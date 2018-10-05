@@ -1,6 +1,6 @@
 # indra
 
-Starter kit for setting up Connext hub infrastructure.
+Everything you need to set up a Hub.
 
 ## How to use this repository
 
