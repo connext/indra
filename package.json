@@ -1,0 +1,30 @@
+{
+  "name": "indra",
+  "version": "0.0.1",
+  "description": "Deployment for Connext hub infrastructure",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "link-contracts": "run-script-os",
+    "link-contracts:linux:darwin": "cd src && ln -s ../../build/contracts contracts",
+    "link-contracts:win32": "cd src && mklink \\D contracts ..\\..\\build\\contracts",
+    "hub-start": "bash kernel/deploy.prod.sh",
+    "hub-stop": "bash kernel/stop.sh",
+    "logs-chainsaw": "docker service logs --tail 100 --follow connext_chainsaw",
+    "logs-hub": "docker service logs --tail 100 --follow connext_hub",
+    "logs-db": "docker service logs --tail 100 --follow connext_postgres",
+    "db": "bash kernel/db.sh",
+    "resetdb": "cd kernel && bash resetdb.sh"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.26.0",
+    "babel-register": "^6.26.0",
+    "truffle-contract": "^4.0.0-next.0",
+    "truffle-hdwallet-provider-privkey": "^0.3.0"
+  },
+  "devDependencies": {
+    "run-script-os": "^1.0.3"
+  },
+  "author": "",
+  "license": "ISC"
+}

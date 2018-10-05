@@ -1,0 +1,1 @@
+bash ./db.sh 'DELETE FROM thread_update; DELETE FROM thread; DELETE FROM channel_update; DELETE FROM channel; DELETE FROM event;'
