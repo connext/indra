@@ -15,16 +15,17 @@ The `master` branch contains deployment scripts in the `./kernel` directory, whi
 - [Node.js 8+](https://nodejs.org/en/)
 - [Ganache CLI](https://github.com/trufflesuite/ganache-cli)
 
-### Cheat Sheet
+### tl;dr
 
 1. Start the Hub. The Hub will use localhost:3000.
-  - Install dependencies
-  - Install Truffle
-  - Install and run Ganache CLI; match CONTRACT_ADDRESS, ETH_NETWORK_ID, and HUB_ACCOUNT to your targeted blockchain.
-  - Migrate contracts
-  - Deploy the Docker stack with `npm run hub-start`
+    - Install dependencies: `npm i`
+    - Install Truffle: `npm i -g truffle`
+    - Install and run Ganache CLI: `npm i -g ganache-cli` and `ganache-cli -m "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" -i 4447 -b 3`
+    - Match CONTRACT_ADDRESS, ETH_NETWORK_ID, and HUB_ACCOUNT in `kernel/deploy.prod.sh` to your targeted blockchain.
+    - Migrate contracts: `truffle migrate --reset --network development`
+    - Deploy the Docker stack with `npm run hub-start`
 
-#### Steps
+#### Detailed Steps
 
 - For Ganache: Start Ganache on your host machine.
 
