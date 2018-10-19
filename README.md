@@ -21,8 +21,8 @@ The `master` branch contains deployment scripts in the `./kernel` directory, whi
     - Install dependencies: `npm i`
     - Install Truffle: `npm i -g truffle`
     - Install and run Ganache CLI: `npm i -g ganache-cli` and `ganache-cli -m "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" -i 4447 -b 3`
-    - Match CONTRACT_ADDRESS, ETH_NETWORK_ID, and HUB_ACCOUNT in `kernel/deploy.prod.sh` to your targeted blockchain.
     - Migrate contracts: `truffle migrate --reset --network development`
+    - Match CONTRACT_ADDRESS, ETH_NETWORK_ID, and HUB_ACCOUNT in `kernel/deploy.prod.sh` to your targeted blockchain.
     - Deploy the Docker stack with `npm run hub-start`
 
 #### Detailed Steps
@@ -38,10 +38,9 @@ ganache-cli -m "candy maple cake sugar pudding cream honey rich smooth crumble s
 ```bash
 truffle migrate --reset --network development
 ```
+- For Rinkeby/testnet: Start a node on your computer and migrate the contracts. Make sure to change the above mentioned variables to match your targeted blockchain.
 
 - Verify `kernel/deploy.prod.sh` to make sure the variables CONTRACT_ADDRESS, ETH_NETWORK_ID, and HUB_ACCOUNT match your targeted blockchain. If you are using Ganache with the above command, it will be set up for this by default.
-
-- For Rinkeby/testnet: Start a node on your computer and migrate the contracts. Make sure to change the above mentioned variables to match your targeted blockchain.
 
 - Deploy the Docker stack.
 
