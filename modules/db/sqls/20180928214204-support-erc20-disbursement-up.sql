@@ -1,0 +1,1 @@
+ALTER TABLE disbursements ADD COLUMN amounterc20 wei_amount;
