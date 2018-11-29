@@ -1,0 +1,86 @@
+sequenceDiagram
+
+    # title <u>User Deposit</u>
+
+    # aliases
+    participant Contract
+    participant User
+    participant Hub
+
+    Note over User: Decides to deposit <br> 100 wei
+
+    opt Request Deposit Approval
+        User->>Hub: /channel/:address/userDeposit
+
+        Note over User,Hub: <br> State: <br> { pendingDepositWei: [0, 100] //[hub, user], <br> weiBalances: [0, 0], <br> tokenBalances: [0, 0] <br> txCount: [1, 1], <br> timeout: 156700391 }
+    end
+
+    Note over Hub: Should deposit <br> tokens for exchange?
+
+    alt Deposits Tokens
+        Hub->>User: 
+
+        # what happens to the txCount if the hub deposits here?
+
+        Note over User,Hub: <br> State: <br> { pendingDepositWei: [0, 100], <br> pendingDepositTokens: [69, 0], <br> weiBalances: [0, 0], <br> tokenBalances: [0, 0], <br> txCount: [1, 1], <br> timeout: 156700391, <br>sigI: 0xac3f }
+
+    else Doesn't Deposit
+        Hub->>User: 
+
+        Note over User,Hub: <br> State: <br> { pendingDepositWei: [0, 100], <br> pendingDepositTokens: [0, 0], <br> weiBalances: [0, 0], <br> tokenBalances: [0, 0] <br> txCount: [1, 1], <br> timeout: 156700391, <br>sigI: 0xac3f }
+
+    end
+
+    loop Poll for User Deposit
+        Hub->>Hub: Verify onchain deposit
+
+        Note over Hub: Amounts match? <br> Deposit confirmed?
+    end
+    
+    Note over User: Verify state, cosign
+
+    alt User submits state
+        User->>Contract: userAuthorizedStateUpdate
+
+    else User does not submit state
+        Note over Hub: Timer expires <br> State is invalid from <br> timeout expiry. Next <br> state will have same <br> txCount.
+    end
+
+    Note over Contract: Deposit confirmed!
+
+    Note over User,Hub: Either party can propose the <br> following updates:
+
+    opt Acknowledge deposits
+        User->>Hub: /channel/:address/update
+        Note over User,Hub: State: <br> { weiBalances: [0, 100], <br> tokenBalances: [69, 0] <br> txCount: [2, 1], <br> timeout: 0, <br>sigA: 0xac3f }
+
+        Note over Hub: Verify state, cosign
+
+        Hub->>User: Return double signed state
+        Note over User,Hub: <br> State: <br> { weiBalances: [0, 100], <br> tokenBalances: [69, 0] <br> txCount: [2, 1], <br> timeout: 0, <br> sigA: 0xac3f, <br>sigI: 0xac3f }
+    end
+
+    # NOTE: In practice, both updates are sent
+    
+    opt Propose BOOTY exchange
+        User->>Hub: Request exchange amount
+        # body to go here?
+
+        Hub->>User: Propose unsigned state
+        Note over User,Hub: <br> State: <br> { weiBalances: [69, 31], <br> tokenBalances: [0, 69] <br> txCount: [2, 1], <br> timeout: 0 }
+
+        Note over User: Verify exchange <br> rate, sign
+
+        User->>Hub: /channel/:address/proposeexchange
+        Note over User,Hub: <br> State: <br> { weiBalances: [69, 31], <br> tokenBalances: [0, 69] <br> txCount: [2, 1], <br> timeout: 0, <br> sigA: 0xc3a }
+
+        Hub->>Hub: Verification
+        Note over Hub: Verify: <br> - Exchange rate <br> - Liquidity <br> - Amount <br> - Sig
+
+        Hub->>User: Cosign
+        Note over User,Hub: <br> State: <br> { weiBalances: [69, 31], <br> tokenBalances: [0, 69] <br> txCount: [2, 1], <br> timeout: 0, <br> sigA: 0xc3a, <br> sigI: 0xd3f }
+
+    end
+
+    Note over Hub,User: In practice, both updates are sent <br> to the hub simultaneously, both <br> confirming deposit at n and <br> exchanging for BOOTY at n+1
+

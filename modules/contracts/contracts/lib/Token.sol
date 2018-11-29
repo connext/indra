@@ -1,6 +1,6 @@
 // Abstract contract for the full ERC 20 Token standard
 // https://github.com/ethereum/EIPs/issues/20
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.25;
 
 contract Token {
     /* This is a slight change to the ERC20 base standard.
@@ -17,7 +17,7 @@ contract Token {
 
     /// @param _owner The address from which the balance will be retrieved
     /// @return The balance
-    function balanceOf(address _owner) public constant returns (uint256 balance);
+    function balanceOf(address _owner) constant public returns (uint256 balance);
 
     /// @notice send `_value` token to `_to` from `msg.sender`
     /// @param _to The address of the recipient

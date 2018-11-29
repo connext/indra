@@ -1,0 +1,76 @@
+sequenceDiagram
+
+    # title Stream Show
+
+    participant Contract
+    participant Viewer
+    participant Hub
+    participant Performer
+
+    Performer->>Hub: channels/:address/startshow
+
+    opt Collateralize channel on Start
+        Hub->>Performer: Propose deposit
+        Note over Hub,Performer: { ...state w/pendingDeposits... }
+
+        Performer->>Hub: Verify and sign
+        Note over Hub,Performer: { ...state w/pendingDeposits..., <br> sigA }
+
+        Hub->>Hub: Verify, cosign
+        Note over Hub: { ...state w/pendingDeposits..., <br> sigA, <br> sigI }
+        
+
+        Hub->>Contract: hubAuthorizedStateUpdate
+        Note over Contract: Confirmed!
+
+        Hub->>Performer: Confirm Deposit
+        Note over Hub,Performer: { ...state..., <br> sigI }
+
+        Performer->>Hub: Confirm Deposit
+        Note over Hub,Performer: { ...state..., <br> sigI, <br> sigA }
+
+    end
+
+    loop Monitor Collateral
+        Hub->>Hub: Start collateral monitoring
+    end
+    
+    Hub->>Performer: Go for it!
+
+    Viewer->>Performer: "I want to join your show"
+    Note over Viewer,Performer: <br> Initial Deposit: <br> { weiBalances: [0, 10] //[hub, user], <br> tokenBalances: [10, 0] <br> txCount: 0,  <br> sigA: 0xce2 }
+
+    Viewer->>Hub: Open thread
+    Note over Viewer,Hub: { ...channel A state..., sigA: 0xc3f }
+
+    Hub-->Hub: Wait for performer confirmation
+
+    Performer->>Hub: Open thread
+    Note over Performer,Hub: { ...channel B state..., sigA: 0xc3f }
+
+
+    Hub->>Hub: Verify thread creation updates
+
+    Hub->>Viewer: Confirm thread opened
+    Note over Viewer,Hub: { ...channel A state..., <br>sigA: 0xc3f, <br>sigI: 0x3fe }
+
+    Hub->>Performer: Confirm thread opened
+    Note over Performer,Hub: { ...channel A state..., <br>sigA: 0xc3f, <br>sigI: 0x3fe }
+
+
+    Viewer->>Performer: Tipping!
+    Note over Viewer,Performer: Tip! <br> Performer should only need latest and initial to decompose on close.
+
+    Viewer-->Viewer: All done
+
+    Viewer->>Hub: Close thread
+    Note over Viewer,Hub: { ...channel A state..., sigA: 0xc3f }
+
+    Hub->>Viewer: Verify, Cosign
+    Note over Viewer,Hub: { ...channel A state..., <br>sigA: 0xc3f, <br>sigI: 0xc3f }
+
+    Hub->>Performer: Close thread
+    Note over Performer,Hub: { ...channel B state..., sigI: 0xc3f }
+
+    Performer->>Hub: Verify, Cosign
+    Note over Performer,Hub: { ...channel B state..., <br>sigA: 0xc3f, <br>sigI: 0xc3f } }

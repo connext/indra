@@ -1,0 +1,9 @@
+language: node_js
+before_script:
+  - npm run ganache &
+branches:
+  only:
+    - develop
+    - master
+node_js:
+  - "10"

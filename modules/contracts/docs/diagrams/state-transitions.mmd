@@ -1,0 +1,43 @@
+graph TD
+    subgraph Channel Open
+        open{Channel Open}-->userAuthorizedUpdate
+        
+        open-->hubAuthorizedUpdate
+
+        open-->startExit
+        open-->startExitWithUpdate
+    end
+
+    subgraph Channel In Dispute
+        startExit-->channelDispute
+        startExitWithUpdate-->channelDispute
+        
+
+        channelDispute{Channel Dispute}-- before channelClosingTime -->emptyChannelWithChallenge
+
+        channelDispute-- after channelClosingTime -->emptyChannel
+
+    end
+
+    subgraph Threads In Dispute
+        emptyChannelWithChallenge-->threadDispute
+        emptyChannel-->threadDispute
+
+        threadDispute{Thread Dispute}-- before threadClosingTime --> startExitThreads
+
+        threadDispute-- before threadClosingTime --> startExitThreadsWithUpdates
+
+        startExitThreads-- before threadClosingTime --> recipientEmptyThreads
+
+        startExitThreadsWithUpdates-- before threadClosingTime --> recipientEmptyThreads
+
+        recipientEmptyThreads-->open
+
+        startExitThreads-- after threadClosingTime --> emptyThreads
+
+        emptyThreads-->open
+
+        threadDispute-- after 10 * threadClosingTime -->open
+
+    end
+    

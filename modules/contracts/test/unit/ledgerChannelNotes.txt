@@ -1,0 +1,270 @@
+dispute scenarios:
+
+- Someone takes a different nonce to chain (for either type of channel)
+  - should fail if nonce is lower than what is on-chain
+- Someone takes the correct nonce to chain
+  - should allow time for response if nonce is higher than anything already onchain
+- For all dispute cases, it resets the challenge time
+- Same thing as above, but for the ledger channels
+- Error cases:
+    - hub didn't countersign, should trigger the dispute case for clients A_I/B_I lc
+    - tipper (alice) does not sign A_I lc rebalance with hub
+    - performer (bob) does not sign B_I lc rebalance with hub
+- Any random person calls updateLC
+- Any random person calls startSettleVC during byzantine case
+- Any random person calls settleVC during byzantine case
+
+
+unit should fail:
+
+- createChannel
+  - call on already open lc
+  - call with incorrect formatted parameters (id, hub address, confirmtime)
+
+- lcOpenTimeout
+  - call after timeout time
+  - call not as initiator of channel
+  - call after channel is open
+
+- joinChannel
+  - call after channel is open
+  - call not as partyI from createChannel()
+  - call with incorrect balance (partyA will have to byzantine settle the lc and not sign any lc state updates)
+
+- depositState
+  - call as either not party A or hub
+  - call with zero funds
+
+- consensusCloseChannel
+  - call with no signed isClose flag
+  - call on closed channel
+  - look for re-entry
+
+- updateLCstate
+  - call on closed channel
+  - call with lower or equal sequence as stored onchain
+  - call after the timeout time
+  - call with bad state not signed by lc parties
+
+- initVCstate
+  - call before updateLCstate timeout ends
+  - call afer more than once for any vc id
+  - call on wrong ledger channel 
+  - call with non-initial state
+  - call on closed vc
+  - call on wrong vc
+
+- settleVC
+  - call before initVC
+  - call before LC settled
+  - call on wrong lc/vc
+  - call on closed vc/lc
+  - call with lower or equal sequence as stored onchain
+  - call with incorrect balances given bond
+  - call with balance decreasing for performer (should only increase)
+  - call with incorrect sigs for given vc
+
+- closeVirtualChannel
+  - call before vc-settle timeout
+  - call on non-open vc
+  - call on already closed vc
+  - call on closed lc
+  - call on non-settled vc
+  - call with wonky balances stored in vc (should have been caught already but look for over/underflows)
+  - look for rentrance
+
+- byzantineCloseChannel
+  - call on non-settling lc
+  - call on previously settled lc
+  - call on lc with vc open
+
+layne 
+
+- Registering with the hub
+    - call register
+        - assertion: does the ledger channel exist on the hub and the connext client?
+        - assertion: the ingrid balance is zero
+    - ask hub to deposit
+        - assertion: is the ingrid balance in the channel equal to the userA balance
+    - Error cases
+        - hub doesn't have sufficient balance to make the deposit
+        - registration fails due to no gas or something
+        - registration should fail if you have an open and active ledger channel already
+
+- Post-registration
+    - open a virtual channel with party B (call openChannel)
+        - assertion: hub has record of VC
+        - assertion: the entire balance of the LC is inside of the VC if no deposit provided
+        - assertion: the deposit balance is inside of the VC if a deposit is provided and LCbal - VCbal = new LC balance
+        - assertion: ingrid countersigns the LC update
+        - assertion: ingrid creates a LC update for party B
+        - error cases
+            - if Ingrid doesn't have enough balance
+            - if you don't have enough balance to cover your deposit
+            - if the deposits are invalid (0, negative)
+            - if you're not sending to a valid address
+            - if you have an active or opening channel with that person
+    - call updateBalance
+        - assertion: balance of VC is updated given the updateBalance parameters
+        - assertion: a properly signs the balance update
+        - assertion: getting the balance from the hub reflects the updated balances
+        - assertion: calling multiples times in a row with updates nonces will update the balance
+        - error cases
+            - if balances are negative or zero
+            - if balanceB is not increased explicitly
+            - if you try to take funds from the other party
+            - if the channel is settled or closed
+            - if you don't have enough balance to make the update
+            - if you don't have a valid VC
+            - if the nonce isn't incremented
+
+- Channel closure
+    - close virtual channel
+        - assertion: the virtual channel's state on the hub is VCS_SETTLED
+        - assertion: the LC balanceA has the remainder of the virtual channel balanceA
+        - assertion: the balanceB belonging to the receiving non-hub counterparty has the balanceb of the virtual channel
+        - assertion: can be called by either partyA or partyB
+        - assertion: can be called by partyB even if partyB has never joined the channel
+        - assertion: should go to dispute case if the hub doesn't countersign the final closing LC update
+        - error cases:
+            - if virtual channel doesn't exist
+            - if virtual channel doesn't belong to me
+            - if virtual channel isn't open
+    - close ledger channel
+        - assertion: the balance of the ledger channel goes to partyA and ingrid's hot wallet
+        - assertion: can only close if there are no open virtual channels
+        - assertion: can only close if the root hash is empty
+        - error cases:
+            - if ledger channel doesn't exist
+            - if ledger channel doesn't belong to me
+            - if ledger channel isn't open
+
+Test case infrastructure:
+
+- local hub talking to testrpc
+- local web3 instance talking to testrpc
+- local database
+- assertions will be made using connext-client methods
+- when test cases complete, shut down all infra
+
+======================================================================================================
+Questions
+  1) Why is LC_S0 needed before opening the channel?
+
+
+============
+Unit test full
+
+createChannel: 7 cases
+  - 1. Error: Channel with lcID has already been created
+  - 2. Error: No partyI address provided
+  - 3. Error: Token _balance is negative
+  - 4. Error: Eth balance doesn't match paid value
+  - 5. Error: Token transfer failure
+  - 6. Success
+
+LCOpenTimeout: 5 (6?) cases
+  - 1. Error: Msg.sender is not partyA of Channels[_lcID]
+  - 2. Error: Channel does not exist
+  - 3. Error: Channel is already open
+  - 4. Error: Function called before LCopenTimeout time has expired
+  - (5?. Error: Token transfer failed) How do we check this??
+  - 6. Success
+
+joinChannel:  6 cases 
+  - 1. Error: Channel with that lcID has already been opened
+  - 2. Error: Msg.sender is not partyI of Channels[_lcID]
+  - 3. Error: Token _balance is negative
+  - 4. Error: Eth balance does not match paid value
+  - 5. Error: Token transfer failure
+  - 6. Success
+
+    Add more case: channel with that ID does not exist
+
+deposit: 7 cases
+  - 1. Error: Tried depositing to a closed channel (what happens with payable eth here? Fallback function?)
+  - 2. Error: Recipient is not either partyA or partyI
+  - 3. Error: Token transfer failure partyA
+  - 4. Error: deposit doesn't match payable Eth partyA
+  - 5. Error: Token transfer failure partyI
+  - 6. Error: deposit doesn't match payable Eth partyI
+  - 7. Success
+
+    Questions: 
+      Why do we need separate deposit fields for parties and initial deposit?
+      How does a deposit get reflected in a new LC update? Should depositing just create an update and checkpoint the channel?
+
+consensusClose: 7 cases
+  - 1. Error: Channel with that ID doesn't exist
+  - 2. Error: Channel with that ID is not open
+  - 3. Error: Total Eth deposit not equal to LC eth balance
+  - 4. Error: Total token deposit not equal to LC token balance
+  - 5. Error: Incorrect signature for party A (either wrong state update or wrong address)
+  - 6. Error: Incorrect signature for party I (either wrong state update or wrong address)
+  - 7. Success
+
+    Add more case: sequence number needs to be greater than channel.sequence
+
+updateLC: 
+  - 1. Error: Channel with that ID doesn't exist
+  - 2. Error: Channel with that ID is not open
+  - 4. Error: Total Eth deposit not equal to LC eth balance
+  - 5. Error: Total token deposit not equal to LC token balance
+  - 7. Error: Incorrect signature for party A (either wrong state update or wrong address)
+  - 8. Error: Incorrect signature for party I (either wrong state update or wrong address)
+  - 9. Success 1: updateLCstate called and updateLCtimeout initiated
+  - 3. Error: Channel sequence is not less than state number
+  - 6. Error: updateLCtimeout has already timed out (channel is updateLCSettling but updateLCtimeout > now)
+  - 10. Success 2: updateLCstate called after timer started
+
+initVCstate:
+  - 1. Error: Channel with that ID doesn't exist
+  - 2. Error: Channel with that ID is not open
+  - 3. Error: VC with that ID is closed already
+  - 4. Error: LC update timer has not yet expired
+  - 5. Error: Update VC timer is not 0 (reentry, i.e. initVCstate was already called)
+  - 6. Error: Alice has not signed initial state or wrong state 
+  - 7. Error: Old state is not contained in root hash
+  - 8. Success (check that updateVCtimer != 0)
+
+    Questions:
+      1) Make sure bob does not need to be checked here in any way
+      2) Does hub sig need to be checked? What happens if alice submits a "fake" VC (i.e. one that was never ratified by hub)
+
+settleVC:
+  - 1. Error: Channel with that ID doesn't exist
+  - 2. Error: Channel with that ID is not open
+  - 3. Error: VC with that ID is already closed
+  - 4. Error: Onchain VC sequence is higher than submitted sequence
+  - 5. Error: State update decreases Eth balance
+  - 6. Error: State update decreases Token balance
+  - 7. Error: Eth balances do not match Eth bonded amount
+  - 8. Error: Token balances do not match token bonded amount
+  - 9. Error: InitVC was not called first
+  - 10. Error: updateLCtimeout has not yet expired (i.e. updateLCtimeout > now)
+  - 11. Error: Incorrect partyA signature or payload
+  - 12. Error: updateVCtimeout has expired
+  - 13. Success 1: called first time (check isInSettlementState flag)
+  - 14. Success 2: called with another higher sequence update before updateVCtimeout expires (check sequence number of onchain vc state)
+
+closeVirtualChannel:
+  - 1. Error: Channel with that ID doesn't exist
+  - 2. Error: Channel with that ID is not open
+  - 3. Error: VC with that ID is already closed
+  - 4. Error: VC is not in settlement state 
+  - 5. Error: updateVCtimeout has not expired
+  - 6. Success (check that correct amounts were transferred to all parties)
+
+    Questions:
+      VC with that ID is already closed doesnt seem to be checked but should be?
+      you can't call closeVC without first calling settleVC (which means you HAVE to prep a sequence 1 state)
+
+byzantineCloseChannel:
+  - 1. Error: Channel with that ID doesnt exist
+  - 2. Error: Channel with that ID is not open
+  - 3. Error: Channel is not updateSettling (i.e. not in dispute)
+  - 4. Error: VCs are still open
+  - 5. Error: LC timeout has not yet expired
+  - 6. Error: onchain Eth balances are greater than deposit (how would this happen?)
+  - 7. Error: onchain token balances are greater than deposit (how would this happen?)
+  - 8. Success: channel byzantine closed! (check numchannels)

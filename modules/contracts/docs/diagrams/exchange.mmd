@@ -1,0 +1,58 @@
+sequenceDiagram
+
+    # title <u>Offchain Exchange</u>
+
+    # aliases
+    participant User
+    participant Hub
+    participant Contract
+
+
+    Note over User: Decides to exchange <br> 69 wei for 69 BOOTY.
+
+
+    User->>Hub: Proposes Exchange
+    Note over User,Hub: { desiredCurrency: 'BOOTY',<br>exchangeAmount: 69,<br>txCount: 1 }
+
+Hub->>User: Proposed, unsigned state update
+Note over User,Hub: State: <br> { weiBalances: [69, 0] //[hub, user], <br> tokenBalances: [0, 69], <br> txCount: [2, 1]<br><br>  } 
+
+User->>Hub: Verified, signed state update
+Note over User,Hub: State: <br> { weiBalances: [69, 0] //[hub, user], <br> tokenBalances: [0, 69], <br> txCount: [2, 1], <br><br><br>sigA: 0xac3f} <br>timeout: 156700391 (offchain)
+    User-->User: Start Offchain Timer
+
+    alt Hub responds in time
+
+        Hub->>Hub: Verify Exchange
+
+        alt Exchange verified
+            
+            Hub->>User: Cosign exchange state
+            Note over User,Hub: State: <br> { weiBalances: [69, 0] //[hub, user], <br> tokenBalances: [0, 69], <br> txCount: [2, 1], <br>sigA: 0xac3f, <br>sigI: 0xac3f } <br> timeout: 156700391 (offchain)
+      
+            User-->User: Remove Offchain Timer
+
+        else Exchange rejected
+            
+            Hub->>User: Previous state at higher nonce
+            Note over User,Hub: Previous state with higher nonce is <br> signed and returned to user. <br> State: <br> { weiBalances: [0, 69] //[hub, user], <br> tokenBalances: [69, 0], <br> txCount: [3, 1], <br><br>sigI: 0xac3f }
+
+            User-->User: Remove Offchain Timer
+
+            User->>Hub: Verify state, cosign
+            Note over User,Hub: State: <br> { weiBalances: [0, 69] //[hub, user], <br> tokenBalances: [69, 0], <br> txCount: [3, 1], <br>sigI: 0xac3f, <br>sigA: 0xac3f }
+
+            User-->User: Propose new exchange update
+
+        end
+
+    else Hub doesnt respond in time
+    
+        alt Dispute with on chain state
+            User->>Contract: startExit()
+        else Dispute with off chain state
+            User->>Contract: startExitWithUpdate()
+        end
+
+        Note over User,Contract: Continue with the thread disputes once the channel dispute is<br> completed, if there are any open threads.
+    end

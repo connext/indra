@@ -1,24 +1,18 @@
 {
   "name": "indra",
-  "version": "0.0.1",
+  "version": "0.0.0",
+  "author": "Connext & Friends",
   "description": "Deployment for Connext hub infrastructure",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "link-contracts": "run-script-os",
-    "link-contracts:linux:darwin": "cd src && ln -s ../../build/contracts contracts",
-    "link-contracts:win32": "cd src && mklink \\D contracts ..\\..\\build\\contracts",
-    "hub-start": "bash kernel/deploy.prod.sh",
-    "hub-stop": "bash kernel/stop.sh",
-    "logs-chainsaw": "docker service logs --tail 100 --follow connext_chainsaw",
-    "logs-hub": "docker service logs --tail 100 --follow connext_hub",
-    "logs-db": "docker service logs --tail 100 --follow connext_postgres",
-    "db": "bash kernel/db.sh",
-    "resetdb": "cd kernel && bash resetdb.sh"
-  },
-  "author": "",
   "license": "ISC",
-  "dependencies": {
-    "truffle-hdwallet-provider": "^1.0.0-web3one.0"
+  "scripts": {
+    "build": "make dev",
+    "db": "bash ops/db.sh",
+    "logs": "bash ops/logs.sh",
+    "rebuild": "make clean && make",
+    "reset": "bash ops/stop.sh && make clean",
+    "restart": "bash ops/restart.sh",
+    "start": "make dev && bash ops/deploy.dev.sh",
+    "prod": "make prod && bash ops/deploy.prod.sh",
+    "stop": "bash ops/stop.sh"
   }
 }
