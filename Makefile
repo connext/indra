@@ -10,6 +10,7 @@ contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(cont
 
 docker_run=docker run --name=buidler --tty --rm
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/app builder:dev
+docker_run_in_hub=$(docker_run) --volume=$(hub):/app builder:dev
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(hub)/build)
@@ -18,7 +19,7 @@ $(shell mkdir -p build $(contracts)/build $(hub)/build)
 .PHONY: default dev clean stop
 
 default: dev
-dev: ethprovider
+dev: ethprovider hub
 
 clean:
 	rm -rf build/*
@@ -37,7 +38,7 @@ stop:
 hub: hub-node-modules
 
 hub-node-modules: builder $(hub)/package.json
-	docker run --rm --tty --name=builder --volume=$(cwd):/app builder:dev "yarn install"
+	$(docker_run_in_hub) "yarn install"
 	touch build/hub-node-modules
 
 # Contracts
@@ -51,7 +52,7 @@ contract-artifacts: contracts-node-modules $(contracts_src)
 	touch build/contract-artifacts
 
 contracts-node-modules: builder $(contracts)/package.json
-	docker run --rm --tty --name=builder --volume=$(contracts):/app builder:dev "yarn install"
+	$(docker_run_in_contracts) "yarn install"
 	touch build/contracts-node-modules
 
 # Builder
