@@ -15,10 +15,15 @@ docker_run_in_contracts=$(docker_run) --volume=$(contracts):/app builder:dev
 $(shell mkdir -p build $(contracts)/build $(hub)/build)
 
 # Begin Phony Rules
-.PHONY: default dev stop
+.PHONY: default dev clean stop
 
 default: dev
 dev: ethprovider
+
+clean:
+	rm -rf build/*
+	rm -rf $(contracts)/build/*
+	rm -rf $(hub)/build/*
 
 stop: 
 	docker container stop builder 2> /dev/null || true
@@ -43,7 +48,7 @@ ethprovider: contract-artifacts
 
 contract-artifacts: contracts-node-modules $(contracts_src)
 	$(docker_run_in_contracts) "bash ops/build.sh"
-	touch build/contracts
+	touch build/contract-artifacts
 
 contracts-node-modules: builder $(contracts)/package.json
 	docker run --rm --tty --name=builder --volume=$(contracts):/app builder:dev "yarn install"
