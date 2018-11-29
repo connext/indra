@@ -1,0 +1,397 @@
+import * as express from 'express'
+import { ApiService, Router } from './ApiService'
+import VirtualChannelsService from '../VirtualChannelsService'
+import PaymentHandler from '../PaymentHandler'
+import { Payment, PaymentType } from '../domain/PaymentMeta'
+import log from '../util/log'
+import { BigNumber } from 'bignumber.js'
+
+const LOG = log('VirtualChannelsApiService')
+
+export default class VirtualChannelsApiService implements ApiService {
+  namespace = 'virtualchannel'
+
+  router: Router = Router()
+
+  private virtualChannelsService: VirtualChannelsService
+
+  private paymentHandler: PaymentHandler<any, any>
+
+  constructor(
+    virtualChannelsService: VirtualChannelsService,
+    paymentHandler: PaymentHandler<any, any>,
+  ) {
+    this.virtualChannelsService = virtualChannelsService
+    this.paymentHandler = paymentHandler
+
+    this.doCreate = this.doCreate.bind(this)
+    this.doJoin = this.doJoin.bind(this)
+    this.doUpdate = this.doUpdate.bind(this)
+    this.doCosign = this.doCosign.bind(this)
+    this.doClose = this.doClose.bind(this)
+    this.getLatestStateSigned = this.getLatestStateSigned.bind(this)
+    this.getUpdateByNonce = this.getUpdateByNonce.bind(this)
+    this.getOpenByParties = this.getOpenByParties.bind(this)
+    this.getById = this.getById.bind(this)
+    this.getOpeningByParty = this.getOpeningByParty.bind(this)
+
+    this.setupRoutes()
+  }
+
+  private async doCreate(req: express.Request, res: express.Response) {
+    const {
+      channelId,
+      partyA,
+      partyB,
+      ethBalance,
+      tokenBalance,
+      lcSig,
+      vcSig,
+    } = req.body
+    if (
+      !channelId ||
+      !partyA ||
+      !partyB ||
+      !ethBalance ||
+      !tokenBalance ||
+      !lcSig ||
+      !vcSig
+    ) {
+      LOG.warn(
+        'Received invalid channel open request. Aborting. Body received: {body}',
+        {
+          body: JSON.stringify(req.body, null, 2),
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    let vc
+    try {
+      vc = await this.virtualChannelsService.create(
+        channelId,
+        partyA,
+        partyB,
+        new BigNumber(ethBalance),
+        new BigNumber(tokenBalance),
+        vcSig,
+        lcSig,
+      )
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.doCreate: {error}',
+        { error },
+      )
+      return res.sendStatus(400)
+    }
+
+    res.send({ channelId: vc!.channelId })
+  }
+
+  private async doJoin(req: express.Request, res: express.Response) {
+    const { lcSig, vcSig } = req.body
+    const { channelId } = req.params
+    if (!channelId || !vcSig || !lcSig) {
+      LOG.warn(
+        'Received invalid channel join request. Aborting. Body received: {body}',
+        {
+          body: req.body,
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    let result
+    try {
+      result = await this.virtualChannelsService.joinAndOpen(
+        channelId,
+        vcSig,
+        lcSig,
+      )
+    } catch (e) {
+      LOG.warn(e.toString())
+      return res.sendStatus(400)
+    }
+    return res.json({ channelId: result!.channelId })
+  }
+
+  private async doUpdate(req: express.Request, res: express.Response) {
+    const { channelId } = req.params
+    if (!channelId || !req.body.payment) {
+      LOG.warn(
+        'Received invalid channel update request. Aborting. Params received: {params}, Body received: {body}',
+        {
+          params: req.params,
+          body: req.body,
+        },
+      )
+      return res.sendStatus(400)
+    }
+    const { balanceA, balanceB, sig, nonce } = req.body.payment
+    if (!balanceA || !balanceB || !nonce || !sig) {
+      LOG.warn(
+        'Received invalid channel update request. Aborting. Body received: {body}',
+        {
+          body: req.body,
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    let parsedMeta
+    try {
+      parsedMeta = await this.paymentHandler.validateMeta(req)
+    } catch (err) {
+      LOG.warn('Failed to parse payment metadata: {err}', {
+        err,
+      })
+      return res.sendStatus(400)
+    }
+
+    let update
+    try {
+      update = await this.virtualChannelsService.update(channelId, {
+        ethBalanceA: new BigNumber(balanceA),
+        ethBalanceB: new BigNumber(balanceB),
+        tokenBalanceA: new BigNumber(0),
+        tokenBalanceB: new BigNumber(0),
+        sigA: sig,
+        nonce,
+      })
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.doUpdate: {error}',
+        { error },
+      )
+      return res.sendStatus(400)
+    }
+
+    const payment: Payment = {
+      purchase: 'vc:' + update.id,
+      channelId,
+      meta: JSON.stringify(parsedMeta),
+      token: update.id,
+    }
+    await this.paymentHandler.storeMeta(
+      parsedMeta,
+      PaymentType.Virtual,
+      payment,
+    )
+    res.send(update)
+  }
+
+  private async doCosign(req: express.Request, res: express.Response) {
+    const { channelId, nonce } = req.params
+    const { sig } = req.body
+
+    if (!channelId || !nonce || !sig) {
+      LOG.warn(
+        'Received invalid channel cosign update request. Aborting. Params received: {params}, Body received: {body}',
+        {
+          body: req.body,
+          params: req.params,
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    let update
+    try {
+      update = await this.virtualChannelsService.cosign(channelId, nonce, sig)
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.doCosign: {error}',
+        { error },
+      )
+      return res.sendStatus(400)
+    }
+    res.send(update)
+  }
+
+  private async doClose(req: express.Request, res: express.Response) {
+    const { channelId } = req.params
+    const { sig, signer } = req.body
+    if (!channelId || !sig || !signer) {
+      LOG.warn(
+        'Received invalid channel close request. Aborting. Params received: {params}, Body received: {body}.',
+        {
+          params: req.params,
+          body: req.body,
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    let close
+    try {
+      close = await this.virtualChannelsService.close(channelId, sig, signer)
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.doClose: {error}',
+        { error },
+      )
+      return res.sendStatus(400)
+    }
+    res.send(close)
+  }
+
+  private async getLatestStateSigned(
+    req: express.Request,
+    res: express.Response,
+  ) {
+    const { channelId } = req.params
+    if (!channelId) {
+      LOG.warn(
+        'Received invalid channel get latest state update request. Aborting. Params received: {params}',
+        {
+          params: req.params,
+        },
+      )
+      return res.sendStatus(400)
+    }
+    let update
+    try {
+      update = await this.virtualChannelsService.getLatestSignedUpdate(
+        channelId,
+      )
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.getLatestStateSigned: {error}',
+        { error },
+      )
+      return res.sendStatus(400)
+    }
+    res.send(update)
+  }
+
+  private async getUpdateByNonce(req: express.Request, res: express.Response) {
+    const { channelId, nonce } = req.params
+    if (!channelId) {
+      LOG.warn(
+        'Received invalid channel update request. Aborting. Params received: {params}',
+        {
+          params: req.params,
+        },
+      )
+      return res.sendStatus(400)
+    }
+    let update
+    try {
+      update = await this.virtualChannelsService.getUpdateByNonce(
+        channelId,
+        nonce,
+      )
+
+      if (!update) {
+        return res.sendStatus(404)
+      }
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.getUpdateByNonce: {error}',
+        {
+          error,
+        },
+      )
+      return res.sendStatus(400)
+    }
+    res.send(update)
+  }
+
+  private async getById(req: express.Request, res: express.Response) {
+    const { channelId } = req.params
+    if (!channelId) {
+      LOG.warn(
+        'Received invalid channel get request. Aborting. Params received: {params}',
+        {
+          params: req.params,
+        },
+      )
+      return res.sendStatus(400)
+    }
+    let channel
+    try {
+      channel = await this.virtualChannelsService.getById(channelId)
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.getById: {error}',
+        { error },
+      )
+      return res.sendStatus(500)
+    }
+
+    if (!channel) {
+      return res.sendStatus(400)
+    }
+
+    return res.send(channel)
+  }
+
+  private async getOpenByParties(req: express.Request, res: express.Response) {
+    const { partyA, partyB } = req.params
+    if (!partyA || !partyB) {
+      LOG.warn(
+        'Received invalid channel get request. Aborting. Params received: {params}',
+        {
+          params: req.params,
+        },
+      )
+      return res.sendStatus(400)
+    }
+    let channel
+    try {
+      channel = await this.virtualChannelsService.getOpenByParties(
+        partyA,
+        partyB,
+      )
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.getOpenByParties: {error}',
+        { error },
+      )
+      return res.sendStatus(500)
+    }
+
+    if (!channel) {
+      return res.sendStatus(400)
+    }
+
+    res.send(channel)
+  }
+
+  private async getOpeningByParty(req: express.Request, res: express.Response) {
+    const { address } = req.params
+    if (!address) {
+      LOG.warn(
+        'Received invalid channel get request. Aborting. Params received: {params}',
+        {
+          params: req.params,
+        },
+      )
+      return res.sendStatus(400)
+    }
+    let channel
+    try {
+      channel = await this.virtualChannelsService.getOpeningChannels(address)
+    } catch (error) {
+      LOG.error(
+        'Error occurred in VirtualChannelsApiService.getOpeningByParty: {error}',
+        { error },
+      )
+      return res.sendStatus(400)
+    }
+    res.send(channel)
+  }
+
+  private setupRoutes() {
+    this.router.post('/', this.doCreate)
+    this.router.post('/:channelId/join', this.doJoin)
+    this.router.post('/:channelId/update', this.doUpdate)
+    this.router.post('/:channelId/update/:nonce/cosign', this.doCosign)
+    this.router.post('/:channelId/close', this.doClose)
+    this.router.get('/:channelId/update/latest', this.getLatestStateSigned)
+    this.router.get('/:channelId/update/nonce/:nonce', this.getUpdateByNonce)
+    this.router.get('/:channelId', this.getById)
+    this.router.get('/a/:partyA/b/:partyB/open', this.getOpenByParties)
+    this.router.get('/address/:address/opening', this.getOpeningByParty)
+  }
+}

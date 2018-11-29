@@ -1,0 +1,158 @@
+import * as chai from 'chai'
+import { assert } from 'chai'
+import DBEngine, { PostgresDBEngine } from '../DBEngine'
+import { Client } from 'pg'
+import Config from '../Config'
+import eraseDb from '../testing/eraseDb'
+import * as chaiAsPromised from 'chai-as-promised'
+import AccountsDao, { PostgresAccountsDao } from './AccountsDao'
+import { WalletMigrations } from '../domain/WalletMigrations'
+
+let func = process.env.DATABASE_URL_TEST ? describe : xdescribe
+
+func('AccountsDao', () => {
+  let engine: DBEngine<Client>
+
+  let dao: AccountsDao
+
+
+  before(() => {
+    chai.use(chaiAsPromised)
+
+    engine = new PostgresDBEngine({
+      databaseUrl: process.env.DATABASE_URL_TEST,
+    } as Config)
+
+    return engine.connect()
+  })
+
+  after(async () => {
+    return engine.disconnect()
+  })
+
+  beforeEach(async () => {
+    await eraseDb(engine)
+    dao = new PostgresAccountsDao(engine)
+  })
+
+  afterEach(async () => {
+    await eraseDb(engine)
+  })
+
+  describe('Apply miigrations', () => {
+    beforeEach(() => {
+      return engine.exec(async (c: Client) =>
+        c.query(`
+          INSERT INTO
+            available_wallet_migrations (migration_name)
+          VALUES
+            ('close_channel'),
+            ('request_booty_disbursement'),
+            ('approve_booty'),
+            ('open_channel')
+        `)
+      )
+    })
+
+    it('Applies migrations in order', async () => {
+      await engine.exec(async (c: Client) => {
+        const res = await c.query(`
+          SELECT id, migration_name FROM available_wallet_migrations
+        `)
+        const applyIds = res.rows.map((row: any) => Number(row.id))
+
+        await dao.applyMigrations('0xdeadbeef', applyIds)
+
+        const result: WalletMigrations = await dao.getMigrations('0xdeadbeef')
+
+        assert.isEmpty(result.unapplied)
+        assert.isNotEmpty(result.applied)
+
+        result.applied.forEach(migration => {
+          assert.include(applyIds, migration.migrationId)
+        })
+      })
+    })
+    it('Applies subset of migrations in order', async () => {
+      await engine.exec(async (c: Client) => {
+        const res = await c.query(`
+        SELECT id, migration_name FROM available_wallet_migrations
+      `)
+        const fullList = res.rows.map((row: any) => Number(row.id))
+        const applyIds = fullList.slice(0, 2)
+
+        await dao.applyMigrations('0xdeadbeef', applyIds)
+
+        const result: WalletMigrations = await dao.getMigrations('0xdeadbeef')
+
+        assert.isNotEmpty(result.unapplied)
+        assert.isNotEmpty(result.applied)
+
+        result.applied.forEach(migration => {
+          assert.include(applyIds, migration.migrationId)
+        })
+        result.unapplied.forEach(migration => {
+          assert.include(fullList, migration.migrationId)
+        })
+      })
+    })
+    it('Applies subset of migrations which are out of sequence and fails', async () => {
+      await engine.exec(async (c: Client) => {
+        const res = await c.query(`
+          SELECT id, migration_name FROM available_wallet_migrations
+        `)
+        const fullList = res.rows.map((row: any) => Number(row.id))
+        const applyIds = fullList.slice(2)
+
+        let error = null
+        try {
+          await dao.applyMigrations('0xdeadbeef', applyIds  )
+        } catch (e) {
+          error = e
+        }
+        assert.isNotNull(error)
+        assert.equal(error.message, 'migration ids are out of sequence')
+      })
+    })
+    it('Applies empty list of migrations and fails', async () => {
+      await engine.exec(async (c: Client) => {
+        let error = null
+        try {
+          await dao.applyMigrations('0xdeadbeef', [])
+        } catch (e) {
+          error = e
+        }
+        assert.isNotNull(error)
+        assert.equal(error.message, 'migration ids array is empty')
+      })
+    })
+    it('Applies invalid migrations and fails', async () => {
+      await engine.exec(async (c: Client) => {
+        let error = null
+        try {
+          await dao.applyMigrations('0xdeadbeef', [9, 10, 11])
+        } catch (e) {
+          error = e
+        }
+        assert.isNotNull(error)
+        assert.equal(error.message, 'migration ids are invalid')
+      })
+    })
+    it('Applies migrations out of order and fails', async () => {
+      await engine.exec(async (c: Client) => {
+        const res = await c.query(`
+          SELECT id, migration_name FROM available_wallet_migrations
+        `)
+        const applyIds = res.rows.map((row: any) => Number(row.id)).reverse()
+        let error = null
+        try {
+          await dao.applyMigrations('0xdeadbeef', applyIds)
+        } catch (e) {
+          error =  e
+        }
+        assert.isNotNull(error)
+        assert.equal(error.message, 'migration ids out of order')
+      })
+    })
+  })
+})

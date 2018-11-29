@@ -1,0 +1,399 @@
+import {assert} from 'chai'
+import DBEngine, {PostgresDBEngine} from '../DBEngine'
+import {Client} from 'pg'
+import {PostgresVirtualChannelsDao, VcStatus} from './VirtualChannelsDao'
+import Config from '../Config'
+import eraseDb from '../testing/eraseDb'
+import {BigNumber} from 'bignumber.js'
+import * as sinon from 'sinon'
+import crypto = require('crypto')
+
+let func = process.env.DATABASE_URL_TEST ? describe : xdescribe
+
+func('VirtualChannelsDao', () => {
+  let client: DBEngine<Client>
+
+  let dao: PostgresVirtualChannelsDao
+
+  before(() => {
+    client = new PostgresDBEngine({
+      databaseUrl: process.env.DATABASE_URL_TEST
+    } as Config)
+
+    return client.connect()
+  })
+
+  after(() => {
+    return client.disconnect()
+  })
+
+  beforeEach(async () => {
+    await eraseDb(client)
+    dao = new PostgresVirtualChannelsDao(client)
+  })
+
+  afterEach(async () => {
+    await eraseDb(client)
+  })
+
+  describe('open', () => {
+    let channelId1: string
+    let channelId2: string
+    let channelId3: string
+    let channelId4: string
+    let sigA1: string
+    let sigA2: string
+
+    beforeEach(async () => {
+      channelId1 = await createRandomBytes32()
+      channelId2 = await createRandomBytes32()
+      channelId3 = await createRandomBytes32()
+      channelId4 = await createRandomBytes32()
+      sigA1 = await createRandomBytes65()
+      sigA2 = await createRandomBytes65()
+
+      // insert ledger channels
+      await client.exec((c: Client) =>
+        c.query(
+          `INSERT INTO chainsaw_ledger_channels (
+            contract, 
+            channel_id, 
+            wei_balance_a_chain, 
+            wei_balance_i_chain, 
+            token, 
+            erc20_balance_a_chain, 
+            erc20_balance_i_chain, 
+            on_chain_nonce, 
+            vc_root_hash, 
+            num_open_vc, 
+            status
+          ) VALUES (
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            '${channelId3}',
+            100,
+            200,
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            0,
+            0,
+            0,
+            '0xf9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4',
+            0,
+            'LCS_OPENED'
+          );
+          
+          INSERT INTO exchange_rates (retrievedat, base, rate_usd) VALUES (now_millis(), 0, 0);`
+        )
+      )
+
+      await client.exec((c: Client) =>
+        c.query(`INSERT INTO chainsaw_ledger_channels (
+            contract, 
+            channel_id, 
+            wei_balance_a_chain, 
+            wei_balance_i_chain, 
+            token, 
+            erc20_balance_a_chain, 
+            erc20_balance_i_chain, 
+            on_chain_nonce, 
+            vc_root_hash, 
+            num_open_vc, 
+            status
+          ) VALUES (
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            '${channelId4}',
+            100,
+            200,
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            0,
+            0,
+            0,
+            '0xf9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4',
+            0,
+            'LCS_OPENED'
+        )`)
+      )
+
+      await dao.create(
+        {
+          channelId: channelId1,
+          partyA: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+          partyB: '0xf17f52151ebef6c7334fad080c5704d77216b732',
+          partyI: '0xc5fdf4076b8f3a5357c5e395ab970b5b54098fef',
+          subchanAtoI: channelId3,
+          subchanBtoI: channelId4
+        },
+        {
+          nonce: 0,
+          ethBalanceA: new BigNumber(100),
+          ethBalanceB: new BigNumber(0),
+          tokenBalanceA: new BigNumber(0),
+          tokenBalanceB: new BigNumber(0),
+          sigA: sigA1
+        }
+      )
+    })
+
+    afterEach(async () => {
+      await eraseDb(client)
+    })
+
+    it('should get a channel by id', async () => {
+      const vc = await dao.channelById(channelId1)
+
+      assert.deepEqual(vc, {
+        ethBalanceA: new BigNumber(100),
+        ethBalanceB: new BigNumber(0),
+        tokenBalanceA: new BigNumber(0),
+        tokenBalanceB: new BigNumber(0),
+        channelId: channelId1,
+        partyA: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+        partyB: '0xf17f52151ebef6c7334fad080c5704d77216b732',
+        partyI: '0xc5fdf4076b8f3a5357c5e395ab970b5b54098fef',
+        subchanAtoI: channelId3,
+        subchanBtoI: channelId4,
+        nonce: 0,
+        state: VcStatus.Opening,
+        onChainNonce: NaN,
+        updateTimeout: NaN
+      })
+    })
+
+    it('should get initial vc states', async () => {
+      await client.exec((c: Client) =>
+        c.query(`INSERT INTO chainsaw_ledger_channels (contract,
+                                                       channel_id,
+                                                       wei_balance_a_chain,
+                                                       wei_balance_i_chain,
+                                                       token,
+                                                       erc20_balance_a_chain,
+                                                       erc20_balance_i_chain,
+                                                       on_chain_nonce,
+                                                       vc_root_hash,
+                                                       num_open_vc,
+                                                       status)
+                 VALUES ('0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+                         '0xf9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4',
+                         100,
+                         200,
+                         '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+                         0,
+                         0,
+                         0,
+                         '0xf9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4',
+                         0,
+                         'LCS_OPENED')`)
+      )
+
+      await dao.create(
+        {
+          channelId: channelId2,
+          partyA: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+          partyB: '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+          partyI: '0xc5fdf4076b8f3a5357c5e395ab970b5b54098fef',
+          subchanAtoI: channelId3,
+          subchanBtoI: channelId4
+        },
+        {
+          nonce: 0,
+          ethBalanceA: new BigNumber(500),
+          ethBalanceB: new BigNumber(0),
+          tokenBalanceA: new BigNumber(0),
+          tokenBalanceB: new BigNumber(0),
+          sigA: sigA2
+        }
+      )
+
+      await dao.join(channelId1, sigA1)
+      await dao.join(channelId2, sigA2)
+
+      const vcInitialStates = await dao.initialStatesForSubchan(channelId3)
+
+      assert.containsAllDeepKeys(vcInitialStates, [0, 1])
+    })
+  })
+  describe('it should return lastest state update for virtual channel', () => {
+    let channelId1: string
+    let channelId2: string
+    let channelId3: string
+    let channelId4: string
+    let sigA1: string
+    let sigA2: string
+    beforeEach(async () => {
+      channelId1 = await createRandomBytes32()
+      channelId2 = await createRandomBytes32()
+      channelId3 = await createRandomBytes32()
+      channelId4 = await createRandomBytes32()
+      sigA1 = await createRandomBytes65()
+      sigA2 = await createRandomBytes65()
+
+      // insert ledger channels
+      await client.exec((c: Client) =>
+        c.query(
+          `INSERT INTO chainsaw_ledger_channels (
+            contract, 
+            channel_id, 
+            wei_balance_a_chain, 
+            wei_balance_i_chain, 
+            token, 
+            erc20_balance_a_chain, 
+            erc20_balance_i_chain, 
+            on_chain_nonce, 
+            vc_root_hash, 
+            num_open_vc, 
+            status
+          ) VALUES (
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            '${channelId3}',
+            100,
+            200,
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            0,
+            0,
+            0,
+            '0xf9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4',
+            0,
+            'LCS_OPENED'
+          );
+          
+          INSERT INTO exchange_rates (retrievedat, base, rate_usd) VALUES (now_millis(), 0, 0);`
+        )
+      )
+
+      await client.exec((c: Client) =>
+        c.query(`INSERT INTO chainsaw_ledger_channels (
+            contract, 
+            channel_id, 
+            wei_balance_a_chain, 
+            wei_balance_i_chain, 
+            token, 
+            erc20_balance_a_chain, 
+            erc20_balance_i_chain, 
+            on_chain_nonce, 
+            vc_root_hash, 
+            num_open_vc, 
+            status
+          ) VALUES (
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            '${channelId4}',
+            100,
+            200,
+            '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+            0,
+            0,
+            0,
+            '0xf9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4',
+            0,
+            'LCS_OPENED'
+        )`)
+      )
+
+      await dao.create(
+        {
+          channelId: channelId1,
+          partyA: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+          partyB: '0xf17f52151ebef6c7334fad080c5704d77216b732',
+          partyI: '0xc5fdf4076b8f3a5357c5e395ab970b5b54098fef',
+          subchanAtoI: channelId3,
+          subchanBtoI: channelId4
+        },
+        {
+          nonce: 0,
+          ethBalanceA: new BigNumber(100),
+          ethBalanceB: new BigNumber(0),
+          tokenBalanceA: new BigNumber(0),
+          tokenBalanceB: new BigNumber(0),
+          sigA: sigA1
+        }
+      )
+    })
+
+    afterEach(async () => {
+      await eraseDb(client)
+    })
+
+    it('should return null when not update found', async () => {
+      const update = await dao.getLatestSignedUpdate(channelId3)
+      assert.equal(null, update)
+    })
+    it('should return a not null value ', async () => {
+      await client.exec((c: Client) =>
+        c.query(`INSERT INTO chainsaw_ledger_channels (
+          contract, 
+          channel_id, 
+          wei_balance_a_chain, 
+          wei_balance_i_chain, 
+          token, 
+          erc20_balance_a_chain, 
+          erc20_balance_i_chain, 
+          on_chain_nonce, 
+          vc_root_hash, 
+          num_open_vc, 
+          status
+        ) VALUES (
+          '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+          '${channelId2}',
+          100,
+          200,
+          '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
+          0,
+          0,
+          0,
+          '0xf9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4',
+          0,
+          'LCS_OPENED'
+      )`)
+      )
+      const update = await dao.getLatestUpdate(channelId1)
+
+      if (!update) {
+        throw new Error('Expected an update.')
+      }
+
+      const dateStub = sinon.stub(Date, 'now').returns(12345)
+      update.ethBalanceA = update.ethBalanceA.plus(10)
+      update.ethBalanceB = update.ethBalanceB.plus(10)
+      update.tokenBalanceA = update.tokenBalanceA.plus(10)
+      update.tokenBalanceB = update.tokenBalanceB.plus(10)
+      update.sigA = sigA1
+      update.sigB = sigA2
+      update.nonce = update.nonce + 1
+      update.priceToken = new BigNumber(10)
+      update.priceWei = new BigNumber(1)
+      await dao.createUpdate(channelId1, update)
+      const newUpdate = await dao.getLatestSignedUpdate(channelId1)
+      assert.deepEqual(newUpdate, {
+        id: 2,
+        channelId: update.channelId,
+        ethBalanceA: update.ethBalanceA,
+        ethBalanceB: update.ethBalanceB,
+        tokenBalanceA: update.tokenBalanceA,
+        tokenBalanceB: update.tokenBalanceB,
+        priceWei: update.priceWei,
+        priceToken: update.priceToken,
+        nonce: update.nonce,
+        sigA: update.sigA,
+        sigB: update.sigB,
+        createdAt: 12345
+      })
+      dateStub.restore()
+    })
+  })
+})
+
+async function createRandomBytes32 (): Promise<any> {
+  return new Promise((resolve, reject) => {
+    crypto.randomBytes(32, (err, buf) => {
+      if (err) reject(err)
+      resolve(`0x${buf.toString('hex')}`)
+    })
+  })
+}
+
+async function createRandomBytes65 (): Promise<any> {
+  return new Promise((resolve, reject) => {
+    crypto.randomBytes(65, (err, buf) => {
+      if (err) reject(err)
+      resolve(`0x${buf.toString('hex')}`)
+    })
+  })
+}
