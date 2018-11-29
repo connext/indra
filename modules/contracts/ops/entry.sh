@@ -1,0 +1,49 @@
+#!/bin/bash
+
+mkdir -p /data build/contracts
+
+# Set default env vars
+netid=$ETH_NETWORK_ID
+[[ -n "$netid" ]] || netid=4447
+mnemonic=$ETH_MNEMONIC
+[[ -n "$mnemonic" ]] || mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+
+echo "Starting Ganache with options: netid=$netid, mnemonic=$mnemonic"
+ganache-cli --host="0.0.0.0" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" >> ganache.log &
+
+function getHash {
+  find build/contracts contracts migrations -type f -not -name "*.swp" |\
+  xargs cat |\
+  sha256sum |\
+  tr -d ' -'
+}
+
+function migrate {
+    truffle compile
+    truffle migrate --reset
+    getHash > build/state-hash
+    echo "Watching contracts/migrations for changes (`getHash`)"
+}
+
+if [[ ! -f build/state-hash ]]
+then
+    echo 
+    echo "First migration..."
+    migrate
+elif [[ "`getHash`" == "`cat build/state-hash`" ]]
+then
+    echo "Contracts & migrations are up to date"
+    echo "Watching contracts/migrations for changes (`getHash`)"
+fi
+
+while true;
+do
+    if [[ "`getHash`" == "`cat build/state-hash`" ]]
+    then
+        sleep 3;
+    else
+        echo 
+        echo "Changes detected! Re-migrating (`getHash`)"
+        migrate
+    fi
+done
