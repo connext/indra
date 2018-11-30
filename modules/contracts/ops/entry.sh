@@ -1,6 +1,8 @@
 #!/bin/bash
 
 mkdir -p /data build/contracts
+ganache=./node_modules/.bin/ganache-cli
+truffle=./node_modules/.bin/truffle
 
 # Set default env vars
 netid=$ETH_NETWORK_ID
@@ -9,8 +11,9 @@ mnemonic=$ETH_MNEMONIC
 [[ -n "$mnemonic" ]] || mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 echo "Starting Ganache with options: netid=$netid, mnemonic=$mnemonic..."
-ganache-cli --host="0.0.0.0" --port="8545" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" &
-sleep 2
+$ganache --host="0.0.0.0" --port="8545" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" &
+sleep 5
+echo 'lets go'
 
 function getHash {
   find build/contracts contracts migrations -type f -not -name "*.swp" |\
@@ -20,8 +23,8 @@ function getHash {
 }
 
 function migrate {
-    truffle compile
-    truffle migrate --reset --network docker
+    $truffle compile
+    $truffle migrate --reset --network docker
     getHash > build/state-hash
     echo "Watching contracts/migrations for changes (`getHash`)"
 }
