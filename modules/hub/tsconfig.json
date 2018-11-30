@@ -18,7 +18,7 @@
     "typeRoots": [
       "node_modules/@types",
       "node_modules/@machinomy",
-      "src/@types",
+      "src/@types"
     ]
   },
   "include": [

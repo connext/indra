@@ -10,6 +10,7 @@ db=$(cwd)/modules/database
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp"
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 db_prereq=$(shell find $(db) $(find_options))
+hub_prereq=$(shell find $(db) $(find_options))
 
 # Setup docker run time
 docker_run=docker run --name=buidler --tty --rm
@@ -51,7 +52,13 @@ database-node-modules: $(db)/package.json
 
 # Hub
 
-hub: hub-node-modules
+hub: hub-node-modules hub-js $(hub_prereq)
+	docker build --file $(hub)/ops/hub.dockerfile --tag $(project)_hub:dev $(hub)
+	touch build/hub
+
+hub-js: builder $(hub_prereq)
+	$(docker_run_in_hub) "yarn build"
+	touch build/hub-js
 
 hub-node-modules: builder $(hub)/package.json
 	$(docker_run_in_hub) "yarn install"
