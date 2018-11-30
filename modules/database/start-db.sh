@@ -3,17 +3,6 @@
 DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 
 # Start fresh postgresql databases
-docker network create hub 2> /dev/null || true
-
-docker run --rm --detach \
-  --name postgres \
-  --network hub \
-  --publish 5432:5432 \
-  --env POSTGRES_DB=sc-hub \
-  --env POSTGRES_USER=user \
-  --env POSTGRES_PASSWORD=pass \
-  postgres:9.6-alpine
-
 docker run --rm --detach \
   --name postgres-test \
   --network hub \

@@ -4,9 +4,14 @@ project=connext
 cwd=$(shell pwd)
 contracts=$(cwd)/modules/contracts
 hub=$(cwd)/modules/hub
+db=$(cwd)/modules/database
 
+# Fetch Prerequisites
+find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp"
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
+db_prereq=$(shell find $(db) $(find_options))
 
+# Setup docker run time
 docker_run=docker run --name=buidler --tty --rm
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/app builder:dev
 docker_run_in_hub=$(docker_run) --volume=$(hub):/app builder:dev
@@ -21,7 +26,7 @@ $(shell mkdir -p build $(contracts)/build $(hub)/build)
 .PHONY: default dev clean stop
 
 default: dev
-dev: ethprovider hub
+dev: ethprovider hub database
 
 clean:
 	rm -rf build/*
@@ -33,6 +38,12 @@ stop:
 
 # Begin Real Rules
 
+# Database
+
+database: $(db_prereq)
+	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
+	touch build/database
+
 # Hub
 
 hub: hub-node-modules
@@ -43,17 +54,13 @@ hub-node-modules: builder $(hub)/package.json
 
 # Contracts
 
-ethprovider: contract-artifacts
+ethprovider: contract-node-modules
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	touch build/ethprovider
 
-contract-artifacts: contracts-node-modules $(contracts_src)
-	$(docker_run_in_contracts) "bash ops/build.sh"
-	touch build/contract-artifacts
-
-contracts-node-modules: builder $(contracts)/package.json
+contract-node-modules: builder $(contracts)/package.json
 	$(docker_run_in_contracts) "yarn install"
-	touch build/contracts-node-modules
+	touch build/contract-node-modules
 
 # Builder
 builder: ops/builder.dockerfile
