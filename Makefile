@@ -14,9 +14,9 @@ hub_prereq=$(shell find $(db) $(find_options))
 
 # Setup docker run time
 docker_run=docker run --name=buidler --tty --rm
-docker_run_in_contracts=$(docker_run) --volume=$(contracts):/app builder:dev
-docker_run_in_hub=$(docker_run) --volume=$(hub):/app builder:dev
-docker_run_in_db=$(docker_run) --volume=$(db):/app builder:dev
+docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root builder:dev
+docker_run_in_hub=$(docker_run) --volume=$(hub):/root builder:dev
+docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev
 
 # Tell make where to look for prerequisites
 VPATH=build:$(contracts)/build:$(hub)/build

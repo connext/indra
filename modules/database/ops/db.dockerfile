@@ -1,4 +1,5 @@
 FROM postgres:9-alpine
+WORKDIR /root
 
 RUN apk add --update --no-cache nodejs
 

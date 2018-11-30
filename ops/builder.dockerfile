@@ -1,7 +1,5 @@
 FROM node:10-alpine
-
-RUN mkdir -p /app
-WORKDIR /app
+WORKDIR /root
 
 # Install native build tools
 RUN apk add --update --no-cache bash curl g++ gcc git jq make python
