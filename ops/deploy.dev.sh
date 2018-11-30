@@ -12,7 +12,7 @@ ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble swe
 
 project=connext
 ethprovider_image=${project}_ethprovider:dev
-database_image=postgres:9-alpine
+database_image=${project}_database:dev
 redis_image=redis:5-alpine
 
 docker swarm init 2> /dev/null
@@ -24,7 +24,6 @@ function pull_if_unavailable {
     fi
 }
 
-pull_if_unavailable $database_image
 pull_if_unavailable $redis_image
 
 function new_secret {
@@ -56,6 +55,11 @@ volumes:
 
 services:
 
+  redis:
+    image: $redis_image
+    ports:
+      - "6379:6379"
+
   database:
     image: $database_image
     environment:
@@ -64,6 +68,8 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/database_dev
     deploy:
       mode: global
+    ports:
+      - "5432:5432"
     secrets:
       - database_dev
     volumes:

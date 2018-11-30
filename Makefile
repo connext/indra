@@ -47,6 +47,7 @@ database: database-node-modules $(db_prereq)
 
 database-node-modules: $(db)/package.json
 	$(docker_run_in_db) "yarn install"
+	touch build/database-node-modules
 
 # Hub
 
