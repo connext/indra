@@ -1,9 +1,6 @@
 FROM postgres:9-alpine
 
-RUN apk add --update --no-cache nodejs yarn 
-
-RUN yarn global add db-migrate
-
+COPY node_modules node_modules
 COPY migrations migrations
 COPY ops ops
 

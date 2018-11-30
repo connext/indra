@@ -15,6 +15,7 @@ db_prereq=$(shell find $(db) $(find_options))
 docker_run=docker run --name=buidler --tty --rm
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/app builder:dev
 docker_run_in_hub=$(docker_run) --volume=$(hub):/app builder:dev
+docker_run_in_db=$(docker_run) --volume=$(db):/app builder:dev
 
 # Tell make where to look for prerequisites
 VPATH=build:$(contracts)/build:$(hub)/build
@@ -40,9 +41,12 @@ stop:
 
 # Database
 
-database: $(db_prereq)
+database: database-node-modules $(db_prereq)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	touch build/database
+
+database-node-modules: $(db)/package.json
+	$(docker_run_in_db) "yarn install"
 
 # Hub
 

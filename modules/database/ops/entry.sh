@@ -1,7 +1,9 @@
 #!/bin/bash
+set -e
 
 /docker-entrypoint.sh postgres &
 
-bash ops/wait-for-it.sh localhost:5432
+bash ops/wait-for-it.sh 127.0.0.1:5432
 
-db-migrate up all --verbose --migrations-dir node_modules/machinomy/migrations && db-migrate up --verbose all
+./node_modules/.bin/db-migrate up all --verbose --migrations-dir node_modules/machinomy/migrations
+./node_modules/.bin/db-migrate up --verbose all
