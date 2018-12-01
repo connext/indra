@@ -8,7 +8,7 @@
     "test": "env DATABASE_URL_TEST='postgresql://localhost:5432/sc-hub-test' mocha -r ts-node/register/type-check -r ./src/register/common.ts -r ./src/register/testing.ts \"src/**/*.test.ts\" --exit",
     "drop-migrate-test": "./migrate-and-test.sh",
     "lint": "tslint -c ../common/tslint.json -t stylish src/**/*.ts",
-    "build:backend": "tsc -p tsconfig.json",
+    "build:backend": "tsc -v && tsc -p tsconfig.json",
     "build": "yarn clean && yarn build:backend",
     "runner": "node ./dist/src/spankchain/main.js",
     "start": "yarn build && concurrently -n hub,chainsaw 'node ./dist/src/spankchain/main.js' 'node ./dist/src/spankchain/main.js chainsaw'",
