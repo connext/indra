@@ -9,7 +9,7 @@ import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
 import { mkAddress } from "./stateUtils";
 import { Utils as ConnextUtils } from '../vendor/connext/Utils'
-import { Validation as ConnextValidation } from '../vendor/connext/Validation'
+import { Validator as ConnextValidation } from '../vendor/connext/Validation'
 import { Big } from '../util/bigNumber';
 
 const Web3 = require('web3')
@@ -108,18 +108,14 @@ class MockWeb3Provider {
 
 class MockConnextValidation extends ConnextValidation {
   constructor() {
-    super(new ConnextUtils())
+    super({} as any)
   }
 
-  validateChannelSigner = () => {
+  assertChannelSigner() {
     return null
   }
 
-  validateThreadSigner = () => {
-    return null
-  }
-
-  validateChannelStateUpdate = () => {
+  assertThreadSigner() {
     return null
   }
 }

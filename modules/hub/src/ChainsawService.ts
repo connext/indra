@@ -5,7 +5,7 @@ import Config from './Config'
 import {ChannelManager} from './ChannelManager'
 import {EventLog} from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
-import {ChannelUpdateReasons, ChannelState} from './vendor/connext/types'
+import {ChannelUpdateReasons, ChannelState, PaymentArgs} from './vendor/connext/types'
 import {Utils} from './vendor/connext/Utils'
 import abi from './abi/ChannelManager'
 import {BigNumber} from 'bignumber.js'
@@ -240,10 +240,11 @@ export default class ChainsawService extends events.EventEmitter {
     }
     const hash = this.utils.createChannelStateHash(state)
     const sigHub = await this.web3.eth.sign(hash, this.hubAddress)
+    // TODO
     await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.hubAddress, {
       ...state,
       sigHub
-    } as ChannelState, chainsawId)
+    } as ChannelState, {} as PaymentArgs, chainsawId)
     // TODO @wolever - transaction wrapping
     await this.chainsawDao.recordPoll(event.blockNumber, event.txIndex, this.contract._address, 'PROCESS_EVENTS')
   }

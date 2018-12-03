@@ -6,6 +6,7 @@ import { default as ChannelsDao } from "./ChannelsDao";
 import { getThreadState, getChannelState } from "../testing/stateUtils";
 import { PaymentMetaDao } from "./PaymentMetaDao";
 import { default as DBEngine, SQL } from "../DBEngine";
+import { PaymentArgs } from "../vendor/connext/types";
 
 describe('PaymentMetaDao', () => {
   const registry = getTestRegistry()
@@ -42,8 +43,8 @@ describe('PaymentMetaDao', () => {
     await s.paymentMetDao.save('abc123', threadUpdate.id, {
       type: 'PT_THREAD',
       amount: {
-        token: tokenVal(1),
-        wei: '0',
+        amountToken: tokenVal(1),
+        amountWei: '0',
       },
       recipient: s.performer,
       meta: {
@@ -73,14 +74,14 @@ describe('PaymentMetaDao', () => {
       user: s.user,
       txCountGlobal: 2,
     })
-    let chanUpdate = await s.channelsDao.applyUpdateByUser(s.user, 'Payment', s.user, state)
+    let chanUpdate = await s.channelsDao.applyUpdateByUser(s.user, 'ConfirmPending', s.user, state, {})
 
     // save a payment for this update
     await s.paymentMetDao.save('abc123', chanUpdate.id, {
       type: 'PT_CHANNEL',
       amount: {
-        token: tokenVal(2),
-        wei: '0',
+        amountToken: tokenVal(2),
+        amountWei: '0',
       },
       recipient: s.performer,
       meta: {

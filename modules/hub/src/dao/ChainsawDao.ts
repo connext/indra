@@ -30,8 +30,6 @@ export default interface ChainsawDao {
     contract: string,
   ): Promise<void>
 
-  openChannelIdsFor(address: string): Promise<string[]>
-
   channelById(channelId: string): Promise<PaymentChannel | null>
 
   eventsSince(contract: string, blockNumber: number, txIndex: number|null): Promise<ContractEventWithMeta[]>
@@ -120,17 +118,6 @@ export class PostgresChainsawDao implements ChainsawDao {
       }
 
       await c.query('COMMIT')
-    })
-  }
-
-  openChannelIdsFor(address: string): Promise<string[]> {
-    return this.engine.exec(async (c: Client) => {
-      const res = await c.query(
-        "SELECT channel_id FROM hub_ledger_channels WHERE status = 'CS_OPEN' AND sender = $1",
-        [address],
-      )
-
-      return res.rows.map((r: any) => r.channel_id)
     })
   }
 

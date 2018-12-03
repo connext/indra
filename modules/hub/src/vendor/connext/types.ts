@@ -1,8 +1,15 @@
 import BN = require('bn.js')
+import { BigNumber } from 'bignumber.js'
 import Web3 = require('web3')
 
 // define the common interfaces
 export type Address = string
+
+// alias functions
+// @ts-ignore
+export const isBN = Web3.utils.isBN
+// @ts-ignore
+export const isBigNum = Web3.utils.isBigNumber
 
 /*********************************
  ****** CONSTRUCTOR TYPES ********
@@ -13,15 +20,50 @@ export interface ContractOptions {
   tokenAddress: string
 }
 
-// connext constructor options
-// NOTE: could extend ContractOptions, doesnt for future readability
-export interface ConnextOptions {
-  web3: Web3
-  hubUrl: string
-  contractAddress: string
-  hubAddress: Address
-  tokenAddress?: Address
-  tokenName?: string
+/*********************************
+ ****** HELPER FUNCTIONS *********
+ *********************************/
+
+export type NumericTypeName = 'str' | 'bn' | 'bignumber' | 'number'
+
+function getType(input: any): NumericTypeName {
+  if (typeof input == 'string')
+    return 'str'
+  if (isBigNum(input))
+    return 'bignumber'
+  if (isBN(input))
+    return 'bn'
+  if (typeof input == 'number')
+    return 'number' // used for testing purposes
+  throw new Error('Unknown input type: ' + typeof input + ', value: ' + JSON.stringify(input))
+}
+
+const castFunctions: any = {
+  'str-bn': (x: string) => new BN(x),
+  'str-bignumber': (x: string) => new BigNumber(x),
+  'bn-str': (x: BN) => x.toString(),
+  'bn-bignumber': (x: BN) => new BigNumber(x.toString()),
+  'bignumber-str': (x: BigNumber) => x.toFixed(),
+  'bignumber-bn': (x: BigNumber) => new BN(x.toFixed()),
+}
+
+export function convertFields(fromType: string, toType: string, fields: string[], input: any) {
+  if (fromType === toType)
+    return input
+
+  if (toType === 'number')
+    throw new Error('Should not convert fields to numbers')
+
+  // casting functions same for strs and number types
+  const cast = castFunctions[`${fromType === 'number' ? 'str' : fromType}-${toType}`]
+  if (!cast)
+    throw new Error(`No castFunc for ${fromType} -> ${toType}`)
+
+  const res = { ...input }
+  for (const field of fields)
+    res[field] = cast(input[field])
+
+  return res
 }
 
 /*********************************
@@ -50,9 +92,11 @@ export type UnsignedChannelState<T = string> = {
   threadRoot: string
   threadCount: number
   timeout: number
+  [key: string]: any;
 }
 
 export type UnsignedChannelStateBN = UnsignedChannelState<BN>
+export type UnsignedChannelStateBigNumber = UnsignedChannelState<BigNumber>
 
 // signed channel state
 // this is what must be submitted to any recover functions
@@ -60,54 +104,16 @@ export type UnsignedChannelStateBN = UnsignedChannelState<BN>
 export type ChannelState<T = string> = UnsignedChannelState<T> &
   (
     | ({ sigUser: string; sigHub: string })
-    | ({ sigHub: string; sigUser?: string })
-    | ({ sigUser: string; sigHub?: string }))
+    | ({ sigUser?: string; sigHub: string })
+    | ({ sigUser: string; sigHub?: string })
+  )
 
 export type ChannelStateBN = ChannelState<BN>
-
-export const isUnsignedChannelState = (
-  state: UnsignedChannelState | ChannelState,
-) => {
-  const keys = Object.keys(state)
-  return keys.indexOf('sigUser') === -1 && keys.indexOf('sigHub') === -1
-}
-
-// adds signature provided to unsigned state, or inserts
-// null string if no sig
-export const unsignedChannelStateToChannelState = (
-  channel: UnsignedChannelState,
-  sig?: string,
-  isUser: boolean = true,
-): ChannelState => {
-  return {
-    contractAddress: channel.contractAddress,
-    user: channel.user,
-    recipient: channel.recipient,
-    balanceWeiHub: channel.balanceWeiHub,
-    balanceWeiUser: channel.balanceWeiUser,
-    balanceTokenHub: channel.balanceTokenHub,
-    balanceTokenUser: channel.balanceTokenUser,
-    pendingDepositWeiHub: channel.pendingDepositWeiHub,
-    pendingDepositWeiUser: channel.pendingDepositWeiUser,
-    pendingDepositTokenHub: channel.pendingDepositTokenHub,
-    pendingDepositTokenUser: channel.pendingDepositTokenUser,
-    pendingWithdrawalWeiHub: channel.pendingWithdrawalWeiHub,
-    pendingWithdrawalWeiUser: channel.pendingWithdrawalWeiUser,
-    pendingWithdrawalTokenHub: channel.pendingWithdrawalTokenHub,
-    pendingWithdrawalTokenUser: channel.pendingWithdrawalTokenUser,
-    txCountGlobal: channel.txCountGlobal,
-    txCountChain: channel.txCountChain,
-    threadRoot: channel.threadRoot,
-    threadCount: channel.threadCount,
-    timeout: channel.timeout,
-    sigUser: sig && isUser ? sig : '',
-    sigHub: sig && !isUser ? sig : '',
-  }
-}
+export type ChannelStateBigNumber = ChannelState<BigNumber>
 
 export const addSigToChannelState = (
-  channel: ChannelState,
-  sig: string,
+  channel: ChannelState | UnsignedChannelState,
+  sig?: string,
   isUser: boolean = true,
 ): ChannelState => {
   return {
@@ -142,88 +148,135 @@ export const ChannelStatus = {
   CS_CHANNEL_DISPUTE: 'CS_CHANNEL_DISPUTE',
   CS_THREAD_DISPUTE: 'CS_THREAD_DISPUTE',
 }
-
 export type ChannelStatus = keyof typeof ChannelStatus
 
-// channel state
-// this is all channel information
-export type ContractChannelState<T = string> = ChannelState<T> &
-  ({
-    status: ChannelStatus
-    channelClosingTime?: number
-    threadClosingTime?: number
-    // all threads for this user
-    threadsChain?: ThreadState<T>[]
-  })
-
-export type ContractChannelStateBN = ContractChannelState<BN>
 
 // channel update reasons
 export const ChannelUpdateReasons = {
   Payment: 'Payment',
   Exchange: 'Exchange',
-  ProposePending: 'ProposePending', // changes in pending
+  ProposePendingDeposit: 'ProposePendingDeposit', // changes in pending
+  ProposePendingWithdrawal: 'ProposePendingWithdrawal', // changes in pending
   ConfirmPending: 'ConfirmPending', // changes in balance
   OpenThread: 'OpenThread',
   CloseThread: 'CloseThread',
 }
 export type ChannelUpdateReason = keyof typeof ChannelUpdateReasons
 
+// exchangeRate is in units of ERC20 / ETH
+// since booty is in 1 USD == USD / ETH
 export type ExchangeArgs<T=string> = {
-  exchangeRate: number,
+  exchangeRate: string, // ERC20 / ETH
   tokensToSell: T,
-  weiToSell: T
+  weiToSell: T,
 }
+export type ExchangeArgsBN = ExchangeArgs<BN>
+export type ExchangeArgsBigNumber = ExchangeArgs<BigNumber>
 
 export type PaymentArgs<T=string> = {
-  recipient: 'user' | 'hub',
-  amountToken: T,
+  // TODO: this is currently being used for both channel and thread payments,
+  // but it should not be. The 'receiver' type, below, should be removed.
+  recipient: 'user' | 'hub' // | 'receiver',
+  amountToken: T
   amountWei: T
 }
-
+export type PaymentArgsBN = PaymentArgs<BN>
+export type PaymentArgsBigNumber = PaymentArgs<BigNumber>
 
 export type DepositArgs<T=string> = {
   depositWeiHub: T,
   depositWeiUser: T,
   depositTokenHub: T,
   depositTokenUser: T,
-  timeout: number
+  timeout: number,
 }
+export type DepositArgsBN = DepositArgs<BN>
+export type DepositArgsBigNumber = DepositArgs<BigNumber>
 
 export type WithdrawalArgs<T=string> = {
-  exchangeRate: number,
-  tokensToSell: T,
-  weiToSell: T,
-  depositWeiUser: T,
-  depositTokenHub: T,
-  withdrawalWeiHub: T,
-  withdrawalWeiUser: T,
-  withdrawalTokenHub: T,
-  recipient: Address
-}
+  // If there is an exchange that happens during this withdrawal, this is the
+  // exchange rate that will be used.
+  exchangeRate: string
 
-export type ExchangeArgsBN = ExchangeArgs<BN>
-export type PaymentArgsBN = PaymentArgs<BN>
-export type DepositArgsBN = DepositArgs<BN>
+  // The number of tokens the user is selling to the hub in exchange for wei
+  tokensToSell: T
+
+  // The amount of wei the user is selling to the hub in exchange for tokens.
+  // Included for completeness, will always be 0 for SpankChain.
+  // Note: it never makes sense to provide both a `tokensToSell` and a
+  // `weiToSell`.
+  weiToSell: T
+
+  // The address which should receive the transfer of user funds. Usually the
+  // user's address. Corresponds to the `recipient` field in the ChannelState.
+  recipient: Address
+
+  // The amount of wei/tokens the user wishes to transfer from their balance to
+  // the `recipient`. Note: these represent values from their pre-exchange
+  // balance (that is, these numbers are independent of the tokensToSell and
+  // weiToSell values; for example, if a user is doing a withdrawal where they
+  // have BOOTY being converted to wei, then the `tokensToSell` will be set to
+  // the amount of BOOTY and the `userWeiToWithdraw` will be 0). For
+  // SpankChain, the `userTokensToWithdraw` will always be 0 because users
+  // can't withdraw tokens.
+  withdrawalWeiUser: T
+  withdrawalTokenUser: T
+
+  // As with user{Wei,Tokens}ToWithdraw, this is the amount of wei/tokens the
+  // hub is withdrawing.
+  withdrawalWeiHub: T
+  withdrawalTokenHub: T
+
+  // The number of wei/tokens the hub wants to deposit into its own balance
+  // as part of this withdrawal (ex, to preemptively collatoralize the channel;
+  // note that this has no relation to any wei or tokens that may need to be
+  // deposited to fulfill a requested exchange).
+  // While not, strictly speaking, invalid, it does not make sense for the
+  // hub to both deposit and withdraw.
+  depositWeiHub: T
+  depositTokenHub: T
+
+  // During a withdrawal, the hub may opt to send additional wei/tokens to
+  // the user (out of the goodness of its heart, or to fulfill a custodial
+  // payment). These will always be 0 until we support custodial payments.
+  additionalWeiHubToUser: T
+  additionalTokenHubToUser: T
+
+  timeout: number
+}
 export type WithdrawalArgsBN = WithdrawalArgs<BN>
+export type WithdrawalArgsBigNumber = WithdrawalArgs<BigNumber>
+
+export type ConfirmPendingArgs = {}
+
+export type ArgsTypes<T=string> =
+  | ExchangeArgs<T>
+  | PaymentArgs<T>
+  | DepositArgs<T>
+  | WithdrawalArgs<T>
+  | UnsignedThreadState<T>
+  | ConfirmPendingArgs
+
+export type ArgTypesBN = ArgsTypes<BN>
+export type ArgTypesBigNumber = ArgsTypes<BigNumber>
 
 // types used when getting or sending states to hub
 export type ChannelStateUpdate<T = string> = {
   reason: ChannelUpdateReason
   state: ChannelState<T> // signed or unsigned?
-  args: ExchangeArgs<T> | PaymentArgs<T> | DepositArgs<T> | WithdrawalArgs<T>
+  args: ArgsTypes<T>
   metadata?: Object
 }
-
 export type ChannelStateUpdateBN = ChannelStateUpdate<BN>
+export type ChannelStateUpdateBigNumber = ChannelStateUpdate<BigNumber>
 
 // this is the typical form of responses from POST
 // hub endpoints and the sync endpoint
 export type SyncResult<T = string> =
   | { type: "thread", state: ThreadStateUpdate<T> }
   | { type: "channel", state: ChannelStateUpdate<T> }
-
 export type SyncResultBN = SyncResult<BN>
+export type SyncResultBigNumber = SyncResult<BigNumber>
 
 // hub response for getters, includes an id and status
 export type ChannelRow<T = string> = {
@@ -231,15 +284,15 @@ export type ChannelRow<T = string> = {
   status: ChannelStatus,
   state: ChannelState<T>
 }
-
 export type ChannelRowBN = ChannelRow<BN>
+export type ChannelRowBigNumber = ChannelRow<BigNumber>
 
 export type ThreadRow<T = string> = {
   id: number,
   state: ThreadState<T>
 }
-
 export type ThreadRowBN = ThreadRow<BN>
+export type ThreadRowBigNumber = ThreadRow<BigNumber>
 
 // TODO rename this
 export const channelStateToChannelStateUpdate = (
@@ -256,12 +309,6 @@ export const channelStateToChannelStateUpdate = (
   }
 }
 
-export const channelStateUpdateToContractChannelState = (
-  hubState: ChannelStateUpdate,
-): ChannelState => {
-  return hubState.state as ChannelState
-}
-
 /*********************************
  ********* THREAD TYPES **********
  *********************************/
@@ -276,17 +323,18 @@ export type UnsignedThreadState<T = string> = {
   balanceTokenSender: T
   balanceTokenReceiver: T
   txCount: number
+  [key: string]: any;
 }
-
 export type UnsignedThreadStateBN = UnsignedThreadState<BN>
+export type UnsignedThreadStateBigNumber = UnsignedThreadState<BigNumber>
 
 // what is submitted to thread recover fns
 export type ThreadState<T = string> = UnsignedThreadState<T> &
   ({
     sigA: string
   })
-
 export type ThreadStateBN = ThreadState<BN>
+export type ThreadStateBigNumber = ThreadState<BigNumber>
 
 // thread status
 export const ThreadStatus = {
@@ -297,14 +345,6 @@ export const ThreadStatus = {
 
 export type ThreadStatus = keyof typeof ThreadStatus
 
-// contract thread state
-export type ContractThreadState<T = string> = ThreadState<T> &
-  ({
-    status: ThreadStatus
-  })
-
-export type ContractThreadStateBN = ContractThreadState<BN>
-
 // thread state update
 export type ThreadStateUpdate<T = string> = {
   // reason: "Payment"
@@ -313,10 +353,11 @@ export type ThreadStateUpdate<T = string> = {
 }
 
 export type ThreadStateUpdateBN = ThreadStateUpdate<BN>
+export type ThreadStateUpdateBigNumber = ThreadStateUpdate<BigNumber>
 
-export const unsignedThreadStateToThreadState = (
+export const addSigToThreadState = (
   thread: UnsignedThreadState,
-  sig: string,
+  sig?: string,
 ): ThreadState => {
   return {
     contractAddress: thread.contractAddress,
@@ -328,7 +369,7 @@ export const unsignedThreadStateToThreadState = (
     balanceTokenSender: thread.balanceTokenSender,
     balanceTokenReceiver: thread.balanceTokenReceiver,
     txCount: thread.txCount,
-    sigA: sig,
+    sigA: sig ? sig : '',
   }
 }
 
@@ -338,56 +379,16 @@ export const unsignedThreadStateToThreadState = (
 
 // what the wallet submits to client createUpdate functions
 export type Payment<T = string> = {
-  wei: T
-  token: T
+  amountWei: T
+  amountToken: T
 }
-
 export type PaymentBN = Payment<BN>
-
-// NOTE: don't use in API
-export type Balances<T = string> = {
-  balanceWei: T
-  balanceToken: T
-}
-
-export type BalancesBN = Balances<BN>
-
-// used in validation
-// to validate potential hub and user combined pending ops
-export type PendingPayments<T = string> = {
-  hubWithdrawal: Payment<T>
-  hubDeposit: Payment<T>
-  userWithdrawal: Payment<T>
-  userDeposit: Payment<T>
-}
-export type PendingPaymentsBN = PendingPayments<BN>
-
-export function channelStateToPendingBalances(
-  channelState: ChannelState | UnsignedChannelState,
-): PendingPayments {
-  return {
-    hubWithdrawal: {
-      wei: channelState.pendingWithdrawalWeiHub,
-      token: channelState.pendingWithdrawalTokenHub,
-    },
-    hubDeposit: {
-      wei: channelState.pendingDepositWeiHub,
-      token: channelState.pendingDepositTokenHub,
-    },
-    userWithdrawal: {
-      wei: channelState.pendingWithdrawalTokenUser,
-      token: channelState.pendingWithdrawalWeiUser,
-    },
-    userDeposit: {
-      wei: channelState.pendingDepositWeiUser,
-      token: channelState.pendingDepositTokenUser,
-    },
-  }
-}
+export type PaymentBigNumber = Payment<BigNumber>
 
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
+
 // util to convert from string to bn for all types
 export const channelNumericFields = [
   'balanceWeiUser',
@@ -404,6 +405,32 @@ export const channelNumericFields = [
   'pendingWithdrawalTokenHub',
 ]
 
+export function convertChannelState(to: "bn", obj: ChannelState<any>): ChannelStateBN
+export function convertChannelState(to: "bignumber", obj: ChannelState<any>): ChannelStateBigNumber
+export function convertChannelState(to: "str", obj: ChannelState<any>): ChannelState
+export function convertChannelState(to: "bn-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBN
+export function convertChannelState(to: "bignumber-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBigNumber
+export function convertChannelState(to: "str-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelState
+export function convertChannelState(
+  to: "bn" | "bignumber" | "str" | "bn-unsigned" | "bignumber-unsigned" | "str-unsigned",
+  obj: ChannelState<any> | UnsignedChannelState<any>,
+) {
+  const [toType, unsigned] = to.split('-')
+  const fromType = getType(obj.balanceWeiHub)
+  const res = convertFields(fromType, toType, channelNumericFields, obj)
+  if (!unsigned)
+    return res
+
+  if (unsigned != 'unsigned')
+    throw new Error(`Invalid "to": ${to}`)
+  return unsignedChannel(res)
+}
+
+export function unsignedChannel<T>(obj: ChannelState<T> | UnsignedChannelState<T>): UnsignedChannelState<T> {
+  const { sigHub, sigUser, ...unsigned } = obj
+  return unsigned
+}
+
 export const threadNumericFields = [
   'balanceWeiSender',
   'balanceWeiReceiver',
@@ -411,92 +438,114 @@ export const threadNumericFields = [
   'balanceTokenReceiver',
 ]
 
-export const balanceNumericFields = ['balanceWei', 'balanceToken']
+export function convertThreadState(to: "bn", obj: ThreadState<any>): ThreadStateBN
+export function convertThreadState(to: "bignumber", obj: ThreadState<any>): ThreadStateBigNumber
+export function convertThreadState(to: "str", obj: ThreadState<any>): ThreadState
+export function convertThreadState(to: "bn-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBN
+export function convertThreadState(to: "bignumber-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBigNumber
+export function convertThreadState(to: "str-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadState
+export function convertThreadState(
+  to: "bn" | "bignumber" | "str" | "bn-unsigned" | "bignumber-unsigned" | "str-unsigned",
+  obj: ThreadState<any> | UnsignedThreadState<any>,
+) {
+  const fromType = getType(obj.balanceWeiReceiver)
+  const [toType, unsigned] = to.split('-')
+  const res = convertFields(fromType, toType, threadNumericFields, obj)
+  if (!unsigned)
+    return res
 
-export const paymentNumericFields = ['wei', 'token']
+  if (unsigned != 'unsigned')
+    throw new Error(`Invalid "to": ${to}`)
 
-export function channelStateToBN(
-  channelState: ChannelState | UnsignedChannelState,
-): ChannelStateBN | UnsignedChannelStateBN {
-  return stringToBN(channelNumericFields, channelState)
+  return unsignedThread(res)
 }
 
-export function channelStateToString(
-  channelState: ChannelStateBN | UnsignedChannelStateBN,
-): ChannelState | UnsignedChannelState {
-  return BNtoString(channelNumericFields, channelState)
+export function unsignedThread<T>(obj: ThreadState<T> | UnsignedThreadState<T>): UnsignedThreadState<T> {
+  const { sigA, ...unsigned } = obj
+  return unsigned
 }
 
-export function threadStateToBN(
-  threadState: ThreadState | UnsignedThreadState,
-): ThreadStateBN | UnsignedThreadStateBN {
-  return stringToBN(threadNumericFields, threadState)
+export const paymentNumericFields = ['amountWei', 'amountToken']
+
+export function convertPayment(to: "bn", obj: PaymentArgs<any>): PaymentArgsBN
+export function convertPayment(to: "bignumber", obj: PaymentArgs<any>): PaymentArgsBigNumber
+export function convertPayment(to: "str", obj: PaymentArgs<any>): PaymentArgs
+export function convertPayment(to: "bn", obj: Payment<any>): PaymentBN
+export function convertPayment(to: "bignumber", obj: Payment<any>): PaymentBigNumber
+export function convertPayment(to: "str", obj: Payment<any>): Payment
+export function convertPayment(
+  to: "bn" | "bignumber" | "str",
+  obj: PaymentArgs<any> | Payment<any>
+) {
+  const fromType = getType(obj.amountToken)
+  return convertFields(fromType, to, paymentNumericFields, obj)
 }
 
-export function threadStateToString(
-  threadState: ThreadStateBN | UnsignedThreadStateBN,
-): ThreadState | UnsignedThreadState {
-  return BNtoString(threadNumericFields, threadState)
+export function convertThreadPayment(to: "bn", obj: Payment<any>): PaymentBN
+export function convertThreadPayment(to: "bignumber", obj: Payment<any>): PaymentBigNumber
+export function convertThreadPayment(to: "str", obj: Payment<any>): Payment
+export function convertThreadPayment(
+  to: "bn" | "bignumber" | "str",
+  obj: Payment<any>
+) {
+  const fromType = getType(obj.amountToken)
+  return convertFields(fromType, to, paymentNumericFields, obj)
 }
 
-export function balancesToBN(balances: Balances): BalancesBN {
-  return stringToBN(balanceNumericFields, balances)
+const exchangeArgsNumericFields = [
+  'weiToSell',
+  'tokensToSell'
+]
+
+export function convertExchange(to: "bn", obj: ExchangeArgs<any>): ExchangeArgsBN
+export function convertExchange(to: "bignumber", obj: ExchangeArgs<any>): ExchangeArgsBigNumber
+export function convertExchange(to: "str", obj: ExchangeArgs<any>): ExchangeArgs
+export function convertExchange(
+  to: "bn" | "bignumber" | "str",
+  obj: ExchangeArgs<any>
+) {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, exchangeArgsNumericFields, obj)
 }
 
-export function balancesToString(balances: BalancesBN): Balances {
-  return BNtoString(balanceNumericFields, balances)
+const depositArgsNumericFields = [
+  'depositWeiHub',
+  'depositWeiUser',
+  'depositTokenHub',
+  'depositTokenUser',
+]
+export function convertDeposit(to: "bn", obj: DepositArgs<any>): DepositArgsBN
+export function convertDeposit(to: "bignumber", obj: DepositArgs<any>): DepositArgsBigNumber
+export function convertDeposit(to: "str", obj: DepositArgs<any>): DepositArgs
+export function convertDeposit(
+  to: "bn" | "bignumber" | "str",
+  obj: DepositArgs<any>
+) {
+  const fromType = getType(obj.depositWeiHub)
+  return convertFields(fromType, to, depositArgsNumericFields, obj)
 }
 
-export function paymentToBN(balances: Payment): PaymentBN {
-  return stringToBN(paymentNumericFields, balances)
-}
-
-export function paymentToString(balances: PaymentBN): Payment {
-  return BNtoString(paymentNumericFields, balances)
-}
-
-export function pendingPaymentsToBN(
-  pending: PendingPayments,
-): PendingPaymentsBN {
-  return {
-    hubDeposit: stringToBN(paymentNumericFields, pending.hubDeposit),
-    userDeposit: stringToBN(paymentNumericFields, pending.userDeposit),
-    hubWithdrawal: stringToBN(paymentNumericFields, pending.hubWithdrawal),
-    userWithdrawal: stringToBN(paymentNumericFields, pending.userWithdrawal),
-  }
-}
-
-export function pendingPaymentsToString(
-  pending: PendingPaymentsBN,
-): PendingPayments {
-  return {
-    hubDeposit: BNtoString(paymentNumericFields, pending.hubDeposit),
-    userDeposit: BNtoString(paymentNumericFields, pending.userDeposit),
-    hubWithdrawal: BNtoString(paymentNumericFields, pending.hubWithdrawal),
-    userWithdrawal: BNtoString(paymentNumericFields, pending.userWithdrawal),
-  }
-}
-
-export function stringToBN(fields: string[], obj: any) {
-  if (!obj) {
-    return obj
-  }
-  const out = { ...obj }
-  fields.forEach(field => {
-    out[field] = new BN(out[field])
-  })
-  return out
-}
-
-export function BNtoString(fields: string[], obj: any) {
-  if (!obj) {
-    return obj
-  }
-  const out = { ...obj }
-  fields.forEach(field => {
-    out[field] = out[field].toString()
-  })
-  return out
+const withdrawalArgsNumericFields = [
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalWeiUser',
+  'withdrawalTokenUser',
+  'withdrawalTokenHub',
+  'withdrawalWeiHub',
+  'depositWeiHub',
+  'depositTokenHub',
+  'additionalWeiHubToUser',
+  'additionalTokenHubToUser',
+]
+export function convertWithdrawal(to: "bn", obj: WithdrawalArgs<any>): WithdrawalArgsBN
+export function convertWithdrawal(to: "bignumber", obj: WithdrawalArgs<any>): WithdrawalArgsBigNumber
+export function convertWithdrawal(to: "str", obj: WithdrawalArgs<any>): WithdrawalArgs
+export function convertWithdrawal(
+  to: "bn" | "bignumber" | "str",
+  obj: WithdrawalArgs<any>
+) {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, withdrawalArgsNumericFields, obj)
 }
 
 
@@ -506,21 +555,21 @@ export function BNtoString(fields: string[], obj: any) {
 
 /*
 POST /payments/purchase
-
+ 
 Accepts:
-
+ 
   {
     metadata: MetadataType,
     payments: PurchasePayment[],
   }
-
+ 
 Returns:
-
+ 
   {
     purchaseId: string,
     updates: SyncResponse,
   }
-
+ 
 */
 
 export interface Purchase<MetadataType=any, PaymentMetadataType=any> {
@@ -584,3 +633,4 @@ export type PurchasePaymentHubResponse<T= string> = ({
 })
 
 export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>
+export type PurchasePaymentHubResponseBigNumber = PurchasePaymentHubResponse<BigNumber>

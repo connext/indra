@@ -1,15 +1,23 @@
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
-import { ChannelUpdateReason, ChannelState } from '../vendor/connext/types'
+import {
+  ChannelUpdateReason,
+  ChannelState,
+  ArgsTypes,
+  ChannelStateBigNumber,
+  PaymentArgsBigNumber,
+  ExchangeArgsBigNumber,
+  DepositArgsBigNumber,
+  WithdrawalArgsBigNumber,
+} from '../vendor/connext/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
 import {
-  ChannelStateBigNum,
   ChannelStateUpdateRowBigNum,
   ChannelRowBigNum,
 } from '../domain/Channel'
 import { Big } from '../util/bigNumber'
-import { emptyRootHash } from '../vendor/connext/Utils';
+import { emptyRootHash } from '../vendor/connext/Utils'
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBigNum | null>
@@ -33,6 +41,7 @@ export default interface ChannelsDao {
     reason: ChannelUpdateReason,
     originator: string,
     state: ChannelState,
+    args: ArgsTypes,
     chainsawEventId?: number,
     onchainLogicalId?: number,
   ): Promise<ChannelStateUpdateRowBigNum>
@@ -40,7 +49,10 @@ export default interface ChannelsDao {
   getTotalChannelTokensPlusThreadBonds(user: string): Promise<BigNumber>
 }
 
-export function getChannelInitialState(user: string, contractAddress: string): ChannelStateBigNum {
+export function getChannelInitialState(
+  user: string,
+  contractAddress: string,
+): ChannelStateBigNumber {
   return {
     contractAddress,
     user,
@@ -63,7 +75,7 @@ export function getChannelInitialState(user: string, contractAddress: string): C
     txCountChain: 0,
     txCountGlobal: 0,
     sigHub: null,
-    sigUser: null
+    sigUser: null,
   }
 }
 
@@ -95,7 +107,7 @@ export class PostgresChannelsDao implements ChannelsDao {
       row = {
         id: null,
         status: 'CS_OPEN',
-        state: getChannelInitialState(user, this.config.channelManagerAddress)
+        state: getChannelInitialState(user, this.config.channelManagerAddress),
       }
     }
     return row
@@ -176,6 +188,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     reason: ChannelUpdateReason,
     originator: string,
     state: ChannelState,
+    args: ArgsTypes,
     chainsawEventId?: number,
     onchainLogicalId?: number,
   ): Promise<ChannelStateUpdateRowBigNum> {
@@ -187,17 +200,18 @@ export class PostgresChannelsDao implements ChannelsDao {
           _contract := ${this.config.channelManagerAddress},
           _user := ${user},
           reason := ${reason},
+          args := ${args},
           originator := ${originator.toLowerCase()},
           _chainsaw_event_id := ${chainsawEventId || null},
           _onchain_tx_logical_id := ${onchainLogicalId || null},
           update_obj := ${state}
         )
-      `)
+      `),
     )
   }
 
   async getTotalChannelTokensPlusThreadBonds(user: string): Promise<BigNumber> {
-    const {result} = await this.db.queryOne(SQL`
+    const { result } = await this.db.queryOne(SQL`
       SELECT (
         COALESCE((
         SELECT SUM(balance_token_sender)
@@ -237,7 +251,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     return Big(co_amount)
   }
 
-  private inflateChannelStateRow(row: any): ChannelStateBigNum {
+  private inflateChannelStateRow(row: any): ChannelStateBigNumber {
     return (
       row && {
         user: row.user,
@@ -250,12 +264,24 @@ export class PostgresChannelsDao implements ChannelsDao {
         balanceTokenUser: new BigNumber(row.balance_token_user),
         pendingDepositWeiHub: new BigNumber(row.pending_deposit_wei_hub || 0),
         pendingDepositWeiUser: new BigNumber(row.pending_deposit_wei_user || 0),
-        pendingDepositTokenHub: new BigNumber(row.pending_deposit_token_hub || 0),
-        pendingDepositTokenUser: new BigNumber(row.pending_deposit_token_user || 0),
-        pendingWithdrawalWeiHub: new BigNumber(row.pending_withdrawal_wei_hub || 0),
-        pendingWithdrawalWeiUser: new BigNumber(row.pending_withdrawal_wei_user || 0),
-        pendingWithdrawalTokenHub: new BigNumber(row.pending_withdrawal_token_hub || 0),
-        pendingWithdrawalTokenUser: new BigNumber(row.pending_withdrawal_token_user || 0),
+        pendingDepositTokenHub: new BigNumber(
+          row.pending_deposit_token_hub || 0,
+        ),
+        pendingDepositTokenUser: new BigNumber(
+          row.pending_deposit_token_user || 0,
+        ),
+        pendingWithdrawalWeiHub: new BigNumber(
+          row.pending_withdrawal_wei_hub || 0,
+        ),
+        pendingWithdrawalWeiUser: new BigNumber(
+          row.pending_withdrawal_wei_user || 0,
+        ),
+        pendingWithdrawalTokenHub: new BigNumber(
+          row.pending_withdrawal_token_hub || 0,
+        ),
+        pendingWithdrawalTokenUser: new BigNumber(
+          row.pending_withdrawal_token_user || 0,
+        ),
         threadCount: row.thread_count,
         threadRoot: row.thread_root,
         sigHub: row.sig_hub,
@@ -276,6 +302,57 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
+  private inflateArgs(
+    args: any,
+    reason: ChannelUpdateReason,
+  ):
+    | PaymentArgsBigNumber
+    | ExchangeArgsBigNumber
+    | DepositArgsBigNumber
+    | WithdrawalArgsBigNumber {
+    switch (reason) {
+      case 'Payment':
+        return {
+          recipient: args.recipient,
+          amountToken: Big(args.amountToken),
+          amountWei: Big(args.amountWei),
+        } as PaymentArgsBigNumber
+      case 'Exchange':
+        return {
+          exchangeRate: args.exchangeRate,
+          tokensToSell: Big(args.tokensToSell),
+          weiToSell: Big(args.weiToSell),
+        } as ExchangeArgsBigNumber
+      case 'ProposePendingDeposit':
+        return {
+          depositWeiHub: Big(args.depositWeiHub),
+          depositWeiUser: Big(args.depositWeiUser),
+          depositTokenHub: Big(args.depositTokenHub),
+          depositTokenUser: Big(args.depositTokenUser),
+          timeout: args.timeout,
+        } as DepositArgsBigNumber
+      case 'ProposePendingWithdrawal':
+        return {
+          exchangeRate: args.exchangeRate,
+          tokensToSell: Big(args.tokensToSell),
+          weiToSell: Big(args.weiToSell),
+          additionalTokenHubToUser: Big(args.additionalTokenHubToUser),
+          additionalWeiHubToUser: Big(args.additionalWeiHubToUser),
+          depositWeiHub: Big(args.depositWeiHub),
+          depositWeiUser: Big(args.depositWeiUser),
+          depositTokenHub: Big(args.depositTokenHub),
+          withdrawalWeiHub: Big(args.withdrawalWeiHub),
+          withdrawalWeiUser: Big(args.withdrawalWeiUser),
+          withdrawalTokenHub: Big(args.withdrawalTokenHub),
+          withdrawalTokenUser: Big(args.withdrawalTokenUser),
+          timeout: args.timeout,
+          recipient: args.recipient,
+        } as WithdrawalArgsBigNumber
+      default:
+        return args
+    }
+  }
+
   private inflateChannelUpdateRow(row: any): ChannelStateUpdateRowBigNum {
     return (
       row && {
@@ -285,6 +362,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         channelId: Number(row.channel_id),
         chainsawId: Number(row.chainsaw_event_id),
         createdOn: row.created_on,
+        args: this.inflateArgs(row.args, row.reason),
       }
     )
   }

@@ -16,10 +16,13 @@ import {
   ChannelState,
   ChannelStateUpdate,
   ThreadState,
+  ChannelUpdateReason,
+  ConfirmPendingArgs,
 } from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao';
 import { channelUpdateFactory, tokenVal, channelAndThreadFactory, exchangeRateFactory } from './testing/factories';
+import { RedisClient } from './RedisClient';
 
 // TODO: extract web3
 
@@ -83,9 +86,6 @@ describe('ChannelsService', () => {
         }
       },
     },
-    Config: getTestConfig({
-      channelManagerAddress: contract,
-    }),
     ExchangeRateDao: new MockExchangeRateDao(),
     GasEstimateDao: new MockGasEstimateDao()
   })
@@ -93,6 +93,7 @@ describe('ChannelsService', () => {
   const channelsDao: PostgresChannelsDao = registry.get('ChannelsDao')
   const service: ChannelsService = registry.get('ChannelsService')
   const threadsDao: ThreadsDao = registry.get('ThreadsDao')
+  const redis: RedisClient = registry.get('RedisClient')
 
   beforeEach(async () => {
     await registry.clearDatabase()
@@ -114,15 +115,15 @@ describe('ChannelsService', () => {
 
     assert.equal(
       (latestState.state as ChannelStateUpdate).reason,
-      'ProposePending',
+      'ProposePendingDeposit' as ChannelUpdateReason,
     )
+    assert.equal((latestState.state.state as ChannelState).timeout >= timeout, true)
     assertChannelStateEqual(latestState.state.state as ChannelState, {
       sigHub: fakeSig,
-      pendingDepositTokenHub,
-      pendingDepositWeiUser: weiDeposit,
+      pendingDepositTokenHub: pendingDepositTokenHub.toFixed(),
+      pendingDepositWeiUser: weiDeposit.toFixed(),
       txCountChain: 1,
       txCountGlobal: 1,
-      timeout,
     })
   })
 
@@ -147,12 +148,12 @@ describe('ChannelsService', () => {
 
     assert.equal(
       (latestState.state as ChannelStateUpdate).reason,
-      'ProposePending',
+      'ProposePendingDeposit' as ChannelUpdateReason,
     )
+    assert.equal((latestState.state.state as ChannelState).timeout >= timeout, true)
     assertChannelStateEqual(latestState.state.state as ChannelState, {
-      pendingDepositTokenHub: 0,
+      pendingDepositTokenHub: '0',
       pendingDepositWeiUser: weiDeposit,
-      timeout,
     })
   })
 
@@ -176,15 +177,15 @@ describe('ChannelsService', () => {
 
     assert.equal(
       (latestState.state as ChannelStateUpdate).reason,
-      'ProposePending',
+      'ProposePendingDeposit' as ChannelUpdateReason,
     )
     const pendingDepositTokenHub = CHANNEL_BOOTY_LIMIT.minus(
       chan.state.balanceTokenHub,
     )
+    assert.equal((latestState.state.state as ChannelState).timeout >= timeout, true)
     assertChannelStateEqual(latestState.state.state as ChannelState, {
-      pendingDepositTokenHub,
-      pendingDepositWeiUser: weiDeposit,
-      timeout,
+      pendingDepositTokenHub: pendingDepositTokenHub.toFixed(),
+      pendingDepositWeiUser: weiDeposit.toFixed(),
     })
   })
 
@@ -208,51 +209,55 @@ describe('ChannelsService', () => {
 
     assert.equal(
       (latestState.state as ChannelStateUpdate).reason,
-      'ProposePending',
+      'ProposePendingDeposit' as ChannelUpdateReason,
     )
     const pendingDepositTokenHub = weiDeposit
       .mul(mockRate)
       .minus(toWeiString(1))
+
+    assert.equal((latestState.state.state as ChannelState).timeout >= timeout, true)
     assertChannelStateEqual(latestState.state.state as ChannelState, {
-      pendingDepositTokenHub,
-      pendingDepositWeiUser: weiDeposit,
-      timeout,
+      pendingDepositTokenHub: pendingDepositTokenHub.toFixed(),
+      pendingDepositWeiUser: weiDeposit.toFixed(),
     })
   })
 
   it('should exchange eth for booty in channel - happy case', async () => {
     const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
       contractAddress: contract,
+      balanceWeiHub: toWeiString(10),
       balanceWeiUser: toWeiString(0.5),
-      balanceTokenHub: toWeiString(69),
+      balanceTokenUser: toWeiString(20),
     })
 
-    const unsigned = await service.doRequestExchange(
+    const exchangeArgs = await service.doRequestExchange(
       channel.user,
-      'BOOTY',
-      toWeiBigNum(10),
+      Big(0),
+      toWeiBigNum(10)
     )
+    const unsigned = await service.redisGetUnsignedState(channel.user)
 
     const balanceWeiExchangeAmount = toWeiBigNum(10).dividedBy(mockRate).floor()
 
-    assertChannelStateEqual(unsigned, {
+    assertChannelStateEqual(unsigned as ChannelState, {
       balanceWeiUser: Big(channel.state.balanceWeiUser)
-        .minus(balanceWeiExchangeAmount)
-        .toFixed(),
-      balanceWeiHub: Big(channel.state.balanceWeiHub)
         .plus(balanceWeiExchangeAmount)
         .toFixed(),
+      balanceWeiHub: Big(channel.state.balanceWeiHub)
+        .minus(balanceWeiExchangeAmount)
+        .toFixed(),
       balanceTokenUser: toWeiString(10),
-      balanceTokenHub: toWeiString(59),
+      balanceTokenHub: toWeiString(10),
     })
   })
 
   it('should onboard a performer by collateralizing their channel - happy case', async () => {
     const user = mkAddress('0xabc')
 
-    const unsigned = await service.doRequestCollateral(user)
+    const depositArgs = await service.doRequestCollateral(user)
+    const unsigned = await service.redisGetUnsignedState(user)
 
-    assertChannelStateEqual(unsigned, {
+    assertChannelStateEqual(unsigned as ChannelState, {
       pendingDepositTokenHub: toWeiString(50),
       txCountGlobal: 1,
       txCountChain: 1,
@@ -272,9 +277,10 @@ describe('ChannelsService', () => {
     await channelAndThreadFactory(registry, user4)
     const threadUsers = await channelAndThreadFactory(registry, user5)
 
-    const unsigned = await service.doRequestCollateral(threadUsers.performer)
+    const depositArgs = await service.doRequestCollateral(threadUsers.performer)
+    const unsigned = await service.redisGetUnsignedState(threadUsers.performer)
 
-    assertChannelStateEqual(unsigned, {
+    assertChannelStateEqual(unsigned as ChannelState, {
       pendingDepositTokenHub: toWeiString(125),
       txCountGlobal: 2,
       txCountChain: 2,
@@ -285,13 +291,15 @@ describe('ChannelsService', () => {
     const user = mkAddress('0xabc')
     const sigUser = mkSig('0xddd')
 
-    const unsigned = await service.doRequestCollateral(user)
+    const depositArgs = await service.doRequestCollateral(user)
+    const unsigned = await service.redisGetUnsignedState(user)
     unsigned.sigUser = sigUser
 
     await service.doUpdates(user, [
       {
-        state: unsigned,
-        reason: 'ProposePending',
+        state: unsigned as ChannelState,
+        reason: 'ProposePendingDeposit',
+        args: depositArgs
       },
     ])
 
@@ -304,7 +312,7 @@ describe('ChannelsService', () => {
       .state as ChannelStateUpdate
     proposePending.state.sigUser = sigUser
 
-    assert.equal(proposePending.reason, 'ProposePending')
+    assert.equal(proposePending.reason, 'ProposePendingDeposit')
     assertChannelStateEqual(proposePending.state as ChannelState, {
       pendingDepositTokenHub: toWeiString(50),
       sigHub: fakeSig,
@@ -317,21 +325,23 @@ describe('ChannelsService', () => {
     const sigUser = mkSig('0xa')
 
     const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceWeiUser: toWeiString(0.5),
-      balanceTokenHub: toWeiString(69),
+      balanceWeiHub: toWeiString(0.5),
+      balanceTokenUser: toWeiString(20),
     })
 
-    const unsigned = await service.doRequestExchange(
+    const exchangeArgs = await service.doRequestExchange(
       channel.user,
-      'BOOTY',
-      toWeiBigNum(10),
+      Big(0),
+      toWeiBigNum(10)
     )
+    const unsigned = await service.redisGetUnsignedState(channel.user)
     unsigned.sigUser = sigUser
 
     await service.doUpdates(channel.user, [
       {
-        state: unsigned,
+        state: unsigned as ChannelState,
         reason: 'Exchange',
+        args: exchangeArgs
       },
     ])
 
@@ -349,475 +359,65 @@ describe('ChannelsService', () => {
 
     assert.equal(exchangeUpdate.reason, 'Exchange')
     assertChannelStateEqual(exchangeUpdate.state, {
-      balanceWeiHub: Big(channel.state.balanceWeiHub).plus(
+      balanceWeiHub: Big(channel.state.balanceWeiHub).minus(
         expectedExchangeAmountWei,
       ),
-      balanceWeiUser: Big(channel.state.balanceWeiUser).minus(
+      balanceWeiUser: Big(channel.state.balanceWeiUser).plus(
         expectedExchangeAmountWei,
       ),
-      balanceTokenHub: toWeiString(59),
+      balanceTokenHub: toWeiString(10),
       balanceTokenUser: toWeiString(10),
       txCount: [2, 1],
     })
   })
 
-  // see doc for description of test cases: https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-CANONICAL-URLs--ASMKwGUa0N~99XhucAuz6IdiAg-Qpw2NAWgCIdg0Z5G9lpSu
-  it('1. fully collateralized exchange, full withdrawal, no wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0.5)
-    let balanceWeiUser = toWeiBigNum(0)
+  async function runWithdrawalTest(initial: Partial<ChannelState>, expected: Partial<ChannelState>) {
 
-    let tokenWithdrawal = toWeiBigNum(10)
-    let weiWithdrawal = toWeiBigNum(0)
+  }
 
-    let recipient = mkAddress('0xfed')
-
+  it('withdrawal where hub withdraws booty', async () => {
     const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
+      balanceTokenHub: toWeiString(10),
+      balanceTokenUser: toWeiString(10),
+      balanceWeiHub: toWeiString(0),
+      balanceWeiUser: toWeiString(0),
     })
-
-    const weiToUserWithdraw = balanceTokenUser.div(mockRate).floor()
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
+    await service.doRequestWithdrawal(channel.user, toWeiBigNum(0), toWeiBigNum(1), mkAddress('0x666'))
+    const withdrawal = await service.redisGetUnsignedState(channel.user)
 
     assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: 0,
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: 0,
-      pendingWithdrawalTokenHub: tokenWithdrawal,
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiHub: balanceWeiHub.minus(weiToUserWithdraw).toFixed(),
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed()
+      recipient: mkAddress('0x666'),
+      balanceTokenHub: '0',
+      balanceTokenUser: toWeiString(9),
+      balanceWeiHub: '0',
+      balanceWeiUser: toWeiBigNum(0),
+      pendingWithdrawalTokenHub: toWeiBigNum(11),
+      pendingWithdrawalWeiHub: toWeiBigNum(0),
+      pendingDepositWeiUser: '8100445524503847',
+      pendingWithdrawalWeiUser: '8100445524503847',
     })
   })
 
-  it('2. partially collateralized exchange, full withdrawal, no wei in user channel', async () => {
-    let balanceWeiHub = toWeiBigNum(0.01) // 123.45/100 = 1.2345
-    let balanceTokenUser = toWeiBigNum(10)
-    let recipient = mkAddress('0xfed')
+  it('withdrawal where hub deposits booty', async () => {
     const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
+      balanceTokenHub: toWeiString(0),
+      balanceTokenUser: toWeiString(10),
+      balanceWeiHub: toWeiString(0),
+      balanceWeiUser: toWeiString(10),
     })
-
-    const weiToUserWithdraw = balanceTokenUser.div(mockRate).floor()
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, toWeiBigNum(0), balanceTokenUser, recipient)
-
+    await service.doRequestWithdrawal(channel.user, toWeiBigNum(3), toWeiBigNum(1), mkAddress('0x666'))
+    const withdrawal = await service.redisGetUnsignedState(channel.user)
+    withdrawal.timeout = 0
     assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: 0,
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: weiToUserWithdraw.minus(balanceWeiHub),
-      pendingWithdrawalTokenHub: balanceTokenUser.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: 0
-    })
-  })
-
-  it('3. uncollateralized exchange, full withdrawal, no wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0)
-    let balanceWeiUser = toWeiBigNum(0)
-
-    let tokenWithdrawal = toWeiBigNum(10)
-    let weiWithdrawal = toWeiBigNum(0)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = balanceTokenUser.div(mockRate).floor()
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: 0,
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalTokenHub: balanceTokenUser.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: 0
-    })
-  })
-
-  it('4. fully collateralized, partial withdrawal, no wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0.5)
-    let balanceWeiUser = toWeiBigNum(0)
-
-    let tokenWithdrawal = toWeiBigNum(6)
-    let weiWithdrawal = toWeiBigNum(0)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor()
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: balanceTokenUser.minus(tokenWithdrawal).toFixed(),
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: 0,
-      pendingWithdrawalTokenHub: tokenWithdrawal.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: balanceWeiHub.minus(weiToUserWithdraw).toFixed()
-    })
-  })
-
-  it('5. partially collateralized, partial withdrawal, no wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0.01) // 123.45/100 = 1.2345
-    let balanceWeiUser = toWeiBigNum(0)
-
-    let tokenWithdrawal = toWeiBigNum(6)
-    let weiWithdrawal = toWeiBigNum(0)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor()
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: balanceTokenUser.minus(tokenWithdrawal).toFixed(),
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: weiToUserWithdraw.minus(balanceWeiHub).toFixed(),
-      pendingWithdrawalTokenHub: tokenWithdrawal.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: 0
-    })
-  })
-
-  it('6. uncollateralized, partial withdrawal, no wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0)
-    let balanceWeiUser = toWeiBigNum(0)
-
-    let tokenWithdrawal = toWeiBigNum(6)
-    let weiWithdrawal = toWeiBigNum(0)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor()
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: balanceTokenUser.minus(tokenWithdrawal).toFixed(),
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalTokenHub: tokenWithdrawal.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: 0
-    })
-  })
-
-  it('7. fully collateralized, full withdrawals, wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0.5)
-    let balanceWeiUser = toWeiBigNum(0.03)
-
-    let tokenWithdrawal = toWeiBigNum(10)
-    let weiWithdrawal = toWeiBigNum(0.03)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor().plus(weiWithdrawal)
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: 0,
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: 0,
-      pendingWithdrawalTokenHub: tokenWithdrawal.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: balanceWeiHub.minus(tokenWithdrawal.div(mockRate).floor()).toFixed()
-    })
-  })
-
-  it('8. partially collateralized, full withdrawals, wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0.01)
-    let balanceWeiUser = toWeiBigNum(0.03)
-
-    let tokenWithdrawal = toWeiBigNum(10)
-    let weiWithdrawal = toWeiBigNum(0.03)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor().plus(weiWithdrawal)
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: 0,
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: tokenWithdrawal.div(mockRate).floor().minus(balanceWeiHub).toFixed(),
-      pendingWithdrawalTokenHub: tokenWithdrawal.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: 0
-    })
-  })
-
-  it('9. uncollateralized, full withdrawals, wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0)
-    let balanceWeiUser = toWeiBigNum(0.03)
-
-    let tokenWithdrawal = toWeiBigNum(10)
-    let weiWithdrawal = toWeiBigNum(0.03)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor().plus(weiWithdrawal)
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: 0,
-      balanceWeiHub: 0,
-      balanceWeiUser: 0,
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: tokenWithdrawal.div(mockRate).floor().minus(balanceWeiHub).toFixed(),
-      pendingWithdrawalTokenHub: tokenWithdrawal.toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: 0
-    })
-  })
-
-  it('10. fully collateralized, partial withdrawal, wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(10)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0.5)
-    let balanceWeiUser = toWeiBigNum(0.03)
-
-    let tokenWithdrawal = toWeiBigNum(0)
-    let weiWithdrawal = toWeiBigNum(0.02)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor().plus(weiWithdrawal)
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: balanceWeiUser.minus(weiWithdrawal).mul(mockRate).toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: 0,
-      balanceWeiUser: balanceWeiUser.minus(weiWithdrawal).toFixed(),
-      pendingDepositTokenHub: 0,
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: 0,
-      pendingWithdrawalTokenHub: balanceTokenHub.minus(balanceWeiUser.minus(weiWithdrawal).mul(mockRate)).toFixed(),
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: balanceWeiHub.minus(tokenWithdrawal.div(mockRate).floor()).toFixed()
-    })
-  })
-
-  it('11. partially collateralized, partial withdrawal, wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0.01)
-    let balanceWeiUser = toWeiBigNum(0.03)
-
-    let tokenWithdrawal = toWeiBigNum(0)
-    let weiWithdrawal = toWeiBigNum(0.02)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor().plus(weiWithdrawal)
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: 0,
-      balanceWeiUser: balanceWeiUser.minus(weiWithdrawal).toFixed(),
-      pendingDepositTokenHub: balanceWeiUser.minus(weiWithdrawal).mul(mockRate).toFixed(),
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: 0,
-      pendingWithdrawalTokenHub: 0,
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: weiToUserWithdraw.minus(balanceWeiHub).toFixed()
-    })
-  })
-
-  it('12. uncollateralized, partial withdrawal, wei in user channel', async () => {
-    let balanceTokenHub = toWeiBigNum(0)
-    let balanceTokenUser = toWeiBigNum(10)
-    let balanceWeiHub = toWeiBigNum(0)
-    let balanceWeiUser = toWeiBigNum(0.03)
-
-    let tokenWithdrawal = toWeiBigNum(0)
-    let weiWithdrawal = toWeiBigNum(0.02)
-
-    let recipient = mkAddress('0xfed')
-
-    const channel = await channelUpdateFactory(registry, 'ConfirmPending', {
-      balanceTokenHub: balanceTokenHub.toFixed(),
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: balanceWeiHub.toFixed(),
-      balanceWeiUser: balanceWeiUser.toFixed(),
-    })
-
-    const weiToUserWithdraw = tokenWithdrawal.div(mockRate).floor().plus(weiWithdrawal)
-
-    const withdrawal = await service.doRequestWithdrawal(channel.user, weiWithdrawal, tokenWithdrawal, recipient)
-
-    assertChannelStateEqual(withdrawal as ChannelState, {
-      recipient,
-      balanceTokenHub: 0,
-      balanceTokenUser: balanceTokenUser.toFixed(),
-      balanceWeiHub: 0,
-      balanceWeiUser: balanceWeiUser.minus(weiWithdrawal).toFixed(),
-      pendingDepositTokenHub: balanceWeiUser.minus(weiWithdrawal).mul(mockRate).toFixed(),
-      pendingDepositTokenUser: 0,
-      pendingDepositWeiHub: 0,
-      pendingDepositWeiUser: 0,
-      pendingWithdrawalTokenHub: 0,
-      pendingWithdrawalTokenUser: 0,
-      pendingWithdrawalWeiUser: weiToUserWithdraw.toFixed(),
-      pendingWithdrawalWeiHub: 0
+      recipient: mkAddress('0x666'),
+      balanceTokenUser: toWeiString(9),
+      balanceWeiHub: '0',
+      balanceWeiUser: toWeiBigNum(7),
+      pendingWithdrawalWeiHub: '0',
+      pendingWithdrawalWeiUser: '3008100445524503847',
+      pendingWithdrawalTokenHub: toWeiBigNum(1),
+      pendingDepositWeiUser: '8100445524503847',
+      pendingDepositTokenHub: CHANNEL_BOOTY_LIMIT,
     })
   })
 
@@ -835,6 +435,7 @@ describe('ChannelsService', () => {
       'ConfirmPending',
       user,
       channelState,
+      {} as ConfirmPendingArgs
     )
 
     let channelState2 = getChannelState('empty', {
@@ -848,6 +449,7 @@ describe('ChannelsService', () => {
       'ConfirmPending',
       receiver,
       channelState2,
+      {} as ConfirmPendingArgs
     )
 
     let threadState = getThreadState('empty', {

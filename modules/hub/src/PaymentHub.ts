@@ -5,7 +5,6 @@ import defaultRegistry from './services'
 import { ApiService } from './api/ApiService'
 import ExchangeRateService from './ExchangeRateService'
 import GasEstimateService from './GasEstimateService'
-import DepositCorrelateService from './DepositCorrelateService'
 import { ApiServer } from "./ApiServer"
 import ChainsawService from './ChainsawService'
 import { OnchainTransactionService } from "./OnchainTransactionService";
@@ -65,11 +64,4 @@ export default class PaymentHub {
     chainsaw.poll()
   }
 
-  public async startDepositCorrelate() {
-    const depositCorrelate = this.container.resolve<DepositCorrelateService>(
-      'DepositCorrelateService',
-    )
-    await depositCorrelate.correlateDeposits()
-    process.exit(0)
-  }
 }

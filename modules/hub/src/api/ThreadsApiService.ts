@@ -14,10 +14,7 @@ export default class ThreadsApiService extends ApiService<
 > {
   namespace = 'thread'
   routes = {
-    // love this route syntax :)b
-    'POST /:sender/to/:receiver': 'doOpenThread',
     'POST /:sender/to/:receiver/update': 'doUpdateThread',
-    'POST /:sender/to/:receiver/close': 'doCloseThread',
     'GET /:sender/to/:receiver': 'doGetThread',
     'GET /:user/initial-states': 'doGetInitialStates',
     'GET /:user/incoming': 'doGetThreadsIncoming',
@@ -32,53 +29,6 @@ export default class ThreadsApiService extends ApiService<
 class ThreadsApiServiceHandler {
   threadsService: ThreadsService
   channelsService: ChannelsService
-
-  async doOpenThread(req: express.Request, res: express.Response) {
-    const { sender, receiver } = req.params
-    const {
-      balanceWei,
-      balanceToken,
-      sigSenderThread,
-      sigUserChannel,
-      lastChanTx,
-      lastThreadId,
-    } = req.body
-    if (
-      !sender ||
-      !receiver ||
-      !balanceWei ||
-      !balanceToken ||
-      !sigSenderThread ||
-      !sigUserChannel ||
-      !Number.isInteger(lastChanTx) ||
-      !Number.isInteger(lastThreadId)
-    ) {
-      LOG.warn(
-        'Received invalid open thread request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
-    }
-
-    await this.threadsService.createThread(
-      sender,
-      receiver,
-      new BigNumber(balanceWei),
-      new BigNumber(balanceToken),
-      sigSenderThread,
-      sigUserChannel,
-    )
-    const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
-      sender,
-      lastChanTx,
-      lastThreadId,
-    )
-
-    res.send(updates)
-  }
 
   async doUpdateThread(req: express.Request, res: express.Response) {
     const { sender, receiver } = req.params
@@ -104,37 +54,6 @@ class ThreadsApiServiceHandler {
         balanceTokenReceiver: Big(update.balanceTokenReceiver),
       }),
     )
-  }
-
-  async doCloseThread(req: express.Request, res: express.Response) {
-    const { sender, receiver } = req.params
-    const { sig, senderSigned, lastChanTx, lastThreadUpdateId } = req.body
-    if (
-      !sender ||
-      !receiver ||
-      !sig ||
-      !isBoolean(senderSigned) ||
-      !Number.isInteger(lastChanTx) ||
-      !Number.isInteger(lastThreadUpdateId)
-    ) {
-      LOG.warn(
-        'Received invalid open thread request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
-    }
-
-    await this.threadsService.close(sender, receiver, sig, senderSigned)
-    const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
-      sender,
-      lastChanTx,
-      lastThreadUpdateId,
-    )
-
-    res.send(updates)
   }
 
   async doGetInitialStates(req: express.Request, res: express.Response) {

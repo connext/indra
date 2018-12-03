@@ -1,7 +1,7 @@
 import {getTestRegistry} from './testing'
 import ChainsawService from './ChainsawService'
 import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
-import DBEngine, {PgPoolService} from './DBEngine'
+import DBEngine from './DBEngine'
 import ChannelsDao, {PostgresChannelsDao} from './dao/ChannelsDao'
 import {ChannelManager} from './ChannelManager'
 import ABI, {BYTECODE} from './abi/ChannelManager'
@@ -10,8 +10,7 @@ import * as sinon from 'sinon'
 import {Utils, emptyRootHash} from './vendor/connext/Utils'
 import {PgPoolServiceForTest} from './testing/mocks'
 import {BigNumber} from 'bignumber.js'
-import { channelStateBigNumToString, ChannelStateBigNum } from './domain/Channel';
-import { ChannelState } from './vendor/connext/types';
+import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
 
 const GAS_PRICE = '1000000000'
 
@@ -187,7 +186,8 @@ describe.skip('ChainsawService', () => {
       const fingerprint = utils.createChannelStateHash(state)
       const sigUser = await w3.eth.sign(fingerprint, USER_ADDRESS)
       update.state.sigUser = sigUser
-      await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, channelStateBigNumToString(update.state),)
+      // TODO
+      await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, convertChannelState('str', update.state), {} as PaymentArgs)
 
       // now send a couple of payment updates
       let next = update.state
@@ -197,7 +197,8 @@ describe.skip('ChainsawService', () => {
         builder = new StateUpdateBuilder(w3, utils, CM_ADDRESS, HUB_ADDRESS, next)
         builder.payWei('hub', '1')
         signed = await builder.countersign(false)
-        await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, signed.str)
+        // TODO
+        await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, signed.str, {} as PaymentArgs)
         next = signed.bn
       }
 
@@ -205,7 +206,8 @@ describe.skip('ChainsawService', () => {
       builder = new StateUpdateBuilder(w3, utils, CM_ADDRESS, HUB_ADDRESS, next)
       builder.deposit('user', '100')
       signed = await builder.countersign(true)
-      await chanDao.applyUpdateByUser(USER_ADDRESS, 'ProposePending', USER_ADDRESS, signed.str)
+      // TODO
+      await chanDao.applyUpdateByUser(USER_ADDRESS, 'ProposePendingDeposit', USER_ADDRESS, signed.str, {} as DepositArgs)
       const deposit = signed.str
       next = signed.str
 
@@ -213,7 +215,8 @@ describe.skip('ChainsawService', () => {
       builder = new StateUpdateBuilder(w3, utils, CM_ADDRESS, HUB_ADDRESS, next)
       builder.payWei('hub', '7')
       signed = await builder.countersign(false)
-      await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, signed.str)
+      // TODO
+      await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, signed.str, {} as PaymentArgs)
 
       // now broadcast on-chain
       depositRes = await contract.methods.userAuthorizedUpdate(
@@ -287,10 +290,10 @@ describe.skip('ChainsawService', () => {
 class StateUpdateBuilder {
   private w3: any
   private hubAddress: string
-  private state: ChannelStateBigNum
+  private state: ChannelStateBigNumber
   private utils: Utils
   
-  constructor (w3: any, utils: Utils, contractAddress: string, hubAddress: string, update?: ChannelStateBigNum) {
+  constructor (w3: any, utils: Utils, contractAddress: string, hubAddress: string, update?: ChannelStateBigNumber) {
     this.w3 = w3
     this.hubAddress = hubAddress.toLowerCase()
     this.utils = utils
@@ -376,7 +379,7 @@ class StateUpdateBuilder {
     return this
   }
   
-  async countersign(chain: boolean): Promise<{ bn: ChannelStateBigNum, str: ChannelState }> {
+  async countersign(chain: boolean): Promise<{ bn: ChannelStateBigNumber, str: ChannelState }> {
     this.state.txCountGlobal++
     if (chain) {
       this.state.txCountChain++

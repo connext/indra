@@ -151,7 +151,8 @@ create type cm_channel_status as enum (
 create type cm_channel_update_reason as enum (
     'Payment',
     'Exchange',
-    'ProposePending',
+    'ProposePendingDeposit',
+    'ProposePendingWithdrawal',
     'ConfirmPending',
     'OpenThread',
     'CloseThread'
@@ -181,8 +182,8 @@ create table _cm_channels (
     hub_signed_on timestamp with time zone null,
     user_signed_on timestamp with time zone null,
 
-    reason cm_channel_update_reason not null,
-    args jsonb not null,
+    reason cm_channel_update_reason null,
+    args jsonb null,
 
     <%= CHANNEL_STATE_COLS.map(c => {
       // We need to allow these columns to be null so that the channel can

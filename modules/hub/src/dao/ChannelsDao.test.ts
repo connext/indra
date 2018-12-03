@@ -7,6 +7,7 @@ import crypto = require('crypto')
 import { getTestRegistry, getTestConfig } from '../testing'
 import { getChannelState, assertChannelStateEqual, mkAddress, mkSig } from '../testing/stateUtils'
 import { insertChannel } from '../testing/dbUtils'
+import { PaymentArgs } from '../vendor/connext/types';
 
 describe('ChannelsDao', () => {
   const registry = getTestRegistry({
@@ -48,7 +49,7 @@ describe('ChannelsDao', () => {
       sigUser,
     })
 
-    await dao.applyUpdateByUser(user, 'Payment', user, channelUpdate)
+    await dao.applyUpdateByUser(user, 'ConfirmPending', user, channelUpdate, {})
 
     const channel = await dao.getChannelByUser(user)
 

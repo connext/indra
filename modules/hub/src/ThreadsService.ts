@@ -3,64 +3,65 @@ import ChannelsDao from './dao/ChannelsDao'
 import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
-import { BigNumber } from 'bignumber.js'
-import { Validation } from './vendor/connext/Validation'
-import { ChannelState, ThreadState } from './vendor/connext/types'
+import { Validator } from './vendor/connext/Validation'
+import { ThreadState, convertThreadState, convertChannelState, UnsignedThreadState, convertPayment, ThreadStateBigNumber } from './vendor/connext/types'
 import {
-  threadStateBigNumToStr,
   ThreadStateBigNum,
   ThreadRow,
-  threadRowBigNumToStr,
-  threadStateUpdateRowBigNumToStr,
   ThreadStateUpdateRow,
 } from './domain/Thread'
-import { channelStateBigNumToString } from './domain/Channel'
+import { ChannelStateUpdateRowBigNum } from './domain/Channel';
+import { SignerService } from './SignerService';
 
 const LOG = log('ThreadsService')
 
 export default class ThreadsService {
+  private signerService: SignerService
+
   private channelsDao: ChannelsDao
 
   private threadsDao: ThreadsDao
 
   private utils: Utils
 
-  private validation: Validation
+  private validator: Validator
 
   private web3: any
 
   private config: Config
 
   constructor(
+    signerService: SignerService,
     channelsDao: ChannelsDao,
     threadsDao: ThreadsDao,
     utils: Utils,
-    validation: Validation,
+    validator: Validator,
     web3: any,
     config: Config,
   ) {
+    this.signerService = signerService
     this.channelsDao = channelsDao
     this.threadsDao = threadsDao
     this.utils = utils
-    this.validation = validation
+    this.validator = validator
     this.web3 = web3
     this.config = config
   }
 
-  public async createThread(
-    sender: string,
-    receiver: string,
-    balanceWei: BigNumber,
-    balanceToken: BigNumber,
-    sigSenderThread: string,
+  // this function is not directly called from the API, it is called from within
+  // channelService.update()
+
+  // TODO: might be able to remove some of this validation
+  public async open(
+    thread: ThreadStateBigNumber,
     sigUserChannel: string,
-  ): Promise<ChannelState> {
-    if (sender.toLowerCase() === receiver.toLowerCase()) {
+  ): Promise<ChannelStateUpdateRowBigNum> {
+    if (thread.sender.toLowerCase() === thread.receiver.toLowerCase()) {
       throw new Error('Sender and receiver cannot be the same')
     }
 
     // make sure no open thread exists
-    const existing = await this.threadsDao.getThread(sender, receiver)
+    const existing = await this.threadsDao.getThread(thread.sender, thread.receiver)
     if (existing) {
       throw new Error(
         `Thread exists already: ${JSON.stringify(existing, null, 2)}`,
@@ -68,6 +69,150 @@ export default class ThreadsService {
     }
 
     // make sure channels exist and have proper balance
+    const channelSender = await this.channelsDao.getChannelByUser(thread.sender)
+    if (!channelSender || channelSender.status !== ('CS_OPEN' as any)) {
+      throw new Error(
+        `ChannelSender invalid, channelSender: ${JSON.stringify(
+          channelSender,
+          null,
+          2,
+        )}`,
+      )
+    }
+
+    const channelReceiver = await this.channelsDao.getChannelByUser(thread.receiver)
+    if (!channelReceiver || channelReceiver.status !== ('CS_OPEN' as any)) {
+      throw new Error(
+        `ChannelReceiver invalid, channelReceiver: ${JSON.stringify(
+          channelReceiver,
+          null,
+          2,
+        )}`,
+      )
+    }
+
+    const channelSenderState = channelSender.state
+    const channelReceiverState = channelReceiver.state
+
+    if (
+      channelSenderState.balanceWeiUser.lessThan(thread.balanceWeiSender) ||
+      channelSenderState.balanceTokenUser.lessThan(thread.balanceTokenSender)
+    ) {
+      LOG.error(
+        `channelSenderState: ${JSON.stringify(channelSenderState, null, 2)}`,
+      )
+      throw new Error(
+        'Sender channel does not have enough balance to open thread',
+      )
+    }
+
+    if (
+      channelReceiverState.balanceWeiHub.lessThan(thread.balanceWeiSender) ||
+      channelReceiverState.balanceTokenHub.lessThan(thread.balanceTokenSender)
+    ) {
+      // TODO: autodeposit here?
+      throw new Error('Hub collateral is too low')
+    }
+
+
+    this.validator.assertThreadSigner(convertThreadState('str', thread))
+
+    // create and validate channel update from input sig
+    // add this thread to the initial states and compute the new root
+    let threadInitialStates = await this.threadsDao.getThreadInitialStatesByUser(
+      thread.sender,
+    )
+    let unsignedThreadStates = threadInitialStates.map(thread =>
+      convertThreadState('str-unsigned', thread.state),
+    )
+    unsignedThreadStates.push(convertThreadState('str', thread) as UnsignedThreadState)
+
+    const unsignedChannelStateSender = this.validator.generateOpenThread(
+      convertChannelState('bn', channelSender.state), 
+      unsignedThreadStates, 
+      convertThreadState('bn', thread)
+    )
+    const channelStateSender = await this.signerService.signChannelState(
+      unsignedChannelStateSender,
+      sigUserChannel
+    )
+    this.validator.assertChannelSigner(channelStateSender)
+
+    // create other side channel update
+    threadInitialStates = await this.threadsDao.getThreadInitialStatesByUser(
+      thread.receiver,
+    )
+    unsignedThreadStates = threadInitialStates.map(thread =>
+      convertThreadState('str-unsigned', thread.state),
+    )
+    unsignedThreadStates.push(convertThreadState('str', thread) as UnsignedThreadState)
+
+    const unsignedChannelStateReceiver = this.validator.generateOpenThread(
+      convertChannelState('bn', channelReceiver.state), 
+      unsignedThreadStates, 
+      convertThreadState('bn', thread)
+    )
+    const channelStateReceiver = await this.signerService.signChannelState(
+      unsignedChannelStateReceiver,
+    )
+    
+    // caller is expected to call this within a transaction
+    const insertedChannelSender = await this.channelsDao.applyUpdateByUser(
+      thread.sender,
+      'OpenThread',
+      thread.sender,
+      channelStateSender,
+      convertThreadState('str-unsigned', thread)
+    )
+    const insertedChannelReceiver = await this.channelsDao.applyUpdateByUser(
+      thread.receiver,
+      'OpenThread',
+      thread.receiver,
+      channelStateReceiver,
+      convertThreadState('str-unsigned', thread)
+    )
+    await this.threadsDao.applyThreadUpdate(
+      convertThreadState('str', thread),
+      insertedChannelSender.id,
+      insertedChannelReceiver.id,
+    )
+    return insertedChannelSender
+  }
+
+  public async update(
+    sender: string,
+    receiver: string,
+    update: ThreadStateBigNum,
+  ): Promise<ThreadStateUpdateRow> {
+    const thread = await this.threadsDao.getThread(sender, receiver)
+    if (!thread || thread.status !== 'CT_OPEN') {
+      throw new Error(`Thread is invalid: ${thread}`)
+    }
+
+    const threadState = this.validator.generateThreadPayment(
+      convertThreadState('bn', thread.state),
+      // @ts-ignore TODO
+      convertPayment('bn', {
+        amountToken: update.balanceTokenReceiver.sub(thread.state.balanceTokenReceiver),
+        amountWei: update.balanceWeiReceiver.sub(thread.state.balanceWeiReceiver),
+        recipient: 'receiver'
+      })
+    )
+    this.validator.assertThreadSigner({...threadState, sigA: update.sigA})
+
+    // TODO: add validation
+
+    const row = await this.threadsDao.applyThreadUpdate(convertThreadState('str', update))
+    return { ...row, state: convertThreadState('str', thread.state) }
+  }
+
+  // we will need to pass in the thread update for p2p
+  public async close(
+    sender: string,
+    receiver: string,
+    sig: string,
+    senderSigned: boolean,
+  ): Promise<ChannelStateUpdateRowBigNum> {
     const channelSender = await this.channelsDao.getChannelByUser(sender)
     if (!channelSender || channelSender.status !== ('CS_OPEN' as any)) {
       throw new Error(
@@ -90,161 +235,92 @@ export default class ThreadsService {
       )
     }
 
-    const channelSenderState = channelSender.state
-    const channelReceiverState = channelReceiver.state
-
-    if (
-      channelSenderState.balanceWeiUser.lessThan(balanceWei) ||
-      channelSenderState.balanceTokenUser.lessThan(balanceToken)
-    ) {
-      LOG.error(
-        `channelSenderState: ${JSON.stringify(channelSenderState, null, 2)}`,
-      )
-      throw new Error(
-        'Sender channel does not have enough balance to open thread',
-      )
-    }
-
-    if (
-      channelReceiverState.balanceWeiHub.lessThan(balanceWei) ||
-      channelReceiverState.balanceTokenHub.lessThan(balanceToken)
-    ) {
-      // TODO: autodeposit here?
-      throw new Error('Hub collateral is too low')
-    }
-
-    // check thread opening sig, infer parameters
-    const threadState: ThreadState = {
-      sender,
-      receiver,
-      threadId: (await this.threadsDao.getCurrentThreadId(sender, receiver)) + 1,
-      txCount: 0,
-      contractAddress: this.config.channelManagerAddress,
-      balanceWeiSender: balanceWei.toFixed(),
-      balanceWeiReceiver: '0',
-      balanceTokenSender: balanceToken.toFixed(),
-      balanceTokenReceiver: '0',
-      sigA: sigSenderThread,
-    }
-    this.validation.validateThreadSigner(threadState)
-
-    // create and validate channel update from input sig
-    const channelStateSender = await this.createChannelUpdateForThreadOpen(
-      threadState,
-      sigUserChannel,
-      true,
-    )
-
-    // create other side channel update
-    const channelStateReceiver = await this.createChannelUpdateForThreadOpen(
-      threadState,
-      null,
-      false,
-    )
-
-    // TODO: MAKE THIS A TRANSACTION!!!!
-    const insertedChannelSender = await this.channelsDao.applyUpdateByUser(
-      sender,
-      'OpenThread',
-      sender,
-      channelStateSender,
-    )
-    const insertedChannelReceiver = await this.channelsDao.applyUpdateByUser(
-      receiver,
-      'OpenThread',
-      receiver,
-      channelStateReceiver,
-    )
-    await this.threadsDao.applyThreadUpdate(
-      threadState,
-      insertedChannelSender.id,
-      insertedChannelReceiver.id,
-    )
-    return channelStateSender
-  }
-
-  public async update(
-    sender: string,
-    receiver: string,
-    update: ThreadStateBigNum,
-  ): Promise<ThreadStateUpdateRow> {
     const thread = await this.threadsDao.getThread(sender, receiver)
     if (!thread || thread.status !== 'CT_OPEN') {
       throw new Error(`Thread is invalid: ${thread}`)
     }
 
-    const lastUpdate = await this.threadsDao.getThreadUpdateLatest(
+    // create and validate sender channel update
+    let threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
       sender,
+    )
+    // remove this thread and cast as string type
+    let threadStates = threadStatesBigNum
+      .filter(
+        state =>
+          !(
+            state.state.sender === thread.state.sender &&
+            state.state.receiver === thread.state.receiver &&
+            state.state.contractAddress === this.config.channelManagerAddress
+          ),
+      )
+      .map(t => convertThreadState('str', t.state))
+
+    const unsignedChannelUpdateSender = this.validator.generateCloseThread(
+      convertChannelState('bn', channelSender.state),
+      threadStates,
+      convertThreadState('bn', thread.state)
+    )
+    if (senderSigned) {
+      this.validator.assertChannelSigner({...unsignedChannelUpdateSender, sigUser: sig})
+    }
+    const channelUpdateSender = await this.signerService.signChannelState(
+      unsignedChannelUpdateSender,
+      senderSigned ? sig : null
+    )
+
+    // create and validate receiver channel update
+    threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
       receiver,
     )
+    // remove this thread and cast as string type
+    threadStates = threadStatesBigNum
+      .filter(
+        state =>
+          !(
+            state.state.sender === thread.state.sender &&
+            state.state.receiver === thread.state.receiver &&
+            state.state.contractAddress === this.config.channelManagerAddress
+          ),
+      )
+      .map(t => convertThreadState('str', t.state))
 
-    const validationError = this.validation.validateThreadStateUpdate({
-      previous: threadStateBigNumToStr(lastUpdate.state),
-      current: threadStateBigNumToStr(update),
-      payment: {
-        wei: lastUpdate.state.balanceWeiSender
-          .minus(update.balanceWeiSender)
-          .toFixed(),
-        token: lastUpdate.state.balanceTokenSender
-          .minus(update.balanceTokenSender)
-          .toFixed(),
-      },
-    })
-    if (validationError) {
-      throw new Error(validationError)
+    const unsignedChannelUpdateReceiver = this.validator.generateCloseThread(
+      convertChannelState('bn', channelReceiver.state),
+      threadStates,
+      convertThreadState('bn', thread.state)
+    )
+    if (!senderSigned) {
+      this.validator.assertChannelSigner({...unsignedChannelUpdateReceiver, sigUser: sig})
     }
-
-    return threadStateUpdateRowBigNumToStr(
-      await this.threadsDao.applyThreadUpdate(threadStateBigNumToStr(update)),
-    )
-  }
-
-  // we will need to pass in the thread update for p2p
-  public async close(
-    sender: string,
-    receiver: string,
-    sig: string,
-    senderSigned: boolean,
-  ): Promise<void> {
-    const thread = await this.threadsDao.getThread(sender, receiver)
-    if (!thread || thread.status !== 'CT_OPEN') {
-      throw new Error(`Thread is invalid: ${thread}`)
-    }
-
-    // validate signer's channel update
-    const user = senderSigned ? sender : receiver
-    // creates and validates update
-    const channelUpdateSigner = await this.createChannelUpdateForThreadClosed(
-      threadRowBigNumToStr(thread),
-      sig,
-      user === sender ? true : false,
+    const channelUpdateReceiver = await this.signerService.signChannelState(
+      unsignedChannelUpdateReceiver,
+      senderSigned ? null : sig
     )
 
-    const channelUpdateOther = await this.createChannelUpdateForThreadClosed(
-      threadRowBigNumToStr(thread),
-      null,
-      user === sender ? false : true,
-    )
-
-    // TODO: make transaction
-    await this.channelsDao.applyUpdateByUser(
-      channelUpdateSigner.user,
+    // call within transaction context
+    const channelRowSender = await this.channelsDao.applyUpdateByUser(
+      channelUpdateSender.user,
       'CloseThread',
-      channelUpdateSigner.user,
-      channelUpdateSigner,
+      channelUpdateSender.user,
+      channelUpdateSender,
+      convertThreadState('str-unsigned', thread.state)
     )
-    await this.channelsDao.applyUpdateByUser(
-      channelUpdateOther.user,
+    const channelRowReceiver = await this.channelsDao.applyUpdateByUser(
+      channelUpdateReceiver.user,
       'CloseThread',
-      channelUpdateOther.user,
-      channelUpdateOther,
+      channelUpdateReceiver.user,
+      channelUpdateReceiver,
+      convertThreadState('str-unsigned', thread.state)
     )
     await this.threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
+
+    return senderSigned ? channelRowSender : channelRowReceiver
   }
 
   public async getInitialStates(user: string): Promise<ThreadState[]> {
     return (await this.threadsDao.getThreadInitialStatesByUser(user)).map(
-      thread => threadStateBigNumToStr(thread.state),
+      thread => convertThreadState('str', thread.state),
     )
   }
 
@@ -258,197 +334,13 @@ export default class ThreadsService {
     }
     return {
       ...thread,
-      state: threadStateBigNumToStr(thread.state),
+      state: convertThreadState('str', thread.state),
     }
   }
 
   public async getThreadsIncoming(user: string): Promise<ThreadRow[]> {
-    return (await this.threadsDao.getThreadsIncoming(user)).map(thread =>
-      threadRowBigNumToStr(thread),
-    )
-  }
-
-  private async createChannelUpdateForThreadOpen(
-    threadState: ThreadState,
-    sig: string,
-    isSender: boolean,
-  ): Promise<ChannelState> {
-    const user = isSender ? threadState.sender : threadState.receiver
-
-    // recreate hub's version
-    let lastStateHubSignedSender = await this.channelsDao.getLatestChannelUpdateHubSigned(
-      user,
-    )
-    // should always be a state in the DB from the initial deposit at least
-    if (!lastStateHubSignedSender) {
-      throw new Error('No update found for channel')
-    }
-
-    // add this thread to the initial states and compute the new root
-    let threadInitialStates = await this.threadsDao.getThreadInitialStatesByUser(
-      user,
-    )
-    // convert to connext type
-    let signedThreadStates = threadInitialStates.map(thread =>
-      threadStateBigNumToStr(thread.state),
-    )
-    signedThreadStates.push(threadState)
-    let threadRoot = this.utils.generateThreadRootHash(signedThreadStates)
-    let threadCount = signedThreadStates.length
-
-    let channelBalances
-    // sender => hub => receiver
-    if (isSender) {
-      // sender: user - sender, hub - receiver
-      channelBalances = {
-        balanceTokenUser: lastStateHubSignedSender.state.balanceTokenUser
-          .minus(threadState.balanceTokenSender)
-          .toFixed(),
-        balanceTokenHub: lastStateHubSignedSender.state.balanceTokenHub.toFixed(),
-        balanceWeiUser: lastStateHubSignedSender.state.balanceWeiUser
-          .minus(threadState.balanceWeiSender)
-          .toFixed(),
-        balanceWeiHub: lastStateHubSignedSender.state.balanceWeiHub.toFixed(),
-      }
-    } else {
-      // receiver: hub - sender, user - receiver
-      channelBalances = {
-        balanceTokenHub: lastStateHubSignedSender.state.balanceTokenHub
-          .minus(threadState.balanceTokenSender)
-          .toFixed(),
-        balanceTokenUser: lastStateHubSignedSender.state.balanceTokenUser.toFixed(),
-        balanceWeiHub: lastStateHubSignedSender.state.balanceWeiHub
-          .minus(threadState.balanceWeiSender)
-          .toFixed(),
-        balanceWeiUser: lastStateHubSignedSender.state.balanceWeiUser.toFixed(),
-      }
-    }
-
-    // check channel update sig with new root
-    const channelState: ChannelState = {
-      ...channelStateBigNumToString(lastStateHubSignedSender.state),
-      ...channelBalances,
-      txCountGlobal: lastStateHubSignedSender.state.txCountGlobal + 1,
-      threadCount,
-      threadRoot,
-      timeout: 0,
-      sigUser: sig,
-      contractAddress: this.config.channelManagerAddress,
-    }
-
-    // cosign channelSender update
-    let hash = this.utils.createChannelStateHash(channelState)
-    let sigHub = await this.web3.eth.sign(hash, this.config.hotWalletAddress)
-    channelState.sigHub = sigHub
-
-    // use validation lib to validate sigs and other validation
-    let validationError = this.validation.validateChannelStateUpdate({
-      reason: 'OpenThread',
-      previous: channelStateBigNumToString(lastStateHubSignedSender.state),
-      current: channelState,
-      hubAddress: this.config.hotWalletAddress,
-      threads: signedThreadStates,
-      threadState: threadState,
+    return (await this.threadsDao.getThreadsIncoming(user)).map(thread => { 
+      return { ...thread, state: convertThreadState('str', thread.state) }
     })
-    if (validationError) {
-      throw new Error(validationError)
-    }
-
-    return channelState
-  }
-
-  private async createChannelUpdateForThreadClosed(
-    thread: ThreadRow,
-    sig: string,
-    isSender: boolean,
-  ) {
-    const user = isSender ? thread.state.sender : thread.state.receiver
-    let previousChannelUpdate = await this.channelsDao.getLatestChannelUpdateHubSigned(
-      user,
-    )
-    let threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
-      user,
-    )
-    // remove this thread and cast as string type
-    let threadStates = threadStatesBigNum
-      .filter(
-        state =>
-          !(
-            state.state.sender === thread.state.sender &&
-            state.state.receiver === thread.state.receiver &&
-            state.state.contractAddress === this.config.channelManagerAddress
-          ),
-      )
-      .map(t => threadStateBigNumToStr(t.state))
-    let threadRoot = this.utils.generateThreadRootHash(threadStates)
-
-    let channelBalances
-    // sender => hub => receiver
-    if (isSender) {
-      // sender: user + sender, hub + receiver
-      channelBalances = {
-        balanceTokenUser: previousChannelUpdate.state.balanceTokenUser
-          .plus(thread.state.balanceTokenSender)
-          .toFixed(),
-        balanceTokenHub: previousChannelUpdate.state.balanceTokenHub
-          .plus(thread.state.balanceTokenReceiver)
-          .toFixed(),
-        balanceWeiUser: previousChannelUpdate.state.balanceWeiUser
-          .plus(thread.state.balanceWeiSender)
-          .toFixed(),
-        balanceWeiHub: previousChannelUpdate.state.balanceWeiHub
-          .plus(thread.state.balanceWeiReceiver)
-          .toFixed(),
-      }
-    } else {
-      // receiver: hub + sender, user + receiver
-      channelBalances = {
-        balanceTokenHub: previousChannelUpdate.state.balanceTokenHub
-          .plus(thread.state.balanceTokenSender)
-          .toFixed(),
-        balanceTokenUser: previousChannelUpdate.state.balanceTokenUser
-          .plus(thread.state.balanceTokenReceiver)
-          .toFixed(),
-        balanceWeiHub: previousChannelUpdate.state.balanceWeiHub
-          .plus(thread.state.balanceWeiSender)
-          .toFixed(),
-        balanceWeiUser: previousChannelUpdate.state.balanceWeiUser
-          .plus(thread.state.balanceWeiReceiver)
-          .toFixed(),
-      }
-    }
-
-    let currentChannelUpdate: ChannelState = {
-      ...channelStateBigNumToString(previousChannelUpdate.state),
-      ...channelBalances,
-      threadCount: threadStates.length,
-      threadRoot,
-      txCountGlobal: previousChannelUpdate.state.txCountGlobal + 1,
-      sigUser: sig,
-    }
-
-    let stateHash = this.utils.createChannelStateHash(
-      currentChannelUpdate,
-    )
-    const sigHub = await this.web3.eth.sign(
-      stateHash,
-      this.config.hotWalletAddress,
-    )
-
-    currentChannelUpdate.sigHub = sigHub
-
-    const validationError = this.validation.validateChannelStateUpdate({
-      hubAddress: this.config.hotWalletAddress,
-      reason: 'CloseThread',
-      previous: channelStateBigNumToString(previousChannelUpdate.state),
-      current: currentChannelUpdate,
-      threads: threadStates,
-      threadState: thread.state,
-    })
-    if (validationError) {
-      throw new Error(validationError)
-    }
-
-    return currentChannelUpdate
   }
 }

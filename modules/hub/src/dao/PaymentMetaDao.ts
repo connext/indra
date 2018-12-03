@@ -49,7 +49,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
         ${purchaseId}, ${payment.recipient},
         ${payment.type == 'PT_CHANNEL' ? updateId : null},
         ${payment.type == 'PT_THREAD' ? updateId : null},
-        ${payment.amount.wei}, ${payment.amount.token},
+        ${payment.amount.amountWei}, ${payment.amount.amountToken},
         ${JSON.stringify(payment.meta)}::jsonb
       )
     `)
@@ -155,8 +155,8 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       sender: row.sender,
       recipient: row.recipient,
       amount: {
-        wei: row.amount_wei,
-        token: row.amount_token,
+        amountWei: row.amount_wei,
+        amountToken: row.amount_token,
       },
       meta: row.meta,
       type: row.payment_type,

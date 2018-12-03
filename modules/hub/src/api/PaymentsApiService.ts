@@ -1,26 +1,18 @@
 import { Big } from "../util/bigNumber";
 import DBEngine from '../DBEngine'
 import * as express from 'express'
-import { ApiService, Router } from './ApiService'
-import { PaymentHandler } from '../PaymentHandler'
+import { ApiService } from './ApiService'
 import log from '../util/log'
 import { ownedAddressOrAdmin } from '../util/ownedAddressOrAdmin'
 import { PaymentMetaDao } from '../dao/PaymentMetaDao'
-import { WithdrawalDto } from '../domain/PaymentMeta'
 import { Role } from '../Role'
-import LedgerChannelsService from '../LedgerChannelService'
-import VirtualChannelsService from '../VirtualChannelsService'
 import { BigNumber } from 'bignumber.js'
 import WithdrawalsService from '../WithdrawalsService'
-import { LcStateUpdate, LedgerChannel } from '../domain/LedgerChannel'
-import { VcStateUpdate } from '../domain/VirtualChannel'
-import LedgerChannelService from '../LedgerChannelService'
 import ExchangeRateDao from '../dao/ExchangeRateDao'
 import { assertUnreachable } from '../util/assertUnreachable'
-import { Payment, Purchase, PurchasePayment } from '../vendor/connext/types'
+import { Payment, PurchasePayment, convertThreadState } from '../vendor/connext/types'
 import { default as ThreadsService } from "../ThreadsService";
 import { default as ChannelsService } from "../ChannelsService";
-import { threadStateStrToBigNum } from "../domain/Thread";
 import { default as Config } from "../Config";
 import { PurchaseRowWithPayments } from "../domain/Purchase";
 
@@ -70,11 +62,7 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
   }
   handler = PaymentsApiServiceHandler
   dependencies = {
-    'ledgerChannelsService': 'LedgerChannelsService',
-    'virtualChannelsService': 'VirtualChannelsService',
-    'paymentHandler': 'PaymentHandler',
     'paymentMetaDao': 'PaymentMetaDao',
-    'withdrawalsService': 'WithdrawalsService',
     'exRateDao': 'ExchangeRateDao',
     'db': 'DBEngine',
     'config': 'Config',
@@ -87,7 +75,6 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
 export class PaymentsApiServiceHandler {
   threadService: ThreadsService
   channelService: ChannelsService
-  paymentHandler: PaymentHandler<any, any>
   paymentMetaDao: PaymentMetaDao
   withdrawalsService: WithdrawalsService
   exRateDao: ExchangeRateDao
@@ -120,7 +107,6 @@ export class PaymentsApiServiceHandler {
     const purchaseId = generatePurchaseId()
 
     for (let payment of payments) {
-      console.log('payment: ', payment);
       let row: { id: number }
       if (payment.type == 'PT_CHANNEL') {
         row = (await this.channelService.doUpdates(user, [payment.update]))[0]
@@ -128,8 +114,9 @@ export class PaymentsApiServiceHandler {
         row = await this.threadService.update(
           user,
           payment.recipient,
-          threadStateStrToBigNum(payment.update.state),
+          convertThreadState('bignumber', payment.update.state),
         )
+        console.log('row: ', row);
       } else {
         assertUnreachable(payment, 'invalid payment type: ' + (payment as any).type)
       }
@@ -166,95 +153,6 @@ export class PaymentsApiServiceHandler {
     res.send(history)
   }
 
-  /*
-  async updateChannelFromPayment(
-    purchaseId: string,
-    payment: Payments,
-  ) {
-    this.paymentHandler.validateMetaFromObject(payment.meta)
-    const paymentDto: PaymentDto = payment.payment
-    const {
-      channelId,
-      ethBalanceA,
-      ethBalanceB,
-      tokenBalanceA,
-      tokenBalanceB,
-      nonce,
-      sig,
-    } = paymentDto
-
-    let update: LcStateUpdate | VcStateUpdate
-    if (payment.type === PaymentType.Ledger) {
-      update = await this.ledgerChannelsService.update(
-        channelId,
-        nonce,
-        new BigNumber(ethBalanceA),
-        new BigNumber(ethBalanceB),
-        new BigNumber(tokenBalanceA),
-        new BigNumber(tokenBalanceB),
-        sig,
-      )
-    } else if (payment.type == PaymentType.Virtual) {
-      update = await this.virtualChannelsService.update(channelId, {
-        ethBalanceA: new BigNumber(ethBalanceA),
-        ethBalanceB: new BigNumber(ethBalanceB),
-        tokenBalanceA: new BigNumber(tokenBalanceA),
-        tokenBalanceB: new BigNumber(tokenBalanceB),
-        nonce,
-        sigA: sig,
-      })
-    } else {
-      return assertUnreachable(payment.type, 'Unexpected payment type')
-    }
-
-    const p: Payment = {
-      channelId,
-      meta: JSON.stringify(payment.meta),
-      token: update.id,
-      purchase: purchaseId,
-    }
-    await this.paymentHandler.storeMeta(payment.meta, payment.type, p)
-
-    return update
-  }
-
-  async doById(req: express.Request, res: express.Response) {
-    const { id, type } = req.params
-
-    let tip
-
-    try {
-      tip = await this.paymentHandler.fetchPaymentByType(type.toUpperCase(), id)
-    } catch (err) {
-      LOG.error('Failed to fetch payment: {err}', {
-        err,
-      })
-      return res.sendStatus(400)
-    }
-
-    const address = req.session!.address
-
-    if (
-      tip &&
-      tip.sender !== address &&
-      !req.session!.roles.has(Role.ADMIN) &&
-      !req.session!.roles.has(Role.SERVICE)
-    ) {
-      LOG.error(
-        'Received request to view payment {type}, {id} from non-admin or owning address {address}',
-        {
-          type,
-          id,
-          address,
-        },
-      )
-      return res.sendStatus(403)
-    }
-
-    return res.send(tip)
-  }
-  */
-
   async doPurchaseById(req: express.Request, res: express.Response) {
     const { id } = req.params
 
@@ -277,12 +175,12 @@ export class PaymentsApiServiceHandler {
       return res.sendStatus(404)
 
     const totalAmount: Payment = {
-      wei: '0',
-      token: '0',
+      amountWei: '0',
+      amountToken: '0',
     }
     for (let payment of payments) {
-      totalAmount.wei = Big(totalAmount.wei).add(payment.amount.wei).toFixed()
-      totalAmount.token = Big(totalAmount.token).add(payment.amount.token).toFixed()
+      totalAmount.amountWei = Big(totalAmount.amountWei).add(payment.amount.amountWei).toFixed()
+      totalAmount.amountToken = Big(totalAmount.amountToken).add(payment.amount.amountToken).toFixed()
     }
 
     // TODO: this is a bit of a hack because we aren't totally tracking

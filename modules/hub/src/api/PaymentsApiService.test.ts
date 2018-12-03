@@ -1,6 +1,4 @@
-import { channelStateBigNumToString } from "../domain/Channel";
 import { mkSig } from "../testing/stateUtils";
-import { mkAddress, getChannelState } from "../testing/stateUtils";
 import { PurchasePayment } from "../vendor/connext/types";
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal, channelNextState } from "../testing/factories";
@@ -31,8 +29,8 @@ describe('PaymentsApiService', () => {
           {
             recipient: chan.state.recipient,
             amount: {
-              wei: '0',
-              token: tokenVal(1),
+              amountWei: '0',
+              amountToken: tokenVal(1),
             },
             meta: {},
             type: 'PT_CHANNEL',
@@ -42,6 +40,11 @@ describe('PaymentsApiService', () => {
                 balanceTokenUser: tokenVal(9),
                 balanceTokenHub: tokenVal(1),
               }),
+              args: {
+                amountWei: '0',
+                amountToken: tokenVal(1),
+                recipient: 'hub'
+              }
             },
           }
         ] as PurchasePayment[]
@@ -55,8 +58,8 @@ describe('PaymentsApiService', () => {
       recipient: chan.state.recipient,
       sender: chan.user,
       amount: {
-        wei: '0',
-        token: tokenVal(1),
+        amountWei: '0',
+        amountToken: tokenVal(1),
       },
     })
 

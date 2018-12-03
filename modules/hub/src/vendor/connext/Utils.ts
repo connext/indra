@@ -8,48 +8,22 @@ import Web3 = require('web3')
 
 import {
   UnsignedChannelState,
-  channelStateToBN,
-  channelStateToString,
   UnsignedThreadState,
-  threadStateToBN,
-  threadStateToString,
-  balancesToBN,
-  balancesToString,
-  paymentToBN,
-  paymentToString,
 } from './types'
 
 // import types from connext
 
 export const emptyAddress = '0x0000000000000000000000000000000000000000'
-
 export const emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
 // define the utils functions
 export class Utils {
-  // refs
-  emptyRootHash = emptyRootHash
-  emptyAddress = emptyAddress
+  emptyAddress = '0x0000000000000000000000000000000000000000'
+  emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
-  channelStateToBN = channelStateToBN
-
-  channelStateToString = channelStateToString
-
-  threadStateToBN = threadStateToBN
-
-  threadStateToString = threadStateToString
-
-  balancesToBN = balancesToBN
-
-  balancesToString = balancesToString
-
-  paymentToBN = paymentToBN
-
-  paymentToString = paymentToString
-
-  createChannelStateHash = (
+  public createChannelStateHash(
     channelState: UnsignedChannelState,
-  ): string => {
+  ): string {
     const {
       contractAddress,
       user,
@@ -116,11 +90,11 @@ export class Utils {
     return hash
   }
 
-  recoverSignerFromChannelState = (
+  public recoverSignerFromChannelState(
     channelState: UnsignedChannelState,
     // could be hub or user
     sig: string,
-  ): string => {
+  ): string {
     let fingerprint: any = this.createChannelStateHash(channelState)
     fingerprint = util.toBuffer(String(fingerprint))
     const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
@@ -147,7 +121,7 @@ export class Utils {
     return addr
   }
 
-  createThreadStateHash = (threadState: UnsignedThreadState): string => {
+  public createThreadStateHash(threadState: UnsignedThreadState): string {
     const {
       contractAddress,
       sender,
@@ -180,10 +154,10 @@ export class Utils {
     return hash
   }
 
-  recoverSignerFromThreadState = (
+  public recoverSignerFromThreadState(
     threadState: UnsignedThreadState,
     sig: string,
-  ): string => {
+  ): string {
     let fingerprint: any = this.createThreadStateHash(threadState)
     fingerprint = util.toBuffer(String(fingerprint))
     const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
@@ -205,9 +179,9 @@ export class Utils {
     return addr
   }
 
-  generateThreadMerkleTree = (
+  public generateThreadMerkleTree(
     threadInitialStates: UnsignedThreadState[],
-  ): any => {
+  ): any {
     // TO DO: should this just return emptyRootHash?
     if (threadInitialStates.length === 0) {
       throw new Error('Cannot create a Merkle tree with 0 leaves.')
@@ -228,9 +202,9 @@ export class Utils {
     return merkle
   }
 
-  generateThreadRootHash = (
+  public generateThreadRootHash(
     threadInitialStates: UnsignedThreadState[],
-  ): string => {
+  ): string {
     let threadRootHash
     if (threadInitialStates.length === 0) {
       // reset to initial value -- no open VCs
@@ -243,10 +217,10 @@ export class Utils {
     return threadRootHash
   }
 
-  generateThreadProof = (
+  public generateThreadProof(
     thread: UnsignedThreadState,
     threads: UnsignedThreadState[],
-  ) => {
+  ): any {
     // generate hash
     const hash = this.createThreadStateHash(thread)
     // generate merkle tree
@@ -264,13 +238,13 @@ export class Utils {
     return proof
   }
 
-  threadIsContained = (
+  public threadIsContained(
     threadHash: string,
     // TO DO: can we not pass in the thread array?
     threads: UnsignedThreadState[],
     threadMerkleRoot: string,
     proof: any,
-  ) => {
+  ) {
     // TO DO: implement without rebuilding the thread tree?
     // otherwise you will have to pass in threads to each one
     // solidity code to satisfy:

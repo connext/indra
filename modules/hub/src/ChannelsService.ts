@@ -6,17 +6,16 @@ import ThreadsDao from './dao/ThreadsDao'
 import { BigNumber } from 'bignumber.js'
 import {
   ChannelStateUpdateRow,
-  channelStateBigNumToString,
   channelStateUpdateRowBigNumToString,
   channelRowBigNumToString,
   ChannelRow,
   ChannelStateUpdateRowBigNum,
   ChannelRowBigNum,
 } from './domain/Channel'
-import { Validation } from './vendor/connext/Validation'
+import { Validator } from './vendor/connext/Validation'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { Big } from './util/bigNumber'
-import { ThreadStateUpdateRow, threadStateBigNumToStr } from './domain/Thread'
+import { ThreadStateUpdateRow } from './domain/Thread'
 import { RedisClient } from './RedisClient'
 import { ChannelManager } from './ChannelManager'
 import ABI from './abi/ChannelManager'
@@ -24,11 +23,23 @@ import {
   ChannelState,
   ChannelStateUpdate,
   UnsignedChannelState,
+  DepositArgs,
+  WithdrawalArgs,
   ExchangeArgs,
+  convertChannelState,
+  convertDeposit,
+  convertWithdrawal,
+  convertExchange,
+  convertThreadState,
+  ThreadState,
+  convertPayment,
+  PaymentArgs,
 } from './vendor/connext/types'
 import { prettySafeJson } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
+import ThreadsService from './ThreadsService';
+import { SignerService } from './SignerService';
 
 const LOG = log('ChannelsService') as any
 
@@ -45,21 +56,21 @@ export type SyncResult =
 export default class ChannelsService {
   private onchainTxService: OnchainTransactionService
 
+  private threadsService: ThreadsService
+
+  private signerService: SignerService
+
   private channelsDao: ChannelsDao
 
   private threadsDao: ThreadsDao
 
   private exchangeRateDao: ExchangeRateDao
 
-  private utils: Utils
-
-  private validation: Validation
+  private validator: Validator
 
   private redis: RedisClient
 
   private db: DBEngine
-
-  private web3: any
 
   private config: Config
 
@@ -67,25 +78,26 @@ export default class ChannelsService {
 
   constructor(
     onchainTxService: OnchainTransactionService,
+    threadsService: ThreadsService,
+    signerService: SignerService,
     channelsDao: ChannelsDao,
     threadsDao: ThreadsDao,
     exchangeRateDao: ExchangeRateDao,
-    utils: Utils,
-    validation: Validation,
+    validator: Validator,
     redis: RedisClient,
     db: DBEngine,
     web3: any,
     config: Config,
   ) {
     this.onchainTxService = onchainTxService
+    this.threadsService = threadsService
+    this.signerService = signerService,
     this.channelsDao = channelsDao
     this.threadsDao = threadsDao
     this.exchangeRateDao = exchangeRateDao
-    this.utils = utils
-    this.validation = validation
+    this.validator = validator
     this.redis = redis
     this.db = db
-    this.web3 = web3
     this.config = config
 
     this.contract = new web3.eth.Contract(
@@ -153,75 +165,34 @@ export default class ChannelsService {
       hubBootyDeposit = bootyRequestToDeposit.minus(channel.state.balanceTokenHub)
     }
 
-    // add deposits
-    const channelStateWithDeposits = channelStateBigNumToString({
-      ...channel.state,
-      pendingDepositWeiUser: depositWei,
-      pendingDepositTokenHub: hubBootyDeposit,
-      pendingDepositTokenUser: depositToken,
-      txCountChain: channel.state.txCountChain + 1,
-      txCountGlobal: channel.state.txCountGlobal + 1,
-      timeout: Math.floor(Date.now() / 1000) + 5 * 60, // NOW(seconds) + 5 minutes
-    })
-
-    const stateHash = this.utils.createChannelStateHash(channelStateWithDeposits)
-
-    // add hub sig
-    const sigHub = await this.web3.eth.sign(
-      stateHash,
-      this.config.hotWalletAddress,
-    )
-    channelStateWithDeposits.sigHub = sigHub
-    channelStateWithDeposits.sigUser = null
-
-    // validate through connext lib
-    // add previous state to validation if this is not the initial state
-    const validationError = this.validation.validateChannelStateUpdate({
-      current: channelStateWithDeposits,
-      reason: 'ProposePending',
-      hubAddress: this.config.hotWalletAddress,
-      previous: channelStateBigNumToString(channel.state),
-    })
-    if (validationError) {
-      throw new Error(validationError)
+    const depositArgs: DepositArgs = {
+      depositWeiHub: '0', 
+      depositWeiUser: depositWei.toFixed(), 
+      depositTokenHub: hubBootyDeposit.toFixed(),
+      depositTokenUser: depositToken.toFixed(),
+      timeout: Math.floor(Date.now() / 1000) + 5 * 60
     }
 
-    // this is debug info for truffle console
-    console.log(
-      `cm.userAuthorizedUpdate('${user}', ['${
-        channelStateWithDeposits.balanceWeiHub
-      }', '${channelStateWithDeposits.balanceWeiUser}'], ['${
-        channelStateWithDeposits.balanceTokenHub
-      }', '${channelStateWithDeposits.balanceTokenUser}'], ['${
-        channelStateWithDeposits.pendingDepositWeiHub
-      }', '${channelStateWithDeposits.pendingWithdrawalWeiHub}', '${
-        channelStateWithDeposits.pendingDepositWeiUser
-      }', '${channelStateWithDeposits.pendingWithdrawalWeiUser}'], ['${
-        channelStateWithDeposits.pendingDepositTokenHub
-      }', '${channelStateWithDeposits.pendingWithdrawalTokenHub}', '${
-        channelStateWithDeposits.pendingDepositTokenUser
-      }', '${channelStateWithDeposits.pendingWithdrawalTokenUser}'], [${
-        channelStateWithDeposits.txCountGlobal
-      }, ${channelStateWithDeposits.txCountChain}], '${
-        channelStateWithDeposits.threadRoot
-      }', ${channelStateWithDeposits.threadCount}, ${
-        channelStateWithDeposits.timeout
-      }, '${channelStateWithDeposits.sigHub}')`,
+    const channelStateWithDeposits = this.validator.generateValidProposePendingDeposit(
+      convertChannelState('bn', channel.state), 
+      convertDeposit('bn', depositArgs)
     )
+
+    const signedChannelStateWithDeposits = await this.signerService.signChannelState(channelStateWithDeposits)
 
     // save to db (create if doesnt exist)
     await this.channelsDao.applyUpdateByUser(
       user,
-      'ProposePending',
+      'ProposePendingDeposit',
       user,
-      channelStateWithDeposits,
+      signedChannelStateWithDeposits,
+      depositArgs
     )
 
     // wallet is expected to request exchange after submitting and confirming this deposit on chain
   }
 
-  // TODO: return unsigned, do not sync
-  public async doRequestCollateral(user: string): Promise<ChannelState> {
+  public async doRequestCollateral(user: string): Promise<DepositArgs> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
     // channel checks
@@ -231,7 +202,7 @@ export default class ChannelsService {
     }
 
     // check if we already have an unsigned request pending
-    const unsigned = await this.redis.get(`PendingStateUpdate:${user}`)
+    const unsigned = await this.redisGetUnsignedState(user)
     if (unsigned) {
       throw new Error(
         `Pending unsigned request already exists, please sync to receive unsigned state: ${unsigned}`,
@@ -261,28 +232,21 @@ export default class ChannelsService {
       return
     }
 
-    const unsignedChannelStateWithDeposits: ChannelState = {
-      ...channelStateBigNumToString(channel.state),
-      pendingDepositTokenHub: channel.state.pendingDepositTokenHub
-        .plus(totalAmountToCollateralize)
-        .toFixed(),
-      txCountChain: channel.state.txCountChain + 1,
-      txCountGlobal: channel.state.txCountGlobal + 1,
+    const depositArgs: DepositArgs = {
+      depositWeiHub: '0',
+      depositWeiUser: '0',
+      depositTokenHub: totalAmountToCollateralize.toFixed(),
+      depositTokenUser: '0',
+      timeout: Math.floor(Date.now() / 1000) + 5 * 60
     }
 
-    const validationError = this.validation.validateChannelStateUpdate({
-      current: unsignedChannelStateWithDeposits,
-      reason: 'ProposePending',
-      hubAddress: this.config.hotWalletAddress,
-      previous: channelStateBigNumToString(channel.state),
-    })
-    if (validationError) {
-      throw new Error(validationError)
-    }
+    const unsignedChannelStateWithDeposits = this.validator.generateValidProposePendingDeposit(
+      convertChannelState('bn', channel.state), 
+      convertDeposit('bn', depositArgs)
+    )
 
     await this.redisSaveUnsignedState(user, unsignedChannelStateWithDeposits)
-
-    return unsignedChannelStateWithDeposits
+    return depositArgs
   }
 
   public async doRequestWithdrawal(
@@ -290,7 +254,7 @@ export default class ChannelsService {
     desiredAmountWei: BigNumber,
     desiredAmountToken: BigNumber,
     recipient: string
-  ): Promise<UnsignedChannelState> {
+  ): Promise<WithdrawalArgs> {
     const channel = await this.channelsDao.getChannelByUser(user)
     if (!channel || channel.status !== 'CS_OPEN') {
       throw new Error(
@@ -299,6 +263,7 @@ export default class ChannelsService {
         )}`,
       )
     }
+
     // get exchange rate
     const currentExchangeRate = await this.exchangeRateDao.latest()
     if (currentExchangeRate.retrievedAt < Date.now() - 1000 * 60 * 60 * 24) {
@@ -309,78 +274,49 @@ export default class ChannelsService {
     }
     const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
 
-    if (desiredAmountWei.greaterThan(channel.state.balanceWeiUser)) {
-      throw new Error(
-        `Cannot withdraw more than channel balance.
-        desiredAmountWei: ${desiredAmountWei}, channel: ${prettySafeJson(
-          channel,
-        )}`,
-      )
-    }
-
-    if (desiredAmountToken.greaterThan(channel.state.balanceTokenUser)) {
-      throw new Error(
-        `Cannot withdraw more than channel balance.
-        desiredAmountToken: ${desiredAmountToken}, channel: ${prettySafeJson(
-          channel,
-        )}`,
-      )
-    }
-
-    // amount to be exchanged token to wei
-    const desiredAmountTokenToWei = desiredAmountToken.div(currentExchangeRateBigNum).floor()
-
-    // new hub wei balance is decremented by the amount that will be exchanged in the channel
-    const balanceWeiHub = BigNumber.max(Big(0), channel.state.balanceWeiHub.minus(desiredAmountTokenToWei))
-    
-    // if there is more to exchange than hub wei balance, deposit wei directly in user channel
-    const depositWeiHubToUser = BigNumber.max(Big(0), desiredAmountTokenToWei.minus(channel.state.balanceWeiHub))
-
     // if user is leaving some wei in the channel, leave an equivalent amount of booty
     const newBalanceWeiUser = channel.state.balanceWeiUser.minus(desiredAmountWei)
-    const hubBootyToKeepInChannel = BigNumber.min(
+    const hubBootyTarget = BigNumber.min(
       newBalanceWeiUser.mul(currentExchangeRateBigNum).floor(),
       CHANNEL_BOOTY_LIMIT,
     )
 
-    // exchanged amount is added to hub offchain token balance
-    let newBalanceTokenHub = desiredAmountToken.plus(channel.state.balanceTokenHub)
+    // Amount of booty that will need to be deposited (or, if negative,
+    // withdrawn) so that the hub's booty balance will be `hubBootyTarget`.
+    const hubBootyDelta = hubBootyTarget.sub(channel.state.balanceTokenHub)
 
-    // hub withdraw extra tokens if needed
-    const hubBootyToWithdraw = BigNumber.max(Big(0), newBalanceTokenHub.minus(hubBootyToKeepInChannel))
-    newBalanceTokenHub = newBalanceTokenHub.minus(hubBootyToWithdraw)
+    const withdrawalArgs: WithdrawalArgs = {
+      exchangeRate: currentExchangeRateBigNum.toFixed(),
+      tokensToSell: desiredAmountToken.toFixed(),
+      weiToSell: '0',
 
-    // hub deposit extra tokens if needed
-    const pendingDepositTokenHub = BigNumber.max(Big(0), hubBootyToKeepInChannel.minus(newBalanceTokenHub))
-
-    const unsigned: UnsignedChannelState = {
-      balanceTokenHub: newBalanceTokenHub.toFixed(),
-      balanceTokenUser: channel.state.balanceTokenUser.minus(desiredAmountToken).toFixed(),
-      balanceWeiHub: '0',
-      balanceWeiUser: channel.state.balanceWeiUser.minus(desiredAmountWei).toFixed(),
-      contractAddress: channel.state.contractAddress,
-      pendingDepositTokenHub: pendingDepositTokenHub.toFixed(),
-      pendingDepositTokenUser: '0',
-      pendingDepositWeiHub: '0',
-      pendingDepositWeiUser: depositWeiHubToUser.toFixed(),
-      pendingWithdrawalTokenHub: hubBootyToWithdraw.toFixed(),
-      pendingWithdrawalTokenUser: '0',
-      pendingWithdrawalWeiHub: balanceWeiHub.toFixed(),
-      pendingWithdrawalWeiUser: desiredAmountTokenToWei.plus(desiredAmountWei).toFixed(),
       recipient,
-      threadCount: channel.state.threadCount,
-      threadRoot: channel.state.threadRoot,
-      timeout: Math.floor(Date.now() / 1000) + 5 * 60,
-      txCountChain: channel.state.txCountChain + 1,
-      txCountGlobal: channel.state.txCountGlobal + 1,
-      user,
+
+      withdrawalWeiUser: desiredAmountWei.toFixed(),
+      withdrawalTokenUser: '0',
+
+      withdrawalWeiHub: channel.state.balanceWeiHub.toFixed(),
+      withdrawalTokenHub: hubBootyDelta.lt(0) ? hubBootyDelta.abs().toFixed() : '0',
+
+      depositWeiHub: '0',
+      depositTokenHub: hubBootyDelta.gt(0) ? hubBootyDelta.toFixed() : '0',
+
+      additionalWeiHubToUser: '0',
+      additionalTokenHubToUser: '0',
+
+      timeout: Math.floor(Date.now() / 1000) + 5 * 60
     }
+
+    const unsigned = this.validator.generateProposePendingWithdrawal(
+      convertChannelState('bn', channel.state),
+      convertWithdrawal('bn', withdrawalArgs)
+    )
 
     // TODO: add validators when they work
     // const validationError = this.validation.validateChannelStateUpdate({
-    //   reason: 'ProposePending', 
-    //   previous: channelStateBigNumToString(channel.state), 
-    //   current: unsigned as ChannelState, 
+    //   reason: 'ProposePending',
+    //   previous: channelStateBigNumToString(channel.state),
+    //   current: unsigned as ChannelState,
     //   hubAddress: this.config.hotWalletAddress
     // })
     // if (validationError) {
@@ -388,18 +324,14 @@ export default class ChannelsService {
     // }
 
     await this.redisSaveUnsignedState(user, unsigned)
-    return unsigned
+    return withdrawalArgs
   }
 
   public async doRequestExchange(
     user: string,
-    desiredCurrency: string,
-    desiredAmount: BigNumber,
-  ): Promise<ChannelState> {
-    if (desiredCurrency !== 'ETH' && desiredCurrency !== 'BOOTY') {
-      throw new Error(`desiredCurrency: ${desiredCurrency} not supported`)
-    }
-
+    weiToSell: BigNumber,
+    tokensToSell: BigNumber,
+  ): Promise<ExchangeArgs> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
     // channel checks
@@ -409,7 +341,7 @@ export default class ChannelsService {
     }
 
     // check if we already have an unsigned request pending
-    const unsigned = await this.redis.get(`PendingStateUpdate:${user}`)
+    let unsigned = await this.redisGetUnsignedState(user)
     if (unsigned) {
       throw new Error(
         `Pending unsigned request already exists, please sync to receive unsigned state: ${unsigned}`,
@@ -426,79 +358,19 @@ export default class ChannelsService {
     }
     const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
 
-    if (desiredCurrency === 'BOOTY') {
-      let userBondedTokens = await this.channelsDao.getTotalChannelTokensPlusThreadBonds(user)
-      if (desiredAmount.plus(userBondedTokens).greaterThan(CHANNEL_BOOTY_LIMIT)) {
-        throw new Error(
-          `Proposed exchange would exceed channel booty limit.
-          desiredAmount: ${desiredAmount}, channel: ${prettySafeJson(channel)}`
-        )
-      }
-
-      if (desiredAmount.greaterThan(channel.state.balanceTokenHub)) {
-        // TODO: propose a hubAuthorizedUpdate unsigned state for the user to send back
-        throw new Error(
-          `Hub balance is not high enough to facilitate exchange. TODO: propose hubAuthorizedUpdate`,
-        )
-      }
-
-      let actualAmountRecievingBooty = desiredAmount
-      // (exchRate) * desiredBooty
-      let amountExchangingWei = desiredAmount
-        .dividedBy(currentExchangeRateBigNum)
-        .floor()
-      if (amountExchangingWei.greaterThan(channel.state.balanceWeiUser)) {
-        LOG.info(`Exchange requested for more than channel balance, falling back to exchanging
-        max channel amount. channel: ${prettySafeJson(
-          channel,
-        )}, desiredAmount: ${desiredAmount}`)
-
-        amountExchangingWei = channel.state.balanceWeiUser
-        actualAmountRecievingBooty = channel.state.balanceWeiUser
-          .mul(currentExchangeRateBigNum)
-          .floor()
-      }
-
-      const unsignedUpdate: ChannelState = {
-        ...channelStateBigNumToString(channel.state),
-        balanceWeiUser: channel.state.balanceWeiUser
-          .minus(amountExchangingWei)
-          .toFixed(),
-        balanceWeiHub: channel.state.balanceWeiHub
-          .plus(amountExchangingWei)
-          .toFixed(),
-        balanceTokenHub: channel.state.balanceTokenHub
-          .minus(actualAmountRecievingBooty)
-          .toFixed(),
-        balanceTokenUser: channel.state.balanceTokenUser
-          .plus(actualAmountRecievingBooty)
-          .toFixed(),
-        txCountGlobal: channel.state.txCountGlobal + 1,
-        sigHub: null,
-        sigUser: null,
-      }
-
-      const validationError = this.validation.validateChannelStateUpdate({
-        current: {
-          ...unsignedUpdate,
-          contractAddress: this.config.channelManagerAddress,
-        },
-        previous: channelStateBigNumToString({
-          ...channel.state,
-          contractAddress: this.config.channelManagerAddress,
-        }),
-        reason: 'Exchange',
-        hubAddress: this.config.channelManagerAddress,
-      })
-      if (validationError) {
-        throw new Error(validationError)
-      }
-
-      await this.redisSaveUnsignedState(user, unsignedUpdate)
-      return unsignedUpdate
-    } else {
-      throw new Error('Implement ETH')
+    const exchangeArgs: ExchangeArgs = {
+      exchangeRate: currentExchangeRateBigNum.toFixed(),
+      tokensToSell: tokensToSell.toFixed(),
+      weiToSell: weiToSell.toFixed(),
     }
+
+    unsigned = this.validator.generateValidExchange(
+      convertChannelState('bn', channel.state),
+      convertExchange('bn', exchangeArgs)
+    )
+
+    await this.redisSaveUnsignedState(user, unsigned)
+    return exchangeArgs
   }
 
   public async doUpdates(
@@ -523,7 +395,6 @@ export default class ChannelsService {
   }
 
   private async doUpdate(user: string, channel: ChannelRowBigNum, update: ChannelStateUpdate): Promise<ChannelStateUpdateRowBigNum | undefined> {
-    console.log('update: ', update)
     let signedChannelStatePrevious: ChannelState
     // need to account for the case where channel does not exist
     // i.e. performer onboarding would be request-collateral =>
@@ -567,13 +438,13 @@ export default class ChannelsService {
       // user calls sync -> hub responds with hub-signed ConfirmPending update
       // user countersigns and sends back here
       if (hubsVersionOfUpdate) {
-        const signedChannelStateHub = channelStateBigNumToString(
+        const signedChannelStateHub = convertChannelState(
+          'str',
           hubsVersionOfUpdate.state,
         )
-        console.log('signedChannelStateHub: ', signedChannelStateHub)
         // verify user sig on hub's data
         // TODO: change name to "assert..."
-        this.validation.validateChannelSigner({
+        this.validator.assertChannelSigner({
           ...signedChannelStateHub,
           sigUser: update.state.sigUser,
         })
@@ -587,77 +458,50 @@ export default class ChannelsService {
             update.reason,
             user,
             signedChannelStateHub,
+            update.args
           )
           return
         }
       }
 
       // previous and current type for validation
-      signedChannelStatePrevious = channelStateBigNumToString(
+      signedChannelStatePrevious = convertChannelState(
+        'str',
         lastValidUpdate.state,
       )
     }
-    const signedChannelStateCurrent = update.state
 
     const hubAddress = this.config.hotWalletAddress
 
     // add sig now so it can be validated by lib
     // safe because we are not saving to the db here
-    // TODO: can we combine the below methods into a function that lives in a class?
-    // i.e. await update.sign() // creates the sig and adds it to the object
-    const hash = this.utils.createChannelStateHash(
-      signedChannelStateCurrent,
-    )
-    const sigHub = await this.web3.eth.sign(
-      hash,
-      this.config.hotWalletAddress,
-    )
+    const sigHub = await this.signerService.getSigForChannelState(update.state)
 
-    // generic validation through connext lib for all reasons
-    const validationError = this.validation.validateChannelStateUpdate({
-      previous: signedChannelStatePrevious,
-      current: { ...signedChannelStateCurrent, sigHub },
-      reason: update.reason,
-      hubAddress,
-    })
-    if (validationError) {
-      throw new Error(validationError)
-    }
-
-    signedChannelStateCurrent.sigHub = sigHub
-
-    let unsignedUpdate: ChannelState
-    let row: ChannelStateUpdateRowBigNum
+    let unsignedUpdateRedis: UnsignedChannelState
+    let unsignedChannelStateCurrent: UnsignedChannelState
     switch (update.reason) {
       case 'Payment':
-        if (!signedChannelStatePrevious)
-          throw new Error(
-            `No previous state while processing Payment ${JSON.stringify(
-              update,
-            )}`,
-          )
-
-        if (
-          // TODO: alias to curr, prev
-          Big(signedChannelStateCurrent.balanceWeiHub).lessThan(
-            Big(signedChannelStatePrevious.balanceWeiHub),
-          ) ||
-          Big(signedChannelStateCurrent.balanceTokenHub).lessThan(
-            Big(signedChannelStatePrevious.balanceTokenHub),
-          )
-        ) {
-          // include prev and curr states
-          throw new Error('Payment must increase hub balance')
-        }
-
+        unsignedChannelStateCurrent = this.validator.generateValidChannelPayment(
+          convertChannelState('bn', signedChannelStatePrevious),
+          // @ts-ignore TODO
+          convertPayment('bn', update.args as PaymentArgs)
+        )
+        this.validator.assertChannelSigner({
+          ...unsignedChannelStateCurrent, 
+          sigUser: update.state.sigUser
+        })
         return await this.channelsDao.applyUpdateByUser(
           user,
           update.reason,
           user,
-          signedChannelStateCurrent,
+          {...unsignedChannelStateCurrent, sigUser: update.state.sigUser, sigHub},
+          update.args
         )
-
-      case 'ProposePending':
+      
+      // for the following, the validation is slightly different, since we proposed an update previously,
+      // we just need to make sure the unsigned update we proposed is signed by them
+      case 'ProposePendingWithdrawal':
+      case 'ProposePendingDeposit':
         // HUB AUTHORIZED UPDATE
         // deposit -
         // performer requests collateral -> hub responds with unsigned update
@@ -665,8 +509,8 @@ export default class ChannelsService {
         // withdrawal -
         // user requests withdrawal -> hub responds with unsigned update
         // user signs and sends back here, which is where we are now
-        unsignedUpdate = await this.redisGetUnsignedState(user) as ChannelState
-        if (!unsignedUpdate) {
+        unsignedUpdateRedis = await this.redisGetUnsignedState(user)
+        if (!unsignedUpdateRedis) {
           throw new Error(
             `Hub could not retrieve the unsigned update, possibly expired?
             user update: ${prettySafeJson(update)}`,
@@ -674,58 +518,58 @@ export default class ChannelsService {
         }
 
         // validate that user sig matches our unsigned update that we proposed
-        this.validation.validateChannelSigner({
-          ...unsignedUpdate,
-          sigUser: signedChannelStateCurrent.sigUser,
+        this.validator.assertChannelSigner({
+          ...unsignedUpdateRedis,
+          sigUser: update.state.sigUser,
         })
-        unsignedUpdate.sigUser = signedChannelStateCurrent.sigUser
 
         // dont await so we can do this in the background
-        const data = this.contract.methods.hubAuthorizedUpdate(
+        let data = this.contract.methods.hubAuthorizedUpdate(
           user,
-          update.state.recipient,
-          [update.state.balanceWeiHub, update.state.balanceWeiUser],
-          [update.state.balanceTokenHub, update.state.balanceTokenUser],
+          unsignedUpdateRedis.recipient,
+          [unsignedUpdateRedis.balanceWeiHub, unsignedUpdateRedis.balanceWeiUser],
+          [unsignedUpdateRedis.balanceTokenHub, unsignedUpdateRedis.balanceTokenUser],
           [
-            update.state.pendingDepositWeiHub,
-            update.state.pendingWithdrawalWeiHub,
-            update.state.pendingDepositWeiUser,
-            update.state.pendingWithdrawalWeiUser,
+            unsignedUpdateRedis.pendingDepositWeiHub,
+            unsignedUpdateRedis.pendingWithdrawalWeiHub,
+            unsignedUpdateRedis.pendingDepositWeiUser,
+            unsignedUpdateRedis.pendingWithdrawalWeiUser,
           ],
           [
-            update.state.pendingDepositTokenHub,
-            update.state.pendingWithdrawalTokenHub,
-            update.state.pendingDepositTokenUser,
-            update.state.pendingWithdrawalTokenUser,
+            unsignedUpdateRedis.pendingDepositTokenHub,
+            unsignedUpdateRedis.pendingWithdrawalTokenHub,
+            unsignedUpdateRedis.pendingDepositTokenUser,
+            unsignedUpdateRedis.pendingWithdrawalTokenUser,
           ],
-          [update.state.txCountGlobal, update.state.txCountChain],
-          update.state.threadRoot,
-          update.state.threadCount,
-          update.state.timeout,
+          [unsignedUpdateRedis.txCountGlobal, unsignedUpdateRedis.txCountChain],
+          unsignedUpdateRedis.threadRoot,
+          unsignedUpdateRedis.threadCount,
+          unsignedUpdateRedis.timeout,
           update.state.sigUser,
         ).encodeABI()
 
-        const txn = await this.onchainTxService.sendTransaction(this.db, {
+        let txn = await this.onchainTxService.sendTransaction(this.db, {
           from: this.config.hotWalletAddress,
           to: this.config.channelManagerAddress,
           data: data
         })
 
-        await this.db.onTransactionCommit(() => this.redis.del(`PendingStateUpdate:${user}`))
+        await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
 
         return await this.channelsDao.applyUpdateByUser(
           user,
           update.reason,
           user,
-          signedChannelStateCurrent,
+          {...unsignedUpdateRedis, sigUser: update.state.sigUser, sigHub},
+          update.args,
           null,
           txn.logicalId
         )
 
       case 'Exchange':
         // ensure users cant hold exchanges
-        unsignedUpdate = await this.redisGetUnsignedState(user) as ChannelState
-        if (!unsignedUpdate) {
+        unsignedUpdateRedis = await this.redisGetUnsignedState(user) as ChannelState
+        if (!unsignedUpdateRedis) {
           throw new Error(
             `Hub could not retrieve the unsigned update, possibly expired?
             user update: ${prettySafeJson(update)}`,
@@ -733,26 +577,38 @@ export default class ChannelsService {
         }
 
         // validate that user sig matches our unsigned update that we proposed
-        this.validation.validateChannelSigner({
-          ...unsignedUpdate,
-          sigUser: signedChannelStateCurrent.sigUser,
+        this.validator.assertChannelSigner({
+          ...unsignedUpdateRedis,
+          sigUser: update.state.sigUser,
         })
-        unsignedUpdate.sigUser = signedChannelStateCurrent.sigUser
 
-        await this.db.onTransactionCommit(() => this.redis.del(`PendingStateUpdate:${user}`))
+        await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
 
         return await this.channelsDao.applyUpdateByUser(
           user,
           update.reason,
           user,
-          signedChannelStateCurrent,
+          {...unsignedUpdateRedis, sigUser: update.state.sigUser, sigHub},
+          update.args
+        )
+
+      case 'OpenThread':
+        return await this.threadsService.open(
+          convertThreadState('bignumber', update.args as ThreadState),
+          update.state.sigUser
+        )
+
+      case 'CloseThread':
+        return await this.threadsService.close(
+          (update.args as ThreadState).sender,
+          (update.args as ThreadState).receiver,
+          update.state.sigUser,
+          update.state.user === (update.args as ThreadState).sender
         )
 
       // below cases don't need additional validation and will already be
       // hub signed, so we shouldn't get here
       case 'ConfirmPending':
-      case 'OpenThread':
-      case 'CloseThread':
       default:
         throw new Error(
           `We should never have gotten here.
@@ -799,13 +655,13 @@ export default class ChannelsService {
         curChan += 1
         push('channel', {
           ...chan,
-          state: channelStateBigNumToString(chan.state),
+          state: convertChannelState('str', chan.state),
         })
       } else {
         curThread += 1
         push('thread', {
           ...thread,
-          state: threadStateBigNumToStr(thread.state),
+          state: convertThreadState('str', thread.state),
         })
       }
     }
@@ -827,13 +683,16 @@ export default class ChannelsService {
     user: string,
     txCount: number,
   ): Promise<ChannelStateUpdate> {
-    return {
-      ...channelStateUpdateRowBigNumToString(
-        await this.channelsDao.getChannelUpdateByTxCount(user, txCount),
-      ),
-      // TODO
-      args: {} as ExchangeArgs
-    }
+    return channelStateUpdateRowBigNumToString(
+      await this.channelsDao.getChannelUpdateByTxCount(user, txCount),
+    )
+  }
+
+  public async redisGetUnsignedState(
+    user: string,
+  ): Promise<UnsignedChannelState | null> {
+    const unsignedUpdate = await this.redis.get(`PendingStateUpdate:${user}`)
+    return unsignedUpdate ? JSON.parse(unsignedUpdate) : null
   }
 
   private async redisSaveUnsignedState(user: string, state: UnsignedChannelState) {
@@ -843,10 +702,7 @@ export default class ChannelsService {
     ])
   }
 
-  private async redisGetUnsignedState(
-    user: string,
-  ): Promise<UnsignedChannelState | null> {
-    const unsignedUpdate = await this.redis.get(`PendingStateUpdate:${user}`)
-    return unsignedUpdate ? JSON.parse(unsignedUpdate) : null
+  private async redisDeleteUnsignedState(user: string) {
+    this.redis.del(`PendingStateUpdate:${user}`)
   }
 }

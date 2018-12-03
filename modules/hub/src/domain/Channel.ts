@@ -1,14 +1,22 @@
 import { BigNumber } from 'bignumber.js'
 import {
-  ChannelUpdateReason,
   ChannelState,
   ChannelStatus,
+  ChannelStateUpdate,
+  UnsignedChannelState,
+  convertChannelState,
+  PaymentArgsBigNumber,
+  ExchangeArgsBigNumber,
+  DepositArgsBigNumber,
+  WithdrawalArgsBigNumber
 } from '../vendor/connext/types'
-import { objValuesBigNumToString, objValuesStringToBigNum } from '../util'
+import {
+  objValuesBigNumToString,
+  objValuesStringToBigNum,
+} from '../util'
+import { Utils } from '../vendor/connext/Utils'
 
-// A single channel state, encompasing exactly the fields which are signed, and
-// the two signatures.
-export type ChannelStateBigNum = ChannelState<BigNumber>
+// TODO move all to connext?
 
 // A row of the cm_threads table, including the latest state, the status, and
 // other fields.
@@ -21,11 +29,23 @@ export type ChannelRow<T = string> = {
 
 export type ChannelRowBigNum = ChannelRow<BigNumber>
 
+export function channelRowStringToBigNum(r: ChannelRow): ChannelRowBigNum {
+  return {
+    ...r,
+    state: convertChannelState('bignumber', r.state),
+  }
+}
+
+export function channelRowBigNumToString(r: ChannelRowBigNum): ChannelRow {
+  return {
+    ...r,
+    state: convertChannelState('str', r.state),
+  }
+}
+
 // includes metadata
-export interface ChannelStateUpdateRow<T = string> {
+export type ChannelStateUpdateRow<T = string> = ChannelStateUpdate<T> & {
   id: number
-  state: ChannelState<T>
-  reason: ChannelUpdateReason
   channelId?: number
   chainsawId?: number
   createdOn: Date
@@ -33,64 +53,58 @@ export interface ChannelStateUpdateRow<T = string> {
 
 export type ChannelStateUpdateRowBigNum = ChannelStateUpdateRow<BigNumber>
 
-export function channelStateBigNumToString(
-  s: ChannelStateBigNum,
-): ChannelState {
-  return objValuesBigNumToString(s)
-}
-
 export function channelStateUpdateRowBigNumToString(
   update: ChannelStateUpdateRowBigNum,
 ): ChannelStateUpdateRow {
   return {
     ...update,
-    state: channelStateBigNumToString(update.state),
+    state: convertChannelState('str', update.state),
+    args: objValuesBigNumToString(update.args),
   }
-}
-
-export function channelRowBigNumToString(r: ChannelRowBigNum): ChannelRow {
-  return {
-    ...r,
-    state: channelStateBigNumToString(r.state),
-  }
-}
-
-export function channelStateStringToBigNum(
-  s: ChannelState,
-): ChannelStateBigNum {
-  return objValuesStringToBigNum(s, [
-    'balanceWeiHub',
-    'balanceWeiHub',
-    'balanceWeiUser',
-    'balanceTokenHub',
-    'balanceTokenUser',
-    'pendingDepositWeiHub',
-    'pendingDepositWeiUser',
-    'pendingDepositTokenHub',
-    'pendingDepositTokenUser',
-    'pendingWithdrawalWeiHub',
-    'pendingWithdrawalWeiUser',
-    'pendingWithdrawalTokenHub',
-    'pendingWithdrawalTokenUser',
-  ])
 }
 
 export function channelStateUpdateRowStringToBigNum(
   update: ChannelStateUpdateRow,
 ): ChannelStateUpdateRowBigNum {
+  let { args } = update
+  let argsBigNum
+  switch (update.reason) {
+    case 'Payment':
+      argsBigNum = objValuesStringToBigNum(args, [
+        'amountToken',
+        'amountWei',
+      ]) as PaymentArgsBigNumber
+      break
+    case 'Exchange':
+      argsBigNum = objValuesStringToBigNum(args, [
+        'tokensToSell',
+        'weiToSell',
+      ]) as ExchangeArgsBigNumber
+      break
+    case 'ProposePendingDeposit':
+      argsBigNum = objValuesStringToBigNum(args, [
+        'depositWeiHub',
+        'depositWeiUser',
+        'depositTokenHub',
+        'depositTokenUser',
+      ]) as DepositArgsBigNumber
+      break
+    case 'ProposePendingWithdrawal':
+      argsBigNum = objValuesStringToBigNum(args, [
+        'tokensToSell',
+        'weiToSell',
+        'depositWeiUser',
+        'depositTokenHub',
+        'withdrawalWeiHub',
+        'withdrawalWeiUser',
+        'withdrawalTokenHub',
+      ]) as WithdrawalArgsBigNumber
+      break
+    default:
+  }
   return {
     ...update,
-    state: channelStateStringToBigNum(update.state),
+    state: convertChannelState('bignumber', update.state),
+    args: argsBigNum,
   }
 }
-
-export function channelRowStringToBigNum(r: ChannelRow): ChannelRowBigNum {
-  return {
-    ...r,
-    state: channelStateStringToBigNum(r.state),
-  }
-}
-
-// class ChannelStateClass implements ChannelState<BigNumber> {
-
-// }

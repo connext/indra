@@ -1,5 +1,6 @@
 import { BigNumber } from 'bignumber.js'
 import { Big } from './bigNumber';
+import Web3 = require('web3')
 
 export function isBigNumber(x: any) {
   return !!x && typeof x == 'object' && (
@@ -15,6 +16,19 @@ export function objValuesBigNumToString(x: any): any {
       res[key] = val
     } else {
       res[key] = isBigNumber(val) ? (val as BigNumber).toFixed() : val
+    }
+  })
+  return res
+}
+
+export function objValuesBigNumToBN(x: any): any {
+  const res = {}
+  Object.entries(x).forEach(([key, val]) => {
+    if (!val) {
+      res[key] = val
+    } else {
+      // @ts-ignore
+      res[key] = isBigNumber(val) ? Web3.utils.toBN(val) : val
     }
   })
   return res
@@ -96,7 +110,7 @@ export function prettySafeJson(obj, opts?: { shorten?: number }) {
  * Usage:
  * > await sleep(1000)
  */
-export function sleep(duration: Number) {
+export function sleep(duration: number) {
   return new Promise(res => setTimeout(res, duration))
 }
 

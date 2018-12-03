@@ -3,7 +3,7 @@ import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChan
 import { default as ChannelsDao } from "../dao/ChannelsDao";
 import { Big } from "../util/bigNumber";
 import { default as ThreadsDao } from "../dao/ThreadsDao";
-import { ChannelUpdateReason, ChannelState } from "../vendor/connext/types";
+import { ChannelUpdateReason, ChannelState, PaymentArgs } from "../vendor/connext/types";
 import BN = require('bn.js')
 import ExchangeRateDao from "../dao/ExchangeRateDao";
 
@@ -21,7 +21,7 @@ export async function channelUpdateFactory(
 ) {
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const state = getChannelState('signed', opts || {})
-  const update = await channelsDao.applyUpdateByUser(state.user, reason, state.user, state)
+  const update = await channelsDao.applyUpdateByUser(state.user, reason, state.user, state, {} as PaymentArgs)
   return {
     update,
     state,

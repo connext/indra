@@ -108,9 +108,9 @@ export class ChannelsApiServiceHandler {
 
   async doRequestExchange(req: express.Request, res: express.Response) {
     const { user } = req.params
-    let { desiredCurrency, desiredAmount } = req.body
+    let { weiToSell, tokensToSell } = req.body
 
-    if (!user || !desiredCurrency || !desiredAmount) {
+    if (!user || !weiToSell || !tokensToSell) {
       LOG.warn(
         'Received invalid exchange request. Aborting. Body received: {body}, Params received: {params}',
         {
@@ -124,8 +124,8 @@ export class ChannelsApiServiceHandler {
     res.send(
       await this.channelsService.doRequestExchange(
         user,
-        desiredCurrency,
-        Big(desiredAmount),
+        Big(weiToSell),
+        Big(tokensToSell),
       ),
     )
   }

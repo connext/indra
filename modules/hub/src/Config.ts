@@ -14,10 +14,8 @@ const ENV_VARS = [
   'CARD_NAME',
   'CARD_IMAGE_URL',
   'REALTIME_DB_SECRET',
-  'LEDGER_CHANNEL_CHALLENGE',
   'SERVICE_USER_KEY',
   'REDIS_URL',
-  'LEDGER_CHANNEL_CHALLENGE',
   'SERVICE_USER_KEY',
   'TOKEN_CONTRACT_ADDRESS',
 ]
@@ -59,6 +57,5 @@ export default class Config {
   public staleChannelDays: number = 7
   public registry?: Registry
   public branding: BrandingConfig
-  public ledgerChannelChallenge: number = 3600
   public tokenContractAddress: string = ''
 }

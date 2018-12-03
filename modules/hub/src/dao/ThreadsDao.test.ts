@@ -12,8 +12,7 @@ import {
   mkSig,
 } from '../testing/stateUtils'
 import { insertChannel } from '../testing/dbUtils'
-import { threadStateBigNumToStr } from '../domain/Thread'
-import { ChannelState } from '../vendor/connext/types'
+import { ChannelState, convertThreadState } from '../vendor/connext/types'
 import { PostgresChannelsDao } from './ChannelsDao'
 import eraseDb from '../testing/eraseDb';
 
@@ -69,6 +68,7 @@ describe('ThreadsDao', () => {
       'OpenThread',
       sender,
       channelUpdate,
+      {}
     )
 
     const threadStateInitial = getThreadState('empty', {
@@ -85,7 +85,7 @@ describe('ThreadsDao', () => {
 
     let thread = await threadsDao.getThread(sender, receiver)
     console.log('thread: ', thread);
-    assertThreadStateEqual(threadStateBigNumToStr(thread.state), {
+    assertThreadStateEqual(convertThreadState('str', thread.state), {
       balanceWeiSender: threadStateInitial.balanceWeiSender,
       balanceTokenSender: threadStateInitial.balanceTokenSender,
     })
@@ -115,7 +115,7 @@ describe('ThreadsDao', () => {
     await threadsDao.applyThreadUpdate(threadStateUpdate)
 
     thread = await threadsDao.getThread(sender, receiver)
-    assertThreadStateEqual(threadStateBigNumToStr(thread.state), {
+    assertThreadStateEqual(convertThreadState('str', thread.state), {
       balanceWeiSender: threadStateUpdate.balanceWeiSender,
       balanceWeiReceiver: threadStateUpdate.balanceWeiReceiver,
       balanceTokenSender: threadStateUpdate.balanceTokenSender,

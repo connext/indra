@@ -1,7 +1,6 @@
-import { truncateAllTables } from "./testing/eraseDb";
 import { PostgresChannelsDao } from './dao/ChannelsDao'
 import { getTestRegistry, assert } from './testing'
-import { getTestConfig, PgPoolServiceForTest } from './testing/mocks'
+import { getTestConfig } from './testing/mocks'
 import { default as DBEngine } from './DBEngine'
 import {
   getChannelState,
@@ -14,17 +13,13 @@ import {
 import { Big } from './util/bigNumber'
 import ThreadsService from './ThreadsService'
 import { Utils } from './vendor/connext/Utils'
-import { channelStateBigNumToString } from './domain/Channel'
-import { Validation } from './vendor/connext/Validation'
+import { Validator } from './vendor/connext/Validation'
 import { PostgresThreadsDao } from './dao/ThreadsDao'
 import { ThreadStateBigNum } from './domain/Thread'
-import { ChannelState } from './vendor/connext/types'
+import { convertChannelState, convertThreadState } from './vendor/connext/types'
+import { ChannelStateUpdateRowBigNum } from './domain/Channel'
 
-const contract = '0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42'
 const fakeSig = mkSig('0xfff')
-
-const connextUtils = new Utils()
-const connextValidation = new Validation(connextUtils)
 
 describe('ThreadsService', () => {
   const registry = getTestRegistry({
@@ -33,38 +28,6 @@ describe('ThreadsService', () => {
         sign: async () => {
           return fakeSig
         },
-      },
-    },
-
-    Config: getTestConfig({
-      channelManagerAddress: contract,
-    }),
-
-    ConnextValidation: {
-      ...connextValidation,
-      validateChannelSigner: () => {
-        console.log(
-          `Called mocked ConnextValidation function validateChannelSigner`,
-        )
-        return null
-      },
-      validateThreadSigner: () => {
-        console.log(
-          `Called mocked ConnextValidation function validateThreadSigner`,
-        )
-        return null
-      },
-      validateChannelStateUpdate: () => {
-        console.log(
-          `Called mocked ConnextValidation function validateChannelStateUpdate`,
-        )
-        return null
-      },
-      validateThreadStateUpdate: () => {
-        console.log(
-          `Called mocked ConnextValidation function validateThreadStateUpdate`,
-        )
-        return null
       },
     },
   })
@@ -81,7 +44,6 @@ describe('ThreadsService', () => {
   const sigChannel = mkSig('0xbbb')
 
   let channelSender = getChannelState('empty', {
-    contractAddress: contract,
     user: sender,
     balanceWei: ['1111', '2222'],
     balanceToken: ['3333', '4444'],
@@ -90,7 +52,6 @@ describe('ThreadsService', () => {
   })
 
   let channelReceiver = getChannelState('empty', {
-    contractAddress: contract,
     user: receiver,
     balanceWei: ['5555', '6666'],
     balanceToken: ['7777', '8888'],
@@ -98,26 +59,32 @@ describe('ThreadsService', () => {
     sig: [sigThread, sigChannel],
   })
 
-  async function createThread(): Promise<ChannelState> {
+  async function createThread(): Promise<ChannelStateUpdateRowBigNum> {
     await channelsDao.applyUpdateByUser(
       sender,
-      'Payment',
+      'ConfirmPending',
       sender,
       channelSender,
+      {},
     )
     await channelsDao.applyUpdateByUser(
       receiver,
-      'Payment',
+      'ConfirmPending',
       receiver,
       channelReceiver,
+      {},
     )
 
-    const channelSenderUpdateAfterThreadOpen = await threadsService.createThread(
-      sender,
-      receiver,
-      Big(0),
-      Big(10),
-      sigThread,
+    const channelSenderUpdateAfterThreadOpen = await threadsService.open(
+      convertThreadState(
+        'bignumber',
+        getThreadState('empty', {
+          sender,
+          receiver,
+          balanceToken: [10, 0],
+          sigA: sigThread,
+        }),
+      ),
       sigChannel,
     )
     return channelSenderUpdateAfterThreadOpen
@@ -127,20 +94,23 @@ describe('ThreadsService', () => {
     const channelSenderUpdateAfterThreadOpen = await createThread()
 
     // assert that balance was bonded out of channel
-    assertChannelStateEqual(channelSenderUpdateAfterThreadOpen, {
-      user: sender,
-      sigHub: fakeSig,
-      balanceTokenUser: Big(channelSender.balanceTokenUser)
-        .minus(Big(10))
-        .toFixed(),
-    })
+    assertChannelStateEqual(
+      convertChannelState('str', channelSenderUpdateAfterThreadOpen.state),
+      {
+        user: sender,
+        sigHub: fakeSig,
+        balanceTokenUser: Big(channelSender.balanceTokenUser)
+          .minus(Big(10))
+          .toFixed(),
+      },
+    )
 
     const channelReceiverFinal = await channelsDao.getLatestChannelUpdateHubSigned(
       receiver,
     )
 
     assertChannelStateEqual(
-      channelStateBigNumToString(channelReceiverFinal.state),
+      convertChannelState('str', channelReceiverFinal.state),
       {
         sigHub: fakeSig,
         balanceTokenHub: Big(channelReceiver.balanceTokenHub)
@@ -161,7 +131,6 @@ describe('ThreadsService', () => {
     await createThread()
 
     const threadUpdate = getThreadState('empty', {
-      contractAddress: contract,
       sender,
       receiver,
       balanceTokenSender: 5,
@@ -179,12 +148,17 @@ describe('ThreadsService', () => {
     const prevThread = thread
 
     await threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
-    await threadsService.createThread(
-      sender,
-      receiver,
-      Big(0),
-      Big(10),
-      sigThread,
+    await threadsService.open(
+      convertThreadState(
+        'bignumber',
+        getThreadState('empty', {
+          threadId: thread.state.threadId + 1,
+          sender,
+          receiver,
+          balanceToken: [10, 0],
+          sigA: sigThread,
+        }),
+      ),
       sigChannel,
     )
     thread = await threadsService.getThread(sender, receiver)
@@ -201,7 +175,6 @@ describe('ThreadsService', () => {
     const sigClose = mkSig('0xabcd')
     await createThread()
     let threadUpdate = getThreadState('empty', {
-      contractAddress: contract,
       sender,
       receiver,
       balanceTokenSender: 5,
@@ -218,7 +191,6 @@ describe('ThreadsService', () => {
     } as ThreadStateBigNum)
 
     threadUpdate = getThreadState('empty', {
-      contractAddress: contract,
       sender,
       receiver,
       balanceTokenSender: 2,
@@ -241,7 +213,7 @@ describe('ThreadsService', () => {
     const channelReceiverBeforeClose = await channelsDao.getChannelByUser(
       receiver,
     )
-      
+
     await threadsService.close(sender, receiver, sigClose, true)
     const threadRow = await threadsDao.getThreadById(thread.id)
     assert.equal(threadRow.status, 'CT_CLOSED')
@@ -249,10 +221,10 @@ describe('ThreadsService', () => {
     const channelSenderAfterClose = await channelsDao.getChannelByUser(sender)
     const channelReceiverAfterClose = await channelsDao.getChannelByUser(
       receiver,
-      )
+    )
 
     assertChannelStateEqual(
-      channelStateBigNumToString(channelSenderAfterClose.state),
+      convertChannelState('str', channelSenderAfterClose.state),
       {
         balanceTokenUser: channelSenderBeforeClose.state.balanceTokenUser
           .plus(2)
@@ -264,7 +236,7 @@ describe('ThreadsService', () => {
     )
 
     assertChannelStateEqual(
-      channelStateBigNumToString(channelReceiverAfterClose.state),
+      convertChannelState('str', channelReceiverAfterClose.state),
       {
         balanceTokenHub: channelReceiverBeforeClose.state.balanceTokenHub
           .plus(2)
