@@ -4,13 +4,20 @@
 # ENV VARS
 
 DOMAINNAME=localhost
-ETH_PROVIDER="http://ethprovider:8545"
 ETH_NETWORK_ID="4447"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
+CHANNEL_MANAGER_ADDRESS="0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42"
+HOT_WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
+TOKEN_CONTRACT_ADDRESS="0xd01c08c7180eae392265d8c7df311cf5a93f1b73"
+SERVICE_USER_KEY="foo"
+ETH_RPC_URL="http://ethprovider:8545"
+REDIS_URL="redis://redis:6379"
 
 ####################
 
 project=connext
+hub_image=${project}_hub:dev
 ethprovider_image=${project}_ethprovider:dev
 database_image=${project}_database:dev
 redis_image=redis:5-alpine
@@ -55,6 +62,24 @@ volumes:
 
 services:
 
+  hub:
+    image: $hub_image
+    ports:
+      - "8080:8080"
+    secrets:
+      - database_dev
+    environment:
+      WALLET_ADDRESS: $WALLET_ADDRESS
+      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
+      HOT_WALLET_ADDRESS: $HOT_WALLET_ADDRESS
+      TOKEN_CONTRACT_ADDRESS: $TOKEN_CONTRACT_ADDRESS
+      ETH_RPC_URL: $ETH_RPC_URL
+      SERVICE_USER_KEY: $SERVICE_USER_KEY
+      POSTGRES_USER: $project
+      POSTGRES_DB: $project
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_dev
+      REDIS_URL: $REDIS_URL
+    
   redis:
     image: $redis_image
     ports:

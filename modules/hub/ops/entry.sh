@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 
-bash ops/wait-for-it.sh 127.0.0.1:5432
+DATABASE=database:5432
+export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$DATABASE/$POSTGRES_DB"
 
-node ./dist/src/spankchain/main.js chainsaw &
-node ./dist/src/spankchain/main.js
+env
+
+bash ops/wait-for-it.sh $DATABASE 2> /dev/null
+
+node ./dist/spankchain/main.js chainsaw &
+node ./dist/spankchain/main.js
