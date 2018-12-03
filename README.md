@@ -1,81 +1,41 @@
 # indra
 
-Everything you need to set up a Hub.
+Everything you need to set up a Connext payment channel hub.
 
 ## How to use this repository
 
-The `master` branch contains deployment scripts in the `./kernel` directory, while the `./contracts` directory contains the ChannelManager contract designed to work with the hub for local development.
+The `master` branch contains deployment scripts in the `./ops` directory. Check out ChannelManager.sol in the contracts module to see the core smart contract powering this platform.
 
 ### Starting the hub
 
-
 #### Prerequisites
 
-- [Docker](https://www.docker.com/)
-- [Node.js 8+](https://nodejs.org/en/)
-- [Ganache CLI](https://github.com/trufflesuite/ganache-cli)
+- Make (required, probably already installed)
+- [Docker](https://www.docker.com/) (required)
+- [Node.js](https://nodejs.org/en/) + [Yarn](https://yarnpkg.com/lang/en/docs/install/#mac-stable) (recommended)
 
 ### tl;dr
 
-1. Start the Hub. The Hub will use localhost:3000.
-    - Install dependencies: `npm i`
-    - Install Truffle: `npm i -g truffle`
-    - Install and run Ganache CLI: `npm i -g ganache-cli` and `ganache-cli -m "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" -i 4447 -b 3`
-    - Migrate contracts: `truffle migrate --reset --network development`
-    - Match CONTRACT_ADDRESS, ETH_NETWORK_ID, and HUB_ACCOUNT in `kernel/deploy.prod.sh` to your targeted blockchain.
-    - Deploy the Docker stack with `npm run hub-start`
+`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode
 
-#### Detailed Steps
+#### Details
 
-- For Ganache: Start Ganache on your host machine.
+Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh`
 
-```bash
-ganache-cli -m "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" -i 4447 -b 3
-```
+`make` does the following:
 
-- Migrate the contracts to your local blockchain.
+1. Build the builder. This project relies on various build tools like c compilers & python & a specific version of nodejs. Rather than making you, the developer, figure out how to make nvm play nice with yarn, we'll use Docker to build the build environment for you. Based on the builder Dockerfile in the top-level ops.
 
-```bash
-truffle migrate --reset --network development
-```
-- For Rinkeby/testnet: Start a node on your computer and migrate the contracts. Make sure to change the above mentioned variables to match your targeted blockchain.
+2. Install dependencies. For example, to install stuff needed by the contracts module, we take the `modules/contracts` dir and stick it into a builder container. This container runs `yarn install` which usually requires compiling some crazy c stuff. When it's done, the container exits and we're left with freshly build `node_modules`.
 
-- Verify `kernel/deploy.prod.sh` to make sure the variables CONTRACT_ADDRESS, ETH_NETWORK_ID, and HUB_ACCOUNT match your targeted blockchain. If you are using Ganache with the above command, it will be set up for this by default.
+3. Build stuff. Like it step 2, we stick the dir we're interested in into the builder docker container & build what's needed
 
-- Deploy the Docker stack.
+`bash ops/deploy.dev.sh` starts 4 containers:
 
-```bash
-npm run hub-start
-```
+1. Redis: the least interesting.
 
-- Once the wake-up process completes, view the logs.
+2. Database: Runs db migrations then starts the database
 
-```bash
-npm run logs-hub
-```
+3. Ethprovider: Runs contract migrations & starts a ganache testnet
 
-```bash
-npm run logs-chainsaw
-```
-
-- If you can't see logs, try the following to further debug.
-
-```bash
-docker service ps --no-trunc connext_hub
-```
-
-```bash
-docker service ps --no-trunc connext_chainsaw
-```
-
-- Check that the hub is up by polling localhost:3000
-
-```bash
-curl http://localhost:3000
-```
-
-- Connect to the database to execute manual queries
-
-```bash
-npm run db
-```
+4. Hub: manages your payment channel
