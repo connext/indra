@@ -22,7 +22,6 @@
     ]
   },
   "include": [
-    "connext-migration-disbursement-tool.ts",
     "src/**/*.ts",
     "example/**/*.ts",
     "types/**/*.ts",
