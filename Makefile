@@ -22,7 +22,7 @@ docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev
 VPATH=build:$(contracts)/build:$(hub)/build
 
 # Env setup
-$(shell mkdir -p build $(contracts)/build $(hub)/build)
+$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/build)
 
 # Begin Phony Rules
 .PHONY: default dev clean stop
@@ -32,8 +32,9 @@ dev: ethprovider hub database
 
 clean:
 	rm -rf build/*
-	rm -rf $(hub)/build/*
 	rm -f $(contracts)/build/state-hash
+	rm -rf $(db)/build/*
+	rm -rf $(hub)/build/*
 
 stop: 
 	docker container stop buidler 2> /dev/null || true
@@ -49,11 +50,15 @@ purge: stop clean
 
 # Database
 
-database: database-node-modules $(db_prereq)
+database: database-node-modules migration-templates $(db_prereq)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	touch build/database
 
-database-node-modules: $(db)/package.json
+migration-templates: $(db_prereq)
+	$(docker_run_in_db) "make"
+	touch build/migration-templates
+
+database-node-modules: $(db)/package.json $(db)/yarn.lock
 	$(docker_run_in_db) "yarn install"
 	touch build/database-node-modules
 
@@ -67,7 +72,7 @@ hub-js: builder $(hub_prereq)
 	$(docker_run_in_hub) "yarn build"
 	touch build/hub-js
 
-hub-node-modules: builder $(hub)/package.json
+hub-node-modules: builder $(hub)/package.json $(hub)/yarn.lock
 	$(docker_run_in_hub) "yarn install"
 	touch build/hub-node-modules
 
@@ -77,7 +82,7 @@ ethprovider: contract-node-modules
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	touch build/ethprovider
 
-contract-node-modules: builder $(contracts)/package.json
+contract-node-modules: builder $(contracts)/package.json $(contracts)/yarn.lock
 	$(docker_run_in_contracts) "yarn install"
 	touch build/contract-node-modules
 
