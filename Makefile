@@ -86,6 +86,12 @@ contract-node-modules: builder $(contracts)/package.json $(contracts)/yarn.lock
 	$(docker_run_in_contracts) "yarn install"
 	touch build/contract-node-modules
 
+# Test
+
+test-hub: hub-node-modules ops/test-entry.sh ops/test.dockerfile
+	docker build --file ops/test.dockerfile --tag $(project)_test:dev .
+	touch build/test-hub
+
 # Builder
 builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag builder:dev .

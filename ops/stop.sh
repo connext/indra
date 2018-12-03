@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-name=connext
+name=$1
 
 docker container stop builder 2> /dev/null || true
 docker stack rm $name

@@ -13,6 +13,7 @@
     "restart": "bash ops/restart.sh",
     "start": "make dev && bash ops/deploy.dev.sh",
     "prod": "make prod && bash ops/deploy.prod.sh",
-    "stop": "bash ops/stop.sh"
+    "stop": "bash ops/stop.sh connext",
+    "stop-test": "bash ops/stop.sh connext_test"
   }
 }
