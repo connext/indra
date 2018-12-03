@@ -36,6 +36,7 @@ clean:
 	rm -f $(contracts)/build/state-hash
 
 stop: 
+	docker container stop buidler 2> /dev/null || true
 	bash ops/stop.sh
 
 purge: stop clean
