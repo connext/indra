@@ -18,8 +18,8 @@ db_prereq=$(shell find $(db) $(find_options))
 hub_prereq=$(shell find $(hub) $(find_options))
 
 # Setup docker run time
-# If on Linux, we need to set file permissions ourselves (Mac's VM takes care of this for us)
-# give the container our uid & gid so we know what to set permissions to
+# If on Linux, give the container our uid & gid so we know what to set permissions to
+# On Mac the VM docker runs in takes care of this for us so don't pass in an id
 id=$(shell id -u):$(shell id -g)
 run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
 docker_run=docker run --name=buidler --tty --rm $(run_as_user)
@@ -116,9 +116,13 @@ database-node-modules: builder $(db)/package.json $(db)/yarn.lock
 
 # Contracts
 
-ethprovider: contract-node-modules
+ethprovider: contract-artifacts
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(app)_ethprovider:dev $(contracts)
 	touch build/ethprovider
+
+contract-artifacts: contract-node-modules
+	$(docker_run_in_contracts) "yarn build"
+	touch build/contract-artifacts
 
 contract-node-modules: builder $(contracts)/package.json $(contracts)/yarn.lock
 	$(docker_run_in_contracts) "yarn install"
@@ -131,6 +135,6 @@ test-hub: hub-node-modules ops/test-entry.sh ops/test.dockerfile
 	touch build/test-hub
 
 # Builder
-builder: ops/builder.dockerfile
+builder: ops/builder.dockerfile ops/permissions-fixer.sh
 	docker build --file ops/builder.dockerfile --tag builder:dev .
 	touch build/builder

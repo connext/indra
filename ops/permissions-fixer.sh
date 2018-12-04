@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 user="$1"
 cmd="$2"
@@ -15,5 +16,4 @@ finish() {
 trap finish EXIT
 
 echo "Running command as user $user"
-
 bash -c "$cmd"
