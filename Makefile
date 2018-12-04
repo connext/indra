@@ -35,11 +35,8 @@ registry=docker.io
 # Begin Phony Rules
 .PHONY: default dev clean stop
 
-debug:
-	echo $(id)
-	echo $(run_as_user)
-
 default: dev
+all: dev prod
 dev: database ethprovider hub
 prod: chainsaw-prod database-prod hub-prod
 
