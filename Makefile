@@ -78,11 +78,11 @@ hub-prod: hub-js
 	docker build --file $(hub)/ops/hub.dockerfile --tag $(app)_hub:latest $(hub)
 	touch build/hub-prod
 
-hub: hub-node-modules hub-js $(hub_prereq)
+hub: hub-js $(hub_prereq)
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(app)_hub:dev $(hub)
 	touch build/hub
 
-hub-js: builder $(hub_prereq)
+hub-js: hub-node-modules $(hub_prereq)
 	$(docker_run_in_hub) "yarn build"
 	touch build/hub-js
 
@@ -104,7 +104,7 @@ migration-templates: $(db_prereq)
 	$(docker_run_in_db) "make"
 	touch build/migration-templates
 
-database-node-modules: $(db)/package.json $(db)/yarn.lock
+database-node-modules: builder $(db)/package.json $(db)/yarn.lock
 	$(docker_run_in_db) "yarn install"
 	touch build/database-node-modules
 

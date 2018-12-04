@@ -4,4 +4,4 @@ COPY node_modules node_modules
 COPY ops ops
 COPY dist dist
 
-ENTRYPOINT ["bash", "ops/hub.entry.sh"]
+ENTRYPOINT ["bash", "ops/entry.sh"]

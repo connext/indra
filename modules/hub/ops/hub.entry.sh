@@ -6,5 +6,4 @@ export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$
 
 bash ops/wait-for-it.sh $DATABASE 2> /dev/null
 
-node ./dist/spankchain/main.js chainsaw &
-node ./dist/spankchain/main.js
+node ./dist/spankchain/main.js hub
