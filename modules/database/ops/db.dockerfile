@@ -11,5 +11,4 @@ COPY ops ops
 COPY build build
 COPY test test
 
-USER postgres
 ENTRYPOINT ["bash", "ops/entry.sh"]
