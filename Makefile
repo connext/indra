@@ -1,4 +1,9 @@
+# Specify make-specific variables (VPATH = prerequisite search path)
+VPATH=build:$(contracts)/build:$(hub)/build
+SHELL=/bin/bash
+
 app=connext
+me=$(shell whoami)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -13,22 +18,26 @@ db_prereq=$(shell find $(db) $(find_options))
 hub_prereq=$(shell find $(hub) $(find_options))
 
 # Setup docker run time
-docker_run=docker run --name=buidler --tty --rm
-docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root builder:dev
-docker_run_in_hub=$(docker_run) --volume=$(hub):/root builder:dev
-docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev
-
-# Tell make where to look for prerequisites
-VPATH=build:$(contracts)/build:$(hub)/build
+# If on Linux, we need to set file permissions ourselves (Mac's VM takes care of this for us)
+# give the container our uid & gid so we know what to set permissions to
+id=$(shell id -u):$(shell id -g)
+run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
+docker_run=docker run --name=buidler --tty --rm $(run_as_user)
+docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root builder:dev $(id)
+docker_run_in_hub=$(docker_run) --volume=$(hub):/root builder:dev $(id)
+docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev $(id)
 
 # Env setup
-me=$(shell whoami)
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/build)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
 
 # Begin Phony Rules
 .PHONY: default dev clean stop
+
+debug:
+	echo $(id)
+	echo $(run_as_user)
 
 default: dev
 dev: database ethprovider hub
