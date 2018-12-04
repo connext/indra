@@ -1,11 +1,10 @@
-FROM builder:dev
+FROM connext_hub:dev
 
 # Install common test tools
 RUN yarn global add mocha
-RUN yarn global add ts-node
 
 COPY modules/hub/package.json package.json
 COPY ops/test-entry.sh entry.sh
-COPY modules/hub/src src
+COPY modules/hub/dist dist
 
 ENTRYPOINT ["bash", "entry.sh"]

@@ -38,7 +38,7 @@ registry=docker.io
 
 default: dev
 all: dev prod
-dev: database ethprovider hub
+dev: database ethprovider hub test-hub
 prod: chainsaw-prod database-prod hub-prod
 
 clean:

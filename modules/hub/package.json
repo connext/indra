@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "clean": "rm -rf dist",
-    "test": "mocha -r ts-node/register/type-check -r ./src/register/common.ts -r ./src/register/testing.ts \"src/**/*.test.ts\" --exit",
+    "test": "mocha -r ./dist/register/common.js -r ./dist/register/testing.js \"dist/**/*.test.js\" --exit",
     "drop-migrate-test": "./migrate-and-test.sh",
     "lint": "tslint -c ../common/tslint.json -t stylish src/**/*.ts",
     "build:backend": "tsc -v && tsc -p tsconfig.json",

@@ -130,7 +130,7 @@ echo -n "Waiting for the $project stack to wake up."
 while true
 do num_awake="`docker container ls | grep $project | wc -l | sed 's/ //g'`"
    sleep 3
-   if [[ "$num_awake" == "4" ]]
+   if [[ "$num_awake" == "5" ]]
    then break
    else echo -n "."
    fi
