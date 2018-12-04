@@ -1,4 +1,4 @@
-project=connext
+app=connext
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -22,13 +22,17 @@ docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev
 VPATH=build:$(contracts)/build:$(hub)/build
 
 # Env setup
+me=$(shell whoami)
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/build)
+version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
+registry=docker.io
 
 # Begin Phony Rules
 .PHONY: default dev clean stop
 
 default: dev
-dev: ethprovider hub database
+dev: database ethprovider hub
+prod: chainsaw-prod database-prod hub-prod
 
 clean:
 	rm -rf build/*
@@ -46,26 +50,36 @@ purge: stop clean
 	docker volume rm connext_chain_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
+deploy: prod
+	docker tag $(app)_database:latest $(registry)/$(me)/database:latest
+	docker tag $(app)_hub:latest $(registry)/$(me)/hub:latest
+	docker tag $(app)_chainsaw:latest $(registry)/$(me)/chainsaw:latest
+	docker push $(registry)/$(me)/database:latest
+	docker push $(registry)/$(me)/hub:latest
+	docker push $(registry)/$(me)/chainsaw:latest
+
+deploy-live: prod
+	docker tag $(app)_database:latest $(registry)/$(me)/database:$(version)
+	docker tag $(app)_hub:latest $(registry)/$(me)/hub:$(version)
+	docker tag $(app)_chainsaw:latest $(registry)/$(me)/chainsaw:$(version)
+	docker push $(registry)/$(me)/database:$(version)
+	docker push $(registry)/$(me)/hub:$(version)
+	docker push $(registry)/$(me)/chainsaw:$(version)
+
 # Begin Real Rules
-
-# Database
-
-database: database-node-modules migration-templates $(db_prereq)
-	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
-	touch build/database
-
-migration-templates: $(db_prereq)
-	$(docker_run_in_db) "make"
-	touch build/migration-templates
-
-database-node-modules: $(db)/package.json $(db)/yarn.lock
-	$(docker_run_in_db) "yarn install"
-	touch build/database-node-modules
 
 # Hub
 
+chainsaw-prod: hub-js
+	docker build --file $(hub)/ops/chainsaw.dockerfile --tag $(app)_chainsaw:latest $(hub)
+	touch build/chainsaw-prod
+
+hub-prod: hub-js
+	docker build --file $(hub)/ops/hub.dockerfile --tag $(app)_hub:latest $(hub)
+	touch build/hub-prod
+
 hub: hub-node-modules hub-js $(hub_prereq)
-	docker build --file $(hub)/ops/hub.dockerfile --tag $(project)_hub:dev $(hub)
+	docker build --file $(hub)/ops/dev.dockerfile --tag $(app)_hub:dev $(hub)
 	touch build/hub
 
 hub-js: builder $(hub_prereq)
@@ -76,10 +90,28 @@ hub-node-modules: builder $(hub)/package.json $(hub)/yarn.lock
 	$(docker_run_in_hub) "yarn install"
 	touch build/hub-node-modules
 
+# Database
+
+database-prod: database
+	docker tag $(app)_database:dev $(app)_database:latest
+	touch build/database-prod
+
+database: database-node-modules migration-templates $(db_prereq)
+	docker build --file $(db)/ops/db.dockerfile --tag $(app)_database:dev $(db)
+	touch build/database
+
+migration-templates: $(db_prereq)
+	$(docker_run_in_db) "make"
+	touch build/migration-templates
+
+database-node-modules: $(db)/package.json $(db)/yarn.lock
+	$(docker_run_in_db) "yarn install"
+	touch build/database-node-modules
+
 # Contracts
 
 ethprovider: contract-node-modules
-	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
+	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(app)_ethprovider:dev $(contracts)
 	touch build/ethprovider
 
 contract-node-modules: builder $(contracts)/package.json $(contracts)/yarn.lock
@@ -89,7 +121,7 @@ contract-node-modules: builder $(contracts)/package.json $(contracts)/yarn.lock
 # Test
 
 test-hub: hub-node-modules ops/test-entry.sh ops/test.dockerfile
-	docker build --file ops/test.dockerfile --tag $(project)_test:dev .
+	docker build --file ops/test.dockerfile --tag $(app)_test:dev .
 	touch build/test-hub
 
 # Builder

@@ -4,7 +4,6 @@
 # ENV VARS
 
 DOMAINNAME=localhost
-ETH_PROVIDER="http://ethprovider:8545"
 ETH_NETWORK_ID="4447"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
