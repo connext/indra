@@ -122,7 +122,7 @@ class MockConnextValidation extends ConnextValidation {
 
 export const getTestConfig = (overrides?: any) => ({
   databaseUrl: process.env.DATABASE_URL_TEST!,
-  redisUrl: 'redis://localhost:6379/6',
+  redisUrl: process.env.REDIS_URL_TEST!,
   sessionSecret: 'hummus',
   hotWalletAddress: '0x7776900000000000000000000000000000000000',
   channelManagerAddress: mkAddress('0xCCC'),

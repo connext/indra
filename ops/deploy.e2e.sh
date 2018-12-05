@@ -68,6 +68,9 @@ services:
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: /run/secrets/database_test
       REDIS_URL: $REDIS_URL
+    deploy:
+      restart_policy:
+        condition: none
 
   hub:
     image: $hub_image
