@@ -10,11 +10,15 @@ MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
 DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
 EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 
+# docker image settings
+repository="`whoami`"
+registry=docker.io
+
 # misc settings
 SERVICE_USER_KEY="foo"
 
 # ethereum settings
-ETH_RPC_URL="http://ethprovider:8545"
+ETH_RPC_URL="http://eth.bohendo.com:8545"
 ETH_NETWORK_ID="4447"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
@@ -29,10 +33,6 @@ POSTGRES_USER="$project"
 POSTGRES_DB="$project"
 POSTGRES_PASSWORD_FILE="/run/secrets/database_dev"
 REDIS_URL="redis://redis:6379"
-
-# docker image settings
-registry=docker.io
-repository="`whoami`"
 
 ####################
 # Deploy according to above configuration
@@ -119,7 +119,7 @@ services:
     depends_on:
       - postgres
     secrets:
-      - connext_db_dev
+      - connext_database
     environment:
       NODE_ENV: production
       SERVICE_USER_KEY: $SERVICE_USER_KEY
@@ -138,8 +138,6 @@ services:
 
   redis:
     image: $redis_image
-    ports:
-      - "6379:6379"
 
   database:
     image: $database_image
