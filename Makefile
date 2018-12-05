@@ -58,20 +58,20 @@ purge: stop clean
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
 deploy: prod
-	docker tag $(project)_database:latest $(registry)/$(me)/$(project)/database:latest
-	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)/hub:latest
-	docker tag $(project)_chainsaw:latest $(registry)/$(me)/$(project)/chainsaw:latest
-	docker push $(registry)/$(me)/$(project)/database:latest
-	docker push $(registry)/$(me)/$(project)/hub:latest
-	docker push $(registry)/$(me)/$(project)/chainsaw:latest
+	docker tag $(project)_database:latest $(registry)/$(me)/$(project)_database:latest
+	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)_hub:latest
+	docker tag $(project)_chainsaw:latest $(registry)/$(me)/$(project)_chainsaw:latest
+	docker push $(registry)/$(me)/$(project)_database:latest
+	docker push $(registry)/$(me)/$(project)_hub:latest
+	docker push $(registry)/$(me)/$(project)_chainsaw:latest
 
 deploy-live: prod
-	docker tag $(project)_database:latest $(registry)/$(me)/$(project)/database:$(version)
-	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)/hub:$(version)
-	docker tag $(project)_chainsaw:latest $(registry)/$(me)/$(project)/chainsaw:$(version)
-	docker push $(registry)/$(me)/$(project)/database:$(version)
-	docker push $(registry)/$(me)/$(project)/hub:$(version)
-	docker push $(registry)/$(me)/$(project)/chainsaw:$(version)
+	docker tag $(project)_database:latest $(registry)/$(me)/$(project)_database:$(version)
+	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)_hub:$(version)
+	docker tag $(project)_chainsaw:latest $(registry)/$(me)/$(project)_chainsaw:$(version)
+	docker push $(registry)/$(me)/$(project)_database:$(version)
+	docker push $(registry)/$(me)/$(project)_hub:$(version)
+	docker push $(registry)/$(me)/$(project)_chainsaw:$(version)
 
 # Begin Real Rules
 

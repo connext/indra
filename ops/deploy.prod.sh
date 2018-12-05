@@ -32,7 +32,7 @@ REDIS_URL="redis://redis:6379"
 
 # docker image settings
 registry=docker.io
-repository=connextproject
+repository="`whoami`"
 
 ####################
 # Deploy according to above configuration
@@ -42,9 +42,9 @@ then version="`cat package.json | jq .version | tr -d '"'`"
 else version="latest"
 fi
 
-chainsaw_image="$registry/$repository/chainsaw:$version"
-database_image="$registry/$repository/database:$version"
-hub_image="$registry/$repository/hub:$version"
+chainsaw_image="$registry/$repository/${project}_chainsaw:$version"
+database_image="$registry/$repository/${project}_database:$version"
+hub_image="$registry/$repository/${project}_hub:$version"
 redis_image="redis:5-alpine"
 
 # turn on swarm mode if it's not already on
