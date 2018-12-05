@@ -91,7 +91,7 @@ services:
   hub:
     image: $hub_image
     ports:
-      - '3000:3000'
+      - '3000:8080'
     depends_on:
       - database
       - chainsaw
@@ -114,8 +114,6 @@ services:
 
   chainsaw:
     image: $chainsaw_image
-    ports:
-      - '3001:3001'
     depends_on:
       - postgres
     secrets:
