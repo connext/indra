@@ -93,7 +93,7 @@ hub-js: hub-node-modules $(hub_prereq)
 	$(docker_run_in_hub) "yarn build"
 	touch build/hub-js
 
-hub-node-modules: builder $(hub)/package.json $(hub)/yarn.lock
+hub-node-modules: builder $(hub)/package.json
 	$(docker_run_in_hub) "yarn install"
 	touch build/hub-node-modules
 
@@ -111,7 +111,7 @@ migration-templates: $(db_prereq)
 	$(docker_run_in_db) "make"
 	touch build/migration-templates
 
-database-node-modules: builder $(db)/package.json $(db)/yarn.lock
+database-node-modules: builder $(db)/package.json
 	$(docker_run_in_db) "yarn install"
 	touch build/database-node-modules
 
@@ -125,7 +125,7 @@ contract-artifacts: contract-node-modules
 	$(docker_run_in_contracts) "yarn build"
 	touch build/contract-artifacts
 
-contract-node-modules: builder $(contracts)/package.json $(contracts)/yarn.lock
+contract-node-modules: builder $(contracts)/package.json
 	$(docker_run_in_contracts) "yarn install"
 	touch build/contract-node-modules
 
