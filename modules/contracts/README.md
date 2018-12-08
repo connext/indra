@@ -1,5 +1,5 @@
 
-(Fully updated 11/16/2018)
+(Fully updated 11/21/2018)
 
 # Running the test suite
 
@@ -293,11 +293,11 @@ Performers can withdraw from channels using the same mechanism regardless of whe
             pendingWeiUpdates: [0, 0, 0.5 eth, 0.5 eth]
             pendingTokenUpdates: [0, 100 booty, 0, 0]
             weiBalances: [0, 0]
-            tokenBalances: [100, 0]
-            txCount: [currentOffchainCount, onChainCount++]
+            tokenBalances: [0, 0]
+            txCount: [currentOffchainCount++, onChainCount++]
             //Note: timeout not needed for hub functions
 
-Note that the deposit and withdraw are both happening on the performer's side of the channel and that the weiBalances remain zero. This is because setting `weiBalances[1]` to `0.5` would violate the `"wei must be conserved"` requirement on the contract. By depositing and withdrawing from the same side, the channel's pending balance is first incremented by 0.5 ETH and then reduced by 0.5 ETH for the performer, allowing them to withdraw ETH directly from the Hub's in-contract balance if they have permission. Dope.
+Note that the deposit and withdraw are both happening on the performer's side of the channel and that the balances remain zero. This is because setting `weiBalances[1]` to `0.5` or `tokenBalances[0]` to `100` would violate the conservation requirement on the contract. By depositing and withdrawing from the same side, the channel's pending balance is first incremented by 0.5 ETH and then reduced by 0.5 ETH for the performer, allowing them to withdraw ETH directly from the Hub's in-contract balance if they have permission. Dope.
 
 For more info on calculating balances for deposit/withdraw states, see: [https://github.com/ConnextProject/contracts/blob/master/docs/aggregateUpdates.md](https://github.com/ConnextProject/contracts/blob/master/docs/aggregateUpdates.md)
 
@@ -337,8 +337,6 @@ A thread is opened by reducing the channel balances in the parties' respective c
 
 Threads are closed offchain following the same procedure but in reverse. First, the viewer submits a channel update reintroducing the final thread balances and removing the thread initial state from thread root to the hub. 
 
-//TODO: Check the diagram for close thread consistency. What happens if Alice closes the thread offchain and then Bob disputes it before countersigning the hub's offchain update?
-
 ## ThreadIDs
 
 Threads are keyed using both sender/receiver addresses as well as a threadId.
@@ -356,7 +354,49 @@ All thread state updates must only increase the recipient's balance and must str
 
 [//TODO](//todo) : Additionally, we also require that all initial thread states set the recipient balances to 0. Since recipient balances can only increase, this constrains the number of cases where malformed states can be generated. (//What other problems exist here?)
 
-# Thread Disputes
+# Unilateral Functions
+In the event that channel/thread participants cannot mutually agree on a final state to close the channel/thread with, participants can call the unilateral functions to use the contract as an arbitrator and settle the final state of the channel on chain.
+
+In general, we hope and expect that most actual disputes will be resolved offchain. Hubs have an incentive to provide good customer service to retain users and users have an incentive to minimize the cost and time of retreiving funds. Having the _option_ to dispute onchain, however, is what makes this system trust-minimized.
+
+(Ironically, the better our dispute mechanisms and incentives are, the less likely they are to ever be used).
+
+## Channel Disputes
+Channel disputes occur between the Hub and a user. The channel dispute process consists of initiating the channel dispute timer with a double-signed state, allowing the counterparty to challenge if a newer state is available, and then finalizing the latest state onchain/distributing funds. Unilateral functions are called in the following order:
+1. a. `startExit` begins the channel dispute timer using the latest recorded onchain state; OR
+   b. `startExitWithUpdate` begins the channel dispute timer while also submitting a new state update.
+2. a. `emptyChannelWithChallenge` (which can only be called by the party that did _not_ initiate the dispute) challenges the channel with a newer state and, if the state is valid, empties the channel. Note that this can happen before the dispute timer expires.
+   b. `emptyChannel` (called by any party after the dispute timer expires) empties the channel with the latest available onchain state.
+
+Note that channel disputes are always a two step process. 
+
+The longest time to dispute occurs if a counterparty is unresponsive during the dispute. In that case, the dispute initiator calls `startExit` or `startExitWithUpdate` (depending on whether or not they have an offchain state that is better for them than the latest onchain state) and then calls `emptyChannel` after the timer expires.
+
+The shortest time to dispute occurs if a dispute is initiated by a party (assuming they submitted their most favorable state onchain) and then the counterparty calls `emptyChannelWithChallenge` immediately afterwards with a more recent state that is in their favor. Since the dispute initiator is unable to challenge further, they are incentivized to not attempt a replay attack and just submit the most recent favorable state that they can. This also stops spam.
+
+The reader may note that initiating a dispute with the _actual_ latest state (i.e. a state that both parties agree and _have_ to finalize on) also has a long dispute time. While this may seem counterintuitive, we believe this to be acceptable since, if both parties truly agreed that this is the latest available state, then they should have been able to withdraw funds from the channel without needing to resort to a unilateral process.
+
+## Thread Disputes
+Because threads are unidirectional, we expect the likelihood of unavailability-related disputes for threads to be very low. This is good because, in the current construction, it is impossible to dispute a thread onchain without first going through the full channel dispute process:
+
+A part of the state update packet that is passed back and forth in a channel is the current thread root hash. This hash contains the merkel root of all of the initial states of all currently open threads, used to _prove_ that a thread exists when initiating a thread dispute. This means that, in order to dispute a thread, the channel's state first has to be finalized onchain which puts the channel into the `ThreadDispute` status. We also keep track of a `threadCount` variable in channel state which is decremented on thread disputes so that, when it reaches 0, we can set the channel's status back to `Open`.
+
+Like with channels, threads have a dispute timer within which their state must be settled onchain. The additional complexity of threads comes from the fact that threads need to be disputed _atomically_, i.e. that if a thread between Alice-Bob is disputed/settled in Alice's channel with the Hub, then it must be settled in Bob's channel with the Hub as well.
+
+Thread dispute functions look much like the channel dispute ones:
+1. a. `startExitThread` takes in a thread's initial state, checks that it's part of the caller's channel's thread root and then starts the thread's dispute timer.
+   b. `startExitThreadWithUpdate` does the same as the above, but also takes in, validates, and saves a thread update.
+2. `challengeThread` (called by the sender, receiver, or hub) takes a challenging update, validates it and then saves it onchain.
+3. `emptyThread` empties the thread in caller's channel and decrements `threadCount`. Note that this function is called twice per thread since a thread is composed of two channels. The `emptied[]` boolean ensures that the thread cannot be emptied into the same channel twice.
+
+The only upper limit on how long it can take for threads to be disputed is a potential `nukeThreads` call. However, since any party to the thread can initiate and settle a dispute on a thread, we expect that _some_ party will always have the incentive to do so as quickly as possible because they will have funds owed to them.
+
+## NukeThreads
+There remains a possibility that _some_ threads remain undisputed, either because their contained balance was too low to be worth disputing or because the counterparty to the channel was completely unavailable (we assume that ths is always the user since hubs would auto-respond to disputes).
+
+If this occurs, it is possible for a channel to be stuck in the `ThreadDispute` status forever. And since we key channels by user address, this would effectively lock out that user from interacting with a given hub. The `nukeThreads` function counters these types of cases by hard resetting the channel to the open state and emptying any remaining funds in the channel to the user.
+
+Why not give them to the hub? We assume that the hub will already have disputed any channel/thread where they have funds owed to them since they are automated actors.
 
 # Data Structures
 
@@ -744,9 +784,9 @@ function startExitWithUpdate(
 8. Deducts balances from the total onchain recorded balances for the channel.
 9. Transfers balances to both parties respectively.
 10. Updates `txCount` , `threadRoot` and `threadCount` state variables.
-11. If there are no threads open, zeroes out the thread closing time and reopens the channel so that it can be used again. We don't have to zero `threadRoot` here because it is assumed to be empty if there are no threads open.
-12. Otherwise, sets the thread dispute time and changes the channel's state to `ThreadDispute`.
-13. Reinitializes the channel closing time and exit initiator variables since the channel dispute process has been completed.
+11. If there are no threads open, reopens the channel so that it can be used again. We don't have to zero `threadRoot` here because it is assumed to be empty if there are no threads open.
+12. Otherwise, changes the channel's state to `ThreadDispute`.
+13. Reinitializes the exit initiator variable since the channel dispute process has been completed.
 14. Emits the `DidEmptyChannelWithChallenge` event.
 ```
 function emptyChannelWithChallenge(
@@ -763,7 +803,7 @@ function emptyChannelWithChallenge(
     string sigUser
 ) public noReentrancy {
     Channel storage channel = channels[user[0]];
-    require(channel.status == Status.ChannelDispute, "channel must be in dispute");
+    require(channel.status == ChannelStatus.ChannelDispute, "channel must be in dispute");
     require(now < channel.channelClosingTime, "channel closing time must not have passed");
 
     require(msg.sender != channel.exitInitiator, "challenger can not be exit initiator");
@@ -782,7 +822,8 @@ function emptyChannelWithChallenge(
         threadCount,
         timeout,
         sigHub,
-        sigUser
+        sigUser,
+        [true, true] // [checkHubSig?, checkUser] <- check both sigs
     );
 
     require(txCount[0] > channel.txCount[0], "global txCount must be higher than the current global txCount");
@@ -803,25 +844,21 @@ function emptyChannelWithChallenge(
     }
 
     // deduct hub/user wei/tokens from total channel balances
-    channel.weiBalances[2] = channel.weiBalances[2].sub(weiBalances[0]).sub(weiBalances[1]);
-    channel.tokenBalances[2] = channel.tokenBalances[2].sub(tokenBalances[0]).sub(tokenBalances[1]);
+    channel.weiBalances[2] = channel.weiBalances[2].sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
+    channel.tokenBalances[2] = channel.tokenBalances[2].sub(channel.tokenBalances[0]).sub(channel.tokenBalances[1]);
 
     // transfer hub wei balance from channel to reserves
-    totalChannelWei = totalChannelWei.sub(channel.weiBalances[0]);
-    channel.weiBalances[0] = 0;
-
+    totalChannelWei = totalChannelWei.sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
     // transfer user wei balance to user
-    totalChannelWei = totalChannelWei.sub(channel.weiBalances[1]);
     user[0].transfer(channel.weiBalances[1]);
+    channel.weiBalances[0] = 0;
     channel.weiBalances[1] = 0;
 
     // transfer hub token balance from channel to reserves
-    totalChannelToken = totalChannelToken.sub(channel.tokenBalances[0]);
-    channel.tokenBalances[0] = 0;
-
+    totalChannelToken = totalChannelToken.sub(channel.tokenBalances[0]).sub(channel.tokenBalances[1]);
     // transfer user token balance to user
-    totalChannelToken = totalChannelToken.sub(channel.tokenBalances[1]);
     require(approvedToken.transfer(user[0], channel.tokenBalances[1]), "user token withdrawal transfer failed");
+    channel.tokenBalances[0] = 0;
     channel.tokenBalances[1] = 0;
 
     // update state variables
@@ -830,19 +867,15 @@ function emptyChannelWithChallenge(
     channel.threadCount = threadCount;
 
     if (channel.threadCount > 0) {
-        channel.threadClosingTime = now.add(challengePeriod);
-        channel.status == Status.ThreadDispute;
+        channel.status = ChannelStatus.ThreadDispute;
     } else {
-        channel.threadClosingTime = 0;
-        channel.status == Status.Open;
-        //TODO  Should we zero out the threadRoot here?
+        channel.channelClosingTime = 0;
+        channel.status = ChannelStatus.Open;
     }
 
     channel.exitInitiator = address(0x0);
-    channel.channelClosingTime = 0;
 
-
-    emit DidEmptyChannelWithChallenge(
+    emit DidEmptyChannel(
         user[0],
         msg.sender == hub ? 0 : 1,
         [channel.weiBalances[0], channel.weiBalances[1]],
@@ -862,49 +895,50 @@ Called by any party when the channel dispute timer expires. Uses the latest avai
 3. Transfers the onchain balances to their respective parties.
 4. If there are no threads open, zeroes out the thread closing time and reopens the channel so that it can be used again. We don't have to zero `threadRoot` here because it is assumed to not contain anything if there were no open threads.
 5. Otherwise, sets the thread dispute time and changes the channel's state to `ThreadDispute`.
-6. Reinitializes the channel closing time and exit initiator variables since the channel dispute process has been completed.
+6. Reinitializes the exit initiator variables since the channel dispute process has been completed.
 7. Emits the `DidEmptyChannel` event.
 ```
 function emptyChannel(
     address user
 ) public noReentrancy {
-    Channel storage channel = channels[user];
-    require(channel.status == Status.ChannelDispute, "channel must be in dispute");
+    require(user != hub, "user can not be hub");
+    require(user != address(this), "user can not be channel manager");
 
-    require(channel.channelClosingTime < now, "channel closing time must have passed");
+    Channel storage channel = channels[user];
+    require(channel.status == ChannelStatus.ChannelDispute, "channel must be in dispute");
+
+    require(
+      channel.channelClosingTime < now ||
+      msg.sender != channel.exitInitiator && (msg.sender == hub || msg.sender == user),
+      "channel closing time must have passed or msg.sender must be non-exit-initiating party"
+    );
 
     // deduct hub/user wei/tokens from total channel balances
     channel.weiBalances[2] = channel.weiBalances[2].sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
     channel.tokenBalances[2] = channel.tokenBalances[2].sub(channel.tokenBalances[0]).sub(channel.tokenBalances[1]);
 
     // transfer hub wei balance from channel to reserves
-    totalChannelWei = totalChannelWei.sub(channel.weiBalances[0]);
-    channel.weiBalances[0] = 0;
-
+    totalChannelWei = totalChannelWei.sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
     // transfer user wei balance to user
-    totalChannelWei = totalChannelWei.sub(channel.weiBalances[1]);
     user.transfer(channel.weiBalances[1]);
+    channel.weiBalances[0] = 0;
     channel.weiBalances[1] = 0;
 
     // transfer hub token balance from channel to reserves
-    totalChannelToken = totalChannelToken.sub(channel.tokenBalances[0]);
-    channel.tokenBalances[0] = 0;
-
+    totalChannelToken = totalChannelToken.sub(channel.tokenBalances[0]).sub(channel.tokenBalances[1]);
     // transfer user token balance to user
-    totalChannelToken = totalChannelToken.sub(channel.tokenBalances[1]);
     require(approvedToken.transfer(user, channel.tokenBalances[1]), "user token withdrawal transfer failed");
+    channel.tokenBalances[0] = 0;
     channel.tokenBalances[1] = 0;
 
     if (channel.threadCount > 0) {
-        channel.threadClosingTime = now.add(challengePeriod);
-        channel.status == Status.ThreadDispute;
+        channel.status = ChannelStatus.ThreadDispute;
     } else {
-        channel.threadClosingTime = 0;
-        channel.status == Status.Open;
+        channel.channelClosingTime = 0;
+        channel.status = ChannelStatus.Open;
     }
 
     channel.exitInitiator = address(0x0);
-    channel.channelClosingTime = 0;
 
     emit DidEmptyChannel(
         user,
@@ -912,8 +946,8 @@ function emptyChannel(
         [channel.weiBalances[0], channel.weiBalances[1]],
         [channel.tokenBalances[0], channel.tokenBalances[1]],
         channel.txCount,
-        channel.threadCount,
-        channel.exitInitiator
+        channel.threadRoot,
+        channel.threadCount
     );
 }
 ```
@@ -921,13 +955,14 @@ function emptyChannel(
 
 Initializes the thread onchain to prep it for dispute (called when no newer state update is available). This is the thread corollary to `startExit` for channel.
 
-1. Verifies that the channel is in the `ThreadDispute` state and that `threadClosingTime` for the provided user has not expired.
+1. Verifies that the channel is in the `ThreadDispute` state.
 2. Verifies that it is being called by either the hub or the user.
-3. Verifies that the provided `user` is either the sender or the receiver in the channel
-4. Verifies that the thread status is open (i.e. that the thread with that threadID is not already in dispute)
-5. Verifies the signature that is submitted to ensure that it belongs to the sender and verifies that the initial state of this thread is contained in the recorded `threadRoot` using `_verifyThread.`
-6. Updates the thread state onchain and sets the thread's status to `Exiting`.
-7. Emits the `DidStartExitThread` event.
+3. Verifies that the provided `user` is either the sender or the receiver in the channel.
+4. Verifies that the initial receiver balances are zero.
+5. Verifies that the thread dispute timer is 0 (i.e. that the thread with that threadID is not already in dispute).
+6. Verifies the signature that is submitted to ensure that it belongs to the sender and verifies that the initial state of this thread is contained in the recorded `threadRoot` using `_verifyThread.`
+7. Updates the thread state onchain and starts the `threadClosingTime` timer.
+8. Emits the `DidStartExitThread` event.
 ```
 function startExitThread(
     address user,
@@ -941,19 +976,20 @@ function startExitThread(
 ) public noReentrancy {
     Channel storage channel = channels[user];
     require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute phase");
-    require(now < channel.threadClosingTime, "channel thread closing time must not have passed");
     require(msg.sender == hub || msg.sender == user, "thread exit initiator must be user or hub");
     require(user == sender || user == receiver, "user must be thread sender or receiver");
 
+    require(weiBalances[1] == 0 && tokenBalances[1] == 0, "initial receiver balances must be zero");
+
     Thread storage thread = threads[sender][receiver][threadId];
 
-    require(thread.status == ThreadStatus.Open, "thread must be open");
+    require(thread.threadClosingTime == 0, "thread closing time must be zero");
 
     _verifyThread(sender, receiver, threadId, weiBalances, tokenBalances, 0, proof, sig, channel.threadRoot);
 
     thread.weiBalances = weiBalances;
     thread.tokenBalances = tokenBalances;
-    thread.status = ThreadStatus.Exiting;
+    thread.threadClosingTime = now.add(challengePeriod);
 
     emit DidStartExitThread(
         user,
@@ -971,16 +1007,18 @@ function startExitThread(
 
 Initializes thread state onchain and immediately updates it. This is called when a party wants to dispute a thread and also has a state beyond just the initial state. The channel corollary is `startExitWithUpdate`
 
-1. Verifies that the channel is in the `ThreadDispute` status and that the thread closing time for the provided user has not expired.
+1. Verifies that the channel is in the `ThreadDispute` status.
 2. Verifies that the message sender is either the hub or the user.
-3. Verifies that the provided `user` is either the sender or receiver in the thread. Then verifies that the thread status is `Open` .
-4. Verifies the thread using the `_verifyThread` method: recreates the signature and recovers signer, then checks that the initial state is part of the `threadRoot`.
-5. Verifies that the transaction count for the updated state is greater than 0 (`txCount` of initial state).
-6. Verifies that the total wei and token balances must be equal to the previously recorded total wei and token balances (i.e. value is conserved).
-7. Verifies that the update only *increases* the value of the receiver and strictly requires that either wei or token balance increases. This is because threads are *unidirectional*: value can only move from sender→receiver. Doing this removes the need for a signature from the receiver.
-8. Verifies that the signature of the updated thread state using the `_verifyThread` method. Note that the `threadRoot` is set to `bytes32(0x0)`because a merkle proof is not needed for the not-initial state.
-9. Updates the thread state onchain and sets the thread's status to `Exiting`.
-10. Emits the `DidStartExitThread` event.
+3. Verifies that the provided `user` is either the sender or receiver in the thread.
+4. Verifies that the initial receiver balances are zero.
+5. Verifies that the thread timer is zero.
+6. Verifies the thread using the `_verifyThread` method: recreates the signature and recovers signer, then checks that the initial state is part of the `threadRoot`.
+7. Verifies that the transaction count for the updated state is greater than 0 (`txCount` of initial state).
+8. Verifies that the total wei and token balances must be equal to the initial total wei and token balances (i.e. value is conserved). Note that since initial receiver balances have to be zero (see 4 above), for the initial state, "sender balance" and "total balance" are the same.
+9. Verifies that the update only *increases* the value of the receiver and strictly requires that either wei or token balance increases. This is because threads are *unidirectional*: value can only move from sender→receiver. Doing this removes the need for a signature from the receiver.
+10. Verifies that the signature of the updated thread state using the `_verifyThread` method. Note that the `threadRoot` is set to `bytes32(0x0)`because a merkle proof is not needed for the not-initial state.
+11. Updates the thread state onchain and starts the thread dispute timer.
+12. Emits the `DidStartExitThread` event.
 ```
 function startExitThreadWithUpdate(
     address user,
@@ -997,12 +1035,13 @@ function startExitThreadWithUpdate(
 ) public noReentrancy {
     Channel storage channel = channels[user];
     require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute phase");
-    require(now < channel.threadClosingTime, "channel thread closing time must not have passed");
     require(msg.sender == hub || msg.sender == user, "thread exit initiator must be user or hub");
     require(user == threadMembers[0] || user == threadMembers[1], "user must be thread sender or receiver");
 
+    require(weiBalances[1] == 0 && tokenBalances[1] == 0, "initial receiver balances must be zero");
+
     Thread storage thread = threads[threadMembers[0]][threadMembers[1]][threadId];
-    require(thread.status == ThreadStatus.Open, "thread must be open");
+    require(thread.threadClosingTime == 0, "thread closing time must be zero");
 
     _verifyThread(threadMembers[0], threadMembers[1], threadId, weiBalances, tokenBalances, 0, proof, sig, channel.threadRoot);
 
@@ -1011,14 +1050,10 @@ function startExitThreadWithUpdate(
     // *********************
 
     require(updatedTxCount > 0, "updated thread txCount must be higher than 0");
-    require(updatedWeiBalances[0].add(updatedWeiBalances[1]) == weiBalances[0].add(weiBalances[1]), "updated wei balances must match sum of initial wei balances");
-    require(updatedTokenBalances[0].add(updatedTokenBalances[1]) == tokenBalances[0].add(tokenBalances[1]), "updated token balances must match sum of initial token balances");
+    require(updatedWeiBalances[0].add(updatedWeiBalances[1]) == weiBalances[0], "sum of updated wei balances must match sender's initial wei balance");
+    require(updatedTokenBalances[0].add(updatedTokenBalances[1]) == tokenBalances[0], "sum of updated token balances must match sender's initial token balance");
 
-    require(
-      updatedWeiBalances[1] >  weiBalances[1] && updatedTokenBalances[1] >= tokenBalances[1] ||
-      updatedWeiBalances[1] >= weiBalances[1] && updatedTokenBalances[1] >  tokenBalances[1],
-      "receiver balances may never decrease and either wei or token balance must strictly increase"
-    );
+    require(updatedWeiBalances[1] > 0 || updatedTokenBalances[1] > 0, "receiver balances may never decrease and either wei or token balance must strictly increase");
 
     // Note: explicitly set threadRoot == 0x0 because then it doesn't get checked by _isContained (updated state is not part of root)
     _verifyThread(threadMembers[0], threadMembers[1], threadId, updatedWeiBalances, updatedTokenBalances, updatedTxCount, "", updateSig, bytes32(0x0));
@@ -1026,7 +1061,7 @@ function startExitThreadWithUpdate(
     thread.weiBalances = updatedWeiBalances;
     thread.tokenBalances = updatedTokenBalances;
     thread.txCount = updatedTxCount;
-    thread.status = ThreadStatus.Exiting;
+    thread.threadClosingTime = now.add(challengePeriod);
 
     emit DidStartExitThread(
         user,
@@ -1042,11 +1077,11 @@ function startExitThreadWithUpdate(
 ```
 ## challengeThread
 
-Lets any party submit a challenge to the previously recorded onchain state for the thread so long as dispute timer has not passed. To protect against parties calling `startExitThreadWithUpdate` immediately before the `channel.threadClosingTime` expires, counterparties should start the thread exit process themselves and prepare to challenge if they have funds owed to them in the thread.
+Lets any party submit a challenge to the previously recorded onchain state for the thread so long as dispute timer has not passed. To protect against parties calling `startExitThreadWithUpdate` immediately before the `threadClosingTime` expires, counterparties should start the thread exit process themselves and prepare to challenge if they have funds owed to them in the thread.
 
-1. Verifies that the channel is in the `ThreadDispute` state and that the thread closing time for the provided user has not expired.
+1. Verifies that the channel is in the `ThreadDispute` state.
 2. Verifies that the `msg.sender` is either the hub, sender or receiver in the thread.
-3. Verifies that the thread is already exiting and that the transaction count provided is greater than the onchain `txCount` for the thread.
+3. Verifies that the thread dispute timer has not yet passed and that the transaction count provided is greater than the onchain `txCount` for the thread.
 4. Verifies that the total submitted balances are equal to the total onchain recorded balances from the initial state.
 5. Verifies that the update only *increases* the value of the receiver and strictly increases either wei or token balance. This is because threads are *unidirectional*: value can only move from sender→receiver. Doing this removes the need for a signature from the receiver.
 6. Verifies the signature using `_verifyThread`.
@@ -1054,7 +1089,6 @@ Lets any party submit a challenge to the previously recorded onchain state for t
 8. Emits `DidChallengeThread` event.
 ```
 function challengeThread(
-    address user,
     address sender,
     address receiver,
     uint256 threadId,
@@ -1063,13 +1097,11 @@ function challengeThread(
     uint256 txCount,
     string sig
 ) public noReentrancy {
-    Channel storage channel = channels[user];
-    require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute phase");
-    require(now < channel.threadClosingTime, "channel thread closing time must not have passed");
     require(msg.sender == hub || msg.sender == sender || msg.sender == receiver, "only hub, sender, or receiver can call this function");
 
     Thread storage thread = threads[sender][receiver][threadId];
-    require(thread.status == ThreadStatus.Exiting, "thread must be exiting");
+    //verify that thread settlement period has not yet expired
+    require(now < thread.threadClosingTime, "thread closing time must not have passed");
 
     // assumes that the non-sender has a later thread state than what was being proposed when the thread exit started
     require(txCount > thread.txCount, "thread txCount must be higher than the current thread txCount");
@@ -1091,7 +1123,6 @@ function challengeThread(
     thread.txCount = txCount;
 
     emit DidChallengeThread(
-        user,
         sender,
         receiver,
         threadId,
@@ -1104,93 +1135,22 @@ function challengeThread(
 ```
 ## emptyThread
 
-Called by any party when the thread dispute timer expires. Uses the latest available onchain state to transfer values. Corollary is `emptyChannel`.
+Called by any party when the thread dispute timer expires. Uses the latest available onchain state to transfer values. Corollary is `emptyChannel`. Note: this can be called twice per thread; once for each channel.
 
-1. Verifies that the channel state is in `ThreadDispute` and that the thread closing time for the provided user has expired.
-2. Verifies that the thread is exiting. No need to verify anything else since we just use already verified onchain state.
-3. Deducts the onchain thread balances from the onchain channel balances for the provided user's channel.
-4. Deducts the onchain thread balances from the global total onchain channel balances (i.e. moves balances back into the hub's reserve) and then transfers onchain thread balances to their respective owners. Note: state is not zeroed out here in order to allow for `exitSettledThread` to be called by thread counterparty in the event of a separate dispute in the counterparty's channel.
-5. Updates the thread's status to `Settled` which stops reentry to this function. 
-6. Decrements the thread count and if the thread count is zero, reopens the channel, reinitializes `threadRoot`, and resets dispute fields.
+1. Verifies that the channel state is in `ThreadDispute`.
+2. Verifies that the caller of the function is either the hub or the user.
+3. Verifies that the provided `user` is either the sender or receiver in the thread.
+4. Verifies that the initial receiver balances are zero.
+5. Verifies that the thread dispute timer has expired.
+6. Verifies that the thread has not already been emptied before for the caller's channel.
+7. Verifies the initial state of the thread and checks that it's a part of the user's channel. This is primarily done in case an already settled thread is being emptied by the thread counterparty.
+8. Verifies that balances are conserved.
+9. Deducts the onchain thread balances from the onchain channel balances for the provided user's channel.
+10. Deducts the onchain thread balances from the global total onchain channel balances (i.e. moves balances back into the hub's reserve) and then transfers onchain thread balances to their respective owners. Note: state is not zeroed out here in order to allow for the other party to call `emptyThread` if needed.
+11. Records that the thread has been emptied for this user's channel which stops reentry of this function.
+12. Decrements the thread count and if the thread count is zero, reopens the channel, reinitializes `threadRoot`, and resets dispute fields.
 ```
 function emptyThread(
-    address user,
-    address sender,
-    address receiver,
-    uint256 threadId
-) public noReentrancy {
-    Channel storage channel = channels[user];
-    require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute");
-    require(channel.threadClosingTime < now, "thread closing time must have passed");
-
-    Thread storage thread = threads[sender][receiver][threadId];
-    require(thread.status == ThreadStatus.Exiting, "thread must be exiting");
-
-    // deduct sender/receiver wei/tokens about to be emptied from the thread from the total channel balances
-    channel.weiBalances[2] = channel.weiBalances[2].sub(thread.weiBalances[0]).sub(thread.weiBalances[1]);
-    channel.tokenBalances[2] = channel.tokenBalances[2].sub(thread.tokenBalances[0]).sub(thread.tokenBalances[1]);
-
-    // deduct wei balances from total channel wei and reset thread balances
-    totalChannelWei = totalChannelWei.sub(thread.weiBalances[0]).sub(thread.weiBalances[1]);
-    // transfer wei to user if they are receiver (otherwise gets added to reserves implicitly)
-    // if user is receiver, send them receiver wei balance
-    if (user == receiver) {
-        user.transfer(thread.weiBalances[1]);
-    // if user is sender, send them remaining sender wei balance
-    } else if (user == sender) {
-        user.transfer(thread.weiBalances[0]);
-    }
-
-    // deduct token balances from channel total balances and reset thread balances
-    totalChannelToken = totalChannelToken.sub(thread.tokenBalances[0]).sub(thread.tokenBalances[1]);
-    // if user is receiver, send them receiver token balance
-    if (user == receiver) {
-        require(approvedToken.transfer(user, thread.tokenBalances[1]), "user [receiver] token withdrawal transfer failed");
-    // if user is sender, send them remaining sender token balance
-    } else if (user == sender) {
-        require(approvedToken.transfer(user, thread.tokenBalances[0]), "user [sender] token withdrawal transfer failed");
-    }
-
-    thread.status = ThreadStatus.Settled;
-
-    // decrement the channel threadCount
-    channel.threadCount = channel.threadCount.sub(1);
-
-    // if this is the last thread being emptied, re-open the channel
-    if (channel.threadCount == 0) {
-        channel.threadRoot = bytes32(0x0);
-        channel.threadClosingTime = 0;
-        channel.status = ChannelStatus.Open;
-    }
-
-    emit DidEmptyThread(
-        user,
-        sender,
-        receiver,
-        threadId,
-        msg.sender,
-        [channel.weiBalances[0], channel.weiBalances[1]],
-        [channel.tokenBalances[0], channel.tokenBalances[1]],
-        channel.txCount,
-        channel.threadRoot,
-        channel.threadCount
-    );
-}
-```
-## exitSettledThread
-
-Allows for a thread that has already been previously settled by the thread counterparty to be exited by a disputing party. This function handles the edge case where Alice disputes her channel, settling her thread with Bob onchain and then Bob subsequently disputes his channel and wants to exit the same thread onchain as well.
-
-1. Verifies that the channel is in thread dispute and that the thread closing time for the provided user has expired.
-2. Verifies that the `msg.sender` is either the hub or the provided user and that the provided user is either the sender or receiver in the thread.
-3. Verifies that the thread has already been settled.
-4. Verifies the initial thread state using `_verifyThread`
-5. Verifies that the balances in the thread are conserved and that receiver balances do not decrease.
-6. Deducts the onchain thread balances from the channel's total balances and then also from the global total onchain channel balances (i.e. moves balances back into the hub's reserve).
-7. Transfers to appropriate recipient (`weiBalance[0]` to user if sender is calling the function, etc.)
-8. Decrements the thread count and if the thread count is zero, reopens the channel, reinitializes `threadRoot`, and resets dispute fields.
-```
-function exitSettledThread(
     address user,
     address sender,
     address receiver,
@@ -1201,23 +1161,25 @@ function exitSettledThread(
     string sig
 ) public noReentrancy {
     Channel storage channel = channels[user];
-    require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute phase");
-    require(now < channel.threadClosingTime, "channel thread closing time must not have passed");
+    require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute");
     require(msg.sender == hub || msg.sender == user, "thread exit initiator must be user or hub");
     require(user == sender || user == receiver, "user must be thread sender or receiver");
 
-    // Thread storage thread = channel.threads[sender][receiver];
+    require(weiBalances[1] == 0 && tokenBalances[1] == 0, "initial receiver balances must be zero");
+
     Thread storage thread = threads[sender][receiver][threadId];
 
-    require(thread.status == ThreadStatus.Settled, "thread must be settled");
+    // We check to make sure that the thread state has been finalized
+    require(thread.threadClosingTime != 0 && thread.threadClosingTime < now, "Thread closing time must have passed");
 
-    // verify initial thread state
+    // Make sure user has not emptied before
+    require(!thread.emptied[user == sender ? 0 : 1], "user cannot empty twice");
+
+    // verify initial thread state.
     _verifyThread(sender, receiver, threadId, weiBalances, tokenBalances, 0, proof, sig, channel.threadRoot);
 
-    require(thread.weiBalances[0].add(thread.weiBalances[1]) == weiBalances[0].add(weiBalances[1]), "updated wei balances must match sum of initial wei balances");
-    require(thread.tokenBalances[0].add(thread.tokenBalances[1]) == tokenBalances[0].add(tokenBalances[1]), "updated token balances must match sum of initial token balances");
-
-    require(thread.weiBalances[1] >= weiBalances[1] && thread.tokenBalances[1] >= tokenBalances[1], "receiver balances may never decrease");
+    require(thread.weiBalances[0].add(thread.weiBalances[1]) == weiBalances[0], "sum of thread wei balances must match sender's initial wei balance");
+    require(thread.tokenBalances[0].add(thread.tokenBalances[1]) == tokenBalances[0], "sum of thread token balances must match sender's initial token balance");
 
     // deduct sender/receiver wei/tokens about to be emptied from the thread from the total channel balances
     channel.weiBalances[2] = channel.weiBalances[2].sub(thread.weiBalances[0]).sub(thread.weiBalances[1]);
@@ -1229,7 +1191,7 @@ function exitSettledThread(
     // if user is receiver, send them receiver wei balance
     if (user == receiver) {
         user.transfer(thread.weiBalances[1]);
-    // if user is sender, send them remainining sender wei balance
+    // if user is sender, send them remaining sender wei balance
     } else if (user == sender) {
         user.transfer(thread.weiBalances[0]);
     }
@@ -1240,10 +1202,13 @@ function exitSettledThread(
     // if user is receiver, send them receiver token balance
     if (user == receiver) {
         require(approvedToken.transfer(user, thread.tokenBalances[1]), "user [receiver] token withdrawal transfer failed");
-    // if user is sender, send them remainining sender token balance
+    // if user is sender, send them remaining sender token balance
     } else if (user == sender) {
         require(approvedToken.transfer(user, thread.tokenBalances[0]), "user [sender] token withdrawal transfer failed");
     }
+
+    // Record that user has emptied
+    thread.emptied[user == sender ? 0 : 1] = true;
 
     // decrement the channel threadCount
     channel.threadCount = channel.threadCount.sub(1);
@@ -1251,7 +1216,7 @@ function exitSettledThread(
     // if this is the last thread being emptied, re-open the channel
     if (channel.threadCount == 0) {
         channel.threadRoot = bytes32(0x0);
-        channel.threadClosingTime = 0;
+        channel.channelClosingTime = 0;
         channel.status = ChannelStatus.Open;
     }
 
@@ -1273,7 +1238,7 @@ function exitSettledThread(
 
 Called in the event that threads reach an unsettleable state because they were not disputed in time. After 10 challenge periods, hard resets the channel state to being open (causes the user to lose access to the funds in any remaining open threads).
 
-1. Verifies that the channel is in `ThreadDispute` and that 10 challenge periods have passed since the `threadClosingTime`.
+1. Verifies that the channel is in `ThreadDispute` and that 10 challenge periods have passed since the `channelClosingTime`.
 2. Transfers any remaining channel balances recorded onchain to the user.
 3. Zeroes out the total channel balances. Note: there is no need to zero out the other elements of those balances because they will always have been zeroed in other functions.
 4. Resets all other channel state params and sets the channel status to `Open`.

@@ -204,7 +204,7 @@ contract("ChannelManager::startExit", accounts => {
   describe('startExit', () => {
     it("happy case", async () => {
       await channelManager.startExit(
-        accounts[0]
+        accounts[1]
       )
     })
   })

@@ -313,21 +313,21 @@ contract("ChannelManager", accounts => {
             })
             init.sigHub = await updateHash(init, hub.privateKey)
             init.sigUser = await updateHash(init, viewer.privateKey)
-            
+
             await userAuthorizedUpdate(init, viewer, weiDeposit)
             await channelManager.startExit(viewer.address)
             await moveForwardSecs(config.timeout + 1)
             // channel must be in thread dispute phase
             console.log('viewer wei channel before empty channel', await channelManager.getWeiBalances(viewer.address))
-            // console.log('viewer wei channel after emptyChannel', await 
+            // console.log('viewer wei channel after emptyChannel', await
             //channelManager.getWeiBalances(viewer.address)
-            
+
             init.txCount = 2
             init.weiBalances = [100,0]
             init.tokenBalances = [100,0]
             init.sig = await updateThreadHash(init, viewer.privateKey)
             await startExitThread(init, hub.address)
-                    
+
             init.txCount = 3
             // TODO : increase tokens
             init.weiBalances = [90,10]
@@ -335,6 +335,12 @@ contract("ChannelManager", accounts => {
             init.sig = await updateThreadHash(init, viewer.privateKey)
             await fastEmptyThread(init, hub.address)
         })
+
+
+        // TODO
+        // 1. startExitThread (sender)
+        // 2. startExitThread (receiver)
+        // 3. startExitThreadWithUpdate
     })
 
     describe('startExitThreadWithUpdate', () => {
@@ -789,6 +795,13 @@ contract("ChannelManager", accounts => {
             await emptyThread(init)
         })
 
+        // TODO What situations can this be called?
+        // 1. startExitThread
+        // 2. startExitThreadWithUpdate
+        // 3. startExitThread -> challengeThread
+        // 4. startExitThreadWithUpdate -> challengeThread
+        // 5. repeated challengeThread x2, x3
+
         it("FAIL: channel not in thread dispute", async() => {
             init.threadCount = 1
             init.sigUser = await updateHash(init, viewer.privateKey)
@@ -845,6 +858,14 @@ contract("ChannelManager", accounts => {
             init.sig = await updateThreadHash(init, viewer.privateKey)
             await startExitThread(init, viewer.address)
         })
+
+        // TODO
+        // 1. initial state of the thread
+        // 2. replay attack (offchain state is ahead)
+        //
+        // Dispute:
+        // -> fastEmptyThread (challenge replay)
+        // -> emptyThread
 
         it("FAIL: not in thread dispute", async() => {
             init.threadCount = 1
@@ -1097,6 +1118,42 @@ contract("ChannelManager", accounts => {
             await hubAuthorizedUpdate(init)
         })
 
+        // TODO write tests based on:
+        // https://github.com/ConnextProject/contracts/blob/master/docs/aggregateUpdates.md
+        // 1. user deposit
+        // 2. hub deposit
+        // 3. user withdrawal
+        // 4. hub withdrawal
+        // 5. user deposit + hub deposit
+        // 6. user deposit + hub withdrawal
+        // 7. user withdrawal + hub deposit
+        // 8. user w + hub w
+        // 9. actual exchange scenarios
+        //    - performer withdrawal booty -> eth
+        //      - also hub withdraws collateral
+        //    - user withdrawal booty -> eth
+        //      - also hub withdraws collateral
+        // 10. recipient is different than user
+        //
+        // State Transitions:
+        // 1. channelBalances (wei / token)
+        // 2. totalChannelWei
+        // 3. totalChannelToken
+        // 4. channel.weiBalances[2]
+        // 5. channel.tokenBalances[2]
+        // 6. recipient ether balance
+        // 7. recipient token balance
+        // 8. contract eth/token balance (reserve)
+        // 9. txCount
+        // 10. threadRoot
+        // 11. threadCount
+        // 12. event
+        //
+        // TODO
+        // test modifiers
+        // 1. onlyHub
+
+
         it("FAIL : pending wei updates", async() => {
             init.pendingWeiUpdates = [0,0,0,1]
             init.sigUser = await updateHash(init, viewer.privateKey)
@@ -1328,6 +1385,18 @@ contract("ChannelManager", accounts => {
         it("happy case", async() => {
             await channelManager.startExit(hub.address)
         })
+
+        // TODO
+        // how to think about nested function testing?
+        // 1. what possible states could this be called from?
+        // - initial state
+        // - after authorized update
+        //
+        // 2. for dispute scenarios
+        // - offchain state is past the onchain state (replay attack)
+        // -> emptyChannelWithChallenge (challenge replay)
+        // -> emptyChannel
+
         it("FAIL : not user or hub", async() => {
             await channelManager.startExit(hub.address, {from: performer.address}).should.be.rejectedWith('exit initiator must be user or hub')
         })
@@ -1425,6 +1494,41 @@ contract("ChannelManager", accounts => {
             await moveForwardSecs(config.timeout + 1)
             await channelManager.emptyChannel(hub.address)
           })
+
+        // TODO
+        // Global Process:
+        // 1. For each function write down every state change
+        // 2. Test each successful state change
+        // 3. Test all logical branches (both sides of an if)
+        // 4. refactor to add helper functions for verification
+        //
+        // EXAMPLE: emptyChannel
+        // 1. channel.weiBalances[2]
+        // 2. channel.tokenBalances[2]
+        // 3. totalChannelWei
+        // 4. totalChannelToken
+        // 5. user ETH balance
+        // 6. contract ETH balance -> reserves
+        // 7. user token balance
+        // 8. contract token balance -> reserves
+        // 9. channel.weiBalances[0, 1] = 0
+        // 10. channel.tokenBalances[0, 1] = 0
+        // 11. channe.threadClosingTime
+        // 12. channel.status
+        // 13. channel.exitInitiator
+        // 14. channel.channelClosingTime
+        // 15. event
+        //
+        // 0. happy case - emptyChannel with zero threadCount (default)
+        // - check 1-15
+        // 1. emptyChannel after hubAuthorizedUpdate
+        // - check 1-15 (different balance)
+        // 2. emptyChannel after userAuthorizedUpdate
+        // - check 1-15 (different balance)
+        // 3. emptyChannel with non-zero threadCount
+        // - check 1-15 (thread dispute, thread closing time updated)
+        // 4. emptyChannel after startExitWithUpdate
+
 
         it("FAIL : channel not in dispute", async() => {
           await channelManager.emptyChannel(hub.address).should.be.rejectedWith('channel must be in dispute')
