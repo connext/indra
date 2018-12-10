@@ -11,6 +11,7 @@ cwd=$(shell pwd)
 contracts=$(cwd)/modules/contracts
 hub=$(cwd)/modules/hub
 db=$(cwd)/modules/database
+e2e=$(cwd)/modules/e2e
 
 # Fetch Prerequisites
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*"
@@ -27,6 +28,7 @@ docker_run=docker run --name=buidler --tty --rm $(run_as_user)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(hub):/root builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev $(id)
+docker_run_in_e2e=$(docker_run) --volume=$(e2e):/root builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/build)
@@ -38,7 +40,7 @@ registry=docker.io
 
 default: dev
 all: dev prod
-dev: database ethprovider hub test-hub
+dev: database ethprovider hub test-hub test e2e-node-modules
 prod: chainsaw-prod database-prod hub-prod
 
 clean:
@@ -135,6 +137,10 @@ contract-node-modules: builder $(contracts)/package.json
 test-hub: hub-node-modules ops/test-entry.sh ops/test.dockerfile
 	docker build --file ops/test.dockerfile --tag $(project)_test:dev .
 	touch build/test-hub
+
+e2e-node-modules: builder $(e2e)/package.json
+	$(docker_run_in_e2e) "yarn install"
+	touch build/e2e-node-modules
 
 # Builder
 builder: ops/builder.dockerfile ops/permissions-fixer.sh
