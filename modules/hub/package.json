@@ -56,6 +56,7 @@
     "ejs": "^2.6.1",
     "eth-crypto": "^1.2.1",
     "ethereumjs-util": "^5.1.4",
+    "ethers": "^4.0.18",
     "express": "^4.16.2",
     "express-promise-router": "^3.0.3",
     "express-session": "^1.15.6",

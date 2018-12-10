@@ -1,6 +1,8 @@
 import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
 import { UnsignedChannelState, ChannelState } from './vendor/connext/types'
+import ethers from 'ethers'
+import fs from 'fs'
 
 export class SignerService {
   private web3: any
@@ -19,7 +21,11 @@ export class SignerService {
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    return await this.web3.eth.sign(stateHash, this.config.hotWalletAddress)
+    let wallet = new ethers.Wallet(fs.readFileSync('/run/secret/private_key'))
+    let binaryData = ethers.utils.arrayify(stateHash);
+    return await wallet.signMessage(binaryData)
+
+    //return await this.web3.eth.sign(stateHash, this.config.hotWalletAddress)
   }
 
   public async signChannelState(
