@@ -9,6 +9,7 @@ project=connext
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
 DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
 EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
+INFURA_KEY="RNXFMnEXo6TEeIYzcTyQ" # provided by bohendo
 
 # docker image settings
 repository="`whoami`"
@@ -18,13 +19,11 @@ registry=docker.io
 SERVICE_USER_KEY="foo"
 
 # ethereum settings
-ETH_RPC_URL="http://eth.bohendo.com:8545"
-ETH_NETWORK_ID="4447"
-ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
-CHANNEL_MANAGER_ADDRESS="0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42"
-HOT_WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
-TOKEN_CONTRACT_ADDRESS="0xd01c08c7180eae392265d8c7df311cf5a93f1b73"
+ETH_RPC_URL="https://ropsten.infura.io/$INFURA_KEY:8545"
+WALLET_ADDRESS="0xB669b484f2c72D226463d9c75d9B9A871aE7904e"
+HOT_WALLET_ADDRESS="0xB669b484f2c72D226463d9c75d9B9A871aE7904e"
+CHANNEL_MANAGER_ADDRESS="0xD6EA218b3F5FEb69A2674EFee592B1c7A589E268" # see modules/contracts/ops/addresses.json
+TOKEN_CONTRACT_ADDRESS="0xc778417E063141139Fce010982780140Aa0cD5Ab" # Ropsten WETH contract
 
 # database settings
 POSTGRES_HOST="database"
