@@ -39,3 +39,25 @@ Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh
 3. Ethprovider: Runs contract migrations & starts a ganache testnet
 
 4. Hub: manages your payment channel
+
+### How to interact with Hub
+
+ 1. AuthApiService
+  - GET /auth/status: returns success and address if a valid auth token is provided
+  - POST /auth/challenge: returns a challenge nonce
+  - POST /auth/response: 
+    - nonce: returned by /auth/challenge
+    - address
+    - origin
+    - signature
+
+ 2. ChannelsApiService
+  - POST /channel/:user/request-deposit: 
+    - depositWei
+    - depositToken
+    - lastChanTx
+    - lastThreadUpdateId
+  - GET /channel/:user/sync
+    - params
+      - lastChanTx
+      - lastThreadUpdateId
