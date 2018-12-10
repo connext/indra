@@ -123,6 +123,7 @@ ethprovider: contract-artifacts
 
 contract-artifacts: contract-node-modules
 	$(docker_run_in_contracts) "yarn build"
+	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
 	touch build/contract-artifacts
 
 contract-node-modules: builder $(contracts)/package.json
