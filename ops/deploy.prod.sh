@@ -55,10 +55,13 @@ function pull_if_unavailable {
   fi
 }
 
-pull_if_unavailable $chainsaw_image
-pull_if_unavailable $database_image
-pull_if_unavailable $hub_image
-pull_if_unavailable $redis_image
+if [[ "$DOMAINNAME" != "localhost" ]]
+then
+  pull_if_unavailable $chainsaw_image
+  pull_if_unavailable $database_image
+  pull_if_unavailable $hub_image
+  pull_if_unavailable $redis_image
+fi
 
 function new_secret {
   secret=$2
