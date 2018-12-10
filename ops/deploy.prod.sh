@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+set -e
 
 ####################
 # ENV VARS
 
 project=connext
+number_of_services=4
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -165,10 +167,10 @@ while true
 do
     num_awake="`docker container ls | grep $project | wc -l | sed 's/ //g'`"
     sleep 3
-    if [[ "$num_awake" == "4" ]]
+    if [[ "$num_awake" == "$number_of_services" ]]
     then break
     else echo -n "."
     fi
 done
 echo " Good Morning!"
-sleep 2
+sleep 3
