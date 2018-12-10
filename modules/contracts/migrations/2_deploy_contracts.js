@@ -7,7 +7,10 @@ module.exports = async function(deployer, network, accounts) {
 
   let tokenAddress = "0x0"; // change to BOOTY address for mainnet
 
-  if (network !== "mainnet" && network !== "rinkeby") {
+  if (network === "ropsten") {
+    // Ropsten WETH address
+    tokenAddress = "0xc778417E063141139Fce010982780140Aa0cD5Ab"
+  } else if (network !== "mainnet" && network !== "rinkeby") {
     const supply = web3.utils.toBN(web3.utils.toWei("696969", "ether"));
     await deployer.deploy(
       HumanStandardToken,

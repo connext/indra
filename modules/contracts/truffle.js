@@ -1,3 +1,8 @@
+require('dotenv').config();
+var HDWalletProvider = require("truffle-hdwallet-provider");
+const MNEMONIC = process.env.MNEMONIC
+const ropsten = `https://ropsten.infura.io/${process.env.API_KEY}`
+
 module.exports = {
   networks: {
     mainnet: {
@@ -5,6 +10,13 @@ module.exports = {
       port: 8545,
       network_id: "1",
       gas: 4700000
+    },
+    ropsten: {
+      host: ropsten,
+      port: 8545,
+      network_id: "3",
+      gas: 6721975,
+      provider: () => new HDWalletProvider(MNEMONIC, ropsten)
     },
     ganache: {
       host: "127.0.0.1",

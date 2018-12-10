@@ -29,9 +29,11 @@
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
     "connext": "^2.5.10",
+    "dotenv": "^6.2.0",
+    "ganache-cli": "6.1.8",
     "truffle": "5.0.0-beta.1",
-    "typechain": "0.3.6",
-    "ganache-cli": "6.1.8"
+    "truffle-hdwallet-provider": "^1.0.0-web3one.1",
+    "typechain": "0.3.6"
   },
   "engines": {
     "node": ">=10",
