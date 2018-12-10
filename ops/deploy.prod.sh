@@ -73,6 +73,7 @@ function new_secret {
 }
 
 new_secret connext_database
+new_secret private_key $PRIVATE_KEY
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -80,6 +81,8 @@ version: '3.4'
 
 secrets:
   connext_database:
+    external: true
+  private_key:
     external: true
 
 volumes:
@@ -96,6 +99,7 @@ services:
       - chainsaw
     secrets:
       - connext_database
+      - private_key
     environment:
       NODE_ENV: production
       SERVICE_USER_KEY: $SERVICE_USER_KEY
