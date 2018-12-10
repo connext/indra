@@ -1,7 +1,7 @@
 import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
 import { UnsignedChannelState, ChannelState } from './vendor/connext/types'
-import fs from 'fs'
+const fs = require('fs');
 const ethers = require('ethers');
 
 export class SignerService {
@@ -21,7 +21,7 @@ export class SignerService {
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    let wallet = new ethers.Wallet(fs.readFileSync('/run/secret/private_key'))
+    let wallet = new ethers.Wallet(fs.readFileSync('/run/secrets/private_key'))
     let binaryData = ethers.utils.arrayify(stateHash);
     return await wallet.signMessage(binaryData)
 

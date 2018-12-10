@@ -38,7 +38,7 @@ database_image=${project}_database:dev
 redis_image=redis:5-alpine
 
 # turn on swarm mode if it's not already on
-docker swarm init 2> /dev/null
+docker swarm init 2> /dev/null || true
 
 function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
