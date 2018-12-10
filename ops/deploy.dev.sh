@@ -59,6 +59,7 @@ function new_secret {
 }
 
 new_secret connext_database_dev
+new_secret private_key_dev "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -66,6 +67,8 @@ version: '3.4'
 
 secrets:
   connext_database_dev:
+    external: true
+  private_key_dev:
     external: true
 
 volumes:
@@ -80,6 +83,7 @@ services:
       - "8080:8080"
     secrets:
       - connext_database_dev
+      - private_key_dev
     environment:
       WALLET_ADDRESS: $WALLET_ADDRESS
       CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
