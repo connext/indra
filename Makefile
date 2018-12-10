@@ -13,7 +13,7 @@ hub=$(cwd)/modules/hub
 db=$(cwd)/modules/database
 
 # Fetch Prerequisites
-find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp"
+find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -name ".*"
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 db_prereq=$(shell find $(db) $(find_options))
 hub_prereq=$(shell find $(hub) $(find_options))
