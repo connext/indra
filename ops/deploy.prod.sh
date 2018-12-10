@@ -43,7 +43,6 @@ then version="`cat package.json | jq .version | tr -d '"'`"
 else version="latest"
 fi
 
-chainsaw_image="$registry/$repository/${project}_chainsaw:$version"
 database_image="$registry/$repository/${project}_database:$version"
 hub_image="$registry/$repository/${project}_hub:$version"
 redis_image="redis:5-alpine"
@@ -59,7 +58,6 @@ function pull_if_unavailable {
 
 if [[ "$DOMAINNAME" != "localhost" ]]
 then
-  pull_if_unavailable $chainsaw_image
   pull_if_unavailable $database_image
   pull_if_unavailable $hub_image
   pull_if_unavailable $redis_image
@@ -97,6 +95,9 @@ services:
 
   hub:
     image: $hub_image
+    entrypoint:
+      - bash
+      - ops/hub.entry.sh
     ports:
       - '3000:8080'
     depends_on:
@@ -121,7 +122,10 @@ services:
       REDIS_URL: $REDIS_URL
 
   chainsaw:
-    image: $chainsaw_image
+    image: $hub_image
+    entrypoint:
+      - bash
+      - ops/chainsaw.entry.sh
     depends_on:
       - postgres
     secrets:

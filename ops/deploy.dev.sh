@@ -81,6 +81,9 @@ services:
 
   hub:
     image: $hub_image
+    entrypoint:
+      - bash
+      - ops/dev.entry.sh
     ports:
       - "8080:8080"
     secrets:

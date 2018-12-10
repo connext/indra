@@ -41,7 +41,7 @@ registry=docker.io
 default: dev
 all: dev prod
 dev: database ethprovider hub test-hub e2e-node-modules
-prod: chainsaw-prod database-prod hub-prod
+prod: database-prod hub-prod
 
 clean:
 	rm -rf build/*
@@ -62,37 +62,29 @@ purge: stop clean
 deploy: prod
 	docker tag $(project)_database:latest $(registry)/$(me)/$(project)_database:latest
 	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)_hub:latest
-	docker tag $(project)_chainsaw:latest $(registry)/$(me)/$(project)_chainsaw:latest
 	docker push $(registry)/$(me)/$(project)_database:latest
 	docker push $(registry)/$(me)/$(project)_hub:latest
-	docker push $(registry)/$(me)/$(project)_chainsaw:latest
 
 deploy-live: prod
 	docker tag $(project)_database:latest $(registry)/$(me)/$(project)_database:$(version)
 	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)_hub:$(version)
-	docker tag $(project)_chainsaw:latest $(registry)/$(me)/$(project)_chainsaw:$(version)
 	docker push $(registry)/$(me)/$(project)_database:$(version)
 	docker push $(registry)/$(me)/$(project)_hub:$(version)
-	docker push $(registry)/$(me)/$(project)_chainsaw:$(version)
 
 # Begin Real Rules
 
 # Hub
 
-chainsaw-prod: hub-js
-	docker build --file $(hub)/ops/chainsaw.dockerfile --tag $(project)_chainsaw:latest $(hub)
-	touch build/chainsaw-prod
-
-hub-prod: hub-js
-	docker build --file $(hub)/ops/hub.dockerfile --tag $(project)_hub:latest $(hub)
+hub-prod: hub
+	docker tag $(project)_hub:dev $(project)_hub:latest
 	touch build/hub-prod
 
 hub: hub-js $(hub_prereq)
-	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
+	docker build --file $(hub)/ops/hub.dockerfile --tag $(project)_hub:dev $(hub)
 	touch build/hub
 
 hub-js: hub-node-modules $(hub_prereq)
-	$(docker_run_in_hub) "yarn build"
+	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	touch build/hub-js
 
 hub-node-modules: builder $(hub)/package.json
