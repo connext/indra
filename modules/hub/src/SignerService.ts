@@ -21,7 +21,7 @@ export class SignerService {
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    let wallet = new ethers.Wallet(fs.readFileSync('/run/secrets/private_key'))
+    let wallet = new ethers.Wallet(fs.readFileSync('/run/secrets/private_key', 'utf8'))
     let binaryData = ethers.utils.arrayify(stateHash);
     return await wallet.signMessage(binaryData)
 
