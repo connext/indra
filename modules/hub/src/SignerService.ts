@@ -1,8 +1,8 @@
 import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
 import { UnsignedChannelState, ChannelState } from './vendor/connext/types'
-import ethers from 'ethers'
 import fs from 'fs'
+const ethers = require('ethers');
 
 export class SignerService {
   private web3: any
