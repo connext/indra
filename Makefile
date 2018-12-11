@@ -8,6 +8,7 @@ me=$(shell whoami)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
+client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 hub=$(cwd)/modules/hub
 db=$(cwd)/modules/database
@@ -26,12 +27,13 @@ id=$(shell id -u):$(shell id -g)
 run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
 docker_run=docker run --name=buidler --tty --rm $(run_as_user)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root builder:dev $(id)
+docker_run_in_client=$(docker_run) --volume=$(client):/root builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(hub):/root builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev $(id)
 docker_run_in_e2e=$(docker_run) --volume=$(e2e):/root builder:dev $(id)
 
 # Env setup
-$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/build)
+$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
 
@@ -40,14 +42,15 @@ registry=docker.io
 
 default: dev
 all: dev prod
-dev: database ethprovider hub test-hub e2e-node-modules
-prod: database-prod hub-prod
+dev: client database ethprovider hub test-hub e2e-node-modules
+prod: client database-prod hub-prod
 
 clean:
 	rm -rf build/*
 	rm -f $(contracts)/build/state-hash
 	rm -rf $(db)/build/*
-	rm -rf $(hub)/build/*
+	rm -rf $(hub)/dist/*
+	rm -rf $(client)/dist/*
 
 stop: 
 	docker container stop buidler 2> /dev/null || true
@@ -72,6 +75,16 @@ deploy-live: prod
 	docker push $(registry)/$(me)/$(project)_hub:$(version)
 
 # Begin Real Rules
+
+# Client
+
+client: client-node-modules
+	$(docker_run_in_client) "./node_modules/.bin/tsc -p tsconfig.json"
+	touch build/client
+
+client-node-modules:
+	$(docker_run_in_client) "yarn install"
+	touch build/client-node-modules
 
 # Hub
 
