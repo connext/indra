@@ -1,8 +1,17 @@
 const ethers = require('ethers');
 const axios = require('axios');
+const ChannelManager = require('../contracts/build/contracts/ChannelManager.json') 
 
 const url = 'http://indra.bohendo.com:3000'
+const eth_provider = ethers.getDefaultProvider('ropsten');
 const HASH_PREAMBLE = 'SpankWallet authentication message:'
+const ChannelManagerAddress = '0xD6EA218b3F5FEb69A2674EFee592B1c7A589E268'
+const private_key = '0xa76d14d7fbbf2868ebd9580305aec6461319b2f261c7a75b0763c79165b41ec2'
+const wallet = new ethers.Wallet(private_key, eth_provider);
+
+let CM = new ethers.Contract(ChannelManagerAddress, ChannelManager.abi, eth_provider)
+
+let CMsigner = CM.connect(wallet);
 
 let challengeData = {
   nonce: '',
@@ -10,9 +19,6 @@ let challengeData = {
   origin: 'localhost',
   signature: ''
 }
-
-const private_key = '0xa76d14d7fbbf2868ebd9580305aec6461319b2f261c7a75b0763c79165b41ec2'
-const wallet = new ethers.Wallet(private_key);
 
 async function authApiServiceTest() {
   try {
@@ -37,23 +43,90 @@ async function authApiServiceTest() {
 }
 
 async function channelApiServiceDepositTest() {
+  try {
+    let res = await axios.post(url + `/channel/${challengeData.address}/request-deposit`, {
+      depositWei: '100',
+      depositToken: '0',
+      lastChanTx: 0,
+      lastThreadUpdateId: 0
+    })
+
+    let state = res.data[9].state.state
+    console.log(state, res.data.length)
+
+    let gas = await CMsigner.estimate.userAuthorizedUpdate(
+      state.recipient, // recipient
+      [
+        state.balanceWeiHub,
+        state.balanceWeiUser,
+      ],
+      [
+        state.balanceTokenHub,
+        state.balanceTokenUser,
+      ],
+      [
+        state.pendingDepositWeiHub,
+        state.pendingWithdrawalWeiHub,
+        state.pendingDepositWeiUser,
+        state.pendingWithdrawalWeiUser,
+      ],
+      [
+        state.pendingDepositTokenHub,
+        state.pendingWithdrawalTokenHub,
+        state.pendingDepositTokenUser,
+        state.pendingWithdrawalTokenUser,
+      ],
+      [state.txCountGlobal, state.txCountChain],
+      state.threadRoot,
+      state.threadCount,
+      state.timeout,
+      state.sigHub
+    )
+
+    console.log(`I estimate this tx will take ${gas} gas`)
+    return;
+
+    let tx = await CMsigner.userAuthorizedUpdate(
+      state.recipient, // recipient
+      [
+        state.balanceWeiHub,
+        state.balanceWeiUser,
+      ],
+      [
+        state.balanceTokenHub,
+        state.balanceTokenUser,
+      ],
+      [
+        state.pendingDepositWeiHub,
+        state.pendingWithdrawalWeiHub,
+        state.pendingDepositWeiUser,
+        state.pendingWithdrawalWeiUser,
+      ],
+      [
+        state.pendingDepositTokenHub,
+        state.pendingWithdrawalTokenHub,
+        state.pendingDepositTokenUser,
+        state.pendingWithdrawalTokenUser,
+      ],
+      [state.txCountGlobal, state.txCountChain],
+      state.threadRoot,
+      state.threadCount,
+      state.timeout,
+      state.sigHub,
+      {gasLimit: gas}
+    )
+
+    //console,log(JSON.stringify(tx, null, 2))
+
+  } catch(e) {
+    console.log(e)
+  }
 }
 
-authApiServiceTest()
+channelApiServiceDepositTest()
 
-axios.post(url + `/channel/${challengeData.address}/request-deposit`, {
-  depositWei: '500000',
-	depositToken: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-	lastChanTx: 0,
-	lastThreadUpdateId: 0
-})
-  .then(function (res) {
-    console.log(JSON.stringify(res.data[0].state, null, 2))
-    console.log(JSON.stringify(res.data[1].state, null, 2))
-  })
-  .catch(function (error) {
-    console.log(error)
-  })
+/*
+authApiServiceTest()
 
 axios.get(url + `/channel/${challengeData.address}/sync`, {
   params: {
@@ -67,3 +140,4 @@ axios.get(url + `/channel/${challengeData.address}/sync`, {
   .catch( e => {
     console.log(e)
   })
+*/
