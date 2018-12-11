@@ -1,0 +1,25 @@
+import getTxCount from "./getTxCount";
+import MockStore from "../mocks/MockStore";
+import {expect} from 'chai'
+import { getWalletTimer } from "./getWalletTimer";
+import { setUpdateTimeoutHandler } from "../worker/actions";
+import { INITIAL_STATE } from "../worker/WorkerState/WorkerState";
+
+describe('getTxCount', () => {
+  const walletTimer = {timeout: 69, pendingUpdate: {arbitrary: 'update'} as any}
+
+  const initialState = setUpdateTimeoutHandler(INITIAL_STATE, walletTimer)
+
+  const mockStore = new MockStore()
+  mockStore.setInitialState(initialState)
+
+  const store = mockStore.createStore()
+
+  it('should get walletTimer from the redux store', () => {
+    const wt = getWalletTimer(store)
+
+    expect(
+      wt
+    ).to.deep.equal(walletTimer)
+  })
+})

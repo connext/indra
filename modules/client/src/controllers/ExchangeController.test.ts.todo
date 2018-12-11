@@ -1,0 +1,332 @@
+import {expect} from 'chai'
+import * as sinon from 'sinon'
+import MockLogger from '../../mocks/MockLogger';
+import { Connext } from '../../lib/connext-client/Connext';
+import MockStore from '../../mocks/MockStore';
+import { createConnext } from '../../lib/createConnext';
+import Web3 = require('web3')
+import ExchangeController from './ExchangeController';
+import { ZERO_STATE } from '../WorkerState/WorkerState';
+import generateExchangeRates from '../../lib/generateExchangeRates';
+import { ETHER, ZERO } from '../../lib/constants';
+import bootyToBEI from '../../lib/currency/bootyToBEI';
+import { SyncResult, UnsignedChannelState } from '../../lib/connext-client/types';
+import * as BigNumber from 'bignumber.js'
+
+const inWei = (etherAmount: string|number) => new BigNumber(ETHER.toString(10)).mul(etherAmount).toString(10)
+const inBei = (bootyAmount: string|number) => bootyToBEI(bootyAmount).amount
+
+// the limit with this tests arbitrary exchange rates for booty based on a 10 booty limit
+const WEI_LIMIT = '144927536231884057'
+
+// arbitrary since we are unit testing
+const hubExchangeResponse = {
+  ...ZERO_STATE,
+  balanceTokenHub: '0',
+  balanceTokenUser: '0',
+  balanceWeiHub: '0',
+  txCountGlobal: 999999,
+  pendingDepositTokenHub: '69',
+  pendingDepositTokenUser: '69',
+  pendingDepositWeiHub: '0',
+  pendingDepositWeiUser: '6969',
+  contractAddress: process.env.CONTRACT_ADDRESS!,
+  pendingWithdrawalWeiUser: '0',
+  pendingWithdrawalWeiHub: '0',
+  pendingWithdrawalTokenUser: '0',
+  pendingWithdrawalTokenHub: '0',
+}
+
+describe('ExchangeController', () => {
+  let ec: ExchangeController
+  const logger = new MockLogger()
+  let connext: Connext
+  let mockStore: MockStore
+  let web3: Web3
+  let address: string
+
+  beforeEach(async () => {
+    web3 = new Web3()
+    mockStore = new MockStore()
+    connext = createConnext(web3)
+    address = await mockStore.setInitialWallet()
+    mockStore.setExchangeRates(generateExchangeRates('69'))
+  })
+
+  it('should not exchange if the user has a booty balance of at least 1 BOOTY', async () => {
+    mockStore.setInitialChannel({
+      ...ZERO_STATE,
+      balanceTokenUser: '1',
+      balanceWeiUser: '10',
+    })
+
+    const store = mockStore.createStore()
+
+    ec = new ExchangeController(store, connext, logger as any)
+
+    const requestBooty = sinon.stub()
+
+    ;(ec as any).requestBooty = requestBooty
+
+    await (ec as any).poll()
+
+    expect(
+      requestBooty.callCount
+    ).equals(0)
+  })
+
+  it('should not exchange if the user has less than 1 booty worth of wei', async () => {
+    mockStore.setInitialChannel({
+      ...ZERO_STATE,
+      balanceTokenUser: '0',
+      balanceWeiUser: inWei(1 / 100),
+    })
+
+    const store = mockStore.createStore()
+
+    ec = new ExchangeController(store, connext, logger as any)
+
+    const requestBooty = sinon.stub()
+
+    ;(ec as any).requestBooty = requestBooty
+
+    await (ec as any).poll()
+
+    expect(
+      requestBooty.callCount
+    ).equals(0)
+  })
+
+  it('should request exchange for the booty limit if the user has enough wei', async () => {
+    const txCount = 69
+    const initialChannel = {
+      ...ZERO_STATE,
+      balanceTokenUser: '0',
+      user: address,
+      txCountGlobal: txCount,
+      balanceWeiUser: inWei(5),
+    }
+    mockStore.setInitialChannel(initialChannel)
+
+    const requestExchange = sinon.mock()
+
+    requestExchange.resolves(hubExchangeResponse)
+
+    connext.requestExchange = requestExchange
+
+    const store = mockStore.createStore()
+
+    ec = new ExchangeController(store, connext, logger as any)
+
+    await (ec as any).poll()
+
+    expect(
+      requestExchange.firstCall.args
+    ).to.deep.equal([
+      {
+        wei: '0',
+        token: '10000000000000000000'
+      },
+      'BOOTY', // this should be BEI though
+    ])
+
+    expect(
+      store.getActions()
+    ).to.deep.equal([
+      {
+        payload: true,
+        type: 'worker/persistent/hasActiveExchange'
+      },
+      {
+        payload: [
+          {
+            state: {
+              reason: "Exchange",
+              state: {
+                balanceTokenHub: "0",
+                balanceTokenUser: "0",
+                balanceWeiHub: "0",
+                balanceWeiUser: "0",
+                contractAddress: process.env.CONTRACT_ADDRESS!,
+                pendingDepositTokenHub: "69",
+                pendingDepositTokenUser: "69",
+                pendingDepositWeiHub: "0",
+                pendingDepositWeiUser: "6969",
+                pendingWithdrawalTokenHub: "0",
+                pendingWithdrawalTokenUser: "0",
+                pendingWithdrawalWeiHub: "0",
+                pendingWithdrawalWeiUser: "0",
+                recipient: "0x0",
+                sigHub: "",
+                sigUser: "",
+                threadCount: 0,
+                threadRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+                timeout: 0,
+                txCountChain: 0,
+                txCountGlobal: 999999,
+                user: "0x0"
+              }
+            },
+            type: "channel"
+          }
+        ],
+        type: "worker/persistent/enqueueSyncItem"
+      }
+    ])
+  })
+
+  it('should exchange if the user has a booty balance over 0 but under 1', async () => {
+    const txCount = 69
+    const initialChannel = {
+      ...ZERO_STATE,
+      user: address,
+      receiver: address,
+      txCountGlobal: txCount,
+      balanceTokenUser: inBei(.99),
+      balanceWeiUser: inWei(5),
+    }
+    mockStore.setInitialChannel(initialChannel)
+
+    const requestExchange = sinon.mock()
+
+    requestExchange.resolves(hubExchangeResponse)
+
+    connext.requestExchange = requestExchange
+
+    const store = mockStore.createStore()
+
+    ec = new ExchangeController(store, connext, logger as any)
+
+    await (ec as any).poll()
+
+    expect(
+      requestExchange.firstCall.args
+    ).to.deep.equal([
+      {
+        wei: '0',
+        token: '10000000000000000000'
+      },
+      'BOOTY', // this should be BEI though
+    ])
+
+    expect(
+      store.getActions()
+    ).to.deep.equal([
+      {
+        payload: true,
+        type: "worker/persistent/hasActiveExchange"
+      },
+      {
+        payload: [
+          {
+            state: {
+              reason: "Exchange",
+              state: {
+                balanceTokenHub: "0",
+                balanceTokenUser: "0",
+                balanceWeiHub: "0",
+                balanceWeiUser: "0",
+                contractAddress: process.env.CONTRACT_ADDRESS,
+                pendingDepositTokenHub: "69",
+                pendingDepositTokenUser: "69",
+                pendingDepositWeiHub: "0",
+                pendingDepositWeiUser: "6969",
+                pendingWithdrawalTokenHub: "0",
+                pendingWithdrawalTokenUser: "0",
+                pendingWithdrawalWeiHub: "0",
+                pendingWithdrawalWeiUser: "0",
+                recipient: "0x0",
+                sigHub: "",
+                sigUser: "",
+                threadCount: 0,
+                threadRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+                timeout: 0,
+                txCountChain: 0,
+                txCountGlobal: 999999,
+                user: "0x0"
+              }
+            },
+            type: "channel"
+          }
+        ],
+        type: "worker/persistent/enqueueSyncItem"
+      }
+    ])
+  })
+
+  it('should request exchange for the entire wei balance if the user has less wei than booty balance', async () => {
+    const txCount = 69
+    const initialChannel = {
+      ...ZERO_STATE,
+      user: address,
+      txCountGlobal: txCount,
+      balanceTokenUser: inBei(.99),
+      balanceWeiUser: inWei(.1),
+    }
+
+    mockStore.setInitialChannel(initialChannel)
+
+    const requestExchange = sinon.mock()
+
+    requestExchange.resolves(hubExchangeResponse)
+
+    connext.requestExchange = requestExchange
+
+    const store = mockStore.createStore()
+
+    ec = new ExchangeController(store, connext, logger as any)
+
+    await (ec as any).poll()
+
+    expect(
+      requestExchange.firstCall.args
+    ).to.deep.equal([
+      {wei: '0', token: '6900000000000000000'},
+      'BOOTY', // this should be BEI though
+    ])
+
+    expect(
+      store.getActions()
+    ).to.deep.equal([
+      {
+        payload: true,
+        type: "worker/persistent/hasActiveExchange"
+      },
+      {
+        payload: [
+          {
+            state: {
+              reason: "Exchange",
+              state: {
+                balanceTokenHub: "0",
+                balanceTokenUser: "0",
+                balanceWeiHub: "0",
+                balanceWeiUser: "0",
+                contractAddress: process.env.CONTRACT_ADDRESS,
+                pendingDepositTokenHub: "69",
+                pendingDepositTokenUser: "69",
+                pendingDepositWeiHub: "0",
+                pendingDepositWeiUser: "6969",
+                pendingWithdrawalTokenHub: "0",
+                pendingWithdrawalTokenUser: "0",
+                pendingWithdrawalWeiHub: "0",
+                pendingWithdrawalWeiUser: "0",
+                recipient: "0x0",
+                sigHub: "",
+                sigUser: "",
+                threadCount: 0,
+                threadRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+                timeout: 0,
+                txCountChain: 0,
+                txCountGlobal: 999999,
+                user: "0x0"
+              }
+            },
+            type: "channel"
+          }
+        ],
+        type: "worker/persistent/enqueueSyncItem"
+      }
+    ])
+  })
+})

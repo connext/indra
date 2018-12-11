@@ -1,0 +1,122 @@
+import {expect} from 'chai'
+import { ZERO_STATE } from '../worker/WorkerState/WorkerState';
+import { diffUpdates } from './diffUpdates';
+
+describe('diffUpdates', () => {
+  const current = {
+    ...ZERO_STATE,
+    balanceTokenHub: '1',
+    balanceTokenUser: '2',
+    balanceWeiHub: '3',
+    balanceWeiUser: '4',
+    pendingDepositTokenHub: '5',
+    pendingDepositTokenUser: '6',
+    pendingDepositWeiHub: '7',
+    pendingDepositWeiUser: '8',
+    pendingWithdrawalTokenHub: '9',
+    pendingWithdrawalTokenUser: '10',
+    pendingWithdrawalWeiHub: '11',
+    pendingWithdrawalWeiUser: '6969696969696969696969696969696900',
+  }
+
+  const previous = {
+    ...ZERO_STATE,
+    balanceTokenHub: '0',
+    balanceTokenUser: '1',
+    balanceWeiHub: '2',
+    balanceWeiUser: '3',
+    pendingDepositTokenHub: '4',
+    pendingDepositTokenUser: '5',
+    pendingDepositWeiHub: '6',
+    pendingDepositWeiUser: '7',
+    pendingWithdrawalTokenHub: '8',
+    pendingWithdrawalTokenUser: '9',
+    pendingWithdrawalWeiHub: '10',
+    pendingWithdrawalWeiUser: '6969696969696969696969696969696969',
+  }
+
+  const expected1 = {
+    balanceTokenHub: '1',
+    balanceTokenUser: '1',
+    balanceWeiHub: '1',
+    balanceWeiUser: '1',
+    pendingDepositTokenHub: '1',
+    pendingDepositTokenUser: '1',
+    pendingDepositWeiHub: '1',
+    pendingDepositWeiUser: '1',
+    pendingWithdrawalTokenHub: '1',
+    pendingWithdrawalTokenUser: '1',
+    pendingWithdrawalWeiHub: '1',
+    pendingWithdrawalWeiUser: `-69`,
+  }
+
+  const expected2 = {
+    balanceTokenHub: '-1',
+    balanceTokenUser: '-1',
+    balanceWeiHub: '-1',
+    balanceWeiUser: '-1',
+    pendingDepositTokenHub: '-1',
+    pendingDepositTokenUser: '-1',
+    pendingDepositWeiHub: '-1',
+    pendingDepositWeiUser: '-1',
+    pendingWithdrawalTokenHub: '-1',
+    pendingWithdrawalTokenUser: '-1',
+    pendingWithdrawalWeiHub: '-1',
+    pendingWithdrawalWeiUser: `69`,
+  }
+
+  const expected3 = {
+    balanceTokenHub: '0',
+    balanceTokenUser: '0',
+    balanceWeiHub: '0',
+    balanceWeiUser: '0',
+    pendingDepositTokenHub: '0',
+    pendingDepositTokenUser: '0',
+    pendingDepositWeiHub: '0',
+    pendingDepositWeiUser: '0',
+    pendingWithdrawalTokenHub: '0',
+    pendingWithdrawalTokenUser: '0',
+    pendingWithdrawalWeiHub: '0',
+    pendingWithdrawalWeiUser: `0`,
+  }
+
+  it('should return the difference in balances between one update and another update', () => {
+    expect(
+      diffUpdates(current, previous)
+    ).to.deep.equal(expected1)
+  })
+
+  it('should return negatives when balance decreases', () => {
+    expect(
+      diffUpdates(previous, current)
+    ).to.deep.equal(expected2)
+  })
+
+  it('should return all 0s if the updates are equal', () => {
+    expect(
+      diffUpdates(previous, previous)
+    ).to.deep.equal(expected3)
+
+    expect(
+      diffUpdates(current, current)
+    ).to.deep.equal(expected3)
+
+    expect(
+      diffUpdates(expected3 as any, expected3 as any)
+    ).to.deep.equal(expected3)
+
+    expect(
+      diffUpdates(
+        diffUpdates(
+          diffUpdates(expected2 as any, expected2 as any) as any,
+          diffUpdates(expected3 as any, expected3 as any) as any,
+        ) as any,
+        diffUpdates(
+          diffUpdates(current, current) as any,
+          diffUpdates(expected1 as any, expected1 as any) as any,
+        ) as any,
+      )
+    ).to.deep.equal(expected3)
+  })
+
+})

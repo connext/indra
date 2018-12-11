@@ -1,0 +1,50 @@
+import { isFairExchange } from "./isFairExchange";
+import { expect } from 'chai'
+import Currency, { ICurrency } from "./currency/Currency";
+import generateExchangeRates from "./generateExchangeRates";
+
+type DecimalPercent = number
+
+const USD_PER_ETH = '69'
+
+const rates = generateExchangeRates(USD_PER_ETH)
+
+describe('isFairExchangeRate', () => {
+  function testIt(
+    testDescription: string,
+    buyAmount: ICurrency,
+    sellAmount: ICurrency,
+    delta: DecimalPercent,
+    expected: boolean
+  ) {
+    it(testDescription, () => {
+      expect(
+        isFairExchange(rates, buyAmount, sellAmount, delta)
+      ).equals(expected)
+    })
+  }
+
+  testIt(
+    'should return true if exchange rate is dead on', // message
+    Currency.ETH(1),  // buyAmount
+    Currency.USD(69), // sellAmount
+    0, // delta
+    true, // expected outcome
+  )
+
+  testIt(
+    'should return false if exchange rate is not within delta',
+    Currency.ETH(1.5),
+    Currency.USD(69),
+    .2,
+    false,
+  )
+
+  testIt(
+    'should return true if exchange rate is within delta',
+    Currency.ETH(1),
+    Currency.USD(69.1),
+    .1,
+    true,
+  )
+})

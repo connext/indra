@@ -1,0 +1,61 @@
+import MockLogger from "../../mocks/MockLogger";
+import AbstractController from "./AbstractController";
+import { expect } from 'chai'
+import * as sinon from 'sinon'
+
+const noop = () => {}
+
+class TestAbstractController extends AbstractController {
+  constructor() {
+    super(new MockLogger() as any)
+  }
+
+  testRegisterHandler() {
+    let addHandlerWasCalled = false
+
+    const method = 'testmethod'
+
+    const server = {
+      addHandler: (m: string, cb: Function) => {
+        addHandlerWasCalled = true
+        expect(!!cb).eq(true)
+        expect(m).eq(method)
+      },
+    }
+
+    this.registerHandler(server as any, method, noop)
+
+    expect(addHandlerWasCalled).eq(true)
+  }
+
+  testUnregisterAllHandlers() {
+    const server = {
+      removeHandler: sinon.stub(),
+      addHandler: sinon.stub(),
+    }
+
+    const methods = ['method1', 'method2', 'method3']
+
+    methods.forEach(method => this.registerHandler(server as any, method, noop))
+
+    this.unregisterAllHandlers()
+
+    expect(server.removeHandler.callCount).equals(3)
+
+    expect(server.removeHandler.firstCall.calledWith(methods[0])).equals(true)
+    expect(server.removeHandler.secondCall.calledWith(methods[1])).equals(true)
+    expect(server.removeHandler.thirdCall.calledWith(methods[2])).equals(true)
+  }
+}
+
+describe('AbstractController', () => {
+  it('should call JsonRpcServer.addHandler with correct method name and a call back function', () => {
+    const tac = new TestAbstractController()
+    tac.testRegisterHandler()
+  })
+
+  it('should remove all handlers when unregisterAllHandlers is called', () => {
+    const tac = new TestAbstractController()
+    tac.testUnregisterAllHandlers()
+  })
+})

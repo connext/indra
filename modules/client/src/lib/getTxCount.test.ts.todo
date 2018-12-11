@@ -1,0 +1,18 @@
+import getTxCount from "./getTxCount";
+import MockStore from "../mocks/MockStore";
+import {expect} from 'chai'
+
+const GLOBAL_TX_COUNT = 69
+
+describe('getTxCount', () => {
+  const mockStore = new MockStore()
+  mockStore.setGlobalTxCount(GLOBAL_TX_COUNT)
+
+  const store = mockStore.createStore()
+
+  it('should get txCountGlobal from the redux store', () => {
+    expect(
+      getTxCount(store)
+    ).equals(GLOBAL_TX_COUNT)
+  })
+})

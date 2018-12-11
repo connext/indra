@@ -1,0 +1,20 @@
+import {expect} from 'chai'
+import { getSem } from './getSem';
+import MockStore from '../mocks/MockStore';
+import * as semaphore from 'semaphore'
+
+describe('getSem', () => {
+  it('should get semaphore from WorkerStores runtime state', () => {
+    const mockStore = new MockStore()
+
+    const sem = semaphore(1)
+
+    mockStore.setSem(sem)
+
+    const store = mockStore.createStore()
+
+    expect(
+      getSem(store)
+    ).equals(sem)
+  })
+})

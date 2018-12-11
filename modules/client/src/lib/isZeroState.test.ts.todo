@@ -1,0 +1,23 @@
+import {expect} from 'chai'
+import isZeroState from './isZeroState';
+import { ZERO_STATE } from '../worker/WorkerState/WorkerState';
+
+describe('isZeroState', () => {
+  it('shoud return true if the state is the zero state', () => {
+    expect(
+      isZeroState(ZERO_STATE)
+    ).equals(true)
+  })
+
+  it('should return false if state is not the zero state', () => {
+    expect(isZeroState({
+      ...ZERO_STATE,
+      user: '0x07FecA8ceF1720966025EacE8E1E3343702f8451',
+      recipient: '0x07FecA8ceF1720966025EacE8E1E3343702f8451',
+      txCountChain: 5,
+      txCountGlobal: 5,
+      threadCount: 2,
+      balanceTokenUser: '1000000000000000',
+    })).equals(false)
+  })
+})

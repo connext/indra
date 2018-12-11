@@ -1,0 +1,15 @@
+import {expect} from 'chai'
+import { createConnext } from './createConnext';
+import Web3 = require('web3')
+import { Connext } from './connext-client/Connext';
+
+describe('createConnext', () => {
+  it('should work', () => {
+    const web3 = new Web3()
+    const connext = createConnext(web3)
+
+    expect(connext.tokenAddress).equals(process.env.TOKEN_ADDRESS!.toLowerCase())
+    expect(connext.hubUrl).equals(process.env.HUB_URL!.toLowerCase())
+    expect(connext.hubAddress).equals(process.env.HUB_ADDRESS!.toLowerCase())
+  })
+})

@@ -1,0 +1,6 @@
+import { Store } from "redux";
+import { WorkerState } from "../worker/WorkerState/WorkerState";
+
+export const getWalletTimer = (store: Store<WorkerState>) => {
+  return store.getState().persistent.walletTimer
+}

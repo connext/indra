@@ -1,0 +1,2 @@
+// out of date
+export type MigrationState = 'AWAITING_ETH' | 'MIGRATING' | 'DONE' | 'MIGRATION_FAILED'

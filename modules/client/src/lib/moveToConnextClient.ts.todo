@@ -1,0 +1,106 @@
+import { ChannelStateUpdate, Balances } from "./connext-client/types";
+import * as BigNumber from 'bignumber.js'
+
+// all these could be moved to connext client
+
+export type GetStateBalanceDifferences = (update: ChannelStateUpdate, currentState: ChannelStateUpdate) => {user: Balances, hub: Balances}
+
+export function getTotalChannelDifferences(update: ChannelStateUpdate, currentState: ChannelStateUpdate): Balances {
+  const updateBalances = getTotalChannelBalances(update)
+  const currentStateBalances = getTotalChannelBalances(currentState)
+
+  return subBalances(updateBalances, currentStateBalances)
+}
+
+// TODO move the change to BigNumber and do math logic to a safeMathy like module that does math on strings
+// without exposing that it's using BigNumber to implement it
+
+export function getTotalChannelBalances(update: ChannelStateUpdate): Balances {
+  const aggregateUser = aggregateUserChannelBalances(update)
+  const aggregateHub =  aggregateHubChannelBalances(update)
+
+  const balanceWei = new BigNumber(aggregateUser.balanceWei)
+    .add(aggregateHub.balanceWei)
+    .toString(10)
+
+  const balanceToken = new BigNumber(aggregateUser.balanceToken)
+    .add(aggregateHub.balanceToken)
+    .toString(10)
+
+  return { balanceWei, balanceToken }
+}
+
+export const getStateBalanceDifferences: GetStateBalanceDifferences = (update, currentState) => {
+  const userBalancesBefore = aggregateUserChannelBalances(currentState)
+  const userBalancesAfter = aggregateUserChannelBalances(update)
+
+  const hubBalancesBefore = aggregateHubChannelBalances(currentState)
+  const hubBalancesAfter = aggregateHubChannelBalances(update)
+
+  return {
+    user: subBalances(userBalancesAfter, userBalancesBefore),
+    hub: subBalances(hubBalancesAfter, hubBalancesBefore)
+  }
+}
+
+export function addBalances(b1: Balances, b2: Balances) {
+  const balanceToken = new BigNumber(b1.balanceToken)
+    .add(b2.balanceToken)
+    .toString(10)
+
+  const balanceWei = new BigNumber(b1.balanceWei)
+    .add(b2.balanceWei)
+    .toString(10)
+
+  return {balanceToken, balanceWei}
+
+}
+
+function subBalances(b1: Balances, subBalances: Balances) {
+  const balanceToken = new BigNumber(b1.balanceToken)
+    .sub(subBalances.balanceToken)
+    .toString(10)
+
+  const balanceWei = new BigNumber(b1.balanceWei)
+    .sub(subBalances.balanceWei)
+    .toString(10)
+
+  return {balanceToken, balanceWei}
+}
+
+export function aggregateUserChannelBalances(update: ChannelStateUpdate): Balances {
+  const { state } = update
+  const balanceToken = new BigNumber(state.balanceTokenUser)
+    .add(state.pendingDepositTokenUser)
+    .add(state.pendingWithdrawalTokenUser)
+    .toString(10)
+
+  const balanceWei = new BigNumber(state.balanceWeiUser)
+    .add(state.pendingDepositWeiUser)
+    .add(state.pendingWithdrawalWeiUser)
+    .toString(10)
+
+  return {
+    balanceToken,
+    balanceWei,
+  }
+}
+
+// TODO duplicate logic here
+export function aggregateHubChannelBalances(update: ChannelStateUpdate): Balances {
+  const { state } = update
+  const balanceToken = new BigNumber(state.balanceTokenHub)
+    .add(state.pendingDepositTokenHub)
+    .add(state.pendingWithdrawalTokenHub)
+    .toString(10)
+
+  const balanceWei = new BigNumber(state.balanceWeiHub)
+    .add(state.pendingDepositWeiHub)
+    .add(state.pendingWithdrawalWeiHub)
+    .toString(10)
+
+  return {
+    balanceToken,
+    balanceWei,
+  }
+}

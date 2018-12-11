@@ -1,0 +1,7 @@
+export interface BrandingState {
+  title?: string
+  companyName?: string
+  backgroundColor?: string
+  textColor?: string
+  address: string
+}

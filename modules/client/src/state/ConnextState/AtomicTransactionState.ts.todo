@@ -1,0 +1,8 @@
+export interface AtomicTransactionState {
+  nextMethodIndex: number
+  nextMethodArgs: any[]
+}
+
+export interface TransactionsState {
+  [key: string]: AtomicTransactionState
+}

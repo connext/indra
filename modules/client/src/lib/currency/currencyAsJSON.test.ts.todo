@@ -1,0 +1,25 @@
+import {expect} from 'chai'
+import CurrencyConvertable from './CurrencyConvertable';
+import Currency, { ICurrency } from './Currency';
+import currencyAsJSON from './currencyAsJSON';
+import { CurrencyType } from '../../worker/WorkerState/CurrencyTypes';
+
+describe('currencyAsJSON', () => {
+  it('should return an ICurrency object when any Currency is passed in', () => {
+    const currencyObj = {type: CurrencyType.BOOTY, amount: '69'}
+    const convertable = new CurrencyConvertable(CurrencyType.BOOTY, 69, {} as any)
+    const currency = Currency.BOOTY(69)
+
+    function doTest(c: ICurrency): void {
+      expect(
+        currencyAsJSON(c)
+      ).to.deep.equal(
+        currencyObj
+      )
+    }
+
+    const cases = [convertable, currency, currencyObj]
+
+    cases.forEach(doTest)
+ })
+})

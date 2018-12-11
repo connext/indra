@@ -1,0 +1,13 @@
+import { expect } from 'chai'
+import * as sinon from 'sinon'
+import wait from './wait';
+
+describe('wait', () => {
+  it('should work', async () => {
+    const before = Date.now()
+    await wait(100)
+    expect(
+      Date.now() >= before + 100
+    ).equal(true)
+  })
+})

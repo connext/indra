@@ -1,0 +1,166 @@
+import {expect} from 'chai'
+import MockConnext from '../../mocks/MockConnext';
+import MockStore from '../../mocks/MockStore';
+import MockLogger from '../../mocks/MockLogger';
+import SyncController from './SyncController';
+import { SyncResult } from '../../lib/connext-client/types';
+
+const GLOBAL_TX_COUNT = 69
+const LAST_THREAD_ID = 420
+
+const arbitraryStateUpdate = (txCountGlobal = 70, lastThreadId = 420) => ({
+  type: 'channel',
+  state: {
+    reason: 'ProposePending',
+    state: {
+      txCountGlobal,
+      lastThreadId,
+    } as any,
+  }
+}) as SyncResult
+
+describe('SyncController', () => {
+  let sc: SyncController
+  let mockConnext: MockConnext
+  let mockStore: MockStore
+  const logger = new MockLogger()
+
+  beforeEach(() => {
+    mockConnext = new MockConnext()
+    mockStore = new MockStore()
+  })
+
+  it('should not queue up sync results that are older than current tx count and lastThreadId', async () => {
+    const connext = mockConnext.getMock()
+
+    connext.sync = async (txCount: number, lastThreadId: number, _address?: string) => {
+      expect(txCount).equals(GLOBAL_TX_COUNT + 1)
+      expect(lastThreadId).equals(LAST_THREAD_ID)
+
+      expect(_address).equals(address)
+
+      return [arbitraryStateUpdate(60, 400)] as any as SyncResult[]
+    }
+
+    const address = await mockStore.setInitialWallet()
+    mockStore.setGlobalTxCount(GLOBAL_TX_COUNT)
+    mockStore.setLastThreadId(LAST_THREAD_ID)
+
+    const store = mockStore.createStore()
+
+    sc = new SyncController(connext, store, logger as any)
+
+    await sc.sync()
+
+    expect(
+      store.getActions()
+    ).to.deep.equal([])
+  })
+
+  it('should queue up sync results that are newer than the latest thread id', async () => {
+    const connext = mockConnext.getMock()
+
+    connext.sync = async (txCount: number, lastThreadId: number, _address?: string) => {
+      expect(txCount).equals(GLOBAL_TX_COUNT - 6 + 1)
+      expect(lastThreadId).equals(LAST_THREAD_ID - 9)
+
+      expect(_address).equals(address)
+
+      return [arbitraryStateUpdate()] as any as SyncResult[]
+    }
+
+    const address = await mockStore.setInitialWallet()
+    mockStore.setGlobalTxCount(GLOBAL_TX_COUNT - 6)
+    mockStore.setLastThreadId(LAST_THREAD_ID - 9)
+
+    const store = mockStore.createStore()
+
+    sc = new SyncController(connext, store, logger as any)
+
+    await sc.sync()
+
+    expect(
+      store.getActions()
+    ).to.deep.equal([
+      {
+        "payload": [
+          {
+            "state": {
+              "reason": "ProposePending",
+              "state": {
+                "lastThreadId": 420,
+                "txCountGlobal": 70
+              }
+            },
+            "type": "channel"
+          }
+        ],
+        "type": "worker/persistent/enqueueSyncItem"
+      }
+    ])
+  })
+
+  it('should work with multiple results', async () => {
+    const connext = mockConnext.getMock()
+
+    connext.sync = async (txCount: number, lastThreadId: number, _address?: string) => {
+      expect(txCount).equals(GLOBAL_TX_COUNT - 6 + 1)
+      expect(lastThreadId).equals(LAST_THREAD_ID - 9)
+
+      expect(_address).equals(address)
+
+      return [arbitraryStateUpdate(), arbitraryStateUpdate(70, 421), arbitraryStateUpdate(70, 422)] as any as SyncResult[]
+    }
+
+    const address = await mockStore.setInitialWallet()
+    mockStore.setGlobalTxCount(GLOBAL_TX_COUNT - 6)
+    mockStore.setLastThreadId(LAST_THREAD_ID - 9)
+
+    const store = mockStore.createStore()
+
+    sc = new SyncController(connext, store, logger as any)
+
+    await sc.sync()
+
+    expect(
+      store.getActions()
+    ).to.deep.equal([
+      {
+        "payload": [
+          {
+            "state": {
+              "reason": "ProposePending",
+              "state": {
+                "lastThreadId": 420,
+                "txCountGlobal": 70
+              }
+            },
+            "type": "channel"
+          },
+          {
+            "state": {
+              "reason": "ProposePending",
+              "state": {
+                "lastThreadId": 421,
+                "txCountGlobal": 70
+              }
+            },
+            "type": "channel"
+          },
+          {
+            "state": {
+              "reason": "ProposePending",
+              "state": {
+                "lastThreadId": 422,
+                "txCountGlobal": 70
+              }
+            },
+            "type": "channel"
+          }
+        ],
+        "type": "worker/persistent/enqueueSyncItem"
+      }
+    ]
+    )
+  })
+})

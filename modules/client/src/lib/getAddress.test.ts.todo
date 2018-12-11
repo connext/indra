@@ -1,0 +1,14 @@
+import MockStore from '../mocks/MockStore';
+import getAddress from './getAddress'
+import {expect} from 'chai'
+
+describe('getAddress', () => {
+  it ('should get publicKey from store', async () => {
+    const mockStore = new MockStore()
+    const publicKey = await mockStore.setInitialWallet()
+
+    expect(
+      getAddress(mockStore.createStore())
+    ).eq(publicKey)
+  })
+})
