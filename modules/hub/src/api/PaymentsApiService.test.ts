@@ -51,6 +51,7 @@ describe('PaymentsApiService', () => {
         ] as PurchasePayment[]
       })
 
+    assert.equal(res.status, 200, JSON.stringify(res.body))
     const { purchaseId } = res.body
     assert.ok(purchaseId)
 

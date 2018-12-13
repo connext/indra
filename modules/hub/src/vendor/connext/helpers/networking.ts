@@ -1,8 +1,5 @@
 export const GET = 'GET'
 export const POST = 'POST'
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill');
-
 
 export class Networking {
   baseUrl: string

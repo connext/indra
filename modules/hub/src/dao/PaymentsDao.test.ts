@@ -14,7 +14,7 @@ describe('PaymentsDao', () => {
   })
 
   it('should reject when there is no linked payments', async () => {
-    assert.isRejected(paymentsDao.create(0, 1))
+    assert.isRejected(paymentsDao.createCustodialPayment(0, 1))
   })
 
   it('should reject when recipient is different than disbursed user', async () => {
@@ -35,7 +35,7 @@ describe('PaymentsDao', () => {
     })
     
     r = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
-    assert.isRejected(paymentsDao.create(paymentId, r.update.id))
+    assert.isRejected(paymentsDao.createCustodialPayment(paymentId, r.update.id))
   })
 
   it('should create a custodial payment', async () => {
@@ -56,7 +56,12 @@ describe('PaymentsDao', () => {
     })
     
     r = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
-    const custodialId = await paymentsDao.create(paymentId, r.update.id)
-    assert.exists(custodialId)
+    await paymentsDao.createCustodialPayment(paymentId, r.update.id)
+
+    const db = registry.get('DBEngine')
+    assert.containSubset((await db.query('SELECT * FROM custodial_payments')).rows[0], {
+      payment_id: '' + paymentId,
+      disbursement_id: '' + r.update.id,
+    })
   })
 })

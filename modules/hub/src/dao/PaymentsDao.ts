@@ -3,7 +3,7 @@ import {Client} from 'pg'
 import log from '../util/log'
 
 export default interface PaymentsDao {
-  create(paymentId: number, disbursementId: number): Promise<number>
+  createCustodialPayment(paymentId: number, disbursementId: number): Promise<void>
 }
 
 const LOG = log('PostgresPaymentsDao')
@@ -15,8 +15,8 @@ export class PostgresPaymentsDao implements PaymentsDao {
     this.db = db
   }
 
-  public async create(paymentId: number, disbursementId: number): Promise<number> {
-    const { id } = await this.db.queryOne(SQL`
+  public async createCustodialPayment(paymentId: number, disbursementId: number): Promise<void> {
+    await this.db.queryOne(SQL`
       INSERT INTO custodial_payments (
         payment_id,
         disbursement_id
@@ -24,9 +24,7 @@ export class PostgresPaymentsDao implements PaymentsDao {
       VALUES (
         ${paymentId},
         ${disbursementId}
-      ) RETURNING id
+      )
     `)
-
-    return parseInt(id)
   }
 }

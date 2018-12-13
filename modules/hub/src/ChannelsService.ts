@@ -1,11 +1,9 @@
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
-import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
 import { BigNumber } from 'bignumber.js'
 import {
-  ChannelStateUpdateRow,
   channelStateUpdateRowBigNumToString,
   channelRowBigNumToString,
   ChannelRow,
@@ -27,9 +25,6 @@ import {
   WithdrawalArgs,
   ExchangeArgs,
   convertChannelState,
-  convertDeposit,
-  convertWithdrawal,
-  convertExchange,
   convertThreadState,
   ThreadState,
   convertPayment,
@@ -521,9 +516,18 @@ export default class ChannelsService {
           )
         }
 
+        let generated = this.validator.generateChannelStateFromRequest(
+          convertChannelState('str', signedChannelStatePrevious),
+          {
+            args: unsignedUpdateRedis.args, 
+            reason: unsignedUpdateRedis.reason, 
+            txCount: signedChannelStatePrevious.txCountGlobal + 1
+          }
+        )
+
         // validate that user sig matches our unsigned update that we proposed
         this.validator.assertChannelSigner({
-          ...unsignedUpdateRedis.state,
+          ...generated,
           sigUser: update.sigUser,
         })
 
@@ -649,6 +653,8 @@ export default class ChannelsService {
     const pushChannel = (update: UpdateRequest) => res.push({ type: 'channel', update })
     const pushThread = (update: ThreadStateUpdateRow) => res.push({ type: 'thread', update })
 
+    let lastTxCount = 0
+
     while (
       curChan < channelUpdates.length ||
       curThread < threadUpdates.length
@@ -672,6 +678,7 @@ export default class ChannelsService {
           txCount: chan.state.txCountGlobal,
           id: chan.id
         })
+        lastTxCount = chan.state.txCountGlobal
       } else {
         curThread += 1
         pushThread({
@@ -681,13 +688,13 @@ export default class ChannelsService {
       }
     }
 
-    // push unsigned state
+    // push unsigned state to end of the sync stack, txCount will be ignored when processing
     const unsigned = await this.redisGetUnsignedState(user)
     if (unsigned) {
       pushChannel({
         args: unsigned.args,
         reason: unsigned.reason,
-        txCount: unsigned.state.txCountGlobal
+        txCount: lastTxCount + 1
       })
     }
 

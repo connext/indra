@@ -52,36 +52,37 @@ export class PaymentsApiServiceHandler {
   config: Config
 
   async doPurchase(req: express.Request, res: express.Response) {
-    const { user } = req.params
     const payments: PurchasePayment[] = req.body.payments
     const meta: any = req.body.meta
 
-    if (!user || !payments || !meta) {
+    if (!payments || !meta) {
       LOG.warn(
         'Received invalid payment request. Aborting. Params received: {params}, Body received: {body}',
         {
-          params: req.params,
-          body: req.body,
+          params: JSON.stringify(req.params),
+          body: JSON.stringify(req.body),
         },
       )
       return res.sendStatus(400)
     }
 
-    let result = await this.paymentsService.doPurchase(req.session!.address, meta, payments)
-    if (result.error) {
+    const result = await this.paymentsService.doPurchase(req.session!.address, meta, payments)
+    if (result.error != false) {
       LOG.warn(result.msg)
       return res.send(400).json(result.msg)
     }
 
     const lastChanTx = Math.max(...payments.map(p => (p.update as UpdateRequest).txCount))
-
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
-      user,
+      req.session!.address,
       lastChanTx,
       0,
     )
 
-    res.send(updates)
+    res.send({
+      purchaseId: result.res.purchaseId,
+      updates,
+    })
   }
 
   async doPaymentHistory(

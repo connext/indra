@@ -37,6 +37,10 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
   }
 
   public async save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number> {
+    // Note: this only returns the ID because returning a full
+    // `PurchasePaymentRow` would require a second query to hit the `payments`
+    // view, and at the moment none of the callers of this function need the
+    // whole row.
     const { id } = await this.db.queryOne(SQL`
       INSERT INTO _payments (
         purchase_id, recipient,

@@ -1,6 +1,8 @@
 import { MockConnextInternal, patch, MockStore } from '../testing/mocks'
 import { assert, mkAddress } from '../testing/index'
 import { PaymentArgs } from '@src/types'
+// @ts-ignore
+global.fetch = require('node-fetch-polyfill');
 
 describe('BuyController: unit tests', () => {
   const user = mkAddress('0xUUU')

@@ -1,4 +1,3 @@
-import { default as DBEngine } from './DBEngine'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
 import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
@@ -13,6 +12,7 @@ import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
 import { sign } from "cookie-signature";
 import PaymentsDao from "./dao/PaymentsDao";
+import { default as DBEngine } from './DBEngine'
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -65,32 +65,28 @@ export default class PaymentsService {
     meta: any,
     payments: PurchasePayment[],
   ): Promise<MaybeResult<{ purchaseId: string }>> {
-
     const purchaseId = this.generatePurchaseId()
 
     for (let payment of payments) {
       let row: { id?: number }
-      if (payment.type == 'PT_CHANNEL') {
-        let channelUpdateRequest: UpdateRequestBigNumber
+      let afterPayment = null
 
-        if (payment.recipient !== this.config.hotWalletAddress) {
-          // instant custodial payment, forward payment to recipient
-          // TODO: db transaction @wolever
-          await this.doInstantCustodialPayment(user, payment, purchaseId)
-          // all database txs are handled by the above function, so just continue
-          continue
-        } else {
-          // normal payment
-          // TODO: should we check if recipient == hub here?
-          channelUpdateRequest = {
-            args: payment.update.args,
-            reason: 'Payment',
-            sigUser: payment.update.sigUser,
-            txCount: payment.update.txCount
-          }
-          const updates = await this.channelsService.doUpdates(user, [channelUpdateRequest])
-          row = updates[0]
-        }
+      if (payment.type == 'PT_CHANNEL') {
+        // normal payment
+        // TODO: should we check if recipient == hub here?
+        row = (await this.channelsService.doUpdates(user, [{
+          args: payment.update.args,
+          reason: 'Payment',
+          sigUser: payment.update.sigUser,
+          txCount: payment.update.txCount
+        }]))[0]
+
+        // If the payment's recipient is not the hub, create an instant
+        // custodial payment (but only after the row in `payments` has been
+        // created, since the `custodial_payments` table references that row)
+        if (payment.recipient !== this.config.hotWalletAddress)
+          afterPayment = paymentId => this.doInstantCustodialPayment(user, payment, paymentId)
+
       } else if (payment.type == 'PT_THREAD') {
         row = await this.threadsService.update(
           user,
@@ -104,7 +100,7 @@ export default class PaymentsService {
       // Note: this handling of meta isn't ideal. In the future, we should have
       // a Purchase table to store the purchase metadata instead of merging it
       // into payment metadata.
-      await this.paymentMetaDao.save(purchaseId, row.id, {
+      const paymentId = await this.paymentMetaDao.save(purchaseId, row.id, {
         recipient: payment.recipient,
         amount: payment.amount,
         type: payment.type,
@@ -113,6 +109,8 @@ export default class PaymentsService {
           ...payment.meta,
         },
       })
+      if (afterPayment)
+        await afterPayment(paymentId)
     }
 
     return {
@@ -121,7 +119,7 @@ export default class PaymentsService {
     }
   }
 
-  private async doInstantCustodialPayment(user: string, payment: PurchasePayment, purchaseId: string): Promise<number> {
+  private async doInstantCustodialPayment(user: string, payment: PurchasePayment, paymentId: number): Promise<void> {
     const paymentUpdate = payment.update as UpdateRequest
 
     const recipientChannel = await this.channelsDao.getChannelByUser(payment.recipient)
@@ -134,14 +132,15 @@ export default class PaymentsService {
       throw new Error(`Payment must be signed to hub in order to forward, payment: ${prettySafeJson(payment)}`)
     }
 
-    // save recipient update
-    // same payment args, but specify as hub to user
-    const argsHubToRecipient =
-      { ...paymentUpdate.args, recipient: 'user' } as PaymentArgs
+    // Create the payment that will be sent to the recipient. It's identical to
+    // the payment being made to the hub, except:
+    // 1) it will be sent to to the recipient's channel, and
+    // 2) the recipient is the user, not the hub
+    const argsHubToRecipient = {...paymentArgs, recipient: 'user'} as PaymentArgs
 
     const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
       convertChannelState('str', recipientChannel.state),
-      argsHubToRecipient,
+      argsHubToRecipient
     )
     const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
     const disbursement = await this.channelsDao.applyUpdateByUser(
@@ -152,18 +151,9 @@ export default class PaymentsService {
       argsHubToRecipient
     )
 
-    // return user to hub update request to be sent to hub through doUpdate
-    const channelUpdateRequest: UpdateRequestBigNumber = {
-      args: convertPayment('bignumber', paymentUpdate.args as PaymentArgsBN),
-      reason: 'Payment',
-      txCount: paymentUpdate.txCount,
-      sigUser: paymentUpdate.sigUser
-    }
-
-    const updates = await this.channelsService.doUpdates(user, [channelUpdateRequest])
-    const { id: updateId } = updates[0]
-    const paymentId = await this.paymentMetaDao.save(purchaseId, updateId, payment)
-    return await this.paymentsDao.create(paymentId, disbursement.id)
+    // Link the payment (ie, the Payment row which references the
+    // paying-user -> hub state update) to the disbursement.
+    return await this.paymentsDao.createCustodialPayment(paymentId, disbursement.id)
   }
 
   private generatePurchaseId(
