@@ -4,7 +4,7 @@ import {PurchasePaymentSummary} from '../vendor/connext/types'
 import Config from '../Config'
 
 export interface PaymentMetaDao {
-  save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<void>
+  save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number>
 
   historyByUser (address: string): Promise<PurchasePaymentRow[]>
 
@@ -36,8 +36,8 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     this.config = config
   }
 
-  public async save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<void> {
-    await this.db.query(SQL`
+  public async save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number> {
+    const { id } = await this.db.queryOne(SQL`
       INSERT INTO _payments (
         purchase_id, recipient,
         channel_update_id,
@@ -51,8 +51,9 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
         ${payment.type == 'PT_THREAD' ? updateId : null},
         ${payment.amount.amountWei}, ${payment.amount.amountToken},
         ${JSON.stringify(payment.meta)}::jsonb
-      )
+      ) RETURNING id
     `)
+    return parseInt(id)
   }
 
   public async historyByUser (address: string): Promise<PurchasePaymentRow[]> {

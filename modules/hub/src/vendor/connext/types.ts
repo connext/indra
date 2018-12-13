@@ -45,6 +45,11 @@ const castFunctions: any = {
   'bn-bignumber': (x: BN) => new BigNumber(x.toString()),
   'bignumber-str': (x: BigNumber) => x.toFixed(),
   'bignumber-bn': (x: BigNumber) => new BN(x.toFixed()),
+
+  // Used for testing
+  'number-str': (x: number) => '' + x,
+  'number-bn': (x: number) => new BN(x),
+  'number-bignumber': (x: number) => new BN(x),
 }
 
 export function convertFields(fromType: string, toType: string, fields: string[], input: any) {
@@ -54,8 +59,15 @@ export function convertFields(fromType: string, toType: string, fields: string[]
   if (toType === 'number')
     throw new Error('Should not convert fields to numbers')
 
+  let key
+  if (fromType === 'number' && toType === 'str') {
+    key = `bn-str`
+  } else if (fromType === 'number') {
+    key = `str-${toType}`
+  }
+
   // casting functions same for strs and number types
-  const cast = castFunctions[`${fromType === 'number' ? 'str' : fromType}-${toType}`]
+  const cast = castFunctions[key || [fromType, toType].join('-')]
   if (!cast)
     throw new Error(`No castFunc for ${fromType} -> ${toType}`)
 
@@ -92,7 +104,6 @@ export type UnsignedChannelState<T = string> = {
   threadRoot: string
   threadCount: number
   timeout: number
-  [key: string]: any;
 }
 
 export type UnsignedChannelStateBN = UnsignedChannelState<BN>
@@ -116,29 +127,12 @@ export const addSigToChannelState = (
   sig?: string,
   isUser: boolean = true,
 ): ChannelState => {
+  // casting to add sigs when they dont exist
+  const chan = channel as ChannelState
   return {
-    contractAddress: channel.contractAddress,
-    user: channel.user,
-    recipient: channel.recipient,
-    balanceWeiHub: channel.balanceWeiHub,
-    balanceWeiUser: channel.balanceWeiUser,
-    balanceTokenHub: channel.balanceTokenHub,
-    balanceTokenUser: channel.balanceTokenUser,
-    pendingDepositWeiHub: channel.pendingDepositWeiHub,
-    pendingDepositWeiUser: channel.pendingDepositWeiUser,
-    pendingDepositTokenHub: channel.pendingDepositTokenHub,
-    pendingDepositTokenUser: channel.pendingDepositTokenUser,
-    pendingWithdrawalWeiHub: channel.pendingWithdrawalWeiHub,
-    pendingWithdrawalWeiUser: channel.pendingWithdrawalWeiUser,
-    pendingWithdrawalTokenHub: channel.pendingWithdrawalTokenHub,
-    pendingWithdrawalTokenUser: channel.pendingWithdrawalTokenUser,
-    txCountGlobal: channel.txCountGlobal,
-    txCountChain: channel.txCountChain,
-    threadRoot: channel.threadRoot,
-    threadCount: channel.threadCount,
-    timeout: channel.timeout,
-    sigUser: sig && isUser ? sig : (channel.sigUser || ''),
-    sigHub: sig && !isUser ? sig : (channel.sigHub || '')
+    ...channel,
+    sigUser: sig && isUser ? sig : (chan.sigUser || ''),
+    sigHub: sig && !isUser ? sig : (chan.sigHub || '')
   }
 }
 
@@ -152,7 +146,7 @@ export type ChannelStatus = keyof typeof ChannelStatus
 
 
 // channel update reasons
-export const ChannelUpdateReasons = {
+export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string } = {
   Payment: 'Payment',
   Exchange: 'Exchange',
   ProposePendingDeposit: 'ProposePendingDeposit', // changes in pending
@@ -161,12 +155,13 @@ export const ChannelUpdateReasons = {
   OpenThread: 'OpenThread',
   CloseThread: 'CloseThread',
 }
-export type ChannelUpdateReason = keyof typeof ChannelUpdateReasons
+export type ChannelUpdateReason = keyof UpdateRequestTypes
 
 // exchangeRate is in units of ERC20 / ETH
 // since booty is in 1 USD == USD / ETH
 export type ExchangeArgs<T=string> = {
   exchangeRate: string, // ERC20 / ETH
+  seller: 'user' | 'hub', // who is initiating trade
   tokensToSell: T,
   weiToSell: T,
 }
@@ -260,6 +255,29 @@ export type ArgsTypes<T=string> =
 export type ArgTypesBN = ArgsTypes<BN>
 export type ArgTypesBigNumber = ArgsTypes<BigNumber>
 
+export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
+  id?: number
+  reason: ChannelUpdateReason
+  args: Args
+  txCount: number
+  sigUser?: string
+  sigHub?: string
+}
+
+export type UpdateRequestTypes<T=string> = {
+  Payment: UpdateRequest<T, PaymentArgs>
+  Exchange: UpdateRequest<T, ExchangeArgs>
+  ProposePendingDeposit: UpdateRequest<T, DepositArgs>
+  ProposePendingWithdrawal: UpdateRequest<T, WithdrawalArgs>
+  ConfirmPending: UpdateRequest<T, ConfirmPendingArgs>
+  OpenThread: UpdateRequest<T, UnsignedThreadState<T>>
+  CloseThread: UpdateRequest<T, UnsignedThreadState<T>>
+}
+
+
+export type UpdateRequestBN = UpdateRequest<BN>
+export type UpdateRequestBigNumber = UpdateRequest<BigNumber>
+
 // types used when getting or sending states to hub
 export type ChannelStateUpdate<T = string> = {
   reason: ChannelUpdateReason
@@ -273,8 +291,8 @@ export type ChannelStateUpdateBigNumber = ChannelStateUpdate<BigNumber>
 // this is the typical form of responses from POST
 // hub endpoints and the sync endpoint
 export type SyncResult<T = string> =
-  | { type: "thread", state: ThreadStateUpdate<T> }
-  | { type: "channel", state: ChannelStateUpdate<T> }
+  | { type: "thread", update: ThreadStateUpdate<T> }
+  | { type: "channel", update: UpdateRequest<T> }
 export type SyncResultBN = SyncResult<BN>
 export type SyncResultBigNumber = SyncResult<BigNumber>
 
@@ -323,7 +341,6 @@ export type UnsignedThreadState<T = string> = {
   balanceTokenSender: T
   balanceTokenReceiver: T
   txCount: number
-  [key: string]: any;
 }
 export type UnsignedThreadStateBN = UnsignedThreadState<BN>
 export type UnsignedThreadStateBigNumber = UnsignedThreadState<BigNumber>
@@ -348,6 +365,8 @@ export type ThreadStatus = keyof typeof ThreadStatus
 // thread state update
 export type ThreadStateUpdate<T = string> = {
   // reason: "Payment"
+  id?: number
+  createdOn?: Date
   state: ThreadState<T> // signed or unsigned?
   metadata?: Object
 }
@@ -384,6 +403,16 @@ export type Payment<T = string> = {
 }
 export type PaymentBN = Payment<BN>
 export type PaymentBigNumber = Payment<BigNumber>
+
+export type WithdrawalParameters<T = string> = {
+  withdrawalWeiUser: T, // withdrawal from users channel wei balance
+  tokensToSell: T, // tokens to be exchanged on withdrawal
+  withdrawalTokenUser: T,
+  weiToSell: T,
+  recipient: Address,
+}
+export type WithdrawalParametersBN = WithdrawalParameters<BN>
+export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
 /*********************************
  ******* TYPE CONVERSIONS ********
@@ -427,7 +456,7 @@ export function convertChannelState(
 }
 
 export function unsignedChannel<T>(obj: ChannelState<T> | UnsignedChannelState<T>): UnsignedChannelState<T> {
-  const { sigHub, sigUser, ...unsigned } = obj
+  const { sigHub, sigUser, ...unsigned } = obj as ChannelState<T>
   return unsigned
 }
 
@@ -461,15 +490,15 @@ export function convertThreadState(
 }
 
 export function unsignedThread<T>(obj: ThreadState<T> | UnsignedThreadState<T>): UnsignedThreadState<T> {
-  const { sigA, ...unsigned } = obj
+  const { sigA, ...unsigned } = obj as ThreadState<T>
   return unsigned
 }
 
 export const paymentNumericFields = ['amountWei', 'amountToken']
-
 export function convertPayment(to: "bn", obj: PaymentArgs<any>): PaymentArgsBN
 export function convertPayment(to: "bignumber", obj: PaymentArgs<any>): PaymentArgsBigNumber
 export function convertPayment(to: "str", obj: PaymentArgs<any>): PaymentArgs
+
 export function convertPayment(to: "bn", obj: Payment<any>): PaymentBN
 export function convertPayment(to: "bignumber", obj: Payment<any>): PaymentBigNumber
 export function convertPayment(to: "str", obj: Payment<any>): Payment
@@ -479,6 +508,23 @@ export function convertPayment(
 ) {
   const fromType = getType(obj.amountToken)
   return convertFields(fromType, to, paymentNumericFields, obj)
+}
+
+export const withdrawalParametersNumericFields = [
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalWeiUser',
+  'withdrawalTokenUser',
+]
+export function convertWithdrawalParameters(to: "bn", obj: WithdrawalParameters<any>): WithdrawalParametersBN
+export function convertWithdrawalParameters(to: "bignumber", obj: WithdrawalParameters<any>): WithdrawalParametersBigNumber
+export function convertWithdrawalParameters(to: "str", obj: WithdrawalParameters<any>): WithdrawalParameters
+export function convertWithdrawalParameters(
+  to: "bn" | "bignumber" | "str",
+  obj: WithdrawalParameters<any>
+) {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, withdrawalParametersNumericFields, obj)
 }
 
 export function convertThreadPayment(to: "bn", obj: Payment<any>): PaymentBN
@@ -492,7 +538,7 @@ export function convertThreadPayment(
   return convertFields(fromType, to, paymentNumericFields, obj)
 }
 
-const exchangeArgsNumericFields = [
+export const exchangeArgsNumericFields = [
   'weiToSell',
   'tokensToSell'
 ]
@@ -508,7 +554,7 @@ export function convertExchange(
   return convertFields(fromType, to, exchangeArgsNumericFields, obj)
 }
 
-const depositArgsNumericFields = [
+export const depositArgsNumericFields = [
   'depositWeiHub',
   'depositWeiUser',
   'depositTokenHub',
@@ -555,22 +601,32 @@ export function convertWithdrawal(
 
 /*
 POST /payments/purchase
- 
+
 Accepts:
- 
+
   {
     metadata: MetadataType,
     payments: PurchasePayment[],
   }
- 
+
 Returns:
- 
+
   {
     purchaseId: string,
     updates: SyncResponse,
   }
- 
+
 */
+
+export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD'
+
+
+export interface PurchaseRequest<MetadataType=any, PaymentMetadataType=any> {
+  meta: MetadataType
+  payments: PurchasePaymentRequest<PaymentMetadataType>[]
+}
+
+export type PurchasePaymentRequest<MetadataType=any> = Omit<PurchasePayment<MetadataType>, 'update'>
 
 export interface Purchase<MetadataType=any, PaymentMetadataType=any> {
   // a unique ID for this purchase, generated by the Hub (payments being sent
@@ -613,7 +669,7 @@ export type PurchasePayment<MetadataType=any> = ({
       // When a purchase is being sent from the Wallet -> Hub the update should
       // be signed by the wallet.
       // The hub's counter-signed updates will be included in the SyncResponse.
-      update: ChannelStateUpdate
+      update: UpdateRequest
     } |
     {
       type: 'PT_THREAD'
@@ -622,7 +678,7 @@ export type PurchasePayment<MetadataType=any> = ({
     }
   ))
 
-type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 export type PurchasePaymentSummary<MetaType=any> = Omit<PurchasePayment<MetaType>, 'update'>
 
 // this is the structure of the expected

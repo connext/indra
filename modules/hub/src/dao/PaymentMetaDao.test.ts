@@ -1,12 +1,10 @@
-import { default as Config } from "../Config";
-import { assert, getTestRegistry, getTestConfig } from '../testing'
+import { assert, getTestRegistry } from '../testing'
 import { channelAndThreadFactory, tokenVal } from "../testing/factories";
 import { default as ThreadsDao } from "./ThreadsDao";
 import { default as ChannelsDao } from "./ChannelsDao";
 import { getThreadState, getChannelState } from "../testing/stateUtils";
 import { PaymentMetaDao } from "./PaymentMetaDao";
 import { default as DBEngine, SQL } from "../DBEngine";
-import { PaymentArgs } from "../vendor/connext/types";
 
 describe('PaymentMetaDao', () => {
   const registry = getTestRegistry()
@@ -15,25 +13,29 @@ describe('PaymentMetaDao', () => {
     channelsDao: ChannelsDao
     threadsDao: ThreadsDao
     paymentMetDao: PaymentMetaDao
-    user: string
-    performer: string
+    user: any
+    performer: any
   }
 
   before(async () => {
+    await registry.clearDatabase()
+    const parties = await channelAndThreadFactory(registry);
+
     s = {
       db: registry.get('DBEngine'),
       channelsDao: registry.get('ChannelsDao'),
       threadsDao: registry.get('ThreadsDao'),
       paymentMetDao: registry.get('PaymentMetaDao'),
-      ...await channelAndThreadFactory(registry),
+      user: parties.user,
+      performer: parties.performer
     }
   })
 
   it('should work with thread payments', async () => {
     // create an update in the thread
     let threadUpdate = await s.threadsDao.applyThreadUpdate(getThreadState('signed', {
-      sender: s.user,
-      receiver: s.performer,
+      sender: s.user.user,
+      receiver: s.performer.user,
       balanceTokenSender: tokenVal(9),
       balanceTokenReceiver: tokenVal(1),
       txCount: 2,
@@ -46,7 +48,7 @@ describe('PaymentMetaDao', () => {
         amountToken: tokenVal(1),
         amountWei: '0',
       },
-      recipient: s.performer,
+      recipient: s.performer.user,
       meta: {
         foo: 42,
       },
@@ -71,10 +73,10 @@ describe('PaymentMetaDao', () => {
   it('should work with channel payments', async () => {
     // create an update in the channel
     const state = getChannelState('signed', {
-      user: s.user,
+      user: s.user.user,
       txCountGlobal: 2,
     })
-    let chanUpdate = await s.channelsDao.applyUpdateByUser(s.user, 'ConfirmPending', s.user, state, {})
+    let chanUpdate = await s.channelsDao.applyUpdateByUser(s.user.user, 'ConfirmPending', s.user.user, state, {})
 
     // save a payment for this update
     await s.paymentMetDao.save('abc123', chanUpdate.id, {
@@ -83,7 +85,7 @@ describe('PaymentMetaDao', () => {
         amountToken: tokenVal(2),
         amountWei: '0',
       },
-      recipient: s.performer,
+      recipient: s.performer.user,
       meta: {
         foo: 42,
       },

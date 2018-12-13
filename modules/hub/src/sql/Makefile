@@ -1,4 +1,4 @@
-all: build build/channel-manager.sql build/onchain-transactions.sql
+all: build build/channel-manager.sql build/onchain-transactions.sql build/custodial-payments.sql
 
 build/%.sql: %.ejs.sql
 	./ejs-render $< > $@ || rm "$@"

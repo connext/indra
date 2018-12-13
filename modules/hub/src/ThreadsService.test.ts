@@ -1,42 +1,51 @@
-import { PostgresChannelsDao } from './dao/ChannelsDao'
-import { getTestRegistry, assert } from './testing'
-import { getTestConfig } from './testing/mocks'
-import { default as DBEngine } from './DBEngine'
+import {assert, getTestRegistry, TestServiceRegistry} from './testing'
 import {
-  getChannelState,
   assertChannelStateEqual,
-  mkAddress,
-  mkSig,
   assertThreadStateEqual,
+  getChannelState,
   getThreadState,
+  mkAddress,
+  mkSig
 } from './testing/stateUtils'
-import { Big } from './util/bigNumber'
+import {Big} from './util/bigNumber'
 import ThreadsService from './ThreadsService'
-import { Utils } from './vendor/connext/Utils'
-import { Validator } from './vendor/connext/Validation'
-import { PostgresThreadsDao } from './dao/ThreadsDao'
-import { ThreadStateBigNum } from './domain/Thread'
-import { convertChannelState, convertThreadState } from './vendor/connext/types'
-import { ChannelStateUpdateRowBigNum } from './domain/Channel'
+import {ThreadStateBigNum} from './domain/Thread'
+import {convertChannelState, convertThreadState} from './vendor/connext/types'
+import {ChannelStateUpdateRowBigNum} from './domain/Channel'
+import GlobalSettingsDao from './dao/GlobalSettingsDao'
 
 const fakeSig = mkSig('0xfff')
 
 describe('ThreadsService', () => {
-  const registry = getTestRegistry({
-    Web3: {
-      eth: {
-        sign: async () => {
-          return fakeSig
-        },
-      },
-    },
+  let registry: TestServiceRegistry
+
+  let channelsDao
+  let threadsDao
+  let threadsService
+  let gsd
+
+  before(() => {
+    registry = getTestRegistry({
+      Web3: {
+        eth: {
+          sign: async () => {
+            return fakeSig
+          }
+        }
+      }
+    })
+
+    gsd = registry.get('GlobalSettingsDao')
+    channelsDao = registry.get('ChannelsDao')
+    threadsDao = registry.get('ThreadsDao')
+    threadsService = registry.get('ThreadsService')
   })
 
-  const channelsDao: PostgresChannelsDao = registry.get('ChannelsDao')
-  const threadsDao: PostgresThreadsDao = registry.get('ThreadsDao')
-  const threadsService: ThreadsService = registry.get('ThreadsService')
-  const db: DBEngine = registry.get('DBEngine')
-  beforeEach(() => registry.clearDatabase())
+  beforeEach(async () => {
+    await registry.clearDatabase()
+    await gsd.insertDefaults()
+    await gsd.toggleThreadsEnabled(true)
+  })
 
   const sender = mkAddress('0xa')
   const receiver = mkAddress('0xb')
@@ -48,7 +57,7 @@ describe('ThreadsService', () => {
     balanceWei: ['1111', '2222'],
     balanceToken: ['3333', '4444'],
     txCount: [1, 1],
-    sig: [sigThread, sigChannel],
+    sig: [sigThread, sigChannel]
   })
 
   let channelReceiver = getChannelState('empty', {
@@ -56,23 +65,23 @@ describe('ThreadsService', () => {
     balanceWei: ['5555', '6666'],
     balanceToken: ['7777', '8888'],
     txCount: [1, 1],
-    sig: [sigThread, sigChannel],
+    sig: [sigThread, sigChannel]
   })
 
-  async function createThread(): Promise<ChannelStateUpdateRowBigNum> {
+  async function createThread (): Promise<ChannelStateUpdateRowBigNum> {
     await channelsDao.applyUpdateByUser(
       sender,
       'ConfirmPending',
       sender,
       channelSender,
-      {},
+      {}
     )
     await channelsDao.applyUpdateByUser(
       receiver,
       'ConfirmPending',
       receiver,
       channelReceiver,
-      {},
+      {}
     )
 
     const channelSenderUpdateAfterThreadOpen = await threadsService.open(
@@ -82,10 +91,10 @@ describe('ThreadsService', () => {
           sender,
           receiver,
           balanceToken: [10, 0],
-          sigA: sigThread,
-        }),
+          sigA: sigThread
+        })
       ),
-      sigChannel,
+      sigChannel
     )
     return channelSenderUpdateAfterThreadOpen
   }
@@ -101,12 +110,12 @@ describe('ThreadsService', () => {
         sigHub: fakeSig,
         balanceTokenUser: Big(channelSender.balanceTokenUser)
           .minus(Big(10))
-          .toFixed(),
-      },
+          .toFixed()
+      }
     )
 
     const channelReceiverFinal = await channelsDao.getLatestChannelUpdateHubSigned(
-      receiver,
+      receiver
     )
 
     assertChannelStateEqual(
@@ -115,15 +124,15 @@ describe('ThreadsService', () => {
         sigHub: fakeSig,
         balanceTokenHub: Big(channelReceiver.balanceTokenHub)
           .minus(Big(10))
-          .toFixed(),
-      },
+          .toFixed()
+      }
     )
 
     const thread = await threadsService.getThread(sender, receiver)
 
     assertThreadStateEqual(thread.state, {
       balanceTokenSender: '10',
-      balanceTokenReceiver: '0',
+      balanceTokenReceiver: '0'
     })
   })
 
@@ -136,14 +145,14 @@ describe('ThreadsService', () => {
       balanceTokenSender: 5,
       balanceTokenReceiver: 5,
       txCount: 5,
-      sigA: sigThread,
+      sigA: sigThread
     })
     await threadsDao.applyThreadUpdate(threadUpdate)
     let thread = await threadsService.getThread(sender, receiver)
     assertThreadStateEqual(thread.state, {
       balanceTokenSender: 5,
       balanceTokenReceiver: 5,
-      txCount: 5,
+      txCount: 5
     })
     const prevThread = thread
 
@@ -156,10 +165,10 @@ describe('ThreadsService', () => {
           sender,
           receiver,
           balanceToken: [10, 0],
-          sigA: sigThread,
-        }),
+          sigA: sigThread
+        })
       ),
-      sigChannel,
+      sigChannel
     )
     thread = await threadsService.getThread(sender, receiver)
 
@@ -167,11 +176,11 @@ describe('ThreadsService', () => {
       balanceTokenSender: 10,
       balanceTokenReceiver: 0,
       threadId: prevThread.state.threadId + 1,
-      txCount: 0,
+      txCount: 0
     })
   })
 
-  it('should update and close thread signed by sender', async () => {
+  it.skip('should update and close thread signed by sender', async () => {
     const sigClose = mkSig('0xabcd')
     await createThread()
     let threadUpdate = getThreadState('empty', {
@@ -180,14 +189,14 @@ describe('ThreadsService', () => {
       balanceTokenSender: 5,
       balanceTokenReceiver: 5,
       txCount: 5,
-      sigA: sigThread,
+      sigA: sigThread
     })
     await threadsService.update(sender, receiver, {
       ...threadUpdate,
       balanceTokenReceiver: Big(threadUpdate.balanceTokenReceiver),
       balanceTokenSender: Big(threadUpdate.balanceTokenSender),
       balanceWeiSender: Big(threadUpdate.balanceWeiSender),
-      balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver),
+      balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver)
     } as ThreadStateBigNum)
 
     threadUpdate = getThreadState('empty', {
@@ -196,22 +205,22 @@ describe('ThreadsService', () => {
       balanceTokenSender: 2,
       balanceTokenReceiver: 8,
       txCount: 8,
-      sigA: sigThread,
+      sigA: sigThread
     })
     await threadsService.update(sender, receiver, {
       ...threadUpdate,
       balanceTokenReceiver: Big(threadUpdate.balanceTokenReceiver),
       balanceTokenSender: Big(threadUpdate.balanceTokenSender),
       balanceWeiSender: Big(threadUpdate.balanceWeiSender),
-      balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver),
+      balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver)
     } as ThreadStateBigNum)
 
     const thread = await threadsService.getThread(sender, receiver)
-    assertThreadStateEqual(thread.state, { balanceToken: [2, 8], txCount: 8 })
+    assertThreadStateEqual(thread.state, {balanceToken: [2, 8], txCount: 8})
 
     const channelSenderBeforeClose = await channelsDao.getChannelByUser(sender)
     const channelReceiverBeforeClose = await channelsDao.getChannelByUser(
-      receiver,
+      receiver
     )
 
     await threadsService.close(sender, receiver, sigClose, true)
@@ -220,7 +229,7 @@ describe('ThreadsService', () => {
 
     const channelSenderAfterClose = await channelsDao.getChannelByUser(sender)
     const channelReceiverAfterClose = await channelsDao.getChannelByUser(
-      receiver,
+      receiver
     )
 
     assertChannelStateEqual(
@@ -231,8 +240,8 @@ describe('ThreadsService', () => {
           .toFixed(),
         balanceTokenHub: channelSenderBeforeClose.state.balanceTokenHub
           .plus(8)
-          .toFixed(),
-      },
+          .toFixed()
+      }
     )
 
     assertChannelStateEqual(
@@ -243,8 +252,41 @@ describe('ThreadsService', () => {
           .toFixed(),
         balanceTokenUser: channelReceiverBeforeClose.state.balanceTokenUser
           .plus(8)
-          .toFixed(),
-      },
+          .toFixed()
+      }
     )
+  })
+
+  describe('when threads are disabled', () => {
+    beforeEach(async () => {
+      await gsd.toggleThreadsEnabled(false)
+    })
+
+    it('should prevent threads from being opened', async () => {
+      await assert.isRejected(createThread(), 'Threads are disabled.')
+    })
+
+    it('should prevent threads from being updated', async () => {
+      let threadUpdate = getThreadState('empty', {
+        sender,
+        receiver,
+        balanceTokenSender: 5,
+        balanceTokenReceiver: 5,
+        txCount: 5,
+        sigA: sigThread
+      })
+
+      await assert.isRejected(threadsService.update(sender, receiver, {
+        ...threadUpdate,
+        balanceTokenReceiver: Big(threadUpdate.balanceTokenReceiver),
+        balanceTokenSender: Big(threadUpdate.balanceTokenSender),
+        balanceWeiSender: Big(threadUpdate.balanceWeiSender),
+        balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver)
+      } as ThreadStateBigNum), 'Threads are disabled.')
+    })
+
+    it('should prevent threads from being closed', async () => {
+      await assert.isRejected(threadsService.close(sender, receiver, 'sig', true), 'Threads are disabled.');
+    })
   })
 })

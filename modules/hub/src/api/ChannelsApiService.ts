@@ -1,3 +1,4 @@
+import { UpdateRequest, convertWithdrawal } from '../vendor/connext/types'
 import * as express from 'express'
 import { ApiService } from './ApiService'
 import log from '../util/log'
@@ -9,7 +10,7 @@ const LOG = log('ChannelsApiService')
 
 export default class ChannelsApiService extends ApiService<
   ChannelsApiServiceHandler
-> {
+  > {
   namespace = 'channel'
   routes = {
     'POST /:user/request-deposit': 'doRequestDeposit',
@@ -33,7 +34,10 @@ export class ChannelsApiServiceHandler {
 
   async doUpdate(req: express.Request, res: express.Response) {
     const { user } = req.params
-    const { updates, lastThreadUpdateId } = req.body
+    const { updates, lastThreadUpdateId } = req.body as {
+      updates: UpdateRequest[]
+      lastThreadUpdateId: number
+    }
     if (!updates || !user || !Number.isInteger(lastThreadUpdateId)) {
       LOG.warn(
         'Received invalid update state request. Aborting. Body received: {body}, Params received: {params}',
@@ -47,14 +51,14 @@ export class ChannelsApiServiceHandler {
 
     const sortedUpdates = updates
       .concat()
-      .sort((a, b) => a.state.txCountGlobal - b.state.txCountGlobal)
-
-    const minTxToSync = sortedUpdates[0].state.txCountGlobal
+      .sort((a, b) => a.txCount - b.txCount)
 
     await this.channelsService.doUpdates(user, updates)
+
+    const minUnsignedUpdate = sortedUpdates.filter(up => !!up.sigHub)[0]
     const syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
-      minTxToSync,
+      (minUnsignedUpdate || sortedUpdates[0]).txCount,
       lastThreadUpdateId,
     )
 
@@ -91,6 +95,7 @@ export class ChannelsApiServiceHandler {
 
   async doRequestCollateral(req: express.Request, res: express.Response) {
     const { user } = req.params
+    const { activeTipperCount, activeViewerCount } = req.body
 
     if (!user) {
       LOG.warn(
@@ -103,7 +108,7 @@ export class ChannelsApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    res.send(await this.channelsService.doRequestCollateral(user))
+    res.send(await this.channelsService.doCollateralizeIfNecessary(user, activeTipperCount || 0, activeViewerCount || 0))
   }
 
   async doRequestExchange(req: express.Request, res: express.Response) {
@@ -132,9 +137,9 @@ export class ChannelsApiServiceHandler {
 
   async doRequestWithdrawal(req: express.Request, res: express.Response) {
     const { user } = req.params
-    let { desiredAmountWei, desiredAmountToken, recipient } = req.body
+    const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser } = req.body
 
-    if (!user || !desiredAmountWei || !desiredAmountToken || !recipient) {
+    if (!user || !withdrawalWeiUser || !recipient || !withdrawalTokenUser || !weiToSell || !tokensToSell) {
       LOG.warn(
         'Received invalid withdrawal request. Aborting. Body received: {body}, Params received: {params}',
         {
@@ -148,9 +153,7 @@ export class ChannelsApiServiceHandler {
     res.send(
       await this.channelsService.doRequestWithdrawal(
         user,
-        Big(desiredAmountWei),
-        Big(desiredAmountToken),
-        recipient
+        convertWithdrawal("bignumber", req.body)
       ),
     )
   }

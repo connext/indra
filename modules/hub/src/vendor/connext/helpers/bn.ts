@@ -8,6 +8,10 @@ export function maxBN(a: BN, b: BN): BN {
   return a.gte(b) ? a : b
 }
 
+export function minBN(a: BN, b: BN): BN {
+  return a.lte(b) ? a : b
+}
+
 // this function uses string manipulation
 // to move the decimal point of the non-integer number provided
 // multiplier is of base10

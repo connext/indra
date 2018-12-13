@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 import BN = require('bn.js')
-import { Address, ChannelState, ThreadState } from '../vendor/connext/types'
+import { Address, ChannelState, ThreadState, UnsignedChannelState } from '../vendor/connext/types'
 
 //
 // chai
@@ -222,6 +222,31 @@ const initialChannelStates = {
     sigHub: '',
   }),
 
+  'initial': () => ({
+    contractAddress: mkAddress('0xCCC'),
+    user: mkAddress('0xAAA'),
+    recipient: mkAddress('0x222'),
+    balanceWeiHub: '0',
+    balanceWeiUser: '0',
+    balanceTokenHub: '0',
+    balanceTokenUser: '0',
+    pendingDepositWeiHub: '0',
+    pendingDepositWeiUser: '0',
+    pendingDepositTokenHub: '0',
+    pendingDepositTokenUser: '0',
+    pendingWithdrawalWeiHub: '0',
+    pendingWithdrawalWeiUser: '0',
+    pendingWithdrawalTokenHub: '0',
+    pendingWithdrawalTokenUser: '0',
+    txCountGlobal: 0,
+    txCountChain: 0,
+    threadRoot: mkHash('0x0'),
+    threadCount: 0,
+    timeout: 0,
+    sigUser: '',
+    sigHub: '',
+  }),
+
   signed: () => getChannelState('empty', {
     sigHub: mkSig('0x5a'),
     sigUser: mkSig('0x5b'),
@@ -270,7 +295,7 @@ export function getThreadState(type: keyof typeof initialThreadStates, ...overri
 }
 
 
-export function assertChannelStateEqual(actual: ChannelState<any>, expected: Partial<SignedOrSuccinctChannel>): void {
+export function assertChannelStateEqual(actual: ChannelState<any>|UnsignedChannelState<any>, expected: Partial<SignedOrSuccinctChannel>): void {
   assert.containSubset(
     expandSuccinctChannel(actual),
     expandSuccinctChannel(expected),
