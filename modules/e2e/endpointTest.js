@@ -45,13 +45,13 @@ async function authApiServiceTest() {
 async function channelApiServiceDepositTest() {
   try {
     let res = await axios.post(url + `/channel/${challengeData.address}/request-deposit`, {
-      depositWei: '100',
+      depositWei: '200',
       depositToken: '0',
-      lastChanTx: 0,
+      lastChanTx: 1,
       lastThreadUpdateId: 0
     })
 
-    let state = res.data[9].state.state
+    let state = res.data[res.data.length - 1].state.state
     console.log(state, res.data.length)
 
     let gas = await CMsigner.estimate.userAuthorizedUpdate(
@@ -80,11 +80,13 @@ async function channelApiServiceDepositTest() {
       state.threadRoot,
       state.threadCount,
       state.timeout,
-      state.sigHub
+      state.sigHub,
+      {
+        value: new ethers.utils.BigNumber(state.pendingDepositWeiUser).toHexString()
+      }
     )
 
-    console.log(`I estimate this tx will take ${gas} gas`)
-    return;
+    console.log(`I estimate this tx will require ${gas} gas`)
 
     let tx = await CMsigner.userAuthorizedUpdate(
       state.recipient, // recipient
@@ -113,17 +115,26 @@ async function channelApiServiceDepositTest() {
       state.threadCount,
       state.timeout,
       state.sigHub,
-      {gasLimit: gas}
+      {
+        value: new ethers.utils.BigNumber(state.pendingDepositWeiUser).toHexString(),
+        gasLimit: new ethers.utils.BigNumber(gas).toHexString()
+      }
     )
 
-    //console,log(JSON.stringify(tx, null, 2))
+    console.log(JSON.stringify(tx, null, 2))
 
   } catch(e) {
     console.log(e)
   }
 }
 
-channelApiServiceDepositTest()
+const run = async () => {
+  await authApiServiceTest()
+  await channelApiServiceDepositTest()
+}
+
+run()
+
 
 /*
 authApiServiceTest()
