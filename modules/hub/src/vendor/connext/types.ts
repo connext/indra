@@ -242,7 +242,9 @@ export type WithdrawalArgs<T=string> = {
 export type WithdrawalArgsBN = WithdrawalArgs<BN>
 export type WithdrawalArgsBigNumber = WithdrawalArgs<BigNumber>
 
-export type ConfirmPendingArgs = {}
+export type ConfirmPendingArgs = {
+  transactionHash: Address
+}
 
 export type ArgsTypes<T=string> =
   | ExchangeArgs<T>
@@ -251,6 +253,7 @@ export type ArgsTypes<T=string> =
   | WithdrawalArgs<T>
   | UnsignedThreadState<T>
   | ConfirmPendingArgs
+  | {}
 
 export type ArgTypesBN = ArgsTypes<BN>
 export type ArgTypesBigNumber = ArgsTypes<BigNumber>

@@ -1,14 +1,14 @@
 import ChainsawDao from './dao/ChainsawDao'
 import log from './util/log'
-import {ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent} from './domain/ContractEvent'
+import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
 import Config from './Config'
-import {ChannelManager} from './ChannelManager'
-import {EventLog} from 'web3/types'
+import { ChannelManager } from './ChannelManager'
+import { EventLog } from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
-import {ChannelUpdateReasons, ChannelState, PaymentArgs} from './vendor/connext/types'
-import {Utils} from './vendor/connext/Utils'
+import { ChannelUpdateReasons, ChannelState, PaymentArgs, ConfirmPendingArgs } from './vendor/connext/types'
+import { Utils } from './vendor/connext/Utils'
 import abi from './abi/ChannelManager'
-import {BigNumber} from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import events = require('events')
 
 const LOG = log('ChainsawService')
@@ -36,7 +36,7 @@ export default class ChainsawService extends events.EventEmitter {
 
   private hubAddress: string
 
-  constructor (chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config) {
+  constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config) {
     super()
     this.chainsawDao = chainsawDao
     this.channelsDao = channelsDao
@@ -46,7 +46,7 @@ export default class ChainsawService extends events.EventEmitter {
     this.hubAddress = config.hotWalletAddress
   }
 
-  async poll () {
+  async poll() {
     try {
       const poll = async () => {
         const start = Date.now()
@@ -88,7 +88,7 @@ export default class ChainsawService extends events.EventEmitter {
     }
   }
 
-  private async doFetchEvents () {
+  private async doFetchEvents() {
     const topBlock = await this.web3.eth.getBlockNumber()
     const last = await this.chainsawDao.lastPollFor(this.contract._address, 'FETCH_EVENTS')
     const lastBlock = last.blockNumber
@@ -96,7 +96,6 @@ export default class ChainsawService extends events.EventEmitter {
 
     // need to check for >= here since we were previously not checking for a confirmation count
     if (lastBlock >= toBlock) {
-      LOG.info('Chain data already up to date.')
       return
     }
 
@@ -153,12 +152,11 @@ export default class ChainsawService extends events.EventEmitter {
     }
   }
 
-  private async doProcessEvents () {
+  private async doProcessEvents() {
     const last = await this.chainsawDao.lastPollFor(this.contract._address, 'PROCESS_EVENTS')
     const ingestedEvents = await this.chainsawDao.eventsSince(this.contract._address, last.blockNumber, last.txIndex)
 
     if (!ingestedEvents.length) {
-      LOG.info('No new events to process.')
       return
     }
 
@@ -179,7 +177,7 @@ export default class ChainsawService extends events.EventEmitter {
     }
   }
 
-  private async processDidUpdateChannel (chainsawId: number, event: DidUpdateChannelEvent) {
+  private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent) {
     let balanceWeiUser
     let balanceWeiHub
     let balanceTokenUser
@@ -189,7 +187,7 @@ export default class ChainsawService extends events.EventEmitter {
     if (event.txCountGlobal > 1) {
       const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(event.user, event.txCountGlobal)
       if (!knownEvent) {
-        LOG.error('CRITICAL: Event broadcast on chain, but not found in the database. This should never happen! Event body: {event}', {event})
+        LOG.error('CRITICAL: Event broadcast on chain, but not found in the database. This should never happen! Event body: {event}', { event })
         throw new Error('Event broadcast on chain, but not found in the database!')
       }
 
@@ -244,12 +242,12 @@ export default class ChainsawService extends events.EventEmitter {
     await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.hubAddress, {
       ...state,
       sigHub
-    } as ChannelState, {} as PaymentArgs, chainsawId)
+    } as ChannelState, { transactionHash: event.txHash } as ConfirmPendingArgs, chainsawId)
     // TODO @wolever - transaction wrapping
     await this.chainsawDao.recordPoll(event.blockNumber, event.txIndex, this.contract._address, 'PROCESS_EVENTS')
   }
 
-  private resolvePendingBalance (latest: WithBalances, event: DidUpdateChannelEvent, party: 'hub' | 'user', type: 'token' | 'wei'): BigNumber {
+  private resolvePendingBalance(latest: WithBalances, event: DidUpdateChannelEvent, party: 'hub' | 'user', type: 'token' | 'wei'): BigNumber {
     const partyUp = party[0].toUpperCase() + party.slice(1)
     const typeUp = type[0].toUpperCase() + type.slice(1)
     const pendingDepositBal = event[`pendingDeposit${typeUp}${partyUp}`] as BigNumber

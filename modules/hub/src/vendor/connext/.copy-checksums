@@ -13,5 +13,5 @@ MD5 (hub/src/vendor/connext/typechain/ERC20Basic.d.ts) = 5ca9c61f3e5f4fb4ce82e24
 MD5 (hub/src/vendor/connext/typechain/Migrations.d.ts) = 0efc9871f970c7ff6e5ee9236f6d70fb
 MD5 (hub/src/vendor/connext/typechain/Ownable.d.ts) = a171dafdf170f6921603475fb0af2470
 MD5 (hub/src/vendor/connext/typechain/abi/ChannelManagerAbi.ts) = 5a47011a7812d60f984592d1a2f72075
-MD5 (hub/src/vendor/connext/types.ts) = 3f7f9b3e5bced3414d194525c8f49f68
-MD5 (hub/src/vendor/connext/validator.ts) = 4c697ebbe5743c22ecaf711253caf26d
+MD5 (hub/src/vendor/connext/types.ts) = 12366adc487fc27abdf9e2ab5b001448
+MD5 (hub/src/vendor/connext/validator.ts) = aee4a34a4311d13a6b097e746bb5cf32

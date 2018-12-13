@@ -1,4 +1,4 @@
-import { ChannelUpdateReason, Payment, convertWithdrawal, PaymentArgs, ExchangeArgs, convertExchange, DepositArgs, convertDeposit, WithdrawalArgs, convertThreadPayment } from './types'
+import { ChannelUpdateReason, Payment, convertWithdrawal, PaymentArgs, ExchangeArgs, convertExchange, DepositArgs, convertDeposit, WithdrawalArgs, convertThreadPayment, ConfirmPendingArgs } from './types'
 import Web3 = require('web3')
 import BN = require('bn.js')
 import {
@@ -219,7 +219,8 @@ export class Validator {
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
   }
 
-  public confirmPending = async (prev: ChannelStateBN, txHash: Address): Promise<string | null> => {
+  public confirmPending = async (prev: ChannelStateBN, args: ConfirmPendingArgs): Promise<string | null> => {
+    const txHash = args.transactionHash
     const tx = await this.web3.eth.getTransactionReceipt(txHash) as any
 
     if (!tx || !tx.status) {
@@ -245,9 +246,9 @@ export class Validator {
     return null
   }
 
-  public generateConfirmPending = async (prevStr: ChannelState, txHash: Address): Promise<UnsignedChannelState> => {
+  public generateConfirmPending = async (prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> => {
     const prev = convertChannelState("bn", prevStr)
-    const error = await this.confirmPending(prev, txHash)
+    const error = await this.confirmPending(prev, args)
     if (error) {
       throw new Error(error)
     }
