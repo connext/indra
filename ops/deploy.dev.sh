@@ -63,9 +63,19 @@ function new_secret {
 new_secret connext_database_dev
 new_secret private_key_dev "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 
+if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
+then
+    id=`docker network create --attachable --driver overlay $project`
+    echo "Created ATTACHABLE network with id $id"
+fi
+
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
+
+networks:
+  $project:
+    external: true
 
 secrets:
   connext_database_dev:
@@ -84,6 +94,8 @@ services:
     entrypoint:
       - bash
       - ops/dev.entry.sh
+    networks:
+      - $project
     ports:
       - "8080:8080"
     secrets:
@@ -105,6 +117,8 @@ services:
 
   redis:
     image: $redis_image
+    networks:
+      - $project
     ports:
       - "6379:6379"
 
@@ -116,6 +130,8 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/connext_database_dev
     deploy:
       mode: global
+    networks:
+      - $project
     ports:
       - "5432:5432"
     secrets:
@@ -128,6 +144,8 @@ services:
     environment:
       ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_MNEMONIC: $ETH_MNEMONIC
+    networks:
+      - $project
     ports:
       - "8545:8545"
     volumes:
