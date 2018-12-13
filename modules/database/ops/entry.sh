@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-# Print env then add database password
-echo "===> Starting Postgres in env:"
+echo "===> Starting database in env:"
 env
 
 # Start temporary database in background to run migrations
@@ -17,10 +16,14 @@ echo "===> Good morning, Postgres!"
 # Run migrations
 echo "===> Running migrations..."
 migrate=./node_modules/.bin/db-migrate
-POSTGRES_PASSWORD="`cat $POSTGRES_PASSWORD_FILE`"
+if [[ -z "POSTGRES_PASSWORD" ]]
+then POSTGRES_PASSWORD="`cat $POSTGRES_PASSWORD_FILE`"
+fi
 $migrate up all --verbose --config ops/config.json --migrations-dir node_modules/machinomy/migrations
 $migrate up all --verbose --config ops/config.json --migrations-dir migrations
-unset POSTGRES_PASSWORD
+if [[ -n "POSTGRES_PASSWORD_FILE" ]]
+then unset POSTGRES_PASSWORD
+fi
 
 echo "===> Running additional migrations..."
 for f in build/*.sql

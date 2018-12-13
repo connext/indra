@@ -123,8 +123,8 @@ class MockValidator extends Validator {
 }
 
 export const getTestConfig = (overrides?: any) => ({
-  databaseUrl: process.env.DATABASE_URL_TEST!,
-  redisUrl: 'redis://localhost:6379/6',
+  databaseUrl: process.env.DATABASE_URL!,
+  redisUrl: process.env.REDIS_URL!,
   sessionSecret: 'hummus',
   hotWalletAddress: '0x7776900000000000000000000000000000000000',
   channelManagerAddress: mkAddress('0xCCC'),
@@ -202,8 +202,8 @@ export const mockServices: any = {
 
   'Web3': {
     // TODO: Finish this: new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'))
-    factory: () => new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545')),
-    dependencies: []
+    factory: (config: any) => new Web3(new Web3.providers.HttpProvider(config.ethRpcUrl)),
+    dependencies: ['Config']
   },
 
   'Validator': {
