@@ -7,10 +7,12 @@ import { Container } from '../Container'
 import { truncateAllTables } from './eraseDb'
 import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
-import { mkAddress } from "./stateUtils";
-import { Utils as ConnextUtils } from '../vendor/connext/Utils'
-import { Validator as ConnextValidation } from '../vendor/connext/Validation'
+import { mkAddress, mkSig } from "./stateUtils";
+import { Validator } from '../vendor/connext/validator'
 import { Big } from '../util/bigNumber';
+import { SignerService } from '../SignerService';
+import { Utils } from '../vendor/connext/Utils';
+import Config from '../Config';
 
 const Web3 = require('web3')
 
@@ -106,9 +108,9 @@ class MockWeb3Provider {
   }
 }
 
-class MockConnextValidation extends ConnextValidation {
+class MockValidator extends Validator {
   constructor() {
-    super({} as any)
+    super({} as any, '0xfoobar')
   }
 
   assertChannelSigner() {
@@ -122,7 +124,7 @@ class MockConnextValidation extends ConnextValidation {
 
 export const getTestConfig = (overrides?: any) => ({
   databaseUrl: process.env.DATABASE_URL_TEST!,
-  redisUrl: process.env.REDIS_URL_TEST!,
+  redisUrl: 'redis://localhost:6379/6',
   sessionSecret: 'hummus',
   hotWalletAddress: '0x7776900000000000000000000000000000000000',
   channelManagerAddress: mkAddress('0xCCC'),
@@ -164,6 +166,16 @@ export class MockExchangeRateDao {
   }
 }
 
+export const fakeSig = mkSig('0xabc123')
+export class MockSignerService extends SignerService {
+  constructor() {
+    super({}, {} as Utils, {} as Config)
+  }
+  async getSigForChannelState() {
+    return fakeSig
+  }
+}
+
 export const mockServices: any = {
   'Config': {
     factory: getTestConfig,
@@ -194,7 +206,7 @@ export const mockServices: any = {
     dependencies: []
   },
 
-  'ConnextValidation': {
-    factory: () => new MockConnextValidation(),
+  'Validator': {
+    factory: () => new MockValidator(),
   },
 }

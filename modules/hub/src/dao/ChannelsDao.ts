@@ -94,7 +94,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     return this.inflateChannelRow(
       await this.db.queryOne(SQL`
         SELECT * FROM cm_channels
-        WHERE 
+        WHERE
           "user" = ${user.toLowerCase()} AND
           contract = ${this.config.channelManagerAddress.toLowerCase()}
       `),

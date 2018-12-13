@@ -1,0 +1,9 @@
+build
+dist
+node_modules
+.cache
+.config
+.node-gyp
+.yarnrc
+*.swp
+.vscode

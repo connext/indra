@@ -18,10 +18,10 @@ import ExchangeRateService from './ExchangeRateService'
 import { default as AccountsDao, PostgresAccountsDao } from './dao/AccountsDao'
 import ExchangeRateDao, { PostgresExchangeRateDao } from './dao/ExchangeRateDao'
 import { Client } from 'pg'
-import { PostgresPaymentsDao } from './dao/PaymentsDao'
+import PaymentsDao, { PostgresPaymentsDao } from './dao/PaymentsDao'
 import { PostgresWithdrawalsDao } from './dao/WithdrawalsDao'
-import {
-  PostgresGlobalSettingsDao,
+import GlobalSettingsDao, {
+  PostgresGlobalSettingsDao
 } from './dao/GlobalSettingsDao'
 //import GlobalSettingsApiService from './api/GlobalSettingsApiService'
 import ExchangeRateApiService from './api/ExchangeRateApiService'
@@ -49,13 +49,14 @@ import FeatureFlagsApiService from './api/FeatureFlagsApiService'
 import { ApiServer } from './ApiServer'
 import { DefaultAuthHandler } from './middleware/AuthHandler'
 import { Utils } from './vendor/connext/Utils'
-import { Validator } from './vendor/connext/Validation'
+import { Validator } from './vendor/connext/validator'
 import ThreadsService from './ThreadsService'
 import ThreadsApiService from './api/ThreadsApiService';
 import { OnchainTransactionService } from "./OnchainTransactionService";
 import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
 import { StateGenerator } from './vendor/connext/StateGenerator';
 import { SignerService } from './SignerService';
+import PaymentsService from './PaymentsService';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -174,6 +175,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   GlobalSettingsDao: {
     factory: (db: DBEngine<Client>) => new PostgresGlobalSettingsDao(db),
     dependencies: ['DBEngine'],
+    isSingleton: true
   },
 
   ChainsawDao: {
@@ -183,9 +185,9 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   PaymentsDao: {
-    factory: (db: DBEngine<Client>, config: Config) =>
-      new PostgresPaymentsDao(db, config),
-    dependencies: ['DBEngine', 'Config'],
+    factory: (db: DBEngine<Client>) =>
+      new PostgresPaymentsDao(db),
+    dependencies: ['DBEngine'],
   },
 
   WithdrawalsDao: {
@@ -209,9 +211,9 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: [],
   },
 
-  ConnextValidation: {
-    factory: (web3: any) => new Validator(web3),
-    dependencies: ['Web3'],
+  Validator: {
+    factory: (web3: any, config: Config) => new Validator(web3, config.hotWalletAddress),
+    dependencies: ['Web3', 'Config'],
   },
 
   StateGenerator: {
@@ -266,6 +268,41 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: ['Web3', 'ConnextUtils', 'Config']
   },
 
+  PaymentsService: {
+    factory: (
+      channelsService: ChannelsService,
+      threadsService: ThreadsService,
+      signerService: SignerService,
+      paymentsDao: PaymentsDao,
+      paymentMetaDao: PaymentMetaDao,
+      channelsDao: ChannelsDao,
+      validator: Validator,
+      config: Config,
+      db: DBEngine,
+    ) => new PaymentsService(
+      channelsService, 
+      threadsService, 
+      signerService, 
+      paymentsDao,
+      paymentMetaDao, 
+      channelsDao, 
+      validator, 
+      config,
+      db,
+    ),
+    dependencies: [
+      'ChannelsService',
+      'ThreadsService',
+      'SignerService',
+      'PaymentsDao',
+      'PaymentMetaDao',
+      'ChannelsDao',
+      'Validator',
+      'Config',
+      'DBEngine',
+    ],
+  },
+
   ChannelsService: {
     factory: (
       onchainTx: OnchainTransactionService,
@@ -300,7 +337,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'ChannelsDao',
       'ThreadsDao',
       'ExchangeRateDao',
-      'ConnextValidation',
+      'Validator',
       'RedisClient',
       'DBEngine',
       'Web3',
@@ -313,19 +350,17 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       signerService: SignerService,
       channelsDao: ChannelsDao,
       threadsDao: ThreadsDao,
-      utils: Utils,
       validation: Validator,
-      web3: Web3,
       config: Config,
-    ) => new ThreadsService(signerService, channelsDao, threadsDao, utils, validation, web3, config),
+      gsd: GlobalSettingsDao
+    ) => new ThreadsService(signerService, channelsDao, threadsDao, validation, config, gsd),
     dependencies: [
       'SignerService',
       'ChannelsDao',
       'ThreadsDao',
-      'ConnextUtils',
-      'ConnextValidation',
-      'Web3',
+      'Validator',
       'Config',
+      'GlobalSettingsDao'
     ],
   },
 }

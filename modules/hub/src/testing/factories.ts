@@ -3,7 +3,7 @@ import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChan
 import { default as ChannelsDao } from "../dao/ChannelsDao";
 import { Big } from "../util/bigNumber";
 import { default as ThreadsDao } from "../dao/ThreadsDao";
-import { ChannelUpdateReason, ChannelState, PaymentArgs } from "../vendor/connext/types";
+import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes } from "../vendor/connext/types";
 import BN = require('bn.js')
 import ExchangeRateDao from "../dao/ExchangeRateDao";
 
@@ -16,12 +16,13 @@ export function tokenVal(x: number | string): string {
  */
 export async function channelUpdateFactory(
   registry: TestServiceRegistry,
-  reason: ChannelUpdateReason,
-  opts?: PartialSignedOrSuccinctChannel
+  opts?: PartialSignedOrSuccinctChannel,
+  reason: ChannelUpdateReason = 'ConfirmPending',
+  args?: ArgsTypes
 ) {
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const state = getChannelState('signed', opts || {})
-  const update = await channelsDao.applyUpdateByUser(state.user, reason, state.user, state, {} as PaymentArgs)
+  const update = await channelsDao.applyUpdateByUser(state.user, reason, state.user, state, args || {})
   return {
     update,
     state,
@@ -45,12 +46,12 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
   const threadsDao: ThreadsDao = registry.get('ThreadsDao')
 
   // open performer channel
-  const perf = await channelUpdateFactory(registry, 'ConfirmPending', {
+  const perf = await channelUpdateFactory(registry, {
     user: receiver || mkAddress('0xf'),
   })
 
   // open user channel
-  const user = await channelUpdateFactory(registry, 'OpenThread', {
+  const user = await channelUpdateFactory(registry, {
     user: sender || mkAddress('0xb'),
     balanceTokenUser: tokenVal(69),
   })
@@ -63,8 +64,8 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
   await threadsDao.applyThreadUpdate(thread, user.update.id)
 
   return {
-    user: user.user,
-    performer: perf.user,
+    user,
+    performer: perf,
   }
 }
 

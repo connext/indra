@@ -12,10 +12,8 @@ import {
   ThreadStateBN,
   convertChannelState,
   PaymentBN,
-  UnsignedChannelStateBN,
 } from "./types";
-import BN = require('bn.js') // no import means ts errs?
-import { toBN, mul } from "./helpers/bn";
+import { toBN, mul, minBN } from "./helpers/bn";
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -33,20 +31,18 @@ export class StateGenerator {
       ...prev,
       balanceWeiHub: args.recipient === 'hub' ? prev.balanceWeiHub.add(args.amountWei) : prev.balanceWeiHub.sub(args.amountWei),
       balanceWeiUser: args.recipient === 'user' ? prev.balanceWeiUser.add(args.amountWei) : prev.balanceWeiUser.sub(args.amountWei),
-      balanceTokenHub: args.recipient === 'hub' ? prev.balanceTokenHub.add(args.amountWei) : prev.balanceTokenHub.sub(args.amountToken),
-      balanceTokenUser: args.recipient === 'user' ? prev.balanceTokenUser.add(args.amountWei) : prev.balanceTokenUser.sub(args.amountToken),
+      balanceTokenHub: args.recipient === 'hub' ? prev.balanceTokenHub.add(args.amountToken) : prev.balanceTokenHub.sub(args.amountToken),
+      balanceTokenUser: args.recipient === 'user' ? prev.balanceTokenUser.add(args.amountToken) : prev.balanceTokenUser.sub(args.amountToken),
       txCountGlobal: prev.txCountGlobal + 1,
       timeout: 0,
     })
   }
 
   public exchange(prev: ChannelStateBN, args: ExchangeArgsBN): UnsignedChannelState {
-    if (args.weiToSell.isZero && args.tokensToSell.gt(toBN(0))) {
+    if (args.tokensToSell.gt(toBN(0))) {
       return this.sellTokens(prev, args)
-    } else if (args.weiToSell.gt(toBN(0)) && args.tokensToSell.isZero) {
-      return this.sellWei(prev, args)
     } else {
-      throw new Error(`Must sell either wei or tokens, not neither nor both: ${JSON.stringify(args)}`)
+      return this.sellWei(prev, args)
     }
   }
 
@@ -97,7 +93,7 @@ export class StateGenerator {
       throw new Error(`Cannot yet sell wei during exchange`)
     const tokenAmountForWeiToSell = toBN(0)
 
-    let nextState: UnsignedChannelStateBN = {
+    let n = {
       ...prev,
 
       balanceWeiHub: prev.balanceWeiHub
@@ -150,38 +146,70 @@ export class StateGenerator {
       timeout: args.timeout,
     }
 
-    nextState = this.simplifyDepositAndWithdrawal(
-      nextState,
-      'pendingDepositWeiUser',
-      'pendingWithdrawalWeiHub',
+    // If there is both an exchange an a deposit, we can add (some portion of)
+    // the deposit amount directly to the hub's balance. For example: if the
+    // hub has a balance of 1 token, the user is selling the hub 10 tokens and
+    // the hub wants to deposit 4 tokens, then `n` will be:
+    //
+    //   balanceTokenHub: 1
+    //   pendingDepositTokenHub: 4
+    //   pendingWithdrawalTokenHub: 10
+    //
+    // Because the tokens the user is selling the hub already exist in the
+    // channel, they can be added directly to hub's balance (up to the amount
+    // the hub is trying to deposit), making the final state:
+    //
+    //   balanceTokenHub: 5 (1 + 4)
+    //   pendingDepositTokenHub: 0 (4 - 4)
+    //   pendingWithdrawalTokenHub: 6 (10 - 4)
+    //
+    // Understand the offChainBal* variables to mean "the balance that has
+    // already been accounted for in an offchain state (ie, that doesn't need
+    // to be deposited onchain), but is currently being added to the
+    // withdrawal."
+    const offChainBalWei = minBN(
+      n.pendingDepositWeiHub,
+      toBN(0)
+        .add(args.weiToSell)
+        .add(args.withdrawalWeiHub),
     )
+    n.balanceWeiHub = n.balanceWeiHub.add(offChainBalWei)
+    n.pendingDepositWeiHub = n.pendingDepositWeiHub.sub(offChainBalWei)
+    n.pendingWithdrawalWeiHub = n.pendingWithdrawalWeiHub.sub(offChainBalWei)
 
-    nextState = this.simplifyDepositAndWithdrawal(
-      nextState,
-      'pendingDepositTokenUser',
-      'pendingWithdrawalTokenHub',
+    const offChainBalToken = minBN(
+      n.pendingDepositTokenHub,
+      toBN(0)
+        .add(args.tokensToSell)
+        .add(args.withdrawalTokenHub),
     )
+    n.balanceTokenHub = n.balanceTokenHub.add(offChainBalToken)
+    n.pendingDepositTokenHub = n.pendingDepositTokenHub.sub(offChainBalToken)
+    n.pendingWithdrawalTokenHub = n.pendingWithdrawalTokenHub.sub(offChainBalToken)
 
-    return convertChannelState("str-unsigned", nextState)
-  }
+    // If there is both a deposit being made to the user and a withdrawal being
+    // made from the hub, then one of the two can be canceled out. For example:
+    // if the hub is making a 10 wei deposit into the user channel and
+    // withdrawing 4 wei:
+    //
+    //   pendingDepositWeiUser: 10
+    //   pendingWithdrawalWeiHub: 4
+    //
+    // The state can be simplified so that the hub withdraws 0 wei and and
+    // deposits 6 into the user channel (the remaining 4 will come from the
+    // hub's in-channel balance):
+    //
+    //   pendingDepositWeiUser: 6 (10 - 4)
+    //   pendingWithdrawalWeiHub: 0 (4 - 4)
+    const depositWithdrawalWei = minBN(n.pendingDepositWeiUser, n.pendingWithdrawalWeiHub)
+    n.pendingDepositWeiUser = n.pendingDepositWeiUser.sub(depositWithdrawalWei)
+    n.pendingWithdrawalWeiHub = n.pendingWithdrawalWeiHub.sub(depositWithdrawalWei)
 
-  private simplifyDepositAndWithdrawal(
-    state: UnsignedChannelStateBN,
-    depositField: keyof UnsignedChannelStateBN,
-    withdrawalField: keyof UnsignedChannelStateBN,
-  ): UnsignedChannelStateBN {
-    if (
-      !state[depositField].eq(toBN(0)) &&
-      !state[withdrawalField].eq(toBN(0))
-    ) {
-      // The hub is both depositing and withdrawing tokens; we can simplify
-      const delta = toBN(0)                     // change in reserve balance
-        .sub(state[depositField])    // amount being removed from reserve
-        .add(state[withdrawalField]) // amount being added to reserve
-      state[depositField] = delta.lt(toBN(0)) ? delta.abs() : toBN(0)
-      state[withdrawalField] = delta.gt(toBN(0)) ? delta : toBN(0)
-    }
-    return state
+    const depositWithdrawalToken = minBN(n.pendingDepositTokenUser, n.pendingWithdrawalTokenHub)
+    n.pendingDepositTokenUser = n.pendingDepositTokenUser.sub(depositWithdrawalToken)
+    n.pendingWithdrawalTokenHub = n.pendingWithdrawalTokenHub.sub(depositWithdrawalToken)
+
+    return convertChannelState("str-unsigned", n)
   }
 
   public confirmPending(prev: ChannelStateBN): UnsignedChannelState {
@@ -261,10 +289,10 @@ export class StateGenerator {
       .div(toBN(mul(args.exchangeRate, DEFAULT_EXCHANGE_MULTIPLIER)))
     return convertChannelState("str-unsigned", {
       ...prev,
-      balanceWeiHub: prev.balanceWeiHub.sub(amountWeiEquivalent),
-      balanceWeiUser: prev.balanceWeiUser.add(amountWeiEquivalent),
-      balanceTokenHub: prev.balanceTokenHub.add(args.tokensToSell),
-      balanceTokenUser: prev.balanceTokenUser.sub(args.tokensToSell),
+      balanceWeiHub: args.seller === "hub" ? prev.balanceWeiHub.add(amountWeiEquivalent) : prev.balanceWeiHub.sub(amountWeiEquivalent),
+      balanceWeiUser: args.seller === "user" ? prev.balanceWeiUser.add(amountWeiEquivalent) : prev.balanceWeiUser.sub(amountWeiEquivalent),
+      balanceTokenHub: args.seller === "hub" ? prev.balanceTokenHub.sub(args.tokensToSell) : prev.balanceTokenHub.add(args.tokensToSell),
+      balanceTokenUser: args.seller === "user" ? prev.balanceTokenUser.sub(args.tokensToSell) : prev.balanceTokenUser.add(args.tokensToSell),
       txCountGlobal: prev.txCountGlobal + 1,
       timeout: 0,
     })
@@ -275,10 +303,10 @@ export class StateGenerator {
       .div(toBN(DEFAULT_EXCHANGE_MULTIPLIER))
     return convertChannelState("str-unsigned", {
       ...prev,
-      balanceWeiHub: prev.balanceWeiHub.add(args.weiToSell),
-      balanceWeiUser: prev.balanceWeiUser.sub(args.weiToSell),
-      balanceTokenHub: prev.balanceTokenHub.sub(amountTokensEquivalent),
-      balanceTokenUser: prev.balanceTokenUser.add(amountTokensEquivalent),
+      balanceWeiHub: args.seller === "hub" ? prev.balanceWeiHub.sub(args.weiToSell) : prev.balanceWeiHub.add(args.weiToSell),
+      balanceWeiUser: args.seller === "user" ? prev.balanceWeiUser.sub(args.weiToSell) : prev.balanceWeiUser.add(args.weiToSell),
+      balanceTokenHub: args.seller === "hub" ? prev.balanceTokenHub.add(amountTokensEquivalent) : prev.balanceTokenHub.sub(amountTokensEquivalent),
+      balanceTokenUser: args.seller === "user" ? prev.balanceTokenUser.add(amountTokensEquivalent) : prev.balanceTokenUser.sub(amountTokensEquivalent),
       txCountGlobal: prev.txCountGlobal + 1,
       timeout: 0,
     })

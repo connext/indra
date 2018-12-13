@@ -6,6 +6,7 @@ import { BigNumber } from 'bignumber.js'
 import ChannelsService from '../ChannelsService'
 import { Big } from '../util/bigNumber'
 import { isBoolean } from 'util'
+import GlobalSettingsDao from '../dao/GlobalSettingsDao'
 
 const LOG = log('ThreadsApiService')
 
@@ -23,14 +24,21 @@ export default class ThreadsApiService extends ApiService<
   dependencies = {
     threadsService: 'ThreadsService',
     channelsService: 'ChannelsService',
+    globalSettingsDao: 'GlobalSettingsDao'
   }
 }
 
 class ThreadsApiServiceHandler {
   threadsService: ThreadsService
   channelsService: ChannelsService
+  globalSettingsDao: GlobalSettingsDao
 
   async doUpdateThread(req: express.Request, res: express.Response) {
+    const enabled = await this.ensureThreadsEnabled(req, res)
+    if (!enabled) {
+      return
+    }
+
     const { sender, receiver } = req.params
     const { update } = req.body
 
@@ -104,5 +112,21 @@ class ThreadsApiServiceHandler {
     }
 
     res.send(await this.threadsService.getThreadsIncoming(user))
+  }
+
+  async ensureThreadsEnabled(req: express.Request, res: express.Response): Promise<boolean> {
+    const enabled = (await this.globalSettingsDao.fetch()).threadsEnabled
+
+    if (!enabled) {
+      LOG.warn('Received a thread request while threads are disabled. URL: {url}, params: {params}', {
+        url: req.url,
+        params: JSON.stringify(req.params),
+      })
+
+      res.sendStatus(403);
+      return false
+    }
+
+    return true
   }
 }
