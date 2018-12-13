@@ -42,7 +42,7 @@ registry=docker.io
 
 default: dev
 all: dev prod
-dev: client database ethprovider hub test-hub e2e-node-modules
+dev: client database ethprovider hub hub-test e2e-node-modules
 prod: client database-prod hub-prod
 
 clean:
@@ -87,6 +87,10 @@ client-node-modules:
 	touch build/client-node-modules
 
 # Hub
+
+hub-test: hub $(hub)/ops/test.dockerfile
+	docker build --file $(hub)/ops/test.dockerfile --tag $(project)_hub:test .
+	touch build/hub-test
 
 hub-prod: hub
 	docker tag $(project)_hub:dev $(project)_hub:latest
@@ -138,10 +142,6 @@ contract-node-modules: builder $(contracts)/package.json
 	touch build/contract-node-modules
 
 # Test
-
-test-hub: hub-node-modules ops/test-entry.sh ops/test.dockerfile
-	docker build --file ops/test.dockerfile --tag $(project)_test:dev .
-	touch build/test-hub
 
 e2e-node-modules: builder $(e2e)/package.json
 	$(docker_run_in_e2e) "yarn install"
