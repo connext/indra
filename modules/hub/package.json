@@ -8,7 +8,7 @@
     "test": "mocha -r ./dist/register/common.js -r ./dist/register/testing.js \"dist/**/*.test.js\" --exit",
     "drop-migrate-test": "./migrate-and-test.sh",
     "lint": "tslint -c ../common/tslint.json -t stylish src/**/*.ts",
-    "build:backend": "tsc -v && tsc -p tsconfig.json",
+    "build:backend": "tsc -p tsconfig.json",
     "build": "yarn clean && yarn build:backend",
     "runner": "node ./dist/src/spankchain/main.js",
     "start": "yarn build && concurrently -n hub,chainsaw 'node ./dist/src/spankchain/main.js' 'node ./dist/src/spankchain/main.js chainsaw'",
@@ -18,7 +18,7 @@
     "start-chainsaw": "yarn clean && yarn build:backend && yarn runner chainsaw",
     "reset-and-migrate": "dropdb spank_hub && createdb spank_hub && yarn migrate",
     "postinstall": "rm -f node_modules/web3/index.d.ts",
-    "blow-my-node": "yarn cache clean && rm -r node_modules/ && rm yarn.lock && rm package-lock.json"
+    "blow-my-node": "yarn cache clean && rm -r node_modules/"
   },
   "author": "",
   "license": "UNLICENSED",
@@ -45,7 +45,7 @@
     "@types/redux-logger": "^3.0.5",
     "bn.js": "^4.11.8",
     "classnames": "^2.2.5",
-    "concurrently": "^4.0.1",
+    "concurrently": "^4.1.0",
     "connect-redis": "^3.3.3",
     "connext": "^2.5.9",
     "cookie-parser": "^1.4.3",
@@ -105,7 +105,7 @@
     "tslint": "^5.9.1",
     "tslint-config-standard": "^7.0.0",
     "types-ethereumjs-util": "^0.0.5",
-    "typescript": "^2.7.2",
+    "typescript": "=3.2.2",
     "yarn-run-all": "^3.1.1"
   }
 }
