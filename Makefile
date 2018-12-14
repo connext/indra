@@ -24,7 +24,7 @@ hub_prereq=$(shell find $(hub) $(find_options))
 # On Mac the VM docker runs in takes care of this for us so don't pass in an id
 id=$(shell id -u):$(shell id -g)
 run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
-docker_run=docker run --name=buidler --tty --rm $(run_as_user)
+docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(hub):/root builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev $(id)
@@ -50,7 +50,7 @@ clean:
 	rm -rf $(hub)/dist/*
 
 stop: 
-	docker container stop buidler 2> /dev/null || true
+	docker container stop $(project)_buidler 2> /dev/null || true
 	bash ops/stop.sh
 
 purge: stop clean
