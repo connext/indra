@@ -36,7 +36,7 @@ version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
 
 # Begin Phony Rules
-.PHONY: default dev clean stop
+.PHONY: default all dev prod clean stop purge deploy deploy-live test
 
 default: dev
 all: dev prod
@@ -70,6 +70,9 @@ deploy-live: prod
 	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)_hub:$(version)
 	docker push $(registry)/$(me)/$(project)_database:$(version)
 	docker push $(registry)/$(me)/$(project)_hub:$(version)
+
+test: hub-test
+	bash $(hub)/ops/test.sh
 
 # Begin Real Rules
 
