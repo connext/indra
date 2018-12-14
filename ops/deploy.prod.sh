@@ -43,9 +43,16 @@ then version="`cat package.json | jq .version | tr -d '"'`"
 else version="latest"
 fi
 
-database_image="$registry/$repository/${project}_database:$version"
-hub_image="$registry/$repository/${project}_hub:$version"
-redis_image="redis:5-alpine"
+if [[ "$DOMAINNAME" != "localhost" ]]
+then
+  database_image="$registry/$repository/${project}_database:$version"
+  hub_image="$registry/$repository/${project}_hub:$version"
+  redis_image="redis:5-alpine"
+else
+  database_image=${project}_database:dev
+  hub_image=${project}_hub:dev
+  redis_image=redis:5-alpine
+fi
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
