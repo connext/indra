@@ -1,6 +1,0 @@
-import { ChannelFlexibleValidatorOptions, BaseValidatorOptions } from "../../lib/connext-client/Validation";
-
-export interface WalletSyncData {
-  update: ChannelFlexibleValidatorOptions
-  isUserDeposit?: boolean
-}

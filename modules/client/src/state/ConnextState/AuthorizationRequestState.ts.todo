@@ -1,5 +1,0 @@
-export interface AuthorizationRequestState {
-  hubUrl: string
-  authRealm: string
-}
-
