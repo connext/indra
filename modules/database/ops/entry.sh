@@ -54,5 +54,12 @@ kill $PID
 while [[ -f "/var/lib/postgresql/data/postmaster.pid" ]]
 do echo "===> Waiting for lock to be released..." && sleep 2
 done
+
+# Have requests to port 5433 returns "done" a la unix.stackexchange.com/a/37762
+echo "===> Signalling the completion of migrations..."
+while true
+do echo 'db migrations complete' | nc -lk -p 5433
+done > /dev/null &
+
 echo "===> Starting new database.."
 exec /docker-entrypoint.sh postgres
