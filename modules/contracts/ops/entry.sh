@@ -11,7 +11,7 @@ mnemonic=$ETH_MNEMONIC
 [[ -n "$mnemonic" ]] || mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 echo "Starting Ganache with options: netid=$netid, mnemonic=$mnemonic..."
-$ganache --host="0.0.0.0" --port="8545" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" &
+$ganache --host="0.0.0.0" --port="8545" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" --blockTime=3 &
 sleep 5
 echo 'lets go'
 
