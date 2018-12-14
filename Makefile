@@ -83,7 +83,7 @@ client: client-node-modules
 	touch build/client
 
 client-node-modules:
-	$(docker_run_in_client) "yarn install"
+	$(docker_run_in_client) "yarn install --network-timeout 1000000"
 	touch build/client-node-modules
 
 # Hub
@@ -101,7 +101,7 @@ hub-js: hub-node-modules $(hub_prereq)
 	touch build/hub-js
 
 hub-node-modules: builder $(hub)/package.json
-	$(docker_run_in_hub) "yarn install"
+	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
 	touch build/hub-node-modules
 
 # Database
@@ -134,7 +134,7 @@ contract-artifacts: contract-node-modules
 	touch build/contract-artifacts
 
 contract-node-modules: builder $(contracts)/package.json
-	$(docker_run_in_contracts) "yarn install"
+	$(docker_run_in_contracts) "yarn install --network-timeout 1000000"
 	touch build/contract-node-modules
 
 # Test
