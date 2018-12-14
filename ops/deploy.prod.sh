@@ -95,9 +95,7 @@ services:
 
   hub:
     image: $hub_image
-    entrypoint:
-      - bash
-      - ops/hub.entry.sh
+    command: hub
     ports:
       - '3000:8080'
     depends_on:
@@ -123,9 +121,7 @@ services:
 
   chainsaw:
     image: $hub_image
-    entrypoint:
-      - bash
-      - ops/chainsaw.entry.sh
+    command: chainsaw
     depends_on:
       - postgres
     secrets:

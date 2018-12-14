@@ -40,7 +40,7 @@ registry=docker.io
 
 default: dev
 all: dev prod
-dev: database ethprovider hub hub-test e2e-node-modules
+dev: database ethprovider hub e2e-node-modules
 prod: database-prod hub-prod
 
 clean:
@@ -71,16 +71,12 @@ deploy-live: prod
 	docker push $(registry)/$(me)/$(project)_database:$(version)
 	docker push $(registry)/$(me)/$(project)_hub:$(version)
 
-test: hub-test
+test: hub
 	bash $(hub)/ops/test.sh
 
 # Begin Real Rules
 
 # Hub
-
-hub-test: hub $(hub)/ops/test.dockerfile
-	docker build --file $(hub)/ops/test.dockerfile --tag $(project)_hub:test .
-	touch build/hub-test
 
 hub-prod: hub
 	docker tag $(project)_hub:dev $(project)_hub:latest

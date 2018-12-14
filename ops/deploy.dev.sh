@@ -91,9 +91,7 @@ services:
 
   hub:
     image: $hub_image
-    entrypoint:
-      - bash
-      - ops/hub.entry.sh
+    command: hub
     networks:
       - $project
     ports:
@@ -117,9 +115,7 @@ services:
 
   chainsaw:
     image: $hub_image
-    entrypoint:
-      - bash
-      - ops/chainsaw.entry.sh
+    command: chainsaw
     networks:
       - $project
     secrets:
