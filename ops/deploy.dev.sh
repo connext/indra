@@ -5,7 +5,7 @@ set -e
 # ENV VARS
 
 project=connext
-number_of_services=4
+number_of_services=5
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -93,7 +93,7 @@ services:
     image: $hub_image
     entrypoint:
       - bash
-      - ops/dev.entry.sh
+      - ops/hub.entry.sh
     networks:
       - $project
     ports:
@@ -101,6 +101,29 @@ services:
     secrets:
       - connext_database_dev
       - private_key_dev
+    environment:
+      WALLET_ADDRESS: $WALLET_ADDRESS
+      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
+      HOT_WALLET_ADDRESS: $HOT_WALLET_ADDRESS
+      TOKEN_CONTRACT_ADDRESS: $TOKEN_CONTRACT_ADDRESS
+      ETH_RPC_URL: $ETH_RPC_URL
+      SERVICE_USER_KEY: $SERVICE_USER_KEY
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database_dev
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      REDIS_URL: $REDIS_URL
+
+  chainsaw:
+    image: $hub_image
+    entrypoint:
+      - bash
+      - ops/chainsaw.entry.sh
+    networks:
+      - $project
+    secrets:
+      - connext_database_dev
     environment:
       WALLET_ADDRESS: $WALLET_ADDRESS
       CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
