@@ -1,4 +1,4 @@
-FROM builder:dev
+FROM connext_builder:dev
 
 COPY node_modules node_modules
 COPY build build

@@ -3,7 +3,7 @@ set -e
 
 name=$1 && [[ -n "$name" ]] || name=connext
 
-docker container stop builder 2> /dev/null || true
+docker container stop ${name}_builder 2> /dev/null || true
 docker stack rm $name
 
 echo -n "Waiting for the $name stack to shutdown."
