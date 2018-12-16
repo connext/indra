@@ -2,9 +2,9 @@
 
 export DATABASE="$POSTGRES_HOST:5432"
 export DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DATABASE/$POSTGRES_DB"
-export REDIS="redis:6379"
+export REDIS="$REDIS_HOST:6379"
 export REDIS_URL="redis://$REDIS"
-export ETH_RPC_URL="ethprovider:8545"
+export ETH_RPC_URL="$ETHPROVIDER_HOST:8545"
 
 ops/wait-for-it.sh -t 60 $POSTGRES_HOST:5433
 ops/wait-for-it.sh -t 60 $DATABASE
