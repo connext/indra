@@ -1,17 +1,15 @@
 project=connext
 
-# Specify make-specific variables (VPATH = prerequisite search path)
-VPATH=build:$(contracts)/build:$(hub)/build
-SHELL=/bin/bash
-
-me=$(shell whoami)
-
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 contracts=$(cwd)/modules/contracts
 hub=$(cwd)/modules/hub
 db=$(cwd)/modules/database
 e2e=$(cwd)/modules/e2e
+
+# Specify make-specific variables (VPATH = prerequisite search path)
+VPATH=build:$(contracts)/build:$(hub)/build
+SHELL=/bin/bash
 
 # Fetch Prerequisites
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*"
@@ -32,6 +30,7 @@ docker_run_in_e2e=$(docker_run) --volume=$(e2e):/root $(project)_builder:dev $(i
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
+me=$(shell whoami)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
 log=@echo;echo;echo "[Makefile] => Building $@"
@@ -94,7 +93,7 @@ hub-js: hub-node-modules $(hub_prereq)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	touch build/hub-js
 
-hub-node-modules: builder $(hub)/package.json
+hub-node-modules: $(project)_builder $(hub)/package.json
 	$(log)
 	$(docker_run_in_hub) "yarn install"
 	touch build/hub-node-modules
@@ -116,7 +115,7 @@ migration-templates: $(db_prereq)
 	$(docker_run_in_db) "make"
 	touch build/migration-templates
 
-database-node-modules: builder $(db)/package.json
+database-node-modules: $(project)_builder $(db)/package.json
 	$(log)
 	$(docker_run_in_db) "yarn install"
 	touch build/database-node-modules
@@ -134,20 +133,20 @@ contract-artifacts: contract-node-modules
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
 	touch build/contract-artifacts
 
-contract-node-modules: builder $(contracts)/package.json
+contract-node-modules: $(project)_builder $(contracts)/package.json
 	$(log)
 	$(docker_run_in_contracts) "yarn install"
 	touch build/contract-node-modules
 
 # Test
 
-e2e-node-modules: builder $(e2e)/package.json
+e2e-node-modules: $(project)_builder $(e2e)/package.json
 	$(log)
 	$(docker_run_in_e2e) "yarn install"
 	touch build/e2e-node-modules
 
 # Builder
-builder: ops/builder.dockerfile ops/permissions-fixer.sh
+$(project)_builder: ops/builder.dockerfile ops/permissions-fixer.sh
 	$(log)
-	docker build --file ops/builder.dockerfile --tag builder:dev .
-	touch build/builder
+	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
+	touch build/$(project)_builder
