@@ -27,7 +27,7 @@ docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
-docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
+docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
@@ -93,14 +93,14 @@ client-node-modules: $(project)_builder $(client)/package.json
 
 # Hub
 
-hub-prod: hub
+hub-prod: hub-js
 	$(log)
-	docker tag $(project)_hub:dev $(project)_hub:latest
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	touch build/hub-prod
 
-hub: hub-js $(hub_prereq)
+hub: hub-js
 	$(log)
-	docker build --file $(hub)/ops/hub.dockerfile --tag $(project)_hub:dev $(hub)
+	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
 	touch build/hub
 
 hub-js: hub-node-modules $(hub_prereq)
@@ -111,6 +111,7 @@ hub-js: hub-node-modules $(hub_prereq)
 hub-node-modules: $(project)_builder $(hub)/package.json
 	$(log)
 	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
+	$(docker_run_in_hub) "ln -fs ../../client node_modules/connext"
 	touch build/hub-node-modules
 
 # Database
