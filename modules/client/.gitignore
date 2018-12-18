@@ -1,9 +1,14 @@
-node_modules/
 dist/
+node_modules/
 notes.txt
 test/tests.txt
 test/apiRoutes.txt
 test/tests.txt
+.cache
+.config
 .env
+.node-gyp
+.npm
+.yarnrc
 *.sw[opq]
 tags
