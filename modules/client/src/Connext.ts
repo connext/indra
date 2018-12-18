@@ -4,7 +4,7 @@ import { UpdateRequest } from './types'
 import { createStore, Action, applyMiddleware } from 'redux'
 require('dotenv').config()
 import { EventEmitter } from 'events'
-import Web3 = require('web3')
+import Web3 from 'web3'
 // local imports
 import { ChannelManager as TypechainChannelManager } from './typechain/ChannelManager'
 import ChannelManagerAbi from './typechain/abi/ChannelManagerAbi'

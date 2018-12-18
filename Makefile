@@ -79,7 +79,12 @@ test: hub
 
 # Client
 
-client: client-node-modules
+client: client-js
+
+client-js: client-node-modules
+	$(log)
+	$(docker_run_in_client) "yarn build"
+	touch build/client-js
 
 client-node-modules: $(project)_builder $(client)/package.json
 	$(log)
