@@ -1,6 +1,6 @@
-require('../register/common')
+require('./register/common')
 
-import PaymentHub from '../PaymentHub'
+import PaymentHub from './PaymentHub'
 
 const hub = new PaymentHub({
   ethRpcUrl: process.env.ETH_RPC_URL!,
