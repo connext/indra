@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const axios = require('axios');
-const ChannelManager = require('../artifacts/ChannelManager.json')
+const ChannelManager = require('./ChannelManager.json')
 
 const url = 'http://indra.bohendo.com:3000'
 const eth_provider = ethers.getDefaultProvider('ropsten');

@@ -54,7 +54,7 @@
     "compile": "node_modules/.bin/tsc",
     "prepare": "npm run build",
     "rebuild": "npm run clean && npm run compile",
-    "test": "node test/HappyCase.test.ts",
+    "test": "node test/HappyCase.test.js",
     "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
     "postinstall": "rm -f node_modules/web3/index.d.ts"
   }
