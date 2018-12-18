@@ -2,7 +2,7 @@
   "name": "hub",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/entry.js",
   "scripts": {
     "clean": "rm -rf dist",
     "test": "mocha -r ./dist/register/common.js -r ./dist/register/testing.js \"dist/**/*.test.js\" --exit",
