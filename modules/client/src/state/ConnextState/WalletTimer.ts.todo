@@ -1,6 +1,0 @@
-import { ChannelStateUpdate } from "../../lib/connext-client/types";
-
-export interface WalletTimer {
-  timeout: number
-  pendingUpdate: ChannelStateUpdate
-}

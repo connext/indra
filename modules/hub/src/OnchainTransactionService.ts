@@ -176,15 +176,15 @@ export class OnchainTransactionService {
       data: txnRequest.data || '0x',
       nonce: nonce,
     }
-    const sig = await this.web3.eth.signTransaction({ ...unsignedTx })
+    //const sig = await this.web3.eth.signTransaction({ ...unsignedTx }) TODO REB-61
     const tx = {
       ...unsignedTx,
-      hash: sig.tx.hash,
-      signature: {
+      hash: '0xb66c4a63fa361db7120e0cbdcb0a02f07ae68f27350ae4d34d7444a2547965b9', // TODO: REB-61 sig.tx.hash,
+      signature: { r: '0x0', s: '0x0', v: 69 }, /*{ TODO: REB-61
         r: sig.tx.r,
         s: sig.tx.s,
         v: this.web3.utils.hexToNumber(sig.tx.v),
-      },
+      }*/
     }
 
     // Note: this is called from within the transactional context of the caller
@@ -201,7 +201,7 @@ export class OnchainTransactionService {
       try {
         await this.poll()
         if (this.running)
-          await sleep(pollInterval)
+          await sleep(pollInterval = 1000)
       } catch (e) {
         LOG.error(`Error polling pending transactions (will retry in 30s): ${'' + e}\n${e.stack}`)
         if (this.running)
@@ -228,8 +228,18 @@ export class OnchainTransactionService {
   private async processPendingTxn(txn: OnchainTransactionRow): Promise<void> {
     if (txn.state == 'new') {
       const error = await new Promise(res => {
-        const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn))
-        tx.on('transactionHash', hash => res(null))
+        // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
+        const tx = this.web3.eth.sendTransaction(txn)
+        tx.on('transactionHash', hash => {
+          console.log('HASH:', hash)
+          // TODO: REB-61
+          this.db.query(SQL`
+            UPDATE onchain_transactions_raw
+            SET hash = ${hash}
+            WHERE id = ${txn.id}
+          `)
+          res(null)
+        })
         tx.on('error', err => res(err))
       })
 

@@ -1,5 +1,0 @@
-import { expect } from 'chai'
-
-describe('serviceWorkerClient functions', () => {
-  it('should write tests for the functions in serviceWorkerClient.ts')
-})

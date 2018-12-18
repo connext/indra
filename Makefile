@@ -1,21 +1,20 @@
 project=connext
 
-# Specify make-specific variables (VPATH = prerequisite search path)
-VPATH=build:$(contracts)/build:$(hub)/build
-SHELL=/bin/bash
-
-me=$(shell whoami)
-
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
-hub=$(cwd)/modules/hub
 db=$(cwd)/modules/database
 e2e=$(cwd)/modules/e2e
+hub=$(cwd)/modules/hub
+
+# Specify make-specific variables (VPATH = prerequisite search path)
+VPATH=build:$(contracts)/build:$(hub)/dist
+SHELL=/bin/bash
 
 # Fetch Prerequisites
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*"
+client_prereq=$(shell find $(client) $(find_options))
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 db_prereq=$(shell find $(db) $(find_options))
 hub_prereq=$(shell find $(hub) $(find_options))
@@ -25,35 +24,36 @@ hub_prereq=$(shell find $(hub) $(find_options))
 # On Mac the VM docker runs in takes care of this for us so don't pass in an id
 id=$(shell id -u):$(shell id -g)
 run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
-docker_run=docker run --name=buidler --tty --rm $(run_as_user)
-docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root builder:dev $(id)
-docker_run_in_client=$(docker_run) --volume=$(client):/root builder:dev $(id)
-docker_run_in_hub=$(docker_run) --volume=$(hub):/root builder:dev $(id)
-docker_run_in_db=$(docker_run) --volume=$(db):/root builder:dev $(id)
-docker_run_in_e2e=$(docker_run) --volume=$(e2e):/root builder:dev $(id)
+docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
+docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
+docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
+docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
+docker_run_in_e2e=$(docker_run) --volume=$(e2e):/root $(project)_builder:dev $(id)
+docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
+me=$(shell whoami)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
+log=@echo;echo;echo "[Makefile] => Building $@"
 
 # Begin Phony Rules
-.PHONY: default dev clean stop
+.PHONY: default all dev prod clean stop purge deploy deploy-live test
 
 default: dev
 all: dev prod
-dev: client database ethprovider hub test-hub e2e-node-modules
-prod: client database-prod hub-prod
+dev: client database ethprovider e2e-node-modules hub
+prod: database-prod hub-prod
 
 clean:
 	rm -rf build/*
 	rm -f $(contracts)/build/state-hash
 	rm -rf $(db)/build/*
 	rm -rf $(hub)/dist/*
-	rm -rf $(client)/dist/*
 
 stop: 
-	docker container stop buidler 2> /dev/null || true
+	docker container stop $(project)_buidler 2> /dev/null || true
 	bash ops/stop.sh
 
 purge: stop clean
@@ -74,80 +74,91 @@ deploy-live: prod
 	docker push $(registry)/$(me)/$(project)_database:$(version)
 	docker push $(registry)/$(me)/$(project)_hub:$(version)
 
+test: hub
+	bash $(hub)/ops/test.sh
+
 # Begin Real Rules
 
 # Client
 
 client: client-node-modules
-	$(docker_run_in_client) "./node_modules/.bin/tsc -p tsconfig.json"
-	touch build/client
 
-client-node-modules:
+client-node-modules: $(project)_builder $(client)/package.json
+	$(log)
 	$(docker_run_in_client) "yarn install --network-timeout 1000000"
 	touch build/client-node-modules
 
 # Hub
 
 hub-prod: hub
+	$(log)
 	docker tag $(project)_hub:dev $(project)_hub:latest
 	touch build/hub-prod
 
 hub: hub-js $(hub_prereq)
+	$(log)
 	docker build --file $(hub)/ops/hub.dockerfile --tag $(project)_hub:dev $(hub)
 	touch build/hub
 
 hub-js: hub-node-modules $(hub_prereq)
+	$(log)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	touch build/hub-js
 
-hub-node-modules: builder $(hub)/package.json
+hub-node-modules: $(project)_builder $(hub)/package.json
+	$(log)
 	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
 	touch build/hub-node-modules
 
 # Database
 
 database-prod: database
+	$(log)
 	docker tag $(project)_database:dev $(project)_database:latest
 	touch build/database-prod
 
 database: database-node-modules migration-templates $(db_prereq)
+	$(log)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	touch build/database
 
 migration-templates: $(db_prereq)
+	$(log)
 	$(docker_run_in_db) "make"
 	touch build/migration-templates
 
-database-node-modules: builder $(db)/package.json
+database-node-modules: $(project)_builder $(db)/package.json
+	$(log)
 	$(docker_run_in_db) "yarn install"
 	touch build/database-node-modules
 
 # Contracts
 
 ethprovider: contract-artifacts
+	$(log)
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	touch build/ethprovider
 
 contract-artifacts: contract-node-modules
+	$(log)
 	$(docker_run_in_contracts) "yarn build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
 	touch build/contract-artifacts
 
-contract-node-modules: builder $(contracts)/package.json
+contract-node-modules: $(project)_builder $(contracts)/package.json
+	$(log)
 	$(docker_run_in_contracts) "yarn install --network-timeout 1000000"
 	touch build/contract-node-modules
 
 # Test
 
-test-hub: hub-node-modules ops/test-entry.sh ops/test.dockerfile
-	docker build --file ops/test.dockerfile --tag $(project)_test:dev .
-	touch build/test-hub
-
-e2e-node-modules: builder $(e2e)/package.json
+e2e-node-modules: $(project)_builder $(e2e)/package.json
+	$(log)
 	$(docker_run_in_e2e) "yarn install"
 	touch build/e2e-node-modules
 
 # Builder
-builder: ops/builder.dockerfile ops/permissions-fixer.sh
-	docker build --file ops/builder.dockerfile --tag builder:dev .
-	touch build/builder
+$(project)_builder: ops/builder.dockerfile ops/permissions-fixer.sh
+	$(log)
+	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
+	touch build/$(project)_builder

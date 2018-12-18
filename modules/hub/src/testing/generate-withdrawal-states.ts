@@ -219,8 +219,6 @@ function extractArgsAndCurrOverrides(obj: any) {
   // hub wei withdrawal is nonzero if there is a surplus of wei after exchanging
   // hub reclaims all wei possible on withdrawals
   const pendingWithdrawalWeiHub = key[2] === '>' ? prev.balanceWeiHub : 0
-  // withdrawal in args is amount of wei from channel
-  const withdrawalWeiHub = prev.balanceWeiHub
 
   let depositTokenHub = 0
   let pendingWithdrawalTokenHub = 0
@@ -263,12 +261,10 @@ function extractArgsAndCurrOverrides(obj: any) {
       tokensToSell: request.token,
       weiToSell: 0, // no wei exchanges on wd
       recipient: '0x2220000000000000000000000000000000000000',
-      withdrawalWeiUser: request.wei, // wei from balance
-      withdrawalTokenUser: 0, // no wd tokens
-      withdrawalWeiHub, // wei from hub balance
-      withdrawalTokenHub: pendingWithdrawalTokenHub - request.token, // tokens from hub balance
-      depositWeiHub: 0, // doesnt collateralize token2wei xchange
-      depositTokenHub, // amount needed for token collateral
+      targetWeiUser: balanceWeiUser,
+      targetTokenUser: balanceTokenUser,
+      targetWeiHub: 0,
+      targetTokenHub: balanceTokenHub,
       additionalWeiHubToUser: 0, // additional recipient payments
       additionalTokenHubToUser: 0, // not yet supported
       timeout: 6969,
@@ -299,12 +295,6 @@ function extractArgsAndCurrOverrides(obj: any) {
   [{ args: { exchangeRate: '5',
     tokensToSell: 5,
     weiToSell: 0,
-    withdrawalWeiUser: 1,
-    withdrawalTokenUser: 0,
-    withdrawalWeiHub: 1,
-    withdrawalTokenHub: 5,
-    depositWeiHub: 0,
-    depositTokenHub: 0,
     additionalWeiHubToUser: 0,
     additionalTokenHubToUser: 0 },
     curr:
@@ -357,18 +347,12 @@ function createWithdrawalArgs(type: string, overrides: WithdrawalArgs) {
         tokensToSell: '0',
         weiToSell: '0',
         recipient: mkAddress('0x222'),
-        withdrawalWeiUser: '0',
-        withdrawalTokenUser: '0',
-        withdrawalWeiHub: '0',
-        withdrawalTokenHub: '0',
-        depositWeiHub: '0',
-        depositTokenHub: '0',
         additionalWeiHubToUser: '0',
         additionalTokenHubToUser: '0',
         timeout: 6969,
         ...overrides,
     }
-    args.timeout = Number(args.timeout) // TODO fix better
+    args.timeout = +args.timeout
     args.exchangeRate = args.exchangeRate.toString()
     return convertWithdrawal(type as any, args)
 }

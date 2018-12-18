@@ -9,6 +9,7 @@ import {
   ExchangeArgsBigNumber,
   DepositArgsBigNumber,
   WithdrawalArgsBigNumber,
+  convertArgs,
 } from '../vendor/connext/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
@@ -302,57 +303,6 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  private inflateArgs(
-    args: any,
-    reason: ChannelUpdateReason,
-  ):
-    | PaymentArgsBigNumber
-    | ExchangeArgsBigNumber
-    | DepositArgsBigNumber
-    | WithdrawalArgsBigNumber {
-    switch (reason) {
-      case 'Payment':
-        return {
-          recipient: args.recipient,
-          amountToken: Big(args.amountToken),
-          amountWei: Big(args.amountWei),
-        } as PaymentArgsBigNumber
-      case 'Exchange':
-        return {
-          exchangeRate: args.exchangeRate,
-          tokensToSell: Big(args.tokensToSell),
-          weiToSell: Big(args.weiToSell),
-        } as ExchangeArgsBigNumber
-      case 'ProposePendingDeposit':
-        return {
-          depositWeiHub: Big(args.depositWeiHub),
-          depositWeiUser: Big(args.depositWeiUser),
-          depositTokenHub: Big(args.depositTokenHub),
-          depositTokenUser: Big(args.depositTokenUser),
-          timeout: args.timeout,
-        } as DepositArgsBigNumber
-      case 'ProposePendingWithdrawal':
-        return {
-          exchangeRate: args.exchangeRate,
-          tokensToSell: Big(args.tokensToSell),
-          weiToSell: Big(args.weiToSell),
-          additionalTokenHubToUser: Big(args.additionalTokenHubToUser),
-          additionalWeiHubToUser: Big(args.additionalWeiHubToUser),
-          depositWeiHub: Big(args.depositWeiHub),
-          depositWeiUser: Big(args.depositWeiUser),
-          depositTokenHub: Big(args.depositTokenHub),
-          withdrawalWeiHub: Big(args.withdrawalWeiHub),
-          withdrawalWeiUser: Big(args.withdrawalWeiUser),
-          withdrawalTokenHub: Big(args.withdrawalTokenHub),
-          withdrawalTokenUser: Big(args.withdrawalTokenUser),
-          timeout: args.timeout,
-          recipient: args.recipient,
-        } as WithdrawalArgsBigNumber
-      default:
-        return args
-    }
-  }
-
   private inflateChannelUpdateRow(row: any): ChannelStateUpdateRowBigNum {
     return (
       row && {
@@ -362,7 +312,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         channelId: Number(row.channel_id),
         chainsawId: Number(row.chainsaw_event_id),
         createdOn: row.created_on,
-        args: this.inflateArgs(row.args, row.reason),
+        args: convertArgs('bignumber', row.reason, row.args),
       }
     )
   }

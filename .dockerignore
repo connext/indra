@@ -2,6 +2,7 @@ node_modules
 modules/**/node_modules
 modules/**/.cache
 modules/**/.config
+modules/**/.git
 modules/**/.node-gyp
 build
 modules/**/build

@@ -100,6 +100,7 @@ export default class PaymentsService {
       // Note: this handling of meta isn't ideal. In the future, we should have
       // a Purchase table to store the purchase metadata instead of merging it
       // into payment metadata.
+      console.log('row: ', row);
       const paymentId = await this.paymentMetaDao.save(purchaseId, row.id, {
         recipient: payment.recipient,
         amount: payment.amount,

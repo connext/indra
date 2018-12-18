@@ -29,5 +29,8 @@ if (process.env.NODE_ENV != 'production') {
     '-sequelize:sql:pg',
     '-sequelize:connection:pg',
     '-follow-redirects',
+    '-body-parser',
+    '-connect:redis',
+    '-express-session',
   ].join(','))
 }

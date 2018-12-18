@@ -1,6 +1,5 @@
 
 {
-
   "ECTools": {
     "networks": {
       "3": {
@@ -11,7 +10,6 @@
       }
     }
   },
-
   "ChannelManager": {
     "networks": {
       "3": {
@@ -24,5 +22,4 @@
       }
     }
   }
-
 }

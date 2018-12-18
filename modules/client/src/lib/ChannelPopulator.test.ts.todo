@@ -1,6 +1,0 @@
-import { expect } from 'chai'
-import ChannelPopulator from './ChannelPopulator';
-
-describe('ChannelPopulator', () => {
-  it('should write ChannelPopulator tests')
-})

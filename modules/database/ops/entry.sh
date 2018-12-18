@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-# Print env then add database password
-echo "===> Starting Postgres in env:"
+echo "===> Starting database in env:"
 env
 
 # Start temporary database in background to run migrations
@@ -17,10 +16,14 @@ echo "===> Good morning, Postgres!"
 # Run migrations
 echo "===> Running migrations..."
 migrate=./node_modules/.bin/db-migrate
-POSTGRES_PASSWORD="`cat $POSTGRES_PASSWORD_FILE`"
+if [[ -z "POSTGRES_PASSWORD" ]]
+then POSTGRES_PASSWORD="`cat $POSTGRES_PASSWORD_FILE`"
+fi
 $migrate up all --verbose --config ops/config.json --migrations-dir node_modules/machinomy/migrations
 $migrate up all --verbose --config ops/config.json --migrations-dir migrations
-unset POSTGRES_PASSWORD
+if [[ -n "POSTGRES_PASSWORD_FILE" ]]
+then unset POSTGRES_PASSWORD
+fi
 
 echo "===> Running additional migrations..."
 for f in build/*.sql
@@ -51,5 +54,12 @@ kill $PID
 while [[ -f "/var/lib/postgresql/data/postmaster.pid" ]]
 do echo "===> Waiting for lock to be released..." && sleep 2
 done
+
+# Have requests to port 5433 returns "done" a la unix.stackexchange.com/a/37762
+echo "===> Signalling the completion of migrations..."
+while true
+do echo 'db migrations complete' | nc -lk -p 5433
+done > /dev/null &
+
 echo "===> Starting new database.."
 exec /docker-entrypoint.sh postgres

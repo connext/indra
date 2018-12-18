@@ -1,49 +1,85 @@
 {
-  "name": "spankchain-connext-client",
-  "description": "Shared code between wallet and hub",
-  "version": "0.0.1",
-  "main": "dist",
+  "name": "connext",
+  "version": "0.0.74",
+  "description": "Containerized state channels",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "eslint src/ ; babel src -d dist",
+    "eslint": "eslint src/",
+    "test": "mocha --recursive --exit --compilers js:babel-core/register",
+    "test-happy": "mocha test/**/HappyCase.test.js --recursive --exit --compilers js:babel-core/register",
+    "test-disputes": "mocha test/**/Disputes.test.js --recursive --exit --compilers js:babel-core/register",
+    "test-unit": "mocha test/unit/**.test.js --recursive --exit --compilers js:babel-core/register"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConnextProject/ethcalate-client.git"
+  },
+  "files": [
+    "dist",
+    "artifacts",
+    "index.d.ts"
+  ],
+  "standard": {
+    "ignore": [
+      "build/**"
+    ]
+  },
+  "keywords": [
+    "payment channels",
+    "state channels",
+    "Ethereum",
+    "web3",
+    "scaling",
+    "blockchain",
+    "connext",
+    "ethcalate"
+  ],
+  "author": "Layne Haber <layne@connext.network>",
+  "contributors": [
+    "Rahul Sethuram, <rahul@connext.network>",
+    "Arjun Bhuptani, <arjun@connext.network>"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ConnextProject/connext-client/issues"
+  },
+  "homepage": "https://github.com/ConnextProject/connext-client#readme",
   "devDependencies": {
-    "@types/chai": "^4.1.6",
-    "@types/chai-subset": "^1.3.1",
-    "@types/ethereumjs-util": "^5.2.0",
-    "@types/mocha": "^5.2.5",
-    "@types/node": "^10.12.0",
-    "@types/semaphore": "^1.1.0",
-    "@types/web3": "^1.0.11",
-    "bluebird": "^3.5.3",
-    "bn.js": "^4.11.8",
-    "chai": "^4.2.0",
-    "chai-subset": "^1.6.0",
-    "dotenv": "^6.1.0",
-    "ethjs-provider-http": "^0.1.6",
-    "fs": "^0.0.1-security",
-    "mocha": "^5.2.0",
-    "sinon": "^7.1.0",
-    "ts-node": "^7.0.1",
-    "typechain": "^0.3.8",
-    "typescript": "^3.0.1"
+    "axios-mock-adapter": "^1.15.0",
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^10.0.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-react": "^6.24.1",
+    "chai": "^4.1.2",
+    "eslint": "^5.0.1",
+    "fetch-cookie": "^0.7.0",
+    "gitbook": "^3.2.3",
+    "gitbook-cli": "^2.3.2",
+    "install": "^0.11.0",
+    "jsdoc-babel": "^0.4.0",
+    "jsdoc-to-markdown": "^4.0.1",
+    "nock": "^9.4.4",
+    "node-fetch": "^2.1.2",
+    "npm": "^6.1.0",
+    "sinon": "^6.1.3",
+    "standard": "^10.0.3"
   },
   "dependencies": {
+    "axios": "^0.16.2",
+    "babel-runtime": "^6.26.0",
     "bignumber.js": "^7.2.1",
-    "ethereumjs-util": "^6.0.0",
-    "ethereumjs-wallet": "0.6.0",
-    "redux": "^4.0.1",
-    "semaphore": "^1.1.0",
-    "typescript-fsa": "^3.0.0-beta-2",
-    "typescript-fsa-reducers": "^1.1.0",
-    "web3": "^1.0.0-beta.36"
-  },
-  "engines": {
-    "node": ">=9",
-    "npm": ">=5"
-  },
-  "scripts": {
-    "clean": "rm -rf ./dist",
-    "build": "npm run clean && npm run compile",
-    "compile": "node_modules/.bin/tsc",
-    "test": "mocha -r ts-node/register/type-check -r ./src/register/common.ts -r ./src/register/testing.ts \"src/**/*.test.ts\" --exit",
-    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
-    "postinstall": "rm -f node_modules/web3/index.d.ts"
+    "dotenv": "^6.0.0",
+    "ethereumjs-abi": "^0.6.5",
+    "ethereumjs-util": "^5.2.0",
+    "ethers": "^4.0.17",
+    "human-standard-token-abi": "^1.0.2",
+    "interval-promise": "^1.2.0",
+    "sinon-stub-promise": "^4.0.0",
+    "truffle-contract": "^3.0.4",
+    "validate.js": "^0.12.0",
+    "web3": "1.0.0-beta.34"
   }
 }

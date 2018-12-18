@@ -36,6 +36,8 @@ export default class ChainsawService extends events.EventEmitter {
 
   private hubAddress: string
 
+  private config: Config
+
   constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config) {
     super()
     this.chainsawDao = chainsawDao
@@ -44,6 +46,7 @@ export default class ChainsawService extends events.EventEmitter {
     this.web3 = web3
     this.contract = new this.web3.eth.Contract(abi, config.channelManagerAddress) as ChannelManager
     this.hubAddress = config.hotWalletAddress
+    this.config = config
   }
 
   async poll() {
@@ -187,8 +190,13 @@ export default class ChainsawService extends events.EventEmitter {
     if (event.txCountGlobal > 1) {
       const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(event.user, event.txCountGlobal)
       if (!knownEvent) {
-        LOG.error('CRITICAL: Event broadcast on chain, but not found in the database. This should never happen! Event body: {event}', { event })
-        throw new Error('Event broadcast on chain, but not found in the database!')
+        // This means there is an event on chain which we don't have a copy of
+        // in our database. This is a Very Big Problem, so crash hard here
+        // and handle it manually.
+        LOG.error('CRITICAL: Event broadcast on chain, but not found in the database. This should never happen! Event body: {event}', { event: JSON.stringify(event) })
+        if (this.config.isProduction)
+          throw new Error('Event broadcast on chain, but not found in the database! THIS IS PROBABLY BAD! See comments in code.')
+        return
       }
 
       // throw an error if there's an outstanding pending update

@@ -13,11 +13,24 @@ import {
   convertChannelState,
   PaymentBN,
 } from "./types";
-import { toBN, mul, minBN } from "./helpers/bn";
+import { toBN, mul, minBN, maxBN } from "./helpers/bn";
+import BN = require('bn.js')
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
 export const DEFAULT_EXCHANGE_MULTIPLIER = 1000000
+
+function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
+  for (let v of vals) {
+    if (v !== null && v !== undefined)
+      return v
+  }
+  return undefined
+}
+
+function subOrZero(a: BN | undefined, b: BN | undefined): BN {
+  return maxBN(toBN(0), a!.sub(b!))
+}
 
 export class StateGenerator {
   private utils: Utils
@@ -83,9 +96,35 @@ export class StateGenerator {
     // balance would remain the same, as the wei equivilent of the tokens to
     // sell would come from the hub's reserve and not their current balance.
 
+    args = {
+      ...args,
+      targetWeiUser: coalesce(
+        args.targetWeiUser, 
+        prev.balanceWeiUser.sub(args.weiToSell),
+      ),
+      targetTokenUser: coalesce(
+        args.targetTokenUser,
+        prev.balanceTokenUser.sub(args.tokensToSell),
+      ),
+      targetWeiHub: coalesce(args.targetWeiHub, prev.balanceWeiHub),
+      targetTokenHub: coalesce(args.targetTokenHub, prev.balanceTokenHub),
+    }
+
     const weiAmountForTokensToSell = args.tokensToSell
       .mul(toBN(DEFAULT_EXCHANGE_MULTIPLIER))
       .div(toBN(mul(args.exchangeRate, DEFAULT_EXCHANGE_MULTIPLIER)))
+
+    const userWeiBalanceDecrease = subOrZero(prev.balanceWeiUser.sub(args.weiToSell), args.targetWeiUser)
+    const userWeiBalanceIncrease = subOrZero(args.targetWeiUser, prev.balanceWeiUser.sub(args.weiToSell))
+
+    // The amount that will ultimately be added to the user's channel balance from token sale
+    const userWeiDepositFromTokenSale = minBN(userWeiBalanceIncrease, weiAmountForTokensToSell)
+
+    // The amount that will ultimately be withdrawn from the token sale
+    const userWeiWithdrawalFromTokenSale = weiAmountForTokensToSell.sub(userWeiDepositFromTokenSale)
+
+    // The additional amount of wei to deposit into the user's channel for the increase in balance
+    const userWeiDepositFromBalanceIncrease = userWeiBalanceIncrease.sub(userWeiDepositFromTokenSale)
 
     // Note: for completeness, include the `tokenAmountForWeiToSell`, even
     // though it will always be 0.
@@ -93,99 +132,141 @@ export class StateGenerator {
       throw new Error(`Cannot yet sell wei during exchange`)
     const tokenAmountForWeiToSell = toBN(0)
 
+    const userTokenBalanceDecrease = subOrZero(prev.balanceTokenUser.sub(args.tokensToSell), args.targetTokenUser)
+    const userTokenBalanceIncrease = subOrZero(args.targetTokenUser, prev.balanceTokenUser.sub(args.tokensToSell))
+    const userTokenDepositFromWeiSale = minBN(userTokenBalanceIncrease, tokenAmountForWeiToSell)
+    const userTokenWithdrawalFromWeiSale = tokenAmountForWeiToSell.sub(userTokenDepositFromWeiSale)
+    const userTokenDepositFromBalanceIncrease = userTokenBalanceIncrease.sub(userTokenDepositFromWeiSale)
+
     let n = {
       ...prev,
 
-      balanceWeiHub: prev.balanceWeiHub
-        .sub(args.withdrawalWeiHub),
+      // The new balances are the min of either their target value or their
+      // current value. If the target values are below the current value, the
+      // difference will be added to the corresponding withdrawal field. If the
+      // target values are greater, the difference will be added to the
+      // corresponding deposit field.
+      balanceWeiHub: minBN(args.targetWeiHub!, prev.balanceWeiHub),
+      balanceTokenHub: minBN(args.targetTokenHub!, prev.balanceTokenHub),
+      balanceWeiUser: minBN(args.targetWeiUser!, prev.balanceWeiUser),
+      balanceTokenUser: minBN(args.targetTokenUser!, prev.balanceTokenUser),
 
-      balanceWeiUser: prev.balanceWeiUser
-        .sub(args.weiToSell)
-        .sub(args.withdrawalWeiUser),
+      // Deposit into the hub's channel (from reserve):
+      // - Any amount required to bring the hub's balance up to 'targetWeiHub'
+      //   (or 0, if the delta is zero or negative)
+      pendingDepositWeiHub: subOrZero(args.targetWeiHub, prev.balanceWeiHub),
+      pendingDepositTokenHub: subOrZero(args.targetTokenHub, prev.balanceTokenHub),
 
-      balanceTokenHub: prev.balanceTokenHub
-        .sub(args.withdrawalTokenHub),
-
-      balanceTokenUser: prev.balanceTokenUser
-        .sub(args.tokensToSell)
-        .sub(args.withdrawalTokenUser),
-
-      pendingDepositWeiHub: args.depositWeiHub,
-
+      // Deposit into the user's channel (from reserve):
+      // - Any amount required to bring their current balance up to
+      //   `targetWeiUser`. Note that the `weiToSell` is deducted from their
+      //   previous balance first, because that amount will not be included in
+      //   `pendingWithdrawalWeiUser`.
+      // - Any wei they are owed for the tokens they are selling
+      // - Any additional wei they are being sent by the hub
       pendingDepositWeiUser: toBN(0)
         .add(weiAmountForTokensToSell)
-        .add(args.additionalWeiHubToUser),
-
-      pendingDepositTokenHub: args.depositTokenHub,
+        .add(userWeiDepositFromBalanceIncrease)
+        .add(args.additionalWeiHubToUser || toBN(0)),
 
       pendingDepositTokenUser: toBN(0)
         .add(tokenAmountForWeiToSell)
-        .add(args.additionalTokenHubToUser),
+        .add(userTokenDepositFromBalanceIncrease)
+        .add(args.additionalTokenHubToUser || toBN(0)),
 
+      // Withdraw into the reserve:
+      // - Any amount required to bring the hub's balance down to 'targetWeiHub'
+      //   (or 0, if the delta is negative)
+      // - Any wei being sold by the user back to the hub
       pendingWithdrawalWeiHub: toBN(0)
-        .add(args.weiToSell)
-        .add(args.withdrawalWeiHub),
-
-      pendingWithdrawalWeiUser: toBN(0)
-        .add(weiAmountForTokensToSell)
-        .add(args.withdrawalWeiUser)
-        .add(args.additionalWeiHubToUser),
+        .add(subOrZero(prev.balanceWeiHub, args.targetWeiHub!))
+        .add(args.weiToSell),
 
       pendingWithdrawalTokenHub: toBN(0)
-        .add(args.tokensToSell)
-        .add(args.withdrawalTokenHub),
+        .add(subOrZero(prev.balanceTokenHub, args.targetTokenHub!))
+        .add(args.tokensToSell),
+
+      // Withdraw to the `recipient` address:
+      // - Any amount required to bring their balance down to `targetWeiUser`
+      //   after the `weiToSell` has been deducted.
+      // - Any wei they are owed for the tokens they are selling
+      // - Any additional wei they are being sent by the hub
+      pendingWithdrawalWeiUser: toBN(0)
+        .add(userWeiBalanceDecrease)
+        .add(userWeiWithdrawalFromTokenSale)
+        .add(args.additionalWeiHubToUser || toBN(0)),
 
       pendingWithdrawalTokenUser: toBN(0)
-        .add(tokenAmountForWeiToSell)
-        .add(args.withdrawalTokenUser)
-        .add(args.additionalTokenHubToUser),
+        .add(userTokenBalanceDecrease)
+        .add(userTokenWithdrawalFromWeiSale)
+        .add(args.additionalTokenHubToUser || toBN(0)),
 
+      // Other miscellaneous fields
       txCountGlobal: prev.txCountGlobal + 1,
       txCountChain: prev.txCountChain + 1,
       recipient: args.recipient,
       timeout: args.timeout,
     }
 
-    // If there is both an exchange an a deposit, we can add (some portion of)
-    // the deposit amount directly to the hub's balance. For example: if the
-    // hub has a balance of 1 token, the user is selling the hub 10 tokens and
-    // the hub wants to deposit 4 tokens, then `n` will be:
+    // If the user's balance drops and the hub's balance increases, or vice
+    // versa, we can transfer (some of) that value in channel. For example, if:
     //
-    //   balanceTokenHub: 1
-    //   pendingDepositTokenHub: 4
-    //   pendingWithdrawalTokenHub: 10
+    //   balanceHub: 3
+    //   balanceUser: 4
     //
-    // Because the tokens the user is selling the hub already exist in the
-    // channel, they can be added directly to hub's balance (up to the amount
-    // the hub is trying to deposit), making the final state:
+    // And a withdrawal is made with:
     //
-    //   balanceTokenHub: 5 (1 + 4)
-    //   pendingDepositTokenHub: 0 (4 - 4)
-    //   pendingWithdrawalTokenHub: 6 (10 - 4)
+    //   targetBalanceHub: 10
+    //   targetBalanceUser: 0
     //
-    // Understand the offChainBal* variables to mean "the balance that has
-    // already been accounted for in an offchain state (ie, that doesn't need
-    // to be deposited onchain), but is currently being added to the
-    // withdrawal."
-    const offChainBalWei = minBN(
-      n.pendingDepositWeiHub,
-      toBN(0)
-        .add(args.weiToSell)
-        .add(args.withdrawalWeiHub),
-    )
-    n.balanceWeiHub = n.balanceWeiHub.add(offChainBalWei)
-    n.pendingDepositWeiHub = n.pendingDepositWeiHub.sub(offChainBalWei)
-    n.pendingWithdrawalWeiHub = n.pendingWithdrawalWeiHub.sub(offChainBalWei)
+    // Then we can transfer the user's balance directly to the hub, resulting
+    // in the state:
+    //
+    //   balanceHub: 7 (3 + 4)
+    //   balanceUser: 0 (as requested)
+    //   pendingDepositHub: 3 (to bring the hub up to 10)
+    //   pendingDepositUser: 4 (from reserve)
+    //   pendingWithdrawalUser: 4 (from reserve)
 
-    const offChainBalToken = minBN(
-      n.pendingDepositTokenHub,
-      toBN(0)
-        .add(args.tokensToSell)
-        .add(args.withdrawalTokenHub),
-    )
-    n.balanceTokenHub = n.balanceTokenHub.add(offChainBalToken)
-    n.pendingDepositTokenHub = n.pendingDepositTokenHub.sub(offChainBalToken)
-    n.pendingWithdrawalTokenHub = n.pendingWithdrawalTokenHub.sub(offChainBalToken)
+    const userDeltaWei = args.targetWeiUser!.sub(prev.balanceWeiUser)
+    const hubDeltaWei = args.targetWeiHub!.sub(prev.balanceWeiHub)
+
+    if (userDeltaWei.lt(toBN(0)) && hubDeltaWei.gt(toBN(0))) {
+      // User balance dropping, hub balance increasing
+      const deltaWei = minBN(userDeltaWei.abs(), hubDeltaWei)
+      n.balanceWeiHub = n.balanceWeiHub.add(deltaWei)
+      n.pendingDepositWeiHub = n.pendingDepositWeiHub.sub(deltaWei)
+      n.pendingWithdrawalWeiHub = n.pendingWithdrawalWeiHub
+        .sub(minBN(deltaWei, args.weiToSell))
+    }
+
+    if (userDeltaWei.gt(toBN(0)) && hubDeltaWei.lt(toBN(0))) {
+      // User balance increasing, hub balance dropping
+      const deltaWei = minBN(userDeltaWei, hubDeltaWei.abs())
+      n.balanceWeiUser = n.balanceWeiUser.add(deltaWei)
+      n.pendingDepositWeiUser = n.pendingDepositWeiUser.sub(deltaWei)
+    }
+
+    // And perform the same simplification as above, except with tokens
+    const userDeltaToken = args.targetTokenUser!.sub(prev.balanceTokenUser)
+    const hubDeltaToken = args.targetTokenHub!.sub(prev.balanceTokenHub)
+
+    if (userDeltaToken.lt(toBN(0)) && hubDeltaToken.gt(toBN(0))) {
+      // User balance dropping, hub balance increasing
+      const deltaToken = minBN(userDeltaToken.abs(), hubDeltaToken)
+      n.balanceTokenHub = n.balanceTokenHub.add(deltaToken)
+      n.pendingDepositTokenHub = n.pendingDepositTokenHub.sub(deltaToken)
+      n.pendingWithdrawalTokenHub = n.pendingWithdrawalTokenHub
+        .sub(minBN(deltaToken, args.tokensToSell))
+    }
+
+    if (userDeltaToken.gt(toBN(0)) && hubDeltaToken.lt(toBN(0))) {
+      // User balance increasing, hub balance dropping
+      const deltaToken = minBN(userDeltaToken, hubDeltaToken.abs())
+      n.balanceTokenUser = n.balanceTokenUser.add(deltaToken)
+      n.pendingDepositTokenUser = n.pendingDepositTokenUser.sub(deltaToken)
+    }
+
 
     // If there is both a deposit being made to the user and a withdrawal being
     // made from the hub, then one of the two can be canceled out. For example:
@@ -195,9 +276,9 @@ export class StateGenerator {
     //   pendingDepositWeiUser: 10
     //   pendingWithdrawalWeiHub: 4
     //
-    // The state can be simplified so that the hub withdraws 0 wei and and
-    // deposits 6 into the user channel (the remaining 4 will come from the
-    // hub's in-channel balance):
+    // The state can be simplified so that the hub withdraws 0 wei and deposits
+    // 6 into the user channel (the remaining 4 will come from the hub's
+    // in-channel balance):
     //
     //   pendingDepositWeiUser: 6 (10 - 4)
     //   pendingWithdrawalWeiHub: 0 (4 - 4)
@@ -213,12 +294,28 @@ export class StateGenerator {
   }
 
   public confirmPending(prev: ChannelStateBN): UnsignedChannelState {
+    // consider case where confirmPending for a withdrawal with exchange:
+    // prev.pendingWeiUpdates = [0, 0, 5, 5] // i.e. hub deposits into user's channel for facilitating exchange
+    // generated.balanceWei = [0, 0]
+    // 
+    // initial = [0, 2]
+    // prev.balance = [0, 1]
+    // prev.pending = [0, 0, 1, 2]
+    // final.balance = [0, 1]
     return convertChannelState("str-unsigned", {
       ...prev,
-      balanceWeiHub: prev.pendingDepositWeiHub.isZero() ? prev.balanceWeiHub : prev.balanceWeiHub.add(prev.pendingDepositWeiHub),
-      balanceWeiUser: prev.pendingDepositWeiUser.isZero() ? prev.balanceWeiUser : prev.balanceWeiUser.add(prev.pendingDepositWeiUser),
-      balanceTokenHub: prev.pendingDepositTokenHub.isZero() ? prev.balanceTokenHub : prev.balanceTokenHub.add(prev.pendingDepositTokenHub),
-      balanceTokenUser: prev.pendingDepositTokenUser.isZero() ? prev.balanceTokenUser : prev.balanceTokenUser.add(prev.pendingDepositTokenUser),
+      balanceWeiHub: prev.pendingDepositWeiHub.gt(prev.pendingWithdrawalWeiHub)
+        ? prev.balanceWeiHub.add(prev.pendingDepositWeiHub).sub(prev.pendingWithdrawalWeiHub)
+        : prev.balanceWeiHub,
+      balanceWeiUser: prev.pendingDepositWeiUser.gt(prev.pendingWithdrawalWeiUser)
+        ? prev.balanceWeiUser.add(prev.pendingDepositWeiUser).sub(prev.pendingWithdrawalWeiUser)
+        : prev.balanceWeiUser,
+      balanceTokenHub: prev.pendingDepositTokenHub.gt(prev.pendingWithdrawalTokenHub)
+        ? prev.balanceTokenHub.add(prev.pendingDepositTokenHub).sub(prev.pendingWithdrawalTokenHub)
+        : prev.balanceTokenHub,
+      balanceTokenUser: prev.pendingDepositTokenUser.gt(prev.pendingWithdrawalTokenUser)
+        ? prev.balanceTokenUser.add(prev.pendingDepositTokenUser).sub(prev.pendingWithdrawalTokenUser)
+        : prev.balanceTokenUser,
       pendingDepositWeiHub: toBN(0),
       pendingDepositWeiUser: toBN(0),
       pendingDepositTokenHub: toBN(0),
@@ -228,6 +325,7 @@ export class StateGenerator {
       pendingWithdrawalTokenHub: toBN(0),
       pendingWithdrawalTokenUser: toBN(0),
       txCountGlobal: prev.txCountGlobal + 1,
+      // recipient: prev.user, TODO: REB-29: should this go here?
       timeout: 0,
     })
   }

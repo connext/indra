@@ -24,7 +24,14 @@ export interface ContractOptions {
  ****** HELPER FUNCTIONS *********
  *********************************/
 
-export type NumericTypeName = 'str' | 'bn' | 'bignumber' | 'number'
+export type NumericTypes = {
+  'str': string
+  'bn': BN
+  'bignumber': BigNumber
+  'number': number
+}
+
+export type NumericTypeName = keyof NumericTypes
 
 function getType(input: any): NumericTypeName {
   if (typeof input == 'string')
@@ -52,7 +59,7 @@ const castFunctions: any = {
   'number-bignumber': (x: number) => new BN(x),
 }
 
-export function convertFields(fromType: string, toType: string, fields: string[], input: any) {
+export function convertFields(fromType: NumericTypeName, toType: NumericTypeName, fields: string[], input: any) {
   if (fromType === toType)
     return input
 
@@ -72,8 +79,13 @@ export function convertFields(fromType: string, toType: string, fields: string[]
     throw new Error(`No castFunc for ${fromType} -> ${toType}`)
 
   const res = { ...input }
-  for (const field of fields)
-    res[field] = cast(input[field])
+  for (const field of fields) {
+    const name = field.split('?')[0]
+    const isOptional = field.endsWith('?')
+    if (isOptional && !(name in input))
+      continue
+    res[name] = cast(input[name])
+  }
 
   return res
 }
@@ -160,10 +172,10 @@ export type ChannelUpdateReason = keyof UpdateRequestTypes
 // exchangeRate is in units of ERC20 / ETH
 // since booty is in 1 USD == USD / ETH
 export type ExchangeArgs<T=string> = {
-  exchangeRate: string, // ERC20 / ETH
-  seller: 'user' | 'hub', // who is initiating trade
-  tokensToSell: T,
-  weiToSell: T,
+  exchangeRate: string // ERC20 / ETH
+  seller: 'user' | 'hub' // who is initiating trade
+  tokensToSell: T
+  weiToSell: T
 }
 export type ExchangeArgsBN = ExchangeArgs<BN>
 export type ExchangeArgsBigNumber = ExchangeArgs<BigNumber>
@@ -191,51 +203,85 @@ export type DepositArgsBigNumber = DepositArgs<BigNumber>
 export type WithdrawalArgs<T=string> = {
   // If there is an exchange that happens during this withdrawal, this is the
   // exchange rate that will be used.
+  // If the value is omitted, no exchange will be performed (and an error will
+  // be thrown if either `tokensToSell` or `weiToSell` are non-zero).
   exchangeRate: string
 
-  // The number of tokens the user is selling to the hub in exchange for wei
+  // The amount of wei or tokens the user is selling to the hub as part of this
+  // withdrawal.
+  // Notes:
+  // 1. The balance from selling wei/tokens is first applied to the balance
+  //    owed by an increase in `target*User`, then the remainder is transferred
+  //    to the `receiver`. For example, if the current state is:
+  //      balanceWeiUser: 0
+  //      balanceTokenUser: 15
+  //    And there is a withdrawal:
+  //      exchangeRate: 5
+  //      tokensToSell: 15
+  //      targetWeiUser: 1
+  //    Then the resulting state will be:
+  //      pendingDepositWeiUser: 1
+  //      pendingWithdrawalWeiUser: 2
+  //
+  // 2. While not explicitly an error, it does not make sense to provide both
+  //    values.
+  //
+  // 3. SpankChain does not support selling wei for tokens on withdrawal, so
+  //    that code path has not been implemented and will yield an error if
+  //    'weiToSell > 0'.
   tokensToSell: T
-
-  // The amount of wei the user is selling to the hub in exchange for tokens.
-  // Included for completeness, will always be 0 for SpankChain.
-  // Note: it never makes sense to provide both a `tokensToSell` and a
-  // `weiToSell`.
   weiToSell: T
 
   // The address which should receive the transfer of user funds. Usually the
   // user's address. Corresponds to the `recipient` field in the ChannelState.
   recipient: Address
 
-  // The amount of wei/tokens the user wishes to transfer from their balance to
-  // the `recipient`. Note: these represent values from their pre-exchange
-  // balance (that is, these numbers are independent of the tokensToSell and
-  // weiToSell values; for example, if a user is doing a withdrawal where they
-  // have BOOTY being converted to wei, then the `tokensToSell` will be set to
-  // the amount of BOOTY and the `userWeiToWithdraw` will be 0). For
-  // SpankChain, the `userTokensToWithdraw` will always be 0 because users
-  // can't withdraw tokens.
-  withdrawalWeiUser: T
-  withdrawalTokenUser: T
+  // The final `balance{Wei,Token}User` after the withdrawal:
+  //
+  // 1. If this amount is less than `balance{Wei,Token}User`, then the
+  //    difference will be transferred to `recipient` (ie, added to
+  //    `pendingWithdrawal{Wei,Token}User`).
+  //
+  // 2. If this amount is greater than `balance{Wei,Token}User`, then the
+  //    difference will be deposited into the user's balance first from any
+  //    pending wei/token sale, then from the hub's reserve (ie, added to
+  //    `pendingDeposit{Wei,Token}User`).
+  //
+  // Note: in an exchange, the wei/tokens that are being sold are *not*
+  // included in this value, so it's likely that callers will want to deduct
+  // them:
+  //
+  //    targetTokenUser: current.balanceTokenUser
+  //      .sub(userTokensToSell)
+  //
+  // If either value is omitted (or null), the previous balance will be used,
+  // minus any `{wei,tokens}ToSell`; ie, the default value is:
+  //   target{Wei,Token}User = prev.balance{Wei,Token}User - args.{wei,tokens}ToSell
+  targetWeiUser?: T
+  targetTokenUser?: T
 
-  // As with user{Wei,Tokens}ToWithdraw, this is the amount of wei/tokens the
-  // hub is withdrawing.
-  withdrawalWeiHub: T
-  withdrawalTokenHub: T
-
-  // The number of wei/tokens the hub wants to deposit into its own balance
-  // as part of this withdrawal (ex, to preemptively collatoralize the channel;
-  // note that this has no relation to any wei or tokens that may need to be
-  // deposited to fulfill a requested exchange).
-  // While not, strictly speaking, invalid, it does not make sense for the
-  // hub to both deposit and withdraw.
-  depositWeiHub: T
-  depositTokenHub: T
+  // The final `balance{Wei,Token}Hub` after the withdrawal:
+  //
+  // 1. If this amount is less than `balance{Wei,Token}Hub`, then the difference
+  //    will be returned to the reserve (ie, added to
+  //    `pendingWithdrawal{Wei,Token}Hub`).
+  //
+  // 2. If this amount is greater than `balance{Wei,Token}Hub`, then the
+  //    difference will be deposited into the hub's balance from the reserve
+  //    (ie, added to `pendingDeposit{Wei,Token}Hub`).
+  //
+  // If either value is omitted (or null), the previous balance will be used;
+  // ie, the default value is:
+  //   target{Wei,Token}Hub = prev.balance{Wei,Token}Hub
+  targetWeiHub?: T
+  targetTokenHub?: T
 
   // During a withdrawal, the hub may opt to send additional wei/tokens to
   // the user (out of the goodness of its heart, or to fulfill a custodial
   // payment). These will always be 0 until we support custodial payments.
-  additionalWeiHubToUser: T
-  additionalTokenHubToUser: T
+  // If no value is provided, '0' will be used.
+  additionalWeiHubToUser?: T
+  additionalTokenHubToUser?: T
 
   timeout: number
 }
@@ -277,6 +323,15 @@ export type UpdateRequestTypes<T=string> = {
   CloseThread: UpdateRequest<T, UnsignedThreadState<T>>
 }
 
+export type UpdateArgTypes<T=string> = {
+  Payment: PaymentArgs<T>
+  Exchange: ExchangeArgs<T>
+  ProposePendingDeposit: DepositArgs<T>
+  ProposePendingWithdrawal: WithdrawalArgs<T>
+  ConfirmPending: ConfirmPendingArgs
+  OpenThread: UnsignedThreadState<T>
+  CloseThread: UnsignedThreadState<T>
+}
 
 export type UpdateRequestBN = UpdateRequest<BN>
 export type UpdateRequestBigNumber = UpdateRequest<BigNumber>
@@ -314,21 +369,6 @@ export type ThreadRow<T = string> = {
 }
 export type ThreadRowBN = ThreadRow<BN>
 export type ThreadRowBigNumber = ThreadRow<BigNumber>
-
-// TODO rename this
-export const channelStateToChannelStateUpdate = (
-  reason: ChannelUpdateReason,
-  state: ChannelState,
-  args: ExchangeArgs | PaymentArgs | DepositArgs | WithdrawalArgs,
-  metadata?: Object,
-): ChannelStateUpdate => {
-  return {
-    reason,
-    state,
-    args,
-    metadata,
-  }
-}
 
 /*********************************
  ********* THREAD TYPES **********
@@ -408,11 +448,22 @@ export type PaymentBN = Payment<BN>
 export type PaymentBigNumber = Payment<BigNumber>
 
 export type WithdrawalParameters<T = string> = {
-  withdrawalWeiUser: T, // withdrawal from users channel wei balance
-  tokensToSell: T, // tokens to be exchanged on withdrawal
-  withdrawalTokenUser: T,
-  weiToSell: T,
-  recipient: Address,
+  recipient: Address
+
+  // The exchange rate shown to the user at the time of the withdrawal, so the
+  // hub can reject the exchange if it would result in a large change to the
+  // amount being withdrawn
+  exchangeRate: string
+
+  // Amount to transfer from the user's balance to 'recipient'
+  withdrawalWeiUser: T
+
+  // Amount of tokens to sell and transfer equivilent wei to 'recipient'
+  tokensToSell: T
+
+  // Optional because, currently, these are not used
+  weiToSell?: T
+  withdrawalTokenUser?: T
 }
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
@@ -447,7 +498,7 @@ export function convertChannelState(
   to: "bn" | "bignumber" | "str" | "bn-unsigned" | "bignumber-unsigned" | "str-unsigned",
   obj: ChannelState<any> | UnsignedChannelState<any>,
 ) {
-  const [toType, unsigned] = to.split('-')
+  const [toType, unsigned] = to.split('-') as any
   const fromType = getType(obj.balanceWeiHub)
   const res = convertFields(fromType, toType, channelNumericFields, obj)
   if (!unsigned)
@@ -463,13 +514,6 @@ export function unsignedChannel<T>(obj: ChannelState<T> | UnsignedChannelState<T
   return unsigned
 }
 
-export const threadNumericFields = [
-  'balanceWeiSender',
-  'balanceWeiReceiver',
-  'balanceTokenSender',
-  'balanceTokenReceiver',
-]
-
 export function convertThreadState(to: "bn", obj: ThreadState<any>): ThreadStateBN
 export function convertThreadState(to: "bignumber", obj: ThreadState<any>): ThreadStateBigNumber
 export function convertThreadState(to: "str", obj: ThreadState<any>): ThreadState
@@ -481,8 +525,8 @@ export function convertThreadState(
   obj: ThreadState<any> | UnsignedThreadState<any>,
 ) {
   const fromType = getType(obj.balanceWeiReceiver)
-  const [toType, unsigned] = to.split('-')
-  const res = convertFields(fromType, toType, threadNumericFields, obj)
+  const [toType, unsigned] = to.split('-') as any
+  const res = convertFields(fromType, toType, argNumericFields.OpenThread, obj)
   if (!unsigned)
     return res
 
@@ -497,106 +541,85 @@ export function unsignedThread<T>(obj: ThreadState<T> | UnsignedThreadState<T>):
   return unsigned
 }
 
-export const paymentNumericFields = ['amountWei', 'amountToken']
-export function convertPayment(to: "bn", obj: PaymentArgs<any>): PaymentArgsBN
-export function convertPayment(to: "bignumber", obj: PaymentArgs<any>): PaymentArgsBigNumber
-export function convertPayment(to: "str", obj: PaymentArgs<any>): PaymentArgs
+export const argNumericFields: { [Name in keyof UpdateArgTypes]: (keyof UpdateArgTypes[Name])[] } = {
+  Payment: ['amountWei', 'amountToken'],
+  Exchange: ['weiToSell', 'tokensToSell'],
+  ProposePendingDeposit: [
+    'depositWeiHub',
+    'depositWeiUser',
+    'depositTokenHub',
+    'depositTokenUser',
+  ],
+  ProposePendingWithdrawal: [
+    'tokensToSell',
+    'weiToSell',
+    'targetWeiUser?',
+    'targetTokenUser?',
+    'targetWeiHub?',
+    'targetTokenHub?',
+    'additionalWeiHubToUser',
+    'additionalTokenHubToUser',
+  ] as any,
+  ConfirmPending: [],
+  OpenThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
+  CloseThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
+}
 
-export function convertPayment(to: "bn", obj: Payment<any>): PaymentBN
-export function convertPayment(to: "bignumber", obj: Payment<any>): PaymentBigNumber
-export function convertPayment(to: "str", obj: Payment<any>): Payment
-export function convertPayment(
-  to: "bn" | "bignumber" | "str",
-  obj: PaymentArgs<any> | Payment<any>
-) {
+export function convertPayment<To extends NumericTypeName>(to: To, obj: PaymentArgs<any>): PaymentArgs<NumericTypes[To]>
+export function convertPayment<To extends NumericTypeName>(to: To, obj: Payment<any>): Payment<NumericTypes[To]>
+export function convertPayment<To extends NumericTypeName>(to: To, obj: PaymentArgs<any> | Payment<any>) {
   const fromType = getType(obj.amountToken)
-  return convertFields(fromType, to, paymentNumericFields, obj)
+  return convertFields(fromType, to, argNumericFields.Payment, obj)
 }
 
-export const withdrawalParametersNumericFields = [
-  'tokensToSell',
-  'weiToSell',
-  'withdrawalWeiUser',
-  'withdrawalTokenUser',
-]
-export function convertWithdrawalParameters(to: "bn", obj: WithdrawalParameters<any>): WithdrawalParametersBN
-export function convertWithdrawalParameters(to: "bignumber", obj: WithdrawalParameters<any>): WithdrawalParametersBigNumber
-export function convertWithdrawalParameters(to: "str", obj: WithdrawalParameters<any>): WithdrawalParameters
-export function convertWithdrawalParameters(
-  to: "bn" | "bignumber" | "str",
-  obj: WithdrawalParameters<any>
-) {
+export function convertWithdrawalParameters<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
   const fromType = getType(obj.tokensToSell)
-  return convertFields(fromType, to, withdrawalParametersNumericFields, obj)
+  const numericFields = [
+    'tokensToSell',
+    'withdrawalWeiUser',
+    'weiToSell?',
+    'withdrawalTokenUser?',
+  ]
+  return convertFields(fromType, to, numericFields, obj)
 }
 
-export function convertThreadPayment(to: "bn", obj: Payment<any>): PaymentBN
-export function convertThreadPayment(to: "bignumber", obj: Payment<any>): PaymentBigNumber
-export function convertThreadPayment(to: "str", obj: Payment<any>): Payment
-export function convertThreadPayment(
-  to: "bn" | "bignumber" | "str",
-  obj: Payment<any>
-) {
+export function convertThreadPayment<To extends NumericTypeName>(to: To, obj: Payment<any>): Payment<NumericTypes[To]> {
   const fromType = getType(obj.amountToken)
-  return convertFields(fromType, to, paymentNumericFields, obj)
+  return convertFields(fromType, to, argNumericFields.Payment, obj)
 }
 
-export const exchangeArgsNumericFields = [
-  'weiToSell',
-  'tokensToSell'
-]
-
-export function convertExchange(to: "bn", obj: ExchangeArgs<any>): ExchangeArgsBN
-export function convertExchange(to: "bignumber", obj: ExchangeArgs<any>): ExchangeArgsBigNumber
-export function convertExchange(to: "str", obj: ExchangeArgs<any>): ExchangeArgs
-export function convertExchange(
-  to: "bn" | "bignumber" | "str",
-  obj: ExchangeArgs<any>
-) {
+export function convertExchange<To extends NumericTypeName>(to: To, obj: ExchangeArgs<any>): ExchangeArgs<NumericTypes[To]> {
   const fromType = getType(obj.tokensToSell)
-  return convertFields(fromType, to, exchangeArgsNumericFields, obj)
+  return convertFields(fromType, to, argNumericFields.Exchange, obj)
 }
 
-export const depositArgsNumericFields = [
-  'depositWeiHub',
-  'depositWeiUser',
-  'depositTokenHub',
-  'depositTokenUser',
-]
-export function convertDeposit(to: "bn", obj: DepositArgs<any>): DepositArgsBN
-export function convertDeposit(to: "bignumber", obj: DepositArgs<any>): DepositArgsBigNumber
-export function convertDeposit(to: "str", obj: DepositArgs<any>): DepositArgs
-export function convertDeposit(
-  to: "bn" | "bignumber" | "str",
-  obj: DepositArgs<any>
-) {
+export function convertDeposit<To extends NumericTypeName>(to: To, obj: DepositArgs<any>): DepositArgs<NumericTypes[To]> {
   const fromType = getType(obj.depositWeiHub)
-  return convertFields(fromType, to, depositArgsNumericFields, obj)
+  return convertFields(fromType, to, argNumericFields.ProposePendingDeposit, obj)
 }
 
-const withdrawalArgsNumericFields = [
-  'tokensToSell',
-  'weiToSell',
-  'withdrawalWeiUser',
-  'withdrawalTokenUser',
-  'withdrawalTokenHub',
-  'withdrawalWeiHub',
-  'depositWeiHub',
-  'depositTokenHub',
-  'additionalWeiHubToUser',
-  'additionalTokenHubToUser',
-]
-export function convertWithdrawal(to: "bn", obj: WithdrawalArgs<any>): WithdrawalArgsBN
-export function convertWithdrawal(to: "bignumber", obj: WithdrawalArgs<any>): WithdrawalArgsBigNumber
-export function convertWithdrawal(to: "str", obj: WithdrawalArgs<any>): WithdrawalArgs
-export function convertWithdrawal(
-  to: "bn" | "bignumber" | "str",
-  obj: WithdrawalArgs<any>
-) {
+export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: WithdrawalArgs<any>): WithdrawalArgs<NumericTypes[To]> {
   const fromType = getType(obj.tokensToSell)
-  return convertFields(fromType, to, withdrawalArgsNumericFields, obj)
+  return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
+
+const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
+  Payment: convertPayment,
+  Exchange: convertExchange,
+  ProposePendingDeposit: convertDeposit,
+  ProposePendingWithdrawal: convertWithdrawal,
+  ConfirmPending: (to: any, args: ConfirmPendingArgs) => args,
+  OpenThread: convertThreadState,
+  CloseThread: convertThreadState,
+}
+
+export function convertArgs<
+  Reason extends keyof UpdateArgTypes,
+  To extends NumericTypeName,
+  >(to: To, reason: Reason, args: UpdateArgTypes[Reason]): UpdateArgTypes<To>[Reason] {
+  return argConvertFunctions[reason](to, args)
+}
 
 /*********************************
  ****** PAYMENT & PURCHASE *******
@@ -688,7 +711,7 @@ export type PurchasePaymentSummary<MetaType=any> = Omit<PurchasePayment<MetaType
 // response from the hub when submitting a purchase
 export type PurchasePaymentHubResponse<T= string> = ({
   purchaseId: string,
-  updates: SyncResult<T>
+  updates: SyncResult<T>[]
 })
 
 export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>

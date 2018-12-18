@@ -37,6 +37,8 @@ const hub = new PaymentHub({
   serviceUserKey: process.env.SERVICE_USER_KEY,
   tokenContractAddress: process.env.TOKEN_CONTRACT_ADDRESS!,
   hotWalletMinBalanceEth: '6.9',
+  isProduction: process.env.NODE_ENV === 'production',
+  isDev: process.env.NODE_ENV !== 'production',
 })
 
 async function run() {

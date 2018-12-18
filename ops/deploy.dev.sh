@@ -5,7 +5,7 @@ set -e
 # ENV VARS
 
 project=connext
-number_of_services=4
+number_of_services=5
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -63,9 +63,19 @@ function new_secret {
 new_secret connext_database_dev
 new_secret private_key_dev "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 
+if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
+then
+    id=`docker network create --attachable --driver overlay $project`
+    echo "Created ATTACHABLE network with id $id"
+fi
+
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
+
+networks:
+  $project:
+    external: true
 
 secrets:
   connext_database_dev:
@@ -81,9 +91,9 @@ services:
 
   hub:
     image: $hub_image
-    entrypoint:
-      - bash
-      - ops/dev.entry.sh
+    command: hub
+    networks:
+      - $project
     ports:
       - "8080:8080"
     secrets:
@@ -103,8 +113,31 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
 
+  chainsaw:
+    image: $hub_image
+    command: chainsaw
+    networks:
+      - $project
+    secrets:
+      - connext_database_dev
+    environment:
+      WALLET_ADDRESS: $WALLET_ADDRESS
+      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
+      HOT_WALLET_ADDRESS: $HOT_WALLET_ADDRESS
+      TOKEN_CONTRACT_ADDRESS: $TOKEN_CONTRACT_ADDRESS
+      ETH_RPC_URL: $ETH_RPC_URL
+      SERVICE_USER_KEY: $SERVICE_USER_KEY
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database_dev
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      REDIS_URL: $REDIS_URL
+
   redis:
     image: $redis_image
+    networks:
+      - $project
     ports:
       - "6379:6379"
 
@@ -116,8 +149,11 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/connext_database_dev
     deploy:
       mode: global
+    networks:
+      - $project
     ports:
       - "5432:5432"
+      - "5433:5433"
     secrets:
       - connext_database_dev
     volumes:
@@ -128,6 +164,8 @@ services:
     environment:
       ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_MNEMONIC: $ETH_MNEMONIC
+    networks:
+      - $project
     ports:
       - "8545:8545"
     volumes:
