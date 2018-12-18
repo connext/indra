@@ -1,0 +1,621 @@
+require('dotenv').config()
+const Web3 = require('web3')
+const HttpProvider = require(`ethjs-provider-http`)
+const sinon = require('sinon')
+import mocha = require('mocha')
+import BN = require('bn.js')
+import { expect } from 'chai'
+import { UnsignedChannelState, Address, ChannelStateUpdate, channelNumericFields, ChannelUpdateReason, SyncResult, ChannelState, ChannelRow } from './types'
+import { getConnextClient, ConnextInternal, ConnextClient } from './Connext'
+import { Networking } from './helpers/networking'
+import * as t from './testing'
+import { Lock } from "./lib/utils";
+import { reducers } from './state/reducers'
+import { assert } from "./testing";
+import { setterAction } from "./state/actions";
+import { MockConnextInternal } from './testing/mocks'
+import { PersistentState } from './state/store'
+
+// // global.fetch = fetch
+
+let sandbox = sinon.createSandbox()
+
+let web3: any
+let accounts: Address[]
+let connext: ConnextClient
+let sender: Address
+let receiver: Address
+
+// deploy contracts to network
+// and update the .env file before testing
+
+type HubResponse = {
+  data: Object
+  statusCode: number
+}
+
+type ContractResponse = {
+  transactionHash: string
+  status: boolean
+}
+
+const updateHubBehavior = (responses: HubResponse[]) => {
+  let fn = sinon.stub()
+  for (let i = 0; i < responses.length; i++) {
+    responses[i].statusCode === 200
+      ? fn.onCall(i).resolves(responses[i])
+      : fn.onCall(i).rejects(responses[i])
+  }
+  return fn
+}
+
+const updateContractBehavior = (responses: ContractResponse[]) => {
+  let fn = sinon.stub()
+  for (let i = 0; i < responses.length; i++) {
+    responses[i].status
+      ? fn.onCall(i).resolves(responses[i])
+      : fn.onCall(i).rejects(responses[i])
+  }
+  return fn
+}
+
+
+// create mocked hub
+const setNetworking = (responses: HubResponse[]) => {
+
+  const stub = updateHubBehavior(responses)
+  // console.log(Object.keys(stub))
+  // console.log(stub.behaviors[0].stub)
+  connext.networking.get = stub
+  connext.networking.post = stub
+  connext.networking.request = stub
+}
+
+const setChannelManager = (responses?: ContractResponse[]) => {
+  if (!responses) {
+    // set to transaction result
+    responses = [{
+      transactionHash: t.mkHash('0xTTT'),
+      status: true
+    }]
+  }
+  const stub = updateContractBehavior(responses)
+  connext.channelManager = {
+    methods: {
+      userAuthorizedUpdate: () => ({ send: stub }),
+      hubAuthorizedUpdate: () => ({ send: stub }),
+    },
+  } as any
+}
+
+const removeNetworking = (connext: Connext) => {
+  delete connext.networking
+}
+
+const removeChannelManager = (connext: Connext) => {
+  delete connext.channelManager
+}
+
+/*
+describe('Connext::requestExchange', () => {
+  describe('mocked hub', () => {
+    beforeEach('instantiate web3/client, create mock', async () => {
+      web3 = new Web3(new HttpProvider(process.env.ETH_NODE_URL))
+      accounts = await web3.eth.getAccounts()
+      sender = accounts[1]
+      receiver = accounts[2]
+
+      // instantiate client
+      connext = new Connext({
+        web3,
+        hubUrl: process.env.HUB_URL || '',
+        contractAddress: process.env.CONTRACT_ADDRESS || '',
+        hubAddress: process.env.HUB_ADDRESS || '',
+        tokenAddress: process.env.TOKEN_ADDRESS,
+        tokenName: process.env.TOKEN_NAME || 'BOOTY',
+      })
+
+      // set networking to default response
+      setNetworking([{ data: {}, statusCode: 200 }])
+    })
+
+    it('should hit the expected url', async () => {
+      // assume the channel has been opened and collateralized
+      // by the user
+      const response = await connext.requestExchange(
+        { wei: '10', token: '10' },
+        'WEI',
+        sender,
+      )
+      sandbox.assert.calledOnce(connext.networking.post)
+    })
+
+    afterEach('restore hub sandbox', () => {
+      removeNetworking(connext)
+      removeChannelManager(connext)
+    })
+  })
+})
+
+describe.skip('Connext::verifyAndCosignAndSubmit', () => {
+  describe('mocked hub', async () => {
+    beforeEach('instantiate web3/client and create hub mock', async () => {
+      web3 = new Web3(new HttpProvider(process.env.ETH_NODE_URL))
+      accounts = await web3.eth.getAccounts()
+      sender = accounts[1]
+      receiver = accounts[2]
+
+      // instantiate client
+      connext = new Connext({
+        web3,
+        hubUrl: process.env.HUB_URL || '',
+        contractAddress: process.env.CONTRACT_ADDRESS || '',
+        hubAddress: process.env.HUB_ADDRESS || '',
+        tokenAddress: process.env.TOKEN_ADDRESS,
+        tokenName: process.env.TOKEN_NAME || 'BOOTY',
+      })
+
+      // set networking to default response
+      setNetworking([{ data: {}, statusCode: 200 }])
+    })
+
+    it('should work if user proposed a deposit, and hub returns confirmation', async () => {
+      // set sync response to confirmation and exchange
+      // represents proposed deposits, latest update user signed
+      let state1 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: sender,
+        recipient: sender,
+        pendingDepositToken: ['10', '0'],
+        pendingDepositWei: ['0', '10'],
+        timeout: Math.floor(Date.now() / 1000) + 15,
+        txCount: [1, 1]
+      })
+      const hash1 = connext.utils.createChannelStateHash(state1)
+      state1.sigHub = await web3.eth.sign(hash1, connext.hubAddress)
+      state1.sigUser = await web3.eth.sign(hash1, state1.user)
+      const latestUpdate: ChannelStateUpdate = {
+        reason: "ProposePending",
+        state: state1,
+        metadata: { originator: state1.user }
+      }
+      // represents confirmed deposits
+      let state2 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: sender,
+        recipient: sender,
+        balanceToken: ['10', '0'],
+        balanceWei: ['0', '10'],
+        txCount: [2, 1],
+      })
+      const hash2 = connext.utils.createChannelStateHash(state2)
+      state2.sigHub = await web3.eth.sign(hash2, connext.hubAddress)
+
+      const actionItems = [
+        {
+          type: "channel",
+          state: {
+            reason: "ConfirmPending",
+            state: state2,
+            metadata: { originator: connext.hubAddress }
+          },
+        }
+      ] as SyncResult[]
+
+      // add user sigs to state for tests/update response
+      state2.sigUser = await web3.eth.sign(hash2, state2.user)
+
+      // call connext function
+      const resp = await connext.verifyAndCosignAndSubmit(
+        latestUpdate,
+        actionItems,
+        0,
+        sender
+      )
+      // validate states were signed
+      sandbox.assert.calledOnce(connext.networking.request)
+      expect(resp.length).to.equal(actionItems.length)
+      t.assertChannelStateEqual(resp[0].update.state as ChannelState, state2)
+    })
+
+    it('should work if hub returns proposed token deposit, confirm deposit, and exchange in existing channel', async () => {
+      // assume latest confirmed states are user deposit, confirmation
+      let state0 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceWei: ['0', '10'],
+        timeout: 0,
+        txCount: [2, 1]
+      })
+      const hash0 = connext.utils.createChannelStateHash(state0)
+      state0.sigHub = await web3.eth.sign(hash0, connext.hubAddress)
+      state0.sigUser = await web3.eth.sign(hash0, receiver)
+      const latestUpdate = {
+        reason: "ConfirmPending" as ChannelUpdateReason,
+        state: state0,
+        metadata: { originator: receiver }
+      }
+      // set sync response to confirmation and exchange
+      // represents proposed deposits, latest update user signed
+      let state1 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceWei: ['0', '10'],
+        pendingDepositToken: ['10', '0'],
+        timeout: Math.floor(Date.now() / 1000) + 15,
+        txCount: [3, 2]
+      })
+      const hash1 = connext.utils.createChannelStateHash(state1)
+      state1.sigHub = await web3.eth.sign(hash1, connext.hubAddress)
+      // represents confirmed deposits
+      let state2 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceWei: ['0', '10'],
+        balanceToken: ['10', '0'],
+        txCount: [4, 2],
+      })
+      const hash2 = connext.utils.createChannelStateHash(state2)
+      state2.sigHub = await web3.eth.sign(hash2, connext.hubAddress)
+      // represents proposed exchange
+      let state3 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceToken: ['0', '10'],
+        balanceWei: ['10', '0'],
+        txCount: [5, 2],
+      })
+      const hash3 = connext.utils.createChannelStateHash(state3)
+      state3.sigHub = await web3.eth.sign(hash3, connext.hubAddress)
+      const actionItems = [
+        {
+          type: "channel",
+          state: {
+            reason: "ProposePending",
+            state: state1,
+            metadata: { originator: sender }
+          },
+        },
+        {
+          type: "channel",
+          state: {
+            reason: "ConfirmPending",
+            state: state2,
+            metadata: { originator: sender }
+          }
+        },
+        {
+          type: "channel",
+          state: {
+            reason: "Exchange",
+            state: state3,
+            metadata: { originator: sender }
+          },
+        }
+      ] as SyncResult[]
+
+      // add user sigs to state for tests/update response
+      state1.sigUser = await web3.eth.sign(hash1, state1.user)
+      state2.sigUser = await web3.eth.sign(hash2, state2.user)
+      state3.sigUser = await web3.eth.sign(hash3, state3.user)
+      // call connext function
+      const resp = await connext.verifyAndCosignAndSubmit(latestUpdate, actionItems, 0, receiver)
+      // validate states were signed
+      sandbox.assert.calledOnce(connext.networking.post)
+      expect(resp.length).to.equal(actionItems.length)
+      t.assertChannelStateEqual(resp[0].update.state as ChannelState, state1)
+      t.assertChannelStateEqual(resp[1].update.state as ChannelState, state2)
+      t.assertChannelStateEqual(resp[2].update.state as ChannelState, state3)
+    })
+
+    afterEach('restore hub sandbox', () => {
+      removeNetworking(connext)
+      removeChannelManager(connext)
+    })
+  })
+})
+
+describe('Connext::verifyAndCosign', () => {
+  describe.skip('mocked hub', async () => {
+    beforeEach('instantiate web3/client and create hub mock', async () => {
+      web3 = new Web3(new HttpProvider(process.env.ETH_NODE_URL))
+      accounts = await web3.eth.getAccounts()
+      sender = accounts[1]
+      receiver = accounts[2]
+
+      // instantiate client
+      connext = new Connext({
+        web3,
+        hubUrl: process.env.HUB_URL || '',
+        contractAddress: process.env.CONTRACT_ADDRESS || '',
+        hubAddress: process.env.HUB_ADDRESS || '',
+        tokenAddress: process.env.TOKEN_ADDRESS,
+        tokenName: process.env.TOKEN_NAME || 'BOOTY',
+      })
+
+      // set networking to default response
+      setNetworking([{ data: {}, statusCode: 200 }])
+    })
+
+    it('should work if user proposed a deposit, and hub returns confirmation', async () => {
+      // set sync response to confirmation and exchange
+      // represents proposed deposits, latest update user signed
+      let state1 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: sender,
+        recipient: sender,
+        pendingDepositToken: ['10', '0'],
+        pendingDepositWei: ['0', '10'],
+        timeout: Math.floor(Date.now() / 1000) + 15,
+        txCount: [1, 1]
+      })
+      const hash1 = connext.utils.createChannelStateHash(state1)
+      state1.sigHub = await web3.eth.sign(hash1, connext.hubAddress)
+      state1.sigUser = await web3.eth.sign(hash1, state1.user)
+      const latestUpdate: ChannelStateUpdate = {
+        reason: "ProposePending",
+        state: state1,
+        metadata: { originator: state1.user }
+      }
+      // represents confirmed deposits
+      let state2 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: sender,
+        recipient: sender,
+        balanceToken: ['10', '0'],
+        balanceWei: ['0', '10'],
+        txCount: [2, 1],
+      })
+      const hash2 = connext.utils.createChannelStateHash(state2)
+      state2.sigHub = await web3.eth.sign(hash2, connext.hubAddress)
+
+      const actionItems = [
+        {
+          type: "channel",
+          state: {
+            reason: "ConfirmPending",
+            state: state2,
+            metadata: { originator: connext.hubAddress }
+          },
+        }
+      ] as SyncResult[]
+
+      // call connext function
+      const resp = await connext.verifyAndCosign(latestUpdate, actionItems, sender)
+      // add user sigs to state for tests
+      state2.sigUser = await web3.eth.sign(hash2, state2.user)
+      // validate states were signed
+      expect(resp.length).to.equal(actionItems.length)
+      t.assertChannelStateEqual(resp[0].state as ChannelState, state2)
+    })
+
+    it('should work if hub returns proposed token deposit, confirm deposit, and exchange in existing channel', async () => {
+      // assume latest confirmed states are user deposit, confirmation
+      let state0 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceWei: ['0', '10'],
+        timeout: 0,
+        txCount: [2, 1]
+      })
+      const hash0 = connext.utils.createChannelStateHash(state0)
+      state0.sigHub = await web3.eth.sign(hash0, connext.hubAddress)
+      state0.sigUser = await web3.eth.sign(hash0, receiver)
+      const latestUpdate = {
+        reason: "ConfirmPending" as ChannelUpdateReason,
+        state: state0,
+        metadata: { originator: receiver }
+      }
+      // set sync response to confirmation and exchange
+      // represents proposed deposits, latest update user signed
+      let state1 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceWei: ['0', '10'],
+        pendingDepositToken: ['10', '0'],
+        timeout: Math.floor(Date.now() / 1000) + 15,
+        txCount: [3, 2]
+      })
+      const hash1 = connext.utils.createChannelStateHash(state1)
+      state1.sigHub = await web3.eth.sign(hash1, connext.hubAddress)
+      // represents confirmed deposits
+      let state2 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceWei: ['0', '10'],
+        balanceToken: ['10', '0'],
+        txCount: [4, 2],
+      })
+      const hash2 = connext.utils.createChannelStateHash(state2)
+      state2.sigHub = await web3.eth.sign(hash2, connext.hubAddress)
+      // represents proposed exchange
+      let state3 = t.getChannelState('empty', {
+        contractAddress: process.env.CONTRACT_ADDRESS,
+        user: receiver,
+        recipient: receiver,
+        balanceToken: ['0', '10'],
+        balanceWei: ['10', '0'],
+        txCount: [5, 2],
+      })
+      const hash3 = connext.utils.createChannelStateHash(state3)
+      state3.sigHub = await web3.eth.sign(hash3, connext.hubAddress)
+      const actionItems = [
+        {
+          type: "channel",
+          state: {
+            reason: "ProposePending",
+            state: state1,
+            metadata: { originator: connext.hubAddress }
+          }
+        },
+        {
+          type: "channel",
+          state: {
+            reason: "ConfirmPending",
+            state: state2,
+            metadata: { originator: connext.hubAddress }
+          }
+        },
+        {
+          type: "channel",
+          state: {
+            reason: "Exchange",
+            state: state3,
+            metadata: { originator: connext.hubAddress }
+          },
+        }
+      ] as SyncResult[]
+
+      // call connext function
+      const resp = await connext.verifyAndCosign(latestUpdate, actionItems, receiver)
+      // add user sigs to state for tests
+      state1.sigUser = await web3.eth.sign(hash1, state1.user)
+      state2.sigUser = await web3.eth.sign(hash2, state2.user)
+      state3.sigUser = await web3.eth.sign(hash3, state3.user)
+
+      // validate states were signed
+      expect(resp.length).to.equal(actionItems.length)
+      t.assertChannelStateEqual(resp[0].state as ChannelState, state1)
+      t.assertChannelStateEqual(resp[1].state as ChannelState, state2)
+      t.assertChannelStateEqual(resp[2].state as ChannelState, state3)
+    })
+
+    afterEach('restore hub sandbox', () => {
+      removeNetworking(connext)
+      removeChannelManager(connext)
+    })
+  })
+})
+
+describe('Connext::sync', () => {
+  describe('mocked hub', async () => {
+    beforeEach('instantiate web3/client and create hub mock', async () => {
+      web3 = new Web3(new HttpProvider(process.env.ETH_NODE_URL))
+      accounts = await web3.eth.getAccounts()
+      sender = accounts[1]
+
+      // instantiate client
+      connext = new Connext({
+        web3,
+        hubUrl: process.env.HUB_URL || '',
+        contractAddress: process.env.CONTRACT_ADDRESS || '',
+        hubAddress: process.env.HUB_ADDRESS || '',
+        tokenAddress: process.env.TOKEN_ADDRESS,
+        tokenName: process.env.TOKEN_NAME || 'BOOTY',
+      })
+
+      // set networking to default response
+      setNetworking([{ data: {}, statusCode: 200 }])
+    })
+
+    it('should call the hub sync endpoint and return an array of channel states', async () => {
+      const responses = [{ statusCode: 200, data: {} }]
+      setNetworking(responses)
+      const ans = await connext.sync(0, 0, sender)
+      sandbox.assert.calledOnce(connext.networking.get)
+    })
+
+    afterEach('restore hub sandbox', () => {
+      removeNetworking(connext)
+      removeChannelManager(connext)
+    })
+  })
+})
+
+describe('Connext::openThread', () => { })
+
+describe('Connext::getChannel', () => {
+  describe('mocked hub', async () => {
+    beforeEach('instantiate web3/client and create hub mock', async () => {
+      web3 = new Web3(new HttpProvider(process.env.ETH_NODE_URL))
+      accounts = await web3.eth.getAccounts()
+      sender = accounts[1]
+
+      // instantiate client
+      connext = new Connext({
+        web3,
+        hubUrl: process.env.HUB_URL || '',
+        contractAddress: process.env.CONTRACT_ADDRESS || '',
+        hubAddress: process.env.HUB_ADDRESS || '',
+        tokenAddress: process.env.TOKEN_ADDRESS,
+        tokenName: process.env.TOKEN_NAME || 'BOOTY',
+      })
+
+      // set networking to default response
+      setNetworking([{ data: {}, statusCode: 200 }])
+    })
+
+    it('should work when you dont have channels', async () => {
+      // create mocked networking instance
+      // to intercept hub requests
+      // should return 404
+      setNetworking([{ statusCode: 404, data: {} }])
+      try {
+        await connext.getChannel(sender)
+      } catch (e) {
+        expect(e.message).to.equal(`Channel not found for user ${sender}`)
+      }
+      sandbox.assert.calledOnce(connext.networking.get)
+    })
+
+    it('should work when you do have a channel', async () => {
+      // create mocked networking instance
+      // to intercept hub requests
+      const state = t.getChannelState('full')
+      const expected = {
+        state,
+        status: "CS_OPEN",
+        id: 1,
+      }
+      setNetworking([{ data: expected, statusCode: 200 }])
+      const response = await connext.getChannel(sender)
+      t.assertChannelStateEqual(state, response.state)
+      sandbox.assert.calledOnce(connext.networking.get)
+    })
+
+    afterEach('restore hub sandbox', () => {
+      removeNetworking(connext)
+      removeChannelManager(connext)
+    })
+  })
+})
+*/
+
+describe('ConnextClient', () => {
+  it('should persist the persistent state', async () => {
+    let saved: any = null
+    const action = setterAction<number>('persistent.bar')
+    reducers.case(action, action.handler)
+
+    const connext = new MockConnextInternal({
+      loadState: async () => JSON.stringify({ ...new PersistentState(), foo: 42 }),
+      saveState: async (state: string) => saved = state,
+    })
+
+    await connext.start()
+    connext.dispatch(action(69))
+    await connext.savePersistentState()
+
+    const savedVal = await saved as any
+    assert.containSubset(JSON.parse(savedVal), {
+      foo: 42,
+      bar: 69,
+    })
+
+    assert.containSubset(connext.store.getState(), {
+      persistent: {
+        foo: 42,
+        bar: 69,
+      },
+    })
+
+
+  })
+})

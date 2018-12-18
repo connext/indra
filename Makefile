@@ -2,17 +2,19 @@ project=connext
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
+client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
-hub=$(cwd)/modules/hub
 db=$(cwd)/modules/database
 e2e=$(cwd)/modules/e2e
+hub=$(cwd)/modules/hub
 
 # Specify make-specific variables (VPATH = prerequisite search path)
-VPATH=build:$(contracts)/build:$(hub)/build
+VPATH=build:$(contracts)/build:$(hub)/dist
 SHELL=/bin/bash
 
 # Fetch Prerequisites
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*"
+client_prereq=$(shell find $(client) $(find_options))
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 db_prereq=$(shell find $(db) $(find_options))
 hub_prereq=$(shell find $(hub) $(find_options))
@@ -23,13 +25,14 @@ hub_prereq=$(shell find $(hub) $(find_options))
 id=$(shell id -u):$(shell id -g)
 run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
 docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
+docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
-docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 docker_run_in_e2e=$(docker_run) --volume=$(e2e):/root $(project)_builder:dev $(id)
+docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
 
 # Env setup
-$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
+$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
 me=$(shell whoami)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
@@ -40,7 +43,7 @@ log=@echo;echo;echo "[Makefile] => Building $@"
 
 default: dev
 all: dev prod
-dev: database ethprovider hub e2e-node-modules
+dev: client database ethprovider e2e-node-modules hub
 prod: database-prod hub-prod
 
 clean:
@@ -75,6 +78,15 @@ test: hub
 	bash $(hub)/ops/test.sh
 
 # Begin Real Rules
+
+# Client
+
+client: client-node-modules
+
+client-node-modules: $(project)_builder $(client)/package.json
+	$(log)
+	$(docker_run_in_client) "yarn install"
+	touch build/client-node-modules
 
 # Hub
 
