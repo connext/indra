@@ -41,6 +41,8 @@ export default class Config {
     return instance
   }
 
+  public isProduction = process.env.NODE_ENV == 'production'
+  public isDev = process.env.NODE_ENV != 'production'
   public ethRpcUrl: string = ''
   public databaseUrl: string = ''
   public redisUrl: string = ''

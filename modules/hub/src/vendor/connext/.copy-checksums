@@ -1,5 +1,5 @@
 MD5 (hub/src/vendor/connext/Connext.test.ts.todo) = 2e90081ae52ce7ef77ad5fd5a9454fe2
-MD5 (hub/src/vendor/connext/StateGenerator.ts) = 95078a8b5b081884915c883e63ce11e0
+MD5 (hub/src/vendor/connext/StateGenerator.ts) = 95530b97f3cbc59c46f9304f62086f74
 MD5 (hub/src/vendor/connext/Utils.ts) = 62382ff45c5a69e406c78177e7e803ca
 MD5 (hub/src/vendor/connext/helpers/bn.ts) = ccef2baa23e0c50e3926a90ca9c3ee29
 MD5 (hub/src/vendor/connext/helpers/merkleTree.ts) = 28fd48dae177da568d79c018987242c9
@@ -13,5 +13,5 @@ MD5 (hub/src/vendor/connext/typechain/ERC20Basic.d.ts) = 5ca9c61f3e5f4fb4ce82e24
 MD5 (hub/src/vendor/connext/typechain/Migrations.d.ts) = 0efc9871f970c7ff6e5ee9236f6d70fb
 MD5 (hub/src/vendor/connext/typechain/Ownable.d.ts) = a171dafdf170f6921603475fb0af2470
 MD5 (hub/src/vendor/connext/typechain/abi/ChannelManagerAbi.ts) = 5a47011a7812d60f984592d1a2f72075
-MD5 (hub/src/vendor/connext/types.ts) = 12366adc487fc27abdf9e2ab5b001448
-MD5 (hub/src/vendor/connext/validator.ts) = aee4a34a4311d13a6b097e746bb5cf32
+MD5 (hub/src/vendor/connext/types.ts) = c3300413bab157672797a110f70c4373
+MD5 (hub/src/vendor/connext/validator.ts) = b77838c136814dcd3f7b2d8a4579e0fe

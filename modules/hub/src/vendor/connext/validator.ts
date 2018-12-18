@@ -10,18 +10,16 @@ import {
   convertPayment,
   convertThreadState,
   DepositArgsBN,
-  depositArgsNumericFields,
   ExchangeArgsBN,
-  exchangeArgsNumericFields,
   PaymentArgsBN,
   PaymentBN,
-  paymentNumericFields,
   ThreadState,
   ThreadStateBN,
   UnsignedChannelState,
   UnsignedThreadState,
   WithdrawalArgsBN,
-  UpdateRequest
+  UpdateRequest,
+  argNumericFields
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
@@ -69,14 +67,14 @@ export class Validator {
     }
   }
 
-  public generateChannelStateFromRequest(prev: ChannelState, request: UpdateRequest): UnsignedChannelState {
-    return this.generateHandlers[request.reason](prev, request.args)
+  public async generateChannelStateFromRequest(prev: ChannelState, request: UpdateRequest): Promise<UnsignedChannelState> {
+    return await this.generateHandlers[request.reason](prev, request.args)
   }
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): string | null {
     // no negative values in payments
-    if (this.hasNegative(args, paymentNumericFields)) {
-      return this.hasNegative(args, paymentNumericFields)
+    if (this.hasNegative(args, argNumericFields.Payment)) {
+      return this.hasNegative(args, argNumericFields.Payment)
     }
     const { recipient, ...amounts } = args
 
@@ -100,7 +98,7 @@ export class Validator {
 
   public exchange = (prev: ChannelStateBN, args: ExchangeArgsBN): string | null => {
     const errs = [
-      this.hasNegative(args, exchangeArgsNumericFields), this.cantAffordFromBalance(
+      this.hasNegative(args, argNumericFields.Exchange), this.cantAffordFromBalance(
         prev,
         {
           amountWei: args.weiToSell,
@@ -148,7 +146,7 @@ export class Validator {
 
     const errs = [
       this.hasNonzero(prev, pendingFields),
-      this.hasNegative(args, depositArgsNumericFields),
+      this.hasNegative(args, argNumericFields.ProposePendingDeposit),
     ].filter(x => !!x)[0]
 
     if (errs) {
@@ -221,18 +219,19 @@ export class Validator {
 
   public confirmPending = async (prev: ChannelStateBN, args: ConfirmPendingArgs): Promise<string | null> => {
     const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransactionReceipt(txHash) as any
+    const tx = await this.web3.eth.getTransaction(txHash) as any
+    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
 
-    if (!tx || !tx.status) {
+    if (!tx || !tx.blockHash) {
       return `Transaction to contract not found. (txHash: ${txHash}, prev: ${JSON.stringify(prev)})`
     }
 
-    if (tx.contractAddress.toLowerCase() !== prev.contractAddress.toLowerCase()) {
+    if (tx.to.toLowerCase() !== prev.contractAddress.toLowerCase()) {
       return `Transaction is not for the correct channel manager contract. (txHash: ${txHash}, contractAddress: ${tx.contractAddress}, prev: ${JSON.stringify(prev)})`
     }
 
     // parse event values
-    const event = this.parseDidUpdateChannelTxReceipt(tx)
+    const event = this.parseDidUpdateChannelTxReceipt(receipt)
 
     if (event.sender.toLowerCase() !== prev.user.toLowerCase() && event.sender.toLowerCase() !== this.hubAddress) {
       return `Transaction sender is not member of the channel (txHash: ${txHash}, event: ${JSON.stringify(event)}, prev: ${JSON.stringify(prev)})`
@@ -357,7 +356,7 @@ export class Validator {
   public threadPayment(prev: ThreadStateBN, args: { amountToken: BN, amountWei: BN }): string | null {
     // no negative values in payments
     const errs = [
-      this.hasNegative(args, paymentNumericFields),
+      this.hasNegative(args, argNumericFields.Payment),
       this.cantAffordFromBalance(prev, args, "sender")
     ].filter(x => !!x)[0]
     if (errs)
@@ -394,7 +393,7 @@ export class Validator {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
     if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr) {
-      throw new Error(`Channel state is not correctly signed. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
+      throw new Error(`Channel state is not correctly signed by ${signer}. channelState: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
 
@@ -505,6 +504,17 @@ export class Validator {
       inputs,
     })
 
+    /*
+    ContractEvent.fromRawEvent({
+      log: log,
+      txIndex: log.transactionIndex,
+      logIndex: log.logIndex,
+      contract: this.contract._address,
+      sender: txsIndex[log.transactionHash].from,
+      timestamp: blockIndex[log.blockNumber].timestamp * 1000
+    })
+    */
+
     let raw = {} as any
     txReceipt.logs.forEach((log) => {
       if (log.topics.indexOf(eventTopic) > -1) {
@@ -515,6 +525,9 @@ export class Validator {
           }
         })
       }
+      // NOTE: The second topic in the log with the events topic
+      // is the indexed user.
+      raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
     })
 
     /*

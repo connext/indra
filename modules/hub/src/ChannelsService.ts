@@ -12,7 +12,7 @@ import {
 } from './domain/Channel'
 import { Validator } from './vendor/connext/validator'
 import ExchangeRateDao from './dao/ExchangeRateDao'
-import { Big } from './util/bigNumber'
+import { Big, toWeiBigNum } from './util/bigNumber'
 import { ThreadStateUpdateRow } from './domain/Thread'
 import { RedisClient } from './RedisClient'
 import { ChannelManager } from './ChannelManager'
@@ -43,13 +43,13 @@ import { SignerService } from './SignerService';
 
 const LOG = log('ChannelsService') as any
 
-export const CHANNEL_BOOTY_LIMIT = Big(69).mul('1e18')
+export const CHANNEL_BOOTY_LIMIT = toWeiBigNum(69)
 
-const BOOTY_MIN_THRESHOLD = Big(30).mul('1e18')
+const BOOTY_MIN_THRESHOLD = toWeiBigNum(30)
 
-const BOOTY_MIN_COLLATERALIZATION = Big(50).mul('1e18')
+const BOOTY_MIN_COLLATERALIZATION = toWeiBigNum(50)
 
-const THREAD_BOOTY_LIMIT = Big(10).mul('1e18')
+const THREAD_BOOTY_LIMIT = toWeiBigNum(10)
 
 export default class ChannelsService {
   private onchainTxService: OnchainTransactionService
@@ -278,9 +278,13 @@ export default class ChannelsService {
       )
     }
 
-    const { recipient, withdrawalWeiUser, withdrawalTokenUser, weiToSell, tokensToSell } = params
+    params = {
+      ...params,
+      weiToSell: params.weiToSell || new BigNumber(0),
+      withdrawalTokenUser: params.withdrawalTokenUser || new BigNumber(0),
+    }
 
-    if (!weiToSell.isZero() || !withdrawalTokenUser.isZero()) {
+    if (!params.weiToSell.isZero() || !params.withdrawalTokenUser.isZero()) {
       throw new Error(
         `Hub is not able to facilitate user exchanging wei for tokens, or withdrawing tokens.`
       )
@@ -295,38 +299,48 @@ export default class ChannelsService {
       )
     }
     const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
+    const proposedExchangeRateBigNum = new BigNumber(params.exchangeRate)
+    const exchangeRateDelta = currentExchangeRateBigNum.sub(proposedExchangeRateBigNum).abs()
+    const allowableDelta = currentExchangeRateBigNum.mul(0.02)
+    if (exchangeRateDelta.gt(allowableDelta)) {
+      throw new Error(
+        `Proposed exchange rate (${params.exchangeRate}) differs from current ` +
+        `rate (${currentExchangeRateBigNum.toFixed()}) by ${exchangeRateDelta.toString()} ` +
+        `which is more than the allowable delta of ${allowableDelta.toString()}`
+      )
+    }
 
     // if user is leaving some wei in the channel, leave an equivalent amount of booty
-    const newBalanceWeiUser = channel.state.balanceWeiUser.minus(withdrawalWeiUser)
+    const newBalanceWeiUser = channel.state.balanceWeiUser.minus(params.withdrawalWeiUser)
     const hubBootyTarget = BigNumber.min(
-      newBalanceWeiUser.mul(currentExchangeRateBigNum).floor(),
+      newBalanceWeiUser.mul(proposedExchangeRateBigNum).floor(),
       CHANNEL_BOOTY_LIMIT,
     )
 
-    // Amount of booty that will need to be deposited (or, if negative,
-    // withdrawn) so that the hub's booty balance will be `hubBootyTarget`.
-    const hubBootyDelta = hubBootyTarget.sub(channel.state.balanceTokenHub)
-
     const withdrawalArgs: WithdrawalArgs = {
-      exchangeRate: currentExchangeRateBigNum.toFixed(),
-      tokensToSell: tokensToSell.toFixed(),
+      exchangeRate: proposedExchangeRateBigNum.toFixed(),
+      tokensToSell: params.tokensToSell.toFixed(),
       weiToSell: '0',
 
-      recipient,
+      recipient: params.recipient,
 
-      withdrawalWeiUser: withdrawalWeiUser.toFixed(),
-      withdrawalTokenUser: '0',
+      targetWeiUser: channel.state.balanceWeiUser
+        .sub(params.withdrawalWeiUser)
+        .sub(params.weiToSell)
+        .toFixed(),
 
-      withdrawalWeiHub: channel.state.balanceWeiHub.toFixed(),
-      withdrawalTokenHub: hubBootyDelta.lt(0) ? hubBootyDelta.abs().toFixed() : '0',
+      targetTokenUser: channel.state.balanceTokenUser
+        .sub(params.withdrawalTokenUser)
+        .sub(params.tokensToSell)
+        .toFixed(),
 
-      depositWeiHub: '0',
-      depositTokenHub: hubBootyDelta.gt(0) ? hubBootyDelta.toFixed() : '0',
+      targetWeiHub: '0',
+      targetTokenHub: hubBootyTarget.toFixed(),
 
       additionalWeiHubToUser: '0',
       additionalTokenHubToUser: '0',
 
-      timeout: Math.floor(Date.now() / 1000) + 5 * 60
+      timeout: Math.floor(Date.now() / 1000) + (5 * 60),
     }
 
     const unsigned = this.validator.generateProposePendingWithdrawal(
@@ -334,7 +348,12 @@ export default class ChannelsService {
       withdrawalArgs
     )
 
-    await this.redisSaveUnsignedState(user, { state: unsigned as ChannelState, args: withdrawalArgs, reason: 'ProposePendingWithdrawal' })
+    await this.redisSaveUnsignedState(user, {
+      reason: 'ProposePendingWithdrawal',
+      state: unsigned as ChannelState,
+      args: withdrawalArgs,
+    })
+
     return withdrawalArgs
   }
 
@@ -369,11 +388,15 @@ export default class ChannelsService {
     }
     const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
 
+    const bootyLimitDelta = BigNumber.max(0, CHANNEL_BOOTY_LIMIT.sub(channel.state.balanceTokenUser))
+    const weiToBootyLimit = bootyLimitDelta.divToInt(currentExchangeRateBigNum)
+    const adjustedWeiToSell = BigNumber.min(weiToSell, weiToBootyLimit)
+
     const exchangeArgs: ExchangeArgs = {
       seller: 'user',
       exchangeRate: currentExchangeRateBigNum.toFixed(),
       tokensToSell: tokensToSell.toFixed(),
-      weiToSell: weiToSell.toFixed(),
+      weiToSell: adjustedWeiToSell.toFixed(),
     }
 
     let unsigned = this.validator.generateExchange(
@@ -427,16 +450,12 @@ export default class ChannelsService {
       update.txCount,
     )
 
-    if (
-      hubsVersionOfUpdate
-    ) {
+    if (hubsVersionOfUpdate) {
       if (
         hubsVersionOfUpdate.state.sigHub &&
         hubsVersionOfUpdate.state.sigUser
       ) {
-        if (
-          update.sigUser !== hubsVersionOfUpdate.state.sigUser
-        ) {
+        if (update.sigUser !== hubsVersionOfUpdate.state.sigUser) {
           throw new Error(
             `Hub version of update sigs do not match provided sigs: 
             Hub version of update: ${prettySafeJson(hubsVersionOfUpdate)}, 
@@ -457,6 +476,7 @@ export default class ChannelsService {
         'str',
         hubsVersionOfUpdate.state,
       )
+
       // verify user sig on hub's data
       this.validator.assertChannelSigner({
         ...signedChannelStateHub,
@@ -516,11 +536,11 @@ export default class ChannelsService {
           )
         }
 
-        let generated = this.validator.generateChannelStateFromRequest(
+        let generated = await this.validator.generateChannelStateFromRequest(
           convertChannelState('str', signedChannelStatePrevious),
           {
-            args: unsignedUpdateRedis.args, 
-            reason: unsignedUpdateRedis.reason, 
+            args: unsignedUpdateRedis.args,
+            reason: unsignedUpdateRedis.reason,
             txCount: signedChannelStatePrevious.txCountGlobal + 1
           }
         )
@@ -640,6 +660,8 @@ export default class ChannelsService {
       user,
       channelTxCount,
     )
+
+    console.log("RESULT:", JSON.stringify(channelUpdates, null, 2))
 
     const threadUpdates = await this.threadsDao.getThreadUpdatesForSync(
       user,

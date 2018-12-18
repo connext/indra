@@ -16,7 +16,7 @@ import { ChannelState, convertThreadState } from '../vendor/connext/types'
 import { PostgresChannelsDao } from './ChannelsDao'
 import eraseDb from '../testing/eraseDb';
 
-describe('ThreadsDao', () => {
+describe.skip('ThreadsDao', () => {
   const registry = getTestRegistry({
     Config: getTestConfig({
       channelManagerAddress: '0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42',

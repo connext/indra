@@ -1,4 +1,5 @@
-import { UpdateRequest, convertWithdrawal } from '../vendor/connext/types'
+import { convertWithdrawalParameters } from '../vendor/connext/types'
+import { UpdateRequest } from '../vendor/connext/types'
 import * as express from 'express'
 import { ApiService } from './ApiService'
 import log from '../util/log'
@@ -34,6 +35,7 @@ export class ChannelsApiServiceHandler {
 
   private getUser(req: express.Request) {
     const { user } = req.params
+    return user // TODO: REB-35
     if (!user || user != req.session!.address) {
       throw new Error(
         `Current user '${req.session!.address}' is not authorized to act ` +
@@ -161,7 +163,7 @@ export class ChannelsApiServiceHandler {
     const { user } = req.params
     const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx } = req.body
 
-    if (!user || !withdrawalWeiUser || !recipient || !withdrawalTokenUser || !weiToSell || !tokensToSell) {
+    if (!user || !withdrawalWeiUser || !recipient || !tokensToSell) {
       LOG.warn(
         'Received invalid withdrawal request. Aborting. Body received: {body}, Params received: {params}',
         {
@@ -174,7 +176,7 @@ export class ChannelsApiServiceHandler {
 
     await this.channelsService.doRequestWithdrawal(
       user,
-      convertWithdrawal("bignumber", req.body)
+      convertWithdrawalParameters("bignumber", req.body)
     )
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
