@@ -12,8 +12,8 @@ bash ops/wait-for-it.sh -t 60 $REDIS 2> /dev/null
 
 export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$DATABASE/$POSTGRES_DB"
 
-echo "Starting tsc watcher"
-tsc --watch --project tsconfig.json &
+echo "Starting tsc watcher!"
+tsc --watch --preserveWatchOutput --project tsconfig.json &
 
 echo "Starting $1!"
 exec nodemon --watch dist dist/entry.js $1

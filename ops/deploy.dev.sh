@@ -112,6 +112,9 @@ services:
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
+    volumes:
+      - `pwd`/modules/hub:/root
+      - `pwd`/modules/client:/client
 
   chainsaw:
     image: $hub_image
@@ -133,6 +136,9 @@ services:
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
+    volumes:
+      - `pwd`/modules/hub:/root
+      - `pwd`/modules/client:/client
 
   redis:
     image: $redis_image
