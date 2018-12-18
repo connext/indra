@@ -6,10 +6,8 @@
   "scripts": {
     "build": "eslint src/ ; babel src -d dist",
     "eslint": "eslint src/",
-    "test": "mocha --recursive --exit --compilers js:babel-core/register",
-    "test-happy": "mocha test/**/HappyCase.test.js --recursive --exit --compilers js:babel-core/register",
-    "test-disputes": "mocha test/**/Disputes.test.js --recursive --exit --compilers js:babel-core/register",
-    "test-unit": "mocha test/unit/**.test.js --recursive --exit --compilers js:babel-core/register"
+    "test": "node test/HappyCase.test.js",
+    "test-happy": "mocha test/**/HappyCase.test.js --recursive --exit --compilers js:babel-core/register"
   },
   "repository": {
     "type": "git",

@@ -5,7 +5,6 @@ cwd=$(shell pwd)
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 db=$(cwd)/modules/database
-e2e=$(cwd)/modules/e2e
 hub=$(cwd)/modules/hub
 
 # Specify make-specific variables (VPATH = prerequisite search path)
@@ -28,7 +27,6 @@ docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
-docker_run_in_e2e=$(docker_run) --volume=$(e2e):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
 
 # Env setup
@@ -43,7 +41,7 @@ log=@echo;echo;echo "[Makefile] => Building $@"
 
 default: dev
 all: dev prod
-dev: client database ethprovider e2e-node-modules hub
+dev: client database ethprovider hub
 prod: database-prod hub-prod
 
 clean:
@@ -149,13 +147,6 @@ contract-node-modules: $(project)_builder $(contracts)/package.json
 	$(log)
 	$(docker_run_in_contracts) "yarn install --network-timeout 1000000"
 	touch build/contract-node-modules
-
-# Test
-
-e2e-node-modules: $(project)_builder $(e2e)/package.json
-	$(log)
-	$(docker_run_in_e2e) "yarn install"
-	touch build/e2e-node-modules
 
 # Builder
 $(project)_builder: ops/builder.dockerfile ops/permissions-fixer.sh
