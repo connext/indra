@@ -308,10 +308,9 @@ export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   id?: number
   reason: ChannelUpdateReason
   args: Args
-  txCount?: number
+  txCount: number
   sigUser?: string
   sigHub?: string
-  state?: any
 }
 
 export type UpdateRequestTypes<T=string> = {

@@ -695,7 +695,9 @@ export default class ChannelsService {
         pushChannel({
           args: chan.args,
           reason: chan.reason,
-          state: chan.state,
+          sigUser: chan.state.sigUser,
+          sigHub: chan.state.sigHub,
+          txCount: chan.state.txCountGlobal,
           id: chan.id
         })
         lastTxCount = chan.state.txCountGlobal
