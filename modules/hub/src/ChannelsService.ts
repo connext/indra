@@ -124,9 +124,7 @@ export default class ChannelsService {
 
     // if the last update has a timeout that expired, that means it wasn't confirmed on chain
     if (channel.state.timeout && nowSeconds <= channel.state.timeout) {
-      LOG.info('Pending update has not expired yet: {channel}, doing nothing', {
-        channel,
-      })
+      LOG.info(`Pending update has not expired yet: ${JSON.stringify(channel)}, doing nothing`)
       return
     }
 
@@ -661,12 +659,14 @@ export default class ChannelsService {
       channelTxCount,
     )
 
-    console.log("RESULT:", JSON.stringify(channelUpdates, null, 2))
+    console.log("channelUpdates:", JSON.stringify(channelUpdates, null, 2))
 
     const threadUpdates = await this.threadsDao.getThreadUpdatesForSync(
       user,
       lastThreadUpdateId,
     )
+
+    console.log("threadUpdates:", JSON.stringify(channelUpdates, null, 2))
 
     let curChan = 0
     let curThread = 0
@@ -695,9 +695,7 @@ export default class ChannelsService {
         pushChannel({
           args: chan.args,
           reason: chan.reason,
-          sigUser: chan.state.sigUser,
-          sigHub: chan.state.sigHub,
-          txCount: chan.state.txCountGlobal,
+          state: chan.state,
           id: chan.id
         })
         lastTxCount = chan.state.txCountGlobal
