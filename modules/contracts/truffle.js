@@ -1,7 +1,8 @@
 require('dotenv').config();
 var HDWalletProvider = require("truffle-hdwallet-provider");
+
 const MNEMONIC = process.env.MNEMONIC
-const ropsten = `https://ropsten.infura.io/${process.env.API_KEY}`
+const ropsten = `https://ropsten.infura.io/${process.env.INFURA_KEY}`
 
 module.exports = {
   networks: {
