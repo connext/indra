@@ -24,16 +24,17 @@ SERVICE_USER_KEY="foo"
 ETH_RPC_URL="https://ropsten.infura.io/$INFURA_KEY:8545"
 WALLET_ADDRESS="0xB669b484f2c72D226463d9c75d9B9A871aE7904e"
 HOT_WALLET_ADDRESS="0xB669b484f2c72D226463d9c75d9B9A871aE7904e"
-CHANNEL_MANAGER_ADDRESS="0xD6EA218b3F5FEb69A2674EFee592B1c7A589E268" # see modules/contracts/ops/addresses.json
+CHANNEL_MANAGER_ADDRESS="0x8BA9df707565Ef788D0C72D41db8efbBADf41240" # see modules/contracts/ops/addresses.json
 TOKEN_CONTRACT_ADDRESS="0xc778417E063141139Fce010982780140Aa0cD5Ab" # Ropsten WETH contract
+PRIVATE_KEY_FILE="/run/secrets/private_key"
 
 # database settings
+REDIS_URL="redis://redis:6379"
 POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/database_dev"
-REDIS_URL="redis://redis:6379"
+POSTGRES_PASSWORD_FILE="/run/secrets/database"
 
 ####################
 # Deploy according to above configuration
@@ -113,6 +114,7 @@ services:
       - private_key
     environment:
       NODE_ENV: production
+      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       ETH_RPC_URL: $ETH_RPC_URL
       WALLET_ADDRESS: $WALLET_ADDRESS
@@ -120,7 +122,7 @@ services:
       CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
       TOKEN_CONTRACT_ADDRESS: $TOKEN_CONTRACT_ADDRESS
       POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database
+      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -135,6 +137,7 @@ services:
       - connext_database
     environment:
       NODE_ENV: production
+      POLLING_INTERVAL: 2000
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       ETH_RPC_URL: $ETH_RPC_URL
       WALLET_ADDRESS: $WALLET_ADDRESS
@@ -142,12 +145,11 @@ services:
       CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
       TOKEN_CONTRACT_ADDRESS: $TOKEN_CONTRACT_ADDRESS
       POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database
+      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
-      POLLING_INTERVAL: 2000
 
   redis:
     image: $redis_image
@@ -161,7 +163,7 @@ services:
     environment:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database
+      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     volumes:
       - database:/var/lib/postgresql/data
 EOF

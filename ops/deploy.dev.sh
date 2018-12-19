@@ -20,14 +20,15 @@ WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
 CHANNEL_MANAGER_ADDRESS="0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42"
 HOT_WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
 TOKEN_CONTRACT_ADDRESS="0xd01c08c7180eae392265d8c7df311cf5a93f1b73"
+PRIVATE_KEY_FILE="/run/secrets/private_key_dev"
 
 # database settings
+REDIS_URL="redis://redis:6379"
 POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
 POSTGRES_PASSWORD_FILE="/run/secrets/database_dev"
-REDIS_URL="redis://redis:6379"
 
 ####################
 # Deploy according to above configuration
@@ -100,6 +101,8 @@ services:
       - connext_database_dev
       - private_key_dev
     environment:
+      NODE_ENV: developmeny
+      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
       WALLET_ADDRESS: $WALLET_ADDRESS
       CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
       HOT_WALLET_ADDRESS: $HOT_WALLET_ADDRESS
@@ -107,7 +110,7 @@ services:
       ETH_RPC_URL: $ETH_RPC_URL
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database_dev
+      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -124,6 +127,7 @@ services:
     secrets:
       - connext_database_dev
     environment:
+      NODE_ENV: developmeny
       WALLET_ADDRESS: $WALLET_ADDRESS
       CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
       HOT_WALLET_ADDRESS: $HOT_WALLET_ADDRESS
@@ -131,7 +135,7 @@ services:
       ETH_RPC_URL: $ETH_RPC_URL
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database_dev
+      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -152,7 +156,7 @@ services:
     environment:
       POSTGRES_USER: $project
       POSTGRES_DB: $project
-      POSTGRES_PASSWORD_FILE: /run/secrets/connext_database_dev
+      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     deploy:
       mode: global
     networks:
