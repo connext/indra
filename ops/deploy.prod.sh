@@ -34,7 +34,7 @@ POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/database"
+POSTGRES_PASSWORD_FILE="/run/secrets/connext_database"
 
 ####################
 # Deploy according to above configuration

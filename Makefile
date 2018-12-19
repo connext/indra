@@ -95,7 +95,9 @@ client-node-modules: $(project)_builder $(client)/package.json
 
 hub-prod: hub-js
 	$(log)
-	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
+	mv .dockerignore .dockerpayattention
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
+	mv .dockerpayattention .dockerignore
 	touch build/hub-prod
 
 hub: hub-js
