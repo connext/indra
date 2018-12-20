@@ -1,12 +1,8 @@
 require('./register/common')
 
-<<<<<<< HEAD:src/entry.ts
 import PaymentHub from './PaymentHub'
-=======
-import PaymentHub from '../PaymentHub'
-import { Big } from '../util/bigNumber';
-import { default as Config } from '../Config'
->>>>>>> booty-development:hub/src/spankchain/main.ts
+import { Big } from './util/bigNumber';
+import { default as Config } from './Config'
 
 const config = Config.fromEnv({
   authRealm: 'SpankChain',
