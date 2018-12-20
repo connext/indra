@@ -47,6 +47,7 @@
     "classnames": "^2.2.5",
     "concurrently": "^4.1.0",
     "connect-redis": "^3.3.3",
+    "connext": "https://github.com/bohendo/connext-client#indra",
     "cookie-parser": "^1.4.3",
     "cookie-signature": "^1.1.0",
     "cors": "^2.8.4",

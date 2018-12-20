@@ -4,9 +4,8 @@ ENV HOME /root
 
 RUN apk add --update --no-cache bash
 
-COPY modules/client /client
-COPY modules/hub/node_modules node_modules
-COPY modules/hub/ops ops
-COPY modules/hub/dist dist
+COPY node_modules node_modules
+COPY ops ops
+COPY dist dist
 
 ENTRYPOINT ["bash", "ops/prod.entry.sh"]

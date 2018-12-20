@@ -97,9 +97,7 @@ client-node-modules: $(project)_builder $(client)/package.json
 
 hub-prod: hub-js
 	$(log)
-	mv .dockerignore .dockerpayattention
-	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
-	mv .dockerpayattention .dockerignore
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	touch build/hub-prod
 
 hub: hub-js
@@ -115,7 +113,6 @@ hub-js: hub-node-modules $(hub_prereq)
 hub-node-modules: $(project)_builder $(hub)/package.json
 	$(log)
 	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
-	$(docker_run_in_hub) "ln -fs ../../client node_modules/connext"
 	touch build/hub-node-modules
 
 # Database
