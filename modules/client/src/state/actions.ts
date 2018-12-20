@@ -1,4 +1,4 @@
-import { SyncControllerState } from './store'
+import { SyncControllerState, RuntimeState } from './store'
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
 //import Wallet from 'ethereumjs-wallet'
 import { ChannelState, SyncResult, Address } from '../types'
@@ -45,8 +45,12 @@ export function setterAction<Payload>(attr: string, ...args: any[]): ActionCreat
 
 // Runtime
 export const setExchangeRate = setterAction<ExchangeRateState>('runtime.exchangeRate')
-export const setCanDeposit = setterAction<boolean>('runtime.canDeposit')
-export const setCanExchange = setterAction<boolean>('runtime.canExchange')
+export const updateCanFields = setterAction<Partial<RuntimeState>>('runtime', 'updateCanFields', (state, fields, prev) => {
+  return {
+    ...prev,
+    ...fields,
+  }
+})
 export const setSortedSyncResultsFromHub = setterAction<SyncResult[]>('runtime.syncResultsFromHub')
 export const dequeueSyncResultsFromHub = setterAction<void>('runtime.syncResultsFromHub', 'dequeue', (state, _, prev) => {
   return prev.slice(1)

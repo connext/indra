@@ -51,7 +51,7 @@ export default class CurrencyConvertable extends Currency {
     }
 
     if (this.type === CurrencyType.BEI && toType === CurrencyType.BOOTY) {
-      const amountInBootyBigNumber = this.amountBigNumber.div(new BigNumber(BEI_AMOUNT))
+      const amountInBootyBigNumber = this.amountBigNumber.idiv(new BigNumber(BEI_AMOUNT))
       return new CurrencyConvertable(
         toType,
         amountInBootyBigNumber,

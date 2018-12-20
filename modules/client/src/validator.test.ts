@@ -373,7 +373,7 @@ describe('validator', () => {
         name: 'should return a string if 0 timeout provided',
         prev,
         args: { ...args, timeout: 0 },
-        valid: false
+        valid: true
       },
       {
         name: 'should return a string if negative timeout provided',
@@ -483,6 +483,12 @@ describe('validator', () => {
         name: 'should work for withdrawals',
         prev: prevWd,
         stubs: [tx, wdReceipt],
+        valid: true,
+      },
+      {
+        name: 'should work depsite casing differences',
+        prev: { ...prevDeposit, user: prevDeposit.user.toUpperCase(), recipient: prevDeposit.user.toUpperCase() },
+        stubs: [tx, depositReceipt],
         valid: true,
       },
       {

@@ -297,16 +297,6 @@ export class MockStore {
     this._initialState = state
   }
 
-  public setWallet = (user: Address) => {
-    this._initialState = {
-      ...this._initialState,
-      runtime: {
-        ...this._initialState.runtime,
-        wallet: user,
-      }
-    }
-  }
-
   public setExchangeRate = (rates: ExchangeRates) => {
     this._initialState = {
       ...this._initialState,

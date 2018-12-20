@@ -4,7 +4,7 @@ import { UpdateRequest } from './types'
 import { createStore, Action, applyMiddleware } from 'redux'
 require('dotenv').config()
 import { EventEmitter } from 'events'
-import Web3 from 'web3'
+import Web3 = require('web3')
 // local imports
 import { ChannelManager as TypechainChannelManager } from './typechain/ChannelManager'
 import ChannelManagerAbi from './typechain/abi/ChannelManagerAbi'
@@ -332,10 +332,12 @@ export interface IChannelManager {
 export class ChannelManager implements IChannelManager {
   address: string
   cm: TypechainChannelManager
+  gasMultiple: number
 
-  constructor(web3: any, address: string) {
+  constructor(web3: any, address: string, gasMultiple: number) {
     this.address = address
     this.cm = new web3.eth.Contract(ChannelManagerAbi, address) as any
+    this.gasMultiple = gasMultiple
   }
 
   async userAuthorizedUpdate(state: ChannelState) {
@@ -374,7 +376,7 @@ export class ChannelManager implements IChannelManager {
       value: state.pendingDepositWeiUser,
     } as any
     const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * 1.5)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
     return new Web3TxWrapper(this.address, 'userAuthorizedUpdate', call.send(sendArgs))
   }
 }
@@ -387,6 +389,7 @@ export interface ConnextClientOptions {
   tokenAddress: Address
   tokenName: string
   user: string
+  gasMultiple?: number
 
   // Clients should pass in these functions which the ConnextClient will use
   // to save and load the persistent portions of its internal state (channels,
@@ -455,8 +458,8 @@ export abstract class ConnextClient extends EventEmitter {
     await this.internal.exchangeController.exchange(toSell, currency)
   }
 
-  async buy(purchase: PurchaseRequest): Promise<void> {
-    await this.internal.buyController.buy(purchase)
+  async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
+    return await this.internal.buyController.buy(purchase)
   }
 
   async withdraw(withdrawal: WithdrawalParameters): Promise<void> {
@@ -504,7 +507,7 @@ export class ConnextInternal extends ConnextClient {
     )
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
-    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress)
+    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)
@@ -571,6 +574,17 @@ export class ConnextInternal extends ConnextClient {
   }
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
+    if (
+      state.user != this.opts.user ||
+      state.contractAddress != this.opts.contractAddress
+    ) {
+      throw new Error(
+        `Refusing to sign state update which changes user or contract: ` +
+        `expected user: ${this.opts.user}, expected contract: ${this.opts.contract} ` +
+        `actual state: ${JSON.stringify(state)}`
+      )
+    }
+
     const hash = this.utils.createChannelStateHash(state)
 
     const { user, hubAddress } = this.opts
