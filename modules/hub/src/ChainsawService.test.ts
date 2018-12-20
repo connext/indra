@@ -280,8 +280,8 @@ describe.skip('ChainsawService', () => {
 
   function poll () {
     return new Promise((resolve, reject) => {
-      cs.once('poll', resolve)
-      cs.once('error', reject)
+      (cs as any).once('poll', resolve)
+      (cs as any).once('error', reject)
       clock.tick(1001)
     })
   }
@@ -292,7 +292,7 @@ class StateUpdateBuilder {
   private hubAddress: string
   private state: ChannelStateBigNumber
   private utils: Utils
-  
+
   constructor (w3: any, utils: Utils, contractAddress: string, hubAddress: string, update?: ChannelStateBigNumber) {
     this.w3 = w3
     this.hubAddress = hubAddress.toLowerCase()
@@ -322,11 +322,11 @@ class StateUpdateBuilder {
       sigUser: ''
     }
   }
-  
+
   payWei (to: 'hub'|'user', amount: BigNumber|string|number): StateUpdateBuilder {
     let balUser
     let balHub
-    
+
     if (to === 'hub') {
       balUser = this.state.balanceWeiUser.sub(amount)
       balHub = this.state.balanceWeiHub.add(amount)
@@ -341,7 +341,7 @@ class StateUpdateBuilder {
 
     this.state.balanceWeiUser = balUser
     this.state.balanceWeiHub = balHub
-    
+
     return this
   }
 
@@ -378,7 +378,7 @@ class StateUpdateBuilder {
 
     return this
   }
-  
+
   async countersign(chain: boolean): Promise<{ bn: ChannelStateBigNumber, str: ChannelState }> {
     this.state.txCountGlobal++
     if (chain) {

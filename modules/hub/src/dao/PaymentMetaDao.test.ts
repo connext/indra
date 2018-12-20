@@ -59,7 +59,7 @@ describe('PaymentMetaDao', () => {
       'amount_token': tokenVal(1),
       'amount_wei': '0',
       'contract': '0xCCC0000000000000000000000000000000000000',
-      'custodial_recipient': null,
+      'custodian_address': null,
       'meta': {
         'foo': 42,
       },
@@ -91,12 +91,12 @@ describe('PaymentMetaDao', () => {
       },
     })
 
-    let res = await s.db.queryOne(SQL`SELECT * FROM payments WHERE custodial_recipient IS NOT NULL`)
+    let res = await s.db.queryOne(SQL`SELECT * FROM payments WHERE custodian_address IS NOT NULL`)
     assert.containSubset(res, {
       'amount_token': tokenVal(2),
       'amount_wei': '0',
       'contract': '0xCCC0000000000000000000000000000000000000',
-      'custodial_recipient': state.recipient,
+      'custodian_address': state.recipient,
       'meta': {
         'foo': 42,
       },

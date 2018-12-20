@@ -35,7 +35,6 @@ export class ChannelsApiServiceHandler {
 
   private getUser(req: express.Request) {
     const { user } = req.params
-    return user // TODO: REB-35
     if (!user || user != req.session!.address) {
       throw new Error(
         `Current user '${req.session!.address}' is not authorized to act ` +
@@ -107,7 +106,7 @@ export class ChannelsApiServiceHandler {
 
   async doRequestCollateral(req: express.Request, res: express.Response) {
     const { user } = req.params
-    const { activeTipperCount, activeViewerCount, lastChanTx } = req.body
+    const { lastChanTx } = req.body
 
 
     if (!user) {
@@ -121,7 +120,7 @@ export class ChannelsApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    await this.channelsService.doCollateralizeIfNecessary(user, activeTipperCount || 0, activeViewerCount || 0)
+    await this.channelsService.doCollateralizeIfNecessary(user)
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
       lastChanTx,

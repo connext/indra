@@ -165,7 +165,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       },
       meta: row.meta,
       type: row.payment_type,
-      custodialRecipient: row.custodial_recipient,
+      custodianAddress: row.custodian_address,
     }
   }
 }

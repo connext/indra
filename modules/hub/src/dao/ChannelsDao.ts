@@ -19,6 +19,7 @@ import {
 } from '../domain/Channel'
 import { Big } from '../util/bigNumber'
 import { emptyRootHash } from '../vendor/connext/Utils'
+import { default as log } from '../util/log'
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBigNum | null>
@@ -48,6 +49,7 @@ export default interface ChannelsDao {
   ): Promise<ChannelStateUpdateRowBigNum>
   getTotalTokensInReceiverThreads(user: string): Promise<BigNumber>
   getTotalChannelTokensPlusThreadBonds(user: string): Promise<BigNumber>
+  getRecentTippers(user: string): Promise<number>
 }
 
 export function getChannelInitialState(
@@ -79,6 +81,8 @@ export function getChannelInitialState(
     sigUser: null,
   }
 }
+
+const LOG = log('ChannelsDao')
 
 export class PostgresChannelsDao implements ChannelsDao {
   private db: DBEngine<Client>
@@ -193,6 +197,14 @@ export class PostgresChannelsDao implements ChannelsDao {
     chainsawEventId?: number,
     onchainLogicalId?: number,
   ): Promise<ChannelStateUpdateRowBigNum> {
+
+    LOG.info('Applying channel update to {user}: {reason}({args}) -> {state}', {
+      user,
+      reason,
+      args: JSON.stringify(args),
+      state: JSON.stringify(state),
+    })
+
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
         SELECT *
@@ -250,6 +262,18 @@ export class PostgresChannelsDao implements ChannelsDao {
     `)
 
     return Big(co_amount)
+  }
+
+  async getRecentTippers(user: string): Promise<number> {
+    const { num_tippers } = await this.db.queryOne(SQL`
+      SELECT COUNT(DISTINCT sender) AS num_tippers
+      FROM payments
+        WHERE
+          recipient = ${user} AND
+          created_on > NOW() - interval '10 minutes'
+    `)
+
+    return parseInt(num_tippers)
   }
 
   private inflateChannelStateRow(row: any): ChannelStateBigNumber {

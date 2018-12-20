@@ -1,3 +1,4 @@
+import { mkHash } from '../testing/stateUtils'
 import * as chai from 'chai'
 import { assert } from 'chai'
 chai.use(require('@spankchain/chai-subset'))
@@ -20,6 +21,7 @@ describe('ChannelsDao', () => {
   let dao: PostgresChannelsDao
 
   beforeEach(async () => {
+    await registry.clearDatabase()
     dao = registry.get('ChannelsDao')
     db = registry.get('DBEngine')
   })
@@ -45,6 +47,8 @@ describe('ChannelsDao', () => {
       contractAddress,
       balanceWei: [150, 150],
       balanceToken: [370, 330],
+      threadCount: 0, // TODO REB-36: enable threads
+      threadRoot: mkHash('0x0'), // TODO REB-36: enable threads
       sigHub,
       sigUser,
     })

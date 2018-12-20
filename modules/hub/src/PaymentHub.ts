@@ -57,12 +57,8 @@ export default class PaymentHub {
   }
 
   public async startChainsaw() {
-    // const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
-    // chainsaw.poll()
-    const chainsaw = this.container.resolve<ChainsawService>(
-      'ChainsawService',
-    )
-    chainsaw.poll()
+    const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
+    await chainsaw.poll()
   }
 
 }

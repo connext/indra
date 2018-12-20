@@ -33,7 +33,7 @@ export const DEFAULT_EXCHANGE_MULTIPLIER = 1000000
 
 const w3utils = (Web3 as any).utils
 
-/* 
+/*
 This class will validate whether or not the args are deemed sensible.
 Will validate args outright, where appropriate, and against determined state
 arguments in other places.
@@ -73,13 +73,15 @@ export class Validator {
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): string | null {
     // no negative values in payments
-    if (this.hasNegative(args, argNumericFields.Payment)) {
-      return this.hasNegative(args, argNumericFields.Payment)
-    }
     const { recipient, ...amounts } = args
+    const errs = [
+      this.isUntimed(prev),
+      this.hasNegative(args, argNumericFields.Payment),
+      this.cantAffordFromBalance(prev, amounts, recipient === "user" ? "hub" : "user")
+    ].filter(x => !!x)[0]
 
-    if (this.cantAffordFromBalance(prev, amounts, recipient === "user" ? "hub" : "user")) {
-      return this.cantAffordFromBalance(prev, amounts, recipient === "user" ? "hub" : "user")
+    if (errs) {
+      return errs
     }
 
     return null
@@ -97,7 +99,9 @@ export class Validator {
   }
 
   public exchange = (prev: ChannelStateBN, args: ExchangeArgsBN): string | null => {
+    const proposed = this.stateGenerator.exchange(prev, args)
     const errs = [
+      this.isUntimed(prev),
       this.hasNegative(args, argNumericFields.Exchange), this.cantAffordFromBalance(
         prev,
         {
@@ -105,7 +109,8 @@ export class Validator {
           amountToken: args.tokensToSell
         },
         args.seller
-      )
+      ),
+      this.hasNegative(proposed, channelNumericFields)
     ].filter(x => !!x)[0]
 
     if (errs) {
@@ -121,7 +126,6 @@ export class Validator {
 
     // can hub afford this exchange
     // apply state generation and check for negative vales
-    const proposed = this.stateGenerator.exchange(prev, args)
     const err = this.hasNegative(proposed, channelNumericFields)
     if (err)
       return err
@@ -145,6 +149,7 @@ export class Validator {
     const pendingFields = channelNumericFields.filter(x => x.startsWith('pending'))
 
     const errs = [
+      this.isUntimed(prev),
       this.hasNonzero(prev, pendingFields),
       this.hasNegative(args, argNumericFields.ProposePendingDeposit),
     ].filter(x => !!x)[0]
@@ -153,8 +158,8 @@ export class Validator {
       return errs
     }
 
-    if (args.timeout <= 0) {
-      return `Timeouts must be non-zero when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
+    if (args.timeout < 0) {
+      return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
     return null
@@ -176,6 +181,7 @@ export class Validator {
     const pendingFields = channelNumericFields.filter(x => x.startsWith('pending'))
 
     const errs = [
+      this.isUntimed(prev),
       this.hasNonzero(prev, pendingFields),
       this.hasNegative(args, Object.keys(args).filter(k => k !== 'recipient')),
     ].filter(x => !!x)[0]
@@ -193,7 +199,7 @@ export class Validator {
 
     // make sure there is no pendingDepositWeiUser
     // as well as a pendingWithdrawalWeiHub, and vice versa. Means
-    // hub should not be collateralizing an on contract exchange and 
+    // hub should not be collateralizing an on contract exchange and
     // requesting withdrawals
     if (
       (!proposed.pendingDepositWeiUser.isZero() && !proposed.pendingWithdrawalWeiHub.isZero())
@@ -221,6 +227,14 @@ export class Validator {
     const txHash = args.transactionHash
     const tx = await this.web3.eth.getTransaction(txHash) as any
     const receipt = await this.web3.eth.getTransactionReceipt(txHash)
+
+    // apply .toLowerCase to all strings on the prev object
+    // (contractAddress, user, recipient, threadRoot, sigHub)
+    for (let field in prev) {
+      if (typeof (prev as any)[field] === "string") {
+        (prev as any)[field] = (prev as any)[field].toLowerCase()
+      }
+    }
 
     if (!tx || !tx.blockHash) {
       return `Transaction to contract not found. (txHash: ${txHash}, prev: ${JSON.stringify(prev)})`
@@ -257,32 +271,43 @@ export class Validator {
 
   public openThread = (prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null => {
     // NOTE: tests mock web3. signing is tested in Utils
+    const userIsSender = args.sender === prev.user
     try {
       this.assertThreadSigner(convertThreadState("str", args))
     } catch (e) {
       return e.message
     }
 
-    if (prev.contractAddress !== args.contractAddress || this.hasNonzero(args, ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver'])) {
+    const errs = [
+      this.isUntimed(prev),
+      this.hasNonzero(
+        args,
+        ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver']
+      ),
+      this.hasNegative(args, Object.keys(args).filter(k => k !== 'recipient')),
+      this.cantAffordFromBalance(
+        prev,
+        { amountToken: args.balanceTokenSender, amountWei: args.balanceWeiSender },
+        userIsSender ? "user" : "hub")
+    ].filter(x => !!x)[0]
+
+    if (errs) {
+      return errs
+    }
+
+    if (prev.contractAddress !== args.contractAddress) {
       return `Invalid initial thread state for channel: ${prev.contractAddress !== args.contractAddress ? 'contract address of thread invalid' : '' + this.hasNonzero(args, ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver'])}. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
     // must be channel user, cannot open with yourself
-    const userIsSender = args.sender === prev.user
     if (!userIsSender && args.receiver !== prev.user || userIsSender && args.receiver === args.sender) {
       return `Invalid thread members (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
-    }
-
-    // channel user/hub should be able to afford the thread opening
-    const err = this.cantAffordFromBalance(prev, { amountToken: args.balanceTokenSender, amountWei: args.balanceWeiSender }, userIsSender ? "user" : "hub")
-    if (err) {
-      return err
     }
 
 
     // NOTE: no way to check if receiver has a channel with the hub
     // must be checked wallet-side and hub-side, respectively
-    // - potential attack vector: 
+    // - potential attack vector:
     //      - hub could potentially have fake "performer" accounts,
     //        and steal money from the user without them knowing
 
@@ -314,8 +339,8 @@ export class Validator {
     }
 
     // NOTE: in other places previous states are not validated, and technically
-    // the args in this case are a previously signed thread state. We are 
-    // performing sig and balance conservation verification here, however, 
+    // the args in this case are a previously signed thread state. We are
+    // performing sig and balance conservation verification here, however,
     // since the major point of the validators is to ensure the args provided
     // lead to a valid current state if applied
 
@@ -324,6 +349,9 @@ export class Validator {
       this.assertThreadSigner(convertThreadState("str", args))
     } catch (e) {
       return e.message
+    }
+    if (this.isUntimed(prev)) {
+      return this.isUntimed(prev)
     }
 
     // and balance is conserved
@@ -361,8 +389,6 @@ export class Validator {
     ].filter(x => !!x)[0]
     if (errs)
       return errs
-
-
 
     return null
   }
@@ -479,6 +505,14 @@ export class Validator {
 
   private hasInequivalent(objs: any[], fields: string[]): string | null {
     return this.evaluateCondition(objs, fields, "non-equivalent")
+  }
+
+  private isUntimed(prev: ChannelStateBN): string | null {
+    if (prev.timeout !== 0) {
+      return `Previous state contains a timeout, must use Invalidation or ConfirmPending paths. Previous; ${JSON.stringify(convertChannelState("str", prev))}`
+    }
+
+    return null
   }
 
   private parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {

@@ -230,6 +230,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   RedisClient: {
     factory: (config: Config) => getRedisClient(config.redisUrl),
     dependencies: ['Config'],
+    isSingleton: true
   },
 
   FeatureFlagsDao: {

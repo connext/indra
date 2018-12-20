@@ -72,7 +72,7 @@ export class PaymentsApiServiceHandler {
       return res.send(400).json(result.msg)
     }
 
-    const lastChanTx = Math.max(...payments.map(p => (p.update as UpdateRequest).txCount))
+    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount))
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
       req.session!.address,
       lastChanTx,
@@ -125,29 +125,11 @@ export class PaymentsApiServiceHandler {
       return res.sendStatus(403)
     }
 
-    const payments = await this.paymentMetaDao.byPurchase(id)
-    if (!payments.length)
+    const purchase = await this.paymentsService.doPurchaseById(id)
+    if (!purchase) {
       return res.sendStatus(404)
-
-    const totalAmount: Payment = {
-      amountWei: '0',
-      amountToken: '0',
-    }
-    for (let payment of payments) {
-      totalAmount.amountWei = Big(totalAmount.amountWei).add(payment.amount.amountWei).toFixed()
-      totalAmount.amountToken = Big(totalAmount.amountToken).add(payment.amount.amountToken).toFixed()
     }
 
-    // TODO: this is a bit of a hack because we aren't totally tracking
-    // purchases right now. In the future the `payments[0]` bits will be
-    // replaced with an actual payments row.
-    return res.send({
-      purchaseId: id,
-      createdOn: payments[0].createdOn,
-      sender: payments[0].sender,
-      meta: { todo: 'this will be filled in later' },
-      amount: totalAmount,
-      payments,
-    } as PurchaseRowWithPayments)
+    res.send(purchase)
   }
 }
