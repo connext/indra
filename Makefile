@@ -60,9 +60,11 @@ purge: stop clean
 	docker volume rm connext_chain_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
-deploy: prod
+tags: prod
 	docker tag $(project)_database:latest $(registry)/$(me)/$(project)_database:latest
 	docker tag $(project)_hub:latest $(registry)/$(me)/$(project)_hub:latest
+
+deploy: tags
 	docker push $(registry)/$(me)/$(project)_database:latest
 	docker push $(registry)/$(me)/$(project)_hub:latest
 

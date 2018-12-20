@@ -39,21 +39,23 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database"
 ####################
 # Deploy according to above configuration
 
-if [[ "$MODE" == "live" ]]
-then version="`cat package.json | jq .version | tr -d '"'`"
-else version="latest"
-fi
-
+# Figure out which images we should use
 if [[ "$DOMAINNAME" != "localhost" ]]
 then
+  if [[ "$MODE" == "live" ]]
+  then version="`cat package.json | jq .version | tr -d '"'`"
+  else version="latest"
+  fi
   database_image="$registry/$repository/${project}_database:$version"
   hub_image="$registry/$repository/${project}_hub:$version"
   redis_image="redis:5-alpine"
 else
-  database_image=${project}_database:dev
-  hub_image=${project}_hub:dev
+  database_image=${project}_database:latest
+  hub_image=${project}_hub:latest
   redis_image=redis:5-alpine
 fi
+
+echo "Deploying images: $database_image and $hub_image"
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true

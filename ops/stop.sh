@@ -4,7 +4,7 @@ set -e
 name=$1 && [[ -n "$name" ]] || name=connext
 
 docker container stop ${name}_builder 2> /dev/null || true
-docker stack rm $name
+docker stack rm $name 2> /dev/null || true
 
 echo -n "Waiting for the $name stack to shutdown."
 while [[ -n "`docker container ls | tail -n +2 | grep $name`" ]]
