@@ -1,4 +1,5 @@
 project=connext
+me=$(shell whoami)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -31,7 +32,6 @@ docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
-me=$(shell whoami)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
 log=@echo;echo;echo "[Makefile] => Building $@"

@@ -5,6 +5,7 @@ set -e
 # ENV VARS
 
 project=connext
+repository="`whoami`"
 number_of_services=4
 
 # set defaults for some core env vars
@@ -14,7 +15,6 @@ EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 INFURA_KEY="RNXFMnEXo6TEeIYzcTyQ" # provided by bohendo
 
 # docker image settings
-repository="`whoami`"
 registry=docker.io
 
 # misc settings
