@@ -1,4 +1,3 @@
-import { ChannelUpdateReason } from '../types'
 import { UpdateRequest } from '../types'
 //import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
 import { EMPTY_ROOT_HASH } from '../lib/constants'
@@ -10,7 +9,7 @@ import { ExchangeRateState } from './ConnextState/ExchangeRates'
 export const CHANNEL_ZERO_STATE = {
   user: '0x0',
   recipient: '0x0',
-  contractAddress: process.env.CONTRACT_ADDRESS!,
+  contractAddress: process.env.REACT_APP_CONTRACT_ADDRESS!, //"0x8BA9df707565Ef788D0C72D41db8efbBADf41240",
   balanceWeiUser: '0',
   balanceWeiHub: '0',
   balanceTokenUser: '0',
@@ -28,15 +27,8 @@ export const CHANNEL_ZERO_STATE = {
   threadRoot: EMPTY_ROOT_HASH,
   threadCount: 0,
   timeout: 0,
-  // To maintain the invariant that the current channel is always signed, add
-  // non-empty signatures here. Note: this is a valid assumption because:
-  // 1. The signatures of the current channel state should never need to be
-  //    checked, and
-  // 2. The initial state (ie, with zll zero values) is indistinguishable from
-  //    some subsequent state which has no value (ie, user and hub have
-  //    withdrawn their entire balance)
-  sigUser: '0x0',
-  sigHub: '0x0',
+  sigUser: '',
+  sigHub: '',
 }
 
 export class SyncControllerState {
@@ -44,11 +36,9 @@ export class SyncControllerState {
 }
 
 export class RuntimeState {
-  canDeposit: boolean = false
-  canExchange: boolean = false
-  canWithdraw: boolean = false
-  canBuy: boolean = false
-  canCollateralize: boolean = false
+  wallet?: any //TODO REMOVE
+  canDeposit: boolean = true
+  canExchange: boolean = true
   exchangeRate: null | ExchangeRateState = null
   syncResultsFromHub: SyncResult[] = []
 }

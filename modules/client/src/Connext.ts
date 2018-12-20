@@ -41,7 +41,9 @@ import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import CollateralController from "./controllers/CollateralController";
 import * as actions from './state/actions';
-import { AbstractController } from './controllers/AbstractController'
+import { AbstractController } from './controllers/AbstractController';
+import * as ethers from 'ethers';
+
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -58,7 +60,7 @@ export interface ContractOptions {
 // connext constructor options
 // NOTE: could extend ContractOptions, doesnt for future readability
 export interface ConnextOptions {
-  web3: Web3
+  web3: any
   hubUrl: string
   contractAddress: string
   hubAddress: Address
@@ -265,7 +267,7 @@ class HubAPIClient implements IHubAPIClient {
 // connext constructor options
 // NOTE: could extend ContractOptions, doesnt for future readability
 export interface ConnextOptions {
-  web3: Web3
+  web3: any
   hubUrl: string
   contractAddress: string
   hubAddress: Address
@@ -331,12 +333,12 @@ export interface IChannelManager {
 
 export class ChannelManager implements IChannelManager {
   address: string
-  cm: TypechainChannelManager
+  cm: any
   gasMultiple: number
 
   constructor(web3: any, address: string, gasMultiple: number) {
     this.address = address
-    this.cm = new web3.eth.Contract(ChannelManagerAbi, address) as any
+    this.cm = new ethers.Contract(address,ChannelManagerAbi,web3) as any
     this.gasMultiple = gasMultiple
   }
 
@@ -382,7 +384,7 @@ export class ChannelManager implements IChannelManager {
 }
 
 export interface ConnextClientOptions {
-  web3: Web3
+  web3: any
   hubUrl: string
   contractAddress: string
   hubAddress: Address
@@ -458,8 +460,8 @@ export abstract class ConnextClient extends EventEmitter {
     await this.internal.exchangeController.exchange(toSell, currency)
   }
 
-  async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
-    return await this.internal.buyController.buy(purchase)
+  async buy(purchase: PurchaseRequest): Promise<void> {
+    await this.internal.buyController.buy(purchase)
   }
 
   async withdraw(withdrawal: WithdrawalParameters): Promise<void> {
@@ -507,7 +509,7 @@ export class ConnextInternal extends ConnextClient {
     )
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
-    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
+    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 3)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)
@@ -574,17 +576,6 @@ export class ConnextInternal extends ConnextClient {
   }
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
-    if (
-      state.user != this.opts.user ||
-      state.contractAddress != this.opts.contractAddress
-    ) {
-      throw new Error(
-        `Refusing to sign state update which changes user or contract: ` +
-        `expected user: ${this.opts.user}, expected contract: ${this.opts.contract} ` +
-        `actual state: ${JSON.stringify(state)}`
-      )
-    }
-
     const hash = this.utils.createChannelStateHash(state)
 
     const { user, hubAddress } = this.opts

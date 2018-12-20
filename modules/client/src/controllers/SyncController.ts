@@ -167,7 +167,7 @@ export default class SyncController extends AbstractController {
 
     const oldSyncResults = this.getState().runtime.syncResultsFromHub
     const merged = mergeSyncResults(oldSyncResults, updates)
-    console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${merged.length}`)
+    console.info(`updates: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${merged.length}`)
     this.store.dispatch(actions.setSortedSyncResultsFromHub(merged))
   }
 }

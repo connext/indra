@@ -1,5 +1,5 @@
 {
-  "name": "connext-client",
+  "name": "connext",
   "version": "0.0.1",
   "description": "Shared code between wallet and hub",
   "license": "ISC",

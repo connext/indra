@@ -7,9 +7,9 @@ export function validateTimestamp(store: ConnextStore, timeout: number) {
   const delta = timeout - now
   if (delta > challenge || delta < 0) {
     // TODO: send an invalidating state back to the hub (REB-12)
-    return (
-      `Proposed timestamp '${timeout}' is too far from now ('${now}')` +
-      `by ${delta}s (with challenge of '${challenge}s)'`
+    return ( null
+      // `Proposed timestamp '${timeout}' is too far from now ('${now}')` +
+      // `by ${delta}s (with challenge of '${challenge}s)'`
     )
   }
 }

@@ -158,8 +158,8 @@ export class Validator {
       return errs
     }
 
-    if (args.timeout < 0) {
-      return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
+    if (args.timeout <= 0) {
+      return `Timeouts must be non-zero when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
     return null

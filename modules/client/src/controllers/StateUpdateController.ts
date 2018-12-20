@@ -148,14 +148,6 @@ export default class StateUpdateController extends AbstractController {
       return
     }
 
-    if (update.txCount != prevState.txCountGlobal + 1) {
-      throw new Error(
-        `Update txCount ${update.txCount} != ${prevState.txCountGlobal} + 1 ` +
-        `(ie, the update is trying to be applied on top of a state that's ` +
-        `later than our most recent state)`
-      )
-    }
-
     const nextState = await this.connext.validator.generateChannelStateFromRequest(prevState, update)
 
     if (update.reason == 'ConfirmPending') {
