@@ -43,7 +43,7 @@ log=@echo;echo;echo "[Makefile] => Building $@"
 
 default: dev
 all: dev prod
-dev: client database ethprovider e2e-node-modules hub
+dev: client database ethprovider hub
 prod: database-prod hub-prod
 
 clean:
