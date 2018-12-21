@@ -1,4 +1,7 @@
-import { ChannelUpdateReason, Payment, convertWithdrawal, PaymentArgs, ExchangeArgs, convertExchange, DepositArgs, convertDeposit, WithdrawalArgs, convertThreadPayment, ConfirmPendingArgs } from './types'
+import { subOrZero } from './StateGenerator'
+import { convertProposePending } from './types'
+import { PendingArgs } from './types'
+import { PendingArgsBN } from './types'
 import Web3 = require('web3')
 import BN = require('bn.js')
 import {
@@ -19,11 +22,27 @@ import {
   UnsignedThreadState,
   WithdrawalArgsBN,
   UpdateRequest,
-  argNumericFields
+  argNumericFields,
+  PendingExchangeArgsBN,
+  UnsignedChannelStateBN,
+  PendingExchangeArgs,
+  convertProposePendingExchange,
+  ChannelUpdateReason,
+  PaymentArgs,
+  ExchangeArgs,
+  convertExchange,
+  DepositArgs,
+  convertDeposit,
+  WithdrawalArgs,
+  convertWithdrawal,
+  ConfirmPendingArgs,
+  convertThreadPayment,
+  Payment,
+  convertArgs
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
-import { toBN } from './helpers/bn'
+import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { TransactionReceipt } from 'web3/types'
 
@@ -57,11 +76,11 @@ export class Validator {
     this.web3 = web3
     this.hubAddress = hubAddress.toLowerCase()
     this.generateHandlers = {
-      'Payment': this.generateChannelPayment,
-      'Exchange': this.generateExchange,
-      'ProposePendingDeposit': this.generateProposePendingDeposit,
-      'ProposePendingWithdrawal': this.generateProposePendingWithdrawal,
-      'ConfirmPending': this.generateConfirmPending,
+      'Payment': this.generateChannelPayment.bind(this),
+      'Exchange': this.generateExchange.bind(this),
+      'ProposePendingDeposit': this.generateProposePendingDeposit.bind(this),
+      'ProposePendingWithdrawal': this.generateProposePendingWithdrawal.bind(this),
+      'ConfirmPending': this.generateConfirmPending.bind(this),
       'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
       'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
     }
@@ -75,9 +94,13 @@ export class Validator {
     // no negative values in payments
     const { recipient, ...amounts } = args
     const errs = [
-      this.isUntimed(prev),
-      this.hasNegative(args, argNumericFields.Payment),
-      this.cantAffordFromBalance(prev, amounts, recipient === "user" ? "hub" : "user")
+      // implicitly checked from isValid, but err message nicer this way
+      this.cantAffordFromBalance(prev, amounts, recipient === "user" ? "hub" : "user"),
+      this.isValidStateTransitionRequest(
+        (prev),
+        { args, reason: "Payment", txCount: prev.txCountGlobal }
+      ),
+      this.hasTimeout(prev),
     ].filter(x => !!x)[0]
 
     if (errs) {
@@ -87,7 +110,7 @@ export class Validator {
     return null
   }
 
-  public generateChannelPayment = (prevStr: ChannelState, argsStr: PaymentArgs): UnsignedChannelState => {
+  public generateChannelPayment(prevStr: ChannelState, argsStr: PaymentArgs): UnsignedChannelState {
     const prev = convertChannelState("bn", prevStr)
     const args = convertPayment("bn", argsStr)
     const error = this.channelPayment(prev, args)
@@ -98,11 +121,9 @@ export class Validator {
     return this.stateGenerator.channelPayment(prev, args)
   }
 
-  public exchange = (prev: ChannelStateBN, args: ExchangeArgsBN): string | null => {
-    const proposed = this.stateGenerator.exchange(prev, args)
+  public exchange(prev: ChannelStateBN, args: ExchangeArgsBN): string | null {
     const errs = [
-      this.isUntimed(prev),
-      this.hasNegative(args, argNumericFields.Exchange), this.cantAffordFromBalance(
+      this.cantAffordFromBalance(
         prev,
         {
           amountWei: args.weiToSell,
@@ -110,7 +131,11 @@ export class Validator {
         },
         args.seller
       ),
-      this.hasNegative(proposed, channelNumericFields)
+      this.isValidStateTransitionRequest(
+        (prev),
+        { args, reason: "Exchange", txCount: prev.txCountGlobal }
+      ),
+      this.hasTimeout(prev),
     ].filter(x => !!x)[0]
 
     if (errs) {
@@ -124,16 +149,10 @@ export class Validator {
       return `Exchanges cannot sell both wei and tokens simultaneously (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
-    // can hub afford this exchange
-    // apply state generation and check for negative vales
-    const err = this.hasNegative(proposed, channelNumericFields)
-    if (err)
-      return err
-
     return null
   }
 
-  public generateExchange = (prevStr: ChannelState, argsStr: ExchangeArgs): UnsignedChannelState => {
+  public generateExchange(prevStr: ChannelState, argsStr: ExchangeArgs): UnsignedChannelState {
     const prev = convertChannelState("bn", prevStr)
     const args = convertExchange("bn", argsStr)
     const error = this.exchange(prev, args)
@@ -144,14 +163,14 @@ export class Validator {
     return this.stateGenerator.exchange(prev, args)
   }
 
-  public proposePendingDeposit = (prev: ChannelStateBN, args: DepositArgsBN): string | null => {
-    // validate there are no pending ops
-    const pendingFields = channelNumericFields.filter(x => x.startsWith('pending'))
-
+  public proposePendingDeposit(prev: ChannelStateBN, args: DepositArgsBN): string | null {
     const errs = [
-      this.isUntimed(prev),
-      this.hasNonzero(prev, pendingFields),
-      this.hasNegative(args, argNumericFields.ProposePendingDeposit),
+      this.isValidStateTransitionRequest(
+        (prev),
+        { args, reason: "ProposePendingDeposit", txCount: prev.txCountGlobal }
+      ),
+      this.hasTimeout(prev),
+      this.hasPendingOps(prev),
     ].filter(x => !!x)[0]
 
     if (errs) {
@@ -165,7 +184,7 @@ export class Validator {
     return null
   }
 
-  public generateProposePendingDeposit = (prevStr: ChannelState, argsStr: DepositArgs): UnsignedChannelState => {
+  public generateProposePendingDeposit(prevStr: ChannelState, argsStr: DepositArgs): UnsignedChannelState {
     const prev = convertChannelState("bn", prevStr)
     const args = convertDeposit("bn", argsStr)
     const error = this.proposePendingDeposit(prev, args)
@@ -176,43 +195,61 @@ export class Validator {
     return this.stateGenerator.proposePendingDeposit(prev, args)
   }
 
-  public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {
+  private _exchangeValidator = (prev: ChannelStateBN, args: any, name: string, proposedStr: UnsignedChannelState): string | null => {
     // validate there are no existing pending ops
     const pendingFields = channelNumericFields.filter(x => x.startsWith('pending'))
 
     const errs = [
-      this.isUntimed(prev),
-      this.hasNonzero(prev, pendingFields),
-      this.hasNegative(args, Object.keys(args).filter(k => k !== 'recipient')),
+      this.isValidStateTransitionRequest(
+        (prev),
+        { args, reason: "ProposePendingWithdrawal", txCount: prev.txCountGlobal }
+      ),
+      this.hasTimeout(prev),
+      this.hasPendingOps(prev),
     ].filter(x => !!x)[0]
 
     if (errs) {
       return errs
     }
 
-    // apply the args, and make sure there are no negative values
-    const proposed = convertChannelState("bn-unsigned", this.stateGenerator.proposePendingWithdrawal(prev, args))
-    const neg = this.hasNegative(proposed, channelNumericFields)
-    if (neg) {
-      return `Proposed withdrawal results in negative balances. ` + neg + ` (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
-    }
-
-    // make sure there is no pendingDepositWeiUser
-    // as well as a pendingWithdrawalWeiHub, and vice versa. Means
-    // hub should not be collateralizing an on contract exchange and
-    // requesting withdrawals
-    if (
-      (!proposed.pendingDepositWeiUser.isZero() && !proposed.pendingWithdrawalWeiHub.isZero())
-      ||
-      (!proposed.pendingDepositTokenUser.isZero() && !proposed.pendingWithdrawalTokenHub.isZero())
-    ) {
-      return `Hub should not be collateralizing a withdrawal exchange along with withdrawing from that currencies channel balance. (args: ${JSON.stringify(convertWithdrawal("str", args))}, prev: ${JSON.stringify(convertChannelState("str", prev))})`
-    }
-
     return null
   }
 
-  public generateProposePendingWithdrawal = (prevStr: ChannelState, argsStr: WithdrawalArgs): UnsignedChannelState => {
+  public proposePending = (prev: ChannelStateBN, args: PendingArgsBN): string | null => {
+    return this._exchangeValidator(prev, args, 'pending', this.stateGenerator.proposePending(prev, args))
+  }
+
+  public generateProposePending = (prevStr: ChannelState, argsStr: PendingArgs): UnsignedChannelState => {
+    const prev = convertChannelState("bn", prevStr)
+    const args = convertProposePending("bn", argsStr)
+    const error = this.proposePending(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+
+    return this.stateGenerator.proposePending(prev, args)
+  }
+
+  public proposePendingExchange = (prev: ChannelStateBN, args: PendingExchangeArgsBN): string | null => {
+    return this._exchangeValidator(prev, args, 'pending exchange', this.stateGenerator.proposePendingExchange(prev, args))
+  }
+
+  public generateProposePendingExcchange = (prevStr: ChannelState, argsStr: PendingExchangeArgs): UnsignedChannelState => {
+    const prev = convertChannelState("bn", prevStr)
+    const args = convertProposePendingExchange("bn", argsStr)
+    const error = this.proposePendingExchange(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+
+    return this.stateGenerator.proposePendingWithdrawal(prev, args)
+  }
+
+  public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {
+    return this._exchangeValidator(prev, args, 'withdrawal', this.stateGenerator.proposePendingWithdrawal(prev, args))
+  }
+
+  public generateProposePendingWithdrawal(prevStr: ChannelState, argsStr: WithdrawalArgs): UnsignedChannelState {
     const prev = convertChannelState("bn", prevStr)
     const args = convertWithdrawal("bn", argsStr)
     const error = this.proposePendingWithdrawal(prev, args)
@@ -223,7 +260,16 @@ export class Validator {
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
   }
 
-  public confirmPending = async (prev: ChannelStateBN, args: ConfirmPendingArgs): Promise<string | null> => {
+  public async confirmPending(prev: ChannelStateBN, args: ConfirmPendingArgs): Promise<string | null> {
+    const e = this.isValidStateTransitionRequest(
+      prev,
+      { args, reason: "ConfirmPending", txCount: prev.txCountGlobal }
+    )
+    if (e) {
+      return e
+    }
+
+    // validate on chain information
     const txHash = args.transactionHash
     const tx = await this.web3.eth.getTransaction(txHash) as any
     const receipt = await this.web3.eth.getTransactionReceipt(txHash)
@@ -259,7 +305,7 @@ export class Validator {
     return null
   }
 
-  public generateConfirmPending = async (prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> => {
+  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
     const prev = convertChannelState("bn", prevStr)
     const error = await this.confirmPending(prev, args)
     if (error) {
@@ -269,7 +315,7 @@ export class Validator {
     return this.stateGenerator.confirmPending(prev)
   }
 
-  public openThread = (prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null => {
+  public openThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null {
     // NOTE: tests mock web3. signing is tested in Utils
     const userIsSender = args.sender === prev.user
     try {
@@ -279,16 +325,19 @@ export class Validator {
     }
 
     const errs = [
-      this.isUntimed(prev),
+      this.cantAffordFromBalance(
+        prev,
+        { amountToken: args.balanceTokenSender, amountWei: args.balanceWeiSender },
+        userIsSender ? "user" : "hub"),
+      this.isValidStateTransitionRequest(
+        prev,
+        { args, reason: "OpenThread", txCount: prev.txCountGlobal }
+      ),
+      this.hasTimeout(prev),
       this.hasNonzero(
         args,
         ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver']
       ),
-      this.hasNegative(args, Object.keys(args).filter(k => k !== 'recipient')),
-      this.cantAffordFromBalance(
-        prev,
-        { amountToken: args.balanceTokenSender, amountWei: args.balanceWeiSender },
-        userIsSender ? "user" : "hub")
     ].filter(x => !!x)[0]
 
     if (errs) {
@@ -330,7 +379,14 @@ export class Validator {
     return this.stateGenerator.openThread(prev, initialThreadStates, args)
   }
 
-  public closeThread = (prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null => {
+  public closeThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null {
+    const e = this.isValidStateTransitionRequest(
+      prev,
+      { args, reason: "CloseThread", txCount: prev.txCountGlobal }
+    )
+    if (e) {
+      return e
+    }
     // NOTE: the initial thread states are states before the thread is
     // closed (corr. to prev open threads)
     const initialState = initialThreadStates.filter(thread => thread.threadId === args.threadId)[0]
@@ -350,8 +406,8 @@ export class Validator {
     } catch (e) {
       return e.message
     }
-    if (this.isUntimed(prev)) {
-      return this.isUntimed(prev)
+    if (this.hasTimeout(prev)) {
+      return this.hasTimeout(prev)
     }
 
     // and balance is conserved
@@ -384,6 +440,7 @@ export class Validator {
   public threadPayment(prev: ThreadStateBN, args: { amountToken: BN, amountWei: BN }): string | null {
     // no negative values in payments
     const errs = [
+      // TODO: REB-36, threads. API input
       this.hasNegative(args, argNumericFields.Payment),
       this.cantAffordFromBalance(prev, args, "sender")
     ].filter(x => !!x)[0]
@@ -507,13 +564,163 @@ export class Validator {
     return this.evaluateCondition(objs, fields, "non-equivalent")
   }
 
-  private isUntimed(prev: ChannelStateBN): string | null {
+  private hasTimeout(prev: ChannelStateBN): string | null {
     if (prev.timeout !== 0) {
       return `Previous state contains a timeout, must use Invalidation or ConfirmPending paths. Previous; ${JSON.stringify(convertChannelState("str", prev))}`
     }
 
     return null
   }
+
+  private hasPendingOps(state: ChannelStateBN | UnsignedChannelStateBN): string | null {
+    // validate there are no pending ops
+    const pendingFields = channelNumericFields.filter(x => x.startsWith('pending'))
+    return this.hasNonzero(state, pendingFields)
+  }
+
+  private enforceDelta(objs: any[], delta: number | BN, fields: string[]) {
+    // gather deltas into objects
+    let deltas: any = {}
+    let k: any = {} // same fields, all val is given delta
+
+    fields.forEach(f => {
+      deltas[f] = typeof delta === 'number'
+        ? objs[1][f] - objs[0][f]
+        : objs[1][f].sub(objs[0][f])
+      k[f] = delta
+    })
+
+    return this.hasInequivalent([deltas, k], fields)
+  }
+
+  /** NOTE: this function is called within every validator function EXCEPT for the invalidation generator. This is update is an offchain construction to recover from invalid updates without disputing or closing your channel. For this reason, the contract would never see it's transition of de-acknowledgment as "valid" without advance knowledge that it was an invalidation update or a unless it was double signed.
+   */
+  private isValidStateTransition(prev: ChannelStateBN, curr: UnsignedChannelStateBN): string | null {
+    let errs = [
+      this.hasNegative(curr, channelNumericFields),
+      this.enforceDelta([prev, curr], 1, ['txCountGlobal'])
+    ] as (string | null)[]
+    // assume the previous should always have at least one sig
+    if (prev.txCountChain > 0 && !prev.sigHub && !prev.sigUser) {
+      errs.push(`No signature detected on the previous state. (prev: ${JSON.stringify(prev)}, curr: ${JSON.stringify(curr)})`)
+    }
+
+    const prevPending = this.hasPendingOps(prev)
+    // pending ops only added to current state if the current state
+    // is of a "ProposePending" request type
+    if (this.hasPendingOps(curr)) {
+      errs.push(this.enforceDelta([prev, curr], 1, ['txCountChain']))
+    } else {
+      errs.push(this.enforceDelta([prev, curr], 0, ['txCountChain']))
+    }
+
+    // calculate the out of channel balance that could be used in 
+    // transition. could include previous pending updates and the
+    // reserves.
+    //
+    // hub will use reserves if it cannot afford the current withdrawal
+    // requested by user from the available balance that exists in the 
+    // channel state
+    // 
+    // out of channel balance amounts should be "subtracted" from 
+    // channel balance calculations. This way, we can enforce that
+    // out of channel balances are accounted for in the
+    // previous balance calculations
+    let reserves = {
+      amountWei: toBN(0),
+      amountToken: toBN(0),
+    }
+    let compiledPending = {
+      amountWei: toBN(0),
+      amountToken: toBN(0),
+    }
+    if (prevPending) {
+      // how much reserves were added into contract?
+      reserves = {
+        amountWei: maxBN(
+          curr.pendingWithdrawalWeiUser.sub(prev.balanceWeiHub),
+          toBN(0)
+        ),
+        amountToken: maxBN(
+          curr.pendingWithdrawalTokenUser.sub(prev.balanceTokenHub),
+          toBN(0),
+        )
+      }
+
+      // what pending updates need to be included?
+      // if you confirm a pending withdrawal, that
+      // balance is removed from the channel and
+      // channel balance is unaffected.
+      //
+      // if you confirm a pending deposit, that balance
+      // is absorbed into the channel balance
+      compiledPending = {
+        amountWei: prev.pendingDepositWeiHub
+          .add(prev.pendingDepositWeiUser)
+          .sub(prev.pendingWithdrawalWeiHub)
+          .sub(prev.pendingWithdrawalWeiUser),
+        amountToken: prev.pendingDepositTokenHub
+          .add(prev.pendingDepositTokenUser)
+          .sub(prev.pendingWithdrawalTokenHub)
+          .sub(prev.pendingWithdrawalTokenUser),
+      }
+
+    }
+
+    // reserves are only accounted for in channel balances in propose 
+    // pending states, where they are deducted to illustrate their
+    // brief lifespan in the channel where they are
+    // immediately deposited and withdrawn
+    const prevBal = this.calculateChannelTotals(prev, reserves)
+    const currBal = this.calculateChannelTotals(curr, compiledPending)
+
+    errs.push(this.enforceDelta([prevBal, currBal], toBN(0), Object.keys(prevBal)))
+    if (errs) {
+      return errs.filter(x => !!x)[0]
+    }
+    return null
+  }
+
+  private isValidStateTransitionRequest(prev: ChannelStateBN, request: UpdateRequest): string | null {
+    // @ts-ignore TODO: wtf 
+    const args = convertArgs("bn", request.reason, request.args)
+    // will fail on generation in wd if negative args supplied
+    let err = this.hasNegative(args, argNumericFields[request.reason])
+    if (err) {
+      return err
+    }
+    // apply update
+    const currStr = this.stateGenerator.createChannelStateFromRequest(prev, request)
+
+    const curr = convertChannelState("bn-unsigned", currStr)
+
+    err = this.isValidStateTransition(prev, curr)
+    if (err) {
+      return err
+    }
+    return null
+  }
+
+  public calculateChannelTotals(state: ChannelStateBN | UnsignedChannelStateBN, outOfChannel: PaymentBN) {
+    // calculate the total amount of wei and tokens in the channel
+    // the operational balance is any balance existing minus
+    // out of channel balance (reserves and previous deposits)
+
+    const total = {
+      totalChannelWei: state.balanceWeiUser
+        .add(state.balanceWeiHub)
+        .add(subOrZero(state.pendingWithdrawalWeiUser, state.pendingDepositWeiUser))
+        .add(subOrZero(state.pendingWithdrawalWeiHub, state.pendingDepositWeiHub))
+        .sub(outOfChannel.amountWei),
+      totalChannelToken: state.balanceTokenUser
+        .add(state.balanceTokenHub)
+        .add(subOrZero(state.pendingWithdrawalTokenUser, state.pendingDepositTokenUser))
+        .add(subOrZero(state.pendingWithdrawalTokenHub, state.pendingDepositTokenHub))
+        .sub(outOfChannel.amountToken),
+    }
+    return total
+  }
+
 
   private parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
     if (!txReceipt.logs) {

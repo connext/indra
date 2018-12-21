@@ -21,7 +21,7 @@ function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
 }
 
 export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult[] {
-  const sorted = [ ...xs, ...ys ]
+  let sorted = [...xs, ...ys]
   sorted.sort((a, b) => {
     // When threads are enabled, we'll need to make sure they are being
     // sorted correctly with respect to channel updates. See comments in
@@ -29,7 +29,30 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     if (a.type == 'thread' || b.type == 'thread')
       throw new Error('TODO: REB-36 (enable threads)')
 
+    // Always sort the current single unsigned state from the hub last
+    if (!a.update.txCount)
+      return 1
+
+    if (!b.update.txCount)
+      return -1
+
     return a.update.txCount - b.update.txCount
+  })
+
+  // Filter sorted to ensure there is just one update with a null txCount
+  let hasNull = false
+  sorted = sorted.filter(s => {
+    if (s.type == 'thread')
+      throw new Error('TODO: REB-36 (enable threads)')
+
+    if (!s.update.txCount) {
+      if (hasNull)
+        return false
+      hasNull = true
+      return true
+    }
+
+    return true
   })
 
   // Dedupe updates by iterating over the sorted updates and ignoring any
@@ -49,7 +72,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
       )
     }
 
-    if (next.update.txCount > cur.update.txCount) {
+    if (!next.update.txCount || next.update.txCount > cur.update.txCount) {
       deduped.push(next)
       continue
     }
@@ -89,6 +112,8 @@ export default class SyncController extends AbstractController {
 
   private poller: Poller
 
+  private flushErrorCount = 0
+
   constructor(name: string, connext: ConnextInternal) {
     super(name, connext)
     this.poller = new Poller(this.logger)
@@ -108,7 +133,7 @@ export default class SyncController extends AbstractController {
   async sync() {
     try {
       const hubUpdates = await this.hub.sync(
-        getTxCount(this.store) + 1,
+        getTxCount(this.store),
         getLastThreadId(this.store),
       )
       this.enqueueSyncResultsFromHub(hubUpdates)
@@ -142,17 +167,44 @@ export default class SyncController extends AbstractController {
   private async flushPendingUpdatesToHub() {
     const state = this.getSyncState()
     console.log(`Sending updates to hub: ${state.updatesToSync.map(u => u && u.reason)}`)
-    const hubUpdates = await this.hub.updateHub(
+    const res = await this.hub.updateHub(
       state.updatesToSync,
       getLastThreadId(this.store),
     )
 
-    const newState = this.getSyncState()
-    this.store.dispatch(actions.setSyncControllerState({
-      ...newState,
-      updatesToSync: state.updatesToSync.slice(state.updatesToSync.length),
-    }))
-    this.enqueueSyncResultsFromHub(hubUpdates)
+    let shouldRemoveUpdates = true
+
+    if (res.error) {
+      this.flushErrorCount += 1
+      const triesRemaining = 4 - this.flushErrorCount
+      console.error(
+        `Error sending updates to hub (will flush and reset ` +
+        `${triesRemaining ? `after ${triesRemaining} attempts` : `now`}): ` +
+        `${res.error}`
+      )
+
+      if (!triesRemaining) {
+        console.error(
+          'Too many failed attempts to send updates to hub; flushing all of ' +
+          'our updates. Updates being flushed:',
+          state.updatesToSync,
+        )
+      } else {
+        shouldRemoveUpdates = false
+      }
+    } else {
+      this.flushErrorCount = 0
+    }
+
+    if (shouldRemoveUpdates) {
+      const newState = this.getSyncState()
+      this.store.dispatch(actions.setSyncControllerState({
+        ...newState,
+        updatesToSync: state.updatesToSync.slice(state.updatesToSync.length),
+      }))
+    }
+
+    this.enqueueSyncResultsFromHub(res.updates)
   }
 
   /**
@@ -160,7 +212,7 @@ export default class SyncController extends AbstractController {
    */
   public enqueueSyncResultsFromHub(updates: SyncResult[]) {
     if (updates.length === undefined)
-      debugger;
+      throw new Error(`This should never happen, this was called incorrectly. An array of SyncResults should always have a defined length.`)
 
     if (updates.length == 0)
       return

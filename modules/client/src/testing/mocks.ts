@@ -192,14 +192,19 @@ export class MockHub implements IHubAPIClient {
   }
 
   async requestWithdrawal(params: WithdrawalParameters, txCountGlobal: number): Promise<SyncResult[]> {
+    const { withdrawalWeiUser, ...res } = params
     return [{
       type: 'channel',
       update: {
         reason: 'ProposePendingWithdrawal',
-        args: getWithdrawalArgs('full', {
-          ...params,
-          additionalWeiHubToUser: toBN(0),
-          additionalTokenHubToUser: toBN(0),
+        args: getWithdrawalArgs('empty', {
+          ...res,
+          targetWeiHub: '0',
+          targetWeiUser: '0',
+          targetTokenHub: '0',
+          targetTokenUser: '0',
+          additionalWeiHubToUser: '0',
+          additionalTokenHubToUser: '0',
           timeout: +(Date.now() / 1000 + 60).toFixed(),
         }),
         txCount: txCountGlobal + 1,
@@ -323,7 +328,7 @@ export class MockStore {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        channel: getChannelState("empty", overrides)
+        channel: getChannelState("empty", { txCountChain: 0, txCountGlobal: 0 }, overrides)
       }
     }
   }

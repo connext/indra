@@ -55,7 +55,7 @@ describe('BuyController: unit tests', () => {
           amountToken: '1',
           amountWei: '1',
         } as PaymentArgs,
-        txCount: 2,
+        txCount: 1,
         sigHub: mkHash('0x51512'),
       },
     }])
@@ -153,7 +153,7 @@ describe('BuyController: unit tests', () => {
           amountToken: '1',
           amountWei: '1',
         } as PaymentArgs,
-        txCount: 2,
+        txCount: 1,
         sigHub: '',
       },
     }])
@@ -172,7 +172,7 @@ describe('BuyController: unit tests', () => {
           amountToken: '1',
           amountWei: '1',
         } as PaymentArgs,
-        txCount: 2,
+        txCount: 1,
         sigHub: mkHash('0x90283'),
         sigUser: '',
       },

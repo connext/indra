@@ -1,9 +1,10 @@
 import { assert } from './testing/index'
 import * as t from './testing/index'
-import { StateGenerator } from './StateGenerator';
+import { StateGenerator, calculateExchange } from './StateGenerator';
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs } from './types';
+import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, convertFields } from './types';
 import { getChannelState, getWithdrawalArgs } from './testing'
+import { toBN } from './helpers/bn'
 
 
 const sg = new StateGenerator()
@@ -14,6 +15,7 @@ function createHigherNoncedChannelState(
   ...overrides: t.PartialSignedOrSuccinctChannel[]
 ) {
   const state = t.getChannelState('empty', {
+    recipient: prev.user,
     ...overrides[0],
     txCountGlobal: prev.txCountGlobal + 1,
   })
@@ -34,6 +36,8 @@ function createHigherNoncedThreadState(
 
 function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]) {
   const state = t.getChannelState('empty', {
+    user: t.mkAddress('0xAAA'),
+    recipient: t.mkAddress('0xAAA'),
     ...overrides[0],
     sigUser: t.mkHash('booty'),
     sigHub: t.mkHash('errywhere'),
@@ -222,7 +226,7 @@ describe('StateGenerator', () => {
       name: 'Hub send additional wei + tokens',
       prev: {
         balanceTokenHub: 11,
-        balanceWeiHub: 12,
+        balanceWeiHub: 11,
         balanceTokenUser: 5,
       },
       args: {
@@ -234,18 +238,18 @@ describe('StateGenerator', () => {
       },
       expected: {
         balanceTokenHub: 12,
-        pendingWithdrawalTokenHub: 1,
+        pendingWithdrawalTokenHub: 4,
 
-        balanceWeiHub: 12,
-        pendingDepositWeiHub: 1,
+        balanceWeiHub: 10,
+        pendingDepositWeiHub: 3,
 
         balanceTokenUser: 0,
-        pendingDepositTokenUser: 0,
+        pendingDepositTokenUser: 3,
         pendingWithdrawalTokenUser: 3,
 
         balanceWeiUser: 0,
-        pendingDepositWeiUser: 1 + 4,
-        pendingWithdrawalWeiUser: 1 + 4,
+        pendingDepositWeiUser: 4,
+        pendingWithdrawalWeiUser: 5,
       },
     },
 
@@ -285,6 +289,7 @@ describe('StateGenerator', () => {
         targetTokenHub: 20,
       },
       expected: {
+        balanceWeiUser: 0,
         balanceTokenUser: 2,
         pendingDepositWeiUser: 3,
         pendingWithdrawalWeiUser: 2,
@@ -307,12 +312,6 @@ describe('StateGenerator', () => {
         }))
         const s = convertChannelState('str-unsigned', sg.proposePendingWithdrawal(prev, args))
 
-        /*
-        console.log('args:', args)
-        console.log('prev:', prev)
-        console.log('new:', s)
-        */
-
         const expected = {
           ...prev,
           ...tc.expected,
@@ -323,6 +322,70 @@ describe('StateGenerator', () => {
 
         assert.deepEqual(s, convertChannelState('str-unsigned', expected))
       })
+    })
+  })
+
+  describe('calculateExchange', () => {
+    type ExchangeTest = {
+      seller: 'user' | 'hub'
+      exchangeRate: number
+      tokensToSell: number
+      weiToSell: number
+      expected: Partial<{
+        ws: number
+        ts: number
+        wr: number
+        tr: number
+      }>
+    }
+
+    const exchangeTests: Partial<ExchangeTest>[] = [
+      { tokensToSell: 10, expected: { ts: 10, wr: 2 } },
+      { tokensToSell: 4, expected: { tr: 4 } },
+      { weiToSell: 1, expected: { tr: 5, ws: 1 } },
+      { weiToSell: 2, expected: { tr: 10, ws: 2 } },
+      { weiToSell: 3, expected: { tr: 3 * 5, ws: 3 } },
+    ]
+
+    exchangeTests.forEach(_t => {
+      const t: ExchangeTest = {
+        exchangeRate: 5,
+        tokensToSell: 0,
+        weiToSell: 0,
+        ...(_t as any),
+      }
+      t.expected = {
+        ws: 0,
+        ts: 0,
+        wr: 0,
+        tr: 0,
+        ...t.expected,
+      }
+
+      for (const seller of ['user', 'hub']) {
+        const flip = (x: number | undefined) => seller == 'hub' ? -x! : x
+        it(seller + ': ' + JSON.stringify(_t), () => {
+          const actual = calculateExchange({
+            exchangeRate: '' + t.exchangeRate,
+            seller: seller as any,
+            tokensToSell: toBN(t.tokensToSell),
+            weiToSell: toBN(t.weiToSell),
+          })
+
+          assert.deepEqual({
+            weiSold: actual.weiSold.toString(),
+            weiReceived: actual.weiReceived.toString(),
+            tokensSold: actual.tokensSold.toString(),
+            tokensReceived: actual.tokensReceived.toString(),
+          }, {
+            weiSold: '' + flip(t.expected.ws),
+            weiReceived: '' + flip(t.expected.wr),
+            tokensSold: '' + flip(t.expected.ts),
+            tokensReceived: '' + flip(t.expected.tr),
+          })
+
+        })
+      }
     })
   })
 
@@ -445,15 +508,14 @@ describe('StateGenerator', () => {
     })
   })
 
-  // TODO: REB-29: Skipped until there's a decision made on whether the
-  // `recipient` should be added here.
-  describe.skip('confirmPending', () => {
+  describe('confirmPending', () => {
     it('should confirm a pending deposit', async () => {
       const prev = createPreviousChannelState({
         pendingDepositToken: [8, 4],
         pendingDepositWei: [1, 6],
+        recipient: t.mkHash('0x222')
       })
-    
+
       // For the purposes of these tests, ensure that the recipient is not the
       // same as the user so we can verify that `confirmPending` will change it
       // back to the user.

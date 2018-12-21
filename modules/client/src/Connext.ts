@@ -85,7 +85,10 @@ export interface IHubAPIClient {
   requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<SyncResult[]>
   requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<SyncResult[]>
   requestCollateral(txCountGlobal: number): Promise<SyncResult[]>
-  updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<SyncResult[]>
+  updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{
+    error: string | null
+    updates: SyncResult[]
+  }>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -251,7 +254,7 @@ class HubAPIClient implements IHubAPIClient {
   updateHub = async (
     updates: UpdateRequest[],
     lastThreadUpdateId: number,
-  ): Promise<SyncResult[]> => {
+  ): Promise<{ error: string | null, updates: SyncResult[] }> => {
     // post to hub
     const response = await this.networking.post(
       `channel/${this.user}/update`,

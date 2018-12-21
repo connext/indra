@@ -1,8 +1,13 @@
 import { ConnextStore } from '../state/store'
-import getChallengePeriod from './getChallengePeriod';
+import getMaxTimeout from './getMaxTimeout';
 
 export function validateTimestamp(store: ConnextStore, timeout: number) {
-  const challenge = getChallengePeriod(store)
+  // timeout will be 0 for request collateral
+  if (timeout === 0) {
+    return
+  }
+
+  const challenge = getMaxTimeout(store)
   const now = Math.floor(Date.now() / 1000)
   const delta = timeout - now
   if (delta > challenge || delta < 0) {

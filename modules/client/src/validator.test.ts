@@ -3,7 +3,7 @@ import * as t from './testing/index'
 import { Validator } from './validator';
 import * as sinon from 'sinon'
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, UnsignedThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN } from './types';
+import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, UnsignedThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs } from './types';
 import { toBN } from './helpers/bn';
 import Web3 = require('web3')
 import { EMPTY_ROOT_HASH } from './lib/constants';
@@ -400,9 +400,10 @@ describe('validator', () => {
       balanceToken: [5, 10]
     })
     const args: WithdrawalArgsBN = convertWithdrawal("bn", t.getWithdrawalArgs("empty", {
+      exchangeRate: '2',
       tokensToSell: 10,
-      withdrawalWei: [5, 5],
-      withdrawalTokenHub: 5,
+      targetWeiUser: 0,
+      targetWeiHub: 5,
     }))
 
     const withdrawalCases: { name: any, prev: ChannelStateBN, args: WithdrawalArgsBN, valid: boolean }[] = [
@@ -430,6 +431,12 @@ describe('validator', () => {
         args: { ...args, tokensToSell: toBN(20) },
         valid: false
       },
+      {
+        name: 'should return a string if the args result in an invalid transition',
+        prev,
+        args: { ...args, targetWeiUser: toBN(20), tokensToSell: toBN(0), additionalWeiHubToUser: toBN(30) },
+        valid: false
+      },
       // TODO: find out which args may result in this state from the
       // withdrawal function (if any) from wolever
       // {
@@ -452,8 +459,6 @@ describe('validator', () => {
     })
   })
 
-  // TODO: changes were made, merged into WIP PR 12/13
-  // these tests must be revisited in addition to other found bugs. 
   describe('confirmPending', () => {
     const depositReceipt = createMockedDepositTxReceipt("user", web3)
     const wdReceipt = createMockedWithdrawalTxReceipt("user", web3)
@@ -565,7 +570,7 @@ describe('validator', () => {
       },
       {
         name: 'should return a string if pending withdrawal wei hub is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingWithdrawalWeiHub: toBN(10) },
+        prev: { ...prevWd, pendingWithdrawalWeiHub: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
@@ -584,7 +589,7 @@ describe('validator', () => {
       {
         name: 'should return a string if pending withdrawal token user is not same in receipt and previous',
         prev: { ...prevWd, pendingWithdrawalTokenUser: toBN(10) },
-        stubs: [tx, depositReceipt],
+        stubs: [tx, wdReceipt],
         valid: false,
       },
       {
@@ -615,6 +620,7 @@ describe('validator', () => {
 
     confirmCases.forEach(async ({ name, prev, stubs, valid }) => {
       it(name, async () => {
+        console.log('prev', convertChannelState("str", prev))
         // set tx receipt stub
         validator.web3.eth.getTransaction = sinon.stub().returns(stubs[0])
         validator.web3.eth.getTransactionReceipt = sinon.stub().returns(stubs[1])
@@ -629,7 +635,7 @@ describe('validator', () => {
     })
   })
 
-  describe('openThread', () => {
+  describe.skip('openThread', () => {
 
     const params = createChannelThreadOverrides(2, { threadId: 70, receiver: t.mkAddress() })
     // contains 2 threads, one where user is sender 
@@ -738,7 +744,7 @@ describe('validator', () => {
     })
   })
 
-  describe('closeThread', () => {
+  describe.skip('closeThread', () => {
     const params = createChannelThreadOverrides(2, { sender: t.mkAddress('0x18'), receiver: sampleAddr })
     // contains 2 threads, one where user is sender 
     // one where user is receiver
@@ -817,7 +823,7 @@ describe('validator', () => {
     })
   })
 
-  describe('threadPayment', () => {
+  describe.skip('threadPayment', () => {
     const prev = createThreadState()
     const args = createThreadPaymentArgs()
 

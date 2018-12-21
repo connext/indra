@@ -195,40 +195,36 @@ export type DepositArgs<T=string> = {
   depositWeiUser: T,
   depositTokenHub: T,
   depositTokenUser: T,
+
   timeout: number,
 }
 export type DepositArgsBN = DepositArgs<BN>
 export type DepositArgsBigNumber = DepositArgs<BigNumber>
 
-export type WithdrawalArgs<T=string> = {
-  // If there is an exchange that happens during this withdrawal, this is the
-  // exchange rate that will be used.
-  // If the value is omitted, no exchange will be performed (and an error will
-  // be thrown if either `tokensToSell` or `weiToSell` are non-zero).
-  exchangeRate: string
+export type PendingArgs<T=string> = {
+  depositWeiUser: T
+  depositWeiHub: T
+  depositTokenUser: T
+  depositTokenHub: T
 
-  // The amount of wei or tokens the user is selling to the hub as part of this
-  // withdrawal.
-  // Notes:
-  // 1. The balance from selling wei/tokens is first applied to the balance
-  //    owed by an increase in `target*User`, then the remainder is transferred
-  //    to the `receiver`. For example, if the current state is:
-  //      balanceWeiUser: 0
-  //      balanceTokenUser: 15
-  //    And there is a withdrawal:
-  //      exchangeRate: 5
-  //      tokensToSell: 15
-  //      targetWeiUser: 1
-  //    Then the resulting state will be:
-  //      pendingDepositWeiUser: 1
-  //      pendingWithdrawalWeiUser: 2
-  //
-  // 2. While not explicitly an error, it does not make sense to provide both
-  //    values.
-  //
-  // 3. SpankChain does not support selling wei for tokens on withdrawal, so
-  //    that code path has not been implemented and will yield an error if
-  //    'weiToSell > 0'.
+  withdrawalWeiUser: T
+  withdrawalWeiHub: T
+  withdrawalTokenUser: T
+  withdrawalTokenHub: T
+
+  recipient: Address
+  timeout: number
+}
+export type PendingArgsBN = PendingArgs<BN>
+export type PendingArgsBigNumber = PendingArgs<BigNumber>
+
+export type PendingExchangeArgs<T=string> = ExchangeArgs<T> & PendingArgs<T>
+export type PendingExchangeArgsBN = PendingExchangeArgs<BN>
+export type PendingExchangeArgsBigNumber = PendingExchangeArgs<BigNumber>
+
+export type WithdrawalArgs<T=string> = {
+  seller: 'user' | 'hub' // who is initiating exchange
+  exchangeRate: string
   tokensToSell: T
   weiToSell: T
 
@@ -603,6 +599,29 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
+const proposePendingNumericArgs = [
+  'depositWeiUser',
+  'depositWeiHub',
+  'depositTokenUser',
+  'depositTokenHub',
+
+  'withdrawalWeiUser',
+  'withdrawalWeiHub',
+  'withdrawalTokenUser',
+  'withdrawalTokenHub',
+]
+
+export function convertProposePending<To extends NumericTypeName>(to: To, obj: PendingArgs<any>): PendingArgs<NumericTypes[To]> {
+  const fromType = getType(obj.depositWeiUser)
+  return convertFields(fromType, to, proposePendingNumericArgs, obj)
+}
+
+const proposePendingExchangeNumericArgs = proposePendingNumericArgs.concat(argNumericFields.Exchange)
+
+export function convertProposePendingExchange<To extends NumericTypeName>(to: To, obj: PendingExchangeArgs<any>): PendingExchangeArgs<NumericTypes[To]> {
+  const fromType = getType(obj.depositWeiUser)
+  return convertFields(fromType, to, proposePendingExchangeNumericArgs, obj)
+}
 
 const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
   Payment: convertPayment,

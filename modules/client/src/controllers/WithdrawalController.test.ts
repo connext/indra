@@ -13,7 +13,7 @@ describe('WithdrawalController: unit tests', () => {
     connext = new MockConnextInternal()
   })
 
-  it('should exchange all of users wei balance if total exchanged tokens under booty limit', async () => {
+  it('should withdraw all of users tokens', async () => {
     // add channel with initial booty balance to exchange and withdraw
     mockStore.setChannel({
       user,
@@ -21,7 +21,6 @@ describe('WithdrawalController: unit tests', () => {
       balanceToken: [0, 50],
     })
     mockStore.setExchangeRate({ 'USD': '5' })
-    // mockStore.setExchangeRate({ 'USD': '5' })
     connext = new MockConnextInternal({ user, store: mockStore.createStore() })
 
     await connext.start()
@@ -44,8 +43,13 @@ describe('WithdrawalController: unit tests', () => {
       reason: 'ProposePendingWithdrawal',
       args: {
         exchangeRate: '5',
+        recipient: mkAddress('0xRRR'),
         tokensToSell: '50',
-        ...params
+        weiToSell: '0',
+        targetWeiUser: '0',
+        targetWeiHub: '0',
+        targetTokenHub: '0',
+        additionalWeiHubToUser: '0',
       },
       sigUser: true,
       sigHub: false,
