@@ -34,13 +34,13 @@ import {
   ChannelStateBigNumber,
   SyncResult,
   WithdrawalParametersBigNumber,
+  ChannelStateBN,
 } from './vendor/connext/types'
 import { prettySafeJson } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
 import ThreadsService from './ThreadsService';
 import { SignerService } from './SignerService';
-import { emptyRootHash } from './vendor/connext/Utils';
 
 const LOG = log('ChannelsService') as any
 
@@ -331,6 +331,7 @@ export default class ChannelsService {
     )
 
     const withdrawalArgs: WithdrawalArgs = {
+      seller: 'user',
       exchangeRate: proposedExchangeRateBigNum.toFixed(),
       tokensToSell: params.tokensToSell.toFixed(),
       weiToSell: '0',
@@ -512,7 +513,7 @@ export default class ChannelsService {
           )
         }
         // we already have a double signed version, do nothing
-        return
+        return hubsVersionOfUpdate
       }
 
       // validate user sig against what we think the last update is
@@ -550,6 +551,7 @@ export default class ChannelsService {
     let unsignedChannelStateCurrent: UnsignedChannelState
     let generated: UnsignedChannelState
     let sigHub: string
+
     switch (update.reason) {
       case 'Payment':
         unsignedChannelStateCurrent = this.validator.generateChannelPayment(
@@ -580,28 +582,11 @@ export default class ChannelsService {
         // withdrawal -
         // user requests withdrawal -> hub responds with unsigned update
         // user signs and sends back here, which is where we are now
-        unsignedUpdateRedis = await this.redisGetUnsignedState(user)
-        if (!unsignedUpdateRedis) {
-          throw new Error(
-            `Hub could not retrieve the unsigned update, possibly expired?
-            user update: ${prettySafeJson(update)}`,
-          )
-        }
-
-        generated = await this.validator.generateChannelStateFromRequest(
-          convertChannelState('str', signedChannelStatePrevious),
-          {
-            args: unsignedUpdateRedis.args,
-            reason: unsignedUpdateRedis.reason,
-            txCount: signedChannelStatePrevious.txCountGlobal + 1
-          }
+        unsignedUpdateRedis = await this.loadAndCheckRedisStateSignature(
+          user,
+          signedChannelStatePrevious,
+          update,
         )
-
-        // validate that user sig matches our unsigned update that we proposed
-        this.validator.assertChannelSigner({
-          ...generated,
-          sigUser: update.sigUser,
-        })
 
         // dont await so we can do this in the background
         let data = this.contract.methods.hubAuthorizedUpdate(
@@ -634,55 +619,25 @@ export default class ChannelsService {
           data: data
         })
 
-        await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
-
-        sigHub = await this.signerService.getSigForChannelState(unsignedUpdateRedis.state)
-
-        return await this.channelsDao.applyUpdateByUser(
+        return await this.saveRedisStateUpdate(
           user,
-          update.reason,
-          user,
-          { ...unsignedUpdateRedis.state, sigUser: update.sigUser, sigHub },
-          update.args,
-          null,
-          txn.logicalId
+          unsignedUpdateRedis,
+          update,
+          txn.logicalId,
         )
 
       case 'Exchange':
         // ensure users cant hold exchanges
-        unsignedUpdateRedis = await this.redisGetUnsignedState(user)
-        if (!unsignedUpdateRedis) {
-          throw new Error(
-            `Hub could not retrieve the unsigned update, possibly expired?
-            user update: ${prettySafeJson(update)}`,
-          )
-        }
-
-        generated = await this.validator.generateChannelStateFromRequest(
-          convertChannelState('str', signedChannelStatePrevious),
-          {
-            args: unsignedUpdateRedis.args,
-            reason: unsignedUpdateRedis.reason,
-            txCount: signedChannelStatePrevious.txCountGlobal + 1
-          }
+        unsignedUpdateRedis = await this.loadAndCheckRedisStateSignature(
+          user,
+          signedChannelStatePrevious,
+          update,
         )
 
-        // validate that user sig matches our unsigned update that we proposed
-        this.validator.assertChannelSigner({
-          ...generated,
-          sigUser: update.sigUser,
-        })
-
-        await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
-
-        sigHub = await this.signerService.getSigForChannelState(unsignedUpdateRedis.state)
-
-        return await this.channelsDao.applyUpdateByUser(
+        return await this.saveRedisStateUpdate(
           user,
-          update.reason,
-          user,
-          { ...unsignedUpdateRedis.state, sigUser: update.sigUser, sigHub },
-          update.args
+          unsignedUpdateRedis,
+          update,
         )
 
       case 'OpenThread':
@@ -779,7 +734,7 @@ export default class ChannelsService {
       pushChannel({
         args: unsigned.args,
         reason: unsigned.reason,
-        txCount: lastTxCount + 1
+        txCount: null
       })
     }
 
@@ -809,11 +764,12 @@ export default class ChannelsService {
     user: string,
   ): Promise<ChannelStateUpdate | null> {
     const unsignedUpdate = await this.redis.get(`PendingStateUpdate:${user}`)
+    console.log('`PendingStateUpdate:${user}`: ', `PendingStateUpdate:${user}`);
     return unsignedUpdate ? JSON.parse(unsignedUpdate) : null
   }
 
   private async redisSaveUnsignedState(user: string, state: ChannelStateUpdate) {
-    await this.redis.set(`PendingStateUpdate:${user}`, JSON.stringify(state), [
+    const redis = await this.redis.set(`PendingStateUpdate:${user}`, JSON.stringify(state), [
       'EX',
       5 * 60,
     ])
@@ -821,5 +777,66 @@ export default class ChannelsService {
 
   private async redisDeleteUnsignedState(user: string) {
     this.redis.del(`PendingStateUpdate:${user}`)
+  }
+
+  private async loadAndCheckRedisStateSignature(
+    user: string,
+    currentState: ChannelStateBN,
+    update: UpdateRequestBigNumber,
+  ) {
+    const fromRedis = await this.redisGetUnsignedState(user)
+    if (!fromRedis) {
+      throw new Error(
+        `Hub could not retrieve the unsigned update, possibly expired?
+        user update: ${prettySafeJson(update)}`,
+      )
+    }
+
+    if (update.txCount != currentState.txCountGlobal + 1) {
+      throw new Error(
+        `Half-signed ${update.reason} from client has out-of-date txCount ` +
+        `(update.txCount: ${update.txCount}, ` +
+        `expected: ${currentState.txCountGlobal + 1}); ` +
+        `update: ${prettySafeJson(update)}`
+      )
+    }
+
+    const generated = await this.validator.generateChannelStateFromRequest(
+      convertChannelState('str', currentState),
+      {
+        args: fromRedis.args,
+        reason: fromRedis.reason,
+        txCount: currentState.txCountGlobal + 1
+      }
+    )
+
+    // validate that user sig matches our unsigned update that we proposed
+    this.validator.assertChannelSigner({
+      ...generated,
+      sigUser: update.sigUser,
+    })
+
+    return fromRedis
+  }
+
+  private async saveRedisStateUpdate(
+    user: string,
+    redisUpdate: ChannelStateUpdate,
+    update: UpdateRequestBigNumber,
+    txnId?: number,
+  ) {
+    await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
+
+    const sigHub = await this.signerService.getSigForChannelState(redisUpdate.state)
+
+    return await this.channelsDao.applyUpdateByUser(
+      user,
+      update.reason,
+      user,
+      { ...redisUpdate.state, sigUser: update.sigUser, sigHub },
+      update.args,
+      null,
+      txnId
+    )
   }
 }

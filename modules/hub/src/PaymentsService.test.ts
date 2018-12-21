@@ -200,10 +200,10 @@ describe('PaymentsService', () => {
     assert.deepEqual(newSenderChannel, oldSenderChannel)
   })
 
-  it('custodial payment should collateralize recipient channel', async () => {
+  it('custodial payment should collateralize recipient channel with failing tip', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
-      balanceTokenUser: tokenVal(5),
+      balanceTokenUser: toWeiString(5),
     })
 
     const receiverChannel = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
@@ -212,7 +212,7 @@ describe('PaymentsService', () => {
       recipient: receiverChannel.user,
       amount: {
         amountWei: '0',
-        amountToken: tokenVal(1),
+        amountToken: toWeiString(1),
       },
       meta: {},
       type: 'PT_CHANNEL',
@@ -222,7 +222,7 @@ describe('PaymentsService', () => {
         txCount: senderChannel.state.txCountGlobal + 1,
         args: {
           amountWei: '0',
-          amountToken: tokenVal(1),
+          amountToken: toWeiString(1),
           recipient: 'hub'
         },
       } as UpdateRequest,
@@ -243,6 +243,50 @@ describe('PaymentsService', () => {
     )
     assertChannelStateEqual(collateralState, {
       pendingDepositTokenHub: toWeiString(50)
+    })
+  })
+
+  it('custodial payment should collateralize recipient channel and still send tip', async () => {
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: mkAddress('0xa'),
+      balanceTokenUser: toWeiString(5),
+    })
+
+    const receiverChannel = await channelUpdateFactory(registry, { user: mkAddress('0xb'), balanceTokenHub: toWeiString(1) })
+
+    const payments: PurchasePayment[] = [{
+      recipient: receiverChannel.user,
+      amount: {
+        amountWei: '0',
+        amountToken: toWeiString(1),
+      },
+      meta: {},
+      type: 'PT_CHANNEL',
+      update: {
+        reason: 'Payment',
+        sigUser: mkSig('0xa'),
+        txCount: senderChannel.state.txCountGlobal + 1,
+        args: {
+          amountWei: '0',
+          amountToken: toWeiString(1),
+          recipient: 'hub'
+        },
+      } as UpdateRequest,
+    }]
+
+    // The purcahse request should fail because there's no channel with the
+    // recipient
+    const purchase = await service.doPurchase(senderChannel.user, {}, payments)
+
+    const updates = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
+    const latest = updates.pop()
+    assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
+    const collateralState = stateGenerator.proposePendingDeposit(
+      convertChannelState('bn', receiverChannel.state),
+      convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
+    )
+    assertChannelStateEqual(collateralState, {
+      pendingDepositTokenHub: toWeiString(49)
     })
   })
 

@@ -127,7 +127,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         WHERE 
           "user" = ${user} AND
           contract = ${this.config.channelManagerAddress} AND
-          tx_count_global >= ${txCount} AND
+          tx_count_global > ${txCount} AND
           invalid IS NULL
         ORDER BY tx_count_global ASC
       `)

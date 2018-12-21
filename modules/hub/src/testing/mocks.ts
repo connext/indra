@@ -194,6 +194,7 @@ export const mockServices: any = {
       return client
     },
     dependencies: ['Config'],
+    isSingleton: true
   },
 
   'PgPoolService': {

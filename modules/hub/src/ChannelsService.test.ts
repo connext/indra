@@ -29,10 +29,6 @@ import {
   PaymentArgs,
   isBigNum,
   convertWithdrawal,
-  convertPayment,
-  ExchangeArgs,
-  ExchangeArgsBigNumber,
-  DepositArgsBigNumber,
   Payment,
 } from './vendor/connext/types'
 import Web3 = require('web3')
@@ -47,7 +43,6 @@ import PaymentsService from './PaymentsService';
 import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
 import Config from './Config';
 import { BigNumber } from 'bignumber.js/bignumber'
-import { emptyRootHash } from './vendor/connext/Utils';
 
 // TODO: extract web3
 
@@ -322,8 +317,9 @@ describe('ChannelsService', () => {
    *  > tweakBalance(1, -1)
    *  '0.999...999'
    */
-  function tweakBalance(ethAmt: number, weiAmt: number): string {
-    return Big(ethAmt).add(Big(weiAmt).div('1e18')).toFixed()
+  function tweakBalance(ethAmt: number, weiAmt: number, mul = false): string {
+    const res = Big(ethAmt).add(Big(weiAmt).div('1e18'))
+    return (mul ? res.mul('1e18') : res).toFixed()
   }
 
   const exchangeTests: ExchangeTestType[] = [
@@ -372,7 +368,7 @@ describe('ChannelsService', () => {
 
       expected: {
         balanceWeiUser: Big(10).div(123.45).mul('1e18').floor().div('1e18').toFixed(),
-        balanceTokenUser: 10,
+        balanceTokenUser: tweakBalance(10, 28),
       },
     },
 
@@ -567,7 +563,7 @@ describe('ChannelsService', () => {
     assertChannelStateEqual(state, {
       pendingDepositTokenHub: toWeiString(collateralizationTarget)
     })
-  })
+  }).timeout(5000)
 
   it('should onboard a performer with an onchain hubAuthorizedUpdate', async () => {
     const user = mkAddress('0xabc')
@@ -667,8 +663,8 @@ describe('ChannelsService', () => {
       balanceWeiUser: Big(channel.state.balanceWeiUser).plus(
         expectedExchangeAmountWei,
       ),
-      balanceTokenHub: toWeiString(10),
-      balanceTokenUser: toWeiString(10),
+      balanceTokenHub: tweakBalance(10, -28, true),
+      balanceTokenUser: tweakBalance(10, 28, true),
       txCount: [2, 1],
     })
   })
@@ -702,7 +698,7 @@ describe('ChannelsService', () => {
       balanceTokenUser: toWeiString(9),
       balanceWeiHub: '0',
       balanceWeiUser: toWeiBigNum(0),
-      pendingWithdrawalTokenHub: toWeiBigNum(11),
+      pendingWithdrawalTokenHub: tweakBalance(11, -174, true),
       pendingWithdrawalWeiHub: toWeiBigNum(0),
       pendingDepositWeiUser: Big('8100445524503847'),
       pendingWithdrawalWeiUser: '8100445524503847',
@@ -738,7 +734,7 @@ describe('ChannelsService', () => {
       pendingWithdrawalWeiUser: '3008100445524503847',
       pendingWithdrawalTokenHub: '0',
       pendingDepositWeiUser: '8100445524503847',
-      pendingDepositTokenHub: config.channelBeiLimit.sub(toWeiBigNum(1)),
+      pendingDepositTokenHub: config.channelBeiLimit.sub(toWeiBigNum(1).sub(174)),
     })
   })
 
@@ -781,7 +777,7 @@ describe('ChannelsService', () => {
           }),
         )
         assert.containSubset(actualArgs, convertWithdrawal('str', expected))
-      })
+      }).timeout(5000)
     })
   })
 
