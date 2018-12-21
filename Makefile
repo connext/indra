@@ -34,10 +34,17 @@ docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 registry=docker.io
-log=@echo;echo;echo "[Makefile] => Building $@"
+
+log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
+log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
 # Begin Phony Rules
 .PHONY: default all dev prod clean stop purge deploy deploy-live test
+
+debug:
+	$(log_start)
+	sleep 2
+	$(log_finish)
 
 default: dev
 all: dev prod
@@ -84,79 +91,79 @@ test: hub
 client: client-js
 
 client-js: client-node-modules
-	$(log)
+	$(log_start)
 	$(docker_run_in_client) "yarn build"
-	touch build/client-js
+	$(log_finish) && touch build/client-js
 
 client-node-modules: $(project)_builder $(client)/package.json
-	$(log)
+	$(log_start)
 	$(docker_run_in_client) "yarn install --network-timeout 1000000"
-	touch build/client-node-modules
+	$(log_finish) && touch build/client-node-modules
 
 # Hub
 
 hub-prod: hub-js
-	$(log)
+	$(log_start)
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
-	touch build/hub-prod
+	$(log_finish) && touch build/hub-prod
 
 hub: hub-js
-	$(log)
+	$(log_start)
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
-	touch build/hub
+	$(log_finish) && touch build/hub
 
 hub-js: hub-node-modules $(hub_prereq)
-	$(log)
+	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
-	touch build/hub-js
+	$(log_finish) && touch build/hub-js
 
 hub-node-modules: $(project)_builder $(hub)/package.json
-	$(log)
+	$(log_start)
 	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
-	touch build/hub-node-modules
+	$(log_finish) && touch build/hub-node-modules
 
 # Database
 
 database-prod: database
-	$(log)
+	$(log_start)
 	docker tag $(project)_database:dev $(project)_database:latest
-	touch build/database-prod
+	$(log_finish) && touch build/database-prod
 
 database: database-node-modules migration-templates $(db_prereq)
-	$(log)
+	$(log_start)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
-	touch build/database
+	$(log_finish) && touch build/database
 
 migration-templates: $(db_prereq)
-	$(log)
+	$(log_start)
 	$(docker_run_in_db) "make"
-	touch build/migration-templates
+	$(log_finish) && touch build/migration-templates
 
 database-node-modules: $(project)_builder $(db)/package.json
-	$(log)
+	$(log_start)
 	$(docker_run_in_db) "yarn install"
-	touch build/database-node-modules
+	$(log_finish) && touch build/database-node-modules
 
 # Contracts
 
 ethprovider: contract-artifacts
-	$(log)
+	$(log_start)
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
-	touch build/ethprovider
+	$(log_finish) && touch build/ethprovider
 
 contract-artifacts: contract-node-modules
-	$(log)
+	$(log_start)
 	$(docker_run_in_contracts) "yarn build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
-	touch build/contract-artifacts
+	$(log_finish) && touch build/contract-artifacts
 
 contract-node-modules: $(project)_builder $(contracts)/package.json
-	$(log)
+	$(log_start)
 	$(docker_run_in_contracts) "yarn install --network-timeout 1000000"
-	touch build/contract-node-modules
+	$(log_finish) && touch build/contract-node-modules
 
 # Builder
 $(project)_builder: ops/builder.dockerfile ops/permissions-fixer.sh
-	$(log)
+	$(log_start)
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
-	touch build/$(project)_builder
+	$(log_finish) && touch build/$(project)_builder
