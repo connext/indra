@@ -10,6 +10,7 @@ import { Utils } from './vendor/connext/Utils'
 import abi from './abi/ChannelManager'
 import { BigNumber } from 'bignumber.js'
 import { sleep } from './util'
+import { SignerService } from "./SignerService";
 
 const LOG = log('ChainsawService')
 
@@ -28,6 +29,8 @@ export default class ChainsawService {
 
   private web3: any
 
+  private signerService: SignerService
+
   private contract: ChannelManager
 
   private channelsDao: ChannelsDao
@@ -38,7 +41,15 @@ export default class ChainsawService {
 
   private config: Config
 
-  constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config) {
+  constructor(
+    signerService: SignerService,
+    chainsawDao: ChainsawDao,
+    channelsDao: ChannelsDao,
+    web3: any,
+    utils: Utils,
+    config: Config
+  ) {
+    this.signerService = signerService
     this.chainsawDao = chainsawDao
     this.channelsDao = channelsDao
     this.utils = utils
@@ -224,7 +235,9 @@ export default class ChainsawService {
       timeout: 0
     }
     const hash = this.utils.createChannelStateHash(state)
-    const sigHub = await this.web3.eth.sign(hash, this.hubAddress)
+
+    const sigHub = await this.signerService.sign(hash)
+
     // TODO
     await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.hubAddress, {
       ...state,

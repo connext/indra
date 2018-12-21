@@ -41,11 +41,6 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 # Begin Phony Rules
 .PHONY: default all dev prod clean stop purge deploy deploy-live test
 
-debug:
-	$(log_start)
-	sleep 2
-	$(log_finish)
-
 default: dev
 all: dev prod
 dev: client database ethprovider hub

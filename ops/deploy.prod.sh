@@ -137,9 +137,11 @@ services:
       - postgres
     secrets:
       - connext_database
+      - private_key
     environment:
       NODE_ENV: production
       POLLING_INTERVAL: 2000
+      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       ETH_RPC_URL: $ETH_RPC_URL
       WALLET_ADDRESS: $WALLET_ADDRESS

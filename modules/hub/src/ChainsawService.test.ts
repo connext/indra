@@ -11,6 +11,7 @@ import {Utils, emptyRootHash} from './vendor/connext/Utils'
 import {PgPoolServiceForTest} from './testing/mocks'
 import {BigNumber} from 'bignumber.js'
 import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
+import { SignerService } from "./SignerService";
 
 const GAS_PRICE = '1000000000'
 
@@ -20,6 +21,7 @@ describe.skip('ChainsawService', () => {
   const registry = getTestRegistry()
   let clock: sinon.SinonFakeTimers
 
+  let signer: SignerService
   let csDao: ChainsawDao
   let chanDao: ChannelsDao
   let utils: Utils
@@ -62,7 +64,8 @@ describe.skip('ChainsawService', () => {
     csDao = new PostgresChainsawDao(engine, config)
     chanDao = new PostgresChannelsDao(engine, config)
     utils = new Utils()
-    cs = new ChainsawService(csDao, chanDao, w3, utils, config)
+    signer = new SignerService(w3, utils, config)
+    cs = new ChainsawService(signer, csDao, chanDao, w3, utils, config)
   })
 
   after(async () => {
