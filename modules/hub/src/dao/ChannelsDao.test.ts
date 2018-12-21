@@ -1,73 +1,55 @@
 import * as chai from 'chai'
 import { assert } from 'chai'
 chai.use(require('@spankchain/chai-subset'))
-import DBEngine from '../DBEngine'
-import { PostgresChannelsDao } from './ChannelsDao'
-import crypto = require('crypto')
-import { getTestRegistry, getTestConfig } from '../testing'
-import { getChannelState, assertChannelStateEqual, mkAddress, mkSig } from '../testing/stateUtils'
-import { insertChannel } from '../testing/dbUtils'
-import { PaymentArgs } from '../vendor/connext/types';
+import ChannelsDao from './ChannelsDao'
+import { getTestRegistry } from '../testing'
+import { assertChannelStateEqual } from '../testing/stateUtils'
+import { convertChannelState } from '../vendor/connext/types';
+import { channelUpdateFactory } from '../testing/factories';
 
 describe('ChannelsDao', () => {
-  const registry = getTestRegistry({
-    Config: getTestConfig({
-      channelManagerAddress: '0x821aea9a577a9b44299b9c15c88cf3087f3b5544',
-    }),
-  })
+  const registry = getTestRegistry()
 
-  let db: DBEngine
-  let dao: PostgresChannelsDao
+  let dao: ChannelsDao = registry.get('ChannelsDao')
 
   beforeEach(async () => {
-    dao = registry.get('ChannelsDao')
-    db = registry.get('DBEngine')
+    await registry.clearDatabase()
   })
 
   it('should retrieve the channel status with the latest state', async () => {
-    const hub = mkAddress('0x1')
-    const user = mkAddress('0x2')
-    const contractAddress = '0x821aea9a577a9b44299b9c15c88cf3087f3b5544'
-    const sigUser = mkSig('0xa')
-    const sigHub = mkSig('0xb')
-
-    const channelState = getChannelState('full', {
-      user,
-      contractAddress,
+    const c = await channelUpdateFactory(registry, {
       balanceWei: [100, 200],
       balanceToken: [300, 400],
     })
 
-    await insertChannel(db, hub, channelState)
-
-    const channelUpdate = getChannelState('full', {
-      user,
-      contractAddress,
+    await channelUpdateFactory(registry, {
+      txCountGlobal: c.state.txCountGlobal + 1,
       balanceWei: [150, 150],
       balanceToken: [370, 330],
-      sigHub,
-      sigUser,
     })
 
-    await dao.applyUpdateByUser(user, 'ConfirmPending', user, channelUpdate, {})
-
-    const channel = await dao.getChannelByUser(user)
+    const channel = await dao.getChannelByUser(c.user)
 
     assert.equal(channel.status, 'CS_OPEN')
 
-    assertChannelStateEqual(channel.state, {
-      balanceWeiHub: channelUpdate.balanceWeiHub,
-      balanceWeiUser: channelUpdate.balanceWeiUser,
-      balanceTokenHub: channelUpdate.balanceTokenHub,
-      balanceTokenUser: channelUpdate.balanceTokenUser,
-      pendingDepositWeiHub: channelUpdate.pendingDepositWeiHub,
-      pendingDepositWeiUser: channelUpdate.pendingDepositWeiUser,
-      pendingDepositTokenHub: channelUpdate.pendingDepositTokenHub,
-      pendingDepositTokenUser: channelUpdate.pendingDepositTokenUser,
-      pendingWithdrawalWeiHub: channelUpdate.pendingWithdrawalWeiHub,
-      pendingWithdrawalWeiUser: channelUpdate.pendingWithdrawalWeiUser,
-      pendingWithdrawalTokenHub: channelUpdate.pendingWithdrawalTokenHub,
-      pendingWithdrawalTokenUser: channelUpdate.pendingWithdrawalTokenUser,
-    })
+    assertChannelStateEqual(
+      convertChannelState('str', channel.state), 
+      {
+        balanceWeiHub: '150',
+        balanceWeiUser: '150',
+        balanceTokenHub: '370',
+        balanceTokenUser: '330',
+      }
+    )
+  })
+
+  it('should inflate number types correctly', async () => {
+    const channel = await channelUpdateFactory(registry)
+
+    const chan = await dao.getChannelByUser(channel.user)
+    
+    assert.equal(JSON.stringify(chan.state.txCountGlobal), '1')
+    assert.equal(typeof chan.state.txCountChain, 'number')
+    assert.equal(typeof chan.state.threadCount, 'number')
   })
 })

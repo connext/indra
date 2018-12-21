@@ -8,8 +8,10 @@ export function maxBN(a: BN, b: BN): BN {
   return a.gte(b) ? a : b
 }
 
-export function minBN(a: BN, b: BN): BN {
-  return a.lte(b) ? a : b
+export function minBN(a: BN, ...bs: BN[]): BN {
+  for (let b of bs)
+    a = a.lte(b) ? a : b
+  return a
 }
 
 // this function uses string manipulation

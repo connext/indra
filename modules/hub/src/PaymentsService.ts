@@ -1,5 +1,5 @@
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary } from "./vendor/connext/types";
+import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -7,12 +7,11 @@ import ChannelsDao from "./dao/ChannelsDao";
 import Config from "./Config";
 import { prettySafeJson } from "./util";
 import { Big } from "./util/bigNumber";
-import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
-import { sign } from "cookie-signature";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
+import { PurchaseRowWithPayments } from "./domain/Purchase";
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -66,6 +65,7 @@ export default class PaymentsService {
     payments: PurchasePayment[],
   ): Promise<MaybeResult<{ purchaseId: string }>> {
     const purchaseId = this.generatePurchaseId()
+    const custodialPayments: Array<{ user: string, payment: PurchasePayment, paymentId: number }> = []
 
     for (let payment of payments) {
       let row: { id?: number }
@@ -74,18 +74,22 @@ export default class PaymentsService {
       if (payment.type == 'PT_CHANNEL') {
         // normal payment
         // TODO: should we check if recipient == hub here?
-        row = (await this.channelsService.doUpdates(user, [{
+        row = await this.channelsService.doUpdateFromWithinTransaction(user, {
           args: payment.update.args,
           reason: 'Payment',
           sigUser: payment.update.sigUser,
           txCount: payment.update.txCount
-        }]))[0]
+        })
 
         // If the payment's recipient is not the hub, create an instant
         // custodial payment (but only after the row in `payments` has been
         // created, since the `custodial_payments` table references that row)
-        if (payment.recipient !== this.config.hotWalletAddress)
-          afterPayment = paymentId => this.doInstantCustodialPayment(user, payment, paymentId)
+        if (payment.recipient !== this.config.hotWalletAddress) {
+          // check if the recipient needs collateralization since they are getting paid
+          await this.channelsService.doCollateralizeIfNecessary(payment.recipient)
+
+          afterPayment = paymentId => custodialPayments.push({ user, payment, paymentId })
+        }
 
       } else if (payment.type == 'PT_THREAD') {
         row = await this.threadsService.update(
@@ -100,7 +104,6 @@ export default class PaymentsService {
       // Note: this handling of meta isn't ideal. In the future, we should have
       // a Purchase table to store the purchase metadata instead of merging it
       // into payment metadata.
-      console.log('row: ', row);
       const paymentId = await this.paymentMetaDao.save(purchaseId, row.id, {
         recipient: payment.recipient,
         amount: payment.amount,
@@ -114,13 +117,44 @@ export default class PaymentsService {
         await afterPayment(paymentId)
     }
 
+    for (let p of custodialPayments) {
+      await this.doInstantCustodialPayment(p.payment, p.paymentId)
+    }
+
     return {
       error: false,
       res: { purchaseId }
     }
   }
 
-  private async doInstantCustodialPayment(user: string, payment: PurchasePayment, paymentId: number): Promise<void> {
+  public async doPurchaseById(id: string): Promise<PurchaseRowWithPayments> {
+    const payments = await this.paymentMetaDao.byPurchase(id)
+    if (!payments.length)
+      return
+
+    const totalAmount: Payment = {
+      amountWei: '0',
+      amountToken: '0',
+    }
+    for (let payment of payments) {
+      totalAmount.amountWei = Big(totalAmount.amountWei).add(payment.amount.amountWei).toFixed()
+      totalAmount.amountToken = Big(totalAmount.amountToken).add(payment.amount.amountToken).toFixed()
+    }
+
+    // TODO: this is a bit of a hack because we aren't totally tracking
+    // purchases right now. In the future the `payments[0]` bits will be
+    // replaced with an actual payments row.
+    return {
+      purchaseId: id,
+      createdOn: payments[0].createdOn,
+      sender: payments[0].sender,
+      meta: { todo: 'this will be filled in later' },
+      amount: totalAmount,
+      payments,
+    }
+  }
+
+  private async doInstantCustodialPayment(payment: PurchasePayment, paymentId: number): Promise<void> {
     const paymentUpdate = payment.update as UpdateRequest
 
     const recipientChannel = await this.channelsDao.getChannelByUser(payment.recipient)

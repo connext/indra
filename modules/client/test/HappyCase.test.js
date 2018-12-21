@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const axios = require('axios');
-const ChannelManager = require('../contracts/build/contracts/ChannelManager.json') 
+const ChannelManager = require('./ChannelManager.json')
 
 const url = 'http://indra.bohendo.com:3000'
 const eth_provider = ethers.getDefaultProvider('ropsten');
@@ -33,7 +33,7 @@ async function authApiServiceTest() {
     try {
       // Send signed challenge response
       res = await axios.post(url + '/auth/response', challengeData)
-      console.log(res.data.token)
+      console.log(`Successful challeng/response, got token: ${res.data.token}`)
     } catch(e) {
       console.log(e)
     }
@@ -52,8 +52,9 @@ async function channelApiServiceDepositTest() {
       lastThreadUpdateId: 0
     })
 
-    let state = res.data[res.data.length - 1].state.state
-    console.log(state, res.data.length)
+    console.log(`Got ${res.data.length} states`)
+    let state = res.data[res.data.length - 1]
+    console.log(state)
 
     let gas = await CMsigner.estimate.userAuthorizedUpdate(
       state.recipient, // recipient

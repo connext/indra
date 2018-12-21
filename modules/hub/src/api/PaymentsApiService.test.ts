@@ -19,6 +19,10 @@ describe('PaymentsApiService', () => {
   const app: TestApiServer = registry.get('TestApiServer')
   const config: Config = registry.get('Config')
 
+  beforeEach(async () => {
+    await registry.clearDatabase()
+  })
+
   it('should work', async () => {
     const chan = await channelUpdateFactory(registry, {
       balanceTokenUser: tokenVal(10),
@@ -64,6 +68,46 @@ describe('PaymentsApiService', () => {
         amountToken: tokenVal(1),
       },
     })
+  })
 
+  it('should work for instant custodial payment', async () => {
+    const sender = await channelUpdateFactory(registry, {
+      balanceTokenUser: tokenVal(10),
+    })
+
+    const receiver = await channelUpdateFactory(registry, {
+      balanceTokenHub: tokenVal(1),
+    })
+
+    const res = await app.withUser(sender.user).request
+      .post('/payments/purchase')
+      .send({
+        meta: {},
+        payments: [
+          {
+            recipient: receiver.user,
+            amount: {
+              amountWei: '0',
+              amountToken: tokenVal(1),
+            },
+            meta: {},
+            type: 'PT_CHANNEL',
+            update: {
+              reason: 'Payment',
+              sigUser: sender.state.sigUser,
+              txCount: sender.state.txCountGlobal + 1,
+              args: {
+                amountWei: '0',
+                amountToken: tokenVal(1),
+                recipient: 'hub'
+              }
+            },
+          }
+        ] as PurchasePayment[]
+      })
+
+    assert.equal(res.status, 200, JSON.stringify(res.body))
+    const { purchaseId } = res.body
+    assert.ok(purchaseId)
   })
 })

@@ -1,4 +1,4 @@
-# indra
+# Indra
 
 Everything you need to set up a Connext payment channel hub.
 
@@ -14,9 +14,32 @@ The `master` branch contains deployment scripts in the `./ops` directory. Check 
 - [Docker](https://www.docker.com/) (required)
 - [Node.js](https://nodejs.org/en/) + [Yarn](https://yarnpkg.com/lang/en/docs/install/#mac-stable) (recommended)
 
-### tl;dr
+### TL;DR
 
-`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode
+**Local development is easy**
+
+`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode. Beware: the first time this is run it will take a long time but subsequent builds will happen much more quickly.
+
+**To deploy to production: First, deploy the contract & docker images**
+
+`make deploy` <- this will build the project's docker images and push them to docker hub
+
+When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `me` variable at the top of the Makefile before running `make deploy`.
+
+To deploy the ChannelManager Contract:
+
+```
+cd modules/contracts && yarn install
+# the space at the beginning of the command below will prevent this
+# command (& the mnemoic) from being stored in your shell's history
+  MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network ropsten -from 3 --to 3
+```
+
+**Then, deploy your payment hub**
+
+`bash ops/deploy.prod.sh` <- Assuming the docker images have been built & pushed to a registry, this will pull & deploy them in an environment suitable for production.
+
+Again, it runs `whoami` to get the current username & tries to use that as the repository name to pull docker images from. If your docker hub username is different, then update the repository at the top of the `deploy.prod.sh` script before deploying.
 
 #### Details
 

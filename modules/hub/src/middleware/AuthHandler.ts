@@ -31,13 +31,6 @@ export class DefaultAuthHandler implements AuthHandler {
 
     const roles = []
 
-    LOG.info('Received auth header: {authHeader}', {
-      authHeader
-    });
-    LOG.info('Service user key: {key}', {
-      key: this.config.serviceUserKey
-    });
-
     if (req.session && req.session.address) {
       roles.push(Role.AUTHENTICATED)
 

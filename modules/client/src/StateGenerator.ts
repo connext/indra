@@ -12,13 +12,90 @@ import {
   ThreadStateBN,
   convertChannelState,
   PaymentBN,
+  Payment,
+  UnsignedChannelStateBN,
+  PendingArgsBN,
+  PendingExchangeArgsBN,
+  ChannelUpdateReason,
+  UpdateRequestBN,
 } from "./types";
 import { toBN, mul, minBN, maxBN } from "./helpers/bn";
 import BN = require('bn.js')
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
-export const DEFAULT_EXCHANGE_MULTIPLIER = 1000000
+const EXCHANGE_MULTIPLIER = 1000000000
+const EXCHANGE_MULTIPLIER_BN = toBN(EXCHANGE_MULTIPLIER)
+
+/**
+ * Calculate the amount of wei/tokens to sell/recieve from the perspective of
+ * the user.
+ *
+ * If the 'seller' is the hub, the amounts will be multiplied by -1 so callers
+ * can apply the values as if they were from the perspective of the user.
+ *
+ * Note: because the number of tokens being sold may not cleanly divide into
+ * the exchange rate, the number of tokens sold (ie, 'res.tokensSold') may be
+ * slightly lower than the number of tokens reqested to sell (ie,
+ * 'args.tokensToSell'). For this reason, it's important that callers use the
+ * 'tokensSold' field to calculate how many tokens are being transferred::
+ *
+ *   const exchange = calculateExchange(...)
+ *   state.balanceWeiUser -= exchange.weiSold
+ *   state.balanceTokenUser -= exchange.tokensSold
+ *   state.balanceWeiHub += exchange.weiReceived
+ *   state.balanceTokenHub += exchange.tokensReceived
+ *
+ */
+export function calculateExchange(args: ExchangeArgsBN) {
+  // Assume the exchange is done from the perspective of the user. If it's
+  // the hub, multiply all the values by -1 so the math will still work.
+  if (args.seller == 'hub') {
+    const neg1 = toBN(-1)
+    args = {
+      ...args,
+      weiToSell: args.weiToSell.mul(neg1),
+      tokensToSell: args.tokensToSell.mul(neg1),
+    }
+  }
+
+  const exchangeRate = toBN(mul(args.exchangeRate, EXCHANGE_MULTIPLIER))
+  const [weiReceived, tokenRemainder] = divmod(args.tokensToSell.mul(EXCHANGE_MULTIPLIER_BN), exchangeRate)
+  const tokensReceived = args.weiToSell.mul(exchangeRate).div(EXCHANGE_MULTIPLIER_BN)
+
+  return {
+    weiSold: args.weiToSell,
+    weiReceived: weiReceived,
+    tokensSold: args.tokensToSell.sub(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
+    tokensReceived: tokensReceived.add(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
+  }
+}
+
+function divmod(num: BN, div: BN): [BN, BN] {
+  return [
+    safeDiv(num, div),
+    safeMod(num, div),
+  ]
+}
+
+function safeMod(num: BN, div: BN) {
+  if (div.isZero())
+    return div
+  return num.mod(div)
+}
+
+function safeDiv(num: BN, div: BN) {
+  if (div.isZero())
+    return div
+  return num.div(div)
+}
+
+function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): {[key in keyof T]: R} {
+  const res: any = {}
+  for (let key in obj)
+    res[key] = func(key as any, res[key])
+  return res
+}
 
 function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
   for (let v of vals) {
@@ -28,15 +105,53 @@ function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
   return undefined
 }
 
-function subOrZero(a: BN | undefined, b: BN | undefined): BN {
-  return maxBN(toBN(0), a!.sub(b!))
+/**
+ * Subtracts the arguments, returning either the value (if greater than zero)
+ * or zero.
+ */
+export function subOrZero(a: (BN | undefined), ...args: (BN | undefined)[]): BN {
+  let res = a!
+  for (let arg of args)
+    res = res.sub(arg!)
+  return maxBN(toBN(0), res)
+}
+
+/**
+ * Returns 'a' if a > 0 else 0.
+ */
+function ifPositive(a: BN) {
+  const zero = toBN(0)
+  return a.gt(zero) ? a : zero
+}
+
+/**
+ * Returns 'a.abs()' if a < 0 else 0.
+ */
+function ifNegative(a: BN) {
+  const zero = toBN(0)
+  return a.lt(zero) ? a.abs() : zero
 }
 
 export class StateGenerator {
   private utils: Utils
 
+  stateTransitionHandlers: { [name in ChannelUpdateReason]: any }
+
   constructor() {
     this.utils = new Utils()
+    this.stateTransitionHandlers = {
+      'Payment': this.channelPayment.bind(this),
+      'Exchange': this.exchange.bind(this),
+      'ProposePendingDeposit': this.proposePendingDeposit.bind(this),
+      'ProposePendingWithdrawal': this.proposePendingWithdrawal.bind(this),
+      'ConfirmPending': this.confirmPending.bind(this),
+      'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
+      'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
+    }
+  }
+
+  public createChannelStateFromRequest(prev: ChannelStateBN, request: UpdateRequestBN): UnsignedChannelState {
+    return this.stateTransitionHandlers[request.reason](prev, request.args)
   }
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): UnsignedChannelState {
@@ -52,17 +167,17 @@ export class StateGenerator {
   }
 
   public exchange(prev: ChannelStateBN, args: ExchangeArgsBN): UnsignedChannelState {
-    if (args.tokensToSell.gt(toBN(0))) {
-      return this.sellTokens(prev, args)
-    } else {
-      return this.sellWei(prev, args)
-    }
+    return convertChannelState("str-unsigned", {
+      ...this.applyInChannelExchange(prev, args),
+      txCountGlobal: prev.txCountGlobal + 1,
+      timeout: 0,
+    })
   }
 
   public proposePendingDeposit(prev: ChannelStateBN, args: DepositArgsBN): UnsignedChannelState {
-    // assume only one pending operation at a time
     return convertChannelState("str-unsigned", {
       ...prev,
+      recipient: prev.user, // set explicitly for case of 1st deposit
       pendingDepositWeiHub: args.depositWeiHub,
       pendingDepositWeiUser: args.depositWeiUser,
       pendingDepositTokenHub: args.depositTokenHub,
@@ -73,33 +188,268 @@ export class StateGenerator {
     })
   }
 
-  public proposePendingWithdrawal(prev: ChannelStateBN, args: WithdrawalArgsBN): UnsignedChannelState {
-    // Note: the logic in this function follows these rules:
-    // 1. The hub's balance is *only* affected by the `withdrawal*Hub`
-    //    (and specifically, it is *not* affected by the user's `*toSell` or
-    //    `additional*HubToUser`; both of these values come from the reserve)
-    // 2. The user's balance is *only* reduced by `withdrawal*User` and
-    //    `*toSell`.
-    //
-    // The implication of this is that, if the hub wants to end up with a
-    // channel with zero balance, they can use:
-    //
-    //    proposePendingWithdrawal({
-    //      tokensToSell: userRequestedTokensToSell,
-    //      withdrawalWeiHub: prevState.balanceWeiHub,
-    //      ...,
-    //    })
-    //
-    // And the final state will be correct.
-    //
-    // Note, though, that if the hub did *not* withdraw any wei, their wei
-    // balance would remain the same, as the wei equivilent of the tokens to
-    // sell would come from the hub's reserve and not their current balance.
+  /**
+   * Apply an exchange to the state, assuming that there is sufficient blance
+   * (otherwise the result may have negative balances; see also:
+   * applyCollateralizedExchange).
+   */
+  public applyInChannelExchange(state: UnsignedChannelStateBN, exchangeArgs: ExchangeArgsBN): UnsignedChannelStateBN {
+    const exchange = calculateExchange(exchangeArgs)
 
+    const res = {
+      ...state,
+
+      balanceWeiUser: state.balanceWeiUser
+        .add(exchange.weiReceived)
+        .sub(exchange.weiSold),
+
+      balanceTokenUser: state.balanceTokenUser
+        .add(exchange.tokensReceived)
+        .sub(exchange.tokensSold),
+
+      balanceWeiHub: state.balanceWeiHub
+        .sub(exchange.weiReceived)
+        .add(exchange.weiSold),
+
+      balanceTokenHub: state.balanceTokenHub
+        .sub(exchange.tokensReceived)
+        .add(exchange.tokensSold),
+    }
+
+    return res
+  }
+
+  /**
+   * Apply an exchange to the state, adding a pending deposit to the user if
+   * the hub doesn't have sufficient balance (note: collateral will only be
+   * added when the hub is selling to the user; collateral will never be
+   * deposited into the user's channel).
+   */
+  public applyCollateralizedExchange(state: UnsignedChannelStateBN, exchangeArgs: ExchangeArgsBN): UnsignedChannelStateBN {
+    let res = this.applyInChannelExchange(state, exchangeArgs)
+
+    function depositIfNegative(r: any, src: string, dst: string) {
+      // If `balance${src}` is negative, make it zero, remove that balance from
+      // `balance${dst}` and add the balance to the `pendingDeposit${dst}`
+      const bal = r['balance' + src] as BN
+      if (bal.lt(toBN(0))) {
+        r['balance' + src] = toBN(0)
+        r['balance' + dst] = r['balance' + dst].sub(bal.abs())
+        r['pendingDeposit' + dst] = r['pendingDeposit' + dst].add(bal.abs())
+      }
+      return res
+    }
+
+    res = depositIfNegative(res, 'WeiHub', 'WeiUser')
+    res = depositIfNegative(res, 'TokenHub', 'TokenUser')
+
+    return res
+  }
+
+  public applyPending(state: UnsignedChannelStateBN, args: PendingArgsBN): UnsignedChannelStateBN {
+    const res = {
+      ...state,
+
+      pendingDepositWeiHub: args.depositWeiHub.add(state.pendingDepositWeiHub),
+      pendingDepositWeiUser: args.depositWeiUser.add(state.pendingDepositWeiUser),
+      pendingDepositTokenHub: args.depositTokenHub.add(state.pendingDepositTokenHub),
+      pendingDepositTokenUser: args.depositTokenUser.add(state.pendingDepositTokenUser),
+      pendingWithdrawalWeiHub: args.withdrawalWeiHub.add(state.pendingWithdrawalWeiHub),
+      pendingWithdrawalWeiUser: args.withdrawalWeiUser.add(state.pendingWithdrawalWeiUser),
+      pendingWithdrawalTokenHub: args.withdrawalTokenHub.add(state.pendingWithdrawalTokenHub),
+      pendingWithdrawalTokenUser: args.withdrawalTokenUser.add(state.pendingWithdrawalTokenUser),
+
+      recipient: args.recipient,
+      timeout: args.timeout,
+    }
+
+    return {
+      ...res,
+
+      balanceWeiHub: state.balanceWeiHub
+        .sub(subOrZero(res.pendingWithdrawalWeiHub, res.pendingDepositWeiHub)),
+
+      balanceTokenHub: state.balanceTokenHub
+        .sub(subOrZero(res.pendingWithdrawalTokenHub, res.pendingDepositTokenHub)),
+
+      balanceWeiUser: state.balanceWeiUser
+        .sub(subOrZero(res.pendingWithdrawalWeiUser, res.pendingDepositWeiUser)),
+
+      balanceTokenUser: state.balanceTokenUser
+        .sub(subOrZero(res.pendingWithdrawalTokenUser, res.pendingDepositTokenUser)),
+    }
+  }
+
+  public proposePending(prev: UnsignedChannelStateBN, args: PendingArgsBN): UnsignedChannelState {
+    const pending = this.applyPending(convertChannelState('bn-unsigned', prev), args)
+    return convertChannelState('str-unsigned', {
+      ...pending,
+      txCountChain: prev.txCountChain + 1,
+      txCountGlobal: prev.txCountGlobal + 1,
+    })
+  }
+
+  // Takes the pending update params as well as offchain exchange params, and
+  // applies the exchange params first
+  //
+  // This can result in negative balances - the validator for this will prevent
+  // this
+  public proposePendingExchange(prev: UnsignedChannelStateBN, args: PendingExchangeArgsBN): UnsignedChannelState {
+    const exchange = this.applyInChannelExchange(convertChannelState('bn-unsigned', prev), args)
+    const pending = this.applyPending(exchange, args)
+    return convertChannelState('str-unsigned', {
+      ...pending,
+      txCountChain: prev.txCountChain + 1,
+      txCountGlobal: prev.txCountGlobal + 1,
+    })
+  }
+
+  /**
+   * Any time there is a user deposit and a hub withdrawal, the state can be
+   * simplified so it becomes an in-channel exchange.
+   *
+   * For example:
+   *
+   *   balanceUser: 0
+   *   balanceHub: 5
+   *   pendingDepositUser: 10
+   *   pendingWithdrawalHub: 7
+   *
+   * Can be simplified to:
+   *
+   *   balanceUser: 7
+   *   balanceHub: 5
+   *   pendingDepositUser: 3
+   *   pendingWithdrawalHub: 0
+   *
+   * NOTE: This function is un-used. See comment at top of function.
+   */
+  private _unused_applyInChannelTransferSimplifications(state: UnsignedChannelStateBN): UnsignedChannelStateBN {
+    state = { ...state }
+
+    // !!! NOTE !!!
+    // This function is currently un-used because:
+    // 1. At present there isn't a need to optimize in-channel balance
+    //    transfers, and
+    // 2. It has not been exhaustively tested.
+    //
+    // It is being left in place because:
+    // 1. In the future it may be desierable to optimize in-channel balance
+    //    exchanges, and
+    // 2. There will likely be future discussions around "maybe we should
+    //    optmize balance transfers!", and this comment will serve as a
+    //    starting point to the discussion.
+    // !!! NOTE !!!
+
+    const s = state as any
+
+    // Hub is withdrawing from their balance and a balance is being sent from
+    // reserve to the user. Deduct from the hub's pending withdrawal, the
+    // user's pending deposit, and add to the user's balance:
+    //
+    //   balanceUser: 0
+    //   pendingDepositUser: 4
+    //   pendingWithdrawalUser: 1
+    //   pendingWithdrawalHub: 9
+    //
+    // Becomes:
+    //
+    //   balanceUser: 3
+    //   pendingDepositUser: 0
+    //   pendingWithdrawalUser: 1
+    //   pendingWithdrawalHub: 5
+    //
+    for (const type of ['Wei', 'Token']) {
+      // First, calculate how much can be added directly from the hub's
+      // withdrawal to the user's balance (this potentially leaves a deposit
+      // that will be immediately withdrawn, which is handled below):
+      //
+      //   pendingWithdrawalUser: 1
+      //   pendingWithdrawalHub: 9
+      //   pendingDepositUser: 4
+      //   balanceUser: 0
+      //
+      // Becomes:
+      //
+      //   pendingWithdrawalUser: 1
+      //   pendingWithdrawalHub: 6 (9 - (4 - 1))
+      //   pendingDepositUser: 1 (4 - (4 - 1))
+      //   balanceUser: 3 (0 + (4 - 1))
+      //
+      let delta = minBN(
+        // Amount being deducted from the hub's balance
+        subOrZero(s[`pendingWithdrawal${type}Hub`], s[`pendingDeposit${type}Hub`]),
+        // Amount being added to the user's balance
+        subOrZero(s[`pendingDeposit${type}User`], s[`pendingWithdrawal${type}User`]),
+      )
+      s[`pendingWithdrawal${type}Hub`] = s[`pendingWithdrawal${type}Hub`].sub(delta)
+      s[`pendingDeposit${type}User`] = s[`pendingDeposit${type}User`].sub(delta)
+      s[`balance${type}User`] = s[`balance${type}User`].add(delta)
+
+      // Second, calculate how much can be deducted from both the hub's
+      // withdrawal and the user deposit:
+      //
+      //   pendingWithdrawalUser: 1
+      //   pendingWithdrawalHub: 6
+      //   pendingDepositUser: 1
+      //   balanceUser: 3
+      //
+      // Becomes:
+      //
+      //   pendingWithdrawalUser: 1
+      //   pendingWithdrawalHub: 5 (6 - 1)
+      //   pendingDepositUser: 0 (1 - 1)
+      //   balanceUser: 3
+      //
+      delta = minBN(
+        // Amount being deducted from the hub's balance
+        subOrZero(s[`pendingWithdrawal${type}Hub`], s[`pendingDeposit${type}Hub`]),
+        // Amount being sent to the user for direct withdrawal
+        s[`pendingDeposit${type}User`],
+      )
+      s[`pendingWithdrawal${type}Hub`] = s[`pendingWithdrawal${type}Hub`].sub(delta)
+      s[`pendingDeposit${type}User`] = s[`pendingDeposit${type}User`].sub(delta)
+    }
+
+    // User is withdrawing from their balance and a deposit is being made from
+    // reserve into the hub's balance. Increase the user's pending deposit,
+    // decrease the hub's deposit, and add to the hub's balance:
+    //
+    //   pendingWithdrawalUser: 5
+    //   pendingDepositHub: 3
+    //   balanceHub: 0
+    //
+    // Becomes:
+    //
+    //   pendingWithdrawalUser: 5
+    //   pendingDepositUser: 3
+    //   balanceHub: 3
+    //
+    for (const type of ['Wei', 'Token']) {
+      let delta = minBN(
+        // Amount being deducted from the user's balance
+        subOrZero(s[`pendingWithdrawal${type}User`], s[`pendingDeposit${type}User`]),
+        // Amount being added from reserve to the hub's balance
+        subOrZero(s[`pendingDeposit${type}Hub`], s[`pendingWithdrawal${type}Hub`]),
+      )
+      s[`pendingDeposit${type}User`] = s[`pendingDeposit${type}User`].add(delta)
+      s[`pendingDeposit${type}Hub`] = s[`pendingDeposit${type}Hub`].sub(delta)
+      s[`balance${type}Hub`] = s[`balance${type}Hub`].add(delta)
+    }
+
+    return state
+  }
+
+  /**
+   * Creates WithdrawalArgs based on more user-friendly inputs.
+   *
+   * See comments on the CreateWithdrawal type for a description.
+   */
+  public proposePendingWithdrawal(prev: UnsignedChannelStateBN, args: WithdrawalArgsBN): UnsignedChannelState {
     args = {
       ...args,
       targetWeiUser: coalesce(
-        args.targetWeiUser, 
+        args.targetWeiUser,
         prev.balanceWeiUser.sub(args.weiToSell),
       ),
       targetTokenUser: coalesce(
@@ -110,194 +460,57 @@ export class StateGenerator {
       targetTokenHub: coalesce(args.targetTokenHub, prev.balanceTokenHub),
     }
 
-    const weiAmountForTokensToSell = args.tokensToSell
-      .mul(toBN(DEFAULT_EXCHANGE_MULTIPLIER))
-      .div(toBN(mul(args.exchangeRate, DEFAULT_EXCHANGE_MULTIPLIER)))
+    const exchange = this.applyCollateralizedExchange(prev, args)
 
-    const userWeiBalanceDecrease = subOrZero(prev.balanceWeiUser.sub(args.weiToSell), args.targetWeiUser)
-    const userWeiBalanceIncrease = subOrZero(args.targetWeiUser, prev.balanceWeiUser.sub(args.weiToSell))
+    const deltas = {
+      userWei: args.targetWeiUser!.sub(exchange.balanceWeiUser.add(exchange.pendingDepositWeiUser)),
+      userToken: args.targetTokenUser!.sub(exchange.balanceTokenUser.add(exchange.pendingDepositTokenUser)),
+      hubWei: args.targetWeiHub!.sub(exchange.balanceWeiHub.add(exchange.pendingDepositWeiHub)),
+      hubToken: args.targetTokenHub!.sub(exchange.balanceTokenHub.add(exchange.pendingDepositTokenHub)),
+    }
 
-    // The amount that will ultimately be added to the user's channel balance from token sale
-    const userWeiDepositFromTokenSale = minBN(userWeiBalanceIncrease, weiAmountForTokensToSell)
-
-    // The amount that will ultimately be withdrawn from the token sale
-    const userWeiWithdrawalFromTokenSale = weiAmountForTokensToSell.sub(userWeiDepositFromTokenSale)
-
-    // The additional amount of wei to deposit into the user's channel for the increase in balance
-    const userWeiDepositFromBalanceIncrease = userWeiBalanceIncrease.sub(userWeiDepositFromTokenSale)
-
-    // Note: for completeness, include the `tokenAmountForWeiToSell`, even
-    // though it will always be 0.
-    if (!args.weiToSell.eq(toBN(0)))
-      throw new Error(`Cannot yet sell wei during exchange`)
-    const tokenAmountForWeiToSell = toBN(0)
-
-    const userTokenBalanceDecrease = subOrZero(prev.balanceTokenUser.sub(args.tokensToSell), args.targetTokenUser)
-    const userTokenBalanceIncrease = subOrZero(args.targetTokenUser, prev.balanceTokenUser.sub(args.tokensToSell))
-    const userTokenDepositFromWeiSale = minBN(userTokenBalanceIncrease, tokenAmountForWeiToSell)
-    const userTokenWithdrawalFromWeiSale = tokenAmountForWeiToSell.sub(userTokenDepositFromWeiSale)
-    const userTokenDepositFromBalanceIncrease = userTokenBalanceIncrease.sub(userTokenDepositFromWeiSale)
-
-    let n = {
-      ...prev,
-
-      // The new balances are the min of either their target value or their
-      // current value. If the target values are below the current value, the
-      // difference will be added to the corresponding withdrawal field. If the
-      // target values are greater, the difference will be added to the
-      // corresponding deposit field.
-      balanceWeiHub: minBN(args.targetWeiHub!, prev.balanceWeiHub),
-      balanceTokenHub: minBN(args.targetTokenHub!, prev.balanceTokenHub),
-      balanceWeiUser: minBN(args.targetWeiUser!, prev.balanceWeiUser),
-      balanceTokenUser: minBN(args.targetTokenUser!, prev.balanceTokenUser),
-
-      // Deposit into the hub's channel (from reserve):
-      // - Any amount required to bring the hub's balance up to 'targetWeiHub'
-      //   (or 0, if the delta is zero or negative)
-      pendingDepositWeiHub: subOrZero(args.targetWeiHub, prev.balanceWeiHub),
-      pendingDepositTokenHub: subOrZero(args.targetTokenHub, prev.balanceTokenHub),
-
-      // Deposit into the user's channel (from reserve):
-      // - Any amount required to bring their current balance up to
-      //   `targetWeiUser`. Note that the `weiToSell` is deducted from their
-      //   previous balance first, because that amount will not be included in
-      //   `pendingWithdrawalWeiUser`.
-      // - Any wei they are owed for the tokens they are selling
-      // - Any additional wei they are being sent by the hub
-      pendingDepositWeiUser: toBN(0)
-        .add(weiAmountForTokensToSell)
-        .add(userWeiDepositFromBalanceIncrease)
+    const pending = this.applyPending(exchange, {
+      depositWeiUser: toBN(0)
+        .add(ifPositive(deltas.userWei))
         .add(args.additionalWeiHubToUser || toBN(0)),
 
-      pendingDepositTokenUser: toBN(0)
-        .add(tokenAmountForWeiToSell)
-        .add(userTokenDepositFromBalanceIncrease)
+      depositWeiHub: ifPositive(deltas.hubWei),
+
+      depositTokenUser: toBN(0)
+        .add(ifPositive(deltas.userToken))
         .add(args.additionalTokenHubToUser || toBN(0)),
 
-      // Withdraw into the reserve:
-      // - Any amount required to bring the hub's balance down to 'targetWeiHub'
-      //   (or 0, if the delta is negative)
-      // - Any wei being sold by the user back to the hub
-      pendingWithdrawalWeiHub: toBN(0)
-        .add(subOrZero(prev.balanceWeiHub, args.targetWeiHub!))
-        .add(args.weiToSell),
+      depositTokenHub: ifPositive(deltas.hubToken),
 
-      pendingWithdrawalTokenHub: toBN(0)
-        .add(subOrZero(prev.balanceTokenHub, args.targetTokenHub!))
-        .add(args.tokensToSell),
-
-      // Withdraw to the `recipient` address:
-      // - Any amount required to bring their balance down to `targetWeiUser`
-      //   after the `weiToSell` has been deducted.
-      // - Any wei they are owed for the tokens they are selling
-      // - Any additional wei they are being sent by the hub
-      pendingWithdrawalWeiUser: toBN(0)
-        .add(userWeiBalanceDecrease)
-        .add(userWeiWithdrawalFromTokenSale)
+      withdrawalWeiUser: toBN(0)
+        .add(ifNegative(deltas.userWei))
         .add(args.additionalWeiHubToUser || toBN(0)),
 
-      pendingWithdrawalTokenUser: toBN(0)
-        .add(userTokenBalanceDecrease)
-        .add(userTokenWithdrawalFromWeiSale)
+      withdrawalWeiHub: ifNegative(deltas.hubWei),
+
+      withdrawalTokenUser: toBN(0)
+        .add(ifNegative(deltas.userToken))
         .add(args.additionalTokenHubToUser || toBN(0)),
 
-      // Other miscellaneous fields
-      txCountGlobal: prev.txCountGlobal + 1,
-      txCountChain: prev.txCountChain + 1,
+      withdrawalTokenHub: ifNegative(deltas.hubToken),
+
       recipient: args.recipient,
       timeout: args.timeout,
-    }
+    })
 
-    // If the user's balance drops and the hub's balance increases, or vice
-    // versa, we can transfer (some of) that value in channel. For example, if:
-    //
-    //   balanceHub: 3
-    //   balanceUser: 4
-    //
-    // And a withdrawal is made with:
-    //
-    //   targetBalanceHub: 10
-    //   targetBalanceUser: 0
-    //
-    // Then we can transfer the user's balance directly to the hub, resulting
-    // in the state:
-    //
-    //   balanceHub: 7 (3 + 4)
-    //   balanceUser: 0 (as requested)
-    //   pendingDepositHub: 3 (to bring the hub up to 10)
-    //   pendingDepositUser: 4 (from reserve)
-    //   pendingWithdrawalUser: 4 (from reserve)
+    return convertChannelState('str-unsigned', {
+      ...pending,
+      txCountChain: prev.txCountChain + 1,
+      txCountGlobal: prev.txCountGlobal + 1,
+    })
 
-    const userDeltaWei = args.targetWeiUser!.sub(prev.balanceWeiUser)
-    const hubDeltaWei = args.targetWeiHub!.sub(prev.balanceWeiHub)
-
-    if (userDeltaWei.lt(toBN(0)) && hubDeltaWei.gt(toBN(0))) {
-      // User balance dropping, hub balance increasing
-      const deltaWei = minBN(userDeltaWei.abs(), hubDeltaWei)
-      n.balanceWeiHub = n.balanceWeiHub.add(deltaWei)
-      n.pendingDepositWeiHub = n.pendingDepositWeiHub.sub(deltaWei)
-      n.pendingWithdrawalWeiHub = n.pendingWithdrawalWeiHub
-        .sub(minBN(deltaWei, args.weiToSell))
-    }
-
-    if (userDeltaWei.gt(toBN(0)) && hubDeltaWei.lt(toBN(0))) {
-      // User balance increasing, hub balance dropping
-      const deltaWei = minBN(userDeltaWei, hubDeltaWei.abs())
-      n.balanceWeiUser = n.balanceWeiUser.add(deltaWei)
-      n.pendingDepositWeiUser = n.pendingDepositWeiUser.sub(deltaWei)
-    }
-
-    // And perform the same simplification as above, except with tokens
-    const userDeltaToken = args.targetTokenUser!.sub(prev.balanceTokenUser)
-    const hubDeltaToken = args.targetTokenHub!.sub(prev.balanceTokenHub)
-
-    if (userDeltaToken.lt(toBN(0)) && hubDeltaToken.gt(toBN(0))) {
-      // User balance dropping, hub balance increasing
-      const deltaToken = minBN(userDeltaToken.abs(), hubDeltaToken)
-      n.balanceTokenHub = n.balanceTokenHub.add(deltaToken)
-      n.pendingDepositTokenHub = n.pendingDepositTokenHub.sub(deltaToken)
-      n.pendingWithdrawalTokenHub = n.pendingWithdrawalTokenHub
-        .sub(minBN(deltaToken, args.tokensToSell))
-    }
-
-    if (userDeltaToken.gt(toBN(0)) && hubDeltaToken.lt(toBN(0))) {
-      // User balance increasing, hub balance dropping
-      const deltaToken = minBN(userDeltaToken, hubDeltaToken.abs())
-      n.balanceTokenUser = n.balanceTokenUser.add(deltaToken)
-      n.pendingDepositTokenUser = n.pendingDepositTokenUser.sub(deltaToken)
-    }
-
-
-    // If there is both a deposit being made to the user and a withdrawal being
-    // made from the hub, then one of the two can be canceled out. For example:
-    // if the hub is making a 10 wei deposit into the user channel and
-    // withdrawing 4 wei:
-    //
-    //   pendingDepositWeiUser: 10
-    //   pendingWithdrawalWeiHub: 4
-    //
-    // The state can be simplified so that the hub withdraws 0 wei and deposits
-    // 6 into the user channel (the remaining 4 will come from the hub's
-    // in-channel balance):
-    //
-    //   pendingDepositWeiUser: 6 (10 - 4)
-    //   pendingWithdrawalWeiHub: 0 (4 - 4)
-    const depositWithdrawalWei = minBN(n.pendingDepositWeiUser, n.pendingWithdrawalWeiHub)
-    n.pendingDepositWeiUser = n.pendingDepositWeiUser.sub(depositWithdrawalWei)
-    n.pendingWithdrawalWeiHub = n.pendingWithdrawalWeiHub.sub(depositWithdrawalWei)
-
-    const depositWithdrawalToken = minBN(n.pendingDepositTokenUser, n.pendingWithdrawalTokenHub)
-    n.pendingDepositTokenUser = n.pendingDepositTokenUser.sub(depositWithdrawalToken)
-    n.pendingWithdrawalTokenHub = n.pendingWithdrawalTokenHub.sub(depositWithdrawalToken)
-
-    return convertChannelState("str-unsigned", n)
   }
 
   public confirmPending(prev: ChannelStateBN): UnsignedChannelState {
     // consider case where confirmPending for a withdrawal with exchange:
     // prev.pendingWeiUpdates = [0, 0, 5, 5] // i.e. hub deposits into user's channel for facilitating exchange
     // generated.balanceWei = [0, 0]
-    // 
+    //
     // initial = [0, 2]
     // prev.balance = [0, 1]
     // prev.pending = [0, 0, 1, 2]
@@ -325,7 +538,7 @@ export class StateGenerator {
       pendingWithdrawalTokenHub: toBN(0),
       pendingWithdrawalTokenUser: toBN(0),
       txCountGlobal: prev.txCountGlobal + 1,
-      // recipient: prev.user, TODO: REB-29: should this go here?
+      recipient: prev.user,
       timeout: 0,
     })
   }
@@ -379,34 +592,6 @@ export class StateGenerator {
       balanceWeiSender: prev.balanceTokenSender.sub(args.amountWei),
       balanceWeiReceiver: prev.balanceTokenReceiver.add(args.amountWei),
       txCount: prev.txCount + 1,
-    })
-  }
-
-  private sellTokens(prev: ChannelStateBN, args: ExchangeArgsBN): UnsignedChannelState {
-    const amountWeiEquivalent = args.tokensToSell.mul(toBN(DEFAULT_EXCHANGE_MULTIPLIER))
-      .div(toBN(mul(args.exchangeRate, DEFAULT_EXCHANGE_MULTIPLIER)))
-    return convertChannelState("str-unsigned", {
-      ...prev,
-      balanceWeiHub: args.seller === "hub" ? prev.balanceWeiHub.add(amountWeiEquivalent) : prev.balanceWeiHub.sub(amountWeiEquivalent),
-      balanceWeiUser: args.seller === "user" ? prev.balanceWeiUser.add(amountWeiEquivalent) : prev.balanceWeiUser.sub(amountWeiEquivalent),
-      balanceTokenHub: args.seller === "hub" ? prev.balanceTokenHub.sub(args.tokensToSell) : prev.balanceTokenHub.add(args.tokensToSell),
-      balanceTokenUser: args.seller === "user" ? prev.balanceTokenUser.sub(args.tokensToSell) : prev.balanceTokenUser.add(args.tokensToSell),
-      txCountGlobal: prev.txCountGlobal + 1,
-      timeout: 0,
-    })
-  }
-
-  private sellWei(prev: ChannelStateBN, args: ExchangeArgsBN): UnsignedChannelState {
-    const amountTokensEquivalent = toBN(mul(args.exchangeRate, DEFAULT_EXCHANGE_MULTIPLIER)).mul(args.weiToSell)
-      .div(toBN(DEFAULT_EXCHANGE_MULTIPLIER))
-    return convertChannelState("str-unsigned", {
-      ...prev,
-      balanceWeiHub: args.seller === "hub" ? prev.balanceWeiHub.sub(args.weiToSell) : prev.balanceWeiHub.add(args.weiToSell),
-      balanceWeiUser: args.seller === "user" ? prev.balanceWeiUser.sub(args.weiToSell) : prev.balanceWeiUser.add(args.weiToSell),
-      balanceTokenHub: args.seller === "hub" ? prev.balanceTokenHub.add(amountTokensEquivalent) : prev.balanceTokenHub.sub(amountTokensEquivalent),
-      balanceTokenUser: args.seller === "user" ? prev.balanceTokenUser.add(amountTokensEquivalent) : prev.balanceTokenUser.sub(amountTokensEquivalent),
-      txCountGlobal: prev.txCountGlobal + 1,
-      timeout: 0,
     })
   }
 }

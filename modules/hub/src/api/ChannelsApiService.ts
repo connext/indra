@@ -1,3 +1,4 @@
+import { default as Config } from '../Config'
 import { convertWithdrawalParameters } from '../vendor/connext/types'
 import { UpdateRequest } from '../vendor/connext/types'
 import * as express from 'express'
@@ -6,6 +7,7 @@ import log from '../util/log'
 import ChannelsService from '../ChannelsService'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
 import { Big } from '../util/bigNumber'
+import { prettySafeJson } from '../util'
 
 const LOG = log('ChannelsApiService')
 
@@ -26,16 +28,17 @@ export default class ChannelsApiService extends ApiService<
   dependencies = {
     channelsService: 'ChannelsService',
     dao: 'ChannelsDao',
+    config: 'Config',
   }
 }
 
 export class ChannelsApiServiceHandler {
   channelsService: ChannelsService
   dao: ChannelsDao
+  config: Config
 
   private getUser(req: express.Request) {
     const { user } = req.params
-    return user // TODO: REB-35
     if (!user || user != req.session!.address) {
       throw new Error(
         `Current user '${req.session!.address}' is not authorized to act ` +
@@ -66,7 +69,14 @@ export class ChannelsApiServiceHandler {
       .concat()
       .sort((a, b) => a.txCount - b.txCount)
 
-    await this.channelsService.doUpdates(user, updates)
+    let err = null
+
+    try {
+      await this.channelsService.doUpdates(user, updates)
+    } catch (e) {
+      LOG.error(`Error in doUpdate('${user}', ${prettySafeJson(updates)}): ${e}\n${e.stack}`)
+      err = e
+    }
 
     const minUnsignedUpdate = sortedUpdates.filter(up => !!up.sigHub)[0]
     const syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
@@ -75,7 +85,10 @@ export class ChannelsApiServiceHandler {
       lastThreadUpdateId,
     )
 
-    res.send(syncUpdates)
+    res.send({
+      error: err ? '' + err + (this.config.isDev ? '\n' + err.stack : '') : null,
+      updates: syncUpdates,
+    })
   }
 
   async doRequestDeposit(req: express.Request, res: express.Response) {
@@ -107,7 +120,7 @@ export class ChannelsApiServiceHandler {
 
   async doRequestCollateral(req: express.Request, res: express.Response) {
     const { user } = req.params
-    const { activeTipperCount, activeViewerCount, lastChanTx } = req.body
+    const { lastChanTx } = req.body
 
 
     if (!user) {
@@ -121,7 +134,7 @@ export class ChannelsApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    await this.channelsService.doCollateralizeIfNecessary(user, activeTipperCount || 0, activeViewerCount || 0)
+    await this.channelsService.doCollateralizeIfNecessary(user)
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
       lastChanTx,
@@ -207,8 +220,8 @@ export class ChannelsApiServiceHandler {
 
     let syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
-      lastChanTx,
-      lastThreadUpdateId,
+      parseInt(lastChanTx),
+      parseInt(lastThreadUpdateId),
     )
 
     res.send(syncUpdates)

@@ -2,7 +2,7 @@
   "name": "hub",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/entry.js",
   "scripts": {
     "clean": "rm -rf dist",
     "test": "mocha -r ./dist/register/common.js -r ./dist/register/testing.js \"dist/**/*.test.js\" --exit",
@@ -47,7 +47,7 @@
     "classnames": "^2.2.5",
     "concurrently": "^4.1.0",
     "connect-redis": "^3.3.3",
-    "connext": "^2.5.9",
+    "connext": "https://github.com/bohendo/connext-client#indra",
     "cookie-parser": "^1.4.3",
     "cookie-signature": "^1.1.0",
     "cors": "^2.8.4",

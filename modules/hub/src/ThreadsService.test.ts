@@ -16,7 +16,7 @@ import GlobalSettingsDao from './dao/GlobalSettingsDao'
 
 const fakeSig = mkSig('0xfff')
 
-describe('ThreadsService', () => {
+describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
   let registry: TestServiceRegistry
 
   let channelsDao

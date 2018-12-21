@@ -509,6 +509,12 @@ begin
         end if;
     end if;
 
+    -- TODO: REB-36 remove this when threads are reenabled
+    if NEW.thread_count <> 0 or NEW.thread_root <> '0x0000000000000000000000000000000000000000000000000000000000000000' then
+        raise exception 'updates with threads are not supported yet, update: %',
+        NEW;
+    end if;
+
     return NEW;
 end;
 $pgsql$;
@@ -1247,7 +1253,7 @@ create view payments as (
     meta,
 
     'PT_CHANNEL' as payment_type,
-    up.recipient as custodial_recipient
+    up.recipient as custodian_address
   from _payments as p
   inner join cm_channel_updates as up on up.id = p.channel_update_id
 
@@ -1267,7 +1273,7 @@ create view payments as (
     meta,
 
     'PT_THREAD' as payment_type,
-    null as custodial_recipient
+    null as custodian_address
   from _payments as p
   inner join cm_thread_updates as up on up.id = p.thread_update_id
 );

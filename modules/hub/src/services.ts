@@ -89,13 +89,15 @@ export const serviceDefinitions: PartialServiceDefinitions = {
 
   ChainsawService: {
     factory: (
+      signerService: SignerService,
       chainsawDao: ChainsawDao,
       channelsDao: ChannelsDao,
       web3: Web3,
       utils: Utils,
       config: Config,
-    ) => new ChainsawService(chainsawDao, channelsDao, web3, utils, config),
+    ) => new ChainsawService(signerService, chainsawDao, channelsDao, web3, utils, config),
     dependencies: [
+      'SignerService',
       'ChainsawDao',
       'ChannelsDao',
       'Web3',
@@ -230,6 +232,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   RedisClient: {
     factory: (config: Config) => getRedisClient(config.redisUrl),
     dependencies: ['Config'],
+    isSingleton: true
   },
 
   FeatureFlagsDao: {

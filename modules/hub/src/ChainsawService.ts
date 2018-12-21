@@ -9,7 +9,8 @@ import { ChannelUpdateReasons, ChannelState, PaymentArgs, ConfirmPendingArgs } f
 import { Utils } from './vendor/connext/Utils'
 import abi from './abi/ChannelManager'
 import { BigNumber } from 'bignumber.js'
-import events = require('events')
+import { sleep } from './util'
+import { SignerService } from "./SignerService";
 
 const LOG = log('ChainsawService')
 
@@ -23,10 +24,12 @@ interface WithBalances {
   balanceTokenUser: BigNumber
 }
 
-export default class ChainsawService extends events.EventEmitter {
+export default class ChainsawService {
   private chainsawDao: ChainsawDao
 
   private web3: any
+
+  private signerService: SignerService
 
   private contract: ChannelManager
 
@@ -38,8 +41,15 @@ export default class ChainsawService extends events.EventEmitter {
 
   private config: Config
 
-  constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config) {
-    super()
+  constructor(
+    signerService: SignerService,
+    chainsawDao: ChainsawDao,
+    channelsDao: ChannelsDao,
+    web3: any,
+    utils: Utils,
+    config: Config
+  ) {
+    this.signerService = signerService
     this.chainsawDao = chainsawDao
     this.channelsDao = channelsDao
     this.utils = utils
@@ -50,44 +60,24 @@ export default class ChainsawService extends events.EventEmitter {
   }
 
   async poll() {
-    try {
-      const poll = async () => {
-        const start = Date.now()
+    while (true) {
+      const start = Date.now()
 
-        try {
-          await this.doFetchEvents()
-        } catch (e) {
-          LOG.error('Fetching events failed: {e}', {
-            e
-          })
-          this.emit('error', e)
-        }
-
-        try {
-          await this.doProcessEvents()
-        } catch (e) {
-          LOG.error('Processing events failed: {e}', {
-            e
-          })
-          this.emit('error', e)
-        }
-
-        const elapsed = start - Date.now()
-
-        if (elapsed > POLL_INTERVAL) {
-          await poll()
-        } else {
-          setTimeout(poll, POLL_INTERVAL - elapsed)
-        }
-
-        this.emit('poll')
+      try {
+        await this.doFetchEvents()
+      } catch (e) {
+        LOG.error('Fetching events failed: {e}', { e })
       }
 
-      await poll()
-    } catch (e) {
-      LOG.error('Failed to poll: {e}', {
-        e
-      })
+      try {
+        await this.doProcessEvents()
+      } catch (e) {
+        LOG.error('Processing events failed: {e}', { e })
+      }
+
+      const elapsed = start - Date.now()
+      if (elapsed < POLL_INTERVAL)
+        await sleep(POLL_INTERVAL - elapsed)
     }
   }
 
@@ -245,7 +235,9 @@ export default class ChainsawService extends events.EventEmitter {
       timeout: 0
     }
     const hash = this.utils.createChannelStateHash(state)
-    const sigHub = await this.web3.eth.sign(hash, this.hubAddress)
+
+    const sigHub = await this.signerService.sign(hash)
+
     // TODO
     await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.hubAddress, {
       ...state,

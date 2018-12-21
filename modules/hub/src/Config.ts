@@ -1,5 +1,7 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
+import { BigNumber } from 'bignumber.js'
+import { toWeiBigNum } from './util/bigNumber';
 
 const ENV_VARS = [
   'ETH_RPC_URL',
@@ -16,8 +18,8 @@ const ENV_VARS = [
   'REALTIME_DB_SECRET',
   'SERVICE_USER_KEY',
   'REDIS_URL',
-  'SERVICE_USER_KEY',
   'TOKEN_CONTRACT_ADDRESS',
+  'HOT_WALLET_ADDRESS',
 ]
 
 export interface BrandingConfig {
@@ -28,7 +30,7 @@ export interface BrandingConfig {
 }
 
 export default class Config {
-  static fromEnv(): Config {
+  static fromEnv(overrides?: Partial<Config>): Config {
     const instance = new Config()
 
     // prettier-ignore
@@ -37,6 +39,9 @@ export default class Config {
       if (v !== undefined)
         (instance as any)[camelize(v, '_')] = val
     })
+
+    for (let key in (overrides || {}))
+      instance[key] = overrides[key]
 
     return instance
   }
@@ -50,7 +55,7 @@ export default class Config {
   public authRealm: string = ''
   public authDomainWhitelist: string[] = []
   public adminAddresses?: string[] = []
-  public serviceUserKey?: string
+  public serviceUserKey: string = 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
   public port: number = 8080
   public recipientAddress: string = ''
   public hotWalletAddress: string = ''
@@ -60,4 +65,10 @@ export default class Config {
   public registry?: Registry
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
+  public channelBeiLimit = toWeiBigNum(process.env.CHANNEL_BEI_LIMIT || 69)
+  public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 20)
+  public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 50)
+  public beiMaxCollateralization = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION || 169)
+  public threadBeiLimit = toWeiBigNum(process.env.THREAD_BEI_LIMIT || 10)
+  public channelBeiDeposit = this.channelBeiLimit.add(1069)
 }

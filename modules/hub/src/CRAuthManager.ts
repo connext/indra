@@ -34,6 +34,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
 
   public async checkSignature (address: string, nonce: string, origin: string, signature: string): Promise<string | null> {
     const creation = this.nonces[nonce]
+    const normalizedAddress = address.toLowerCase()
 
     if (!creation) {
       LOG.warn(`Nonce ${nonce} not found.`)
@@ -43,8 +44,8 @@ export class MemoryCRAuthManager implements CRAuthManager {
     const hash = this.sha3(`${MemoryCRAuthManager.HASH_PREAMBLE} ${this.sha3(nonce)} ${this.sha3(origin)}`)
     const sigAddr = this.extractAddress(hash, signature)
 
-    if (!sigAddr || sigAddr !== address) {
-      LOG.warn(`Received invalid signature. Expected address: ${address}. Got address: ${sigAddr}.`)
+    if (!sigAddr || sigAddr !== normalizedAddress) {
+      LOG.warn(`Received invalid signature. Expected address: ${normalizedAddress}. Got address: ${sigAddr}.`)
       return null
     }
 

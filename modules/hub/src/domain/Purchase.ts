@@ -14,5 +14,5 @@ export type PurchasePaymentRow<MetaType=any> = PurchasePaymentSummary<MetaType> 
   createdOn: Date
   purchaseId: string
   sender: string
-  custodialRecipient: string
+  custodianAddress: string
 }

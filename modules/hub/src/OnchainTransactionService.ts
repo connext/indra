@@ -176,15 +176,24 @@ export class OnchainTransactionService {
       data: txnRequest.data || '0x',
       nonce: nonce,
     }
-    //const sig = await this.web3.eth.signTransaction({ ...unsignedTx }) TODO REB-61
+
+    /* TODO: REB-61
+    const sig = await this.web3.eth.signTransaction({ ...unsignedTx })
     const tx = {
       ...unsignedTx,
-      hash: '0xb66c4a63fa361db7120e0cbdcb0a02f07ae68f27350ae4d34d7444a2547965b9', // TODO: REB-61 sig.tx.hash,
-      signature: { r: '0x0', s: '0x0', v: 69 }, /*{ TODO: REB-61
+      hash: sig.tx.hash,
+      signature: {
         r: sig.tx.r,
         s: sig.tx.s,
         v: this.web3.utils.hexToNumber(sig.tx.v),
-      }*/
+      }
+    }
+    */
+
+    const tx = {
+      ...unsignedTx,
+      hash: null,
+      signature: null,
     }
 
     // Note: this is called from within the transactional context of the caller
@@ -231,7 +240,6 @@ export class OnchainTransactionService {
         // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
         const tx = this.web3.eth.sendTransaction(txn)
         tx.on('transactionHash', hash => {
-          console.log('HASH:', hash)
           // TODO: REB-61
           this.db.query(SQL`
             UPDATE onchain_transactions_raw

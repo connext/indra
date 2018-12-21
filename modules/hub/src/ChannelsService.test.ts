@@ -1,5 +1,5 @@
 import { PostgresChannelsDao } from './dao/ChannelsDao'
-import ChannelsService, { CHANNEL_BOOTY_LIMIT } from './ChannelsService'
+import ChannelsService from './ChannelsService'
 import { getTestRegistry, assert } from './testing'
 import {
   MockExchangeRateDao,
@@ -15,6 +15,7 @@ import {
   mkSig,
   getThreadState,
   mkHash,
+  PartialSignedOrSuccinctChannel,
 } from './testing/stateUtils'
 import { Big, toWeiBigNum, toWeiString } from './util/bigNumber'
 import {
@@ -25,6 +26,10 @@ import {
   DepositArgs,
   convertDeposit,
   convertExchange,
+  PaymentArgs,
+  isBigNum,
+  convertWithdrawal,
+  Payment,
 } from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
@@ -34,6 +39,10 @@ import {
   channelAndThreadFactory,
 } from './testing/factories'
 import { StateGenerator } from './vendor/connext/StateGenerator'
+import PaymentsService from './PaymentsService';
+import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
+import Config from './Config';
+import { BigNumber } from 'bignumber.js/bignumber'
 
 // TODO: extract web3
 
@@ -52,6 +61,14 @@ function web3ContractMock() {
       }
     },
   }
+}
+
+function fieldsToWei<T>(obj: T): T {
+  const res = {} as any
+  for (let field in obj)
+    res[field] = Big(obj[field as string]).mul('1e18').toFixed()
+
+  return res
 }
 
 const contract = mkAddress('0xCCC')
@@ -94,6 +111,19 @@ describe('ChannelsService', () => {
             },
           }
         },
+        sendTransaction: () => {
+          console.log(`Called mocked web3 function sendTransaction`)
+          return {
+            on: (input, cb) => {
+              switch (input) {
+                case 'transactionHash':
+                  return cb(mkHash('0xbeef'))
+                case 'error':
+                  return cb(null)
+              }
+            },
+          }
+        },
       },
     },
     ExchangeRateDao: new MockExchangeRateDao(),
@@ -105,6 +135,8 @@ describe('ChannelsService', () => {
   const service: ChannelsService = registry.get('ChannelsService')
   const threadsDao: ThreadsDao = registry.get('ThreadsDao')
   const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  const paymentsService: PaymentsService = registry.get('PaymentsService')
+  const config: Config = registry.get('Config')
 
   beforeEach(async () => {
     await registry.clearDatabase()
@@ -207,7 +239,7 @@ describe('ChannelsService', () => {
       (latestState.update as UpdateRequest).reason,
       'ProposePendingDeposit' as ChannelUpdateReason,
     )
-    const pendingDepositTokenHub = CHANNEL_BOOTY_LIMIT.minus(
+    const pendingDepositTokenHub = config.channelBeiDeposit.minus(
       chan.state.balanceTokenHub,
     )
 
@@ -262,40 +294,124 @@ describe('ChannelsService', () => {
     })
   })
 
-  it('should exchange eth for booty in channel - happy case', async () => {
-    const channel = await channelUpdateFactory(registry, {
-      contractAddress: contract,
-      balanceWeiHub: toWeiString(10),
-      balanceWeiUser: toWeiString(0.5),
-      balanceTokenUser: toWeiString(20),
-    })
+  async function runExchangeTest(
+    initialChannelState: PartialSignedOrSuccinctChannel,
+    exchangeAmounts: Payment<BigNumber>,
+    expectedState: PartialSignedOrSuccinctChannel,
+  ) {
+  }
 
-    const exchangeArgs = await service.doRequestExchange(
-      channel.user,
-      Big(0),
-      toWeiBigNum(10),
-    )
-    const generated = stateGenerator.exchange(
-      convertChannelState('bn', channel.state),
-      convertExchange('bn', exchangeArgs),
-    )
-    const unsigned = await service.redisGetUnsignedState(channel.user)
+  type ExchangeTestType = {
+    name: string
+    initial: PartialSignedOrSuccinctChannel
+    exchange: Payment<number>
+    expected: PartialSignedOrSuccinctChannel
+  }
 
-    assertChannelStateEqual(generated, unsigned.state)
+  /**
+   * Beacuse exchange rates will lead to not-quite-round numbers, the
+   * `tweakBalance` function makes those numbers cleaner to express.
+   * For example:
+   *  > tweakBalance(1, 69)
+   *  '1.000...069'
+   *  > tweakBalance(1, -1)
+   *  '0.999...999'
+   */
+  function tweakBalance(ethAmt: number, weiAmt: number, mul = false): string {
+    const res = Big(ethAmt).add(Big(weiAmt).div('1e18'))
+    return (mul ? res.mul('1e18') : res).toFixed()
+  }
 
-    const balanceWeiExchangeAmount = toWeiBigNum(10)
-      .dividedBy(mockRate)
-      .floor()
+  const exchangeTests: ExchangeTestType[] = [
+    {
+      name: 'should exchange user eth for booty - happy case',
+      initial: {
+        balanceTokenHub: 69.1,
+        balanceWeiUser: 1,
+      },
+      exchange: {
+        amountToken: 0,
+        amountWei: 1,
+      },
+      expected: {
+        balanceTokenUser: tweakBalance(69, 975),
+      },
+    },
 
-    assertChannelStateEqual(unsigned.state, {
-      balanceWeiUser: Big(channel.state.balanceWeiUser)
-        .plus(balanceWeiExchangeAmount)
-        .toFixed(),
-      balanceWeiHub: Big(channel.state.balanceWeiHub)
-        .minus(balanceWeiExchangeAmount)
-        .toFixed(),
-      balanceTokenUser: toWeiString(10),
-      balanceTokenHub: toWeiString(10),
+    {
+      name: 'should limit exchanges to hub booty balance',
+      initial: {
+        balanceTokenHub: 10,
+        balanceWeiUser: 1,
+      },
+      exchange: {
+        amountToken: 0,
+        amountWei: 1,
+      },
+      expected: {
+        balanceTokenUser: tweakBalance(10, -15),
+        balanceTokenHub: tweakBalance(0, 15),
+      },
+    },
+
+    {
+      name: 'should exchange eth for booty in channel - happy case',
+      initial: {
+        balanceWeiHub: 10,
+        balanceTokenUser: 20,
+      },
+
+      exchange: {
+        amountToken: 10,
+        amountWei: 0,
+      },
+
+      expected: {
+        balanceWeiUser: Big(10).div(123.45).mul('1e18').floor().div('1e18').toFixed(),
+        balanceTokenUser: tweakBalance(10, 28),
+      },
+    },
+
+    {
+      name: 'should limit exchanges to hub wei balance',
+      initial: {
+        balanceWeiHub: 1,
+        balanceTokenUser: 200,
+      },
+
+      exchange: {
+        amountToken: 200,
+        amountWei: 0,
+      },
+
+      expected: {
+        balanceWeiUser: 1,
+        balanceWeiHub: 0,
+      },
+    },
+  ]
+
+  describe('doRequestExchange', () => {
+    exchangeTests.forEach(t => {
+      it(t.name, async () => {
+        const channel = await channelUpdateFactory(registry, {
+          contractAddress: contract,
+          ...fieldsToWei(t.initial),
+        })
+
+        const exchangeArgs = await service.doRequestExchange(
+          channel.user,
+          Big(t.exchange.amountWei).mul('1e18'),
+          Big(t.exchange.amountToken).mul('1e18'),
+        )
+        const generated = stateGenerator.exchange(
+          convertChannelState('bn', channel.state),
+          convertExchange('bn', exchangeArgs),
+        )
+        const unsigned = await service.redisGetUnsignedState(channel.user)
+        assertChannelStateEqual(generated, unsigned.state)
+        assertChannelStateEqual(unsigned.state, fieldsToWei(t.expected))
+      })
     })
   })
 
@@ -317,7 +433,8 @@ describe('ChannelsService', () => {
     })
   })
 
-  it('should recollateralize a performer channel when they have threads open', async () => {
+  // TODO: enable this when threads are working
+  it.skip('should recollateralize a performer channel when they have threads open', async () => {
     const user1 = mkAddress('0xa')
     const user2 = mkAddress('0xb')
     const user3 = mkAddress('0xc')
@@ -332,7 +449,6 @@ describe('ChannelsService', () => {
 
     const depositArgs = await service.doCollateralizeIfNecessary(
       threadUsers.performer.user,
-      5,
     )
     const generated = stateGenerator.proposePendingDeposit(
       convertChannelState(
@@ -350,6 +466,104 @@ describe('ChannelsService', () => {
       txCountChain: 2,
     })
   })
+
+  // RECENT TIPPER TESTS
+  it('should collateralize with the minimum amount if there are no recent tippers', async () => {
+    const channel = await channelUpdateFactory(registry)
+
+    await service.doCollateralizeIfNecessary(channel.user)
+    const updates = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    const latestUpdate = updates.pop()
+
+    const state = stateGenerator.proposePendingDeposit(
+      convertChannelState('bn', channel.state), 
+      convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+    )
+
+    assertChannelStateEqual(state, {
+      pendingDepositTokenHub: toWeiString(50)
+    })
+  })
+
+  it('should collateralize with the amount of recent tippers', async () => {
+    const channel = await channelUpdateFactory(registry, {balanceTokenHub: toWeiString(10)})
+
+    for (let i = 0; i < 5; i++) {
+      const tipper = await channelUpdateFactory(registry, {user: mkAddress(`0x${i}`), balanceTokenUser: toWeiString(5)})
+      await paymentsService.doPurchase(tipper.user, {}, [{
+        recipient: channel.user,
+        meta: {},
+        amount: {
+          amountToken: toWeiString(1),
+          amountWei: '0'
+        },
+        type: 'PT_CHANNEL',
+        update: {
+          args: {
+            amountToken: toWeiString(1),
+            amountWei: '0',
+            recipient: 'hub'
+          } as PaymentArgs,
+          reason: 'Payment',
+          txCount: tipper.update.state.txCountGlobal + 1
+        }
+      }]) 
+    }
+
+    await service.doCollateralizeIfNecessary(channel.user)
+    const updates = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    const latestUpdate = updates.pop()
+
+    const state = stateGenerator.proposePendingDeposit(
+      convertChannelState('bn', channel.state), 
+      convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+    )
+    
+    const collateralizationTarget = 5 * 10 * 2.5 - 5
+    assertChannelStateEqual(state, {
+      pendingDepositTokenHub: toWeiString(collateralizationTarget)
+    })
+  })
+
+  it('should collateralize to the max amount', async () => {
+    const channel = await channelUpdateFactory(registry, {balanceTokenHub: toWeiString(10)})
+
+    for (let i = 0; i < 10; i++) {
+      const tipper = await channelUpdateFactory(registry, {user: mkAddress(`0x${i}`), balanceTokenUser: toWeiString(5)})
+      await paymentsService.doPurchase(tipper.user, {}, [{
+        recipient: channel.user,
+        meta: {},
+        amount: {
+          amountToken: toWeiString(1),
+          amountWei: '0'
+        },
+        type: 'PT_CHANNEL',
+        update: {
+          args: {
+            amountToken: toWeiString(1),
+            amountWei: '0',
+            recipient: 'hub'
+          } as PaymentArgs,
+          reason: 'Payment',
+          txCount: tipper.update.state.txCountGlobal + 1
+        }
+      }]) 
+    }
+
+    await service.doCollateralizeIfNecessary(channel.user)
+    const updates = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    const latestUpdate = updates.pop()
+
+    const state = stateGenerator.proposePendingDeposit(
+      convertChannelState('bn', channel.state), 
+      convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+    )
+    
+    const collateralizationTarget = 169
+    assertChannelStateEqual(state, {
+      pendingDepositTokenHub: toWeiString(collateralizationTarget)
+    })
+  }).timeout(5000)
 
   it('should onboard a performer with an onchain hubAuthorizedUpdate', async () => {
     const user = mkAddress('0xabc')
@@ -449,8 +663,8 @@ describe('ChannelsService', () => {
       balanceWeiUser: Big(channel.state.balanceWeiUser).plus(
         expectedExchangeAmountWei,
       ),
-      balanceTokenHub: toWeiString(10),
-      balanceTokenUser: toWeiString(10),
+      balanceTokenHub: tweakBalance(10, -28, true),
+      balanceTokenUser: tweakBalance(10, 28, true),
       txCount: [2, 1],
     })
   })
@@ -484,7 +698,7 @@ describe('ChannelsService', () => {
       balanceTokenUser: toWeiString(9),
       balanceWeiHub: '0',
       balanceWeiUser: toWeiBigNum(0),
-      pendingWithdrawalTokenHub: toWeiBigNum(11),
+      pendingWithdrawalTokenHub: tweakBalance(11, -174, true),
       pendingWithdrawalWeiHub: toWeiBigNum(0),
       pendingDepositWeiUser: Big('8100445524503847'),
       pendingWithdrawalWeiUser: '8100445524503847',
@@ -492,7 +706,7 @@ describe('ChannelsService', () => {
   })
 
   // TODO: REB-60
-  it.skip('withdrawal where hub deposits booty', async () => {
+  it('withdrawal where hub deposits booty', async () => {
     const channel = await channelUpdateFactory(registry, {
       balanceTokenHub: toWeiString(0),
       balanceTokenUser: toWeiString(10),
@@ -520,49 +734,52 @@ describe('ChannelsService', () => {
       pendingWithdrawalWeiUser: '3008100445524503847',
       pendingWithdrawalTokenHub: '0',
       pendingDepositWeiUser: '8100445524503847',
-      pendingDepositTokenHub: CHANNEL_BOOTY_LIMIT.sub(toWeiBigNum(1)),
+      pendingDepositTokenHub: config.channelBeiLimit.sub(toWeiBigNum(1).sub(174)),
     })
   })
 
-  // describe('Withdrawal generated cases', () => {
-  //   function makeBigNumsBigger(x: any) {
-  //     for (let key in x) if (isBigNum(x[key])) x[key] = x[key].mul('1e18')
-  //     return x
-  //   }
-  //   extractWithdrawalOverrides().forEach(wd => {
-  //     it(`${wd.name}: ${wd.desc.replace(/^\s*/, '').replace(/\s*$/, '').replace(/\n/g, ', ')}`, async () => {
-  //       let { prev, args, request } = createWithdrawalParams(wd, 'bignumber')
-  //       prev = makeBigNumsBigger(prev)
-  //       request = {
-  //         wei: toWeiBigNum(request.wei),
-  //         token: toWeiBigNum(request.token),
-  //       }
+  describe('Withdrawal generated cases', () => {
+    function makeBigNumsBigger(x: any) {
+      for (let key in x) if (isBigNum(x[key])) x[key] = x[key].mul('1e18')
+      return x
+    }
+    extractWithdrawalOverrides().forEach(wd => {
+      it(`${wd.name}: ${wd.desc.replace(/^\s*/, '').replace(/\s*$/, '').replace(/\n/g, ', ')}`, async () => {
+        let { prev, args, request } = createWithdrawalParams(wd, 'bignumber')
+        prev = makeBigNumsBigger(prev)
+        request = {
+          wei: toWeiBigNum(request.wei),
+          token: toWeiBigNum(request.token),
+        }
 
-  //       const channel = await channelUpdateFactory(
-  //         registry,
-  //         prev,
-  //       )
+        const channel = await channelUpdateFactory(
+          registry,
+          prev,
+        )
 
-  //       const actualArgs = await service.doRequestWithdrawal(
-  //         channel.user,
-  //         request.wei,
-  //         request.token,
-  //         mkAddress('0x666'),
-  //       )
+        const actualArgs = await service.doRequestWithdrawal(
+          channel.user,
+          {
+            exchangeRate: '123.45',
+            recipient: mkAddress('0x666'),
+            tokensToSell: request.token,
+            withdrawalWeiUser: request.wei
+          }
+        )
 
-  //       delete args.timeout
+        delete args.timeout
 
-  //       const expected = makeBigNumsBigger(
-  //         convertWithdrawal('bignumber', {
-  //           ...args,
-  //           exchangeRate: '123.45',
-  //           recipient: mkAddress('0x666'),
-  //         }),
-  //       )
-  //       assert.containSubset(actualArgs, convertWithdrawal('str', expected))
-  //     })
-  //   })
-  // })
+        const expected = makeBigNumsBigger(
+          convertWithdrawal('bignumber', {
+            ...args,
+            exchangeRate: '123.45',
+            recipient: mkAddress('0x666'),
+          }),
+        )
+        assert.containSubset(actualArgs, convertWithdrawal('str', expected))
+      }).timeout(5000)
+    })
+  })
 
   it('should sync channel and thread updates', async () => {
     const user = mkAddress('0xabc')
@@ -611,5 +828,24 @@ describe('ChannelsService', () => {
     )
 
     assert.deepEqual(syncUpdates.map(s => s.type), ['channel', 'thread'])
+  })
+
+  it('should only sign zero-thread states', async () => {
+    assert.isRejected(channelUpdateFactory(registry, {
+      threadCount: 1,
+      threadRoot: mkHash('0xbad'),
+      balanceTokenUser: 10000,
+      balanceWeiUser: 9999
+    }))
+  })
+
+  it('should not recollateralize with pending states', async () => {
+    const channel = await channelUpdateFactory(registry, {
+      pendingDepositTokenHub: '1'
+    })
+    console.log(convertChannelState('str', channel.state))
+
+    const args = await service.doCollateralizeIfNecessary(channel.user)
+    assert.isNull(args)
   })
 })

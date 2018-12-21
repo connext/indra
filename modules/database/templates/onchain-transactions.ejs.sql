@@ -17,12 +17,16 @@ create table onchain_transactions_raw (
   gas_price bigint not null,
   data text not null,
   nonce bigint not null,
-  signature jsonb not null check (
-    json_not_null(signature, 'r', 'hex') is not null and
-    json_not_null(signature, 's', 'hex') is not null and
-    json_not_null(signature, 'v', 'uint')::integer is not null
-  ),
-  hash csw_sha3_hash not null unique,
+
+  -- TODO: REB-61
+  -- signature jsonb not null check (
+  --   json_not_null(signature, 'r', 'hex') is not null and
+  --   json_not_null(signature, 's', 'hex') is not null and
+  --   json_not_null(signature, 'v', 'uint')::integer is not null
+  -- ),
+  --hash csw_sha3_hash not null unique,
+  signature jsonb,
+  hash csw_sha3_hash unique,
 
   meta jsonb not null, -- includes reason, contract, method, args, etc
 

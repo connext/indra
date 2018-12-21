@@ -9,7 +9,7 @@ import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
 import { mkAddress, mkSig } from "./stateUtils";
 import { Validator } from '../vendor/connext/validator'
-import { Big } from '../util/bigNumber';
+import { Big, toWeiBigNum } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
 import { Utils } from '../vendor/connext/Utils';
 import Config from '../Config';
@@ -128,6 +128,12 @@ export const getTestConfig = (overrides?: any) => ({
   sessionSecret: 'hummus',
   hotWalletAddress: '0x7776900000000000000000000000000000000000',
   channelManagerAddress: mkAddress('0xCCC'),
+  channelBeiLimit: toWeiBigNum(69),
+  beiMinThreshold: toWeiBigNum(20),
+  beiMinCollateralization: toWeiBigNum(50),
+  beiMaxCollateralization: toWeiBigNum(169),
+  threadBeiLimit: toWeiBigNum(10),
+  channelBeiDeposit: toWeiBigNum(69).add(1069),
   ...(overrides || {}),
 })
 
@@ -188,6 +194,7 @@ export const mockServices: any = {
       return client
     },
     dependencies: ['Config'],
+    isSingleton: true
   },
 
   'PgPoolService': {

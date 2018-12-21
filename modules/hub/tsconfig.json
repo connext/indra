@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "moduleResolution": "node",
-    "outDir": "dist/",
+    "outDir": "dist",
     "sourceMap": true,
     "noImplicitAny": false,
     "strictPropertyInitialization": false,
@@ -17,25 +17,18 @@
     "declarationDir": "dist/types",
     "typeRoots": [
       "node_modules/@types",
-      "node_modules/@machinomy",
-      "src/@types"
+      "node_modules/@machinomy"
     ]
   },
   "include": [
     "src/**/*.ts",
-    "example/**/*.ts",
-    "types/**/*.ts",
     "node_modules/**/index.d.ts"
   ],
   "exclude": [
-    "node_modules/**",
-    "node_modules/@machinomy/**/*.ts",
-    "../common/**",
-    "src/frontend/**"
+    "node_modules"
   ],
   "typeRoots": [
     "node_modules/@types",
-    "node_modules/@machinomy",
-    "src/@types"
+    "node_modules/@machinomy"
   ]
 }
