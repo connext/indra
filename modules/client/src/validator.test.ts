@@ -1,11 +1,11 @@
 import { assert } from './testing/index'
 import * as t from './testing/index'
 import { Validator } from './validator';
-import * as sinon from 'sinon'
+import * as sinon from 'sinon';
 import { Utils } from './Utils';
 import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, UnsignedThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs } from './types';
 import { toBN } from './helpers/bn';
-import Web3 = require('web3')
+import Web3 from 'web3'
 import { EMPTY_ROOT_HASH } from './lib/constants';
 
 const eventInputs = [

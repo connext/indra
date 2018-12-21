@@ -3,7 +3,8 @@ import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateReque
 import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
-import * as actions from "../state/actions"
+import * as actions from "../state/actions";
+const ethers = require('ethers')
 
 /*
  * Rule:
@@ -123,7 +124,68 @@ export default class DepositController extends AbstractController {
         ),
       )
       state.sigHub = update.sigHub
-      const tx = await this.connext.contract.userAuthorizedUpdate(state)
+      console.log(this)
+      let signer = this.connext.contract.cm.connect(this.connext.opts.wallet)
+      let gasEstimate = await signer.estimate.userAuthorizedUpdate(
+        state.recipient, // recipient
+        [
+          state.balanceWeiHub,
+          state.balanceWeiUser,
+        ],
+        [
+          state.balanceTokenHub,
+          state.balanceTokenUser,
+        ],
+        [
+          state.pendingDepositWeiHub,
+          state.pendingWithdrawalWeiHub,
+          state.pendingDepositWeiUser,
+          state.pendingWithdrawalWeiUser,
+        ],
+        [
+          state.pendingDepositTokenHub,
+          state.pendingWithdrawalTokenHub,
+          state.pendingDepositTokenUser,
+          state.pendingWithdrawalTokenUser,
+        ],
+        [state.txCountGlobal, state.txCountChain],
+        state.threadRoot,
+        state.threadCount,
+        state.timeout,
+        state.sigHub!,
+      )
+      const tx = await signer.userAuthorizedUpdate(
+        state.recipient, // recipient
+        [
+          state.balanceWeiHub,
+          state.balanceWeiUser,
+        ],
+        [
+          state.balanceTokenHub,
+          state.balanceTokenUser,
+        ],
+        [
+          state.pendingDepositWeiHub,
+          state.pendingWithdrawalWeiHub,
+          state.pendingDepositWeiUser,
+          state.pendingWithdrawalWeiUser,
+        ],
+        [
+          state.pendingDepositTokenHub,
+          state.pendingWithdrawalTokenHub,
+          state.pendingDepositTokenUser,
+          state.pendingWithdrawalTokenUser,
+        ],
+        [state.txCountGlobal, state.txCountChain],
+        state.threadRoot,
+        state.threadCount,
+        state.timeout,
+        state.sigHub!,
+        {
+          value: new ethers.utils.bigNumberify(state.pendingDepositWeiUser).toHexString(),
+          gasLimit: new ethers.utils.BigNumber(gasEstimate).toHexString()
+        }
+      )
       await tx.awaitEnterMempool()
       // update the channel in the state
       // this.connext.syncController.enqueueSyncResultsFromHub([{ type: "channel", update }])
