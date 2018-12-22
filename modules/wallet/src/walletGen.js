@@ -1,4 +1,3 @@
-import {setWallet} from './utils/actions.js';
 import { store } from './App';
 import * as ethers from 'ethers';
 

@@ -1,22 +1,24 @@
 import React, { Component } from 'react';
-import getWeb3 from "./utils/getWeb3";
-import Web3 from 'web3';
 import { getConnextClient } from 'connext/dist/Connext';
 import './App.css';
 import ProviderOptions from './utils/ProviderOptions.ts';
 import clientProvider from './utils/web3/clientProvider.ts'; 
-import {Buffer} from 'buffer';
 import * as ethers from 'ethers';
 import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
+require('dotenv').config();
+const ropstenWethAbi = require('./utils/tokenAbi.json')
 
 console.log(`starting app in env: ${JSON.stringify(process.env,null,1)}`)
-
-const ropstenWethAbi = require('./utils/tokenAbi.json')
+const hubUrl = process.env.REACT_APP_HUB_URL
 const ropstenWethAddress = process.env.REACT_APP_TOKEN_CONTRACT_ADDRESS
+const hotWalletAddress = process.env.REACT_APP_HOT_WALLET_ADDRESS
+const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS
+
 const HASH_PREAMBLE = 'SpankWallet authentication message:'
+
 let ropstenWethContract
 let ropstenWethSigner
 
@@ -27,8 +29,6 @@ const opts = {
   },
   withCredentials: true
 }
-
-require('dotenv').config();
 
 export const store = createStore(setWallet, null);
 
@@ -75,7 +75,7 @@ class App extends Component {
       walletSet:false,
       keyEntered:'',
       approvalWeiUser: '100',
-      recipient:process.env.REACT_APP_HOT_WALLET_ADDRESS,
+      recipient: hotWalletAddress,
       connext:null,
     }
   }
@@ -86,22 +86,6 @@ class App extends Component {
   async componentDidMount(){
     try {
 
-
-      // old provider code
-      // const web3 = await getWeb3();
-      // const accounts = await web3.eth.getAccounts();
-
-      // console.log(
-      //   `instantiating connext with hub as: ${process.env.HOT_WALLET_ADDRESS}`
-      // );
-      // console.log(
-      //   `web3 address : ${JSON.stringify(accounts)}`
-      // );
-
-
-      
-      
-
       // New provider code
       const providerOpts = new ProviderOptions().approving()
       console.log(providerOpts);
@@ -111,7 +95,6 @@ class App extends Component {
       this.setState({web3: web3});
       console.log(web3)
       console.log("debug1")
-
 
       // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
       // as is, if you don't write down the privkey in the store you can't recover the wallet
@@ -124,7 +107,7 @@ class App extends Component {
        const newWallet = wallet.connect(web3);
        store.dispatch({
         type: 'SET_WALLET',
-        text: newWallet //Buffer.from(String(privKey.private),'hex')
+        text: newWallet
       });
       this.setState({wallet: store.getState()[0]});//newWallet});
 
@@ -136,7 +119,7 @@ class App extends Component {
       const account = store.getState()[0].address;
       this.setState({address:account});
       console.log(
-        `instantiating connext with hub as: ` + process.env.REACT_APP_HUB_URL
+        `instantiating connext with hub as: ${hubUrl}`
       );
       console.log(
         `web3 address : ${JSON.stringify(account)}`
@@ -147,9 +130,9 @@ class App extends Component {
       const connext = getConnextClient({
           wallet: newWallet,
           web3,
-          hubAddress: process.env.REACT_APP_HOT_WALLET_ADDRESS, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
-          hubUrl: process.env.REACT_APP_HUB_URL, //http://localhost:8080,
-          contractAddress: process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
+          hubAddress: hotWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
+          hubUrl: hubUrl, //http://localhost:8080,
+          contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
           user: account
         })
       
@@ -237,8 +220,7 @@ class App extends Component {
 
     async approvalHandler(evt) {
 
-      let approveFor = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS
-
+      let approveFor = channelManagerAddress
       let toApprove = this.state.approvalWeiUser
       let toApproveBn = ethers.utils.bigNumberify(toApprove)
 
@@ -308,20 +290,20 @@ class App extends Component {
     }
 
     async checkAuthorizeHandler(evt) {
-      let res = await axios.get(process.env.REACT_APP_HUB_URL + '/auth/status', opts)
+      let res = await axios.get(`${hubUrl}/auth/status`, opts)
       console.log(`Auth status: ${JSON.stringify(res.data)}`)
     }
 
     async authorizeHandler(evt) {
       console.log(this.state.wallet)
 
-      let res = await axios.post(process.env.REACT_APP_HUB_URL + '/auth/challenge', {}, opts)
+      let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts)
 
       let hash = ethers.utils.id(`${HASH_PREAMBLE} ${ethers.utils.id(res.data.nonce)} ${ethers.utils.id('localhost')}`)
       let signature = await this.state.wallet.signMessage(ethers.utils.arrayify(hash));
 
       try {
-        let authRes = await axios.post(process.env.REACT_APP_HUB_URL + '/auth/response', {
+        let authRes = await axios.post(`${hubUrl}/auth/response`, {
           nonce: res.data.nonce,
           address: this.state.wallet.address,
           origin: 'localhost',
