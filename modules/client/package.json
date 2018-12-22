@@ -5,14 +5,15 @@
   "license": "ISC",
   "main": "dist/Connext.js",
   "scripts": {
-    "clean": "rm -rf ./dist",
     "build": "node_modules/.bin/tsc -p tsconfig.json",
+    "clean": "rm -rf ./dist",
     "compile": "node_modules/.bin/tsc",
+    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
+    "postinstall": "rm -f node_modules/web3/index.d.ts",
     "prepare": "npm run rebuild",
     "rebuild": "npm run clean && npm run compile",
     "test": "node test/HappyCase.test.js",
-    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
-    "postinstall": "rm -f node_modules/web3/index.d.ts"
+    "watch": "tsc --watch --project tsconfig.json"
   },
   "engines": {
     "node": ">=9",
@@ -57,6 +58,7 @@
     "sinon": "^7.1.0",
     "ts-node": "^7.0.1",
     "typechain": "^0.3.8",
+    "types-ethereumjs-util": "^0.0.8",
     "typescript": "=3.2.2"
   }
 }
