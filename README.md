@@ -24,7 +24,7 @@ The `master` branch contains deployment scripts in the `./ops` directory. Check 
 
 `make deploy` <- this will build the project's docker images and push them to docker hub
 
-When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `me` variable at the top of the Makefile before running `make deploy`.
+When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make deploy`.
 
 To deploy the ChannelManager Contract:
 
@@ -39,7 +39,7 @@ cd modules/contracts && yarn install
 
 `bash ops/deploy.prod.sh` <- Assuming the docker images have been built & pushed to a registry, this will pull & deploy them in an environment suitable for production.
 
-Again, it runs `whoami` to get the current username & tries to use that as the repository name to pull docker images from. If your docker hub username is different, then update the repository at the top of the `deploy.prod.sh` script before deploying.
+Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the repository at the top of the `deploy.prod.sh` script before deploying.
 
 #### Details
 
