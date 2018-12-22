@@ -1,17 +1,23 @@
 #!/bin/bash
 
-echo "Wallet entrypoint activated"
+hub="hub:8080"
+ethprovider="ethprovider:8545"
 
-# Add "connext" to yarn links
+echo "Wallet entrypoint activated!"
+echo "Setting up yarn links.."
 cd /client && echo "cwd=`pwd`"
 yarn link
-
-# Link "connext" into current project
 cd $HOME && echo "cwd=`pwd`"
 yarn link connext
 
 # Start typescript watcher in background
-tsc --watch --preserveWatchOutput --project tsconfig.json &
+./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
+
+# Wait for hub & ethprovider to wake up
+echo "Waiting for $hub and $ethprovider to wake up.."
+bash /ops/wait-for.sh $hub
+bash /ops/wait-for.sh $ethprovider
 
 # Start wallet react app
+echo "Starting wallet dev server.."
 yarn start
