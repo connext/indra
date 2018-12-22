@@ -5,7 +5,7 @@ set -e
 # ENV VARS
 
 project=connext
-number_of_services=5
+number_of_services=7
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -34,6 +34,8 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 # Deploy according to above configuration
 
 hub_image=${project}_hub:dev
+proxy_image=${project}_proxy:dev
+wallet_image=${project}_wallet:dev
 ethprovider_image=${project}_ethprovider:dev
 database_image=${project}_database:dev
 redis_image=redis:5-alpine
@@ -87,8 +89,28 @@ secrets:
 volumes:
   chain_dev:
   database_dev:
+  certs:
 
 services:
+
+  proxy:
+    image: $proxy_image
+    networks:
+      - $project
+    ports:
+      - "80:80"
+    volumes:
+      - certs:/etc/letsencrypt
+
+  wallet:
+    image: $wallet_image
+    networks:
+      - $project
+    ports:
+      - "3000:3000"
+    volumes:
+      - `pwd`/modules/wallet:/root
+      - `pwd`/modules/client:/client
 
   hub:
     image: $hub_image
@@ -126,8 +148,10 @@ services:
       - $project
     secrets:
       - connext_database_dev
+      - private_key_dev
     environment:
       NODE_ENV: developmeny
+      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
       WALLET_ADDRESS: $WALLET_ADDRESS
       CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
       HOT_WALLET_ADDRESS: $HOT_WALLET_ADDRESS

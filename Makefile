@@ -7,6 +7,8 @@ client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
+proxy=$(cwd)/modules/proxy
+wallet=$(cwd)/modules/wallet
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 VPATH=build:$(contracts)/build:$(hub)/dist
@@ -18,6 +20,8 @@ client_prereq=$(shell find $(client) $(find_options))
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 db_prereq=$(shell find $(db) $(find_options))
 hub_prereq=$(shell find $(hub) $(find_options))
+proxy_prereq=$(shell find $(proxy) $(find_options))
+wallet_prereq=$(shell find $(wallet) $(find_options))
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to set permissions to
@@ -28,7 +32,8 @@ docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
-docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
+docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
+docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root $(project)_builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
@@ -43,7 +48,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: client database ethprovider hub
+dev: client database ethprovider hub wallet proxy
 prod: database-prod hub-prod
 
 clean:
@@ -80,6 +85,20 @@ test: hub
 	bash $(hub)/ops/test.sh
 
 # Begin Real Rules
+
+# Proxy
+
+proxy:
+	$(log_start)
+	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
+	$(log_finish) && touch build/wallet
+
+# Wallet
+
+wallet:
+	$(log_start)
+	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
+	$(log_finish) && touch build/wallet
 
 # Client
 
