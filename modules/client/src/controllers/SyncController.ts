@@ -9,6 +9,7 @@ import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
 
 const TWO_SECONDS = 2 * 1000
+const TEN_SECONDS = 10 * 1000
 
 function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
   return {
@@ -108,7 +109,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
 }
 
 export default class SyncController extends AbstractController {
-  static POLLER_INTERVAL_LENGTH = TWO_SECONDS
+  static POLLER_INTERVAL_LENGTH = TEN_SECONDS
 
   private poller: Poller
 
