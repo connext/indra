@@ -6,10 +6,9 @@ import { getStore } from "../walletGen";
 import store from '../App';
 require('dotenv').config()
 
-
 const DEFAULT_NETWORK = 'ropsten'
+export const RPC_URL = process.env.REACT_APP_ETHPROVIDER_URL || 'http://localhost:8545'
 
-export const RPC_URL = 'https://ropsten.infura.io/RNXFMnEXo6TEeIYzcTyQ:8545' //process.env.RPC_URL
 if (!RPC_URL)
   throw new Error('Unknown NETWORK_NAME: ' + process.env.NETWORK_NAME || DEFAULT_NETWORK)
 

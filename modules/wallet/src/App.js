@@ -12,11 +12,21 @@ import { createWallet,createWalletFromKey } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
 
+console.log(`starting app in env: ${JSON.stringify(process.env,null,1)}`)
+
 const ropstenWethAbi = require('./utils/tokenAbi.json')
 const ropstenWethAddress = process.env.REACT_APP_TOKEN_CONTRACT_ADDRESS
 const HASH_PREAMBLE = 'SpankWallet authentication message:'
 let ropstenWethContract
 let ropstenWethSigner
+
+const opts = {
+  headers: {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Authorization': 'Bearer foo'
+  },
+  withCredentials: true
+}
 
 require('dotenv').config();
 
@@ -297,19 +307,16 @@ class App extends Component {
       console.log(`Updating state : ${this.state.depositVal}`)
     }
 
-
     async checkAuthorizeHandler(evt) {
-      let res = await axios.get(process.env.REACT_APP_HUB_URL + '/auth/status', {
-        headers: {
-          'Authorize': 'true'
-        }
-      })
+      let res = await axios.get(process.env.REACT_APP_HUB_URL + '/auth/status', opts)
       console.log(`Auth status: ${JSON.stringify(res.data)}`)
     }
 
     async authorizeHandler(evt) {
       console.log(this.state.wallet)
-      let res = await axios.post(process.env.REACT_APP_HUB_URL + '/auth/challenge')
+
+      let res = await axios.post(process.env.REACT_APP_HUB_URL + '/auth/challenge', {}, opts)
+
       let hash = ethers.utils.id(`${HASH_PREAMBLE} ${ethers.utils.id(res.data.nonce)} ${ethers.utils.id('localhost')}`)
       let signature = await this.state.wallet.signMessage(ethers.utils.arrayify(hash));
 
@@ -319,7 +326,7 @@ class App extends Component {
           address: this.state.wallet.address,
           origin: 'localhost',
           signature: signature
-        })
+        }, opts)
         const token = authRes.data.token
         document.cookie = `hub.sid=${token}`
         console.log(`cookie set: ${token}`)
