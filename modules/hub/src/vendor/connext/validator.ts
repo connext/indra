@@ -606,9 +606,10 @@ export class Validator {
     }
 
     const prevPending = this.hasPendingOps(prev)
+    const currPending = this.hasPendingOps(curr)
     // pending ops only added to current state if the current state
-    // is of a "ProposePending" request type
-    if (this.hasPendingOps(curr)) {
+    // is of a "ProposePending" request type (indicated by gain of pending ops)
+    if (currPending && !prevPending) {
       errs.push(this.enforceDelta([prev, curr], 1, ['txCountChain']))
     } else {
       errs.push(this.enforceDelta([prev, curr], 0, ['txCountChain']))
@@ -634,7 +635,11 @@ export class Validator {
       amountWei: toBN(0),
       amountToken: toBN(0),
     }
-    if (prevPending) {
+
+    // if the previous operation has pending operations, and current
+    // does not, then the current op is either a confirmation or an
+    // invalidation (this code should NOT be used for invalidation updates)
+    if (prevPending && !currPending) {
       // how much reserves were added into contract?
       reserves = {
         amountWei: maxBN(

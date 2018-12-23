@@ -65,6 +65,15 @@ export class ChannelsApiServiceHandler {
       return res.sendStatus(400)
     }
 
+    if (!updates.length) {
+      res.send({
+        error: null,
+        updates: [],
+        msg: 'Did not recieve any updates.',
+      })
+      return
+    }
+
     const sortedUpdates = updates
       .concat()
       .sort((a, b) => a.txCount - b.txCount)

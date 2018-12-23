@@ -36,13 +36,18 @@ import {
   WithdrawalParametersBigNumber,
   ChannelStateBN,
 } from './vendor/connext/types'
-import { prettySafeJson } from './util'
+import { prettySafeJson, Omit } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
 import ThreadsService from './ThreadsService';
 import { SignerService } from './SignerService';
 
 const LOG = log('ChannelsService') as any
+
+export type RedisUnsignedUpdate = {
+  update: Omit<ChannelStateUpdate, 'state'>
+  timestamp: number
+}
 
 export default class ChannelsService {
   private onchainTxService: OnchainTransactionService
@@ -145,19 +150,20 @@ export default class ChannelsService {
       .plus(userBootyCurrentlyInChannel)
       .plus(channel.state.balanceTokenHub)
 
-    let hubBootyDeposit: BigNumber
-    if (bootyRequestToDeposit.lessThanOrEqualTo(channel.state.balanceTokenHub)) {
-      // if we already have enough booty to collateralize the user channel, dont deposit
-      hubBootyDeposit = Big(0)
-    } else if (totalChannelRequestedBooty.greaterThan(this.config.channelBeiDeposit)) {
-      // if total channel booty plus new additions exceeds limit, only fund up to the limit
-      hubBootyDeposit = this.config.channelBeiDeposit
-        .minus(userBootyCurrentlyInChannel)
-        .minus(channel.state.balanceTokenHub)
-    } else {
-      // fund the up to the amount the user put in
-      hubBootyDeposit = bootyRequestToDeposit.minus(channel.state.balanceTokenHub)
-    }
+    const hubBootyDeposit = BigNumber.max(0, (
+      bootyRequestToDeposit.lessThanOrEqualTo(channel.state.balanceTokenHub) ?
+        // if we already have enough booty to collateralize the user channel, dont deposit
+        Big(0) :
+
+      totalChannelRequestedBooty.greaterThan(this.config.channelBeiDeposit) ?
+        // if total channel booty plus new additions exceeds limit, only fund up to the limit
+        this.config.channelBeiDeposit
+          .minus(userBootyCurrentlyInChannel)
+          .minus(channel.state.balanceTokenHub) :
+
+        // fund the up to the amount the user put in
+        bootyRequestToDeposit.minus(channel.state.balanceTokenHub)
+    ))
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
@@ -241,6 +247,19 @@ export default class ChannelsService {
       return null
     }
 
+    const currentPendingRedis = await this.redisGetUnsignedState(user)
+    if (currentPendingRedis) {
+      const age = (Date.now() - currentPendingRedis.timestamp) / 1000
+      if (age < 60) {
+        LOG.info(
+          `Current pending recollateralization or withdrawal is only ` +
+          `${age.toFixed()}s old; will not recollateralize until that's ` +
+          `more than 60s old.`
+        )
+        return
+      }
+    }
+
     const amountToCollateralize = await this.calculateRequiredCollateral(
       convertChannelState('bignumber', channel.state),
     )
@@ -262,19 +281,10 @@ export default class ChannelsService {
       timeout: 0
     }
 
-    const unsignedChannelStateWithDeposits = this.validator.generateProposePendingDeposit(
-      convertChannelState('str', channel.state),
-      depositArgs
-    )
-
-    await this.redisSaveUnsignedState(
-      user,
-      {
-        state: unsignedChannelStateWithDeposits as ChannelState,
-        args: depositArgs,
-        reason: 'ProposePendingDeposit'
-      }
-    )
+    await this.redisSaveUnsignedState(user, {
+      args: depositArgs,
+      reason: 'ProposePendingDeposit'
+    })
     return depositArgs
   }
 
@@ -357,14 +367,8 @@ export default class ChannelsService {
       timeout: Math.floor(Date.now() / 1000) + (5 * 60),
     }
 
-    const unsigned = this.validator.generateProposePendingWithdrawal(
-      convertChannelState('str', channel.state),
-      withdrawalArgs
-    )
-
     await this.redisSaveUnsignedState(user, {
       reason: 'ProposePendingWithdrawal',
-      state: unsigned as ChannelState,
       args: withdrawalArgs,
     })
 
@@ -399,7 +403,8 @@ export default class ChannelsService {
     }
 
     // check if we already have an unsigned request pending
-    let existingUnsigned = await this.redisGetUnsignedState(user)
+    const res = await this.redisGetUnsignedState(user)
+    let existingUnsigned = res && res.update
     if (existingUnsigned) {
       throw new Error(
         `Pending unsigned request already exists, please sync to receive unsigned state: ${existingUnsigned}`,
@@ -442,13 +447,7 @@ export default class ChannelsService {
       ),
     }
 
-    let unsigned = this.validator.generateExchange(
-      convertChannelState('str', channel.state),
-      exchangeArgs
-    )
-
     await this.redisSaveUnsignedState(user, {
-      state: unsigned as ChannelState,
       args: exchangeArgs,
       reason: 'Exchange',
     })
@@ -457,7 +456,7 @@ export default class ChannelsService {
 
   public async doUpdates(
     user: string,
-    updates: UpdateRequestBigNumber[],
+    updates: (UpdateRequestBigNumber | null)[],
   ): Promise<ChannelStateUpdateRowBigNum[]> {
     const rows = []
     for (const update of updates) {
@@ -470,7 +469,7 @@ export default class ChannelsService {
   public async doUpdateFromWithinTransaction(
     user: string,
     update: UpdateRequestBigNumber
-  ): Promise<ChannelStateUpdateRowBigNum> {
+  ): Promise<ChannelStateUpdateRowBigNum | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
     // channel status checks
@@ -496,6 +495,8 @@ export default class ChannelsService {
       update.txCount,
     )
 
+    console.log('USER:', user)
+    console.log('CM:', this.config.channelManagerAddress)
     console.log('CURRENT:', channel)
     console.log('UPDATE:', update)
     console.log('HUB VER:', hubsVersionOfUpdate)
@@ -547,7 +548,7 @@ export default class ChannelsService {
       }
     }
 
-    let unsignedUpdateRedis: ChannelStateUpdate
+    let redisUpdate: ChannelStateUpdate
     let unsignedChannelStateCurrent: UnsignedChannelState
     let generated: UnsignedChannelState
     let sigHub: string
@@ -582,35 +583,37 @@ export default class ChannelsService {
         // withdrawal -
         // user requests withdrawal -> hub responds with unsigned update
         // user signs and sends back here, which is where we are now
-        unsignedUpdateRedis = await this.loadAndCheckRedisStateSignature(
+        redisUpdate = await this.loadAndCheckRedisStateSignature(
           user,
           signedChannelStatePrevious,
           update,
         )
+        if (!redisUpdate)
+          return null
 
         // dont await so we can do this in the background
         let data = this.contract.methods.hubAuthorizedUpdate(
           user,
-          unsignedUpdateRedis.state.recipient,
-          [unsignedUpdateRedis.state.balanceWeiHub, unsignedUpdateRedis.state.balanceWeiUser],
-          [unsignedUpdateRedis.state.balanceTokenHub, unsignedUpdateRedis.state.balanceTokenUser],
+          redisUpdate.state.recipient,
+          [redisUpdate.state.balanceWeiHub, redisUpdate.state.balanceWeiUser],
+          [redisUpdate.state.balanceTokenHub, redisUpdate.state.balanceTokenUser],
           [
-            unsignedUpdateRedis.state.pendingDepositWeiHub,
-            unsignedUpdateRedis.state.pendingWithdrawalWeiHub,
-            unsignedUpdateRedis.state.pendingDepositWeiUser,
-            unsignedUpdateRedis.state.pendingWithdrawalWeiUser,
+            redisUpdate.state.pendingDepositWeiHub,
+            redisUpdate.state.pendingWithdrawalWeiHub,
+            redisUpdate.state.pendingDepositWeiUser,
+            redisUpdate.state.pendingWithdrawalWeiUser,
           ],
           [
-            unsignedUpdateRedis.state.pendingDepositTokenHub,
-            unsignedUpdateRedis.state.pendingWithdrawalTokenHub,
-            unsignedUpdateRedis.state.pendingDepositTokenUser,
-            unsignedUpdateRedis.state.pendingWithdrawalTokenUser,
+            redisUpdate.state.pendingDepositTokenHub,
+            redisUpdate.state.pendingWithdrawalTokenHub,
+            redisUpdate.state.pendingDepositTokenUser,
+            redisUpdate.state.pendingWithdrawalTokenUser,
           ],
-          [unsignedUpdateRedis.state.txCountGlobal, unsignedUpdateRedis.state.txCountChain],
-          unsignedUpdateRedis.state.threadRoot,
-          unsignedUpdateRedis.state.threadCount,
-          unsignedUpdateRedis.state.timeout,
-          update.sigUser,
+          [redisUpdate.state.txCountGlobal, redisUpdate.state.txCountChain],
+          redisUpdate.state.threadRoot,
+          redisUpdate.state.threadCount,
+          redisUpdate.state.timeout,
+          redisUpdate.state.sigUser,
         ).encodeABI()
 
         let txn = await this.onchainTxService.sendTransaction(this.db, {
@@ -621,24 +624,22 @@ export default class ChannelsService {
 
         return await this.saveRedisStateUpdate(
           user,
-          unsignedUpdateRedis,
+          redisUpdate,
           update,
           txn.logicalId,
         )
 
       case 'Exchange':
         // ensure users cant hold exchanges
-        unsignedUpdateRedis = await this.loadAndCheckRedisStateSignature(
+        redisUpdate = await this.loadAndCheckRedisStateSignature(
           user,
           signedChannelStatePrevious,
           update,
         )
+        if (!redisUpdate)
+          return null
 
-        return await this.saveRedisStateUpdate(
-          user,
-          unsignedUpdateRedis,
-          update,
-        )
+        return await this.saveRedisStateUpdate(user, redisUpdate, update)
 
       case 'OpenThread':
         // will store unsigned state in redis for the next sync response
@@ -732,8 +733,9 @@ export default class ChannelsService {
     const unsigned = await this.redisGetUnsignedState(user)
     if (unsigned) {
       pushChannel({
-        args: unsigned.args,
-        reason: unsigned.reason,
+        id: -unsigned.timestamp,
+        args: unsigned.update.args,
+        reason: unsigned.update.reason,
         txCount: null
       })
     }
@@ -762,20 +764,21 @@ export default class ChannelsService {
 
   public async redisGetUnsignedState(
     user: string,
-  ): Promise<ChannelStateUpdate | null> {
+  ): Promise<RedisUnsignedUpdate | null> {
     const unsignedUpdate = await this.redis.get(`PendingStateUpdate:${user}`)
-    console.log('`PendingStateUpdate:${user}`: ', `PendingStateUpdate:${user}`);
     return unsignedUpdate ? JSON.parse(unsignedUpdate) : null
   }
 
-  private async redisSaveUnsignedState(user: string, state: ChannelStateUpdate) {
-    const redis = await this.redis.set(`PendingStateUpdate:${user}`, JSON.stringify(state), [
-      'EX',
-      5 * 60,
-    ])
+  private async redisSaveUnsignedState(user: string, update: Omit<ChannelStateUpdate, 'state'>) {
+    const redis = await this.redis.set(
+      `PendingStateUpdate:${user}`,
+      JSON.stringify({ update, timestamp: Date.now() }),
+      ['EX', 5 * 60],
+    )
   }
 
-  private async redisDeleteUnsignedState(user: string) {
+  // public for tests
+  public async redisDeleteUnsignedState(user: string) {
     this.redis.del(`PendingStateUpdate:${user}`)
   }
 
@@ -783,13 +786,14 @@ export default class ChannelsService {
     user: string,
     currentState: ChannelStateBN,
     update: UpdateRequestBigNumber,
-  ) {
+  ): Promise<ChannelStateUpdate | null> {
     const fromRedis = await this.redisGetUnsignedState(user)
     if (!fromRedis) {
-      throw new Error(
-        `Hub could not retrieve the unsigned update, possibly expired?
-        user update: ${prettySafeJson(update)}`,
+      LOG.info(
+        `Hub could not retrieve the unsigned update, possibly expired or sent twice? ` +
+        `user update: ${prettySafeJson(update)}`
       )
+      return null
     }
 
     if (update.txCount != currentState.txCountGlobal + 1) {
@@ -801,22 +805,27 @@ export default class ChannelsService {
       )
     }
 
-    const generated = await this.validator.generateChannelStateFromRequest(
+    const unsigned = await this.validator.generateChannelStateFromRequest(
       convertChannelState('str', currentState),
       {
-        args: fromRedis.args,
-        reason: fromRedis.reason,
+        args: fromRedis.update.args,
+        reason: fromRedis.update.reason,
         txCount: currentState.txCountGlobal + 1
       }
     )
 
-    // validate that user sig matches our unsigned update that we proposed
-    this.validator.assertChannelSigner({
-      ...generated,
+    const signed = {
+      ...unsigned,
       sigUser: update.sigUser,
-    })
+    }
 
-    return fromRedis
+    // validate that user sig matches our unsigned update that we proposed
+    this.validator.assertChannelSigner(signed)
+
+    return {
+      ...fromRedis.update,
+      state: signed,
+    }
   }
 
   private async saveRedisStateUpdate(

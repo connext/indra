@@ -301,10 +301,13 @@ export type ArgTypesBN = ArgsTypes<BN>
 export type ArgTypesBigNumber = ArgsTypes<BigNumber>
 
 export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
+  // For unsigned updates, the id will be a negative timestamp of when the
+  // unsigned update was created. This can be used to ensure they are unique.
   id?: number
   reason: ChannelUpdateReason
   args: Args
-  txCount: number
+  // the txCount will be null if the update is an unsigned update
+  txCount: number | null
   sigUser?: string
   sigHub?: string
 }

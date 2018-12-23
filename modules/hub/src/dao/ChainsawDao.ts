@@ -5,6 +5,7 @@ import { PaymentChannel } from '../domain/PaymentChannel'
 import { BigNumber } from 'bignumber.js'
 import {ContractEvent} from '../domain/ContractEvent'
 import Config from '../Config'
+import { default as log } from '../util/log'
 
 const STATUS_TO_STATES = {
   CS_OPEN: 0,
@@ -18,6 +19,8 @@ export type ContractEventWithMeta = {
   event: ContractEvent,
   id: number
 }
+
+const LOG = log('ChainsawDao')
 
 export default interface ChainsawDao {
   lastPollFor(address: string, type: PollType): Promise<ChainsawPollEvent>
@@ -89,21 +92,25 @@ export class PostgresChainsawDao implements ChainsawDao {
           events.map((e: ContractEvent) => {
             const fields = e.toFields()
 
+            const args = [
+              this.hubAddress,
+              e.contract.toLowerCase(),
+              e.blockNumber,
+              e.blockHash,
+              e.txHash,
+              e.logIndex,
+              e.txIndex,
+              e.sender,
+              e.timestamp,
+              e.TYPE,
+              JSON.stringify(fields)
+            ]
+
+            LOG.info(`Inserting chainsaw event: ${JSON.stringify(args)}`)
+
             return c.query(
               'SELECT chainsaw_insert_event($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
-              [
-                this.hubAddress,
-                e.contract.toLowerCase(),
-                e.blockNumber,
-                e.blockHash,
-                e.txHash,
-                e.logIndex,
-                e.txIndex,
-                e.sender,
-                e.timestamp,
-                e.TYPE,
-                JSON.stringify(fields)
-              ],
+              args,
             )
           }),
         )

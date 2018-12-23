@@ -404,13 +404,8 @@ describe('ChannelsService', () => {
           Big(t.exchange.amountWei).mul('1e18'),
           Big(t.exchange.amountToken).mul('1e18'),
         )
-        const generated = stateGenerator.exchange(
-          convertChannelState('bn', channel.state),
-          convertExchange('bn', exchangeArgs),
-        )
-        const unsigned = await service.redisGetUnsignedState(channel.user)
-        assertChannelStateEqual(generated, unsigned.state)
-        assertChannelStateEqual(unsigned.state, fieldsToWei(t.expected))
+        const res = await service.redisGetUnsignedState(channel.user)
+        assert.deepEqual(res.update.args, exchangeArgs)
       })
     })
   })
@@ -419,18 +414,8 @@ describe('ChannelsService', () => {
     const user = mkAddress('0xabc')
 
     const depositArgs = await service.doCollateralizeIfNecessary(user)
-    const generated = stateGenerator.proposePendingDeposit(
-      convertChannelState('bn', getChannelState('initial', { user, recipient: user })),
-      convertDeposit('bn', depositArgs),
-    )
-    const unsigned = await service.redisGetUnsignedState(user)
-    assertChannelStateEqual(generated, unsigned.state)
-
-    assertChannelStateEqual(unsigned.state, {
-      pendingDepositTokenHub: toWeiString(50),
-      txCountGlobal: 1,
-      txCountChain: 1,
-    })
+    const res = await service.redisGetUnsignedState(user)
+    assert.deepEqual(res.update.args, depositArgs)
   })
 
   // TODO: enable this when threads are working
@@ -450,21 +435,8 @@ describe('ChannelsService', () => {
     const depositArgs = await service.doCollateralizeIfNecessary(
       threadUsers.performer.user,
     )
-    const generated = stateGenerator.proposePendingDeposit(
-      convertChannelState(
-        'bn',
-        threadUsers.performer.state,
-      ),
-      convertDeposit('bn', depositArgs),
-    )
-    const unsigned = await service.redisGetUnsignedState(threadUsers.performer.user)
-    assertChannelStateEqual(generated, unsigned.state)
-
-    assertChannelStateEqual(unsigned.state, {
-      pendingDepositTokenHub: toWeiString(125),
-      txCountGlobal: 2,
-      txCountChain: 2,
-    })
+    const res = await service.redisGetUnsignedState(threadUsers.performer.user)
+    assert.deepEqual(res.update.args, depositArgs)
   })
 
   // RECENT TIPPER TESTS
@@ -479,7 +451,6 @@ describe('ChannelsService', () => {
       convertChannelState('bn', channel.state), 
       convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
-
     assertChannelStateEqual(state, {
       pendingDepositTokenHub: toWeiString(50)
     })
@@ -510,6 +481,7 @@ describe('ChannelsService', () => {
       }]) 
     }
 
+    await service.redisDeleteUnsignedState(channel.user)
     await service.doCollateralizeIfNecessary(channel.user)
     const updates = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
     const latestUpdate = updates.pop()
@@ -550,6 +522,7 @@ describe('ChannelsService', () => {
       }]) 
     }
 
+    await service.redisDeleteUnsignedState(channel.user)
     await service.doCollateralizeIfNecessary(channel.user)
     const updates = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
     const latestUpdate = updates.pop()
@@ -691,17 +664,18 @@ describe('ChannelsService', () => {
       }
     )
     const withdrawal = await service.redisGetUnsignedState(channel.user)
-
-    assertChannelStateEqual(withdrawal.state, {
-      recipient: mkAddress('0x666'),
-      balanceTokenHub: '0',
-      balanceTokenUser: toWeiString(9),
-      balanceWeiHub: '0',
-      balanceWeiUser: toWeiBigNum(0),
-      pendingWithdrawalTokenHub: tweakBalance(11, -174, true),
-      pendingWithdrawalWeiHub: toWeiBigNum(0),
-      pendingDepositWeiUser: Big('8100445524503847'),
-      pendingWithdrawalWeiUser: '8100445524503847',
+    assert.isOk((withdrawal.update.args as any).timeout)
+    assert.containSubset(withdrawal.update.args, {
+      additionalTokenHubToUser: '0',
+      additionalWeiHubToUser: '0',
+      exchangeRate: '123.45',
+      seller: 'user',
+      targetTokenHub: '0',
+      targetTokenUser: '9000000000000000000',
+      targetWeiHub: '0',
+      targetWeiUser: '0',
+      tokensToSell: '1000000000000000000',
+      weiToSell: '0',
     })
   })
 
@@ -724,17 +698,18 @@ describe('ChannelsService', () => {
       }
     )
     const withdrawal = await service.redisGetUnsignedState(channel.user)
-    withdrawal.state.timeout = 0
-    assertChannelStateEqual(withdrawal.state, {
-      recipient: mkAddress('0x666'),
-      balanceTokenUser: toWeiString(9),
-      balanceWeiHub: '0',
-      balanceWeiUser: toWeiBigNum(7),
-      pendingWithdrawalWeiHub: '0',
-      pendingWithdrawalWeiUser: '3008100445524503847',
-      pendingWithdrawalTokenHub: '0',
-      pendingDepositWeiUser: '8100445524503847',
-      pendingDepositTokenHub: config.channelBeiLimit.sub(toWeiBigNum(1).sub(174)),
+    assert.isOk((withdrawal.update.args as any).timeout)
+    assert.containSubset(withdrawal.update.args, {
+      seller: 'user',
+      targetTokenHub: '69000000000000000000',
+      targetTokenUser: '9000000000000000000',
+      targetWeiHub: '0',
+      targetWeiUser: '7000000000000000000',
+      tokensToSell: '1000000000000000000',
+      weiToSell: '0',
+      additionalTokenHubToUser: '0',
+      additionalWeiHubToUser: '0',
+      exchangeRate: '123.45',
     })
   })
 

@@ -50,8 +50,10 @@ export class TestServiceRegistry {
   }
 
   async clearDatabase() {
-    await this.get('RedisClient').flushall()
-    await this.get('PgPoolService').clearDatabase()
+    await Promise.all([
+      this.get('RedisClient').flushall(),
+      this.get('PgPoolService').clearDatabase(),
+    ])
   }
 
   get<N extends ServiceName>(name: N, overrides?: ServiceDict): ServiceType<N> {
