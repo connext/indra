@@ -38,7 +38,7 @@ export class ChannelsApiServiceHandler {
   config: Config
 
   private getUser(req: express.Request) {
-    const { user } = req.params
+    const user = req.params.user.toLowerCase()
     if (!user || user != req.session!.address) {
       throw new Error(
         `Current user '${req.session!.address}' is not authorized to act ` +
@@ -119,7 +119,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doRequestCollateral(req: express.Request, res: express.Response) {
-    const { user } = req.params
+    const user = this.getUser(req)
     const { lastChanTx } = req.body
 
 
@@ -144,7 +144,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doRequestExchange(req: express.Request, res: express.Response) {
-    const { user } = req.params
+    const user = this.getUser(req)
     let { weiToSell, tokensToSell, lastChanTx } = req.body
 
 
@@ -173,7 +173,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doRequestWithdrawal(req: express.Request, res: express.Response) {
-    const { user } = req.params
+    const user = this.getUser(req)
     const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx } = req.body
 
     if (!user || !withdrawalWeiUser || !recipient || !tokensToSell) {
@@ -200,8 +200,8 @@ export class ChannelsApiServiceHandler {
   }
 
   async doSync(req: express.Request, res: express.Response) {
+    const user = this.getUser(req)
     let { lastChanTx, lastThreadUpdateId } = req.query
-    let { user } = req.params
 
     if (
       !user ||
