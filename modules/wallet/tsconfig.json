@@ -30,8 +30,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "noEmit": true,
-    "isolatedModules": true
+    "noEmit": true
   },
   "include": [
     "src",

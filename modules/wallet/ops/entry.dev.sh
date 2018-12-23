@@ -15,8 +15,8 @@ yarn link connext
 
 # Wait for hub & ethprovider to wake up
 echo "Waiting for $hub and $ethprovider to wake up.."
-bash /ops/wait-for.sh $hub
-bash /ops/wait-for.sh $ethprovider
+bash /ops/wait-for.sh -t 60 $hub 2> /dev/null
+bash /ops/wait-for.sh -t 60 $ethprovider 2> /dev/null
 
 # Start wallet react app
 echo "Starting wallet dev server.."

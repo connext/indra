@@ -16,6 +16,11 @@
 .env.test.local
 .env.production.local
 *.swp
+.cache
+.config
+.node-gyp
+.yarn
+.yarnrc
 
 npm-debug.log*
 yarn-debug.log*

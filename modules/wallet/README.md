@@ -1,4 +1,6 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# This branch is intended to be run as part of the Indra repo.
+
+See that project root for build/deployment instructions.
 
 ## To link w the connext-client module that's under construction
 
