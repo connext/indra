@@ -68,6 +68,7 @@
     "nock": "^10.0.1",
     "node-fetch": "^2.0.0",
     "node-sass-chokidar": "^0.0.3",
+    "nodemon": "^1.18.9",
     "path-to-regexp": "^2.1.0",
     "pg": "^7.4.1",
     "pg-types": "^1.13.0",

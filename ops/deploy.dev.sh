@@ -6,6 +6,13 @@ set -e
 
 project=connext
 number_of_services=7
+proxy_image=${project}_proxy:dev
+wallet_image=${project}_wallet:dev
+hub_image=${project}_hub:dev
+chainsaw_image=${project}_hub:dev
+redis_image=redis:5-alpine
+database_image=${project}_database:dev
+ethprovider_image=${project}_ethprovider:dev
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -32,13 +39,6 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 
 ####################
 # Deploy according to above configuration
-
-hub_image=${project}_hub:dev
-proxy_image=${project}_proxy:dev
-wallet_image=${project}_wallet:dev
-ethprovider_image=${project}_ethprovider:dev
-database_image=${project}_database:dev
-redis_image=redis:5-alpine
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -142,7 +142,7 @@ services:
       - `pwd`/modules/client:/client
 
   chainsaw:
-    image: $hub_image
+    image: $chainsaw_image
     command: chainsaw
     networks:
       - $project
@@ -204,9 +204,7 @@ services:
       - "8545:8545"
     volumes:
       - chain_dev:/data
-      - `pwd`/modules/contracts/contracts:/app/contracts
-      - `pwd`/modules/contracts/migrations:/app/migrations
-      - `pwd`/modules/contracts/build:/app/build
+      - `pwd`/modules/contracts:/root
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
