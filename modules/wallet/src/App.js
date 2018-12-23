@@ -8,6 +8,7 @@ import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
+import Web3 from 'web3.js';
 require('dotenv').config();
 const ropstenWethAbi = require('./utils/tokenAbi.json')
 
@@ -157,8 +158,8 @@ class App extends Component {
     updateDepositHandler(evt) {
       this.setState({
         depositVal: {
-          amountWei: '0',
-          amountToken: evt.target.value
+          amountWei: evt.target.value,
+          amountToken: '0'
         }
       });
       console.log(`Updating state : ${this.state.depositVal}`)
@@ -318,6 +319,26 @@ class App extends Component {
       
     }
 
+    // to get tokens from metamask to browser wallet
+    async getTokens(){
+      let web3
+      if (!web3) {
+        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
+      }
+      const provider = new ethers.provider.Web3Provider(web3.currentProvider);
+      const signer = provider.getSigner();
+
+      let tokens = ethers.utils.bigNumberify('1000000000000000000')
+
+      let depositResGas = await signer.estimate.approve(store.getState()[0].address, tokens)
+
+      console.log(`I predict this tx [a ${typeof signer.transfer}] will require ${depositResGas} gas`)
+
+      let approveTx = await signer.functions.transfer(store.getState()[0].address, tokens, {gasLimit: depositResGas})
+
+      console.log(approveTx);
+    }
+
     // ** wrapper for ethers getBalance. probably breaks for tokens
     async getBalance(){
         const balance_hex = await this.state.web3.getBalance(this.state.address)
@@ -377,8 +398,12 @@ class App extends Component {
             <button className="btn" onClick={() => this.getBalance()}>Refresh balance</button>
           </p>
           <p>
+            Token Address: {tokenAddress}
+          </p>
+          <p>
             Token Balance:
           </p>
+            <button className="btn" onClick={() => this.getTokens()}>Transfer Tokens to browser wallet</button>
           <p>
             <button className="btn" onClick={this.toggleKey}>
               {this.state.toggleKey ? 
