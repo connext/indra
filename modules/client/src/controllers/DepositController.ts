@@ -153,6 +153,9 @@ export default class DepositController extends AbstractController {
         state.threadCount,
         state.timeout,
         state.sigHub!,
+        {
+          value: new ethers.utils.bigNumberify(state.pendingDepositWeiUser).toHexString(),
+        }
       )
       const tx = await signer.userAuthorizedUpdate(
         state.recipient, // recipient
