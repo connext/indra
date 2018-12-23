@@ -10,10 +10,13 @@ import { createStore } from 'redux';
 import axios from 'axios';
 import Web3 from 'web3.js';
 require('dotenv').config();
-const ropstenWethAbi = require('./utils/tokenAbi.json')
+
+// const ropstenWethAbi = require('./abi/ropstenWeth.json')
+const humanTokenAbi = require('./abi/humanToken.json')
 
 console.log(`starting app in env: ${JSON.stringify(process.env,null,1)}`)
 const hubUrl = process.env.REACT_APP_HUB_URL
+const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL
 const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS
 const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS
 const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS
@@ -112,8 +115,7 @@ class App extends Component {
       });
       this.setState({wallet: store.getState()[0]});//newWallet});
 
-      // ropsten weth token contract
-      tokenContract = new ethers.Contract(tokenAddress, ropstenWethAbi, web3)
+      tokenContract = new ethers.Contract(tokenAddress, humanTokenAbi, web3)
       tokenSigner = tokenContract.connect(newWallet)
 
       // get address
@@ -220,33 +222,26 @@ class App extends Component {
     }
 
     async approvalHandler(evt) {
-
       let approveFor = channelManagerAddress
       let toApprove = this.state.approvalWeiUser
       let toApproveBn = ethers.utils.bigNumberify(toApprove)
-
       let depositResGas = await tokenSigner.estimate.approve(approveFor, toApproveBn)
-
       console.log(`I predict this tx [a ${typeof tokenSigner.approve}] will require ${depositResGas} gas`)
-
       let approveTx = await tokenSigner.functions.approve(approveFor, toApproveBn, {gasLimit: depositResGas})
-
       console.log(approveTx);
-
     }
-  
+
     //Connext Helpers
     async depositHandler(evt) {
       console.log(this.state.connext);
       let depositRes = await this.state.connext.deposit(this.state.depositVal)
       console.log(`${JSON.stringify(depositRes)}`)
     }
-  
+
     async paymentHandler(evt) {
       await this.state.connext.buy(this.state.paymentVal)
     }
-  
-    
+
     async withdrawalHandler(evt) {
       await this.state.connext.withdraw(this.state.withdrawalVal)
     };
@@ -283,6 +278,7 @@ class App extends Component {
       this.setState({walletSet:true})
       return wallet
     }
+
     updateWalletHandler(evt) {
       this.setState({
         keyEntered:  evt.target.value,
@@ -297,12 +293,9 @@ class App extends Component {
 
     async authorizeHandler(evt) {
       console.log(this.state.wallet)
-
       let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts)
-
       let hash = ethers.utils.id(`${HASH_PREAMBLE} ${ethers.utils.id(res.data.nonce)} ${ethers.utils.id('localhost')}`)
       let signature = await this.state.wallet.signMessage(ethers.utils.arrayify(hash));
-
       try {
         let authRes = await axios.post(`${hubUrl}/auth/response`, {
           nonce: res.data.nonce,
@@ -346,8 +339,7 @@ class App extends Component {
         const eth_balance = (balance_num / 1000000000000000000)
         console.log(eth_balance)
         this.setState({balance:eth_balance})
-      }
-
+    }
 
   //TODO add send functionality
   // async sendTransactionToExternal() {
