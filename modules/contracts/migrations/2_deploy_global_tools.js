@@ -1,5 +1,4 @@
 const EC = artifacts.require("./ECTools.sol");
-const LC = artifacts.require("./ChannelManager.sol");
 const HumanStandardToken = artifacts.require("./HumanStandardToken.sol");
 
 module.exports = async function(deployer, network, accounts) {

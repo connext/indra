@@ -4,7 +4,7 @@ set -e
 database=$POSTGRES_HOST:$POSTGRES_PORT
 db_migrations=${database%:*}:5433
 ethprovider=${ETH_RPC_URL#*://}
-eth_migrations=${ethprovider%:*}:8546
+eth_migrations=${ethprovider%:*}:8544
 redis=${REDIS_URL#*://}
 
 echo "Waiting for $db_migrations & $database & $eth_migrations & $ethprovider & $redis to wake up..."
@@ -38,6 +38,7 @@ function extractAddress {
 
 function eth_env_setup {
   export ETH_STATE_HASH="`getHash`"
+  echo -n `getHash` /state-hash
   echo "Setting up eth env for state hash: $ETH_STATE_HASH.."
   export WALLET_ADDRESS="`ethersGet address`"
   export HOT_WALLET_ADDRESS="`ethersGet address`"
@@ -46,26 +47,20 @@ function eth_env_setup {
   export ETH_NETWORK_ID="`curleth 'net_version' '[]'`"
   export CHANNEL_MANAGER_ADDRESS="`extractAddress ChannelManager`"
   export TOKEN_CONTRACT_ADDRESS="`extractAddress HumanStandardToken`"
-  echo "Done! new eth env:"
-  echo "WALLET_ADDRESS=$WALLET_ADDRESS"
-  echo "HOT_WALLET_ADDRESS=$HOT_WALLET_ADDRESS"
-  echo "PRIVATE_KEY_FILE=$PRIVATE_KEY_FILE"
-  echo "ETH_NETWORK_ID=$ETH_NETWORK_ID"
-  echo "CHANNEL_MANAGER_ADDRESS=$CHANNEL_MANAGER_ADDRESS"
-  echo "TOKEN_CONTRACT_ADDRESS=$TOKEN_CONTRACT_ADDRESS"
 }
 eth_env_setup
 
 echo "Starting eth state watcher!"
-while true;
-do if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
-   then sleep 3;
-   else echo "Changes detected! Re-migrating (`getHash`)" && eth_env_setup
-   fi
+while true
+do
+  if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
+  then sleep 3
+  else echo "Changes detected! Refreshing eth env" && eth_env_setup
+  fi
 done &
 
 echo "Starting tsc watcher!"
 ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
 
 echo "Starting nodemon $1!"
-exec ./node_modules/.bin/nodemon --watch dist dist/entry.js $1
+exec ./node_modules/.bin/nodemon --watch dist --watch /state-hash dist/entry.js $1

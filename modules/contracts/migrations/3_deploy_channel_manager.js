@@ -1,5 +1,5 @@
 const EC = artifacts.require("./ECTools.sol");
-const LC = artifacts.require("./ChannelManager.sol");
+const CM = artifacts.require("./ChannelManager.sol");
 const HumanStandardToken = artifacts.require("./HumanStandardToken.sol");
 
 module.exports = async function(deployer, network, accounts) {
@@ -23,6 +23,6 @@ module.exports = async function(deployer, network, accounts) {
   }
 
   console.log(`Using token: ${tokenAddress}`)
-  await deployer.link(EC, LC);
-  await deployer.deploy(LC, accounts[0], 10000, tokenAddress);
+  await deployer.link(EC, CM);
+  await deployer.deploy(CM, accounts[0], 10000, tokenAddress);
 };

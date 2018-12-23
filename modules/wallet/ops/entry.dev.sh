@@ -19,30 +19,30 @@ cd $HOME && echo "cwd=`pwd`"
 yarn link connext
 
 function getHash {
-  find /contracts -type f -not -name "*.swp" | xargs cat | sha256sum | tr -d ' -';
+  find /contracts -type f -not -name "*.swp" | xargs cat | sha256sum | tr -d ' -'
 }
 
 function ethersGet {
-  cmd="console.log(require('ethers').Wallet.fromMnemonic(process.env.ETH_MNEMONIC).$1)";
-  echo $cmd | node | tr -d '\n\r';
+  cmd="console.log(require('ethers').Wallet.fromMnemonic(process.env.ETH_MNEMONIC).$1)"
+  echo $cmd | node | tr -d '\n\r'
 }
 
 function curleth {
-  opts="-s -H \"Content-Type: application/json\" -X POST --data ";
+  opts="-s -H \"Content-Type: application/json\" -X POST --data "
   curl $opts '{"id":31415,"jsonrpc":"2.0","method":"'"$1"'","params":'"$2"'}' $eth_provider \
     | jq .result \
-    | tr -d '"\n\r';
+    | tr -d '"\n\r'
 }
 
 function extractAddress {
-  cat /contracts/$1.json | jq '.networks["'"$ETH_NETWORK_ID"'"].address' | tr -d '"\n\r';
+  cat /contracts/$1.json | jq '.networks["'"$ETH_NETWORK_ID"'"].address' | tr -d '"\n\r'
 }
 
 function eth_env_setup {
   export ETH_STATE_HASH="`getHash`"
+  echo -n `getHash` /state-hash
   echo "Resetting eth env for state hash: $ETH_STATE_HASH.."
   export ETH_NETWORK_ID="`curleth 'net_version' '[]'`"
-
   echo "REACT_APP_DEV=false" > .env
   echo "REACT_APP_HUB_URL=$HUB_URL" >> .env
   echo "REACT_APP_ETHPROVIDER_URL=$ETHPROVIDER_URL" >> .env
@@ -55,11 +55,12 @@ function eth_env_setup {
 eth_env_setup
 
 echo "Starting eth state watcher!"
-while true;
-do if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
-   then sleep 3;
-   else echo "Changes detected! Re-migrating (`getHash`)" && eth_env_setup
-   fi
+while true
+do
+  if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
+  then sleep 3
+  else echo "Changes detected! Refreshing eth env" && eth_env_setup
+  fi
 done &
 
 # Start typescript watcher in background
