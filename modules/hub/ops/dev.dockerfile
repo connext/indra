@@ -1,2 +1,2 @@
 FROM connext_builder:dev
-ENTRYPOINT ["bash", "ops/entry.sh"]
+ENTRYPOINT ["bash", "ops/dev.entry.sh"]

@@ -4,6 +4,8 @@ import PaymentHub from './PaymentHub'
 import { Big } from './util/bigNumber';
 import { default as Config } from './Config'
 
+console.log(`Starting in env: ${JSON.stringify(process.env,null,2)}`)
+
 const config = Config.fromEnv({
   authRealm: 'SpankChain',
   sessionSecret:
