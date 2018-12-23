@@ -16,12 +16,7 @@ SHELL=/bin/bash
 
 # Fetch Prerequisites
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*"
-client_prereq=$(shell find $(client) $(find_options))
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
-db_prereq=$(shell find $(db) $(find_options))
-hub_prereq=$(shell find $(hub) $(find_options))
-proxy_prereq=$(shell find $(proxy) $(find_options))
-wallet_prereq=$(shell find $(wallet) $(find_options))
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to set permissions to
@@ -88,81 +83,98 @@ test: hub
 
 # Proxy
 
-proxy:
-	$(log_start) && docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
+proxy: $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch build/wallet
 
 # Wallet
 
-wallet: wallet-node-modules $(wallet_prereq)
-	$(log_start) && docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
-	touch build/wallet && $(log_finish)
+wallet: wallet-node-modules $(shell find $(wallet) $(find_options))
+	$(log_start)
+	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
+	$(log_finish) && touch build/wallet
 
 wallet-node-modules: $(project)_builder $(wallet)/package.json
-	$(log_start) && $(docker_run_in_wallet) "yarn install --network-timeout 1000000"
-	touch build/wallet-node-modules && $(log_finish)
+	$(log_start)
+	$(docker_run_in_wallet) "yarn install --network-timeout 1000000"
+	$(log_finish) && touch build/wallet-node-modules
 
 # Client
 
-client: client-node-modules $(client_prereq)
-	$(log_start) && $(docker_run_in_client) "yarn build"
-	touch build/client-js && $(log_finish)
+client: client-node-modules $(shell find $(client) $(find_options))
+	$(log_start)
+	$(docker_run_in_client) "yarn build"
+	$(log_finish) && touch build/client-js
 
 client-node-modules: $(project)_builder $(client)/package.json
-	$(log_start) && $(docker_run_in_client) "yarn install --network-timeout 1000000"
-	touch build/client-node-modules && $(log_finish)
+	$(log_start)
+	$(docker_run_in_client) "yarn install --network-timeout 1000000"
+	$(log_finish) && touch build/client-node-modules
 
 # Hub
 
 hub-prod: hub-js
-	$(log_start) && docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
-	touch build/hub-prod && $(log_finish)
+	$(log_start)
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
+	$(log_finish) && touch build/hub-prod
 
 hub: hub-js
-	$(log_start) && docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
-	touch build/hub && $(log_finish)
+	$(log_start)
+	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
+	$(log_finish) && touch build/hub
 
-hub-js: hub-node-modules $(hub_prereq)
-	$(log_start) && $(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
-	touch build/hub-js && $(log_finish)
+hub-js: hub-node-modules $(shell find $(hub) $(find_options))
+	$(log_start)
+	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
+	$(log_finish) && touch build/hub-js
 
 hub-node-modules: $(project)_builder $(hub)/package.json
-	$(log_start) && $(docker_run_in_hub) "yarn install --network-timeout 1000000"
-	touch build/hub-node-modules && $(log_finish)
+	$(log_start)
+	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
+	$(log_finish) && touch build/hub-node-modules
 
 # Database
 
 database-prod: database
-	$(log_start) && docker tag $(project)_database:dev $(project)_database:latest
-	touch build/database-prod && $(log_finish)
+	$(log_start)
+	docker tag $(project)_database:dev $(project)_database:latest
+	$(log_finish) && touch build/database-prod
 
 database: database-node-modules migration-templates $(db_prereq)
-	$(log_start) && docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
-	touch build/database && $(log_finish)
+	$(log_start)
+	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
+	$(log_finish) && touch build/database
 
-migration-templates: $(db_prereq)
-	$(log_start) && $(docker_run_in_db) "make"
-	touch build/migration-templates && $(log_finish)
+migration-templates: $(shell find $(db) $(find_options))
+	$(log_start)
+	$(docker_run_in_db) "make"
+	$(log_finish) && touch build/migration-templates
 
 database-node-modules: $(project)_builder $(db)/package.json
-	$(log_start) && $(docker_run_in_db) "yarn install"
-	touch build/database-node-modules && $(log_finish)
+	$(log_start)
+	$(docker_run_in_db) "yarn install"
+	$(log_finish) && touch build/database-node-modules
 
 # Contracts
 
 ethprovider: contract-artifacts
-	$(log_start) && docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
-	touch build/ethprovider && $(log_finish)
+	$(log_start)
+	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
+	$(log_finish) && touch build/ethprovider
 
 contract-artifacts: contract-node-modules
-	$(log_start) && $(docker_run_in_contracts) "yarn build && bash ops/inject-addresses.sh"
-	touch build/contract-artifacts && $(log_finish)
+	$(log_start)
+	$(docker_run_in_contracts) "yarn build && bash ops/inject-addresses.sh"
+	$(log_finish) && touch build/contract-artifacts
 
 contract-node-modules: $(project)_builder $(contracts)/package.json
-	$(log_start) && $(docker_run_in_contracts) "yarn install --network-timeout 1000000"
-	touch build/contract-node-modules && $(log_finish)
+	$(log_start)
+	$(docker_run_in_contracts) "yarn install --network-timeout 1000000"
+	$(log_finish) && touch build/contract-node-modules
 
 # Builder
-$(project)_builder: ops/builder.dockerfile ops/permissions-fixer.sh
-	$(log_start) && docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
-	touch build/$(project)_builder && $(log_finish)
+$(project)_builder: $(shell find ops)
+	$(log_start)
+	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
+	$(log_finish) && touch build/$(project)_builder
