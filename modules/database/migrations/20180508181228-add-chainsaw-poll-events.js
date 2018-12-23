@@ -16,14 +16,12 @@ exports.setup = function(options, seedLink) {
 
 exports.up = function(db) {
   return db.runSql(`
-    create extension citext;
+    create extension if not exists citext;
 
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'csw_eth_address') THEN
         CREATE DOMAIN csw_eth_address as citext
         CHECK ( value ~* '^0x[a-f0-9]{40}$' );
-      END IF;
     END$$;
   
     CREATE TABLE chainsaw_poll_events (

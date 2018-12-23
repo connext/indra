@@ -16,8 +16,8 @@ exports.setup = function(options, seedLink) {
 
 exports.up = function(db) {
   return db.runSql(`
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'ledger_channel_state_update_reason'::regtype::oid, 'LC_PAYMENT', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'ledger_channel_state_update_reason'::regtype );`)
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'ledger_channel_state_update_reason'::regtype::oid, 'LC_PAYMENT', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'ledger_channel_state_update_reason'::regtype );`)
 }
 
 exports.down = function(db) {

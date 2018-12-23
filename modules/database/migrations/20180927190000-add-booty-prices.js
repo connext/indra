@@ -21,9 +21,7 @@ exports.up = function(db) {
   
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'token_amount') THEN
         CREATE DOMAIN token_amount AS NUMERIC(78,0);
-      END IF;
     END $$;
     
     

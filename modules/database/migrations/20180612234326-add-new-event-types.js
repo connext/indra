@@ -16,22 +16,22 @@ exports.setup = function(options, seedLink) {
 
 exports.up = function(db) {
   return db.runSql(`
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCOpen', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCJoin', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCDeposit', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCClose', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCUpdateState', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidVCInit', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidVCSettle', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
-  INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-    SELECT 'csw_channel_event_type'::regtype::oid, 'DidVCClose', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCOpen', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCJoin', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCDeposit', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCClose', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidLCUpdateState', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidVCInit', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidVCSettle', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
+  --INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
+  --  SELECT 'csw_channel_event_type'::regtype::oid, 'DidVCClose', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'csw_channel_event_type'::regtype );
   `)
 
   /*

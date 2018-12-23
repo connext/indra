@@ -18,16 +18,12 @@ exports.up = function(db) {
   return db.runSql(`
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'wei_amount') THEN
         CREATE DOMAIN wei_amount AS NUMERIC(78,0);
-      END IF;
     END$$;
     
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'fiat_amount') THEN
         CREATE DOMAIN fiat_amount AS NUMERIC(78,2);
-      END IF;
     END$$;
   
     CREATE OR REPLACE FUNCTION validate_status() RETURNS trigger AS $v$
@@ -62,9 +58,7 @@ exports.up = function(db) {
 
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'withdrawal_status') THEN
         CREATE TYPE withdrawal_status AS ENUM('NEW', 'PENDING', 'CONFIRMED', 'FAILED');
-      END IF;
     END$$;
 
     CREATE TABLE withdrawals (
