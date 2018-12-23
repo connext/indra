@@ -173,7 +173,7 @@ contract-node-modules: $(project)_builder $(contracts)/package.json
 	$(log_finish) && touch build/contract-node-modules
 
 # Builder
-$(project)_builder: $(shell find ops)
-	$(log_start)
+$(project)_builder: ops/builder.dockerfile
+	$(log_start) && echo "prereqs: $<"
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
 	$(log_finish) && touch build/$(project)_builder

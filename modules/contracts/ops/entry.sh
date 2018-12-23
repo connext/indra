@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "arg 1 = $1"
-
 ganache_rpc_port=8545
 migration_flag_port=8544
 
@@ -32,7 +30,7 @@ function migrate {
 }
 
 # Do we need to do an initial migration?
-if [[ "`getHash`" != "`cat build/state-hash`" ]]
+if [[ "`getHash`" != "`cat build/state-hash || true`" ]]
 then migrate
 else echo "Contracts & migrations are up to date"
 fi
@@ -40,7 +38,7 @@ fi
 function signal_migrations_complete {
   echo "===> Signalling the completion of migrations..."
   while true # unix.stackexchange.com/a/37762
-  do echo 'eth migrations complete' | nc -lk -p $migration_flag_port
+  do sleep 2 && echo 'eth migrations complete' | nc -lk -p $migration_flag_port
   done > /dev/null
 }
 
@@ -49,7 +47,7 @@ function watch {
   while true
   do
     if [[ "`getHash`" == "`cat build/state-hash`" ]]
-    then sleep 3
+    then sleep 2
     else migrate
     fi
   done

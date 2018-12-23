@@ -58,7 +58,7 @@ done
 # Have requests to port 5433 returns "done" a la unix.stackexchange.com/a/37762
 echo "===> Signalling the completion of migrations..."
 while true
-do echo 'db migrations complete' | nc -lk -p 5433
+do echo 2 && echo 'db migrations complete' | nc -lk -p 5433
 done > /dev/null &
 
 echo "===> Starting new database.."

@@ -166,7 +166,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: $watch_ethprovider
+    command: "$watch_ethprovider"
     environment:
       ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_MNEMONIC: $ETH_MNEMONIC

@@ -41,7 +41,7 @@ function extractAddress {
 
 function eth_env_setup {
   export ETH_STATE_HASH="`getHash`"
-  echo -n `getHash` /state-hash
+  echo -n `getHash` > /state-hash
   echo "Setting up eth env for state hash: $ETH_STATE_HASH.."
   export WALLET_ADDRESS="`ethersGet address`"
   export HOT_WALLET_ADDRESS="`ethersGet address`"
