@@ -3,7 +3,7 @@ import { getConnextClient } from 'connext/dist/Connext';
 import './App.css';
 import ProviderOptions from './utils/ProviderOptions.ts';
 import clientProvider from './utils/web3/clientProvider.ts'; 
-import * as ethers from 'ethers';
+import * as eth from 'ethers';
 import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey } from './walletGen';
 import { createStore } from 'redux';
@@ -93,42 +93,42 @@ class App extends Component {
       // New provider code
       const providerOpts = new ProviderOptions().approving()
       const provider = clientProvider(providerOpts)
-      const web3 = new ethers.providers.Web3Provider(provider)
+      const web3 = new eth.providers.Web3Provider(provider)
       this.setState({web3: web3});
 
-      console.log(providerOpts);
-      console.log(provider);
-      console.log(web3)
-      console.log("checkpoint")
+      console.log("set up web3 successfully")
 
       // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
       // as is, if you don't write down the privkey in the store you can't recover the wallet
-
       const wallet = this.walletHandler() 
-      console.log(store.getState()[0])
+      const newWallet = wallet.connect(web3);
 
       // make sure wallet is linked to chain
-      console.log(provider)
-       const newWallet = wallet.connect(web3);
-       store.dispatch({
+      store.dispatch({
         type: 'SET_WALLET',
         text: newWallet
       });
-      this.setState({wallet: store.getState()[0]});//newWallet});
 
-      tokenContract = new ethers.Contract(tokenAddress, humanTokenAbi, web3)
-      tokenSigner = tokenContract.connect(newWallet)
+      this.setState({ wallet: store.getState()[0] });//newWallet});
+
+      console.log("Set up new wallet:")
+      console.log(store.getState()[0])
+
+      // new new provider code
+      const ethProvider = new eth.providers.JsonRpcProvider(providerUrl)
+      const localWallet = wallet.connect(ethProvider)
+
+      tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, ethProvider)
+      tokenSigner = tokenContract.connect(localWallet)
+      console.log("Set up token contract")
 
       // get address
       const account = store.getState()[0].address;
       this.setState({address:account});
-      console.log(
-        `instantiating connext with hub as: ${hubUrl}`
-      );
-      console.log(
-        `web3 address : ${JSON.stringify(account)}`
-      );
-      
+
+      console.log(`instantiating connext with hub as: ${hubUrl}`);
+      console.log(`web3 address : ${JSON.stringify(account)}`);
+      console.log("Setting up connext...")
 
       // *** Instantiate the connext client ***
       const connext = getConnextClient({
@@ -138,23 +138,22 @@ class App extends Component {
           hubUrl: hubUrl, //http://localhost:8080,
           contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
           user: account
-        })
-      
-     connext.start() // start polling
-     //console.log('Pollers started! Good morning :)')
-     connext.on('onStateChange', state => {
+      })
+
+      console.log("Successfully setting up connext!")
+
+      connext.start() // start polling
+      //console.log('Pollers started! Good morning :)')
+      connext.on('onStateChange', state => {
         console.log('Connext state changed:', state)
       })
-      this.setState({connext: connext
-      });
+
+      this.setState({ connext: connext });
 
     } catch (error) {
-      alert(
-        `Failed to load web3 or Connext. Check console for details.`
-      );
+      alert(`Failed to load web3 or Connext. Check console for details.`);
       console.log(error);
     }
-
     
   };
 
@@ -225,7 +224,7 @@ class App extends Component {
     async approvalHandler(evt) {
       let approveFor = channelManagerAddress
       let toApprove = this.state.approvalWeiUser
-      let toApproveBn = ethers.utils.bigNumberify(toApprove)
+      let toApproveBn = eth.utils.bigNumberify(toApprove)
       let depositResGas = await tokenSigner.estimate.approve(approveFor, toApproveBn)
       console.log(`I predict this tx [a ${typeof tokenSigner.approve}] will require ${depositResGas} gas`)
       let approveTx = await tokenSigner.functions.approve(approveFor, toApproveBn, {gasLimit: depositResGas})
@@ -295,8 +294,8 @@ class App extends Component {
     async authorizeHandler(evt) {
       console.log(this.state.wallet)
       let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts)
-      let hash = ethers.utils.id(`${HASH_PREAMBLE} ${ethers.utils.id(res.data.nonce)} ${ethers.utils.id('localhost')}`)
-      let signature = await this.state.wallet.signMessage(ethers.utils.arrayify(hash));
+      let hash = eth.utils.id(`${HASH_PREAMBLE} ${eth.utils.id(res.data.nonce)} ${eth.utils.id('localhost')}`)
+      let signature = await this.state.wallet.signMessage(eth.utils.arrayify(hash));
       try {
         let authRes = await axios.post(`${hubUrl}/auth/response`, {
           nonce: res.data.nonce,
@@ -319,10 +318,10 @@ class App extends Component {
       if (!web3) {
         web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
       }
-      const provider = new ethers.provider.Web3Provider(web3.currentProvider);
+      const provider = new eth.provider.Web3Provider(web3.currentProvider);
       const signer = provider.getSigner();
 
-      let tokens = ethers.utils.bigNumberify('1000000000000000000')
+      let tokens = eth.utils.bigNumberify('1000000000000000000')
 
       let depositResGas = await signer.estimate.approve(store.getState()[0].address, tokens)
 
