@@ -4,6 +4,8 @@ import getTokenBalance from './getTokenBalance';
 import Currency from 'connext/dist/lib/currency/Currency';
 const tokenAbi = require('human-standard-token-abi')
 
+const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS
+
 describe('getTokenBalance', () => {
   it('should get the token balance from Booty contract', async () => {
     const web3 = new Web3()
@@ -15,7 +17,7 @@ describe('getTokenBalance', () => {
     ;(web3 as any).eth.Contract = class MockContract {
       constructor(_tokenAbi: any, tokenAddress: any) {
         expect(_tokenAbi).to.deep.equal(tokenAbi)
-        expect(tokenAddress).equals(process.env.TOKEN_ADDRESS)
+        expect(tokenAddress).equals(tokenAddress)
       }
 
       methods = {

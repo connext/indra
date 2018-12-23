@@ -13,14 +13,14 @@ const ropstenWethAbi = require('./utils/tokenAbi.json')
 
 console.log(`starting app in env: ${JSON.stringify(process.env,null,1)}`)
 const hubUrl = process.env.REACT_APP_HUB_URL
-const ropstenWethAddress = process.env.REACT_APP_TOKEN_CONTRACT_ADDRESS
-const hotWalletAddress = process.env.REACT_APP_HOT_WALLET_ADDRESS
+const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS
+const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS
 const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS
 
 const HASH_PREAMBLE = 'SpankWallet authentication message:'
 
-let ropstenWethContract
-let ropstenWethSigner
+let tokenContract
+let tokenSigner
 
 const opts = {
   headers: {
@@ -75,7 +75,7 @@ class App extends Component {
       walletSet:false,
       keyEntered:'',
       approvalWeiUser: '100',
-      recipient: hotWalletAddress,
+      recipient: hubWalletAddress,
       connext:null,
     }
   }
@@ -112,8 +112,8 @@ class App extends Component {
       this.setState({wallet: store.getState()[0]});//newWallet});
 
       // ropsten weth token contract
-      ropstenWethContract = new ethers.Contract(ropstenWethAddress, ropstenWethAbi, web3)
-      ropstenWethSigner = ropstenWethContract.connect(newWallet)
+      tokenContract = new ethers.Contract(tokenAddress, ropstenWethAbi, web3)
+      tokenSigner = tokenContract.connect(newWallet)
 
       // get address
       const account = store.getState()[0].address;
@@ -130,7 +130,7 @@ class App extends Component {
       const connext = getConnextClient({
           wallet: newWallet,
           web3,
-          hubAddress: hotWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
+          hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
           hubUrl: hubUrl, //http://localhost:8080,
           contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
           user: account
@@ -224,11 +224,11 @@ class App extends Component {
       let toApprove = this.state.approvalWeiUser
       let toApproveBn = ethers.utils.bigNumberify(toApprove)
 
-      let depositResGas = await ropstenWethSigner.estimate.approve(approveFor, toApproveBn)
+      let depositResGas = await tokenSigner.estimate.approve(approveFor, toApproveBn)
 
-      console.log(`I predict this tx [a ${typeof ropstenWethSigner.approve}] will require ${depositResGas} gas`)
+      console.log(`I predict this tx [a ${typeof tokenSigner.approve}] will require ${depositResGas} gas`)
 
-      let approveTx = await ropstenWethSigner.functions.approve(approveFor, toApproveBn, {gasLimit: depositResGas})
+      let approveTx = await tokenSigner.functions.approve(approveFor, toApproveBn, {gasLimit: depositResGas})
 
       console.log(approveTx);
 

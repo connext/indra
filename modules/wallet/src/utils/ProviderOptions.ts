@@ -10,7 +10,7 @@ const DEFAULT_NETWORK = 'ropsten'
 export const RPC_URL = process.env.REACT_APP_ETHPROVIDER_URL || 'http://localhost:8545'
 
 if (!RPC_URL)
-  throw new Error('Unknown NETWORK_NAME: ' + process.env.NETWORK_NAME || DEFAULT_NETWORK)
+  throw new Error('Missing ethereum provider url')
 
 export type ApproveTransactionCallback = (error: string|null, isApproved?: boolean) => void
 export type ApproveSignCallback = (error: string|null, rawMsgSig?: string) => void

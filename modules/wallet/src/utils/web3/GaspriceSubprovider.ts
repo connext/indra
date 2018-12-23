@@ -1,8 +1,9 @@
 import { BigNumber } from 'bignumber.js'
+import requestJson from './request';
 
 export const Subprovider = require('web3-provider-engine/subproviders/subprovider')
 
-import requestJson from './request';
+const hubUrl = process.env.REACT_APP_HUB_URL
 
 const GWEI = new BigNumber('1e9')
 const MAX_PRICE = GWEI.times(50)
@@ -34,7 +35,7 @@ export default class GaspriceSubprovider extends Subprovider {
   }
 
   private async estimateGasPriceFromHub (): Promise<BigNumber | null> {
-    const res = await requestJson<any>(`${process.env.HUB_URL}/gasPrice/estimate`)
+    const res = await requestJson<any>(`${hubUrl}/gasPrice/estimate`)
     if (res && res.gasPrice) {
       return new BigNumber(res.gasPrice).times(GWEI)
     }

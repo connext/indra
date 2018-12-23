@@ -1,22 +1,70 @@
 #!/bin/bash
 
-hub="hub:8080"
-ethprovider="ethprovider:8545"
-
 echo "Wallet entrypoint activated!"
-echo "Setting up yarn links.."
+
+# These are docker swarm hostnames, not available from browser
+hub="hub:8080"
+eth_migrations="ethprovider:8544"
+eth_provider="ethprovider:8545"
+
+echo "Waiting for $hub & $eth_migrations & $eth_provider to wake up.."
+bash /ops/wait-for.sh -t 60 $hub 2> /dev/null
+bash /ops/wait-for.sh -t 60 $eth_migrations 2> /dev/null
+bash /ops/wait-for.sh -t 60 $eth_provider 2> /dev/null
+
+echo "Setting up yarn links so we can use modules/client as if it were a node_module"
 cd /client && echo "cwd=`pwd`"
 yarn link
 cd $HOME && echo "cwd=`pwd`"
 yarn link connext
 
-# Start typescript watcher in background
-./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
+function getHash {
+  find /contracts -type f -not -name "*.swp" | xargs cat | sha256sum | tr -d ' -';
+}
 
-# Wait for hub & ethprovider to wake up
-echo "Waiting for $hub and $ethprovider to wake up.."
-bash /ops/wait-for.sh -t 60 $hub 2> /dev/null
-bash /ops/wait-for.sh -t 60 $ethprovider 2> /dev/null
+function ethersGet {
+  cmd="console.log(require('ethers').Wallet.fromMnemonic(process.env.ETH_MNEMONIC).$1)";
+  echo $cmd | node | tr -d '\n\r';
+}
+
+function curleth {
+  opts="-s -H \"Content-Type: application/json\" -X POST --data ";
+  curl $opts '{"id":31415,"jsonrpc":"2.0","method":"'"$1"'","params":'"$2"'}' $eth_provider \
+    | jq .result \
+    | tr -d '"\n\r';
+}
+
+function extractAddress {
+  cat /contracts/$1.json | jq '.networks["'"$ETH_NETWORK_ID"'"].address' | tr -d '"\n\r';
+}
+
+function eth_env_setup {
+  export ETH_STATE_HASH="`getHash`"
+  echo "Resetting eth env for state hash: $ETH_STATE_HASH.."
+  export ETH_NETWORK_ID="`curleth 'net_version' '[]'`"
+
+  echo "REACT_APP_DEV=false" > .env
+  echo "REACT_APP_HUB_URL=$HUB_URL" >> .env
+  echo "REACT_APP_ETHPROVIDER_URL=$ETHPROVIDER_URL" >> .env
+  echo "REACT_APP_HUB_WALLET_ADDRESS=`ethersGet address`" >> .env
+  echo "REACT_APP_CHANNEL_MANAGER_ADDRESS=`extractAddress ChannelManager`" >> .env
+  echo "REACT_APP_TOKEN_ADDRESS=`extractAddress HumanStandardToken`" >> .env
+  echo "Done! new eth env:"
+  cat .env
+}
+eth_env_setup
+
+echo "Starting eth state watcher!"
+while true;
+do if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
+   then sleep 3;
+   else echo "Changes detected! Re-migrating (`getHash`)" && eth_env_setup
+   fi
+done &
+
+# Start typescript watcher in background
+echo "Starting tsc watcher!"
+./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
 
 # Start wallet react app
 echo "Starting wallet dev server.."

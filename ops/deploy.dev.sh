@@ -98,11 +98,18 @@ services:
     image: $wallet_image
     networks:
       - $project
+    environment:
+      NODE_ENV: $MODE
+      SERVICE_USER_KEY: $SERVICE_USER_KEY
+      ETH_MNEMONIC: $ETH_MNEMONIC
+      ETHPROVIDER_URL: "http://localhost:8545"
+      HUB_URL: "http://localhost/hub"
     ports:
       - "3000:3000"
     volumes:
       - `pwd`/modules/wallet:/root
       - `pwd`/modules/client:/client
+      - `pwd`/modules/contracts/build/contracts:/contracts
 
   hub:
     image: $hub_image
