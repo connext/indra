@@ -47,7 +47,6 @@ prod: database-prod hub-prod
 
 clean:
 	rm -rf build/*
-	rm -f $(contracts)/build/state-hash
 	rm -rf $(db)/build/*
 	rm -rf $(hub)/dist/*
 
@@ -57,8 +56,9 @@ stop:
 
 purge: stop clean
 	docker container prune -f
-	docker volume rm connext_database_dev || true
+	rm -rf $(contracts)/build/*
 	docker volume rm connext_chain_dev || true
+	docker volume rm connext_database_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
 tags: prod
@@ -85,7 +85,7 @@ test: hub
 proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
-	$(log_finish) && touch build/wallet
+	$(log_finish) && touch build/proxy
 
 # Wallet
 
@@ -104,7 +104,7 @@ wallet-node-modules: $(project)_builder $(wallet)/package.json
 client: client-node-modules $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_client) "yarn build"
-	$(log_finish) && touch build/client-js
+	$(log_finish) && touch build/client
 
 client-node-modules: $(project)_builder $(client)/package.json
 	$(log_start)

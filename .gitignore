@@ -1,8 +1,12 @@
 build
 dist
 node_modules
+yarn-error.log
+.bash_history
 .cache
 .config
+.env
 .node-gyp
+.node_repl_history
 .yarnrc
 *.swp
