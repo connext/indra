@@ -166,3 +166,31 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
     this.catch = this._p.catch.bind(this._p)
   }
 }
+
+/**
+ * Catches any exception which might be raised by a promise and returns a
+ * tuple of [result, error], where either the result or the error will be
+ * undefined:
+ *
+ *   let [res, error] = await maybe(someApi.get(...))
+ *   if (err) {
+ *     return `Oh no there was an error: ${err}`
+ *   }
+ *   console.log('The result:', res)
+ *
+ * The result is also an object with `res` and `err` fields:
+ *
+ *   let someResult = await maybe(someApi.get(...))
+ *   if (someResult.err) {
+ *     return `Oh no there was an error: ${someResult.err}`
+ *   }
+ *   console.log('The result:', someResult.res)
+ *
+ */
+type MaybeRes<T> = [T, any] & { res: T, err: any }
+export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
+  return (p as Promise<T>).then(
+    res => Object.assign([res, null], { res, err: null }) as any,
+    err => Object.assign([null, err], { res: null, err }) as any,
+  )
+}

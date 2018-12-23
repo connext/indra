@@ -7,6 +7,8 @@ import getTxCount from '../lib/getTxCount'
 import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
+import { maybe, Lock } from '../lib/utils'
+import Semaphore = require('semaphore')
 
 const TWO_SECONDS = 2 * 1000
 const TEN_SECONDS = 10 * 1000
@@ -66,14 +68,14 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     if (next.type == 'thread' || cur.type == 'thread')
       throw new Error('TODO: REB-36 (enable threads)')
 
-    if (next.update.txCount < cur.update.txCount) {
+    if (next.update.txCount && next.update.txCount < cur.update.txCount!) {
       throw new Error(
         `next update txCount should never be < cur: ` +
         `${JSON.stringify(next.update)} >= ${JSON.stringify(cur.update)}`
       )
     }
 
-    if (!next.update.txCount || next.update.txCount > cur.update.txCount) {
+    if (!next.update.txCount || next.update.txCount > cur.update.txCount!) {
       deduped.push(next)
       continue
     }
@@ -141,7 +143,13 @@ export default class SyncController extends AbstractController {
     } catch (e) {
       console.error('Sync error:', e)
       this.logToApi('sync', { message: '' + e })
-      throw e
+    }
+
+    try {
+      await this.flushPendingUpdatesToHub()
+    } catch (e) {
+      console.error('Flush error:', e)
+      this.logToApi('flush', { message: '' + e })
     }
   }
 
@@ -165,26 +173,48 @@ export default class SyncController extends AbstractController {
    * Sends all pending updates (that is, those which have been put onto the
    * store, but not yet sync'd) to the hub.
    */
+  private flushLock = Semaphore(1)
   private async flushPendingUpdatesToHub() {
+    // Lock around `flushPendingUpdatesToHub` to make sure it doesn't get
+    // called by both the poller something else at the same time.
+    return new Promise(res => {
+      this.flushLock.take(async () => {
+        try {
+          await this._flushPendingUpdatesToHub()
+        } catch (e) {
+          console.error('Error flushing updates:', e)
+        } finally {
+          this.flushLock.leave()
+          res()
+        }
+      })
+    })
+  }
+
+  private async _flushPendingUpdatesToHub() {
     const state = this.getSyncState()
-    console.log(`Sending updates to hub: ${state.updatesToSync.map(u => u && u.reason)}`)
-    const res = await this.hub.updateHub(
+    if (!state.updatesToSync.length)
+      return
+
+    console.log(`Sending updates to hub: ${state.updatesToSync.map(u => u && u.reason)}`, state.updatesToSync)
+    const [res, err] = await maybe(this.hub.updateHub(
       state.updatesToSync,
       getLastThreadId(this.store),
-    )
+    ))
 
     let shouldRemoveUpdates = true
 
-    if (res.error) {
+    if (err || res.error) {
+      const error = err || res.error
       this.flushErrorCount += 1
-      const triesRemaining = 4 - this.flushErrorCount
+      const triesRemaining = Math.max(0, 4 - this.flushErrorCount)
       console.error(
         `Error sending updates to hub (will flush and reset ` +
         `${triesRemaining ? `after ${triesRemaining} attempts` : `now`}): ` +
-        `${res.error}`
+        `${error}`
       )
 
-      if (!triesRemaining) {
+      if (triesRemaining <= 0) {
         console.error(
           'Too many failed attempts to send updates to hub; flushing all of ' +
           'our updates. Updates being flushed:',
@@ -193,6 +223,13 @@ export default class SyncController extends AbstractController {
       } else {
         shouldRemoveUpdates = false
       }
+
+      // If there's a bug somewhere, it can cause a loop here where the hub
+      // sends something bad, wallet does something bad, then immidately sends
+      // back to the hub... so sleep a bit to make sure we don't clobber the
+      // poor hub.
+      console.log('Sleeping for a bit before trying again...')
+      await new Promise(res => setTimeout(res, 6.9 * 1000))
     } else {
       this.flushErrorCount = 0
     }
@@ -201,7 +238,7 @@ export default class SyncController extends AbstractController {
       const newState = this.getSyncState()
       this.store.dispatch(actions.setSyncControllerState({
         ...newState,
-        updatesToSync: state.updatesToSync.slice(state.updatesToSync.length),
+        updatesToSync: newState.updatesToSync.slice(state.updatesToSync.length),
       }))
     }
 
@@ -221,6 +258,28 @@ export default class SyncController extends AbstractController {
     const oldSyncResults = this.getState().runtime.syncResultsFromHub
     const merged = mergeSyncResults(oldSyncResults, updates)
     console.info(`updates: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${merged.length}`)
+
+    // De-dupe incoming updates and remove any that are already in queue to be
+    // sent to the hub. Note that this still isn't _perfect_; there is a race
+    // condition where we could:
+    // 1. Start a sync request
+    // 2. Send our entire update queue to the hub
+    // 3. Recieve a response to our sync request that contains updates that
+    //    were sent in 2.
+    // This isn't a huge issue because everything is idempotent, but it might
+    // lead to some scarry looking errors.
+    const updateKey = (u: UpdateRequest) => u.id && u.id < 0 ? `unsigned:${u.id}` : `tx:${u.txCount}`
+    const existing = {} as any
+    this.getSyncState().updatesToSync.forEach(u => {
+      existing[updateKey(u)] = true
+    })
+    const filtered = merged.filter(u => {
+      if (u.type != 'channel')
+        throw new Error('TODO: REB-36 (enable threads)')
+      return !existing[updateKey(u.update)]
+    })
+
+    console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${filtered.length}:`, filtered)
     this.store.dispatch(actions.setSortedSyncResultsFromHub(merged))
   }
 }

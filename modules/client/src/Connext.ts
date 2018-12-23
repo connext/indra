@@ -320,6 +320,7 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
 }
 
 export interface IChannelManager {
+  gasMultiple: number
   userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
 }
 
@@ -581,7 +582,7 @@ export class ConnextInternal extends ConnextClient {
         : (this.opts.wallet.signMessage as any)(hash)
     )
 
-    console.log('Signing channel state: ' + sig, state)
+    console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, user !== hubAddress)
   }
 

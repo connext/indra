@@ -4,6 +4,7 @@ import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
 import * as actions from "../state/actions";
+const tokenAbi = require("human-standard-token-abi")
 const ethers = require('ethers')
 
 /*
@@ -116,6 +117,20 @@ export default class DepositController extends AbstractController {
     }
 
     try {
+      if (args.depositTokenUser !== '0') {
+        console.log('Approving transfer.')
+        const token = new this.connext.opts.web3.eth.Contract(
+          tokenAbi,
+          this.connext.opts.tokenAddress
+        )
+        let sendArgs: any = {
+          from: prev.user,
+        }
+        const call = token.methods.approve(prev.contractAddress, args.depositTokenUser)
+        const gasEstimate = await call.estimateGas(sendArgs)
+        sendArgs.gas = this.connext.contract.gasMultiple * gasEstimate
+        await call.send(sendArgs)
+      }
       console.log('Sending user authorized deposit to chain.')
       const state = await this.connext.signChannelState(
         this.validator.generateProposePendingDeposit(

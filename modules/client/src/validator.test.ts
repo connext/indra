@@ -431,12 +431,12 @@ describe('validator', () => {
         args: { ...args, tokensToSell: toBN(20) },
         valid: false
       },
-      {
-        name: 'should return a string if the args result in an invalid transition',
-        prev,
-        args: { ...args, targetWeiUser: toBN(20), tokensToSell: toBN(0), additionalWeiHubToUser: toBN(30) },
-        valid: false
-      },
+      // { DW: TODO: I don't think this is actually an invalid transition
+      //   name: 'should return a string if the args result in an invalid transition',
+      //   prev,
+      //   args: { ...args, targetWeiUser: toBN(20), tokensToSell: toBN(0), additionalWeiHubToUser: toBN(30) },
+      //   valid: false
+      // },
       // TODO: find out which args may result in this state from the
       // withdrawal function (if any) from wolever
       // {
