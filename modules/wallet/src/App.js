@@ -8,7 +8,6 @@ import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
-import Web3 from 'web3';
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -75,6 +74,7 @@ class App extends Component {
       wallet:null,
       address:null,
       balance:0,
+      tokenBlance:0,
       toggleKey:false,
       walletSet:false,
       keyEntered:'',
@@ -314,6 +314,7 @@ class App extends Component {
 
     // to get tokens from metamask to browser wallet
     async getTokens(){
+      /*
       let web3
       if (!web3) {
         web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
@@ -330,6 +331,7 @@ class App extends Component {
       let approveTx = await signer.functions.transfer(store.getState()[0].address, tokens, {gasLimit: depositResGas})
 
       console.log(approveTx);
+      */
     }
 
     // ** wrapper for ethers getBalance. probably breaks for tokens
@@ -337,8 +339,9 @@ class App extends Component {
         const balance_hex = await this.state.web3.getBalance(this.state.address)
         const balance_num = Number(balance_hex)
         const eth_balance = (balance_num / 1000000000000000000)
-        console.log(eth_balance)
-        this.setState({balance:eth_balance})
+        const t_balance_hex = await tokenContract.balanceOf(this.state.address)
+        const t_balance_num = Number(t_balance_hex)/ 1000000000000000000
+        this.setState({balance:eth_balance, tokenBlance: t_balance_num})
     }
 
   //TODO add send functionality
@@ -393,7 +396,7 @@ class App extends Component {
             Token Address: {tokenAddress}
           </p>
           <p>
-            Token Balance:
+            Token Balance: {JSON.stringify(this.state.tokenBlance)} TST
           </p>
             <button className="btn" onClick={() => this.getTokens()}>Transfer Tokens to browser wallet</button>
           <p>
