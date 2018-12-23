@@ -45,6 +45,16 @@ class App extends Component {
           balance: 0,
           tokenBalance: 0
         },
+        hubWallet: {
+          address: hubWalletAddress,
+          balance: 0,
+          tokenBalance: 0,
+        },
+        channelManager: {
+          address: channelManagerAddress,
+          balance: 0,
+          tokenBalance: 0,
+        },
         depositVal: {
           amountWei: '0',
           amountToken: '0'
@@ -100,7 +110,7 @@ class App extends Component {
       const providerOpts = new ProviderOptions().approving()
       const provider = clientProvider(providerOpts)
       const web3 = new eth.providers.Web3Provider(provider)
-      this.setState({web3: web3});
+      await this.setState({ web3: web3 });
 
       console.log("set up web3 successfully")
 
@@ -156,8 +166,7 @@ class App extends Component {
       })
 
       this.setState({ connext: connext });
-      await this.getMetamaskBalance()
-      await this.getBalance()
+      await this.refreshBalances()
 
     } catch (error) {
       alert(`Failed to load web3 or Connext. Check console for details.`);
@@ -359,81 +368,111 @@ class App extends Component {
     }
 
     // ** wrapper for ethers getBalance. probably breaks for tokens
-    async getMetamaskBalance(){
-        let web3 = window.web3
-        if (!web3) {
-          alert('You need to install & unlock metamask to fetch balances from it')
-          return
-        }
-        const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
-        const metamask = metamaskProvider.getSigner();
-        const address = (await metamask.provider.listAccounts())[0]
-        const balance = Number(await this.state.web3.getBalance(address)) / 1000000000000000000
-        const tokenBalance = Number(await tokenContract.balanceOf(address)) / 1000000000000000000
-        this.setState({
-          metamask: {
-            address: address,
-            balance: balance,
-            tokenBalance: tokenBalance
-          }
-        })
-    }
+    async refreshBalances(){
+      const balance = Number(await this.state.web3.getBalance(this.state.address)) / 1000000000000000000
+      const tokenBalance = Number(await tokenContract.balanceOf(this.state.address)) / 1000000000000000000
+      this.setState({ balance: balance, tokenBalance: tokenBalance })
 
-    // ** wrapper for ethers getBalance. probably breaks for tokens
-    async getBalance(){
-        const balance = Number(await this.state.web3.getBalance(this.state.address)) / 1000000000000000000
-        const tokenBalance = Number(await tokenContract.balanceOf(this.state.address)) / 1000000000000000000
-        this.setState({ balance: balance, tokenBalance: tokenBalance })
+      const hubBalance = Number(await this.state.web3.getBalance(hubWalletAddress)) / 1000000000000000000
+      const hubTokenBalance = Number(await tokenContract.balanceOf(hubWalletAddress)) / 1000000000000000000
+      this.setState({ hubWallet: {
+        address: hubWalletAddress,
+        balance: hubBalance,
+        tokenBalance: hubTokenBalance
+      }})
+
+      const cmBalance = Number(await this.state.web3.getBalance(channelManagerAddress)) / 1000000000000000000
+      const cmTokenBalance = Number(await tokenContract.balanceOf(channelManagerAddress)) / 1000000000000000000
+      this.setState({ channelManager: {
+        address: channelManagerAddress,
+        balance: cmBalance,
+        tokenBalance: cmTokenBalance
+      }})
+
+      let web3 = window.web3
+      if (!web3) {
+        this.setState({ metamask: { address: 'unavailable', balance: 0, tokenBalance: 0 } })
+        return
+      }
+
+      const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
+      const metamask = metamaskProvider.getSigner();
+      const address = (await metamask.provider.listAccounts())[0]
+      const mmBalance = Number(await this.state.web3.getBalance(address)) / 1000000000000000000
+      const mmTokenBalance = Number(await tokenContract.balanceOf(address)) / 1000000000000000000
+      this.setState({
+        metamask: {
+          address: address,
+          balance: mmBalance,
+          tokenBalance: mmTokenBalance
+        }
+      })
     }
 
   render() {
     return (
     <div className="app">
-        <h1> Connext Starter Kit</h1>
-        <div className="col">
-          <div> 
-            <h1>Payment UX</h1>
-            <button className='btn' onClick={evt => this.authorizeHandler(evt)}>Authorize</button>
-            <button className='btn' onClick={evt => this.checkAuthorizeHandler(evt)}>Check Authorization</button>
-            <br/>
-            <br/>
-            <div className="value-entry">
-              Enter approval amount in Wei <br/>
-              <button className='btn' onClick={evt => this.approvalHandler(evt)}>Approve Channel Manager</button> &nbsp;
-              <input defaultValue={0} onChange={evt => this.updateApprovalHandler(evt)}/>
-            </div>
-            <br/>
-            <div className="value-entry">
-              Enter deposit amount in Wei <br/>
-              <button className="btn" onClick={evt => this.depositHandler(evt)}>Deposit to Channel</button> &nbsp;
-              <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt)}/>
-            </div>
-            <br/>
-            <div className="value-entry">
-              Enter payment amount in Wei <br/>
-              <button className="btn" onClick={evt => this.paymentHandler(evt)}>Make a Payment</button> &nbsp;
-              <input defaultValue={0} onChange={evt => this.updatePaymentHandler(evt)}/>
-            </div>
-            <br/>
-            <div className="value-entry">
-              Enter withdrawal amount in Wei <br/>
-              <button className="btn" onClick={evt => this.withdrawalHandler(evt)}>Withdraw from Channel</button> &nbsp;
-              <input defaultValue={0} onChange={evt => this.updateWithdrawHandler(evt)}/>
-            </div>
+      <h1> Connext Starter Kit</h1>
+      <div className="col">
+        <div> 
+          <h1>Payment UX</h1>
+          <button className='btn' onClick={evt => this.authorizeHandler(evt)}>Authorize</button>
+          <button className='btn' onClick={evt => this.checkAuthorizeHandler(evt)}>Check Authorization</button>
+          <br/>
+          <br/>
+          <div className="value-entry">
+            Enter approval amount in Wei <br/>
+            <button className='btn' onClick={evt => this.approvalHandler(evt)}>Approve Channel Manager</button> &nbsp;
+            <input defaultValue={0} onChange={evt => this.updateApprovalHandler(evt)}/>
+          </div>
+          <br/>
+          <div className="value-entry">
+            Enter deposit amount in Wei <br/>
+            <button className="btn" onClick={evt => this.depositHandler(evt)}>Deposit to Channel</button> &nbsp;
+            <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt)}/>
+          </div>
+          <br/>
+          <div className="value-entry">
+            Enter payment amount in Wei <br/>
+            <button className="btn" onClick={evt => this.paymentHandler(evt)}>Make a Payment</button> &nbsp;
+            <input defaultValue={0} onChange={evt => this.updatePaymentHandler(evt)}/>
+          </div>
+          <br/>
+          <div className="value-entry">
+            Enter withdrawal amount in Wei <br/>
+            <button className="btn" onClick={evt => this.withdrawalHandler(evt)}>Withdraw from Channel</button> &nbsp;
+            <input defaultValue={0} onChange={evt => this.updateWithdrawHandler(evt)}/>
+          </div>
         </div>
       </div>
       <div className="col">
 
+        <h1>Channel Information</h1>
+        <p>Token Address: {tokenAddress}</p>
+        {/* these are undefined for some reason. I don't know why. I'm mad. */}
+        Channel Balances: 
+        {/*
+        User Wei Balance: {this.state.connext.store.persistent.channel.balanceWeiUser}
+        User Token Balance: {this.state.connext.store.balanceWeiUser}
+        Hub Wei Balance: {this.state.connext.store.balanceWeiHub}
+        Hub Token Balance: {this.state.connext.store.balanceWeiHub}
+        */}
+
+      </div>
+      <div className="col">
+
+        <h1>Interesting Accounts</h1>
+        <button className="btn" onClick={() => this.refreshBalances()}>Refresh balances</button>
+
         {this.state.walletSet
           ?
           <div>
-            <h1>Browser Wallet</h1>
-            <button className="btn" onClick={() => this.getBalance()}>Refresh balances</button>
+            <h3>Browser Wallet</h3>
+            <button className='btn' onClick={evt => this.getTokens(evt)}>Get 1 Token from Metamask</button>
+            <button className='btn' onClick={evt => this.getEther(evt)}>Get 1 Ether from Metamask</button>
             <p>Address: {this.state.address}</p>
             <p>ETH Balance: {this.state.balance}</p>
             <p>TST Balance: {this.state.tokenBalance}</p>
-            <button className='btn' onClick={evt => this.getTokens(evt)}>Get 1 Token from Metamask</button>
-            <button className='btn' onClick={evt => this.getEther(evt)}>Get 1 Ether from Metamask</button>
             <p>
               <button className="btn" onClick={this.toggleKey}>
                 {this.state.toggleKey ?  <span>Hide Private Key</span> : <span>Reveal Private Key</span> }
@@ -451,22 +490,18 @@ class App extends Component {
           </div>
         }
 
-        <h1>Connext Information</h1>
-        <p>Token Address: {tokenAddress}</p>
-        {/* these are undefined for some reason. I don't know why. I'm mad. */}
+        <h1>Channel Manager</h1>
+        <p>Address: {this.state.channelManager.address}</p>
+        <p>ETH Balance: {this.state.channelManager.balance}</p>
+        <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
 
-        Channel Balances: 
-        {/*
-        User Wei Balance: {this.state.connext.store.persistent.channel.balanceWeiUser}
-        User Token Balance: {this.state.connext.store.balanceWeiUser}
-        Hub Wei Balance: {this.state.connext.store.balanceWeiHub}
-        Hub Token Balance: {this.state.connext.store.balanceWeiHub}
-        */}
+        <h1>Hub's Wallet</h1>
+        <p>Address: {this.state.hubWallet.address}</p>
+        <p>ETH Balance: {this.state.hubWallet.balance}</p>
+        <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
 
         <h1>Metamask Wallet</h1>
-        <button className='btn' onClick={evt => this.getMetamaskBalance(evt)}>Refresh Metamask Data</button>
-        <br/>
-        <p>Address: {this.state.metamask.address || 'Refresh Metamask Info'}</p>
+        <p>Address: {this.state.metamask.address}</p>
         <p>ETH balance: {this.state.metamask.balance}</p>
         <p>TST balance: {this.state.metamask.tokenBalance}</p>
       </div>
