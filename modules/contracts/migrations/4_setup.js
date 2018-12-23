@@ -11,13 +11,14 @@ module.exports = async function(deployer, network, accounts) {
   let ChannelManager = await CM.deployed();
   let Token = await HumanStandardToken.deployed();
 
-  Token.approve(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("69", "ether")))
-  Token.transfer(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("6969", "ether")))
+  await Token.approve(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("6969", "ether")))
+  await Token.transfer(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("69", "ether")))
 
-  web3.eth.sendTransaction({
+  await web3.eth.sendTransaction({
     to: ChannelManager.address,
-    value: web3.utils.toBN(web3.utils.toWei("69", "ether")),
+    value: web3.utils.toBN(web3.utils.toWei("6.9", "ether")),
     from: accounts[0]
   })
 
+  console.log('Migration 4 complete')
 };

@@ -14,7 +14,7 @@ mnemonic=$ETH_MNEMONIC
 [[ -n "$mnemonic" ]] || mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 echo "Starting Ganache with options: netid=$netid, mnemonic=$mnemonic..."
-$ganache --host="0.0.0.0" --port="$ganache_rpc_port" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" --blockTime=3 &
+$ganache --host="0.0.0.0" --port="$ganache_rpc_port" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" --blockTime=3 > ops/ganache.log &
 sleep 5
 
 function getHash {

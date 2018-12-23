@@ -19,5 +19,7 @@ then
 # If we're restarting one service of the stack
 else
   docker service scale ${project}_$flag=0
+  docker service scale ${project}_proxy=0
+  docker service scale ${project}_proxy=1
   docker service scale ${project}_$flag=1
 fi

@@ -1,5 +1,6 @@
 build
 dist
+ganache.log
 node_modules
 yarn-error.log
 .bash_history

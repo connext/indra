@@ -66,6 +66,8 @@ done &
 # Start typescript watcher in background
 echo "Starting tsc watcher!"
 ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
+cd /client && yarn watch &
+cd /root
 
 # Start wallet react app
 echo "Starting wallet dev server.."

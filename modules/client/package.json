@@ -13,7 +13,7 @@
     "prepare": "npm run rebuild",
     "rebuild": "npm run clean && npm run compile",
     "test": "node test/HappyCase.test.js",
-    "watch": "tsc --watch --project tsconfig.json"
+    "watch": "tsc --watch --preserveWatchOutput --project tsconfig.json"
   },
   "engines": {
     "node": ">=9",
