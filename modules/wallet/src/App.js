@@ -8,7 +8,7 @@ import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
-import Web3 from 'web3.js';
+import Web3 from 'web3';
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -92,13 +92,14 @@ class App extends Component {
 
       // New provider code
       const providerOpts = new ProviderOptions().approving()
-      console.log(providerOpts);
       const provider = clientProvider(providerOpts)
-      console.log(provider);
       const web3 = new ethers.providers.Web3Provider(provider)
       this.setState({web3: web3});
+
+      console.log(providerOpts);
+      console.log(provider);
       console.log(web3)
-      console.log("debug1")
+      console.log("checkpoint")
 
       // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
       // as is, if you don't write down the privkey in the store you can't recover the wallet

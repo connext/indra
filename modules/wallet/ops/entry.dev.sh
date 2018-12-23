@@ -65,17 +65,22 @@ function watch_eth_state {
   done
 }
 
+function watch_client_src {
+# Start typescript watcher in background
+  echo "Starting connext-client src watcher..."
+  ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
+  cd /client
+  yarn watch
+}
+
 if [[ "$1" == "watch" ]]
-then watch_eth_state &
+then
+  watch_eth_state &
+  watch_client_src &
 else echo "not watching eth state, turn this on in deploy.dev.sh if desired"
 fi
 
-# Start typescript watcher in background
-echo "Starting connext-client src watcher..."
-./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
-cd /client && yarn watch &
-cd /root
-
 # Start wallet react app
 echo "Starting wallet dev server..."
+cd /root && echo "cwd=`pwd`"
 exec yarn start
