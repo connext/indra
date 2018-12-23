@@ -467,7 +467,7 @@ class App extends Component {
         {this.state.walletSet
           ?
           <div>
-            <h3>Browser Wallet</h3>
+            <h2>Browser Wallet</h2>
             <button className='btn' onClick={evt => this.getTokens(evt)}>Get 1 Token from Metamask</button>
             <button className='btn' onClick={evt => this.getEther(evt)}>Get 1 Ether from Metamask</button>
             <p>Address: {this.state.address}</p>
@@ -490,17 +490,17 @@ class App extends Component {
           </div>
         }
 
-        <h1>Channel Manager</h1>
+        <h2>Channel Manager</h2>
         <p>Address: {this.state.channelManager.address}</p>
         <p>ETH Balance: {this.state.channelManager.balance}</p>
         <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
 
-        <h1>Hub's Wallet</h1>
+        <h2>Hub's Wallet</h2>
         <p>Address: {this.state.hubWallet.address}</p>
         <p>ETH Balance: {this.state.hubWallet.balance}</p>
         <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
 
-        <h1>Metamask Wallet</h1>
+        <h2>Metamask Wallet</h2>
         <p>Address: {this.state.metamask.address}</p>
         <p>ETH balance: {this.state.metamask.balance}</p>
         <p>TST balance: {this.state.metamask.tokenBalance}</p>
