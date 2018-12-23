@@ -186,9 +186,10 @@ export default class DepositController extends AbstractController {
           gasLimit: new ethers.utils.BigNumber(gasEstimate).toHexString()
         }
       )
-      await tx.awaitEnterMempool()
+      console.log(tx)
+      await tx.wait() //.awaitEnterMempool()
       // update the channel in the state
-      // this.connext.syncController.enqueueSyncResultsFromHub([{ type: "channel", update }])
+      this.connext.syncController.enqueueSyncResultsFromHub([{ type: "channel", update }])
     } catch (e) {
       throw DepositError('' + e)
     }

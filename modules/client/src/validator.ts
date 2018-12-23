@@ -46,6 +46,10 @@ import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { TransactionReceipt } from 'web3/types'
 
+// new provider code
+import ChannelManagerAbi from './typechain/abi/ChannelManagerAbi'
+import * as ethers from 'ethers';
+
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
 export const DEFAULT_EXCHANGE_MULTIPLIER = 1000000
@@ -62,6 +66,8 @@ arguments in other places.
 export class Validator {
   private utils: Utils
 
+  private Interface: any
+
   private stateGenerator: StateGenerator
 
   private generateHandlers: { [name in ChannelUpdateReason]: any }
@@ -71,6 +77,9 @@ export class Validator {
   hubAddress: Address
 
   constructor(web3: Web3, hubAddress: Address) {
+    this.Interface = new ethers.utils.Interface(ChannelManagerAbi)
+    console.log("Validator Interface")
+    console.log(this.Interface.events.DidUpdateChannel)
     this.utils = new Utils()
     this.stateGenerator = new StateGenerator()
     this.web3 = web3
@@ -271,8 +280,8 @@ export class Validator {
 
     // validate on chain information
     const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransaction(txHash) as any
-    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
+    const tx = await this.web3.getTransaction(txHash) as any
+    const receipt = await this.web3.getTransactionReceipt(txHash)
 
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
@@ -470,6 +479,8 @@ export class Validator {
   }
 
   public assertChannelSigner(channelState: ChannelState, signer: "user" | "hub" = "user"): void {
+    console.log('Channel state debug')
+    console.log(JSON.stringify(channelState, null, 2))
     const sig = signer === "hub" ? channelState.sigHub : channelState.sigUser
     const adr = signer === "hub" ? this.hubAddress : channelState.user
     if (!sig) {
@@ -727,6 +738,27 @@ export class Validator {
       return null
     }
 
+    // new provider code
+    const eventTopic = this.Interface.events.DidUpdateChannel.topic
+    let raw = {} as any
+    txReceipt.logs.forEach((log) => {
+      if (log.topics.indexOf(eventTopic) > -1) {
+        let tmp = this.Interface.parseLog(log) as any
+        Object.keys(tmp.values).forEach((field) => {
+          if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
+            if (tmp.values[field].toString().split(',').length>1)
+              raw[field] = tmp.values[field].toString().split(',')
+            else
+              raw[field] = tmp.values[field].toString()
+          }
+        })
+      }
+      // NOTE: The second topic in the log with the events topic
+      // is the indexed user.
+      raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
+    })
+
+    /*
     const inputs = [
       { type: 'address', name: 'user', indexed: true },
       { type: 'uint256', name: 'senderIdx' },
@@ -745,7 +777,6 @@ export class Validator {
       inputs,
     })
 
-    /*
     ContractEvent.fromRawEvent({
       log: log,
       txIndex: log.transactionIndex,
@@ -754,7 +785,6 @@ export class Validator {
       sender: txsIndex[log.transactionHash].from,
       timestamp: blockIndex[log.blockNumber].timestamp * 1000
     })
-    */
 
     let raw = {} as any
     txReceipt.logs.forEach((log) => {
@@ -771,7 +801,6 @@ export class Validator {
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
     })
 
-    /*
     event DidUpdateChannel (
       address indexed user,
       uint256 senderIdx, // 0: hub, 1: user
