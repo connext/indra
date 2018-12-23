@@ -8,6 +8,7 @@ import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
+//import Web3 from 'web3';
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -73,8 +74,8 @@ class App extends Component {
       web3: null,
       wallet:null,
       address:null,
-      balance:0,
-      tokenBlance:0,
+      balance: 0,
+      tokenBalance: 0,
       toggleKey:false,
       walletSet:false,
       keyEntered:'',
@@ -117,6 +118,7 @@ class App extends Component {
       // new new provider code
       const ethProvider = new eth.providers.JsonRpcProvider(providerUrl)
       const localWallet = wallet.connect(ethProvider)
+      this.setState({ localWallet: localWallet })
 
       tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, ethProvider)
       tokenSigner = tokenContract.connect(localWallet)
@@ -314,24 +316,38 @@ class App extends Component {
 
     // to get tokens from metamask to browser wallet
     async getTokens(){
-      /*
-      let web3
+      let web3 = window.web3
       if (!web3) {
-        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
+        alert('You need to install & unlock metamask to do that')
+        return
       }
-      const provider = new eth.provider.Web3Provider(web3.currentProvider);
-      const signer = provider.getSigner();
-
+      const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
+      const metamask = metamaskProvider.getSigner();
+      const tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, metamaskProvider)
+      const token = tokenContract.connect(metamask)
       let tokens = eth.utils.bigNumberify('1000000000000000000')
-
-      let depositResGas = await signer.estimate.approve(store.getState()[0].address, tokens)
-
-      console.log(`I predict this tx [a ${typeof signer.transfer}] will require ${depositResGas} gas`)
-
-      let approveTx = await signer.functions.transfer(store.getState()[0].address, tokens, {gasLimit: depositResGas})
-
+      let depositResGas = await token.estimate.approve(store.getState()[0].address, tokens)
+      let approveTx = await token.functions.transfer(store.getState()[0].address, tokens, {gasLimit: depositResGas})
       console.log(approveTx);
       */
+    }
+
+    // to get tokens from metamask to browser wallet
+    async getEther(){
+      let web3 = window.web3
+      if (!web3) {
+        alert('You need to install & unlock metamask to do that')
+        return
+      }
+      const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
+      const metamask = metamaskProvider.getSigner();
+      console.log(this.state.localWallet.address)
+      const sentTx = await metamask.sendTransaction({
+        to: this.state.localWallet.address,
+        value: eth.utils.bigNumberify('1000000000000000000'),
+        gasLimit: eth.utils.bigNumberify('21000'),
+      })
+      console.log(sentTx)
     }
 
     // ** wrapper for ethers getBalance. probably breaks for tokens
@@ -358,7 +374,9 @@ class App extends Component {
           <div> 
             <h1>Payment UX</h1>
             <button className='btn' onClick={evt => this.authorizeHandler(evt)}>Authorize</button>
+            <br/>
             <button className='btn' onClick={evt => this.checkAuthorizeHandler(evt)}>Check Authorization</button>
+            <br/>
             <div className="value-entry">
               <input defaultValue={0} onChange={evt => this.updateApprovalHandler(evt)}/>
               Enter approval amount in Wei
@@ -388,15 +406,15 @@ class App extends Component {
           <p>
             Address: {this.state.address}
           </p>
+          <button className='btn' onClick={evt => this.getTokens(evt)}>Get 1 Token from Metamask</button>
+          <button className='btn' onClick={evt => this.getEther(evt)}>Get 1 Ether from Metamask</button>
+          <br/>
+          <button className="btn" onClick={() => this.getBalance()}>Refresh balances</button>
           <p>
             Balance: {JSON.stringify(this.state.balance)} ETH
-            <button className="btn" onClick={() => this.getBalance()}>Refresh balance</button>
           </p>
           <p>
-            Token Address: {tokenAddress}
-          </p>
-          <p>
-            Token Balance: {JSON.stringify(this.state.tokenBlance)} TST
+            Token Balance: {JSON.stringify(this.state.tokenBalance)} TST
           </p>
             <button className="btn" onClick={() => this.getTokens()}>Transfer Tokens to browser wallet</button>
           <p>
@@ -422,6 +440,9 @@ class App extends Component {
         </div>
         }
         <h1>Connext Information</h1>
+        <p>
+          Token Address: {tokenAddress}
+        </p>
         {/* these are undefined for some reason. I don't know why. I'm mad. */}
           Channel Balances: 
           {/*User Wei Balance: {this.state.connext.store.persistent.channel.balanceWeiUser}
