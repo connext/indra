@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "arg 1 = $1"
+echo "arg 2 = $2"
+
 database=$POSTGRES_HOST:$POSTGRES_PORT
 db_migrations=${database%:*}:5433
 ethprovider=${ETH_RPC_URL#*://}
@@ -50,17 +53,27 @@ function eth_env_setup {
 }
 eth_env_setup
 
-echo "Starting eth state watcher!"
-while true
-do
-  if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
-  then sleep 3
-  else echo "Changes detected! Refreshing eth env" && eth_env_setup
-  fi
-done &
+function watch_eth_state {
+  echo "Starting eth state watcher!"
+  while true
+  do
+    if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
+    then sleep 3
+    else echo "Changes detected! Refreshing eth env" && eth_env_setup
+    fi
+  done
+}
 
-echo "Starting tsc watcher!"
-./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
+function watch_src {
+  echo "Starting tsc watcher!"
+  ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json
+}
+
+if [[ "$2" == "watch" ]]
+then
+  watch_eth_state &
+  watch_src &
+fi
 
 echo "Starting nodemon $1!"
 exec ./node_modules/.bin/nodemon --watch dist --watch /state-hash dist/entry.js $1

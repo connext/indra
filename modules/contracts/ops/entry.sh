@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "arg 1 = $1"
+
 ganache_rpc_port=8545
 migration_flag_port=8544
 
@@ -27,7 +29,6 @@ function migrate {
   $truffle compile
   $truffle migrate --reset --network docker
   getHash > build/state-hash
-  echo "Watching contracts/migrations for changes..."
 }
 
 # Do we need to do an initial migration?
@@ -36,16 +37,28 @@ then migrate
 else echo "Contracts & migrations are up to date"
 fi
 
-echo "===> Signalling the completion of migrations..."
-while true # unix.stackexchange.com/a/37762
-do echo 'eth migrations complete' | nc -lk -p $migration_flag_port
-done > /dev/null &
+function signal_migrations_complete {
+  echo "===> Signalling the completion of migrations..."
+  while true # unix.stackexchange.com/a/37762
+  do echo 'eth migrations complete' | nc -lk -p $migration_flag_port
+  done > /dev/null
+}
 
-echo "Watching contract src & artifacts for changes.."
-while true
-do
-  if [[ "`getHash`" == "`cat build/state-hash`" ]]
-  then sleep 3
-  else migrate
-  fi
-done
+function watch {
+  echo "Watching contract src & artifacts for changes.."
+  while true
+  do
+    if [[ "`getHash`" == "`cat build/state-hash`" ]]
+    then sleep 3
+    else migrate
+    fi
+  done
+}
+
+if [[ "$1" == "watch" ]]
+then
+  signal_migrations_complete &
+  watch
+else
+  signal_migrations_complete
+fi

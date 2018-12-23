@@ -32,6 +32,11 @@ POSTGRES_USER="$project"
 POSTGRES_DB="$project"
 POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 
+# set any of these to "watch" to turn on watchers
+watch_ethprovider="no"
+watch_hub="no"
+watch_chainsaw="no"
+
 ####################
 # Deploy according to above configuration
 
@@ -113,7 +118,7 @@ services:
 
   hub:
     image: $hub_image
-    command: hub
+    command: hub $watch_hub
     networks:
       - $project
     ports:
@@ -138,7 +143,7 @@ services:
 
   chainsaw:
     image: $chainsaw_image
-    command: chainsaw
+    command: chainsaw $watch_chainsaw
     networks:
       - $project
     secrets:
@@ -159,12 +164,19 @@ services:
       - `pwd`/modules/client:/client
       - `pwd`/modules/contracts/build/contracts:/contracts
 
-  redis:
-    image: $redis_image
+  ethprovider:
+    image: $ethprovider_image
+    command: $watch_ethprovider
+    environment:
+      ETH_NETWORK_ID: $ETH_NETWORK_ID
+      ETH_MNEMONIC: $ETH_MNEMONIC
     networks:
       - $project
     ports:
-      - "6379:6379"
+      - "8545:8545"
+    volumes:
+      - chain_dev:/data
+      - `pwd`/modules/contracts:/root
 
   database:
     image: $database_image
@@ -184,18 +196,12 @@ services:
     volumes:
       - database_dev:/var/lib/postgresql/data
 
-  ethprovider:
-    image: $ethprovider_image
-    environment:
-      ETH_NETWORK_ID: $ETH_NETWORK_ID
-      ETH_MNEMONIC: $ETH_MNEMONIC
+  redis:
+    image: $redis_image
     networks:
       - $project
     ports:
-      - "8545:8545"
-    volumes:
-      - chain_dev:/data
-      - `pwd`/modules/contracts:/root
+      - "6379:6379"
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
