@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "arg 1 = $1"
-echo "arg 2 = $2"
-
 database=$POSTGRES_HOST:$POSTGRES_PORT
 db_migrations=${database%:*}:5433
 ethprovider=${ETH_RPC_URL#*://}

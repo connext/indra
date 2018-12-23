@@ -36,6 +36,7 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 watch_ethprovider="no"
 watch_hub="no"
 watch_chainsaw="no"
+watch_wallet="no"
 
 ####################
 # Deploy according to above configuration
@@ -101,6 +102,7 @@ services:
 
   wallet:
     image: $wallet_image
+    command: "$watch_wallet"
     networks:
       - $project
     environment:

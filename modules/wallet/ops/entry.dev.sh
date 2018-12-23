@@ -40,7 +40,7 @@ function extractAddress {
 
 function eth_env_setup {
   export ETH_STATE_HASH="`getHash`"
-  echo -n `getHash` /state-hash
+  echo -n `getHash` > /state-hash
   echo "Resetting eth env for state hash: $ETH_STATE_HASH.."
   export ETH_NETWORK_ID="`curleth 'net_version' '[]'`"
   echo "REACT_APP_DEV=false" > .env
@@ -54,21 +54,28 @@ function eth_env_setup {
 }
 eth_env_setup
 
-echo "Starting eth state watcher!"
-while true
-do
-  if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
-  then sleep 3
-  else echo "Changes detected! Refreshing eth env" && eth_env_setup
-  fi
-done &
+function watch_eth_state {
+  echo "Starting eth state watcher!"
+  while true
+  do
+    if [[ "`getHash`" == "$ETH_STATE_HASH" ]]
+    then sleep 3
+    else echo "Changes detected! Refreshing eth env" && eth_env_setup
+    fi
+  done
+}
+
+if [[ "$1" == "watch" ]]
+then watch_eth_state &
+else echo "not watching eth state, turn this on in deploy.dev.sh if desired"
+fi
 
 # Start typescript watcher in background
-echo "Starting tsc watcher!"
+echo "Starting connext-client src watcher..."
 ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
 cd /client && yarn watch &
 cd /root
 
 # Start wallet react app
-echo "Starting wallet dev server.."
-yarn start
+echo "Starting wallet dev server..."
+exec yarn start
