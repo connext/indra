@@ -337,8 +337,13 @@ class App extends Component {
         alert('You need to install & unlock metamask to do that')
         return
       }
-      const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider)
+      const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
       const metamask = metamaskProvider.getSigner();
+      const address = (await metamask.provider.listAccounts())[0]
+      if (!address) {
+        alert('You need to install & unlock metamask to do that')
+        return
+      }
 
       const tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, metamaskProvider)
       const token = tokenContract.connect(metamask)
@@ -358,7 +363,11 @@ class App extends Component {
       }
       const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
       const metamask = metamaskProvider.getSigner();
-      console.log(this.state.localWallet.address)
+      const address = (await metamask.provider.listAccounts())[0]
+      if (!address) {
+        alert('You need to install & unlock metamask to do that')
+        return
+      }
       const sentTx = await metamask.sendTransaction({
         to: this.state.localWallet.address,
         value: eth.utils.bigNumberify('1000000000000000000'),
@@ -391,13 +400,16 @@ class App extends Component {
 
       let web3 = window.web3
       if (!web3) {
-        this.setState({ metamask: { address: 'unavailable', balance: 0, tokenBalance: 0 } })
+        alert('You need to install & unlock metamask to do that')
         return
       }
-
       const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
       const metamask = metamaskProvider.getSigner();
       const address = (await metamask.provider.listAccounts())[0]
+      if (!address) {
+        this.setState({ metamask: { address: 'unavailable', balance: 0, tokenBalance: 0 } })
+        return
+      }
       const mmBalance = Number(await this.state.web3.getBalance(address)) / 1000000000000000000
       const mmTokenBalance = Number(await tokenContract.balanceOf(address)) / 1000000000000000000
       this.setState({
