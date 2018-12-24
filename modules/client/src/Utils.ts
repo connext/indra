@@ -5,6 +5,7 @@ import util = require('ethereumjs-util')
 import { MerkleUtils } from './helpers/merkleUtils'
 import MerkleTree from './helpers/merkleTree'
 import Web3 = require('web3')
+import * as ethers from 'ethers';
 
 import {
   UnsignedChannelState,
@@ -49,43 +50,54 @@ export class Utils {
 
     // hash data
     // @ts-ignore
-    const hash = Web3.utils.soliditySha3(
-      { type: 'address', value: contractAddress },
-      // @ts-ignore TODO wtf??!
-      { type: 'address[2]', value: [user.toLowerCase(), recipient.toLowerCase()] },
-      {
-        type: 'uint256[2]',
-        value: [balanceWeiHub, balanceWeiUser],
-      },
-      {
-        type: 'uint256[2]',
-        value: [balanceTokenHub, balanceTokenUser],
-      },
-      {
-        type: 'uint256[4]',
-        value: [
+
+    const hash = ethers.utils.solidityKeccak256(
+      [
+        'address',
+        'address[2]',
+        'uint256[2]',
+        'uint256[2]',
+        'uint256[4]',
+        'uint256[4]',
+        'uint256[2]',
+        'bytes32',
+        'uint256',
+        'uint256'
+      ],
+      [
+        contractAddress,
+        [
+          user,
+          recipient
+        ],
+        [
+          balanceWeiHub,
+          balanceWeiUser
+        ],
+        [
+          balanceTokenHub,
+          balanceTokenUser
+        ],
+        [
           pendingDepositWeiHub,
           pendingWithdrawalWeiHub,
           pendingDepositWeiUser,
-          pendingWithdrawalWeiUser,
+          pendingWithdrawalWeiUser
         ],
-      },
-      {
-        type: 'uint256[4]',
-        value: [
+        [
           pendingDepositTokenHub,
           pendingWithdrawalTokenHub,
           pendingDepositTokenUser,
-          pendingWithdrawalTokenUser,
+          pendingWithdrawalTokenUser
         ],
-      },
-      {
-        type: 'uint256[2]',
-        value: [txCountGlobal, txCountChain],
-      },
-      { type: 'bytes32', value: threadRoot },
-      { type: 'uint256', value: threadCount },
-      { type: 'uint256', value: timeout },
+        [
+          txCountGlobal,
+          txCountChain
+        ],
+        threadRoot,
+        threadCount,
+        timeout
+      ]
     )
     console.log('hash: ', hash);
     return hash
@@ -96,30 +108,13 @@ export class Utils {
     // could be hub or user
     sig: string,
   ): string {
-    let fingerprint: any = this.createChannelStateHash(channelState)
-    fingerprint = util.toBuffer(String(fingerprint))
-    const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-    // @ts-ignore
-    const prefixedMsg = util.keccak256(
-      // @ts-ignore
-      Buffer.concat([
-        prefix,
-        util.toBuffer(String(fingerprint.length)),
-        fingerprint,
-      ]),
-    )
-    const res = util.fromRpcSig(sig)
-    const pubKey = util.ecrecover(
-      util.toBuffer(prefixedMsg),
-      res.v,
-      res.r,
-      res.s,
-    )
-    const addrBuf = util.pubToAddress(pubKey)
-    const addr = util.bufferToHex(addrBuf)
-    console.log('recovered:', addr)
 
-    return addr
+    let fingerprint: any = this.createChannelStateHash(channelState)
+    const prefixedMsg = ethers.utils.hashMessage(fingerprint)
+    const addr = ethers.utils.recoverAddress(prefixedMsg, sig)
+    console.log(`Recovered address ${addr} from hash aka fingerprint ${fingerprint} with prefixedMsg ${prefixedMsg} and sig ${sig}`)
+
+    return addr.toLowerCase()
   }
 
   public createThreadStateHash(threadState: UnsignedThreadState): string {
