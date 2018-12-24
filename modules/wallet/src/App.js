@@ -56,48 +56,39 @@ class App extends Component {
           tokenBalance: 0,
         },
         depositVal: {
-          amountWei: '0',
-          amountToken: '0'
+          amountWei: '1000',
+          amountToken: '1000'
         },
         paymentVal:{
           meta:{
             purchaseId: 'payment',
           },
           payments: {
-            purchaseId: 'paymentTotal',
-            meta: null,
+            recipient: hubWalletAddress,
             amount: {
-                amountWei: '0',
-                amountToken: '0'
+              amountWei: '100',
+              amountToken: '100'
             },
-            payments: {
-                recipient: '0x0',
-                amount: {
-                    amountWei: '0',
-                    amountToken: '0'
-                },
-            meta: null
-            }
           },
-          withdrawalVal:{
-            withdrawalWeiUser: '0',
-            tokensToSell: '0', 
-            withdrawalTokenUser: '0', 
-            weiToSell: '0',
-            recipient: '0x0', //likely wrong, will address soon
-          },
-          web3: null,
-          wallet: null,
-          address:null,
-          balance: 0,
-          tokenBalance: 0,
-          toggleKey:false,
-          walletSet:false,
-          keyEntered:'',
-          approvalWeiUser: '100',
-          recipient: hubWalletAddress,
-          connext:null,
-        }
+        },
+        withdrawalVal:{
+          withdrawalWeiUser: '100',
+          tokensToSell: '0',
+          withdrawalTokenUser: '100',
+          weiToSell: '0',
+          recipient: '0x0', //likely wrong, will address soon
+        },
+        web3: null,
+        wallet: null,
+        address:null,
+        balance: 0,
+        tokenBalance: 0,
+        toggleKey:false,
+        walletSet:false,
+        keyEntered:'',
+        approvalWeiUser: '10000',
+        recipient: hubWalletAddress,
+        connext:null,
       }
       this.toggleKey = this.toggleKey.bind(this);
     }
@@ -175,68 +166,58 @@ class App extends Component {
     
   };
 
-    updateDepositHandler(evt) {
-      this.setState({
-        depositVal: {
-          amountWei: evt.target.value,
-          amountToken: '0'
-        }
-      });
-      console.log(`Updating state : ${this.state.depositVal}`)
-    }
-
-    updateWithdrawHandler(evt) {
-      this.setState({
-        withdrawalVal:{
-          withdrawalWeiUser: '0',
-          tokensToSell: '0', 
-          withdrawalTokenUser: evt.target.value, 
-          weiToSell: '0',
-          recipient: '0x0', //likely wrong, will address soon
-        }
-      });
-    }
-
     updateApprovalHandler(evt) {
       this.setState({
         approvalWeiUser: evt.target.value,
       });
     }
 
-    updatePaymentHandler(evt) {
-      this.setState({
-        paymentVal:{
-          meta: {},
-          payments: [
-            {
-              amount: { amountToken: evt.target.value, amountWei: '0' },
-              type: 'PT_CHANNEL',
-              meta: {},
-              recipient: '$$HUB$$', //0xB669b484f2c72D226463d9c75d9B9A871aE7904e
-            },
-          ],
-        //   meta:{
-        //     purchaseId: 'payment',
-        //   },
-        //   payments: {
-        //     purchaseId: 'paymentTotal',
-        //     meta: null,
-        //     amount: {
-        //         amountWei: evt.target.value,
-        //         amountToken: '0'
-        //     },
-        //     payments: {
-        //         recipient: '0x0',
-        //         amount: {
-        //             amountWei: '0',
-        //             amountToken: '0'
-        //         },
-        //     meta: null
-        //     }
-        //   }
-        // }
-        }
-      });
+    async updateDepositHandler(evt, token) {
+      var value = evt.target.value
+      if (token === 'ETH') {
+        await this.setState(oldState => {
+          oldState.depositVal.amountWei = value
+          return oldState
+        })
+      } else if (token === 'TST') {
+        await this.setState(oldState => {
+          oldState.depositVal.amountToken = value
+          return oldState
+        })
+      }
+      //console.log(`Updated depositVal: ${JSON.stringify(this.state.depositVal,null,2)}`)
+    }
+
+    async updateWithdrawHandler(evt, token) {
+      var value = evt.target.value
+      if (token === 'ETH') {
+        await this.setState(oldState => {
+          oldState.withdrawalVal.withdrawalWeiUser = value
+          return oldState
+        })
+      } else if (token === 'TST') {
+        await this.setState(oldState => {
+          oldState.withdrawalVal.withdrawalTokenUser = value
+          return oldState
+        })
+      }
+      //console.log(`Updated withdrawalVal: ${JSON.stringify(this.state.withdrawalVal,null,2)}`)
+    }
+
+    async updatePaymentHandler(evt, token) {
+      var value = evt.target.value
+      if (token === 'ETH') {
+        await this.setState(oldState => {
+          oldState.paymentVal.payments.amount.amountWei = value
+          return oldState
+        })
+      } else if (token === 'TST') {
+        await this.setState(oldState => {
+          oldState.paymentVal.payments.amount.amountToken = value
+          return oldState
+        })
+      }
+      //console.log(`Updated paymentVal: ${JSON.stringify(this.state.paymentVal,null,2)}`)
     }
 
     async approvalHandler(evt) {
@@ -251,7 +232,7 @@ class App extends Component {
 
     //Connext Helpers
     async depositHandler(evt) {
-      console.log(this.state.connext);
+      console.log(`Depositing: ${JSON.stringify(this.state.depositVal,null,2)}`);
       let depositRes = await this.state.connext.deposit(this.state.depositVal)
       console.log(`${JSON.stringify(depositRes)}`)
     }
@@ -430,30 +411,43 @@ class App extends Component {
           <h1>Payment UX</h1>
           <button className='btn' onClick={evt => this.authorizeHandler(evt)}>Authorize</button>
           <button className='btn' onClick={evt => this.checkAuthorizeHandler(evt)}>Check Authorization</button>
-          <br/>
-          <br/>
-          <div className="value-entry">
-            Enter approval amount in Wei <br/>
+          <br/> <br/>
+          <div>
+            <div className="value-entry">
+              Enter approval amount in Wei:&nbsp;&nbsp;<input defaultValue={10000} onChange={evt => this.updateApprovalHandler(evt)}/>
+            </div>
             <button className='btn' onClick={evt => this.approvalHandler(evt)}>Approve Channel Manager</button> &nbsp;
-            <input defaultValue={0} onChange={evt => this.updateApprovalHandler(evt)}/>
+            <br/> <br/>
           </div>
-          <br/>
-          <div className="value-entry">
-            Enter deposit amount in Wei <br/>
+          <div>
+            <div className="value-entry">
+              Enter ETH deposit amount in Wei:&nbsp;&nbsp;<input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, 'ETH')}/>
+            </div>
+            <div className="value-entry">
+              Enter TST deposit amount in Wei:&nbsp;&nbsp;<input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, 'TST')}/>
+            </div>
             <button className="btn" onClick={evt => this.depositHandler(evt)}>Deposit to Channel</button> &nbsp;
-            <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt)}/>
+            <br/> <br/>
           </div>
-          <br/>
-          <div className="value-entry">
-            Enter payment amount in Wei <br/>
+          <div>
+            <div className="value-entry">
+              Enter ETH payment amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updatePaymentHandler(evt, 'ETH')}/>
+            </div>
+            <div className="value-entry">
+              Enter TST payment amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updatePaymentHandler(evt, 'TST')}/>
+            </div>
             <button className="btn" onClick={evt => this.paymentHandler(evt)}>Make a Payment</button> &nbsp;
-            <input defaultValue={0} onChange={evt => this.updatePaymentHandler(evt)}/>
+            <br/> <br/>
           </div>
-          <br/>
-          <div className="value-entry">
-            Enter withdrawal amount in Wei <br/>
+          <div>
+            <div className="value-entry">
+              Enter ETH withdrawal amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updateWithdrawHandler(evt, 'ETH')}/>
+            </div>
+            <div className="value-entry">
+              Enter TST withdrawal amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updateWithdrawHandler(evt, 'TST')}/>
+            </div>
             <button className="btn" onClick={evt => this.withdrawalHandler(evt)}>Withdraw from Channel</button> &nbsp;
-            <input defaultValue={0} onChange={evt => this.updateWithdrawHandler(evt)}/>
+            <br/> <br/>
           </div>
         </div>
       </div>
