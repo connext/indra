@@ -235,15 +235,19 @@ class App extends Component {
     async depositHandler(evt) {
       console.log(`Depositing: ${JSON.stringify(this.state.depositVal,null,2)}`);
       let depositRes = await this.state.connext.deposit(this.state.depositVal)
-      console.log(`${JSON.stringify(depositRes)}`)
+      console.log(`Deposit Result: ${JSON.stringify(depositRes,null,2)}`)
     }
 
     async paymentHandler(evt) {
-      await this.state.connext.buy(this.state.paymentVal)
+      console.log(`Submitting payment: ${JSON.stringify(this.state.paymentVal,null,2)}`)
+      let paymentRes = await this.state.connext.buy(this.state.paymentVal)
+      console.log(`Payment result: ${JSON.stringify(paymentRes,null,2)}`)
     }
 
     async withdrawalHandler(evt) {
-      await this.state.connext.withdraw(this.state.withdrawalVal)
+      console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal,null,2)}`)
+      let withdrawalRes = await this.state.connext.withdraw(this.state.withdrawalVal)
+      console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes,null,2)}`)
     };
 
     // Other Helpers
