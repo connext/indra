@@ -117,8 +117,13 @@ export default class DepositController extends AbstractController {
     }
 
     try {
+    // TODO: Figure out better way with new provider
+    /*
+    try {
       if (args.depositTokenUser !== '0') {
         console.log('Approving transfer.')
+        console.log(`this connext opts: ${JSON.stringify(this.connext, null, 2)}`)
+        console.log(`this connext: ${JSON.stringify(this.connext, null, 2)}`)
         const token = new this.connext.opts.web3.eth.Contract(
           tokenAbi,
           this.connext.opts.tokenAddress
@@ -131,6 +136,7 @@ export default class DepositController extends AbstractController {
         sendArgs.gas = this.connext.contract.gasMultiple * gasEstimate
         await call.send(sendArgs)
       }
+     */
       console.log('Sending user authorized deposit to chain.')
       const state = await this.connext.signChannelState(
         this.validator.generateProposePendingDeposit(
