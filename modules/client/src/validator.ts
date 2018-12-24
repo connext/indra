@@ -78,8 +78,6 @@ export class Validator {
 
   constructor(web3: Web3, hubAddress: Address) {
     this.Interface = new ethers.utils.Interface(ChannelManagerAbi)
-    console.log("Validator Interface")
-    console.log(this.Interface.events.DidUpdateChannel)
     this.utils = new Utils()
     this.stateGenerator = new StateGenerator()
     this.web3 = web3
@@ -479,14 +477,12 @@ export class Validator {
   }
 
   public assertChannelSigner(channelState: ChannelState, signer: "user" | "hub" = "user"): void {
-    console.log(`Channel state debug for user: ${signer}`)
-    console.log(JSON.stringify(channelState, null, 2))
     const sig = signer === "hub" ? channelState.sigHub : channelState.sigUser
     const adr = signer === "hub" ? this.hubAddress : channelState.user
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr) {
+    if (this.utils.recoverSignerFromChannelState(channelState, sig).toLowerCase() !== adr.toLowerCase()) {
       throw new Error(`Channel state is not correctly signed by ${signer}. channelState: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
@@ -840,10 +836,6 @@ export class Validator {
       threadRoot: raw.threadRoot,
       threadCount: parseInt(raw.threadCount, 10)
     }
-
-    console.log(`Recovered channel state from raw log output`)
-    console.log('raw:', JSON.stringify(raw,null,2))
-    console.log('organized:', JSON.stringify(output,null,2))
 
     return output
   }
