@@ -21,14 +21,14 @@ export class SignerService {
   }
 
   public async sign(hash: string): Promise<string> {
-    return await this.wallet.signMessage(hash)
+    return await this.wallet.signMessage(eth.utils.arrayify(hash))
   }
 
   public async getSigForChannelState(
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    return await this.wallet.signMessage(stateHash)
+    return await this.wallet.signMessage(eth.utils.arrayify(stateHash))
   }
 
   public async signChannelState(
