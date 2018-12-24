@@ -745,6 +745,7 @@ export class Validator {
 
     // new provider code
     const eventTopic = this.Interface.events.DidUpdateChannel.topic
+
     let raw = {} as any
     txReceipt.logs.forEach((log) => {
       if (log.topics.indexOf(eventTopic) > -1) {
@@ -819,7 +820,7 @@ export class Validator {
     );
     */
 
-    return {
+    const output = {
       user: raw.user,
       sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
       balanceWeiUser: toBN(raw.weiBalances[1]),
@@ -839,5 +840,11 @@ export class Validator {
       threadRoot: raw.threadRoot,
       threadCount: parseInt(raw.threadCount, 10)
     }
+
+    console.log(`Recovered channel state from raw log output`)
+    console.log('raw:', JSON.stringify(raw,null,2))
+    console.log('organized:', JSON.stringify(output,null,2))
+
+    return output
   }
 }

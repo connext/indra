@@ -172,6 +172,7 @@ export default class DepositController extends AbstractController {
           value: new ethers.utils.bigNumberify(state.pendingDepositWeiUser).toHexString(),
         }
       )
+
       const tx = await signer.userAuthorizedUpdate(
         state.recipient, // recipient
         [
@@ -201,11 +202,11 @@ export default class DepositController extends AbstractController {
         state.sigHub!,
         {
           value: new ethers.utils.bigNumberify(state.pendingDepositWeiUser).toHexString(),
-          gasLimit: new ethers.utils.BigNumber(gasEstimate).toHexString()
+          gasLimit: new ethers.utils.BigNumber(gasEstimate * this.connext.contract.gasMultiple).toHexString()
         }
       )
       console.log(tx)
-      await tx.wait() //.awaitEnterMempool()
+      // await tx.wait() // waits for first confirmation
       // update the channel in the state
       this.connext.syncController.enqueueSyncResultsFromHub([{ type: "channel", update }])
     } catch (e) {
