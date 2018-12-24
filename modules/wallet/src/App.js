@@ -63,13 +63,13 @@ class App extends Component {
           meta:{
             purchaseId: 'payment',
           },
-          payments: {
+          payments: [{
             recipient: hubWalletAddress,
             amount: {
               amountWei: '100',
               amountToken: '100'
             },
-          },
+          }],
         },
         withdrawalVal:{
           withdrawalWeiUser: '100',
@@ -78,6 +78,7 @@ class App extends Component {
           weiToSell: '0',
           recipient: '0x0', //likely wrong, will address soon
         },
+        authorized: 'false',
         web3: null,
         wallet: null,
         address:null,
@@ -208,12 +209,12 @@ class App extends Component {
       var value = evt.target.value
       if (token === 'ETH') {
         await this.setState(oldState => {
-          oldState.paymentVal.payments.amount.amountWei = value
+          oldState.paymentVal.payments[0].amount.amountWei = value
           return oldState
         })
       } else if (token === 'TST') {
         await this.setState(oldState => {
-          oldState.paymentVal.payments.amount.amountToken = value
+          oldState.paymentVal.payments[0].amount.amountToken = value
           return oldState
         })
       }
@@ -285,11 +286,6 @@ class App extends Component {
       console.log(`Updating state : ${this.state.depositVal}`)
     }
 
-    async checkAuthorizeHandler(evt) {
-      let res = await axios.get(`${hubUrl}/auth/status`, opts)
-      console.log(`Auth status: ${JSON.stringify(res.data)}`)
-    }
-
     async authorizeHandler(evt) {
       console.log(this.state.wallet)
       let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts)
@@ -305,6 +301,13 @@ class App extends Component {
         const token = authRes.data.token
         document.cookie = `hub.sid=${token}`
         console.log(`cookie set: ${token}`)
+        res = await axios.get(`${hubUrl}/auth/status`, opts)
+        if (res.data.success) {
+          this.setState({ authorized: 'true' });
+        } else {
+          this.setState({ authorized: 'false' });
+        }
+        console.log(`Auth status: ${JSON.stringify(res.data)}`)
       } catch(e){
         console.log(e)
       }
@@ -410,7 +413,10 @@ class App extends Component {
         <div> 
           <h1>Payment UX</h1>
           <button className='btn' onClick={evt => this.authorizeHandler(evt)}>Authorize</button>
-          <button className='btn' onClick={evt => this.checkAuthorizeHandler(evt)}>Check Authorization</button>
+          <span>&nbsp;&nbsp;(authorized: {this.state.authorized})</span>
+          <br/> <br/>
+          <button className='btn' onClick={evt => this.getTokens(evt)}>Get 1 Token from Metamask</button>
+          <button className='btn' onClick={evt => this.getEther(evt)}>Get 1 Ether from Metamask</button>
           <br/> <br/>
           <div>
             <div className="value-entry">
@@ -474,8 +480,6 @@ class App extends Component {
           ?
           <div>
             <h2>Browser Wallet</h2>
-            <button className='btn' onClick={evt => this.getTokens(evt)}>Get 1 Token from Metamask</button>
-            <button className='btn' onClick={evt => this.getEther(evt)}>Get 1 Ether from Metamask</button>
             <p>Address: {this.state.address}</p>
             <p>ETH Balance: {this.state.balance}</p>
             <p>TST Balance: {this.state.tokenBalance}</p>
