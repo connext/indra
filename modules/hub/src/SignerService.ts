@@ -28,8 +28,7 @@ export class SignerService {
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    let binaryData = eth.utils.arrayify(stateHash);
-    return await this.wallet.signMessage(binaryData)
+    return await this.wallet.signMessage(stateHash)
   }
 
   public async signChannelState(

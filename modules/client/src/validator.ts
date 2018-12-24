@@ -479,7 +479,7 @@ export class Validator {
   }
 
   public assertChannelSigner(channelState: ChannelState, signer: "user" | "hub" = "user"): void {
-    console.log('Channel state debug')
+    console.log(`Channel state debug for user: ${signer}`)
     console.log(JSON.stringify(channelState, null, 2))
     const sig = signer === "hub" ? channelState.sigHub : channelState.sigUser
     const adr = signer === "hub" ? this.hubAddress : channelState.user

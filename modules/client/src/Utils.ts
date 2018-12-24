@@ -108,12 +108,10 @@ export class Utils {
     // could be hub or user
     sig: string,
   ): string {
-
     let fingerprint: any = this.createChannelStateHash(channelState)
     const prefixedMsg = ethers.utils.hashMessage(fingerprint)
     const addr = ethers.utils.recoverAddress(prefixedMsg, sig)
     console.log(`Recovered address ${addr} from hash aka fingerprint ${fingerprint} with prefixedMsg ${prefixedMsg} and sig ${sig}`)
-
     return addr.toLowerCase()
   }
 
