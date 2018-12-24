@@ -90,6 +90,7 @@ class App extends Component {
         approvalWeiUser: '10000',
         recipient: hubWalletAddress,
         connext:null,
+        channelState:null
       }
       this.toggleKey = this.toggleKey.bind(this);
     }
@@ -155,9 +156,13 @@ class App extends Component {
       //console.log('Pollers started! Good morning :)')
       connext.on('onStateChange', state => {
         console.log('Connext state changed:', state)
+        this.setState({
+          channelState: state.persistent.channel
+        })
       })
 
       this.setState({ connext: connext });
+      console.log(`This is state: ${JSON.stringify(this.state.channelState, null, 2)}`)
       await this.refreshBalances()
 
     } catch (error) {
@@ -467,12 +472,14 @@ class App extends Component {
         <p>Token Address: {tokenAddress}</p>
         {/* these are undefined for some reason. I don't know why. I'm mad. */}
         Channel Balances: 
-        {/*
-        User Wei Balance: {this.state.connext.store.persistent.channel.balanceWeiUser}
-        User Token Balance: {this.state.connext.store.balanceWeiUser}
-        Hub Wei Balance: {this.state.connext.store.balanceWeiHub}
-        Hub Token Balance: {this.state.connext.store.balanceWeiHub}
-        */}
+          <br/>
+          User Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
+          <br/>
+          User Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenUser : null}
+          <br/>
+          Hub Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
+          <br/>
+          Hub Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
 
       </div>
       <div className="col">
