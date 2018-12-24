@@ -33,7 +33,7 @@ function curleth {
 }
 
 function extractAddress {
-  cat /contracts/$1.json | jq '.networks["'"$ETH_NETWORK_ID"'"].address' | tr -d '"\n\r'
+  cat /contracts/$1.json | jq '.networks["'"$ETH_NETWORK_ID"'"].address' | tr -d '"\n\r' | tr '[:upper:]' '[:lower:]'
 }
 
 function eth_env_setup {

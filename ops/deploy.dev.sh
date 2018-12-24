@@ -34,7 +34,7 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 
 # set any of these to "watch" to turn on watchers
 watch_ethprovider="no"
-watch_hub="no"
+watch_hub="watch"
 watch_chainsaw="no"
 watch_wallet="no"
 

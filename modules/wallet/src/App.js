@@ -15,11 +15,11 @@ require('dotenv').config();
 const humanTokenAbi = require('./abi/humanToken.json')
 
 console.log(`starting app in env: ${JSON.stringify(process.env,null,1)}`)
-const hubUrl = process.env.REACT_APP_HUB_URL
-const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL
-const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS
-const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS
-const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS
+const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase()
+const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL.toLowerCase()
+const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS.toLowerCase()
+const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS.toLowerCase()
+const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLowerCase()
 
 const HASH_PREAMBLE = 'SpankWallet authentication message:'
 

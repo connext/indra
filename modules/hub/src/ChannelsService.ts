@@ -685,7 +685,7 @@ export default class ChannelsService {
       lastThreadUpdateId,
     )
 
-    console.log("threadUpdates:", JSON.stringify(channelUpdates, null, 2))
+    console.log("threadUpdates:", JSON.stringify(threadUpdates, null, 2))
 
     let curChan = 0
     let curThread = 0
@@ -710,6 +710,8 @@ export default class ChannelsService {
           (chan.createdOn == thread.createdOn && chan.reason == 'OpenThread'))
 
       if (pushChan) {
+        const sig = await this.signerService.getSigForChannelState(convertChannelState('str', chan.state))
+        console.log('sig: ', sig);
         curChan += 1
         pushChannel({
           args: chan.args,

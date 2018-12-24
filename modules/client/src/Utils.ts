@@ -52,7 +52,7 @@ export class Utils {
     const hash = Web3.utils.soliditySha3(
       { type: 'address', value: contractAddress },
       // @ts-ignore TODO wtf??!
-      { type: 'address[2]', value: [user, recipient] },
+      { type: 'address[2]', value: [user.toLowerCase(), recipient.toLowerCase()] },
       {
         type: 'uint256[2]',
         value: [balanceWeiHub, balanceWeiUser],
@@ -87,6 +87,7 @@ export class Utils {
       { type: 'uint256', value: threadCount },
       { type: 'uint256', value: timeout },
     )
+    console.log('hash: ', hash);
     return hash
   }
 
