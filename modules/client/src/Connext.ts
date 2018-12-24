@@ -575,12 +575,12 @@ export class ConnextInternal extends ConnextClient {
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
-      state.user != this.opts.user ||
-      state.contractAddress != this.opts.contractAddress
+      state.user.toLowerCase() != this.opts.user.toLowerCase() ||
+      state.contractAddress.toLowerCase() != this.opts.contractAddress.toLowerCase()
     ) {
       throw new Error(
         `Refusing to sign state update which changes user or contract: ` +
-        `expected user: ${this.opts.user}, expected contract: ${this.opts.contract} ` +
+        `expected user: ${this.opts.user}, expected contract: ${this.opts.contractAddress} ` +
         `actual state: ${JSON.stringify(state)}`
       )
     }
