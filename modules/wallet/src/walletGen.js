@@ -2,7 +2,7 @@ import { store } from './App';
 import * as ethers from 'ethers';
 
 export function createWallet(){
-  let mnemonic //= localStorage.getItem('mnemonic')
+  let mnemonic = localStorage.getItem('mnemonic')
   let wallet
   if (mnemonic) {
     console.log('found existing wallet')
