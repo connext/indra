@@ -79,7 +79,8 @@ class App extends Component {
         tokensToSell: "0",
         withdrawalTokenUser: "0",
         weiToSell: "0",
-        recipient: "0x0" //likely wrong, will address soon
+        exchangeRate: "0.00",
+        recipient: "0x0"
       },
       authorized: "false",
       web3: null,
@@ -173,6 +174,21 @@ class App extends Component {
     }
   }
 
+  async pollExchangeRate() {
+    const getRate = async () => {
+      const response = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=ETH')
+      const json = await response.json()
+      console.log('latest ETH->USD exchange rate: ', json.data.rates.USD);
+      this.setState({
+        exchangeRate: json.data.rates.USD
+      })
+    }
+    getRate()
+    setInterval(() => {
+      getRate()
+    }, 10000);
+  }
+
   updateApprovalHandler(evt) {
     this.setState({
       approvalWeiUser: evt.target.value
@@ -213,7 +229,7 @@ class App extends Component {
       });
     } else if (token === "TST") {
       await this.setState(oldState => {
-        oldState.withdrawalVal.withdrawalTokenUser = value;
+        oldState.withdrawalVal.tokensToSell = value;
         return oldState;
       });
     } else if (token === "recipient") {
@@ -275,9 +291,14 @@ class App extends Component {
     console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
   }
 
-  async withdrawalHandler() {
+  async withdrawalHandler(max) {
+    let withdrawalVal = {...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate}
+    if (max) {
+      withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser
+      withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser
+    }
     console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
-    let withdrawalRes = await this.state.connext.withdraw(this.state.withdrawalVal);
+    let withdrawalRes = await this.state.connext.withdraw(withdrawalVal);
     console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
   }
 
@@ -327,6 +348,7 @@ class App extends Component {
 
   createWallet() {
     createWallet();
+    location.reload(true);
   }
 
   async authorizeHandler(evt) {
@@ -552,11 +574,11 @@ class App extends Component {
                 Enter TST withdrawal amount in Wei:&nbsp;&nbsp;
                 <input defaultValue={0} onChange={evt => this.updateWithdrawHandler(evt, "TST")} />
               </div>
-              <button className="btn" onClick={evt => this.withdrawalHandler(evt)}>
+              <button className="btn" onClick={() => this.withdrawalHandler()}>
                 Withdraw from Channel
               </button>{" "}
               &nbsp;
-              <button className="btn" onClick={evt => this.withdrawalHandler(evt, "max")}>
+              <button className="btn" onClick={() => this.withdrawalHandler(true)}>
                 Withdraw Max from Channel
               </button>{" "}
               &nbsp;
