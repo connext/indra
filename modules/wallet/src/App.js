@@ -57,16 +57,17 @@ class App extends Component {
         },
         depositVal: {
           amountWei: '1000',
-          amountToken: '1000'
+          amountToken: '0'
         },
+        exchangeVal: '100',
         paymentVal:{
           meta:{
             purchaseId: 'payment',
           },
           payments: [{
-            recipient: hubWalletAddress,
+            recipient: '0x0',
             amount: {
-              amountWei: '100',
+              amountWei: '0',
               amountToken: '100'
             },
           }],
@@ -74,7 +75,7 @@ class App extends Component {
         withdrawalVal:{
           withdrawalWeiUser: '100',
           tokensToSell: '0',
-          withdrawalTokenUser: '100',
+          withdrawalTokenUser: '0',
           weiToSell: '0',
           recipient: '0x0', //likely wrong, will address soon
         },
@@ -194,6 +195,15 @@ class App extends Component {
       //console.log(`Updated depositVal: ${JSON.stringify(this.state.depositVal,null,2)}`)
     }
 
+    async updateExchangeHandler(evt) {
+      var value = evt.target.value
+      await this.setState(oldState => {
+        oldState.exchangeVal = value
+        return oldState
+      })
+      console.log(`Updated exchangeVal: ${JSON.stringify(this.state.exchangeVal,null,2)}`)
+    }
+
     async updateWithdrawHandler(evt, token) {
       var value = evt.target.value
       if (token === 'ETH') {
@@ -210,6 +220,15 @@ class App extends Component {
       //console.log(`Updated withdrawalVal: ${JSON.stringify(this.state.withdrawalVal,null,2)}`)
     }
 
+    async updatePaymentRecipientHandler(evt) {
+      const value = evt.target.value
+      await this.setState(oldState => {
+        oldState.paymentVal.payments[0].recipient = value
+        return oldState
+      })
+      console.log(`Updated paymentVal: ${JSON.stringify(this.state.paymentVal,null,2)}`)
+    }
+
     async updatePaymentHandler(evt, token) {
       var value = evt.target.value
       if (token === 'ETH') {
@@ -223,7 +242,7 @@ class App extends Component {
           return oldState
         })
       }
-      //console.log(`Updated paymentVal: ${JSON.stringify(this.state.paymentVal,null,2)}`)
+      console.log(`Updated paymentVal: ${JSON.stringify(this.state.paymentVal,null,2)}`)
     }
 
     async approvalHandler(evt) {
@@ -237,22 +256,34 @@ class App extends Component {
     }
 
     //Connext Helpers
-    async depositHandler(evt) {
+    async depositHandler() {
       console.log(`Depositing: ${JSON.stringify(this.state.depositVal,null,2)}`);
       let depositRes = await this.state.connext.deposit(this.state.depositVal)
       console.log(`Deposit Result: ${JSON.stringify(depositRes,null,2)}`)
     }
 
-    async paymentHandler(evt) {
+    async exchangeHandler() {
+      console.log(`Exchanging: ${JSON.stringify(this.state.exchangeVal,null,2)}`);
+      let exchangeRes = await this.state.connext.exchange(this.state.exchangeVal, "wei")
+      console.log(`Exchange Result: ${JSON.stringify(exchangeRes,null,2)}`)
+    }
+
+    async paymentHandler() {
       console.log(`Submitting payment: ${JSON.stringify(this.state.paymentVal,null,2)}`)
       let paymentRes = await this.state.connext.buy(this.state.paymentVal)
       console.log(`Payment result: ${JSON.stringify(paymentRes,null,2)}`)
     }
 
-    async withdrawalHandler(evt) {
+    async withdrawalHandler() {
       console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal,null,2)}`)
       let withdrawalRes = await this.state.connext.withdraw(this.state.withdrawalVal)
       console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes,null,2)}`)
+    };
+
+    async collateralHandler() {
+      console.log(`Requesting Collateral`)
+      let collateralRes = await this.state.connext.requestCollateral()
+      console.log(`Collateral result: ${JSON.stringify(collateralRes,null,2)}`)
     };
 
     // Other Helpers
@@ -421,6 +452,7 @@ class App extends Component {
       <div className="col">
         <div> 
           <h1>Payment UX</h1>
+          <h2>Deposit</h2>
           <button className='btn' onClick={evt => this.authorizeHandler(evt)}>Authorize</button>
           <span>&nbsp;&nbsp;(authorized: {this.state.authorized})</span>
           <br/> <br/>
@@ -439,27 +471,42 @@ class App extends Component {
               Enter ETH deposit amount in Wei:&nbsp;&nbsp;<input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, 'ETH')}/>
             </div>
             <div className="value-entry">
-              Enter TST deposit amount in Wei:&nbsp;&nbsp;<input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, 'TST')}/>
+              Enter TST deposit amount in Wei:&nbsp;&nbsp;<input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, 'TST')}/>
             </div>
             <button className="btn" onClick={evt => this.depositHandler(evt)}>Deposit to Channel</button> &nbsp;
             <br/> <br/>
           </div>
           <div>
+            <h2>Exchange</h2>
+            <p>Exchanges will be made in-channel. Currently only ETH->Token exchanges are supported.</p>
             <div className="value-entry">
-              Enter ETH payment amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updatePaymentHandler(evt, 'ETH')}/>
+              Enter ETH exchange amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updateExchangeHandler(evt)}/>
+            </div>
+            <button className="btn" onClick={evt => this.exchangeHandler(evt)}>Make an Exchange</button> &nbsp;
+            <br/> <br/>
+          </div>
+          <div>
+            <h2>Payment</h2>
+            <div className="value-entry">
+              Enter recipient address:&nbsp;&nbsp;<input defaultValue={`0x...`} onChange={evt => this.updatePaymentRecipientHandler(evt)}/>
+            </div>
+            <div className="value-entry">
+              Enter ETH payment amount in Wei:&nbsp;&nbsp;<input defaultValue={0} onChange={evt => this.updatePaymentHandler(evt, 'ETH')}/>
             </div>
             <div className="value-entry">
               Enter TST payment amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updatePaymentHandler(evt, 'TST')}/>
             </div>
             <button className="btn" onClick={evt => this.paymentHandler(evt)}>Make a Payment</button> &nbsp;
+            <button className="btn" onClick={evt => this.collateralHandler(evt)}>Request Collateral</button> &nbsp;
             <br/> <br/>
           </div>
           <div>
+            <h2>Withdrawal</h2>
             <div className="value-entry">
               Enter ETH withdrawal amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updateWithdrawHandler(evt, 'ETH')}/>
             </div>
             <div className="value-entry">
-              Enter TST withdrawal amount in Wei:&nbsp;&nbsp;<input defaultValue={100} onChange={evt => this.updateWithdrawHandler(evt, 'TST')}/>
+              Enter TST withdrawal amount in Wei:&nbsp;&nbsp;<input defaultValue={0} onChange={evt => this.updateWithdrawHandler(evt, 'TST')}/>
             </div>
             <button className="btn" onClick={evt => this.withdrawalHandler(evt)}>Withdraw from Channel</button> &nbsp;
             <br/> <br/>
