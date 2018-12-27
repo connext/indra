@@ -34,9 +34,9 @@ Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'`
 
 `yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:80`
 
-Beware: the first time this is run it will take a long time but subsequent builds will happen much more quickly.
+Beware: the first time this is run it will take a long time but have no fear: subsequent builds will go much more quickly.
 
-A couple sets of `node_modules` will be installed when running `yarn start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once while building `hub-node-modules` for example, running `rm -rf modules/hub/node_modules modules/hub/yarn.lock` and then trying again should fix things.
+A couple sets of `node_modules` will be installed when running `yarn start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once then some half-downloaded file is likely jamming up the works. Run `make deep-clean` to scrub any `node_modules` & lock files & caches that might be causing trouble. Then, give `yarn start` another try & things will hopefully be good to go.
 
 There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are off by default. The wallet aka UI will always be watched as it's served by a webpack-dev-server. If you expect to be actively developing any other modules, you can turn on watchers for those too. Careful, turning on all the watchers will increase the start-up time and drain your computer's battery more quickly.
 
