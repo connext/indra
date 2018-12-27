@@ -9,3 +9,5 @@ node_modules
 .vscode
 .bash_history
 .node_repl_history
+.yarn
+.npm
