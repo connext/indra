@@ -348,7 +348,7 @@ class App extends Component {
 
   createWallet() {
     createWallet();
-    location.reload(true);
+    window.location.reload(true);
   }
 
   async authorizeHandler(evt) {
