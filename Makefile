@@ -99,7 +99,7 @@ proxy: $(shell find $(proxy) $(find_options))
 
 # Wallet
 
-wallet: wallet-node-modules $(shell find $(wallet) $(find_options))
+wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
