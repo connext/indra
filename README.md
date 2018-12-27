@@ -49,7 +49,7 @@ When pushing images to dockerhub, it's assumed that your account's username (obt
 To deploy the ChannelManager Contract:
 
 ```
-cd modules/contracts && yarn install
+make contract-artifacts
 # the space at the beginning of the command below will prevent this
 # command (& the mnemoic) from being stored in your shell's history
   MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network ropsten
@@ -60,6 +60,8 @@ cd modules/contracts && yarn install
 `bash ops/deploy.prod.sh` <- Assuming the docker images have been built & pushed to a registry, this will pull & deploy them in an environment suitable for production.
 
 Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying.
+
+If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `bash ops/restart.sh prod`.
 
 #### Details
 
