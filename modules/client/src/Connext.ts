@@ -60,6 +60,7 @@ export interface ContractOptions {
 // connext constructor options
 // NOTE: could extend ContractOptions, doesnt for future readability
 export interface ConnextOptions {
+  wallet: any
   web3: any
   hubUrl: string
   contractAddress: string
@@ -267,18 +268,6 @@ class HubAPIClient implements IHubAPIClient {
   }
 }
 
-// connext constructor options
-// NOTE: could extend ContractOptions, doesnt for future readability
-export interface ConnextOptions {
-  web3: any
-  hubUrl: string
-  contractAddress: string
-  hubAddress: Address
-  hub?: IHubAPIClient
-  tokenAddress?: Address
-  tokenName?: string
-}
-
 export abstract class IWeb3TxWrapper {
   abstract awaitEnterMempool(): Promise<void>
 
@@ -331,6 +320,9 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
 }
 
 export interface IChannelManager {
+  address: string
+  gasMultiple: number
+  cm: any
   userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
 }
 
@@ -347,7 +339,8 @@ export class ChannelManager implements IChannelManager {
 
   async userAuthorizedUpdate(state: ChannelState) {
     // deposit on the contract
-    const call = this.cm.methods.userAuthorizedUpdate(
+    console.log(this)
+    const call = this.cm.userAuthorizedUpdate(
       state.recipient, // recipient
       [
         state.balanceWeiHub,
@@ -376,17 +369,19 @@ export class ChannelManager implements IChannelManager {
       state.sigHub!,
     )
 
+    console.log(JSON.stringify(call, null, 2))
     const sendArgs = {
       from: state.user,
       value: state.pendingDepositWeiUser,
     } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
+    const gasEstimate = await this.cm.estimate.userAuthorizedUpdate()
     sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
     return new Web3TxWrapper(this.address, 'userAuthorizedUpdate', call.send(sendArgs))
   }
 }
 
 export interface ConnextClientOptions {
+  wallet: any
   web3: any
   hubUrl: string
   contractAddress: string
@@ -512,7 +507,7 @@ export class ConnextInternal extends ConnextClient {
     )
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
-    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 3)
+    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 4)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)
@@ -579,16 +574,27 @@ export class ConnextInternal extends ConnextClient {
   }
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
+    if (
+      state.user.toLowerCase() != this.opts.user.toLowerCase() ||
+      state.contractAddress.toLowerCase() != this.opts.contractAddress.toLowerCase()
+    ) {
+      throw new Error(
+        `Refusing to sign state update which changes user or contract: ` +
+        `expected user: ${this.opts.user}, expected contract: ${this.opts.contractAddress} ` +
+        `actual state: ${JSON.stringify(state)}`
+      )
+    }
+
     const hash = this.utils.createChannelStateHash(state)
 
     const { user, hubAddress } = this.opts
     const sig = await (
       process.env.DEV || user === hubAddress
         ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, user)
+        : (this.opts.wallet.signMessage as any)(ethers.utils.arrayify(hash))
     )
 
-    console.log('Signing channel state: ' + sig, state)
+    console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, user !== hubAddress)
   }
 

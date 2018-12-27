@@ -62,12 +62,12 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
 
   public async historyByUser (address: string): Promise<PurchasePaymentRow[]> {
     const res = await this.db.query(SQL`
-      SELECT * from payments 
-      WHERE 
-      (recipient = ${address} 
-      OR sender = ${address}) 
+      SELECT * from payments
+      WHERE
+      (recipient = ${address}
+      OR sender = ${address})
       AND recipient != ${this.config.hotWalletAddress}
-      ORDER BY created_on DESC  
+      ORDER BY created_on DESC
     `)
 
     return res.rows.map((row: any) => this.rowToPaymentSummary(row))

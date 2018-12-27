@@ -60,9 +60,7 @@ exports.up = function(db) {
 
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'disbursements_status') THEN
         CREATE TYPE disbursements_status AS ENUM('NEW', 'PENDING', 'CONFIRMED', 'FAILED');
-      END IF;
     END$$;
 
     CREATE TABLE disbursements (

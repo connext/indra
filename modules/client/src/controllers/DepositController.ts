@@ -3,7 +3,9 @@ import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateReque
 import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
-import * as actions from "../state/actions"
+import * as actions from "../state/actions";
+const tokenAbi = require("human-standard-token-abi")
+const ethers = require('ethers')
 
 /*
  * Rule:
@@ -115,6 +117,26 @@ export default class DepositController extends AbstractController {
     }
 
     try {
+    // TODO: Figure out better way with new provider
+    /*
+    try {
+      if (args.depositTokenUser !== '0') {
+        console.log('Approving transfer.')
+        console.log(`this connext opts: ${JSON.stringify(this.connext, null, 2)}`)
+        console.log(`this connext: ${JSON.stringify(this.connext, null, 2)}`)
+        const token = new this.connext.opts.web3.eth.Contract(
+          tokenAbi,
+          this.connext.opts.tokenAddress
+        )
+        let sendArgs: any = {
+          from: prev.user,
+        }
+        const call = token.methods.approve(prev.contractAddress, args.depositTokenUser)
+        const gasEstimate = await call.estimateGas(sendArgs)
+        sendArgs.gas = this.connext.contract.gasMultiple * gasEstimate
+        await call.send(sendArgs)
+      }
+     */
       console.log('Sending user authorized deposit to chain.')
       const state = await this.connext.signChannelState(
         this.validator.generateProposePendingDeposit(
@@ -123,10 +145,76 @@ export default class DepositController extends AbstractController {
         ),
       )
       state.sigHub = update.sigHub
-      const tx = await this.connext.contract.userAuthorizedUpdate(state)
-      await tx.awaitEnterMempool()
+      console.log(this)
+      let signer = this.connext.contract.cm.connect(this.connext.opts.wallet)
+      let gasEstimate = await signer.estimate.userAuthorizedUpdate(
+        state.recipient, // recipient
+        [
+          state.balanceWeiHub,
+          state.balanceWeiUser,
+        ],
+        [
+          state.balanceTokenHub,
+          state.balanceTokenUser,
+        ],
+        [
+          state.pendingDepositWeiHub,
+          state.pendingWithdrawalWeiHub,
+          state.pendingDepositWeiUser,
+          state.pendingWithdrawalWeiUser,
+        ],
+        [
+          state.pendingDepositTokenHub,
+          state.pendingWithdrawalTokenHub,
+          state.pendingDepositTokenUser,
+          state.pendingWithdrawalTokenUser,
+        ],
+        [state.txCountGlobal, state.txCountChain],
+        state.threadRoot,
+        state.threadCount,
+        state.timeout,
+        state.sigHub!,
+        {
+          value: new ethers.utils.bigNumberify(state.pendingDepositWeiUser).toHexString(),
+        }
+      )
+
+      const tx = await signer.userAuthorizedUpdate(
+        state.recipient, // recipient
+        [
+          state.balanceWeiHub,
+          state.balanceWeiUser,
+        ],
+        [
+          state.balanceTokenHub,
+          state.balanceTokenUser,
+        ],
+        [
+          state.pendingDepositWeiHub,
+          state.pendingWithdrawalWeiHub,
+          state.pendingDepositWeiUser,
+          state.pendingWithdrawalWeiUser,
+        ],
+        [
+          state.pendingDepositTokenHub,
+          state.pendingWithdrawalTokenHub,
+          state.pendingDepositTokenUser,
+          state.pendingWithdrawalTokenUser,
+        ],
+        [state.txCountGlobal, state.txCountChain],
+        state.threadRoot,
+        state.threadCount,
+        state.timeout,
+        state.sigHub!,
+        {
+          value: new ethers.utils.bigNumberify(state.pendingDepositWeiUser).toHexString(),
+          gasLimit: new ethers.utils.BigNumber(gasEstimate * this.connext.contract.gasMultiple).toHexString()
+        }
+      )
+      console.log(tx)
+      // await tx.wait() // waits for first confirmation
       // update the channel in the state
-      // this.connext.syncController.enqueueSyncResultsFromHub([{ type: "channel", update }])
+      this.connext.syncController.enqueueSyncResultsFromHub([{ type: "channel", update }])
     } catch (e) {
       throw DepositError('' + e)
     }

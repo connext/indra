@@ -18,9 +18,7 @@ exports.up = function(db) {
   return db.runSql(`
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'channel_claim_status') THEN
         CREATE TYPE channel_claim_status AS ENUM('NEW', 'PENDING', 'CONFIRMED', 'FAILED');
-      END IF;
     END$$;
   
     CREATE TABLE channel_claims (

@@ -28,7 +28,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
-    "connext": "^2.5.10",
+    "connext": "^3.0.1",
     "dotenv": "^6.2.0",
     "ganache-cli": "6.1.8",
     "truffle": "5.0.0-beta.1",

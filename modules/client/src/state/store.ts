@@ -9,7 +9,7 @@ import { ExchangeRateState } from './ConnextState/ExchangeRates'
 export const CHANNEL_ZERO_STATE = {
   user: '0x0',
   recipient: '0x0',
-  contractAddress: process.env.REACT_APP_CONTRACT_ADDRESS!, //"0x8BA9df707565Ef788D0C72D41db8efbBADf41240",
+  contractAddress: process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS!.toLowerCase(), //"0x8BA9df707565Ef788D0C72D41db8efbBADf41240",
   balanceWeiUser: '0',
   balanceWeiHub: '0',
   balanceTokenUser: '0',

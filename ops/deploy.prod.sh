@@ -5,7 +5,7 @@ set -e
 # ENV VARS
 
 project=connext
-repository="`whoami`"
+registry="docker.io/`whoami`"
 number_of_services=4
 
 # set defaults for some core env vars
@@ -13,9 +13,6 @@ MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
 DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
 EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 INFURA_KEY="RNXFMnEXo6TEeIYzcTyQ" # provided by bohendo
-
-# docker image settings
-registry=docker.io
 
 # misc settings
 SERVICE_USER_KEY="foo"
@@ -46,8 +43,8 @@ then
   then version="`cat package.json | jq .version | tr -d '"'`"
   else version="latest"
   fi
-  database_image="$registry/$repository/${project}_database:$version"
-  hub_image="$registry/$repository/${project}_hub:$version"
+  database_image="$registry/${project}_database:$version"
+  hub_image="$registry/${project}_hub:$version"
   redis_image="redis:5-alpine"
 else
   database_image=${project}_database:latest

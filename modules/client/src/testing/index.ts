@@ -14,6 +14,7 @@ import {
   ArgsTypes,
   ChannelUpdateReasons,
   addSigToChannelState,
+  PendingArgs,
 } from '../types'
 import { capitalize } from '../helpers/naming';
 import { StateGenerator } from '../StateGenerator';
@@ -60,11 +61,11 @@ export type SignedOrSuccinctThread = SuccinctThreadState | ThreadState
 
 export type PartialSignedOrSuccinctChannel = Partial<
   SuccinctChannelState & ChannelState<string | number | BN>
-  >
+>
 
 export type PartialSignedOrSuccinctThread = Partial<
   SuccinctThreadState & ThreadState<string | number | BN>
-  >
+>
 
 /* Arg Succinct Types */
 export type SuccinctDepositArgs<T = string | number | BN> = {
@@ -77,7 +78,23 @@ export type VerboseOrSuccinctDepositArgs = SuccinctDepositArgs | DepositArgs
 
 export type PartialVerboseOrSuccinctDepositArgs = Partial<
   SuccinctDepositArgs & DepositArgs<string | number | BN>
-  >
+>
+
+/* Arg Succinct Types */
+export type SuccinctPendingArgs<T = string | number | BN> = {
+  depositWei: [T, T],
+  depositToken: [T, T],
+  withdrawalWei: [T, T],
+  withdrawalToken: [T, T],
+  recipient: Address,
+  timeout: number,
+}
+
+export type VerboseOrSuccinctPendingArgs = SuccinctPendingArgs | PendingArgs
+
+export type PartialVerboseOrSuccinctPendingArgs = Partial<
+  SuccinctPendingArgs & PendingArgs<string | number | BN>
+>
 
 export type SuccinctWithdrawalArgs<T = string | number | BN> = SuccinctDepositArgs<T> & {
   exchangeRate: string,
@@ -94,7 +111,7 @@ export type VerboseOrSuccinctWithdrawalArgs = SuccinctWithdrawalArgs | Withdrawa
 
 export type PartialVerboseOrSuccinctWithdrawalArgs = Partial<
   SuccinctWithdrawalArgs & WithdrawalArgs<string | number | BN>
-  >
+>
 
 export type SuccinctPaymentArgs<T = string | number | BN> = {
   recipient: 'user' | 'hub' // | 'receiver',
@@ -105,7 +122,7 @@ export type VerboseOrSuccinctPaymentArgs = SuccinctPaymentArgs | PaymentArgs
 
 export type PartialVerboseOrSuccinctPaymentArgs = Partial<
   SuccinctPaymentArgs & PaymentArgs<string | number | BN>
-  >
+>
 
 export type SuccinctExchangeArgs<T = string | number | BN> = {
   exchangeRate: string, // ERC20 / ETH
@@ -117,12 +134,13 @@ export type VerboseOrSuccinctExchangeArgs = SuccinctExchangeArgs | ExchangeArgs
 
 export type PartialVerboseOrSuccinctExchangeArgs = Partial<
   SuccinctExchangeArgs & ExchangeArgs<string | number | BN>
-  >
+>
 
 export type PartialArgsType = PartialVerboseOrSuccinctDepositArgs |
   PartialVerboseOrSuccinctWithdrawalArgs |
   PartialVerboseOrSuccinctPaymentArgs |
-  PartialVerboseOrSuccinctExchangeArgs
+  PartialVerboseOrSuccinctExchangeArgs |
+  PartialVerboseOrSuccinctPendingArgs
 
 /* Channel and Thread Functions */
 export function expandSuccinctChannel(
@@ -200,6 +218,18 @@ export function expandSuccinctExchangeArgs(
   return expandSuccinct(['tokens', 'wei'], s, false, false)
 }
 
+export function expandSuccinctPendingArgs(
+  s: VerboseOrSuccinctPendingArgs,
+): PendingArgs<string>
+export function expandSuccinctPendingArgs(
+  s: PartialVerboseOrSuccinctPendingArgs,
+): Partial<PendingArgs<string>>
+export function expandSuccinctPendingArgs(
+  s: SuccinctPendingArgs | Partial<VerboseOrSuccinctPendingArgs>,
+) {
+  return expandSuccinct(['Hub', 'User'], s)
+}
+
 /* Common */
 function expandSuccinct(
   strs: string[],
@@ -249,6 +279,18 @@ export function makeSuccinctThread(
   s: SignedOrSuccinctThread | Partial<SignedOrSuccinctThread>,
 ) {
   return makeSuccinct(['Sender', 'Receiver'], s)
+}
+
+export function makeSuccinctPending(
+  s: VerboseOrSuccinctPendingArgs,
+): SuccinctPendingArgs<string>
+export function makeSuccinctPending(
+  s: PartialVerboseOrSuccinctPendingArgs,
+): Partial<SuccinctPendingArgs<string>>
+export function makeSuccinctPending(
+  s: VerboseOrSuccinctPendingArgs | Partial<VerboseOrSuccinctPendingArgs>,
+) {
+  return makeSuccinct(['Hub', 'User'], s)
 }
 
 export function makeSuccinctDeposit(
@@ -362,6 +404,11 @@ export function updateObj(type: "Exchange",
   ...rest: PartialVerboseOrSuccinctExchangeArgs[]
 ): ExchangeArgs<string>
 
+export function updateObj(type: "Pending",
+  s: VerboseOrSuccinctPendingArgs,
+  ...rest: PartialVerboseOrSuccinctPendingArgs[]
+): PendingArgs<string>
+
 export function updateObj(
   type: objUpdateType,
   s: any,
@@ -381,6 +428,7 @@ export function updateObj(
 const objUpdateTypes = {
   channel: 'channel',
   thread: 'thread',
+  Pending: "Pending"
 }
 type objUpdateType = keyof typeof objUpdateTypes | ChannelUpdateReason
 
@@ -389,6 +437,7 @@ const updateFns: any = {
   'ProposePendingDeposit': expandSuccinctDepositArgs,
   'Exchange': expandSuccinctExchangeArgs,
   'Payment': expandSuccinctPaymentArgs,
+  'Pending': expandSuccinctPendingArgs,
   'channel': expandSuccinctChannel,
   'thread': expandSuccinctThread,
 }
@@ -516,6 +565,7 @@ const initialWithdrawalArgs: WDInitial = {
   full: () => ({
     exchangeRate: '5', // wei to token
     tokensToSell: '1',
+    seller: "user",
     weiToSell: '2',
     recipient: mkAddress('0x222'),
     targetWeiUser: '3',
@@ -529,6 +579,7 @@ const initialWithdrawalArgs: WDInitial = {
 
   empty: () => ({
     exchangeRate: '5', // wei to token
+    seller: "user",
     tokensToSell: '0',
     weiToSell: '0',
     recipient: mkAddress('0x222'),
@@ -592,6 +643,36 @@ const initialExchangeArgs: ExchangeInitial = {
   })
 }
 
+type PendingInitial = { [key: string]: () => PendingArgs }
+
+const initialPendingArgs: PendingInitial = {
+  full: () => ({
+    withdrawalWeiUser: '2',
+    withdrawalWeiHub: '3',
+    withdrawalTokenUser: '4',
+    withdrawalTokenHub: '5',
+    depositTokenUser: '6',
+    depositWeiUser: '7',
+    depositWeiHub: '8',
+    depositTokenHub: '9',
+    recipient: mkAddress('0xRRR'),
+    timeout: 696969
+  }),
+
+  empty: () => ({
+    withdrawalWeiUser: '0',
+    withdrawalWeiHub: '0',
+    withdrawalTokenUser: '0',
+    withdrawalTokenHub: '0',
+    depositTokenUser: '0',
+    depositWeiUser: '0',
+    depositWeiHub: '0',
+    depositTokenHub: '0',
+    recipient: mkAddress('0xRRR'),
+    timeout: 0
+  })
+}
+
 export function getChannelState(
   type: keyof typeof initialChannelStates,
   ...overrides: PartialSignedOrSuccinctChannel[]
@@ -612,6 +693,7 @@ const getInitialArgs: any = {
   "ConfirmPending": () => { },
   "Payment": initialPaymentArgs,
   "Exchange": initialExchangeArgs,
+  "Pending": initialPendingArgs,
 }
 
 export function getChannelStateUpdate(
@@ -628,6 +710,13 @@ export function getChannelStateUpdate(
     reason,
     state: updateObj("channel", initialChannelStates.empty(), ...stateOverrides)
   }
+}
+
+export function getPendingArgs(
+  type: keyof typeof initialPendingArgs,
+  ...overrides: PartialVerboseOrSuccinctPendingArgs[]
+): PendingArgs<string> {
+  return updateObj("Pending", initialPendingArgs[type](), ...overrides)
 }
 
 export function getDepositArgs(

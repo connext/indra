@@ -18,21 +18,12 @@ exports.up = function(db) {
   return db.runSql(`
     DO $$
     BEGIN
-      IF NOT EXISTS(SELECT 1
-                    FROM pg_type
-                    WHERE typname = 'csw_sha3_hash')
-      THEN
         CREATE DOMAIN csw_sha3_hash AS citext
           CHECK ( value ~* '^0x[a-f0-9]{64}$' );
-      END IF;
     END$$;
     
     DO $$
     BEGIN
-      IF NOT EXISTS(SELECT 1
-                    FROM pg_type
-                    WHERE typname = 'csw_channel_event_type')
-      THEN
         CREATE TYPE csw_channel_event_type AS ENUM (
           'DidOpen', -- (bytes32 indexed channelId, address indexed sender, address indexed receiver, uint256 value)
           'DidDeposit', -- (bytes32 indexed channelId, uint256 deposit)
@@ -40,7 +31,6 @@ exports.up = function(db) {
           'DidStartSettling', -- (bytes32 indexed channelId)
           'DidSettle' -- (bytes32 indexed channelId)
         );
-      END IF;
     END$$;
     
     CREATE TABLE chainsaw_channel_events (

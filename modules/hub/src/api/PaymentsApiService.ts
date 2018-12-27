@@ -72,7 +72,7 @@ export class PaymentsApiServiceHandler {
       return res.send(400).json(result.msg)
     }
 
-    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount))
+    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount)) - 1
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
       req.session!.address,
       lastChanTx,

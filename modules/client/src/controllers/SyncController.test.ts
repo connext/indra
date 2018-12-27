@@ -7,7 +7,7 @@ import { StateGenerator } from '../StateGenerator';
 global.fetch = require('node-fetch-polyfill');
 
 describe('mergeSyncResults', () => {
-  function mkResult(txCount: number, sigs: 'hub' | 'user' | 'both' = 'both'): SyncResult {
+  function mkResult(txCount: number | null, sigs: 'hub' | 'user' | 'both' = 'both'): SyncResult {
     return {
       type: 'channel',
       update: {
@@ -53,6 +53,11 @@ describe('mergeSyncResults', () => {
           ))
       }
     })
+  })
+
+  it('should handle null states', () => {
+    const actual = mergeSyncResults([mkResult(null), mkResult(1)], [mkResult(null), mkResult(2)])
+    assert.deepEqual(actual.map(t => (t.update as any).txCount), [1, 2, null])
   })
 
 })

@@ -87,6 +87,7 @@ export class Utils {
       { type: 'uint256', value: threadCount },
       { type: 'uint256', value: timeout },
     )
+    console.log('hash: ', hash);
     return hash
   }
 

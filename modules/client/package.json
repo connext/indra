@@ -5,25 +5,28 @@
   "license": "ISC",
   "main": "dist/Connext.js",
   "scripts": {
-    "clean": "rm -rf ./dist",
     "build": "node_modules/.bin/tsc -p tsconfig.json",
+    "clean": "rm -rf ./dist",
     "compile": "node_modules/.bin/tsc",
-    "prepare": "npm run build",
+    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
+    "postinstall": "rm -f node_modules/web3/index.d.ts",
+    "prepare": "npm run rebuild",
     "rebuild": "npm run clean && npm run compile",
     "test": "node test/HappyCase.test.js",
-    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
-    "postinstall": "rm -f node_modules/web3/index.d.ts"
+    "watch": "tsc --watch --preserveWatchOutput --project tsconfig.json"
   },
   "engines": {
     "node": ">=9",
     "npm": ">=5"
   },
   "dependencies": {
+    "@types/bluebird": "^3.5.25",
     "axios": "^0.18.0",
     "bignumber.js": "^7.2.1",
     "ethereumjs-util": "^6.0.0",
     "ethereumjs-wallet": "0.6.0",
     "ethers": "^4.0.20",
+    "human-standard-token-abi": "^2.0.0",
     "redux": "^4.0.1",
     "semaphore": "^1.1.0",
     "typescript-fsa": "^3.0.0-beta-2",
@@ -56,6 +59,7 @@
     "sinon": "^7.1.0",
     "ts-node": "^7.0.1",
     "typechain": "^0.3.8",
+    "types-ethereumjs-util": "^0.0.8",
     "typescript": "=3.2.2"
   }
 }

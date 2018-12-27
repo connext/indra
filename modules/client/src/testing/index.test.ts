@@ -89,6 +89,29 @@ describe('expandSuccinctExchange', () => {
   })
 })
 
+describe('get pending', () => {
+  it('should work', () => {
+    let args = t.getPendingArgs("empty")
+
+    assert.deepEqual(args, {
+      withdrawalWeiUser: '0',
+      withdrawalWeiHub: '0',
+      withdrawalTokenUser: '0',
+      withdrawalTokenHub: '0',
+      depositTokenUser: '0',
+      depositWeiUser: '0',
+      depositWeiHub: '0',
+      depositTokenHub: '0',
+      recipient: t.mkAddress('0xRRR'),
+      timeout: 0
+    })
+
+    args = t.getPendingArgs("empty", { recipient: t.mkAddress('0xDAD?') })
+
+    assert.containSubset(args, { recipient: t.mkAddress('0xDAD?') })
+  })
+})
+
 describe('assertChannelStateEqual', () => {
   it('should work', () => {
     let state = t.getChannelState('full', {

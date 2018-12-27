@@ -64,7 +64,7 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
       showTrailingZeros: false
     } as CurrencyFormatOptions,
     [CurrencyType.BOOTY]: {
-      decimals: 0,
+      decimals: 2,
       withSymbol: false,
       showTrailingZeros: false
     } as CurrencyFormatOptions,
@@ -150,7 +150,7 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
       ...Currency._defaultOptions[this._type] as any,
       ..._options || {}
     }
-
+    
     const symbol = options.withSymbol ? `${this.symbol}` : ``
 
     let amountBigNum = this._amount

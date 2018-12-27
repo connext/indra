@@ -115,8 +115,6 @@ export default class StateUpdateController extends AbstractController {
   }
 
   private async handleSyncItem(item: SyncResult) {
-    console.log('Applying update from hub:', item)
-
     this._queuedActions = []
 
     if (item.type === 'thread') {
@@ -137,9 +135,10 @@ export default class StateUpdateController extends AbstractController {
     }
 
     const update = item.update
+    console.log(`Applying update from hub: ${update.reason} txCount=${update.txCount}:`, update)
+
     const prevState: ChannelState = getChannel(this.store)
     console.log('prevState:', prevState)
-    console.log('update:', update)
     if (update.txCount && update.txCount <= prevState.txCountGlobal) {
       console.warn(
         `StateUpdateController received update with old ` +

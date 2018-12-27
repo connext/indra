@@ -9,7 +9,10 @@
 // This incurs a 4x-5x performance penalty, though, so only use it in dev +
 // staging... but use Bluebird promises unconditionally to minimize the
 // differences between production, staging, and dev.
-global.Promise = require('bluebird')
+
+import Bluebird from "bluebird";
+declare var Promise: Bluebird<any>;
+
 if (process.env.NODE_ENV !== 'production') {
   (Promise as any).longStackTraces()
 }

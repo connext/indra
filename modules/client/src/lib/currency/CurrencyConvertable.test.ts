@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import * as redux from 'redux'
 import CurrencyConvertable from './CurrencyConvertable'
-import BN = require('bn.js')
+import BN from 'bn.js'
 import Currency from './Currency';
 import { default as generateExchangeRates } from '../../testing/generateExchangeRates'
 import { default as getExchangeRates } from '../getExchangeRates'

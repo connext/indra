@@ -1,0 +1,36 @@
+.app{
+  display:flex;
+  flex-wrap:wrap;
+  flex-basis:50%;
+  margin: 0 auto;  
+}
+.app>h1{
+  padding-left:25%;
+  padding-right:25%;
+  width:50%;
+}
+.col{
+  padding-left:10%;
+  padding-top:3%;
+}
+.value-entry{
+  padding:1% 0 1% 0;
+}
+.btn{
+  background-color: #002868 ;
+  color: #FFF;
+  opacity:0.5;
+
+  padding: 4px 4px 4px 4px;
+  border-radius:5px;
+}
+
+.btn:hover{
+  transition: ease-out 0.2s;
+  background-color: #FFF !important;
+  color:#002868;
+  cursor:pointer;
+}
+.btn:focus{
+  outline:none;
+}

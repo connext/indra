@@ -1084,9 +1084,19 @@ begin
                     _tx_hash;
             end if;
 
-            insert into _cm_channels (contract, hub, "user", recipient)
-            values (_contract, hub, _user, _user)
-            returning * into channel;
+            begin
+              insert into _cm_channels (contract, hub, "user", recipient)
+              values (_contract, hub, _user, _user)
+              returning * into channel;
+            exception when unique_violation then
+              channel := (
+                  select row(c.*)
+                  from cm_channels as c
+                  where
+                      contract = _contract and
+                      "user" = _user
+              );
+            end;
         end if;
     end if;
 
@@ -1163,7 +1173,19 @@ exception when unique_violation then
 
     if chainsaw_event.id is null then
         -- This really should never happen... but just to be super careful.
-        raise exception 'assertion error: got unexpected unique_violation';
+        raise exception 'assertion error: got unexpected unique_violation - % - during chainsaw_insert_event: % % % % % % % % % % %',
+          SQLERRM,
+          hub,
+          _contract,
+          block_number,
+          block_hash,
+          _tx_hash,
+          _log_index,
+          _tx_index,
+          sender,
+          js_timestamp,
+          event_type,
+          fields;
     end if;
 
     return jsonb_build_object(

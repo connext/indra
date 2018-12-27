@@ -18,9 +18,7 @@ exports.up = function(db) {
   return db.runSql(`
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'calculation_method') THEN
         CREATE TYPE calculation_method AS ENUM('WEI_SUM', 'PEGGED_FIAT');
-      END IF;
     END$$;
   
     ALTER TABLE withdrawals ADD COLUMN method calculation_method;

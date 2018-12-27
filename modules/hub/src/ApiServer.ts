@@ -20,21 +20,26 @@ const COOKIE_NAME = 'hub.sid'
 
 const RedisStore = require('connect-redis')(session)
 
-const requestLog = log('requests')
 const requestLogMiddleware = (req: any, res: any, next: any): any => {
   req._startTime = Date.now()
+  console.log('\n')
+  log('requests').info('<==IN {remoteAddr} {method} {url}\nHeaders: {reqHeaders}\nQuery: {query}\nBody: {body}\nCookies: {cookies}', {
+    remoteAddr: req.ip,
+    method: req.method,
+    url: req.originalUrl,
+    reqHeaders: JSON.stringify(req.headers,null,2) || 'empty headers',
+    query: JSON.stringify(req.query,null,2) || 'empty query',
+    body: JSON.stringify(req.body,null,2) || 'empty body',
+    cookies: JSON.stringify(req.cookies,null,2) || 'empty cookies',
+  })
   res.on('finish', () => {
     let duration = Date.now() - req._startTime
-    requestLog.info('{remoteAddr} {method} {url} -> {statusCode} ({size} bytes; {duration})', {
+    log('responses').info('OUT==> {remoteAddr} {method} {url} -> {statusCode} ({size} bytes; {duration})\n', {
       remoteAddr: req.ip,
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
       size: res.get('content-length') || '?',
-      query: req.query,
-      host: req.hostname,
-      reqHeaders: req.headers,
-      resHeaders: res.getHeaders(),
       duration: (duration / 1000).toFixed(3),
     })
   })
@@ -55,6 +60,8 @@ export class ApiServer {
     this.authHandler = this.container.resolve('AuthHandler')
 
     this.app = express()
+    this.app.use(cookie())
+    this.app.use(express.json())
     this.app.use(requestLogMiddleware)
 
     const corsHandler = cors({
@@ -65,7 +72,6 @@ export class ApiServer {
     this.app.options('*', corsHandler)
     this.app.use(corsHandler)
 
-    this.app.use(cookie())
     this.app.use(
       new AuthHeaderMiddleware(COOKIE_NAME, this.config.sessionSecret)
         .middleware,
@@ -88,7 +94,6 @@ export class ApiServer {
       }),
     )
 
-    this.app.use(express.json())
     // TODO: This can probably be removed
     this.app.use(
       '/assets',

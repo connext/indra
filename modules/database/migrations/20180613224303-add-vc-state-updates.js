@@ -18,13 +18,8 @@ exports.up = function(db) {
   return db.runSql(`
     DO $$
     BEGIN
-      IF NOT EXISTS(SELECT 1
-                    FROM pg_type
-                    WHERE typname = 'eth_signature')
-      THEN
         CREATE DOMAIN eth_signature AS VARCHAR(132)
           CHECK ( value ~* '^0x[a-f0-9]{130}$' );
-      END IF;
     END$$;
 
     CREATE TABLE virtual_channel_state_updates (

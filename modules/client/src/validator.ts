@@ -46,6 +46,10 @@ import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { TransactionReceipt } from 'web3/types'
 
+// new provider code
+import ChannelManagerAbi from './typechain/abi/ChannelManagerAbi'
+import * as ethers from 'ethers';
+
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
 export const DEFAULT_EXCHANGE_MULTIPLIER = 1000000
@@ -62,6 +66,8 @@ arguments in other places.
 export class Validator {
   private utils: Utils
 
+  private Interface: any
+
   private stateGenerator: StateGenerator
 
   private generateHandlers: { [name in ChannelUpdateReason]: any }
@@ -71,6 +77,7 @@ export class Validator {
   hubAddress: Address
 
   constructor(web3: Web3, hubAddress: Address) {
+    this.Interface = new ethers.utils.Interface(ChannelManagerAbi)
     this.utils = new Utils()
     this.stateGenerator = new StateGenerator()
     this.web3 = web3
@@ -271,8 +278,8 @@ export class Validator {
 
     // validate on chain information
     const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransaction(txHash) as any
-    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
+    const tx = await this.web3.getTransaction(txHash) as any
+    const receipt = await this.web3.getTransactionReceipt(txHash)
 
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
@@ -475,7 +482,7 @@ export class Validator {
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr) {
+    if (this.utils.recoverSignerFromChannelState(channelState, sig).toLowerCase() !== adr.toLowerCase()) {
       throw new Error(`Channel state is not correctly signed by ${signer}. channelState: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
@@ -606,9 +613,10 @@ export class Validator {
     }
 
     const prevPending = this.hasPendingOps(prev)
+    const currPending = this.hasPendingOps(curr)
     // pending ops only added to current state if the current state
-    // is of a "ProposePending" request type
-    if (this.hasPendingOps(curr)) {
+    // is of a "ProposePending" request type (indicated by gain of pending ops)
+    if (currPending && !prevPending) {
       errs.push(this.enforceDelta([prev, curr], 1, ['txCountChain']))
     } else {
       errs.push(this.enforceDelta([prev, curr], 0, ['txCountChain']))
@@ -634,7 +642,11 @@ export class Validator {
       amountWei: toBN(0),
       amountToken: toBN(0),
     }
-    if (prevPending) {
+
+    // if the previous operation has pending operations, and current
+    // does not, then the current op is either a confirmation or an
+    // invalidation (this code should NOT be used for invalidation updates)
+    if (prevPending && !currPending) {
       // how much reserves were added into contract?
       reserves = {
         amountWei: maxBN(
@@ -727,6 +739,28 @@ export class Validator {
       return null
     }
 
+    // new provider code
+    const eventTopic = this.Interface.events.DidUpdateChannel.topic
+
+    let raw = {} as any
+    txReceipt.logs.forEach((log) => {
+      if (log.topics.indexOf(eventTopic) > -1) {
+        let tmp = this.Interface.parseLog(log) as any
+        Object.keys(tmp.values).forEach((field) => {
+          if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
+            if (tmp.values[field].toString().split(',').length>1)
+              raw[field] = tmp.values[field].toString().split(',')
+            else
+              raw[field] = tmp.values[field].toString()
+          }
+        })
+      }
+      // NOTE: The second topic in the log with the events topic
+      // is the indexed user.
+      raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
+    })
+
+    /*
     const inputs = [
       { type: 'address', name: 'user', indexed: true },
       { type: 'uint256', name: 'senderIdx' },
@@ -745,7 +779,6 @@ export class Validator {
       inputs,
     })
 
-    /*
     ContractEvent.fromRawEvent({
       log: log,
       txIndex: log.transactionIndex,
@@ -754,7 +787,6 @@ export class Validator {
       sender: txsIndex[log.transactionHash].from,
       timestamp: blockIndex[log.blockNumber].timestamp * 1000
     })
-    */
 
     let raw = {} as any
     txReceipt.logs.forEach((log) => {
@@ -771,7 +803,6 @@ export class Validator {
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
     })
 
-    /*
     event DidUpdateChannel (
       address indexed user,
       uint256 senderIdx, // 0: hub, 1: user
@@ -785,7 +816,7 @@ export class Validator {
     );
     */
 
-    return {
+    const output = {
       user: raw.user,
       sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
       balanceWeiUser: toBN(raw.weiBalances[1]),
@@ -805,5 +836,7 @@ export class Validator {
       threadRoot: raw.threadRoot,
       threadCount: parseInt(raw.threadCount, 10)
     }
+
+    return output
   }
 }
