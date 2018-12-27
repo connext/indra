@@ -51,14 +51,14 @@ clean:
 	rm -rf $(hub)/dist/*
 
 deep-clean: clean
-	rm -rf $(cwd)/modules/**/node_modules/*
+	rm -rf $(cwd)/modules/**/node_modules
 	rm -rf $(cwd)/modules/**/yarn.lock
 	rm -rf $(cwd)/modules/**/package-lock.json
-	rm -rf $(cwd)/modules/**/.cache/*
+	rm -rf $(cwd)/modules/**/.cache
 	rm -rf $(cwd)/modules/**/.yarnrc
-	rm -rf $(cwd)/modules/**/.yarn/*
-	rm -rf $(cwd)/modules/**/dist/*
-	rm -rf $(cwd)/modules/**/.node_gyp/*
+	rm -rf $(cwd)/modules/**/.yarn
+	rm -rf $(cwd)/modules/**/dist
+	rm -rf $(cwd)/modules/**/.node_gyp
 
 stop: 
 	docker container stop $(project)_buidler 2> /dev/null || true
