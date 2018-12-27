@@ -14,6 +14,8 @@
     "start": "make dev && bash ops/deploy.dev.sh",
     "prod": "make prod && bash ops/deploy.prod.sh",
     "stop": "bash ops/stop.sh connext",
-    "stop-test": "bash ops/stop.sh connext_test"
+    "stop-test": "bash ops/stop.sh connext_test",
+    "clean": "make clean",
+    "deep-clean": "make deep-clean"
   }
 }
