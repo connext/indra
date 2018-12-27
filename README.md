@@ -2,11 +2,25 @@
 
 Everything you need to set up a Connext payment channel hub.
 
-## How to use this repository
+## Repo Executive Summary
 
-The `master` branch contains deployment scripts in the `./ops` directory. Check out ChannelManager.sol in the contracts module to see the core smart contract powering this platform.
+You can run this project locally in dev-mode with `yarn start` (or `yarn restart`)
 
-### Starting the hub
+The above command will build anything needed for you but you can also build stuff manually with `make`.
+
+You can run Indra in production-mode with `yarn prod` (or `yarn restart prod`).
+
+This repo is split into modules. Each module, ie `name`, in general, has source code in `modules/name/src` that the build/deploy tools in `modules/name/ops` use to build stuff that's output to either `modules/name/build` or `modules/name/dist`.
+
+At runtime, most modules are run in their own docker container(s). These docker containers are built according to dockerfiles found in `modules/name/ops/*.dockerfile` and, on startup, run the scripts found in `modules/name/ops/*.entry.sh`
+
+See all running containers with: `docker service ls`.
+
+You can see the logs for some container with: `yarn logs name`. Where "name" would be `hub` for the docker container `connext_hub`.
+
+Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'` or open a db console with just `bash ops/db.sh`
+
+## How to get started developing
 
 #### Prerequisites
 
@@ -18,7 +32,13 @@ The `master` branch contains deployment scripts in the `./ops` directory. Check 
 
 **Local development is easy**
 
-`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode. Beware: the first time this is run it will take a long time but subsequent builds will happen much more quickly.
+`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:80`
+
+Beware: the first time this is run it will take a long time but subsequent builds will happen much more quickly.
+
+A couple sets of `node_modules` will be installed when running `yarn start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once while building `hub-node-modules` for example, running `rm -rf modules/hub/node_modules modules/hub/yarn.lock` and then trying again should fix things.
+
+There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are off by default. The wallet aka UI will always be watched as it's served by a webpack-dev-server. If you expect to be actively developing any other modules, you can turn on watchers for those too. Careful, turning on all the watchers will increase the start-up time and drain your computer's battery more quickly.
 
 **To deploy to production: First, deploy the contract & docker images**
 
@@ -32,14 +52,14 @@ To deploy the ChannelManager Contract:
 cd modules/contracts && yarn install
 # the space at the beginning of the command below will prevent this
 # command (& the mnemoic) from being stored in your shell's history
-  MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network ropsten -from 3 --to 3
+  MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network ropsten
 ```
 
 **Then, deploy your payment hub**
 
 `bash ops/deploy.prod.sh` <- Assuming the docker images have been built & pushed to a registry, this will pull & deploy them in an environment suitable for production.
 
-Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the repository at the top of the `deploy.prod.sh` script before deploying.
+Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying.
 
 #### Details
 
@@ -47,21 +67,27 @@ Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh
 
 `make` does the following:
 
-1. Build the builder. This project relies on various build tools like c compilers & python & a specific version of nodejs. Rather than making you, the developer, figure out how to make nvm play nice with yarn, we'll use Docker to build the build environment for you. Based on the builder Dockerfile in the top-level ops.
+1. Build the builder. This project relies on various build tools like c compilers & python & a specific version of nodejs. Rather than making you, the developer, figure out how to make nvm play nice with yarn, we'll use Docker to build the build environment for you. Based on the builder Dockerfile in the top-level ops folder.
 
-2. Install dependencies. For example, to install stuff needed by the contracts module, we take the `modules/contracts` dir and stick it into a builder container. This container runs `yarn install` which usually requires compiling some crazy c stuff. When it's done, the container exits and we're left with freshly build `node_modules`.
+2. Install dependencies. For example, to install stuff needed by the contracts module, we take the `modules/contracts` dir and mount it into a builder container. This container runs `yarn install` which usually requires compiling some crazy c modules. When it's done, the container exits and a freshly built `node_modules` is left behind in the directory that was mounted..
 
-3. Build stuff. Like it step 2, we stick the dir we're interested in into the builder docker container & build what's needed
+3. Build stuff. Like it step 2, we stick the dir we're interested in into the builder docker container & build what's needed.
 
-`bash ops/deploy.dev.sh` starts 4 containers:
+`bash ops/deploy.dev.sh` starts 7 containers:
 
-1. Redis: the least interesting.
+ 1. Proxy: an nginx server that sits in front of both the hub & the wallet. Useful for preventing CORS problems.
 
-2. Database: Runs db migrations then starts the database
+ 2. Wallet: A webpack-dev-server that watches & serves data from the wallet module.
 
-3. Ethprovider: Runs contract migrations & starts a ganache testnet
+ 3. Hub: Manages your payment channel.
 
-4. Hub: manages your payment channel
+ 4. Chainsaw: Watches for interesting blockchain events & processes them as needed
+
+ 5. Ethprovider: Runs contract migrations & starts a ganache testnet
+
+ 6. Database: Runs db migrations then starts the database
+
+ 7. Redis: Depended on by the hub & chainsaw
 
 ### How to interact with Hub
 

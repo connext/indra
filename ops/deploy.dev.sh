@@ -4,6 +4,12 @@ set -e
 ####################
 # ENV VARS
 
+# set any of these to "watch" to turn on watchers
+watch_ethprovider="no"
+watch_hub="no"
+watch_chainsaw="no"
+watch_wallet="no"
+
 project=connext
 number_of_services=7
 proxy_image=${project}_proxy:dev
@@ -31,12 +37,6 @@ POSTGRES_PORT="5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
 POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
-
-# set any of these to "watch" to turn on watchers
-watch_ethprovider="no"
-watch_hub="no"
-watch_chainsaw="no"
-watch_wallet="no"
 
 ####################
 # Deploy according to above configuration
