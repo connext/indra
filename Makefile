@@ -64,7 +64,7 @@ stop:
 	docker container stop $(project)_buidler 2> /dev/null || true
 	bash ops/stop.sh
 
-purge: stop clean
+purge: stop deep-clean
 	docker container prune -f
 	rm -rf $(contracts)/build/*
 	docker volume rm connext_chain_dev || true
