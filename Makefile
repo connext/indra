@@ -50,6 +50,16 @@ clean:
 	rm -rf $(db)/build/*
 	rm -rf $(hub)/dist/*
 
+deep-clean: clean
+	rm -rf $(cwd)/modules/**/node_modules/*
+	rm -rf $(cwd)/modules/**/yarn.lock
+	rm -rf $(cwd)/modules/**/package-lock.json
+	rm -rf $(cwd)/modules/**/.cache/*
+	rm -rf $(cwd)/modules/**/.yarnrc
+	rm -rf $(cwd)/modules/**/.yarn/*
+	rm -rf $(cwd)/modules/**/dist/*
+	rm -rf $(cwd)/modules/**/.node_gyp/*
+
 stop: 
 	docker container stop $(project)_buidler 2> /dev/null || true
 	bash ops/stop.sh
@@ -103,12 +113,12 @@ wallet-node-modules: $(project)_builder $(wallet)/package.json
 
 client: client-node-modules $(shell find $(client)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_client) "yarn build"
+	$(docker_run_in_client) "npm run build"
 	$(log_finish) && touch build/client
 
 client-node-modules: $(project)_builder $(client)/package.json
 	$(log_start)
-	$(docker_run_in_client) "yarn install --network-timeout 1000000"
+	$(docker_run_in_client) "npm install"
 	$(log_finish) && touch build/client-node-modules
 
 # Hub
