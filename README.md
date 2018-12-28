@@ -42,6 +42,8 @@ There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are 
 
 **To deploy to production: First, deploy the contract & docker images**
 
+Before running make deploy, check the `modules/wallet/.env` file as this will contain your wallet's prod-mode env vars. If these vars look good, then run:
+
 `make deploy` <- this will build the project's docker images and push them to docker hub
 
 When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make deploy`.
