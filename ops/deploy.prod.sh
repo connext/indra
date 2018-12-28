@@ -18,7 +18,7 @@ INFURA_KEY="RNXFMnEXo6TEeIYzcTyQ" # provided by bohendo
 SERVICE_USER_KEY="foo"
 
 # ethereum settings
-ETH_RPC_URL="https://ropsten.infura.io/$INFURA_KEY:8545"
+ETH_RPC_URL="https://ropsten.infura.io:8545/$INFURA_KEY"
 WALLET_ADDRESS="0xB669b484f2c72D226463d9c75d9B9A871aE7904e"
 HOT_WALLET_ADDRESS="0xB669b484f2c72D226463d9c75d9B9A871aE7904e"
 CHANNEL_MANAGER_ADDRESS="0x8BA9df707565Ef788D0C72D41db8efbBADf41240" # see modules/contracts/ops/addresses.json
