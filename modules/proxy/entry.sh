@@ -6,9 +6,11 @@ domain=$DOMAINNAME; [[ -n "$domain" ]] || domain=localhost
 echo "domain=$domain email=$email"
 
 # Wait for downstream services to wake up
-echo "waiting for wallet:3000 & hub:8080"
+ethprovider="${ETH_RPC_URL#*://}"
+echo "waiting for wallet:3000 & hub:8080 & $ethprovider"
 [[ "$MODE" == "dev" ]] && bash wait_for.sh -t 60 wallet:3000 2> /dev/null
 bash wait_for.sh -t 60 hub:8080 2> /dev/null
+bash wait_for.sh -t 60 $ethprovider 2> /dev/null
 
 letsencrypt=/etc/letsencrypt/live
 devcerts=$letsencrypt/localhost
@@ -33,7 +35,9 @@ echo "Using certs for $domain"
 ln -sf $letsencrypt/$domain/privkey.pem /etc/certs/privkey.pem
 ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
+# Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
+sed -i 's/$ethprovider/'"$ETH_RPC_URL"'/' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {

@@ -105,11 +105,10 @@ services:
 
   proxy:
     image: $proxy_image
-    networks:
-      - $project
     environment:
-      - DOMAINNAME: $DOMAINNAME
-      - EMAIL: $EMAIL
+      DOMAINNAME: $DOMAINNAME
+      EMAIL: $EMAIL
+      ETH_RPC_URL: $ETH_RPC_URL
     ports:
       - "80:80"
       - "443:443"
