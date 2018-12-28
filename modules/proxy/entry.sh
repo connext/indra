@@ -37,7 +37,7 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$ethprovider|'"$ethprovider"'|' /etc/nginx/nginx.conf
+sed -i 's|$ethprovider|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
 
 cat /etc/nginx/nginx.conf
 
