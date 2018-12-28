@@ -5,4 +5,3 @@ modules/**/.config
 modules/**/.git
 modules/**/.node-gyp
 build
-modules/**/build

@@ -28,7 +28,7 @@ docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:d
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
-docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root $(project)_builder:dev $(id)
+docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root --volume=$(client):/client $(project)_builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
@@ -43,7 +43,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 default: dev
 all: dev prod
 dev: client database ethprovider hub wallet proxy
-prod: database-prod hub-prod
+prod: database-prod hub-prod proxy-prod
 
 clean:
 	rm -rf build/*
@@ -92,6 +92,11 @@ test: hub
 
 # Proxy
 
+proxy-prod: wallet-prod $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	$(log_finish) && touch build/proxy-prod
+
 proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
@@ -99,12 +104,18 @@ proxy: $(shell find $(proxy) $(find_options))
 
 # Wallet
 
+wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_wallet) "ln -sf /client node_modules/connext"
+	$(docker_run_in_wallet) "yarn build"
+	$(log_finish) && touch build/wallet-prod
+
 wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
 
-wallet-node-modules: $(project)_builder $(wallet)/package.json
+wallet-node-modules: $(project)_builder $(wallet)/package.json client
 	$(log_start)
 	$(docker_run_in_wallet) "yarn install --network-timeout 1000000"
 	$(log_finish) && touch build/wallet-node-modules

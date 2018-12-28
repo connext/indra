@@ -43,10 +43,12 @@ then
   then version="`cat package.json | jq .version | tr -d '"'`"
   else version="latest"
   fi
+  proxy_image="$registry/${project}_proxy:$version"
   database_image="$registry/${project}_database:$version"
   hub_image="$registry/${project}_hub:$version"
   redis_image="redis:5-alpine"
 else
+  proxy_image=${project}_proxy:latest
   database_image=${project}_database:latest
   hub_image=${project}_hub:latest
   redis_image=redis:5-alpine
@@ -97,8 +99,22 @@ secrets:
 
 volumes:
   database:
+  certs:
 
 services:
+
+  proxy:
+    image: $proxy_image
+    networks:
+      - $project
+    environment:
+      - DOMAINNAME: $DOMAINNAME
+      - EMAIL: $EMAIL
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/letsencrypt
 
   hub:
     image: $hub_image
