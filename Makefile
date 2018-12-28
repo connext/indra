@@ -74,16 +74,20 @@ purge: stop deep-clean
 tags: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:latest
+	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:latest
 
 deploy: tags
 	docker push $(registry)/$(project)_database:latest
 	docker push $(registry)/$(project)_hub:latest
+	docker push $(registry)/$(project)_proxy:latest
 
 deploy-live: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:$(version)
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:$(version)
+	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:$(version)
 	docker push $(registry)/$(project)_database:$(version)
 	docker push $(registry)/$(project)_hub:$(version)
+	docker push $(registry)/$(project)_proxy:$(version)
 
 test: hub
 	bash $(hub)/ops/test.sh
@@ -106,6 +110,7 @@ proxy: $(shell find $(proxy) $(find_options))
 
 wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
+	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
 	$(docker_run_in_wallet) "ln -sf /client node_modules/connext"
 	$(docker_run_in_wallet) "yarn build"
 	$(log_finish) && touch build/wallet-prod

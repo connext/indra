@@ -42,7 +42,7 @@ There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are 
 
 **To deploy to production: First, deploy the contract & docker images**
 
-Before running make deploy, check the `modules/wallet/.env` file as this will contain your wallet's prod-mode env vars. If these vars look good, then run:
+Before running make deploy, check the `modules/wallet/ops/prod.env` file as this will contain your wallet's prod-mode env vars. (TODO: build this dynamically from the env vars in `ops/deploy.prod.sh`) If these vars look good, then run:
 
 `make deploy` <- this will build the project's docker images and push them to docker hub
 

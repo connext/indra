@@ -54,7 +54,7 @@ else
   redis_image=redis:5-alpine
 fi
 
-echo "Deploying images: $database_image and $hub_image"
+echo "Deploying images: $database_image and $hub_image and $proxy_image"
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
