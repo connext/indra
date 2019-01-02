@@ -32,7 +32,7 @@ Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'`
 
 **Local development is easy**
 
-`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:80`
+`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:8080`
 
 Beware: the first time this is run it will take a long time but have no fear: subsequent builds will go much more quickly.
 
