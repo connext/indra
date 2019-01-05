@@ -312,7 +312,7 @@ class App extends Component {
   getKey() {
     console.log(store.getState()[0]);
     function _innerGetKey() {
-      const key = store.getState()[0].privateKey;
+      const key = store.getState()[0].mnemonic;
       return key;
     }
     let privKey = _innerGetKey();
@@ -613,7 +613,7 @@ class App extends Component {
               <p>TST Balance: {this.state.tokenBalance}</p>
               <p>
                 <button className="btn" onClick={this.toggleKey}>
-                  {this.state.toggleKey ? <span>Hide Private Key</span> : <span>Reveal Private Key</span>}
+                  {this.state.toggleKey ? <span>Hide Mnemonic</span> : <span>Reveal Mnemonic</span>}
                 </button>
                 {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
               </p>
