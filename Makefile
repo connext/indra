@@ -3,7 +3,6 @@ registry=docker.io/$(shell whoami)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
-client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
@@ -24,14 +23,13 @@ contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(cont
 id=$(shell id -u):$(shell id -g)
 run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
 docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
-docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
-docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root --volume=$(client):/client $(project)_builder:dev $(id)
+docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root $(project)_builder:dev $(id)
 
 # Env setup
-$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
+$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
@@ -42,7 +40,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: client database ethprovider hub wallet proxy
+dev: database ethprovider hub wallet proxy
 prod: database-prod hub-prod proxy-prod
 
 clean:
@@ -111,7 +109,7 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
 
-wallet-node-modules: $(project)_builder $(wallet)/package.json client
+wallet-node-modules: $(project)_builder $(wallet)/package.json
 	$(log_start)
 	$(docker_run_in_wallet) "yarn install --network-timeout 1000000"
 	$(log_finish) && touch build/wallet-node-modules
