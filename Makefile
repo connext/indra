@@ -103,7 +103,6 @@ proxy: $(shell find $(proxy) $(find_options))
 wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
-	$(docker_run_in_wallet) "ln -sf /client node_modules/connext"
 	$(docker_run_in_wallet) "yarn build"
 	$(log_finish) && touch build/wallet-prod
 
@@ -121,12 +120,12 @@ wallet-node-modules: $(project)_builder $(wallet)/package.json client
 
 client: client-node-modules $(shell find $(client)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_client) "npm run build"
+	$(docker_run_in_client) "yarn build"
 	$(log_finish) && touch build/client
 
 client-node-modules: $(project)_builder $(client)/package.json
 	$(log_start)
-	$(docker_run_in_client) "npm install"
+	$(docker_run_in_client) "yarn install"
 	$(log_finish) && touch build/client-node-modules
 
 # Hub
