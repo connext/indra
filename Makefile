@@ -116,18 +116,6 @@ wallet-node-modules: $(project)_builder $(wallet)/package.json client
 	$(docker_run_in_wallet) "yarn install --network-timeout 1000000"
 	$(log_finish) && touch build/wallet-node-modules
 
-# Client
-
-client: client-node-modules $(shell find $(client)/src $(find_options))
-	$(log_start)
-	$(docker_run_in_client) "yarn build"
-	$(log_finish) && touch build/client
-
-client-node-modules: $(project)_builder $(client)/package.json
-	$(log_start)
-	$(docker_run_in_client) "yarn install"
-	$(log_finish) && touch build/client-node-modules
-
 # Hub
 
 hub-prod: hub-js
