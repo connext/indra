@@ -47,18 +47,11 @@ prod: database-prod hub-prod proxy-prod
 
 clean:
 	rm -rf build/*
-	rm -rf $(db)/build/*
-	rm -rf $(hub)/dist/*
+	rm -rf $(cwd)/modules/**/build
+	rm -rf $(cwd)/modules/**/dist
 
 deep-clean: clean
 	rm -rf $(cwd)/modules/**/node_modules
-	rm -rf $(cwd)/modules/**/yarn.lock
-	rm -rf $(cwd)/modules/**/package-lock.json
-	rm -rf $(cwd)/modules/**/.cache
-	rm -rf $(cwd)/modules/**/.yarnrc
-	rm -rf $(cwd)/modules/**/.yarn
-	rm -rf $(cwd)/modules/**/dist
-	rm -rf $(cwd)/modules/**/.node_gyp
 
 stop: 
 	docker container stop $(project)_buidler 2> /dev/null || true
@@ -66,7 +59,6 @@ stop:
 
 purge: stop deep-clean
 	docker container prune -f
-	rm -rf $(contracts)/build/*
 	docker volume rm connext_chain_dev || true
 	docker volume rm connext_database_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
