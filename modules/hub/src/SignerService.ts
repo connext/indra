@@ -1,6 +1,6 @@
-import { Utils } from './vendor/connext/Utils'
+import { Utils } from 'connext/dist/Utils'
 import Config from './Config'
-import { UnsignedChannelState, ChannelState } from './vendor/connext/types'
+import { UnsignedChannelState, ChannelState } from 'connext/dist/types'
 import * as fs from 'fs';
 import * as eth from 'ethers';
 

@@ -8,7 +8,7 @@ import { PaymentMetaDao } from '../dao/PaymentMetaDao'
 import { Role } from '../Role'
 import WithdrawalsService from '../WithdrawalsService'
 import ExchangeRateDao from '../dao/ExchangeRateDao'
-import { Payment, PurchasePayment, UpdateRequest } from '../vendor/connext/types'
+import { Payment, PurchasePayment, UpdateRequest } from 'connext/dist/types'
 import { default as ThreadsService } from "../ThreadsService";
 import { default as ChannelsService } from "../ChannelsService";
 import { default as Config } from "../Config";

@@ -1,7 +1,7 @@
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal } from "../testing/factories";
 import ChannelsService from '../ChannelsService';
-import { UpdateRequest, SyncResult } from '../vendor/connext/types';
+import { UpdateRequest, SyncResult } from 'connext/dist/types';
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()

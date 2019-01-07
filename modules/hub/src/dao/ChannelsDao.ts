@@ -10,7 +10,7 @@ import {
   DepositArgsBigNumber,
   WithdrawalArgsBigNumber,
   convertArgs,
-} from '../vendor/connext/types'
+} from 'connext/dist/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
 import {
@@ -18,7 +18,7 @@ import {
   ChannelRowBigNum,
 } from '../domain/Channel'
 import { Big } from '../util/bigNumber'
-import { emptyRootHash } from '../vendor/connext/Utils'
+import { emptyRootHash } from 'connext/dist/Utils'
 import { default as log } from '../util/log'
 
 export default interface ChannelsDao {

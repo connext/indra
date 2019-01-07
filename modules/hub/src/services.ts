@@ -48,13 +48,13 @@ import { PostgresFeatureFlagsDao } from './dao/FeatureFlagsDao'
 import FeatureFlagsApiService from './api/FeatureFlagsApiService'
 import { ApiServer } from './ApiServer'
 import { DefaultAuthHandler } from './middleware/AuthHandler'
-import { Utils } from './vendor/connext/Utils'
-import { Validator } from './vendor/connext/validator'
+import { Utils } from 'connext/dist/Utils'
+import { Validator } from 'connext/dist/validator'
 import ThreadsService from './ThreadsService'
 import ThreadsApiService from './api/ThreadsApiService';
 import { OnchainTransactionService } from "./OnchainTransactionService";
 import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
-import { StateGenerator } from './vendor/connext/StateGenerator';
+import { StateGenerator } from 'connext/dist/StateGenerator';
 import { SignerService } from './SignerService';
 import PaymentsService from './PaymentsService';
 

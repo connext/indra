@@ -1,5 +1,5 @@
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "./vendor/connext/types";
+import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "connext/dist/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -7,7 +7,7 @@ import ChannelsDao from "./dao/ChannelsDao";
 import Config from "./Config";
 import { prettySafeJson } from "./util";
 import { Big } from "./util/bigNumber";
-import { Validator } from "./vendor/connext/validator";
+import { Validator } from "connext/dist/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
@@ -137,8 +137,8 @@ export default class PaymentsService {
       amountToken: '0',
     }
     for (let payment of payments) {
-      totalAmount.amountWei = Big(totalAmount.amountWei).add(payment.amount.amountWei).toFixed()
-      totalAmount.amountToken = Big(totalAmount.amountToken).add(payment.amount.amountToken).toFixed()
+      totalAmount.amountWei = Big(totalAmount.amountWei).plus(payment.amount.amountWei).toFixed()
+      totalAmount.amountToken = Big(totalAmount.amountToken).plus(payment.amount.amountToken).toFixed()
     }
 
     // TODO: this is a bit of a hack because we aren't totally tracking

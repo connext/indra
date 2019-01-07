@@ -1,17 +1,17 @@
-import {getTestRegistry} from './testing'
-import ChainsawService from './ChainsawService'
+import ABI, {BYTECODE} from './abi/ChannelManager'
+import {BigNumber} from 'bignumber.js'
+import {assert} from 'chai'
+import {ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber} from 'connext/dist/types';
+import {Utils, emptyRootHash} from 'connext/dist/Utils'
 import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
-import DBEngine from './DBEngine'
+import ChainsawService from './ChainsawService'
 import ChannelsDao, {PostgresChannelsDao} from './dao/ChannelsDao'
 import {ChannelManager} from './ChannelManager'
-import ABI, {BYTECODE} from './abi/ChannelManager'
-import {assert} from 'chai'
+import DBEngine from './DBEngine'
+import {SignerService} from "./SignerService";
 import * as sinon from 'sinon'
-import {Utils, emptyRootHash} from './vendor/connext/Utils'
+import {getTestRegistry} from './testing'
 import {PgPoolServiceForTest} from './testing/mocks'
-import {BigNumber} from 'bignumber.js'
-import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
-import { SignerService } from "./SignerService";
 
 const GAS_PRICE = '1000000000'
 
@@ -331,11 +331,11 @@ class StateUpdateBuilder {
     let balHub
 
     if (to === 'hub') {
-      balUser = this.state.balanceWeiUser.sub(amount)
-      balHub = this.state.balanceWeiHub.add(amount)
+      balUser = this.state.balanceWeiUser.minus(amount)
+      balHub = this.state.balanceWeiHub.plus(amount)
     } else {
-      balUser = this.state.balanceWeiUser.add(amount)
-      balHub = this.state.balanceWeiHub.sub(amount)
+      balUser = this.state.balanceWeiUser.plus(amount)
+      balHub = this.state.balanceWeiHub.minus(amount)
     }
 
     if (balUser.isNeg() || balHub.isNeg()) {
@@ -350,9 +350,9 @@ class StateUpdateBuilder {
 
   deposit(to: 'hub'|'user', amount: BigNumber|string|number): StateUpdateBuilder {
     if (to === 'hub') {
-      this.state.pendingDepositWeiHub = this.state.pendingDepositWeiHub.add(amount)
+      this.state.pendingDepositWeiHub = this.state.pendingDepositWeiHub.plus(amount)
     } else {
-      this.state.pendingDepositWeiUser = this.state.pendingDepositWeiUser.add(amount)
+      this.state.pendingDepositWeiUser = this.state.pendingDepositWeiUser.plus(amount)
     }
 
     return this
@@ -362,9 +362,9 @@ class StateUpdateBuilder {
     let bal
 
     if (from === 'hub') {
-      bal = this.state.balanceWeiHub.sub(amount)
+      bal = this.state.balanceWeiHub.minus(amount)
     } else {
-      bal = this.state.balanceWeiUser.add(amount)
+      bal = this.state.balanceWeiUser.plus(amount)
     }
 
     if (bal.isNeg()) {
@@ -373,10 +373,10 @@ class StateUpdateBuilder {
 
     if (from === 'hub') {
       this.state.balanceWeiHub = bal
-      this.state.pendingWithdrawalWeiHub = this.state.pendingWithdrawalWeiHub.add(bal)
+      this.state.pendingWithdrawalWeiHub = this.state.pendingWithdrawalWeiHub.plus(bal)
     } else {
       this.state.balanceWeiUser = bal
-      this.state.pendingWithdrawalWeiUser = this.state.pendingWithdrawalWeiUser.add(bal)
+      this.state.pendingWithdrawalWeiUser = this.state.pendingWithdrawalWeiUser.plus(bal)
     }
 
     return this

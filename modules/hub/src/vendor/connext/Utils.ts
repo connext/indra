@@ -11,7 +11,7 @@ import {
   UnsignedThreadState,
 } from './types'
 
-// import types from connext
+// import types from connext/dist
 
 export const emptyAddress = '0x0000000000000000000000000000000000000000'
 export const emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'

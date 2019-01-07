@@ -30,7 +30,7 @@ import {
   isBigNum,
   convertWithdrawal,
   Payment,
-} from './vendor/connext/types'
+} from 'connext/dist/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
 import {
@@ -38,7 +38,7 @@ import {
   tokenVal,
   channelAndThreadFactory,
 } from './testing/factories'
-import { StateGenerator } from './vendor/connext/StateGenerator'
+import { StateGenerator } from 'connext/dist/StateGenerator'
 import PaymentsService from './PaymentsService';
 import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
 import Config from './Config';
@@ -66,7 +66,7 @@ function web3ContractMock() {
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
   for (let field in obj)
-    res[field] = Big(obj[field as string]).mul('1e18').toFixed()
+    res[field] = Big(obj[field as string]).times('1e18').toFixed()
 
   return res
 }
@@ -154,7 +154,7 @@ describe('ChannelsService', () => {
       0,
     )
 
-    const pendingDepositTokenHub = weiDeposit.mul(mockRate)
+    const pendingDepositTokenHub = weiDeposit.times(mockRate)
 
     assert.equal(
       (updateRequest.update as UpdateRequest).reason,
@@ -278,7 +278,7 @@ describe('ChannelsService', () => {
       'ProposePendingDeposit' as ChannelUpdateReason,
     )
     const pendingDepositTokenHub = weiDeposit
-      .mul(mockRate)
+      .times(mockRate)
       .minus(toWeiString(1))
 
     const generatedState = stateGenerator.proposePendingDeposit(
@@ -318,8 +318,8 @@ describe('ChannelsService', () => {
    *  '0.999...999'
    */
   function tweakBalance(ethAmt: number, weiAmt: number, mul = false): string {
-    const res = Big(ethAmt).add(Big(weiAmt).div('1e18'))
-    return (mul ? res.mul('1e18') : res).toFixed()
+    const res = Big(ethAmt).plus(Big(weiAmt).div('1e18'))
+    return (mul ? res.times('1e18') : res).toFixed()
   }
 
   const exchangeTests: ExchangeTestType[] = [
@@ -367,7 +367,7 @@ describe('ChannelsService', () => {
       },
 
       expected: {
-        balanceWeiUser: Big(10).div(123.45).mul('1e18').floor().div('1e18').toFixed(),
+        balanceWeiUser: Big(10).div(123.45).times('1e18').integerValue(BigNumber.ROUND_FLOOR).div('1e18').toFixed(),
         balanceTokenUser: tweakBalance(10, 28),
       },
     },
@@ -401,8 +401,8 @@ describe('ChannelsService', () => {
 
         const exchangeArgs = await service.doRequestExchange(
           channel.user,
-          Big(t.exchange.amountWei).mul('1e18'),
-          Big(t.exchange.amountToken).mul('1e18'),
+          Big(t.exchange.amountWei).times('1e18'),
+          Big(t.exchange.amountToken).times('1e18'),
         )
         const res = await service.redisGetUnsignedState(channel.user)
         assert.deepEqual(res.update.args, exchangeArgs)
@@ -613,7 +613,7 @@ describe('ChannelsService', () => {
 
     const expectedExchangeAmountWei = toWeiBigNum(10)
       .div(mockRate)
-      .floor()
+      .integerValue(BigNumber.ROUND_FLOOR)
 
     let syncUpdates = await service.getChannelAndThreadUpdatesForSync(
       channel.user,
@@ -715,7 +715,7 @@ describe('ChannelsService', () => {
 
   describe('Withdrawal generated cases', () => {
     function makeBigNumsBigger(x: any) {
-      for (let key in x) if (isBigNum(x[key])) x[key] = x[key].mul('1e18')
+      for (let key in x) if (isBigNum(x[key])) x[key] = x[key].times('1e18')
       return x
     }
     extractWithdrawalOverrides().forEach(wd => {

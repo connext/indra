@@ -2,7 +2,7 @@ const fs = require("fs")
 const vm = require('vm')
 import * as t from './index'
 
-import { convertChannelState, WithdrawalArgs, convertWithdrawal } from '../vendor/connext/types'
+import { convertChannelState, WithdrawalArgs, convertWithdrawal } from 'connext/dist/types'
 import { PartialSignedOrSuccinctChannel, getChannelState, mkHash, mkAddress, mkSig } from './stateUtils'
 import BN = require('bn.js') // no import means ts errs?
 

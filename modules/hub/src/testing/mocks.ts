@@ -8,10 +8,10 @@ import { truncateAllTables } from './eraseDb'
 import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
 import { mkAddress, mkSig } from "./stateUtils";
-import { Validator } from '../vendor/connext/validator'
+import { Validator } from 'connext/dist/validator'
 import { Big, toWeiBigNum } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
-import { Utils } from '../vendor/connext/Utils';
+import { Utils } from 'connext/dist/Utils';
 import Config from '../Config';
 
 const Web3 = require('web3')
@@ -133,7 +133,7 @@ export const getTestConfig = (overrides?: any) => ({
   beiMinCollateralization: toWeiBigNum(50),
   beiMaxCollateralization: toWeiBigNum(169),
   threadBeiLimit: toWeiBigNum(10),
-  channelBeiDeposit: toWeiBigNum(69).add(1069),
+  channelBeiDeposit: toWeiBigNum(69).plus(1069),
   ...(overrides || {}),
 })
 

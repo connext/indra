@@ -5,8 +5,8 @@ import Config from './Config'
 import { ChannelManager } from './ChannelManager'
 import { EventLog } from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
-import { ChannelUpdateReasons, ChannelState, PaymentArgs, ConfirmPendingArgs } from './vendor/connext/types'
-import { Utils } from './vendor/connext/Utils'
+import { ChannelUpdateReasons, ChannelState, PaymentArgs, ConfirmPendingArgs } from 'connext/dist/types'
+import { Utils } from 'connext/dist/Utils'
 import abi from './abi/ChannelManager'
 import { BigNumber } from 'bignumber.js'
 import { sleep } from './util'
@@ -261,7 +261,7 @@ export default class ChainsawService {
     }
 
     if (pendingDepositBal.gt(pendingWithdrawalBal)) {
-      return balance.add(pendingDepositBal).sub(pendingWithdrawalBal)
+      return balance.plus(pendingDepositBal).minus(pendingWithdrawalBal)
     }
 
     throw new Error('Unprocessable state.')

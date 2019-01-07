@@ -9,14 +9,12 @@ import {
   ExchangeArgsBigNumber,
   DepositArgsBigNumber,
   WithdrawalArgsBigNumber
-} from '../vendor/connext/types'
+} from 'connext/dist/types'
 import {
   objValuesBigNumToString,
   objValuesStringToBigNum,
 } from '../util'
-import { Utils } from '../vendor/connext/Utils'
-
-// TODO move all to connext?
+import { Utils } from 'connext/dist/Utils'
 
 // A row of the cm_threads table, including the latest state, the status, and
 // other fields.

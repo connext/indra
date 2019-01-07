@@ -12,7 +12,7 @@ import {
   mkSig,
 } from '../testing/stateUtils'
 import { insertChannel } from '../testing/dbUtils'
-import { ChannelState, convertThreadState } from '../vendor/connext/types'
+import { ChannelState, convertThreadState } from 'connext/dist/types'
 import { PostgresChannelsDao } from './ChannelsDao'
 import eraseDb from '../testing/eraseDb';
 
