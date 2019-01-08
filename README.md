@@ -11,7 +11,7 @@ Everything you need to set up a Connext payment channel hub.
     - [Details](#Details)
     - [How to interact with Hub](#How-to-interact-with-Hub)
  - [Debugging](#Debugging)
-     - [Ethprovider/Ganache not working](#Ethprovider\/Ganache-not-working)
+     - [Ethprovider or Ganache not working](#Ethprovider-or-Ganache-not-working)
     
 
 ## Repo Executive Summary
@@ -140,7 +140,7 @@ Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh
 
 ## Debugging
 
-### Ethprovider/Ganache not working
+### Ethprovider or Ganache not working
 `#!/bin/bash
 url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
 echo "Sending $1 query to provider: $url"
