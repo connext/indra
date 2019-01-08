@@ -12,6 +12,8 @@ Everything you need to set up a Connext payment channel hub.
     - [How to interact with Hub](#How-to-interact-with-Hub)
  - [Debugging](#Debugging)
      - [Ethprovider or Ganache not working](#Ethprovider-or-Ganache-not-working)
+     - [Hub errors on start](#Hub-errors-on-start)
+     - [Locked DB](#Locked-DB)
     
 
 ## Repo Executive Summary
@@ -153,3 +155,20 @@ One other sanity check is to run `docker service ls` and make sure that you see 
 You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is alive & run `ps` to see if it's even running.
 
 Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running yarn restart to see if it gets recreated & if so, check to see if there is anything suspicious there
+
+### Hub errors on start
+
+We've seen some non-deterministic errors on `yarn start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
+
+- Running `yarn start` again
+- A restart: `yarn restart`
+- Cache clean and restart: `yarn cache clean && yarn restart`
+- Nuke everything and start over: 
+    `make purge`
+    `docker system prune -af`
+    `docker volume prune -f`
+    `yarn start`
+
+### Locked DB
+
+We've seen the database get locked on startup. The cause is unclear at the moment (possibly a race condition), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
