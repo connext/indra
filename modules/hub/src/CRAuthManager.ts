@@ -43,7 +43,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
     const hash = this.sha3(`${MemoryCRAuthManager.HASH_PREAMBLE} ${this.sha3(nonce)} ${this.sha3(origin)}`)
     const sigAddr = this.extractAddress(hash, signature)
 
-    if (!sigAddr || sigAddr !== address) {
+    if (!sigAddr || sigAddr.toLowerCase() !== address.toLowerCase()) {
       LOG.warn(`Received invalid signature. Expected address: ${address}. Got address: ${sigAddr}.`)
       return null
     }
