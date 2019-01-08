@@ -100,6 +100,8 @@ To be enforced by DB:
 - Can't update cm_*_updates
 */
 
+create extension if not exists citext;
+
 CREATE DOMAIN csw_eth_address as citext
 CHECK ( value ~* '^0x[a-f0-9]{40}$' );
 
@@ -112,6 +114,13 @@ CHECK ( value ~* '^0x[a-f0-9]{130}$' );
 CREATE DOMAIN token_amount AS NUMERIC(78,0);
 
 CREATE DOMAIN wei_amount AS NUMERIC(78,0);
+
+CREATE TABLE exchange_rates (
+    id BIGSERIAL PRIMARY KEY,
+    retrievedat BIGINT,
+    base VARCHAR,
+    rate_usd NUMERIC(78, 2)
+);
 
 --
 -- Chainsaw
@@ -132,7 +141,7 @@ CREATE TABLE chainsaw_poll_events (
     polled_at BIGINT NOT NULL,
     contract csw_eth_address NOT NULL,
     poll_type varchar not null default 'FETCH_EVENTS',
-    add column tx_idx integer
+    tx_idx integer
 );
 
 alter table chainsaw_poll_events

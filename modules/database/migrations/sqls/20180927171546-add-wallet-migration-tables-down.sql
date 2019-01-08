@@ -1,2 +1,0 @@
-DROP TABLE applied_wallet_migrations CASCADE;
-DROP TABLE available_wallet_migrations;
