@@ -44,7 +44,7 @@ There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are 
 
 Before running make deploy, check the `modules/wallet/ops/prod.env` file as this will contain your wallet's prod-mode env vars. (TODO: build this dynamically from the env vars in `ops/deploy.prod.sh`) If these vars look good, then run:
 
-`make deploy` <- this will build the project's docker images and push them to docker hub
+`make deploy` <- this will build the project's docker images and push them to docker hub.
 
 When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make deploy`.
 
@@ -59,7 +59,17 @@ make contract-artifacts
 
 **Then, deploy your payment hub**
 
-`bash ops/deploy.prod.sh` <- Assuming the docker images have been built & pushed to a registry, this will pull & deploy them in an environment suitable for production.
+If you're deploying to a server on AWS or Digital Ocean, ssh into that server and make sure all of `git`, `make` and `docker` are installed on the machine you're deploying to. To deploy the payment hub, run:
+
+```
+git clone https://github.com/ConnextProject/indra.git
+cp indra
+DOMAINNAME=example.com bash ops/deploy.prod.sh
+```
+
+The `DOMAINNAME=example.com` prefix sets an env var that allows correct configuration of an https connection from which the wallet UI can be served securely. Make sure that your production server is reachable at the domain name you specify. You can also add this env var to your server's `~/.bashrc` if you don't want to specify the domain name during every deployment.
+
+Assuming the docker images have been built & pushed to a registry, `bash ops/deploy.prod.sh` will pull & deploy them in an environment suitable for production.
 
 Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying.
 
