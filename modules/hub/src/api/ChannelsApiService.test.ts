@@ -26,4 +26,25 @@ describe('ChannelsApiService', () => {
     const collateralizeUpdate = res.body.pop() as SyncResult
     assert.isNotOk((collateralizeUpdate.update as UpdateRequest).txCount)
   })
+
+  it('Should return an error if there is already a pending operation', async () => {
+    const chan = await channelUpdateFactory(registry, {
+      balanceTokenUser: tokenVal(10),
+      pendingDepositWeiUser: tokenVal(10),
+    })
+
+    const res = await app.withUser(chan.user).request
+      .post(`/channel/${chan.user}/request-deposit`)
+      .send({
+        depositWei: '1',
+        depositToken: '0',
+        lastChanTx: chan.state.txCountGlobal,
+        lastThreadUpdateId: 0,
+      })
+
+    assert.equal(res.status, 400, JSON.stringify(res.body))
+    assert.deepEqual(res.body, {
+      error: 'current state has pending fields',
+    })
+  })
 })

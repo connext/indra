@@ -1,11 +1,12 @@
 import { subOrZero } from './StateGenerator'
-import { convertProposePending } from './types'
+import { convertProposePending, InvalidationArgs, ArgsTypes } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
 import Web3 = require('web3')
 import BN = require('bn.js')
 import {
   Address,
+  proposePendingNumericArgs,
   channelNumericFields,
   ChannelState,
   ChannelStateBN,
@@ -81,6 +82,7 @@ export class Validator {
       'ProposePendingDeposit': this.generateProposePendingDeposit.bind(this),
       'ProposePendingWithdrawal': this.generateProposePendingWithdrawal.bind(this),
       'ConfirmPending': this.generateConfirmPending.bind(this),
+      'Invalidation': this.generateInvalidation.bind(this),
       'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
       'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
     }
@@ -195,28 +197,27 @@ export class Validator {
     return this.stateGenerator.proposePendingDeposit(prev, args)
   }
 
-  private _exchangeValidator = (prev: ChannelStateBN, args: any, name: string, proposedStr: UnsignedChannelState): string | null => {
-    // validate there are no existing pending ops
-    const pendingFields = channelNumericFields.filter(x => x.startsWith('pending'))
+  private _pendingValidator = (
+    prev: ChannelStateBN,
+    args: PendingArgsBN | PendingExchangeArgsBN,
+    proposedStr: UnsignedChannelState,
+  ): string | null => {
 
     const errs = [
-      this.isValidStateTransitionRequest(
-        (prev),
-        { args, reason: "ProposePendingWithdrawal", txCount: prev.txCountGlobal }
-      ),
       this.hasTimeout(prev),
       this.hasPendingOps(prev),
+      this.hasNegative(args, proposePendingNumericArgs),
+      this.hasNegative(proposedStr, channelNumericFields),
+      args.timeout < 0 ? `timeout is negative: ${args.timeout}` : null,
     ].filter(x => !!x)[0]
-
-    if (errs) {
+    if (errs)
       return errs
-    }
 
     return null
   }
 
   public proposePending = (prev: ChannelStateBN, args: PendingArgsBN): string | null => {
-    return this._exchangeValidator(prev, args, 'pending', this.stateGenerator.proposePending(prev, args))
+    return this._pendingValidator(prev, args, this.stateGenerator.proposePending(prev, args))
   }
 
   public generateProposePending = (prevStr: ChannelState, argsStr: PendingArgs): UnsignedChannelState => {
@@ -231,10 +232,13 @@ export class Validator {
   }
 
   public proposePendingExchange = (prev: ChannelStateBN, args: PendingExchangeArgsBN): string | null => {
-    return this._exchangeValidator(prev, args, 'pending exchange', this.stateGenerator.proposePendingExchange(prev, args))
+    const err = this.exchange(prev, args)
+    if (err)
+      return err
+    return this._pendingValidator(prev, args, this.stateGenerator.proposePendingExchange(prev, args))
   }
 
-  public generateProposePendingExcchange = (prevStr: ChannelState, argsStr: PendingExchangeArgs): UnsignedChannelState => {
+  public generateProposePendingExchange = (prevStr: ChannelState, argsStr: PendingExchangeArgs): UnsignedChannelState => {
     const prev = convertChannelState("bn", prevStr)
     const args = convertProposePendingExchange("bn", argsStr)
     const error = this.proposePendingExchange(prev, args)
@@ -246,7 +250,20 @@ export class Validator {
   }
 
   public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {
-    return this._exchangeValidator(prev, args, 'withdrawal', this.stateGenerator.proposePendingWithdrawal(prev, args))
+    const errs = [
+      this.isValidStateTransitionRequest(
+        (prev),
+        { args, reason: "ProposePendingWithdrawal", txCount: prev.txCountGlobal }
+      ),
+      this.hasTimeout(prev),
+      this.hasPendingOps(prev),
+    ].filter(x => !!x)[0]
+
+    if (errs) {
+      return errs
+    }
+
+    return null
   }
 
   public generateProposePendingWithdrawal(prevStr: ChannelState, argsStr: WithdrawalArgs): UnsignedChannelState {
@@ -313,6 +330,42 @@ export class Validator {
     }
 
     return this.stateGenerator.confirmPending(prev)
+  }
+
+  // NOTE: the prev here is NOT the previous state in the state-chain 
+  // of events. Instead it is the previously "valid" update, meaning the 
+  // previously double signed upate with no pending ops
+  public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs) {
+    // state should not 
+    if (args.lastInvalidTxCount < args.previousValidTxCount) {
+      return `Previous valid nonce is higher than the nonce of the state to be invalidated. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
+    }
+
+    // prev state must have same tx count as args
+    if (latestValidState.txCountGlobal !== args.previousValidTxCount) {
+      return `Previous state nonce does not match the provided previousValidTxCount. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
+    }
+
+    // ensure the state provided is double signed, w/o pending ops
+    if (this.hasPendingOps(latestValidState) || !latestValidState.sigHub || !latestValidState.sigUser) {
+      return `Previous state has pending operations, or is missing a signature. See the notes on the previous state supplied to invalidation in source. (prev: ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")})`
+    }
+
+    // NOTE: fully signed states can only be invalidated if timeout passed
+    // this is out of scope of the validator library
+
+    return null
+  }
+
+  public generateInvalidation(prevStr: ChannelState, argsStr: InvalidationArgs) {
+    const prev = convertChannelState("bn", prevStr)
+    const args = convertArgs("bn", "Invalidation", argsStr)
+    const error = this.invalidation(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+
+    return this.stateGenerator.invalidation(prev, args)
   }
 
   public openThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null {
@@ -572,7 +625,7 @@ export class Validator {
     return null
   }
 
-  private hasPendingOps(state: ChannelStateBN | UnsignedChannelStateBN): string | null {
+  public hasPendingOps(state: ChannelStateBN | UnsignedChannelStateBN): string | null {
     // validate there are no pending ops
     const pendingFields = channelNumericFields.filter(x => x.startsWith('pending'))
     return this.hasNonzero(state, pendingFields)
@@ -793,10 +846,6 @@ export class Validator {
     return {
       user: raw.user,
       sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
-      balanceWeiUser: toBN(raw.weiBalances[1]),
-      balanceWeiHub: toBN(raw.weiBalances[0]),
-      balanceTokenHub: toBN(raw.tokenBalances[0]),
-      balanceTokenUser: toBN(raw.tokenBalances[1]),
       pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0]),
       pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2]),
       pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0]),
@@ -805,10 +854,19 @@ export class Validator {
       pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3]),
       pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1]),
       pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3]),
-      txCountGlobal: parseInt(raw.txCount[0], 10),
       txCountChain: parseInt(raw.txCount[1], 10),
-      threadRoot: raw.threadRoot,
-      threadCount: parseInt(raw.threadCount, 10)
     }
+  }
+
+  private logChannel(prev: ChannelStateBN | UnsignedChannelStateBN) {
+    if (!(prev as ChannelStateBN).sigUser) {
+      return JSON.stringify(convertChannelState("str-unsigned", prev))
+    } else {
+      return JSON.stringify(convertChannelState("str", prev as ChannelStateBN))
+    }
+  }
+
+  private logArgs(args: ArgsTypes, reason: ChannelUpdateReason) {
+    return JSON.stringify(convertArgs("str", reason, args as any))
   }
 }

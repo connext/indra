@@ -1,3 +1,4 @@
+import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
 import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
@@ -12,11 +13,14 @@ import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
 import { PurchaseRowWithPayments } from "./domain/Purchase";
+import { default as log } from './util/log'
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
   { error: false; res: T }
 )
+
+const LOG = log('PaymentsService')
 
 export default class PaymentsService {
   private channelsService: ChannelsService
@@ -85,9 +89,6 @@ export default class PaymentsService {
         // custodial payment (but only after the row in `payments` has been
         // created, since the `custodial_payments` table references that row)
         if (payment.recipient !== this.config.hotWalletAddress) {
-          // check if the recipient needs collateralization since they are getting paid
-          await this.channelsService.doCollateralizeIfNecessary(payment.recipient)
-
           afterPayment = paymentId => custodialPayments.push({ user, payment, paymentId })
         }
 
@@ -118,7 +119,15 @@ export default class PaymentsService {
     }
 
     for (let p of custodialPayments) {
-      await this.doInstantCustodialPayment(p.payment, p.paymentId)
+      try {
+        await this.doInstantCustodialPayment(p.payment, p.paymentId)
+      } finally {
+        // Check to see if collateral is needed, even if the tip failed
+        const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(p.payment.recipient))
+        if (err) {
+          LOG.error(`Error recollateralizing ${p.payment.recipient}: ${'' + err}\n${err.stack}`)
+        }
+      }
     }
 
     return {

@@ -67,7 +67,7 @@ export default class Config {
   public tokenContractAddress: string = ''
   public channelBeiLimit = toWeiBigNum(process.env.CHANNEL_BEI_LIMIT || 69)
   public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 20)
-  public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 50)
+  public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 30)
   public beiMaxCollateralization = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION || 169)
   public threadBeiLimit = toWeiBigNum(process.env.THREAD_BEI_LIMIT || 10)
   public channelBeiDeposit = this.channelBeiLimit.add(1069)

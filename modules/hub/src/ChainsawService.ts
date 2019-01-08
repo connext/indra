@@ -1,3 +1,5 @@
+import { Lock } from './util'
+import { convertChannelState } from './vendor/connext/types'
 import ChainsawDao from './dao/ChainsawDao'
 import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
@@ -10,11 +12,12 @@ import { Utils } from './vendor/connext/Utils'
 import abi from './abi/ChannelManager'
 import { BigNumber } from 'bignumber.js'
 import { sleep } from './util'
-import { SignerService } from "./SignerService";
+import { default as DBEngine } from './DBEngine'
+import { StateGenerator } from './vendor/connext/StateGenerator'
 
 const LOG = log('ChainsawService')
 
-const CONFIRMATION_COUNT = 1
+const CONFIRMATION_COUNT = 3
 const POLL_INTERVAL = 1000
 
 interface WithBalances {
@@ -29,8 +32,6 @@ export default class ChainsawService {
 
   private web3: any
 
-  private signerService: SignerService
-
   private contract: ChannelManager
 
   private channelsDao: ChannelsDao
@@ -41,15 +42,11 @@ export default class ChainsawService {
 
   private config: Config
 
-  constructor(
-    signerService: SignerService,
-    chainsawDao: ChainsawDao,
-    channelsDao: ChannelsDao,
-    web3: any,
-    utils: Utils,
-    config: Config
-  ) {
-    this.signerService = signerService
+  private db: DBEngine
+
+  private stateGenerator: StateGenerator
+
+  constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config, db: DBEngine, stateGenerator: StateGenerator) {
     this.chainsawDao = chainsawDao
     this.channelsDao = channelsDao
     this.utils = utils
@@ -57,27 +54,33 @@ export default class ChainsawService {
     this.contract = new this.web3.eth.Contract(abi, config.channelManagerAddress) as ChannelManager
     this.hubAddress = config.hotWalletAddress
     this.config = config
+    this.db = db
+    this.stateGenerator = stateGenerator
   }
 
   async poll() {
     while (true) {
       const start = Date.now()
 
-      try {
-        await this.doFetchEvents()
-      } catch (e) {
-        LOG.error('Fetching events failed: {e}', { e })
-      }
-
-      try {
-        await this.doProcessEvents()
-      } catch (e) {
-        LOG.error('Processing events failed: {e}', { e })
-      }
+      await this.pollOnce()
 
       const elapsed = start - Date.now()
       if (elapsed < POLL_INTERVAL)
         await sleep(POLL_INTERVAL - elapsed)
+    }
+  }
+
+  async pollOnce() {
+    try {
+      await this.db.withTransaction(() => this.doFetchEvents())
+    } catch (e) {
+      LOG.error('Fetching events failed: {e}', { e })
+    }
+
+    try {
+      await this.db.withTransaction(() => this.doProcessEvents())
+    } catch (e) {
+      LOG.error('Processing events failed: {e}', { e })
     }
   }
 
@@ -171,12 +174,6 @@ export default class ChainsawService {
   }
 
   private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent) {
-    let balanceWeiUser
-    let balanceWeiHub
-    let balanceTokenUser
-    let balanceTokenHub
-    let txCountGlobal
-
     if (event.txCountGlobal > 1) {
       const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(event.user, event.txCountGlobal)
       if (!knownEvent) {
@@ -188,82 +185,16 @@ export default class ChainsawService {
           throw new Error('Event broadcast on chain, but not found in the database! THIS IS PROBABLY BAD! See comments in code.')
         return
       }
-
-      // throw an error if there's an outstanding pending update
-      const lastState = await this.channelsDao.getLatestChannelUpdateDoubleSigned(event.user)
-      if (!lastState.state.sigUser || !lastState.state.sigHub) {
-        LOG.error('Latest state update is not fully signed. State: {state}', {
-          state: lastState
-        })
-        throw new Error('Latest state update is not fully signed.')
-      }
-
-      balanceWeiUser = this.resolvePendingBalance(lastState.state, event, 'user', 'wei')
-      balanceWeiHub = this.resolvePendingBalance(lastState.state, event, 'hub', 'wei')
-      balanceTokenUser = this.resolvePendingBalance(lastState.state, event, 'user', 'token')
-      balanceTokenHub = this.resolvePendingBalance(lastState.state, event, 'hub', 'token')
-      txCountGlobal = lastState.state.txCountGlobal + 1
-    } else {
-      balanceWeiUser = this.resolvePendingBalance(event, event, 'user', 'wei')
-      balanceWeiHub = this.resolvePendingBalance(event, event, 'hub', 'wei')
-      balanceTokenUser = this.resolvePendingBalance(event, event, 'user', 'token')
-      balanceTokenHub = this.resolvePendingBalance(event, event, 'hub', 'token')
-      txCountGlobal = event.txCountGlobal + 1
     }
 
-    // TODO potential race: additional off-chain updates occur while this update is happening (@wolever to do serialized locking)
-    const state = {
-      contractAddress: event.contract,
-      user: event.user,
-      recipient: event.senderIdx === 0 ? this.hubAddress : event.user,
-      balanceWeiHub: balanceWeiHub.toString(),
-      balanceWeiUser: balanceWeiUser.toString(),
-      balanceTokenHub: balanceTokenHub.toString(),
-      balanceTokenUser: balanceTokenUser.toString(),
-      pendingDepositWeiHub: '0',
-      pendingDepositWeiUser: '0',
-      pendingDepositTokenHub: '0',
-      pendingDepositTokenUser: '0',
-      pendingWithdrawalWeiHub: '0',
-      pendingWithdrawalWeiUser: '0',
-      pendingWithdrawalTokenHub: '0',
-      pendingWithdrawalTokenUser: '0',
-      txCountGlobal: txCountGlobal,
-      txCountChain: event.txCountChain,
-      threadRoot: event.threadRoot,
-      threadCount: event.threadCount,
-      timeout: 0
-    }
+    const prev = await this.channelsDao.getChannelOrInitialState(event.user)
+    const state = this.stateGenerator.confirmPending(convertChannelState('bn', prev.state))
     const hash = this.utils.createChannelStateHash(state)
-
-    const sigHub = await this.signerService.sign(hash)
-
-    // TODO
+    const sigHub = await this.web3.eth.sign(hash, this.hubAddress)
     await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.hubAddress, {
       ...state,
       sigHub
     } as ChannelState, { transactionHash: event.txHash } as ConfirmPendingArgs, chainsawId)
-    // TODO @wolever - transaction wrapping
     await this.chainsawDao.recordPoll(event.blockNumber, event.txIndex, this.contract._address, 'PROCESS_EVENTS')
-  }
-
-  private resolvePendingBalance(latest: WithBalances, event: DidUpdateChannelEvent, party: 'hub' | 'user', type: 'token' | 'wei'): BigNumber {
-    const partyUp = party[0].toUpperCase() + party.slice(1)
-    const typeUp = type[0].toUpperCase() + type.slice(1)
-    const pendingDepositBal = event[`pendingDeposit${typeUp}${partyUp}`] as BigNumber
-    const pendingWithdrawalBal = event[`pendingWithdrawal${typeUp}${partyUp}`] as BigNumber
-    const balance = latest[`balance${typeUp}${partyUp}`] as BigNumber
-
-    // if a state has both a deposit and a withdrawal, that
-    // represents an exchange.
-    if (pendingWithdrawalBal.gte(pendingDepositBal)) {
-      return balance
-    }
-
-    if (pendingDepositBal.gt(pendingWithdrawalBal)) {
-      return balance.add(pendingDepositBal).sub(pendingWithdrawalBal)
-    }
-
-    throw new Error('Unprocessable state.')
   }
 }
