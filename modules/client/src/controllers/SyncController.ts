@@ -1,20 +1,21 @@
-import { UpdateRequest } from '../types'
-import { ChannelStateUpdate, SyncResult } from '../types'
+import { UpdateRequest, ChannelState, convertChannelState, InvalidationArgs } from '../types'
+import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
 import { Poller } from '../lib/poller/Poller'
 import { ConnextInternal } from '../Connext'
-import { SyncControllerState } from '../state/store'
+import { SyncControllerState, CHANNEL_ZERO_STATE } from '../state/store'
 import getTxCount from '../lib/getTxCount'
 import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
 import { maybe, Lock } from '../lib/utils'
 import Semaphore = require('semaphore')
-
-const TWO_SECONDS = 2 * 1000
-const TEN_SECONDS = 10 * 1000
+import { getChannel } from '../lib/getChannel';
+import { Utils } from '../Utils'
+import { Block } from 'web3/eth/types'
 
 function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
   return {
+    id: up.id,
     reason: up.reason,
     args: up.args,
     txCount: up.state.txCountGlobal,
@@ -59,8 +60,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   })
 
   // Dedupe updates by iterating over the sorted updates and ignoring any
-  // duplicate txCounts (after copying over any signatures which exist on one
-  // but no the other, if applicable; see comments below).
+  // duplicate txCounts with identical signatures.
   const deduped = sorted.slice(0, 1)
   for (let next of sorted.slice(1)) {
     const cur = deduped[deduped.length - 1]
@@ -98,24 +98,74 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
       )
     }
 
-    // Then copy over any signatures from the 'next' update to the 'cur'
-    // update, then otherwise ignore it (ie, because it's a duplicate of the
-    // current).
-    if (nextSigs.sigHub)
-      cur.update.sigHub = nextSigs.sigHub
-    if (nextSigs.sigUser)
-      cur.update.sigUser = nextSigs.sigUser
+    // If the two updates have different sigs (ex, the next update is the
+    // countersigned version of the prev), then keep both
+    if (nextSigs.sigHub != cur.update.sigHub || nextSigs.sigUser != cur.update.sigUser) {
+      deduped.push(next)
+      continue
+    }
+
+    // Otherwise the updates are identical; ignore the "next" update.
   }
 
   return deduped
 }
 
+
+export function filterPendingSyncResults(fromHub: SyncResult[], toHub: UpdateRequest[]) {
+  // De-dupe incoming updates and remove any that are already in queue to be
+  // sent to the hub. This is done by removing any incoming updates which
+  // have a corresponding (by txCount, or id, in the case of unsigned
+  // updates) update and fewer signatures than the update in queue to send to
+  // the hub. Additionally, if there is an invalidation in the queue of updates
+  // to be sent, the corresponding incoming update will be ignored.
+  const updateKey = (u: UpdateRequest) => u.id && u.id < 0 ? `unsigned:${u.id}` : `tx:${u.txCount}`
+
+  const existing: {[key: string]: { sigHub: boolean, sigUser: boolean }} = {}
+  toHub.forEach(u => {
+    existing[updateKey(u)] = {
+      sigHub: !!u.sigHub,
+      sigUser: !!u.sigUser,
+    }
+
+    if (u.reason == 'Invalidation') {
+      const args: InvalidationArgs = u.args as InvalidationArgs
+      for (let i = args.previousValidTxCount + 1; i <= args.lastInvalidTxCount; i += 1) {
+        existing[`tx:${i}`] = {
+          sigHub: true,
+          sigUser: true,
+        }
+      }
+    }
+  })
+
+  return fromHub.filter(u => {
+    if (u.type != 'channel')
+      throw new Error('TODO: REB-36 (enable threads)')
+
+    const cur = existing[updateKey(u.update)]
+    if (!cur)
+      return true
+
+    if (cur.sigHub && !u.update.sigHub)
+      return false
+
+    if (cur.sigUser && !u.update.sigUser)
+      return false
+
+    return true
+  })
+}
+
+
 export default class SyncController extends AbstractController {
-  static POLLER_INTERVAL_LENGTH = TEN_SECONDS
+  static POLLER_INTERVAL_LENGTH = 2 * 1000
 
   private poller: Poller
 
   private flushErrorCount = 0
+
+  private utils = new Utils()
 
   constructor(name: string, connext: ConnextInternal) {
     super(name, connext)
@@ -135,8 +185,16 @@ export default class SyncController extends AbstractController {
 
   async sync() {
     try {
+      await this.checkCurrentStateTimeoutAndInvalidate()
+    } catch (e) {
+      this.logToApi('invalidation-check', { message: '' + e })
+      console.error('Error checking whether current state should be invalidated:', e)
+    }
+
+    try {
+      const state = this.store.getState()
       const hubUpdates = await this.hub.sync(
-        getTxCount(this.store),
+        state.persistent.channel.txCountGlobal,
         getLastThreadId(this.store),
       )
       this.enqueueSyncResultsFromHub(hubUpdates)
@@ -153,8 +211,37 @@ export default class SyncController extends AbstractController {
     }
   }
 
-  protected getSyncState(): SyncControllerState {
+  public getSyncState(): SyncControllerState {
     return this.store.getState().persistent.syncControllerState
+  }
+
+  private async checkCurrentStateTimeoutAndInvalidate() {
+    // if latest state has a timeout, check to see if event is mined
+    const { channel, channelUpdate } = this.getState().persistent
+    if (!channel.timeout)
+      return
+
+    let block = await this.findBlockNearestTimeout(channel.timeout)
+    if (block.timestamp < channel.timeout)
+      return
+
+    const evts = await this.connext.getContractEvents(
+      'DidUpdateChannel',
+      block.number - 2000, // 2000 blocks = ~8 hours
+    )
+    const event = evts.find(e => e.returnValues.txCount[0] === channel.txCountGlobal)
+    if (event) {
+      // For now, just sit tight and wait for Chainsaw to find the event. In
+      // the future, the client could send a `ConfirmPending` here.
+      return
+    }
+
+    const msg = (
+      `State has timed out (timestamp: ${channel.timeout} < latest block ` +
+      `${block.timestamp} (${block.number}/${block.hash}) and no ` +
+      `DidUpdateChannel events have been seen since block ${block.number - 2000}`
+    )
+    await this.sendInvalidation(channelUpdate, 'CU_INVALID_TIMEOUT', msg)
   }
 
   public async sendUpdateToHub(update: ChannelStateUpdate) {
@@ -167,6 +254,59 @@ export default class SyncController extends AbstractController {
       ],
     }))
     this.flushPendingUpdatesToHub()
+  }
+
+  /**
+   * If the current latest block has a `timestamp < timeout`, return the current
+   * latest block. Otherwise find a block with a
+   * `timestamp > timeout && timestamp < timeout + 60 minutes` (ie, a block
+   * with a timestamp greater than the timeout, but no more than 60 minutes
+   * greater).
+   */
+  async findBlockNearestTimeout(timeout: number, delta = 60 * 60): Promise<Block> {
+    let block = await this.connext.opts.web3.eth.getBlock('latest')
+    if (block.timestamp < timeout + delta)
+      return block
+
+    // Do a sort of binary search for a valid target block
+    // Start with a step of 10k blocks (~2 days)
+    // Precondition:
+    //   block.timestamp >= timeout + delta
+    // Invariants:
+    //   1. block.number + step < latestBlock.number
+    //   2. if step < 0: block.timestamp >= timeout + delta
+    //   3. if step > 0: block.timestamp < timeout + delta
+    let step = -10000
+    while (true) {
+      if (Math.abs(step) <= 2) {
+        // This should never happen, and is a sign that we'll get into an
+        // otherwise infinite loop. Indicative of a bug in the code.
+        throw new Error(
+          `Step too small trying to find block (this should never happen): ` +
+          `target timeout: ${timeout}; block: ${JSON.stringify(block)}`
+        )
+      }
+
+      block = await this.connext.opts.web3.eth.getBlock(block.number + step)
+      if (block.timestamp > timeout && block.timestamp < timeout + delta) {
+        break
+      }
+
+      if (block.timestamp < timeout) {
+        // If the current block's timestamp is before the timeout, step
+        // forward half a step.
+        step = Math.ceil(Math.abs(step) / 2)
+      } else {
+        // If the current block's timestamp is after the timeout, step
+        // backwards a full step. Note: we can't step backwards half a step
+        // because we don't know how far back we're going to need to look,
+        // so guarantee progress only in the "step forward" stage.
+        step = Math.abs(step) * -1
+      }
+
+    }
+
+    return block
   }
 
   /**
@@ -234,6 +374,11 @@ export default class SyncController extends AbstractController {
       this.flushErrorCount = 0
     }
 
+    // First add any new items into the sync queue...
+    this.enqueueSyncResultsFromHub(res.updates)
+
+    // ... then flush any pending items. This order is important to make sure
+    // that the merge methods work correctly.
     if (shouldRemoveUpdates) {
       const newState = this.getSyncState()
       this.store.dispatch(actions.setSyncControllerState({
@@ -241,8 +386,6 @@ export default class SyncController extends AbstractController {
         updatesToSync: newState.updatesToSync.slice(state.updatesToSync.length),
       }))
     }
-
-    this.enqueueSyncResultsFromHub(res.updates)
   }
 
   /**
@@ -257,29 +400,76 @@ export default class SyncController extends AbstractController {
 
     const oldSyncResults = this.getState().runtime.syncResultsFromHub
     const merged = mergeSyncResults(oldSyncResults, updates)
-    console.info(`updates: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${merged.length}`)
-
-    // De-dupe incoming updates and remove any that are already in queue to be
-    // sent to the hub. Note that this still isn't _perfect_; there is a race
-    // condition where we could:
-    // 1. Start a sync request
-    // 2. Send our entire update queue to the hub
-    // 3. Recieve a response to our sync request that contains updates that
-    //    were sent in 2.
-    // This isn't a huge issue because everything is idempotent, but it might
-    // lead to some scarry looking errors.
-    const updateKey = (u: UpdateRequest) => u.id && u.id < 0 ? `unsigned:${u.id}` : `tx:${u.txCount}`
-    const existing = {} as any
-    this.getSyncState().updatesToSync.forEach(u => {
-      existing[updateKey(u)] = true
-    })
-    const filtered = merged.filter(u => {
-      if (u.type != 'channel')
-        throw new Error('TODO: REB-36 (enable threads)')
-      return !existing[updateKey(u.update)]
-    })
+    const filtered = filterPendingSyncResults(merged, this.getSyncState().updatesToSync)
 
     console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${filtered.length}:`, filtered)
-    this.store.dispatch(actions.setSortedSyncResultsFromHub(merged))
+    this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
+  }
+
+  public async sendInvalidation(
+    updateToInvalidate: UpdateRequest,
+    reason: InvalidationReason,
+    message: string,
+  ) {
+    console.log(
+      `Sending invalidation of txCount=${updateToInvalidate.txCount} ` +
+      `because: ${reason} (${message})`
+    )
+    console.log(`Update being invalidated:`, updateToInvalidate)
+
+    if (!updateToInvalidate.txCount || !updateToInvalidate.sigHub) {
+      console.error(
+        `Oops, it doesn't make sense to invalidate an unsigned update, ` +
+        `and requested invalidation is an unsigned update without a txCount/sigHub: `,
+        updateToInvalidate,
+      )
+      return
+    }
+
+    // at the moment, you cannot invalidate states that have pending
+    // operations and have been built on top of
+    const channel = getChannel(this.store)
+    if (
+      // If the very first propose pending is invalidated, then the
+      // channel.txCountGlobal will be 0
+      !(channel.txCountGlobal == 0 && updateToInvalidate.txCount == 1) &&
+      updateToInvalidate.txCount < channel.txCountGlobal &&
+      updateToInvalidate.reason.startsWith("ProposePending")
+    ) {
+      throw new Error(
+        `Cannot invalidate 'ProposePending*' type updates that have been built ` +
+        `on (channel: ${JSON.stringify(channel)}; updateToInvalidate: ` +
+        `${JSON.stringify(updateToInvalidate)})`
+      )
+    }
+
+    // If we've already signed the update that's being invalidated, make sure
+    // the corresponding state being invalidated (which is, for the moment,
+    // always going to be our current state, as guaranteed by the check above)
+    // has pending operations.
+    if (updateToInvalidate.sigUser && !this.utils.hasPendingOps(channel)) {
+      throw new Error(
+        `Refusing to invalidate an update with no pending operations we have already signed: ` +
+        `${JSON.stringify(updateToInvalidate)}`
+      )
+    }
+
+    const latestValidState = this.getState().persistent.latestValidState
+    const args: InvalidationArgs = {
+      previousValidTxCount: latestValidState.txCountGlobal,
+      lastInvalidTxCount: updateToInvalidate.txCount,
+      reason,
+      message,
+    }
+
+    const invalidationState = await this.connext.signChannelState(
+      this.validator.generateInvalidation(latestValidState, args)
+    )
+
+    await this.sendUpdateToHub({
+      reason: 'Invalidation',
+      state: invalidationState,
+      args,
+    })
   }
 }

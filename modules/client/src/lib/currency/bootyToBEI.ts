@@ -6,7 +6,7 @@ import { BigNumber } from 'bignumber.js'
 
 export default function bootyToBEI(
   bootyAmount: ICurrency<CurrencyType.BOOTY>|number|string|BN|BigNumber
-): ICurrency<CurrencyType.BEI> {
+): Currency<CurrencyType.BEI> {
   if (
     bootyAmount instanceof BigNumber ||
     typeof bootyAmount === 'number' ||

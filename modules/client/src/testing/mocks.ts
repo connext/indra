@@ -10,15 +10,16 @@ import { ChannelStateUpdate } from '../types'
 import { IHubAPIClient } from '../Connext'
 import Web3 = require('web3')
 import { ConnextClientOptions } from '../Connext'
-import { ConnextInternal, IChannelManager } from '../Connext'
+import { ConnextInternal, IChannelManager, ChannelManagerChannelDetails } from '../Connext'
 import { mkAddress, getChannelState, getChannelStateUpdate, getDepositArgs, assert } from '.'
 import { ChannelRow, ThreadRow, PurchasePaymentHubResponse, WithdrawalArgsBN, PaymentBN, Payment, UnsignedChannelState, ChannelUpdateReason, ArgsTypes, PurchasePayment } from '../types'
 import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
-import { ConnextState, PersistentState, RuntimeState, CHANNEL_ZERO_STATE } from '../state/store';
+import { ConnextState, PersistentState, RuntimeState, CHANNEL_ZERO_STATE, SyncControllerState } from '../state/store';
 import { StateGenerator } from '../StateGenerator';
 import { createStore } from 'redux'
 import { reducers } from "../state/reducers";
 import BN = require('bn.js')
+import { EventLog } from 'web3/types';
 
 
 export class MockConnextInternal extends ConnextInternal {
@@ -70,6 +71,23 @@ export class MockConnextInternal extends ConnextInternal {
     const { user, hubAddress } = this.opts
     return addSigToChannelState(state, mkHash('0x987123'), user !== hubAddress)
   }
+
+  async getContractEvents(eventName: string, fromBlock: number): Promise<EventLog[]> {
+    return []
+  }
+
+}
+
+export class MockWeb3 extends Web3 {
+  async getBlockNumber(): Promise<number> {
+    return 500
+  }
+
+  async getBlock(blockNum: number): Promise<any> {
+    return {
+      timestamp: Math.floor(Date.now() / 1000)
+    }
+  }
 }
 
 export class MockWeb3TxWrapper extends IWeb3TxWrapper {
@@ -84,6 +102,8 @@ export class MockWeb3TxWrapper extends IWeb3TxWrapper {
 
 export class MockChannelManager implements IChannelManager {
   contractMethodCalls = [] as any[]
+
+  gasMultiple = 1.5
 
   assertCalled(method: keyof MockChannelManager, ...args: any[]) {
     for (let call of this.contractMethodCalls) {
@@ -110,6 +130,15 @@ export class MockChannelManager implements IChannelManager {
     })
     return new MockWeb3TxWrapper()
   }
+
+  async getPastEvents(user: Address, eventName: string, fromBlock: number) {
+    return []
+  }
+
+  async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
+    throw new Error('TODO: mock getChannelDetails')
+  }
+
 }
 
 export class MockHub implements IHubAPIClient {
@@ -137,10 +166,6 @@ export class MockHub implements IHubAPIClient {
 
   async getThreadByParties(): Promise<ThreadRow> {
     return { id: 1, state: getThreadState('full') }
-  }
-
-  private getUpdate(): UpdateRequest {
-    throw new Error('XXX where is this being called')
   }
 
   async sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<SyncResult[]> {
@@ -256,7 +281,13 @@ export class MockHub implements IHubAPIClient {
     ]
     return {
       error: null,
-      updates: [],
+      updates: updates.map(up => ({
+        type: 'channel' as 'channel',
+        update: {
+          ...up,
+          sigHub: up.sigHub || '0xMockHubSig',
+        },
+      })),
     }
   }
 
@@ -336,6 +367,26 @@ export class MockStore {
     }
   }
 
+  public setLatestValidState = (overrides: PartialSignedOrSuccinctChannel = {}) => {
+    this._initialState = {
+      ...this._initialState,
+      persistent: {
+        ...this._initialState.persistent,
+        latestValidState: getChannelState("empty", { txCountChain: 0, txCountGlobal: 0 }, overrides)
+      }
+    }
+  }
+
+  public setChannelUpdate = (update: UpdateRequest) => {
+    this._initialState = {
+      ...this._initialState,
+      persistent: {
+        ...this._initialState.persistent,
+        channelUpdate: update,
+      }
+    }
+  }
+
   public addThread = (overrides: PartialSignedOrSuccinctThread) => {
     const thread = getThreadState("empty", overrides)
 
@@ -385,12 +436,14 @@ export class MockStore {
     }
   }
 
-  public setSyncControllerState = (updatesToSync: UpdateRequest[], latestValidState: ChannelState) => {
+  public setSyncControllerState = (updatesToSync: UpdateRequest[]) => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        syncControllerState: { updatesToSync, }
+        syncControllerState: {
+          updatesToSync,
+        }
       }
     }
   }
