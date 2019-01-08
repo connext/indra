@@ -8,7 +8,7 @@ import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
-//import Web3 from 'web3';
+const Web3 = require('web3');
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -106,6 +106,7 @@ class App extends Component {
       const providerOpts = new ProviderOptions().approving();
       const provider = clientProvider(providerOpts);
       const web3 = new eth.providers.Web3Provider(provider);
+      const web3Legacy = new Web3(provider);
       await this.setState({ web3: web3 });
 
       console.log("set up web3 successfully");
@@ -146,7 +147,7 @@ class App extends Component {
       // *** Instantiate the connext client ***
       const connext = getConnextClient({
         wallet: newWallet,
-        web3,
+        web3: web3Legacy,
         hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
         hubUrl: hubUrl, //http://localhost:8080,
         contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
