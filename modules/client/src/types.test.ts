@@ -1,5 +1,5 @@
 import * as t from './testing/index'
-import BN from 'bn.js'
+import BN = require('bn.js')
 import { assert } from './testing/index'
 import { convertChannelState, convertThreadState, convertFields } from './types'
 import { BigNumber } from 'bignumber.js/bignumber'

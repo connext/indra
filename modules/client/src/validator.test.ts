@@ -1,11 +1,11 @@
 import { assert } from './testing/index'
 import * as t from './testing/index'
 import { Validator } from './validator';
-import * as sinon from 'sinon';
+import * as sinon from 'sinon'
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, UnsignedThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs } from './types';
+import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, UnsignedThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs, PendingArgs, proposePendingNumericArgs, convertProposePending, PendingArgsBN, PendingExchangeArgsBN, InvalidationArgs } from './types';
 import { toBN } from './helpers/bn';
-import Web3 from 'web3'
+import Web3 = require('web3')
 import { EMPTY_ROOT_HASH } from './lib/constants';
 
 const eventInputs = [
@@ -113,6 +113,18 @@ function createPaymentArgs(
   }, ...overrides) as any
 
   return convertPayment("bn", { ...convertPayment("str", args) })
+}
+
+function createProposePendingArgs(overrides?: Partial<PendingArgs<number>>): PendingArgsBN {
+  const res = {
+    recipient: '0x1234',
+    timeout: 0,
+  } as PendingArgs
+  proposePendingNumericArgs.forEach((a: string) => (res as any)[a] = 0)
+  return convertProposePending('bn', {
+    ...res,
+    ...(overrides || {}),
+  })
 }
 
 function createThreadState(...overrides: t.PartialSignedOrSuccinctThread[]) {
@@ -225,7 +237,7 @@ describe('validator', () => {
     })
   })
 
-  describe('exchange', () => {
+  function getExchangeCases() {
     const prev = createPreviousChannelState({
       balanceToken: [5, 5],
       balanceWei: [5, 5],
@@ -245,7 +257,7 @@ describe('validator', () => {
       seller: "user"
     }
 
-    const exchangeCases = [
+    return [
       {
         name: 'valid token for wei exchange seller is user',
         prev,
@@ -325,8 +337,10 @@ describe('validator', () => {
         valid: false,
       },
     ]
+  }
 
-    exchangeCases.forEach(({ name, prev, args, valid }) => {
+  describe('exchange', () => {
+    getExchangeCases().forEach(({ name, prev, args, valid }) => {
       it(name, () => {
         if (valid) {
           assert.isNull(validator.exchange(prev, args as ExchangeArgsBN))
@@ -431,12 +445,12 @@ describe('validator', () => {
         args: { ...args, tokensToSell: toBN(20) },
         valid: false
       },
-      // { DW: TODO: I don't think this is actually an invalid transition
-      //   name: 'should return a string if the args result in an invalid transition',
-      //   prev,
-      //   args: { ...args, targetWeiUser: toBN(20), tokensToSell: toBN(0), additionalWeiHubToUser: toBN(30) },
-      //   valid: false
-      // },
+      {
+        name: 'should return a string if the args result in an invalid transition',
+        prev,
+        args: { ...args, weiToSell: toBN(10), tokensToSell: toBN(0), additionalWeiHubToUser: toBN(30) },
+        valid: false
+      },
       // TODO: find out which args may result in this state from the
       // withdrawal function (if any) from wolever
       // {
@@ -520,30 +534,30 @@ describe('validator', () => {
         stubs: [tx, createMockedDepositTxReceipt("hub", web3)],
         valid: false,
       },
-      {
-        name: 'should return a string if balance wei hub is not same in receipt and previous',
-        prev: { ...prevDeposit, balanceWeiHub: toBN(5) },
-        stubs: [tx, depositReceipt],
-        valid: false,
-      },
-      {
-        name: 'should return a string if balance wei user is not same in receipt and previous',
-        prev: { ...prevDeposit, balanceWeiUser: toBN(5) },
-        stubs: [tx, depositReceipt],
-        valid: false,
-      },
-      {
-        name: 'should return a string if balance token hub is not same in receipt and previous',
-        prev: { ...prevDeposit, balanceTokenHub: toBN(5) },
-        stubs: [tx, depositReceipt],
-        valid: false,
-      },
-      {
-        name: 'should return a string if balance token user is not same in receipt and previous',
-        prev: { ...prevDeposit, balanceTokenUser: toBN(5) },
-        stubs: [tx, depositReceipt],
-        valid: false,
-      },
+      // {
+      //   name: 'should return a string if balance wei hub is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceWeiHub: toBN(5) },
+      //   stubs: [tx, depositReceipt],
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if balance wei user is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceWeiUser: toBN(5) },
+      //   stubs: [tx, depositReceipt],
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if balance token hub is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceTokenHub: toBN(5) },
+      //   stubs: [tx, depositReceipt],
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if balance token user is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceTokenUser: toBN(5) },
+      //   stubs: [tx, depositReceipt],
+      //   valid: false,
+      // },
       {
         name: 'should return a string if pending deposit wei hub is not same in receipt and previous',
         prev: { ...prevDeposit, pendingDepositWeiHub: toBN(3) },
@@ -592,30 +606,30 @@ describe('validator', () => {
         stubs: [tx, wdReceipt],
         valid: false,
       },
-      {
-        name: 'should return a string if tx count global is not same in receipt and previous',
-        prev: { ...prevDeposit, txCountGlobal: 7 },
-        stubs: [tx, depositReceipt],
-        valid: false,
-      },
+      // {
+      //   name: 'should return a string if tx count global is not same in receipt and previous',
+      //   prev: { ...prevDeposit, txCountGlobal: 7 },
+      //   stubs: [tx, depositReceipt],
+      //   valid: false,
+      // },
       {
         name: 'should return a string if tx count chain is not same in receipt and previous',
         prev: { ...prevDeposit, txCountChain: 7 },
         stubs: [tx, depositReceipt],
         valid: false,
       },
-      {
-        name: 'should return a string if thread root is not same in receipt and previous',
-        prev: { ...prevDeposit, threadRoot: t.mkHash('0xROOTZ') },
-        stubs: [tx, depositReceipt],
-        valid: false,
-      },
-      {
-        name: 'should return a string if thread count is not same in receipt and previous',
-        prev: { ...prevDeposit, threadCount: 7 },
-        stubs: [tx, depositReceipt],
-        valid: false,
-      },
+      // {
+      //   name: 'should return a string if thread root is not same in receipt and previous',
+      //   prev: { ...prevDeposit, threadRoot: t.mkHash('0xROOTZ') },
+      //   stubs: [tx, depositReceipt],
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if thread count is not same in receipt and previous',
+      //   prev: { ...prevDeposit, threadCount: 7 },
+      //   stubs: [tx, depositReceipt],
+      //   valid: false,
+      // },
     ]
 
     confirmCases.forEach(async ({ name, prev, stubs, valid }) => {
@@ -630,6 +644,67 @@ describe('validator', () => {
           assert.isNull(await validator.confirmPending(prev, { transactionHash }))
         } else {
           assert.exists(await validator.confirmPending(prev, { transactionHash }))
+        }
+      })
+    })
+  })
+
+  describe('invalidation', () => {
+    const prev = createPreviousChannelState({
+      txCount: [1, 1]
+    })
+
+    const args: InvalidationArgs = {
+      previousValidTxCount: prev.txCountGlobal,
+      lastInvalidTxCount: prev.txCountGlobal + 1,
+      reason: "CU_INVALID_ERROR",
+    }
+
+    const invalidationCases = [
+      {
+        name: 'should work',
+        prev,
+        args,
+        valid: true
+      },
+      {
+        name: 'should return string if previous nonce is higher than nonce to be invalidated',
+        prev,
+        args: { ...args, previousValidTxCount: 3 },
+        valid: false
+      },
+      {
+        name: 'should return string if previous state nonce and nonce in args do not match',
+        prev: { ...prev, txCountGlobal: 5 },
+        args: { ...args, previousValidTxCount: 3, lastInvalidTxCount: 3 },
+        valid: false
+      },
+      {
+        name: 'should return string if previous state has pending ops',
+        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
+        args,
+        valid: false
+      },
+      {
+        name: 'should return string if previous state is missing sigHub',
+        prev: { ...prev, sigHub: '' },
+        args,
+        valid: false
+      },
+      {
+        name: 'should return string if previous state is missing sigUser',
+        prev: { ...prev, sigUser: '' },
+        args,
+        valid: false
+      },
+    ]
+
+    invalidationCases.forEach(({ name, prev, args, valid }) => {
+      it(name, () => {
+        if (valid) {
+          assert.isNull(validator.invalidation(prev, args))
+        } else {
+          assert.exists(validator.invalidation(prev, args))
         }
       })
     })
@@ -819,6 +894,144 @@ describe('validator', () => {
           assert.exists(await validator.closeThread(prev, initialThreadStates, args))
         }
 
+      })
+    })
+  })
+
+  function getProposePendingCases() {
+    const prev = createPreviousChannelState({
+      balanceToken: [5, 5],
+      balanceWei: [5, 5],
+    })
+    const args = createProposePendingArgs()
+
+    return [
+      {
+        name: 'should work',
+        prev,
+        args,
+        valid: true,
+      },
+      {
+        name: 'should return a string if args are negative',
+        prev,
+        args: createProposePendingArgs({
+          depositWeiUser: -1,
+        }),
+        valid: false,
+      },
+      {
+        name: 'should error if withdrawal exceeds balance',
+        prev,
+        args: createProposePendingArgs({
+          withdrawalWeiUser: 100,
+        }),
+        valid: false,
+      },
+      {
+        name: 'should error if timeout is negative',
+        prev,
+        args: createProposePendingArgs({
+          timeout: -1,
+        }),
+        valid: false,
+      },
+    ]
+  }
+
+  describe('proposePending', () => {
+    getProposePendingCases().forEach(async ({ name, prev, args, valid }) => {
+      it(name, async () => {
+        if (valid) {
+          assert.isNull(await validator.proposePending(prev, args))
+        } else {
+          assert.exists(await validator.proposePending(prev, args))
+        }
+      })
+    })
+  })
+
+  describe('proposePendingExchange', () => {
+    const prev = createPreviousChannelState({
+      balanceToken: [5, 5],
+      balanceWei: [5, 5],
+    })
+    const args: PendingExchangeArgsBN = {
+      exchangeRate: '2',
+      weiToSell: toBN(0),
+      tokensToSell: toBN(0),
+      seller: "user",
+      ...createProposePendingArgs(),
+    }
+
+    function runCase(tc: { name: string, prev: ChannelStateBN, args: PendingExchangeArgsBN, valid: boolean }) {
+      it(tc.name, async () => {
+        if (tc.valid) {
+          assert.isNull(await validator.proposePendingExchange(tc.prev, tc.args))
+        } else {
+          assert.exists(await validator.proposePendingExchange(tc.prev, tc.args))
+        }
+      })
+    }
+
+    const proposePendingExchangeCases = [
+      {
+        name: 'exchange + withdrawal makes balance 0',
+        prev,
+        args: {
+          ...args,
+          tokensToSell: toBN(2),
+          withdrawalTokenUser: toBN(3),
+        },
+        valid: true,
+      },
+
+      {
+        name: 'exchange + withdrawal makes balance negative',
+        prev,
+        args: {
+          ...args,
+          tokensToSell: toBN(4),
+          withdrawalTokenUser: toBN(4),
+        },
+        valid: false,
+      },
+
+      {
+        name: 'hub withdraws sold tokens',
+        prev,
+        args: {
+          ...args,
+          tokensToSell: toBN(5),
+          withdrawalTokenHub: toBN(7),
+        },
+        valid: true,
+      },
+
+      {
+        name: 'user withdraws purchased wei',
+        prev,
+        args: {
+          ...args,
+          tokensToSell: toBN(4),
+          withdrawalWeiUser: toBN(7),
+        },
+        valid: true,
+      },
+
+    ]
+
+    proposePendingExchangeCases.forEach(runCase)
+
+    describe('with pending cases', () => {
+      getProposePendingCases().forEach(tc => {
+        runCase({ ...tc, args: { ...args, weiToSell: toBN(1), ...tc.args } })
+      })
+    })
+
+    describe('with exchange cases', () => {
+      getExchangeCases().forEach(tc => {
+        runCase({ ...tc, args: { ...args, ...tc.args as ExchangeArgsBN } })
       })
     })
   })

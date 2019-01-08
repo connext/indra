@@ -1,7 +1,7 @@
-import { SyncControllerState } from './store'
+import { SyncControllerState, RuntimeState, PendingRequestedDeposit } from './store'
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
 //import Wallet from 'ethereumjs-wallet'
-import { ChannelState, SyncResult, Address } from '../types'
+import { ChannelState, SyncResult, Address, UpdateRequest } from '../types'
 import { ConnextState } from '../state/store'
 import { ExchangeRateState } from './ConnextState/ExchangeRates'
 
@@ -45,22 +45,24 @@ export function setterAction<Payload>(attr: string, ...args: any[]): ActionCreat
 
 // Runtime
 export const setExchangeRate = setterAction<ExchangeRateState>('runtime.exchangeRate')
-export const setCanDeposit = setterAction<boolean>('runtime.canDeposit')
-export const setCanExchange = setterAction<boolean>('runtime.canExchange')
+export const updateCanFields = setterAction<Partial<RuntimeState>>('runtime', 'updateCanFields', (state, fields, prev) => {
+  return {
+    ...prev,
+    ...fields,
+  }
+})
 export const setSortedSyncResultsFromHub = setterAction<SyncResult[]>('runtime.syncResultsFromHub')
-export const dequeueSyncResultsFromHub = setterAction<void>('runtime.syncResultsFromHub', 'dequeue', (state, _, prev) => {
-  return prev.slice(1)
+export const dequeueSyncResultsFromHub = setterAction<SyncResult>('runtime.syncResultsFromHub', 'dequeue', (state, toRemove, prev) => {
+  return prev.filter((x: any) => x !== toRemove)
 })
 
 // Persistent
 export const setLastThreadId = setterAction<number>('persistent.lastThreadId')
-export const setChannel = setterAction<ChannelState>('persistent.channel', (state, channel) => {
-  if (!(channel.sigHub && channel.sigUser))
-    throw new Error(`Can't set channel that doesn't have both a sigHub and sigUser: ${JSON.stringify(channel)}`)
-  return channel
-})
 
+export type SetChannelActionArgs = {
+  update: UpdateRequest
+  state: ChannelState
+}
+export const setChannel = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
 export const setSyncControllerState = setterAction<SyncControllerState>('persistent.syncControllerState')
-
-export const setChannelUser = setterAction<Address>('persistent.channel.user')
-export const setChannelRecipient = setterAction<Address>('persistent.channel.recipient')
+export const setRequestedDeposit = setterAction<PendingRequestedDeposit | null>('persistent.requestedDeposit')
