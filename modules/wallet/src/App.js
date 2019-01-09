@@ -150,7 +150,7 @@ class App extends Component {
         hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
         hubUrl: hubUrl, //http://localhost:8080,
         contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
-        user: account
+        user: account.address
       });
 
       console.log("Successfully setting up connext!");
@@ -362,9 +362,9 @@ class App extends Component {
         `${hubUrl}/auth/response`,
         {
           nonce: res.data.nonce,
-          address: this.state.wallet.address,
+          address: this.state.address,
           origin: "localhost",
-          signature: signature
+          signature: signature.signature
         },
         opts
       );
