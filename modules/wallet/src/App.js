@@ -427,9 +427,10 @@ class App extends Component {
     console.log('***** getEther *****')
     console.log(store.getState())
     console.log('web3:', web3)
-    const sentTx = await web3.eth.sendTransaction({
+    const sentTx = await metamask.sendTransaction({
       to: store.getState()[0].address,
-      value: Web3.utils.toWei("1", "ether"),
+      value: eth.utils.bigNumberify("1000000000000000000"),
+      gasLimit: eth.utils.bigNumberify("21000")
     });
     console.log(sentTx);
   }
