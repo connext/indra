@@ -9,6 +9,7 @@ import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletG
 import { createStore } from 'redux';
 import axios from 'axios';
 const Web3 = require('web3');
+var Tx = require('ethereumjs-tx');
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -16,7 +17,7 @@ const humanTokenAbi = require('./abi/humanToken.json')
 
 console.log(`starting app in env: ${JSON.stringify(process.env, null, 1)}`)
 const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase()
-const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL.toLowerCase()
+//const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL.toLowerCase()
 const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS.toLowerCase()
 const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS.toLowerCase()
 const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLowerCase()
@@ -132,7 +133,7 @@ class App extends Component {
       this.setState({
         tokenContract: new web3.eth.Contract(humanTokenAbi, tokenAddress)
       })
-      console.log("Set up token contract");
+      console.log(`Set up token contract at ${tokenAddress}`);
 
       // get address
       const account = store.getState()[0];
@@ -162,8 +163,8 @@ class App extends Component {
         });
       });
 
-      this.setState({ connext: connext });
-      console.log(`This is state: ${JSON.stringify(this.state.channelState, null, 2)}`);
+      await this.setState({ connext: connext });
+      console.log(`Channel state: ${JSON.stringify(this.state.channelState, null, 2)}`);
       await this.refreshBalances();
       this.pollExchangeRate();
     } catch (error) {
@@ -261,14 +262,27 @@ class App extends Component {
   }
 
   async approvalHandler(evt) {
-    // const tokenContract = this.state.tokenContract
-    // let approveFor = channelManagerAddress;
-    // let toApprove = this.state.approvalWeiUser;
-    // let toApproveBn = eth.utils.bigNumberify(toApprove);
-    // let depositResGas = await tokenSigner.estimate.approve(approveFor, toApproveBn);
-    // console.log(`I predict this tx [a ${typeof tokenSigner.approve}] will require ${depositResGas} gas`);
-    // let approveTx = await tokenSigner.functions.approve(approveFor, toApproveBn, { gasLimit: depositResGas });
-    // console.log(approveTx);
+    const web3 = this.state.web3
+    const tokenContract = this.state.tokenContract
+    const approveFor = channelManagerAddress;
+    const toApprove = this.state.approvalWeiUser;
+    const toApproveBn = eth.utils.bigNumberify(toApprove);
+    const nonce = await web3.eth.getTransactionCount(this.state.wallet.address);
+    const depositResGas = await tokenContract.methods.approve(approveFor, toApproveBn).estimateGas();
+    let tx = new Tx({
+      to: tokenAddress,
+      nonce: nonce,
+      from: this.state.wallet.address,
+      gasLimit: depositResGas * 2,
+      data: tokenContract.methods.approve(approveFor, toApproveBn).encodeABI()
+    })
+    tx.sign(Buffer.from(this.state.wallet.privateKey.substring(2), 'hex'))
+    let signedTx = '0x' + tx.serialize().toString('hex')
+    let sentTx = web3.eth.sendSignedTransaction(signedTx, (err) => { if (err) console.error(err) })
+    sentTx
+      .once('transactionHash', (hash) => { console.log(`tx broadcasted, hash: ${hash}`) })
+      .once('receipt', (receipt) => { console.log(`tx mined, receipt: ${JSON.stringify(receipt)}`) })
+    console.log(`Sent tx: ${typeof sentTx} with keys ${Object.keys(sentTx)}`);
   }
 
   //Connext Helpers
