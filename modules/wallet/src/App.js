@@ -2,10 +2,10 @@ import React, { Component } from 'react';
 import { getConnextClient } from 'connext/dist/Connext';
 import './App.css';
 import ProviderOptions from './utils/ProviderOptions.ts';
-import clientProvider from './utils/web3/clientProvider.ts'; 
+import clientProvider from './utils/web3/clientProvider.ts';
 import * as eth from 'ethers';
-import {setWallet} from './utils/actions.js';
-import { createWallet,createWalletFromKey, findOrCreateWallet } from './walletGen';
+import { setWallet } from './utils/actions.js';
+import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
 const Web3 = require('web3');
@@ -14,7 +14,7 @@ require('dotenv').config();
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
 const humanTokenAbi = require('./abi/humanToken.json')
 
-console.log(`starting app in env: ${JSON.stringify(process.env,null,1)}`)
+console.log(`starting app in env: ${JSON.stringify(process.env, null, 1)}`)
 const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase()
 const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL.toLowerCase()
 const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS.toLowerCase()
@@ -296,7 +296,7 @@ class App extends Component {
   }
 
   async withdrawalHandler(max) {
-    let withdrawalVal = {...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate}
+    let withdrawalVal = { ...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate }
     if (max) {
       withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser
       withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser
@@ -325,7 +325,7 @@ class App extends Component {
 
   toggleKey(evt) {
     evt.preventDefault();
-    this.setState(prevState => ({ toggleKey: !prevState.toggleKey }), () => {});
+    this.setState(prevState => ({ toggleKey: !prevState.toggleKey }), () => { });
   }
 
   // WalletHandler - it works but i'm running into some lifecycle issues. for option for user
@@ -412,7 +412,7 @@ class App extends Component {
 
   // to get tokens from metamask to browser wallet
   async getEther() {
-    let web3 = window.web3;
+    let web3 = await window.web3;
     if (!web3) {
       alert("You need to install & unlock metamask to do that");
       return;
@@ -424,10 +424,12 @@ class App extends Component {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const sentTx = await metamask.sendTransaction({
-      to: this.state.localWallet.address,
-      value: eth.utils.bigNumberify("1000000000000000000"),
-      gasLimit: eth.utils.bigNumberify("21000")
+    console.log('***** getEther *****')
+    console.log(store.getState())
+    console.log('web3:', web3)
+    const sentTx = await web3.eth.sendTransaction({
+      to: store.getState()[0].address,
+      value: Web3.utils.toWei("1", "ether"),
     });
     console.log(sentTx);
   }
@@ -627,14 +629,14 @@ class App extends Component {
               </button>
             </div>
           ) : (
-            <div>
-              Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
               <div>
-                <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
+                Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
+              <div>
+                  <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
+                </div>
+                <button className="btn">Get wallet</button>
               </div>
-              <button className="btn">Get wallet</button>
-            </div>
-          )}
+            )}
 
           <h2>Channel Manager</h2>
           <p>Address: {this.state.channelManager.address}</p>
