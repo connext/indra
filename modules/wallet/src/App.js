@@ -3,12 +3,12 @@ import { getConnextClient } from 'connext/dist/Connext';
 import './App.css';
 import ProviderOptions from './utils/ProviderOptions.ts';
 import clientProvider from './utils/web3/clientProvider.ts';
-import * as eth from 'ethers';
 import { setWallet } from './utils/actions.js';
 import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
 const Web3 = require('web3');
+const eth = require('ethers');
 const util = require('ethereumjs-util')
 require('dotenv').config();
 
@@ -395,20 +395,26 @@ class App extends Component {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
-    const metamask = metamaskProvider.getSigner();
-    const address = (await metamask.provider.listAccounts())[0];
+    const metamaskProvider = new Web3(web3.currentProvider);
+    const address = (await metamaskProvider.eth.getAccounts())[0];
     if (!address) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
 
-    const tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, metamaskProvider);
-    const token = tokenContract.connect(metamask);
+    const tokenContract = new metamaskProvider.eth.Contract(humanTokenAbi, tokenAddress);
 
-    let tokens = eth.utils.bigNumberify("1000000000000000000");
-    console.log(`Sending ${tokens} tokens to ${this.state.address}`);
-    let approveTx = await token.functions.transfer(this.state.address, tokens);
+    let tokens = "1000000000000000000"
+    console.log(`Sending ${tokens} tokens from ${address} to ${store.getState()[0].getAddressString()}`);
+
+    console.log('state:')
+    console.log(this.state)
+
+    let approveTx = await tokenContract.methods.transfer(store.getState()[0].getAddressString(), tokens).send({
+      from: address,
+      gas: "81000"
+    });
+
     console.log(approveTx);
   }
 
