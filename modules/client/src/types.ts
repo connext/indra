@@ -362,9 +362,6 @@ export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   txCount: number | null
   sigUser?: string
   sigHub?: string
-  // If this update is coming from the hub, this will be the database timestamp
-  // when the update was created there.
-  createdOn?: Date
 }
 
 export type UpdateRequestTypes<T=string> = {
@@ -394,8 +391,6 @@ export type UpdateRequestBigNumber = UpdateRequest<BigNumber>
 
 // types used when getting or sending states to hub
 export type ChannelStateUpdate<T = string> = {
-  // If this state corresponds to a DB state, this ID should match
-  id?: number
   reason: ChannelUpdateReason
   state: ChannelState<T> // signed or unsigned?
   args: ArgsTypes<T>

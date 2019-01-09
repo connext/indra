@@ -4,7 +4,7 @@ import { UpdateRequest } from '../types'
 import { EMPTY_ROOT_HASH } from '../lib/constants'
 import { Store } from 'redux';
 import { ThreadState, ChannelState } from '../types'
-import { SyncResult, Payment } from '../types'
+import { SyncResult } from '../types'
 import { ExchangeRateState } from './ConnextState/ExchangeRates'
 
 export const CHANNEL_ZERO_STATE = {
@@ -40,7 +40,6 @@ export const CHANNEL_ZERO_STATE = {
 }
 
 export class SyncControllerState {
-  // Updates we need to send back to the hub
   updatesToSync: UpdateRequest[] = []
 }
 
@@ -52,13 +51,6 @@ export class RuntimeState {
   canCollateralize: boolean = false
   exchangeRate: null | ExchangeRateState = null
   syncResultsFromHub: SyncResult[] = []
-  updateRequestTimeout: number = 60 * 10 // default 10 min
-}
-
-export interface PendingRequestedDeposit {
-  amount: Payment
-  requestedOn: number
-  txCount: number | null
 }
 
 export class PersistentState {
@@ -86,10 +78,9 @@ export class PersistentState {
 
   threads: ThreadState[] = []
   initialThreadStates: ThreadState[] = []
+  challengePeriod: number = 60 * 5 // default 5 min
   lastThreadId: number = 0
   syncControllerState = new SyncControllerState()
-
-  requestedDeposit: null | PendingRequestedDeposit = null
 }
 
 export class ConnextState {

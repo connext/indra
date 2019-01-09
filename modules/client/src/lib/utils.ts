@@ -194,29 +194,3 @@ export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
     err => Object.assign([null, err], { res: null, err }) as any,
   )
 }
-
-/**
- * Times out a promise. Waits for either:
- * 1) Promise `p` to resolve. If so, `[false, T]` is returned (where T is the
- *    return value of `p`.
- * 2) Timeout `timeout` expires. If so, `[true, p]` is returned (where `p` is
- *    the original promise.
- */
-export function timeoutPromise<T>(p: Promise<T>, timeout: number): Promise<
-  [false, T] |
-  [true, Promise<T>]
-> {
-  let toClear: any
-  const res = Promise.race([
-    p.then(res => [false, res]),
-    new Promise(res => {
-      toClear = setTimeout(() => {
-        res([true, p])
-      }, timeout)
-    }),
-  ])
-  res.then(null, () => null).then(() => {
-    toClear && clearTimeout(timeout)
-  })
-  return res as any
-}

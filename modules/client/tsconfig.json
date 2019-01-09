@@ -37,9 +37,5 @@
   },
   "include": [
     "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/**/*.test.*",
-    "src/testing/**/*"
   ]
 }

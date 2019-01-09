@@ -9,7 +9,6 @@ import Web3 = require('web3')
 import {
   UnsignedChannelState,
   UnsignedThreadState,
-  ChannelState,
 } from './types'
 
 // import types from connext
@@ -269,15 +268,4 @@ export class Utils {
     }
     return mtree.verify(proof, threadHash)
   }
-
-  hasPendingOps(state: ChannelState) {
-    for (let field in state) {
-      if (!field.startsWith('pending'))
-        continue
-      if ((state as any)[field] !== '0')
-        return true
-    }
-    return false
-  }
-
 }

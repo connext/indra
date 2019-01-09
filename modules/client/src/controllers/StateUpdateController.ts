@@ -45,7 +45,6 @@ export async function watchStore<T>(
     }
     inCallback = true
 
-    const prevVal = lastVal
     lastVal = val
 
     try {
@@ -55,26 +54,6 @@ export async function watchStore<T>(
       // exception, then ``onChange(...)`` *should* be called, but also calling
       // it might raise another exception, so we don't).
       await onChange(val)
-    } catch (e) {
-
-      // Some naieve but hopefully useful retry logic. If the onChange callback
-      // throws an exception *and* the current item doesn't change for
-      // 30 seconds, hope that it's a temporary failure and try again. This
-      // should be safe because the callback should be idempotent, and we're
-      // checking that it isn't already running before we call it.
-      setTimeout(() => {
-        console.warn(
-          'Exception was previously raised by watchStore callback ' +
-          'and no progress has been made in the last 30 seconds. ' +
-          'Trying again...'
-        )
-        if (lastVal === val && !inCallback) {
-          lastVal = {}
-          onStoreChange()
-        }
-      }, 1000 * 30)
-
-      throw e
     } finally {
       inCallback = false
     }
@@ -95,25 +74,8 @@ export default class StateUpdateController extends AbstractController {
   async start() {
     this.unsubscribe = await watchStore(
       this.store,
-      state => {
-        const item = state.runtime.syncResultsFromHub[0]
-        if (item && item.type == 'thread')
-          throw new Error('REB-36: enable threads!')
-
-        // No sync results from hub; nothing to do
-        if (!item)
-          return null
-
-        // Wait until we've flushed all the updates to the hub before
-        // processing the next item.
-        const { updatesToSync } = state.persistent.syncControllerState
-        if (updatesToSync.length > 0)
-          return null
-
-        // Otherwise, call `syncOneItemFromStore` on the item.
-        return item
-      },
-      item => this.syncOneItemFromStore(item),
+      state => state.runtime.syncResultsFromHub,
+      items => this.syncOneItemFromStore(items[0]),
     )
   }
 
@@ -142,12 +104,14 @@ export default class StateUpdateController extends AbstractController {
     this._queuedActions = null
   }
 
-  private async syncOneItemFromStore(item: SyncResult | null) {
+  private async syncOneItemFromStore(item: SyncResult) {
     if (!item)
       return
-
     await this.handleSyncItem(item)
-    this.store.dispatch(actions.dequeueSyncResultsFromHub(item))
+    // NOTE: wallet doesnt like this, but this err
+    // should be uncommented after moving client to npm repo
+    // @ts-ignore 
+    this.store.dispatch(actions.dequeueSyncResultsFromHub())
   }
 
   private async handleSyncItem(item: SyncResult) {
@@ -248,7 +212,6 @@ export default class StateUpdateController extends AbstractController {
     // in the future by storing the pending payment locally, and alerting the
     // user if the hub attempts to countersign and return it later.
     await this.connext.syncController.sendUpdateToHub({
-      id: update.id,
       reason: update.reason,
       args: update.args,
       state: signedState,
