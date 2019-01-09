@@ -5,16 +5,16 @@ export async function createWallet(web3) {
   console.log("Creating new random wallet");
   let wallet = await web3.eth.accounts.create()
   // localStorage.setItem("mnemonic", wallet.signingKey.mnemonic);
-  localStorage.setItem("wallet", wallet);
+  localStorage.setItem("privateKey", wallet.privateKey);
   return wallet
 }
 
 export async function findOrCreateWallet(web3) {
-  let mnemonic = localStorage.getItem("mnemonic");
+  let privateKey = localStorage.getItem("privateKey");
   let wallet;
-  if (mnemonic && false) {
+  if (privateKey) {
     console.log("found existing wallet");
-    wallet = new ethers.Wallet.fromMnemonic(mnemonic);
+    wallet = web3.eth.accounts.privateKeyToAccount(privateKey)
   } else {
     wallet = await createWallet(web3);
   }
