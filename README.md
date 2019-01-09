@@ -142,7 +142,21 @@ Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh
 
 ## Debugging
 
+### `The container name "/connext_buidler" is already in use`
+
+Full error message:
+
+```
+docker: Error response from daemon: Conflict. The container name "/connext_buidler" is already in use by container "6d37b932d8047e16f4a8fdf58780fe6974e6beef58bf4cc5e48d00d3e94a67c3". You have to remove (or rename) that container to be able to reuse that name.
+```
+
+You probably started to build something and then stopped it with ctrl-c. It only looks like the build stopped: the builder process is still hanging out in the background wrapping up what it was working on. If you wait for a few seconds, this problem will sometimes just go away as the builder finishes & exits.
+
+To speed things up, run `make stop` to tell the builder to hurry up & finish and then wait for the builder to exit.
+
+
 ### Ethprovider or Ganache not working
+
 `#!/bin/bash
 url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
 echo "Sending $1 query to provider: $url"
