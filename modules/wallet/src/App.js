@@ -147,7 +147,8 @@ class App extends Component {
         hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
         hubUrl: hubUrl, //http://localhost:8080,
         contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
-        user: address.toLowerCase()
+        user: address.toLowerCase(),
+        tokenAddress,
       });
 
       console.log("Successfully set up connext!");
@@ -278,6 +279,7 @@ class App extends Component {
     console.log(approveTx);
 
     console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
+    console.log('********', this.state.connext.opts.tokenAddress)
     let depositRes = await this.state.connext.deposit(this.state.depositVal);
     console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
   }
