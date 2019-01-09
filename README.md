@@ -171,4 +171,4 @@ We've seen some non-deterministic errors on `yarn start` where some part of the 
 
 ### Locked DB
 
-We've seen the database get locked on startup. The cause is unclear at the moment (possibly a race condition), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
+We've seen the database get locked on startup. Often, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (possibly a race condition), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
