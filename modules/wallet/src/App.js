@@ -9,6 +9,7 @@ import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletG
 import { createStore } from 'redux';
 import axios from 'axios';
 const Web3 = require('web3');
+const util = require('ethereumjs-util')
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -101,7 +102,7 @@ class App extends Component {
   async componentDidMount() {
     try {
       // New provider code
-      const providerOpts = new ProviderOptions().approving();
+      const providerOpts = new ProviderOptions(store).approving();
       const provider = clientProvider(providerOpts);
       const web3 = new Web3(provider);
       await this.setState({ web3 });
@@ -112,16 +113,14 @@ class App extends Component {
       // as is, if you don't write down the privkey in the store you can't recover the wallet
       const wallet = await this.walletHandler();
       console.log('wallet: ', wallet);
-      web3.eth.sign = wallet.sign
-      web3.eth.signTransaction = wallet.signTransaction
+      // web3.eth.sign = wallet.sign
+      // web3.eth.signTransaction = wallet.signTransaction
       await this.setState({ web3 });
-
-      const newWallet = wallet
 
       // make sure wallet is linked to chain
       store.dispatch({
         type: "SET_WALLET",
-        text: newWallet
+        text: wallet
       });
 
       this.setState({ wallet: store.getState()[0] }); //newWallet});
@@ -135,11 +134,11 @@ class App extends Component {
       console.log("Set up token contract");
 
       // get address
-      const account = store.getState()[0];
-      this.setState({ address: account.address });
+      const address = wallet.getAddressString()
+      this.setState({ address });
 
       console.log(`instantiating connext with hub as: ${hubUrl}`);
-      console.log(`web3 address : ${JSON.stringify(account.address)}`);
+      console.log(`web3 address : ${await web3.eth.getAccounts()}`);
       console.log("Setting up connext...");
 
       // *** Instantiate the connext client ***
@@ -148,12 +147,12 @@ class App extends Component {
         hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
         hubUrl: hubUrl, //http://localhost:8080,
         contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
-        user: account.address.toLowerCase()
+        user: address.toLowerCase()
       });
 
       console.log("Successfully set up connext!");
 
-      connext.start(); // start polling
+      await connext.start(); // start polling
       //console.log('Pollers started! Good morning :)')
       connext.on("onStateChange", state => {
         console.log("Connext state changed:", state);
@@ -163,7 +162,7 @@ class App extends Component {
       });
 
       this.setState({ connext: connext });
-      console.log(`This is state: ${JSON.stringify(this.state.channelState, null, 2)}`);
+      console.log(`This is connext state: ${JSON.stringify(this.state.channelState, null, 2)}`);
       await this.refreshBalances();
       this.pollExchangeRate();
     } catch (error) {
@@ -356,25 +355,28 @@ class App extends Component {
   }
 
   async authorizeHandler(evt) {
-    console.log(this.state.wallet);
-    let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
-    let hash = eth.utils.id(`${HASH_PREAMBLE} ${eth.utils.id(res.data.nonce)} ${eth.utils.id("localhost")}`);
-    let signature = await this.state.web3.eth.sign(hash);
+    const web3 = this.state.web3
+    const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
+
+    const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`)
+
+    // let hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(res.data.nonce)} ${web3.utils.sha3("localhost")}`);
+    let signature = await this.state.web3.eth.sign(hash, this.state.address);
     try {
       let authRes = await axios.post(
         `${hubUrl}/auth/response`,
         {
-          nonce: res.data.nonce,
+          nonce: challengeRes.data.nonce,
           address: this.state.address,
           origin: "localhost",
-          signature: signature.signature
+          signature,
         },
         opts
       );
       const token = authRes.data.token;
       document.cookie = `hub.sid=${token}`;
       console.log(`cookie set: ${token}`);
-      res = await axios.get(`${hubUrl}/auth/status`, opts);
+      const res = await axios.get(`${hubUrl}/auth/status`, opts);
       if (res.data.success) {
         this.setState({ authorized: "true" });
       } else {
@@ -424,15 +426,12 @@ class App extends Component {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    console.log('***** getEther *****')
-    console.log(store.getState())
-    console.log('web3:', web3)
     const sentTx = await metamask.sendTransaction({
-      to: store.getState()[0].address,
+      to: store.getState()[0].getAddressString(),
       value: eth.utils.bigNumberify("1000000000000000000"),
       gasLimit: eth.utils.bigNumberify("21000")
     });
-    console.log(sentTx);
+    console.log(`Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `, sentTx);
   }
 
   // ** wrapper for ethers getBalance. probably breaks for tokens
