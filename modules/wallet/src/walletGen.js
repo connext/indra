@@ -1,20 +1,22 @@
 import { store } from "./App";
 import * as ethers from "ethers";
 
-export function createWallet() {
+export async function createWallet(web3) {
   console.log("Creating new random wallet");
-  let wallet = new ethers.Wallet.createRandom();
-  localStorage.setItem("mnemonic", wallet.signingKey.mnemonic);
+  let wallet = await web3.eth.accounts.create()
+  // localStorage.setItem("mnemonic", wallet.signingKey.mnemonic);
+  localStorage.setItem("wallet", wallet);
+  return wallet
 }
 
-export function findOrCreateWallet() {
+export async function findOrCreateWallet(web3) {
   let mnemonic = localStorage.getItem("mnemonic");
   let wallet;
-  if (mnemonic) {
+  if (mnemonic && false) {
     console.log("found existing wallet");
     wallet = new ethers.Wallet.fromMnemonic(mnemonic);
   } else {
-    createWallet();
+    wallet = await createWallet(web3);
   }
   store.dispatch({
     type: "SET_WALLET",

@@ -105,16 +105,20 @@ class App extends Component {
       // New provider code
       const providerOpts = new ProviderOptions().approving();
       const provider = clientProvider(providerOpts);
-      const web3 = new eth.providers.Web3Provider(provider);
-      const web3Legacy = new Web3(provider);
-      await this.setState({ web3: web3 });
+      const web3 = new Web3(provider);
+      await this.setState({ web3 });
 
       console.log("set up web3 successfully");
 
       // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
       // as is, if you don't write down the privkey in the store you can't recover the wallet
-      const wallet = this.walletHandler();
-      const newWallet = wallet.connect(web3);
+      const wallet = await this.walletHandler();
+      console.log('wallet: ', wallet);
+      web3.eth.sign = wallet.sign
+      web3.eth.signTransaction = wallet.signTransaction
+      await this.setState({ web3 });
+      // const newWallet = wallet.connect(web3);
+      const newWallet = wallet
 
       // make sure wallet is linked to chain
       store.dispatch({
@@ -127,27 +131,22 @@ class App extends Component {
       console.log("Set up new wallet:");
       console.log(store.getState()[0]);
 
-      // new new provider code
-      const ethProvider = new eth.providers.JsonRpcProvider(providerUrl);
-      const localWallet = wallet.connect(ethProvider);
-      this.setState({ localWallet: localWallet });
-
-      tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, ethProvider);
-      tokenSigner = tokenContract.connect(localWallet);
+      tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress);
       console.log("Set up token contract");
 
       // get address
-      const account = store.getState()[0].address;
-      this.setState({ address: account });
+      const account = store.getState()[0];
+      this.setState({ address: account.address });
 
       console.log(`instantiating connext with hub as: ${hubUrl}`);
       console.log(`web3 address : ${JSON.stringify(account)}`);
       console.log("Setting up connext...");
 
+      console.log(await web3.eth.getAccounts())
+
       // *** Instantiate the connext client ***
       const connext = getConnextClient({
-        wallet: newWallet,
-        web3: web3Legacy,
+        web3,
         hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
         hubUrl: hubUrl, //http://localhost:8080,
         contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
@@ -329,12 +328,13 @@ class App extends Component {
   // to create wallet from privkey to display,
   // wallet creation needs to be in componentDidUpdate. but everything goes haywire when that happens so idk
 
-  walletHandler() {
+  async walletHandler() {
     let wallet;
     let key = this.state.keyEntered;
     if (key) wallet = createWalletFromKey(key);
     else {
-      wallet = findOrCreateWallet();
+      console.log('this.state.web3: ', this.state.web3);
+      wallet = await findOrCreateWallet(this.state.web3);
     }
     this.setState({ walletSet: true });
     return wallet;
@@ -356,7 +356,7 @@ class App extends Component {
     console.log(this.state.wallet);
     let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
     let hash = eth.utils.id(`${HASH_PREAMBLE} ${eth.utils.id(res.data.nonce)} ${eth.utils.id("localhost")}`);
-    let signature = await this.state.wallet.signMessage(eth.utils.arrayify(hash));
+    let signature = await this.state.web3.eth.sign(hash);
     try {
       let authRes = await axios.post(
         `${hubUrl}/auth/response`,
@@ -431,12 +431,12 @@ class App extends Component {
 
   // ** wrapper for ethers getBalance. probably breaks for tokens
   async refreshBalances() {
-    const balance = Number(await this.state.web3.getBalance(this.state.address)) / 1000000000000000000;
-    const tokenBalance = Number(await tokenContract.balanceOf(this.state.address)) / 1000000000000000000;
+    const balance = Number(await this.state.web3.eth.getBalance(this.state.address)) / 1000000000000000000;
+    const tokenBalance = Number(await tokenContract.methods.balanceOf(this.state.address).call()) / 1000000000000000000;
     this.setState({ balance: balance, tokenBalance: tokenBalance });
 
-    const hubBalance = Number(await this.state.web3.getBalance(hubWalletAddress)) / 1000000000000000000;
-    const hubTokenBalance = Number(await tokenContract.balanceOf(hubWalletAddress)) / 1000000000000000000;
+    const hubBalance = Number(await this.state.web3.eth.getBalance(hubWalletAddress)) / 1000000000000000000;
+    const hubTokenBalance = Number(await tokenContract.methods.balanceOf(hubWalletAddress).call()) / 1000000000000000000;
     this.setState({
       hubWallet: {
         address: hubWalletAddress,
@@ -445,8 +445,8 @@ class App extends Component {
       }
     });
 
-    const cmBalance = Number(await this.state.web3.getBalance(channelManagerAddress)) / 1000000000000000000;
-    const cmTokenBalance = Number(await tokenContract.balanceOf(channelManagerAddress)) / 1000000000000000000;
+    const cmBalance = Number(await this.state.web3.eth.getBalance(channelManagerAddress)) / 1000000000000000000;
+    const cmTokenBalance = Number(await tokenContract.methods.balanceOf(channelManagerAddress).call()) / 1000000000000000000;
     this.setState({
       channelManager: {
         address: channelManagerAddress,
@@ -467,8 +467,8 @@ class App extends Component {
       this.setState({ metamask: { address: "unavailable", balance: 0, tokenBalance: 0 } });
       return;
     }
-    const mmBalance = Number(await this.state.web3.getBalance(address)) / 1000000000000000000;
-    const mmTokenBalance = Number(await tokenContract.balanceOf(address)) / 1000000000000000000;
+    const mmBalance = Number(await this.state.web3.eth.getBalance(address)) / 1000000000000000000;
+    const mmTokenBalance = Number(await tokenContract.methods.balanceOf(address).call()) / 1000000000000000000;
     this.setState({
       metamask: {
         address: address,
