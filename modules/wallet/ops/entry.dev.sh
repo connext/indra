@@ -12,6 +12,12 @@ bash /ops/wait-for.sh -t 60 $hub 2> /dev/null
 bash /ops/wait-for.sh -t 60 $eth_migrations 2> /dev/null
 bash /ops/wait-for.sh -t 60 $eth_provider 2> /dev/null
 
+echo "Setting up yarn links so we can use modules/client as if it were a node_module"
+cd /client && echo "cwd=`pwd`"
+yarn link
+cd $HOME && echo "cwd=`pwd`"
+rm -rf node_modules/connext && yarn link connext
+
 function getHash {
   find /contracts -type f -not -name "*.swp" | xargs cat | sha256sum | tr -d ' -'
 }

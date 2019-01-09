@@ -35,7 +35,7 @@ import { default as Logger } from "./lib/Logger";
 import { ConnextStore, ConnextState, PersistentState } from "./state/store";
 import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
-import { isFunction, ResolveablePromise } from "./lib/utils";
+import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
 import { toBN } from './helpers/bn'
 import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
@@ -441,6 +441,8 @@ export interface ConnextClientOptions {
   loadState?: () => Promise<string | null>
   saveState?: (state: string) => Promise<any>
 
+  getLogger?: (name: string) => Logger
+
   // Optional, useful for dependency injection
   hub?: IHubAPIClient
   store?: ConnextStore
@@ -599,7 +601,6 @@ export class ConnextInternal extends ConnextClient {
     }
 
     await super.start()
-    console.log("USER:", await this.contract.getChannelDetails(this.opts.user))
   }
 
   async stop() {
@@ -633,7 +634,7 @@ export class ConnextInternal extends ConnextClient {
     const sig = await (
       process.env.DEV || user === hubAddress
         ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, user)
+        : (this.opts.web3.eth.sign as any)(hash, user)
     )
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
@@ -689,8 +690,21 @@ export class ConnextInternal extends ConnextClient {
     while (true) {
       const state = this._latestState!
       result = this.opts.saveState!(JSON.stringify(state))
+
       // Wait for any current save to finish, but ignore any error it might raise
-      await result.then(null, () => null)
+      const [timeout, _] = await timeoutPromise(
+        result.then(null, () => null),
+        10 * 1000,
+      )
+      if (timeout) {
+        console.warn(
+          'Timeout (10 seconds) while waiting for state to save. ' +
+          'This error will be ignored (which may cause data loss). ' +
+          'User supplied function that has not returned:',
+          this.opts.saveState
+        )
+      }
+
       if (this._latestState == state)
         break
     }

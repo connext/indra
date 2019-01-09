@@ -27,15 +27,7 @@ export class Poller {
         try {
           await cb()
         } catch(e) {
-          this.logger.logToApi([{
-            name: `${this.logger.source}:`,
-            ts: new Date(),
-            data: {
-              message: `Error has occurred in poller: ${e.message || e}`,
-              type: 'error',
-              stack: e.stack || e
-            }
-          }])
+          this.logger.logToApi('client-poller', e)
         }
         lastPolled = Date.now()
       }

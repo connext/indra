@@ -4,6 +4,7 @@ registry=docker.io/$(shell whoami)
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 contracts=$(cwd)/modules/contracts
+client=$(cwd)/modules/client
 db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
@@ -24,6 +25,7 @@ id=$(shell id -u):$(shell id -g)
 run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
 docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
+docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
 docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root $(project)_builder:dev $(id)
@@ -95,6 +97,18 @@ proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch build/proxy
+
+# Client
+
+client: client-node-modules $(shell find $(client)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_client) "npm run build"
+	$(log_finish) && touch build/client
+
+client-node-modules: $(project)_builder $(client)/package.json
+	$(log_start)
+	$(docker_run_in_client) "npm install"
+	$(log_finish) && touch build/client-node-modules
 
 # Wallet
 

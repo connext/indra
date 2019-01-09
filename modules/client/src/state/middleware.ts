@@ -1,21 +1,13 @@
 import { DepositArgs, ExchangeArgs, SyncResult, UpdateRequest, WithdrawalArgs, ChannelState, ChannelUpdateReason } from '../types'
 import { ConnextState } from './store'
 import * as actions from './actions'
-
-function hasPendingOps(state: ChannelState) {
-  for (let field in state) {
-    if (!field.startsWith('pending'))
-      continue
-    if ((state as any)[field] !== '0')
-      return true
-  }
-  return false
-}
+import { Utils } from '../Utils'
 
 
 export function handleStateFlags(args: any): any {
   let didInitialUpdate = false
 
+  const utils = new Utils()
   const { dispatch, getState } = args
 
   return (next: any) => (action: any) => {
@@ -51,7 +43,7 @@ export function handleStateFlags(args: any): any {
 
       let isUnsigned = false
       let hasTimeout = !!channel.timeout
-      let hasPending = hasPendingOps(channel)
+      let hasPending = utils.hasPendingOps(channel)
 
       updatesToSync.forEach(update => {
         isUnsigned = isUnsigned || !(update.sigHub && update.sigUser)

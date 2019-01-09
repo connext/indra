@@ -1,6 +1,6 @@
-import { SyncResult, convertChannelState, InvalidationArgs } from '../types'
-import { mergeSyncResults } from './SyncController'
-import { assert, getChannelState, mkAddress, mkHash } from '../testing'
+import { SyncResult, convertChannelState, InvalidationArgs, UpdateRequest } from '../types'
+import { mergeSyncResults, filterPendingSyncResults } from './SyncController'
+import { assert, getChannelState, mkAddress, mkHash, parameterizedTests, updateObj, getChannelStateUpdate } from '../testing'
 import { MockConnextInternal, MockStore, MockHub, MockWeb3 } from '../testing/mocks';
 import { StateGenerator } from '../StateGenerator';
 // @ts-ignore
@@ -28,7 +28,6 @@ describe('mergeSyncResults', () => {
     ['both new', [mkResult(2)], [mkResult(1)]],
     ['both new', [mkResult(1)], [mkResult(1)]],
     ['mixed', [mkResult(1), mkResult(2)], [mkResult(3), mkResult(2)]],
-    ['merge sigs', [mkResult(1, 'user')], [mkResult(2), mkResult(1, 'hub')]],
   ]
 
   tests.forEach(([name, xs, ys]) => {
@@ -55,6 +54,31 @@ describe('mergeSyncResults', () => {
     })
   })
 
+  it('should not merge sigs', () => {
+    const actual = mergeSyncResults([mkResult(1, 'user')], [mkResult(2), mkResult(1, 'hub')])
+    assert.containSubset(actual[0], {
+      update: {
+        txCount: 1,
+        sigUser: 'sig-user',
+        sigHub: undefined,
+      },
+    })
+    assert.containSubset(actual[1], {
+      update: {
+        txCount: 1,
+        sigUser: undefined,
+        sigHub: 'sig-hub',
+      },
+    })
+    assert.containSubset(actual[2], {
+      update: {
+        txCount: 2,
+        sigUser: 'sig-user',
+        sigHub: 'sig-hub',
+      },
+    })
+  })
+
   it('should handle null states', () => {
     const actual = mergeSyncResults([mkResult(null), mkResult(1)], [mkResult(null), mkResult(2)])
     assert.deepEqual(actual.map(t => (t.update as any).txCount), [1, 2, null])
@@ -62,11 +86,190 @@ describe('mergeSyncResults', () => {
 
 })
 
+describe('filterPendingSyncResults', () => {
+  function mkFromHub(opts: any) {
+    return {
+      type:  'channel',
+      update: {
+        reason: 'Payment',
+        ...opts,
+      },
+    }
+  }
+
+  parameterizedTests([
+    {
+      name: 'toSync contains invalidation',
+
+      fromHub: [ mkFromHub({ txCount: 4 }), mkFromHub({ txCount: 5 }) ],
+
+      toHub: [
+        {
+          reason: 'Invalidation',
+          args: {
+            previousValidTxCount: 4,
+            lastInvalidTxCount: 5,
+          },
+          sigUser: true,
+          txCount: 6,
+        },
+      ],
+
+      expected: [ { txCount: 4 } ],
+    },
+
+    {
+      name: 'results contain state with more sigs',
+
+      fromHub: [
+        mkFromHub({
+          txCount: 5,
+          sigHub: true,
+          sigUser: true,
+        })
+      ],
+
+      toHub: [
+        {
+          txCount: 5,
+          sigUser: true,
+        },
+      ],
+
+      expected: [
+        {
+          txCount: 5,
+          sigHub: true,
+          sigUser: true,
+        },
+      ],
+    },
+
+    {
+      name: 'results are fully signed signed',
+
+      fromHub: [ mkFromHub({ txCount: 5, sigHub: true, sigUser: true }) ],
+
+      toHub: [
+        {
+          txCount: 5,
+          sigHub: true,
+          sigUser: true,
+        },
+      ],
+
+      expected: [
+        {
+          txCount: 5,
+          sigHub: true,
+          sigUser: true,
+        },
+      ],
+    },
+
+    {
+      name: 'results are less signed',
+
+      fromHub: [ mkFromHub({ txCount: 5, sigHub: true }) ],
+
+      toHub: [
+        {
+          txCount: 5,
+          sigHub: true,
+          sigUser: true,
+        },
+      ],
+
+      expected: [],
+    },
+
+    {
+      name: 'unsigned state being synced',
+
+      fromHub: [ mkFromHub({ id: -69 }) ],
+
+      toHub: [
+        {
+          id: -69,
+          sigUser: true,
+        },
+      ],
+
+      expected: [],
+    },
+
+    {
+      name: 'unsigned state is new',
+
+      fromHub: [ mkFromHub({ id: -69 }) ],
+
+      toHub: [], 
+
+      expected: [
+        { id: -69 },
+      ],
+    },
+  ], tc => {
+    const actual = filterPendingSyncResults(tc.fromHub as any, tc.toHub as any)
+    assert.equal(
+      actual.length, tc.expected.length,
+      `Actual != expected;\n` +
+      `Actual: ${JSON.stringify(actual)}\n` +
+      `Expected: ${JSON.stringify(tc.expected)}`
+    )
+
+    for (let i = 0; i < actual.length; i += 1)
+      assert.containSubset(actual[i].update, tc.expected[i])
+  })
+})
+
+describe('SyncController.findBlockNearestTimeout', () => {
+  const connext = new MockConnextInternal()
+
+  let latestBlockNumber: number | null = null
+  connext.opts.web3.eth.getBlock = ((num: any) => {
+    if (num == 'latest')
+      num = latestBlockNumber
+    return Promise.resolve({
+      timestamp: num,
+      number: num,
+    })
+  }) as any
+
+  // To simplify testing, assume the timestamp == block.number
+  parameterizedTests([
+    {
+      name: 'current block is sufficiently close',
+      latestBlockNumber: 500,
+      targetTimestamp: 490,
+      expectedBlockNumber: 500,
+    },
+    
+    {
+      name: 'current block is before the timeout',
+      latestBlockNumber: 400,
+      targetTimestamp: 500,
+      expectedBlockNumber: 400,
+    },
+
+    {
+      name: 'current block is far in the future',
+      latestBlockNumber: 20000,
+      targetTimestamp: 500,
+      expectedBlockNumber: 510,
+    },
+  ], async input => {
+    latestBlockNumber = input.latestBlockNumber
+    const block = await connext.syncController.findBlockNearestTimeout(input.targetTimestamp, 15)
+    assert.equal(block.number, input.expectedBlockNumber)
+  })
+
+})
 
 describe("SyncController: invalidation handling", () => {
   const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
-  const mockStore = new MockStore()
+  const prevStateTimeout = 1000
 
   const lastValid = getChannelState("empty", {
     balanceToken: [10, 10],
@@ -81,14 +284,26 @@ describe("SyncController: invalidation handling", () => {
     ...lastValid,
     pendingDepositToken: [5, 5],
     pendingDepositWei: [5, 5],
-    timeout: Math.floor(Date.now() / 1000) - 100,
+    timeout: prevStateTimeout,
     txCount: [4, 1]
   })
 
-  mockStore.setSyncControllerState([], lastValid)
-  mockStore.setChannel(prev)
+  // This is used for both block number and block timestamp. Tests can mutate
+  // it to change the value returned by web3
+  let curBlockTimestamp: number
 
   beforeEach(async () => {
+    const mockStore = new MockStore()
+    mockStore.setSyncControllerState([])
+    mockStore.setChannel(prev)
+    mockStore.setLatestValidState(lastValid)
+    mockStore.setChannelUpdate({
+      reason: 'ProposePendingDeposit',
+      txCount: 4,
+      args: {} as any,
+      sigHub: '0xsig-hub',
+    })
+
     // update web3 functions to return mocked values
     const mocked = new MockWeb3()
 
@@ -99,53 +314,80 @@ describe("SyncController: invalidation handling", () => {
 
     // stub out block times
     // TODO: fix mock web3 to handle provider better
-    connext.opts.web3.eth.getBlockNumber = mocked.getBlockNumber
-    connext.opts.web3.eth.getBlock = mocked.getBlock
+    connext.opts.web3.eth.getBlockNumber = async () => {
+      return curBlockTimestamp
+    }
+    connext.opts.web3.eth.getBlock = async () => {
+      return {
+        number: curBlockTimestamp,
+        timestamp: curBlockTimestamp,
+      } as any
+    }
   })
 
-  it('invalidation should work', async () => {
-    await connext.start()
+  afterEach(() => {
+    return connext.stop()
+  })
 
+  parameterizedTests([
+    {
+      name: 'invalidation should work',
+      invalidates: true,
+    },
+
+    {
+      name: 'should not invalidate until the timeout has expired',
+      curBlockTimestamp: prevStateTimeout - 100,
+      invalidates: false,
+    },
+
+
+    {
+      name: 'should not invalidate if the event has been broadcast to chain',
+      eventTxCounts: [prev.txCountGlobal, prev.txCountChain],
+      invalidates: false,
+    },
+
+    {
+      name: 'should invalidate if chain event does not match',
+      eventTxCounts: [prev.txCountGlobal - 1, prev.txCountChain - 1],
+      invalidates: true,
+    },
+
+  ], async _test => {
+    const test = {
+      curBlockTimestamp: prevStateTimeout + 100,
+      eventTxCounts: null,
+      ..._test,
+    }
+
+    curBlockTimestamp = test.curBlockTimestamp
+    connext.getContractEvents = (eventName, fromBlock) => {
+      return !test.eventTxCounts ? [] : [
+        {
+          returnValues: {
+            txCount: test.eventTxCounts,
+          },
+        },
+      ] as any
+    }
+
+    await connext.start()
     await new Promise(res => setTimeout(res, 20))
 
-    connext.mockHub.assertReceivedUpdate({
-      reason: "Invalidation",
-      args: {
-        previousValidTxCount: lastValid.txCountGlobal,
-        lastInvalidTxCount: prev.txCountGlobal,
-        reason: "CU_INVALID_TIMEOUT",
-      } as InvalidationArgs,
-      sigUser: true,
-      sigHub: false,
-    })
-  })
-
-  // NOTE: HUB DOES NOT RETURN ANY VALIDATION ERRORS
-  // THESE TESTS ARE SKIPPED UNTIL THE HUB TAKES OVER SENDING THE 
-  // INVALIDATION UPDATES
-  it.skip('should throw error if previous has higher tx count then update', () => {
-
-  })
-
-  it.skip('should throw error if args has higher tx count than previous and previous has pending states', () => {
-
-  })
-
-  it.skip('should throw error if args has same tx count and previous has no pending ops', () => {
-
-  })
-
-  it.skip('should throw error if args has same tx count and timeout hasnt elapsed', () => {
-
-  })
-
-  it.skip('should throw error if args has same tx count and tx was submitted', () => {
-    connext.contract.getPastEvents = (user, eventName, fromBlock) => {
-      return [{
-        returnValues: {
-          txCount: [4, 1]
-        }
-      }] as any
+    if (test.invalidates) {
+      connext.mockHub.assertReceivedUpdate({
+        reason: "Invalidation",
+        args: {
+          previousValidTxCount: lastValid.txCountGlobal,
+          lastInvalidTxCount: prev.txCountGlobal,
+          reason: "CU_INVALID_TIMEOUT",
+        } as InvalidationArgs,
+        sigUser: true,
+        sigHub: false,
+      })
+    } else {
+      assert.deepEqual(connext.mockHub.receivedUpdateRequests, [])
     }
   })
 

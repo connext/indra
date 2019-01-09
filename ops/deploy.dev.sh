@@ -115,6 +115,7 @@ services:
       - "3000:3000"
     volumes:
       - `pwd`/modules/wallet:/root
+      - `pwd`/modules/client:/client
       - `pwd`/modules/contracts/build/contracts:/contracts
 
   hub:
