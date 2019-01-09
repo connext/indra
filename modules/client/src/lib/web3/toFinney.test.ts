@@ -1,6 +1,6 @@
 import {expect} from 'chai'
 import toFinney from './toFinney'
-import BN from 'bn.js'
+import BN = require('bn.js')
 
 describe('toFinney', () => {
   it('should work', () => {

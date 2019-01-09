@@ -29,11 +29,7 @@ export abstract class AbstractController {
   async start(): Promise<void> { }
   async stop(): Promise<void> { }
 
-  protected logToApi(method: string, data: any) {
-    this.logger.logToApi([{
-      name: `${this.name}:${method}`,
-      ts: new Date(),
-      data
-    }])
+  protected logToApi(key: string, data: any) {
+    this.logger.logToApi(key, data)
   }
 }

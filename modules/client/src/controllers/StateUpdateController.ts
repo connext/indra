@@ -1,6 +1,6 @@
 import { ConnextState } from '../state/store'
 import { ConnextStore } from '../state/store'
-import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState } from '../types'
+import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState } from '../types'
 import { ChannelState, UpdateRequestTypes } from '../types'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
@@ -45,6 +45,7 @@ export async function watchStore<T>(
     }
     inCallback = true
 
+    const prevVal = lastVal
     lastVal = val
 
     try {
@@ -54,6 +55,26 @@ export async function watchStore<T>(
       // exception, then ``onChange(...)`` *should* be called, but also calling
       // it might raise another exception, so we don't).
       await onChange(val)
+    } catch (e) {
+
+      // Some naieve but hopefully useful retry logic. If the onChange callback
+      // throws an exception *and* the current item doesn't change for
+      // 30 seconds, hope that it's a temporary failure and try again. This
+      // should be safe because the callback should be idempotent, and we're
+      // checking that it isn't already running before we call it.
+      setTimeout(() => {
+        console.warn(
+          'Exception was previously raised by watchStore callback ' +
+          'and no progress has been made in the last 30 seconds. ' +
+          'Trying again...'
+        )
+        if (lastVal === val && !inCallback) {
+          lastVal = {}
+          onStoreChange()
+        }
+      }, 1000 * 30)
+
+      throw e
     } finally {
       inCallback = false
     }
@@ -74,8 +95,25 @@ export default class StateUpdateController extends AbstractController {
   async start() {
     this.unsubscribe = await watchStore(
       this.store,
-      state => state.runtime.syncResultsFromHub,
-      items => this.syncOneItemFromStore(items[0]),
+      state => {
+        const item = state.runtime.syncResultsFromHub[0]
+        if (item && item.type == 'thread')
+          throw new Error('REB-36: enable threads!')
+
+        // No sync results from hub; nothing to do
+        if (!item)
+          return null
+
+        // Wait until we've flushed all the updates to the hub before
+        // processing the next item.
+        const { updatesToSync } = state.persistent.syncControllerState
+        if (updatesToSync.length > 0)
+          return null
+
+        // Otherwise, call `syncOneItemFromStore` on the item.
+        return item
+      },
+      item => this.syncOneItemFromStore(item),
     )
   }
 
@@ -104,14 +142,12 @@ export default class StateUpdateController extends AbstractController {
     this._queuedActions = null
   }
 
-  private async syncOneItemFromStore(item: SyncResult) {
+  private async syncOneItemFromStore(item: SyncResult | null) {
     if (!item)
       return
+
     await this.handleSyncItem(item)
-    // NOTE: wallet doesnt like this, but this err
-    // should be uncommented after moving client to npm repo
-    // @ts-ignore 
-    this.store.dispatch(actions.dequeueSyncResultsFromHub())
+    this.store.dispatch(actions.dequeueSyncResultsFromHub(item))
   }
 
   private async handleSyncItem(item: SyncResult) {
@@ -137,8 +173,12 @@ export default class StateUpdateController extends AbstractController {
     const update = item.update
     console.log(`Applying update from hub: ${update.reason} txCount=${update.txCount}:`, update)
 
-    const prevState: ChannelState = getChannel(this.store)
+    const connextState = this.getState()
+    const prevState: ChannelState = connextState.persistent.channel
+    const latestValidState: ChannelState = connextState.persistent.latestValidState
+
     console.log('prevState:', prevState)
+
     if (update.txCount && update.txCount <= prevState.txCountGlobal) {
       console.warn(
         `StateUpdateController received update with old ` +
@@ -147,7 +187,7 @@ export default class StateUpdateController extends AbstractController {
       return
     }
 
-    if (update.txCount && update.txCount != prevState.txCountGlobal + 1) {
+    if (update.reason != 'Invalidation' && update.txCount && update.txCount != prevState.txCountGlobal + 1) {
       throw new Error(
         `Update txCount ${update.txCount} != ${prevState.txCountGlobal} + 1 ` +
         `(ie, the update is trying to be applied on top of a state that's ` +
@@ -155,7 +195,10 @@ export default class StateUpdateController extends AbstractController {
       )
     }
 
-    const nextState = await this.connext.validator.generateChannelStateFromRequest(prevState, update)
+    const nextState = await this.connext.validator.generateChannelStateFromRequest(
+      update.reason === 'Invalidation' ? latestValidState : prevState,
+      update
+    )
 
     // any sigs included on the updates should be valid
     this.assertValidSigs(update, nextState)
@@ -167,9 +210,12 @@ export default class StateUpdateController extends AbstractController {
     // on every sync - but it would be nice if we can make that guarantee.
     if (update.sigHub && update.sigUser) {
       this.store.dispatch(actions.setChannel({
-        ...nextState,
-        sigHub: update.sigHub,
-        sigUser: update.sigUser,
+        update: update,
+        state: {
+          ...nextState,
+          sigHub: update.sigHub,
+          sigUser: update.sigUser,
+        },
       }))
       return
     }
@@ -178,11 +224,13 @@ export default class StateUpdateController extends AbstractController {
       throw new Error('Update has user sig but not hub sig: ' + JSON.stringify(update))
     }
 
+    // NOTE: the previous state passed into the update handlers is NOT
+    // the previous passed into the validators to generate the 
+    // `nextState`.
     const err = await (this.updateHandlers as any)[update.reason].call(this, prevState, update)
     if (err) {
-      // TODO: return a state invalidation here (REB-9)
-      console.error('State update validation failed' + err, update)
-      throw new Error('State update validation failed' + err)
+      console.warn('Not countersigning state update: ' + err)
+      return
     }
 
     const signedState: ChannelState = await this.connext.signChannelState(nextState)
@@ -200,36 +248,15 @@ export default class StateUpdateController extends AbstractController {
     // in the future by storing the pending payment locally, and alerting the
     // user if the hub attempts to countersign and return it later.
     await this.connext.syncController.sendUpdateToHub({
+      id: update.id,
       reason: update.reason,
       args: update.args,
       state: signedState,
     })
 
-    // when handling a deposit, the signed update will have both signatures
-    // in that case, set the state
-    if (signedState.sigHub && signedState.sigUser)
-      this.store.dispatch(actions.setChannel(signedState))
-
     this.flushQueuedActions()
     await this.connext.awaitPersistentStateSaved()
 
-    /*
-    const hasActiveDeposit = this.store.getState().runtime.hasActiveDeposit
-    const didReceiveConfirmPending = !!toSign.find(
-      update => update.type === 'channel' && update.state.reason === 'ConfirmPending'
-    )
-
-    if (hasActiveDeposit && didReceiveConfirmPending) {
-      this.store.dispatch(
-        actions.setHasActiveDeposit(false)
-      )
-    }
-
-    const hasActiveWithdrawal = this.store.getState().runtime.hasActiveWithdrawal
-    if (hasActiveWithdrawal && didReceiveConfirmPending) {
-      this.store.dispatch(actions.setHasActiveWithdrawal(false))
-    }
-    */
   }
 
   /**
@@ -310,8 +337,7 @@ export default class StateUpdateController extends AbstractController {
         // if-and-only-if we have signed it.
         // Note that the `sendDepositToChain` method will validate that the
         // deposit amount is the amount we expect.
-        await this.connext.depositController.sendUserAuthorizedDeposit(prev, update)
-        return
+        return await this.connext.depositController.sendUserAuthorizedDeposit(prev, update)
       }
 
       throw new Error(
@@ -320,7 +346,6 @@ export default class StateUpdateController extends AbstractController {
       )
     },
 
-    // TODO: all of these (REB-6)
     'ProposePendingWithdrawal': async (prev, update) => {
       if (!update.sigHub) {
         const WithdrawalError = (msg: string) => {
@@ -338,9 +363,131 @@ export default class StateUpdateController extends AbstractController {
         return
       }
     },
+
+    // TODO: remove from above
+    'Invalidation': async (prev, update) => {
+      // 1. Sanity check previousValidTxCount and lastInvalidTxCount.
+      //
+      //    if update.args.previousValidTxCount > // update.args.lastInvalidTxCount:
+      //      uh oh (validators will catch this) --> never gets here
+      // no sanity check
+      //
+      // Notes for later:
+      //
+      //    The SyncController.latestValidState will be the latest state that
+      //    the SyncController has seen which:
+      //      1. Validates (sigs are valid, etc)
+      //      2. Is fully signed
+      //      3. Does not have pending operations
+      //
+      //    Note: when the hub sends an Invalidation, it will also include its
+      //    latest valid state along with the sync. This means means that, bugs
+      //    in the hub aside, 'latestValidState.txCount' will never be less
+      //    than 'previousValidTxCount'.
+      //
+      // 2. If our current state is ahead of the state 
+      // being invalidated:
+      //
+      //    if current.txCount > update.args.lastInvalidTxCount:
+      //      This shouldn't happen, because it implies we have a fully signed
+      //      state that hasn't been sent to the hub.
+      //      Throw an error, deal with this later.
+
+      if (update.args.lastInvalidTxCount < prev.txCountGlobal) {
+        throw new Error(`Previously double-signed and stored client state is higher nonced than proposed invalidation. Implies lack of sync betweeen hub and client stores.`)
+      }
+      //
+      // 3. If our current state is behind the state being invalidated:
+      //
+      //    if current.txCount < update.args.lastInvalidTxCount:
+      //      if current.pendingOps:
+      //        error()
+      //
+      //      This will happen if the hub is rejecting one of our partially
+      //      signed states (ex, a half-signed exchange we've sent the hub). (would not yet be stored in client store)
+      //
+      //      In the general case, we can't check to see if we have the
+      //      half-signed state the hub is trying to invalidate, so don't bother
+      //      checking for it (since I don't think there's an attack vector
+      //      here?)
+      if (update.args.lastInvalidTxCount > prev.txCountGlobal &&
+        this.validator.hasPendingOps(convertChannelState("bn", prev))) {
+        // hub is invalidating the last half-signed state. make sure there
+        // are no pending operations
+        throw new Error(`Hub should not increase the nonce in an invalidation request unless the previous client state does not have pending operations. lastInvalid: ${update.args.lastInvalidTxCount}, prev.txCountGlobal: ${prev.txCountGlobal}`)
+      }
+      // 4. If the state being invalidated is equal to our current state,
+      //    ensure it has pending fields and IF there is a timeout, 
+      //    that timeout has expired:
+      //
+      //    if current.txCount == update.args.lastInvalidTxCount:
+      //      if !current.timeout:
+      //        This shouldn't happen, because it implies we have a fully signed
+      //        state that hasn't been sent to the hub.
+      //        Throw an error, deal with this later.
+      //
+      //      latest_block = web3.eth.getLatestBlock()
+      //      if latest_block.timestamp < current.timeout:
+      //        discard the invalidation
+      //        log an error
+      //        return
+      //
+      //      Use `web3.eth.filter(…)` to check whether the contract has
+      //      emitted a 'DidUpdateChannel' event which corresponds to the state
+      //      that's being invalidated.
+      //
+      //      if one does exist:
+      //        discard the invalidation
+      //        generate and sync a ConfirmPending
+      //        (implementation detail: for now, we'll just throw an error)
+      //        return
+      //
+      //    Note: if the state being invalidated has a timeout, the hub will
+      //    return it as part of the sync() that includes the invalidation, so
+      //    we're guaranteed to have it.
+      if (
+        update.args.lastInvalidTxCount === prev.txCountGlobal &&
+        !this.validator.hasPendingOps(convertChannelState("bn", prev))
+      ) {
+        // check that the timeout has expired
+        const web3Alias = this.connext.opts.web3
+        const latestBlock = await web3Alias.eth.getBlock('latest')
+        if (prev.timeout < latestBlock.timestamp) {
+          throw new Error(
+            `Hub proposed an invalidation for an update that has not yet ` +
+            `timed out. Update timeout: ${prev.timeout}; latest block: ` +
+            `timestamp: ${latestBlock.timestamp} (hash: ${latestBlock.hash})`
+          )
+        }
+        // check that the deposit has not made it to chain
+        const events = await this.connext.getContractEvents(
+          'DidUpdateChannel',
+          latestBlock.number - 1500,
+        )
+        const event = events.find(e => e.returnValues.txCount[0] === prev.txCountGlobal)
+        if (event) {
+          throw new Error(
+            `Hub proposed invalidation for a state that has made it to chain. ` +
+            `State txCount: ${prev.txCountGlobal}, event: ${JSON.stringify(event)}`
+          )
+        }
+
+      } else {
+        throw new Error(
+          `Hub proposed invalidation for a double signed state with no ` +
+          `pending fields. Invalidation: ${JSON.stringify(update)} ` +
+          `state: ${JSON.stringify(prev)}`
+        )
+      }
+      // 5. The invalidation is valid. Countersign and return it.
+      // return update to be countersigned and returned
+      return
+    },
+
     'ConfirmPending': async (prev, update) => {
 
     },
+
     'OpenThread': async (prev, update) => {
       throw new Error('REB-36: enable threads!')
     },

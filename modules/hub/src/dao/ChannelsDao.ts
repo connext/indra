@@ -1,15 +1,16 @@
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import {
-  ChannelUpdateReason,
-  ChannelState,
   ArgsTypes,
+  ChannelState,
   ChannelStateBigNumber,
-  PaymentArgsBigNumber,
-  ExchangeArgsBigNumber,
-  DepositArgsBigNumber,
-  WithdrawalArgsBigNumber,
+  ChannelUpdateReason,
   convertArgs,
+  DepositArgsBigNumber,
+  ExchangeArgsBigNumber,
+  InvalidationArgs,
+  PaymentArgsBigNumber,
+  WithdrawalArgsBigNumber,
 } from 'connext/dist/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
@@ -20,6 +21,7 @@ import {
 import { Big } from '../util/bigNumber'
 import { emptyRootHash } from 'connext/dist/Utils'
 import { default as log } from '../util/log'
+import { mkSig } from '../testing/stateUtils';
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBigNum | null>
@@ -31,12 +33,6 @@ export default interface ChannelsDao {
   getChannelUpdateByTxCount(
     user: string,
     txCount: number,
-  ): Promise<ChannelStateUpdateRowBigNum | null>
-  getLatestChannelUpdateDoubleSigned(
-    user: string,
-  ): Promise<ChannelStateUpdateRowBigNum | null>
-  getLatestChannelUpdateHubSigned(
-    user: string,
   ): Promise<ChannelStateUpdateRowBigNum | null>
   applyUpdateByUser(
     user: string,
@@ -50,6 +46,8 @@ export default interface ChannelsDao {
   getTotalTokensInReceiverThreads(user: string): Promise<BigNumber>
   getTotalChannelTokensPlusThreadBonds(user: string): Promise<BigNumber>
   getRecentTippers(user: string): Promise<number>
+  getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBigNum>
+  invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
 }
 
 export function getChannelInitialState(
@@ -77,8 +75,8 @@ export function getChannelInitialState(
     timeout: 0,
     txCountChain: 0,
     txCountGlobal: 0,
-    sigHub: null,
-    sigUser: null,
+    sigHub: mkSig('0x0'),
+    sigUser: mkSig('0x0'),
   }
 }
 
@@ -97,11 +95,18 @@ export class PostgresChannelsDao implements ChannelsDao {
   // gets latest state of channel
   async getChannelByUser(user: string): Promise<ChannelRowBigNum | null> {
     return this.inflateChannelRow(
+      // Note: the `FOR UPDATE` here will ensure that we acquire a lock on the
+      // channel for the duration of this transaction. This will make sure that
+      // only one request can update a channel at a time, to prevent race
+      // conditions where two threads try to get the channel to create a new
+      // state on top of it and both end up generating an update with the same
+      // txCount.
       await this.db.queryOne(SQL`
         SELECT * FROM cm_channels
         WHERE
           "user" = ${user.toLowerCase()} AND
           contract = ${this.config.channelManagerAddress.toLowerCase()}
+        FOR UPDATE
       `),
     )
   }
@@ -135,41 +140,6 @@ export class PostgresChannelsDao implements ChannelsDao {
     return rows.map(r => this.inflateChannelUpdateRow(r))
   }
 
-  async getLatestChannelUpdateDoubleSigned(
-    user: string,
-  ): Promise<ChannelStateUpdateRowBigNum | null> {
-    return this.inflateChannelUpdateRow(
-      await this.db.queryOne(SQL`
-        SELECT * FROM cm_channel_updates 
-        WHERE 
-          "user" = ${user.toLowerCase()} AND
-          contract = ${this.config.channelManagerAddress.toLowerCase()} AND
-          sig_user IS NOT NULL AND
-          sig_hub IS NOT NULL AND
-          invalid IS NULL
-        ORDER BY tx_count_global DESC
-        LIMIT 1
-      `),
-    )
-  }
-
-  async getLatestChannelUpdateHubSigned(
-    user: string,
-  ): Promise<ChannelStateUpdateRowBigNum | null> {
-    return this.inflateChannelUpdateRow(
-      await this.db.queryOne(SQL`
-        SELECT * FROM cm_channel_updates 
-        WHERE 
-          "user" = ${user.toLowerCase()} AND
-          contract = ${this.config.channelManagerAddress.toLowerCase()} AND
-          sig_hub IS NOT NULL AND
-          invalid IS NULL
-        ORDER BY tx_count_global DESC
-        LIMIT 1
-      `),
-    )
-  }
-
   async getChannelUpdateByTxCount(
     user: string,
     txCountGlobal: number,
@@ -181,8 +151,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         WHERE 
         c."user" = ${user.toLowerCase()} AND
         c.contract = ${this.config.channelManagerAddress.toLowerCase()} and 
-        u.tx_count_global = ${txCountGlobal} AND
-        u.invalid IS NULL
+        u.tx_count_global = ${txCountGlobal}
         ORDER BY u.tx_count_global ASC
       `),
     )
@@ -276,6 +245,52 @@ export class PostgresChannelsDao implements ChannelsDao {
     return parseInt(num_tippers)
   }
 
+  async getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBigNum> {
+    const last = this.inflateChannelUpdateRow(
+      await this.db.queryOne(SQL`
+        SELECT * FROM cm_channel_updates 
+        WHERE
+          pending_deposit_wei_hub = 0 AND
+          pending_deposit_wei_user = 0 AND
+          pending_deposit_token_hub = 0 AND
+          pending_deposit_token_user = 0 AND
+          pending_withdrawal_wei_hub = 0 AND
+          pending_withdrawal_wei_user = 0 AND
+          pending_withdrawal_token_hub = 0 AND
+          pending_withdrawal_token_user = 0 AND
+          "user" = ${user.toLowerCase()} AND
+          contract = ${this.config.channelManagerAddress.toLowerCase()} AND
+          sig_hub IS NOT NULL AND
+          sig_user IS NOT NULL AND
+          invalid IS NULL
+        ORDER BY tx_count_global DESC
+        LIMIT 1
+      `)
+    )
+    if (!last) {
+      return {
+        state: getChannelInitialState(user, this.config.channelManagerAddress.toLowerCase()),
+        args: {},
+        id: 0,
+        reason: "Invalidation",
+        createdOn: new Date(),
+      }
+    }
+    return last
+  }
+
+  async invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void> {
+    await this.db.queryOne(SQL`
+      UPDATE _cm_channel_updates
+      SET invalid = ${invalidationArgs.reason}
+      WHERE
+        tx_count_global > ${invalidationArgs.previousValidTxCount} AND
+        tx_count_global <= ${invalidationArgs.lastInvalidTxCount} AND
+        "user" = ${user.toLowerCase()}
+      RETURNING id
+    `)
+  }
+
   private inflateChannelStateRow(row: any): ChannelStateBigNumber {
     return (
       row && {
@@ -337,6 +352,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         chainsawId: Number(row.chainsaw_event_id),
         createdOn: row.created_on,
         args: convertArgs('bignumber', row.reason, row.args),
+        invalid: row.invalid
       }
     )
   }

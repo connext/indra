@@ -11,15 +11,16 @@ describe('DepositController: unit tests', () => {
     await connext.start()
   })
 
-  it('should work', async () => {
-    await connext.depositController.requestUserDeposit({ amountWei: '420', amountToken: '69' })
+  // TODO: properly mock out token transfer approval
+  it('should work for wei', async () => {
+    await connext.depositController.requestUserDeposit({ amountWei: '420', amountToken: '0' })
     await new Promise(res => setTimeout(res, 10))
 
     connext.mockHub.assertReceivedUpdate({
       reason: 'ProposePendingDeposit',
       args: {
         depositWeiUser: '420',
-        depositTokenUser: '69',
+        depositTokenUser: '0',
       },
       sigUser: true,
       sigHub: true,
@@ -27,14 +28,14 @@ describe('DepositController: unit tests', () => {
 
     connext.mockContract.assertCalled('userAuthorizedUpdate', {
       pendingDepositWeiUser: '420',
-      pendingDepositTokenUser: '69',
+      pendingDepositTokenUser: '0',
     })
 
     assert.containSubset(connext.store.getState(), {
       persistent: {
         channel: {
           pendingDepositTokenHub: '9',
-          pendingDepositTokenUser: '69',
+          pendingDepositTokenUser: '0',
           pendingDepositWeiHub: '8',
           pendingDepositWeiUser: '420',
         },

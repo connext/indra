@@ -8,7 +8,7 @@ import {setWallet} from './utils/actions.js';
 import { createWallet,createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
-//import Web3 from 'web3';
+const Web3 = require('web3');
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -22,9 +22,6 @@ const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS.toLowerCase()
 const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLowerCase()
 
 const HASH_PREAMBLE = 'SpankWallet authentication message:'
-
-let tokenContract
-let tokenSigner
 
 const opts = {
   headers: {
@@ -95,7 +92,8 @@ class App extends Component {
       recipient: hubWalletAddress,
       connext: null,
       channelState: null,
-      exchangeRate: "0.00"
+      exchangeRate: "0.00",
+      tokenContract: null
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
@@ -105,15 +103,20 @@ class App extends Component {
       // New provider code
       const providerOpts = new ProviderOptions().approving();
       const provider = clientProvider(providerOpts);
-      const web3 = new eth.providers.Web3Provider(provider);
-      await this.setState({ web3: web3 });
+      const web3 = new Web3(provider);
+      await this.setState({ web3 });
 
       console.log("set up web3 successfully");
 
       // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
       // as is, if you don't write down the privkey in the store you can't recover the wallet
-      const wallet = this.walletHandler();
-      const newWallet = wallet.connect(web3);
+      const wallet = await this.walletHandler();
+      console.log('wallet: ', wallet);
+      web3.eth.sign = wallet.sign
+      web3.eth.signTransaction = wallet.signTransaction
+      await this.setState({ web3 });
+
+      const newWallet = wallet
 
       // make sure wallet is linked to chain
       store.dispatch({
@@ -123,37 +126,32 @@ class App extends Component {
 
       this.setState({ wallet: store.getState()[0] }); //newWallet});
 
-      console.log("Set up new wallet:");
+      console.log("Set up wallet:");
       console.log(store.getState()[0]);
 
-      // new new provider code
-      const ethProvider = new eth.providers.JsonRpcProvider(providerUrl);
-      const localWallet = wallet.connect(ethProvider);
-      this.setState({ localWallet: localWallet });
-
-      tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, ethProvider);
-      tokenSigner = tokenContract.connect(localWallet);
+      this.setState({
+        tokenContract: new web3.eth.Contract(humanTokenAbi, tokenAddress)
+      })
       console.log("Set up token contract");
 
       // get address
-      const account = store.getState()[0].address;
-      this.setState({ address: account });
+      const account = store.getState()[0];
+      this.setState({ address: account.address });
 
       console.log(`instantiating connext with hub as: ${hubUrl}`);
-      console.log(`web3 address : ${JSON.stringify(account)}`);
+      console.log(`web3 address : ${JSON.stringify(account.address)}`);
       console.log("Setting up connext...");
 
       // *** Instantiate the connext client ***
       const connext = getConnextClient({
-        wallet: newWallet,
         web3,
         hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
         hubUrl: hubUrl, //http://localhost:8080,
         contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
-        user: account
+        user: account.address.toLowerCase()
       });
 
-      console.log("Successfully setting up connext!");
+      console.log("Successfully set up connext!");
 
       connext.start(); // start polling
       //console.log('Pollers started! Good morning :)')
@@ -263,17 +261,23 @@ class App extends Component {
   }
 
   async approvalHandler(evt) {
-    let approveFor = channelManagerAddress;
-    let toApprove = this.state.approvalWeiUser;
-    let toApproveBn = eth.utils.bigNumberify(toApprove);
-    let depositResGas = await tokenSigner.estimate.approve(approveFor, toApproveBn);
-    console.log(`I predict this tx [a ${typeof tokenSigner.approve}] will require ${depositResGas} gas`);
-    let approveTx = await tokenSigner.functions.approve(approveFor, toApproveBn, { gasLimit: depositResGas });
-    console.log(approveTx);
+    // const tokenContract = this.state.tokenContract
+    // let approveFor = channelManagerAddress;
+    // let toApprove = this.state.approvalWeiUser;
+    // let toApproveBn = eth.utils.bigNumberify(toApprove);
+    // let depositResGas = await tokenSigner.estimate.approve(approveFor, toApproveBn);
+    // console.log(`I predict this tx [a ${typeof tokenSigner.approve}] will require ${depositResGas} gas`);
+    // let approveTx = await tokenSigner.functions.approve(approveFor, toApproveBn, { gasLimit: depositResGas });
+    // console.log(approveTx);
   }
 
   //Connext Helpers
   async depositHandler() {
+    const tokenContract = this.state.tokenContract
+    let approveFor = channelManagerAddress;
+    let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
+    console.log(approveTx);
+
     console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
     let depositRes = await this.state.connext.deposit(this.state.depositVal);
     console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
@@ -328,12 +332,12 @@ class App extends Component {
   // to create wallet from privkey to display,
   // wallet creation needs to be in componentDidUpdate. but everything goes haywire when that happens so idk
 
-  walletHandler() {
+  async walletHandler() {
     let wallet;
     let key = this.state.keyEntered;
     if (key) wallet = createWalletFromKey(key);
     else {
-      wallet = findOrCreateWallet();
+      wallet = await findOrCreateWallet(this.state.web3);
     }
     this.setState({ walletSet: true });
     return wallet;
@@ -355,15 +359,15 @@ class App extends Component {
     console.log(this.state.wallet);
     let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
     let hash = eth.utils.id(`${HASH_PREAMBLE} ${eth.utils.id(res.data.nonce)} ${eth.utils.id("localhost")}`);
-    let signature = await this.state.wallet.signMessage(eth.utils.arrayify(hash));
+    let signature = await this.state.web3.eth.sign(hash);
     try {
       let authRes = await axios.post(
         `${hubUrl}/auth/response`,
         {
           nonce: res.data.nonce,
-          address: this.state.wallet.address,
+          address: this.state.address,
           origin: "localhost",
-          signature: signature
+          signature: signature.signature
         },
         opts
       );
@@ -430,12 +434,13 @@ class App extends Component {
 
   // ** wrapper for ethers getBalance. probably breaks for tokens
   async refreshBalances() {
-    const balance = Number(await this.state.web3.getBalance(this.state.address)) / 1000000000000000000;
-    const tokenBalance = Number(await tokenContract.balanceOf(this.state.address)) / 1000000000000000000;
+    const tokenContract = this.state.tokenContract
+    const balance = Number(await this.state.web3.eth.getBalance(this.state.address)) / 1000000000000000000;
+    const tokenBalance = Number(await tokenContract.methods.balanceOf(this.state.address).call()) / 1000000000000000000;
     this.setState({ balance: balance, tokenBalance: tokenBalance });
 
-    const hubBalance = Number(await this.state.web3.getBalance(hubWalletAddress)) / 1000000000000000000;
-    const hubTokenBalance = Number(await tokenContract.balanceOf(hubWalletAddress)) / 1000000000000000000;
+    const hubBalance = Number(await this.state.web3.eth.getBalance(hubWalletAddress)) / 1000000000000000000;
+    const hubTokenBalance = Number(await tokenContract.methods.balanceOf(hubWalletAddress).call()) / 1000000000000000000;
     this.setState({
       hubWallet: {
         address: hubWalletAddress,
@@ -444,8 +449,8 @@ class App extends Component {
       }
     });
 
-    const cmBalance = Number(await this.state.web3.getBalance(channelManagerAddress)) / 1000000000000000000;
-    const cmTokenBalance = Number(await tokenContract.balanceOf(channelManagerAddress)) / 1000000000000000000;
+    const cmBalance = Number(await this.state.web3.eth.getBalance(channelManagerAddress)) / 1000000000000000000;
+    const cmTokenBalance = Number(await tokenContract.methods.balanceOf(channelManagerAddress).call()) / 1000000000000000000;
     this.setState({
       channelManager: {
         address: channelManagerAddress,
@@ -466,8 +471,8 @@ class App extends Component {
       this.setState({ metamask: { address: "unavailable", balance: 0, tokenBalance: 0 } });
       return;
     }
-    const mmBalance = Number(await this.state.web3.getBalance(address)) / 1000000000000000000;
-    const mmTokenBalance = Number(await tokenContract.balanceOf(address)) / 1000000000000000000;
+    const mmBalance = Number(await this.state.web3.eth.getBalance(address)) / 1000000000000000000;
+    const mmTokenBalance = Number(await tokenContract.methods.balanceOf(address).call()) / 1000000000000000000;
     this.setState({
       metamask: {
         address: address,

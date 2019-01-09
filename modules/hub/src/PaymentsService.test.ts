@@ -242,7 +242,7 @@ describe('PaymentsService', () => {
       convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(50)
+      pendingDepositTokenHub: toWeiString(30)
     })
   })
 
@@ -286,7 +286,7 @@ describe('PaymentsService', () => {
       convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(49)
+      pendingDepositTokenHub: toWeiString(30)
     })
   })
 

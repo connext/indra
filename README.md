@@ -2,6 +2,20 @@
 
 Everything you need to set up a Connext payment channel hub.
 
+## Contents
+
+- [Repo Executive Summary](#Repo-Executive-Summary)
+- [How to get started developing](#How-to-get-started-developing)
+    - [Prerequisites](#Prerequisites)
+    - [TL;DR](#TL;DR)
+    - [Details](#Details)
+    - [How to interact with Hub](#How-to-interact-with-Hub)
+ - [Debugging](#Debugging)
+     - [Ethprovider or Ganache not working](#Ethprovider-or-Ganache-not-working)
+     - [Hub errors on start](#Hub-errors-on-start)
+     - [Locked DB](#Locked-DB)
+    
+
 ## Repo Executive Summary
 
 You can run this project locally in dev-mode with `yarn start` (or `yarn restart`)
@@ -22,7 +36,7 @@ Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'`
 
 ## How to get started developing
 
-#### Prerequisites
+### Prerequisites
 
 - Make (required, probably already installed)
 - [Docker](https://www.docker.com/) (required)
@@ -75,7 +89,7 @@ Again, it runs `whoami` to get the current username & tries to use that as the r
 
 If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `bash ops/restart.sh prod`.
 
-#### Details
+### Details
 
 Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh`
 
@@ -124,3 +138,37 @@ Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh
     - params
       - lastChanTx
       - lastThreadUpdateId
+
+
+## Debugging
+
+### Ethprovider or Ganache not working
+`#!/bin/bash
+url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
+echo "Sending $1 query to provider: $url"
+curl -H "Content-Type: application/json" -X POST --data '{"id":31415,"jsonrpc":"2.0","method":"'$1'","params":'$2'}' $url`
+
+This lets us do a simple curleth net_version '[]' as a sanity check to make sure the ethprovider is alive & listening. If not, curl gives more useful errors that direct you towards investigating either metamask or ganache.
+
+One other sanity check is to run `docker service ls` and make sure that you see an ethprovider service that has port 8545 exposed.
+
+You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is alive & run `ps` to see if it's even running.
+
+Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running yarn restart to see if it gets recreated & if so, check to see if there is anything suspicious there
+
+### Hub errors on start
+
+We've seen some non-deterministic errors on `yarn start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
+
+- Running `yarn start` again
+- A restart: `yarn restart`
+- Cache clean and restart: `yarn cache clean && yarn restart`
+- Nuke everything and start over: 
+    `make purge`
+    `docker system prune -af`
+    `docker volume prune -f`
+    `yarn start`
+
+### Locked DB
+
+We've seen the database get locked on startup. The cause is unclear at the moment (possibly a race condition), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.

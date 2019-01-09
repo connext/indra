@@ -177,6 +177,8 @@ export class OnchainTransactionService {
       nonce: nonce,
     }
 
+    LOG.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)
+
     /* TODO: REB-61
     const sig = await this.web3.eth.signTransaction({ ...unsignedTx })
     const tx = {

@@ -1,5 +1,5 @@
 import { ConnextStore } from '../state/store'
-import getMaxTimeout from './getMaxTimeout';
+import { getUpdateRequestTimeout } from './getUpdateRequestTimeout';
 
 export function validateTimestamp(store: ConnextStore, timeout: number) {
   // timeout will be 0 for request collateral
@@ -7,14 +7,15 @@ export function validateTimestamp(store: ConnextStore, timeout: number) {
     return
   }
 
-  const challenge = getMaxTimeout(store)
+  const maxTimeout = getUpdateRequestTimeout(store)
   const now = Math.floor(Date.now() / 1000)
   const delta = timeout - now
-  if (delta > challenge || delta < 0) {
+  const allowableClockDrift = maxTimeout * 1.5
+  if (delta > maxTimeout + allowableClockDrift || delta < 0) {
     // TODO: send an invalidating state back to the hub (REB-12)
-    return ( null
-      // `Proposed timestamp '${timeout}' is too far from now ('${now}')` +
-      // `by ${delta}s (with challenge of '${challenge}s)'`
+    return (
+      `Proposed timestamp '${timeout}' is too far from now ('${now}') ` +
+      `by ${delta}s (with maxTimeout of '${maxTimeout}s)'`
     )
   }
 }

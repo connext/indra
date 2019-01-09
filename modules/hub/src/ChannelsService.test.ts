@@ -1,6 +1,6 @@
 import { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
-import { getTestRegistry, assert } from './testing'
+import { getTestRegistry, assert, getFakeClock } from './testing'
 import {
   MockExchangeRateDao,
   MockGasEstimateDao,
@@ -30,6 +30,7 @@ import {
   isBigNum,
   convertWithdrawal,
   Payment,
+  InvalidationArgs,
 } from 'connext/dist/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
@@ -43,6 +44,7 @@ import PaymentsService from './PaymentsService';
 import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
 import Config from './Config';
 import { BigNumber } from 'bignumber.js/bignumber'
+import { sleep } from './util';
 
 // TODO: extract web3
 
@@ -74,6 +76,7 @@ function fieldsToWei<T>(obj: T): T {
 const contract = mkAddress('0xCCC')
 
 describe('ChannelsService', () => {
+  const clock = getFakeClock()
   const registry = getTestRegistry({
     Web3: {
       ...Web3,
@@ -111,18 +114,9 @@ describe('ChannelsService', () => {
             },
           }
         },
-        sendTransaction: () => {
+        sendTransaction: function() {
           console.log(`Called mocked web3 function sendTransaction`)
-          return {
-            on: (input, cb) => {
-              switch (input) {
-                case 'transactionHash':
-                  return cb(mkHash('0xbeef'))
-                case 'error':
-                  return cb(null)
-              }
-            },
-          }
+          return this.sendSignedTransaction()
         },
       },
     },
@@ -389,6 +383,21 @@ describe('ChannelsService', () => {
         balanceWeiHub: 0,
       },
     },
+
+    {
+      name: 'should not exchange if there\'s nothing to exchange',
+      initial: {
+        balanceWeiHub: 0,
+        balanceTokenUser: 0,
+      },
+
+      exchange: {
+        amountToken: 200,
+        amountWei: 0,
+      },
+
+      expected: null,
+    },
   ]
 
   describe('doRequestExchange', () => {
@@ -405,7 +414,7 @@ describe('ChannelsService', () => {
           Big(t.exchange.amountToken).times('1e18'),
         )
         const res = await service.redisGetUnsignedState(channel.user)
-        assert.deepEqual(res.update.args, exchangeArgs)
+        assert.deepEqual(res && res.update.args, exchangeArgs)
       })
     })
   })
@@ -452,7 +461,7 @@ describe('ChannelsService', () => {
       convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: toWeiString(50)
+      pendingDepositTokenHub: toWeiString(10)
     })
   })
 
@@ -576,7 +585,7 @@ describe('ChannelsService', () => {
         sigUser: proposePending.sigUser,
       } as ChannelState,
       {
-        pendingDepositTokenHub: toWeiString(50),
+        pendingDepositTokenHub: toWeiString(10),
         sigHub: fakeSig,
         sigUser,
         txCount: [1, 1],
@@ -822,5 +831,147 @@ describe('ChannelsService', () => {
 
     const args = await service.doCollateralizeIfNecessary(channel.user)
     assert.isNull(args)
+  })
+
+  it('should sign an invalidating update', async () => {
+    let channel = await channelUpdateFactory(registry)
+    channel = await channelUpdateFactory(registry, {
+      balanceToken: [100, 175],
+      txCountGlobal: channel.state.txCountGlobal + 1
+    })
+    channel = await channelUpdateFactory(registry, {
+      ...channel.state,
+      pendingDepositToken: [1, 2],
+      pendingDepositWei: [3, 4],
+      pendingWithdrawalToken: [5, 6],
+      pendingWithdrawalWei: [7, 8],
+      txCountGlobal: channel.state.txCountGlobal + 1
+    })
+    channel = await channelUpdateFactory(registry, {
+      ...channel.state,
+      txCountGlobal: channel.state.txCountGlobal + 1,
+      sigUser: null
+    })
+    channel = await channelUpdateFactory(registry, {
+      ...channel.state,
+      txCountGlobal: channel.state.txCountGlobal + 1,
+      sigUser: null
+    })
+
+    await service.doUpdates(channel.user, [{
+      reason: 'Invalidation',
+      args: {
+        reason: 'CU_INVALID_TIMEOUT',
+        previousValidTxCount: 2,
+        lastInvalidTxCount: 5
+      } as InvalidationArgs,
+      txCount: channel.state.txCountGlobal + 1,
+      sigUser: mkSig('0xa')
+    }])
+
+    for (const txCount of [3, 4, 5]) {
+      const update = await channelsDao.getChannelUpdateByTxCount(channel.user, txCount)
+      assert.equal(update.invalid, 'CU_INVALID_TIMEOUT')
+    }
+
+    let chan = await channelsDao.getChannelByUser(channel.user)
+    assertChannelStateEqual(
+      convertChannelState('str', chan.state),
+      {
+        pendingDepositToken: [0, 0],
+        pendingDepositWei: [0, 0],
+        pendingWithdrawalToken: [0, 0],
+        pendingWithdrawalWei: [0, 0],
+        txCountGlobal: channel.state.txCountGlobal + 1,
+        sigHub: fakeSig
+      }
+    )
+  })
+
+  it('should invalidate the first transaction if its bad', async () => {
+    let channel = await channelUpdateFactory(registry, {
+      pendingDepositToken: [1, 2],
+      pendingDepositWei: [3, 4]
+    })
+
+    await service.doUpdates(channel.user, [{
+      reason: 'Invalidation',
+      args: {
+        reason: 'CU_INVALID_TIMEOUT',
+        previousValidTxCount: 0,
+        lastInvalidTxCount: 1
+      } as InvalidationArgs,
+      txCount: channel.state.txCountGlobal + 1,
+      sigUser: mkSig('0xa')
+    }])
+
+    let chan = await channelsDao.getChannelByUser(channel.user)
+    assertChannelStateEqual(
+      convertChannelState('str', chan.state),
+      {
+        pendingDepositToken: [0, 0],
+        pendingDepositWei: [0, 0],
+        pendingWithdrawalToken: [0, 0],
+        pendingWithdrawalWei: [0, 0],
+        txCountGlobal: channel.state.txCountGlobal + 1,
+        sigHub: fakeSig
+      }
+    )
+  })
+
+  it('should not accept an invalidation on a state that has not expired the timeout', async () => {
+    let channel = await channelUpdateFactory(registry)
+    channel = await channelUpdateFactory(registry, {
+      pendingDepositToken: [1, 2],
+      pendingDepositWei: [3, 4],
+      txCountGlobal: channel.state.txCountGlobal + 1,
+      timeout: Math.floor(Date.now() / 1000) + 3
+    })
+
+    const invalidationArgs: InvalidationArgs = {
+      lastInvalidTxCount: channel.state.txCountGlobal,
+      previousValidTxCount: channel.state.txCountGlobal - 1,
+      reason: 'CU_INVALID_ERROR'
+    }
+
+    await service.doUpdates(channel.user, [{
+      args: invalidationArgs,
+      reason: 'Invalidation',
+      sigUser: fakeSig,
+      txCount: channel.state.txCountGlobal + 1
+    }])
+
+    const sync = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    assert.deepEqual(sync.map(item => (item.update as UpdateRequest).reason), ['ConfirmPending', 'ConfirmPending'])
+    // make sure it didnt get invalidated
+    assert.isEmpty(sync.filter(item => (item.update as UpdateRequest).reason == 'Invalidation'))
+  })
+
+  it('should accept an invalidation on a state that has expired the timeout', async () => {
+    let channel = await channelUpdateFactory(registry)
+    channel = await channelUpdateFactory(registry, {
+      pendingDepositToken: [1, 2],
+      pendingDepositWei: [3, 4],
+      txCountGlobal: channel.state.txCountGlobal + 1,
+      timeout: Math.floor(Date.now() / 1000) + 1
+    })
+
+    await clock.awaitTicks(2000)
+
+    const invalidationArgs: InvalidationArgs = {
+      lastInvalidTxCount: channel.state.txCountGlobal,
+      previousValidTxCount: channel.state.txCountGlobal - 1,
+      reason: 'CU_INVALID_ERROR'
+    }
+
+    await service.doUpdates(channel.user, [{
+      args: invalidationArgs,
+      reason: 'Invalidation',
+      sigUser: fakeSig,
+      txCount: channel.state.txCountGlobal + 1
+    }])
+
+    const sync = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    assert.deepEqual(sync.map(item => (item.update as UpdateRequest).reason), ['ConfirmPending', 'Invalidation'])
   })
 })

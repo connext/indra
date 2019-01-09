@@ -1,3 +1,5 @@
+import { prettySafeJson } from ".";
+
 /*
 
 Logs messages to both console.log and logdna!
@@ -125,7 +127,7 @@ export class SCLogger {
       return `${val.message}\n${val.stack}`
     }
 
-    return val
+    return prettySafeJson(val)
   }
 }
 

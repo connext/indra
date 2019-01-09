@@ -89,20 +89,22 @@ export const serviceDefinitions: PartialServiceDefinitions = {
 
   ChainsawService: {
     factory: (
-      signerService: SignerService,
       chainsawDao: ChainsawDao,
       channelsDao: ChannelsDao,
       web3: Web3,
       utils: Utils,
       config: Config,
-    ) => new ChainsawService(signerService, chainsawDao, channelsDao, web3, utils, config),
+      db: DBEngine,
+      stateGenerator: StateGenerator,
+    ) => new ChainsawService(chainsawDao, channelsDao, web3, utils, config, db, stateGenerator),
     dependencies: [
-      'SignerService',
       'ChainsawDao',
       'ChannelsDao',
       'Web3',
       'ConnextUtils',
       'Config',
+      'DBEngine',
+      'StateGenerator',
     ],
     isSingleton: true,
   },

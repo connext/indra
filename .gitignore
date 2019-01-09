@@ -11,3 +11,4 @@ yarn-error.log
 .node_repl_history
 .yarnrc
 *.swp
+**/*.DS_Store

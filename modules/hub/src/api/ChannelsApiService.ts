@@ -8,6 +8,7 @@ import ChannelsService from '../ChannelsService'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
 import { Big } from '../util/bigNumber'
 import { prettySafeJson } from '../util'
+import { Role } from '../Role'
 
 const LOG = log('ChannelsApiService')
 
@@ -22,6 +23,7 @@ export default class ChannelsApiService extends ApiService<
     'POST /:user/request-exchange': 'doRequestExchange',
     'POST /:user/request-withdrawal': 'doRequestWithdrawal',
     'GET /:user/sync': 'doSync', // params: lastChanTx=1&lastThreadUpdateId=2
+    'GET /:user/debug': 'doGetChannelDebug',
     'GET /:user': 'doGetChannelByUser',
   }
   handler = ChannelsApiServiceHandler
@@ -38,11 +40,18 @@ export class ChannelsApiServiceHandler {
   config: Config
 
   private getUser(req: express.Request) {
-    const user = req.params.user.toLowerCase()
-    if (!user || user != req.session!.address) {
+    const { user } = req.params
+    const hasAccess = (
+      (user && user == req.session!.address) ||
+      req.session!.roles.has(Role.ADMIN) ||
+      req.session!.roles.has(Role.SERVICE)
+    )
+
+    if (!hasAccess) {
       throw new Error(
-        `Current user '${req.session!.address}' is not authorized to act ` +
-        `on behalf of requested user '${user}'.`
+        `Current user '${req.session!.address}' with roles ` +
+        `'${JSON.stringify(Array.from(req.session!.roles))}' is not ` +
+        `authorized to act on behalf of requested user '${user}'.`
       )
     }
     return user
@@ -81,16 +90,15 @@ export class ChannelsApiServiceHandler {
     let err = null
 
     try {
-      await this.channelsService.doUpdates(user, updates)
+      await this.channelsService.doUpdates(user, sortedUpdates)
     } catch (e) {
       LOG.error(`Error in doUpdate('${user}', ${prettySafeJson(updates)}): ${e}\n${e.stack}`)
       err = e
     }
 
-    const minUnsignedUpdate = sortedUpdates.filter(up => !!up.sigHub)[0]
     const syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
-      (minUnsignedUpdate || sortedUpdates[0]).txCount,
+      sortedUpdates[0].txCount - 1,
       lastThreadUpdateId,
     )
 
@@ -114,11 +122,17 @@ export class ChannelsApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    await this.channelsService.doRequestDeposit(
+    const err = await this.channelsService.doRequestDeposit(
       user,
       Big(depositWei),
       Big(depositToken),
     )
+    if (err) {
+      res.status(400)
+      res.send({ error: err })
+      return
+    }
+
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
       lastChanTx,
@@ -128,7 +142,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doRequestCollateral(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const { user } = req.params
     const { lastChanTx } = req.body
 
 
@@ -153,7 +167,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doRequestExchange(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const { user } = req.params
     let { weiToSell, tokensToSell, lastChanTx } = req.body
 
 
@@ -182,7 +196,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doRequestWithdrawal(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const { user } = req.params
     const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx } = req.body
 
     if (!user || !withdrawalWeiUser || !recipient || !tokensToSell) {
@@ -209,8 +223,8 @@ export class ChannelsApiServiceHandler {
   }
 
   async doSync(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
     let { lastChanTx, lastThreadUpdateId } = req.query
+    let { user } = req.params
 
     if (
       !user ||
@@ -254,5 +268,19 @@ export class ChannelsApiServiceHandler {
     }
 
     res.send(channel)
+  }
+
+  async doGetChannelDebug(req: express.Request, res: express.Response) {
+    const user = this.getUser(req)
+    const channel = await this.dao.getChannelOrInitialState(user)
+    const recentUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
+      user,
+      Math.max(0, channel.state.txCountGlobal - 10),
+      0, // TODO REB-36: enable threads
+    )
+    res.send({
+      channel,
+      recentUpdates: recentUpdates.reverse(),
+    })
   }
 }

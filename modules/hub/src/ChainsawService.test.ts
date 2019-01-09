@@ -2,6 +2,7 @@ import ABI, {BYTECODE} from './abi/ChannelManager'
 import {BigNumber} from 'bignumber.js'
 import {assert} from 'chai'
 import {ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber} from 'connext/dist/types';
+import {StateGenerator} from 'connext/dist/StateGenerator'
 import {Utils, emptyRootHash} from 'connext/dist/Utils'
 import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
 import ChainsawService from './ChainsawService'
@@ -10,18 +11,17 @@ import {ChannelManager} from './ChannelManager'
 import DBEngine from './DBEngine'
 import {SignerService} from "./SignerService";
 import * as sinon from 'sinon'
-import {getTestRegistry} from './testing'
+import {TestServiceRegistry, getTestRegistry} from './testing'
 import {PgPoolServiceForTest} from './testing/mocks'
 
 const GAS_PRICE = '1000000000'
 
-// TODO: commenting out for now so we can get tests passing. We should document
-// how to run this with a local web3 so we can get it passing again.
-describe.skip('ChainsawService', () => {
-  const registry = getTestRegistry()
+describe.skip('ChainsawService', function() {
+  this.timeout(10000)
+
+  let registry: TestServiceRegistry
   let clock: sinon.SinonFakeTimers
 
-  let signer: SignerService
   let csDao: ChainsawDao
   let chanDao: ChannelsDao
   let utils: Utils
@@ -34,50 +34,47 @@ describe.skip('ChainsawService', () => {
   let CM_ADDRESS: string
 
   before(async () => {
-    w3 = registry.get('Web3')
-    const pgPool = registry.get('PgPoolService') as PgPoolServiceForTest
-    pgPool.testNeedsReset = false
+    w3 = getTestRegistry().get('Web3')
     clock = sinon.useFakeTimers()
     const accounts = await w3.eth.getAccounts()
     HUB_ADDRESS = accounts[0]
     USER_ADDRESS = accounts[1]
 
     contract = new w3.eth.Contract(ABI) as ChannelManager
-    const res = await contract.deploy({
-      data: BYTECODE,
-      arguments: [HUB_ADDRESS, '0x100', '0xd01c08c7180eae392265d8c7df311cf5a93f1b73']
-    }).send({
-      from: HUB_ADDRESS,
-      gas: 6721975,
-      gasPrice: GAS_PRICE
-    })
+    //const res = await contract.deploy({
+    //  data: BYTECODE,
+    //  arguments: [HUB_ADDRESS, '0x100', '0xd01c08c7180eae392265d8c7df311cf5a93f1b73']
+    //}).send({
+    //  from: HUB_ADDRESS,
+    //  gas: 6721975,
+    //  gasPrice: GAS_PRICE
+    //})
 
-    CM_ADDRESS = res.options.address
+    CM_ADDRESS = '0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42'
     contract = new w3.eth.Contract(ABI, CM_ADDRESS)
 
-    const config = {
-      ...registry.get('Config'),
+    registry = getTestRegistry({
       hotWalletAddress: HUB_ADDRESS,
       channelManagerAddress: CM_ADDRESS
-    }
-    const engine = registry.get('DBEngine') as DBEngine
-    csDao = new PostgresChainsawDao(engine, config)
-    chanDao = new PostgresChannelsDao(engine, config)
-    utils = new Utils()
-    signer = new SignerService(w3, utils, config)
-    cs = new ChainsawService(signer, csDao, chanDao, w3, utils, config)
+    })
+    csDao = registry.get('ChainsawDao')
+    chanDao = registry.get('ChannelsDao')
+    utils = registry.get('ConnextUtils')
+    cs = registry.get('ChainsawService')
+  })
+
+  before(async () => {
+    await registry.clearDatabase()
   })
 
   after(async () => {
-    const pgPool = registry.get('PgPoolService') as PgPoolServiceForTest
-    pgPool.testNeedsReset = true
     clock.restore()
   })
 
   it('should poll on startup and record high water mark', async () => {
     // kick off polling here
     const startBlock = await w3.eth.getBlockNumber()
-    await cs.poll()
+    await cs.pollOnce()
     const lastEvent = await csDao.lastPollFor(CM_ADDRESS, 'FETCH_EVENTS')
     assert.equal(lastEvent.blockNumber, startBlock - 1)
   })
@@ -87,7 +84,7 @@ describe.skip('ChainsawService', () => {
     await mine(5)
     const afterMined = await csDao.lastPollFor(CM_ADDRESS, 'FETCH_EVENTS')
     assert.equal(start.blockNumber, afterMined.blockNumber)
-    await poll()
+    await cs.pollOnce()
     const topBlock = await w3.eth.getBlockNumber()
     const afterTime = await csDao.lastPollFor(CM_ADDRESS, 'FETCH_EVENTS')
     assert.equal(afterTime.blockNumber, topBlock - 1)
@@ -95,29 +92,8 @@ describe.skip('ChainsawService', () => {
 
   describe('when a deposit is broadcast', () => {
     before(async () => {
-      const state = {
-        contractAddress: CM_ADDRESS,
-        user: USER_ADDRESS,
-        recipient: USER_ADDRESS,
-        balanceWeiHub: '0',
-        balanceWeiUser: '0',
-        balanceTokenHub: '0',
-        balanceTokenUser: '0',
-        pendingDepositWeiHub: '0',
-        pendingDepositWeiUser: '100',
-        pendingDepositTokenHub: '0',
-        pendingDepositTokenUser: '0',
-        pendingWithdrawalWeiHub: '0',
-        pendingWithdrawalWeiUser: '0',
-        pendingWithdrawalTokenHub: '0',
-        pendingWithdrawalTokenUser: '0',
-        txCountGlobal: 1,
-        txCountChain: 1,
-        threadRoot: emptyRootHash,
-        threadCount: 0,
-        timeout: 0
-      }
-      const fingerprint = utils.createChannelStateHash(state)
+      const state = await chanDao.getChannelOrInitialState(USER_ADDRESS)
+      const fingerprint = utils.createChannelStateHash(convertChannelState('str-unsigned', state.state))
       const sigHub = await w3.eth.sign(fingerprint, HUB_ADDRESS)
       await contract.methods.userAuthorizedUpdate(
         USER_ADDRESS,
@@ -139,7 +115,7 @@ describe.skip('ChainsawService', () => {
 
       // confirmations
       await mine(2)
-      await poll()
+      await cs.pollOnce()
     })
 
     it('should persist that channel', async () => {
@@ -163,33 +139,10 @@ describe.skip('ChainsawService', () => {
 
     before(async () => {
       // start by countersigning the previous state
-      const update = await chanDao.getChannelUpdateByTxCount(USER_ADDRESS, 2)
-      const state = {
-        contractAddress: CM_ADDRESS,
-        user: USER_ADDRESS,
-        recipient: update.state.recipient,
-        balanceWeiHub: update.state.balanceWeiHub.toString(),
-        balanceWeiUser: update.state.balanceWeiUser.toString(),
-        balanceTokenHub: update.state.balanceTokenHub.toString(),
-        balanceTokenUser: update.state.balanceTokenUser.toString(),
-        pendingDepositWeiHub: update.state.pendingDepositWeiHub.toString(),
-        pendingDepositWeiUser: update.state.pendingDepositWeiUser.toString(),
-        pendingDepositTokenHub: update.state.pendingDepositTokenHub.toString(),
-        pendingDepositTokenUser: update.state.pendingDepositTokenUser.toString(),
-        pendingWithdrawalWeiHub: update.state.pendingWithdrawalWeiHub.toString(),
-        pendingWithdrawalWeiUser: update.state.pendingWithdrawalWeiUser.toString(),
-        pendingWithdrawalTokenHub: update.state.pendingWithdrawalTokenHub.toString(),
-        pendingWithdrawalTokenUser: update.state.pendingWithdrawalTokenUser.toString(),
-        txCountGlobal: update.state.txCountGlobal,
-        txCountChain: update.state.txCountChain,
-        threadRoot: update.state.threadRoot,
-        threadCount: update.state.threadCount,
-        timeout: update.state.timeout
-      }
-      const fingerprint = utils.createChannelStateHash(state)
+      const update = await chanDao.getChannelByUser(USER_ADDRESS)
+      const fingerprint = utils.createChannelStateHash(convertChannelState('str', update.state))
       const sigUser = await w3.eth.sign(fingerprint, USER_ADDRESS)
       update.state.sigUser = sigUser
-      // TODO
       await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, convertChannelState('str', update.state), {} as PaymentArgs)
 
       // now send a couple of payment updates
@@ -241,11 +194,11 @@ describe.skip('ChainsawService', () => {
       })
 
       await mine(2)
-      await poll()
+      await cs.pollOnce()
     })
 
     it('should persist the update to the database', async () => {
-      const lastState = await chanDao.getLatestChannelUpdateHubSigned(USER_ADDRESS)
+      const lastState = await chanDao.getChannelByUser(USER_ADDRESS)
       assert.equal(lastState.state.txCountChain, 2);
       assert.equal(lastState.state.txCountGlobal, 8);
       // matches the initial deposit, the payments, and the additional deposit above
@@ -281,13 +234,6 @@ describe.skip('ChainsawService', () => {
     }
   }
 
-  function poll () {
-    return new Promise((resolve, reject) => {
-      (cs as any).once('poll', resolve)
-      (cs as any).once('error', reject)
-      clock.tick(1001)
-    })
-  }
 })
 
 class StateUpdateBuilder {

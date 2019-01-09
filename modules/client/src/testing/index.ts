@@ -824,3 +824,12 @@ export function generateParams(
     prev: prev.sigHub !== '' && prev.sigUser !== '' ? addSigToChannelState(prev, mkHash('0x15')) : prev,
   }
 }
+
+export function parameterizedTests<TestInput>(
+  inputs: (TestInput & { name: string })[],
+  func: (input: TestInput) => any
+) {
+  inputs.forEach(input => {
+    it(input.name, () => func(input))
+  })
+}

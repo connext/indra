@@ -73,4 +73,4 @@ then
 fi
 
 echo "Starting nodemon $1!"
-exec ./node_modules/.bin/nodemon --watch dist --watch /state-hash dist/entry.js $1
+exec ./node_modules/.bin/nodemon --watch dist --watch /state-hash dist/spankchain/main.js $1

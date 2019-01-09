@@ -6,8 +6,8 @@ require('dotenv').config()
 import { EventEmitter } from 'events'
 import Web3 = require('web3')
 // local imports
-import { ChannelManager as TypechainChannelManager } from './typechain/ChannelManager'
-import ChannelManagerAbi from './typechain/abi/ChannelManagerAbi'
+import { ChannelManager as TypechainChannelManager } from './contract/ChannelManager'
+import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
 import { Networking } from './helpers/networking'
 import BuyController from './controllers/BuyController'
 import DepositController from './controllers/DepositController'
@@ -35,15 +35,15 @@ import { default as Logger } from "./lib/Logger";
 import { ConnextStore, ConnextState, PersistentState } from "./state/store";
 import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
-import { isFunction, ResolveablePromise } from "./lib/utils";
+import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
 import { toBN } from './helpers/bn'
 import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import CollateralController from "./controllers/CollateralController";
 import * as actions from './state/actions';
-import { AbstractController } from './controllers/AbstractController';
-import * as ethers from 'ethers';
-
+import { AbstractController } from './controllers/AbstractController'
+import { EventLog } from 'web3/types';
+import { getChannel } from './lib/getChannel';
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -60,8 +60,7 @@ export interface ContractOptions {
 // connext constructor options
 // NOTE: could extend ContractOptions, doesnt for future readability
 export interface ConnextOptions {
-  wallet: any
-  web3: any
+  web3: Web3
   hubUrl: string
   contractAddress: string
   hubAddress: Address
@@ -268,6 +267,18 @@ class HubAPIClient implements IHubAPIClient {
   }
 }
 
+// connext constructor options
+// NOTE: could extend ContractOptions, doesnt for future readability
+export interface ConnextOptions {
+  web3: Web3
+  hubUrl: string
+  contractAddress: string
+  hubAddress: Address
+  hub?: IHubAPIClient
+  tokenAddress?: Address
+  tokenName?: string
+}
+
 export abstract class IWeb3TxWrapper {
   abstract awaitEnterMempool(): Promise<void>
 
@@ -319,28 +330,49 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
   }
 }
 
+export type ChannelManagerChannelDetails = {
+  txCountGlobal: number
+  txCountChain: number
+  threadRoot: string
+  threadCount: number
+  exitInitiator: string
+  channelClosingTime: number
+  status: string
+}
+
 export interface IChannelManager {
-  address: string
   gasMultiple: number
-  cm: any
   userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
+  getPastEvents(user: Address, eventName: string, fromBlock: number): Promise<EventLog[]>
+  getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
 }
 
 export class ChannelManager implements IChannelManager {
   address: string
-  cm: any
+  cm: TypechainChannelManager
   gasMultiple: number
 
   constructor(web3: any, address: string, gasMultiple: number) {
     this.address = address
-    this.cm = new ethers.Contract(address,ChannelManagerAbi,web3) as any
+    this.cm = new web3.eth.Contract(ChannelManagerAbi.abi, address) as any
     this.gasMultiple = gasMultiple
+  }
+
+  async getPastEvents(user: Address, eventName: string, fromBlock: number) {
+    const events = await this.cm.getPastEvents(
+      eventName,
+      {
+        filter: { user },
+        fromBlock,
+        toBlock: "latest",
+      }
+    )
+    return events
   }
 
   async userAuthorizedUpdate(state: ChannelState) {
     // deposit on the contract
-    console.log(this)
-    const call = this.cm.userAuthorizedUpdate(
+    const call = this.cm.methods.userAuthorizedUpdate(
       state.recipient, // recipient
       [
         state.balanceWeiHub,
@@ -369,20 +401,32 @@ export class ChannelManager implements IChannelManager {
       state.sigHub!,
     )
 
-    console.log(JSON.stringify(call, null, 2))
     const sendArgs = {
       from: state.user,
       value: state.pendingDepositWeiUser,
     } as any
-    const gasEstimate = await this.cm.estimate.userAuthorizedUpdate()
+    const gasEstimate = await call.estimateGas(sendArgs)
     sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
     return new Web3TxWrapper(this.address, 'userAuthorizedUpdate', call.send(sendArgs))
   }
+
+  async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
+    const res = await this.cm.methods.getChannelDetails(user).call({ from: user })
+    return {
+      txCountGlobal: +res[0],
+      txCountChain: +res[1],
+      threadRoot: res[2],
+      threadCount: +res[3],
+      exitInitiator: res[4],
+      channelClosingTime: +res[5],
+      status: res[6],
+    }
+  }
+
 }
 
 export interface ConnextClientOptions {
-  wallet: any
-  web3: any
+  web3: Web3
   hubUrl: string
   contractAddress: string
   hubAddress: Address
@@ -396,6 +440,8 @@ export interface ConnextClientOptions {
   // threads, etc).
   loadState?: () => Promise<string | null>
   saveState?: (state: string) => Promise<any>
+
+  getLogger?: (name: string) => Logger
 
   // Optional, useful for dependency injection
   hub?: IHubAPIClient
@@ -458,8 +504,8 @@ export abstract class ConnextClient extends EventEmitter {
     await this.internal.exchangeController.exchange(toSell, currency)
   }
 
-  async buy(purchase: PurchaseRequest): Promise<void> {
-    await this.internal.buyController.buy(purchase)
+  async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
+    return await this.internal.buyController.buy(purchase)
   }
 
   async withdraw(withdrawal: WithdrawalParameters): Promise<void> {
@@ -507,7 +553,7 @@ export class ConnextInternal extends ConnextClient {
     )
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
-    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 4)
+    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)
@@ -547,9 +593,6 @@ export class ConnextInternal extends ConnextClient {
       this._saveState(state)
     })
 
-    this.store.dispatch(actions.setChannelUser(this.opts.user))
-    this.store.dispatch(actions.setChannelRecipient(this.opts.user))
-
     // Start all controllers
     for (let controller of this.getControllers()) {
       console.log('Starting:', controller.name)
@@ -575,8 +618,8 @@ export class ConnextInternal extends ConnextClient {
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
-      state.user.toLowerCase() != this.opts.user.toLowerCase() ||
-      state.contractAddress.toLowerCase() != this.opts.contractAddress.toLowerCase()
+      state.user != this.opts.user ||
+      state.contractAddress != this.opts.contractAddress
     ) {
       throw new Error(
         `Refusing to sign state update which changes user or contract: ` +
@@ -591,11 +634,15 @@ export class ConnextInternal extends ConnextClient {
     const sig = await (
       process.env.DEV || user === hubAddress
         ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.wallet.signMessage as any)(ethers.utils.arrayify(hash))
+        : (this.opts.web3.eth.personal.sign as any)(hash, user)
     )
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, user !== hubAddress)
+  }
+
+  public async getContractEvents(eventName: string, fromBlock: number) {
+    return this.contract.getPastEvents(this.opts.user, eventName, fromBlock)
   }
 
   protected _latestState: PersistentState | null = null
@@ -643,8 +690,21 @@ export class ConnextInternal extends ConnextClient {
     while (true) {
       const state = this._latestState!
       result = this.opts.saveState!(JSON.stringify(state))
+
       // Wait for any current save to finish, but ignore any error it might raise
-      await result.then(null, () => null)
+      const [timeout, _] = await timeoutPromise(
+        result.then(null, () => null),
+        10 * 1000,
+      )
+      if (timeout) {
+        console.warn(
+          'Timeout (10 seconds) while waiting for state to save. ' +
+          'This error will be ignored (which may cause data loss). ' +
+          'User supplied function that has not returned:',
+          this.opts.saveState
+        )
+      }
+
       if (this._latestState == state)
         break
     }
@@ -664,6 +724,14 @@ export class ConnextInternal extends ConnextClient {
       return this.opts.store
 
     const state = new ConnextState()
+    state.persistent.channel = {
+      ...state.persistent.channel,
+      contractAddress: this.opts.contractAddress,
+      user: this.opts.user,
+      recipient: this.opts.user,
+    }
+    state.persistent.latestValidState = state.persistent.channel
+
     if (this.opts.loadState) {
       const loadedState = await this.opts.loadState()
       if (loadedState)
