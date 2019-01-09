@@ -350,8 +350,8 @@ class App extends Component {
     console.log(`Updating state : ${this.state.depositVal}`);
   }
 
-  createWallet() {
-    createWallet();
+  async createWallet() {
+    await createWallet(this.state.web3);
     window.location.reload(true);
   }
 
@@ -625,7 +625,7 @@ class App extends Component {
                 </button>
                 {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
               </p>
-              <button className="btn" onClick={this.createWallet}>
+              <button className="btn" onClick={() => this.createWallet()}>
                 Create New Wallet
               </button>
             </div>
