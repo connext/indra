@@ -100,28 +100,6 @@ To be enforced by DB:
 - Can't update cm_*_updates
 */
 
-create extension if not exists citext;
-
-CREATE DOMAIN csw_eth_address as citext
-CHECK ( value ~* '^0x[a-f0-9]{40}$' );
-
-CREATE DOMAIN csw_sha3_hash AS citext
-CHECK ( value ~* '^0x[a-f0-9]{64}$' );
-
-CREATE DOMAIN eth_signature AS VARCHAR(132)
-CHECK ( value ~* '^0x[a-f0-9]{130}$' );
-
-CREATE DOMAIN token_amount AS NUMERIC(78,0);
-
-CREATE DOMAIN wei_amount AS NUMERIC(78,0);
-
-CREATE TABLE exchange_rates (
-    id BIGSERIAL PRIMARY KEY,
-    retrievedat BIGINT,
-    base VARCHAR,
-    rate_usd NUMERIC(78, 2)
-);
-
 --
 -- Chainsaw
 --
@@ -135,18 +113,6 @@ create type cm_event_type as enum (
     'DidEmptyThread',
     'DidNukeThread'
 );
-
-CREATE TABLE chainsaw_poll_events (
-    block_number BIGINT NOT NULL,
-    polled_at BIGINT NOT NULL,
-    contract csw_eth_address NOT NULL,
-    poll_type varchar not null default 'FETCH_EVENTS',
-    tx_idx integer
-);
-
-alter table chainsaw_poll_events
-add constraint chainsaw_poll_events_block_number_tx_id_unique
-unique (block_number, tx_idx);
 
 create table chainsaw_events (
     id bigserial primary key,
@@ -189,7 +155,8 @@ create type cm_channel_update_reason as enum (
     'ProposePendingWithdrawal',
     'ConfirmPending',
     'OpenThread',
-    'CloseThread'
+    'CloseThread',
+    'Invalidation'
 );
 
 -- Note: _cm_channels has the underscore prefix because it is never meant to be
@@ -315,21 +282,21 @@ begin
 
     -- Check that the tx count increases monotonically
     if (
-        NEW.tx_count_global < OLD.tx_count_global OR
-        NEW.tx_count_chain < OLD.tx_count_chain
+        NEW.tx_count_global < OLD.tx_count_global
+        -- do not check tx_count_chain since invalidation updates can potentially lower it
     ) then
         raise exception 'Update lowers channel tx_count (old: [%, %], new: [%, %])',
-            NEW.tx_count_global,
             OLD.tx_count_global,
-            NEW.tx_count_chain,
-            OLD.tx_count_chain;
+            OLD.tx_count_chain,
+            NEW.tx_count_global,
+            NEW.tx_count_chain;
     end if;
 
     -- TODO: Probably more checks
     return NEW;
 
 end;
-$pgsql$ ;
+$pgsql$;
 
 create trigger cm_channels_check_update_trigger
 before update on _cm_channels
@@ -340,7 +307,9 @@ for each row execute procedure cm_channels_check_update_trigger();
 --
 
 create type cm_channel_update_invalid_reason as enum (
-    'CU_INVALID_EXPIRED'
+    'CU_INVALID_TIMEOUT',
+    'CU_INVALID_REJECTED',
+    'CU_INVALID_ERROR'
 );
 
 -- Note: _cm_channel_updates has the underscore prefix because it is never meant to be
@@ -348,7 +317,7 @@ create type cm_channel_update_invalid_reason as enum (
 -- prevent people from trying to insert or update on it directly.
 create table _cm_channel_updates (
     id bigserial primary key,
-    channel_id bigint references _cm_channels(id),
+    channel_id bigint references _cm_channels(id) deferrable initially immediate,
     created_on timestamp with time zone not null default now(),
     reason cm_channel_update_reason not null,
     args jsonb not null,
@@ -460,9 +429,23 @@ begin
 
     if update_row.id is not null then
 
+      if update_row.sig_hub is distinct from _sig_hub then
+        raise exception 'update attempts to change sig_hub on update % (txCount=%) from % to % (this is likely indicative of a race condition where two different updates are generated at the same time with the same txCount)',
+          update_row.id,
+          update_row.tx_count_global,
+          update_row.sig_hub,
+          _sig_hub;
+      end if;
+
+      if _sig_user is null then
+        raise exception 'attempt to update an existing state, but no sig_user provided. this likely indicates a race condition where two identical states are generated at the same time (for example, two identical tips are sent at once). Update txCount=% with sigHub=%.',
+          update_row.tx_count_global,
+          update_row.sig_hub;
+      end if;
+
       if _sig_user is not null and _sig_user is distinct from update_row.sig_user then
         if update_row.sig_user is not null then
-          raise exception 'update attempts to change signature on update % from % to %!',
+          raise exception 'update attempts to change user signature on update % from % to %!',
             update_row.id, update_row.sig_user, _sig_user;
         end if;
 
@@ -1119,8 +1102,42 @@ begin
             end if;
 
             begin
-              insert into _cm_channels (contract, hub, "user", recipient)
-              values (_contract, hub, _user, _user)
+              insert into _cm_channels (
+                contract, hub, "user", recipient,
+
+                balance_wei_hub, balance_wei_user,
+                balance_token_hub, balance_token_user,
+
+                pending_deposit_wei_hub, pending_deposit_wei_user,
+                pending_deposit_token_hub, pending_deposit_token_user,
+
+                pending_withdrawal_wei_hub, pending_withdrawal_wei_user,
+                pending_withdrawal_token_hub, pending_withdrawal_token_user,
+
+                tx_count_global, tx_count_chain,
+
+                thread_root, thread_count,
+
+                timeout
+              )
+              values (
+                _contract, hub, _user, _user,
+
+                '0', '0',
+                '0', '0',
+
+                '0', '0',
+                '0', '0',
+
+                '0', '0',
+                '0', '0',
+
+                0, 0,
+
+                '0x0000000000000000000000000000000000000000000000000000000000000000', 0,
+
+                0
+              )
               returning * into channel;
             exception when unique_violation then
               channel := (
@@ -1231,6 +1248,14 @@ exception when unique_violation then
 end
 $pgsql$;
 
+alter table chainsaw_poll_events add column poll_type varchar not null default 'FETCH_EVENTS';
+alter table chainsaw_poll_events add column tx_idx integer;
+alter table chainsaw_poll_events
+drop constraint chainsaw_poll_events_block_number_key;
+alter table chainsaw_poll_events
+add constraint chainsaw_poll_events_block_number_tx_id_unique
+unique (block_number, tx_idx);
+
 create or replace function cm_chainsaw_events_since(
   _contract csw_eth_address,
   _block_num integer,
@@ -1258,6 +1283,8 @@ $pgsql$;
 --
 -- payments
 --
+
+drop view payments;
 
 create table _payments (
   id bigserial primary key,
@@ -1325,24 +1352,3 @@ create view payments as (
 );
 
 -- vim: set shiftwidth=2 tabstop=2 softtabstop=2 :vim
-
-CREATE TABLE gas_estimates (
-    id BIGSERIAL PRIMARY KEY,
-    retrieved_at BIGINT,
-
-    speed DOUBLE PRECISION,
-    block_num BIGINT UNIQUE,
-    block_time DOUBLE PRECISION,
-
-    fastest DOUBLE PRECISION,
-    fastest_wait DOUBLE PRECISION,
-
-    fast DOUBLE PRECISION,
-    fast_wait DOUBLE PRECISION,
-
-    average DOUBLE PRECISION,
-    avg_wait DOUBLE PRECISION,
-
-    safe_low DOUBLE PRECISION,
-    safe_low_wait DOUBLE PRECISION
-);

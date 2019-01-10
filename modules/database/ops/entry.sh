@@ -26,6 +26,7 @@ fi
 echo "===> Running additional migrations..."
 
 sql_files=(
+  build/initial.sql
   build/channel-manager.sql
   build/custodial-payments.sql
   build/onchain-transactions.sql
