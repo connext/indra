@@ -73,7 +73,7 @@ function watch_client_src {
   yarn watch
 }
 
-if [[ "$1" == "watch" ]]
+if [[ "$1" == "yes" ]]
 then
   watch_eth_state &
   watch_client_src &

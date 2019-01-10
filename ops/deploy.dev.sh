@@ -4,11 +4,11 @@ set -e
 ####################
 # ENV VARS
 
-# set any of these to "watch" to turn on watchers
+# set any of these to "yes" to turn on watchers
 watch_ethprovider="no"
-watch_hub="yes"
+watch_hub="no"
 watch_chainsaw="no"
-watch_wallet="yes"
+watch_wallet="no"
 
 project=connext
 number_of_services=7

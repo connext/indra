@@ -53,7 +53,7 @@ function watch {
   done
 }
 
-if [[ "$1" == "watch" ]]
+if [[ "$1" == "yes" ]]
 then
   signal_migrations_complete &
   watch
