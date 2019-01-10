@@ -503,7 +503,7 @@ class App extends Component {
         </div>
         <div className="row">
           <div className="column">
-            <h1>Channel Information</h1>
+            <h3>Channel Information</h3>
             <p>Token Address: {tokenAddress}</p>
             Channel Balances:
             <br />
@@ -516,7 +516,6 @@ class App extends Component {
             Hub Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
           </div>
           <div className="column">
-            <h1>Interesting Accounts</h1>
             <button className="btn" onClick={() => this.refreshBalances()}>
               Refresh balances
             </button>
@@ -546,54 +545,52 @@ class App extends Component {
                   <button className="btn">Get wallet</button>
                 </div>
               )}
-
+          </div>
+          <div className="column">
             <h2>Channel Manager</h2>
             <p>Address: {this.state.channelManager.address}</p>
             <p>ETH Balance: {this.state.channelManager.balance}</p>
             <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
-
+          </div>
+          <div className="column">
             <h2>Hub's Wallet</h2>
             <p>Address: {this.state.hubWallet.address}</p>
             <p>ETH Balance: {this.state.hubWallet.balance}</p>
             <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
-
-            <h2>Metamask Wallet</h2>
-            <p>Address: {this.state.metamask.address}</p>
-            <p>ETH balance: {this.state.metamask.balance}</p>
-            <p>TST balance: {this.state.metamask.tokenBalance}</p>
           </div>
         </div>
         <div className="row">
-        <div className="column">
-            <h2>Deposit</h2>
-            <button className="btn" onClick={evt => this.authorizeHandler(evt)}>
-              Authorize
-            </button>
-            <span>&nbsp;&nbsp;(authorized: {this.state.authorized})</span>
-            <br /> <br />
-            <button className="btn" onClick={evt => this.getTokens(evt)}>
-              Get 1 Token from Metamask
-            </button>
-            <button className="btn" onClick={evt => this.getEther(evt)}>
-              Get 1 Ether from Metamask
-            </button>
-            <br /> <br />
-            <div>
-              <div className="value-entry">
-                Enter ETH deposit amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
-              </div>
-              <div className="value-entry">
-                Enter TST deposit amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "TST")} />
-              </div>
-              <button className="btn" onClick={evt => this.depositHandler(evt)}>
-                Deposit to Channel
-              </button>{" "}
-              &nbsp;
+            <div className="column">
+              <h2>Deposit</h2>
+              <button className="btn" onClick={evt => this.authorizeHandler(evt)}>
+                Authorize
+              </button>
+              <span>&nbsp;&nbsp;(authorized: {this.state.authorized})</span>
               <br /> <br />
+              <button className="btn" onClick={evt => this.getTokens(evt)}>
+                Get 1 Token from Metamask
+              </button>
+              <button className="btn" onClick={evt => this.getEther(evt)}>
+                Get 1 Ether from Metamask
+              </button>
+              <br /> <br />
+              <div>
+                <div className="value-entry">
+                  Enter ETH deposit amount in Wei:&nbsp;&nbsp;
+                  <input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
+                </div>
+                <div className="value-entry">
+                  Enter TST deposit amount in Wei:&nbsp;&nbsp;
+                  <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "TST")} />
+                </div>
+                <button className="btn" onClick={evt => this.depositHandler(evt)}>
+                  Deposit to Channel
+                </button>{" "}
+                &nbsp;
+                <br /> <br />
+              </div>
             </div>
-            <div>
+            <div className="column">
               <h2>Exchange</h2>
               <p>Exchanges will be made in-channel. Currently only ETH->Token exchanges are supported.</p>
               <div className="value-entry">
@@ -606,7 +603,7 @@ class App extends Component {
               &nbsp;
               <br /> <br />
             </div>
-            <div>
+            <div className="column">
               <h2>Payment</h2>
               <div className="value-entry">
                 Enter recipient address:&nbsp;&nbsp;
@@ -630,7 +627,7 @@ class App extends Component {
               &nbsp;
               <br /> <br />
             </div>
-            <div>
+            <div className="column">
               <h2>Withdrawal</h2>
               <div className="value-entry">
                 Enter recipient address:&nbsp;&nbsp;
@@ -654,7 +651,6 @@ class App extends Component {
               &nbsp;
               <br /> <br />
             </div>
-          </div>
         </div>
       </div>
     );

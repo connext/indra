@@ -17,6 +17,8 @@
   flex-direction: column;
   flex-basis: 100%;
   flex: 1;
+  padding-bottom: 2.5%;
+  padding-top: 2.5%;
 }
 
 .value-entry{
@@ -27,6 +29,7 @@
   background-color: #002868 ;
   color: #FFF;
   opacity:0.5;
+  width: 60%;
 
   padding: 4px 4px 4px 4px;
   border-radius:5px;
