@@ -165,6 +165,8 @@ class App extends Component {
       this.setState({ connext: connext });
       console.log(`This is connext state: ${JSON.stringify(this.state.channelState, null, 2)}`);
       await this.refreshBalances();
+      await this.authorizeHandler();
+
       this.pollExchangeRate();
     } catch (error) {
       alert(`Failed to load web3 or Connext. Check console for details.`);
