@@ -299,6 +299,7 @@ class App extends Component {
   async withdrawalHandler(max) {
     let withdrawalVal = { ...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate }
     if (max) {
+      withdrawalVal.recipient = this.state.metamask.address
       withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser
       withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser
     }
@@ -594,7 +595,7 @@ class App extends Component {
               </button>{" "}
               &nbsp;
               <button className="btn" onClick={() => this.withdrawalHandler(true)}>
-                Withdraw Max from Channel
+                Withdraw Max from Channel to MetaMask
               </button>{" "}
               &nbsp;
               <br /> <br />
