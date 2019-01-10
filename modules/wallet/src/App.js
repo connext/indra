@@ -54,7 +54,7 @@ class App extends Component {
         tokenBalance: 0
       },
       depositVal: {
-        amountWei: "1000",
+        amountWei: "0",
         amountToken: "0"
       },
       exchangeVal: "100",
@@ -274,11 +274,37 @@ class App extends Component {
   }
 
   //Connext Helpers
+
   async depositHandler() {
     const tokenContract = this.state.tokenContract
     let approveFor = channelManagerAddress;
     let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
     console.log(approveTx);
+
+    try{
+      const wei = this.state.depositVal.amountWei
+      const tokens = this.state.depositVal.amountToken
+
+      if (wei !== "0"){
+        console.log("found wei deposit")
+        if (wei >= this.state.balance){
+          const weiNeeded = wei - this.state.balance
+          await this.getEther(weiNeeded)
+        }
+      }
+
+      if (tokens !== "0"){
+        console.log("found token deposit")
+        if (tokens >= this.state.tokenBalance){
+          const tokensNeeded = tokens - this.state.tokenBalance
+          await this.getTokens(tokensNeeded)
+        }
+      }
+      
+    } catch(e){
+      console.log(`error fetching deposit from metamask: ${e}`)
+    } 
+
 
     console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
     console.log('********', this.state.connext.opts.tokenAddress)
@@ -394,8 +420,9 @@ class App extends Component {
   }
 
   // to get tokens from metamask to browser wallet
-  async getTokens() {
+  async getTokens(amountToken) {
     let web3 = window.web3;
+    console.log(web3)
     if (!web3) {
       alert("You need to install & unlock metamask to do that");
       return;
@@ -409,7 +436,7 @@ class App extends Component {
 
     const tokenContract = new metamaskProvider.eth.Contract(humanTokenAbi, tokenAddress);
 
-    let tokens = "1000000000000000000"
+    let tokens = amountToken
     console.log(`Sending ${tokens} tokens from ${address} to ${store.getState()[0].getAddressString()}`);
 
     console.log('state:')
@@ -424,8 +451,9 @@ class App extends Component {
   }
 
   // to get tokens from metamask to browser wallet
-  async getEther() {
-    let web3 = await window.web3;
+  async getEther(amountWei) {
+    let web3 = window.web3;
+    console.log(web3)
     if (!web3) {
       alert("You need to install & unlock metamask to do that");
       return;
@@ -439,7 +467,7 @@ class App extends Component {
     }
     const sentTx = await metamask.sendTransaction({
       to: store.getState()[0].getAddressString(),
-      value: eth.utils.bigNumberify("1000000000000000000"),
+      value: eth.utils.bigNumberify(amountWei),
       gasLimit: eth.utils.bigNumberify("21000")
     });
     console.log(`Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `, sentTx);
@@ -562,22 +590,28 @@ class App extends Component {
         <div className="row">
             <div className="column">
               <h2>Deposit</h2>
-              <button className="btn" onClick={evt => this.authorizeHandler(evt)}>
-                Authorize
-              </button>
-              <span>&nbsp;&nbsp;(authorized: {this.state.authorized})</span>
-              <br /> <br />
+              {this.state.authorized ?
+              (<div> 
+                Wallet authorized!
+              </div>
+                ):
+                (
+                <div>
+                  Awaiting wallet authorization....
+                </div>
+                ) }
+              {/* <br /> <br />
               <button className="btn" onClick={evt => this.getTokens(evt)}>
                 Get 1 Token from Metamask
               </button>
               <button className="btn" onClick={evt => this.getEther(evt)}>
                 Get 1 Ether from Metamask
-              </button>
+              </button> */}
               <br /> <br />
               <div>
                 <div className="value-entry">
                   Enter ETH deposit amount in Wei:&nbsp;&nbsp;
-                  <input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
+                  <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
                 </div>
                 <div className="value-entry">
                   Enter TST deposit amount in Wei:&nbsp;&nbsp;
