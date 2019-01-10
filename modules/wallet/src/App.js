@@ -515,17 +515,6 @@ class App extends Component {
             <br /> <br />
             <div>
               <div className="value-entry">
-                Enter approval amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={10000} onChange={evt => this.updateApprovalHandler(evt)} />
-              </div>
-              <button className="btn" onClick={evt => this.approvalHandler(evt)}>
-                Approve Channel Manager
-              </button>{" "}
-              &nbsp;
-              <br /> <br />
-            </div>
-            <div>
-              <div className="value-entry">
                 Enter ETH deposit amount in Wei:&nbsp;&nbsp;
                 <input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
               </div>
