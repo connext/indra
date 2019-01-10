@@ -9,7 +9,7 @@
     "db": "bash ops/db.sh",
     "logs": "bash ops/logs.sh",
     "rebuild": "make clean && make",
-    "reset": "bash ops/stop.sh && make clean",
+    "reset": "make reset && bash ops/restart.sh",
     "restart": "bash ops/restart.sh",
     "start": "make dev && bash ops/deploy.dev.sh",
     "prod": "make prod && bash ops/deploy.prod.sh",

@@ -22,6 +22,8 @@ You can run this project locally in dev-mode with `yarn start` (or `yarn restart
 
 The above command will build anything needed for you but you can also build stuff manually with `make`.
 
+You can wipe all persistent data and restart the app with a fresh db using `yarn reset`
+
 You can run Indra in production-mode with `yarn prod` (or `yarn restart prod`).
 
 This repo is split into modules. Each module, ie `name`, in general, has source code in `modules/name/src` that the build/deploy tools in `modules/name/ops` use to build stuff that's output to either `modules/name/build` or `modules/name/dist`.
@@ -33,6 +35,8 @@ See all running containers with: `docker service ls`.
 You can see the logs for some container with: `yarn logs name`. Where "name" would be `hub` for the docker container `connext_hub`.
 
 Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'` or open a db console with just `bash ops/db.sh`
+
+If you encounter any problems, check out the debugging guide at the bottom of this doc. For any unanswered questions, reach out on our Discord channel & we'll be happy to help.
 
 ## How to get started developing
 
@@ -142,7 +146,21 @@ Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh
 
 ## Debugging
 
+### `The container name "/connext_buidler" is already in use`
+
+Full error message:
+
+```
+docker: Error response from daemon: Conflict. The container name "/connext_buidler" is already in use by container "6d37b932d8047e16f4a8fdf58780fe6974e6beef58bf4cc5e48d00d3e94a67c3". You have to remove (or rename) that container to be able to reuse that name.
+```
+
+You probably started to build something and then stopped it with ctrl-c. It only looks like the build stopped: the builder process is still hanging out in the background wrapping up what it was working on. If you wait for a few seconds, this problem will sometimes just go away as the builder finishes & exits.
+
+To speed things up, run `make stop` to tell the builder to hurry up & finish and then wait for the builder to exit.
+
+
 ### Ethprovider or Ganache not working
+
 `#!/bin/bash
 url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
 echo "Sending $1 query to provider: $url"
@@ -171,4 +189,4 @@ We've seen some non-deterministic errors on `yarn start` where some part of the 
 
 ### Locked DB
 
-We've seen the database get locked on startup. The cause is unclear at the moment (possibly a race condition), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
+We've seen the database get locked on startup. Often, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
