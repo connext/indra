@@ -105,12 +105,12 @@ proxy: $(shell find $(proxy) $(find_options))
 
 client: client-node-modules $(shell find $(client)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_client) "npm run build"
+	$(docker_run_in_client) "yarn build"
 	$(log_finish) && touch build/client
 
 client-node-modules: $(project)_builder $(client)/package.json
 	$(log_start)
-	$(docker_run_in_client) "npm install"
+	$(docker_run_in_client) "yarn install"
 	$(log_finish) && touch build/client-node-modules
 
 # Wallet
