@@ -1,21 +1,28 @@
 .app{
-  display:flex;
-  flex-wrap:wrap;
-  flex-basis:50%;
-  margin: 0 auto;  
+  margin: 0 auto;
+  padding-top: 1%;
+  padding-left: 5%;
+  padding-right: 5%;
 }
-.app>h1{
-  padding-left:25%;
-  padding-right:25%;
-  width:50%;
+
+.row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
 }
-.col{
-  padding-left:10%;
-  padding-top:3%;
+
+.column {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 100%;
+  flex: 1;
 }
+
 .value-entry{
   padding:1% 0 1% 0;
 }
+
 .btn{
   background-color: #002868 ;
   color: #FFF;
@@ -24,7 +31,6 @@
   padding: 4px 4px 4px 4px;
   border-radius:5px;
 }
-
 .btn:hover{
   transition: ease-out 0.2s;
   background-color: #FFF !important;

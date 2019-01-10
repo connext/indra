@@ -498,10 +498,73 @@ class App extends Component {
   render() {
     return (
       <div className="app">
-        <h1> Connext Starter Kit</h1>
-        <div className="col">
-          <div>
-            <h1>Payment UX</h1>
+        <div className="row" style={{justifyContent: 'center'}}>
+          <h1> Connext Starter Kit</h1>
+        </div>
+        <div className="row">
+          <div className="column">
+            <h1>Channel Information</h1>
+            <p>Token Address: {tokenAddress}</p>
+            Channel Balances:
+            <br />
+            User Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
+            <br />
+            User Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenUser : null}
+            <br />
+            Hub Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
+            <br />
+            Hub Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
+          </div>
+          <div className="column">
+            <h1>Interesting Accounts</h1>
+            <button className="btn" onClick={() => this.refreshBalances()}>
+              Refresh balances
+            </button>
+
+            {this.state.walletSet ? (
+              <div>
+                <h2>Browser Wallet</h2>
+                <p>Address: {this.state.address}</p>
+                <p>ETH Balance: {this.state.balance}</p>
+                <p>TST Balance: {this.state.tokenBalance}</p>
+                <p>
+                  <button className="btn" onClick={this.toggleKey}>
+                    {this.state.toggleKey ? <span>Hide Mnemonic</span> : <span>Reveal Mnemonic</span>}
+                  </button>
+                  {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
+                </p>
+                <button className="btn" onClick={() => this.createWallet()}>
+                  Create New Wallet
+                </button>
+              </div>
+            ) : (
+                <div>
+                  Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
+                <div>
+                    <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
+                  </div>
+                  <button className="btn">Get wallet</button>
+                </div>
+              )}
+
+            <h2>Channel Manager</h2>
+            <p>Address: {this.state.channelManager.address}</p>
+            <p>ETH Balance: {this.state.channelManager.balance}</p>
+            <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
+
+            <h2>Hub's Wallet</h2>
+            <p>Address: {this.state.hubWallet.address}</p>
+            <p>ETH Balance: {this.state.hubWallet.balance}</p>
+            <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
+
+            <h2>Metamask Wallet</h2>
+            <p>Address: {this.state.metamask.address}</p>
+            <p>ETH balance: {this.state.metamask.balance}</p>
+            <p>TST balance: {this.state.metamask.tokenBalance}</p>
+          </div>
+        </div>
+        <div className="row">
+        <div className="column">
             <h2>Deposit</h2>
             <button className="btn" onClick={evt => this.authorizeHandler(evt)}>
               Authorize
@@ -592,66 +655,6 @@ class App extends Component {
               <br /> <br />
             </div>
           </div>
-        </div>
-        <div className="col">
-          <h1>Channel Information</h1>
-          <p>Token Address: {tokenAddress}</p>
-          Channel Balances:
-          <br />
-          User Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
-          <br />
-          User Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenUser : null}
-          <br />
-          Hub Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
-          <br />
-          Hub Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
-        </div>
-        <div className="col">
-          <h1>Interesting Accounts</h1>
-          <button className="btn" onClick={() => this.refreshBalances()}>
-            Refresh balances
-          </button>
-
-          {this.state.walletSet ? (
-            <div>
-              <h2>Browser Wallet</h2>
-              <p>Address: {this.state.address}</p>
-              <p>ETH Balance: {this.state.balance}</p>
-              <p>TST Balance: {this.state.tokenBalance}</p>
-              <p>
-                <button className="btn" onClick={this.toggleKey}>
-                  {this.state.toggleKey ? <span>Hide Mnemonic</span> : <span>Reveal Mnemonic</span>}
-                </button>
-                {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
-              </p>
-              <button className="btn" onClick={() => this.createWallet()}>
-                Create New Wallet
-              </button>
-            </div>
-          ) : (
-              <div>
-                Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
-              <div>
-                  <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
-                </div>
-                <button className="btn">Get wallet</button>
-              </div>
-            )}
-
-          <h2>Channel Manager</h2>
-          <p>Address: {this.state.channelManager.address}</p>
-          <p>ETH Balance: {this.state.channelManager.balance}</p>
-          <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
-
-          <h2>Hub's Wallet</h2>
-          <p>Address: {this.state.hubWallet.address}</p>
-          <p>ETH Balance: {this.state.hubWallet.balance}</p>
-          <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
-
-          <h2>Metamask Wallet</h2>
-          <p>Address: {this.state.metamask.address}</p>
-          <p>ETH balance: {this.state.metamask.balance}</p>
-          <p>TST balance: {this.state.metamask.tokenBalance}</p>
         </div>
       </div>
     );
