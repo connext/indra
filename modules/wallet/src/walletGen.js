@@ -16,7 +16,7 @@ export async function createWallet(web3) {
 }
 
 export async function findOrCreateWallet(web3) {
-  let privateKey = localStorage.getItem("privateKey");
+  //let privateKey = localStorage.getItem("privateKey");
   let mnemonic = localStorage.getItem("mnemonic")
   let wallet;
   if (mnemonic) {

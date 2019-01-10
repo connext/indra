@@ -10,7 +10,7 @@ import axios from 'axios';
 const Web3 = require('web3');
 const Tx = require('ethereumjs-tx');
 const eth = require('ethers');
-const util = require('ethereumjs-util')
+//const util = require('ethereumjs-util')
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -67,8 +67,8 @@ class App extends Component {
           {
             recipient: "0x0",
             amount: {
-              amountWei: "0",
-              amountToken: "100"
+              amountWei: "100",
+              amountToken: "0"
             }
           }
         ]
@@ -564,11 +564,11 @@ class App extends Component {
               </div>
               <div className="value-entry">
                 Enter ETH payment amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={0} onChange={evt => this.updatePaymentHandler(evt, "ETH")} />
+                <input defaultValue={100} onChange={evt => this.updatePaymentHandler(evt, "ETH")} />
               </div>
               <div className="value-entry">
                 Enter TST payment amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={100} onChange={evt => this.updatePaymentHandler(evt, "TST")} />
+                <input defaultValue={0} onChange={evt => this.updatePaymentHandler(evt, "TST")} />
               </div>
               <button className="btn" onClick={evt => this.paymentHandler(evt)}>
                 Make a Payment
