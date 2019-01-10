@@ -125,7 +125,6 @@ export default class ChannelsService {
       )
     }
 
-/*  TODO: publish hasPendingOps method to npm's version of connext Utils
     if (utils.hasPendingOps(channelStateStr)) {
       LOG.info(
         `User requested a deposit while state already has pending operations ` +
@@ -133,7 +132,6 @@ export default class ChannelsService {
       )
       return 'current state has pending fields'
     }
-*/
 
     const nowSeconds = Math.floor(Date.now() / 1000)
 
@@ -808,8 +806,7 @@ export default class ChannelsService {
           sigUser: chan.state.sigUser,
           sigHub: chan.state.sigHub,
           txCount: chan.state.txCountGlobal,
-          // TODO: update connext on npm to include this prop
-          //createdOn: chan.createdOn,
+          createdOn: chan.createdOn,
           id: chan.id
         })
         lastTxCount = chan.state.txCountGlobal

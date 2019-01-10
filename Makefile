@@ -27,7 +27,7 @@ docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
-docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
+docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
 docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root $(project)_builder:dev $(id)
 
 # Env setup
@@ -151,6 +151,7 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 hub-node-modules: $(project)_builder $(hub)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
+	$(docker_run_in_hub) "rm -rf node_modules/connext && ln -sf ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
 
 # Database

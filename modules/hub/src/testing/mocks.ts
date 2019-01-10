@@ -1,3 +1,4 @@
+import { Utils } from 'connext/dist/Utils';
 import { Validator } from 'connext/dist/validator'
 import * as request from 'supertest'
 
@@ -11,9 +12,9 @@ import { Role } from "../Role";
 
 import { mkAddress, mkSig, mkHash } from "./stateUtils";
 
+import BigNumber from 'bignumber.js';
 import { Big, toWeiBigNum } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
-import { Utils } from 'connext/dist/Utils';
 import Config from '../Config';
 
 const Web3 = require('web3')

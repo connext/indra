@@ -14,6 +14,12 @@ bash ops/wait-for-it.sh -t 60 $eth_migrations 2> /dev/null
 bash ops/wait-for-it.sh -t 60 $ethprovider 2> /dev/null
 bash ops/wait-for-it.sh -t 60 $redis 2> /dev/null
 
+echo "Setting up yarn links so we can use modules/client as if it were a node_module"
+cd /client && echo "cwd=`pwd`"
+yarn link
+cd $HOME && echo "cwd=`pwd`"
+rm -rf node_modules/connext && yarn link connext
+
 export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$database/$POSTGRES_DB"
 
 function getHash {
