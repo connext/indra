@@ -3,13 +3,14 @@ import { getConnextClient } from 'connext/dist/Connext';
 import './App.css';
 import ProviderOptions from './utils/ProviderOptions.ts';
 import clientProvider from './utils/web3/clientProvider.ts';
-import * as eth from 'ethers';
 import { setWallet } from './utils/actions.js';
 import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
 import axios from 'axios';
 const Web3 = require('web3');
-var Tx = require('ethereumjs-tx');
+const Tx = require('ethereumjs-tx');
+const eth = require('ethers');
+const util = require('ethereumjs-util')
 require('dotenv').config();
 
 // const ropstenWethAbi = require('./abi/ropstenWeth.json')
@@ -102,7 +103,7 @@ class App extends Component {
   async componentDidMount() {
     try {
       // New provider code
-      const providerOpts = new ProviderOptions().approving();
+      const providerOpts = new ProviderOptions(store).approving();
       const provider = clientProvider(providerOpts);
       const web3 = new Web3(provider);
       await this.setState({ web3 });
@@ -113,16 +114,14 @@ class App extends Component {
       // as is, if you don't write down the privkey in the store you can't recover the wallet
       const wallet = await this.walletHandler();
       console.log('wallet: ', wallet);
-      web3.eth.sign = wallet.sign
-      web3.eth.signTransaction = wallet.signTransaction
+      // web3.eth.sign = wallet.sign
+      // web3.eth.signTransaction = wallet.signTransaction
       await this.setState({ web3 });
-
-      const newWallet = wallet
 
       // make sure wallet is linked to chain
       store.dispatch({
         type: "SET_WALLET",
-        text: newWallet
+        text: wallet
       });
 
       this.setState({ wallet: store.getState()[0] }); //newWallet});
@@ -136,11 +135,11 @@ class App extends Component {
       console.log(`Set up token contract at ${tokenAddress}`);
 
       // get address
-      const account = store.getState()[0];
-      this.setState({ address: account.address });
+      const address = wallet.getAddressString()
+      this.setState({ address });
 
       console.log(`instantiating connext with hub as: ${hubUrl}`);
-      console.log(`web3 address : ${JSON.stringify(account.address)}`);
+      console.log(`web3 address : ${await web3.eth.getAccounts()}`);
       console.log("Setting up connext...");
 
       // *** Instantiate the connext client ***
@@ -149,12 +148,13 @@ class App extends Component {
         hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
         hubUrl: hubUrl, //http://localhost:8080,
         contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
-        user: account.address.toLowerCase()
+        user: address.toLowerCase(),
+        tokenAddress,
       });
 
       console.log("Successfully set up connext!");
 
-      connext.start(); // start polling
+      await connext.start(); // start polling
       //console.log('Pollers started! Good morning :)')
       connext.on("onStateChange", state => {
         console.log("Connext state changed:", state);
@@ -165,6 +165,7 @@ class App extends Component {
 
       await this.setState({ connext: connext });
       console.log(`Channel state: ${JSON.stringify(this.state.channelState, null, 2)}`);
+
       await this.refreshBalances();
       this.pollExchangeRate();
     } catch (error) {
@@ -293,6 +294,7 @@ class App extends Component {
     console.log(approveTx);
 
     console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
+    console.log('********', this.state.connext.opts.tokenAddress)
     let depositRes = await this.state.connext.deposit(this.state.depositVal);
     console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
   }
@@ -312,6 +314,7 @@ class App extends Component {
   async withdrawalHandler(max) {
     let withdrawalVal = { ...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate }
     if (max) {
+      withdrawalVal.recipient = this.state.metamask.address
       withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser
       withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser
     }
@@ -370,25 +373,28 @@ class App extends Component {
   }
 
   async authorizeHandler(evt) {
-    console.log(this.state.wallet);
-    let res = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
-    let hash = eth.utils.id(`${HASH_PREAMBLE} ${eth.utils.id(res.data.nonce)} ${eth.utils.id("localhost")}`);
-    let signature = await this.state.web3.eth.sign(hash);
+    const web3 = this.state.web3
+    const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
+
+    const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`)
+
+    // let hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(res.data.nonce)} ${web3.utils.sha3("localhost")}`);
+    let signature = await this.state.web3.eth.sign(hash, this.state.address);
     try {
       let authRes = await axios.post(
         `${hubUrl}/auth/response`,
         {
-          nonce: res.data.nonce,
+          nonce: challengeRes.data.nonce,
           address: this.state.address,
           origin: "localhost",
-          signature: signature.signature
+          signature,
         },
         opts
       );
       const token = authRes.data.token;
       document.cookie = `hub.sid=${token}`;
       console.log(`cookie set: ${token}`);
-      res = await axios.get(`${hubUrl}/auth/status`, opts);
+      const res = await axios.get(`${hubUrl}/auth/status`, opts);
       if (res.data.success) {
         this.setState({ authorized: "true" });
       } else {
@@ -407,20 +413,26 @@ class App extends Component {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
-    const metamask = metamaskProvider.getSigner();
-    const address = (await metamask.provider.listAccounts())[0];
+    const metamaskProvider = new Web3(web3.currentProvider);
+    const address = (await metamaskProvider.eth.getAccounts())[0];
     if (!address) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
 
-    const tokenContract = new eth.Contract(tokenAddress, humanTokenAbi, metamaskProvider);
-    const token = tokenContract.connect(metamask);
+    const tokenContract = new metamaskProvider.eth.Contract(humanTokenAbi, tokenAddress);
 
-    let tokens = eth.utils.bigNumberify("1000000000000000000");
-    console.log(`Sending ${tokens} tokens to ${this.state.address}`);
-    let approveTx = await token.functions.transfer(this.state.address, tokens);
+    let tokens = "1000000000000000000"
+    console.log(`Sending ${tokens} tokens from ${address} to ${store.getState()[0].getAddressString()}`);
+
+    console.log('state:')
+    console.log(this.state)
+
+    let approveTx = await tokenContract.methods.transfer(store.getState()[0].getAddressString(), tokens).send({
+      from: address,
+      gas: "81000"
+    });
+
     console.log(approveTx);
   }
 
@@ -438,15 +450,12 @@ class App extends Component {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    console.log('***** getEther *****')
-    console.log(store.getState())
-    console.log('web3:', web3)
     const sentTx = await metamask.sendTransaction({
-      to: store.getState()[0].address,
+      to: store.getState()[0].getAddressString(),
       value: eth.utils.bigNumberify("1000000000000000000"),
       gasLimit: eth.utils.bigNumberify("21000")
     });
-    console.log(sentTx);
+    console.log(`Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `, sentTx);
   }
 
   // ** wrapper for ethers getBalance. probably breaks for tokens
@@ -521,17 +530,6 @@ class App extends Component {
             <br /> <br />
             <div>
               <div className="value-entry">
-                Enter approval amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={10000} onChange={evt => this.updateApprovalHandler(evt)} />
-              </div>
-              <button className="btn" onClick={evt => this.approvalHandler(evt)}>
-                Approve Channel Manager
-              </button>{" "}
-              &nbsp;
-              <br /> <br />
-            </div>
-            <div>
-              <div className="value-entry">
                 Enter ETH deposit amount in Wei:&nbsp;&nbsp;
                 <input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
               </div>
@@ -601,7 +599,7 @@ class App extends Component {
               </button>{" "}
               &nbsp;
               <button className="btn" onClick={() => this.withdrawalHandler(true)}>
-                Withdraw Max from Channel
+                Withdraw Max from Channel to MetaMask
               </button>{" "}
               &nbsp;
               <br /> <br />
