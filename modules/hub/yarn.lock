@@ -1673,7 +1673,7 @@ connect-redis@^3.3.3:
 
 "connext@https://github.com/bohendo/connext-client#indra":
   version "0.0.1"
-  resolved "https://github.com/bohendo/connext-client#172ffd6b7d461148cff4939313cdf2a56eb97a28"
+  resolved "https://github.com/bohendo/connext-client#8be246bce2afb40ca77609f49c03bbdf1cdb10bb"
   dependencies:
     "@types/bluebird" "^3.5.25"
     axios "^0.18.0"
@@ -7356,9 +7356,9 @@ types-rlp@^0.0.1:
     rlp "^2.0.0"
 
 typescript-fsa-reducers@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/typescript-fsa-reducers/-/typescript-fsa-reducers-1.1.0.tgz#b6f00e515a7fe2ad319a6f4f8e642b205405b1c2"
-  integrity sha512-LDeuwrNwuqyZMJsxP8pJUCDuBMK504VG0j51sImLMZjgDbPD/WSEbZPS++cFVzN+FnGS25iTO7HFfQ3JHWVx5A==
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/typescript-fsa-reducers/-/typescript-fsa-reducers-1.2.0.tgz#015043b22440ce517e696f24564f7233b6a5a67b"
+  integrity sha512-JGIqBDf4SV+pE8CDenTqtr13cts7kwS3/YbYhLoKZZMZWSIhwn+xwwbrg/oEfvftLykyE9PXrySy6A62m6gEaw==
 
 typescript-fsa@^3.0.0-beta-2:
   version "3.0.0-beta-2"
