@@ -48,9 +48,9 @@ prod: database-prod hub-prod proxy-prod
 stop: 
 	docker container stop $(project)_buidler 2> /dev/null || true
 	bash ops/stop.sh
+	docker container prune -f
 
 reset: stop
-	docker container prune -f
 	docker volume rm connext_chain_dev || true
 	docker volume rm connext_database_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
