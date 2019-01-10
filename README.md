@@ -33,6 +33,7 @@ At runtime, most modules are run in their own docker container(s). These docker 
 See all running containers with: `docker service ls`.
 
 You can see the logs for some container with: `yarn logs name`. Where "name" would be `hub` for the docker container `connext_hub`.
+The ethprovider has two sets of logs: `yarn logs ethprovider` will show migration logs and `yarn logs ganache` will show output from ganache.
 
 Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'` or open a db console with just `bash ops/db.sh`
 
