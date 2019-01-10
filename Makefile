@@ -45,6 +45,16 @@ all: dev prod
 dev: database ethprovider hub wallet proxy
 prod: database-prod hub-prod proxy-prod
 
+stop: 
+	docker container stop $(project)_buidler 2> /dev/null || true
+	bash ops/stop.sh
+	docker container prune -f
+
+reset: stop
+	docker volume rm connext_chain_dev || true
+	docker volume rm connext_database_dev || true
+	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
+
 clean:
 	rm -rf build/*
 	rm -rf $(cwd)/modules/**/build
@@ -53,15 +63,7 @@ clean:
 deep-clean: clean
 	rm -rf $(cwd)/modules/**/node_modules
 
-stop: 
-	docker container stop $(project)_buidler 2> /dev/null || true
-	bash ops/stop.sh
-
-purge: stop deep-clean
-	docker container prune -f
-	docker volume rm connext_chain_dev || true
-	docker volume rm connext_database_dev || true
-	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
+purge: reset deep-clean
 
 tags: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
