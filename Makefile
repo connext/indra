@@ -121,7 +121,7 @@ wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(docker_run_in_wallet) "yarn build"
 	$(log_finish) && touch build/wallet-prod
 
-wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
+wallet: client wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
@@ -138,7 +138,7 @@ hub-prod: hub-js
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	$(log_finish) && touch build/hub-prod
 
-hub: hub-js
+hub: client hub-js
 	$(log_start)
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
 	$(log_finish) && touch build/hub

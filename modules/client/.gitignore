@@ -9,6 +9,7 @@ test/tests.txt
 .env
 .node-gyp
 .npm
+.vscode
 .yarn
 .yarnrc
 *.sw[opq]
