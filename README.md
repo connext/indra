@@ -189,4 +189,12 @@ We've seen some non-deterministic errors on `yarn start` where some part of the 
 
 ### Locked DB
 
-We've seen the database get locked on startup. Often, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
+We've seen the database get locked on startup. Sometimes, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
+
+### 502 Bad Gateway
+
+This is a pretty common error--it's either due to a locked DB 
+(see [Locked DB](#Locker-DB)) or slow startup. 
+
+To debug: run `yarn logs database`, and see if the DB is locked. If so, unlock it. If it's not locked, run `yarn logs wallet` to see if the wallet front-end has compiled. Most likely, the wallet is just taking a long time to compile and it's manifesting as a 502 error.
+
