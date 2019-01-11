@@ -233,7 +233,8 @@ class App extends Component {
     });
   }
 
-  walletChangeHandler = (selectedWallet) => {
+  walletChangeHandler = async (selectedWallet) => {
+    this.refreshBalances()
     this.setState({ selectedWallet });
     console.log(`Option selected:`, selectedWallet);
   }
@@ -393,6 +394,7 @@ class App extends Component {
       return key;
     }
     let privKey = _innerGetKey();
+    console.log(`privkey: ${JSON.stringify(privKey)}`)
     return privKey;
   }
 
@@ -564,79 +566,18 @@ class App extends Component {
         tokenBalance: mmTokenBalance
       }
     });
+    console.log("balances refreshed!")
   }
 
   render() {
     return (
       <div className="app">
-        <div className="row" style={{justifyContent: 'center'}}>
+        <div className="row" style={{justifyContent: 'center', fontFamily:'Comfortaa'}}>
           <h1> Connext Starter Kit</h1>
         </div>
         <div className="row">
-          <div className="column">
-          <br /> 
-            <Select
-              value={this.state.selectedWallet}
-              onChange={this.walletChangeHandler}
-              options={this.state.walletOptions}
-            />
-            {this.state.selectedWallet ?
-            (<div>
-            <h2>Wallet Details: {this.state.selectedWallet.label}</h2>
-            <p>Address: {this.state.selectedWallet.value.address}</p>
-            <p>ETH Balance: {this.state.selectedWallet.value.ETHBalance} </p>
-            <p>TST Balance: {this.state.selectedWallet.value.TSTBalance} </p>
-            </div>)
-            :
-            (<p>Select a wallet to display details</p>)
-            }
-
-          </div>
-          <div className="column">
-          <h2>Wallet Utilities</h2>
-            <button className="btn" onClick={() => this.refreshBalances()}>
-              Refresh balances
-            </button>
-
-            {this.state.walletSet ? (
-              <div>
-                <p>
-                  <button className="btn" onClick={this.toggleKey}>
-                    {this.state.toggleKey ? <span>Hide Browser Wallet Mnemonic</span> : <span>Reveal Browser Wallet Mnemonic</span>}
-                  </button>
-                  {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
-                </p>
-                <button className="btn" onClick={() => this.createWallet()}>
-                  Create New Browser Wallet
-                </button>
-              </div>
-            ) : (
-                <div>
-                  Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
-                <div>
-                    <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
-                  </div>
-                  <button className="btn">Get wallet</button>
-                </div>
-              )}
-          </div>
-          <div className="column">
-            <h3>Channel Information</h3>
-            <p>Token Address: {tokenAddress}</p>
-            Channel Balances:
-            <br />
-            User Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
-            <br />
-            User Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenUser : null}
-            <br />
-            Hub Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
-            <br />
-            Hub Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
-          </div>
-        </div>
-        <div className="row">
             <div className="column">
-              <h2>Deposit</h2>
+              <h2 style={{justifyContent: 'center', fontFamily:'Comfortaa'}}>Deposit</h2>
               {this.state.authorized ?
               (<div> 
                 Wallet authorized!
@@ -672,20 +613,20 @@ class App extends Component {
               </div>
             </div>
             <div className="column">
-              <h2>Exchange</h2>
-              <p>Exchanges will be made in-channel. Currently only ETH->Token exchanges are supported.</p>
+              <h2 style={{justifyContent: 'center', fontFamily:'Comfortaa'}}>Swap</h2>
+              <p>Swaps will be made in-channel. Currently only ETH->Token swaps are supported.</p>
               <div className="value-entry">
-                Enter ETH exchange amount in Wei:&nbsp;&nbsp;
+                Enter ETH amount in Wei:&nbsp;&nbsp;
                 <input defaultValue={100} onChange={evt => this.updateExchangeHandler(evt)} />
               </div>
               <button className="btn" onClick={evt => this.exchangeHandler(evt)}>
-                Make an Exchange
+                Make a Swap
               </button>{" "}
               &nbsp;
               <br /> <br />
             </div>
             <div className="column">
-              <h2>Payment</h2>
+              <h2 style={{justifyContent: 'center', fontFamily:'Comfortaa'}}>Payment</h2>
               <div className="value-entry">
                 Enter recipient address:&nbsp;&nbsp;
                 <input defaultValue={`0x...`} onChange={evt => this.updatePaymentHandler(evt, "recipient")} />
@@ -709,7 +650,7 @@ class App extends Component {
               <br /> <br />
             </div>
             <div className="column">
-              <h2>Withdrawal</h2>
+              <h2 style={{justifyContent: 'center', fontFamily:'Comfortaa'}}>Withdrawal</h2>
               <div className="value-entry">
                 Enter recipient address:&nbsp;&nbsp;
                 <input defaultValue={`0x...`} onChange={evt => this.updateWithdrawHandler(evt, "recipient")} />
@@ -732,6 +673,66 @@ class App extends Component {
               &nbsp;
               <br /> <br />
             </div>
+        </div>
+        <div className="row">
+          <div className="column">
+          <h2 style={{fontFamily:'Comfortaa'}}>Wallet Information</h2>
+            <Select
+              value={this.state.selectedWallet}
+              onChange={this.walletChangeHandler}
+              options={this.state.walletOptions}
+            />
+            {this.state.selectedWallet ?
+            (<div>
+            <h2>Wallet Details: {this.state.selectedWallet.label}</h2>
+            <p>Address: {this.state.selectedWallet.value.address}</p>
+            <p>ETH Balance: {this.state.selectedWallet.value.ETHBalance} </p>
+            <p>TST Balance: {this.state.selectedWallet.value.TSTBalance} </p>
+            {this.state.walletSet ? (
+                <div>
+                  <p>
+                    <button className="btn" onClick={this.toggleKey}>
+                      {this.state.toggleKey ? <span>Hide Browser Wallet Mnemonic</span> : <span>Reveal Browser Wallet Mnemonic</span>}
+                    </button>
+                    {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
+                  </p>
+                  <button className="btn" onClick={() => this.createWallet()}>
+                    Create New Browser Wallet
+                  </button>
+                </div>
+              ) : (
+                  <div>
+                    Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
+                  <div>
+                      <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
+                    </div>
+                    <button className="btn">Get wallet</button>
+                  </div>
+                )}
+            </div>)
+            :
+            (<div><p>No wallet selected</p>
+                </div>
+              )
+            }
+
+          </div>
+
+          <div className="column">
+            <h2 style={{fontFamily:'Comfortaa'}}>Channel Information</h2>
+            <div>
+              <span style={{fontWeight:"bold"}}>User Wei Balance:</span> {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
+              <br />
+              <span style={{fontWeight:"bold"}}>User Token Balance: </span>{this.state.channelState ? this.state.channelState.balanceTokenUser : null}
+              <br />
+            </div>
+            <div>
+              <span style={{fontWeight:"bold"}}>Hub Wei Balance: </span> {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
+              <br />
+              <span style={{fontWeight:"bold"}}>Hub Token Balance:</span> {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
+            </div>
+            <p>Token Address: {tokenAddress}</p>
+          </div>
         </div>
       </div>
     );
