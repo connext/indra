@@ -14,6 +14,7 @@ Everything you need to set up a Connext payment channel hub.
      - [Ethprovider or Ganache not working](#Ethprovider-or-Ganache-not-working)
      - [Hub errors on start](#Hub-errors-on-start)
      - [Locked DB](#Locked-DB)
+     - [502 Bad Gateway](#502-Bad-Gateway)
     
 
 ## Repo Executive Summary
