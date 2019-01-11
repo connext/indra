@@ -17,5 +17,8 @@
     "stop-test": "bash ops/stop.sh connext_test",
     "clean": "make clean",
     "deep-clean": "make deep-clean"
+  },
+  "dependencies": {
+    "react-select": "^2.2.0"
   }
 }
