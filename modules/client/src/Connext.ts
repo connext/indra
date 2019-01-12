@@ -634,7 +634,7 @@ export class ConnextInternal extends ConnextClient {
     const sig = await (
       process.env.DEV || user === hubAddress
         ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.web3.eth.sign as any)(hash, user)
+        : (this.opts.web3.eth.personal.sign as any)(hash, user)
     )
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
