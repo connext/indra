@@ -84,7 +84,7 @@ class App extends Component {
         exchangeRate: "0.00",
         recipient: "0x0"
       },
-      authorized: "false",
+      authorized: false,
       web3: null,
       wallet: null,
       address: null,
@@ -354,7 +354,7 @@ class App extends Component {
     const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`)
 
     // let hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(res.data.nonce)} ${web3.utils.sha3("localhost")}`);
-    const signature = await this.state.web3.eth.personal.sign(hash, this.state.address);
+    const signature = await web3.eth.personal.sign(hash, this.state.address);
 
     try {
       let authRes = await axios.post(
@@ -372,9 +372,9 @@ class App extends Component {
       console.log(`cookie set: ${token}`);
       const res = await axios.get(`${hubUrl}/auth/status`, opts);
       if (res.data.success) {
-        this.setState({ authorized: "true" });
+        this.setState({ authorized: true });
       } else {
-        this.setState({ authorized: "false" });
+        this.setState({ authorized: false });
       }
       console.log(`Auth status: ${JSON.stringify(res.data)}`);
     } catch (e) {
@@ -525,7 +525,7 @@ class App extends Component {
   }
 
   async setWalletAndProvider(metamask = false) {
-    this.setState({ usingMetamask: metamask, })
+    this.setState({ usingMetamask: metamask, authorized: false })
     let web3
     let address
     let wallet
@@ -535,7 +535,7 @@ class App extends Component {
       console.log("Metamask is not detected.");
     }
     const metamaskWeb3 = new Web3(windowProvider.currentProvider);
-    const metamaskAddr = (await metamaskWeb3.eth.getAccounts())[0]
+    const metamaskAddr = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase()
     console.log('detected metamask address:', metamaskAddr)
     const metamaskWei = await metamaskWeb3.eth.getBalance(metamaskAddr)
 
@@ -546,13 +546,13 @@ class App extends Component {
           alert("You need to install & unlock metamask to do that");
           return;
         }
-        web3 = metamaskWeb3;
-        address = (await web3.eth.getAccounts())[0].toLowerCase();
+        address = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase();
         if (!address) {
           alert("You need to install & unlock metamask to do that");
           return;
         }
-        wallet = await web3.eth.getAccounts()[0]
+        wallet = address
+        web3 = metamaskWeb3
       } else {
         // New provider code
         const providerOpts = new ProviderOptions(store).approving();
@@ -567,26 +567,6 @@ class App extends Component {
       await this.setState({ web3 });
       console.log("set up web3 successfully");
 
-      const tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress)
-      this.setState({ tokenContract })
-      console.log("Set up token contract");
-
-      // set metamask wallet defaults
-      const metamaskToken = await tokenContract.methods.balanceOf(metamaskAddr).call({
-        from: address,
-        gas: "820000"
-      })
-
-      const metamaskState = {
-        addrress: metamaskAddr,
-        balance: metamaskWei.toString(),
-        tokenBalance: metamaskToken.toString(),
-      }
-      console.log('setting metamask state:', metamaskState)
-      await this.setState({
-        metamask: metamaskState
-      })
-
       console.log('wallet: ', wallet);
       // make sure wallet is linked to chain
       store.dispatch({
@@ -597,6 +577,14 @@ class App extends Component {
 
       this.setState({ address })
       console.log("Set up wallet:", address);
+
+      const tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress)
+      this.setState({ tokenContract })
+      console.log("Set up token contract");
+
+
+      console.log('updating balances before setting wallet optsions...')
+      await this.refreshBalances()
 
       // set wallet options
       const walletOptions = [
@@ -610,7 +598,7 @@ class App extends Component {
         },
         {
           value: {
-            address: this.state.address,
+            address: address,
             ETHBalance: this.state.balance,
             TSTBalance: this.state.tokenBalance
           },
