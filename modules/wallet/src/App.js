@@ -142,8 +142,16 @@ class App extends Component {
   }
 
   walletChangeHandler = async (selectedWallet) => {
-    this.refreshBalances()
     this.setState({ selectedWallet });
+    if (selectedWallet.label === "Metamask") {
+      await this.setWalletAndProvider(true)
+    } else {
+      await this.setWalletAndProvider(false)
+    }
+    await this.setConnext()
+    await this.authorizeHandler()
+    await this.refreshBalances()
+
     console.log(`Option selected:`, selectedWallet);
   }
 
@@ -483,17 +491,21 @@ class App extends Component {
     const { web3, hubWallet, address, } = this.state
     console.log(`instantiating connext with hub as: ${hubUrl}`);
     console.log(`web3 address : ${await web3.eth.getAccounts()}`);
-    console.log("Setting up connext...");
 
-    // *** Instantiate the connext client ***
-    const connext = getConnextClient({
+    const opts = {
       web3,
-      hubAddress: hubWallet.address, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
+      hubAddress: hubWallet.address,
+      //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
       hubUrl: hubUrl, //http://localhost:8080,
       contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
       user: address.toLowerCase(),
       tokenAddress,
-    });
+    }
+
+    console.log("Setting up connext with opts:", opts);
+
+    // *** Instantiate the connext client ***
+    const connext = getConnextClient(opts);
 
     console.log("Successfully set up connext!");
 
@@ -517,15 +529,24 @@ class App extends Component {
     let web3
     let address
     let wallet
+    // get metamask address defaults
+    const windowProvider = window.web3;
+    if (!windowProvider) {
+      console.log("Metamask is not detected.");
+    }
+    const metamaskWeb3 = new Web3(windowProvider.currentProvider);
+    const metamaskAddr = (await metamaskWeb3.eth.getAccounts())[0]
+    console.log('detected metamask address:', metamaskAddr)
+    const metamaskWei = await metamaskWeb3.eth.getBalance(metamaskAddr)
+
     try {
       if (metamask) {
         this.setState({ usingMetamask: true, })
-        let windowProvider = window.web3;
         if (!windowProvider) {
           alert("You need to install & unlock metamask to do that");
           return;
         }
-        web3 = new Web3(windowProvider.currentProvider);
+        web3 = metamaskWeb3;
         address = (await web3.eth.getAccounts())[0].toLowerCase();
         if (!address) {
           alert("You need to install & unlock metamask to do that");
@@ -546,10 +567,25 @@ class App extends Component {
       await this.setState({ web3 });
       console.log("set up web3 successfully");
 
-      this.setState({
-        tokenContract: new web3.eth.Contract(humanTokenAbi, tokenAddress)
-      })
+      const tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress)
+      this.setState({ tokenContract })
       console.log("Set up token contract");
+
+      // set metamask wallet defaults
+      const metamaskToken = await tokenContract.methods.balanceOf(metamaskAddr).call({
+        from: address,
+        gas: "820000"
+      })
+
+      const metamaskState = {
+        addrress: metamaskAddr,
+        balance: metamaskWei.toString(),
+        tokenBalance: metamaskToken.toString(),
+      }
+      console.log('setting metamask state:', metamaskState)
+      await this.setState({
+        metamask: metamaskState
+      })
 
       console.log('wallet: ', wallet);
       // make sure wallet is linked to chain
@@ -566,7 +602,7 @@ class App extends Component {
       const walletOptions = [
         {
           value: {
-            address: this.state.metamask.address,
+            address: metamaskAddr,
             ETHBalance: this.state.metamask.balance,
             TSTBalance: this.state.metamask.tokenBalance
           },
@@ -599,7 +635,7 @@ class App extends Component {
       ]
 
       this.setState({
-        walletOptions: walletOptions
+        walletOptions: walletOptions,
       });
 
       console.log(`wallet state set: ${JSON.stringify(this.state.walletOptions)}`)
