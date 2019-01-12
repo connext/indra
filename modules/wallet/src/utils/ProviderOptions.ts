@@ -88,4 +88,10 @@ export default class ProviderOptions {
     const state = this.store.getState()
     return state[0] ? state[0].getPrivateKey() : null
   }
+
+  private getPublicKey = (): String | null => {
+    const state = this.store.getState()
+    return state[0] ? state[0].getAddressString() : null
+  }
+
 }
