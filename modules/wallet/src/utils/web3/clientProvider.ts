@@ -41,28 +41,8 @@ export default function clientProvider(opts: any): any {
   const gasprice = new GaspriceSubprovider()
   engine.addProvider(gasprice)
 
-  // id mgmt
   const idmgmtSubprovider = new HookedWalletSubprovider({
-    // accounts
-    getAccounts: opts.getAccounts,
-    // transactions
-    processTransaction: opts.processTransaction,
-    approveTransaction: opts.approveTransaction,
-    signTransaction: opts.signTransaction,
-    publishTransaction: opts.publishTransaction,
-    // messages
-    // old eth_sign
-    processMessage: opts.processMessage,
-    approveMessage: opts.approveMessage,
-    signMessage: opts.signMessage,
-    // new personal_sign
-    processPersonalMessage: opts.processPersonalMessage,
-    processTypedMessage: opts.processTypedMessage,
-    approvePersonalMessage: opts.approvePersonalMessage,
-    approveTypedMessage: opts.approveTypedMessage,
-    signPersonalMessage: opts.signPersonalMessage,
-    signTypedMessage: opts.signTypedMessage,
-    personalRecoverSigner: opts.personalRecoverSigner,
+    ...opts,
   })
   engine.addProvider(idmgmtSubprovider)
 
