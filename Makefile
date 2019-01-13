@@ -28,7 +28,7 @@ docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_bui
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
-docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root $(project)_builder:dev $(id)
+docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
@@ -101,18 +101,6 @@ proxy: $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch build/proxy
 
-# Client
-
-client: client-node-modules $(shell find $(client)/src $(find_options))
-	$(log_start)
-	$(docker_run_in_client) "npm run build"
-	$(log_finish) && touch build/client
-
-client-node-modules: builder $(client)/package.json
-	$(log_start)
-	$(docker_run_in_client) "npm install --prefer-offline"
-	$(log_finish) && touch build/client-node-modules
-
 # Wallet
 
 wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
@@ -128,7 +116,12 @@ wallet: client wallet-node-modules $(shell find $(wallet)/src $(find_options))
 
 wallet-node-modules: builder $(wallet)/package.json
 	$(log_start)
+	$(docker_run_in_wallet) "mkdir -p /root/.npm/global"
+	$(docker_run_in_wallet) "npm config set prefix /root/.npm/global"
+	$(docker_run_in_wallet) "cd /client && npm config set prefix /root/.npm/global"
+	$(docker_run_in_wallet) "cd /client && npm ln"
 	$(docker_run_in_wallet) "npm install --prefer-offline"
+	$(docker_run_in_wallet) "npm ln connext"
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
@@ -138,7 +131,7 @@ hub-prod: hub-js
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	$(log_finish) && touch build/hub-prod
 
-hub: client hub-js $(hub)/ops/dev.entry.sh
+hub: hub-js $(hub)/ops/dev.entry.sh
 	$(log_start)
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
 	$(log_finish) && touch build/hub
@@ -150,9 +143,43 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 
 hub-node-modules: builder $(hub)/package.json
 	$(log_start)
+	$(docker_run_in_hub) "mkdir -p /root/.npm/global"
+	$(docker_run_in_hub) "npm config set prefix /root/.npm/global"
+	$(docker_run_in_hub) "cd /client && npm config set prefix /root/.npm/global"
+	$(docker_run_in_hub) "cd /client && npm ln"
 	$(docker_run_in_hub) "npm install --prefer-offline"
-	$(docker_run_in_hub) "rm -rf node_modules/connext && ln -s ../../client node_modules/connext"
+	$(docker_run_in_hub) "npm ln connext"
 	$(log_finish) && touch build/hub-node-modules
+
+# Client
+
+client: client-node-modules $(shell find $(client)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_client) "npm run build"
+	$(log_finish) && touch build/client
+
+client-node-modules: builder $(client)/package.json
+	$(log_start)
+	$(docker_run_in_client) "npm install --prefer-offline"
+	$(log_finish) && touch build/client-node-modules
+
+# Contracts
+
+ethprovider: contract-artifacts
+	$(log_start)
+	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
+	$(log_finish) && touch build/ethprovider
+
+contract-artifacts: contract-node-modules
+	$(log_start)
+	$(docker_run_in_contracts) "npm run build"
+	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
+	$(log_finish) && touch build/contract-artifacts
+
+contract-node-modules: builder $(contracts)/package.json
+	$(log_start)
+	$(docker_run_in_contracts) "npm install --prefer-offline"
+	$(log_finish) && touch build/contract-node-modules
 
 # Database
 
@@ -175,24 +202,6 @@ database-node-modules: builder $(db)/package.json
 	$(log_start)
 	$(docker_run_in_db) "npm install --prefer-offline"
 	$(log_finish) && touch build/database-node-modules
-
-# Contracts
-
-ethprovider: contract-artifacts
-	$(log_start)
-	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
-	$(log_finish) && touch build/ethprovider
-
-contract-artifacts: contract-node-modules
-	$(log_start)
-	$(docker_run_in_contracts) "npm run build"
-	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
-	$(log_finish) && touch build/contract-artifacts
-
-contract-node-modules: builder $(contracts)/package.json
-	$(log_start)
-	$(docker_run_in_contracts) "npm install --prefer-offline"
-	$(log_finish) && touch build/contract-node-modules
 
 # Builder
 builder: ops/builder.dockerfile

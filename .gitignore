@@ -6,6 +6,7 @@ node_modules
 .config
 .env
 .npm
+.npmrc
 .node_repl_history
 *.swp
 **/*.DS_Store
