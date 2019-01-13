@@ -19,11 +19,11 @@ find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 
 # Setup docker run time
-# If on Linux, give the container our uid & gid so we know what to set permissions to
-# On Mac the VM docker runs in takes care of this for us so don't pass in an id
-id=$(shell id -u):$(shell id -g)
-run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
-docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
+# If on Linux, give the container our uid & gid so we know what to reset permissions to
+# On Mac the docker-VM care of this for us so pass root's id (noop)
+my_id=$(shell id -u):$(shell id -g)
+id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
+docker_run=docker run --name=$(project)_buidler --tty --rm
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
