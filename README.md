@@ -18,13 +18,13 @@ Everything you need to set up a Connext payment channel hub.
 
 ## Repo Executive Summary
 
-You can run this project locally in dev-mode with `npm start` (or `npm run restart`)
+You can run this project locally in dev-mode with `npm start` (or `npm restart`). Stop it with `npm stop`
 
-The above command will build anything needed for you but you can also build stuff manually with `make`.
+The above start command will build anything needed for you but you can also build stuff manually with `make`.
 
 You can wipe all persistent data and restart the app with a fresh db using `npm run reset`
 
-You can run Indra in production-mode with `npm run prod` (or `npm run restart prod`).
+You can run Indra in production-mode with `npm run prod` (or `npm restart prod`).
 
 This repo is split into modules. Each module, ie `name`, in general, has source code in `modules/name/src` that the build/deploy tools in `modules/name/ops` use to build stuff that's output to either `modules/name/build` or `modules/name/dist`.
 
@@ -49,7 +49,7 @@ If you encounter any problems, check out the debugging guide at the bottom of th
 
 ### TL;DR
 
-**Note**: We have migrated away from using `yarn` due to [yarn issue 2629](https://github.com/yarnpkg/yarn/issues/2629), an unsolved bug in yarn that results in installations randomly failing. The improved cache system introduced in npm version 5 has [obsoleted yarn's biggest value-add](https://iamturns.com/yarn-vs-npm-2018/) anyway.
+**Note**: We have migrated away from using `yarn` due to [yarn issue 2629](https://github.com/yarnpkg/yarn/issues/2629), an unsolved bug in yarn that results in installations randomly failing.
 
 **Local development is easy**
 
@@ -177,7 +177,7 @@ One other sanity check is to run `docker service ls` and make sure that you see 
 
 You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is alive & run `ps` to see if it's even running.
 
-Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm run restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
+Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
 
 ### Hub errors on start
 
@@ -189,4 +189,4 @@ We've seen some non-deterministic errors on `npm start` where some part of the s
 
 ### Locked DB
 
-We've seen the database get locked on startup. Often, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `npm run restart` should fix the problem.
+We've seen the database get locked on startup. Often, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `npm restart` should fix the problem.
