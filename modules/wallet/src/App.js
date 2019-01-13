@@ -267,8 +267,6 @@ class App extends Component {
 
 
     console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
-    // console.log('********', this.state.connext.opts.tokenAddress)
-    console.log('******** opts', this.state.connext)
     let depositRes = await this.state.connext.deposit(this.state.depositVal);
     console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
   }
@@ -353,8 +351,7 @@ class App extends Component {
 
     const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`)
 
-    // let hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(res.data.nonce)} ${web3.utils.sha3("localhost")}`);
-    const signature = await web3.eth.personal.sign(hash, this.state.address);
+    const signature = await web3.eth.personal.sign(hash, this.state.address)
 
     try {
       let authRes = await axios.post(
@@ -537,7 +534,6 @@ class App extends Component {
     const metamaskWeb3 = new Web3(windowProvider.currentProvider);
     const metamaskAddr = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase()
     console.log('detected metamask address:', metamaskAddr)
-    const metamaskWei = await metamaskWeb3.eth.getBalance(metamaskAddr)
 
     try {
       if (metamask) {
