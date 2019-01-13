@@ -435,12 +435,41 @@ class App extends Component {
 
   // ** wrapper for ethers getBalance. probably breaks for tokens
   async refreshBalances() {
+    const web3 = this.state.web3
     const tokenContract = this.state.tokenContract
-    const balance = Number(await this.state.web3.eth.getBalance(this.state.address)) / 1000000000000000000;
-    const tokenBalance = Number(await tokenContract.methods.balanceOf(this.state.address).call()) / 1000000000000000000;
+    // get browser wallet balance
+    const browserAddr = store.getState()[0].getAddressString()
+    const balance = (await web3.eth.getBalance(browserAddr))
+    console.log('found eth balance:', balance)
+
+    const tokenBalance = Number(await tokenContract.methods.balanceOf(browserAddr).call()) / 1000000000000000000;
     this.setState({ balance: balance, tokenBalance: tokenBalance });
 
-    const hubBalance = Number(await this.state.web3.eth.getBalance(hubWalletAddress)) / 1000000000000000000;
+    // get metamask wallet balance
+    let metamaskWeb3 = window.web3;
+    if (!metamaskWeb3) {
+      alert("You need to install & unlock metamask to do that");
+      return;
+    }
+    const metamaskProvider = new eth.providers.Web3Provider(metamaskWeb3.currentProvider);
+    const metamask = metamaskProvider.getSigner();
+    const mmAddress = (await metamask.provider.listAccounts())[0];
+    if (!mmAddress) {
+      this.setState({ metamask: { address: "unavailable", balance: 0, tokenBalance: 0 } });
+      return;
+    }
+    const mmBalance = Number(await web3.eth.getBalance(mmAddress)) / 1000000000000000000;
+    const mmTokenBalance = Number(await tokenContract.methods.balanceOf(mmAddress).call()) / 1000000000000000000;
+    this.setState({
+      metamask: {
+        address: mmAddress,
+        balance: mmBalance,
+        tokenBalance: mmTokenBalance
+      }
+    });
+
+    // get hub wallet balance
+    const hubBalance = Number(await web3.eth.getBalance(hubWalletAddress)) / 1000000000000000000;
     const hubTokenBalance = Number(await tokenContract.methods.balanceOf(hubWalletAddress).call()) / 1000000000000000000;
     this.setState({
       hubWallet: {
@@ -450,7 +479,8 @@ class App extends Component {
       }
     });
 
-    const cmBalance = Number(await this.state.web3.eth.getBalance(channelManagerAddress)) / 1000000000000000000;
+    // get channel manager balance
+    const cmBalance = Number(await web3.eth.getBalance(channelManagerAddress)) / 1000000000000000000;
     const cmTokenBalance = Number(await tokenContract.methods.balanceOf(channelManagerAddress).call()) / 1000000000000000000;
     this.setState({
       channelManager: {
@@ -460,27 +490,6 @@ class App extends Component {
       }
     });
 
-    let web3 = window.web3;
-    if (!web3) {
-      alert("You need to install & unlock metamask to do that");
-      return;
-    }
-    const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
-    const metamask = metamaskProvider.getSigner();
-    const address = (await metamask.provider.listAccounts())[0];
-    if (!address) {
-      this.setState({ metamask: { address: "unavailable", balance: 0, tokenBalance: 0 } });
-      return;
-    }
-    const mmBalance = Number(await this.state.web3.eth.getBalance(address)) / 1000000000000000000;
-    const mmTokenBalance = Number(await tokenContract.methods.balanceOf(address).call()) / 1000000000000000000;
-    this.setState({
-      metamask: {
-        address: address,
-        balance: mmBalance,
-        tokenBalance: mmTokenBalance
-      }
-    });
     console.log("balances refreshed!")
   }
 
@@ -547,7 +556,7 @@ class App extends Component {
           alert("You need to install & unlock metamask to do that");
           return;
         }
-        wallet = address
+        wallet = await this.walletHandler()
         web3 = metamaskWeb3
       } else {
         // New provider code
@@ -579,7 +588,8 @@ class App extends Component {
       console.log("Set up token contract");
 
 
-      console.log('updating balances before setting wallet optsions...')
+      console.log('updating balances before setting wallet options...')
+
       await this.refreshBalances()
 
       // set wallet options
