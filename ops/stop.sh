@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-name=$1 && [[ -n "$name" ]] || name=connext
-
+name=connext
 docker container stop ${name}_builder 2> /dev/null || true
 docker stack rm $name 2> /dev/null || true
 

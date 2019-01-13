@@ -18,7 +18,7 @@ Everything you need to set up a Connext payment channel hub.
 
 ## Repo Executive Summary
 
-You can run this project locally in dev-mode with `npm run start` (or `npm run restart`)
+You can run this project locally in dev-mode with `npm start` (or `npm run restart`)
 
 The above command will build anything needed for you but you can also build stuff manually with `make`.
 
@@ -49,15 +49,15 @@ If you encounter any problems, check out the debugging guide at the bottom of th
 
 ### TL;DR
 
-**Note**: We have migrated away from using `yarn` due to [yarn issue 2629](https://github.com/yarnpkg/yarn/issues/2629), an unsolved bug in yarn that results in installations randomly failing. The improved cache system introduced in npm version 5 has [essential obsoleted yarn](https://iamturns.com/yarn-vs-npm-2018/) anyway.
+**Note**: We have migrated away from using `yarn` due to [yarn issue 2629](https://github.com/yarnpkg/yarn/issues/2629), an unsolved bug in yarn that results in installations randomly failing. The improved cache system introduced in npm version 5 has [obsoleted yarn's biggest value-add](https://iamturns.com/yarn-vs-npm-2018/) anyway.
 
 **Local development is easy**
 
-`npm run start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:8080`
+`npm start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:8080`
 
 Beware: the first time this is run it will take a long time but have no fear: subsequent builds will go much more quickly.
 
-A couple sets of `node_modules` will be installed when running `npm run start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once then some half-downloaded file is likely jamming up the works. Run `make deep-clean` to scrub any `node_modules` & lock files & caches that might be causing trouble. Then, give `npm run start` another try & things will hopefully be good to go.
+A couple sets of `node_modules` will be installed when running `npm start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once then some half-downloaded file is likely jamming up the works. Run `make deep-clean` to scrub any `node_modules` & lock files & caches that might be causing trouble. Then, give `npm start` another try & things will hopefully be good to go.
 
 There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are off by default. The wallet aka UI will always be watched as it's served by a webpack-dev-server. If you expect to be actively developing any other modules, you can turn on watchers for those too. Careful, turning on all the watchers will increase the start-up time and drain your computer's battery more quickly.
 
@@ -98,7 +98,7 @@ If your hub is already deployed & you want to redeploy to apply changes you've m
 
 ### Details
 
-Behind the scenes, `npm run start` will run `make` and then `bash ops/deploy.dev.sh`
+Behind the scenes, `npm start` will run `make` and then `bash ops/deploy.dev.sh`
 
 `make` does the following:
 
@@ -181,11 +181,11 @@ Ganache should dump its logs onto your host and you can print/follow them with: 
 
 ### Hub errors on start
 
-We've seen some non-deterministic errors on `npm run start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
+We've seen some non-deterministic errors on `npm start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
 
-- Running `npm run start` again
-- Rebuild everything then restart: `make clean && npm run start`
-- Remove build artifacts & persistent data storage and restart: `make purge && npm run start`
+- Running `npm start` again
+- Rebuild everything then restart: `make clean && npm start`
+- Remove build artifacts & persistent data storage and restart: `make purge && npm start`
 
 ### Locked DB
 

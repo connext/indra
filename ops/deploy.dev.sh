@@ -6,7 +6,7 @@ set -e
 
 # set any of these to "yes" to turn on watchers
 watch_ethprovider="no"
-watch_hub="no"
+watch_hub="yes"
 watch_chainsaw="no"
 watch_wallet="no"
 
