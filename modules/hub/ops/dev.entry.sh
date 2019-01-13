@@ -20,8 +20,6 @@ yarn link
 cd $HOME && echo "cwd=`pwd`"
 rm -rf node_modules/connext && yarn link connext
 
-./node_modules/.bin/tsc -p tsconfig.json
-
 export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$database/$POSTGRES_DB"
 
 function getHash {

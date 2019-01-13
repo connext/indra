@@ -110,7 +110,7 @@ client: client-node-modules $(shell find $(client)/src $(find_options))
 
 client-node-modules: builder $(client)/package.json
 	$(log_start)
-	$(docker_run_in_client) "npm install"
+	$(docker_run_in_client) "npm install --prefer-offline"
 	$(log_finish) && touch build/client-node-modules
 
 # Wallet
@@ -128,7 +128,7 @@ wallet: client wallet-node-modules $(shell find $(wallet)/src $(find_options))
 
 wallet-node-modules: builder $(wallet)/package.json
 	$(log_start)
-	$(docker_run_in_wallet) "npm install"
+	$(docker_run_in_wallet) "npm install --prefer-offline"
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
@@ -138,19 +138,19 @@ hub-prod: hub-js
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	$(log_finish) && touch build/hub-prod
 
+hub: client hub-js $(hub)/ops/dev.entry.sh
+	$(log_start)
+	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
+	$(log_finish) && touch build/hub
+
 hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
 
-hub: client hub-node-modules
-	$(log_start)
-	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
-	$(log_finish) && touch build/hub
-
 hub-node-modules: builder $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "npm install"
+	$(docker_run_in_hub) "npm install --prefer-offline"
 	$(docker_run_in_hub) "rm -rf node_modules/connext && ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
 
@@ -173,7 +173,7 @@ migration-templates: $(shell find $(db) $(find_options))
 
 database-node-modules: builder $(db)/package.json
 	$(log_start)
-	$(docker_run_in_db) "npm install"
+	$(docker_run_in_db) "npm install --prefer-offline"
 	$(log_finish) && touch build/database-node-modules
 
 # Contracts
@@ -191,7 +191,7 @@ contract-artifacts: contract-node-modules
 
 contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
-	$(docker_run_in_contracts) "npm install"
+	$(docker_run_in_contracts) "npm install --prefer-offline"
 	$(log_finish) && touch build/contract-node-modules
 
 # Builder

@@ -73,7 +73,7 @@
     "pg-types": "^1.13.0",
     "sql-template-strings": "^2.2.2",
     "uuid": "^3.2.1",
-    "web3": "1.0.0-beta.34",
+    "web3": "^1.0.0-beta.36",
     "web3-typescript-typings": "^0.10.2"
   },
   "devDependencies": {
