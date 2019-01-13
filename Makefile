@@ -130,7 +130,7 @@ wallet-node-modules: builder client $(wallet)/package.json
 
 hub-prod: hub-js
 	$(log_start)
-	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
 	$(log_finish) && touch build/hub-prod
 
 hub: hub-js $(hub)/ops/dev.entry.sh
