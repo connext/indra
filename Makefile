@@ -105,12 +105,12 @@ proxy: $(shell find $(proxy) $(find_options))
 
 client: client-node-modules $(shell find $(client)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_client) "yarn build"
+	$(docker_run_in_client) "npm run build"
 	$(log_finish) && touch build/client
 
-client-node-modules: $(project)_builder $(client)/package.json
+client-node-modules: builder $(client)/package.json
 	$(log_start)
-	$(docker_run_in_client) "yarn install"
+	$(docker_run_in_client) "npm install"
 	$(log_finish) && touch build/client-node-modules
 
 # Wallet
@@ -118,7 +118,7 @@ client-node-modules: $(project)_builder $(client)/package.json
 wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
-	$(docker_run_in_wallet) "yarn build"
+	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/wallet-prod
 
 wallet: client wallet-node-modules $(shell find $(wallet)/src $(find_options))
@@ -126,9 +126,9 @@ wallet: client wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
 
-wallet-node-modules: $(project)_builder $(wallet)/package.json
+wallet-node-modules: builder $(wallet)/package.json
 	$(log_start)
-	$(docker_run_in_wallet) "yarn install --network-timeout 1000000"
+	$(docker_run_in_wallet) "npm install"
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
@@ -148,9 +148,10 @@ hub: client hub-node-modules
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
 	$(log_finish) && touch build/hub
 
-hub-node-modules: $(project)_builder $(hub)/package.json
+hub-node-modules: builder $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "yarn install --check-files --network-concurrency 1 --mutex file:.cache/.mutex"
+	$(docker_run_in_hub) "npm install"
+	$(docker_run_in_hub) "rm -rf node_modules/connext && ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
 
 # Database
@@ -170,9 +171,9 @@ migration-templates: $(shell find $(db) $(find_options))
 	$(docker_run_in_db) "make"
 	$(log_finish) && touch build/migration-templates
 
-database-node-modules: $(project)_builder $(db)/package.json
+database-node-modules: builder $(db)/package.json
 	$(log_start)
-	$(docker_run_in_db) "yarn install"
+	$(docker_run_in_db) "npm install"
 	$(log_finish) && touch build/database-node-modules
 
 # Contracts
@@ -184,16 +185,17 @@ ethprovider: contract-artifacts
 
 contract-artifacts: contract-node-modules
 	$(log_start)
-	$(docker_run_in_contracts) "yarn build && bash ops/inject-addresses.sh"
+	$(docker_run_in_contracts) "npm run build"
+	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
 	$(log_finish) && touch build/contract-artifacts
 
-contract-node-modules: $(project)_builder $(contracts)/package.json
+contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
-	$(docker_run_in_contracts) "yarn install --network-timeout 1000000"
+	$(docker_run_in_contracts) "npm install"
 	$(log_finish) && touch build/contract-node-modules
 
 # Builder
-$(project)_builder: ops/builder.dockerfile
+builder: ops/builder.dockerfile
 	$(log_start) && echo "prereqs: $<"
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
-	$(log_finish) && touch build/$(project)_builder
+	$(log_finish) && touch build/builder
