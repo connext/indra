@@ -6,6 +6,7 @@ import clientProvider from './utils/web3/clientProvider.ts';
 import { setWallet } from './utils/actions.js';
 import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
+import Select from 'react-select';
 import axios from 'axios';
 const Web3 = require('web3');
 const Tx = require('ethereumjs-tx');
@@ -39,6 +40,8 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      selectedWallet:null,
+      walletOptions: [],
       metamask: {
         address: null,
         balance: 0,
@@ -55,7 +58,7 @@ class App extends Component {
         tokenBalance: 0
       },
       depositVal: {
-        amountWei: "1000",
+        amountWei: "0",
         amountToken: "0"
       },
       exchangeVal: "100",
@@ -138,6 +141,40 @@ class App extends Component {
       const address = wallet.getAddressString()
       this.setState({ address });
 
+      const walletOptions = [
+        { value: {
+            address:this.state.metamask.address,
+            ETHBalance:this.state.metamask.balance,
+            TSTBalance:this.state.metamask.tokenBalance
+          }, 
+          label: 'Metamask' },
+        { value: {
+          address:this.state.address,
+          ETHBalance:this.state.balance,
+          TSTBalance:this.state.tokenBalance
+        }, 
+        label: 'Browser' },
+        { value: {
+          address:this.state.channelManager.address,
+          ETHBalance:this.state.channelManager.balance,
+          TSTBalance:this.state.channelManager.tokenBalance
+        }, 
+        label: 'ChannelManager' },
+        { value: {
+          address:this.state.hubWallet.address,
+          ETHBalance:this.state.hubWallet.balance,
+          TSTBalance:this.state.hubWallet.tokenBalance
+        }, 
+        label: 'Hub' },
+        ]
+
+      this.setState({
+          walletOptions: walletOptions
+      });
+
+      console.log(`wallet state set: ${JSON.stringify(this.state.walletOptions)}`)
+
+
       console.log(`instantiating connext with hub as: ${hubUrl}`);
       console.log(`web3 address : ${await web3.eth.getAccounts()}`);
       console.log("Setting up connext...");
@@ -167,6 +204,7 @@ class App extends Component {
       console.log(`Channel state: ${JSON.stringify(this.state.channelState, null, 2)}`);
 
       await this.refreshBalances();
+
       await this.authorizeHandler();
 
       this.pollExchangeRate();
@@ -195,6 +233,11 @@ class App extends Component {
     this.setState({
       approvalWeiUser: evt.target.value
     });
+  }
+
+  walletChangeHandler = (selectedWallet) => {
+    this.setState({ selectedWallet });
+    console.log(`Option selected:`, selectedWallet);
   }
 
   async updateDepositHandler(evt, token) {
@@ -289,11 +332,37 @@ class App extends Component {
   }
 
   //Connext Helpers
+
   async depositHandler() {
     const tokenContract = this.state.tokenContract
     let approveFor = channelManagerAddress;
     let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
     console.log(approveTx);
+
+    try{
+      const wei = this.state.depositVal.amountWei
+      const tokens = this.state.depositVal.amountToken
+
+      if (wei !== "0"){
+        console.log("found wei deposit")
+        if (wei >= this.state.balance){
+          const weiNeeded = wei - this.state.balance
+          await this.getEther(weiNeeded)
+        }
+      }
+
+      if (tokens !== "0"){
+        console.log("found token deposit")
+        if (tokens >= this.state.tokenBalance){
+          const tokensNeeded = tokens - this.state.tokenBalance
+          await this.getTokens(tokensNeeded)
+        }
+      }
+      
+    } catch(e){
+      console.log(`error fetching deposit from metamask: ${e}`)
+    } 
+
 
     console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
     console.log('********', this.state.connext.opts.tokenAddress)
@@ -409,8 +478,9 @@ class App extends Component {
   }
 
   // to get tokens from metamask to browser wallet
-  async getTokens() {
+  async getTokens(amountToken) {
     let web3 = window.web3;
+    console.log(web3)
     if (!web3) {
       alert("You need to install & unlock metamask to do that");
       return;
@@ -424,7 +494,7 @@ class App extends Component {
 
     const tokenContract = new metamaskProvider.eth.Contract(humanTokenAbi, tokenAddress);
 
-    let tokens = "1000000000000000000"
+    let tokens = amountToken
     console.log(`Sending ${tokens} tokens from ${address} to ${store.getState()[0].getAddressString()}`);
 
     console.log('state:')
@@ -439,8 +509,9 @@ class App extends Component {
   }
 
   // to get tokens from metamask to browser wallet
-  async getEther() {
-    let web3 = await window.web3;
+  async getEther(amountWei) {
+    let web3 = window.web3;
+    console.log(web3)
     if (!web3) {
       alert("You need to install & unlock metamask to do that");
       return;
@@ -454,7 +525,7 @@ class App extends Component {
     }
     const sentTx = await metamask.sendTransaction({
       to: store.getState()[0].getAddressString(),
-      value: eth.utils.bigNumberify("1000000000000000000"),
+      value: eth.utils.bigNumberify(amountWei),
       gasLimit: eth.utils.bigNumberify("21000")
     });
     console.log(`Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `, sentTx);
@@ -513,39 +584,109 @@ class App extends Component {
   render() {
     return (
       <div className="app">
-        <h1> Connext Starter Kit</h1>
-        <div className="col">
-          <div>
-            <h1>Payment UX</h1>
-            <h2>Deposit</h2>
-            <button className="btn" onClick={evt => this.authorizeHandler(evt)}>
-              Authorize
+        <div className="row" style={{justifyContent: 'center'}}>
+          <h1> Connext Starter Kit</h1>
+        </div>
+        <div className="row">
+          <div className="column">
+          <br /> 
+            <Select
+              value={this.state.selectedWallet}
+              onChange={this.walletChangeHandler}
+              options={this.state.walletOptions}
+            />
+            {this.state.selectedWallet ?
+            (<div>
+            <h2>Wallet Details: {this.state.selectedWallet.label}</h2>
+            <p>Address: {this.state.selectedWallet.value.address}</p>
+            <p>ETH Balance: {this.state.selectedWallet.value.ETHBalance} </p>
+            <p>TST Balance: {this.state.selectedWallet.value.TSTBalance} </p>
+            </div>)
+            :
+            (<p>Select a wallet to display details</p>)
+            }
+
+          </div>
+          <div className="column">
+          <h2>Wallet Utilities</h2>
+            <button className="btn" onClick={() => this.refreshBalances()}>
+              Refresh balances
             </button>
-            <span>&nbsp;&nbsp;(authorized: {this.state.authorized})</span>
-            <br /> <br />
-            <button className="btn" onClick={evt => this.getTokens(evt)}>
-              Get 1 Token from Metamask
-            </button>
-            <button className="btn" onClick={evt => this.getEther(evt)}>
-              Get 1 Ether from Metamask
-            </button>
-            <br /> <br />
-            <div>
-              <div className="value-entry">
-                Enter ETH deposit amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={1000} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
+
+            {this.state.walletSet ? (
+              <div>
+                <p>
+                  <button className="btn" onClick={this.toggleKey}>
+                    {this.state.toggleKey ? <span>Hide Browser Wallet Mnemonic</span> : <span>Reveal Browser Wallet Mnemonic</span>}
+                  </button>
+                  {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
+                </p>
+                <button className="btn" onClick={() => this.createWallet()}>
+                  Create New Browser Wallet
+                </button>
               </div>
-              <div className="value-entry">
-                Enter TST deposit amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "TST")} />
+            ) : (
+                <div>
+                  Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
+                <div>
+                    <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
+                  </div>
+                  <button className="btn">Get wallet</button>
+                </div>
+              )}
+          </div>
+          <div className="column">
+            <h3>Channel Information</h3>
+            <p>Token Address: {tokenAddress}</p>
+            Channel Balances:
+            <br />
+            User Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
+            <br />
+            User Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenUser : null}
+            <br />
+            Hub Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
+            <br />
+            Hub Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
+          </div>
+        </div>
+        <div className="row">
+            <div className="column">
+              <h2>Deposit</h2>
+              {this.state.authorized ?
+              (<div> 
+                Wallet authorized!
               </div>
-              <button className="btn" onClick={evt => this.depositHandler(evt)}>
-                Deposit to Channel
-              </button>{" "}
-              &nbsp;
+                ):
+                (
+                <div>
+                  Awaiting wallet authorization....
+                </div>
+                ) }
+              {/* <br /> <br />
+              <button className="btn" onClick={evt => this.getTokens(evt)}>
+                Get 1 Token from Metamask
+              </button>
+              <button className="btn" onClick={evt => this.getEther(evt)}>
+                Get 1 Ether from Metamask
+              </button> */}
               <br /> <br />
+              <div>
+                <div className="value-entry">
+                  Enter ETH deposit amount in Wei:&nbsp;&nbsp;
+                  <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
+                </div>
+                <div className="value-entry">
+                  Enter TST deposit amount in Wei:&nbsp;&nbsp;
+                  <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "TST")} />
+                </div>
+                <button className="btn" onClick={evt => this.depositHandler(evt)}>
+                  Deposit to Channel
+                </button>{" "}
+                &nbsp;
+                <br /> <br />
+              </div>
             </div>
-            <div>
+            <div className="column">
               <h2>Exchange</h2>
               <p>Exchanges will be made in-channel. Currently only ETH->Token exchanges are supported.</p>
               <div className="value-entry">
@@ -558,7 +699,7 @@ class App extends Component {
               &nbsp;
               <br /> <br />
             </div>
-            <div>
+            <div className="column">
               <h2>Payment</h2>
               <div className="value-entry">
                 Enter recipient address:&nbsp;&nbsp;
@@ -582,7 +723,7 @@ class App extends Component {
               &nbsp;
               <br /> <br />
             </div>
-            <div>
+            <div className="column">
               <h2>Withdrawal</h2>
               <div className="value-entry">
                 Enter recipient address:&nbsp;&nbsp;
@@ -606,67 +747,6 @@ class App extends Component {
               &nbsp;
               <br /> <br />
             </div>
-          </div>
-        </div>
-        <div className="col">
-          <h1>Channel Information</h1>
-          <p>Token Address: {tokenAddress}</p>
-          Channel Balances:
-          <br />
-          User Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
-          <br />
-          User Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenUser : null}
-          <br />
-          Hub Wei Balance: {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
-          <br />
-          Hub Token Balance: {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
-        </div>
-        <div className="col">
-          <h1>Interesting Accounts</h1>
-          <button className="btn" onClick={() => this.refreshBalances()}>
-            Refresh balances
-          </button>
-
-          {this.state.walletSet ? (
-            <div>
-              <h2>Browser Wallet</h2>
-              <p>Address: {this.state.address}</p>
-              <p>ETH Balance: {this.state.balance}</p>
-              <p>TST Balance: {this.state.tokenBalance}</p>
-              <p>
-                <button className="btn" onClick={this.toggleKey}>
-                  {this.state.toggleKey ? <span>Hide Mnemonic</span> : <span>Reveal Mnemonic</span>}
-                </button>
-                {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
-              </p>
-              <button className="btn" onClick={() => this.createWallet()}>
-                Create New Wallet
-              </button>
-            </div>
-          ) : (
-              <div>
-                Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
-              <div>
-                  <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
-                </div>
-                <button className="btn">Get wallet</button>
-              </div>
-            )}
-
-          <h2>Channel Manager</h2>
-          <p>Address: {this.state.channelManager.address}</p>
-          <p>ETH Balance: {this.state.channelManager.balance}</p>
-          <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
-
-          <h2>Hub's Wallet</h2>
-          <p>Address: {this.state.hubWallet.address}</p>
-          <p>ETH Balance: {this.state.hubWallet.balance}</p>
-          <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
-
-          <h2>Metamask Wallet</h2>
-          <p>Address: {this.state.metamask.address}</p>
-          <p>ETH balance: {this.state.metamask.balance}</p>
-          <p>TST balance: {this.state.metamask.tokenBalance}</p>
         </div>
       </div>
     );
