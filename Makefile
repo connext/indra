@@ -34,6 +34,7 @@ docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet)
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
+install=npm install --prefer-offline --unsafe-perm
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
@@ -63,6 +64,7 @@ clean:
 
 deep-clean: clean
 	rm -rf $(cwd)/modules/**/node_modules
+	rm -rf $(cwd)/modules/**/.npm/global
 
 purge: reset deep-clean
 
@@ -118,10 +120,10 @@ wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
 	$(docker_run_in_wallet) "mkdir -p /root/.npm/global"
 	$(docker_run_in_wallet) "npm config set prefix /root/.npm/global"
-	$(docker_run_in_wallet) "cd /client && npm config set prefix /root/.npm/global"
 	$(docker_run_in_wallet) "cd /client && npm ln"
-	$(docker_run_in_wallet) "npm install --prefer-offline"
+	$(docker_run_in_wallet) "$(install)"
 	$(docker_run_in_wallet) "npm ln connext"
+	$(docker_run_in_wallet) "cd /client && npm install"
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
@@ -145,17 +147,18 @@ hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "mkdir -p /root/.npm/global"
 	$(docker_run_in_hub) "npm config set prefix /root/.npm/global"
-	$(docker_run_in_hub) "cd /client && npm config set prefix /root/.npm/global"
 	$(docker_run_in_hub) "cd /client && npm ln"
-	$(docker_run_in_hub) "npm install --prefer-offline"
+	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "npm ln connext"
+	$(docker_run_in_hub) "cd /client && npm install"
 	$(log_finish) && touch build/hub-node-modules
 
 # Client
 
 client: builder $(client)/package.json
 	$(log_start)
-	$(docker_run_in_client) "npm install --prefer-offline"
+	$(docker_run_in_client) "npm config set prefix /root/.npm/global"
+	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/client
 
 # Contracts
@@ -173,7 +176,7 @@ contract-artifacts: contract-node-modules
 
 contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
-	$(docker_run_in_contracts) "npm install --prefer-offline"
+	$(docker_run_in_contracts) "$(install)"
 	$(log_finish) && touch build/contract-node-modules
 
 # Database
@@ -195,7 +198,7 @@ migration-templates: $(shell find $(db) $(find_options))
 
 database-node-modules: builder $(db)/package.json
 	$(log_start)
-	$(docker_run_in_db) "npm install --prefer-offline"
+	$(docker_run_in_db) "$(install)"
 	$(log_finish) && touch build/database-node-modules
 
 # Builder
