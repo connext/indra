@@ -138,20 +138,19 @@ hub-prod: hub-js
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	$(log_finish) && touch build/hub-prod
 
-hub: client hub-js
-	$(log_start)
-	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
-	$(log_finish) && touch build/hub
-
 hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
 
+hub: client hub-node-modules
+	$(log_start)
+	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
+	$(log_finish) && touch build/hub
+
 hub-node-modules: $(project)_builder $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
-	$(docker_run_in_hub) "rm -rf node_modules/connext && ln -sf ../../client node_modules/connext"
+	$(docker_run_in_hub) "yarn install --check-files --network-concurrency 1 --mutex file:.cache/.mutex"
 	$(log_finish) && touch build/hub-node-modules
 
 # Database
