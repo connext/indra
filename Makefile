@@ -109,12 +109,12 @@ wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/wallet-prod
 
-wallet: client wallet-node-modules $(shell find $(wallet)/src $(find_options))
+wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
 
-wallet-node-modules: builder $(wallet)/package.json
+wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
 	$(docker_run_in_wallet) "mkdir -p /root/.npm/global"
 	$(docker_run_in_wallet) "npm config set prefix /root/.npm/global"
@@ -141,7 +141,7 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
 
-hub-node-modules: builder $(hub)/package.json
+hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "mkdir -p /root/.npm/global"
 	$(docker_run_in_hub) "npm config set prefix /root/.npm/global"
@@ -153,15 +153,10 @@ hub-node-modules: builder $(hub)/package.json
 
 # Client
 
-client: client-node-modules $(shell find $(client)/src $(find_options))
-	$(log_start)
-	$(docker_run_in_client) "npm run build"
-	$(log_finish) && touch build/client
-
-client-node-modules: builder $(client)/package.json
+client: builder $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "npm install --prefer-offline"
-	$(log_finish) && touch build/client-node-modules
+	$(log_finish) && touch build/client
 
 # Contracts
 

@@ -64,7 +64,7 @@ function watch_client_src {
   echo "Starting connext-client src watcher..."
   ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
   cd /client
-  yarn watch
+  npm run watch
 }
 
 if [[ "$1" == "yes" ]]
@@ -77,4 +77,4 @@ fi
 # Start wallet react app
 echo "Starting wallet dev server..."
 cd /root && echo "cwd=`pwd`"
-exec yarn start
+exec npm start
