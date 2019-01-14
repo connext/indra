@@ -105,14 +105,7 @@ class App extends Component {
 
   async componentDidMount() {
     try {
-      await this.setWalletAndProvider()
-
-      await this.setConnext()
-
-      await this.refreshBalances();
-
-      await this.authorizeHandler();
-
+      await this.setWalletAndProvider(false)
       this.pollExchangeRate();
     } catch (error) {
       alert(`Failed to load web3 or Connext. Check console for details.`);
@@ -142,14 +135,17 @@ class App extends Component {
   }
 
   walletChangeHandler = async (selectedWallet) => {
-    this.setState({ selectedWallet });
+    this.setState({ selectedWallet, });
     if (selectedWallet.label === "Metamask") {
       await this.setWalletAndProvider(true)
     } else {
       await this.setWalletAndProvider(false)
     }
+
+    await this.authorizeHandler();
+
     await this.setConnext()
-    await this.authorizeHandler()
+
     await this.refreshBalances()
 
     console.log(`Option selected:`, selectedWallet);
@@ -604,7 +600,7 @@ class App extends Component {
         },
         {
           value: {
-            address: address,
+            address: wallet.getAddressString(),
             ETHBalance: this.state.balance,
             TSTBalance: this.state.tokenBalance
           },
@@ -629,7 +625,7 @@ class App extends Component {
       ]
 
       this.setState({
-        walletOptions: walletOptions,
+        walletOptions,
       });
 
       console.log(`wallet state set: ${JSON.stringify(this.state.walletOptions)}`)
@@ -638,14 +634,6 @@ class App extends Component {
       alert(`Failed to load web3 or Connext. Check console for details.`);
       console.log(error);
     }
-  }
-
-  async userMetamaskHandler(e) {
-    if (this.state.connext) {
-      await this.state.connext.stop()
-    }
-    await this.setWalletAndProvider(true)
-    await this.setConnext()
   }
 
   render() {
@@ -661,12 +649,21 @@ class App extends Component {
               (<div>
                 Wallet authorized!
               </div>
-              ) :
-              (
-                <div>
-                  Awaiting wallet authorization....
+              )
+              : (
+                this.state.walletSet ?
+                  (
+                    <div>
+                      Wallet not selected.
                 </div>
-              )}
+                  )
+                  :
+                  (
+                    <div>
+                      Awaiting wallet authorization....
+                </div>
+                  ))
+            }
             {/* <br /> <br />
               <button className="btn" onClick={evt => this.getTokens(evt)}>
                 Get 1 Token from Metamask
