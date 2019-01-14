@@ -64,7 +64,6 @@ clean:
 
 deep-clean: clean
 	rm -rf $(cwd)/modules/**/node_modules
-	rm -rf $(cwd)/modules/**/.npm/global
 
 purge: reset deep-clean
 
@@ -153,7 +152,6 @@ hub-node-modules: builder client $(hub)/package.json
 
 client: builder $(client)/package.json
 	$(log_start)
-	$(docker_run_in_client) "npm config set prefix /root/.npm/global"
 	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/client
 
