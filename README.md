@@ -22,6 +22,8 @@ You can run this project locally in dev-mode with `npm start` (or `npm restart`)
 
 The above start command will build anything needed for you but you can also build stuff manually with `make`.
 
+Once everything builds & starts up, play with the app at `http://localhost` (the wallet module takes the longest to wake up, monitor it with `npm run logs wallet`)
+
 You can wipe all persistent data and restart the app with a fresh db using `npm run reset`
 
 You can run Indra in production-mode with `npm run prod` (or `npm restart prod`).
@@ -53,7 +55,7 @@ If you encounter any problems, check out the debugging guide at the bottom of th
 
 **Local development is easy**
 
-`npm start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:8080`
+`npm start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost`
 
 Beware: the first time this is run it will take a long time but have no fear: subsequent builds will go much more quickly.
 
