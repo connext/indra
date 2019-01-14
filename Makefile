@@ -118,12 +118,10 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 
 wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
-	$(docker_run_in_wallet) "mkdir -p /root/.npm/global"
-	$(docker_run_in_wallet) "npm config set prefix /root/.npm/global"
-	$(docker_run_in_wallet) "cd /client && npm ln"
+	$(docker_run_in_wallet) "rm -f node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
-	$(docker_run_in_wallet) "npm ln connext"
-	$(docker_run_in_wallet) "cd /client && npm install"
+	$(docker_run_in_wallet) "mv -f node_modules/connext node_modules/.connext.backup"
+	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
@@ -145,12 +143,10 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 
 hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "mkdir -p /root/.npm/global"
-	$(docker_run_in_hub) "npm config set prefix /root/.npm/global"
-	$(docker_run_in_hub) "cd /client && npm ln"
+	$(docker_run_in_hub) "rm -f node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
-	$(docker_run_in_hub) "npm ln connext"
-	$(docker_run_in_hub) "cd /client && npm install"
+	$(docker_run_in_hub) "mv -f node_modules/connext node_modules/.connext.backup"
+	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
 
 # Client
