@@ -38,6 +38,8 @@ export default interface ChainsawDao {
   eventsSince(contract: string, blockNumber: number, txIndex: number|null): Promise<ContractEventWithMeta[]>
 
   eventAt(contract: string, user: string, txCountGlobal: number, txCountChain: number): Promise<ContractEvent|null>
+
+  eventByHash (txHash: string): Promise<ContractEvent | null>
 }
 
 export class PostgresChainsawDao implements ChainsawDao {
@@ -199,6 +201,25 @@ export class PostgresChainsawDao implements ChainsawDao {
 
       return ContractEvent.fromRow(res.rows[0])
     });
+  }
+
+  eventByHash (txHash: string): Promise<ContractEvent | null> {
+    return this.engine.exec(async (c: Client) => {
+      const res = await c.query(
+        `SELECT * FROM chainsaw_events e WHERE tx_hash = $1`,
+        [txHash]
+      )
+
+      if (!res.rows.length) {
+        return null
+      }
+
+      if (res.rows.length > 1) {
+        throw new Error('Expected only one row.')
+      }
+
+      return ContractEvent.fromRow(res.rows[0])
+    })
   }
 
   private inflateRow(row: any): ChainsawPollEvent {

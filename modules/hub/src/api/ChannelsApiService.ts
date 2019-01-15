@@ -1,6 +1,6 @@
 import { default as Config } from '../Config'
-import { convertWithdrawalParameters } from 'connext/dist/types'
-import { UpdateRequest } from 'connext/dist/types'
+import { convertWithdrawalParameters } from '../vendor/connext/types'
+import { UpdateRequest } from '../vendor/connext/types'
 import * as express from 'express'
 import { ApiService } from './ApiService'
 import log from '../util/log'

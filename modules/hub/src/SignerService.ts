@@ -1,9 +1,7 @@
-import * as fs from 'fs';
-import { Utils } from 'connext/dist/Utils'
-import { UnsignedChannelState, ChannelState } from 'connext/dist/types'
-import * as eth from 'ethers';
-import { Block } from 'web3/eth/types';
+import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
+import { UnsignedChannelState, ChannelState } from './vendor/connext/types'
+import { Block } from 'web3/types';
 
 export class SignerService {
   private web3: any

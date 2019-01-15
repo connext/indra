@@ -142,7 +142,7 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 
 hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "rm -f node_modules/connext"
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "mv -f node_modules/connext node_modules/.connext.backup"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"

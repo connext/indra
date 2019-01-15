@@ -10,7 +10,7 @@ import {
 import {Big} from './util/bigNumber'
 import ThreadsService from './ThreadsService'
 import {ThreadStateBigNum} from './domain/Thread'
-import {convertChannelState, convertThreadState} from 'connext/dist/types'
+import {convertChannelState, convertThreadState} from './vendor/connext/types'
 import {ChannelStateUpdateRowBigNum} from './domain/Channel'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 

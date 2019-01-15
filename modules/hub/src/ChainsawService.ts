@@ -1,18 +1,19 @@
-import { BigNumber } from 'bignumber.js'
-import { ChannelUpdateReasons, ChannelState, convertChannelState, PaymentArgs, ConfirmPendingArgs } from 'connext/dist/types'
-import { Utils } from 'connext/dist/Utils'
-import { StateGenerator } from 'connext/dist/StateGenerator'
-import { EventLog } from 'web3/types'
 import { Lock } from './util'
+import { convertChannelState } from './vendor/connext/types'
 import ChainsawDao from './dao/ChainsawDao'
 import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
 import Config from './Config'
 import { ChannelManager } from './ChannelManager'
+import { EventLog } from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
+import { ChannelUpdateReasons, ChannelState, PaymentArgs, ConfirmPendingArgs } from './vendor/connext/types'
+import { Utils } from './vendor/connext/Utils'
 import abi from './abi/ChannelManager'
+import { BigNumber } from 'bignumber.js'
 import { sleep } from './util'
 import { default as DBEngine } from './DBEngine'
+import { Validator } from './vendor/connext/validator'
 
 const LOG = log('ChainsawService')
 
@@ -37,24 +38,21 @@ export default class ChainsawService {
 
   private utils: Utils
 
-  private hubAddress: string
-
   private config: Config
 
   private db: DBEngine
 
-  private stateGenerator: StateGenerator
+  private validator: Validator
 
-  constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config, db: DBEngine, stateGenerator: StateGenerator) {
+  constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config, db: DBEngine, validator: Validator) {
     this.chainsawDao = chainsawDao
     this.channelsDao = channelsDao
     this.utils = utils
     this.web3 = web3
     this.contract = new this.web3.eth.Contract(abi, config.channelManagerAddress) as ChannelManager
-    this.hubAddress = config.hotWalletAddress
     this.config = config
     this.db = db
-    this.stateGenerator = stateGenerator
+    this.validator = validator
   }
 
   async poll() {
@@ -81,6 +79,16 @@ export default class ChainsawService {
     } catch (e) {
       LOG.error('Processing events failed: {e}', { e })
     }
+  }
+
+  /**
+   * Process a single transaction by hash. Intended to be used by scripts that need to force a re-process.
+   */
+  async processTx(txHash: string) {
+    const tx = await this.chainsawDao.eventByHash(txHash)
+    if (tx.TYPE != 'DidUpdateChannel')
+      throw new Error('Tx must be a "DidUpdateChannel", but got: ' + tx.TYPE)
+    await this.processDidUpdateChannel(tx.chainsawId, tx as DidUpdateChannelEvent)
   }
 
   private async doFetchEvents() {
@@ -163,6 +171,12 @@ export default class ChainsawService {
           break
         case DidUpdateChannelEvent.TYPE:
           await this.processDidUpdateChannel(event.id, event.event as DidUpdateChannelEvent)
+          await this.chainsawDao.recordPoll(
+            event.event.blockNumber,
+            event.event.txIndex,
+            this.contract._address,
+            'PROCESS_EVENTS',
+          )
           break
         default:
           LOG.info('Got type {type}. Not implemented yet.', {
@@ -187,13 +201,17 @@ export default class ChainsawService {
     }
 
     const prev = await this.channelsDao.getChannelOrInitialState(event.user)
-    const state = this.stateGenerator.confirmPending(convertChannelState('bn', prev.state))
+    const state = await this.validator.generateConfirmPending(
+      convertChannelState('str', prev.state),
+      { transactionHash: event.txHash }
+    )
     const hash = this.utils.createChannelStateHash(state)
-    const sigHub = await this.web3.eth.sign(hash, this.hubAddress)
-    await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.hubAddress, {
+
+    //const sigHub = '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+    const sigHub = await this.web3.eth.sign(hash, this.config.hotWalletAddress)
+    await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.config.hotWalletAddress, {
       ...state,
       sigHub
     } as ChannelState, { transactionHash: event.txHash } as ConfirmPendingArgs, chainsawId)
-    await this.chainsawDao.recordPoll(event.blockNumber, event.txIndex, this.contract._address, 'PROCESS_EVENTS')
   }
 }

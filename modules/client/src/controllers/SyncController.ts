@@ -185,13 +185,6 @@ export default class SyncController extends AbstractController {
 
   async sync() {
     try {
-      await this.checkCurrentStateTimeoutAndInvalidate()
-    } catch (e) {
-      this.logToApi('invalidation-check', { message: '' + e })
-      console.error('Error checking whether current state should be invalidated:', e)
-    }
-
-    try {
       const state = this.store.getState()
       const hubUpdates = await this.hub.sync(
         state.persistent.channel.txCountGlobal,
@@ -209,6 +202,14 @@ export default class SyncController extends AbstractController {
       console.error('Flush error:', e)
       this.logToApi('flush', { message: '' + e })
     }
+
+    try {
+      await this.checkCurrentStateTimeoutAndInvalidate()
+    } catch (e) {
+      this.logToApi('invalidation-check', { message: '' + e })
+      console.error('Error checking whether current state should be invalidated:', e)
+    }
+
   }
 
   public getSyncState(): SyncControllerState {
@@ -216,9 +217,18 @@ export default class SyncController extends AbstractController {
   }
 
   private async checkCurrentStateTimeoutAndInvalidate() {
-    // if latest state has a timeout, check to see if event is mined
+    // If latest state has a timeout, check to see if event is mined
+    const state = this.getState()
+
     const { channel, channelUpdate } = this.getState().persistent
     if (!channel.timeout)
+      return
+
+    // Wait until all the hub's sync results have been handled before checking
+    // if we need to invalidate (the current state might be invalid, but the
+    // pending updates from the hub might resolve that; ex, they might contain
+    // an ConfirmPending).
+    if (state.runtime.syncResultsFromHub.length > 0)
       return
 
     let block = await this.findBlockNearestTimeout(channel.timeout)
@@ -227,7 +237,7 @@ export default class SyncController extends AbstractController {
 
     const evts = await this.connext.getContractEvents(
       'DidUpdateChannel',
-      block.number - 2000, // 2000 blocks = ~8 hours
+      Math.max(block.number - 2000, 0), // 2000 blocks = ~8 hours
     )
     const event = evts.find(e => e.returnValues.txCount[0] === channel.txCountGlobal)
     if (event) {
@@ -276,7 +286,7 @@ export default class SyncController extends AbstractController {
     //   1. block.number + step < latestBlock.number
     //   2. if step < 0: block.timestamp >= timeout + delta
     //   3. if step > 0: block.timestamp < timeout + delta
-    let step = -10000
+    let step = -1 * Math.min(block.number, 10000)
     while (true) {
       if (Math.abs(step) <= 2) {
         // This should never happen, and is a sign that we'll get into an
@@ -406,7 +416,18 @@ export default class SyncController extends AbstractController {
     this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
   }
 
-  public async sendInvalidation(
+  /**
+   * Sends an invalidation to the hub.
+   *
+   * Note: this assumes that the caller has guaranteed that the state can
+   * safely be invalidated. Currently this is true because `sendInvalidation`
+   * is only called from one place - checkCurrentStateTimeoutAndInvalidate -
+   * which performs the appropriate checks.
+   *
+   * If this gets called from other places, care will need to be taken to
+   * ensure they have done the appropriate validation too.
+   */
+  private async sendInvalidation(
     updateToInvalidate: UpdateRequest,
     reason: InvalidationReason,
     message: string,

@@ -1,20 +1,22 @@
 import { BigNumber } from 'bignumber.js'
 import {
   ChannelState,
-  ChannelStateUpdate,
   ChannelStatus,
+  ChannelStateUpdate,
   convertChannelState,
-  DepositArgsBigNumber,
-  ExchangeArgsBigNumber,
-  InvalidationReason,
   PaymentArgsBigNumber,
+  ExchangeArgsBigNumber,
+  DepositArgsBigNumber,
   WithdrawalArgsBigNumber,
-} from 'connext/dist/types'
+  InvalidationReason
+} from '../vendor/connext/types'
 import {
   objValuesBigNumToString,
   objValuesStringToBigNum,
 } from '../util'
-import { Utils } from 'connext/dist/Utils'
+import { Utils } from '../vendor/connext/Utils'
+
+// TODO move all to connext?
 
 // A row of the cm_threads table, including the latest state, the status, and
 // other fields.

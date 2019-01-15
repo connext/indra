@@ -1,3 +1,4 @@
+import { WithdrawalParametersBigNumber } from './vendor/connext/types'
 import { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
 import { getTestRegistry, assert, getFakeClock } from './testing'
@@ -31,7 +32,8 @@ import {
   convertWithdrawal,
   Payment,
   InvalidationArgs,
-} from 'connext/dist/types'
+  WithdrawalArgs,
+} from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
 import {
@@ -39,7 +41,7 @@ import {
   tokenVal,
   channelAndThreadFactory,
 } from './testing/factories'
-import { StateGenerator } from 'connext/dist/StateGenerator'
+import { StateGenerator } from './vendor/connext/StateGenerator'
 import PaymentsService from './PaymentsService';
 import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
 import Config from './Config';
@@ -361,7 +363,7 @@ describe('ChannelsService', () => {
       },
 
       expected: {
-        balanceWeiUser: Big(10).div(123.45).times('1e18').integerValue(BigNumber.ROUND_FLOOR).div('1e18').toFixed(),
+        balanceWeiUser: Big(10).div(123.45).times('1e18').decimalPlaces(0, BigNumber.ROUND_FLOOR).div('1e18').toFixed(),
         balanceTokenUser: tweakBalance(10, 28),
       },
     },
@@ -622,7 +624,7 @@ describe('ChannelsService', () => {
 
     const expectedExchangeAmountWei = toWeiBigNum(10)
       .div(mockRate)
-      .integerValue(BigNumber.ROUND_FLOOR)
+      .decimalPlaces(0, BigNumber.ROUND_FLOOR)
 
     let syncUpdates = await service.getChannelAndThreadUpdatesForSync(
       channel.user,
@@ -653,26 +655,32 @@ describe('ChannelsService', () => {
 
   async function runWithdrawalTest(
     initial: Partial<ChannelState>,
-    expected: Partial<ChannelState>,
-  ) { }
-
-  it('withdrawal where hub withdraws booty', async () => {
+    params: Partial<WithdrawalParametersBigNumber>,
+    expected: Partial<WithdrawalArgs>,
+  ) {
     const channel = await channelUpdateFactory(registry, {
-      balanceTokenHub: toWeiString(10),
-      balanceTokenUser: toWeiString(10),
+      balanceTokenHub: toWeiString(0),
+      balanceTokenUser: toWeiString(0),
       balanceWeiHub: toWeiString(0),
       balanceWeiUser: toWeiString(0),
+      ...initial,
     })
     await service.doRequestWithdrawal(
       channel.user,
       {
         recipient: mkAddress('0x666'),
         exchangeRate: '123.45',
-        tokensToSell: toWeiBigNum(1),
-        withdrawalWeiUser: toWeiBigNum(0)
+        tokensToSell: toWeiBigNum(0),
+        withdrawalWeiUser: toWeiBigNum(0),
+        ...params,
       }
     )
     const withdrawal = await service.redisGetUnsignedState(channel.user)
+    if (!expected) {
+      assert.isNotOk(withdrawal)
+      return
+    }
+
     assert.isOk((withdrawal.update.args as any).timeout)
     assert.containSubset(withdrawal.update.args, {
       additionalTokenHubToUser: '0',
@@ -680,46 +688,63 @@ describe('ChannelsService', () => {
       exchangeRate: '123.45',
       seller: 'user',
       targetTokenHub: '0',
-      targetTokenUser: '9000000000000000000',
+      targetTokenUser: '0',
       targetWeiHub: '0',
       targetWeiUser: '0',
-      tokensToSell: '1000000000000000000',
+      tokensToSell: '0',
       weiToSell: '0',
+      ...expected,
     })
+
+  }
+
+  it('withdrawal where hub withdraws booty', async () => {
+    await runWithdrawalTest(
+      {
+        balanceTokenHub: toWeiString(10),
+        balanceTokenUser: toWeiString(10),
+      },
+      {
+        tokensToSell: toWeiBigNum(1),
+        withdrawalWeiUser: toWeiBigNum(0)
+      },
+      {
+        targetTokenHub: '0',
+        targetTokenUser: '9000000000000000000',
+        tokensToSell: '1000000000000000000',
+      },
+    )
+  })
+
+  it('withdrawal should be ignored if nothing will be withdrawn', async () => {
+    await runWithdrawalTest(
+      {},
+      {}, // Don't request any withdrawals (ie, all values are 0)
+      null, // And we shouldn't get anything
+    )
   })
 
   // TODO: REB-60
   it('withdrawal where hub deposits booty', async () => {
-    const channel = await channelUpdateFactory(registry, {
-      balanceTokenHub: toWeiString(0),
-      balanceTokenUser: toWeiString(10),
-      balanceWeiHub: toWeiString(0),
-      balanceWeiUser: toWeiString(10),
-    })
-    await service.doRequestWithdrawal(
-      channel.user,
+    await runWithdrawalTest(
       {
-        recipient: mkAddress('0x666'),
-        exchangeRate: '123.45',
+        balanceTokenUser: toWeiString(10),
+        balanceWeiUser: toWeiString(10),
+      },
+
+      {
         tokensToSell: toWeiBigNum(1),
         withdrawalTokenUser: toWeiBigNum(0),
         withdrawalWeiUser: toWeiBigNum(3),
-      }
-    )
-    const withdrawal = await service.redisGetUnsignedState(channel.user)
-    assert.isOk((withdrawal.update.args as any).timeout)
-    assert.containSubset(withdrawal.update.args, {
-      seller: 'user',
+      },
+
+      {
       targetTokenHub: '69000000000000000000',
       targetTokenUser: '9000000000000000000',
-      targetWeiHub: '0',
       targetWeiUser: '7000000000000000000',
       tokensToSell: '1000000000000000000',
-      weiToSell: '0',
-      additionalTokenHubToUser: '0',
-      additionalWeiHubToUser: '0',
-      exchangeRate: '123.45',
-    })
+      },
+    )
   })
 
   describe('Withdrawal generated cases', () => {

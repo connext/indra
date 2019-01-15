@@ -1,18 +1,17 @@
-import ABI, {BYTECODE} from './abi/ChannelManager'
-import {BigNumber} from 'bignumber.js'
-import {assert} from 'chai'
-import {ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber} from 'connext/dist/types';
-import {StateGenerator} from 'connext/dist/StateGenerator'
-import {Utils, emptyRootHash} from 'connext/dist/Utils'
-import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
+import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
+import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
+import DBEngine from './DBEngine'
 import ChannelsDao, {PostgresChannelsDao} from './dao/ChannelsDao'
 import {ChannelManager} from './ChannelManager'
-import DBEngine from './DBEngine'
-import {SignerService} from "./SignerService";
+import ABI, {BYTECODE} from './abi/ChannelManager'
+import {assert} from 'chai'
 import * as sinon from 'sinon'
-import {TestServiceRegistry, getTestRegistry} from './testing'
+import {Utils, emptyRootHash} from './vendor/connext/Utils'
 import {PgPoolServiceForTest} from './testing/mocks'
+import {BigNumber} from 'bignumber.js'
+import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
+import { StateGenerator } from './vendor/connext/StateGenerator'
 
 const GAS_PRICE = '1000000000'
 

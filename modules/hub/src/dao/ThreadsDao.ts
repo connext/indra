@@ -7,7 +7,7 @@ import {
   ThreadRowBigNum,
 } from '../domain/Thread'
 import { BigNumber } from 'bignumber.js'
-import { ThreadState, ThreadStatus } from 'connext/dist/types'
+import { ThreadState, ThreadStatus } from '../vendor/connext/types'
 
 export default interface ThreadsDao {
   applyThreadUpdate(

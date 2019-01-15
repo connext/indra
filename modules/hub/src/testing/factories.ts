@@ -1,11 +1,10 @@
-import BN = require('bn.js')
-import BigNumber = require('bignumber.js')
-import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes } from "connext/dist/types";
 import { TestServiceRegistry } from ".";
 import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread } from "./stateUtils";
 import { default as ChannelsDao } from "../dao/ChannelsDao";
 import { Big } from "../util/bigNumber";
 import { default as ThreadsDao } from "../dao/ThreadsDao";
+import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes } from "../vendor/connext/types";
+import BN = require('bn.js')
 import ExchangeRateDao from "../dao/ExchangeRateDao";
 
 export function tokenVal(x: number | string): string {

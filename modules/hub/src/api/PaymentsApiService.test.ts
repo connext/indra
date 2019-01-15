@@ -1,5 +1,5 @@
 import { mkSig } from "../testing/stateUtils";
-import { PurchasePayment } from "connext/dist/types";
+import { PurchasePayment } from "../vendor/connext/types";
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal, channelNextState } from "../testing/factories";
 import { PaymentMetaDao } from "../dao/PaymentMetaDao";

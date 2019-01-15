@@ -1,5 +1,5 @@
 import getTxCount from '../lib/getTxCount'
-import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateRequestTypes, SyncResult, UpdateRequest, InvalidationArgs, ChannelStateUpdate } from '../types'
+import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateRequestTypes, SyncResult, UpdateRequest, ChannelStateUpdate } from '../types'
 import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
@@ -115,25 +115,13 @@ export default class DepositController extends AbstractController {
       await this._sendUserAuthorizedDeposit(prev, update)
       this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.res()
     } catch (e) {
-      try {
-        await this.connext.syncController.sendInvalidation(
-          update,
-          'CU_INVALID_ERROR',
-          '' + e,
-        )
-      } catch (invalidationError) {
-        console.warn('Update which triggered invalidation:', update)
-        console.warn('Error handling update which triggered invalidation:', e)
-        console.error('Error occured while trying to send invalidation:', invalidationError)
-        throw new Error(
-          `Error handling both update and invalidation.\n` +
-          `Update error: ${e}\n` +
-          `Invalidation error: ${invalidationError}`
-        )
-      }
+      console.warn(
+        `Error handling userAuthorizedUpdate (this update will be ` +
+        `countersigned and held until it expires - at which point it ` +
+        `will be invalidated - or the hub sends us a subsequent ` +
+        `ConfirmPending.`, e
+      )
       this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.rej(e)
-      console.warn('Error sending userAuthorizedUpdate (invalidation has been sent to hub):', e)
-      return 'Error sending userAuthorizedUpdate (invalidation has been sent to hub): ' + e.stack
     } finally {
       this.resolvePendingDepositPromise = null
       await this.saveRequestedDeposit(null, true)

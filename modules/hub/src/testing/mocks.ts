@@ -1,5 +1,3 @@
-import { Utils } from 'connext/dist/Utils';
-import { Validator } from 'connext/dist/validator'
 import * as request from 'supertest'
 
 import { getRedisClient } from '../RedisClient'
@@ -9,12 +7,11 @@ import { Container } from '../Container'
 import { truncateAllTables } from './eraseDb'
 import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
-
 import { mkAddress, mkSig, mkHash } from "./stateUtils";
-
-import BigNumber from 'bignumber.js';
+import { Validator } from '../vendor/connext/validator'
 import { Big, toWeiBigNum } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
+import { Utils } from '../vendor/connext/Utils';
 import Config from '../Config';
 
 const Web3 = require('web3')

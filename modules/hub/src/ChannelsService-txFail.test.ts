@@ -1,12 +1,12 @@
-import { StateGenerator } from "connext/dist/StateGenerator";
-import { DepositArgsBigNumber, UpdateRequest, convertChannelState, convertDeposit, DepositArgs } from "connext/dist/types";
-import Web3 = require('web3')
-import ChannelsService from "./ChannelsService";
+import { toWeiBigNum } from "./util/bigNumber";
 import { getTestRegistry, assert } from "./testing";
+import Web3 = require('web3')
 import { mkHash, mkSig, assertChannelStateEqual } from "./testing/stateUtils";
 import { MockExchangeRateDao, MockGasEstimateDao, MockSignerService } from "./testing/mocks";
+import ChannelsService from "./ChannelsService";
+import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { channelUpdateFactory } from "./testing/factories";
-import { toWeiBigNum } from "./util/bigNumber";
+import { DepositArgsBigNumber, UpdateRequest, convertChannelState, convertDeposit, DepositArgs } from "./vendor/connext/types";
 
 function web3ContractMock() {
   this.methods = {

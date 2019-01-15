@@ -1,17 +1,17 @@
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import {
-  ArgsTypes,
-  ChannelState,
-  ChannelStateBigNumber,
   ChannelUpdateReason,
-  convertArgs,
-  DepositArgsBigNumber,
-  ExchangeArgsBigNumber,
-  InvalidationArgs,
+  ChannelState,
+  ArgsTypes,
+  ChannelStateBigNumber,
   PaymentArgsBigNumber,
+  ExchangeArgsBigNumber,
+  DepositArgsBigNumber,
   WithdrawalArgsBigNumber,
-} from 'connext/dist/types'
+  convertArgs,
+  InvalidationArgs,
+} from '../vendor/connext/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
 import {
@@ -19,7 +19,7 @@ import {
   ChannelRowBigNum,
 } from '../domain/Channel'
 import { Big } from '../util/bigNumber'
-import { emptyRootHash } from 'connext/dist/Utils'
+import { emptyRootHash } from '../vendor/connext/Utils'
 import { default as log } from '../util/log'
 import { mkSig } from '../testing/stateUtils';
 

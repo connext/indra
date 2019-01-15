@@ -48,13 +48,13 @@ import { PostgresFeatureFlagsDao } from './dao/FeatureFlagsDao'
 import FeatureFlagsApiService from './api/FeatureFlagsApiService'
 import { ApiServer } from './ApiServer'
 import { DefaultAuthHandler } from './middleware/AuthHandler'
-import { Utils } from 'connext/dist/Utils'
-import { Validator } from 'connext/dist/validator'
+import { Utils } from './vendor/connext/Utils'
+import { Validator } from './vendor/connext/validator'
 import ThreadsService from './ThreadsService'
 import ThreadsApiService from './api/ThreadsApiService';
 import { OnchainTransactionService } from "./OnchainTransactionService";
 import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
-import { StateGenerator } from 'connext/dist/StateGenerator';
+import { StateGenerator } from './vendor/connext/StateGenerator';
 import { SignerService } from './SignerService';
 import PaymentsService from './PaymentsService';
 
@@ -95,8 +95,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       utils: Utils,
       config: Config,
       db: DBEngine,
-      stateGenerator: StateGenerator,
-    ) => new ChainsawService(chainsawDao, channelsDao, web3, utils, config, db, stateGenerator),
+      validator: Validator,
+    ) => new ChainsawService(chainsawDao, channelsDao, web3, utils, config, db, validator),
     dependencies: [
       'ChainsawDao',
       'ChannelsDao',
@@ -104,7 +104,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'ConnextUtils',
       'Config',
       'DBEngine',
-      'StateGenerator',
+      'Validator',
     ],
     isSingleton: true,
   },
@@ -317,6 +317,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       threadsDao: ThreadsDao,
       exchangeRateDao: ExchangeRateDao,
       validation: Validator,
+      generator: StateGenerator,
       redis: RedisClient,
       db: DBEngine,
       web3: any,
@@ -330,6 +331,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
         threadsDao,
         exchangeRateDao,
         validation,
+        generator,
         redis,
         db,
         web3,
@@ -343,6 +345,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'ThreadsDao',
       'ExchangeRateDao',
       'Validator',
+      'StateGenerator',
       'RedisClient',
       'DBEngine',
       'Web3',
