@@ -85,6 +85,14 @@ export function getFakeClock() {
   let clock: ReturnType<typeof sinon['useFakeTimers']> | null
   beforeEach(() => clock = sinon.useFakeTimers())
   afterEach(() => {
+    // Sinon does something strange with `setTimeout()` calls that were made
+    // while the fake clock was active, and it looks like they get discarded
+    // when the fake clock is restored. This causes problems with the Postgres
+    // connection pool, which (speculation) uses `setTimeout` to clean up
+    // un-used connections... so if a fake clock was active, tick far into the
+    // future to make sure that any pending timeouts are executed before it's
+    // restored.
+    clock && clock.tick(1e69)
     clock && clock.restore()
     clock = null
   })

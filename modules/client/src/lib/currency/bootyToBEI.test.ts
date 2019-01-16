@@ -2,7 +2,7 @@ import {expect} from 'chai'
 import Currency from '../currency/Currency';
 import bootyToBEI from './bootyToBEI';
 import { BigNumber } from 'bignumber.js'
-import BN from 'bn.js'
+import BN = require('bn.js')
 
 describe('bootyToBEI', () => {
   it('should convert ICurrency, string, number, BN, BigNumber to a Bei Currency', () => {

@@ -2,9 +2,9 @@ import { assert } from './testing/index'
 import * as t from './testing/index'
 import { StateGenerator, calculateExchange } from './StateGenerator';
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, convertFields } from './types';
+import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs } from './types';
 import { getChannelState, getWithdrawalArgs } from './testing'
-import { toBN } from './helpers/bn'
+import { toBN } from './helpers/bn';
 
 
 const sg = new StateGenerator()
@@ -325,6 +325,22 @@ describe('StateGenerator', () => {
     })
   })
 
+  describe('invalidation', () => {
+    it('should work', async () => {
+      const prev = createPreviousChannelState({
+        txCount: [3, 2],
+      })
+      const args: InvalidationArgs = {
+        previousValidTxCount: prev.txCountGlobal,
+        lastInvalidTxCount: 7,
+        reason: "CU_INVALID_ERROR",
+      }
+
+      const curr = sg.invalidation(prev, args)
+      assert.deepEqual(curr, { ...convertChannelState("str-unsigned", prev), txCountGlobal: 8, })
+    })
+  })
+
   describe('calculateExchange', () => {
     type ExchangeTest = {
       seller: 'user' | 'hub'
@@ -378,11 +394,11 @@ describe('StateGenerator', () => {
             tokensSold: actual.tokensSold.toString(),
             tokensReceived: actual.tokensReceived.toString(),
           }, {
-            weiSold: '' + flip(t.expected.ws),
-            weiReceived: '' + flip(t.expected.wr),
-            tokensSold: '' + flip(t.expected.ts),
-            tokensReceived: '' + flip(t.expected.tr),
-          })
+              weiSold: '' + flip(t.expected.ws),
+              weiReceived: '' + flip(t.expected.wr),
+              tokensSold: '' + flip(t.expected.ts),
+              tokensReceived: '' + flip(t.expected.tr),
+            })
 
         })
       }

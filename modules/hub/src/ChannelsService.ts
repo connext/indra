@@ -35,12 +35,15 @@ import {
   SyncResult,
   WithdrawalParametersBigNumber,
   ChannelStateBN,
+  InvalidationArgs,
 } from './vendor/connext/types'
 import { prettySafeJson, Omit } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
 import ThreadsService from './ThreadsService';
 import { SignerService } from './SignerService';
+import { OnchainTransactionRow } from './domain/OnchainTransaction';
+import { Utils } from './vendor/connext/Utils'
 
 const LOG = log('ChannelsService') as any
 
@@ -48,6 +51,9 @@ export type RedisUnsignedUpdate = {
   update: Omit<ChannelStateUpdate, 'state'>
   timestamp: number
 }
+
+
+const utils = new Utils()
 
 export default class ChannelsService {
   private onchainTxService: OnchainTransactionService
@@ -106,8 +112,9 @@ export default class ChannelsService {
     user: string,
     depositWei: BigNumber,
     depositToken: BigNumber,
-  ): Promise<void> {
+  ): Promise<string | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
+    const channelStateStr = convertChannelState("str", channel.state)
 
     // channel checks
     if (channel.status !== 'CS_OPEN') {
@@ -118,11 +125,23 @@ export default class ChannelsService {
       )
     }
 
+    if (utils.hasPendingOps(channelStateStr)) {
+      LOG.info(
+        `User requested a deposit while state already has pending operations ` +
+        `(user: ${user}; current state: ${JSON.stringify(channelStateStr)})`
+      )
+      return 'current state has pending fields'
+    }
+
     const nowSeconds = Math.floor(Date.now() / 1000)
 
     // if the last update has a timeout that expired, that means it wasn't confirmed on chain
+    // TODO REB-12: This is incorrect; the timeout needs to be compared to
+    // the latest block timestamp, not Date.now()
     if (channel.state.timeout && nowSeconds <= channel.state.timeout) {
-      LOG.info(`Pending update has not expired yet: ${JSON.stringify(channel)}, doing nothing`)
+      LOG.info('Pending update has not expired yet: {channel}, doing nothing', {
+        channel,
+      })
       return
     }
 
@@ -174,7 +193,7 @@ export default class ChannelsService {
     }
 
     const channelStateWithDeposits = this.validator.generateProposePendingDeposit(
-      convertChannelState("str", channel.state),
+      channelStateStr,
       depositArgs
     )
 
@@ -197,29 +216,33 @@ export default class ChannelsService {
   public async calculateRequiredCollateral(
     state: ChannelStateBigNumber
   ): Promise<BigNumber> {
-    let totalAmountToCollateralize = Big(0)
-    const amtInOpenThread = Big(await this.channelsDao.getRecentTippers(state.user)).mul(this.config.threadBeiLimit)
+    const numTippers = await this.channelsDao.getRecentTippers(state.user)
+    const targetAmount = Big(numTippers).mul(this.config.threadBeiLimit)
+    const minAmount = numTippers > 0 ?
+        this.config.beiMinCollateralization :
+        toWeiBigNum(10)
+
     if (
       // threshold is max of BOOTY_MIN_THRESHOLD and 0.5 * amount in open threads
       state.balanceTokenHub
-        .lessThan(BigNumber.max(this.config.beiMinThreshold, amtInOpenThread.mul(0.5)),
+        .greaterThan(BigNumber.max(minAmount, targetAmount).mul(0.5),
       )
     ) {
-      // collateralize at least the min amount
-      totalAmountToCollateralize = BigNumber.max(
-        this.config.beiMinCollateralization,
-        amtInOpenThread.mul(2.5),
-      )
-      
-      // collateralize at most the max amount
-      totalAmountToCollateralize = BigNumber.min(this.config.beiMaxCollateralization, totalAmountToCollateralize)
-
-      // recollateralize with total amount minus (actual balance + pending deposit)
-      totalAmountToCollateralize = totalAmountToCollateralize
-        .minus(state.balanceTokenHub)
+      return Big(0)
     }
 
-    return totalAmountToCollateralize
+    // collateralize at least the min amount
+    const totalAmountToCollateralize = BigNumber.min(
+      this.config.beiMaxCollateralization,
+
+      BigNumber.max(
+        minAmount,
+        targetAmount.mul(2.5),
+      ),
+    )
+
+    // recollateralize with total amount minus (actual balance + pending deposit)
+    return totalAmountToCollateralize.minus(state.balanceTokenHub)
   }
 
   public async doCollateralizeIfNecessary(
@@ -295,9 +318,8 @@ export default class ChannelsService {
     const channel = await this.channelsDao.getChannelByUser(user)
     if (!channel || channel.status !== 'CS_OPEN') {
       throw new Error(
-        `withdraw: Channel is not in the correct state: ${prettySafeJson(
-          channel,
-        )}`,
+        `withdraw: Channel is not in the correct state: ` +
+        `${prettySafeJson(channel)}`,
       )
     }
 
@@ -393,7 +415,7 @@ export default class ChannelsService {
     user: string,
     weiToSell: BigNumber,
     tokensToSell: BigNumber,
-  ): Promise<ExchangeArgs> {
+  ): Promise<ExchangeArgs | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
     // channel checks
@@ -447,10 +469,14 @@ export default class ChannelsService {
       ),
     }
 
+    if (exchangeArgs.weiToSell == '0' && exchangeArgs.tokensToSell == '0')
+      return null
+
     await this.redisSaveUnsignedState(user, {
       args: exchangeArgs,
       reason: 'Exchange',
     })
+
     return exchangeArgs
   }
 
@@ -550,7 +576,6 @@ export default class ChannelsService {
 
     let redisUpdate: ChannelStateUpdate
     let unsignedChannelStateCurrent: UnsignedChannelState
-    let generated: UnsignedChannelState
     let sigHub: string
 
     switch (update.reason) {
@@ -592,6 +617,30 @@ export default class ChannelsService {
           return null
 
         // dont await so we can do this in the background
+        LOG.info(`Calling hubAuthorizedUpdate with: ${JSON.stringify([
+          user,
+          redisUpdate.state.recipient,
+          [redisUpdate.state.balanceWeiHub, redisUpdate.state.balanceWeiUser],
+          [redisUpdate.state.balanceTokenHub, redisUpdate.state.balanceTokenUser],
+          [
+            redisUpdate.state.pendingDepositWeiHub,
+            redisUpdate.state.pendingWithdrawalWeiHub,
+            redisUpdate.state.pendingDepositWeiUser,
+            redisUpdate.state.pendingWithdrawalWeiUser,
+          ],
+          [
+            redisUpdate.state.pendingDepositTokenHub,
+            redisUpdate.state.pendingWithdrawalTokenHub,
+            redisUpdate.state.pendingDepositTokenUser,
+            redisUpdate.state.pendingWithdrawalTokenUser,
+          ],
+          [redisUpdate.state.txCountGlobal, redisUpdate.state.txCountChain],
+          redisUpdate.state.threadRoot,
+          redisUpdate.state.threadCount,
+          redisUpdate.state.timeout,
+          redisUpdate.state.sigUser,
+        ])}`)
+
         let data = this.contract.methods.hubAuthorizedUpdate(
           user,
           redisUpdate.state.recipient,
@@ -619,7 +668,14 @@ export default class ChannelsService {
         let txn = await this.onchainTxService.sendTransaction(this.db, {
           from: this.config.hotWalletAddress,
           to: this.config.channelManagerAddress,
-          data: data
+          data,
+          meta: {
+            completeCallback: 'ChannelsService.invalidateUpdate',
+            args: {
+              user,
+              lastInvalidTxCount: redisUpdate.state.txCountGlobal
+            }
+          }
         })
 
         return await this.saveRedisStateUpdate(
@@ -640,6 +696,41 @@ export default class ChannelsService {
           return null
 
         return await this.saveRedisStateUpdate(user, redisUpdate, update)
+
+      case 'Invalidation':
+        const lastStateNoPendingOps = await this.channelsDao.getLastStateNoPendingOps(user)
+        
+        const latestBlock = await this.signerService.getLatestBlock()
+        
+        // make sure there is no pending timeout
+        if (signedChannelStatePrevious.timeout && latestBlock.timestamp <= signedChannelStatePrevious.timeout) {
+          LOG.info('Cannot invalidate update with timeout that hasnt expired, lastStateNoPendingOps: {lastStateNoPendingOps}, block: {latestBlock}', {
+            lastStateNoPendingOps,
+            latestBlock
+          })
+          return
+        }
+        // TODO REB-12: make sure that event has not made it to chain. This
+        // is currently being done by the client, but should be moved into
+        // the validator so it's part of the validation here too.
+        unsignedChannelStateCurrent = this.validator.generateInvalidation(
+          convertChannelState('str', lastStateNoPendingOps.state),
+          update.args as InvalidationArgs
+        )
+        this.validator.assertChannelSigner({
+          ...unsignedChannelStateCurrent,
+          sigUser: update.sigUser
+        })
+        sigHub = await this.signerService.getSigForChannelState(unsignedChannelStateCurrent)
+        const u = await this.channelsDao.applyUpdateByUser(
+          user,
+          update.reason,
+          user,
+          { ...unsignedChannelStateCurrent, sigUser: update.sigUser, sigHub },
+          update.args
+        )
+        await this.channelsDao.invalidateUpdates(user, update.args as InvalidationArgs)
+        return u
 
       case 'OpenThread':
         // will store unsigned state in redis for the next sync response
@@ -678,14 +769,12 @@ export default class ChannelsService {
       channelTxCount,
     )
 
-    console.log("channelUpdates:", JSON.stringify(channelUpdates, null, 2))
+    console.log("RESULT:", JSON.stringify(channelUpdates, null, 2))
 
     const threadUpdates = await this.threadsDao.getThreadUpdatesForSync(
       user,
       lastThreadUpdateId,
     )
-
-    console.log("threadUpdates:", JSON.stringify(threadUpdates, null, 2))
 
     let curChan = 0
     let curThread = 0
@@ -710,8 +799,6 @@ export default class ChannelsService {
           (chan.createdOn == thread.createdOn && chan.reason == 'OpenThread'))
 
       if (pushChan) {
-        const sig = await this.signerService.getSigForChannelState(convertChannelState('str', chan.state))
-        console.log('sig: ', sig);
         curChan += 1
         pushChannel({
           args: chan.args,
@@ -719,6 +806,7 @@ export default class ChannelsService {
           sigUser: chan.state.sigUser,
           sigHub: chan.state.sigHub,
           txCount: chan.state.txCountGlobal,
+          createdOn: chan.createdOn,
           id: chan.id
         })
         lastTxCount = chan.state.txCountGlobal
@@ -848,6 +936,34 @@ export default class ChannelsService {
       update.args,
       null,
       txnId
+    )
+  }
+
+  // callback function for OnchainTransactionService
+  private async invalidateUpdate(txn: OnchainTransactionRow) {
+    if (txn.state !== 'failed') {
+      LOG.info(`Transaction completed, no need to invalidate`)
+      return
+    }
+    LOG.info(`Txn failed, proposing an invalidating update, txn: ${prettySafeJson(txn)}`)
+    const { user, lastInvalidTxCount } = txn.meta.args
+    const lastValidState = await this.channelsDao.getLastStateNoPendingOps(user)
+    const invalidationArgs = {
+      lastInvalidTxCount,
+      previousValidTxCount: lastValidState.state.txCountGlobal,
+      reason: 'CU_INVALID_ERROR'
+    } as InvalidationArgs
+    const unsignedState = this.validator.generateInvalidation(
+      convertChannelState('str', lastValidState.state),
+      invalidationArgs
+    )
+    const sigHub = await this.signerService.getSigForChannelState(unsignedState)
+    return await this.channelsDao.applyUpdateByUser(
+      user,
+      'Invalidation',
+      user,
+      { ...unsignedState, sigHub },
+      invalidationArgs,
     )
   }
 }

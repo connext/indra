@@ -7,8 +7,7 @@ import ExchangeRateService from './ExchangeRateService'
 import GasEstimateService from './GasEstimateService'
 import { ApiServer } from "./ApiServer"
 import ChainsawService from './ChainsawService'
-import { OnchainTransactionService } from "./OnchainTransactionService"
-//const Connext = require('connext')
+import { OnchainTransactionService } from "./OnchainTransactionService";
 const Web3 = require('web3')
 
 const tokenAbi = require('human-standard-token-abi')

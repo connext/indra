@@ -39,7 +39,7 @@ class AuthApiServiceHandler {
   }
 
   async doResponse(req: express.Request, res: express.Response) {
-    const address = req.body.address.toLowerCase()
+    const address = req.body.address
     const nonce = req.body.nonce
     const origin = req.body.origin
     const signature = req.body.signature

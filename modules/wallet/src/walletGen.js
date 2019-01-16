@@ -1,20 +1,29 @@
 import { store } from "./App";
-import * as ethers from "ethers";
+// import * as ethers from "ethers";
+const Wallet = require("ethereumjs-wallet")
+const bip39 = require('bip39')
+const hdkey = require('ethereumjs-wallet/hdkey')
 
-export function createWallet() {
+export async function createWallet(web3) {
   console.log("Creating new random wallet");
-  let wallet = new ethers.Wallet.createRandom();
-  localStorage.setItem("mnemonic", wallet.signingKey.mnemonic);
+  const mnemonic = bip39.generateMnemonic()
+  const wallet = await hdkey.fromMasterSeed(mnemonic).getWallet()
+  console.log("Address generated:", wallet.getAddressString())
+  // const wallet = await web3.eth.accounts.create()
+  localStorage.setItem("mnemonic", mnemonic);
+  localStorage.setItem("privateKey", wallet.getPrivateKeyString());
+  return wallet
 }
 
-export function findOrCreateWallet() {
-  let mnemonic = localStorage.getItem("mnemonic");
+export async function findOrCreateWallet(web3) {
+  let privateKey = localStorage.getItem("privateKey");
+  let mnemonic = localStorage.getItem("mnemonic")
   let wallet;
   if (mnemonic) {
-    console.log("found existing wallet");
-    wallet = new ethers.Wallet.fromMnemonic(mnemonic);
+    wallet = await hdkey.fromMasterSeed(mnemonic).getWallet()
+    console.log("found existing wallet:", wallet.getAddressString());
   } else {
-    createWallet();
+    wallet = await createWallet(web3);
   }
   store.dispatch({
     type: "SET_WALLET",
@@ -24,8 +33,8 @@ export function findOrCreateWallet() {
 }
 
 export function createWalletFromKey(privKey) {
-  const wallet = new ethers.Wallet(privKey);
-  console.log(wallet);
+  // const wallet = new ethers.Wallet(privKey);
+  const wallet = new Wallet.fromPrivateKey(privKey)
   store.dispatch({
     type: "SET_WALLET",
     text: wallet //Buffer.from(String(privKey.private),'hex')

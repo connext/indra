@@ -3,12 +3,12 @@ import {
   ChannelState,
   ChannelStatus,
   ChannelStateUpdate,
-  UnsignedChannelState,
   convertChannelState,
   PaymentArgsBigNumber,
   ExchangeArgsBigNumber,
   DepositArgsBigNumber,
-  WithdrawalArgsBigNumber
+  WithdrawalArgsBigNumber,
+  InvalidationReason
 } from '../vendor/connext/types'
 import {
   objValuesBigNumToString,
@@ -46,9 +46,10 @@ export function channelRowBigNumToString(r: ChannelRowBigNum): ChannelRow {
 // includes metadata
 export type ChannelStateUpdateRow<T = string> = ChannelStateUpdate<T> & {
   id: number
+  createdOn: Date
   channelId?: number
   chainsawId?: number
-  createdOn: Date
+  invalid?: InvalidationReason
 }
 
 export type ChannelStateUpdateRowBigNum = ChannelStateUpdateRow<BigNumber>

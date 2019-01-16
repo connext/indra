@@ -2,6 +2,12 @@ import BN = require('bn.js')
 import toFinney from './web3/toFinney'
 import { CurrencyType } from '../state/ConnextState/CurrencyTypes'
 
+// !!! WARNING !!!
+// There is a duplicate of this file in vynos/vynos/lib/constants.ts
+// Some fields are used in one, some of the fields are used in the other
+// This needs to be cleaned up! Please clean this up!
+// !!! WARNING !!!
+
 // TODO string these
 export const GWEI = new BN('1000000000')
 export const FINNEY = toFinney(1)
@@ -13,7 +19,7 @@ export const ETHER = toFinney(1000)
 export const OPEN_CHANNEL_GAS = new BN('600000')
 export const CLOSE_CHANNEL_GAS = new BN('750000')
 export const DEPOSIT_GAS = new BN('300000')
-export const RESERVE_GAS_PRICE = new BN('50')
+export const RESERVE_GAS_PRICE = new BN('25')
 export const OPEN_CHANNEL_COST = GWEI.mul(RESERVE_GAS_PRICE).mul(OPEN_CHANNEL_GAS)
 const actionsBeforeRefill = new BN(2)
 export const RESERVE_BALANCE = actionsBeforeRefill.mul(OPEN_CHANNEL_COST)

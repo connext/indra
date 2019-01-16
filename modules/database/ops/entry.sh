@@ -19,15 +19,21 @@ migrate=./node_modules/.bin/db-migrate
 if [[ -z "POSTGRES_PASSWORD" ]]
 then POSTGRES_PASSWORD="`cat $POSTGRES_PASSWORD_FILE`"
 fi
-$migrate up all --verbose --config ops/config.json --migrations-dir node_modules/machinomy/migrations
-$migrate up all --verbose --config ops/config.json --migrations-dir migrations
 if [[ -n "POSTGRES_PASSWORD_FILE" ]]
 then unset POSTGRES_PASSWORD
 fi
 
 echo "===> Running additional migrations..."
-for f in build/*.sql
-do echo "Loading $f..." && psql --username=$POSTGRES_USER $POSTGRES_DB < "$f"
+
+sql_files=(
+  build/initial.sql
+  build/channel-manager.sql
+  build/custodial-payments.sql
+  build/onchain-transactions.sql
+)
+
+for f in "${sql_files[@]}"; do 
+echo "Loading $f..." && psql --username=$POSTGRES_USER $POSTGRES_DB < "$f"
 done
 echo "===> Migrations completed successfully"
 

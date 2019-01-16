@@ -164,6 +164,7 @@ export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string }
   ProposePendingDeposit: 'ProposePendingDeposit', // changes in pending
   ProposePendingWithdrawal: 'ProposePendingWithdrawal', // changes in pending
   ConfirmPending: 'ConfirmPending', // changes in balance
+  Invalidation: 'Invalidation',
   OpenThread: 'OpenThread',
   CloseThread: 'CloseThread',
 }
@@ -288,6 +289,56 @@ export type ConfirmPendingArgs = {
   transactionHash: Address
 }
 
+/**
+ * An Invalidation occurs when both parties want or need to agree that a state
+ * is not valid.
+ *
+ * This can happen for two reasons:
+ * 1. When the timeout on a state expires. More formally, a block mined with a
+ *    timestamp greater than the state's timeout, but the contract has not
+ *    emitted a `DidUpdateChannel` event with a matching channel and txCount;
+ *    ie, the state has not been sent to chain.
+ *
+ * 2. Either party wants to reject a half-signed state sent by the
+ *    counterparty. For example, if an exchange is proposed and half-signed,
+ *    but the counterparty does not agree with the exchange rate.
+ * 
+ * Rules for state invalidation:
+ * 1. A fully-signed state can only be invalidated if it has a timeout and that
+ *    timeout has expired (per the definition of "expired", above)
+ *
+ * 2. An invalidation must reference the latest valid state (ie, the one which
+ *    should be reverted to) and the latest invalid state.
+ *
+ *    These will typically be "N - 1" and "N", except in the case of purchases,
+ *    where the client may send multiple half-signed states to the hub*. In
+ *    this case, the hub will invalidate all the states or none of them.
+ *
+ *    *: in the future, purchases should be simplified so they only send one
+ *       state, so this will no longer be relevant.
+ *
+ * 3. The sender must always sign the invalidation before relaying it to the
+ *    counterparty (ie, it never makes sense to have an unsigned Invalidation).
+ *
+ * TODO REB-12: do we need to do anything special with invalidating unsigned
+ * states? (ex, ProposePendingDeposit)
+ */
+
+ // channel status
+export const InvalidationReason = {
+  CU_INVALID_TIMEOUT: 'CU_INVALID_TIMEOUT', // The invalid state has timed out
+  CU_INVALID_REJECTED: 'CU_INVALID_REJECTED', // The state is being rejected (ex, because the exchange rate is invalid)
+  CU_INVALID_ERROR: 'CU_INVALID_ERROR', // Some other error
+}
+export type InvalidationReason = keyof typeof InvalidationReason
+
+export type InvalidationArgs = {
+  previousValidTxCount: number
+  lastInvalidTxCount: number
+  reason: InvalidationReason
+  message?: string
+}
+
 export type ArgsTypes<T=string> =
   | ExchangeArgs<T>
   | PaymentArgs<T>
@@ -295,6 +346,7 @@ export type ArgsTypes<T=string> =
   | WithdrawalArgs<T>
   | UnsignedThreadState<T>
   | ConfirmPendingArgs
+  | InvalidationArgs
   | {}
 
 export type ArgTypesBN = ArgsTypes<BN>
@@ -310,6 +362,9 @@ export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   txCount: number | null
   sigUser?: string
   sigHub?: string
+  // If this update is coming from the hub, this will be the database timestamp
+  // when the update was created there.
+  createdOn?: Date
 }
 
 export type UpdateRequestTypes<T=string> = {
@@ -318,6 +373,7 @@ export type UpdateRequestTypes<T=string> = {
   ProposePendingDeposit: UpdateRequest<T, DepositArgs>
   ProposePendingWithdrawal: UpdateRequest<T, WithdrawalArgs>
   ConfirmPending: UpdateRequest<T, ConfirmPendingArgs>
+  Invalidation: UpdateRequest<T, InvalidationArgs>
   OpenThread: UpdateRequest<T, UnsignedThreadState<T>>
   CloseThread: UpdateRequest<T, UnsignedThreadState<T>>
 }
@@ -328,6 +384,7 @@ export type UpdateArgTypes<T=string> = {
   ProposePendingDeposit: DepositArgs<T>
   ProposePendingWithdrawal: WithdrawalArgs<T>
   ConfirmPending: ConfirmPendingArgs
+  Invalidation: InvalidationArgs
   OpenThread: UnsignedThreadState<T>
   CloseThread: UnsignedThreadState<T>
 }
@@ -337,6 +394,8 @@ export type UpdateRequestBigNumber = UpdateRequest<BigNumber>
 
 // types used when getting or sending states to hub
 export type ChannelStateUpdate<T = string> = {
+  // If this state corresponds to a DB state, this ID should match
+  id?: number
   reason: ChannelUpdateReason
   state: ChannelState<T> // signed or unsigned?
   args: ArgsTypes<T>
@@ -560,6 +619,7 @@ export const argNumericFields: { [Name in keyof UpdateArgTypes]: (keyof UpdateAr
     'additionalTokenHubToUser',
   ] as any,
   ConfirmPending: [],
+  Invalidation: [],
   OpenThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
   CloseThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
 }
@@ -602,7 +662,7 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
-const proposePendingNumericArgs = [
+export const proposePendingNumericArgs = [
   'depositWeiUser',
   'depositWeiHub',
   'depositTokenUser',
@@ -619,7 +679,7 @@ export function convertProposePending<To extends NumericTypeName>(to: To, obj: P
   return convertFields(fromType, to, proposePendingNumericArgs, obj)
 }
 
-const proposePendingExchangeNumericArgs = proposePendingNumericArgs.concat(argNumericFields.Exchange)
+export const proposePendingExchangeNumericArgs = proposePendingNumericArgs.concat(argNumericFields.Exchange)
 
 export function convertProposePendingExchange<To extends NumericTypeName>(to: To, obj: PendingExchangeArgs<any>): PendingExchangeArgs<NumericTypes[To]> {
   const fromType = getType(obj.depositWeiUser)
@@ -632,6 +692,7 @@ const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
   ProposePendingDeposit: convertDeposit,
   ProposePendingWithdrawal: convertWithdrawal,
   ConfirmPending: (to: any, args: ConfirmPendingArgs) => args,
+  Invalidation: (to: any, args: InvalidationArgs) => args,
   OpenThread: convertThreadState,
   CloseThread: convertThreadState,
 }

@@ -62,7 +62,7 @@ export abstract class ContractEvent {
       case DidNukeThreadsEvent.TYPE:
         return DidNukeThreadsEvent.fromRawEvent(event)
       default:
-        throw new Error('Unknown event.')
+        throw new Error('Unknown event: ' + name)
     }
   }
 

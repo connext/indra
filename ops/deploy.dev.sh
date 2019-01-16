@@ -6,9 +6,9 @@ set -e
 
 # set any of these to "watch" to turn on watchers
 watch_ethprovider="no"
-watch_hub="no"
+watch_hub="yes"
 watch_chainsaw="no"
-watch_wallet="no"
+watch_wallet="yes"
 
 project=connext
 number_of_services=7

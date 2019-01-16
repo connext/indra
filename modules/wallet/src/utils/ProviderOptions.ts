@@ -1,7 +1,7 @@
-import ethUtil from 'ethereumjs-util';
-import sigUtil from 'eth-sig-util';
+const ethUtil = require('ethereumjs-util')
+const sigUtil = require('eth-sig-util')
 import Tx from 'ethereumjs-tx';
-import {Buffer} from 'buffer';
+import { Buffer } from 'buffer';
 import { getStore } from "../walletGen";
 import store from '../App';
 require('dotenv').config()
@@ -12,19 +12,19 @@ export const RPC_URL = process.env.REACT_APP_ETHPROVIDER_URL || 'http://localhos
 if (!RPC_URL)
   throw new Error('Missing ethereum provider url')
 
-export type ApproveTransactionCallback = (error: string|null, isApproved?: boolean) => void
-export type ApproveSignCallback = (error: string|null, rawMsgSig?: string) => void
+export type ApproveTransactionCallback = (error: string | null, isApproved?: boolean) => void
+export type ApproveSignCallback = (error: string | null, rawMsgSig?: string) => void
 
 export default class ProviderOptions {
-  store:any 
+  store: any
 
-  constructor (store: any) {
-    this.store = getStore()
+  constructor(store: any) {
+    this.store = store
   }
 
-  getAccounts = (callback: (err: string|null, accounts?: string[]) => void) => {
+  getAccounts = (callback: (err: string | null, accounts?: string[]) => void) => {
     const state = this.store.getState()
-    const addr = state.Wallet ? state.Wallet.address : null
+    const addr = state[0] ? state[0].getAddressString() : null
     callback(null, addr ? [addr] : [])
   }
 
@@ -86,6 +86,12 @@ export default class ProviderOptions {
   //likely needs updates 
   private getPrivateKey = (): Buffer | null => {
     const state = this.store.getState()
-    return state.wallet ? Buffer.from(String(state.wallet.privateKey),'hex') : null
+    return state[0] ? state[0].getPrivateKey() : null
   }
+
+  private getPublicKey = (): String | null => {
+    const state = this.store.getState()
+    return state[0] ? state[0].getAddressString() : null
+  }
+
 }

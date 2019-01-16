@@ -18,6 +18,7 @@ import {
   PendingExchangeArgsBN,
   ChannelUpdateReason,
   UpdateRequestBN,
+  InvalidationArgs,
 } from "./types";
 import { toBN, mul, minBN, maxBN } from "./helpers/bn";
 import BN = require('bn.js')
@@ -90,7 +91,7 @@ function safeDiv(num: BN, div: BN) {
   return num.div(div)
 }
 
-function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): {[key in keyof T]: R} {
+function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): { [key in keyof T]: R } {
   const res: any = {}
   for (let key in obj)
     res[key] = func(key as any, res[key])
@@ -146,6 +147,7 @@ export class StateGenerator {
       'ProposePendingWithdrawal': this.proposePendingWithdrawal.bind(this),
       'ConfirmPending': this.confirmPending.bind(this),
       'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
+      'Invalidation': this.invalidation.bind(this),
       'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
     }
   }
@@ -592,6 +594,14 @@ export class StateGenerator {
       balanceWeiSender: prev.balanceTokenSender.sub(args.amountWei),
       balanceWeiReceiver: prev.balanceTokenReceiver.add(args.amountWei),
       txCount: prev.txCount + 1,
+    })
+  }
+
+  public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs): UnsignedChannelState {
+    return convertChannelState("str-unsigned", {
+      ...latestValidState,
+      timeout: 0,
+      txCountGlobal: args.lastInvalidTxCount + 1,
     })
   }
 }

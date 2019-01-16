@@ -7,7 +7,7 @@ import { Container } from '../Container'
 import { truncateAllTables } from './eraseDb'
 import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
-import { mkAddress, mkSig } from "./stateUtils";
+import { mkAddress, mkSig, mkHash } from "./stateUtils";
 import { Validator } from '../vendor/connext/validator'
 import { Big, toWeiBigNum } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
@@ -123,17 +123,12 @@ class MockValidator extends Validator {
 }
 
 export const getTestConfig = (overrides?: any) => ({
-  databaseUrl: process.env.DATABASE_URL!,
-  redisUrl: process.env.REDIS_URL!,
+  ...Config.fromEnv(),
+  databaseUrl: process.env.DATABASE_URL_TEST!,
+  redisUrl: 'redis://localhost:6379/6',
   sessionSecret: 'hummus',
   hotWalletAddress: '0x7776900000000000000000000000000000000000',
   channelManagerAddress: mkAddress('0xCCC'),
-  channelBeiLimit: toWeiBigNum(69),
-  beiMinThreshold: toWeiBigNum(20),
-  beiMinCollateralization: toWeiBigNum(50),
-  beiMaxCollateralization: toWeiBigNum(169),
-  threadBeiLimit: toWeiBigNum(10),
-  channelBeiDeposit: toWeiBigNum(69).add(1069),
   ...(overrides || {}),
 })
 
@@ -175,7 +170,60 @@ export class MockExchangeRateDao {
 export const fakeSig = mkSig('0xabc123')
 export class MockSignerService extends SignerService {
   constructor() {
-    super({}, {} as Utils, {} as Config)
+    super({
+      eth: {
+        getBlock: async (block: string|number) => {
+          if (block === 'latest') {
+            return { timestamp: Math.floor(Date.now() / 1000) }
+          }
+        },
+        sign: async () => {
+          return
+        },
+        getTransactionCount: async () => {
+          return 1
+        },
+        estimateGas: async () => {
+          return 1000
+        },
+        signTransaction: async () => {
+          return {
+            tx: {
+              hash: mkHash('0xaaa'),
+              r: mkHash('0xabc'),
+              s: mkHash('0xdef'),
+              v: '0x27',
+            },
+          }
+        },
+        sendSignedTransaction: () => {
+          console.log(`Called mocked web3 function sendSignedTransaction`)
+          return {
+            on: (input, cb) => {
+              switch (input) {
+                case 'transactionHash':
+                  return cb(mkHash('0xbeef'))
+                case 'error':
+                  return cb(null)
+              }
+            },
+          }
+        },
+        sendTransaction: () => {
+          console.log(`Called mocked web3 function sendTransaction`)
+          return {
+            on: (input, cb) => {
+              switch (input) {
+                case 'transactionHash':
+                  return cb(mkHash('0xbeef'))
+                case 'error':
+                  return cb(null)
+              }
+            },
+          }
+        },
+      },
+    }, {} as Utils, {} as Config)
   }
   async getSigForChannelState() {
     return fakeSig
@@ -209,8 +257,8 @@ export const mockServices: any = {
 
   'Web3': {
     // TODO: Finish this: new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'))
-    factory: (config: any) => new Web3(new Web3.providers.HttpProvider(config.ethRpcUrl)),
-    dependencies: ['Config']
+    factory: () => new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545')),
+    dependencies: []
   },
 
   'Validator': {
