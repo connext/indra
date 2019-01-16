@@ -1,6 +1,6 @@
 .app{
   margin: 0 auto;
-  padding-top: 1%;
+  padding-top: 3%;
   padding-left: 5%;
   padding-right: 5%;
 }
@@ -17,7 +17,7 @@
 .column {
   display: flex;
   flex-direction: column;
-  flex-basis: 100%;
+  flex-basis: 80%;
   flex: 1;
   padding-bottom: 2.5%;
   padding-top: 2.5%;
