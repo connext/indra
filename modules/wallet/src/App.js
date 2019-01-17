@@ -90,98 +90,63 @@ class App extends Component {
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
+  
+  async setWalletAndProvider(metamask = false) {
+    this.setState({authorized: false })
+    let web3
+    let address
+    let wallet
+    // get metamask address defaults
+    const windowProvider = window.web3;
+    if (!windowProvider) {
+      console.log("Metamask is not detected.");
+    }
+    const metamaskWeb3 = new Web3(windowProvider.currentProvider);
+    const metamaskAddr = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase()
+    console.log('detected metamask address:', metamaskAddr)
 
-  async componentDidUpdate() {
     try {
-      // New provider code
-      let web3 
-
-      if(this.state.useDelegatedSigner){
+      if (metamask) {
+        this.setState({ usingMetamask: true, })
+        if (!windowProvider) {
+          alert("You need to install & unlock metamask to do that");
+          return;
+        }
+        address = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase();
+        if (!address) {
+          alert("You need to install & unlock metamask to do that");
+          return;
+        }
+        wallet = await this.walletHandler()
+        web3 = metamaskWeb3
+      } else {
+        // New provider code
         const providerOpts = new ProviderOptions(store).approving();
         const provider = clientProvider(providerOpts);
         web3 = new Web3(provider);
-      
-
-      } else if(!this.state.useDelegatedSigner){
-        web3 = window.web3;
-        web3 = new Web3(web3.currentProvider);
-        console.log(web3);
+        // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
+        // as is, if you don't write down the privkey in the store you can't recover the wallet
+        wallet = await this.walletHandler()
+        address = wallet.getAddressString().toLowerCase()
       }
 
+      await this.setState({ web3 });
       console.log("set up web3 successfully");
-      
 
-      // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
-      // as is, if you don't write down the privkey in the store you can't recover the wallet
-      const wallet = await this.walletHandler();
       console.log('wallet: ', wallet);
-      // web3.eth.sign = wallet.sign
-      // web3.eth.signTransaction = wallet.signTransaction
-
       // make sure wallet is linked to chain
       store.dispatch({
         type: "SET_WALLET",
         text: wallet
       });
+      this.setState({ wallet: store.getState()[0] })
 
+      this.setState({ address })
+      console.log("Set up wallet:", address);
 
-      console.log("Set up wallet:");
-      console.log(store.getState()[0]);
-
-
-      // get address
-      const address = wallet.getAddressString()
-
-
-      console.log(`instantiating connext with hub as: ${hubUrl}`);
-      console.log(`web3 address : ${await web3.eth.getAccounts()}`);
-      console.log("Setting up connext...");
-
-
-
-
-      if (!this.state.connext){
-        await this.setState({web3: web3});
-        this.setState({
-          tokenContract: new this.state.web3.eth.Contract(humanTokenAbi, tokenAddress)
-        })
-        console.log(`Set up token contract at ${tokenAddress}`);
-
-        this.setState({ address });
-        this.setState({ wallet: store.getState()[0] }); //newWallet});
-
-              // *** Instantiate the connext client ***
-        const connext = getConnextClient({
-          web3:web3,
-          hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
-          hubUrl: hubUrl, //http://localhost:8080,
-          contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
-          user: address.toLowerCase(),
-          tokenAddress,
-        });
-
-        console.log("Successfully set up connext!");
-
-        await connext.start(); // start polling
-        //console.log('Pollers started! Good morning :)')
-        connext.on("onStateChange", state => {
-          console.log("Connext state changed:", state);
-          this.setState({
-            channelState: state.persistent.channel
-          });
-        });
-
-        await this.authorizeHandler();
-
-        this.pollExchangeRate();
-        this.pollBrowserWallet();
-
-        await this.setState({ connext: connext });
-        console.log(`Channel state: ${JSON.stringify(this.state.channelState, null, 2)}`);
-
-      }else{
-        return
-      }
+      const tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress)
+      this.setState({ tokenContract })
+      console.log("Set up token contract");
 
     } catch (error) {
       alert(`Failed to load web3 or Connext. Check console for details.`);
@@ -189,7 +154,42 @@ class App extends Component {
     }
   }
 
-  
+  async setConnext() {
+    const { web3, hubWallet, address, } = this.state
+    console.log(`instantiating connext with hub as: ${hubUrl}`);
+    console.log(`web3 address : ${await web3.eth.getAccounts()}`);
+
+    const opts = {
+      web3,
+      hubAddress: hubWallet.address,
+      //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
+      hubUrl: hubUrl, //http://localhost:8080,
+      contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
+      user: address.toLowerCase(),
+      tokenAddress,
+    }
+
+    console.log("Setting up connext with opts:", opts);
+
+    // *** Instantiate the connext client ***
+    const connext = getConnextClient(opts);
+
+    console.log("Successfully set up connext!");
+
+    await connext.start(); // start polling
+    //console.log('Pollers started! Good morning :)')
+    connext.on("onStateChange", state => {
+      console.log("Connext state changed:", state);
+      this.setState({
+        channelState: state.persistent.channel,
+      });
+    });
+
+    this.setState({ connext, });
+    const channelState = connext.state ? connext.state.persistent.channel : null
+    this.setState({ channelState })
+    console.log(`This is connext state: ${JSON.stringify(this.state.channelState, null, 2)}`);
+  }
 
   async pollExchangeRate() {
     const getRate = async () => {
@@ -260,16 +260,34 @@ class App extends Component {
     console.log(`Option selected:`, selectedWallet);
   }
 
-  handleMetamaskClose = () => {
+  async handleMetamaskClose(){
     this.setState({ modalOpen: false });
     this.setState({ useDelegatedSigner: false});
-    this.forceUpdate()
+    try{
+      await this.setWalletAndProvider(true);
+      await this.setConnext();
+      await this.authorizeHandler();
+
+      this.pollExchangeRate();
+    }catch(e){
+      console.log(`failed to set provider or start connext`)
+    }
   };
 
-  handleDelegatedSignerSelect = () => {
+  async handleDelegatedSignerSelect(){
     this.setState({ disableButtons: true});
     this.setState({ delegatedSignerSelected: true });
     this.setState({ useDelegatedSigner: true});
+    try{
+      await this.setWalletAndProvider(false);
+      await this.setConnext();
+      await this.authorizeHandler();
+
+      this.pollExchangeRate();
+      this.pollBrowserWallet();
+    }catch(e){
+      console.log(`failed to set provider or start connext`)
+    }
   };
 
   handleClose = () => {
@@ -435,7 +453,7 @@ class App extends Component {
             If you lose it and are locked out of your wallet, you will lose access<br />
              to any funds remaining in your channel. <br />Keep it secret, keep it safe.
              <br /> <br />
-             {`${JSON.stringify(this.getKey())}`}
+             {`${JSON.stringify(() => this.getKey())}`}
             </div>
             <div>
                 <Button variant="contained" onClick={this.handleClose}> Close</Button>
@@ -499,19 +517,7 @@ class App extends Component {
           </div>
         </div>
         
-        {/* <div className="row">
-
-          <div className="column">
-
-            {this.state.walletSet ? (
-              <div>
-                <p>
-                  <button className="btn" onClick={this.toggleKey}>
-                    {this.state.toggleKey ? <span>Hide Browser Wallet Mnemonic</span> : <span>Reveal Browser Wallet Mnemonic</span>}
-                  </button>
-                  {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
-                </p>
-                <button className="btn" onClick={() => this.createWallet()}>
+        {/* <button className="btn" onClick={() => this.createWallet()}>
                   Create New Browser Wallet
                 </button>
               </div>
@@ -521,11 +527,7 @@ class App extends Component {
                 <div>
                     <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
                   </div>
-                  <button className="btn">Get wallet</button>
-                </div>
-              )}
-          </div>
-      </div> */}
+                  <button className="btn">Get wallet</button> */}
     </div>
     );
   }
