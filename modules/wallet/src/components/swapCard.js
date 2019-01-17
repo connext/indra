@@ -96,6 +96,9 @@ class SwapCard extends Component {
       col2:{
         width:'3%',
         justifyContent:"'flex-end' !important"
+      },
+      popover:{
+        padding:'8px 8px 8px 8px'
       }
     }
 

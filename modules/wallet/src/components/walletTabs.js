@@ -44,25 +44,25 @@ class FullWidthTabs extends React.Component {
 
     async refreshBalances() {
         const tokenContract = this.props.tokenContract
-        const balance = Number(await this.props.web3.eth.getBalance(this.state.address)) / 1000000000000000000;
-        const tokenBalance = Number(await tokenContract.methods.balanceOf(this.state.address).call()) / 1000000000000000000;
-        this.setState({ balance: balance, tokenBalance: tokenBalance });
+        // const balance = Number(await this.props.web3.eth.getBalance(this.state.address)) / 1000000000000000000;
+        // const tokenBalance = Number(await tokenContract.methods.balanceOf(this.state.address).call()) / 1000000000000000000;
+        // this.setState({ balance: balance, tokenBalance: tokenBalance });
 
-        const hubBalance = Number(await this.props.web3.eth.getBalance(this.state.hubWalletAddress)) / 1000000000000000000;
-        const hubTokenBalance = Number(await this.props.tokenContract.methods.balanceOf(this.state.hubWalletAddress).call()) / 1000000000000000000;
+        const hubBalance = Number(await this.props.web3.eth.getBalance(this.state.hubWallet.address)) / 1000000000000000000;
+        const hubTokenBalance = Number(await this.props.tokenContract.methods.balanceOf(this.state.hubWallet.address).call()) / 1000000000000000000;
         this.setState({
             hubWallet: {
-                address: this.state.hubWalletAddress,
+                address:this.state.hubWallet.address,
                 balance: hubBalance,
                 tokenBalance: hubTokenBalance
             }
         });
 
-        const cmBalance = Number(await this.props.web3.eth.getBalance(this.state.channelManagerAddress)) / 1000000000000000000;
-        const cmTokenBalance = Number(await tokenContract.methods.balanceOf(this.state.channelManagerAddress).call()) / 1000000000000000000;
+        const cmBalance = Number(await this.props.web3.eth.getBalance(this.state.channelManager.address)) / 1000000000000000000;
+        const cmTokenBalance = Number(await tokenContract.methods.balanceOf(this.state.channelManager.address).call()) / 1000000000000000000;
         this.setState({
         channelManager: {
-            address: this.state.channelManagerAddress,
+            address:this.state.channelManager.address,
             balance: cmBalance,
             tokenBalance: cmTokenBalance
         }
@@ -104,16 +104,23 @@ class FullWidthTabs extends React.Component {
 
     const tabStyles = {
       full:{
-        width:'60%',
-        alignItems:'center'
+        maxWidth:'60%',
+        alignItems:'center',
+        padding:'2% 2% 2% 2% '
       },
       bar:{
-        maxWidth:'100%',
       },
       content:{
           backgroundColor:"#EAEBEE",
           boxShadow:'0px 1px 1px 1px #ADB5C1',
           borderRadius: '2px'
+      },
+      tabContainer:{
+        maxWidth:'60%',
+      },
+      refresh:{
+        float:"right",
+        marginTop:"-45px"
       }
     }
 
@@ -125,6 +132,7 @@ class FullWidthTabs extends React.Component {
             onChange={this.handleChange}
             indicatorColor="primary"
             textColor="primary"
+            variant="fullWidth"
           >
             <Tab label="Metamask" />
             <Tab label="Hub" />
@@ -138,33 +146,48 @@ class FullWidthTabs extends React.Component {
           index={this.state.value}
           onChangeIndex={this.handleChangeIndex}
         >
-          <TabContainer >
+          <TabContainer style={tabStyles.tabContainer}>
             <div>
                 <p>Address: {this.state.metamask.address}</p>
                 <p>ETH Balance: {this.state.metamask.balance} </p>
                 <p>TST Balance: {this.state.metamask.tokenBalance}</p>
             </div>
+              <IconButton
+              onClick={() => this.refreshBalances()}
+              style={tabStyles.refresh}
+              >
+                <RefreshIcon/>          
+              </IconButton>
           </TabContainer>
-          <TabContainer>
+          <TabContainer style={tabStyles.tabContainer}>
             <div>
                 <p>Address: {this.state.hubWallet.address}</p>
                 <p>ETH Balance: {this.state.hubWallet.balance} </p>
                 <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
             </div>
+              <IconButton
+              onClick={() => this.refreshBalances()}
+              style={tabStyles.refresh}
+              >
+              <RefreshIcon/>          
+              </IconButton>
           </TabContainer>
-          <TabContainer >
+          <TabContainer style={tabStyles.tabContainer}>
           <div>
                 <p>Address: {this.state.channelManager.address}</p>
                 <p>ETH Balance: {this.state.channelManager.balance} </p>
                 <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
         </div>
-          </TabContainer>
-          <IconButton
+            <IconButton
             onClick={() => this.refreshBalances()}
+            style={tabStyles.refresh}
             >
-            <RefreshIcon/>
-          </IconButton>
+              <RefreshIcon/>          
+            </IconButton>
+          </TabContainer>
         </SwipeableViews>
+
+
       </div>
     );
   }

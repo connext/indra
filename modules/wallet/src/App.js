@@ -14,6 +14,8 @@ import PayCard from './components/payCard';
 import WithdrawCard from './components/withdrawCard';
 import ChannelCard from './components/channelCard';
 import FullWidthTabs from './components/walletTabs';
+import Modal from '@material-ui/core/Modal';
+import Button from '@material-ui/core/Button';
 const Web3 = require('web3');
 const Tx = require('ethereumjs-tx');
 const eth = require('ethers');
@@ -46,8 +48,6 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedWallet: null,
-      walletOptions: [],
       metamask: {
         address: null,
         balance: 0,
@@ -70,6 +70,10 @@ class App extends Component {
       address: null,
       balance: 0,
       tokenBalance: 0,
+      browserWalletDeposit: {
+        amountWei: "0",
+        amountToken: "0"
+      },
       toggleKey: false,
       walletSet: false,
       keyEntered: "",
@@ -78,20 +82,114 @@ class App extends Component {
       connext: null,
       channelState: null,
       exchangeRate: "0.00",
-      tokenContract: null
+      tokenContract: null,
+      useDelegatedSigner:true,
+      delegatedSignerSelected:false,
+      disableButtons:false,
+      modalOpen:true
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
 
-  async componentDidMount() {
+  async componentDidUpdate() {
     try {
-      await this.setWalletAndProvider(false)
-      this.pollExchangeRate();
+      // New provider code
+      let web3 
+
+      if(this.state.useDelegatedSigner){
+        const providerOpts = new ProviderOptions(store).approving();
+        const provider = clientProvider(providerOpts);
+        web3 = new Web3(provider);
+      
+
+      } else if(!this.state.useDelegatedSigner){
+        web3 = window.web3;
+        web3 = new Web3(web3.currentProvider);
+        console.log(web3);
+      }
+
+      console.log("set up web3 successfully");
+      
+
+      // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
+      // as is, if you don't write down the privkey in the store you can't recover the wallet
+      const wallet = await this.walletHandler();
+      console.log('wallet: ', wallet);
+      // web3.eth.sign = wallet.sign
+      // web3.eth.signTransaction = wallet.signTransaction
+
+      // make sure wallet is linked to chain
+      store.dispatch({
+        type: "SET_WALLET",
+        text: wallet
+      });
+
+
+      console.log("Set up wallet:");
+      console.log(store.getState()[0]);
+
+
+      // get address
+      const address = wallet.getAddressString()
+
+
+      console.log(`instantiating connext with hub as: ${hubUrl}`);
+      console.log(`web3 address : ${await web3.eth.getAccounts()}`);
+      console.log("Setting up connext...");
+
+
+
+
+      if (!this.state.connext){
+        await this.setState({web3: web3});
+        this.setState({
+          tokenContract: new this.state.web3.eth.Contract(humanTokenAbi, tokenAddress)
+        })
+        console.log(`Set up token contract at ${tokenAddress}`);
+
+        this.setState({ address });
+        this.setState({ wallet: store.getState()[0] }); //newWallet});
+
+              // *** Instantiate the connext client ***
+        const connext = getConnextClient({
+          web3:web3,
+          hubAddress: hubWalletAddress, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
+          hubUrl: hubUrl, //http://localhost:8080,
+          contractAddress: channelManagerAddress, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
+          user: address.toLowerCase(),
+          tokenAddress,
+        });
+
+        console.log("Successfully set up connext!");
+
+        await connext.start(); // start polling
+        //console.log('Pollers started! Good morning :)')
+        connext.on("onStateChange", state => {
+          console.log("Connext state changed:", state);
+          this.setState({
+            channelState: state.persistent.channel
+          });
+        });
+
+        await this.authorizeHandler();
+
+        this.pollExchangeRate();
+        this.pollBrowserWallet();
+
+        await this.setState({ connext: connext });
+        console.log(`Channel state: ${JSON.stringify(this.state.channelState, null, 2)}`);
+
+      }else{
+        return
+      }
+
     } catch (error) {
       alert(`Failed to load web3 or Connext. Check console for details.`);
       console.log(error);
     }
   }
+
+  
 
   async pollExchangeRate() {
     const getRate = async () => {
@@ -106,6 +204,37 @@ class App extends Component {
     setInterval(() => {
       getRate()
     }, 10000);
+  }
+
+  async pollBrowserWallet() {
+    const browserWalletDeposit = async () => {
+      const tokenContract = this.state.tokenContract
+      const balance = await this.state.web3.eth.getBalance(this.state.address);
+      const tokenBalance = await tokenContract.methods.balanceOf(this.state.address).call();
+      if(balance !== "0" || tokenBalance !=="0"){
+        this.setState({
+          browserWalletDeposit:{
+            amountWei: balance,
+            amountToken: tokenBalance
+          }
+        })
+      try{
+        let approveFor = this.state.channelManager.address;
+        let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
+        console.log(approveTx);
+        console.log(`Depositing: ${JSON.stringify(this.state.browserWalletDeposit, null, 2)}`);
+        console.log('********', this.state.connext.opts.tokenAddress)
+        let depositRes = await this.state.connext.deposit(this.state.browserWalletDeposit);
+        console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
+      } catch(e){
+        console.log(`error depositing excess funds from autosigner: ${e}`)
+      } 
+    }
+    }
+    browserWalletDeposit()
+    setInterval(() => {
+      browserWalletDeposit()
+    }, 80000);
   }
 
   updateApprovalHandler(evt) {
@@ -131,13 +260,23 @@ class App extends Component {
     console.log(`Option selected:`, selectedWallet);
   }
 
+  handleMetamaskClose = () => {
+    this.setState({ modalOpen: false });
+    this.setState({ useDelegatedSigner: false});
+    this.forceUpdate()
+  };
+
+  handleDelegatedSignerSelect = () => {
+    this.setState({ disableButtons: true});
+    this.setState({ delegatedSignerSelected: true });
+    this.setState({ useDelegatedSigner: true});
+  };
+
+  handleClose = () => {
+    this.setState({ modalOpen: false });
+  };
 
 
-
-
-
-
-  
 
   async approvalHandler(evt) {
     const web3 = this.state.web3
@@ -259,10 +398,60 @@ class App extends Component {
   render() {
     return (
       <div className="app">
+      <Modal
+          className="modal"
+          aria-labelledby="simple-modal-title"
+          aria-describedby="simple-modal-description"
+          open={this.state.modalOpen}
+        >
+          <div>
+          <div className="row">
+            <div className="column">
+            <Button 
+                    variant="contained" 
+                    color="primary"
+                    disabled={this.state.disableButtons} 
+                    onClick={() => this.handleMetamaskClose()}
+                    >
+              Use Metamask to sign
+              </Button>
+            </div>
+            <div className="column">
+            <Button
+                variant="contained" 
+                color="primary"
+                disabled={this.state.disableButtons}
+                onClick={() => this.handleDelegatedSignerSelect()}>
+              Use Autosigner
+            </Button>
+            </div>
+            </div>
+            <div className="row">
+            <div className="column">
+            {this.state.delegatedSignerSelected ? 
+            (<div>
+             <div> 
+            The following mnemonic is the recovery phrase for your wallet.<br/>
+            If you lose it and are locked out of your wallet, you will lose access<br />
+             to any funds remaining in your channel. <br />Keep it secret, keep it safe.
+             <br /> <br />
+             {`${JSON.stringify(this.getKey())}`}
+            </div>
+            <div>
+                <Button variant="contained" onClick={this.handleClose}> Close</Button>
+            </div>
+            </div>
+            )
+            :
+            (null)}
+            </div>
+          </div>
+          </div>
+        </Modal>
         <div className="row" style={{justifyContent: 'center'}}>
           <img style={{height:'70px', width:'300px'}} src="https://connext.network/static/media/logoHorizontal.3251cc60.png" />
         </div>
-        <div className="row">
+        <div className="row" style={{flexWrap:"nowrap"}}>
           <div className="column">
            <ChannelCard 
               channelState={this.state.channelState}/>
@@ -305,7 +494,7 @@ class App extends Component {
           </div>         
         </div>
         <div className="row">
-          <div className="column" style={{justifyContent:'flex-end !important'}}>
+          <div className="column">
             Made with 💛 by the Connext Team
           </div>
         </div>

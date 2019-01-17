@@ -46,7 +46,7 @@ class ChannelCard extends Component {
         flexWrap:'wrap',
         flexBasis:'100%',
         flexDirection:'row',
-        width: '80%',
+        width: '400px',
         justifyContent:'center',
         padding: '1% 4% 4% 4%',
         backgroundColor:'#8E98A7',
