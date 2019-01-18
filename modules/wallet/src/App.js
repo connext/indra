@@ -16,6 +16,7 @@ import ChannelCard from './components/channelCard';
 import FullWidthTabs from './components/walletTabs';
 import Modal from '@material-ui/core/Modal';
 import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
 const Web3 = require('web3');
 const Tx = require('ethereumjs-tx');
 const eth = require('ethers');
@@ -76,7 +77,9 @@ class App extends Component {
       },
       toggleKey: false,
       walletSet: false,
-      keyEntered: "",
+      showWalletOptions:true,
+      useExistingWallet:"existing",
+      recovery: "",
       approvalWeiUser: "10000",
       recipient: hubWalletAddress,
       connext: null,
@@ -102,12 +105,9 @@ class App extends Component {
       console.log("Metamask is not detected.");
     }
     const metamaskWeb3 = new Web3(windowProvider.currentProvider);
-    const metamaskAddr = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase()
-    console.log('detected metamask address:', metamaskAddr)
 
     try {
       if (metamask) {
-        this.setState({ usingMetamask: true, })
         if (!windowProvider) {
           alert("You need to install & unlock metamask to do that");
           return;
@@ -117,17 +117,21 @@ class App extends Component {
           alert("You need to install & unlock metamask to do that");
           return;
         }
-        wallet = await this.walletHandler()
+        await this._walletCreateHandler()
         web3 = metamaskWeb3
       } else {
         // New provider code
+        console.log(`setwallet debug`)
         const providerOpts = new ProviderOptions(store).approving();
         const provider = clientProvider(providerOpts);
         web3 = new Web3(provider);
+        console.log("GOT WEB3")
         // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
         // as is, if you don't write down the privkey in the store you can't recover the wallet
-        wallet = await this.walletHandler()
-        address = wallet.getAddressString().toLowerCase()
+        await this.chooseWalletHandler()
+        console.log(`wallet (setprovider): ${JSON.stringify(wallet)}`)
+        address = this.state.wallet.getAddressString().toLowerCase()
+        console.log(`found address: ${JSON.stringify(address)}`)
       }
 
       await this.setState({ web3 });
@@ -135,11 +139,7 @@ class App extends Component {
 
       console.log('wallet: ', wallet);
       // make sure wallet is linked to chain
-      store.dispatch({
-        type: "SET_WALLET",
-        text: wallet
-      });
-      this.setState({ wallet: store.getState()[0] })
+
 
       this.setState({ address })
       console.log("Set up wallet:", address);
@@ -237,65 +237,6 @@ class App extends Component {
     }, 80000);
   }
 
-  updateApprovalHandler(evt) {
-    this.setState({
-      approvalWeiUser: evt.target.value
-    });
-  }
-
-  walletChangeHandler = async (selectedWallet) => {
-    this.setState({ selectedWallet, });
-    if (selectedWallet.label === "Metamask") {
-      await this.setWalletAndProvider(true)
-    } else {
-      await this.setWalletAndProvider(false)
-    }
-
-    await this.authorizeHandler();
-
-    await this.setConnext()
-
-    await this.refreshBalances()
-
-    console.log(`Option selected:`, selectedWallet);
-  }
-
-  async handleMetamaskClose(){
-    this.setState({ modalOpen: false });
-    this.setState({ useDelegatedSigner: false});
-    try{
-      await this.setWalletAndProvider(true);
-      await this.setConnext();
-      await this.authorizeHandler();
-
-      this.pollExchangeRate();
-    }catch(e){
-      console.log(`failed to set provider or start connext`)
-    }
-  };
-
-  async handleDelegatedSignerSelect(){
-    this.setState({ disableButtons: true});
-    this.setState({ delegatedSignerSelected: true });
-    this.setState({ useDelegatedSigner: true});
-    try{
-      await this.setWalletAndProvider(false);
-      await this.setConnext();
-      await this.authorizeHandler();
-
-      this.pollExchangeRate();
-      this.pollBrowserWallet();
-    }catch(e){
-      console.log(`failed to set provider or start connext`)
-    }
-  };
-
-  handleClose = () => {
-    this.setState({ modalOpen: false });
-  };
-
-
-
   async approvalHandler(evt) {
     const web3 = this.state.web3
     const tokenContract = this.state.tokenContract
@@ -347,26 +288,124 @@ class App extends Component {
     this.setState(prevState => ({ toggleKey: !prevState.toggleKey }), () => { });
   }
 
-  // WalletHandler - it works but i'm running into some lifecycle issues. for option for user
-  // to create wallet from privkey to display,
-  // wallet creation needs to be in componentDidUpdate. but everything goes haywire when that happens so idk
+  updateApprovalHandler(evt) {
+    this.setState({
+      approvalWeiUser: evt.target.value
+    });
+  }
 
-  async walletHandler() {
-    let wallet;
-    let key = this.state.keyEntered;
-    if (key) wallet = createWalletFromKey(key);
-    else {
-      wallet = await findOrCreateWallet(this.state.web3);
+  walletChangeHandler = (selectedWallet) => {
+    this.setState({ selectedWallet });
+    console.log(`Option selected:`, selectedWallet);
+  }
+
+  async handleMetamaskClose(){
+    this.setState({ modalOpen: false });
+    this.setState({ useDelegatedSigner: false});
+    try{
+      await this.setWalletAndProvider(true);
+      await this.setConnext();
+      await this.authorizeHandler();
+
+      this.pollExchangeRate();
+    }catch(e){
+      console.log(`failed to set provider or start connext`)
     }
+  };
+
+  async handleDelegatedSignerSelect(){
+    await this.setState({ disableButtons: true});
+    await this.setState({ delegatedSignerSelected: true });
+    await this.setState({ useDelegatedSigner: true});
+    //await this.walletFoundHandler()
+  };
+
+
+  async chooseWalletHandler(choice,recovery=null){
+    let wallet;
+      if(choice == "new"){
+        await this.chooseNewWallet()
+        await this.setState({showWalletOptions: false});
+      }else if(choice =="existing"){
+        await this.chooseExistingWallet()
+        await this.setState({modalOpen:false});
+      }else if(choice == "recover"){
+        await this.chooseRecoverWallet()
+      }
+      console.log(`Chose wallet: ${JSON.stringify(this.state.useExistingWallet)}`)
+      try{
+        if (!this.state.walletSet){
+          wallet = await this._walletCreateHandler(this.state.useExistingWallet,recovery)
+          console.log(`wallet: ${wallet}`)
+          await this.setWalletAndProvider();
+        }
+        console.log(`debug1`)
+        await this.setConnext();
+        console.log(`debug2`)
+        await this.authorizeHandler();
+        console.log(`debug3`)
+
+        this.pollExchangeRate();
+        this.pollBrowserWallet();
+      }catch(e){
+        console.log(`failed to set provider or start connext ${JSON.stringify(e)}`)
+      }
+    return wallet
+  };
+
+  async walletFoundHandler() {
+    let key = this.getKey();
+    if (key){
+      this.setState({walletFound: true});
+    }
+  }
+
+  async _walletCreateHandler(recovery=null){
+    let wallet;
+    let key;
+    if (this.state.useExistingWallet == "existing"){
+      wallet = await findOrCreateWallet(this.state.web3);
+    } else if(this.state.useExistingWallet == "new") {
+      wallet = await createWallet(this.state.web3);
+    } else if(this.state.seExistingWallet == "recover" && recovery){
+      key = recovery
+      wallet = createWalletFromKey(key)
+      }
+    if (wallet){
+      console.log(`Wallet created!`)
+    }else{
+      alert(`Unable to create wallet. Try refreshing your page and starting over.`)
+    }
+    store.dispatch({
+      type: "SET_WALLET",
+      text: wallet
+    });
+    this.setState({ wallet: store.getState()[0] })
+
     this.setState({ walletSet: true });
     return wallet;
   }
 
+  async chooseNewWallet(evt){
+    this.setState({useExistingWallet: "new"});
+  }
+
+  async chooseExistingWallet(evt){
+    this.setState({useExistingWallet: "existing"});
+  }
+
+  async chooseRecoverWallet(evt){
+    this.setState({useExistingWallet: "recover"});
+  }
+
+  closeModal(){
+    this.setState({modalOpen:false});
+  }
   updateWalletHandler(evt) {
     this.setState({
-      keyEntered: evt.target.value
+      recovery: evt.target.value
     });
-    console.log(`Updating state : ${this.state.depositVal}`);
+    console.log(`Updating state : ${this.state.recovery}`);
   }
 
   async createWallet() {
@@ -375,7 +414,7 @@ class App extends Component {
   }
 
   async authorizeHandler(evt) {
-    const web3 = this.state.web3
+    const web3 = this.state.web3 
     const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
 
     const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`)
@@ -448,16 +487,37 @@ class App extends Component {
             <div className="column">
             {this.state.delegatedSignerSelected ? 
             (<div>
-             <div> 
-            The following mnemonic is the recovery phrase for your wallet.<br/>
-            If you lose it and are locked out of your wallet, you will lose access<br />
-             to any funds remaining in your channel. <br />Keep it secret, keep it safe.
-             <br /> <br />
-             {`${JSON.stringify(() => this.getKey())}`}
-            </div>
-            <div>
-                <Button variant="contained" onClick={this.handleClose}> Close</Button>
-            </div>
+              <div>
+                  {this.state.showWalletOptions ? 
+                    (<div>
+                      Autosigner found!
+                      <br />
+                      <Button onClick={() => this.chooseWalletHandler("existing")}>Use Existing Signer</Button>
+                      <Button onClick={() => this.chooseWalletHandler("new")}>Create New Signer</Button>
+                      <TextField
+                        id="outlined-with-placeholder"
+                        label="Mnemonic"
+                        value={this.state.recovery}
+                        onChange={(evt) => this.updateWalletHandler(evt)}
+                        placeholder="12 word passphrase (e.g. hat avocado green....)"
+                        margin="normal"
+                        variant="outlined"
+                      />
+                      <Button onClick={() => this.chooseWalletHandler("recover", this.state.recovery)}>Recover Signer from Key</Button>
+                    </div>)
+                    :
+                    (<div>
+                      The following mnemonic is the recovery phrase for your signer.<br/>
+                      If you lose it and are locked out of your signer, you will lose access<br />
+                       to any funds remaining in your channel. <br />Keep it secret, keep it safe.
+                       <br /> <br />
+                      {`${JSON.stringify(() => this.getKey())}`}
+                      <br />
+                      <div>
+                          <Button variant="contained" onClick={() => this.closeModal()}> Close</Button>
+                      </div>
+                    </div>)}
+              </div>
             </div>
             )
             :
@@ -534,3 +594,12 @@ class App extends Component {
 }
 
 export default App;
+
+
+
+{/* <div> 
+The following mnemonic is the recovery phrase for your wallet.<br/>
+If you lose it and are locked out of your wallet, you will lose access<br />
+ to any funds remaining in your channel. <br />Keep it secret, keep it safe.
+ <br /> <br />
+{`${JSON.stringify(() => this.getKey())}`} */}
