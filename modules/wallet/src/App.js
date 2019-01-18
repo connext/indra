@@ -264,13 +264,6 @@ class App extends Component {
   //Connext Helpers
 
 
-
-  async collateralHandler() {
-    console.log(`Requesting Collateral`);
-    let collateralRes = await this.state.connext.requestCollateral();
-    console.log(`Collateral result: ${JSON.stringify(collateralRes, null, 2)}`);
-  }
-
   // Other Helpers
   getKey() {
     console.log(store.getState()[0]);
@@ -319,7 +312,6 @@ class App extends Component {
     await this.setState({ useDelegatedSigner: true});
     //await this.walletFoundHandler()
   };
-
 
   async chooseWalletHandler(choice,recovery=null){
     let wallet;
@@ -447,6 +439,11 @@ class App extends Component {
     }
   }
 
+  async collateralHandler() {
+    console.log(`Requesting Collateral`);
+    let collateralRes = await this.props.connext.requestCollateral();
+    console.log(`Collateral result: ${JSON.stringify(collateralRes, null, 2)}`);
+  }
   // to get tokens from metamask to browser wallet
   
 
@@ -536,11 +533,20 @@ class App extends Component {
           </div>
           <div className="column">
             <FullWidthTabs 
+              connext={this.state.connext}
               metamask={this.state.metamask} 
               channelManager={this.state.channelManager}
               hubWallet={this.state.hubWallet} 
               web3={this.state.web3}
               tokenContract={this.state.tokenContract}/>
+            <div style={{display:"flex",marginLeft:"10%"}}>
+              <div style={{marginRight: "10px"}}>
+                <Button variant="contained" color="primary" onClick={()=> this.setState({modalOpen: true})}>Select Signer</Button>
+              </div>
+              <div>
+                <Button variant="contained" color="primary" onClick={() => this.collateralHandler()}>Request Collateral</Button>
+              </div>
+            </div>
           </div>
         </div>
         <div className="row">

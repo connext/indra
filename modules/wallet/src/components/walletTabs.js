@@ -5,6 +5,9 @@ import SwipeableViews from 'react-swipeable-views';
 import AppBar from '@material-ui/core/AppBar';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
+import TextField from '@material-ui/core/TextField';
+import Modal from '@material-ui/core/Modal';
+import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import RefreshIcon from '@material-ui/icons/Refresh';
@@ -39,8 +42,12 @@ class FullWidthTabs extends React.Component {
             address: this.props.channelManager.address,
             balance: this.props.channelManager.balance,
             tokenBalance: this.props.channelManager.tokenBalance
-        }
+        },
+        modalOpen:false,
+        showWalletOptions:true
     };
+
+
 
     async refreshBalances() {
         const tokenContract = this.props.tokenContract
@@ -121,6 +128,10 @@ class FullWidthTabs extends React.Component {
       refresh:{
         float:"right",
         marginTop:"-45px"
+      },
+      bottomButtons:{
+        display:'flex',
+        justifyContent:'center'
       }
     }
 
@@ -186,8 +197,46 @@ class FullWidthTabs extends React.Component {
             </IconButton>
           </TabContainer>
         </SwipeableViews>
+        <br/>
 
-
+          {/* <Modal 
+          className="modal"
+          aria-labelledby="simple-modal-title"
+          aria-describedby="simple-modal-description"
+          open={this.state.modalOpen}
+        >
+          <div>
+                  {this.state.showWalletOptions ? 
+                    (<div>
+                      <br />
+                      <Button onClick={() => this.setState({modalOpen:false})}>Use Existing Signer</Button>
+                      <Button onClick={() => this.handleMetamaskClose()}>Use Metamask to Sign</Button>
+                      <Button onClick={() => this.chooseWalletHandler("new")}>Create New Signer</Button>
+                      <TextField
+                        id="outlined-with-placeholder"
+                        label="Mnemonic"
+                        value={this.state.recovery}
+                        onChange={(evt) => this.updateWalletHandler(evt)}
+                        placeholder="12 word passphrase (e.g. hat avocado green....)"
+                        margin="normal"
+                        variant="outlined"
+                      />
+                      <Button onClick={() => this.chooseWalletHandler("recover", this.state.recovery)}>Recover Signer from Key</Button>
+                    </div>)
+                    :
+                    (<div>
+                      The following mnemonic is the recovery phrase for your signer.<br/>
+                      If you lose it and are locked out of your signer, you will lose access<br />
+                       to any funds remaining in your channel. <br />Keep it secret, keep it safe.
+                       <br /> <br />
+                      {`${JSON.stringify(() => this.getKey())}`}
+                      <br />
+                      <div>
+                          <Button variant="contained" onClick={() => this.setState({modalOpen:false})}> Close</Button>
+                      </div>
+                    </div>)}
+              </div>
+            </Modal> */}
       </div>
     );
   }

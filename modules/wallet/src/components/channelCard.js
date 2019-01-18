@@ -108,13 +108,13 @@ class ChannelCard extends Component {
           >
             <Typography style={cardStyle.popover} >Refer to this section for information about <br/>your offchain balance.</Typography>
           </Popover>
-        <Typography variant="h5" style={cardStyle.row}>ETH: {this.state.channelState ? this.state.channelState.balanceWeiUser : null} Wei</Typography>
+        <Typography variant="h5" style={cardStyle.row}>ETH: {this.props.channelState ? this.props.channelState.balanceWeiUser : null} Wei</Typography>
 
-        <Typography gutterBottom variant="h5" style={cardStyle.row}>TST: {this.state.channelState ? this.state.channelState.balanceTokenUser : null} Wei</Typography> 
+        <Typography gutterBottom variant="h5" style={cardStyle.row}>TST: {this.props.channelState ? this.props.channelState.balanceTokenUser : null} Wei</Typography> 
 
-        <Typography variant="h6" style={cardStyle.row}>Hub ETH: {this.state.channelState ? this.state.channelState.balanceWeiHub : null} Wei </Typography>    
+        <Typography variant="h6" style={cardStyle.row}>Hub ETH: {this.props.channelState ? this.props.channelState.balanceWeiHub : null} Wei </Typography>    
 
-        <Typography variant="h6" style={cardStyle.row}>Hub TST: {this.state.channelState ? this.state.channelState.balanceTokenHub : null} Wei</Typography>   
+        <Typography variant="h6" style={cardStyle.row}>Hub TST: {this.props.channelState ? this.props.channelState.balanceTokenHub : null} Wei</Typography>   
       </Card>
     );
   };
