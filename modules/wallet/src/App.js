@@ -320,9 +320,10 @@ class App extends Component {
         await this.setState({showWalletOptions: false});
       }else if(choice =="existing"){
         await this.chooseExistingWallet()
-        await this.setState({modalOpen:false});
+        await this.closeModal();
       }else if(choice == "recover"){
         await this.chooseRecoverWallet()
+        await this.setState({showWalletOptions: false});
       }
       console.log(`Chose wallet: ${JSON.stringify(this.state.useExistingWallet)}`)
       try{
@@ -392,6 +393,10 @@ class App extends Component {
 
   closeModal(){
     this.setState({modalOpen:false});
+    this.setState({showWalletOptions:true})
+    this.setState({ disableButtons: false});
+    this.setState({ delegatedSignerSelected: false });
+    this.setState({ useDelegatedSigner: false});
   }
   updateWalletHandler(evt) {
     this.setState({
