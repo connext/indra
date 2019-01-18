@@ -441,7 +441,7 @@ class App extends Component {
 
   async collateralHandler() {
     console.log(`Requesting Collateral`);
-    let collateralRes = await this.props.connext.requestCollateral();
+    let collateralRes = await this.state.connext.requestCollateral();
     console.log(`Collateral result: ${JSON.stringify(collateralRes, null, 2)}`);
   }
   // to get tokens from metamask to browser wallet
