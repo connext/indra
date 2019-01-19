@@ -2,7 +2,7 @@ import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
-import { Validator } from './vendor/connext/validator'
+import { Validator } from './vendor/client/validator'
 import {
   convertChannelState,
   convertPayment,
@@ -11,7 +11,7 @@ import {
   ThreadStateBigNumber,
   UnsignedThreadState,
   PaymentArgs
-} from './vendor/connext/types'
+} from './vendor/client/types'
 import { ThreadRow, ThreadStateBigNum, ThreadStateUpdateRow } from './domain/Thread'
 import { ChannelStateUpdateRowBigNum } from './domain/Channel'
 import { SignerService } from './SignerService'

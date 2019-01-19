@@ -3,7 +3,7 @@ import { Client } from "pg";
 import { OnchainTransactionRow } from "../domain/OnchainTransaction";
 import Config from "../Config";
 import { ChannelDisputeRow } from "../domain/ChannelDispute";
-import { DisputeStatus } from "../vendor/connext/types";
+import { DisputeStatus } from "../vendor/client/types";
 
 export default interface ChannelDisputesDao {
   create(

@@ -8,12 +8,12 @@ import { truncateAllTables } from './eraseDb'
 import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
 import { mkAddress, mkSig, mkHash } from "./stateUtils";
-import { Validator } from '../vendor/connext/validator'
+import { Validator } from '../vendor/client/validator'
 import { Big } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
-import { Utils } from '../vendor/connext/Utils';
+import { Utils } from '../vendor/client/Utils';
 import Config from '../Config';
-import { ChannelManagerChannelDetails } from '../vendor/connext/types';
+import { ChannelManagerChannelDetails } from '../vendor/client/types';
 
 const Web3 = require('web3')
 

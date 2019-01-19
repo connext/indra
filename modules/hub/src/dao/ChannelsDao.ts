@@ -7,7 +7,7 @@ import {
   ChannelStateBigNumber,
   convertArgs,
   InvalidationArgs,
-} from '../vendor/connext/types'
+} from '../vendor/client/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
 import {
@@ -15,7 +15,7 @@ import {
   ChannelRowBigNum,
 } from '../domain/Channel'
 import { Big } from '../util/bigNumber'
-import { emptyRootHash } from '../vendor/connext/Utils'
+import { emptyRootHash } from '../vendor/client/Utils'
 import { default as log } from '../util/log'
 import { mkSig } from '../testing/stateUtils';
 import { OnchainTransactionRow } from '../domain/OnchainTransaction';

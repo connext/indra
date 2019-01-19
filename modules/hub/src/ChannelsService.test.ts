@@ -1,4 +1,4 @@
-import { WithdrawalParametersBigNumber } from './vendor/connext/types'
+import { WithdrawalParametersBigNumber } from './vendor/client/types'
 import { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
 import { getTestRegistry, assert, getFakeClock } from './testing'
@@ -33,7 +33,7 @@ import {
   Payment,
   InvalidationArgs,
   WithdrawalArgs,
-} from './vendor/connext/types'
+} from './vendor/client/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
 import {
@@ -41,7 +41,7 @@ import {
   tokenVal,
   channelAndThreadFactory,
 } from './testing/factories'
-import { StateGenerator } from './vendor/connext/StateGenerator'
+import { StateGenerator } from './vendor/client/StateGenerator'
 import PaymentsService from './PaymentsService';
 import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
 import Config from './Config';

@@ -1,6 +1,6 @@
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "./vendor/connext/types";
+import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "./vendor/client/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -8,7 +8,7 @@ import ChannelsDao from "./dao/ChannelsDao";
 import Config from "./Config";
 import { prettySafeJson } from "./util";
 import { Big } from "./util/bigNumber";
-import { Validator } from "./vendor/connext/validator";
+import { Validator } from "./vendor/client/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'

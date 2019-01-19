@@ -1,5 +1,5 @@
-import { convertWithdrawal } from './vendor/connext/types'
-import { hasPendingOps } from './vendor/connext/hasPendingOps'
+import { convertWithdrawal } from './vendor/client/types'
+import { hasPendingOps } from './vendor/client/hasPendingOps'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
@@ -11,7 +11,7 @@ import {
   ChannelRow,
   ChannelStateUpdateRowBigNum,
 } from './domain/Channel'
-import { Validator } from './vendor/connext/validator'
+import { Validator } from './vendor/client/validator'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { Big, toWeiBigNum } from './util/bigNumber'
 import { ThreadStateUpdateRow } from './domain/Thread'
@@ -36,7 +36,7 @@ import {
   ChannelStateBN,
   InvalidationArgs,
   Sync
-} from './vendor/connext/types'
+} from './vendor/client/types'
 import { prettySafeJson, Omit } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
@@ -45,7 +45,7 @@ import { SignerService } from './SignerService';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { assertUnreachable } from './util/assertUnreachable';
-import { StateGenerator } from './vendor/connext/StateGenerator';
+import { StateGenerator } from './vendor/client/StateGenerator';
 
 const LOG = log('ChannelsService') as any
 

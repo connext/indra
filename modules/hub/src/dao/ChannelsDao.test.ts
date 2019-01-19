@@ -4,7 +4,7 @@ chai.use(require('@spankchain/chai-subset'))
 import ChannelsDao from './ChannelsDao'
 import { getTestRegistry } from '../testing'
 import { assertChannelStateEqual, mkAddress, mkHash } from '../testing/stateUtils'
-import { convertChannelState } from '../vendor/connext/types';
+import { convertChannelState } from '../vendor/client/types';
 import { channelUpdateFactory } from '../testing/factories';
 import { OnchainTransactionsDao } from './OnchainTransactionsDao';
 import DBEngine, { SQL } from '../DBEngine';

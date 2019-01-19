@@ -1,7 +1,7 @@
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal } from "../testing/factories";
 import ChannelsService from '../ChannelsService';
-import { UpdateRequest, SyncResult, Sync } from '../vendor/connext/types';
+import { UpdateRequest, SyncResult, Sync } from '../vendor/client/types';
 import { mkHash } from '../testing/stateUtils';
 
 describe('ChannelsApiService', () => {
