@@ -5,10 +5,6 @@ import {
   ChannelState,
   ArgsTypes,
   ChannelStateBigNumber,
-  PaymentArgsBigNumber,
-  ExchangeArgsBigNumber,
-  DepositArgsBigNumber,
-  WithdrawalArgsBigNumber,
   convertArgs,
   InvalidationArgs,
 } from '../vendor/connext/types'
@@ -22,6 +18,7 @@ import { Big } from '../util/bigNumber'
 import { emptyRootHash } from '../vendor/connext/Utils'
 import { default as log } from '../util/log'
 import { mkSig } from '../testing/stateUtils';
+import { OnchainTransactionRow } from '../domain/OnchainTransaction';
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBigNum | null>
@@ -47,7 +44,9 @@ export default interface ChannelsDao {
   getTotalChannelTokensPlusThreadBonds(user: string): Promise<BigNumber>
   getRecentTippers(user: string): Promise<number>
   getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBigNum>
+  getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
+  getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
 }
 
 export function getChannelInitialState(
@@ -117,6 +116,8 @@ export class PostgresChannelsDao implements ChannelsDao {
       row = {
         id: null,
         status: 'CS_OPEN',
+        user,
+        lastUpdateOn: new Date(0),
         state: getChannelInitialState(user, this.config.channelManagerAddress),
       }
     }
@@ -279,6 +280,25 @@ export class PostgresChannelsDao implements ChannelsDao {
     return last
   }
 
+  // get state that allows exit from contract
+  // must be double signed and have 0 timeout
+  async getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBigNum|null> {
+    return this.inflateChannelUpdateRow(
+      await this.db.queryOne(SQL`
+        SELECT * FROM cm_channel_updates 
+        WHERE 
+          "user" = ${user.toLowerCase()} AND
+          contract = ${this.config.channelManagerAddress.toLowerCase()} AND
+          timeout = 0 AND
+          sig_hub IS NOT NULL AND
+          sig_user IS NOT NULL AND
+          invalid IS NULL
+        ORDER BY tx_count_global DESC
+        LIMIT 1
+      `),
+    )
+  }
+
   async invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void> {
     await this.db.queryOne(SQL`
       UPDATE _cm_channel_updates
@@ -289,6 +309,33 @@ export class PostgresChannelsDao implements ChannelsDao {
         "user" = ${user.toLowerCase()}
       RETURNING id
     `)
+  }
+
+  /**
+   * Returns disputed channels which entered dispute more than
+   * ``disputePeriod`` seconds ago.
+   *
+   * Note that the caller will need to check:
+   * - That the onchain dispute period has elapsed (ie, that the timestamp
+   *   of the latest block >= the time when the dispute started + the dispute
+   *   period)
+   * - There isn't already a pending `closeChannel()`
+   */
+  async getDisputedChannelsForClose(disputePeriod: number) {
+    // Assume, for now, that the `hub_signed_on` represents approximately the
+    // time the dispute was sent to chain. In future we can get more precise
+    // by looking at the timestamp from the onchain transaction... but this
+    // will be good enough for now.
+    const { rows } = await this.db.query(SQL`
+      SELECT *
+      FROM cm_channels
+      WHERE
+        contract = ${this.config.channelManagerAddress} AND
+        status = 'CS_CHANNEL_DISPUTE' AND
+        last_updated_on < NOW() - (${disputePeriod}::text || ' seconds')::INTERVAL
+    `)
+
+    return rows.map(r => this.inflateChannelRow(r))
   }
 
   private inflateChannelStateRow(row: any): ChannelStateBigNumber {
@@ -335,9 +382,11 @@ export class PostgresChannelsDao implements ChannelsDao {
   private inflateChannelRow(row: any): ChannelRowBigNum {
     return (
       row && {
-        state: this.inflateChannelStateRow(row),
-        status: row.status,
         id: +row.id,
+        status: row.status,
+        lastUpdateOn: new Date(row.last_updated_on),
+        user: row.user,
+        state: this.inflateChannelStateRow(row),
       }
     )
   }

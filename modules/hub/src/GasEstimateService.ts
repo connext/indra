@@ -1,5 +1,6 @@
 import GasEstimateDao from './dao/GasEstimateDao'
 import log from './util/log'
+import { Poller } from './vendor/connext/lib/poller/Poller'
 const { fetch } = require('fetch-ponyfill')()
 
 const LOG = log('GasEstimateService')
@@ -19,7 +20,7 @@ export interface EthGasStationResponse {
 }
 
 export default class GasEstimateService {
-  static POLL_INTERVAL_MS = 10 * 1000
+  static POLL_INTERVAL_MS = 60 * 1000
 
   static MAX_GAS_PRICE = 100
 
@@ -27,29 +28,29 @@ export default class GasEstimateService {
 
   static MAX_RETRY_COUNT = 5
 
-  private dao: GasEstimateDao
+  private poller: Poller
 
-  private started: boolean = false
-
-  constructor (dao: GasEstimateDao) {
-    this.dao = dao
+  constructor (
+    private dao: GasEstimateDao,
+  ) {
+    this.poller = new Poller({
+      name: 'GasEstimateService',
+      interval: GasEstimateService.POLL_INTERVAL_MS,
+      callback: this.pollGasEstimates.bind(this),
+      timeout: 2 * 60 * 1000,
+    })
   }
 
   public start() {
     LOG.info('Starting gas estimate service.')
-    this.started = true
-    this.pollGasEstimates()
+    this.poller.start()
   }
 
   public stop() {
-    this.started = false
+    this.poller.stop()
   }
 
   async pollGasEstimates() {
-    if (!this.started) {
-      return
-    }
-
     for (let retryCount = 0; ; retryCount += 1) {
       try {
         await this.pollOnce()
@@ -76,8 +77,6 @@ export default class GasEstimateService {
 
       break
     }
-
-    setTimeout(() => this.pollGasEstimates(), GasEstimateService.POLL_INTERVAL_MS)
   }
 
   async pollOnce() {

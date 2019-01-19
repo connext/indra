@@ -7,6 +7,9 @@ import ChannelsService from "./ChannelsService";
 import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { channelUpdateFactory } from "./testing/factories";
 import { DepositArgsBigNumber, UpdateRequest, convertChannelState, convertDeposit, DepositArgs } from "./vendor/connext/types";
+import { sleep } from "./util";
+import ChannelsDao from "./dao/ChannelsDao";
+import DBEngine, { SQL } from "./DBEngine";
 
 function web3ContractMock() {
   this.methods = {
@@ -81,6 +84,8 @@ describe('ChannelsService-txFail', () => {
 
   const service: ChannelsService = registry.get('ChannelsService')
   const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  const dao: ChannelsDao = registry.get('ChannelsDao')
+  const db: DBEngine = registry.get('DBEngine')
 
   beforeEach(async () => {
     await registry.clearDatabase()
@@ -89,7 +94,7 @@ describe('ChannelsService-txFail', () => {
   it('should invalidate a failing hub authorized update', async () => {
     let channel = await channelUpdateFactory(registry)
     await service.doCollateralizeIfNecessary(channel.user)
-    let sync = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    let { updates: sync } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
     let latest = sync.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
 
@@ -100,10 +105,11 @@ describe('ChannelsService-txFail', () => {
       sigUser: mkSig('0xc')
     }])
 
-    await new Promise(res => setTimeout(() => res(), 3000))
+    // need to sleep here to let the async process fail
+    sleep(50)
 
-    sync = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
-    latest = sync.pop()
+    let { updates: sync2 } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    latest = sync2.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
     const generated = stateGenerator.invalidation(
       convertChannelState('bn', channel.state), 
@@ -119,5 +125,16 @@ describe('ChannelsService-txFail', () => {
       pendingWithdrawalToken: [0, 0],
       pendingWithdrawalWei: [0, 0],
     })
-  }).timeout(5000)
+  })
+
+  // TODO: make this work again
+  // it('should move a disputed channel back to open if tx fails', async () => {
+  //   const channel = await channelUpdateFactory(registry)
+  //   await service.startUnilateralExit(channel.user, 'this is a test')
+  //   // need to sleep here to let the async process fail
+  //   await sleep(20)
+
+  //   const { status } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+  //   assert.equal(status, 'CS_OPEN')
+  // })
 })

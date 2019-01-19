@@ -37,9 +37,25 @@ const hub = new PaymentHub(config)
 
 async function run() {
   if (process.argv[2] === 'chainsaw') {
+
     await hub.startChainsaw()
+
+  } else if (process.argv[2] === 'exit-channels') {
+
+    await hub.startUnilateralExitChannels(process.argv.slice(3))
+
+  // If the hub is started with the command "process-tx", the next arg
+  // is a transaction hash to process
+  // NOTE - this will override ...
+  // process.argv[3] -> transaction hash
+  } else if (process.argv[2] === 'process-tx') {
+    await hub.processTx(process.argv[3])
+  } else if (process.argv[2] === 'fix-channels') {
+    await hub.fixBrokenChannels()
   } else {
+
     await hub.start()
+
   }
 }
 

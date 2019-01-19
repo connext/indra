@@ -4,6 +4,7 @@ import {
   Context,
   Container,
 } from './Container'
+import { ChannelManager } from './ChannelManager'
 import AuthApiService from './api/AuthApiService'
 import { MemoryCRAuthManager } from './CRAuthManager'
 import Config from './Config'
@@ -15,7 +16,6 @@ import {
 } from './DBEngine'
 import PaymentsApiService from './api/PaymentsApiService'
 import ExchangeRateService from './ExchangeRateService'
-import { default as AccountsDao, PostgresAccountsDao } from './dao/AccountsDao'
 import ExchangeRateDao, { PostgresExchangeRateDao } from './dao/ExchangeRateDao'
 import { Client } from 'pg'
 import PaymentsDao, { PostgresPaymentsDao } from './dao/PaymentsDao'
@@ -57,6 +57,9 @@ import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
 import { StateGenerator } from './vendor/connext/StateGenerator';
 import { SignerService } from './SignerService';
 import PaymentsService from './PaymentsService';
+import { default as ChannelManagerABI } from './abi/ChannelManager'
+import { CloseChannelService } from './CloseChannelService'
+import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDisputesDao';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -89,22 +92,52 @@ export const serviceDefinitions: PartialServiceDefinitions = {
 
   ChainsawService: {
     factory: (
+      signerService: SignerService,
       chainsawDao: ChainsawDao,
       channelsDao: ChannelsDao,
+      channelDisputesDao: ChannelDisputesDao,
+      contract: ChannelManager,
       web3: Web3,
       utils: Utils,
       config: Config,
       db: DBEngine,
       validator: Validator,
-    ) => new ChainsawService(chainsawDao, channelsDao, web3, utils, config, db, validator),
+    ) => new ChainsawService(signerService, chainsawDao, channelsDao, channelDisputesDao, contract, web3, utils, config, db, validator),
     dependencies: [
+      'SignerService',
       'ChainsawDao',
       'ChannelsDao',
+      'ChannelDisputesDao',
+      'ChannelManagerContract',
       'Web3',
       'ConnextUtils',
       'Config',
       'DBEngine',
       'Validator',
+    ],
+    isSingleton: true,
+  },
+
+  CloseChannelService: {
+    factory: (
+      onchainTxService: OnchainTransactionService,
+      signerService: SignerService,
+      channelDisputesDao: ChannelDisputesDao,
+      channelsDao: ChannelsDao,
+      contract: ChannelManager,
+      config: Config,
+      web3: any,
+      db: DBEngine,
+    ) => new CloseChannelService(onchainTxService, signerService, channelDisputesDao, channelsDao, contract, config, web3, db),
+    dependencies: [
+      'OnchainTransactionService',
+      'SignerService',
+      'ChannelDisputesDao',
+      'ChannelsDao',
+      'ChannelManagerContract',
+      'Config',
+      'Web3',
+      'DBEngine'
     ],
     isSingleton: true,
   },
@@ -153,14 +186,24 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     isSingleton: true,
   },
 
+  ChannelManagerContract: {
+    factory: (
+      web3: any,
+      config: Config,
+    ) => new web3.eth.Contract(
+      ChannelManagerABI.abi,
+      config.channelManagerAddress,
+    ) as ChannelManager,
+    dependencies: [
+      'Web3',
+      'Config',
+    ],
+    isSingleton: true,
+  },
+
   //
   // Factories
   //
-
-  AccountsDao: {
-    factory: (db: DBEngine<Client>) => new PostgresAccountsDao(db),
-    dependencies: ['DBEngine'],
-  },
 
   OnchainTransactionsDao: {
     factory: () => new OnchainTransactionsDao(),
@@ -268,9 +311,15 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: ['DBEngine', 'Config'],
   },
 
+  ChannelDisputesDao: {
+    factory: (db: DBEngine<Client>, config: Config) =>
+      new PostgresChannelDisputesDao(db, config),
+    dependencies: ['DBEngine', 'Config'],
+  },
+
   SignerService: {
-    factory: (web3: any, utils: Utils, config: Config) => new SignerService(web3, utils, config),
-    dependencies: ['Web3', 'ConnextUtils', 'Config']
+    factory: (web3: any, contract: ChannelManager, utils: Utils, config: Config) => new SignerService(web3, contract, utils, config),
+    dependencies: ['Web3', 'ChannelManagerContract', 'ConnextUtils', 'Config']
   },
 
   PaymentsService: {
@@ -284,14 +333,15 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       validator: Validator,
       config: Config,
       db: DBEngine,
+      contract: ChannelManager,
     ) => new PaymentsService(
-      channelsService, 
-      threadsService, 
-      signerService, 
+      channelsService,
+      threadsService,
+      signerService,
       paymentsDao,
-      paymentMetaDao, 
-      channelsDao, 
-      validator, 
+      paymentMetaDao,
+      channelsDao,
+      validator,
       config,
       db,
     ),
@@ -305,6 +355,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Validator',
       'Config',
       'DBEngine',
+      'ChannelManagerContract',
     ],
   },
 
@@ -316,12 +367,13 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       channelsDao: ChannelsDao,
       threadsDao: ThreadsDao,
       exchangeRateDao: ExchangeRateDao,
-      validation: Validator,
+      channelDisputesDao: ChannelDisputesDao,
       generator: StateGenerator,
+      validation: Validator,
       redis: RedisClient,
       db: DBEngine,
-      web3: any,
       config: Config,
+      contract: ChannelManager,
     ) =>
       new ChannelsService(
         onchainTx,
@@ -330,12 +382,13 @@ export const serviceDefinitions: PartialServiceDefinitions = {
         channelsDao,
         threadsDao,
         exchangeRateDao,
-        validation,
+        channelDisputesDao,
         generator,
+        validation,
         redis,
         db,
-        web3,
         config,
+        contract,
       ),
     dependencies: [
       'OnchainTransactionService',
@@ -344,12 +397,13 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'ChannelsDao',
       'ThreadsDao',
       'ExchangeRateDao',
-      'Validator',
+      'ChannelDisputesDao',
       'StateGenerator',
+      'Validator',
       'RedisClient',
       'DBEngine',
-      'Web3',
       'Config',
+      'ChannelManagerContract',
     ],
   },
 

@@ -10,6 +10,8 @@ import {
   UnsignedChannelState,
   UnsignedThreadState,
   ChannelState,
+  SignedDepositRequestProposal,
+  Payment,
 } from './types'
 
 // import types from connext
@@ -21,6 +23,25 @@ export const emptyRootHash = '0x000000000000000000000000000000000000000000000000
 export class Utils {
   emptyAddress = '0x0000000000000000000000000000000000000000'
   emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
+
+  public createDepositRequestProposalHash(
+    req: Payment,
+  ): string {
+    const { amountToken, amountWei } = req
+    // @ts-ignore
+    const hash = Web3.utils.soliditySha3(
+      { type: 'uint256', value: amountToken },
+      { type: 'uint256', value: amountWei },
+    )
+    return hash
+  }
+
+  public recoverSignerFromDepositRequest(
+    args: SignedDepositRequestProposal,
+  ): string {
+    const hash = this.createDepositRequestProposalHash(args)
+    return this.recoverSigner(hash, args.sigUser)
+  }
 
   public createChannelStateHash(
     channelState: UnsignedChannelState,
@@ -96,30 +117,8 @@ export class Utils {
     // could be hub or user
     sig: string,
   ): string {
-    let fingerprint: any = this.createChannelStateHash(channelState)
-    fingerprint = util.toBuffer(String(fingerprint))
-    const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-    // @ts-ignore
-    const prefixedMsg = util.keccak256(
-      // @ts-ignore
-      Buffer.concat([
-        prefix,
-        util.toBuffer(String(fingerprint.length)),
-        fingerprint,
-      ]),
-    )
-    const res = util.fromRpcSig(sig)
-    const pubKey = util.ecrecover(
-      util.toBuffer(prefixedMsg),
-      res.v,
-      res.r,
-      res.s,
-    )
-    const addrBuf = util.pubToAddress(pubKey)
-    const addr = util.bufferToHex(addrBuf)
-    console.log('recovered:', addr)
-
-    return addr
+    const hash: any = this.createChannelStateHash(channelState)
+    return this.recoverSigner(hash, sig)
   }
 
   public createThreadStateHash(threadState: UnsignedThreadState): string {
@@ -159,25 +158,9 @@ export class Utils {
     threadState: UnsignedThreadState,
     sig: string,
   ): string {
-    let fingerprint: any = this.createThreadStateHash(threadState)
-    fingerprint = util.toBuffer(String(fingerprint))
-    const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-    // @ts-ignore
-    const prefixedMsg = util.keccak256(
-      // @ts-ignore
-      Buffer.concat([
-        prefix,
-        util.toBuffer(String(fingerprint.length)),
-        fingerprint,
-      ]),
-    )
-    const res = util.fromRpcSig(sig)
-    const pubKey = util.ecrecover(prefixedMsg, res.v, res.r, res.s)
-    const addrBuf = util.pubToAddress(pubKey)
-    const addr = util.bufferToHex(addrBuf)
-    console.log('recovered:', addr)
-
-    return addr
+    console.log('recovering signer from state:', threadState)
+    const hash: any = this.createThreadStateHash(threadState)
+    return this.recoverSigner(hash, sig)
   }
 
   public generateThreadMerkleTree(
@@ -268,6 +251,46 @@ export class Utils {
       throw new Error(`Incorrect root provided`)
     }
     return mtree.verify(proof, threadHash)
+  }
+
+  private recoverSigner(hash: string, sig: string) {
+    // let fingerprint: any = this.createChannelStateHash(channelState)
+    let fingerprint = util.toBuffer(String(hash))
+    const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
+    // @ts-ignore
+    const prefixedMsg = util.keccak256(
+      // @ts-ignore
+      Buffer.concat([
+        // @ts-ignore
+        prefix,
+        // @ts-ignore
+        util.toBuffer(String(fingerprint.length)),
+        // @ts-ignore
+        fingerprint,
+      ]),
+    )
+    const res = util.fromRpcSig(sig)
+    const pubKey = util.ecrecover(
+      util.toBuffer(prefixedMsg),
+      res.v,
+      res.r,
+      res.s,
+    )
+    const addrBuf = util.pubToAddress(pubKey)
+    const addr = util.bufferToHex(addrBuf)
+    console.log('recovered:', addr)
+
+    return addr
+  }
+
+  hasPendingOps(state: ChannelState) {
+    for (let field in state) {
+      if (!field.startsWith('pending'))
+        continue
+      if ((state as any)[field] !== '0')
+        return true
+    }
+    return false
   }
 
 }

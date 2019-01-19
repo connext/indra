@@ -51,8 +51,6 @@ export abstract class ContractEvent {
         return DidUpdateChannelEvent.fromRawEvent(event)
       case DidStartExitChannelEvent.TYPE:
         return DidStartExitChannelEvent.fromRawEvent(event)
-      case DidEmptyChannelWithChallengeEvent.TYPE:
-        return DidEmptyChannelWithChallengeEvent.fromRawEvent(event)
       case DidEmptyChannelEvent.TYPE:
         return DidEmptyChannelEvent.fromRawEvent(event)
       case DidStartExitThreadEvent.TYPE:
@@ -71,6 +69,10 @@ export abstract class ContractEvent {
     switch (row.event_type) {
       case DidUpdateChannelEvent.TYPE:
         return DidUpdateChannelEvent.fromRow(row)
+      case DidStartExitChannelEvent.TYPE:
+        return DidStartExitChannelEvent.fromRow(row)
+      case DidEmptyChannelEvent.TYPE:
+        return DidEmptyChannelEvent.fromRow(row)
       default:
         throw new Error('Unknown event.')
     }
@@ -263,57 +265,35 @@ export class DidStartExitChannelEvent extends ContractEvent {
   static fromRawEvent (event: RawContractEvent): DidStartExitChannelEvent {
     return new DidStartExitChannelEvent(event)
   }
-}
 
-export class DidEmptyChannelWithChallengeEvent extends ContractEvent {
-  static TYPE = 'DidEmptyChannelWithChallenge'
-  TYPE = DidEmptyChannelWithChallengeEvent.TYPE
+  static fromRow (row: any): DidStartExitChannelEvent {
+    const {fields} = row
 
-  user: string
-  senderIdx: number
-  balanceWeiUser: BigNumber
-  balanceWeiHub: BigNumber
-  balanceTokenUser: BigNumber
-  balanceTokenHub: BigNumber
-  txCountGlobal: number
-  txCountChain: number
-  threadRoot: string
-  threadCount: number
-
-  constructor (
-    event: RawContractEvent
-  ) {
-    super(event)
-    const vals = event.log.returnValues
-    this.user = vals.user
-    this.senderIdx = vals.senderIdx
-    this.balanceWeiUser = new BigNumber(vals.weiBalances[0])
-    this.balanceWeiHub = new BigNumber(vals.weiBalances[1])
-    this.balanceTokenUser = new BigNumber(vals.tokenBalances[0])
-    this.balanceTokenHub = new BigNumber(vals.tokenBalances[1])
-    this.txCountGlobal = vals.txCount[0]
-    this.txCountChain = vals.txCount[1]
-    this.threadRoot = vals.threadRoot
-    this.threadCount = vals.threadCount
-  }
-
-  toFields (): Object | any {
-    return {
-      user: this.user.toLowerCase(),
-      senderIdx: this.senderIdx,
-      balanceWeiUser: this.balanceWeiUser.toFixed(),
-      balanceWeiHub: this.balanceWeiHub.toFixed(),
-      balanceTokenUser: this.balanceTokenUser.toFixed(),
-      balanceTokenHub: this.balanceTokenHub.toFixed(),
-      txCountGlobal: this.txCountGlobal,
-      txCountChain: this.txCountChain,
-      threadRoot: this.threadRoot,
-      threadCount: this.threadCount
+    const event: RawContractEvent = {
+      contract: row.contract,
+      sender: row.sender,
+      timestamp: row.ts,
+      logIndex: row.log_index,
+      channelId: row.channel_id,
+      txIndex: row.tx_index,
+      chainsawId: row.id,
+      log: {
+        blockNumber: row.block_number,
+        transactionHash: row.tx_hash,
+        blockHash: row.block_hash,
+        returnValues: {
+          user: fields.user,
+          senderIdx: fields.senderIdx,
+          weiBalances: [fields.balanceWeiUser, fields.balanceWeiHub],
+          tokenBalances: [fields.balanceTokenUser, fields.balanceTokenHub],
+          txCount: [Number(fields.txCountGlobal), Number(fields.txCountChain)],
+          threadRoot: fields.threadRoot,
+          threadCount: fields.threadCount
+        }
+      } as EventLog
     }
-  }
 
-  static fromRawEvent (event: RawContractEvent): DidEmptyChannelWithChallengeEvent {
-    return new DidEmptyChannelWithChallengeEvent(event)
+    return new DidStartExitChannelEvent(event)
   }
 }
 
@@ -365,6 +345,36 @@ export class DidEmptyChannelEvent extends ContractEvent {
   }
 
   static fromRawEvent (event: RawContractEvent): DidEmptyChannelEvent {
+    return new DidEmptyChannelEvent(event)
+  }
+
+  static fromRow (row: any): DidEmptyChannelEvent {
+    const {fields} = row
+
+    const event: RawContractEvent = {
+      contract: row.contract,
+      sender: row.sender,
+      timestamp: row.ts,
+      logIndex: row.log_index,
+      channelId: row.channel_id,
+      txIndex: row.tx_index,
+      chainsawId: row.id,
+      log: {
+        blockNumber: row.block_number,
+        transactionHash: row.tx_hash,
+        blockHash: row.block_hash,
+        returnValues: {
+          user: fields.user,
+          senderIdx: fields.senderIdx,
+          weiBalances: [fields.balanceWeiUser, fields.balanceWeiHub],
+          tokenBalances: [fields.balanceTokenUser, fields.balanceTokenHub],
+          txCount: [Number(fields.txCountGlobal), Number(fields.txCountChain)],
+          threadRoot: fields.threadRoot,
+          threadCount: fields.threadCount
+        }
+      } as EventLog
+    }
+
     return new DidEmptyChannelEvent(event)
   }
 }

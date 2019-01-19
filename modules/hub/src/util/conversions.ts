@@ -1,7 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 
 export function fiatToWei(fiat: BigNumber, rate: BigNumber): BigNumber {
-  return fiat.dividedBy(rate).times('1e18').decimalPlaces(0, BigNumber.ROUND_FLOOR)
+  return fiat.dividedBy(rate).times('1e18').floor()
 }
 
 export function weiToFiat(wei: BigNumber, rate: BigNumber): BigNumber {

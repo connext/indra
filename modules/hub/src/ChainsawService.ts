@@ -1,59 +1,38 @@
-import { Lock } from './util'
-import { convertChannelState } from './vendor/connext/types'
+import { convertChannelState, EmptyChannelArgs } from './vendor/connext/types'
 import ChainsawDao from './dao/ChainsawDao'
 import log from './util/log'
-import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
+import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
 import Config from './Config'
 import { ChannelManager } from './ChannelManager'
 import { EventLog } from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
-import { ChannelUpdateReasons, ChannelState, PaymentArgs, ConfirmPendingArgs } from './vendor/connext/types'
+import { ChannelState, ConfirmPendingArgs } from './vendor/connext/types'
 import { Utils } from './vendor/connext/Utils'
-import abi from './abi/ChannelManager'
 import { BigNumber } from 'bignumber.js'
 import { sleep } from './util'
 import { default as DBEngine } from './DBEngine'
-import { Validator } from './vendor/connext/validator'
+import { Validator } from './vendor/connext/validator';
+import ChannelDisputesDao from './dao/ChannelDisputesDao';
+import { SignerService } from './SignerService';
 
 const LOG = log('ChainsawService')
 
 const CONFIRMATION_COUNT = 3
 const POLL_INTERVAL = 1000
 
-interface WithBalances {
-  balanceWeiHub: BigNumber
-  balanceTokenHub: BigNumber
-  balanceWeiUser: BigNumber
-  balanceTokenUser: BigNumber
-}
-
 export default class ChainsawService {
-  private chainsawDao: ChainsawDao
-
-  private web3: any
-
-  private contract: ChannelManager
-
-  private channelsDao: ChannelsDao
-
-  private utils: Utils
-
-  private config: Config
-
-  private db: DBEngine
-
-  private validator: Validator
-
-  constructor(chainsawDao: ChainsawDao, channelsDao: ChannelsDao, web3: any, utils: Utils, config: Config, db: DBEngine, validator: Validator) {
-    this.chainsawDao = chainsawDao
-    this.channelsDao = channelsDao
-    this.utils = utils
-    this.web3 = web3
-    this.contract = new this.web3.eth.Contract(abi, config.channelManagerAddress) as ChannelManager
-    this.config = config
-    this.db = db
-    this.validator = validator
-  }
+  constructor(
+    private signerService: SignerService,
+    private chainsawDao: ChainsawDao, 
+    private channelsDao: ChannelsDao, 
+    private channelDisputesDao: ChannelDisputesDao,
+    private contract: ChannelManager,
+    private web3: any, 
+    private utils: Utils, 
+    private config: Config, 
+    private db: DBEngine, 
+    private validator: Validator
+  ) {}
 
   async poll() {
     while (true) {
@@ -178,6 +157,24 @@ export default class ChainsawService {
             'PROCESS_EVENTS',
           )
           break
+        case DidStartExitChannelEvent.TYPE:
+          await this.processDidStartExitChannel(event.id, event.event as DidStartExitChannelEvent)
+          await this.chainsawDao.recordPoll(
+            event.event.blockNumber,
+            event.event.txIndex,
+            this.contract._address,
+            'PROCESS_EVENTS',
+          )
+          break
+        case DidEmptyChannelEvent.TYPE:
+          await this.processDidEmptyChannel(event.id, event.event as DidStartExitChannelEvent)
+          await this.chainsawDao.recordPoll(
+            event.event.blockNumber,
+            event.event.txIndex,
+            this.contract._address,
+            'PROCESS_EVENTS',
+          )
+          break
         default:
           LOG.info('Got type {type}. Not implemented yet.', {
             type: event.event.TYPE
@@ -213,5 +210,35 @@ export default class ChainsawService {
       ...state,
       sigHub
     } as ChannelState, { transactionHash: event.txHash } as ConfirmPendingArgs, chainsawId)
+  }
+
+  private async processDidStartExitChannel(chainsawId: number, event: DidStartExitChannelEvent) {
+    const onchainChannel = await this.signerService.getChannelDetails(event.user)
+
+    const disputeRecord = await this.channelDisputesDao.getActive(event.user)
+    if (!disputeRecord) {
+      // dispute might not have been initiated by us, so we need to add it here
+      await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', chainsawId, null, onchainChannel.channelClosingTime)
+      return
+    }
+
+    await this.channelDisputesDao.setExitEvent(disputeRecord.id, chainsawId, onchainChannel.channelClosingTime)
+  }
+
+  private async processDidEmptyChannel(chainsawId: number, event: DidEmptyChannelEvent) {
+    const disputeRecord = await this.channelDisputesDao.getActive(event.user)
+    // we should always have the dispute in our DB
+    if (!disputeRecord) {
+      throw new Error(`Did not find record of dispute start. Event: ${event}`)
+    }
+
+    await this.channelDisputesDao.setEmptyEvent(disputeRecord.id, chainsawId)
+
+    // zero out channel with new state
+    const channel = await this.channelsDao.getChannelOrInitialState(event.user)
+    const args: EmptyChannelArgs = { transactionHash: event.txHash }
+    const newState = await this.validator.generateEmptyChannel(convertChannelState('str', channel.state), args)
+    const signed = await this.signerService.signChannelState(newState)
+    await this.channelsDao.applyUpdateByUser(event.user, 'EmptyChannel', event.user, signed, args, chainsawId)
   }
 }

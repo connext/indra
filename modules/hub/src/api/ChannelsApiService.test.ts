@@ -1,7 +1,8 @@
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal } from "../testing/factories";
 import ChannelsService from '../ChannelsService';
-import { UpdateRequest, SyncResult } from '../vendor/connext/types';
+import { UpdateRequest, SyncResult, Sync } from '../vendor/connext/types';
+import { mkHash } from '../testing/stateUtils';
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()
@@ -23,8 +24,11 @@ describe('ChannelsApiService', () => {
       .send()
 
     assert.equal(res.status, 200, JSON.stringify(res.body))
-    const collateralizeUpdate = res.body.pop() as SyncResult
+    const collateralizeUpdate = res.body.updates[0]
+    // const collateralizeUpdate = res.body.pop() as SyncResult
     assert.isNotOk((collateralizeUpdate.update as UpdateRequest).txCount)
+    // const check = res.body.updates[0].update.txCount
+    // assert.isNotOk(check)
   })
 
   it('Should return an error if there is already a pending operation', async () => {
@@ -38,6 +42,7 @@ describe('ChannelsApiService', () => {
       .send({
         depositWei: '1',
         depositToken: '0',
+        sigUser: mkHash('0xsigUser'),
         lastChanTx: chan.state.txCountGlobal,
         lastThreadUpdateId: 0,
       })

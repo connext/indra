@@ -7,7 +7,7 @@ import { BigNumber } from 'bignumber.js'
 import defaultRegistry, { serviceDefinitions } from '../services'
 import { isBigNumber } from '../util'
 import { Registry, Container } from '../Container'
-import { mockServices } from './mocks'
+import { mockServices, clearFakeClosingTime } from './mocks'
 export { TestApiServer, getTestConfig } from './mocks'
 
 export type ServiceName = keyof typeof serviceDefinitions
@@ -54,6 +54,7 @@ export class TestServiceRegistry {
       this.get('RedisClient').flushall(),
       this.get('PgPoolService').clearDatabase(),
     ])
+    clearFakeClosingTime()
   }
 
   get<N extends ServiceName>(name: N, overrides?: ServiceDict): ServiceType<N> {

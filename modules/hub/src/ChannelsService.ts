@@ -1,5 +1,4 @@
 import { convertWithdrawal } from './vendor/connext/types'
-import { StateGenerator } from './vendor/connext/StateGenerator'
 import { hasPendingOps } from './vendor/connext/hasPendingOps'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
@@ -11,7 +10,6 @@ import {
   channelRowBigNumToString,
   ChannelRow,
   ChannelStateUpdateRowBigNum,
-  ChannelRowBigNum,
 } from './domain/Channel'
 import { Validator } from './vendor/connext/validator'
 import ExchangeRateDao from './dao/ExchangeRateDao'
@@ -19,9 +17,7 @@ import { Big, toWeiBigNum } from './util/bigNumber'
 import { ThreadStateUpdateRow } from './domain/Thread'
 import { RedisClient } from './RedisClient'
 import { ChannelManager } from './ChannelManager'
-import ABI from './abi/ChannelManager'
 import {
-  ChannelState,
   ChannelStateUpdate,
   UnsignedChannelState,
   DepositArgs,
@@ -39,6 +35,7 @@ import {
   WithdrawalParametersBigNumber,
   ChannelStateBN,
   InvalidationArgs,
+  Sync
 } from './vendor/connext/types'
 import { prettySafeJson, Omit } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
@@ -46,6 +43,9 @@ import DBEngine from './DBEngine';
 import ThreadsService from './ThreadsService';
 import { SignerService } from './SignerService';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
+import ChannelDisputesDao from './dao/ChannelDisputesDao';
+import { assertUnreachable } from './util/assertUnreachable';
+import { StateGenerator } from './vendor/connext/StateGenerator';
 
 const LOG = log('ChannelsService') as any
 
@@ -56,66 +56,27 @@ export type RedisUnsignedUpdate = {
 
 
 export default class ChannelsService {
-  private onchainTxService: OnchainTransactionService
-
-  private threadsService: ThreadsService
-
-  private signerService: SignerService
-
-  private channelsDao: ChannelsDao
-
-  private threadsDao: ThreadsDao
-
-  private exchangeRateDao: ExchangeRateDao
-
-  private validator: Validator
-
-  private generator: StateGenerator
-
-  private redis: RedisClient
-
-  private db: DBEngine
-
-  private config: Config
-
-  private contract: ChannelManager
-
   constructor(
-    onchainTxService: OnchainTransactionService,
-    threadsService: ThreadsService,
-    signerService: SignerService,
-    channelsDao: ChannelsDao,
-    threadsDao: ThreadsDao,
-    exchangeRateDao: ExchangeRateDao,
-    validator: Validator,
-    generator: StateGenerator,
-    redis: RedisClient,
-    db: DBEngine,
-    web3: any,
-    config: Config,
-  ) {
-    this.onchainTxService = onchainTxService
-    this.threadsService = threadsService
-    this.signerService = signerService
-    this.channelsDao = channelsDao
-    this.threadsDao = threadsDao
-    this.exchangeRateDao = exchangeRateDao
-    this.validator = validator
-    this.generator = generator
-    this.redis = redis
-    this.db = db
-    this.config = config
-
-    this.contract = new web3.eth.Contract(
-      ABI,
-      config.channelManagerAddress,
-    ) as ChannelManager
-  }
+    private onchainTxService: OnchainTransactionService,
+    private threadsService: ThreadsService,
+    private signerService: SignerService,
+    private channelsDao: ChannelsDao,
+    private threadsDao: ThreadsDao,
+    private exchangeRateDao: ExchangeRateDao,
+    private channelDisputesDao: ChannelDisputesDao,
+    private generator: StateGenerator,
+    private validator: Validator,
+    private redis: RedisClient,
+    private db: DBEngine,
+    private config: Config,
+    private contract: ChannelManager,
+  ) {}
 
   public async doRequestDeposit(
     user: string,
     depositWei: BigNumber,
     depositToken: BigNumber,
+    sigUser: string,
   ): Promise<string | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
     const channelStateStr = convertChannelState("str", channel.state)
@@ -128,6 +89,13 @@ export default class ChannelsService {
         )}`,
       )
     }
+
+    // assert user signed parameters
+    this.validator.assertDepositRequestSigner({
+      amountToken: depositToken.toString(),
+      amountWei: depositWei.toString(),
+      sigUser,
+    }, user)
 
     if (hasPendingOps(channelStateStr)) {
       LOG.info(
@@ -163,7 +131,7 @@ export default class ChannelsService {
     // equivalent token amount to deposit based on booty amount
     const bootyRequestToDeposit = currentExchangeRateBigNum
       .times(depositWei)
-      .decimalPlaces(0, BigNumber.ROUND_FLOOR)
+      .floor()
 
     const userBootyCurrentlyInChannel = await this.channelsDao.getTotalChannelTokensPlusThreadBonds(
       user,
@@ -183,9 +151,8 @@ export default class ChannelsService {
         this.config.channelBeiDeposit
           .minus(userBootyCurrentlyInChannel)
           .minus(channel.state.balanceTokenHub) :
-
-        // fund the up to the amount the user put in
-        bootyRequestToDeposit.minus(channel.state.balanceTokenHub)
+          // fund the up to the amount the user put in
+          bootyRequestToDeposit.minus(channel.state.balanceTokenHub)
     ))
 
     const depositArgs: DepositArgs = {
@@ -193,7 +160,8 @@ export default class ChannelsService {
       depositWeiUser: depositWei.toFixed(),
       depositTokenHub: hubBootyDeposit.toFixed(),
       depositTokenUser: depositToken.toFixed(),
-      timeout: Math.floor(Date.now() / 1000) + 5 * 60
+      timeout: Math.floor(Date.now() / 1000) + 5 * 60,
+      sigUser,
     }
 
     const channelStateWithDeposits = this.validator.generateProposePendingDeposit(
@@ -224,8 +192,8 @@ export default class ChannelsService {
     const numTippers = await this.channelsDao.getRecentTippers(state.user)
     const baseTarget = Big(numTippers).times(this.config.threadBeiLimit)
     const baseMin = numTippers > 0 ?
-        this.config.beiMinCollateralization :
-        toWeiBigNum(10)
+      this.config.beiMinCollateralization :
+      toWeiBigNum(10)
 
     return {
       minAmount: BigNumber.max(baseMin, baseTarget).times(0.5),
@@ -309,7 +277,8 @@ export default class ChannelsService {
       depositWeiUser: '0',
       depositTokenHub: amountToCollateralize.toFixed(),
       depositTokenUser: '0',
-      timeout: 0
+      timeout: 0,
+      sigUser: null,
     }
 
     await this.redisSaveUnsignedState(user, {
@@ -366,7 +335,7 @@ export default class ChannelsService {
     // if user is leaving some wei in the channel, leave an equivalent amount of booty
     const newBalanceWeiUser = channel.state.balanceWeiUser.minus(params.withdrawalWeiUser)
     const hubBootyTargetForExchange = BigNumber.min(
-      newBalanceWeiUser.times(proposedExchangeRateBigNum).decimalPlaces(0, BigNumber.ROUND_FLOOR),
+      newBalanceWeiUser.times(proposedExchangeRateBigNum).floor(),
       this.config.channelBeiLimit,
     )
 
@@ -452,7 +421,7 @@ export default class ChannelsService {
     if (otherLimit)
       limit = BigNumber.min(limit, otherLimit)
 
-    const exchangeLimit = limit.div(exchangeRate).decimalPlaces(0, BigNumber.ROUND_FLOOR)
+    const exchangeLimit = limit.div(exchangeRate).floor()
     return BigNumber.min(reqAmount, exchangeLimit).toFixed()
   }
 
@@ -489,12 +458,12 @@ export default class ChannelsService {
     const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
 
     const bootyLimit = BigNumber.min(
-      BigNumber.max(0, channel.state.balanceTokenHub.minus(currentExchangeRateBigNum.decimalPlaces(0, BigNumber.ROUND_CEIL))),
+      BigNumber.max(0, channel.state.balanceTokenHub.minus(currentExchangeRateBigNum.floor())),
     )
     const weiToBootyLimit = (
       bootyLimit
         .div(currentExchangeRateBigNum)
-        .decimalPlaces(0, BigNumber.ROUND_CEIL)
+        .ceil()
     )
     const adjustedWeiToSell = BigNumber.min(weiToSell, weiToBootyLimit)
 
@@ -744,9 +713,9 @@ export default class ChannelsService {
 
       case 'Invalidation':
         const lastStateNoPendingOps = await this.channelsDao.getLastStateNoPendingOps(user)
-        
+
         const latestBlock = await this.signerService.getLatestBlock()
-        
+
         // make sure there is no pending timeout
         if (signedChannelStatePrevious.timeout && latestBlock.timestamp <= signedChannelStatePrevious.timeout) {
           LOG.info('Cannot invalidate update with timeout that hasnt expired, lastStateNoPendingOps: {lastStateNoPendingOps}, block: {latestBlock}', {
@@ -808,7 +777,9 @@ export default class ChannelsService {
     user: string,
     channelTxCount: number,
     lastThreadUpdateId: number,
-  ): Promise<SyncResult[]> {
+  ): Promise<Sync> {
+    const channel = await this.channelsDao.getChannelOrInitialState(user)
+    console.log('channel: ', channel);
     const channelUpdates = await this.channelsDao.getChannelUpdatesForSync(
       user,
       channelTxCount,
@@ -827,8 +798,6 @@ export default class ChannelsService {
     const res: SyncResult[] = []
     const pushChannel = (update: UpdateRequest) => res.push({ type: 'channel', update })
     const pushThread = (update: ThreadStateUpdateRow) => res.push({ type: 'thread', update })
-
-    let lastTxCount = channelTxCount
 
     while (
       curChan < channelUpdates.length ||
@@ -854,7 +823,6 @@ export default class ChannelsService {
           createdOn: chan.createdOn,
           id: chan.id
         })
-        lastTxCount = chan.state.txCountGlobal
       } else {
         curThread += 1
         pushThread({
@@ -875,7 +843,7 @@ export default class ChannelsService {
       })
     }
 
-    return res
+    return { status: channel.status, updates: res }
   }
 
   public async getChannel(user: string): Promise<ChannelRow | null> {
@@ -985,7 +953,7 @@ export default class ChannelsService {
   }
 
   // callback function for OnchainTransactionService
-  private async invalidateUpdate(txn: OnchainTransactionRow) {
+  private async invalidateUpdate(txn: OnchainTransactionRow): Promise<ChannelStateUpdateRowBigNum> {
     if (txn.state !== 'failed') {
       LOG.info(`Transaction completed, no need to invalidate`)
       return

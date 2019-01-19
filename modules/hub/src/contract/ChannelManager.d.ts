@@ -22,6 +22,29 @@ export class ChannelManager {
       4: string;
     }>;
 
+    getChannelBalances(
+      user: string
+    ): TransactionObject<{
+      0: string;
+      1: string;
+      2: string;
+      3: string;
+      4: string;
+      5: string;
+    }>;
+
+    getChannelDetails(
+      user: string
+    ): TransactionObject<{
+      0: string;
+      1: string;
+      2: string;
+      3: string;
+      4: string;
+      5: string;
+      6: string;
+    }>;
+
     hubContractWithdraw(
       weiAmount: number | string,
       tokenAmount: number | string

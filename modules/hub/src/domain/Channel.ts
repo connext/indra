@@ -23,6 +23,8 @@ import { Utils } from '../vendor/connext/Utils'
 export type ChannelRow<T = string> = {
   id: number
   status: ChannelStatus
+  lastUpdateOn: Date
+  user: string
   state: ChannelState<T>
   // ... dispute things, open events, etc ...
 }

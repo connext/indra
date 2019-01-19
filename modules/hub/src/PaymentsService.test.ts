@@ -61,7 +61,7 @@ describe('PaymentsService', () => {
 
     await service.doPurchase(sender, {}, payments)
 
-    const senderUpdates = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
+    const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const custodialUpdateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(custodialUpdateSender, {
       reason: 'Payment',
@@ -69,7 +69,7 @@ describe('PaymentsService', () => {
     })
     assert.isOk(custodialUpdateSender.sigHub)
 
-    const receiverUpdates = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
+    const {updates: receiverUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
     const custodialUpdateReceiver = receiverUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(custodialUpdateReceiver, {
       reason: 'Payment',
@@ -134,7 +134,7 @@ describe('PaymentsService', () => {
 
     await service.doPurchase(sender, {}, payments)
 
-    const senderUpdates = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
+    const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const custodialUpdateSender = senderUpdates[senderUpdates.length - 2].update as UpdateRequest
     assert.containSubset(custodialUpdateSender, {
       reason: 'Payment',
@@ -149,7 +149,7 @@ describe('PaymentsService', () => {
     })
     assert.isOk(tipHub.sigHub)
 
-    const receiverUpdates = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
+    const {updates: receiverUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
     const custodialUpdateReceiver = receiverUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(custodialUpdateReceiver, {
       reason: 'Payment',
@@ -234,7 +234,7 @@ describe('PaymentsService', () => {
       service.doPurchase(senderChannel.user, {}, payments),
     )
 
-    const updates = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
+    const {updates} = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
     const latest = updates.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
     const collateralState = stateGenerator.proposePendingDeposit(
@@ -278,7 +278,7 @@ describe('PaymentsService', () => {
     // recipient
     const purchase = await service.doPurchase(senderChannel.user, {}, payments)
 
-    const updates = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
+    const {updates} = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
     const latest = updates.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
     const collateralState = stateGenerator.proposePendingDeposit(

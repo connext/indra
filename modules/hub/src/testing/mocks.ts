@@ -9,10 +9,11 @@ import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
 import { mkAddress, mkSig, mkHash } from "./stateUtils";
 import { Validator } from '../vendor/connext/validator'
-import { Big, toWeiBigNum } from '../util/bigNumber';
+import { Big } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
 import { Utils } from '../vendor/connext/Utils';
 import Config from '../Config';
+import { ChannelManagerChannelDetails } from '../vendor/connext/types';
 
 const Web3 = require('web3')
 
@@ -97,7 +98,7 @@ class MockWeb3Provider {
   }
 
   sendAsync(payload, callback) {
-    if(payload.id)
+    if (payload.id)
       this.countId = payload.id
 
     console.log('SEND ASYNC:', payload)
@@ -118,6 +119,13 @@ class MockValidator extends Validator {
   }
 
   assertThreadSigner() {
+    return null
+  }
+
+  assertDepositRequestSigner(req: any) {
+    if (!req.sigUser) {
+      throw new Error('No signature detected')
+    }
     return null
   }
 }
@@ -172,7 +180,7 @@ export class MockSignerService extends SignerService {
   constructor() {
     super({
       eth: {
-        getBlock: async (block: string|number) => {
+        getBlock: async (block: string | number) => {
           if (block === 'latest') {
             return { timestamp: Math.floor(Date.now() / 1000) }
           }
@@ -223,10 +231,91 @@ export class MockSignerService extends SignerService {
           }
         },
       },
-    }, {} as Utils, {} as Config)
+    }, {} as any, new Utils(), getTestConfig())
   }
   async getSigForChannelState() {
     return fakeSig
+  }
+  async getChannelDetails() {
+    return {
+      channelClosingTime: fakeClosingTime,
+      exitInitiator: '',
+      status: '',
+      threadCount: 0,
+      threadRoot: '',
+      txCountChain: 1,
+      txCountGlobal: 1
+    } as ChannelManagerChannelDetails
+  }
+}
+
+export let fakeClosingTime: number = 0
+export function setFakeClosingTime(time: number) {
+  fakeClosingTime = time
+}
+export function clearFakeClosingTime() {
+  fakeClosingTime = 0
+}
+
+export class MockChannelManagerContract {
+  methods = {
+    hubAuthorizedUpdate: () => {
+      return {
+        send: async () => {
+          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          return true
+        },
+        encodeABI: () => {
+          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          return true
+        },
+      }
+    },
+    getChannelDetails: () => {
+      console.log(`Called mocked contract function getChannelDetails`)
+      return {
+        call: async () => {
+          return [
+            1, // txCountGlobal
+            1, // txCountChain
+            '', // threadRoot 
+            0, // threadCount
+            '', // exitInitiator 
+            fakeClosingTime, // channelClosingTime
+            '' // status
+          ]
+        }
+      }
+    },
+    startExitWithUpdate: () => {
+      console.log(`Called mocked contract function startExitWithUpdate`)
+      return {
+        send: async () => {
+          return true
+        },
+        encodeABI: () => {
+          return '0xdeadbeef'
+        },
+      }
+    },
+    startExit: () => {
+      console.log(`Called mocked contract function startExit`)
+      return {
+        send: async () => {
+          return true
+        },
+        encodeABI: () => {
+          return '0xdeadbeef'
+        },
+      }
+    },
+    challengePeriod: () => {
+      return {
+        call: async () => {
+          return 0
+        }
+      }
+    }
   }
 }
 
@@ -263,5 +352,17 @@ export const mockServices: any = {
 
   'Validator': {
     factory: () => new MockValidator(),
+  },
+
+  'ExchangeRateDao': {
+    factory: () => new MockExchangeRateDao(),
+  },
+
+  'SignerService': {
+    factory: () => new MockSignerService(),
+  },
+
+  'ChannelManagerContract': {
+    factory: () => new MockChannelManagerContract(),
   },
 }

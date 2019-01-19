@@ -8,8 +8,6 @@ IFS="`printf "\n\t"`"
 set -eu
 cd "$(dirname "$0")"
 
-make
-
 DB="sc-hub-sql-tests"
 dropdb --if-exists "$DB" || true
 createdb "$DB"
@@ -17,8 +15,6 @@ createdb "$DB"
 cd ../../
 DATABASE_URL="postgres:///$DB" yarn migrate
 cd -
-
-./load-sql -a "$DB"
 
 outf="/tmp/sc-hub-sql-tests-output"
 for f in tests/*.sql; do
