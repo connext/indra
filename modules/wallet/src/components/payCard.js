@@ -110,8 +110,10 @@ class PayCard extends Component {
         padding: '4% 4% 4% 4%'
       },
       icon:{
-        width:'100%',
-        paddingTop:'8px'
+        width:'50px',
+        height:'50px',
+        paddingTop:'8px',
+        right:'0'
       },
       input:{
         width:'100%'
@@ -121,9 +123,8 @@ class PayCard extends Component {
         height:'40px'
       },
       col1:{
-        marginLeft:'14%',
-        width:'53%',
-        justifyContent:"'flex-end' !important"
+        marginLeft: '55px',
+        width:'40%'
       },
       col2:{
         width:'3%',

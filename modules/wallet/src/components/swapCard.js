@@ -78,7 +78,8 @@ class SwapCard extends Component {
         padding: '4% 4% 4% 4%'
       },
       icon:{
-        width:'100%',
+        width:'50px',
+        height:'50px',
         paddingTop:'8px'
       },
       input:{
@@ -89,8 +90,8 @@ class SwapCard extends Component {
         height:'40px'
       },
       col1:{
-        marginLeft:'14%',
-        width:'53%',
+        marginLeft:'55px',
+        width:'40%',
         justifyContent:"'flex-end' !important"
       },
       col2:{

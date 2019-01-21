@@ -6,7 +6,8 @@ import clientProvider from './utils/web3/clientProvider.ts';
 import { setWallet } from './utils/actions.js';
 import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
-import Select from 'react-select';
+import PropTypes from 'prop-types';
+import { withStyles } from '@material-ui/core/styles';
 import axios from 'axios';
 import DepositCard from './components/depositCard';
 import SwapCard from './components/swapCard';
@@ -372,9 +373,10 @@ class App extends Component {
       wallet = await findOrCreateWallet(this.state.web3);
     } else if(this.state.useExistingWallet == "new") {
       wallet = await createWallet(this.state.web3);
-    } else if(this.state.seExistingWallet == "recover" && recovery){
+    } else if(this.state.useExistingWallet == "recover" && recovery){
       key = recovery
-      wallet = createWalletFromKey(key)
+      console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`)
+      wallet = await createWalletFromKey(key)
       }
     if (wallet){
       console.log(`Wallet created!`)
@@ -411,11 +413,12 @@ class App extends Component {
     this.setState({ useDelegatedSigner: false});
     this.setState({mnemonic:null});
   }
+
   updateWalletHandler(evt) {
     this.setState({
       recovery: evt.target.value
     });
-    console.log(`Updating state : ${this.state.recovery}`);
+    console.log(`Updating state : ${JSON.stringify(this.state.recovery)}`);
   }
 
   async createWallet() {
@@ -468,6 +471,8 @@ class App extends Component {
   // ** wrapper for ethers getBalance. probably breaks for tokens
 
   render() {
+    const { classes } = this.props;
+
     return (
       <div className="app">
       <Modal
@@ -476,7 +481,7 @@ class App extends Component {
           aria-describedby="simple-modal-description"
           open={this.state.modalOpen}
         >
-          <div>
+          <div className="modal_inner">
           <div className="row">
             <div className="column">
             <Button 
@@ -488,7 +493,7 @@ class App extends Component {
               Use Metamask to sign
               </Button>
             </div>
-            <div className="column">
+            <div className="column" >
             <Button
                 variant="contained" 
                 color="primary"
@@ -505,20 +510,39 @@ class App extends Component {
               <div>
                   {this.state.showWalletOptions ? 
                     (<div>
-                      Autosigner found!
+                      <div>
+                      <h4>You have an autosigner set up already! <br />
+                          You can either use it, recover an old one, or set up an entirely new one. </h4>
                       <br />
-                      <Button onClick={() => this.chooseWalletHandler("existing")}>Use Existing Signer</Button>
-                      <Button onClick={() => this.chooseWalletHandler("new")}>Create New Signer</Button>
-                      <TextField
-                        id="outlined-with-placeholder"
-                        label="Mnemonic"
-                        value={this.state.recovery}
-                        onChange={(evt) => this.updateWalletHandler(evt)}
-                        placeholder="12 word passphrase (e.g. hat avocado green....)"
-                        margin="normal"
-                        variant="outlined"
-                      />
-                      <Button onClick={() => this.chooseWalletHandler("recover", this.state.recovery)}>Recover Signer from Key</Button>
+                      </div>
+                      <div>
+                        <Button style={{padding: '15px 15px 15px 15px', marginRight:'15px'}} variant="contained" color="primary" onClick={() => this.chooseWalletHandler("existing")}>Use Existing Signer</Button>
+                        <Button style={{padding: '15px 15px 15px 15px'}} variant="contained" color="primary" onClick={() => this.chooseWalletHandler("new")}>Create New Signer</Button>
+                      </div>
+                      <div style={{display:"flex"}}>
+                        <div style={{width:"65%"}}>
+                          <TextField
+                            id="outlined-with-placeholder"
+                            label="Mnemonic"
+                            value={this.state.recovery}
+                            onChange={(evt) => this.updateWalletHandler(evt)}
+                            placeholder="12 word passphrase (e.g. hat avocado green....)"
+                            margin="normal"
+                            variant="outlined"
+                            fullWidth
+                          />
+                        </div>
+                        <div style={{width:"35%"}}>
+                          <Button 
+                              style={{marginTop:'17px', 
+                                      marginLeft: '10px',
+                                      padding: '15px 15px 15px 15px'}} 
+                              variant="contained" color="primary" 
+                              onClick={() => this.chooseWalletHandler("recover", this.state.recovery)}>
+                              Recover Signer from Key
+                          </Button>
+                        </div>             
+                      </div>
                     </div>)
                     :
                     (<div>
@@ -527,12 +551,12 @@ class App extends Component {
                        to any funds remaining in your channel. <br />Keep it secret, keep it safe.
                        <br /> <br />
                        {this.toggleKey ? (
-                       <Button variant="contained" onClick={(evt) => this.getKey(evt)}>
+                       <Button variant="contained" color="primary" onClick={(evt) => this.getKey(evt)}>
                           Show Mnemonic
                         </Button>)
                         :
                         (
-                          <Button variant="contained" onClick={() => this.toggleKey()}>
+                          <Button variant="contained" color="primary" onClick={() => this.toggleKey()}>
                           Hide Mnemonic
                           </Button>
                         )}
@@ -627,13 +651,6 @@ class App extends Component {
   }
 }
 
+
 export default App;
 
-
-
-{/* <div> 
-The following mnemonic is the recovery phrase for your wallet.<br/>
-If you lose it and are locked out of your wallet, you will lose access<br />
- to any funds remaining in your channel. <br />Keep it secret, keep it safe.
- <br /> <br />
-{`${JSON.stringify(() => this.getKey())}`} */}

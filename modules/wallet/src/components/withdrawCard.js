@@ -112,7 +112,8 @@ class WithdrawCard extends Component {
         padding: '4% 4% 4% 4%'
       },
       icon:{
-        width:'80%',
+        width:'50px',
+        height:'50px',
         paddingTop:'10px'
       },
       input:{
@@ -127,8 +128,8 @@ class WithdrawCard extends Component {
         width:'100%'
       },
       col1:{
-        marginLeft:'14%',
-        width:'53%',
+        marginLeft:'55px',
+        width:'40%',
         justifyContent:"'flex-end' !important"
       },
       col2:{
