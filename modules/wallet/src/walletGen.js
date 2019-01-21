@@ -32,14 +32,21 @@ export async function findOrCreateWallet(web3) {
   return wallet;
 }
 
-export function createWalletFromKey(privKey) {
+export async function createWalletFromKey(privKey) {
+  let wallet;
   // const wallet = new ethers.Wallet(privKey);
-  const wallet = new Wallet.fromPrivateKey(privKey)
-  store.dispatch({
-    type: "SET_WALLET",
-    text: wallet //Buffer.from(String(privKey.private),'hex')
-  });
-  return wallet;
+  //const wallet = new Wallet.fromPrivateKey(privKey)
+  try{
+    wallet = await hdkey.fromMasterSeed(privKey).getWallet()
+    console.log(`Found wallet from mnemonic`)
+    store.dispatch({
+      type: "SET_WALLET",
+      text: wallet //Buffer.from(String(privKey.private),'hex')
+    });
+    return wallet;
+  }catch(e){
+    console.log(`error in WalletGen`)
+  }
 }
 
 export function getStore() {

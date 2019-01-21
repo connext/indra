@@ -6,8 +6,18 @@ import clientProvider from './utils/web3/clientProvider.ts';
 import { setWallet } from './utils/actions.js';
 import { createWallet, createWalletFromKey, findOrCreateWallet } from './walletGen';
 import { createStore } from 'redux';
-import Select from 'react-select';
+import PropTypes from 'prop-types';
+import { withStyles } from '@material-ui/core/styles';
 import axios from 'axios';
+import DepositCard from './components/depositCard';
+import SwapCard from './components/swapCard';
+import PayCard from './components/payCard';
+import WithdrawCard from './components/withdrawCard';
+import ChannelCard from './components/channelCard';
+import FullWidthTabs from './components/walletTabs';
+import Modal from '@material-ui/core/Modal';
+import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
 const Web3 = require('web3');
 const Tx = require('ethereumjs-tx');
 const eth = require('ethers');
@@ -40,8 +50,6 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedWallet: null,
-      walletOptions: [],
       metamask: {
         address: null,
         balance: 0,
@@ -58,449 +66,92 @@ class App extends Component {
         balance: 0,
         tokenBalance: 0
       },
-      depositVal: {
-        amountWei: "0",
-        amountToken: "0"
-      },
-      exchangeVal: "100",
-      paymentVal: {
-        meta: {
-          purchaseId: "payment"
-        },
-        payments: [
-          {
-            recipient: "0x0",
-            amount: {
-              amountWei: "100",
-              amountToken: "0"
-            }
-          }
-        ]
-      },
-      withdrawalVal: {
-        withdrawalWeiUser: "100",
-        tokensToSell: "0",
-        withdrawalTokenUser: "0",
-        weiToSell: "0",
-        exchangeRate: "0.00",
-        recipient: "0x0"
-      },
-      authorized: false,
+      authorized: "false",
       web3: null,
       wallet: null,
       address: null,
       balance: 0,
       tokenBalance: 0,
+      browserWalletDeposit: {
+        amountWei: "0",
+        amountToken: "0"
+      },
       toggleKey: false,
       walletSet: false,
-      keyEntered: "",
+      showWalletOptions:true,
+      useExistingWallet:"existing",
+      recovery: "",
       approvalWeiUser: "10000",
       recipient: hubWalletAddress,
       connext: null,
       channelState: null,
       exchangeRate: "0.00",
-      tokenContract: null
+      tokenContract: null,
+      useDelegatedSigner:true,
+      delegatedSignerSelected:false,
+      disableButtons:false,
+      modalOpen:true,
+      mnemonic:null
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
+  
+  async setWalletAndProvider(metamask = false) {
+    this.setState({authorized: false })
+    let web3
+    let address
+    // get metamask address defaults
+    const windowProvider = window.web3;
+    if (!windowProvider) {
+      console.log("Metamask is not detected.");
+    }
+    const metamaskWeb3 = new Web3(windowProvider.currentProvider);
 
-  async componentDidMount() {
     try {
-      await this.setWalletAndProvider(false)
-      this.pollExchangeRate();
+      if (metamask) {
+        if (!windowProvider) {
+          alert("You need to install & unlock metamask to do that");
+          return;
+        }
+        address = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase();
+        if (!address) {
+          alert("You need to install & unlock metamask to do that");
+          return;
+        }
+        await this._walletCreateHandler()
+        web3 = metamaskWeb3
+      } else {
+        // New provider code
+        console.log(`setwallet debug`)
+        const providerOpts = new ProviderOptions(store).approving();
+        const provider = clientProvider(providerOpts);
+        web3 = new Web3(provider);
+        console.log("GOT WEB3")
+        // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
+        // as is, if you don't write down the privkey in the store you can't recover the wallet
+        await this.chooseWalletHandler()
+        address = this.state.wallet.getAddressString().toLowerCase()
+        console.log(`found address: ${JSON.stringify(address)}`)
+      }
+
+      await this.setState({ web3 });
+      console.log("set up web3 successfully");
+
+      console.log('wallet: ', this.state.wallet);
+      // make sure wallet is linked to chain
+
+
+      this.setState({ address })
+      console.log("Set up wallet:", address);
+
+      const tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress)
+      this.setState({ tokenContract })
+      console.log("Set up token contract");
+
     } catch (error) {
       alert(`Failed to load web3 or Connext. Check console for details.`);
       console.log(error);
     }
-  }
-
-  async pollExchangeRate() {
-    const getRate = async () => {
-      const response = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=ETH')
-      const json = await response.json()
-      console.log('latest ETH->USD exchange rate: ', json.data.rates.USD);
-      this.setState({
-        exchangeRate: json.data.rates.USD
-      })
-    }
-    getRate()
-    setInterval(() => {
-      getRate()
-    }, 10000);
-  }
-
-  updateApprovalHandler(evt) {
-    this.setState({
-      approvalWeiUser: evt.target.value
-    });
-  }
-
-  walletChangeHandler = async (selectedWallet) => {
-    this.setState({ selectedWallet, });
-    if (selectedWallet.label === "Metamask") {
-      await this.setWalletAndProvider(true)
-    } else {
-      await this.setWalletAndProvider(false)
-    }
-
-    await this.authorizeHandler();
-
-    await this.setConnext()
-
-    await this.refreshBalances()
-
-    console.log(`Option selected:`, selectedWallet);
-  }
-
-  async updateDepositHandler(evt, token) {
-    var value = evt.target.value;
-    if (token === "ETH") {
-      await this.setState(oldState => {
-        oldState.depositVal.amountWei = value;
-        return oldState;
-      });
-    } else if (token === "TST") {
-      await this.setState(oldState => {
-        oldState.depositVal.amountToken = value;
-        return oldState;
-      });
-    }
-    //console.log(`Updated depositVal: ${JSON.stringify(this.state.depositVal,null,2)}`)
-  }
-
-  async updateExchangeHandler(evt) {
-    var value = evt.target.value;
-    await this.setState(oldState => {
-      oldState.exchangeVal = value;
-      return oldState;
-    });
-    console.log(`Updated exchangeVal: ${JSON.stringify(this.state.exchangeVal, null, 2)}`);
-  }
-
-  async updateWithdrawHandler(evt, token) {
-    var value = evt.target.value;
-    if (token === "ETH") {
-      await this.setState(oldState => {
-        oldState.withdrawalVal.withdrawalWeiUser = value;
-        return oldState;
-      });
-    } else if (token === "TST") {
-      await this.setState(oldState => {
-        oldState.withdrawalVal.tokensToSell = value;
-        return oldState;
-      });
-    } else if (token === "recipient") {
-      await this.setState(oldState => {
-        oldState.withdrawalVal.recipient = value;
-        return oldState;
-      });
-    }
-    console.log(`Updated withdrawalVal: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
-  }
-
-  async updatePaymentHandler(evt, token) {
-    var value = evt.target.value;
-    if (token === "ETH") {
-      await this.setState(oldState => {
-        oldState.paymentVal.payments[0].amount.amountWei = value;
-        return oldState;
-      });
-    } else if (token === "TST") {
-      await this.setState(oldState => {
-        oldState.paymentVal.payments[0].amount.amountToken = value;
-        return oldState;
-      });
-    } else if (token === "recipient") {
-      await this.setState(oldState => {
-        oldState.paymentVal.payments[0].recipient = value;
-        return oldState;
-      });
-    }
-    console.log(`Updated paymentVal: ${JSON.stringify(this.state.paymentVal, null, 2)}`);
-  }
-
-  async approvalHandler(evt) {
-    const web3 = this.state.web3
-    const tokenContract = this.state.tokenContract
-    const approveFor = channelManagerAddress;
-    const toApprove = this.state.approvalWeiUser;
-    const toApproveBn = eth.utils.bigNumberify(toApprove);
-    const nonce = await web3.eth.getTransactionCount(this.state.wallet.address);
-    const depositResGas = await tokenContract.methods.approve(approveFor, toApproveBn).estimateGas();
-    let tx = new Tx({
-      to: tokenAddress,
-      nonce: nonce,
-      from: this.state.wallet.address,
-      gasLimit: depositResGas * 2,
-      data: tokenContract.methods.approve(approveFor, toApproveBn).encodeABI()
-    })
-    tx.sign(Buffer.from(this.state.wallet.privateKey.substring(2), 'hex'))
-    let signedTx = '0x' + tx.serialize().toString('hex')
-    let sentTx = web3.eth.sendSignedTransaction(signedTx, (err) => { if (err) console.error(err) })
-    sentTx
-      .once('transactionHash', (hash) => { console.log(`tx broadcasted, hash: ${hash}`) })
-      .once('receipt', (receipt) => { console.log(`tx mined, receipt: ${JSON.stringify(receipt)}`) })
-    console.log(`Sent tx: ${typeof sentTx} with keys ${Object.keys(sentTx)}`);
-  }
-
-  //Connext Helpers
-
-  async depositHandler() {
-    const tokenContract = this.state.tokenContract
-    let approveFor = channelManagerAddress;
-    let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
-    console.log(approveTx);
-
-    try {
-      const wei = this.state.depositVal.amountWei
-      const tokens = this.state.depositVal.amountToken
-
-      if (wei !== "0") {
-        console.log("found wei deposit")
-        if (wei >= this.state.balance) {
-          const weiNeeded = wei - this.state.balance
-          await this.getEther(weiNeeded)
-        }
-      }
-
-      if (tokens !== "0") {
-        console.log("found token deposit")
-        if (tokens >= this.state.tokenBalance) {
-          const tokensNeeded = tokens - this.state.tokenBalance
-          await this.getTokens(tokensNeeded)
-        }
-      }
-
-    } catch (e) {
-      console.log(`error fetching deposit from metamask: ${e}`)
-    }
-
-
-    console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
-    let depositRes = await this.state.connext.deposit(this.state.depositVal);
-    console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
-  }
-
-  async exchangeHandler() {
-    console.log(`Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`);
-    let exchangeRes = await this.state.connext.exchange(this.state.exchangeVal, "wei");
-    console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
-  }
-
-  async paymentHandler() {
-    console.log(`Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`);
-    let paymentRes = await this.state.connext.buy(this.state.paymentVal);
-    console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
-  }
-
-  async withdrawalHandler(max) {
-    let withdrawalVal = { ...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate }
-    if (max) {
-      withdrawalVal.recipient = this.state.metamask.address
-      withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser
-      withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser
-    }
-    console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
-    let withdrawalRes = await this.state.connext.withdraw(withdrawalVal);
-    console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
-  }
-
-  async collateralHandler() {
-    console.log(`Requesting Collateral`);
-    let collateralRes = await this.state.connext.requestCollateral();
-    console.log(`Collateral result: ${JSON.stringify(collateralRes, null, 2)}`);
-  }
-
-  // Other Helpers
-  getKey() {
-    console.log(store.getState()[0]);
-    function _innerGetKey() {
-      const key = store.getState()[0].mnemonic;
-      return key;
-    }
-    let privKey = _innerGetKey();
-    console.log(`privkey: ${JSON.stringify(privKey)}`)
-    return privKey;
-  }
-
-  toggleKey(evt) {
-    evt.preventDefault();
-    this.setState(prevState => ({ toggleKey: !prevState.toggleKey }), () => { });
-  }
-
-  // WalletHandler - it works but i'm running into some lifecycle issues. for option for user
-  // to create wallet from privkey to display,
-  // wallet creation needs to be in componentDidUpdate. but everything goes haywire when that happens so idk
-
-  async walletHandler() {
-    let wallet;
-    let key = this.state.keyEntered;
-    if (key) wallet = createWalletFromKey(key);
-    else {
-      wallet = await findOrCreateWallet(this.state.web3);
-    }
-    this.setState({ walletSet: true });
-    return wallet;
-  }
-
-  updateWalletHandler(evt) {
-    this.setState({
-      keyEntered: evt.target.value
-    });
-    console.log(`Updating state : ${this.state.depositVal}`);
-  }
-
-  async createWallet() {
-    await createWallet(this.state.web3);
-    window.location.reload(true);
-  }
-
-  async authorizeHandler(evt) {
-    const web3 = this.state.web3
-    const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
-
-    const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`)
-
-    const signature = await web3.eth.personal.sign(hash, this.state.address)
-
-    try {
-      let authRes = await axios.post(
-        `${hubUrl}/auth/response`,
-        {
-          nonce: challengeRes.data.nonce,
-          address: this.state.address,
-          origin: "localhost",
-          signature,
-        },
-        opts
-      );
-      const token = authRes.data.token;
-      document.cookie = `hub.sid=${token}`;
-      console.log(`cookie set: ${token}`);
-      const res = await axios.get(`${hubUrl}/auth/status`, opts);
-      if (res.data.success) {
-        this.setState({ authorized: true });
-      } else {
-        this.setState({ authorized: false });
-      }
-      console.log(`Auth status: ${JSON.stringify(res.data)}`);
-    } catch (e) {
-      console.log(e);
-    }
-  }
-
-  // to get tokens from metamask to browser wallet
-  async getTokens(amountToken) {
-    let web3 = window.web3;
-    console.log(web3)
-    if (!web3) {
-      alert("You need to install & unlock metamask to do that");
-      return;
-    }
-    const metamaskProvider = new Web3(web3.currentProvider);
-    const address = (await metamaskProvider.eth.getAccounts())[0];
-    if (!address) {
-      alert("You need to install & unlock metamask to do that");
-      return;
-    }
-
-    const tokenContract = new metamaskProvider.eth.Contract(humanTokenAbi, tokenAddress);
-
-    let tokens = amountToken
-    console.log(`Sending ${tokens} tokens from ${address} to ${store.getState()[0].getAddressString()}`);
-
-    console.log('state:')
-    console.log(this.state)
-
-    let approveTx = await tokenContract.methods.transfer(store.getState()[0].getAddressString(), tokens).send({
-      from: address,
-      gas: "81000"
-    });
-
-    console.log(approveTx);
-  }
-
-  // to get tokens from metamask to browser wallet
-  async getEther(amountWei) {
-    let web3 = window.web3;
-    console.log(web3)
-    if (!web3) {
-      alert("You need to install & unlock metamask to do that");
-      return;
-    }
-    const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
-    const metamask = metamaskProvider.getSigner();
-    const address = (await metamask.provider.listAccounts())[0];
-    if (!address) {
-      alert("You need to install & unlock metamask to do that");
-      return;
-    }
-    const sentTx = await metamask.sendTransaction({
-      to: store.getState()[0].getAddressString(),
-      value: eth.utils.bigNumberify(amountWei),
-      gasLimit: eth.utils.bigNumberify("21000")
-    });
-    console.log(`Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `, sentTx);
-  }
-
-  // ** wrapper for ethers getBalance. probably breaks for tokens
-  async refreshBalances() {
-    const web3 = this.state.web3
-    const tokenContract = this.state.tokenContract
-    // get browser wallet balance
-    const browserAddr = store.getState()[0].getAddressString()
-    const balance = (await web3.eth.getBalance(browserAddr))
-    console.log('found eth balance:', balance)
-
-    const tokenBalance = Number(await tokenContract.methods.balanceOf(browserAddr).call()) / 1000000000000000000;
-    this.setState({ balance: balance, tokenBalance: tokenBalance });
-
-    // get metamask wallet balance
-    let metamaskWeb3 = window.web3;
-    if (!metamaskWeb3) {
-      alert("You need to install & unlock metamask to do that");
-      return;
-    }
-    const metamaskProvider = new eth.providers.Web3Provider(metamaskWeb3.currentProvider);
-    const metamask = metamaskProvider.getSigner();
-    const mmAddress = (await metamask.provider.listAccounts())[0];
-    if (!mmAddress) {
-      this.setState({ metamask: { address: "unavailable", balance: 0, tokenBalance: 0 } });
-      return;
-    }
-    const mmBalance = Number(await web3.eth.getBalance(mmAddress)) / 1000000000000000000;
-    const mmTokenBalance = Number(await tokenContract.methods.balanceOf(mmAddress).call()) / 1000000000000000000;
-    this.setState({
-      metamask: {
-        address: mmAddress,
-        balance: mmBalance,
-        tokenBalance: mmTokenBalance
-      }
-    });
-
-    // get hub wallet balance
-    const hubBalance = Number(await web3.eth.getBalance(hubWalletAddress)) / 1000000000000000000;
-    const hubTokenBalance = Number(await tokenContract.methods.balanceOf(hubWalletAddress).call()) / 1000000000000000000;
-    this.setState({
-      hubWallet: {
-        address: hubWalletAddress,
-        balance: hubBalance,
-        tokenBalance: hubTokenBalance
-      }
-    });
-
-    // get channel manager balance
-    const cmBalance = Number(await web3.eth.getBalance(channelManagerAddress)) / 1000000000000000000;
-    const cmTokenBalance = Number(await tokenContract.methods.balanceOf(channelManagerAddress).call()) / 1000000000000000000;
-    this.setState({
-      channelManager: {
-        address: channelManagerAddress,
-        balance: cmBalance,
-        tokenBalance: cmTokenBalance
-      }
-    });
-
-    console.log("balances refreshed!")
   }
 
   async setConnext() {
@@ -540,293 +191,466 @@ class App extends Component {
     console.log(`This is connext state: ${JSON.stringify(this.state.channelState, null, 2)}`);
   }
 
-  async setWalletAndProvider(metamask = false) {
-    this.setState({ usingMetamask: metamask, authorized: false })
-    let web3
-    let address
-    let wallet
-    // get metamask address defaults
-    const windowProvider = window.web3;
-    if (!windowProvider) {
-      console.log("Metamask is not detected.");
-    }
-    const metamaskWeb3 = new Web3(windowProvider.currentProvider);
-    const metamaskAddr = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase()
-    console.log('detected metamask address:', metamaskAddr)
-
-    try {
-      if (metamask) {
-        this.setState({ usingMetamask: true, })
-        if (!windowProvider) {
-          alert("You need to install & unlock metamask to do that");
-          return;
-        }
-        address = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase();
-        if (!address) {
-          alert("You need to install & unlock metamask to do that");
-          return;
-        }
-        wallet = await this.walletHandler()
-        web3 = metamaskWeb3
-      } else {
-        // New provider code
-        const providerOpts = new ProviderOptions(store).approving();
-        const provider = clientProvider(providerOpts);
-        web3 = new Web3(provider);
-        // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
-        // as is, if you don't write down the privkey in the store you can't recover the wallet
-        wallet = await this.walletHandler()
-        address = wallet.getAddressString().toLowerCase()
-      }
-
-      await this.setState({ web3 });
-      console.log("set up web3 successfully");
-
-      console.log('wallet: ', wallet);
-      // make sure wallet is linked to chain
-      store.dispatch({
-        type: "SET_WALLET",
-        text: wallet
-      });
-      this.setState({ wallet: store.getState()[0] })
-
-      this.setState({ address })
-      console.log("Set up wallet:", address);
-
-      const tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress)
-      this.setState({ tokenContract })
-      console.log("Set up token contract");
-
-
-      console.log('updating balances before setting wallet options...')
-
-      await this.refreshBalances()
-
-      // set wallet options
-      const walletOptions = [
-        {
-          value: {
-            address: metamaskAddr,
-            ETHBalance: this.state.metamask.balance,
-            TSTBalance: this.state.metamask.tokenBalance
-          },
-          label: 'Metamask'
-        },
-        {
-          value: {
-            address: wallet.getAddressString(),
-            ETHBalance: this.state.balance,
-            TSTBalance: this.state.tokenBalance
-          },
-          label: 'Browser'
-        },
-        {
-          value: {
-            address: this.state.channelManager.address,
-            ETHBalance: this.state.channelManager.balance,
-            TSTBalance: this.state.channelManager.tokenBalance
-          },
-          label: 'ChannelManager'
-        },
-        {
-          value: {
-            address: this.state.hubWallet.address,
-            ETHBalance: this.state.hubWallet.balance,
-            TSTBalance: this.state.hubWallet.tokenBalance
-          },
-          label: 'Hub'
-        },
-      ]
-
+  async pollExchangeRate() {
+    const getRate = async () => {
+      const response = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=ETH')
+      const json = await response.json()
+      console.log('latest ETH->USD exchange rate: ', json.data.rates.USD);
       this.setState({
-        walletOptions,
-      });
+        exchangeRate: json.data.rates.USD
+      })
+    }
+    getRate()
+    setInterval(() => {
+      getRate()
+    }, 10000);
+  }
 
-      console.log(`wallet state set: ${JSON.stringify(this.state.walletOptions)}`)
+  async pollBrowserWallet() {
+    const browserWalletDeposit = async () => {
+      const tokenContract = this.state.tokenContract
+      const balance = await this.state.web3.eth.getBalance(this.state.address);
+      const tokenBalance = await tokenContract.methods.balanceOf(this.state.address).call();
+      if(balance !== "0" || tokenBalance !=="0"){
+        this.setState({
+          browserWalletDeposit:{
+            amountWei: balance,
+            amountToken: tokenBalance
+          }
+        })
+      try{
+        let approveFor = this.state.channelManager.address;
+        let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
+        console.log(approveTx);
+        console.log(`Depositing: ${JSON.stringify(this.state.browserWalletDeposit, null, 2)}`);
+        console.log('********', this.state.connext.opts.tokenAddress)
+        let depositRes = await this.state.connext.deposit(this.state.browserWalletDeposit);
+        console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
+      } catch(e){
+        console.log(`error depositing excess funds from autosigner: ${e}`)
+      } 
+    }
+    }
+    browserWalletDeposit()
+    setInterval(() => {
+      browserWalletDeposit()
+    }, 80000);
+  }
 
-    } catch (error) {
-      alert(`Failed to load web3 or Connext. Check console for details.`);
-      console.log(error);
+  async approvalHandler(evt) {
+    const web3 = this.state.web3
+    const tokenContract = this.state.tokenContract
+    const approveFor = channelManagerAddress;
+    const toApprove = this.state.approvalWeiUser;
+    const toApproveBn = eth.utils.bigNumberify(toApprove);
+    const nonce = await web3.eth.getTransactionCount(this.state.wallet.address);
+    const depositResGas = await tokenContract.methods.approve(approveFor, toApproveBn).estimateGas();
+    let tx = new Tx({
+      to: tokenAddress,
+      nonce: nonce,
+      from: this.state.wallet.address,
+      gasLimit: depositResGas * 2,
+      data: tokenContract.methods.approve(approveFor, toApproveBn).encodeABI()
+    })
+    tx.sign(Buffer.from(this.state.wallet.privateKey.substring(2), 'hex'))
+    let signedTx = '0x' + tx.serialize().toString('hex')
+    let sentTx = web3.eth.sendSignedTransaction(signedTx, (err) => { if (err) console.error(err) })
+    sentTx
+      .once('transactionHash', (hash) => { console.log(`tx broadcasted, hash: ${hash}`) })
+      .once('receipt', (receipt) => { console.log(`tx mined, receipt: ${JSON.stringify(receipt)}`) })
+    console.log(`Sent tx: ${typeof sentTx} with keys ${Object.keys(sentTx)}`);
+  }
+
+  //Connext Helpers
+
+
+  // Other Helpers
+
+  // stringToArray(bufferString) {
+  //   let uint8Array = new TextEncoder("utf-8").encode(bufferString);
+  //   return uint8Array;
+  // }
+  
+  // arrayToString(bufferValue) {
+  //   return new TextDecoder("utf-8").decode(bufferValue);
+  // }
+
+  getKey(evt) {
+    console.log(store.getState()[0]);
+    function _innerGetKey() {
+      const key = localStorage.getItem("mnemonic");
+      return key;
+    }
+    let privKey = _innerGetKey();
+    this.toggleKey(evt)
+    console.log(privKey)
+    this.setState({mnemonic:privKey})
+    return privKey;
+  }
+
+  toggleKey(evt) {
+    evt.preventDefault()
+    this.setState(prevState => ({ toggleKey: !prevState.toggleKey }), () => { });
+    this.setState({mnemonic: null})
+  }
+
+  updateApprovalHandler(evt) {
+    this.setState({
+      approvalWeiUser: evt.target.value
+    });
+  }
+
+  walletChangeHandler = (selectedWallet) => {
+    this.setState({ selectedWallet });
+    console.log(`Option selected:`, selectedWallet);
+  }
+
+  async handleMetamaskClose(){
+    this.setState({ modalOpen: false });
+    this.setState({ useDelegatedSigner: false});
+    try{
+      await this.setWalletAndProvider(true);
+      await this.setConnext();
+      await this.authorizeHandler();
+
+      this.pollExchangeRate();
+    }catch(e){
+      console.log(`failed to set provider or start connext: ${JSON.stringify(e)}`)
+    }
+  };
+
+  async handleDelegatedSignerSelect(){
+    await this.setState({ disableButtons: true});
+    await this.setState({ delegatedSignerSelected: true });
+    await this.setState({ useDelegatedSigner: true});
+    //await this.walletFoundHandler()
+  };
+
+  async chooseWalletHandler(choice,recovery=null){
+    let wallet;
+      if(choice == "new"){
+        await this.chooseNewWallet()
+        await this.setState({showWalletOptions: false});
+      }else if(choice =="existing"){
+        await this.chooseExistingWallet()
+        await this.closeModal();
+      }else if(choice == "recover"){
+        await this.chooseRecoverWallet()
+        await this.setState({showWalletOptions: false});
+      }
+      console.log(`Chose wallet: ${JSON.stringify(this.state.useExistingWallet)}`)
+      try{
+        if (!this.state.walletSet){
+          wallet = await this._walletCreateHandler(this.state.useExistingWallet,recovery)
+          console.log(`wallet: ${wallet}`)
+          await this.setWalletAndProvider();
+        }
+        console.log(`debug1`)
+        await this.setConnext();
+        console.log(`debug2`)
+        await this.authorizeHandler();
+        console.log(`debug3`)
+
+        this.pollExchangeRate();
+        this.pollBrowserWallet();
+      }catch(e){
+        console.log(`failed to set provider or start connext ${JSON.stringify(e)}`)
+      }
+    return wallet
+  };
+
+  async walletFoundHandler() {
+    let key = this.getKey();
+    if (key){
+      this.setState({walletFound: true});
     }
   }
 
+  async _walletCreateHandler(recovery=null){
+    let wallet;
+    let key;
+    if (this.state.useExistingWallet == "existing"){
+      wallet = await findOrCreateWallet(this.state.web3);
+    } else if(this.state.useExistingWallet == "new") {
+      wallet = await createWallet(this.state.web3);
+    } else if(this.state.useExistingWallet == "recover" && recovery){
+      key = recovery
+      console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`)
+      wallet = await createWalletFromKey(key)
+      }
+    if (wallet){
+      console.log(`Wallet created!`)
+    }else{
+      alert(`Unable to create wallet. Try refreshing your page and starting over.`)
+    }
+    store.dispatch({
+      type: "SET_WALLET",
+      text: wallet
+    });
+    this.setState({ wallet: store.getState()[0] })
+
+    this.setState({ walletSet: true });
+    return wallet;
+  }
+
+  async chooseNewWallet(evt){
+    this.setState({useExistingWallet: "new"});
+  }
+
+  async chooseExistingWallet(evt){
+    this.setState({useExistingWallet: "existing"});
+  }
+
+  async chooseRecoverWallet(evt){
+    this.setState({useExistingWallet: "recover"});
+  }
+
+  closeModal(){
+    this.setState({modalOpen:false});
+    this.setState({showWalletOptions:true})
+    this.setState({ disableButtons: false});
+    this.setState({ delegatedSignerSelected: false });
+    this.setState({ useDelegatedSigner: false});
+    this.setState({mnemonic:null});
+  }
+
+  updateWalletHandler(evt) {
+    this.setState({
+      recovery: evt.target.value
+    });
+    console.log(`Updating state : ${JSON.stringify(this.state.recovery)}`);
+  }
+
+  async createWallet() {
+    await createWallet(this.state.web3);
+    window.location.reload(true);
+  }
+
+  async authorizeHandler(evt) {
+    const web3 = this.state.web3 
+    const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
+
+    const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`)
+
+    const signature = await web3.eth.personal.sign(hash, this.state.address)
+
+    try {
+      let authRes = await axios.post(
+        `${hubUrl}/auth/response`,
+        {
+          nonce: challengeRes.data.nonce,
+          address: this.state.address,
+          origin: "localhost",
+          signature,
+        },
+        opts
+      );
+      const token = authRes.data.token;
+      document.cookie = `hub.sid=${token}`;
+      console.log(`cookie set: ${token}`);
+      const res = await axios.get(`${hubUrl}/auth/status`, opts);
+      if (res.data.success) {
+        this.setState({ authorized: true });
+      } else {
+        this.setState({ authorized: false });
+      }
+      console.log(`Auth status: ${JSON.stringify(res.data)}`);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async collateralHandler() {
+    console.log(`Requesting Collateral`);
+    let collateralRes = await this.state.connext.requestCollateral();
+    console.log(`Collateral result: ${JSON.stringify(collateralRes, null, 2)}`);
+  }
+  // to get tokens from metamask to browser wallet
+  
+
+  // ** wrapper for ethers getBalance. probably breaks for tokens
+
   render() {
+    const { classes } = this.props;
+
     return (
       <div className="app">
-        <div className="row" style={{ justifyContent: 'center', fontFamily: 'Comfortaa' }}>
-          <h1> Connext Starter Kit</h1>
-        </div>
-        <div className="row">
-          <div className="column">
-            <h2 style={{ justifyContent: 'center', fontFamily: 'Comfortaa' }}>Deposit</h2>
-            {this.state.authorized ?
-              (<div>
-                Wallet authorized!
-              </div>
-              )
-              : (
-                this.state.walletSet ?
-                  (
-                    <div>
-                      Wallet not selected.
-                </div>
-                  )
-                  :
-                  (
-                    <div>
-                      Awaiting wallet authorization....
-                </div>
-                  ))
-            }
-            {/* <br /> <br />
-              <button className="btn" onClick={evt => this.getTokens(evt)}>
-                Get 1 Token from Metamask
-              </button>
-              <button className="btn" onClick={evt => this.getEther(evt)}>
-                Get 1 Ether from Metamask
-              </button> */}
-            <br /> <br />
-            <div>
-              <div className="value-entry">
-                Enter ETH deposit amount in Wei:&nbsp;&nbsp;
-                  <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "ETH")} />
-              </div>
-              <div className="value-entry">
-                Enter TST deposit amount in Wei:&nbsp;&nbsp;
-                  <input defaultValue={0} onChange={evt => this.updateDepositHandler(evt, "TST")} />
-              </div>
-              <button className="btn" onClick={evt => this.depositHandler(evt)}>
-                Deposit to Channel
-                </button>{" "}
-              &nbsp;
-                <br /> <br />
+      <Modal
+          className="modal"
+          aria-labelledby="simple-modal-title"
+          aria-describedby="simple-modal-description"
+          open={this.state.modalOpen}
+        >
+          <div className="modal_inner">
+          <div className="row">
+            <div className="column">
+            <Button 
+                    variant="contained" 
+                    color="primary"
+                    disabled={this.state.disableButtons} 
+                    onClick={() => this.handleMetamaskClose()}
+                    >
+              Use Metamask to sign
+              </Button>
             </div>
-          </div>
-          <div className="column">
-            <h2 style={{ justifyContent: 'center', fontFamily: 'Comfortaa' }}>Swap</h2>
-            <p>Swaps will be made in-channel. Currently only ETH->Token swaps are supported.</p>
-            <div className="value-entry">
-              Enter ETH amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={100} onChange={evt => this.updateExchangeHandler(evt)} />
+            <div className="column" >
+            <Button
+                variant="contained" 
+                color="primary"
+                disabled={this.state.disableButtons}
+                onClick={() => this.handleDelegatedSignerSelect()}>
+              Use Autosigner
+            </Button>
             </div>
-            <button className="btn" onClick={evt => this.exchangeHandler(evt)}>
-              Make a Swap
-              </button>{" "}
-            &nbsp;
-              <br /> <br />
-          </div>
-          <div className="column">
-            <h2 style={{ justifyContent: 'center', fontFamily: 'Comfortaa' }}>Payment</h2>
-            <div className="value-entry">
-              Enter recipient address:&nbsp;&nbsp;
-                <input defaultValue={`0x...`} onChange={evt => this.updatePaymentHandler(evt, "recipient")} />
             </div>
-            <div className="value-entry">
-              Enter ETH payment amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={0} onChange={evt => this.updatePaymentHandler(evt, "ETH")} />
-            </div>
-            <div className="value-entry">
-              Enter TST payment amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={100} onChange={evt => this.updatePaymentHandler(evt, "TST")} />
-            </div>
-            <button className="btn" onClick={evt => this.paymentHandler(evt)}>
-              Make a Payment
-              </button>{" "}
-            &nbsp;
-              <button className="btn" onClick={evt => this.collateralHandler(evt)}>
-              Request Collateral
-              </button>{" "}
-            &nbsp;
-              <br /> <br />
-          </div>
-          <div className="column">
-            <h2 style={{ justifyContent: 'center', fontFamily: 'Comfortaa' }}>Withdrawal</h2>
-            <div className="value-entry">
-              Enter recipient address:&nbsp;&nbsp;
-                <input defaultValue={`0x...`} onChange={evt => this.updateWithdrawHandler(evt, "recipient")} />
-            </div>
-            <div className="value-entry">
-              Enter ETH withdrawal amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={100} onChange={evt => this.updateWithdrawHandler(evt, "ETH")} />
-            </div>
-            <div className="value-entry">
-              Enter TST withdrawal amount in Wei:&nbsp;&nbsp;
-                <input defaultValue={0} onChange={evt => this.updateWithdrawHandler(evt, "TST")} />
-            </div>
-            <button className="btn" onClick={() => this.withdrawalHandler()}>
-              Withdraw from Channel
-              </button>{" "}
-            &nbsp;
-              <button className="btn" onClick={() => this.withdrawalHandler(true)}>
-              Withdraw Max from Channel to MetaMask
-              </button>{" "}
-            &nbsp;
-              <br /> <br />
-          </div>
-        </div>
-        <div className="row">
-          <div className="column">
-            <h2 style={{ fontFamily: 'Comfortaa' }}>Wallet Information</h2>
-            <Select
-              value={this.state.selectedWallet}
-              onChange={this.walletChangeHandler}
-              options={this.state.walletOptions}
-            />
-            {this.state.selectedWallet ?
-              (<div>
-                <h2>Wallet Details: {this.state.selectedWallet.label}</h2>
-                <p>Address: {this.state.selectedWallet.value.address}</p>
-                <p>ETH Balance: {this.state.selectedWallet.value.ETHBalance} </p>
-                <p>TST Balance: {this.state.selectedWallet.value.TSTBalance} </p>
-                {this.state.walletSet ? (
-                  <div>
-                    <p>
-                      <button className="btn" onClick={this.toggleKey}>
-                        {this.state.toggleKey ? <span>Hide Browser Wallet Mnemonic</span> : <span>Reveal Browser Wallet Mnemonic</span>}
-                      </button>
-                      {this.state.toggleKey ? <span>{this.getKey()}</span> : null}
-                    </p>
-                    <button className="btn" onClick={() => this.createWallet()}>
-                      Create New Browser Wallet
-                  </button>
-                  </div>
-                ) : (
-                    <div>
-                      Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
-                  <div>
-                        <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
+            <div className="row">
+            <div className="column">
+            {this.state.delegatedSignerSelected ? 
+            (<div>
+              <div>
+                  {this.state.showWalletOptions ? 
+                    (<div>
+                      <div>
+                      <h4>You have an autosigner set up already! <br />
+                          You can either use it, recover an old one, or set up an entirely new one. </h4>
+                      <br />
                       </div>
-                      <button className="btn">Get wallet</button>
-                    </div>
-                  )}
-              </div>)
-              :
-              (<div><p>No wallet selected</p>
+                      <div>
+                        <Button style={{padding: '15px 15px 15px 15px', marginRight:'15px'}} variant="contained" color="primary" onClick={() => this.chooseWalletHandler("existing")}>Use Existing Signer</Button>
+                        <Button style={{padding: '15px 15px 15px 15px'}} variant="contained" color="primary" onClick={() => this.chooseWalletHandler("new")}>Create New Signer</Button>
+                      </div>
+                      <div style={{display:"flex"}}>
+                        <div style={{width:"65%"}}>
+                          <TextField
+                            id="outlined-with-placeholder"
+                            label="Mnemonic"
+                            value={this.state.recovery}
+                            onChange={(evt) => this.updateWalletHandler(evt)}
+                            placeholder="12 word passphrase (e.g. hat avocado green....)"
+                            margin="normal"
+                            variant="outlined"
+                            fullWidth
+                          />
+                        </div>
+                        <div style={{width:"35%"}}>
+                          <Button 
+                              style={{marginTop:'17px', 
+                                      marginLeft: '10px',
+                                      padding: '15px 15px 15px 15px'}} 
+                              variant="contained" color="primary" 
+                              onClick={() => this.chooseWalletHandler("recover", this.state.recovery)}>
+                              Recover Signer from Key
+                          </Button>
+                        </div>             
+                      </div>
+                    </div>)
+                    :
+                    (<div>
+                      The following mnemonic is the recovery phrase for your signer.<br/>
+                      If you lose it and are locked out of your signer, you will lose access<br />
+                       to any funds remaining in your channel. <br />Keep it secret, keep it safe.
+                       <br /> <br />
+                       {this.toggleKey ? (
+                       <Button variant="contained" color="primary" onClick={(evt) => this.getKey(evt)}>
+                          Show Mnemonic
+                        </Button>)
+                        :
+                        (
+                          <Button variant="contained" color="primary" onClick={() => this.toggleKey()}>
+                          Hide Mnemonic
+                          </Button>
+                        )}
+                        {this.toggleKey ? (<span>{this.state.mnemonic}</span>):null}
+                      <br />
+                      <div>
+                          <Button variant="contained" onClick={() => this.closeModal()}> Close</Button>
+                      </div>
+                    </div>)}
               </div>
-              )
-            }
-
+            </div>
+            )
+            :
+            (null)}
+            </div>
           </div>
-
+          </div>
+        </Modal>
+        <div className="row" style={{justifyContent: 'center'}}>
+          <img style={{height:'70px', width:'300px'}} src="https://connext.network/static/media/logoHorizontal.3251cc60.png" />
+        </div>
+        <div className="row" style={{flexWrap:"nowrap"}}>
           <div className="column">
-            <h2 style={{ fontFamily: 'Comfortaa' }}>Channel Information</h2>
-            <div>
-              <span style={{ fontWeight: "bold" }}>User Wei Balance:</span> {this.state.channelState ? this.state.channelState.balanceWeiUser : null}
-              <br />
-              <span style={{ fontWeight: "bold" }}>User Token Balance: </span>{this.state.channelState ? this.state.channelState.balanceTokenUser : null}
-              <br />
+           <ChannelCard 
+              channelState={this.state.channelState}/>
+          </div>
+          <div className="column">
+            <FullWidthTabs 
+              connext={this.state.connext}
+              metamask={this.state.metamask} 
+              channelManager={this.state.channelManager}
+              hubWallet={this.state.hubWallet} 
+              web3={this.state.web3}
+              tokenContract={this.state.tokenContract}/>
+            <div style={{display:"flex",marginLeft:"10%"}}>
+              <div style={{marginRight: "10px"}}>
+                <Button variant="contained" color="primary" onClick={()=> this.setState({modalOpen: true})}>Select Signer</Button>
+              </div>
+              <div>
+                <Button variant="contained" color="primary" onClick={() => this.collateralHandler()}>Request Collateral</Button>
+              </div>
             </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Hub Wei Balance: </span> {this.state.channelState ? this.state.channelState.balanceWeiHub : null}
-              <br />
-              <span style={{ fontWeight: "bold" }}>Hub Token Balance:</span> {this.state.channelState ? this.state.channelState.balanceTokenHub : null}
-            </div>
-            <p>Token Address: {tokenAddress}</p>
           </div>
         </div>
-      </div>
+        <div className="row">
+          <div className="column">
+            <DepositCard
+              channelManagerAddress={this.state.channelManager.address}
+              Web3={window.web3}
+              tokenContract={this.state.tokenContract}
+              humanTokenAbi={humanTokenAbi}
+              connext={this.state.connext}
+              />
+          </div>
+          <div className="column">
+            <SwapCard
+              connext={this.state.connext}
+              exchangeRate={this.state.exchangeRate}
+              />
+          </div>
+          <div className="column">
+            <PayCard
+              connext={this.state.connext}
+              />
+          </div>
+          <div className="column">
+            <WithdrawCard
+              connext={this.state.connext}
+              exchangeRate={this.state.exchangeRate}
+              />
+          </div>         
+        </div>
+        <div className="row">
+          <div className="column">
+            Made with 💛 by the Connext Team
+          </div>
+        </div>
+        
+        {/* <button className="btn" onClick={() => this.createWallet()}>
+                  Create New Browser Wallet
+                </button>
+              </div>
+            ) : (
+                <div>
+                  Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
+                <div>
+                    <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
+                  </div>
+                  <button className="btn">Get wallet</button> */}
+    </div>
     );
   }
 }
 
+
 export default App;
+
