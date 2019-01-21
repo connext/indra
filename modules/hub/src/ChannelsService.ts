@@ -1,4 +1,3 @@
-import { convertWithdrawal } from './vendor/client/types'
 import { hasPendingOps } from './vendor/client/hasPendingOps'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
@@ -35,7 +34,9 @@ import {
   WithdrawalParametersBigNumber,
   ChannelStateBN,
   InvalidationArgs,
-  Sync
+  Sync,
+  convertWithdrawalParams,
+  convertWithdrawal,
 } from './vendor/client/types'
 import { prettySafeJson, Omit } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
@@ -47,9 +48,11 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { assertUnreachable } from './util/assertUnreachable';
 import { StateGenerator } from './vendor/client/StateGenerator';
 
-const LOG = log('ChannelsService') as any
+const LOG = log('ChannelsService')
 
+type RedisReason = 'user-authorized' | 'hub-authorized' | 'offchain'
 export type RedisUnsignedUpdate = {
+  reason: RedisReason
   update: Omit<ChannelStateUpdate, 'state'>
   timestamp: number
 }
@@ -236,7 +239,7 @@ export default class ChannelsService {
       return null
     }
 
-    const currentPendingRedis = await this.redisGetUnsignedState(user)
+    const currentPendingRedis = await this.redisGetUnsignedState('hub-authorized', user)
     if (currentPendingRedis) {
       const age = (Date.now() - currentPendingRedis.timestamp) / 1000
       if (age < 60) {
@@ -281,7 +284,7 @@ export default class ChannelsService {
       sigUser: null,
     }
 
-    await this.redisSaveUnsignedState(user, {
+    await this.redisSaveUnsignedState('hub-authorized', user, {
       args: depositArgs,
       reason: 'ProposePendingDeposit'
     })
@@ -305,6 +308,10 @@ export default class ChannelsService {
       weiToSell: params.weiToSell || new BigNumber(0),
       withdrawalTokenUser: params.withdrawalTokenUser || new BigNumber(0),
     }
+
+    const hasNegative = this.validator.withdrawalParams(convertWithdrawalParams('bn', params))
+    if (hasNegative)
+      throw new Error(`Invalid withdrawal: ${hasNegative}`)
 
     if (!params.weiToSell.isZero() || !params.withdrawalTokenUser.isZero()) {
       throw new Error(
@@ -380,7 +387,7 @@ export default class ChannelsService {
       timeout: Math.floor(Date.now() / 1000) + (5 * 60),
     }
 
-    const state = this.generator.proposePendingWithdrawal(
+    const state = await this.generator.proposePendingWithdrawal(
       convertChannelState('bn', channel.state),
       convertWithdrawal('bn', withdrawalArgs),
     )
@@ -403,7 +410,7 @@ export default class ChannelsService {
       return null
     }
 
-    await this.redisSaveUnsignedState(user, {
+    await this.redisSaveUnsignedState('hub-authorized', user, {
       reason: 'ProposePendingWithdrawal',
       args: withdrawalArgs,
     })
@@ -439,7 +446,7 @@ export default class ChannelsService {
     }
 
     // check if we already have an unsigned request pending
-    const res = await this.redisGetUnsignedState(user)
+    const res = await this.redisGetUnsignedState('offchain', user)
     let existingUnsigned = res && res.update
     if (existingUnsigned) {
       throw new Error(
@@ -486,7 +493,7 @@ export default class ChannelsService {
     if (exchangeArgs.weiToSell == '0' && exchangeArgs.tokensToSell == '0')
       return null
 
-    await this.redisSaveUnsignedState(user, {
+    await this.redisSaveUnsignedState('offchain', user, {
       args: exchangeArgs,
       reason: 'Exchange',
     })
@@ -548,8 +555,8 @@ export default class ChannelsService {
       ) {
         if (update.sigUser !== hubsVersionOfUpdate.state.sigUser) {
           throw new Error(
-            `Hub version of update sigs do not match provided sigs: 
-            Hub version of update: ${prettySafeJson(hubsVersionOfUpdate)}, 
+            `Hub version of update sigs do not match provided sigs:
+            Hub version of update: ${prettySafeJson(hubsVersionOfUpdate)},
             provided update: ${prettySafeJson(update)}}`,
           )
         }
@@ -623,6 +630,7 @@ export default class ChannelsService {
         // user requests withdrawal -> hub responds with unsigned update
         // user signs and sends back here, which is where we are now
         redisUpdate = await this.loadAndCheckRedisStateSignature(
+          'hub-authorized',
           user,
           signedChannelStatePrevious,
           update,
@@ -702,6 +710,7 @@ export default class ChannelsService {
       case 'Exchange':
         // ensure users cant hold exchanges
         redisUpdate = await this.loadAndCheckRedisStateSignature(
+          'offchain',
           user,
           signedChannelStatePrevious,
           update,
@@ -833,7 +842,7 @@ export default class ChannelsService {
     }
 
     // push unsigned state to end of the sync stack, txCount will be ignored when processing
-    const unsigned = await this.redisGetUnsignedState(user)
+    const unsigned = await this.redisGetUnsignedState('any', user)
     if (unsigned) {
       pushChannel({
         id: -unsigned.timestamp,
@@ -866,16 +875,31 @@ export default class ChannelsService {
   }
 
   public async redisGetUnsignedState(
+    reason: RedisReason | 'any',
     user: string,
   ): Promise<RedisUnsignedUpdate | null> {
     const unsignedUpdate = await this.redis.get(`PendingStateUpdate:${user}`)
-    return unsignedUpdate ? JSON.parse(unsignedUpdate) : null
+    if (!unsignedUpdate)
+      return null
+    const res = JSON.parse(unsignedUpdate) as RedisUnsignedUpdate
+    if (reason != 'any' && res.reason != reason) {
+      LOG.warn(
+        `Requested to get a redis state with reason ${reason} but state in ` +
+        `redis had reason: ${res.reason} (pretending redis was empty)`
+      )
+      return null
+    }
+    return res
   }
 
-  private async redisSaveUnsignedState(user: string, update: Omit<ChannelStateUpdate, 'state'>) {
+  private async redisSaveUnsignedState(reason: RedisReason, user: string, update: Omit<ChannelStateUpdate, 'state'>) {
     const redis = await this.redis.set(
       `PendingStateUpdate:${user}`,
-      JSON.stringify({ update, timestamp: Date.now() }),
+      JSON.stringify({
+        update,
+        reason,
+        timestamp: Date.now(),
+      }),
       ['EX', 5 * 60],
     )
   }
@@ -886,11 +910,12 @@ export default class ChannelsService {
   }
 
   private async loadAndCheckRedisStateSignature(
+    reason: RedisReason,
     user: string,
     currentState: ChannelStateBN,
     update: UpdateRequestBigNumber,
   ): Promise<ChannelStateUpdate | null> {
-    const fromRedis = await this.redisGetUnsignedState(user)
+    const fromRedis = await this.redisGetUnsignedState(reason, user)
     if (!fromRedis) {
       LOG.info(
         `Hub could not retrieve the unsigned update, possibly expired or sent twice? ` +

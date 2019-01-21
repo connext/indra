@@ -699,6 +699,13 @@ export type WithdrawalParameters<T = string> = {
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
+export const withdrawalParamsNumericFields = [
+  'withdrawalWeiUser',
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalTokenUser',
+]
+
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
@@ -834,6 +841,11 @@ export function convertDeposit<To extends NumericTypeName>(to: To, obj: DepositA
 export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: WithdrawalArgs<any>): WithdrawalArgs<NumericTypes[To]> {
   const fromType = getType(obj.tokensToSell)
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
+}
+
+export function convertWithdrawalParams<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, withdrawalParamsNumericFields, obj)
 }
 
 export const proposePendingNumericArgs = [

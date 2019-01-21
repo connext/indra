@@ -39,7 +39,10 @@ import {
   ConfirmPendingArgs,
   convertThreadPayment,
   Payment,
-  convertArgs
+  convertArgs,
+  WithdrawalParametersBN,
+  withdrawalParamsNumericFields,
+  convertWithdrawalParams
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
@@ -264,6 +267,16 @@ export class Validator {
     }
 
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
+  }
+
+  public withdrawalParams = (params: WithdrawalParametersBN): string | null => {
+    if (+params.exchangeRate != +params.exchangeRate || +params.exchangeRate < 0)
+      return 'invalid exchange rate: ' + params.exchangeRate
+    return this.hasNegative(params, withdrawalParamsNumericFields)
+  }
+
+  public payment = (params: PaymentBN): string | null => {
+    return this.hasNegative(params, argNumericFields.Payment)
   }
 
   public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {

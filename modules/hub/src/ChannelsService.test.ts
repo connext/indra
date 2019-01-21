@@ -1,4 +1,3 @@
-import { WithdrawalParametersBigNumber } from './vendor/client/types'
 import { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
 import { getTestRegistry, assert, getFakeClock } from './testing'
@@ -33,6 +32,7 @@ import {
   Payment,
   InvalidationArgs,
   WithdrawalArgs,
+  WithdrawalParametersBigNumber,
 } from './vendor/client/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
@@ -406,7 +406,7 @@ describe('ChannelsService', () => {
           Big(t.exchange.amountWei).times('1e18'),
           Big(t.exchange.amountToken).times('1e18'),
         )
-        const res = await service.redisGetUnsignedState(channel.user)
+        const res = await service.redisGetUnsignedState('any', channel.user)
         assert.deepEqual(res && res.update.args, exchangeArgs)
       })
     })
@@ -416,7 +416,7 @@ describe('ChannelsService', () => {
     const user = mkAddress('0xabc')
 
     const depositArgs = await service.doCollateralizeIfNecessary(user)
-    const res = await service.redisGetUnsignedState(user)
+    const res = await service.redisGetUnsignedState('any', user)
     assert.deepEqual(res.update.args, depositArgs)
   })
 
@@ -437,7 +437,7 @@ describe('ChannelsService', () => {
     const depositArgs = await service.doCollateralizeIfNecessary(
       threadUsers.performer.user,
     )
-    const res = await service.redisGetUnsignedState(threadUsers.performer.user)
+    const res = await service.redisGetUnsignedState('any', threadUsers.performer.user)
     assert.deepEqual(res.update.args, depositArgs)
   })
 
@@ -647,7 +647,7 @@ describe('ChannelsService', () => {
   async function runWithdrawalTest(
     initial: Partial<ChannelState>,
     params: Partial<WithdrawalParametersBigNumber>,
-    expected: Partial<WithdrawalArgs>,
+    expected: Partial<WithdrawalArgs> | null | RegExp,
   ) {
     const channel = await channelUpdateFactory(registry, {
       balanceTokenHub: toWeiString(0),
@@ -656,7 +656,7 @@ describe('ChannelsService', () => {
       balanceWeiUser: toWeiString(0),
       ...initial,
     })
-    await service.doRequestWithdrawal(
+    const resPromise = service.doRequestWithdrawal(
       channel.user,
       {
         recipient: mkAddress('0x666'),
@@ -666,7 +666,15 @@ describe('ChannelsService', () => {
         ...params,
       }
     )
-    const withdrawal = await service.redisGetUnsignedState(channel.user)
+
+    if (expected instanceof RegExp) {
+      await assert.isRejected(resPromise, expected)
+      return
+    }
+
+    await resPromise
+
+    const withdrawal = await service.redisGetUnsignedState('any', channel.user)
     if (!expected) {
       assert.isNotOk(withdrawal)
       return
@@ -704,6 +712,16 @@ describe('ChannelsService', () => {
         targetTokenUser: '9000000000000000000',
         tokensToSell: '1000000000000000000',
       },
+    )
+  })
+
+  it('should not allow negative withdrawals', async () => {
+    await runWithdrawalTest(
+      {},
+      {
+        withdrawalWeiUser: toWeiBigNum('-1'),
+      },
+      /negative/,
     )
   })
 
