@@ -9,6 +9,8 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@material-ui/core": "^3.9.0",
+    "@material-ui/icons": "^3.0.2",
     "@types/bluebird": "^3.5.25",
     "@types/semaphore": "^1.1.0",
     "@types/web3": "^1.0.14",
@@ -28,6 +30,7 @@
     "react-dom": "^16.6.3",
     "react-scripts": "2.1.1",
     "react-select": "^2.2.0",
+    "react-swipeable-views": "^0.13.0",
     "redux": "^4.0.1",
     "semaphore": "^1.1.0",
     "typescript": "^3.2.2",
