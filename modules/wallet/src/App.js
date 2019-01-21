@@ -89,7 +89,8 @@ class App extends Component {
       useDelegatedSigner:true,
       delegatedSignerSelected:false,
       disableButtons:false,
-      modalOpen:true
+      modalOpen:true,
+      mnemonic:null
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
@@ -98,7 +99,6 @@ class App extends Component {
     this.setState({authorized: false })
     let web3
     let address
-    let wallet
     // get metamask address defaults
     const windowProvider = window.web3;
     if (!windowProvider) {
@@ -129,7 +129,6 @@ class App extends Component {
         // create wallet. TODO: maintain wallet or use some kind of auth instead of generating new one.
         // as is, if you don't write down the privkey in the store you can't recover the wallet
         await this.chooseWalletHandler()
-        console.log(`wallet (setprovider): ${JSON.stringify(wallet)}`)
         address = this.state.wallet.getAddressString().toLowerCase()
         console.log(`found address: ${JSON.stringify(address)}`)
       }
@@ -137,7 +136,7 @@ class App extends Component {
       await this.setState({ web3 });
       console.log("set up web3 successfully");
 
-      console.log('wallet: ', wallet);
+      console.log('wallet: ', this.state.wallet);
       // make sure wallet is linked to chain
 
 
@@ -265,20 +264,33 @@ class App extends Component {
 
 
   // Other Helpers
-  getKey() {
+
+  // stringToArray(bufferString) {
+  //   let uint8Array = new TextEncoder("utf-8").encode(bufferString);
+  //   return uint8Array;
+  // }
+  
+  // arrayToString(bufferValue) {
+  //   return new TextDecoder("utf-8").decode(bufferValue);
+  // }
+
+  getKey(evt) {
     console.log(store.getState()[0]);
     function _innerGetKey() {
-      const key = store.getState()[0].mnemonic;
+      const key = localStorage.getItem("mnemonic");
       return key;
     }
     let privKey = _innerGetKey();
-    console.log(`privkey: ${JSON.stringify(privKey)}`)
+    this.toggleKey(evt)
+    console.log(privKey)
+    this.setState({mnemonic:privKey})
     return privKey;
   }
 
   toggleKey(evt) {
-    evt.preventDefault();
+    evt.preventDefault()
     this.setState(prevState => ({ toggleKey: !prevState.toggleKey }), () => { });
+    this.setState({mnemonic: null})
   }
 
   updateApprovalHandler(evt) {
@@ -302,7 +314,7 @@ class App extends Component {
 
       this.pollExchangeRate();
     }catch(e){
-      console.log(`failed to set provider or start connext`)
+      console.log(`failed to set provider or start connext: ${JSON.stringify(e)}`)
     }
   };
 
@@ -397,6 +409,7 @@ class App extends Component {
     this.setState({ disableButtons: false});
     this.setState({ delegatedSignerSelected: false });
     this.setState({ useDelegatedSigner: false});
+    this.setState({mnemonic:null});
   }
   updateWalletHandler(evt) {
     this.setState({
@@ -513,7 +526,17 @@ class App extends Component {
                       If you lose it and are locked out of your signer, you will lose access<br />
                        to any funds remaining in your channel. <br />Keep it secret, keep it safe.
                        <br /> <br />
-                      {`${JSON.stringify(() => this.getKey())}`}
+                       {this.toggleKey ? (
+                       <Button variant="contained" onClick={(evt) => this.getKey(evt)}>
+                          Show Mnemonic
+                        </Button>)
+                        :
+                        (
+                          <Button variant="contained" onClick={() => this.toggleKey()}>
+                          Hide Mnemonic
+                          </Button>
+                        )}
+                        {this.toggleKey ? (<span>{this.state.mnemonic}</span>):null}
                       <br />
                       <div>
                           <Button variant="contained" onClick={() => this.closeModal()}> Close</Button>
