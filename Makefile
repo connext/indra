@@ -155,7 +155,6 @@ pull-client:
 	rm -rf modules/client
 	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable
 	mv connext-client modules/client
-	endif
 	$(log_finish)
 
 client: pull-client builder $(client)/package.json
