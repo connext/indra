@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 import BN = require('bn.js')
-import { Address, ChannelState, ThreadState, UnsignedChannelState } from '../vendor/connext/types'
+import { Address, ChannelState, ThreadState, UnsignedChannelState } from '../vendor/client/types'
 
 //
 // chai

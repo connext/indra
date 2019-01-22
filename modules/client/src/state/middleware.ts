@@ -2,6 +2,7 @@ import { DepositArgs, ExchangeArgs, SyncResult, UpdateRequest, WithdrawalArgs, C
 import { ConnextState } from './store'
 import * as actions from './actions'
 import { Utils } from '../Utils'
+import { hasPendingOps } from '../hasPendingOps'
 
 
 export function handleStateFlags(args: any): any {
@@ -43,7 +44,7 @@ export function handleStateFlags(args: any): any {
 
       let isUnsigned = false
       let hasTimeout = !!channel.timeout
-      let hasPending = utils.hasPendingOps(channel)
+      let hasPending = hasPendingOps(channel)
 
       updatesToSync.forEach(update => {
         isUnsigned = isUnsigned || !(update.sigHub && update.sigUser)

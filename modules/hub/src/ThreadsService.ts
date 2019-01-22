@@ -2,7 +2,7 @@ import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
-import { Validator } from './vendor/connext/validator'
+import { Validator } from './vendor/client/validator'
 import {
   convertChannelState,
   convertPayment,
@@ -11,7 +11,7 @@ import {
   ThreadStateBigNumber,
   UnsignedThreadState,
   PaymentArgs
-} from './vendor/connext/types'
+} from './vendor/client/types'
 import { ThreadRow, ThreadStateBigNum, ThreadStateUpdateRow } from './domain/Thread'
 import { ChannelStateUpdateRowBigNum } from './domain/Channel'
 import { SignerService } from './SignerService'
@@ -98,8 +98,8 @@ export default class ThreadsService {
     const channelReceiverState = channelReceiver.state
 
     if (
-      channelSenderState.balanceWeiUser.lessThan(thread.balanceWeiSender) ||
-      channelSenderState.balanceTokenUser.lessThan(thread.balanceTokenSender)
+      channelSenderState.balanceWeiUser.isLessThan(thread.balanceWeiSender) ||
+      channelSenderState.balanceTokenUser.isLessThan(thread.balanceTokenSender)
     ) {
       LOG.error(
         `channelSenderState: ${JSON.stringify(channelSenderState, null, 2)}`
@@ -110,8 +110,8 @@ export default class ThreadsService {
     }
 
     if (
-      channelReceiverState.balanceWeiHub.lessThan(thread.balanceWeiSender) ||
-      channelReceiverState.balanceTokenHub.lessThan(thread.balanceTokenSender)
+      channelReceiverState.balanceWeiHub.isLessThan(thread.balanceWeiSender) ||
+      channelReceiverState.balanceTokenHub.isLessThan(thread.balanceTokenSender)
     ) {
       LOG.info(
         `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)},
@@ -200,8 +200,8 @@ export default class ThreadsService {
       convertThreadState('str', thread.state),
       // @ts-ignore TODO: Enable threads --> reciever isnt in payment args
       convertPayment('str', {
-        amountToken: update.balanceTokenReceiver.sub(thread.state.balanceTokenReceiver),
-        amountWei: update.balanceWeiReceiver.sub(thread.state.balanceWeiReceiver),
+        amountToken: update.balanceTokenReceiver.minus(thread.state.balanceTokenReceiver),
+        amountWei: update.balanceWeiReceiver.minus(thread.state.balanceWeiReceiver),
         recipient: 'receiver'
       } as PaymentArgs)
     )

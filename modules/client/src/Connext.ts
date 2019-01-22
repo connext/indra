@@ -1,4 +1,5 @@
-import { WithdrawalParameters } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync } from './types'
+import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
 import { createStore, Action, applyMiddleware } from 'redux'
@@ -75,19 +76,19 @@ export interface IHubAPIClient {
   getThreadInitialStates(): Promise<UnsignedThreadState[]>
   getIncomingThreads(): Promise<ThreadRow[]>
   getThreadByParties(receiver: Address, sender?: Address): Promise<ThreadRow>
-  sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<SyncResult[]>
+  sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
   getExchangerRates(): Promise<ExchangeRates>
   buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
   ): Promise<PurchasePaymentHubResponse>
-  requestDeposit(deposit: Payment, txCount: number, lastThreadUpdateId: number): Promise<SyncResult[]>
-  requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<SyncResult[]>
-  requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<SyncResult[]>
-  requestCollateral(txCountGlobal: number): Promise<SyncResult[]>
+  requestDeposit(deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number): Promise<Sync>
+  requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
+  requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
+  requestCollateral(txCountGlobal: number): Promise<Sync>
   updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{
     error: string | null
-    updates: SyncResult[]
+    updates: Sync
   }>
 }
 
@@ -172,7 +173,7 @@ class HubAPIClient implements IHubAPIClient {
   async sync(
     txCountGlobal: number,
     lastThreadUpdateId: number
-  ): Promise<SyncResult[]> {
+  ): Promise<Sync | null> {
     try {
       const res = await this.networking.get(
         `channel/${this.user}/sync?lastChanTx=${txCountGlobal}&lastThreadUpdateId=${lastThreadUpdateId}`,
@@ -180,7 +181,7 @@ class HubAPIClient implements IHubAPIClient {
       return res.data
     } catch (e) {
       if (e.status === 404) {
-        return []
+        return null
       }
       throw e
     }
@@ -201,15 +202,19 @@ class HubAPIClient implements IHubAPIClient {
 
   // post to hub telling user wants to deposit
   requestDeposit = async (
-    deposit: Payment,
+    deposit: SignedDepositRequestProposal,
     txCount: number,
     lastThreadUpdateId: number,
-  ): Promise<SyncResult[]> => {
+  ): Promise<Sync> => {
+    if (!deposit.sigUser) {
+      throw new Error(`No signature detected on the deposit request. Deposit: ${deposit}, txCount: ${txCount}, lastThreadUpdateId: ${lastThreadUpdateId}`)
+    }
     const response = await this.networking.post(
       `channel/${this.user}/request-deposit`,
       {
         depositWei: deposit.amountWei,
         depositToken: deposit.amountToken,
+        sigUser: deposit.sigUser,
         lastChanTx: txCount,
         lastThreadUpdateId,
       },
@@ -221,7 +226,7 @@ class HubAPIClient implements IHubAPIClient {
   requestWithdrawal = async (
     withdrawal: WithdrawalParameters,
     txCountGlobal: number
-  ): Promise<SyncResult[]> => {
+  ): Promise<Sync> => {
     const response = await this.networking.post(
       `channel/${this.user}/request-withdrawal`,
       { ...withdrawal, lastChanTx: txCountGlobal },
@@ -229,7 +234,7 @@ class HubAPIClient implements IHubAPIClient {
     return response.data
   }
 
-  async requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<SyncResult[]> {
+  async requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync> {
     const { data } = await this.networking.post(
       `channel/${this.user}/request-exchange`,
       { weiToSell, tokensToSell, lastChanTx: txCountGlobal }
@@ -239,7 +244,7 @@ class HubAPIClient implements IHubAPIClient {
 
   // performer calls this when they wish to start a show
   // return the proposed deposit fro the hub which should then be verified and cosigned
-  requestCollateral = async (txCountGlobal: number): Promise<SyncResult[]> => {
+  requestCollateral = async (txCountGlobal: number): Promise<Sync> => {
     // post to hub
     const response = await this.networking.post(
       `channel/${this.user}/request-collateralization`,
@@ -254,7 +259,7 @@ class HubAPIClient implements IHubAPIClient {
   updateHub = async (
     updates: UpdateRequest[],
     lastThreadUpdateId: number,
-  ): Promise<{ error: string | null, updates: SyncResult[] }> => {
+  ): Promise<{ error: string | null, updates: Sync }> => {
     // post to hub
     const response = await this.networking.post(
       `channel/${this.user}/update`,
@@ -328,16 +333,6 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
   awaitFirstConfirmation(): Promise<void> {
     return this.onFirstConfirmation as any
   }
-}
-
-export type ChannelManagerChannelDetails = {
-  txCountGlobal: number
-  txCountChain: number
-  threadRoot: string
-  threadCount: number
-  exitInitiator: string
-  channelClosingTime: number
-  status: string
 }
 
 export interface IChannelManager {
@@ -630,15 +625,26 @@ export class ConnextInternal extends ConnextClient {
 
     const hash = this.utils.createChannelStateHash(state)
 
-    const { user, hubAddress } = this.opts
     const sig = await (
-      process.env.DEV || user === hubAddress
-        ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, user)
+      process.env.DEV
+        ? this.opts.web3.eth.sign(hash, this.opts.user)
+        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
     )
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
-    return addSigToChannelState(state, sig, user !== hubAddress)
+    return addSigToChannelState(state, sig, true)
+  }
+
+  public async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>, ): Promise<SignedDepositRequestProposal> {
+    const hash = this.utils.createDepositRequestProposalHash(args)
+    const sig = await (
+      process.env.DEV
+        ? this.opts.web3.eth.sign(hash, this.opts.user)
+        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
+    )
+
+    console.log(`Signing deposit request ${args}. Sig: ${sig}`)
+    return { ...args, sigUser: sig }
   }
 
   public async getContractEvents(eventName: string, fromBlock: number) {

@@ -20,7 +20,29 @@ export class ChannelManager {
       2: string;
       3: string;
       4: string;
+    }>;
+
+    getChannelBalances(
+      user: string
+    ): TransactionObject<{
+      0: string;
+      1: string;
+      2: string;
+      3: string;
+      4: string;
       5: string;
+    }>;
+
+    getChannelDetails(
+      user: string
+    ): TransactionObject<{
+      0: string;
+      1: string;
+      2: string;
+      3: string;
+      4: string;
+      5: string;
+      6: string;
     }>;
 
     hubContractWithdraw(
@@ -91,9 +113,9 @@ export class ChannelManager {
       user: string,
       sender: string,
       receiver: string,
+      threadId: number | string,
       weiBalances: (number | string)[],
       tokenBalances: (number | string)[],
-      txCount: number | string,
       proof: (string | number[])[],
       sig: string
     ): TransactionObject<void>;
@@ -101,9 +123,9 @@ export class ChannelManager {
     startExitThreadWithUpdate(
       user: string,
       threadMembers: (string)[],
+      threadId: number | string,
       weiBalances: (number | string)[],
       tokenBalances: (number | string)[],
-      txCount: number | string,
       proof: (string | number[])[],
       sig: string,
       updatedWeiBalances: (number | string)[],
@@ -112,10 +134,10 @@ export class ChannelManager {
       updateSig: string
     ): TransactionObject<void>;
 
-    fastEmptyThread(
-      user: string,
+    challengeThread(
       sender: string,
       receiver: string,
+      threadId: number | string,
       weiBalances: (number | string)[],
       tokenBalances: (number | string)[],
       txCount: number | string,
@@ -125,7 +147,12 @@ export class ChannelManager {
     emptyThread(
       user: string,
       sender: string,
-      receiver: string
+      receiver: string,
+      threadId: number | string,
+      weiBalances: (number | string)[],
+      tokenBalances: (number | string)[],
+      proof: (string | number[])[],
+      sig: string
     ): TransactionObject<void>;
 
     nukeThreads(user: string): TransactionObject<void>;
@@ -182,6 +209,15 @@ export class ChannelManager {
     ): EventEmitter;
 
     DidStartExitThread(
+      options?: {
+        filter?: object;
+        fromBlock?: BlockType;
+        topics?: string[];
+      },
+      cb?: Callback<EventLog>
+    ): EventEmitter;
+
+    DidChallengeThread(
       options?: {
         filter?: object;
         fromBlock?: BlockType;

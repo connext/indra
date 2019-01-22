@@ -3,80 +3,142 @@ import * as t from './testing/index'
 import { Validator } from './validator';
 import * as sinon from 'sinon'
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, UnsignedThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs, PendingArgs, proposePendingNumericArgs, convertProposePending, PendingArgsBN, PendingExchangeArgsBN, InvalidationArgs } from './types';
-import { toBN } from './helpers/bn';
+import {
+  convertChannelState,
+  convertPayment,
+  ChannelEventReason,
+  PaymentArgs,
+  PaymentArgsBN,
+  convertThreadState,
+  UnsignedThreadState,
+  ChannelStateBN,
+  WithdrawalArgsBN,
+  convertWithdrawal,
+  ExchangeArgsBN,
+  EmptyChannelArgs,
+  EventInputs,
+  PendingArgs,
+  proposePendingNumericArgs,
+  convertProposePending,
+  PendingArgsBN,
+  PendingExchangeArgsBN,
+  InvalidationArgs,
+  DepositArgsBN
+} from './types';
+import { toBN, mul } from './helpers/bn';
 import Web3 = require('web3')
 import { EMPTY_ROOT_HASH } from './lib/constants';
+import { HttpProvider } from 'web3/providers';
 
-const eventInputs = [
-  { type: 'address', name: 'user', indexed: true },
-  { type: 'uint256', name: 'senderIdx' },
-  { type: 'uint256[2]', name: 'weiBalances' },
-  { type: 'uint256[2]', name: 'tokenBalances' },
-  { type: 'uint256[4]', name: 'pendingWeiUpdates' },
-  { type: 'uint256[4]', name: 'pendingTokenUpdates' },
-  { type: 'uint256[2]', name: 'txCount' },
-  { type: 'bytes32', name: 'threadRoot' },
-  { type: 'uint256', name: 'threadCount' },
-]
-const eventName = `DidUpdateChannel`
 const sampleAddr = "0x0bfa016abfa8f627654b4989da4620271dc77b1c"
+
+const createMockedTxReceipt: { [name in ChannelEventReason]: (sender: "user" | "hub", web3: Web3, type?: "deposit" | "withdrawal", ...overrides: any[]) => any } = {
+  DidEmptyChannel: (sender, web3, ...overrides: any[]) =>
+    createMockedEmptyChannelTxReceipt(sender, web3, ...overrides)
+  ,
+
+  DidStartExitChannel: (sender, web3, ...overrides: any[]) =>
+    createMockedStartExitChannelTxReceipt(sender, web3, ...overrides)
+  ,
+
+  DidUpdateChannel: (sender, web3, type, ...overrides: any[]) => {
+    // default to deposit tx
+    return createMockedUpdateChannelTxReceipt(
+      sender,
+      web3,
+      type || "deposit",
+      ...overrides
+    )
+  },
+}
+
+function createMockedEmptyChannelTxReceipt(sender: "user" | "hub", web3: Web3, ...overrides: any[]) {
+  const vals = _generateTransactionReceiptValues({
+    user: sampleAddr,
+    senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5,
+    txCount: ["420", "69"],
+  }, ...overrides)
+
+  return _createMockedTransactionReceipt("DidEmptyChannel", web3, vals)
+}
+
+function createMockedStartExitChannelTxReceipt(sender: "user" | "hub", web3: Web3, ...overrides: any[]) {
+  const vals = _generateTransactionReceiptValues({
+    user: sampleAddr,
+    senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5,
+    txCount: ["420", "69"],
+  }, ...overrides)
+  return _createMockedTransactionReceipt("DidStartExitChannel", web3, vals)
+}
+
+function createMockedUpdateChannelTxReceipt(sender: "user" | "hub", web3: Web3, type: "deposit" | "withdrawal", ...overrides: any[]) {
+  switch (type) {
+    case "deposit":
+      return createMockedDepositTxReceipt(sender, web3, overrides)
+    case "withdrawal":
+      return createMockedWithdrawalTxReceipt(sender, web3, overrides)
+    default:
+      throw new Error('Unrecognized type:' + type)
+  }
+}
 
 /* Overrides for these fns function must be in the contract format
 as they are used in solidity decoding. Returns tx with default deposit
 values of all 5s
 */
 function createMockedWithdrawalTxReceipt(sender: "user" | "hub", web3: Web3, ...overrides: any[]) {
-  const vals = generateTransactionReceiptValues({
+  const vals = _generateTransactionReceiptValues({
     senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5
     pendingWeiUpdates: ['0', '5', '0', '5'],
     pendingTokenUpdates: ['0', '5', '0', '5'],
-  }, overrides)
+    txCount: ['4', '3']
+  }, ...overrides)
 
-  return createMockedTransactionReceipt(web3, vals)
+  return _createMockedTransactionReceipt("DidUpdateChannel", web3, vals)
 }
 
 function createMockedDepositTxReceipt(sender: "user" | "hub", web3: Web3, ...overrides: any[]) {
-  const vals = generateTransactionReceiptValues({
+  const vals = _generateTransactionReceiptValues({
     senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5
     pendingWeiUpdates: ['5', '0', '5', '0'],
     pendingTokenUpdates: ['5', '0', '5', '0'],
-  }, overrides)
+  }, ...overrides)
 
-  return createMockedTransactionReceipt(web3, vals)
+  return _createMockedTransactionReceipt("DidUpdateChannel", web3, vals)
 }
 
-function generateTransactionReceiptValues(...overrides: any[]) {
+function _generateTransactionReceiptValues(...overrides: any[]) {
   return Object.assign({
     user: sampleAddr,
     senderIdx: '1', // default to user wei deposit 5
     weiBalances: ['0', '0'],
     tokenBalances: ['0', '0'],
-    pendingWeiUpdates: ['0', '0', '0', '0'],
-    pendingTokenUpdates: ['0', '0', '0', '0'],
     txCount: ['1', '1'],
     threadRoot: EMPTY_ROOT_HASH,
     threadCount: '0',
   }, ...overrides)
 }
 
-function createMockedTransactionReceipt(web3: Web3, vals: any) {
+function _createMockedTransactionReceipt(event: ChannelEventReason, web3: Web3, vals: any) {
   const eventTopic = web3.eth.abi.encodeEventSignature({
-    name: eventName,
+    name: event,
     type: 'event',
-    inputs: eventInputs,
+    inputs: EventInputs[event],
   })
 
   const addrTopic = web3.eth.abi.encodeParameter('address', vals.user)
 
-  const { user, ...nonIndexed } = vals
+  // put non-indexed values in same order as types
+  const nonIndexedTypes = EventInputs[event].filter(val => Object.keys(val).indexOf('indexed') === -1).map(e => e.type)
+  let nonIndexedVals: any = []
+  EventInputs[event].forEach(val => {
+    if (val.indexed) {
+      return
+    }
+    nonIndexedVals.push(vals[val.name])
+  })
 
-  const nonIndexedTypes = eventInputs.filter(val => Object.keys(val).indexOf('indexed') === -1).map(e => e.type)
-
-  const data = web3.eth.abi.encodeParameters(nonIndexedTypes, Object.values(nonIndexed))
-
-  // TODO: replace indexed fields
-  // so you can also overwrite the indexed fields
+  const data = web3.eth.abi.encodeParameters(nonIndexedTypes, nonIndexedVals)
 
   return {
     status: true,
@@ -92,6 +154,7 @@ function createMockedTransactionReceipt(web3: Web3, vals: any) {
 function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]) {
   const state = t.getChannelState('empty', Object.assign({
     user: sampleAddr,
+    recipient: sampleAddr,
     sigUser: t.mkHash('booty'),
     sigHub: t.mkHash('errywhere'),
   }, ...overrides))
@@ -192,7 +255,7 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
 }
 
 describe('validator', () => {
-  const web3 = new Web3() /* NOTE: all functional aspects of web3 are mocked */
+  let web3 = new Web3() /* NOTE: all functional aspects of web3 are mocked */
   const validator = new Validator(web3, t.mkAddress('0xHHH'))
 
   describe('channelPayment', () => {
@@ -356,11 +419,12 @@ describe('validator', () => {
       balanceToken: [5, 5],
       balanceWei: [5, 5]
     })
-    const args = {
+    const args: DepositArgsBN = {
       depositWeiHub: toBN(1),
       depositWeiUser: toBN(1),
       depositTokenHub: toBN(1),
       depositTokenUser: toBN(1),
+      sigUser: t.mkHash('0xsigUser'),
       timeout: 6969,
     }
 
@@ -369,6 +433,12 @@ describe('validator', () => {
         name: 'should work',
         prev,
         args,
+        valid: true
+      },
+      {
+        name: 'should work if 0 timeout provided (hub authorized deposits)',
+        prev,
+        args: { ...args, timeout: 0 },
         valid: true
       },
       {
@@ -384,21 +454,28 @@ describe('validator', () => {
         valid: false
       },
       {
-        name: 'should return a string if 0 timeout provided',
-        prev,
-        args: { ...args, timeout: 0 },
-        valid: true
-      },
-      {
         name: 'should return a string if negative timeout provided',
         prev,
         args: { ...args, timeout: -5 },
         valid: false
       },
+      {
+        name: 'should fail if an invalid signer is provided',
+        prev,
+        args,
+        valid: false,
+        sigRecover: true,
+      },
     ]
 
-    proposePendingDepositCases.forEach(({ name, prev, args, valid }) => {
+    proposePendingDepositCases.forEach(({ name, prev, args, valid, sigRecover = false }) => {
       it(name, () => {
+        if (sigRecover) {
+          console.log('validator will throw error')
+          validator.assertDepositRequestSigner = (args: any, signer: string) => { throw new Error('Invalid signer') }
+        } else {
+          validator.assertDepositRequestSigner = (args: any, signer: string) => { return }
+        }
         if (valid) {
           assert.isNull(validator.proposePendingDeposit(prev, args))
         } else {
@@ -476,6 +553,7 @@ describe('validator', () => {
   describe('confirmPending', () => {
     const depositReceipt = createMockedDepositTxReceipt("user", web3)
     const wdReceipt = createMockedWithdrawalTxReceipt("user", web3)
+    const multipleReceipt = { ...depositReceipt, logs: depositReceipt.logs.concat(wdReceipt.logs) }
 
     const prevDeposit = createPreviousChannelState({
       pendingDepositToken: [5, 5],
@@ -484,6 +562,8 @@ describe('validator', () => {
     const prevWd = createPreviousChannelState({
       pendingWithdrawalToken: [5, 5],
       pendingWithdrawalWei: [5, 5],
+      recipient: t.mkAddress('0xAAA'),
+      txCount: [4, 3]
     })
 
     const tx = {
@@ -508,6 +588,12 @@ describe('validator', () => {
         name: 'should work depsite casing differences',
         prev: { ...prevDeposit, user: prevDeposit.user.toUpperCase(), recipient: prevDeposit.user.toUpperCase() },
         stubs: [tx, depositReceipt],
+        valid: true,
+      },
+      {
+        name: 'should work if given multiple channel events in logs',
+        prev: prevDeposit,
+        stubs: [tx, multipleReceipt],
         valid: true,
       },
       {
@@ -634,7 +720,6 @@ describe('validator', () => {
 
     confirmCases.forEach(async ({ name, prev, stubs, valid }) => {
       it(name, async () => {
-        console.log('prev', convertChannelState("str", prev))
         // set tx receipt stub
         validator.web3.eth.getTransaction = sinon.stub().returns(stubs[0])
         validator.web3.eth.getTransactionReceipt = sinon.stub().returns(stubs[1])
@@ -710,10 +795,110 @@ describe('validator', () => {
     })
   })
 
+  describe('emptyChannel', () => {
+    const emptyReceipt = createMockedTxReceipt.DidEmptyChannel("user", web3)
+    const nonzeroReceipt = createMockedTxReceipt.DidEmptyChannel("user", web3, undefined, { weiBalances: ["1", "0"] })
+    const depositReceipt = createMockedDepositTxReceipt("user", web3)
+
+    const multipleReceipt = { ...emptyReceipt, logs: emptyReceipt.logs.concat(depositReceipt.logs) }
+
+    const prev = createPreviousChannelState({
+      txCount: [420, 69],
+    })
+
+    const args: EmptyChannelArgs = {
+      transactionHash: emptyReceipt.transactionHash,
+    }
+
+    const tx = {
+      blockHash: t.mkHash('0xBBB'),
+      to: prev.contractAddress,
+    }
+
+    const emptyChannelCases = [
+      {
+        name: "should work",
+        prev,
+        args,
+        stubs: [tx, emptyReceipt],
+        valid: true,
+      },
+      {
+        name: "should work with multiple events",
+        prev,
+        args,
+        stubs: [tx, multipleReceipt],
+        valid: true,
+      },
+      {
+        name: "should fail if it cannot find tx",
+        prev,
+        args,
+        stubs: [null, emptyReceipt],
+        valid: false,
+      },
+      {
+        name: "should fail if tx has no blockhash",
+        prev,
+        args,
+        stubs: [{ ...tx, blockHash: null }, emptyReceipt],
+        valid: false,
+      },
+      {
+        name: "should fail if tx to contract not found",
+        prev: { ...prev, contractAddress: t.mkAddress('0xfail') },
+        args,
+        stubs: [tx, emptyReceipt],
+        valid: false,
+      },
+      {
+        name: "should fail if no event is found",
+        prev,
+        args,
+        stubs: [tx, { ...emptyReceipt, logs: null }],
+        valid: false,
+      },
+      {
+        name: "should fail if no matching event is found",
+        prev: { ...prev, user: t.mkAddress('0xfail') },
+        args,
+        stubs: [tx, emptyReceipt],
+        valid: false,
+      },
+      {
+        name: "should fail if event has nonzero fields",
+        prev,
+        args,
+        stubs: [tx, nonzeroReceipt],
+        valid: false,
+      },
+      {
+        name: "should fail if previous has a higher txCountGlobal",
+        prev: { ...prev, txCountGlobal: 5000 },
+        args,
+        stubs: [tx, emptyReceipt],
+        valid: false,
+      },
+    ]
+
+    emptyChannelCases.forEach(async ({ name, prev, args, stubs, valid }) => {
+      it(name, async () => {
+        // set tx receipt stub
+        validator.web3.eth.getTransaction = sinon.stub().returns(stubs[0])
+        validator.web3.eth.getTransactionReceipt = sinon.stub().returns(stubs[1])
+        if (valid) {
+          assert.isNull(await validator.emptyChannel(prev, args))
+        } else {
+          assert.exists(await validator.emptyChannel(prev, args))
+        }
+      })
+    })
+  })
+
   describe.skip('openThread', () => {
 
     const params = createChannelThreadOverrides(2, { threadId: 70, receiver: t.mkAddress() })
-    // contains 2 threads, one where user is sender 
+    // contains 2 threads, one where user is sender
     // one where user is receiver
     const initialThreadStates = params.initialThreadStates
     const { threadRoot, threadCount, ...res } = params
@@ -821,7 +1006,7 @@ describe('validator', () => {
 
   describe.skip('closeThread', () => {
     const params = createChannelThreadOverrides(2, { sender: t.mkAddress('0x18'), receiver: sampleAddr })
-    // contains 2 threads, one where user is sender 
+    // contains 2 threads, one where user is sender
     // one where user is receiver
     const initialThreadStates = params.initialThreadStates
     const { threadRoot, threadCount, ...res } = params
@@ -1078,5 +1263,51 @@ describe('validator', () => {
 
 
 /* EG of tx receipt obj string, use JSON.parse
-const txReceipt = `{"transactionHash":"${t.mkHash('0xhash')}","transactionIndex":0,"blockHash":"0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55","blockNumber":437,"gasUsed":609307,"cumulativeGasUsed":609307,"contractAddress":"${t.mkAddress('0xCCC')}","logs":[{"logIndex":0,"transactionIndex":0,"transactionHash":"0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7","blockHash":"${t.mkHash('0xblock')}","blockNumber":437,"address":"0x9378e143606A4666AD5F20Ac8865B44e703e321e","data":"0x0000000000000000000000000000000000000000000000000000000000000000","topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53","0x0000000000000000000000003638eeb7733ed1fb83cf028200dfb2c41a6d9da8"],"type":"mined","id":"log_9f6b5361"},{"logIndex":1,"transactionIndex":0,"transactionHash":"0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7","blockHash":"0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55","blockNumber":437,"address":"0x9378e143606A4666AD5F20Ac8865B44e703e321e","data":"0x0000000000000000000000000000000000000000000000000000000000000000","topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000003638eeb7733ed1fb83cf028200dfb2c41a6d9da8","0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53"],"type":"mined","id":"log_18b4ce0a"},{"logIndex":2,"transactionIndex":0,"transactionHash":"0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7","blockHash":"0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55","blockNumber":437,"address":"0x3638EEB7733ed1Fb83Cf028200dfb2C41A6D9DA8","data":"0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","topics":["0xeace9ecdebd30bbfc243bdc30bfa016abfa8f627654b4989da4620271dc77b1c","0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53"],"type":"mined","id":"log_bc5572a6"}],"status":true,"logsBloom":"0x00000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000020000000000000000000008000000000000000000040000000000000008000000420000000000000000000000000000080000000000000000000810000000000000000000000000000000000000000000020000000000000000000000000000000100000000000000000000000000000000000000000000000000040000000000000002000008000000000000000000000000000000000000000000000000000000008000000000000000000000000000001000000000000000000000000000"}`
+const txReceipt = {
+  "transactionHash": "${t.mkHash('0xhash')}",
+  "transactionIndex": 0,
+  "blockHash": "0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55", "blockNumber": 437,
+  "gasUsed": 609307,
+  "cumulativeGasUsed": 609307,
+  "contractAddress": "${t.mkAddress('0xCCC')}",
+  "logs":
+    [{
+      "logIndex": 0,
+      "transactionIndex": 0,
+      "transactionHash": "0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7",
+      "blockHash": "${t.mkHash('0xblock')}",
+      "blockNumber": 437,
+      "address": "0x9378e143606A4666AD5F20Ac8865B44e703e321e",
+      "data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53", "0x0000000000000000000000003638eeb7733ed1fb83cf028200dfb2c41a6d9da8"],
+      "type": "mined",
+      "id": "log_9f6b5361"
+    },
+    {
+      "logIndex": 1,
+      "transactionIndex": 0,
+      "transactionHash": "0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7",
+      "blockHash": "0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55",
+      "blockNumber": 437,
+      "address": "0x9378e143606A4666AD5F20Ac8865B44e703e321e",
+      "data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0x0000000000000000000000003638eeb7733ed1fb83cf028200dfb2c41a6d9da8", "0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53"],
+      "type": "mined",
+      "id": "log_18b4ce0a"
+    },
+    {
+      "logIndex": 2,
+      "transactionIndex": 0,
+      "transactionHash": "0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7",
+      "blockHash": "0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55",
+      "blockNumber": 437,
+      "address": "0x3638EEB7733ed1Fb83Cf028200dfb2C41A6D9DA8",
+      "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "topics": ["0xeace9ecdebd30bbfc243bdc30bfa016abfa8f627654b4989da4620271dc77b1c", "0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53"],
+      "type": "mined",
+      "id": "log_bc5572a6"
+    }],
+  "status": true,
+  "logsBloom": "0x00000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000020000000000000000000008000000000000000000040000000000000008000000420000000000000000000000000000080000000000000000000810000000000000000000000000000000000000000000020000000000000000000000000000000100000000000000000000000000000000000000000000000000040000000000000002000008000000000000000000000000000000000000000000000000000000008000000000000000000000000000001000000000000000000000000000"
+}
 */

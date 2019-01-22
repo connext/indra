@@ -1,15 +1,12 @@
 dist/
 node_modules/
 notes.txt
-test/tests.txt
 test/apiRoutes.txt
 test/tests.txt
-.cache
 .config
 .env
 .node-gyp
 .npm
-.yarn
-.yarnrc
+.vscode
 *.sw[opq]
 tags

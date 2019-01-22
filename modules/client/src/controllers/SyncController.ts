@@ -1,4 +1,6 @@
-import { UpdateRequest, ChannelState, convertChannelState, InvalidationArgs } from '../types'
+import { UpdateRequest, ChannelState, convertChannelState, InvalidationArgs, Sync } from '../types'
+import { assertUnreachable } from '../lib/utils'
+import { Block } from 'web3/eth/types'
 import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
 import { Poller } from '../lib/poller/Poller'
 import { ConnextInternal } from '../Connext'
@@ -10,8 +12,8 @@ import * as actions from '../state/actions'
 import { maybe, Lock } from '../lib/utils'
 import Semaphore = require('semaphore')
 import { getChannel } from '../lib/getChannel';
-import { Utils } from '../Utils'
-import { Block } from 'web3/eth/types'
+import { EventLog } from 'web3/types'
+import { hasPendingOps } from '../hasPendingOps'
 
 function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
   return {
@@ -121,7 +123,7 @@ export function filterPendingSyncResults(fromHub: SyncResult[], toHub: UpdateReq
   // to be sent, the corresponding incoming update will be ignored.
   const updateKey = (u: UpdateRequest) => u.id && u.id < 0 ? `unsigned:${u.id}` : `tx:${u.txCount}`
 
-  const existing: {[key: string]: { sigHub: boolean, sigUser: boolean }} = {}
+  const existing: { [key: string]: { sigHub: boolean, sigUser: boolean } } = {}
   toHub.forEach(u => {
     existing[updateKey(u)] = {
       sigHub: !!u.sigHub,
@@ -165,18 +167,19 @@ export default class SyncController extends AbstractController {
 
   private flushErrorCount = 0
 
-  private utils = new Utils()
-
   constructor(name: string, connext: ConnextInternal) {
     super(name, connext)
-    this.poller = new Poller(this.logger)
+    this.poller = new Poller({
+      name: 'SyncController',
+      interval: SyncController.POLLER_INTERVAL_LENGTH,
+      callback: this.sync.bind(this),
+      timeout: 5 * 60 * 1000,
+    })
+
   }
 
   async start() {
-    await this.poller.start(
-      this.sync.bind(this),
-      SyncController.POLLER_INTERVAL_LENGTH
-    )
+    await this.poller.start()
   }
 
   async stop() {
@@ -185,19 +188,16 @@ export default class SyncController extends AbstractController {
 
   async sync() {
     try {
-      await this.checkCurrentStateTimeoutAndInvalidate()
-    } catch (e) {
-      this.logToApi('invalidation-check', { message: '' + e })
-      console.error('Error checking whether current state should be invalidated:', e)
-    }
-
-    try {
       const state = this.store.getState()
-      const hubUpdates = await this.hub.sync(
+      const hubSync = await this.hub.sync(
         state.persistent.channel.txCountGlobal,
         getLastThreadId(this.store),
       )
-      this.enqueueSyncResultsFromHub(hubUpdates)
+      if (!hubSync) {
+        console.log('No updates found from the hub to sync')
+        return
+      }
+      this.handleHubSync(hubSync)
     } catch (e) {
       console.error('Sync error:', e)
       this.logToApi('sync', { message: '' + e })
@@ -209,6 +209,14 @@ export default class SyncController extends AbstractController {
       console.error('Flush error:', e)
       this.logToApi('flush', { message: '' + e })
     }
+
+    try {
+      await this.checkCurrentStateTimeoutAndInvalidate()
+    } catch (e) {
+      this.logToApi('invalidation-check', { message: '' + e })
+      console.error('Error checking whether current state should be invalidated:', e)
+    }
+
   }
 
   public getSyncState(): SyncControllerState {
@@ -216,32 +224,80 @@ export default class SyncController extends AbstractController {
   }
 
   private async checkCurrentStateTimeoutAndInvalidate() {
-    // if latest state has a timeout, check to see if event is mined
+    // If latest state has a timeout, check to see if event is mined
+    const state = this.getState()
+
     const { channel, channelUpdate } = this.getState().persistent
     if (!channel.timeout)
       return
 
+    // Wait until all the hub's sync results have been handled before checking
+    // if we need to invalidate (the current state might be invalid, but the
+    // pending updates from the hub might resolve that; ex, they might contain
+    // an ConfirmPending).
+    if (state.runtime.syncResultsFromHub.length > 0)
+      return
+
+    const { didEmit, latestBlock } = await this.didContractEmitUpdateEvent(channel)
+    switch (didEmit) {
+      case 'unknown':
+        // The timeout hasn't expired yet; do nothing.
+        return
+
+      case 'yes':
+        // For now, just sit tight and wait for Chainsaw to find the event. In
+        // the future, the client could send a `ConfirmPending` here.
+        return
+
+      case 'no':
+        const msg = (
+          `State has timed out (timestamp: ${channel.timeout} < latest block ` +
+          `${latestBlock.timestamp} (${latestBlock.number}/${latestBlock.hash}) and no ` +
+          `DidUpdateChannel events have been seen since block ${latestBlock.number - 2000}`
+        )
+        await this.sendInvalidation(channelUpdate, 'CU_INVALID_TIMEOUT', msg)
+        return
+
+      default:
+        assertUnreachable(didEmit)
+    }
+  }
+
+  /**
+   * Checks to see whether a `DidUpdateChannel` event with `txCountGlobal`
+   * matching `channel.txCountGlobal` has been emitted.
+   *
+   * Returns 'yes' if it has, 'no' if it has not, and 'unknown' if the
+   * channel's timeout has not yet expired.
+   */
+  public async didContractEmitUpdateEvent(channel: ChannelState): Promise<{
+    didEmit: 'yes' | 'no' | 'unknown'
+    latestBlock: Block
+    event?: EventLog
+  }> {
+    if (!channel.timeout) {
+      // Note: this isn't a hard or inherent limitation... but do it here for
+      // now to make sure we don't accidentally do Bad Things for states
+      // with pending operations where the timeout = 0.
+      throw new Error(
+        'Cannot check whether the contract has emitted an event ' +
+        'for a state without a timeout. State: ' + JSON.stringify(channel)
+      )
+    }
+
     let block = await this.findBlockNearestTimeout(channel.timeout)
     if (block.timestamp < channel.timeout)
-      return
+      return { didEmit: 'unknown', latestBlock: block }
 
     const evts = await this.connext.getContractEvents(
       'DidUpdateChannel',
-      block.number - 2000, // 2000 blocks = ~8 hours
+      Math.max(block.number - 2000, 0), // 2000 blocks = ~8 hours
     )
-    const event = evts.find(e => e.returnValues.txCount[0] === channel.txCountGlobal)
-    if (event) {
-      // For now, just sit tight and wait for Chainsaw to find the event. In
-      // the future, the client could send a `ConfirmPending` here.
-      return
-    }
+    const event = evts.find(e => e.returnValues.txCount[0] == channel.txCountGlobal)
+    if (event)
+      return { didEmit: 'yes', latestBlock: block, event }
 
-    const msg = (
-      `State has timed out (timestamp: ${channel.timeout} < latest block ` +
-      `${block.timestamp} (${block.number}/${block.hash}) and no ` +
-      `DidUpdateChannel events have been seen since block ${block.number - 2000}`
-    )
-    await this.sendInvalidation(channelUpdate, 'CU_INVALID_TIMEOUT', msg)
+    return { didEmit: 'no', latestBlock: block }
   }
 
   public async sendUpdateToHub(update: ChannelStateUpdate) {
@@ -276,7 +332,7 @@ export default class SyncController extends AbstractController {
     //   1. block.number + step < latestBlock.number
     //   2. if step < 0: block.timestamp >= timeout + delta
     //   3. if step > 0: block.timestamp < timeout + delta
-    let step = -10000
+    let step = -1 * Math.min(block.number, 10000)
     while (true) {
       if (Math.abs(step) <= 2) {
         // This should never happen, and is a sign that we'll get into an
@@ -375,7 +431,7 @@ export default class SyncController extends AbstractController {
     }
 
     // First add any new items into the sync queue...
-    this.enqueueSyncResultsFromHub(res.updates)
+    this.enqueueSyncResultsFromHub(res.updates.updates)
 
     // ... then flush any pending items. This order is important to make sure
     // that the merge methods work correctly.
@@ -389,9 +445,35 @@ export default class SyncController extends AbstractController {
   }
 
   /**
+   * Responsible for handling sync responses from the hub, specifically
+   * the channel status.
+  */
+  public handleHubSync(sync: Sync) {
+    if (this.store.getState().runtime.channelStatus !== sync.status) {
+      this.store.dispatch(actions.setChannelStatus(sync.status))
+    }
+
+    // signing disabled in state update controller based on channel sync status
+    // unconditionally enqueue results
+    this.enqueueSyncResultsFromHub(sync.updates)
+
+    // descriptive status error handling
+    switch (sync.status) {
+      case "CS_OPEN":
+        break
+      case "CS_CHANNEL_DISPUTE":
+        break
+      case "CS_THREAD_DISPUTE":
+        throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')
+      default:
+        assertUnreachable(sync.status)
+    }
+  }
+
+  /**
    * Enqueues updates from the hub, to be handled by `StateUpdateController`.
    */
-  public enqueueSyncResultsFromHub(updates: SyncResult[]) {
+  private enqueueSyncResultsFromHub(updates: SyncResult[]) {
     if (updates.length === undefined)
       throw new Error(`This should never happen, this was called incorrectly. An array of SyncResults should always have a defined length.`)
 
@@ -406,7 +488,18 @@ export default class SyncController extends AbstractController {
     this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
   }
 
-  public async sendInvalidation(
+  /**
+   * Sends an invalidation to the hub.
+   *
+   * Note: this assumes that the caller has guaranteed that the state can
+   * safely be invalidated. Currently this is true because `sendInvalidation`
+   * is only called from one place - checkCurrentStateTimeoutAndInvalidate -
+   * which performs the appropriate checks.
+   *
+   * If this gets called from other places, care will need to be taken to
+   * ensure they have done the appropriate validation too.
+   */
+  private async sendInvalidation(
     updateToInvalidate: UpdateRequest,
     reason: InvalidationReason,
     message: string,
@@ -447,7 +540,7 @@ export default class SyncController extends AbstractController {
     // the corresponding state being invalidated (which is, for the moment,
     // always going to be our current state, as guaranteed by the check above)
     // has pending operations.
-    if (updateToInvalidate.sigUser && !this.utils.hasPendingOps(channel)) {
+    if (updateToInvalidate.sigUser && !hasPendingOps(channel)) {
       throw new Error(
         `Refusing to invalidate an update with no pending operations we have already signed: ` +
         `${JSON.stringify(updateToInvalidate)}`

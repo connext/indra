@@ -156,7 +156,8 @@ create type cm_channel_update_reason as enum (
     'ConfirmPending',
     'OpenThread',
     'CloseThread',
-    'Invalidation'
+    'Invalidation',
+    'EmptyChannel'
 );
 
 -- Note: _cm_channels has the underscore prefix because it is never meant to be
@@ -169,13 +170,11 @@ create table _cm_channels (
     "user" csw_eth_address not null,
     status cm_channel_status not null check (
         case status
-        when 'CS_OPEN' then
-            coalesce(channel_dispute_event_id, thread_dispute_event_id) is null
-        when 'CS_CHANNEL_DISPUTE' then 
-            channel_dispute_event_id is not null and
+        when 'CS_CHANNEL_DISPUTE' then
+            channel_dispute_id is not null and
             thread_dispute_event_id is null
         when 'CS_THREAD_DISPUTE' then
-            channel_dispute_event_id is null and
+            channel_dispute_id is null and
             thread_dispute_event_id is not null
         end
     ) default 'CS_OPEN',
@@ -197,9 +196,7 @@ create table _cm_channels (
     latest_update_id bigint, -- references _cm_channel_updates(id) deferrable initially deferred,
     last_updated_on timestamp with time zone null,
 
-    channel_dispute_event_id bigint references chainsaw_events(id) null,
-    channel_dispute_ends_on timestamp with time zone null,
-    channel_dispute_originator csw_eth_address null,
+    channel_dispute_id bigint null, -- references channel_disputes(id)
 
     thread_dispute_event_id bigint references chainsaw_events(id) null,
     thread_dispute_ends_on timestamp with time zone null,
@@ -219,22 +216,47 @@ references _cm_channels(id);
 create or replace function cm_channels_check_update_trigger()
 returns trigger language plpgsql as
 $pgsql$
+declare
+  dispute_id bigint;
 begin
+    -- Check unilateral start exit and change status
+
+    dispute_id := (
+        select id from cm_channel_disputes
+        where 
+            channel_id = NEW.id and
+            status in ('CD_PENDING', 'CD_IN_DISPUTE_PERIOD')
+    );
+
+    if NEW.channel_dispute_id is not null then
+        NEW.status := 'CS_CHANNEL_DISPUTE';
+
+        if (dispute_id) is null then
+            raise exception 'Channel has invalid channel dispute status, dispute status: % (NEW: %)',
+            (select status from cm_channel_disputes where id = NEW.channel_dispute_id),
+            NEW;
+        end if;
+    else
+        NEW.status := 'CS_OPEN';
+
+        if (dispute_id) is not null then
+            raise exception 'Channel has invalid channel dispute status, dispute status: % (NEW: %)',
+            (select status from cm_channel_disputes where id = NEW.channel_dispute_id),
+            NEW;
+        end if;
+    end if;
+
     -- Check that the dispute status is reasonable
     if not (
         coalesce(
-            NEW.channel_dispute_event_id::text,
-            NEW.channel_dispute_ends_on::text,
-            NEW.channel_dispute_originator::text,
+            NEW.channel_dispute_id::text,
             NEW.thread_dispute_event_id::text,
             NEW.thread_dispute_ends_on::text,
             NEW.thread_dispute_originator::text
         ) is null or
 
         (
-            NEW.channel_dispute_event_id is not null and
-            NEW.channel_dispute_ends_on is not null and
-            NEW.channel_dispute_originator is not null
+            NEW.channel_dispute_id is not null
         ) or
 
         (
@@ -508,7 +530,17 @@ returns trigger language plpgsql as
 $pgsql$
 declare
   has_corresponding_onchain_tx boolean;
+  channel cm_channels;
 begin
+    -- Do not allow state updates when channel is in dispute status
+    select * from cm_channels 
+    where id = NEW.channel_id 
+    into channel;
+
+    if channel.status <> 'CS_OPEN' then
+        raise exception 'cannot insert channel updates when channel is being disputed, channel = %',
+        NEW;
+    end if;
 
     if NEW.onchain_tx_logical_id is not null then
         has_corresponding_onchain_tx := (
@@ -545,6 +577,8 @@ returns trigger language plpgsql as
 $pgsql$
 declare
     latest_update cm_channel_updates;
+    channel cm_channels;
+    previous_channel_tx_count_global integer;
 begin
     select *
     from cm_channel_updates
@@ -554,6 +588,12 @@ begin
     order by tx_count_global desc
     limit 1
     into latest_update;
+
+    select tx_count_global
+    from cm_channels 
+    where 
+        id = latest_update.channel_id
+    into previous_channel_tx_count_global;
 
     update _cm_channels
     set
@@ -566,6 +606,16 @@ begin
         <%= CHANNEL_STATE_COLS.map(c => `${c.name} = latest_update.${c.name}`).join(', ') %>
     where id = latest_update.channel_id;
 
+    if channel.status = 'CS_CHANNEL_DISPUTE' then
+        -- if new state is being added, state can only be invalidation or empty channel
+        if NEW.tx_count_global > previous_channel_tx_count_global then
+            if NEW.reason <> 'Invalidation' and NEW.reason <> 'EmptyChannel' then
+                raise exception 'can only invalidate or empty from disputed state, NEW: %',
+                NEW;
+            end if;
+        end if;
+    end if;
+
     return NEW;
 end;
 $pgsql$;
@@ -573,7 +623,6 @@ $pgsql$;
 create trigger cm_channel_updates_post_insert_update_trigger
 after insert or update on _cm_channel_updates
 for each row execute procedure cm_channel_updates_post_insert_update_trigger();
-
 
 --
 -- cm_threads

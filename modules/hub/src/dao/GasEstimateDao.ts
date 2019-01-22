@@ -33,11 +33,11 @@ export class PostgresGasEstimateDao implements GasEstimateDao {
   private db: DBEngine<Client>
   private redis: RedisClient
 
-  // By default, expire the redis key after 5 minutes. This number is, at the
+  // By default, expire the redis key after 1 day. This number is, at the
   // moment, entirely arbitrary... but in the future, once we've got some data,
   // we can pick it based on "how long, on average, does it take to see
   // meaningful changes in the gas price?"
-  private REDIS_KEY_TIMEOUT_SECONDS = 5 * 60
+  private REDIS_KEY_TIMEOUT_SECONDS = 60 * 60 * 24
   private REDIS_KEY = 'gas-estimate-latest'
 
   constructor (db: DBEngine<Client>, redis: RedisClient) {

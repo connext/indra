@@ -3,14 +3,18 @@ import { assert } from 'chai'
 chai.use(require('@spankchain/chai-subset'))
 import ChannelsDao from './ChannelsDao'
 import { getTestRegistry } from '../testing'
-import { assertChannelStateEqual } from '../testing/stateUtils'
-import { convertChannelState } from '../vendor/connext/types';
+import { assertChannelStateEqual, mkAddress, mkHash } from '../testing/stateUtils'
+import { convertChannelState } from '../vendor/client/types';
 import { channelUpdateFactory } from '../testing/factories';
+import { OnchainTransactionsDao } from './OnchainTransactionsDao';
+import DBEngine, { SQL } from '../DBEngine';
 
 describe('ChannelsDao', () => {
   const registry = getTestRegistry()
 
-  let dao: ChannelsDao = registry.get('ChannelsDao')
+  const dao: ChannelsDao = registry.get('ChannelsDao')
+  const onchainTxDao: OnchainTransactionsDao = registry.get('OnchainTransactionsDao')
+  const db: DBEngine = registry.get('DBEngine')
 
   beforeEach(async () => {
     await registry.clearDatabase()

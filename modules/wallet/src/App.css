@@ -1,6 +1,6 @@
 .app{
   margin: 0 auto;
-  padding-top: 1%;
+  padding-top: 3%;
   padding-left: 5%;
   padding-right: 5%;
 }
@@ -17,13 +17,23 @@
 .column {
   display: flex;
   flex-direction: column;
-  flex-basis: 100%;
+  flex-basis: 80%;
   flex: 1;
   padding-bottom: 2.5%;
   padding-top: 2.5%;
   padding-left: 1%;
   padding-right: 1%;
   font-family: 'proxima-nova',sans-serif;
+}
+.modal_inner{
+  background-color:#FFF;
+  box-shadow: 1px 1px 1px 1px black;
+  padding: 2% 2% 2% 2%;
+  transform: translate(23vmax, 13vmax);
+  width:50%;
+}
+
+.modal{
 }
 
 .value-entry{

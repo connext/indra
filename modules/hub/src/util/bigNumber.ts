@@ -5,9 +5,9 @@ export function Big(n: number | string): BigNumber {
 }
 
 export function toWeiBigNum(amount: number | string): BigNumber {
-  return Big(amount).mul(1e18)
+  return Big(amount).times(1e18)
 }
 
 export function toWeiString(amount: number | string): string {
-  return Big(amount).mul(1e18).toFixed()
+  return Big(amount).times(1e18).toFixed()
 }

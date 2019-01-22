@@ -102,23 +102,17 @@ function generateHash(txn: Omit<UnconfirmedTransaction, 'hash'>, includeSig: boo
  *
  */
 export class OnchainTransactionService {
-  web3: any
-  gasEstimateDao: GasEstimateDao
-  onchainTransactionDao: OnchainTransactionsDao
-  db: DBEngine
-  container: Container
-
   pollFinished = Lock.released()
   stopped: Lock = Lock.released()
   running: boolean = false
 
-  constructor(web3: any, gasEstimateDao: GasEstimateDao, onchainTransactionDao: OnchainTransactionsDao, db: DBEngine, container: Container) {
-    this.web3 = web3
-    this.gasEstimateDao = gasEstimateDao
-    this.onchainTransactionDao = onchainTransactionDao
-    this.db = db
-    this.container = container
-  }
+  constructor(
+    private web3: any, 
+    private gasEstimateDao: GasEstimateDao, 
+    private onchainTransactionDao: OnchainTransactionsDao, 
+    private db: DBEngine, 
+    private container: Container
+  ) {}
 
   lookupCallback(name: string): (tx: OnchainTransactionRow) => Promise<void> {
     const [serviceName, methodName] = name.split('.')

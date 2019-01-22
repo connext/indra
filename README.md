@@ -18,13 +18,15 @@ Everything you need to set up a Connext payment channel hub.
 
 ## Repo Executive Summary
 
-You can run this project locally in dev-mode with `yarn start` (or `yarn restart`)
+You can run this project locally in dev-mode with `npm start` (or `npm restart`). Stop it with `npm stop`
 
-The above command will build anything needed for you but you can also build stuff manually with `make`.
+The above start command will build anything needed for you but you can also build stuff manually with `make`.
 
-You can wipe all persistent data and restart the app with a fresh db using `yarn reset`
+Once everything builds & starts up, play with the app at `http://localhost` (the wallet module takes the longest to wake up, monitor it with `npm run logs wallet`)
 
-You can run Indra in production-mode with `yarn prod` (or `yarn restart prod`).
+You can wipe all persistent data and restart the app with a fresh db using `npm run reset`
+
+You can run Indra in production-mode with `npm run prod` (or `npm restart prod`).
 
 This repo is split into modules. Each module, ie `name`, in general, has source code in `modules/name/src` that the build/deploy tools in `modules/name/ops` use to build stuff that's output to either `modules/name/build` or `modules/name/dist`.
 
@@ -32,7 +34,8 @@ At runtime, most modules are run in their own docker container(s). These docker 
 
 See all running containers with: `docker service ls`.
 
-You can see the logs for some container with: `yarn logs name`. Where "name" would be `hub` for the docker container `connext_hub`.
+You can see the logs for some container with: `npm run logs name`. Where "name" would be `hub` for the docker container `connext_hub`.
+The ethprovider has two sets of logs: `npm run logs ethprovider` will show migration logs and `npm run logs ganache` will show output from ganache.
 
 Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'` or open a db console with just `bash ops/db.sh`
 
@@ -44,17 +47,19 @@ If you encounter any problems, check out the debugging guide at the bottom of th
 
 - Make (required, probably already installed)
 - [Docker](https://www.docker.com/) (required)
-- [Node.js](https://nodejs.org/en/) + [Yarn](https://yarnpkg.com/lang/en/docs/install/#mac-stable) (recommended)
+- [Node.js](https://nodejs.org/en/)
 
 ### TL;DR
 
+**Note**: We have migrated away from using `yarn` due to [yarn issue 2629](https://github.com/yarnpkg/yarn/issues/2629), an unsolved bug in yarn that results in installations randomly failing.
+
 **Local development is easy**
 
-`yarn start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost:8080`
+`npm start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost`
 
 Beware: the first time this is run it will take a long time but have no fear: subsequent builds will go much more quickly.
 
-A couple sets of `node_modules` will be installed when running `yarn start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once then some half-downloaded file is likely jamming up the works. Run `make deep-clean` to scrub any `node_modules` & lock files & caches that might be causing trouble. Then, give `yarn start` another try & things will hopefully be good to go.
+A couple sets of `node_modules` will be installed when running `npm start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once then some half-downloaded file is likely jamming up the works. Run `make deep-clean` to scrub any `node_modules` & lock files & caches that might be causing trouble. Then, give `npm start` another try & things will hopefully be good to go.
 
 There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are off by default. The wallet aka UI will always be watched as it's served by a webpack-dev-server. If you expect to be actively developing any other modules, you can turn on watchers for those too. Careful, turning on all the watchers will increase the start-up time and drain your computer's battery more quickly.
 
@@ -95,13 +100,13 @@ If your hub is already deployed & you want to redeploy to apply changes you've m
 
 ### Details
 
-Behind the scenes, `yarn start` will run `make` and then `bash ops/deploy.dev.sh`
+Behind the scenes, `npm start` will run `make` and then `bash ops/deploy.dev.sh`
 
 `make` does the following:
 
-1. Build the builder. This project relies on various build tools like c compilers & python & a specific version of nodejs. Rather than making you, the developer, figure out how to make nvm play nice with yarn, we'll use Docker to build the build environment for you. Based on the builder Dockerfile in the top-level ops folder.
+1. Build the builder. This project relies on various build tools like c compilers & python & a specific version of nodejs. Rather than making you, the developer, figure out how to make nvm play nice with npm, we'll use Docker to build the build environment for you. Based on the builder Dockerfile in the top-level ops folder.
 
-2. Install dependencies. For example, to install stuff needed by the contracts module, we take the `modules/contracts` dir and mount it into a builder container. This container runs `yarn install` which usually requires compiling some crazy c modules. When it's done, the container exits and a freshly built `node_modules` is left behind in the directory that was mounted..
+2. Install dependencies. For example, to install stuff needed by the contracts module, we take the `modules/contracts` dir and mount it into a builder container. This container runs `npm install` which usually requires compiling some crazy c modules. When it's done, the container exits and a freshly built `node_modules` is left behind in the directory that was mounted..
 
 3. Build stuff. Like it step 2, we stick the dir we're interested in into the builder docker container & build what's needed.
 
@@ -161,32 +166,29 @@ To speed things up, run `make stop` to tell the builder to hurry up & finish and
 
 ### Ethprovider or Ganache not working
 
-`#!/bin/bash
+```
+#!/bin/bash
 url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
 echo "Sending $1 query to provider: $url"
-curl -H "Content-Type: application/json" -X POST --data '{"id":31415,"jsonrpc":"2.0","method":"'$1'","params":'$2'}' $url`
+curl -H "Content-Type: application/json" -X POST --data '{"id":31415,"jsonrpc":"2.0","method":"'$1'","params":'$2'}' $url
+```
 
-This lets us do a simple curleth net_version '[]' as a sanity check to make sure the ethprovider is alive & listening. If not, curl gives more useful errors that direct you towards investigating either metamask or ganache.
+This lets us do a simple `curleth net_version '[]'` as a sanity check to make sure the ethprovider is alive & listening. If not, curl gives more useful errors that direct you towards investigating either metamask or ganache.
 
 One other sanity check is to run `docker service ls` and make sure that you see an ethprovider service that has port 8545 exposed.
 
 You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is alive & run `ps` to see if it's even running.
 
-Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running yarn restart to see if it gets recreated & if so, check to see if there is anything suspicious there
+Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
 
 ### Hub errors on start
 
-We've seen some non-deterministic errors on `yarn start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
+We've seen some non-deterministic errors on `npm start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
 
-- Running `yarn start` again
-- A restart: `yarn restart`
-- Cache clean and restart: `yarn cache clean && yarn restart`
-- Nuke everything and start over: 
-    `make purge`
-    `docker system prune -af`
-    `docker volume prune -f`
-    `yarn start`
+- Running `npm start` again
+- Rebuild everything then restart: `make clean && npm start`
+- Remove build artifacts & persistent data storage and restart: `make purge && npm start`
 
 ### Locked DB
 
-We've seen the database get locked on startup. Often, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
+We've seen the database get locked on startup. Often, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `npm restart` should fix the problem.

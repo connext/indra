@@ -77,7 +77,7 @@ export default class WithdrawalsService {
       return wd
     }
 
-    const newBalanceEth = currentBalanceWei.sub(wd.amountWei).div('1e18')
+    const newBalanceEth = currentBalanceWei.minus(wd.amountWei).div('1e18')
     if (newBalanceEth.lt(this.config.hotWalletMinBalanceEth)) {
       LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
         address,
@@ -162,7 +162,7 @@ export default class WithdrawalsService {
       return wd
     }
 
-    const newBalanceEth = currentBalanceWei.sub(amount).div('1e18')
+    const newBalanceEth = currentBalanceWei.minus(amount).div('1e18')
     if (newBalanceEth.lt(this.config.hotWalletMinBalanceEth)) {
       LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
         address: initiator,
