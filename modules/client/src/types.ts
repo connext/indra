@@ -91,6 +91,19 @@ export function convertFields(fromType: NumericTypeName, toType: NumericTypeName
 }
 
 /*********************************
+ ********* CONTRACT TYPES ********
+ *********************************/
+export type ChannelManagerChannelDetails = {
+  txCountGlobal: number
+  txCountChain: number
+  threadRoot: string
+  threadCount: number
+  exitInitiator: string
+  channelClosingTime: number
+  status: string
+}
+
+/*********************************
  ********* CHANNEL TYPES *********
  *********************************/
 // channel state fingerprint
@@ -167,6 +180,8 @@ export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string }
   Invalidation: 'Invalidation',
   OpenThread: 'OpenThread',
   CloseThread: 'CloseThread',
+  // unilateral functions
+  EmptyChannel: 'EmptyChannel',
 }
 export type ChannelUpdateReason = keyof UpdateRequestTypes
 
@@ -198,9 +213,20 @@ export type DepositArgs<T=string> = {
   depositTokenUser: T,
 
   timeout: number,
+  sigUser?: string, // optional for hub proposed deposits
 }
 export type DepositArgsBN = DepositArgs<BN>
 export type DepositArgsBigNumber = DepositArgs<BigNumber>
+
+// this type is used to verify that a user has requested a deposit
+// sent to it from the hub on sync to alleviate bugs found
+// on multidevice. used to submit proposals to hub
+
+export type SignedDepositRequestProposal<T=string> = Payment<T> & {
+  sigUser: string
+}
+export type SignedDepositRequestProposalBN = SignedDepositRequestProposal<BN>
+export type SignedDepositRequestProposalBigNumber = SignedDepositRequestProposal<BigNumber>
 
 export type PendingArgs<T=string> = {
   depositWeiUser: T
@@ -285,8 +311,11 @@ export type WithdrawalArgs<T=string> = {
 export type WithdrawalArgsBN = WithdrawalArgs<BN>
 export type WithdrawalArgsBigNumber = WithdrawalArgs<BigNumber>
 
+// NOTE: the validators enforce event information
+// against previous is equivalent to the information
+// released by events corresponding to that transaction hash
 export type ConfirmPendingArgs = {
-  transactionHash: Address
+  transactionHash: Address,
 }
 
 /**
@@ -324,7 +353,7 @@ export type ConfirmPendingArgs = {
  * states? (ex, ProposePendingDeposit)
  */
 
- // channel status
+// channel status
 export const InvalidationReason = {
   CU_INVALID_TIMEOUT: 'CU_INVALID_TIMEOUT', // The invalid state has timed out
   CU_INVALID_REJECTED: 'CU_INVALID_REJECTED', // The state is being rejected (ex, because the exchange rate is invalid)
@@ -339,14 +368,17 @@ export type InvalidationArgs = {
   message?: string
 }
 
+export type EmptyChannelArgs = ConfirmPendingArgs
+
 export type ArgsTypes<T=string> =
   | ExchangeArgs<T>
   | PaymentArgs<T>
   | DepositArgs<T>
   | WithdrawalArgs<T>
-  | UnsignedThreadState<T>
   | ConfirmPendingArgs
   | InvalidationArgs
+  | EmptyChannelArgs
+  | UnsignedThreadState<T>
   | {}
 
 export type ArgTypesBN = ArgsTypes<BN>
@@ -374,6 +406,7 @@ export type UpdateRequestTypes<T=string> = {
   ProposePendingWithdrawal: UpdateRequest<T, WithdrawalArgs>
   ConfirmPending: UpdateRequest<T, ConfirmPendingArgs>
   Invalidation: UpdateRequest<T, InvalidationArgs>
+  EmptyChannel: UpdateRequest<T, EmptyChannelArgs>
   OpenThread: UpdateRequest<T, UnsignedThreadState<T>>
   CloseThread: UpdateRequest<T, UnsignedThreadState<T>>
 }
@@ -385,6 +418,7 @@ export type UpdateArgTypes<T=string> = {
   ProposePendingWithdrawal: WithdrawalArgs<T>
   ConfirmPending: ConfirmPendingArgs
   Invalidation: InvalidationArgs
+  EmptyChannel: EmptyChannelArgs,
   OpenThread: UnsignedThreadState<T>
   CloseThread: UnsignedThreadState<T>
 }
@@ -404,13 +438,26 @@ export type ChannelStateUpdate<T = string> = {
 export type ChannelStateUpdateBN = ChannelStateUpdate<BN>
 export type ChannelStateUpdateBigNumber = ChannelStateUpdate<BigNumber>
 
-// this is the typical form of responses from POST
-// hub endpoints and the sync endpoint
+export const DisputeStatus = {
+  CD_PENDING: 'CD_PENDING',
+  CD_IN_DISPUTE_PERIOD: 'CD_IN_DISPUTE_PERIOD',
+  CD_FAILED: 'CD_FAILED',
+  CD_FINISHED: 'CD_FINISHED'
+}
+export type DisputeStatus = keyof typeof DisputeStatus
+
 export type SyncResult<T = string> =
   | { type: "thread", update: ThreadStateUpdate<T> }
   | { type: "channel", update: UpdateRequest<T> }
 export type SyncResultBN = SyncResult<BN>
 export type SyncResultBigNumber = SyncResult<BigNumber>
+
+// this is the typical form of responses from POST
+// hub endpoints and the sync endpoint
+export type Sync<T = string> = {
+  status: ChannelStatus,
+  updates: SyncResult<T>[]
+}
 
 // hub response for getters, includes an id and status
 export type ChannelRow<T = string> = {
@@ -494,6 +541,132 @@ export const addSigToThreadState = (
 }
 
 /*********************************
+ ******** CONTRACT TYPES *********
+ *********************************/
+// event types
+export const ChannelEventReasons = {
+  DidUpdateChannel: 'DidUpdateChannel',
+  DidStartExitChannel: 'DidStartExitChannel',
+  DidEmptyChannel: 'DidEmptyChannel',
+}
+export type ChannelEventReason = keyof typeof ChannelEventReasons
+
+// DidStartExit, DidEmptyChannel
+type BaseChannelEvent<T = string> = {
+  user: Address, // indexed
+  senderIdx: "0" | "1", // 0: hub, 1: user
+  weiBalances: [T, T], // [hub, user]
+  tokenBalances: [T, T], // [hub, user]
+  txCount: [string, string], // [global, onchain]
+  threadRoot: string,
+  threadCount: string,
+}
+
+export type DidStartExitChannelEvent = BaseChannelEvent<string>
+export type DidStartExitChannelEventBN = BaseChannelEvent<BN>
+export type DidStartExitChannelBigNumber = BaseChannelEvent<BigNumber>
+
+export type DidEmptyChannelEvent = BaseChannelEvent<string>
+export type DidEmptyChannelEventBN = BaseChannelEvent<BN>
+export type DidEmptyChannelEventBigNumber = BaseChannelEvent<BigNumber>
+
+// DidUpdateChannel
+export type DidUpdateChannelEvent<T = string> = BaseChannelEvent & {
+  pendingWeiUpdates: [T, T, T, T], // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
+  pendingTokenUpdates: [T, T, T, T], // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
+}
+export type DidUpdateChannelEventBN = DidUpdateChannelEvent<BN>
+export type DidUpdateChannelEventBigNumber = DidUpdateChannelEvent<BigNumber>
+
+const BaseChannelEventInputs = [
+  { type: 'address', name: 'user', indexed: true },
+  { type: 'uint256', name: 'senderIdx' },
+  { type: 'uint256[2]', name: 'weiBalances' },
+  { type: 'uint256[2]', name: 'tokenBalances' },
+  { type: 'uint256[2]', name: 'txCount' },
+  { type: 'bytes32', name: 'threadRoot' },
+  { type: 'uint256', name: 'threadCount' },
+]
+
+const DidUpdateChannelEventInputs = [
+  { type: 'address', name: 'user', indexed: true },
+  { type: 'uint256', name: 'senderIdx' },
+  { type: 'uint256[2]', name: 'weiBalances' },
+  { type: 'uint256[2]', name: 'tokenBalances' },
+  { type: 'uint256[4]', name: 'pendingWeiUpdates' },
+  { type: 'uint256[4]', name: 'pendingTokenUpdates' },
+  { type: 'uint256[2]', name: 'txCount' },
+  { type: 'bytes32', name: 'threadRoot' },
+  { type: 'uint256', name: 'threadCount' },
+]
+
+export const EventInputs = {
+  'DidUpdateChannel': DidUpdateChannelEventInputs,
+  'DidStartExitChannel': BaseChannelEventInputs,
+  'DidEmptyChannel': BaseChannelEventInputs,
+}
+
+export type ChannelEvent<T = string> = BaseChannelEvent<T> | DidUpdateChannelEvent<T>
+
+// convert between succinct and verbose event types
+export type VerboseChannelEvent<T = string> = UnsignedChannelState<T> & {
+  sender: Address,
+}
+export type VerboseChannelEventBN = VerboseChannelEvent<BN>
+export type VerboseChannelEventBigNumber = VerboseChannelEvent<BigNumber>
+
+export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contractAddress: Address): VerboseChannelEvent {
+  let ans = {} as any
+  ans.contractAddress = contractAddress
+  Object.entries(obj).forEach(([name, val]) => {
+    // if it contains arrays, expand to named
+    const value = val as any
+    switch (name) {
+      case "senderIdx":
+        if (value !== "0" && value !== "1") {
+          throw new Error(`Incorrect senderIdx value detected: ${value}`)
+        }
+        ans.sender = value === "1" ? obj.user : hubAddress
+        break
+      case "weiBalances":
+        ans.balanceWeiHub = value[0]
+        ans.balanceWeiUser = value[1]
+        break
+      case "tokenBalances":
+        ans.balanceTokenHub = value[0]
+        ans.balanceTokenUser = value[1]
+        break
+      case "pendingWeiUpdates":
+        ans.pendingDepositWeiHub = value[0]
+        ans.pendingWithdrawalWeiHub = value[1]
+        ans.pendingDepositWeiUser = value[2]
+        ans.pendingWithdrawalWeiUser = value[3]
+        break
+      case "pendingTokenUpdates":
+        ans.pendingDepositTokenHub = value[0]
+        ans.pendingWithdrawalTokenHub = value[1]
+        ans.pendingDepositTokenUser = value[2]
+        ans.pendingWithdrawalTokenUser = value[3]
+        break
+      case "txCount":
+        ans.txCountGlobal = parseInt(value[0], 10)
+        ans.txCountChain = parseInt(value[1], 10)
+        break
+      default:
+        ans[name] = +value >= 0 && !value.startsWith('0x')
+          ? +value // detected int
+          : value
+    }
+  })
+  return ans
+}
+
+export function convertVerboseEvent<To extends NumericTypeName>(to: To, obj: VerboseChannelEvent<any>): VerboseChannelEvent<NumericTypes[To]> {
+  const fromType = getType(obj.balanceWeiHub)
+  return convertFields(fromType, to, channelNumericFields, obj)
+}
+
+/*********************************
  ********* WALLET TYPES **********
  *********************************/
 
@@ -525,6 +698,13 @@ export type WithdrawalParameters<T = string> = {
 }
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
+
+export const withdrawalParamsNumericFields = [
+  'withdrawalWeiUser',
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalTokenUser',
+]
 
 /*********************************
  ******* TYPE CONVERSIONS ********
@@ -620,6 +800,7 @@ export const argNumericFields: { [Name in keyof UpdateArgTypes]: (keyof UpdateAr
   ] as any,
   ConfirmPending: [],
   Invalidation: [],
+  EmptyChannel: [],
   OpenThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
   CloseThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
 }
@@ -662,12 +843,16 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
+export function convertWithdrawalParams<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, withdrawalParamsNumericFields, obj)
+}
+
 export const proposePendingNumericArgs = [
   'depositWeiUser',
   'depositWeiHub',
   'depositTokenUser',
   'depositTokenHub',
-
   'withdrawalWeiUser',
   'withdrawalWeiHub',
   'withdrawalTokenUser',
@@ -693,6 +878,7 @@ const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
   ProposePendingWithdrawal: convertWithdrawal,
   ConfirmPending: (to: any, args: ConfirmPendingArgs) => args,
   Invalidation: (to: any, args: InvalidationArgs) => args,
+  EmptyChannel: (to: any, args: EmptyChannelArgs) => args,
   OpenThread: convertThreadState,
   CloseThread: convertThreadState,
 }
@@ -710,21 +896,21 @@ export function convertArgs<
 
 /*
 POST /payments/purchase
-
+ 
 Accepts:
-
+ 
   {
     metadata: MetadataType,
     payments: PurchasePayment[],
   }
-
+ 
 Returns:
-
+ 
   {
     purchaseId: string,
     updates: SyncResponse,
   }
-
+ 
 */
 
 export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD'
@@ -794,7 +980,7 @@ export type PurchasePaymentSummary<MetaType=any> = Omit<PurchasePayment<MetaType
 // response from the hub when submitting a purchase
 export type PurchasePaymentHubResponse<T= string> = ({
   purchaseId: string,
-  updates: SyncResult<T>[]
+  sync: Sync<T>
 })
 
 export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>

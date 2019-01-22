@@ -43,10 +43,23 @@ describe('DepositController: unit tests', () => {
     })
   })
 
+  it('should fail if the hub returns invalidly signed update', async () => {
+    connext.validator.generateProposePendingDeposit = (req, signer) => { throw new Error('Invalid signer') }
+
+    await assert.isRejected(
+      connext.depositController.requestUserDeposit({
+        amountWei: '420',
+        amountToken: '69',
+      }),
+      /Invalid signer/
+    )
+
+  })
+
   it('should fail if the hub returns an invalid timestamp', async () => {
     patch(connext.mockHub, 'requestDeposit', async (old: any, ...args: any[]) => {
       const res = await old(...args)
-      res[0].update.args.timeout = 69
+      res.updates[0].update.args.timeout = 69
       return res
     })
 
@@ -56,23 +69,6 @@ describe('DepositController: unit tests', () => {
         amountToken: '69',
       }),
       /timestamp/
-    )
-  })
-
-  it('should fail if the hub changes the proposed deposit', async () => {
-    patch(connext.mockHub, 'requestDeposit', async (old: any, ...args: any[]) => {
-      const res = await old(...args)
-      res[0].update.args.depositWeiUser = '419'
-      res[0].update.args.depositTokenUser = '68'
-      return res
-    })
-
-    await assert.isRejected(
-      connext.depositController.requestUserDeposit({
-        amountWei: '420',
-        amountToken: '69',
-      }),
-      /Deposit request does not match requested deposit/
     )
   })
 })

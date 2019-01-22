@@ -1,11 +1,10 @@
 import getTxCount from '../lib/getTxCount'
-import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateRequestTypes, SyncResult, UpdateRequest, ChannelStateUpdate } from '../types'
+import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateRequestTypes, SyncResult, UpdateRequest, ChannelStateUpdate, convertPayment } from '../types'
 import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
 import * as actions from "../state/actions"
 import { getChannel } from '../lib/getChannel'
-import { PendingRequestedDeposit } from '../state/store'
 const tokenAbi = require("human-standard-token-abi")
 
 /*
@@ -22,80 +21,22 @@ const tokenAbi = require("human-standard-token-abi")
 export default class DepositController extends AbstractController {
   private resolvePendingDepositPromise: any = null
 
-  private async getRequestedDeposit() {
-    const req = this.getState().persistent.requestedDeposit
-    if (!req)
-      return null
-
-    const state = this.store.getState()
-    const channel = state.persistent.channel
-
-    // 1. If the saved request has a txCount but that txCount has been
-    //    fully signed, then we can safely discard the pending request.
-    if (req.txCount && channel.txCountGlobal >= req.txCount) {
-      await this.saveRequestedDeposit(null)
-      return null
-    }
-
-    // 2. Otherwise, if the saved request does have a txCount, it means we're
-    //    waiting for it to go to chain, or waiting for the hub to confirm
-    //    our countersig.
-    if (req.txCount)
-      return req
-
-    // 3. If the request does not have a txCount and it's more than 5 minutes
-    //    old, it's very likely (although we can't guarantee) that we'll never
-    //    hear back from the hub, so discard the pending request
-    const now = Date.now()
-    if ((now - req.requestedOn) / 1000 > 60 * 5) {
-      await this.saveRequestedDeposit(null)
-      return null
-    }
-
-    return req
-  }
-
-  private async saveRequestedDeposit(req: PendingRequestedDeposit | null, ignoreErrors = false) {
-    try {
-      this.store.dispatch(actions.setRequestedDeposit(req))
-      await this.connext.awaitPersistentStateSaved()
-    } catch (e) {
-      if (!ignoreErrors)
-        throw e
-      console.error('Error saving pending deposit state (which will be ignored):', e)
-    }
-  }
+  // TODO: should the deposit params (timeout, payment) be saved for sig recovery or just use params sent by hub?
 
   public async requestUserDeposit(deposit: Payment) {
-    // Note: this is also enforced by the state update validator (which
-    // shouldn't allow an update while there there are still `pending` fields).
-    // This check is mostly a sanity check.
-    const requestedDeposit = await this.getRequestedDeposit()
-    if (requestedDeposit) {
-      throw new Error(
-        `Cannot request a new deposit while one is still pending!\n` +
-        `Request: ${JSON.stringify(deposit)}\nPending: ${JSON.stringify(requestedDeposit)}`
-      )
+    const err = this.validator.payment(convertPayment("bn", deposit))
+    if (err) {
+      throw new Error(`Cannot request a negative deposit. Deposit: ${JSON.stringify(deposit, null, 2)}. ` + err)
     }
+    const signedRequest = await this.connext.signDepositRequestProposal(deposit)
 
-    await this.saveRequestedDeposit({
-      amount: deposit,
-      requestedOn: Date.now(),
-      txCount: null,
-    })
+    const sync = await this.hub.requestDeposit(
+      signedRequest,
+      getTxCount(this.store),
+      getLastThreadId(this.store)
+    )
 
-    try {
-      const sync = await this.hub.requestDeposit(
-        deposit,
-        getTxCount(this.store),
-        getLastThreadId(this.store)
-      )
-
-      this.connext.syncController.enqueueSyncResultsFromHub(sync)
-    } catch (e) {
-      await this.saveRequestedDeposit(null, true)
-      throw e
-    }
+    this.connext.syncController.handleHubSync(sync)
 
     // There can only be one pending deposit at a time, so it's safe to return
     // a promise that will resolve/reject when we eventually hear back from the
@@ -124,7 +65,6 @@ export default class DepositController extends AbstractController {
       this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.rej(e)
     } finally {
       this.resolvePendingDepositPromise = null
-      await this.saveRequestedDeposit(null, true)
     }
   }
 
@@ -149,6 +89,23 @@ export default class DepositController extends AbstractController {
       )
     }
 
+    const { args } = update
+
+    // throw a deposit error if the signer is not correct on update
+    if (!args.sigUser) {
+      throw DepositError(`Args are unsigned, not submitting a userAuthorizedUpdate to chain.`)
+    }
+
+    try {
+      this.connext.validator.assertDepositRequestSigner({
+        amountToken: args.depositTokenUser,
+        amountWei: args.depositWeiUser,
+        sigUser: args.sigUser
+      }, prev.user)
+    } catch (e) {
+      throw DepositError(e.message)
+    }
+
     const state = await this.connext.signChannelState(
       this.validator.generateProposePendingDeposit(
         prev,
@@ -162,31 +119,6 @@ export default class DepositController extends AbstractController {
       throw DepositError(tsErr)
     }
 
-    const requestedDeposit = await this.getRequestedDeposit()
-    if (!requestedDeposit) {
-      // Make the simplifying assumption that we will only respond to a deposit
-      // if we have requested a deposit. It would be possible to make this
-      // logic more complex, but it's reasonable to assume that we'll only get
-      // a user deposit in response to `requestUserDeposit`, and further that
-      // the same instance of the client that requested the deposit will handle
-      // the deposit.
-      throw DepositError('Recieved a deposit when none was requested')
-    }
-
-    const requestedAmount = requestedDeposit.amount
-
-    const { args } = update
-    if (
-      args.depositWeiUser != requestedAmount.amountWei ||
-      args.depositTokenUser != requestedAmount.amountToken
-    ) {
-      throw DepositError(`Deposit request does not match requested deposit!`)
-    }
-
-    await this.saveRequestedDeposit({
-      ...requestedDeposit,
-      txCount: update.txCount,
-    })
 
     try {
       if (args.depositTokenUser !== '0') {
@@ -219,7 +151,7 @@ export default class DepositController extends AbstractController {
         return
       }
 
-      // logic should be retry transaction UNTIL timeout elapses, then 
+      // logic should be retry transaction UNTIL timeout elapses, then
       // submit the invalidation update
       throw DepositError('Sending userAuthorizedUpdate to chain: ' + e)
     }

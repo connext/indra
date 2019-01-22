@@ -1,41 +1,57 @@
 import {expect} from 'chai'
-import Logger from '../Logger'
+import { sleep } from '../utils'
 import {SinonFakeTimers, SinonSandbox} from 'sinon'
 import { Poller } from './Poller'
 const sinon = require('sinon')
 
-describe('Poller class', () => {
+describe('Poller', () => {
   let poller: Poller
   let runs: number
-  let f: () => Promise<any>
-  let sbox: SinonSandbox
-  let clock: SinonFakeTimers
+  let callback: () => Promise<any>
 
   beforeEach(() => {
-    sbox = sinon.createSandbox()
-    clock = sbox.useFakeTimers()
-    poller = new Poller({} as Logger)
+    callback = async () => {
+      runs += 1
+    }
+    poller = new Poller({
+      name: 'test-poller',
+      interval: 2,
+      callback,
+    })
     runs = 0
-    f = async (): Promise<number> => ++runs
   })
 
   afterEach(() => {
     poller.stop()
-    sbox.restore()
   })
 
   it('should run function once every intervalLength', async () => {
-    await poller.start(f, 200)
+    await poller.start()
     expect(runs).to.equal(1)
-    clock.tick(601)
-    setImmediate(() => expect(runs).to.equal(4))
+    await sleep(10)
+    expect(runs).greaterThan(3)
   })
 
   it('should stop running when stop is called', async () => {
-    await poller.start(f, 200)
-    clock.tick(100)
-    poller.stop()
-    clock.tick(202)
+    await poller.start()
     expect(runs).to.equal(1)
+    poller.stop()
+    await sleep(10)
+    expect(runs).to.equal(1)
+  })
+
+  it('should time out', async () => {
+    poller = new Poller({
+      name: 'test-poller',
+      interval: 2,
+      timeout: 5,
+      callback: () => {
+        runs += 1
+        return new Promise((res, rej) => null)
+      }
+    })
+    await poller.start()
+    await sleep(15)
+    expect(runs).greaterThan(2)
   })
 })

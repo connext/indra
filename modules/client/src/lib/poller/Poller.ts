@@ -1,44 +1,81 @@
-import Logger from '../Logger'
-//import Timer = NodeJS.Timer
+import { maybe, timeoutPromise } from '../utils'
 
+export type PollerOptions = {
+  // Name to include in log messages
+  name: string
+
+  // How often the poller should be run
+  interval: number
+
+  // Function to call
+  callback: () => Promise<any>
+
+  // Log an error and reset polling if callback() doesn't resolve within
+  // 'timeout' (deafult: no timeout)
+  timeout?: number
+}
+
+/**
+ * General purpose poller for calling a callback at a particular interval,
+ * with an optional timeout:
+ *
+ *   const p = new Poller({
+ *     name: 'my-poller',
+ *     interval: 60 * 1000,
+ *     callback: () => console.lock('Tick!'),
+ *     timeout: 30 * 1000,
+ *   })
+ */
 export class Poller {
   private polling = false
-  private logger: Logger
-  private timeout: /*Timer|null  for some reason this only works on my machine *shrug */ any = null
+  private timeout: any = null
 
-  constructor(logger: Logger) {
-    this.logger = logger
-  }
+  constructor(
+    private opts: PollerOptions,
+  ) {}
 
-  public start (cb: () => Promise<any>, intervalLength: number) {
+  public start() {
+    const { opts } = this
     if (this.polling) {
-      throw new Error('Poller was already started')
+      throw new Error(`Poller ${opts.name} was already started`)
     }
 
     this.polling = true
-    let lastPolled: number
 
     const poll = async () => {
       if (!this.polling) {
         return
       }
 
-      if (!lastPolled || this.isReadyToPoll(lastPolled, intervalLength)) {
-        try {
-          await cb()
-        } catch(e) {
-          this.logger.logToApi('client-poller', e)
-        }
-        lastPolled = Date.now()
+      const startTime = Date.now()
+      const [[didTimeout, res], err] = await maybe(timeoutPromise(opts.callback(), opts.timeout))
+      if (err) {
+        console.error(`Error polling ${opts.name}:`, err)
       }
 
-      const nextPoll = intervalLength - (Date.now() - lastPolled)
-      this.timeout = setTimeout(
-        poll,
-        nextPoll,
-      )
+      if (didTimeout) {
+        console.error(
+          `Timeout of ${(opts.timeout! / 1000).toFixed()}s waiting for callback on poller ` +
+          `${opts.name} to complete. ` + (
+            this.polling ?
+              `It will be called again in ${(opts.interval / 1000).toFixed()}s.` :
+              `The poller has been stopped and it will not be called again.`
+          )
+        )
+
+        maybe(res).then(([res, err]) => {
+          console.error(
+            `Orphaned poller callback on poller ${opts.name} returned after ` +
+            `${((Date.now() - startTime) / 1000).toFixed()}s`,
+            res || err,
+          )
+        })
+      }
+
+      this.timeout = setTimeout(poll, opts.interval)
     }
-    poll()
+
+    return poll()
   }
 
   public stop = () => {
@@ -52,6 +89,4 @@ export class Poller {
   public isStarted(): boolean {
     return this.polling
   }
-
-  private isReadyToPoll = (lastPolled: number, intervalLength: number): boolean => Date.now() - lastPolled > intervalLength
 }

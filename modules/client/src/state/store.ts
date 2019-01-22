@@ -1,8 +1,8 @@
-import { ChannelUpdateReason } from '../types'
+import { ChannelUpdateReason, ChannelStatus } from '../types'
 import { UpdateRequest } from '../types'
 //import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
 import { EMPTY_ROOT_HASH } from '../lib/constants'
-import { Store } from 'redux';
+import { Store } from 'redux'
 import { ThreadState, ChannelState } from '../types'
 import { SyncResult, Payment } from '../types'
 import { ExchangeRateState } from './ConnextState/ExchangeRates'
@@ -52,13 +52,8 @@ export class RuntimeState {
   canCollateralize: boolean = false
   exchangeRate: null | ExchangeRateState = null
   syncResultsFromHub: SyncResult[] = []
+  channelStatus: ChannelStatus = "CS_OPEN"
   updateRequestTimeout: number = 60 * 10 // default 10 min
-}
-
-export interface PendingRequestedDeposit {
-  amount: Payment
-  requestedOn: number
-  txCount: number | null
 }
 
 export class PersistentState {
@@ -88,8 +83,6 @@ export class PersistentState {
   initialThreadStates: ThreadState[] = []
   lastThreadId: number = 0
   syncControllerState = new SyncControllerState()
-
-  requestedDeposit: null | PendingRequestedDeposit = null
 }
 
 export class ConnextState {

@@ -1,7 +1,7 @@
-import { SyncControllerState, RuntimeState, PendingRequestedDeposit } from './store'
+import { SyncControllerState, RuntimeState } from './store'
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
 //import Wallet from 'ethereumjs-wallet'
-import { ChannelState, SyncResult, Address, UpdateRequest } from '../types'
+import { ChannelState, SyncResult, Address, UpdateRequest, ChannelStatus } from '../types'
 import { ConnextState } from '../state/store'
 import { ExchangeRateState } from './ConnextState/ExchangeRates'
 
@@ -55,6 +55,7 @@ export const setSortedSyncResultsFromHub = setterAction<SyncResult[]>('runtime.s
 export const dequeueSyncResultsFromHub = setterAction<SyncResult>('runtime.syncResultsFromHub', 'dequeue', (state, toRemove, prev) => {
   return prev.filter((x: any) => x !== toRemove)
 })
+export const setChannelStatus = setterAction<ChannelStatus>('runtime.channelStatus')
 
 // Persistent
 export const setLastThreadId = setterAction<number>('persistent.lastThreadId')
@@ -65,4 +66,3 @@ export type SetChannelActionArgs = {
 }
 export const setChannel = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
 export const setSyncControllerState = setterAction<SyncControllerState>('persistent.syncControllerState')
-export const setRequestedDeposit = setterAction<PendingRequestedDeposit | null>('persistent.requestedDeposit')

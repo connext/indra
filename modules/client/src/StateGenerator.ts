@@ -12,13 +12,13 @@ import {
   ThreadStateBN,
   convertChannelState,
   PaymentBN,
-  Payment,
   UnsignedChannelStateBN,
   PendingArgsBN,
   PendingExchangeArgsBN,
   ChannelUpdateReason,
   UpdateRequestBN,
   InvalidationArgs,
+  VerboseChannelEventBN,
 } from "./types";
 import { toBN, mul, minBN, maxBN } from "./helpers/bn";
 import BN = require('bn.js')
@@ -91,10 +91,10 @@ function safeDiv(num: BN, div: BN) {
   return num.div(div)
 }
 
-function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): { [key in keyof T]: R } {
+export function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): { [key in keyof T]: R } {
   const res: any = {}
   for (let key in obj)
-    res[key] = func(key as any, res[key])
+    res[key] = func(key as any, obj[key] as any)
   return res
 }
 
@@ -146,8 +146,9 @@ export class StateGenerator {
       'ProposePendingDeposit': this.proposePendingDeposit.bind(this),
       'ProposePendingWithdrawal': this.proposePendingWithdrawal.bind(this),
       'ConfirmPending': this.confirmPending.bind(this),
-      'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
       'Invalidation': this.invalidation.bind(this),
+      'EmptyChannel': this.emptyChannel.bind(this),
+      'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
       'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
     }
   }
@@ -517,6 +518,9 @@ export class StateGenerator {
     // prev.balance = [0, 1]
     // prev.pending = [0, 0, 1, 2]
     // final.balance = [0, 1]
+
+    // the only event values used directly are the pending operations
+    // and the txCountChain
     return convertChannelState("str-unsigned", {
       ...prev,
       balanceWeiHub: prev.pendingDepositWeiHub.gt(prev.pendingWithdrawalWeiHub)
@@ -531,6 +535,7 @@ export class StateGenerator {
       balanceTokenUser: prev.pendingDepositTokenUser.gt(prev.pendingWithdrawalTokenUser)
         ? prev.balanceTokenUser.add(prev.pendingDepositTokenUser).sub(prev.pendingWithdrawalTokenUser)
         : prev.balanceTokenUser,
+      // reset pending values
       pendingDepositWeiHub: toBN(0),
       pendingDepositWeiUser: toBN(0),
       pendingDepositTokenHub: toBN(0),
@@ -539,11 +544,35 @@ export class StateGenerator {
       pendingWithdrawalWeiUser: toBN(0),
       pendingWithdrawalTokenHub: toBN(0),
       pendingWithdrawalTokenUser: toBN(0),
+      // account for offchain updates by using prev txCountGlobal
       txCountGlobal: prev.txCountGlobal + 1,
+      // use chain tx count from event
+      txCountChain: prev.txCountChain,
+      // ^ enforced in validation to be equal
+      // reset recipient + timeout
       recipient: prev.user,
       timeout: 0,
     })
   }
+
+  //////////////////////////
+  // UNILATERAL FUNCTIONS //
+  //////////////////////////
+  // the transaction count in the args is used to ensure consistency
+  // between what is expected and what is emitted from the event during
+  // this state transition. `validator` ensures their truthfulness
+  public emptyChannel(event: VerboseChannelEventBN): UnsignedChannelState {
+    // state called to represent the channel being emptied
+    // should increase the global nonce
+    const { sender, ...channel } = event
+    return convertChannelState("str-unsigned", {
+      ...channel,
+      recipient: channel.user,
+      timeout: 0,
+      txCountGlobal: channel.txCountGlobal + 1,
+    })
+  }
+
 
   // TODO: should the args be a signed thread state or unsigned thread state?
   public openThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: UnsignedThreadStateBN): UnsignedChannelState {

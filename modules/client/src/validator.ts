@@ -1,5 +1,5 @@
-import { subOrZero } from './StateGenerator'
-import { convertProposePending, InvalidationArgs, ArgsTypes } from './types'
+import { subOrZero, objMap } from './StateGenerator'
+import { convertProposePending, InvalidationArgs, ArgsTypes, SignedDepositRequestProposal, EmptyChannelArgs, VerboseChannelEventBN, ChannelEventReason, EventInputs, convertVerboseEvent, makeEventVerbose } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
 import Web3 = require('web3')
@@ -39,7 +39,10 @@ import {
   ConfirmPendingArgs,
   convertThreadPayment,
   Payment,
-  convertArgs
+  convertArgs,
+  WithdrawalParametersBN,
+  withdrawalParamsNumericFields,
+  convertWithdrawalParams
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
@@ -83,6 +86,7 @@ export class Validator {
       'ProposePendingWithdrawal': this.generateProposePendingWithdrawal.bind(this),
       'ConfirmPending': this.generateConfirmPending.bind(this),
       'Invalidation': this.generateInvalidation.bind(this),
+      'EmptyChannel': this.generateEmptyChannel.bind(this),
       'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
       'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
     }
@@ -148,7 +152,7 @@ export class Validator {
     if (args.tokensToSell.gt(toBN(0)) && args.weiToSell.gt(toBN(0)) ||
       args.tokensToSell.isZero() && args.weiToSell.isZero()
     ) {
-      return `Exchanges cannot sell both wei and tokens simultaneously (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
+      return `Exchanges cannot sell both wei and tokens simultaneously (args: ${JSON.stringify(args)}, prev: ${this.logChannel(prev)})`
     }
 
     return null
@@ -180,7 +184,23 @@ export class Validator {
     }
 
     if (args.timeout < 0) {
-      return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
+      return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${this.logChannel(prev)})`
+    }
+
+    // ensure the deposit is correctly signed by user if the sig user
+    // exists
+    if (args.sigUser) {
+      try {
+        const argsStr = convertDeposit("str", args)
+        const proposal: SignedDepositRequestProposal = {
+          amountToken: argsStr.depositTokenUser,
+          amountWei: argsStr.depositWeiUser,
+          sigUser: args.sigUser,
+        }
+        this.assertDepositRequestSigner(proposal, prev.user)
+      } catch (e) {
+        return `Invalid signer detected. ` + e.message + ` (prev: ${this.logChannel(prev)}, args: ${this.logArgs(args, "ProposePendingDeposit")}`
+      }
     }
 
     return null
@@ -249,6 +269,16 @@ export class Validator {
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
   }
 
+  public withdrawalParams = (params: WithdrawalParametersBN): string | null => {
+    if (+params.exchangeRate != +params.exchangeRate || +params.exchangeRate < 0)
+      return 'invalid exchange rate: ' + params.exchangeRate
+    return this.hasNegative(params, withdrawalParamsNumericFields)
+  }
+
+  public payment = (params: PaymentBN): string | null => {
+    return this.hasNegative(params, argNumericFields.Payment)
+  }
+
   public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {
     const errs = [
       this.isValidStateTransitionRequest(
@@ -278,45 +308,70 @@ export class Validator {
   }
 
   public async confirmPending(prev: ChannelStateBN, args: ConfirmPendingArgs): Promise<string | null> {
-    const e = this.isValidStateTransitionRequest(
-      prev,
-      { args, reason: "ConfirmPending", txCount: prev.txCountGlobal }
-    )
-    if (e) {
-      return e
-    }
-
-    // validate on chain information
-    const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransaction(txHash) as any
-    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
-
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
-    for (let field in prev) {
-      if (typeof (prev as any)[field] === "string") {
-        (prev as any)[field] = (prev as any)[field].toLowerCase()
-      }
-    }
+    prev = objMap(prev, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
 
+    // validate on chain information
+    // const txHash = args.transactionHash
+    const tx = await this.web3.eth.getTransaction(args.transactionHash) as any
+
+    // return out of fn on transaction errors
     if (!tx || !tx.blockHash) {
-      return `Transaction to contract not found. (txHash: ${txHash}, prev: ${JSON.stringify(prev)})`
+      return `Transaction to contract not found. (txHash: ${args.transactionHash}, prev: ${this.logChannel(prev)})`
     }
 
     if (tx.to.toLowerCase() !== prev.contractAddress.toLowerCase()) {
-      return `Transaction is not for the correct channel manager contract. (txHash: ${txHash}, contractAddress: ${tx.contractAddress}, prev: ${JSON.stringify(prev)})`
+      return `Transaction is not for the correct channel manager contract. (txHash: ${args.transactionHash}, contractAddress: ${tx.contractAddress}, prev: ${this.logChannel(prev)})`
     }
 
     // parse event values
-    const event = this.parseDidUpdateChannelTxReceipt(receipt)
-
-    if (event.sender.toLowerCase() !== prev.user.toLowerCase() && event.sender.toLowerCase() !== this.hubAddress) {
-      return `Transaction sender is not member of the channel (txHash: ${txHash}, event: ${JSON.stringify(event)}, prev: ${JSON.stringify(prev)})`
+    const receipt = await this.web3.eth.getTransactionReceipt(args.transactionHash)
+    let events = []
+    try {
+      events = this.parseChannelEventTxReceipt("DidUpdateChannel", receipt, prev.contractAddress)
+    } catch (e) {
+      return e.message
+    }
+    if (events.length === 0) {
+      return `Event not able to be parsed or not found. Args: ${args}`
     }
 
-    // compare values against previous
-    if (this.hasInequivalent([event, prev], Object.keys(event).filter(key => key !== "sender"))) {
-      return `Decoded tx event values are not properly reflected in the previous state. ` + this.hasInequivalent([event, prev], Object.keys(event).filter(key => key !== "sender")) + `. (txHash: ${txHash}, event: ${JSON.stringify(event)}, prev: ${JSON.stringify(prev)})`
+    // find matching event
+    const matchingEvent = this.findMatchingEvent(prev, events)
+    if (!matchingEvent) {
+      return `No event matching the contractAddress, user, and txCountChain of the previous state could be found in the events parsed. Tx: ${args.transactionHash}, prev: ${this.logChannel(prev)}, events: ${JSON.stringify(events)}`
+    }
+
+    if (matchingEvent.sender.toLowerCase() !== prev.user &&
+      matchingEvent.sender.toLowerCase() !== this.hubAddress) {
+      return `Transaction sender is not member of the channel (txHash: ${args.transactionHash}, event: ${JSON.stringify(event)}, prev: ${this.logChannel(prev)})`
+    }
+
+    // all pending values from the event as well as the txCountChain and
+    // timeout must all be equivalent. other fields may have been updated
+    // with allowable offchain state updates. also exclude fields in event
+    // that are not in the channel (`sender`)
+    const keysToCheck = channelNumericFields.filter(f => f.startsWith('pending'))
+    const str = this.hasInequivalent(
+      [matchingEvent, prev],
+      keysToCheck
+    )
+    if (str) {
+      return `Decoded tx event values are not properly reflected in the previous state. ` + str + `. (txHash: ${args.transactionHash}, events[${events.indexOf(matchingEvent)}]: ${JSON.stringify(matchingEvent)}, prev: ${this.logChannel(prev)})`
+    }
+
+    // add to args to create request
+    const err = this.isValidStateTransitionRequest(
+      prev,
+      {
+        reason: "ConfirmPending",
+        args,
+        txCount: prev.txCountGlobal,
+      }
+    )
+    if (err) {
+      return err
     }
 
     return null
@@ -332,11 +387,88 @@ export class Validator {
     return this.stateGenerator.confirmPending(prev)
   }
 
-  // NOTE: the prev here is NOT the previous state in the state-chain 
-  // of events. Instead it is the previously "valid" update, meaning the 
+  public async emptyChannel(prev: ChannelStateBN, args: EmptyChannelArgs): Promise<string | null> {
+    // apply .toLowerCase to all strings on the prev object
+    // (contractAddress, user, recipient, threadRoot, sigHub)
+    prev = objMap(prev, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
+
+    // compare event values to expected by transactionHash
+    // validate on chain information
+    const txHash = args.transactionHash
+    const tx = await this.web3.eth.getTransaction(txHash) as any
+    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
+
+    if (!tx || !tx.blockHash) {
+      return `Transaction to contract not found. Event not able to be parsed or does not exist.(txHash: ${txHash}, prev: ${JSON.stringify(prev)})`
+    }
+
+    if (tx.to.toLowerCase() !== prev.contractAddress) {
+      return `Transaction is not for the correct channel manager contract. (txHash: ${txHash}, contractAddress: ${tx.contractAddress}, prev: ${JSON.stringify(prev)})`
+    }
+
+    // parse event values
+    let events = []
+    try {
+      events = this.parseChannelEventTxReceipt("DidEmptyChannel", receipt, prev.contractAddress)
+    } catch (e) {
+      return e.message
+    }
+
+    if (events.length === 0) {
+      return `Event not able to be parsed or does not exist. Args: ${args}`
+    }
+
+    // handle all events gracefully if multiple
+    // find matching event
+    const matchingEvent = this.findMatchingEvent(prev, events, "txCountChain")
+    if (!matchingEvent) {
+      return `No event matching the contractAddress and user of the previous state could be found in the events parsed. Tx: ${args.transactionHash}, prev: ${this.logChannel(prev)}, events: ${JSON.stringify(events)}`
+    }
+
+    // all channel fields should be 0
+    const hasNonzero = this.hasNonzero(matchingEvent, channelNumericFields)
+    if (hasNonzero) {
+      return `Nonzero event values were decoded.` + hasNonzero + `. (txHash: ${args.transactionHash}, events[${events.indexOf(matchingEvent)}]: ${JSON.stringify(events)}, prev: ${this.logChannel(prev)})`
+    }
+
+    // there is no guarantee that the previous state supplied here is
+    // correct. error if there is a replay attack, i.e. the previous state
+    // has a higher txCountGlobal
+    if (prev.txCountGlobal > matchingEvent.txCountGlobal) {
+      return `Previous state has a higher txCountGlobal than the decoded event. (transactionHash: ${args.transactionHash}, prev: ${this.logChannel(prev)}, ${JSON.stringify(events)}`
+    }
+
+    return null
+  }
+
+  public async generateEmptyChannel(prevStr: ChannelState, args: EmptyChannelArgs): Promise<UnsignedChannelState> {
+    const prev = convertChannelState("bn", prevStr)
+    const error = await this.emptyChannel(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+    // NOTE: the validator retrieves the event and notes all on chain
+    // validation from the event. The stateGenerator does NOT.
+    // Anaologous to confirmPending. To remain consistent with what
+    // exists onchain, must use path that contains validation
+
+    const receipt = await this.web3.eth.getTransactionReceipt(args.transactionHash)
+    const events = this.parseChannelEventTxReceipt("DidEmptyChannel", receipt, prev.contractAddress)
+    const matchingEvent = this.findMatchingEvent(prev, events, "txCountChain")
+    if (!matchingEvent) {
+      throw new Error(`This should not happen, matching event not found even though it was found in the validator.`)
+    }
+
+    // For an empty channel, the generator should rely on an empty channel
+    // event. All channel information should be reset from the contract.
+    return this.stateGenerator.emptyChannel(matchingEvent)
+  }
+
+  // NOTE: the prev here is NOT the previous state in the state-chain
+  // of events. Instead it is the previously "valid" update, meaning the
   // previously double signed upate with no pending ops
   public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs) {
-    // state should not 
+    // state should not
     if (args.lastInvalidTxCount < args.previousValidTxCount) {
       return `Previous valid nonce is higher than the nonce of the state to be invalidated. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
     }
@@ -357,7 +489,7 @@ export class Validator {
     return null
   }
 
-  public generateInvalidation(prevStr: ChannelState, argsStr: InvalidationArgs) {
+  public generateInvalidation(prevStr: ChannelState, argsStr: InvalidationArgs): UnsignedChannelState {
     const prev = convertChannelState("bn", prevStr)
     const args = convertArgs("bn", "Invalidation", argsStr)
     const error = this.invalidation(prev, args)
@@ -398,12 +530,12 @@ export class Validator {
     }
 
     if (prev.contractAddress !== args.contractAddress) {
-      return `Invalid initial thread state for channel: ${prev.contractAddress !== args.contractAddress ? 'contract address of thread invalid' : '' + this.hasNonzero(args, ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver'])}. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
+      return `Invalid initial thread state for channel: ${prev.contractAddress !== args.contractAddress ? 'contract address of thread invalid' : '' + this.hasNonzero(args, ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver'])}. (args: ${JSON.stringify(args)}, prev: ${this.logChannel(prev)})`
     }
 
     // must be channel user, cannot open with yourself
     if (!userIsSender && args.receiver !== prev.user || userIsSender && args.receiver === args.sender) {
-      return `Invalid thread members (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
+      return `Invalid thread members (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${this.logChannel(prev)})`
     }
 
 
@@ -444,7 +576,7 @@ export class Validator {
     // closed (corr. to prev open threads)
     const initialState = initialThreadStates.filter(thread => thread.threadId === args.threadId)[0]
     if (!initialState) {
-      return `Thread is not included in channel open threads. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
+      return `Thread is not included in channel open threads. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${this.logChannel(prev)})`
     }
 
     // NOTE: in other places previous states are not validated, and technically
@@ -473,7 +605,7 @@ export class Validator {
       amountToken: args.balanceTokenReceiver.add(args.balanceTokenSender)
     }
     if (this.hasInequivalent([initAmts, finalAmts], Object.keys(finalAmts))) {
-      return `Balances in closing thread state are not conserved. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
+      return `Balances in closing thread state are not conserved. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${this.logChannel(prev)})`
     }
 
     return null
@@ -536,6 +668,15 @@ export class Validator {
   public assertThreadSigner(threadState: ThreadState): void {
     if (this.utils.recoverSignerFromThreadState(threadState, threadState.sigA) !== threadState.sender) {
       throw new Error(`Thread state is not correctly signed. threadState: ${JSON.stringify(threadState)}`)
+    }
+  }
+
+  public assertDepositRequestSigner(req: SignedDepositRequestProposal, signer: Address): void {
+    if (!req.sigUser) {
+      throw new Error(`No signature detected on deposit request. (request: ${JSON.stringify(req)}, signer: ${signer})`)
+    }
+    if (this.utils.recoverSignerFromDepositRequest(req) !== signer) {
+      throw new Error(`Deposit request proposal is not correctly signed by intended signer. (request: ${JSON.stringify(req)}, signer: ${signer})`)
     }
   }
 
@@ -655,7 +796,7 @@ export class Validator {
     ] as (string | null)[]
     // assume the previous should always have at least one sig
     if (prev.txCountChain > 0 && !prev.sigHub && !prev.sigUser) {
-      errs.push(`No signature detected on the previous state. (prev: ${JSON.stringify(prev)}, curr: ${JSON.stringify(curr)})`)
+      errs.push(`No signature detected on the previous state. (prev: ${this.logChannel(prev)}, curr: ${JSON.stringify(curr)})`)
     }
 
     const prevPending = this.hasPendingOps(prev)
@@ -665,18 +806,21 @@ export class Validator {
     if (currPending && !prevPending) {
       errs.push(this.enforceDelta([prev, curr], 1, ['txCountChain']))
     } else {
+      // NOTE: on confirmPending validator, equivalence between event
+      // values and previous values is enforced
+      // it is also enforced that there are pending values
       errs.push(this.enforceDelta([prev, curr], 0, ['txCountChain']))
     }
 
-    // calculate the out of channel balance that could be used in 
+    // calculate the out of channel balance that could be used in
     // transition. could include previous pending updates and the
     // reserves.
     //
     // hub will use reserves if it cannot afford the current withdrawal
-    // requested by user from the available balance that exists in the 
+    // requested by user from the available balance that exists in the
     // channel state
-    // 
-    // out of channel balance amounts should be "subtracted" from 
+    //
+    // out of channel balance amounts should be "subtracted" from
     // channel balance calculations. This way, we can enforce that
     // out of channel balances are accounted for in the
     // previous balance calculations
@@ -725,7 +869,7 @@ export class Validator {
 
     }
 
-    // reserves are only accounted for in channel balances in propose 
+    // reserves are only accounted for in channel balances in propose
     // pending states, where they are deducted to illustrate their
     // brief lifespan in the channel where they are
     // immediately deposited and withdrawn
@@ -740,10 +884,10 @@ export class Validator {
   }
 
   private isValidStateTransitionRequest(prev: ChannelStateBN, request: UpdateRequest): string | null {
-    // @ts-ignore TODO: wtf 
+    // @ts-ignore TODO: wtf
     const args = convertArgs("bn", request.reason, request.args)
     // will fail on generation in wd if negative args supplied
-    let err = this.hasNegative(args, argNumericFields[request.reason])
+    let err = this.hasNegative(args, (argNumericFields)[request.reason])
     if (err) {
       return err
     }
@@ -779,26 +923,29 @@ export class Validator {
     return total
   }
 
+  private findMatchingEvent(prev: ChannelStateBN, events: VerboseChannelEventBN[], fieldsToExclude: string = ""): VerboseChannelEventBN | null {
+    const compFields = ["user", "contractAddress", "txCountChain"].filter(f => f !== fieldsToExclude)
+    return events.filter(e => {
+      // only return events whos contractAddress, txCountChain,
+      // and user address are the same as the previous state.
+      return this.hasInequivalent([e, prev], compFields) === null
+    })[0]
+  }
 
-  private parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
+  private parseChannelEventTxReceipt(name: ChannelEventReason, txReceipt: TransactionReceipt, contractAddress: string): VerboseChannelEventBN[] {
+
     if (!txReceipt.logs) {
-      return null
+      throw new Error('Uh-oh! No Tx logs found. Are you sure the receipt is correct?')
     }
 
-    const inputs = [
-      { type: 'address', name: 'user', indexed: true },
-      { type: 'uint256', name: 'senderIdx' },
-      { type: 'uint256[2]', name: 'weiBalances' },
-      { type: 'uint256[2]', name: 'tokenBalances' },
-      { type: 'uint256[4]', name: 'pendingWeiUpdates' },
-      { type: 'uint256[4]', name: 'pendingTokenUpdates' },
-      { type: 'uint256[2]', name: 'txCount' },
-      { type: 'bytes32', name: 'threadRoot' },
-      { type: 'uint256', name: 'threadCount' },
-    ]
+    const inputs = EventInputs[name]
+    if (!inputs) {
+      // indicates invalid name provided
+      throw new Error(`Uh-oh! No inputs found. Are you sure you did typescript good? Check 'ChannelEventReason' in 'types.ts' in the source. Event name provided: ${name}`)
+    }
 
     const eventTopic = this.web3.eth.abi.encodeEventSignature({
-      name: 'DidUpdateChannel',
+      name,
       type: 'event',
       inputs,
     })
@@ -814,49 +961,61 @@ export class Validator {
     })
     */
 
-    let raw = {} as any
+    let parsed: VerboseChannelEventBN[] = []
     txReceipt.logs.forEach((log) => {
-      if (log.topics.indexOf(eventTopic) > -1) {
-        let tmp = this.web3.eth.abi.decodeLog(inputs, log.data, log.topics) as any
-        Object.keys(tmp).forEach((field) => {
-          if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
-            raw[field] = tmp[field]
-          }
-        })
+      // logs have the format where multiple topics
+      // can adhere to the piece of data you are looking for
+      // only seach the logs if the topic is contained
+      let raw = {} as any
+      if (log.topics[0] !== eventTopic) {
+        return
       }
+      // will be returned with values double indexed, one under
+      // their field names, and one under an `_{index}` value, where
+      // there index is a numeric value in the list corr to the order
+      // in which they are emitted/defined in the contract
+      let tmp = this.web3.eth.abi.decodeLog(inputs, log.data, log.topics) as any
+      // store only the descriptive field names
+      Object.keys(tmp).forEach((field) => {
+        if (!field.match(/\d/g) && !field.startsWith('__')) {
+          raw[field] = tmp[field]
+        }
+      })
+
       // NOTE: The second topic in the log with the events topic
-      // is the indexed user.
+      // is the indexed user. This is valid for all Channel events in contract
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
+      parsed.push(convertVerboseEvent("bn", makeEventVerbose(
+        raw,
+        this.hubAddress,
+        contractAddress)
+      ))
     })
 
-    /*
-    event DidUpdateChannel (
-      address indexed user,
-      uint256 senderIdx, // 0: hub, 1: user
-      uint256[2] weiBalances, // [hub, user]
-      uint256[2] tokenBalances, // [hub, user]
-      uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
-      uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
-      uint256[2] txCount, // [global, onchain]
-      bytes32 threadRoot,
-      uint256 threadCount
-    );
-    */
-
-    return {
-      user: raw.user,
-      sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
-      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0]),
-      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2]),
-      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0]),
-      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2]),
-      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1]),
-      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3]),
-      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1]),
-      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3]),
-      txCountChain: parseInt(raw.txCount[1], 10),
-    }
+    return parsed
   }
+
+  /*
+  event DidStartExitChannel (
+        address indexed user,
+        uint256 senderIdx, // 0: hub, 1: user
+        uint256[2] weiBalances, // [hub, user]
+        uint256[2] tokenBalances, // [hub, user]
+        uint256[2] txCount, // [global, onchain]
+        bytes32 threadRoot,
+        uint256 threadCount
+    );
+
+    event DidEmptyChannel (
+        address indexed user,
+        uint256 senderIdx, // 0: hub, 1: user
+        uint256[2] weiBalances, // [hub, user]
+        uint256[2] tokenBalances, // [hub, user]
+        uint256[2] txCount, // [global, onchain]
+        bytes32 threadRoot,
+        uint256 threadCount
+    );
+  */
 
   private logChannel(prev: ChannelStateBN | UnsignedChannelStateBN) {
     if (!(prev as ChannelStateBN).sigUser) {

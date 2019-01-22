@@ -201,11 +201,18 @@ export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
  *    return value of `p`.
  * 2) Timeout `timeout` expires. If so, `[true, p]` is returned (where `p` is
  *    the original promise.
+ *
+ * If timeout is false-y then `[false, T]` will be unconditionally returned.
  */
-export function timeoutPromise<T>(p: Promise<T>, timeout: number): Promise<
+export function timeoutPromise<T>(p: Promise<T>, timeout: number | null | undefined): Promise<
   [false, T] |
   [true, Promise<T>]
 > {
+
+  if (!timeout) {
+    return p.then(res => [false, res]) as any
+  }
+
   let toClear: any
   const res = Promise.race([
     p.then(res => [false, res]),
@@ -219,4 +226,32 @@ export function timeoutPromise<T>(p: Promise<T>, timeout: number): Promise<
     toClear && clearTimeout(timeout)
   })
   return res as any
+}
+
+/**
+ * Used to assert at compile time that a statement is unreachable.
+ *
+ * For example:
+ *
+ *  type Option = 'a' | 'b'
+ *
+ *  function handleOption(o: Option) {
+ *    if (o == 'a')
+ *      return handleA()
+ *    if (o == 'b')
+ *      return handleB()
+ *    assertUnreachable(o)
+ *  }
+ */
+export function assertUnreachable(x: never): never {
+  throw new Error('Reached unreachable statement: ' + JSON.stringify(x))
+}
+
+/**
+ * Sleep.
+ *
+ *    await sleep(1000)
+ */
+export function sleep(t: number) {
+  return new Promise(res => setTimeout(res, t))
 }

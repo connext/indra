@@ -1,23 +1,8 @@
 {
-  "name": "connext",
+  "name": "@spankchain/connext-client",
   "description": "Shared code between wallet and hub",
-  "version": "3.0.1",
+  "version": "0.0.1",
   "main": "dist",
-  "engines": {
-    "node": ">=9",
-    "npm": ">=5"
-  },
-  "scripts": {
-    "build": "npm run clean && npm run compile",
-    "clean": "rm -rf ./dist",
-    "compile": "node_modules/.bin/tsc",
-    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
-    "postinstall": "rm -f node_modules/web3/index.d.ts",
-    "prepare": "npm run build",
-    "build-tester": "docker build --file ops/dev.dockerfile --tag connext_tester:dev .",
-    "test": "docker run --rm --volume=`pwd`:/root connext_tester:dev",
-    "test-local": "mocha -r ts-node/register/type-check -r ./src/register/common.ts -r ./src/register/testing.ts \"src/**/*.test.ts\" --exit"
-  },
   "devDependencies": {
     "@types/chai": "^4.1.6",
     "@types/chai-as-promised": "^7.1.0",
@@ -55,6 +40,19 @@
     "semaphore": "^1.1.0",
     "typescript-fsa": "^3.0.0-beta-2",
     "typescript-fsa-reducers": "^1.1.0",
-    "web3": "^1.0.0-beta.36"
+    "web3": "^1.0.0-beta.37"
+  },
+  "engines": {
+    "node": ">=9",
+    "npm": ">=5"
+  },
+  "scripts": {
+    "clean": "rm -rf ./dist",
+    "build": "npm run clean && npm run compile",
+    "compile": "node_modules/.bin/tsc",
+    "prepare": "npm run build",
+    "test": "mocha -r ts-node/register/type-check -r ./src/register/common.ts -r ./src/register/testing.ts \"src/**/*.test.ts\" --exit",
+    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'",
+    "postinstall": "rm -f node_modules/web3/index.d.ts"
   }
 }

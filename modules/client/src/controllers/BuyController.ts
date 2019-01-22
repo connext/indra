@@ -48,7 +48,7 @@ export default class BuyController extends AbstractController {
     }
 
     const res = await this.connext.hub.buy(purchase.meta, signedPayments)
-    this.connext.syncController.enqueueSyncResultsFromHub(res.updates)
+    this.connext.syncController.handleHubSync(res.sync)
     return res
   }
 

@@ -35,14 +35,16 @@ export class ExchangeController extends AbstractController {
 
   constructor(name: string, connext: ConnextInternal) {
     super(name, connext)
-    this.poller = new Poller(this.logger)
+    this.poller = new Poller({
+      name: 'ExchangeController',
+      interval: ExchangeController.POLLER_INTERVAL_LENGTH,
+      callback: this.pollExchangeRates.bind(this),
+      timeout: 60 * 1000,
+    })
   }
 
   async start() {
-    await this.poller.start(
-      this.pollExchangeRates,
-      ExchangeController.POLLER_INTERVAL_LENGTH
-    )
+    await this.poller.start()
   }
 
   async stop() {
@@ -76,7 +78,7 @@ export class ExchangeController extends AbstractController {
     const weiToSell = currency === "wei" ? toSell : '0'
     const tokensToSell = currency === "token" ? toSell : '0'
     const sync = await this.hub.requestExchange(weiToSell, tokensToSell, getTxCount(this.store))
-    this.connext.syncController.enqueueSyncResultsFromHub(sync)
+    this.connext.syncController.handleHubSync(sync)
 
   }
 }

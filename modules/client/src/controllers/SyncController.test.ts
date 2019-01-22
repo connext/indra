@@ -1,7 +1,7 @@
-import { SyncResult, convertChannelState, InvalidationArgs, UpdateRequest } from '../types'
+import { SyncResult, convertChannelState, InvalidationArgs, UpdateRequest, convertVerboseEvent, unsignedChannel } from '../types'
 import { mergeSyncResults, filterPendingSyncResults } from './SyncController'
 import { assert, getChannelState, mkAddress, mkHash, parameterizedTests, updateObj, getChannelStateUpdate } from '../testing'
-import { MockConnextInternal, MockStore, MockHub, MockWeb3 } from '../testing/mocks';
+import { MockConnextInternal, MockStore, MockHub, MockWeb3, patch } from '../testing/mocks';
 import { StateGenerator } from '../StateGenerator';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
@@ -89,7 +89,7 @@ describe('mergeSyncResults', () => {
 describe('filterPendingSyncResults', () => {
   function mkFromHub(opts: any) {
     return {
-      type:  'channel',
+      type: 'channel',
       update: {
         reason: 'Payment',
         ...opts,
@@ -101,7 +101,7 @@ describe('filterPendingSyncResults', () => {
     {
       name: 'toSync contains invalidation',
 
-      fromHub: [ mkFromHub({ txCount: 4 }), mkFromHub({ txCount: 5 }) ],
+      fromHub: [mkFromHub({ txCount: 4 }), mkFromHub({ txCount: 5 })],
 
       toHub: [
         {
@@ -115,7 +115,7 @@ describe('filterPendingSyncResults', () => {
         },
       ],
 
-      expected: [ { txCount: 4 } ],
+      expected: [{ txCount: 4 }],
     },
 
     {
@@ -148,7 +148,7 @@ describe('filterPendingSyncResults', () => {
     {
       name: 'results are fully signed signed',
 
-      fromHub: [ mkFromHub({ txCount: 5, sigHub: true, sigUser: true }) ],
+      fromHub: [mkFromHub({ txCount: 5, sigHub: true, sigUser: true })],
 
       toHub: [
         {
@@ -170,7 +170,7 @@ describe('filterPendingSyncResults', () => {
     {
       name: 'results are less signed',
 
-      fromHub: [ mkFromHub({ txCount: 5, sigHub: true }) ],
+      fromHub: [mkFromHub({ txCount: 5, sigHub: true })],
 
       toHub: [
         {
@@ -186,7 +186,7 @@ describe('filterPendingSyncResults', () => {
     {
       name: 'unsigned state being synced',
 
-      fromHub: [ mkFromHub({ id: -69 }) ],
+      fromHub: [mkFromHub({ id: -69 })],
 
       toHub: [
         {
@@ -201,9 +201,9 @@ describe('filterPendingSyncResults', () => {
     {
       name: 'unsigned state is new',
 
-      fromHub: [ mkFromHub({ id: -69 }) ],
+      fromHub: [mkFromHub({ id: -69 })],
 
-      toHub: [], 
+      toHub: [],
 
       expected: [
         { id: -69 },
@@ -244,7 +244,7 @@ describe('SyncController.findBlockNearestTimeout', () => {
       targetTimestamp: 490,
       expectedBlockNumber: 500,
     },
-    
+
     {
       name: 'current block is before the timeout',
       latestBlockNumber: 400,
@@ -397,7 +397,7 @@ describe("SyncController: invalidation handling", () => {
 })
 
 // TODO: changes were made, merged into WIP PR 12/13
-// these tests must be revisited in addition to other found bugs. 
+// these tests must be revisited in addition to other found bugs.
 describe.skip('SyncController: unit tests (ConfirmPending)', () => {
   const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
@@ -414,10 +414,10 @@ describe.skip('SyncController: unit tests (ConfirmPending)', () => {
     connext = new MockConnextInternal({ user })
     // NOTE: this validator depends on web3. have it just return
     // the generated state
-    connext.validator.generateConfirmPending = (prev, args) => {
+    connext.validator.generateConfirmPending = async (prev, args) => {
       return new StateGenerator().confirmPending(
-        convertChannelState("bn", initialChannel)
-      ) as any
+        convertChannelState("bn", prev),
+      )
     }
     mockStore.setChannel(initialChannel)
   })

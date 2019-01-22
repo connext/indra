@@ -1,6 +1,6 @@
 import { ConnextState } from '../state/store'
 import { ConnextStore } from '../state/store'
-import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState } from '../types'
+import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState } from '../types'
 import { ChannelState, UpdateRequestTypes } from '../types'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
@@ -9,6 +9,8 @@ import { Unsubscribe } from 'redux'
 import { Action } from 'typescript-fsa/lib'
 import { validateTimestamp } from '../lib/timestamp';
 import { validateExchangeRate } from './ExchangeController';
+import { assertUnreachable } from '../lib/utils'
+import { hasPendingOps } from '../hasPendingOps'
 
 type StateUpdateHandlers = {
   [Type in keyof UpdateRequestTypes]: (
@@ -96,6 +98,16 @@ export default class StateUpdateController extends AbstractController {
     this.unsubscribe = await watchStore(
       this.store,
       state => {
+        // channel in dispute status, prevent further updates
+        // TODO: thoroughly handle client response
+        const status = state.runtime.channelStatus
+        if (status === "CS_CHANNEL_DISPUTE") {
+          console.warn(`Not processing updates, channel is not open. Status: ${status}`)
+          return null
+        } else if (status === "CS_THREAD_DISPUTE") {
+          throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See REB-36. Disabling client.')
+        }
+        // channel is open
         const item = state.runtime.syncResultsFromHub[0]
         if (item && item.type == 'thread')
           throw new Error('REB-36: enable threads!')
@@ -150,7 +162,7 @@ export default class StateUpdateController extends AbstractController {
     this.store.dispatch(actions.dequeueSyncResultsFromHub(item))
   }
 
-  private async handleSyncItem(item: SyncResult) {
+  public async handleSyncItem(item: SyncResult) {
     this._queuedActions = []
 
     if (item.type === 'thread') {
@@ -193,6 +205,11 @@ export default class StateUpdateController extends AbstractController {
         `(ie, the update is trying to be applied on top of a state that's ` +
         `later than our most recent state)`
       )
+    }
+
+    if (update.reason === 'EmptyChannel') {
+      console.log('Channel has exited dispute phase, re-enabling client')
+      this.store.dispatch(actions.setChannelStatus("CS_OPEN"))
     }
 
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
@@ -323,10 +340,11 @@ export default class StateUpdateController extends AbstractController {
           return new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
         }
 
-        // verification of args
+        // verification of args: timestamp, no user deposits
         const tsErr = validateTimestamp(this.store, update.args.timeout)
         if (tsErr)
           throw CollateralError(tsErr)
+
         return
       }
 
@@ -337,6 +355,10 @@ export default class StateUpdateController extends AbstractController {
         // if-and-only-if we have signed it.
         // Note that the `sendDepositToChain` method will validate that the
         // deposit amount is the amount we expect.
+
+        // user signature on the deposit parameters in enforced within the 
+        // deposit controller, and additionally in the validators if it is
+        // included, so no need to check here
         return await this.connext.depositController.sendUserAuthorizedDeposit(prev, update)
       }
 
@@ -364,130 +386,69 @@ export default class StateUpdateController extends AbstractController {
       }
     },
 
-    // TODO: remove from above
     'Invalidation': async (prev, update) => {
-      // 1. Sanity check previousValidTxCount and lastInvalidTxCount.
-      //
-      //    if update.args.previousValidTxCount > // update.args.lastInvalidTxCount:
-      //      uh oh (validators will catch this) --> never gets here
-      // no sanity check
-      //
-      // Notes for later:
-      //
-      //    The SyncController.latestValidState will be the latest state that
-      //    the SyncController has seen which:
-      //      1. Validates (sigs are valid, etc)
-      //      2. Is fully signed
-      //      3. Does not have pending operations
-      //
-      //    Note: when the hub sends an Invalidation, it will also include its
-      //    latest valid state along with the sync. This means means that, bugs
-      //    in the hub aside, 'latestValidState.txCount' will never be less
-      //    than 'previousValidTxCount'.
-      //
-      // 2. If our current state is ahead of the state 
-      // being invalidated:
-      //
-      //    if current.txCount > update.args.lastInvalidTxCount:
-      //      This shouldn't happen, because it implies we have a fully signed
-      //      state that hasn't been sent to the hub.
-      //      Throw an error, deal with this later.
 
-      if (update.args.lastInvalidTxCount < prev.txCountGlobal) {
-        throw new Error(`Previously double-signed and stored client state is higher nonced than proposed invalidation. Implies lack of sync betweeen hub and client stores.`)
-      }
-      //
-      // 3. If our current state is behind the state being invalidated:
-      //
-      //    if current.txCount < update.args.lastInvalidTxCount:
-      //      if current.pendingOps:
-      //        error()
-      //
-      //      This will happen if the hub is rejecting one of our partially
-      //      signed states (ex, a half-signed exchange we've sent the hub). (would not yet be stored in client store)
-      //
-      //      In the general case, we can't check to see if we have the
-      //      half-signed state the hub is trying to invalidate, so don't bother
-      //      checking for it (since I don't think there's an attack vector
-      //      here?)
-      if (update.args.lastInvalidTxCount > prev.txCountGlobal &&
-        this.validator.hasPendingOps(convertChannelState("bn", prev))) {
-        // hub is invalidating the last half-signed state. make sure there
-        // are no pending operations
-        throw new Error(`Hub should not increase the nonce in an invalidation request unless the previous client state does not have pending operations. lastInvalid: ${update.args.lastInvalidTxCount}, prev.txCountGlobal: ${prev.txCountGlobal}`)
-      }
-      // 4. If the state being invalidated is equal to our current state,
-      //    ensure it has pending fields and IF there is a timeout, 
-      //    that timeout has expired:
-      //
-      //    if current.txCount == update.args.lastInvalidTxCount:
-      //      if !current.timeout:
-      //        This shouldn't happen, because it implies we have a fully signed
-      //        state that hasn't been sent to the hub.
-      //        Throw an error, deal with this later.
-      //
-      //      latest_block = web3.eth.getLatestBlock()
-      //      if latest_block.timestamp < current.timeout:
-      //        discard the invalidation
-      //        log an error
-      //        return
-      //
-      //      Use `web3.eth.filter(…)` to check whether the contract has
-      //      emitted a 'DidUpdateChannel' event which corresponds to the state
-      //      that's being invalidated.
-      //
-      //      if one does exist:
-      //        discard the invalidation
-      //        generate and sync a ConfirmPending
-      //        (implementation detail: for now, we'll just throw an error)
-      //        return
-      //
-      //    Note: if the state being invalidated has a timeout, the hub will
-      //    return it as part of the sync() that includes the invalidation, so
-      //    we're guaranteed to have it.
-      if (
-        update.args.lastInvalidTxCount === prev.txCountGlobal &&
-        !this.validator.hasPendingOps(convertChannelState("bn", prev))
-      ) {
-        // check that the timeout has expired
-        const web3Alias = this.connext.opts.web3
-        const latestBlock = await web3Alias.eth.getBlock('latest')
-        if (prev.timeout < latestBlock.timestamp) {
-          throw new Error(
-            `Hub proposed an invalidation for an update that has not yet ` +
-            `timed out. Update timeout: ${prev.timeout}; latest block: ` +
-            `timestamp: ${latestBlock.timestamp} (hash: ${latestBlock.hash})`
-          )
-        }
-        // check that the deposit has not made it to chain
-        const events = await this.connext.getContractEvents(
-          'DidUpdateChannel',
-          latestBlock.number - 1500,
+      // NOTE (BSU-72): this will break in two ways if the hub tries to
+      // invalidate a state without a timeout:
+      // 1. The txCountGlobal will not necessarily be the most recent (ex,
+      //    because there may have been tips on top of the pending state)
+      // 2. The `didContractEmitUpdateEvent` will throw an error because it
+      //    has not been tested with `timeout = 0` states.
+
+      if (update.args.lastInvalidTxCount !== prev.txCountGlobal) {
+        throw new Error(
+          `Hub proposed invalidation for a state which isn't our latest. ` +
+          `Invalidation: ${JSON.stringify(update)} ` +
+          `Latest state: ${JSON.stringify(prev)}`
         )
-        const event = events.find(e => e.returnValues.txCount[0] === prev.txCountGlobal)
-        if (event) {
-          throw new Error(
-            `Hub proposed invalidation for a state that has made it to chain. ` +
-            `State txCount: ${prev.txCountGlobal}, event: ${JSON.stringify(event)}`
-          )
-        }
+      }
 
-      } else {
+      if (!hasPendingOps(prev)) {
         throw new Error(
           `Hub proposed invalidation for a double signed state with no ` +
           `pending fields. Invalidation: ${JSON.stringify(update)} ` +
           `state: ${JSON.stringify(prev)}`
         )
       }
-      // 5. The invalidation is valid. Countersign and return it.
-      // return update to be countersigned and returned
+
+      const { syncController } = this.connext
+      const { didEmit, latestBlock, event } = await syncController.didContractEmitUpdateEvent(prev)
+
+      switch (didEmit) {
+        case 'unknown':
+          throw new Error(
+            `Hub proposed an invalidation for an update that has not yet ` +
+            `timed out. Update timeout: ${prev.timeout}; latest block: ` +
+            `timestamp: ${latestBlock.timestamp} (hash: ${latestBlock.hash})`
+          )
+
+        case 'yes':
+          throw new Error(
+            `Hub proposed invalidation for a state that has made it to chain. ` +
+            `State txCount: ${prev.txCountGlobal}, event: ${JSON.stringify(event)}`
+          )
+
+        case 'no':
+          // No event was emitted, the state has timed out; countersign and
+          // return the invalidation
+          return
+
+        default:
+          assertUnreachable(didEmit)
+      }
+
+    },
+
+    'EmptyChannel': async (prev, update) => {
+      // channel event is checked in the validator
       return
     },
 
     'ConfirmPending': async (prev, update) => {
-
+      // throw new Error('BSU-37: merge the PR!')
+      // channel event is checked in the validator
+      return
     },
-
     'OpenThread': async (prev, update) => {
       throw new Error('REB-36: enable threads!')
     },
