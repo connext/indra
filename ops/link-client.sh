@@ -3,8 +3,8 @@
 set -e
 
 name="connext-client"
-repo="git@github.com:bohendo/$name.git"
-branch="indra-experimental"
+repo="git@github.com:ConnextProject/$name.git"
+branch="spank-stable"
 root="`pwd`"
 path="$root/modules/client"
 
