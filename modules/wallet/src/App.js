@@ -373,14 +373,15 @@ class App extends Component {
       wallet = await findOrCreateWallet(this.state.web3);
     } else if(this.state.useExistingWallet == "new") {
       wallet = await createWallet(this.state.web3);
+      window.location.reload(true);
     } else if(this.state.useExistingWallet == "recover" && recovery){
       key = recovery
       console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`)
       wallet = await createWalletFromKey(key)
-      }
+    }
     if (wallet){
       console.log(`Wallet created!`)
-    }else{
+    } else {
       alert(`Unable to create wallet. Try refreshing your page and starting over.`)
     }
     store.dispatch({
