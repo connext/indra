@@ -66,7 +66,7 @@ function watch_src {
   ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json
 }
 
-if [[ "$2" == "watch" ]]
+if [[ "$2" == "yes" ]]
 then
   watch_eth_state &
   watch_src &

@@ -33,11 +33,11 @@ export default interface ChainsawDao {
     contract: string,
   ): Promise<void>
 
-  channelById(channelId: string): Promise<PaymentChannel | null>
-
   eventsSince(contract: string, blockNumber: number, txIndex: number|null): Promise<ContractEventWithMeta[]>
 
   eventAt(contract: string, user: string, txCountGlobal: number, txCountChain: number): Promise<ContractEvent|null>
+
+  eventByHash(txHash: string): Promise<ContractEvent|null>
 }
 
 export class PostgresChainsawDao implements ChainsawDao {
@@ -128,35 +128,6 @@ export class PostgresChainsawDao implements ChainsawDao {
     })
   }
 
-  channelById(channelId: string): Promise<PaymentChannel | null> {
-    return this.engine.exec(async (c: Client) => {
-      const res = await c.query(
-        'SELECT * from hub_channels WHERE channel_id = $1 LIMIT 1',
-        [channelId],
-      )
-
-      if (!res.rows.length) {
-        return null
-      }
-
-      const row = res.rows[0]
-      const state = STATUS_TO_STATES[row.status]
-
-      if (state === undefined) {
-        throw new Error(`Unknown state: ${row.status}`)
-      }
-
-      return {
-        state,
-        spent: new BigNumber(row.wei_spent),
-        value: new BigNumber(row.wei_value),
-        channelId: row.channel_id,
-        receiver: row.receiver,
-        sender: row.sender,
-      }
-    })
-  }
-
   eventsSince (contract: string, blockNumber: number, txIndex: number|null): Promise<ContractEventWithMeta[]> {
     return this.engine.exec(async (c: Client) => {
       const res = await c.query(
@@ -199,6 +170,25 @@ export class PostgresChainsawDao implements ChainsawDao {
 
       return ContractEvent.fromRow(res.rows[0])
     });
+  }
+
+  eventByHash (txHash: string): Promise<ContractEvent | null> {
+    return this.engine.exec(async (c: Client) => {
+      const res = await c.query(
+        `SELECT * FROM chainsaw_events e WHERE tx_hash = $1`,
+        [txHash]
+      )
+
+      if (!res.rows.length) {
+        return null
+      }
+
+      if (res.rows.length > 1) {
+        throw new Error('Expected only one row.')
+      }
+
+      return ContractEvent.fromRow(res.rows[0])
+    })
   }
 
   private inflateRow(row: any): ChainsawPollEvent {

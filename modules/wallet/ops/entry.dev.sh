@@ -12,12 +12,6 @@ bash /ops/wait-for.sh -t 60 $hub 2> /dev/null
 bash /ops/wait-for.sh -t 60 $eth_migrations 2> /dev/null
 bash /ops/wait-for.sh -t 60 $eth_provider 2> /dev/null
 
-echo "Setting up yarn links so we can use modules/client as if it were a node_module"
-cd /client && echo "cwd=`pwd`"
-yarn link
-cd $HOME && echo "cwd=`pwd`"
-yarn link connext
-
 function getHash {
   find /contracts -type f -not -name "*.swp" | xargs cat | sha256sum | tr -d ' -'
 }
@@ -70,10 +64,10 @@ function watch_client_src {
   echo "Starting connext-client src watcher..."
   ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
   cd /client
-  yarn watch
+  npm run watch
 }
 
-if [[ "$1" == "watch" ]]
+if [[ "$1" == "yes" ]]
 then
   watch_eth_state &
   watch_client_src &
@@ -83,4 +77,4 @@ fi
 # Start wallet react app
 echo "Starting wallet dev server..."
 cd /root && echo "cwd=`pwd`"
-exec yarn start
+exec npm start

@@ -13,4 +13,4 @@ bash ops/wait-for-it.sh -t 60 $redis 2> /dev/null
 export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$database/$POSTGRES_DB"
 
 echo "Starting node $1!"
-exec node dist/entry.js $1
+exec node dist/spankchain/main.js $1

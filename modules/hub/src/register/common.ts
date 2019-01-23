@@ -1,3 +1,5 @@
+import {BigNumber} from "bignumber.js";
+
 /*
  * A common entrypoint for all components.
  *
@@ -33,4 +35,12 @@ if (process.env.NODE_ENV != 'production') {
     '-connect:redis',
     '-express-session',
   ].join(','))
+}
+
+BigNumber.prototype.floor = function(): BigNumber {
+  return this.integerValue(BigNumber.ROUND_FLOOR)
+}
+
+BigNumber.prototype.ceil = function(): BigNumber {
+  return this.integerValue(BigNumber.ROUND_CEIL)
 }

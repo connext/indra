@@ -1,4 +1,4 @@
-import { PurchasePaymentSummary, Payment } from "../vendor/connext/types";
+import { PurchasePaymentSummary, Payment } from "../vendor/client/types";
 
 export type PurchaseRowWithPayments<MetaType=any, PaymentMetaType=any> = {
   purchaseId: string

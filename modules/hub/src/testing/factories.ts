@@ -3,12 +3,12 @@ import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChan
 import { default as ChannelsDao } from "../dao/ChannelsDao";
 import { Big } from "../util/bigNumber";
 import { default as ThreadsDao } from "../dao/ThreadsDao";
-import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes } from "../vendor/connext/types";
+import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes } from "../vendor/client/types";
 import BN = require('bn.js')
 import ExchangeRateDao from "../dao/ExchangeRateDao";
 
 export function tokenVal(x: number | string): string {
-  return Big(x).mul(1e18).toFixed()
+  return Big(x).times(1e18).toFixed()
 }
 
 /**

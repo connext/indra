@@ -1,6 +1,6 @@
 import { default as Config } from '../Config'
-import { convertWithdrawalParameters } from '../vendor/connext/types'
-import { UpdateRequest } from '../vendor/connext/types'
+import { convertWithdrawalParameters } from '../vendor/client/types'
+import { UpdateRequest } from '../vendor/client/types'
 import * as express from 'express'
 import { ApiService } from './ApiService'
 import log from '../util/log'
@@ -110,8 +110,8 @@ export class ChannelsApiServiceHandler {
 
   async doRequestDeposit(req: express.Request, res: express.Response) {
     const user = this.getUser(req)
-    let { depositWei, depositToken, lastChanTx, lastThreadUpdateId } = req.body
-    if (!depositWei || !depositToken || !user || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
+    let { depositWei, depositToken, lastChanTx, lastThreadUpdateId, sigUser } = req.body
+    if (!depositWei || !depositToken || !user || !sigUser || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
       LOG.warn(
         'Received invalid user deposit request. Aborting. Body received: {body}, Params received: {params}',
         {
@@ -126,6 +126,7 @@ export class ChannelsApiServiceHandler {
       user,
       Big(depositWei),
       Big(depositToken),
+      sigUser,
     )
     if (err) {
       res.status(400)
@@ -273,7 +274,7 @@ export class ChannelsApiServiceHandler {
   async doGetChannelDebug(req: express.Request, res: express.Response) {
     const user = this.getUser(req)
     const channel = await this.dao.getChannelOrInitialState(user)
-    const recentUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
+    const { updates: recentUpdates } = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
       Math.max(0, channel.state.txCountGlobal - 10),
       0, // TODO REB-36: enable threads

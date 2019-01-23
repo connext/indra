@@ -3,8 +3,8 @@ registry=docker.io/$(shell whoami)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
-client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
+client=$(cwd)/modules/client
 db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
@@ -19,21 +19,22 @@ find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 
 # Setup docker run time
-# If on Linux, give the container our uid & gid so we know what to set permissions to
-# On Mac the VM docker runs in takes care of this for us so don't pass in an id
-id=$(shell id -u):$(shell id -g)
-run_as_user=$(shell if [[ "`uname`" == "Darwin" ]]; then echo "--user $(id)"; fi)
-docker_run=docker run --name=$(project)_buidler --tty --rm $(run_as_user)
-docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
+# If on Linux, give the container our uid & gid so we know what to reset permissions to
+# On Mac the docker-VM care of this for us so pass root's id (noop)
+my_id=$(shell id -u):$(shell id -g)
+id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
+docker_run=docker run --name=$(project)_buidler --tty --rm
 docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
+docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
-docker_run_in_hub=$(docker_run) --volume=$(hub):/root $(project)_builder:dev $(id)
-docker_run_in_wallet=$(docker_run) --volume=$(wallet):/root --volume=$(client):/client $(project)_builder:dev $(id)
+docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
+docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder:dev $(id)
 
 # Env setup
-$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist $(client)/dist)
+$(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
+install=npm install --prefer-offline --unsafe-perm
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
@@ -42,7 +43,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: client database ethprovider hub wallet proxy
+dev: database ethprovider hub wallet proxy
 prod: database-prod hub-prod proxy-prod
 
 stop: 
@@ -52,6 +53,7 @@ stop:
 
 reset: stop
 	docker volume rm connext_chain_dev || true
+	rm -f $(contracts)/build/state-hash
 	docker volume rm connext_database_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
@@ -105,8 +107,7 @@ proxy: $(shell find $(proxy) $(find_options))
 wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
-	$(docker_run_in_wallet) "ln -sf /client node_modules/connext"
-	$(docker_run_in_wallet) "yarn build"
+	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/wallet-prod
 
 wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
@@ -114,31 +115,22 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
 
-wallet-node-modules: $(project)_builder $(wallet)/package.json client
+wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
-	$(docker_run_in_wallet) "yarn install --network-timeout 1000000"
+	$(docker_run_in_wallet) "rm -f node_modules/connext"
+	$(docker_run_in_wallet) "$(install)"
+	$(docker_run_in_wallet) "mv -f node_modules/connext node_modules/.connext.backup"
+	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/wallet-node-modules
-
-# Client
-
-client: client-node-modules $(shell find $(client)/src $(find_options))
-	$(log_start)
-	$(docker_run_in_client) "npm run build"
-	$(log_finish) && touch build/client
-
-client-node-modules: $(project)_builder $(client)/package.json
-	$(log_start)
-	$(docker_run_in_client) "npm install"
-	$(log_finish) && touch build/client-node-modules
 
 # Hub
 
 hub-prod: hub-js
 	$(log_start)
-	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
 	$(log_finish) && touch build/hub-prod
 
-hub: hub-js
+hub: hub-js $(hub)/ops/dev.entry.sh
 	$(log_start)
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
 	$(log_finish) && touch build/hub
@@ -148,10 +140,45 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
 
-hub-node-modules: $(project)_builder $(hub)/package.json
+hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "yarn install --network-timeout 1000000"
+	$(docker_run_in_hub) "rm -f node_modules/connext"
+	$(docker_run_in_hub) "$(install)"
+	$(docker_run_in_hub) "mv -f node_modules/connext node_modules/.connext.backup"
+	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
+
+# Client
+
+pull-client:
+	$(log_start)
+	rm -rf modules/client
+	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable
+	mv connext-client modules/client
+	$(log_finish)
+
+client: pull-client builder $(client)/package.json
+	$(log_start)
+	$(docker_run_in_client) "$(install)"
+	$(log_finish) && touch build/client
+
+# Contracts
+
+ethprovider: contract-artifacts
+	$(log_start)
+	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
+	$(log_finish) && touch build/ethprovider
+
+contract-artifacts: contract-node-modules
+	$(log_start)
+	$(docker_run_in_contracts) "npm run build"
+	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
+	$(log_finish) && touch build/contract-artifacts
+
+contract-node-modules: builder $(contracts)/package.json
+	$(log_start)
+	$(docker_run_in_contracts) "$(install)"
+	$(log_finish) && touch build/contract-node-modules
 
 # Database
 
@@ -170,30 +197,13 @@ migration-templates: $(shell find $(db) $(find_options))
 	$(docker_run_in_db) "make"
 	$(log_finish) && touch build/migration-templates
 
-database-node-modules: $(project)_builder $(db)/package.json
+database-node-modules: builder $(db)/package.json
 	$(log_start)
-	$(docker_run_in_db) "yarn install"
+	$(docker_run_in_db) "$(install)"
 	$(log_finish) && touch build/database-node-modules
 
-# Contracts
-
-ethprovider: contract-artifacts
-	$(log_start)
-	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
-	$(log_finish) && touch build/ethprovider
-
-contract-artifacts: contract-node-modules
-	$(log_start)
-	$(docker_run_in_contracts) "yarn build && bash ops/inject-addresses.sh"
-	$(log_finish) && touch build/contract-artifacts
-
-contract-node-modules: $(project)_builder $(contracts)/package.json
-	$(log_start)
-	$(docker_run_in_contracts) "yarn install --network-timeout 1000000"
-	$(log_finish) && touch build/contract-node-modules
-
 # Builder
-$(project)_builder: ops/builder.dockerfile
+builder: ops/builder.dockerfile
 	$(log_start) && echo "prereqs: $<"
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
-	$(log_finish) && touch build/$(project)_builder
+	$(log_finish) && touch build/builder

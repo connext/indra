@@ -48,7 +48,7 @@ describe.skip('WithdrawalsService', () => {
           if (!bal)
             throw new Error(`No mock balance defined for address: ${addr}`)
 
-          cb(null, (new BigNumber.BigNumber(bal)).mul('1e18'))
+          cb(null, (new BigNumber.BigNumber(bal)).times('1e18'))
         },
       },
     }

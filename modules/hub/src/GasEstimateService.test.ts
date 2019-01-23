@@ -24,7 +24,8 @@ describe('GasEstimateService', () => {
   const registry = getTestRegistry()
   const clock = getFakeClock()
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await registry.reset()
     let blockNum = 69
     nock('https://ethgasstation.info')
       .persist()

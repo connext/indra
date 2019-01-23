@@ -1,19 +1,29 @@
-import { Utils } from './vendor/connext/Utils'
+import { Utils } from './vendor/client/Utils'
 import Config from './Config'
-import { UnsignedChannelState, ChannelState } from './vendor/connext/types'
+import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/client/types'
 import { Block } from 'web3/types';
+import { ChannelManager } from './ChannelManager';
 
 export class SignerService {
-  private web3: any
+  constructor(
+    private web3: any, 
+    private contract: ChannelManager,
+    private utils: Utils, 
+    private config: Config
+  ) {
+  }
 
-  private utils: Utils
-
-  private config: Config
-
-  constructor(web3: any, utils: Utils, config: Config) {
-    this.web3 = web3
-    this.utils = utils
-    this.config = config
+  public async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
+    const res = await this.contract.methods.getChannelDetails(user).call({ from: this.config.hotWalletAddress })
+    return {
+      txCountGlobal: +res[0],
+      txCountChain: +res[1],
+      threadRoot: res[2],
+      threadCount: +res[3],
+      exitInitiator: res[4],
+      channelClosingTime: +res[5],
+      status: res[6],
+    }
   }
 
   public async getLatestBlock(): Promise<Block> {

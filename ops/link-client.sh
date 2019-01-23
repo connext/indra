@@ -3,8 +3,8 @@
 set -e
 
 name="connext-client"
-repo="git@github.com:bohendo/$name.git"
-branch="indra-experimental"
+repo="git@github.com:ConnextProject/$name.git"
+branch="spank-stable"
 root="`pwd`"
 path="$root/modules/client"
 
@@ -25,13 +25,3 @@ else
   git checkout $branch
   cp -r .git $path/.git
 fi
-
-# Link this module so that `require` in src
-# will pull from connext-client instead of node_modules
-cd $path
-yarn unlink 2> /dev/null || true
-yarn link
-cd $root
-yarn link connext
-cd $root/modules/hub
-yarn link connext
