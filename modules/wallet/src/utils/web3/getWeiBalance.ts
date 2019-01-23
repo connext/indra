@@ -7,7 +7,7 @@ export default async function getWeiBalance (web3: Web3, address: string): Promi
     web3.eth.getBalance(address, 'latest',
       (e: Error, balance: BN) => e
         ? reject(e)
-        : resolve(Currency.WEI(balance)),
+        : resolve(Currency.WEI(balance.toString())),
     )
   )
 }
