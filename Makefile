@@ -65,6 +65,12 @@ clean:
 deep-clean: clean
 	rm -rf $(cwd)/modules/**/node_modules
 
+fuck-it-send-it: deep-clean
+	rm -rf $(cwd)/modules/**/.config
+	rm -rf $(cwd)/modules/**/.node-gyp
+	rm -rf $(cwd)/modules/**/.npm
+	rm -rf $(cwd)/modules/**/package-lock.json
+
 purge: reset deep-clean
 
 tags: prod
