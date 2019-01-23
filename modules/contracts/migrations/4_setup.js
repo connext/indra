@@ -8,15 +8,16 @@ module.exports = async function(deployer, network, accounts) {
     return
   }
 
-  let ChannelManager = await CM.deployed();
-  let Token = await HumanStandardToken.deployed();
+  // should only be executed in dev mode on
+  const ChannelManager = await CM.deployed();
+  const Token = await HumanStandardToken.deployed();
 
-  await Token.approve(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("6969", "ether")))
-  await Token.transfer(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("69", "ether")))
+  await Token.approve(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("7000", "ether")))
+  await Token.transfer(ChannelManager.address, web3.utils.toBN(web3.utils.toWei("7000", "ether")))
 
   await web3.eth.sendTransaction({
     to: ChannelManager.address,
-    value: web3.utils.toBN(web3.utils.toWei("6.9", "ether")),
+    value: web3.utils.toBN(web3.utils.toWei("10", "ether")),
     from: accounts[0]
   })
 

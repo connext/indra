@@ -24,5 +24,5 @@ module.exports = async function(deployer, network, accounts) {
 
   console.log(`Using token: ${tokenAddress}`)
   await deployer.link(EC, CM);
-  await deployer.deploy(CM, accounts[0], 10000, tokenAddress);
+  await deployer.deploy(CM, accounts[0], 100000, tokenAddress);
 };
