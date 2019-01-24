@@ -14,16 +14,29 @@ Run the following steps in order. For each section, use a separate terminal wind
 
 ### Ganache
 Run the following from `modules/hub`.
+* `npm install` - Install dependencies.
 * `bash development/ganache-reset` - Migrates the contracts.
 * `bash development/ganache-run` - Runs Ganache (if you put a number after the `ganache-run` command you can set the blocktime).
 
 ### Hub
 Run the following from `modules/hub`.
+* `createdb sc-hub` - Creates the hub's database (if it already exists, skip this step).
 * `bash development/hub-reset` - Resets the hub's database.
 * `bash development/hub-run` - Runs hub and chainsaw.
 
 ### Wallet
 Run the following from `modules/wallet`.
+
+* Add the following to a file called `.env` inside `modules/wallet`. Do not commit this file to Git:
+```
+REACT_APP_DEV=false
+REACT_APP_HUB_URL=http://localhost:8080
+REACT_APP_ETHPROVIDER_URL=http://localhost:8545
+REACT_APP_HUB_WALLET_ADDRESS=0xfb482f8f779fd96a857f1486471524808b97452d
+REACT_APP_CHANNEL_MANAGER_ADDRESS=0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42
+REACT_APP_TOKEN_ADDRESS=0xd01c08c7180eae392265d8c7df311cf5a93f1b73
+```
+* `npm install` - Install dependencies.
 * `npm start` - Runs the local dev server at `http://localhost:3000`.
 * Set up Metamask to use one of the following accounts:
 
