@@ -48,7 +48,16 @@ class WithdrawCard extends Component {
   };
 
   handleChange = name => event => {
+    var withdrawalValWei = this.state.withdrawalVal.weiToSell
+    var withdrawalValToken = this.state.withdrawalVal.tokensToSell
     this.setState({ [name]: event.target.checked });
+    if (this.state.checkedB){
+      this.setState({displayVal: withdrawalValWei})
+    }else{
+      this.setState({displayVal: withdrawalValToken})
+    }
+    console.log(`displaying: ${this.state.displayVal}`)
+
   };
 
   async updateWithdrawHandler(evt) {

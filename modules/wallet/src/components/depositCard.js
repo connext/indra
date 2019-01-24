@@ -47,19 +47,27 @@ class DepositCard extends Component {
     };
   
     handleChange = name => event => {
+      var depositValWei = this.state.depositVal.amountWei
+      var depositValToken = this.state.depositVal.amountToken
       this.setState({ [name]: event.target.checked });
+      if (this.state.checkedB){
+        this.setState({displayVal: depositValWei})
+      }else{
+        this.setState({displayVal: depositValToken})
+      }      
     };
 
     async updateDepositHandler(evt) {
       var value = evt.target.value;
       this.setState({
-        displayVal: evt.target.value,
+        displayVal: evt.target.value
       });
       if (!this.state.checkedB) {
         await this.setState(oldState => {
           oldState.depositVal.amountWei = value;
           return oldState;
-        });
+        })
+        
       } else if (this.state.checkedB) {
         await this.setState(oldState => {
           oldState.depositVal.amountToken = value;

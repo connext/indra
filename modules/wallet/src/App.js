@@ -95,7 +95,28 @@ class App extends Component {
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
-  
+
+  componentWillMount(){
+    const resetHappened =   localStorage.getItem("resetHappened")
+    console.log(`reset value: ${resetHappened}`)
+    if(resetHappened === "true"){
+      console.log(`setting modal state`)
+      this.setState({modalOpen:false});
+      console.log(`modal state set to true`)
+    }else{
+      this.setState({modalOpen:true})
+      console.log(`modal state set to false`)
+    }
+    
+  }
+  componentDidMount(){
+    console.log(`didmount modal state: ${this.state.modalOpen}`)
+    if(this.state.modalOpen === false){
+      this.chooseWalletHandler("existing")
+      localStorage.setItem("resetHappened","false")
+    }
+  }
+
   async setWalletAndProvider(metamask = false) {
     this.setState({authorized: false })
     let web3
@@ -219,9 +240,24 @@ class App extends Component {
           }
         })
       try{
+        // const sendArgs = {
+        //   from: this.state.channelState.user
+        // }
         let approveFor = this.state.channelManager.address;
-        let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
+        let approveTx = await tokenContract.methods.approve(approveFor, this.state.browserWalletDeposit);
         console.log(approveTx);
+        // const gasEstimate = await approveTx.estimateGas(sendArgs)
+        // if (gasEstimate > this.state.browserWalletDeposit.amountWei){
+        //   throw "Not enough wei for gas"
+        // }
+        // if (gasEstimate < this.state.browserWalletDeposit.amountWei){
+        //   const depositDiff = balance - gasEstimate
+        //   this.setState({
+        //     browserWalletDeposit:{
+        //       amountWei: depositDiff,
+        //       amountToken: tokenBalance
+        //     }})
+        // }
         console.log(`Depositing: ${JSON.stringify(this.state.browserWalletDeposit, null, 2)}`);
         console.log('********', this.state.connext.opts.tokenAddress)
         let depositRes = await this.state.connext.deposit(this.state.browserWalletDeposit);
@@ -328,13 +364,13 @@ class App extends Component {
 
   async chooseWalletHandler(choice,recovery=null){
     let wallet;
-      if(choice == "new"){
+      if(choice === "new"){
         await this.chooseNewWallet()
         await this.setState({showWalletOptions: false});
-      }else if(choice =="existing"){
+      }else if(choice ==="existing"){
         await this.chooseExistingWallet()
-        await this.closeModal();
-      }else if(choice == "recover"){
+        await this.closeModal("existing");
+      }else if(choice === "recover"){
         await this.chooseRecoverWallet()
         await this.setState({showWalletOptions: false});
       }
@@ -373,7 +409,6 @@ class App extends Component {
       wallet = await findOrCreateWallet(this.state.web3);
     } else if(this.state.useExistingWallet == "new") {
       wallet = await createWallet(this.state.web3);
-      window.location.reload(true);
     } else if(this.state.useExistingWallet == "recover" && recovery){
       key = recovery
       console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`)
@@ -406,13 +441,24 @@ class App extends Component {
     this.setState({useExistingWallet: "recover"});
   }
 
-  closeModal(){
-    this.setState({modalOpen:false});
-    this.setState({showWalletOptions:true})
-    this.setState({ disableButtons: false});
-    this.setState({ delegatedSignerSelected: false });
-    this.setState({ useDelegatedSigner: false});
-    this.setState({mnemonic:null});
+  closeModal(choice){
+    if(choice !== "existing"){
+      this.setState({modalOpen:false});
+      this.setState({showWalletOptions:true})
+      this.setState({ disableButtons: false});
+      this.setState({ delegatedSignerSelected: false });
+      this.setState({ useDelegatedSigner: false});
+      this.setState({mnemonic:null});
+      localStorage.setItem("resetHappened","true")
+      window.location.reload(true);
+    }else if(choice === "existing"){
+      this.setState({modalOpen:false});
+      this.setState({showWalletOptions:true})
+      this.setState({ disableButtons: false});
+      this.setState({ delegatedSignerSelected: false });
+      this.setState({ useDelegatedSigner: false});
+      this.setState({mnemonic:null});
+    }
   }
 
   updateWalletHandler(evt) {
@@ -424,7 +470,6 @@ class App extends Component {
 
   async createWallet() {
     await createWallet(this.state.web3);
-    window.location.reload(true);
   }
 
   async authorizeHandler(evt) {
@@ -564,7 +609,7 @@ class App extends Component {
                         {this.toggleKey ? (<span>{this.state.mnemonic}</span>):null}
                       <br />
                       <div>
-                          <Button variant="contained" onClick={() => this.closeModal()}> Close</Button>
+                          <Button variant="contained" onClick={() => this.closeModal("other")}> Close</Button>
                       </div>
                     </div>)}
               </div>
