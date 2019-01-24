@@ -92,8 +92,9 @@ class DepositCard extends Component {
         if (Number(wei) >= this.props.balance) {
           console.log(`calling getEther`);
           const weiNeeded = eth.utils.bigNumberify(Number(wei) - this.props.balance);
+          const extraWeiForGas = eth.utils.parseEther('0.04') // 40 FIN for gas
           console.log(`weiNeeded: ${weiNeeded}`);
-          await this.getEther(weiNeeded);
+          await this.getEther(weiNeeded.add(extraWeiForGas));
         }
       }
 
