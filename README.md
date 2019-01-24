@@ -9,12 +9,13 @@ We are working on rebuilding our one-step process Docker environment. However, w
 ### Prerequisites
 * PostgreSQL running locally: `brew install postgres` for Mac (TODO: add other platform information).
 * Redis running locally: `brew install redis` for Mac (TODO: add other platform information).
+* Yarn: `brew install yarn` for Mac (TODO: add other platform information).
 
 Run the following steps in order. For each section, use a separate terminal window. Closing the terminal window will stop the process.
 
 ### Ganache
 Run the following from `modules/hub`.
-* `npm install` - Install dependencies.
+* `yarn install` - Install dependencies.
 * `bash development/ganache-reset` - Migrates the contracts.
 * `bash development/ganache-run` - Runs Ganache (if you put a number after the `ganache-run` command you can set the blocktime).
 

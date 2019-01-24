@@ -17,7 +17,5 @@
     "clean": "make clean",
     "deep-clean": "make deep-clean"
   },
-  "devDependencies": {
-    "concurrently": "^4.1.0"
-  }
+  "devDependencies": {}
 }
