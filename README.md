@@ -26,7 +26,9 @@ Run the following from `modules/hub`.
 Run the following from `modules/wallet`.
 * `npm start` - Runs the local dev server at `http://localhost:3000`.
 * Set up Metamask to use the following account:
+
 Address: 0xFB482f8f779fd96A857f1486471524808B97452D
+
 Private Key: 09cd8192c4ad4dd3b023a8ef381a24d29266ebd4af88ecdac92ec874e1c2fed8
 
 The rest of the information in this Readme is potentially unstable or not working.
