@@ -2,6 +2,36 @@
 
 Everything you need to set up a Connext payment channel hub.
 
+# Important New Repo Information!
+
+We are working on rebuilding our one-step process Docker environment. However, we have been running into lots of intermittent issues so in the meantime, please follow the below directions to get up and running with the new setup:
+
+### Prerequisites
+* PostgreSQL running locally: `brew install postgres` for Mac (TODO: add other platform information).
+* Redis running locally: `brew install redis` for Mac (TODO: add other platform information).
+
+Run the following steps in order. For each section, use a separate terminal window. Closing the terminal window will stop the process.
+
+### Ganache
+Run the following from `modules/hub`.
+* `bash development/ganache-reset` - Migrates the contracts.
+* `bash development/ganache-run` - Runs Ganache (if you put a number after the `ganache-run` command you can set the blocktime).
+
+### Hub
+Run the following from `modules/hub`.
+* `bash development/hub-reset` - Resets the hub's database.
+* `bash development/hub-run` - Runs hub and chainsaw.
+
+### Wallet
+Run the following from `modules/wallet`.
+* `npm start` - Runs the local dev server at `http://localhost:3000`.
+* Set up Metamask to use the following account:
+Address: 0xFB482f8f779fd96A857f1486471524808B97452D
+Private Key: 09cd8192c4ad4dd3b023a8ef381a24d29266ebd4af88ecdac92ec874e1c2fed8
+
+The rest of the information in this Readme is potentially unstable or not working.
+============================================================================
+
 ## Contents
 
 - [Repo Executive Summary](#Repo-Executive-Summary)
@@ -15,7 +45,6 @@ Everything you need to set up a Connext payment channel hub.
      - [Hub errors on start](#Hub-errors-on-start)
      - [Locked DB](#Locked-DB)
      - [502 Bad Gateway](#502-Bad-Gateway)
-    
 
 ## Repo Executive Summary
 

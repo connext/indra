@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getConnextClient } from './client/dist/Connext.js';
+import { getConnextClient } from 'connext/dist/Connext.js';
 import './App.css';
 import ProviderOptions from './utils/ProviderOptions.ts';
 import clientProvider from './utils/web3/clientProvider.ts';
