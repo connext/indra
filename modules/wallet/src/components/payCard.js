@@ -208,7 +208,7 @@ class PayCard extends Component {
             variant="outlined"
           />
           <Button style={cardStyle.button} 
-                  onClick={() => this.paymentHandler}
+                  onClick={() => this.paymentHandler()}
                   variant="contained" 
                   color="primary">
             Pay
