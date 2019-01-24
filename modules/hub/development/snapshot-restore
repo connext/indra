@@ -1,0 +1,37 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+if [[ -z "${1-}" ]]; then
+    echo "USAGE: $0 SNAPSHOT_DIRECTORY"
+    echo "Example: $0 ./snapshots/snapshot-foo-2018-10-05T01:02/"
+    exit 1
+fi
+
+dir="$1"
+if [[ ! -d "$dir" ]]; then
+    echo "ERROR: $dir does not exist"
+    exit 1
+fi
+
+[ -e "data/ganache-data" ] && rm -r data/ganache-data/
+tar -C data -xf "$dir/ganache-data.tar.gz"
+
+
+for db in 'sc-hub' 'sc-camsite'; do
+    psql -q postgres <<EOF
+        SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '$db'
+          AND pid <> pg_backend_pid();
+EOF
+    dropdb --if-exists "$db"
+    createdb "$db"
+    psql -q "$db" < "$dir/$db.sql"
+done

@@ -1,0 +1,54 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+[ ! -e ~/.parity/bin ] && mkdir -p ~/.parity/bin
+
+if [ ! -e ~/.parity/bin/parity ]; then
+    if [[ "$(uname)" == "Darwin" ]]; then
+        echo "Downloading parity binary..."
+        curl https://releases.parity.io/v2.2.1/x86_64-apple-darwin/parity -o ~/.parity/bin/parity
+        chmod +x ~/.parity/bin/parity
+    else
+        echo "Please download Parity and save it to ~/.parity/bin/parity"
+        echo "Releases: https://github.com/paritytech/parity-ethereum/releases"
+        echo "Hint: on OS X:"
+        echo "  curl https://releases.parity.io/v2.2.1/x86_64-apple-darwin/parity -o ~/.parity/bin/parity"
+        echo "  chmod +x ~/.parity/bin/parity"
+        exit 1
+    fi
+fi
+
+echo "Initializing Parity..."
+
+[ -e ~/.parity/data ] && rm -r ~/.parity/data
+mkdir ~/.parity/data
+
+
+~/.parity/bin/parity --config dev --base-path=~/.parity/data --jsonrpc-port 12123 &
+P_PID="$!"
+trap "kill -9 $P_PID" EXIT
+
+while :; do
+    if nc -z localhost 12123; then
+        break
+    fi
+    kill -0 "$P_PID" || {
+        echo "Error: Pairty crashed. Check the logs and try again?"
+        exit 1
+    }
+    sleep 1
+done
+
+# Give Parity a couple of seconds to boot up and initialize the data directory...
+sleep 5
+
+echo
+echo "Done!"
+exit 0

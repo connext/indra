@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+cd ..
+
+. ./development/env-vars
+node --nolazy -r ts-node/register --inspect=127.0.0.1:9227 ./src/spankchain/main.ts exit-channels $@

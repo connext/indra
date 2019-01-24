@@ -1,0 +1,69 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+mkdir -p data
+cd data
+
+VC_VER="3fb9ad2c596cef9be6f6c363d02eb959ace51c50"
+echo "Using ConnextProject/contracts version: $VC_VER"
+if [[ ! -e contracts ]]; then
+    git clone https://github.com/ConnextProject/contracts.git
+else
+    cd contracts
+    git reset --hard
+    cd ..
+    git -C contracts/ fetch --all
+fi
+cd contracts
+echo "Checking out: $VC_VER"
+git checkout "$VC_VER"
+
+if [[ ! -e node_modules ]]; then
+  echo "Installing node modules..."
+  npm i
+fi
+
+cd ../
+$(rm -rf ganache-data)
+mkdir -p ganache-data
+echo
+
+echo "Starting Ganache..."
+cd ../
+./ganache-run 1 &
+G_PID="$?"
+trap "kill $G_PID" EXIT
+
+sleep 1
+
+# C=0
+while :; do
+    if nc -z localhost 8545; then
+        break
+    fi
+    kill -0 "$G_PID" || {
+        echo "Error: ganache crashed. Check the logs and try again?"
+        exit 1
+    }
+    sleep 1
+done
+
+
+echo "ganache started; running truffle to deploy contracts..."
+
+cd data/contracts
+./node_modules/.bin/truffle migrate --network=ganache --reset
+
+echo "funding contract..."
+
+../../fund-contract
+
+echo "ganache-reset done" # to get console back to a nice state
+exit 0

@@ -1,0 +1,19 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-channel-close
+spec:
+  schedule: "* * * * *" #Every minute
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: {{ .Release.Name }}-channel-close
+              image: "{{ required "Repository required" .Values.image.repository }}:{{ required "Image tag required" .Values.image.tag }}"
+              command: ["node"]
+              args: ["./dist/spankchain/main.js", "closeSettlingChannels"]
+              env:
+                {{- include "sc_hub_env" . | indent 16 }}

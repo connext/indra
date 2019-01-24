@@ -1,6 +1,6 @@
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
-import { UnsignedChannelState } from '../vendor/client/types'
+import { UnsignedChannelState } from '../vendor/connext/types'
 
 export async function insertChannel(
   db: DBEngine<Client>,

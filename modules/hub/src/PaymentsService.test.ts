@@ -1,12 +1,12 @@
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
-import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs } from "./vendor/client/types";
+import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs } from "./vendor/connext/types";
 import { mkAddress, mkSig, assertChannelStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { MockSignerService } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
-import { StateGenerator } from "./vendor/client/StateGenerator";
+import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { toWeiString } from "./util/bigNumber";
 
 describe('PaymentsService', () => {

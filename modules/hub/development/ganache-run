@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+block_time="${1-6.9}"
+echo "Starting ganache with block time $block_time..."
+mkdir -p data/ganache-data
+cd data/contracts
+node_modules/.bin/ganache-cli -b "${block_time}" -m 'refuse result toy bunker royal small story exhaust know piano base stand' --db "../ganache-data/" -v -i 4447

@@ -1,4 +1,4 @@
-import { hasPendingOps } from './vendor/client/hasPendingOps'
+import { hasPendingOps } from './vendor/connext/hasPendingOps'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
@@ -10,7 +10,7 @@ import {
   ChannelRow,
   ChannelStateUpdateRowBigNum,
 } from './domain/Channel'
-import { Validator } from './vendor/client/validator'
+import { Validator } from './vendor/connext/validator'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { Big, toWeiBigNum } from './util/bigNumber'
 import { ThreadStateUpdateRow } from './domain/Thread'
@@ -37,7 +37,7 @@ import {
   Sync,
   convertWithdrawalParams,
   convertWithdrawal,
-} from './vendor/client/types'
+} from './vendor/connext/types'
 import { prettySafeJson, Omit } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
@@ -46,7 +46,7 @@ import { SignerService } from './SignerService';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { assertUnreachable } from './util/assertUnreachable';
-import { StateGenerator } from './vendor/client/StateGenerator';
+import { StateGenerator } from './vendor/connext/StateGenerator';
 
 const LOG = log('ChannelsService')
 
@@ -913,23 +913,23 @@ export default class ChannelsService {
     reason: RedisReason,
     user: string,
     currentState: ChannelStateBN,
-    update: UpdateRequestBigNumber,
+    unsafeUpdate: UpdateRequestBigNumber,
   ): Promise<ChannelStateUpdate | null> {
     const fromRedis = await this.redisGetUnsignedState(reason, user)
     if (!fromRedis) {
       LOG.info(
         `Hub could not retrieve the unsigned update, possibly expired or sent twice? ` +
-        `user update: ${prettySafeJson(update)}`
+        `user update: ${prettySafeJson(unsafeUpdate)}`
       )
       return null
     }
 
-    if (update.txCount != currentState.txCountGlobal + 1) {
+    if (unsafeUpdate.txCount != currentState.txCountGlobal + 1) {
       throw new Error(
-        `Half-signed ${update.reason} from client has out-of-date txCount ` +
-        `(update.txCount: ${update.txCount}, ` +
+        `Half-signed ${unsafeUpdate.reason} from client has out-of-date txCount ` +
+        `(update.txCount: ${unsafeUpdate.txCount}, ` +
         `expected: ${currentState.txCountGlobal + 1}); ` +
-        `update: ${prettySafeJson(update)}`
+        `update: ${prettySafeJson(unsafeUpdate)}`
       )
     }
 
@@ -944,7 +944,7 @@ export default class ChannelsService {
 
     const signed = {
       ...unsigned,
-      sigUser: update.sigUser,
+      sigUser: unsafeUpdate.sigUser,
     }
 
     // validate that user sig matches our unsigned update that we proposed
@@ -959,7 +959,7 @@ export default class ChannelsService {
   private async saveRedisStateUpdate(
     user: string,
     redisUpdate: ChannelStateUpdate,
-    update: UpdateRequestBigNumber,
+    unsafeUpdate: UpdateRequestBigNumber,
     txnId?: number,
   ) {
     await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
@@ -968,10 +968,10 @@ export default class ChannelsService {
 
     return await this.channelsDao.applyUpdateByUser(
       user,
-      update.reason,
+      redisUpdate.reason,
       user,
-      { ...redisUpdate.state, sigUser: update.sigUser, sigHub },
-      update.args,
+      { ...redisUpdate.state, sigUser: unsafeUpdate.sigUser, sigHub },
+      redisUpdate.args,
       null,
       txnId
     )

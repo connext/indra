@@ -1,6 +1,6 @@
 import {PurchasePaymentRow} from '../domain/Purchase'
 import DBEngine, {SQL} from '../DBEngine'
-import {PurchasePaymentSummary} from '../vendor/client/types'
+import {PurchasePaymentSummary} from '../vendor/connext/types'
 import Config from '../Config'
 
 export interface PaymentMetaDao {

@@ -1,0 +1,11 @@
+{
+  "test": {
+    "driver": "pg",
+    "database": "sc-hub-test"
+  },
+
+  "dev": {
+    "driver": "pg",
+    "database": "sc-hub"
+  }
+}

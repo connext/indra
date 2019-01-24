@@ -6,17 +6,18 @@
   "scripts": {
     "clean": "rm -rf dist",
     "test": "env DATABASE_URL_TEST='postgresql://localhost:5432/sc-hub-test' mocha -r ts-node/register/type-check -r ./src/register/common.ts -r ./src/register/testing.ts \"src/**/*.test.ts\" --exit",
+    "drop-migrate-test": "./migrate-and-test.sh",
     "lint": "tslint -c ../common/tslint.json -t stylish src/**/*.ts",
     "build:backend": "tsc -p tsconfig.json",
-    "build": "npm run clean && npm run build:backend",
+    "build": "yarn clean && yarn build:backend",
     "runner": "node ./dist/spankchain/main.js",
-    "start": "npm run build && concurrently -n hub,chainsaw 'node ./dist/spankchain/main.js' 'node ./dist/spankchain/main.js chainsaw'",
-    "migrate": "db-migrate up all --verbose --migrations-dir machinomy_migrations && db-migrate up all --verbose",
-    "start-hub": "npm run clean && npm run build:backend && npm run runner",
-    "start-chainsaw": "npm run clean && npm run build:backend && npm run runner chainsaw",
-    "reset-and-migrate": "dropdb spank_hub && createdb spank_hub && npm run migrate",
+    "start": "yarn build && concurrently -n hub,chainsaw 'node ./dist/spankchain/main.js' 'node ./dist/spankchain/main.js chainsaw'",
+    "migrate": "db-migrate up --verbose all",
+    "start-hub": "yarn clean && yarn build:backend && yarn runner",
+    "start-chainsaw": "yarn clean && yarn build:backend && yarn runner chainsaw",
+    "reset-and-migrate": "dropdb spank_hub && createdb spank_hub && yarn migrate",
     "postinstall": "rm -f node_modules/web3/index.d.ts",
-    "blow-my-node": "npm run cache clean && rm -r node_modules/"
+    "blow-my-node": "yarn cache clean && rm -r node_modules/"
   },
   "author": "",
   "license": "UNLICENSED",
@@ -41,7 +42,6 @@
     "classnames": "^2.2.5",
     "concurrently": "^4.1.0",
     "connect-redis": "^3.3.3",
-    "connext": "^3.0.1",
     "cookie-parser": "^1.4.3",
     "cookie-signature": "^1.1.0",
     "cors": "^2.8.4",
@@ -96,6 +96,7 @@
     "tslint": "^5.9.1",
     "tslint-config-standard": "^7.0.0",
     "types-ethereumjs-util": "^0.0.5",
-    "typescript": "=3.2.2"
+    "typescript": "=3.2.2",
+    "yarn-run-all": "^3.1.1"
   }
 }

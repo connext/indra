@@ -1,4 +1,4 @@
-import { convertChannelState, EmptyChannelArgs } from './vendor/client/types'
+import { convertChannelState, EmptyChannelArgs } from './vendor/connext/types'
 import ChainsawDao from './dao/ChainsawDao'
 import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
@@ -6,12 +6,12 @@ import Config from './Config'
 import { ChannelManager } from './ChannelManager'
 import { EventLog } from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
-import { ChannelState, ConfirmPendingArgs } from './vendor/client/types'
-import { Utils } from './vendor/client/Utils'
+import { ChannelState, ConfirmPendingArgs } from './vendor/connext/types'
+import { Utils } from './vendor/connext/Utils'
 import { BigNumber } from 'bignumber.js'
 import { sleep } from './util'
 import { default as DBEngine } from './DBEngine'
-import { Validator } from './vendor/client/validator';
+import { Validator } from './vendor/connext/validator';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { SignerService } from './SignerService';
 

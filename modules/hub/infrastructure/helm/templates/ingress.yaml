@@ -1,0 +1,27 @@
+{{- if .Values.ingress.enabled -}}
+{{- $serviceName := include "spankchain-hub.fullname" . -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "spankchain-hub.fullname" . }}
+  labels:
+    app: {{ template "spankchain-hub.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: {{ required "ingress.host required" .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: {{ $serviceName }}
+              servicePort: {{ .Values.service.externalPort }}
+  tls:
+    - secretName: {{ required "ingress.tlsSecret required" .Values.ingress.tlsSecret }}
+      hosts:
+        - {{ required "ingress.host required" .Values.ingress.host }}
+  {{- end -}}

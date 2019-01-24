@@ -10,4 +10,4 @@ node_modules
 .node_repl_history
 *.swp
 **/*.DS_Store
-modules/client
+modules/hub/development/data
