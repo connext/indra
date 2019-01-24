@@ -652,6 +652,8 @@ class App extends Component {
             <DepositCard
               channelManagerAddress={this.state.channelManager.address}
               Web3={window.web3}
+              balance={this.state.balance}
+              tokenBalance={this.state.tokenBalance}
               tokenContract={this.state.tokenContract}
               humanTokenAbi={humanTokenAbi}
               connext={this.state.connext}

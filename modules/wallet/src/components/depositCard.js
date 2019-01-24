@@ -27,8 +27,8 @@ class DepositCard extends Component {
     checkedB: true,
     anchorEl: null,
     depositVal: {
-      amountWei: "0",
-      amountToken: "0"
+      amountWei: '0',
+      amountToken: '0'
     },
     displayVal: '0'
   };
@@ -86,19 +86,24 @@ class DepositCard extends Component {
       try{
         const wei = this.state.depositVal.amountWei
         const tokens = this.state.depositVal.amountToken
+        console.log(`wei: ${wei}`)
+        console.log(`tokens: ${tokens}`)
   
-        if (wei !== "0"){
+        if (wei !== '0'){
           console.log("found wei deposit")
-          if (wei >= this.state.balance){
-            const weiNeeded = wei - this.state.balance
+          if (Number(wei) >= this.props.balance){
+            console.log(`calling getEther`)
+            const weiNeeded = eth.utils.bigNumberify(Number(wei) - this.props.balance)
+            console.log(`weiNeeded: ${weiNeeded}`)
             await this.getEther(weiNeeded)
           }
         }
   
-        if (tokens !== "0"){
+        if (tokens !== '0'){
           console.log("found token deposit")
-          if (tokens >= this.state.tokenBalance){
-            const tokensNeeded = tokens - this.state.tokenBalance
+          if (Number(tokens) >= this.props.tokenBalance){
+            console.log(`calling getTokens`)
+            const tokensNeeded = eth.utils.bigNumberify(Number(tokens) - this.props.tokenBalance)
             await this.getTokens(tokensNeeded)
           }
         }
