@@ -143,14 +143,14 @@ class SwapCard extends Component {
             id="outlined-number"
             label="Amount (Wei)"
             value={this.state.displayVal}
-            onChange={evt => this.state.updateExchangeHandler(evt)}
+            onChange={evt => this.updateExchangeHandler(evt)}
             type="number"
             margin="normal"
             variant="outlined"
           />
           <div>Rate: 1 ETH = {this.props.exchangeRate} TST</div>
           <Button style={cardStyle.button} 
-                  onClick={() => this.exchangeHandler}
+                  onClick={() =>  this.exchangeHandler()}
                   variant="contained" 
                   color="primary">
             Swap
