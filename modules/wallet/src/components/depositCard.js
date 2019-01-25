@@ -227,11 +227,6 @@ class DepositCard extends Component {
           <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
           TST
         </div>
-        <div>
-          <Typography>
-            Get more than 40 Finney (40000000000000000 Wei) ETH.
-          </Typography>
-        </div>
         <TextField
           style={cardStyle.input}
           id="outlined-number"
@@ -243,7 +238,7 @@ class DepositCard extends Component {
           onChange={evt => this.updateDepositHandler(evt)}
         />
         <Button style={cardStyle.button} variant="contained" color="primary" onClick={evt => this.depositHandler(evt)}>
-          Get
+         Get from MetaMask
         </Button>
       </Card>
     );

@@ -17,10 +17,17 @@ import PayCard from "./components/payCard";
 import WithdrawCard from "./components/withdrawCard";
 import ChannelCard from "./components/channelCard";
 import FullWidthTabs from "./components/walletTabs";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import HelpIcon from "@material-ui/icons/Help";
+import IconButton from "@material-ui/core/IconButton";
 import Modal from "@material-ui/core/Modal";
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
+import Popover from "@material-ui/core/Popover";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import Connext from './assets/Connext.svg';
+import { Typography } from "@material-ui/core";
 const Web3 = require("web3");
 const Tx = require("ethereumjs-tx");
 const eth = require("ethers");
@@ -96,7 +103,8 @@ class App extends Component {
       delegatedSignerSelected: false,
       disableButtons: false,
       modalOpen: true,
-      mnemonic: null
+      mnemonic: null,
+      anchorEl: null,
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
@@ -563,6 +571,20 @@ class App extends Component {
     }
   }
 
+  handleClick = event => {
+    console.log("click handled");
+    this.setState({
+      anchorEl: event.currentTarget
+    });
+  };
+  handleClose = () => {
+    this.setState({
+      anchorEl: null
+    });
+  };
+
+
+
   async collateralHandler() {
     console.log(`Requesting Collateral`);
     let collateralRes = await this.state.connext.requestCollateral();
@@ -573,6 +595,8 @@ class App extends Component {
   // ** wrapper for ethers getBalance. probably breaks for tokens
 
   render() {
+    const { anchorEl } = this.state;
+    const open = Boolean(anchorEl);
     return (
       <div className="app">
         <Modal
@@ -734,12 +758,73 @@ class App extends Component {
             </div>
           </div>
         </Modal>
-        <div className="row" style={{ justifyContent: "center" }}>
-          <img
-            style={{ height: "70px", width: "300px" }}
-            src="https://connext.network/static/media/logoHorizontal.3251cc60.png"
-          />
-        </div>
+        <AppBar position="static">
+            <Toolbar>
+            <img src={Connext} style={{width:'60px',height:'60px'}}/>
+            <Typography variant='h6' style={{flexGrow:1}}>
+
+            </Typography>
+            <IconButton
+              color="inherit"
+              aria-label="Menu"
+              aria-owns={open ? "simple-popper" : undefined}
+              aria-haspopup="true"
+              variant="contained"
+              onClick={this.handleClick}
+            >
+              <HelpIcon />
+            </IconButton>
+            <Popover
+              id="simple-popper"
+              open={open}
+              anchorEl={anchorEl}
+              onClose={this.handleClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center"
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "center"
+              }}
+              
+          > 
+          <div style={{
+                padding:'20px 20px 20px 20px',
+                boxShadow:'1px 1px 1px 1px black',
+              }}>
+            <Typography variant="h4">
+              Step 1
+            </Typography>
+            <Typography>
+              Get tokens or ETH from your MetaMask. <br />
+              Enter the amount in Wei, tokens, or both, and then click Get.{" "}
+            </Typography>
+            <Typography variant="h4" style={{marginTop:'20px'}}>
+              Step 2
+            </Typography>
+            <Typography>
+              This step is OPTIONAL. If you'd like to swap ETH for <br />
+              tokens, you can do it in-channel.
+            </Typography>
+            <Typography variant="h4" style={{marginTop:'20px'}}>
+              Step 3
+            </Typography>
+            <Typography>
+            Here, you can pay a counterparty using <br />
+              your offchain funds. Enter the recipient address and the amount in tokens or ETH, then click Pay.{" "}
+            </Typography>
+            <Typography variant="h4" style={{marginTop:'20px'}}>
+              Step 4
+            </Typography>
+            <Typography>
+            Here, you can withdraw funds from your channel. <br />
+              Enter the recipient address and the amount, then click Withdraw.{" "}
+            </Typography>
+            </div>
+          </Popover>
+            </Toolbar>
+        </AppBar>
         <div className="row" style={{ flexWrap: "nowrap" }}>
           <div className="column">
             <ChannelCard
