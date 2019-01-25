@@ -67,7 +67,13 @@ class WithdrawCard extends Component {
         return oldState;
       });
     }
-    console.log(`Updated withdrawalVal: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
+    console.log(
+      `Updated withdrawalVal: ${JSON.stringify(
+        this.state.withdrawalVal,
+        null,
+        2
+      )}`
+    );
   }
 
   async updateRecipientHandler(evt) {
@@ -79,17 +85,28 @@ class WithdrawCard extends Component {
       oldState.withdrawalVal.recipient = value;
       return oldState;
     });
-    console.log(`Updated recipient: ${JSON.stringify(this.state.withdrawalVal.recipient, null, 2)}`);
+    console.log(
+      `Updated recipient: ${JSON.stringify(
+        this.state.withdrawalVal.recipient,
+        null,
+        2
+      )}`
+    );
   }
 
   async withdrawalHandler(max) {
-    let withdrawalVal = { ...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate };
+    let withdrawalVal = {
+      ...this.state.withdrawalVal,
+      exchangeRate: this.state.exchangeRate
+    };
     if (max) {
       withdrawalVal.recipient = this.state.metamask.address;
       withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser;
       withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser;
     }
-    console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
+    console.log(
+      `Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`
+    );
     let withdrawalRes = await this.state.connext.withdraw(withdrawalVal);
     console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
   }
@@ -145,39 +162,14 @@ class WithdrawCard extends Component {
         <div style={cardStyle.col1}>
           <UnarchiveIcon style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              Here, you can withdraw funds from your channel. <br />
-              Enter the recipient address and the amount, then click Withdraw.{" "}
-            </Typography>
-          </Popover>
-        </div>
         <div>
           ETH
-          <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
+          <Switch
+            checked={this.state.checkedB}
+            onChange={this.handleChange("checkedB")}
+            value="checkedB"
+            color="primary"
+          />
           TST
         </div>
         <TextField
@@ -201,7 +193,12 @@ class WithdrawCard extends Component {
           margin="normal"
           variant="outlined"
         />
-        <Button style={cardStyle.button} onClick={() => this.withdrawalHandler()} variant="contained" color="primary">
+        <Button
+          style={cardStyle.button}
+          onClick={() => this.withdrawalHandler()}
+          variant="contained"
+          color="primary"
+        >
           Withdraw
         </Button>
       </Card>

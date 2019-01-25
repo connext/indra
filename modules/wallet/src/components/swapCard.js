@@ -38,12 +38,19 @@ class SwapCard extends Component {
       oldState.exchangeVal = value;
       return oldState;
     });
-    console.log(`Updated exchangeVal: ${JSON.stringify(this.state.exchangeVal, null, 2)}`);
+    console.log(
+      `Updated exchangeVal: ${JSON.stringify(this.state.exchangeVal, null, 2)}`
+    );
   }
 
   async exchangeHandler() {
-    console.log(`Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`);
-    let exchangeRes = await this.props.connext.exchange(this.state.exchangeVal, "wei");
+    console.log(
+      `Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`
+    );
+    let exchangeRes = await this.props.connext.exchange(
+      this.state.exchangeVal,
+      "wei"
+    );
     console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
   }
 
@@ -94,37 +101,6 @@ class SwapCard extends Component {
         <div style={cardStyle.col1}>
           <SwapHoriz style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              {" "}
-              OPTIONAL. If you'd like to swap ETH for <br />
-              tokens, you can do it in-channel.{" "}
-            </Typography>
-          </Popover>
-        </div>
         <div>Only ETH to Token in-channel swaps are currently available.</div>
         <TextField
           style={cardStyle.input}
@@ -137,7 +113,12 @@ class SwapCard extends Component {
           variant="outlined"
         />
         <div>Rate: 1 ETH = {this.props.exchangeRate} TST</div>
-        <Button style={cardStyle.button} onClick={() => this.exchangeHandler()} variant="contained" color="primary">
+        <Button
+          style={cardStyle.button}
+          onClick={() => this.exchangeHandler()}
+          variant="contained"
+          color="primary"
+        >
           Swap
         </Button>
       </Card>

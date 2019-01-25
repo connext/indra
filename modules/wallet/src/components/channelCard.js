@@ -35,6 +35,7 @@ class ChannelCard extends Component {
         flexBasis: "100%",
         flexDirection: "row",
         width: "400px",
+        height: "200px",
         justifyContent: "center",
         padding: "1% 4% 4% 4%",
         backgroundColor: "#8E98A7",
@@ -101,7 +102,7 @@ class ChannelCard extends Component {
           <Typography style={cardStyle.popover}>
             Click on your address to copy it to your clipboard.
             <br />
-            The balances you see are offchain balances for you and the hub.
+            Balances are in-channel balances.
           </Typography>
         </Popover>
         <Typography variant="subtitle1" style={cardStyle.row}>

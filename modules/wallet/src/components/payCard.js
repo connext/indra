@@ -72,7 +72,9 @@ class PayCard extends Component {
         return oldState;
       });
     }
-    console.log(`Updated paymentVal: ${JSON.stringify(this.state.paymentVal, null, 2)}`);
+    console.log(
+      `Updated paymentVal: ${JSON.stringify(this.state.paymentVal, null, 2)}`
+    );
   }
 
   async updateRecipientHandler(evt) {
@@ -84,11 +86,19 @@ class PayCard extends Component {
       oldState.paymentVal.payments[0].recipient = value;
       return oldState;
     });
-    console.log(`Updated recipient: ${JSON.stringify(this.state.paymentVal.payments[0].recipient, null, 2)}`);
+    console.log(
+      `Updated recipient: ${JSON.stringify(
+        this.state.paymentVal.payments[0].recipient,
+        null,
+        2
+      )}`
+    );
   }
 
   async paymentHandler() {
-    console.log(`Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`);
+    console.log(
+      `Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`
+    );
     let paymentRes = await this.props.connext.buy(this.state.paymentVal);
     console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
   }
@@ -138,39 +148,14 @@ class PayCard extends Component {
         <div style={cardStyle.col1}>
           <SendIcon style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              Here, you can pay a counterparty using <br />
-              your offchain funds. Enter the recipient address and the amount in tokens or ETH, then click Pay.{" "}
-            </Typography>
-          </Popover>
-        </div>
         <div>
           ETH
-          <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
+          <Switch
+            checked={this.state.checkedB}
+            onChange={this.handleChange("checkedB")}
+            value="checkedB"
+            color="primary"
+          />
           TST
         </div>
         <TextField
@@ -194,7 +179,12 @@ class PayCard extends Component {
           margin="normal"
           variant="outlined"
         />
-        <Button style={cardStyle.button} onClick={() => this.paymentHandler()} variant="contained" color="primary">
+        <Button
+          style={cardStyle.button}
+          onClick={() => this.paymentHandler()}
+          variant="contained"
+          color="primary"
+        >
           Pay
         </Button>
       </Card>

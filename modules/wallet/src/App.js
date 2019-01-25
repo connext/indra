@@ -26,7 +26,7 @@ import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
 import Popover from "@material-ui/core/Popover";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import Connext from './assets/Connext.svg';
+import Connext from "./assets/Connext.svg";
 import { Typography } from "@material-ui/core";
 const Web3 = require("web3");
 const Tx = require("ethereumjs-tx");
@@ -104,7 +104,7 @@ class App extends Component {
       disableButtons: false,
       modalOpen: true,
       mnemonic: null,
-      anchorEl: null,
+      anchorEl: null
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
@@ -583,8 +583,6 @@ class App extends Component {
     });
   };
 
-
-
   async collateralHandler() {
     console.log(`Requesting Collateral`);
     let collateralRes = await this.state.connext.requestCollateral();
@@ -598,172 +596,11 @@ class App extends Component {
     const { anchorEl } = this.state;
     const open = Boolean(anchorEl);
     return (
-      <div className="app">
-        <Modal
-          className="modal"
-          aria-labelledby="simple-modal-title"
-          aria-describedby="simple-modal-description"
-          open={this.state.modalOpen}
-        >
-          <div className="modal_inner">
-            <div className="row">
-              <div className="column">
-                <Button
-                  variant="contained"
-                  color="primary"
-                  disabled={this.state.disableButtons}
-                  onClick={() => this.handleMetamaskClose()}
-                >
-                  Use Metamask to sign
-                </Button>
-              </div>
-              <div className="column">
-                <Button
-                  variant="contained"
-                  color="primary"
-                  disabled={this.state.disableButtons}
-                  onClick={() => this.handleDelegatedSignerSelect()}
-                >
-                  Use Autosigner
-                </Button>
-              </div>
-            </div>
-            <div className="row">
-              <div className="column">
-                {this.state.delegatedSignerSelected ? (
-                  <div>
-                    <div>
-                      {this.state.showWalletOptions ? (
-                        <div>
-                          <div>
-                            <h4>
-                              You have an autosigner set up already! <br />
-                              You can either use it, recover an old one, or set
-                              up an entirely new one.{" "}
-                            </h4>
-                            <br />
-                          </div>
-                          <div>
-                            <Button
-                              style={{
-                                padding: "15px 15px 15px 15px",
-                                marginRight: "15px"
-                              }}
-                              variant="contained"
-                              color="primary"
-                              onClick={() =>
-                                this.chooseWalletHandler("existing")
-                              }
-                            >
-                              Use Existing Signer
-                            </Button>
-                            <Button
-                              style={{ padding: "15px 15px 15px 15px" }}
-                              variant="contained"
-                              color="primary"
-                              onClick={() => this.chooseWalletHandler("new")}
-                            >
-                              Create New Signer
-                            </Button>
-                          </div>
-                          <div style={{ display: "flex" }}>
-                            <div style={{ width: "65%" }}>
-                              <TextField
-                                id="outlined-with-placeholder"
-                                label="Mnemonic"
-                                value={this.state.recovery}
-                                onChange={evt => this.updateWalletHandler(evt)}
-                                placeholder="12 word passphrase (e.g. hat avocado green....)"
-                                margin="normal"
-                                variant="outlined"
-                                fullWidth
-                              />
-                            </div>
-                            <div style={{ width: "35%" }}>
-                              <Button
-                                style={{
-                                  marginTop: "17px",
-                                  marginLeft: "10px",
-                                  padding: "15px 15px 15px 15px"
-                                }}
-                                variant="contained"
-                                color="primary"
-                                onClick={() =>
-                                  this.chooseWalletHandler(
-                                    "recover",
-                                    this.state.recovery
-                                  )
-                                }
-                              >
-                                Recover Signer from Key
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          The following mnemonic is the recovery phrase for your
-                          signer. Click to copy it to your clipboard
-                          <br />
-                          If you lose it and are locked out of your signer, you
-                          will lose access
-                          <br />
-                          to any funds remaining in your channel. <br />
-                          Keep it secret, keep it safe.
-                          <br /> <br />
-                          {this.state.toggleKey ? (
-                            <div>
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={evt => this.toggleKey(evt)}
-                              >
-                                Hide Mnemonic
-                              </Button>
-                              <br />
-                              <br />
-                              <CopyToClipboard
-                                style={{ cursor: "pointer" }}
-                                text={this.state.mnemonic}
-                              >
-                                <span>{this.state.mnemonic}</span>
-                              </CopyToClipboard>
-                            </div>
-                          ) : (
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              onClick={evt => this.getKey(evt)}
-                            >
-                              Show Mnemonic
-                            </Button>
-                          )}
-                          <br />
-                          <br />
-                          <div>
-                            <Button
-                              variant="contained"
-                              onClick={() => this.closeModal("other")}
-                            >
-                              {" "}
-                              Close
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </Modal>
-        <AppBar position="static">
-            <Toolbar>
-            <img src={Connext} style={{width:'60px',height:'60px'}}/>
-            <Typography variant='h6' style={{flexGrow:1}}>
-
-            </Typography>
+      <div>
+        <AppBar position="sticky">
+          <Toolbar>
+            <img src={Connext} style={{ width: "60px", height: "60px" }} />
+            <Typography variant="h6" style={{ flexGrow: 1 }} />
             <IconButton
               color="inherit"
               aria-label="Menu"
@@ -787,72 +624,265 @@ class App extends Component {
                 vertical: "top",
                 horizontal: "center"
               }}
-              
-          > 
-          <div style={{
-                padding:'20px 20px 20px 20px',
-                boxShadow:'1px 1px 1px 1px black',
-              }}>
-            <Typography variant="h4">
-              Step 1
-            </Typography>
-            <Typography>
-              Get tokens or ETH from your MetaMask. <br />
-              Enter the amount in Wei, tokens, or both, and then click Get.{" "}
-            </Typography>
-            <Typography variant="h4" style={{marginTop:'20px'}}>
-              Step 2
-            </Typography>
-            <Typography>
-              This step is OPTIONAL. If you'd like to swap ETH for <br />
-              tokens, you can do it in-channel.
-            </Typography>
-            <Typography variant="h4" style={{marginTop:'20px'}}>
-              Step 3
-            </Typography>
-            <Typography>
-            Here, you can pay a counterparty using <br />
-              your offchain funds. Enter the recipient address and the amount in tokens or ETH, then click Pay.{" "}
-            </Typography>
-            <Typography variant="h4" style={{marginTop:'20px'}}>
-              Step 4
-            </Typography>
-            <Typography>
-            Here, you can withdraw funds from your channel. <br />
-              Enter the recipient address and the amount, then click Withdraw.{" "}
-            </Typography>
-            </div>
-          </Popover>
-            </Toolbar>
+              style={{ width: "75%" }}
+            >
+              <div
+                style={{
+                  padding: "20px 20px 20px 20px",
+                  boxShadow: "1px 1px 1px 1px black"
+                }}
+              >
+                <Typography variant="h3">Connext Demo Wallet</Typography>
+                <Typography variant="h4"style={{ marginTop: "40px" }}>Step 1: Deposit to channel</Typography>
+                <Typography>
+                  First, you need to send funds to your channel. You can either
+                  manually send them to the address shown in the Channel
+                  Information, or you can use the UX below to fetch ETH or
+                  tokens from your Metamask account. Enter the amount in Wei,
+                  tokens, or both, and then click Get and sign the popup--we'll
+                  do the rest! If you're using an Autosigner, we'll leave a
+                  small amount of ETH in the autosigner wallet to cover gas
+                  fees, but you'll get it all back when you withdraw.{" "}
+                </Typography>
+                <Typography variant="h4" style={{ marginTop: "20px" }}>
+                  Step 2: Swap ETH for Tokens
+                </Typography>
+                <Typography>
+                  This step is OPTIONAL. If you'd like to swap ETH for tokens,
+                  you can do it in-channel. Just enter the amount of ETH you'd
+                  like to swap, using the exchange rate provided.
+                </Typography>
+                <Typography variant="h4" style={{ marginTop: "20px" }}>
+                  Step 3: Pay
+                </Typography>
+                <Typography>
+                  Here, you can pay a counterparty using your offchain funds.
+                  Enter the recipient address and the amount in tokens or ETH,
+                  then click Pay. Everything's offchain, so no gas is necessary
+                  and the payment is instant.{" "}
+                </Typography>
+                <Typography variant="h4" style={{ marginTop: "20px" }}>
+                  Step 4: Withdraw
+                </Typography>
+                <Typography>
+                  When you're done making payments, you'll want to withdraw
+                  funds from your channel. Enter the recipient address (most
+                  likely an address that you control) and the amount, then click
+                  Withdraw.{" "}
+                </Typography>
+                <Typography variant="h5" style={{ marginTop: "40px" }}>
+                  A note about autosigners
+                </Typography>
+                <Typography>
+                  We use autosigners to cut down on the number of MetaMask
+                  popups that show up in the course of conducting an offchain
+                  transaction. An autosigner is an inpage wallet which uses a
+                  custom Web3 implementation to automatically sign all
+                  transactions initiated by the user via the UX. Private keys
+                  are stored securely in browser storage.{" "}
+                </Typography>
+              </div>
+            </Popover>
+          </Toolbar>
         </AppBar>
-        <div className="row" style={{ flexWrap: "nowrap" }}>
-          <div className="column">
-            <ChannelCard
-              channelState={this.state.channelState}
-              address={this.state.address}
-            />
-          </div>
-          <div className="column">
-            <FullWidthTabs
-              connext={this.state.connext}
-              metamask={this.state.metamask}
-              channelManager={this.state.channelManager}
-              hubWallet={this.state.hubWallet}
-              web3={this.state.web3}
-              tokenContract={this.state.tokenContract}
-            />
-            <div style={{ display: "flex", marginLeft: "10%" }}>
-              <div style={{ marginRight: "10px" }}>
+        <div className="app">
+          <Modal
+            className="modal"
+            aria-labelledby="simple-modal-title"
+            aria-describedby="simple-modal-description"
+            open={this.state.modalOpen}
+          >
+            <div className="modal_inner">
+              <div className="row">
+                <div className="row">
+                  <p style={{ fontStyle: "italic" }}>
+                    Choose how you'd like to sign transactions. For most use
+                    cases, we recommend using an autosigner to cut down on the
+                    number of popups.
+                  </p>
+                </div>
+                <div className="row">
+                  <div className="column">
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      disabled={this.state.disableButtons}
+                      onClick={() => this.handleMetamaskClose()}
+                    >
+                      Use Metamask to sign
+                    </Button>
+                  </div>
+                  <div className="column">
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      disabled={this.state.disableButtons}
+                      onClick={() => this.handleDelegatedSignerSelect()}
+                    >
+                      Use Autosigner
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="row">
+                <div className="column">
+                  {this.state.delegatedSignerSelected ? (
+                    <div>
+                      <div>
+                        {this.state.showWalletOptions ? (
+                          <div>
+                            <div>
+                              <h4>
+                                You have an autosigner set up already! <br />
+                                You can either use it, recover an old one, or
+                                set up an entirely new one.{" "}
+                              </h4>
+                              <br />
+                            </div>
+                            <div>
+                              <Button
+                                style={{
+                                  padding: "15px 15px 15px 15px",
+                                  marginRight: "15px"
+                                }}
+                                variant="contained"
+                                color="primary"
+                                onClick={() =>
+                                  this.chooseWalletHandler("existing")
+                                }
+                              >
+                                Use Existing Signer
+                              </Button>
+                              <Button
+                                style={{ padding: "15px 15px 15px 15px" }}
+                                variant="contained"
+                                color="primary"
+                                onClick={() => this.chooseWalletHandler("new")}
+                              >
+                                Create New Signer
+                              </Button>
+                            </div>
+                            <div style={{ display: "flex" }}>
+                              <div style={{ width: "65%" }}>
+                                <TextField
+                                  id="outlined-with-placeholder"
+                                  label="Mnemonic"
+                                  value={this.state.recovery}
+                                  onChange={evt =>
+                                    this.updateWalletHandler(evt)
+                                  }
+                                  placeholder="12 word passphrase (e.g. hat avocado green....)"
+                                  margin="normal"
+                                  variant="outlined"
+                                  fullWidth
+                                />
+                              </div>
+                              <div style={{ width: "35%" }}>
+                                <Button
+                                  style={{
+                                    marginTop: "17px",
+                                    marginLeft: "10px",
+                                    padding: "15px 15px 15px 15px"
+                                  }}
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={() =>
+                                    this.chooseWalletHandler(
+                                      "recover",
+                                      this.state.recovery
+                                    )
+                                  }
+                                >
+                                  Recover Signer from Key
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            The following mnemonic is the recovery phrase for
+                            your signer. Click to copy it to your clipboard
+                            <br />
+                            If you lose it and are locked out of your signer,
+                            you will lose access
+                            <br />
+                            to any funds remaining in your channel. <br />
+                            Keep it secret, keep it safe.
+                            <br /> <br />
+                            {this.state.toggleKey ? (
+                              <div>
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={evt => this.toggleKey(evt)}
+                                >
+                                  Hide Mnemonic
+                                </Button>
+                                <br />
+                                <br />
+                                <CopyToClipboard
+                                  style={{ cursor: "pointer" }}
+                                  text={this.state.mnemonic}
+                                >
+                                  <span>{this.state.mnemonic}</span>
+                                </CopyToClipboard>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={evt => this.getKey(evt)}
+                              >
+                                Show Mnemonic
+                              </Button>
+                            )}
+                            <br />
+                            <br />
+                            <div>
+                              <Button
+                                variant="contained"
+                                onClick={() => this.closeModal("other")}
+                              >
+                                {" "}
+                                Close
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </Modal>
+          <div className="row" style={{ flexWrap: "nowrap" }}>
+            <div className="column">
+              <ChannelCard
+                channelState={this.state.channelState}
+                address={this.state.address}
+              />
+            </div>
+            <div className="column">
+              <FullWidthTabs
+                connext={this.state.connext}
+                metamask={this.state.metamask}
+                channelManager={this.state.channelManager}
+                hubWallet={this.state.hubWallet}
+                web3={this.state.web3}
+                tokenContract={this.state.tokenContract}
+              />
+              <div>
                 <Button
+                  style={{ width: "30%", marginRight: "10px" }}
                   variant="contained"
                   color="primary"
                   onClick={() => this.setState({ modalOpen: true })}
                 >
                   Select Signer
                 </Button>
-              </div>
-              <div>
                 <Button
+                  style={{ width: "30%" }}
                   variant="contained"
                   color="primary"
                   onClick={() => this.collateralHandler()}
@@ -862,50 +892,38 @@ class App extends Component {
               </div>
             </div>
           </div>
+          <div className="row">
+            <div className="column">
+              <DepositCard
+                channelManagerAddress={this.state.channelManager.address}
+                Web3={window.web3}
+                balance={this.state.balance}
+                tokenBalance={this.state.tokenBalance}
+                tokenContract={this.state.tokenContract}
+                humanTokenAbi={humanTokenAbi}
+                connext={this.state.connext}
+              />
+            </div>
+            <div className="column">
+              <SwapCard
+                connext={this.state.connext}
+                exchangeRate={this.state.exchangeRate}
+              />
+            </div>
+            <div className="column">
+              <PayCard connext={this.state.connext} />
+            </div>
+            <div className="column">
+              <WithdrawCard
+                connext={this.state.connext}
+                exchangeRate={this.state.exchangeRate}
+              />
+            </div>
+          </div>
+          <div className="row">
+            <div className="column">Made with 💛 by the Connext Team</div>
+          </div>
         </div>
-        <div className="row">
-          <div className="column">
-            <DepositCard
-              channelManagerAddress={this.state.channelManager.address}
-              Web3={window.web3}
-              balance={this.state.balance}
-              tokenBalance={this.state.tokenBalance}
-              tokenContract={this.state.tokenContract}
-              humanTokenAbi={humanTokenAbi}
-              connext={this.state.connext}
-            />
-          </div>
-          <div className="column">
-            <SwapCard
-              connext={this.state.connext}
-              exchangeRate={this.state.exchangeRate}
-            />
-          </div>
-          <div className="column">
-            <PayCard connext={this.state.connext} />
-          </div>
-          <div className="column">
-            <WithdrawCard
-              connext={this.state.connext}
-              exchangeRate={this.state.exchangeRate}
-            />
-          </div>
-        </div>
-        <div className="row">
-          <div className="column">Made with 💛 by the Connext Team</div>
-        </div>
-
-        {/* <button className="btn" onClick={() => this.createWallet()}>
-                  Create New Browser Wallet
-                </button>
-              </div>
-            ) : (
-                <div>
-                  Enter your private key. If you do not have a wallet, leave blank and we'll create one for you.
-                <div>
-                    <input defaultValue={""} onChange={evt => this.updateWalletHandler(evt)} />
-                  </div>
-                  <button className="btn">Get wallet</button> */}
       </div>
     );
   }

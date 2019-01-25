@@ -64,14 +64,19 @@ class DepositCard extends Component {
         return oldState;
       });
     }
-    console.log(`Updated depositVal: ${JSON.stringify(this.state.depositVal, null, 2)}`);
+    console.log(
+      `Updated depositVal: ${JSON.stringify(this.state.depositVal, null, 2)}`
+    );
   }
 
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
-    const { tokenContract, channelManagerAddress: approveFor } = this.props
+    const { tokenContract, channelManagerAddress: approveFor } = this.props;
 
-    let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
+    let approveTx = await tokenContract.methods.approve(
+      approveFor,
+      this.state.depositVal
+    );
     console.log(approveTx);
 
     try {
@@ -108,18 +113,27 @@ class DepositCard extends Component {
       return;
     }
 
-    const tokenContract = new metamaskProvider.eth.Contract(this.props.humanTokenAbi, this.props.tokenContract.tokenAddress);
+    const tokenContract = new metamaskProvider.eth.Contract(
+      this.props.humanTokenAbi,
+      this.props.tokenContract.tokenAddress
+    );
 
     let tokens = amountToken;
-    console.log(`Sending ${tokens} tokens from ${address} to ${store.getState()[0].getAddressString()}`);
+    console.log(
+      `Sending ${tokens} tokens from ${address} to ${store
+        .getState()[0]
+        .getAddressString()}`
+    );
 
     console.log("state:");
     console.log(this.state);
 
-    let approveTx = await tokenContract.methods.transfer(store.getState()[0].getAddressString(), tokens).send({
-      from: address,
-      gas: "81000"
-    });
+    let approveTx = await tokenContract.methods
+      .transfer(store.getState()[0].getAddressString(), tokens)
+      .send({
+        from: address,
+        gas: "81000"
+      });
 
     console.log(approveTx);
   }
@@ -132,7 +146,9 @@ class DepositCard extends Component {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
+    const metamaskProvider = new eth.providers.Web3Provider(
+      web3.currentProvider
+    );
     const metamask = metamaskProvider.getSigner();
     const address = (await metamask.provider.listAccounts())[0];
     if (!address) {
@@ -144,7 +160,10 @@ class DepositCard extends Component {
       value: eth.utils.bigNumberify(amountWei),
       gasLimit: eth.utils.bigNumberify("21000")
     });
-    console.log(`Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `, sentTx);
+    console.log(
+      `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
+      sentTx
+    );
   }
 
   render() {
@@ -192,39 +211,15 @@ class DepositCard extends Component {
         <div style={cardStyle.col1}>
           <ArchiveIcon style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              Get tokens or ETH from your MetaMask. <br />
-              Enter the amount in Wei, tokens, or both, and then click Get.{" "}
-            </Typography>
-          </Popover>
-        </div>
+
         <div>
           ETH
-          <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
+          <Switch
+            checked={this.state.checkedB}
+            onChange={this.handleChange("checkedB")}
+            value="checkedB"
+            color="primary"
+          />
           TST
         </div>
         <TextField
@@ -237,8 +232,13 @@ class DepositCard extends Component {
           variant="outlined"
           onChange={evt => this.updateDepositHandler(evt)}
         />
-        <Button style={cardStyle.button} variant="contained" color="primary" onClick={evt => this.depositHandler(evt)}>
-         Get from MetaMask
+        <Button
+          style={cardStyle.button}
+          variant="contained"
+          color="primary"
+          onClick={evt => this.depositHandler(evt)}
+        >
+          Get from MetaMask
         </Button>
       </Card>
     );
