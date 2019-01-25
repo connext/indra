@@ -23,7 +23,7 @@ class DepositCard extends Component {
   }
   state = {
     checkedA: true,
-    checkedB: true,
+    checkedB: false,
     anchorEl: null,
     depositVal: {
       amountWei: "0",
