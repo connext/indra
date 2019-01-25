@@ -2,6 +2,56 @@
 
 Everything you need to set up a Connext payment channel hub.
 
+# Important New Repo Information!
+
+We are working on rebuilding our one-step process Docker environment. However, we have been running into lots of intermittent issues so in the meantime, please follow the below directions to get up and running with the new setup:
+
+### Prerequisites
+* PostgreSQL running locally: `brew install postgres` for Mac (TODO: add other platform information).
+* Redis running locally: `brew install redis` for Mac (TODO: add other platform information).
+* Yarn: `brew install yarn` for Mac (TODO: add other platform information).
+
+Run the following steps in order. For each section, use a separate terminal window. Closing the terminal window will stop the process.
+
+### Ganache
+Run the following from `modules/hub`.
+* `yarn install` - Install dependencies.
+* `bash development/ganache-reset` - Migrates the contracts.
+* `bash development/ganache-run` - Runs Ganache (if you put a number after the `ganache-run` command you can set the blocktime).
+
+### Hub
+Run the following from `modules/hub`.
+* `createdb sc-hub` - Creates the hub's database (if it already exists, skip this step).
+* `bash development/hub-reset` - Resets the hub's database.
+* `bash development/hub-run` - Runs hub and chainsaw.
+
+### Wallet
+Run the following from `modules/wallet`.
+
+* Add the following to a file called `.env` inside `modules/wallet`. Do not commit this file to Git:
+```
+REACT_APP_DEV=false
+REACT_APP_HUB_URL=http://localhost:8080
+REACT_APP_ETHPROVIDER_URL=http://localhost:8545
+REACT_APP_HUB_WALLET_ADDRESS=0xfb482f8f779fd96a857f1486471524808b97452d
+REACT_APP_CHANNEL_MANAGER_ADDRESS=0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42
+REACT_APP_TOKEN_ADDRESS=0xd01c08c7180eae392265d8c7df311cf5a93f1b73
+```
+* `npm install` - Install dependencies.
+* `npm start` - Runs the local dev server at `http://localhost:3000`.
+* Set up Metamask to use one of the following accounts:
+
+Address: 0xFB482f8f779fd96A857f1486471524808B97452D
+
+Private Key: 09cd8192c4ad4dd3b023a8ef381a24d29266ebd4af88ecdac92ec874e1c2fed8 (hub's account, contains tokens)
+
+Address: 0x2DA565caa7037Eb198393181089e92181ef5Fb53
+
+Private Key: 54dec5a04356ed96fc469803f3e45b901c69c5d5fd93a34fbf3568cd4c6efadd
+
+The rest of the information in this Readme is potentially unstable or not working.
+============================================================================
+
 ## Contents
 
 - [Repo Executive Summary](#Repo-Executive-Summary)
@@ -15,7 +65,6 @@ Everything you need to set up a Connext payment channel hub.
      - [Hub errors on start](#Hub-errors-on-start)
      - [Locked DB](#Locked-DB)
      - [502 Bad Gateway](#502-Bad-Gateway)
-    
 
 ## Repo Executive Summary
 

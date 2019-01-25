@@ -1,0 +1,37 @@
+ingress:
+  enabled: true
+  # Used to create an Ingress record.
+  host: hub-staging.spankdev.com
+  tlsSecret: spankdev-ssl
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: 30
+    nginx.ingress.kubernetes.io/proxy-read-timeout: 1800
+    nginx.ingress.kubernetes.io/proxy-send-timeout: 1800
+
+resources:
+  limits:
+    cpu: 1
+    memory: 500Mi
+  requests:
+    cpu: 100m
+    memory: 150Mi
+
+local:
+  postgresql: false
+  skipDbMigrate: false
+
+pgHost: 'pg-sqlproxy-gcloud-sqlproxy'
+pgSecretName: 'api-db-creds'
+
+env:
+  ETH_RPC_URL: 'http://10.150.0.4:8545'
+  NODE_ENV: 'staging'
+  WALLET_ADDRESS: '0x8ec75ef3adf6c953775d0738e0e7bd60e647e5ef'
+  HOT_WALLET_ADDRESS: '0x8ec75ef3adf6c953775d0738e0e7bd60e647e5ef'
+  SERVICE_USER_KEY: 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
+  CHANNEL_MANAGER_ADDRESS: '0x2e478F306B438C7653D60fd380e406Fa71e06B40'
+  TOKEN_CONTRACT_ADDRESS: '0xb92139a108ae4d03112bafc76307360d575c0403'
+
+redis:
+  usePassword: false

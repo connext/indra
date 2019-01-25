@@ -1,0 +1,30 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+if [[ "$#" -ne 2 ]]; then
+    echo "USAGE: $0 ETH ADDRESS"
+    echo "Sends ETH to ADDRESS."
+    exit 1
+fi
+
+AMOUNT="$(awk "BEGIN { print $1 * 1e18 }")"
+ADDRESS="$2"
+
+echo "Sending $AMOUNT WEI to $ADDRESS..."
+
+(
+    echo "web3.eth.sendTransaction({'from': '0xfb482f8f779fd96a857f1486471524808b97452d','to': '$ADDRESS','value': '$AMOUNT'})"
+    # Note: this needs to be Large Enough that truffle console can start and
+    # the transaction can be sent, otherwise truffle terminates before the
+    # transaction is sent (ex, waiting for the result of eth_gasPrice).
+    sleep 20
+
+) | ./truffle console
+echo "" # return console to nice state

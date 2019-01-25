@@ -1,0 +1,45 @@
+steps:
+  #- name: 'gcr.io/cloud-builders/docker'
+  #  args: ['pull', 'gcr.io/$PROJECT_ID/$REPO_NAME/${_PROJECT}:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+            'build',
+            '-f', '${_PROJECT}/Dockerfile',
+            #'--cache-from', 'gcr.io/$PROJECT_ID/$REPO_NAME/${_PROJECT}:latest',
+            '-t', 'gcr.io/$PROJECT_ID/$REPO_NAME/${_PROJECT}:$COMMIT_SHA',
+            #'-t', 'gcr.io/$PROJECT_ID/$REPO_NAME/${_PROJECT}:latest',
+            '.'
+          ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ["push", "gcr.io/$PROJECT_ID/$REPO_NAME/${_PROJECT}:$COMMIT_SHA"]
+  - name: 'gcr.io/$PROJECT_ID/cloud-build-helm:2.8.2'
+    args: ['dependency', 'build']
+    dir: '${_PROJECT}/infrastructure/helm'
+    env:  [
+            'CLOUDSDK_COMPUTE_ZONE=${_ZONE}',
+            'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER}',
+            'GCLOUD_PROJECT=${_GCLOUD_PROJECT}'
+          ]
+  - name: 'gcr.io/$PROJECT_ID/cloud-build-helm:2.8.2'
+    args: [
+      'upgrade',
+      '${_HELM_RELEASE_NAME}',
+      'helm',
+      '--install',
+      '-f', 'helm-values-${_ENV}.yaml',
+      '--set', 'image.tag=$COMMIT_SHA'
+    ]
+    dir: '${_PROJECT}/infrastructure'
+    env:  [
+            'CLOUDSDK_COMPUTE_ZONE=${_ZONE}',
+            'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER}',
+            'GCLOUD_PROJECT=${_GCLOUD_PROJECT}'
+          ]
+images: [
+          'gcr.io/$PROJECT_ID/$REPO_NAME/${_PROJECT}:$COMMIT_SHA',
+          #'gcr.io/$PROJECT_ID/$REPO_NAME/${_PROJECT}:latest'
+        ]
+
+timeout: 1200s
+options:
+  machineType: N1_HIGHCPU_8

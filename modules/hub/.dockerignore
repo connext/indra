@@ -1,4 +1,5 @@
-.cache
-.config
-.git
-.node-gyp
+node_modules
+dist
+*.log
+.editorconfig
+.DS_Store

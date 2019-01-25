@@ -4,9 +4,9 @@ import Web3 = require('web3')
 import { mkHash, mkSig, assertChannelStateEqual } from "./testing/stateUtils";
 import { MockExchangeRateDao, MockGasEstimateDao, MockSignerService } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
-import { StateGenerator } from "./vendor/client/StateGenerator";
+import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { channelUpdateFactory } from "./testing/factories";
-import { DepositArgsBigNumber, UpdateRequest, convertChannelState, convertDeposit, DepositArgs } from "./vendor/client/types";
+import { DepositArgsBigNumber, UpdateRequest, convertChannelState, convertDeposit, DepositArgs } from "./vendor/connext/types";
 import { sleep } from "./util";
 import ChannelsDao from "./dao/ChannelsDao";
 import DBEngine, { SQL } from "./DBEngine";

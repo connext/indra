@@ -1,0 +1,29 @@
+{{ if not .Values.local.skipDbMigrate }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.Release.Name }}-migrate
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install,pre-upgrade"
+    # Jobs are executed in ascending order
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      name: {{.Release.Name }}-migrate
+      namespace: {{ .Release.Namespace }}
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: {{ .Release.Name }}-migrate
+          image: "{{ required "Repository required" .Values.image.repository }}:{{ required "Image tag required" .Values.image.tag }}"
+          command: ["npm"]
+          args: ["run", "migrate"]
+          env:
+            {{- include "sc_hub_env" . | indent 12 }}
+{{- end -}}

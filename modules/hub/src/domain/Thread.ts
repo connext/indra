@@ -1,4 +1,4 @@
-import { ThreadState, ThreadStatus } from '../vendor/client/types'
+import { ThreadState, ThreadStatus } from '../vendor/connext/types'
 import { BigNumber } from 'bignumber.js'
 
 // A single thread state, encompasing exactly the fields which are signed, and

@@ -1,6 +1,5 @@
 import { store } from "./App";
 // import * as ethers from "ethers";
-const Wallet = require("ethereumjs-wallet")
 const bip39 = require('bip39')
 const hdkey = require('ethereumjs-wallet/hdkey')
 

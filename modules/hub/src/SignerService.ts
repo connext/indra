@@ -1,6 +1,6 @@
-import { Utils } from './vendor/client/Utils'
+import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
-import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/client/types'
+import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/connext/types'
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
 

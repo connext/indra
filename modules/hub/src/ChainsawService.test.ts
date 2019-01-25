@@ -7,11 +7,11 @@ import {ChannelManager} from './ChannelManager'
 import ABI, {BYTECODE} from './abi/ChannelManager'
 import {assert} from 'chai'
 import * as sinon from 'sinon'
-import {Utils, emptyRootHash} from './vendor/client/Utils'
+import {Utils, emptyRootHash} from './vendor/connext/Utils'
 import {PgPoolServiceForTest} from './testing/mocks'
 import {BigNumber} from 'bignumber.js'
-import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/client/types';
-import { StateGenerator } from './vendor/client/StateGenerator'
+import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
+import { StateGenerator } from './vendor/connext/StateGenerator'
 
 const GAS_PRICE = '1000000000'
 

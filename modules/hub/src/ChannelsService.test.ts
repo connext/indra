@@ -33,7 +33,7 @@ import {
   InvalidationArgs,
   WithdrawalArgs,
   WithdrawalParametersBigNumber,
-} from './vendor/client/types'
+} from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
 import {
@@ -41,7 +41,7 @@ import {
   tokenVal,
   channelAndThreadFactory,
 } from './testing/factories'
-import { StateGenerator } from './vendor/client/StateGenerator'
+import { StateGenerator } from './vendor/connext/StateGenerator'
 import PaymentsService from './PaymentsService';
 import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
 import Config from './Config';

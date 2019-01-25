@@ -45,6 +45,7 @@ export class SyncControllerState {
 }
 
 export class RuntimeState {
+  awaitingOnchainTransaction: boolean = false
   canDeposit: boolean = false
   canExchange: boolean = false
   canWithdraw: boolean = false

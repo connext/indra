@@ -9,12 +9,12 @@ import {
   DepositArgsBigNumber,
   WithdrawalArgsBigNumber,
   InvalidationReason
-} from '../vendor/client/types'
+} from '../vendor/connext/types'
 import {
   objValuesBigNumToString,
   objValuesStringToBigNum,
 } from '../util'
-import { Utils } from '../vendor/client/Utils'
+import { Utils } from '../vendor/connext/Utils'
 
 // TODO move all to connext?
 
