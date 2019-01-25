@@ -20,6 +20,7 @@ import FullWidthTabs from "./components/walletTabs";
 import Modal from "@material-ui/core/Modal";
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 const Web3 = require("web3");
 const Tx = require("ethereumjs-tx");
 const eth = require("ethers");
@@ -348,23 +349,22 @@ class App extends Component {
   //   return new TextDecoder("utf-8").decode(bufferValue);
   // }
 
-  getKey(evt) {
+  async getKey(evt) {
     console.log(store.getState()[0]);
     function _innerGetKey() {
       const key = localStorage.getItem("mnemonic");
       return key;
     }
     let privKey = _innerGetKey();
-    this.toggleKey(evt);
     console.log(privKey);
-    this.setState({ mnemonic: privKey });
+    await this.setState({ mnemonic: privKey });
+    this.toggleKey(evt);
     return privKey;
   }
 
   toggleKey(evt) {
     evt.preventDefault();
     this.setState(prevState => ({ toggleKey: !prevState.toggleKey }), () => {});
-    this.setState({ mnemonic: null });
   }
 
   updateApprovalHandler(evt) {
@@ -679,7 +679,7 @@ class App extends Component {
                       ) : (
                         <div>
                           The following mnemonic is the recovery phrase for your
-                          signer.
+                          signer. Click to copy it to your clipboard
                           <br />
                           If you lose it and are locked out of your signer, you
                           will lose access
@@ -687,7 +687,25 @@ class App extends Component {
                           to any funds remaining in your channel. <br />
                           Keep it secret, keep it safe.
                           <br /> <br />
-                          {this.toggleKey ? (
+                          {this.state.toggleKey ? (
+                            <div>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={evt => this.toggleKey(evt)}
+                              >
+                                Hide Mnemonic
+                              </Button>
+                              <br />
+                              <br />
+                              <CopyToClipboard
+                                style={{ cursor: "pointer" }}
+                                text={this.state.mnemonic}
+                              >
+                                <span>{this.state.mnemonic}</span>
+                              </CopyToClipboard>
+                            </div>
+                          ) : (
                             <Button
                               variant="contained"
                               color="primary"
@@ -695,18 +713,8 @@ class App extends Component {
                             >
                               Show Mnemonic
                             </Button>
-                          ) : (
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              onClick={() => this.toggleKey()}
-                            >
-                              Hide Mnemonic
-                            </Button>
                           )}
-                          {this.toggleKey ? (
-                            <span>{this.state.mnemonic}</span>
-                          ) : null}
+                          <br />
                           <br />
                           <div>
                             <Button
