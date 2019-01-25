@@ -6,8 +6,6 @@ import clientProvider from "./utils/web3/clientProvider.ts";
 import { setWallet } from "./utils/actions.js";
 import { createWallet, createWalletFromKey, findOrCreateWallet } from "./walletGen";
 import { createStore } from "redux";
-import PropTypes from "prop-types";
-import { withStyles } from "@material-ui/core/styles";
 import axios from "axios";
 import DepositCard from "./components/depositCard";
 import SwapCard from "./components/swapCard";
@@ -418,11 +416,11 @@ class App extends Component {
   async _walletCreateHandler(recovery = null) {
     let wallet;
     let key;
-    if (this.state.useExistingWallet == "existing") {
+    if (this.state.useExistingWallet === "existing") {
       wallet = await findOrCreateWallet(this.state.web3);
-    } else if (this.state.useExistingWallet == "new") {
+    } else if (this.state.useExistingWallet === "new") {
       wallet = await createWallet(this.state.web3);
-    } else if (this.state.useExistingWallet == "recover" && recovery) {
+    } else if (this.state.useExistingWallet === "recover" && recovery) {
       key = recovery;
       console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`);
       wallet = await createWalletFromKey(key);
@@ -529,8 +527,6 @@ class App extends Component {
   // ** wrapper for ethers getBalance. probably breaks for tokens
 
   render() {
-    const { classes } = this.props;
-
     return (
       <div className="app">
         <Modal className="modal" aria-labelledby="simple-modal-title" aria-describedby="simple-modal-description" open={this.state.modalOpen}>
