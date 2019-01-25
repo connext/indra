@@ -81,8 +81,8 @@ class SwapCard extends Component {
       button: {
         width: "100%",
         height: "40px",
-        backgroundColor:"#7b90b1",
-        color:"#FFF"
+        backgroundColor: "#7b90b1",
+        color: "#FFF"
       },
       col1: {
         marginLeft: "55px",

@@ -3,9 +3,9 @@
   padding-top: 0%;
   padding-left: 5%;
   padding-right: 5%;
-  display:flex;
-  flex-direction:row;
-  flex-wrap:wrap;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   font-family: "proxima-nova", sans-serif;
   background-color: #fcfbf3;
   /* background-color:  //#c8d0de */
@@ -21,6 +21,7 @@
 .column {
   display: flex;
   flex-direction: column;
+  flex-basis: 80%;
   flex: 1;
   padding-bottom: 2.5%;
   padding-top: 2.5%;

@@ -154,7 +154,7 @@ class FullWidthTabs extends React.Component {
             indicatorColor="primary"
             textColor="primary"
             variant="fullWidth"
-            style={{backgroundColor:"#D5D9DF"}}
+            style={{ backgroundColor: "#D5D9DF" }}
           >
             <Tab label="Metamask" />
             <Tab label="Hub" />

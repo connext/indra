@@ -633,7 +633,9 @@ class App extends Component {
                 }}
               >
                 <Typography variant="h3">Connext Demo Wallet</Typography>
-                <Typography variant="h4"style={{ marginTop: "40px" }}>Step 1: Deposit to channel</Typography>
+                <Typography variant="h4" style={{ marginTop: "40px" }}>
+                  Step 1: Deposit to channel
+                </Typography>
                 <Typography>
                   First, you need to send funds to your channel. You can either
                   manually send them to the address shown in the Channel
@@ -857,13 +859,16 @@ class App extends Component {
             </div>
           </Modal>
           <div className="row">
-            <div className="column" style={{marginRight:0,marginLeft:"auto"}}>
+            <div
+              className="column"
+              style={{ justifyContent: "space-between", flexGrow: 1 }}
+            >
               <ChannelCard
                 channelState={this.state.channelState}
                 address={this.state.address}
               />
             </div>
-            <div className="column">
+            <div className="column" style={{ flexGrow: 1 }}>
               <FullWidthTabs
                 connext={this.state.connext}
                 metamask={this.state.metamask}
@@ -874,14 +879,23 @@ class App extends Component {
               />
               <div>
                 <Button
-                  style={{ width: "235px", marginRight: "5px", color:"#FFF", backgroundColor:"#7b90b1"}}
+                  style={{
+                    width: "235px",
+                    marginRight: "5px",
+                    color: "#FFF",
+                    backgroundColor: "#7b90b1"
+                  }}
                   variant="contained"
                   onClick={() => this.setState({ modalOpen: true })}
                 >
                   Select Signer
                 </Button>
                 <Button
-                  style={{ width: "235px", color:"#FFF", backgroundColor:"#7b90b1" }}
+                  style={{
+                    width: "235px",
+                    color: "#FFF",
+                    backgroundColor: "#7b90b1"
+                  }}
                   variant="contained"
                   onClick={() => this.collateralHandler()}
                 >

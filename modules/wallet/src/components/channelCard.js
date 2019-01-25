@@ -109,34 +109,42 @@ class ChannelCard extends Component {
             <span>{this.props.address}</span>
           </CopyToClipboard>
         </Typography>
-       
-            <Typography variant="h6" style={cardStyle.row}>
-              ETH balance:
-              {this.props.channelState ? (
-                <span>{this.props.channelState.balanceWeiUser} Wei </span>
-              ) : (<span style={{fontStyle:"italic"}}> Balance loading</span>)}{" "}
-            </Typography>
 
-            <Typography gutterBottom variant="h6" style={cardStyle.row}>
-              TST balance:{" "}
-              {this.props.channelState ? (
-                <span>{this.props.channelState.balanceTokenUser} Wei </span>
-              ) : (<span style={{fontStyle:"italic"}}> Balance loading</span>)}{" "}
-            </Typography>
+        <Typography variant="h6" style={cardStyle.row}>
+          ETH balance:
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceWeiUser} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}> Balance loading</span>
+          )}{" "}
+        </Typography>
 
-            <Typography variant="h6" style={cardStyle.row}>
-              Hub ETH balance:{" "}
-              {this.props.channelState ? (
-                <span>{this.props.channelState.balanceWeiHub} Wei </span>
-              ) : (<span style={{fontStyle:"italic"}}>Balance loading</span>)}{" "}
-            </Typography>
+        <Typography gutterBottom variant="h6" style={cardStyle.row}>
+          TST balance:{" "}
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceTokenUser} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}> Balance loading</span>
+          )}{" "}
+        </Typography>
 
-            <Typography variant="h6" style={cardStyle.row}>
-              Hub TST balance:{" "}
-              {this.props.channelState ? (
-                <span>{this.props.channelState.balanceTokenHub} Wei </span>
-              ) : (<span style={{fontStyle:"italic"}}>Balance loading</span>)}{" "}
-            </Typography>
+        <Typography variant="h6" style={cardStyle.row}>
+          Hub ETH balance:{" "}
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceWeiHub} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}>Balance loading</span>
+          )}{" "}
+        </Typography>
+
+        <Typography variant="h6" style={cardStyle.row}>
+          Hub TST balance:{" "}
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceTokenHub} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}>Balance loading</span>
+          )}{" "}
+        </Typography>
       </Card>
     );
   }
