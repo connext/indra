@@ -4,6 +4,7 @@ import HelpIcon from "@material-ui/icons/Help";
 import Typography from "@material-ui/core/Typography";
 import IconButton from "@material-ui/core/IconButton";
 import Popover from "@material-ui/core/Popover";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 class ChannelCard extends Component {
   state = {
@@ -43,6 +44,9 @@ class ChannelCard extends Component {
         width: "100%",
         justifyContent: "center",
         color: "white"
+      },
+      clipboard: {
+        cursor: "pointer"
       },
       input: {
         width: "100%"
@@ -95,28 +99,50 @@ class ChannelCard extends Component {
           }}
         >
           <Typography style={cardStyle.popover}>
-            Refer to this section for information about <br />
-            your offchain balance.
+            Click on your address to copy it to your clipboard.
+            <br />
+            The balances you see are offchain balances for you and the hub.
           </Typography>
         </Popover>
         <Typography variant="subtitle1" style={cardStyle.row}>
-          {this.props.address}
+          <CopyToClipboard
+            style={cardStyle.clipboard}
+            text={this.props.address}
+          >
+            <span>{this.props.address}</span>
+          </CopyToClipboard>
         </Typography>
 
         <Typography variant="h5" style={cardStyle.row}>
-          ETH: {this.props.channelState ? this.props.channelState.balanceWeiUser : null} Wei
+          ETH:{" "}
+          {this.props.channelState
+            ? this.props.channelState.balanceWeiUser
+            : null}{" "}
+          Wei
         </Typography>
 
         <Typography gutterBottom variant="h5" style={cardStyle.row}>
-          TST: {this.props.channelState ? this.props.channelState.balanceTokenUser : null} Wei
+          TST:{" "}
+          {this.props.channelState
+            ? this.props.channelState.balanceTokenUser
+            : null}{" "}
+          Wei
         </Typography>
 
         <Typography variant="h6" style={cardStyle.row}>
-          Hub ETH: {this.props.channelState ? this.props.channelState.balanceWeiHub : null} Wei{" "}
+          Hub ETH:{" "}
+          {this.props.channelState
+            ? this.props.channelState.balanceWeiHub
+            : null}{" "}
+          Wei{" "}
         </Typography>
 
         <Typography variant="h6" style={cardStyle.row}>
-          Hub TST: {this.props.channelState ? this.props.channelState.balanceTokenHub : null} Wei
+          Hub TST:{" "}
+          {this.props.channelState
+            ? this.props.channelState.balanceTokenHub
+            : null}{" "}
+          Wei
         </Typography>
       </Card>
     );

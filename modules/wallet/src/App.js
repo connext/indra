@@ -4,7 +4,11 @@ import "./App.css";
 import ProviderOptions from "./utils/ProviderOptions.ts";
 import clientProvider from "./utils/web3/clientProvider.ts";
 import { setWallet } from "./utils/actions.js";
-import { createWallet, createWalletFromKey, findOrCreateWallet } from "./walletGen";
+import {
+  createWallet,
+  createWalletFromKey,
+  findOrCreateWallet
+} from "./walletGen";
 import { createStore } from "redux";
 import axios from "axios";
 import DepositCard from "./components/depositCard";
@@ -34,7 +38,7 @@ const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLo
 
 const HASH_PREAMBLE = "SpankWallet authentication message:";
 
-const BALANCE_THRESHOLD_WEI = eth.utils.parseEther('0.04') // 10FIN
+const BALANCE_THRESHOLD_WEI = eth.utils.parseEther("0.04"); // 10FIN
 
 const opts = {
   headers: {
@@ -204,14 +208,24 @@ class App extends Component {
     });
 
     this.setState({ connext });
-    const channelState = connext.state ? connext.state.persistent.channel : null;
+    const channelState = connext.state
+      ? connext.state.persistent.channel
+      : null;
     this.setState({ channelState });
-    console.log(`This is connext state: ${JSON.stringify(this.state.channelState, null, 2)}`);
+    console.log(
+      `This is connext state: ${JSON.stringify(
+        this.state.channelState,
+        null,
+        2
+      )}`
+    );
   }
 
   async pollExchangeRate() {
     const getRate = async () => {
-      const response = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH");
+      const response = await fetch(
+        "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
+      );
       const json = await response.json();
       console.log("latest ETH->USD exchange rate: ", json.data.rates.USD);
       this.setState({
@@ -228,8 +242,12 @@ class App extends Component {
     const browserWalletDeposit = async () => {
       const tokenContract = this.state.tokenContract;
       const balance = await this.state.web3.eth.getBalance(this.state.address);
-      const tokenBalance = await tokenContract.methods.balanceOf(this.state.address).call();
-      console.log(`Polled onchain balance, weiBalance: ${balance}, tokenBalance: ${tokenBalance}`)
+      const tokenBalance = await tokenContract.methods
+        .balanceOf(this.state.address)
+        .call();
+      console.log(
+        `Polled onchain balance, weiBalance: ${balance}, tokenBalance: ${tokenBalance}`
+      );
       if (balance !== "0" || tokenBalance !== "0") {
         this.setState({
           browserWalletDeposit: {
@@ -239,13 +257,16 @@ class App extends Component {
         });
         if (eth.utils.bigNumberify(balance).lte(BALANCE_THRESHOLD_WEI)) {
           // don't autodeposit anything under the threshold
-          return
+          return;
         }
         // const sendArgs = {
         //   from: this.state.channelState.user
         // }
         let approveFor = this.state.channelManager.address;
-        let approveTx = await tokenContract.methods.approve(approveFor, this.state.browserWalletDeposit);
+        let approveTx = await tokenContract.methods.approve(
+          approveFor,
+          this.state.browserWalletDeposit
+        );
         console.log(approveTx);
         // const gasEstimate = await approveTx.estimateGas(sendArgs)
         // if (gasEstimate > this.state.browserWalletDeposit.amountWei){
@@ -260,9 +281,12 @@ class App extends Component {
         //     }})
         // }
         const actualDeposit = {
-          amountWei: eth.utils.bigNumberify(balance).sub(BALANCE_THRESHOLD_WEI).toString(),
+          amountWei: eth.utils
+            .bigNumberify(balance)
+            .sub(BALANCE_THRESHOLD_WEI)
+            .toString(),
           amountToken: tokenBalance
-        }
+        };
         // TODO does this need to be in the state?
         this.setState({
           browserWalletDeposit: actualDeposit
@@ -286,7 +310,9 @@ class App extends Component {
     const toApprove = this.state.approvalWeiUser;
     const toApproveBn = eth.utils.bigNumberify(toApprove);
     const nonce = await web3.eth.getTransactionCount(this.state.wallet.address);
-    const depositResGas = await tokenContract.methods.approve(approveFor, toApproveBn).estimateGas();
+    const depositResGas = await tokenContract.methods
+      .approve(approveFor, toApproveBn)
+      .estimateGas();
     let tx = new Tx({
       to: tokenAddress,
       nonce: nonce,
@@ -362,7 +388,9 @@ class App extends Component {
 
       this.pollExchangeRate();
     } catch (e) {
-      console.log(`failed to set provider or start connext: ${JSON.stringify(e)}`);
+      console.log(
+        `failed to set provider or start connext: ${JSON.stringify(e)}`
+      );
     }
   }
 
@@ -378,17 +406,24 @@ class App extends Component {
     if (choice === "new") {
       await this.chooseNewWallet();
       await this.setState({ showWalletOptions: false });
+      await this.setState({ walletSet: false });
     } else if (choice === "existing") {
       await this.chooseExistingWallet();
       await this.closeModal("existing");
     } else if (choice === "recover") {
       await this.chooseRecoverWallet();
       await this.setState({ showWalletOptions: false });
+      await this.setState({ walletSet: false });
     }
-    console.log(`Chose wallet: ${JSON.stringify(this.state.useExistingWallet)}`);
+    console.log(
+      `Chose wallet: ${JSON.stringify(this.state.useExistingWallet)}`
+    );
     try {
       if (!this.state.walletSet) {
-        wallet = await this._walletCreateHandler(this.state.useExistingWallet, recovery);
+        wallet = await this._walletCreateHandler(
+          this.state.useExistingWallet,
+          recovery
+        );
         console.log(`wallet: ${wallet}`);
         await this.setWalletAndProvider();
       }
@@ -401,7 +436,9 @@ class App extends Component {
       this.pollExchangeRate();
       this.pollBrowserWallet();
     } catch (e) {
-      console.log(`failed to set provider or start connext ${JSON.stringify(e)}`);
+      console.log(
+        `failed to set provider or start connext ${JSON.stringify(e)}`
+      );
     }
     return wallet;
   }
@@ -422,13 +459,19 @@ class App extends Component {
       wallet = await createWallet(this.state.web3);
     } else if (this.state.useExistingWallet === "recover" && recovery) {
       key = recovery;
-      console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`);
+      console.log(
+        `creating wallet using recovery key: ${JSON.stringify(
+          this.state.recovery
+        )}`
+      );
       wallet = await createWalletFromKey(key);
     }
     if (wallet) {
       console.log(`Wallet created!`);
     } else {
-      alert(`Unable to create wallet. Try refreshing your page and starting over.`);
+      alert(
+        `Unable to create wallet. Try refreshing your page and starting over.`
+      );
     }
     store.dispatch({
       type: "SET_WALLET",
@@ -461,7 +504,6 @@ class App extends Component {
       this.setState({ useDelegatedSigner: false });
       this.setState({ mnemonic: null });
       localStorage.setItem("resetHappened", "true");
-      window.location.reload(true);
     } else if (choice === "existing") {
       this.setState({ modalOpen: false });
       this.setState({ showWalletOptions: true });
@@ -487,7 +529,11 @@ class App extends Component {
     const web3 = this.state.web3;
     const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
 
-    const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`);
+    const hash = web3.utils.sha3(
+      `${HASH_PREAMBLE} ${web3.utils.sha3(
+        challengeRes.data.nonce
+      )} ${web3.utils.sha3("localhost")}`
+    );
 
     const signature = await web3.eth.personal.sign(hash, this.state.address);
 
@@ -529,16 +575,31 @@ class App extends Component {
   render() {
     return (
       <div className="app">
-        <Modal className="modal" aria-labelledby="simple-modal-title" aria-describedby="simple-modal-description" open={this.state.modalOpen}>
+        <Modal
+          className="modal"
+          aria-labelledby="simple-modal-title"
+          aria-describedby="simple-modal-description"
+          open={this.state.modalOpen}
+        >
           <div className="modal_inner">
             <div className="row">
               <div className="column">
-                <Button variant="contained" color="primary" disabled={this.state.disableButtons} onClick={() => this.handleMetamaskClose()}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={this.state.disableButtons}
+                  onClick={() => this.handleMetamaskClose()}
+                >
                   Use Metamask to sign
                 </Button>
               </div>
               <div className="column">
-                <Button variant="contained" color="primary" disabled={this.state.disableButtons} onClick={() => this.handleDelegatedSignerSelect()}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={this.state.disableButtons}
+                  onClick={() => this.handleDelegatedSignerSelect()}
+                >
                   Use Autosigner
                 </Button>
               </div>
@@ -553,16 +614,22 @@ class App extends Component {
                           <div>
                             <h4>
                               You have an autosigner set up already! <br />
-                              You can either use it, recover an old one, or set up an entirely new one.{" "}
+                              You can either use it, recover an old one, or set
+                              up an entirely new one.{" "}
                             </h4>
                             <br />
                           </div>
                           <div>
                             <Button
-                              style={{ padding: "15px 15px 15px 15px", marginRight: "15px" }}
+                              style={{
+                                padding: "15px 15px 15px 15px",
+                                marginRight: "15px"
+                              }}
                               variant="contained"
                               color="primary"
-                              onClick={() => this.chooseWalletHandler("existing")}
+                              onClick={() =>
+                                this.chooseWalletHandler("existing")
+                              }
                             >
                               Use Existing Signer
                             </Button>
@@ -590,10 +657,19 @@ class App extends Component {
                             </div>
                             <div style={{ width: "35%" }}>
                               <Button
-                                style={{ marginTop: "17px", marginLeft: "10px", padding: "15px 15px 15px 15px" }}
+                                style={{
+                                  marginTop: "17px",
+                                  marginLeft: "10px",
+                                  padding: "15px 15px 15px 15px"
+                                }}
                                 variant="contained"
                                 color="primary"
-                                onClick={() => this.chooseWalletHandler("recover", this.state.recovery)}
+                                onClick={() =>
+                                  this.chooseWalletHandler(
+                                    "recover",
+                                    this.state.recovery
+                                  )
+                                }
                               >
                                 Recover Signer from Key
                               </Button>
@@ -602,26 +678,41 @@ class App extends Component {
                         </div>
                       ) : (
                         <div>
-                          The following mnemonic is the recovery phrase for your signer.
+                          The following mnemonic is the recovery phrase for your
+                          signer.
                           <br />
-                          If you lose it and are locked out of your signer, you will lose access
+                          If you lose it and are locked out of your signer, you
+                          will lose access
                           <br />
                           to any funds remaining in your channel. <br />
                           Keep it secret, keep it safe.
                           <br /> <br />
                           {this.toggleKey ? (
-                            <Button variant="contained" color="primary" onClick={evt => this.getKey(evt)}>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={evt => this.getKey(evt)}
+                            >
                               Show Mnemonic
                             </Button>
                           ) : (
-                            <Button variant="contained" color="primary" onClick={() => this.toggleKey()}>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={() => this.toggleKey()}
+                            >
                               Hide Mnemonic
                             </Button>
                           )}
-                          {this.toggleKey ? <span>{this.state.mnemonic}</span> : null}
+                          {this.toggleKey ? (
+                            <span>{this.state.mnemonic}</span>
+                          ) : null}
                           <br />
                           <div>
-                            <Button variant="contained" onClick={() => this.closeModal("other")}>
+                            <Button
+                              variant="contained"
+                              onClick={() => this.closeModal("other")}
+                            >
                               {" "}
                               Close
                             </Button>
@@ -636,13 +727,16 @@ class App extends Component {
           </div>
         </Modal>
         <div className="row" style={{ justifyContent: "center" }}>
-          <img style={{ height: "70px", width: "300px" }} src="https://connext.network/static/media/logoHorizontal.3251cc60.png" />
+          <img
+            style={{ height: "70px", width: "300px" }}
+            src="https://connext.network/static/media/logoHorizontal.3251cc60.png"
+          />
         </div>
         <div className="row" style={{ flexWrap: "nowrap" }}>
           <div className="column">
-            <ChannelCard 
-              channelState={this.state.channelState} 
-              address={this.state.address} 
+            <ChannelCard
+              channelState={this.state.channelState}
+              address={this.state.address}
             />
           </div>
           <div className="column">
@@ -656,12 +750,20 @@ class App extends Component {
             />
             <div style={{ display: "flex", marginLeft: "10%" }}>
               <div style={{ marginRight: "10px" }}>
-                <Button variant="contained" color="primary" onClick={() => this.setState({ modalOpen: true })}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => this.setState({ modalOpen: true })}
+                >
                   Select Signer
                 </Button>
               </div>
               <div>
-                <Button variant="contained" color="primary" onClick={() => this.collateralHandler()}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => this.collateralHandler()}
+                >
                   Request Collateral
                 </Button>
               </div>
@@ -681,13 +783,19 @@ class App extends Component {
             />
           </div>
           <div className="column">
-            <SwapCard connext={this.state.connext} exchangeRate={this.state.exchangeRate} />
+            <SwapCard
+              connext={this.state.connext}
+              exchangeRate={this.state.exchangeRate}
+            />
           </div>
           <div className="column">
             <PayCard connext={this.state.connext} />
           </div>
           <div className="column">
-            <WithdrawCard connext={this.state.connext} exchangeRate={this.state.exchangeRate} />
+            <WithdrawCard
+              connext={this.state.connext}
+              exchangeRate={this.state.exchangeRate}
+            />
           </div>
         </div>
         <div className="row">
