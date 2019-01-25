@@ -68,7 +68,7 @@ class ChannelCard extends Component {
 
     return (
       <Card style={cardStyle.card}>
-        <Typography variant="h6" style={cardStyle.headerText}>
+        <Typography variant="h5" style={cardStyle.headerText}>
           Channel
         </Typography>
         <IconButton
@@ -99,6 +99,10 @@ class ChannelCard extends Component {
             your offchain balance.
           </Typography>
         </Popover>
+        <Typography variant="subtitle1" style={cardStyle.row}>
+          {this.props.address}
+        </Typography>
+
         <Typography variant="h5" style={cardStyle.row}>
           ETH: {this.props.channelState ? this.props.channelState.balanceWeiUser : null} Wei
         </Typography>

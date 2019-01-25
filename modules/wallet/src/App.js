@@ -640,7 +640,10 @@ class App extends Component {
         </div>
         <div className="row" style={{ flexWrap: "nowrap" }}>
           <div className="column">
-            <ChannelCard channelState={this.state.channelState} />
+            <ChannelCard 
+              channelState={this.state.channelState} 
+              address={this.state.address} 
+            />
           </div>
           <div className="column">
             <FullWidthTabs
