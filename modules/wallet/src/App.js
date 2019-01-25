@@ -6,8 +6,6 @@ import clientProvider from "./utils/web3/clientProvider.ts";
 import { setWallet } from "./utils/actions.js";
 import { createWallet, createWalletFromKey, findOrCreateWallet } from "./walletGen";
 import { createStore } from "redux";
-import PropTypes from "prop-types";
-import { withStyles } from "@material-ui/core/styles";
 import axios from "axios";
 import DepositCard from "./components/depositCard";
 import SwapCard from "./components/swapCard";
@@ -35,6 +33,8 @@ const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS.toLowerCase();
 const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLowerCase();
 
 const HASH_PREAMBLE = "SpankWallet authentication message:";
+
+const BALANCE_THRESHOLD_WEI = eth.utils.parseEther('0.04') // 10FIN
 
 const opts = {
   headers: {
@@ -229,6 +229,7 @@ class App extends Component {
       const tokenContract = this.state.tokenContract;
       const balance = await this.state.web3.eth.getBalance(this.state.address);
       const tokenBalance = await tokenContract.methods.balanceOf(this.state.address).call();
+      console.log(`Polled onchain balance, weiBalance: ${balance}, tokenBalance: ${tokenBalance}`)
       if (balance !== "0" || tokenBalance !== "0") {
         this.setState({
           browserWalletDeposit: {
@@ -236,38 +237,46 @@ class App extends Component {
             amountToken: tokenBalance
           }
         });
-        try {
-          // const sendArgs = {
-          //   from: this.state.channelState.user
-          // }
-          let approveFor = this.state.channelManager.address;
-          let approveTx = await tokenContract.methods.approve(approveFor, this.state.browserWalletDeposit);
-          console.log(approveTx);
-          // const gasEstimate = await approveTx.estimateGas(sendArgs)
-          // if (gasEstimate > this.state.browserWalletDeposit.amountWei){
-          //   throw "Not enough wei for gas"
-          // }
-          // if (gasEstimate < this.state.browserWalletDeposit.amountWei){
-          //   const depositDiff = balance - gasEstimate
-          //   this.setState({
-          //     browserWalletDeposit:{
-          //       amountWei: depositDiff,
-          //       amountToken: tokenBalance
-          //     }})
-          // }
-          console.log(`Depositing: ${JSON.stringify(this.state.browserWalletDeposit, null, 2)}`);
-          console.log("********", this.state.connext.opts.tokenAddress);
-          let depositRes = await this.state.connext.deposit(this.state.browserWalletDeposit);
-          console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
-        } catch (e) {
-          console.log(`error depositing excess funds from autosigner: ${e}`);
+        if (eth.utils.bigNumberify(balance).lte(BALANCE_THRESHOLD_WEI)) {
+          // don't autodeposit anything under the threshold
+          return
         }
+        // const sendArgs = {
+        //   from: this.state.channelState.user
+        // }
+        let approveFor = this.state.channelManager.address;
+        let approveTx = await tokenContract.methods.approve(approveFor, this.state.browserWalletDeposit);
+        console.log(approveTx);
+        // const gasEstimate = await approveTx.estimateGas(sendArgs)
+        // if (gasEstimate > this.state.browserWalletDeposit.amountWei){
+        //   throw "Not enough wei for gas"
+        // }
+        // if (gasEstimate < this.state.browserWalletDeposit.amountWei){
+        //   const depositDiff = balance - gasEstimate
+        //   this.setState({
+        //     browserWalletDeposit:{
+        //       amountWei: depositDiff,
+        //       amountToken: tokenBalance
+        //     }})
+        // }
+        const actualDeposit = {
+          amountWei: eth.utils.bigNumberify(balance).sub(BALANCE_THRESHOLD_WEI).toString(),
+          amountToken: tokenBalance
+        }
+        // TODO does this need to be in the state?
+        this.setState({
+          browserWalletDeposit: actualDeposit
+        });
+        console.log(`Depositing: ${JSON.stringify(actualDeposit, null, 2)}`);
+        console.log("********", this.state.connext.opts.tokenAddress);
+        let depositRes = await this.state.connext.deposit(actualDeposit);
+        console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
       }
     };
     browserWalletDeposit();
     setInterval(() => {
       browserWalletDeposit();
-    }, 80000);
+    }, 10000);
   }
 
   async approvalHandler(evt) {
@@ -407,11 +416,11 @@ class App extends Component {
   async _walletCreateHandler(recovery = null) {
     let wallet;
     let key;
-    if (this.state.useExistingWallet == "existing") {
+    if (this.state.useExistingWallet === "existing") {
       wallet = await findOrCreateWallet(this.state.web3);
-    } else if (this.state.useExistingWallet == "new") {
+    } else if (this.state.useExistingWallet === "new") {
       wallet = await createWallet(this.state.web3);
-    } else if (this.state.useExistingWallet == "recover" && recovery) {
+    } else if (this.state.useExistingWallet === "recover" && recovery) {
       key = recovery;
       console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`);
       wallet = await createWalletFromKey(key);
@@ -518,8 +527,6 @@ class App extends Component {
   // ** wrapper for ethers getBalance. probably breaks for tokens
 
   render() {
-    const { classes } = this.props;
-
     return (
       <div className="app">
         <Modal className="modal" aria-labelledby="simple-modal-title" aria-describedby="simple-modal-description" open={this.state.modalOpen}>

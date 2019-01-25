@@ -1,13 +1,8 @@
 import React, { Component } from "react";
 import Card from "@material-ui/core/Card";
-import CardActionArea from "@material-ui/core/CardActionArea";
-import CardActions from "@material-ui/core/CardActions";
-import CardContent from "@material-ui/core/CardContent";
 import Button from "@material-ui/core/Button";
 import ArchiveIcon from "@material-ui/icons/Archive";
 import TextField from "@material-ui/core/TextField";
-import { withStyles } from "@material-ui/core/styles";
-import PropTypes from "prop-types";
 import Switch from "@material-ui/core/Switch";
 import HelpIcon from "@material-ui/icons/Help";
 import IconButton from "@material-ui/core/IconButton";
@@ -18,12 +13,9 @@ const Web3 = require("web3");
 const eth = require("ethers");
 
 class DepositCard extends Component {
-  constructor(props) {
-    super(props);
-  }
   state = {
     checkedA: true,
-    checkedB: true,
+    checkedB: false,
     anchorEl: null,
     depositVal: {
       amountWei: "0",
@@ -75,9 +67,10 @@ class DepositCard extends Component {
     console.log(`Updated depositVal: ${JSON.stringify(this.state.depositVal, null, 2)}`);
   }
 
+  // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
-    const tokenContract = this.props.tokenContract;
-    let approveFor = this.props.channelManagerAddress;
+    const { tokenContract, channelManagerAddress: approveFor } = this.props
+
     let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
     console.log(approveTx);
 
@@ -89,31 +82,16 @@ class DepositCard extends Component {
 
       if (wei !== "0") {
         console.log("found wei deposit");
-        if (Number(wei) >= this.props.balance) {
-          console.log(`calling getEther`);
-          const weiNeeded = eth.utils.bigNumberify(Number(wei) - this.props.balance);
-          const extraWeiForGas = eth.utils.parseEther('0.04') // 40 FIN for gas
-          console.log(`weiNeeded: ${weiNeeded}`);
-          await this.getEther(weiNeeded.add(extraWeiForGas));
-        }
+        await this.getEther(wei);
       }
 
       if (tokens !== "0") {
         console.log("found token deposit");
-        if (Number(tokens) >= this.props.tokenBalance) {
-          console.log(`calling getTokens`);
-          const tokensNeeded = eth.utils.bigNumberify(Number(tokens) - this.props.tokenBalance);
-          await this.getTokens(tokensNeeded);
-        }
+        await this.getTokens(tokens);
       }
     } catch (e) {
       console.log(`error fetching deposit from metamask: ${e}`);
     }
-
-    console.log(`Depositing: ${JSON.stringify(this.state.depositVal, null, 2)}`);
-    console.log("********", this.props.connext.opts.tokenAddress);
-    let depositRes = await this.props.connext.deposit(this.state.depositVal);
-    console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
   }
 
   async getTokens(amountToken) {
@@ -239,8 +217,8 @@ class DepositCard extends Component {
             }}
           >
             <Typography style={cardStyle.popover}>
-              Here, you can deposit funds to your channel. <br />
-              Enter the amount in Wei, tokens, or both, and then click Deposit.{" "}
+              Get tokens or ETH from your MetaMask. <br />
+              Enter the amount in Wei, tokens, or both, and then click Get.{" "}
             </Typography>
           </Popover>
         </div>
@@ -248,6 +226,11 @@ class DepositCard extends Component {
           ETH
           <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
           TST
+        </div>
+        <div>
+          <Typography>
+            Get more than 40 Finney (40000000000000000 Wei) ETH.
+          </Typography>
         </div>
         <TextField
           style={cardStyle.input}
@@ -260,7 +243,7 @@ class DepositCard extends Component {
           onChange={evt => this.updateDepositHandler(evt)}
         />
         <Button style={cardStyle.button} variant="contained" color="primary" onClick={evt => this.depositHandler(evt)}>
-          Deposit
+          Get
         </Button>
       </Card>
     );
