@@ -122,13 +122,13 @@ class FullWidthTabs extends React.Component {
   render() {
     const tabStyles = {
       full: {
-        maxWidth: "61%",
+        width: "475px",
         alignItems: "center"
         // padding: "2% 2% 2% 2% "
       },
       bar: {},
       content: {
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#D5D9DF",
         boxShadow: "0px 1px 1px 1px #ADB5C1",
         borderRadius: "2px"
       },
@@ -154,6 +154,7 @@ class FullWidthTabs extends React.Component {
             indicatorColor="primary"
             textColor="primary"
             variant="fullWidth"
+            style={{backgroundColor:"#D5D9DF"}}
           >
             <Tab label="Metamask" />
             <Tab label="Hub" />

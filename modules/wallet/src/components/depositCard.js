@@ -177,7 +177,7 @@ class DepositCard extends Component {
         flexDirection: "row",
         width: "230px",
         justifyContent: "center",
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#D5D9DF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -190,7 +190,9 @@ class DepositCard extends Component {
       },
       button: {
         width: "100%",
-        height: "40px"
+        height: "40px",
+        backgroundColor:"#7b90b1",
+        color:"#FFF"
       },
       col1: {
         marginLeft: "55px",
@@ -235,7 +237,6 @@ class DepositCard extends Component {
         <Button
           style={cardStyle.button}
           variant="contained"
-          color="primary"
           onClick={evt => this.depositHandler(evt)}
         >
           Get from MetaMask

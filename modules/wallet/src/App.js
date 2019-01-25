@@ -597,7 +597,7 @@ class App extends Component {
     const open = Boolean(anchorEl);
     return (
       <div>
-        <AppBar position="sticky">
+        <AppBar position="sticky" color="secondary">
           <Toolbar>
             <img src={Connext} style={{ width: "60px", height: "60px" }} />
             <Typography variant="h6" style={{ flexGrow: 1 }} />
@@ -856,8 +856,8 @@ class App extends Component {
               </div>
             </div>
           </Modal>
-          <div className="row" style={{ flexWrap: "nowrap" }}>
-            <div className="column">
+          <div className="row">
+            <div className="column" style={{marginRight:0,marginLeft:"auto"}}>
               <ChannelCard
                 channelState={this.state.channelState}
                 address={this.state.address}
@@ -874,17 +874,15 @@ class App extends Component {
               />
               <div>
                 <Button
-                  style={{ width: "30%", marginRight: "10px" }}
+                  style={{ width: "235px", marginRight: "5px", color:"#FFF", backgroundColor:"#7b90b1"}}
                   variant="contained"
-                  color="primary"
                   onClick={() => this.setState({ modalOpen: true })}
                 >
                   Select Signer
                 </Button>
                 <Button
-                  style={{ width: "30%" }}
+                  style={{ width: "235px", color:"#FFF", backgroundColor:"#7b90b1" }}
                   variant="contained"
-                  color="primary"
                   onClick={() => this.collateralHandler()}
                 >
                   Request Collateral

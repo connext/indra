@@ -38,7 +38,7 @@ class ChannelCard extends Component {
         height: "200px",
         justifyContent: "center",
         padding: "1% 4% 4% 4%",
-        backgroundColor: "#8E98A7",
+        backgroundColor: "#3f516e",
         color: "white"
       },
       row: {
@@ -57,15 +57,11 @@ class ChannelCard extends Component {
         height: "40px"
       },
       headerText: {
-        paddingTop: "8px",
-        marginLeft: "80px",
-        marginRight: "80px",
-        width: "30%",
+        marginTop: "13px",
+        marginLeft: "30px",
         color: "white"
       },
-      headerIcon: {
-        width: "10%"
-      },
+      headerIcon: {},
       popover: {
         padding: "8px 8px 8px 8px"
       }
@@ -74,7 +70,7 @@ class ChannelCard extends Component {
     return (
       <Card style={cardStyle.card}>
         <Typography variant="h5" style={cardStyle.headerText}>
-          Channel
+          Channel Information
         </Typography>
         <IconButton
           style={cardStyle.headerIcon}
@@ -102,7 +98,7 @@ class ChannelCard extends Component {
           <Typography style={cardStyle.popover}>
             Click on your address to copy it to your clipboard.
             <br />
-            Balances are in-channel balances.
+            All balances are in-channel balances.
           </Typography>
         </Popover>
         <Typography variant="subtitle1" style={cardStyle.row}>
@@ -113,38 +109,34 @@ class ChannelCard extends Component {
             <span>{this.props.address}</span>
           </CopyToClipboard>
         </Typography>
+       
+            <Typography variant="h6" style={cardStyle.row}>
+              ETH balance:
+              {this.props.channelState ? (
+                <span>{this.props.channelState.balanceWeiUser} Wei </span>
+              ) : (<span style={{fontStyle:"italic"}}> Balance loading</span>)}{" "}
+            </Typography>
 
-        <Typography variant="h5" style={cardStyle.row}>
-          ETH:{" "}
-          {this.props.channelState
-            ? this.props.channelState.balanceWeiUser
-            : null}{" "}
-          Wei
-        </Typography>
+            <Typography gutterBottom variant="h6" style={cardStyle.row}>
+              TST balance:{" "}
+              {this.props.channelState ? (
+                <span>{this.props.channelState.balanceTokenUser} Wei </span>
+              ) : (<span style={{fontStyle:"italic"}}> Balance loading</span>)}{" "}
+            </Typography>
 
-        <Typography gutterBottom variant="h5" style={cardStyle.row}>
-          TST:{" "}
-          {this.props.channelState
-            ? this.props.channelState.balanceTokenUser
-            : null}{" "}
-          Wei
-        </Typography>
+            <Typography variant="h6" style={cardStyle.row}>
+              Hub ETH balance:{" "}
+              {this.props.channelState ? (
+                <span>{this.props.channelState.balanceWeiHub} Wei </span>
+              ) : (<span style={{fontStyle:"italic"}}>Balance loading</span>)}{" "}
+            </Typography>
 
-        <Typography variant="h6" style={cardStyle.row}>
-          Hub ETH:{" "}
-          {this.props.channelState
-            ? this.props.channelState.balanceWeiHub
-            : null}{" "}
-          Wei{" "}
-        </Typography>
-
-        <Typography variant="h6" style={cardStyle.row}>
-          Hub TST:{" "}
-          {this.props.channelState
-            ? this.props.channelState.balanceTokenHub
-            : null}{" "}
-          Wei
-        </Typography>
+            <Typography variant="h6" style={cardStyle.row}>
+              Hub TST balance:{" "}
+              {this.props.channelState ? (
+                <span>{this.props.channelState.balanceTokenHub} Wei </span>
+              ) : (<span style={{fontStyle:"italic"}}>Balance loading</span>)}{" "}
+            </Typography>
       </Card>
     );
   }

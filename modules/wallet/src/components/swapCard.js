@@ -67,7 +67,7 @@ class SwapCard extends Component {
         width: "230px",
         height: "100%",
         justifyContent: "center",
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#D5D9DF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -80,7 +80,9 @@ class SwapCard extends Component {
       },
       button: {
         width: "100%",
-        height: "40px"
+        height: "40px",
+        backgroundColor:"#7b90b1",
+        color:"#FFF"
       },
       col1: {
         marginLeft: "55px",
@@ -117,7 +119,6 @@ class SwapCard extends Component {
           style={cardStyle.button}
           onClick={() => this.exchangeHandler()}
           variant="contained"
-          color="primary"
         >
           Swap
         </Button>

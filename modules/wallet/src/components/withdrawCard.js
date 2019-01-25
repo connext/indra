@@ -124,7 +124,7 @@ class WithdrawCard extends Component {
         width: "230px",
         height: "300px",
         justifyContent: "center",
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#D5D9DF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -138,7 +138,9 @@ class WithdrawCard extends Component {
       },
       button: {
         width: "100%",
-        height: "40px"
+        height: "40px",
+        backgroundColor:"#7b90b1",
+        color:"#FFF"
       },
       row: {
         width: "100%"
@@ -197,7 +199,6 @@ class WithdrawCard extends Component {
           style={cardStyle.button}
           onClick={() => this.withdrawalHandler()}
           variant="contained"
-          color="primary"
         >
           Withdraw
         </Button>

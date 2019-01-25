@@ -3,6 +3,12 @@
   padding-top: 0%;
   padding-left: 5%;
   padding-right: 5%;
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  font-family: "proxima-nova", sans-serif;
+  background-color: #fcfbf3;
+  /* background-color:  //#c8d0de */
 }
 
 .row {
@@ -10,21 +16,17 @@
   flex-direction: row;
   flex-wrap: wrap;
   width: 100%;
-  justify-content: flex-end;
 }
 
 .column {
   display: flex;
-  align-items: stretch;
   flex-direction: column;
-  flex-basis: 80%;
   flex: 1;
   padding-bottom: 2.5%;
   padding-top: 2.5%;
   padding-left: 1%;
   padding-right: 1%;
   font-family: "proxima-nova", sans-serif;
-  justify-content: flex-end;
 }
 .modal_inner {
   background-color: #fff;
