@@ -72,27 +72,35 @@ class DepositCard extends Component {
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
     try {
+      const { usingMetamask, connext } = this.props
       const wei = this.state.depositVal.amountWei;
       const tokens = this.state.depositVal.amountToken;
       console.log(`wei: ${wei}`);
       console.log(`tokens: ${tokens}`);
 
-      if (wei !== "0") {
-        console.log("found wei deposit");
-        await this.getEther(wei);
+      // if you are using metamask, deposit directly with connext
+      // otherwise, fetch tokens/eth
+      if (usingMetamask) {
+        await connext.deposit({ amountWei: wei, amountToken: tokens, recipient: "user" })
+      } else {
+        if (wei !== "0") {
+          console.log("found wei deposit");
+          await this.getEther(wei);
+        }
+  
+        if (tokens !== "0") {
+          console.log("found token deposit");
+          await this.getTokens(tokens);
+        }
       }
 
-      if (tokens !== "0") {
-        console.log("found token deposit");
-        await this.getTokens(tokens);
-      }
     } catch (e) {
       console.log(`error fetching deposit from metamask: ${e}`);
     }
   }
 
   async getTokens(amountToken) {
-    const { usingMetamask, tokenContract, humanTokenAbi, channelManagerAddress } = this.props
+    const { tokenContract, humanTokenAbi, } = this.props
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
@@ -113,35 +121,25 @@ class DepositCard extends Component {
     );
 
     console.log(
-      `Sending ${amountToken} tokens ${mmAddr} to ${usingMetamask ? "channel" : browserAddr}`
+      `Sending ${amountToken} tokens from ${mmAddr} to ${browserAddr}`
     );
 
     console.log("state:");
     console.log(this.state);
 
-
-    // approval of transfer by contract if using metamask
-    // otherwise, send to browserAddr
-    if (usingMetamask) {
-      let approveTx = await tokenContract.methods.approve(
-        channelManagerAddress,
-        amountToken,
-      );
-      console.log('Approval of tokens to contract:', approveTx);
-    } else {
-      const transferTx = await tc.methods
-      .transfer(browserAddr, amountToken)
-      .send({
-        from: mmAddr,
-        gas: "81000"
-      });
-      console.log('Token transfer tx:', transferTx);
-    }
+    const transferTx = await tc.methods
+    .transfer(browserAddr, amountToken)
+    .send({
+      from: mmAddr,
+      gas: "81000"
+    });
+    console.log('Token transfer tx:', transferTx);
+    
   }
 
   // to get tokens from metamask to browser wallet
   async getEther(amountWei) {
-    const { usingMetamask, channelManagerAddress } = this.props
+    const { usingMetamask, channelManagerAddress, connext } = this.props
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
@@ -161,12 +159,8 @@ class DepositCard extends Component {
     // if the autosigner is being used, send to that address
     // otherwise, send from metamask to contract
     try {
-      console.log(`Sending eth from ${mmAddr} to ${usingMetamask ? "channel" : browserAddr }`)
-      const sentTx = await metamask.sendTransaction({
-        to: usingMetamask ? channelManagerAddress : browserAddr,
-        value: eth.utils.bigNumberify(amountWei),
-        gasLimit: eth.utils.bigNumberify("21000")
-      });
+      console.log(`Sending eth from ${mmAddr} to ${browserAddr}`)
+      let sentTx = await connext.deposit({ amountWei })
       console.log(
         `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
         sentTx
