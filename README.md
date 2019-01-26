@@ -7,29 +7,11 @@ Everything you need to set up a Connext payment channel hub.
 We are working on rebuilding our one-step process Docker environment. However, we have been running into lots of intermittent issues so in the meantime, please follow the below directions to get up and running with the new setup:
 
 ### Prerequisite
-* PostgreSQL running locally: `brew install postgres` for Mac. See below for Linux.
+* PostgreSQL running locally: `brew install postgres` for Mac. [IMPORTANT: See here for Linux](https://github.com/ConnextProject/indra/blob/master/docs/LINUX_POSTGRES.md).
 * Redis running locally: `brew install redis` for Mac. `sudo apt-get install redis` for Linux.
 * Yarn: `brew install yarn` for Mac (TODO: add other platform information).
 
 Run the following steps in order. For each section, use a separate terminal window. Closing the terminal window will stop the process.
-
-### Installing PostgreSQL (for Ubuntu Linux)
-Make sure to install version 9.6 - *it isn't a part of apt-get by default* If you have an existing instance of PostgreSQL 10 installed, remove by running:
-```
-sudo apt-get --purge remove postgresql
-dpkg -l | grep postgres (to look for postgresfiles in the system)
-sudo rm -rf postgresql ... (remove all the files that appeared in the list after running the previous command)
-```
-Then, set up the source repositories and install.
-```
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'  
-
-wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | sudo apt-key add - 
-
-sudo apt-get update  
-sudo apt-get upgrade 
-sudo apt-get install postgresql-9.6 
-```
 
 ### Ganache
 Run the following from `modules/hub`.
