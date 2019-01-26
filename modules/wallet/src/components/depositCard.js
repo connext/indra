@@ -71,14 +71,6 @@ class DepositCard extends Component {
 
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
-    const { tokenContract, channelManagerAddress: approveFor } = this.props;
-
-    let approveTx = await tokenContract.methods.approve(
-      approveFor,
-      this.state.depositVal
-    );
-    console.log(approveTx);
-
     try {
       const wei = this.state.depositVal.amountWei;
       const tokens = this.state.depositVal.amountToken;
@@ -100,6 +92,7 @@ class DepositCard extends Component {
   }
 
   async getTokens(amountToken) {
+    const { usingMetamask, tokenContract, humanTokenAbi, channelManagerAddress } = this.props
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
@@ -107,39 +100,48 @@ class DepositCard extends Component {
       return;
     }
     const metamaskProvider = new Web3(web3.currentProvider);
-    const address = (await metamaskProvider.eth.getAccounts())[0];
-    if (!address) {
+    const mmAddr = (await metamaskProvider.eth.getAccounts())[0];
+    const browserAddr = store.getState()[0].getAddressString()
+    if (!mmAddr) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
 
-    const tokenContract = new metamaskProvider.eth.Contract(
-      this.props.humanTokenAbi,
-      this.props.tokenContract.tokenAddress
+    const tc = new metamaskProvider.eth.Contract(
+      humanTokenAbi,
+      tokenContract.tokenAddress
     );
 
-    let tokens = amountToken;
     console.log(
-      `Sending ${tokens} tokens from ${address} to ${store
-        .getState()[0]
-        .getAddressString()}`
+      `Sending ${amountToken} tokens ${mmAddr} to ${usingMetamask ? "channel" : browserAddr}`
     );
 
     console.log("state:");
     console.log(this.state);
 
-    let approveTx = await tokenContract.methods
-      .transfer(store.getState()[0].getAddressString(), tokens)
+
+    // approval of transfer by contract if using metamask
+    // otherwise, send to browserAddr
+    if (usingMetamask) {
+      let approveTx = await tokenContract.methods.approve(
+        channelManagerAddress,
+        amountToken,
+      );
+      console.log('Approval of tokens to contract:', approveTx);
+    } else {
+      const transferTx = await tc.methods
+      .transfer(browserAddr, amountToken)
       .send({
-        from: address,
+        from: mmAddr,
         gas: "81000"
       });
-
-    console.log(approveTx);
+      console.log('Token transfer tx:', transferTx);
+    }
   }
 
   // to get tokens from metamask to browser wallet
   async getEther(amountWei) {
+    const { usingMetamask, channelManagerAddress } = this.props
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
@@ -150,20 +152,28 @@ class DepositCard extends Component {
       web3.currentProvider
     );
     const metamask = metamaskProvider.getSigner();
-    const address = (await metamask.provider.listAccounts())[0];
-    if (!address) {
+    const mmAddr = (await metamask.provider.listAccounts())[0];
+    const browserAddr = store.getState()[0].getAddressString()
+    if (!mmAddr) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const sentTx = await metamask.sendTransaction({
-      to: store.getState()[0].getAddressString(),
-      value: eth.utils.bigNumberify(amountWei),
-      gasLimit: eth.utils.bigNumberify("21000")
-    });
-    console.log(
-      `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
-      sentTx
-    );
+    // if the autosigner is being used, send to that address
+    // otherwise, send from metamask to contract
+    try {
+      console.log(`Sending eth from ${mmAddr} to ${usingMetamask ? "channel" : browserAddr }`)
+      const sentTx = await metamask.sendTransaction({
+        to: usingMetamask ? channelManagerAddress : browserAddr,
+        value: eth.utils.bigNumberify(amountWei),
+        gasLimit: eth.utils.bigNumberify("21000")
+      });
+      console.log(
+        `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
+        sentTx
+      );
+    } catch (e) {
+      console.warn(`Error sending transaction: ${e.message}`)
+    }
   }
 
   render() {
