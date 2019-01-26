@@ -9,7 +9,7 @@ We are working on rebuilding our one-step process Docker environment. However, w
 ### Prerequisite
 * PostgreSQL running locally: `brew install postgres` for Mac. [See here for Linux](https://github.com/ConnextProject/indra/blob/master/docs/LINUX_POSTGRES.md).
 * Redis running locally: `brew install redis` for Mac. `sudo apt-get install redis` for Linux.
-* Yarn: `brew install yarn` for Mac (TODO: add other platform information).
+* Yarn: `brew install yarn` for Mac. `sudo apt-get install yarn` for Linux.
 
 Run the following steps in order. For each section, use a separate terminal window. Closing the terminal window will stop the process.
 
