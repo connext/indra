@@ -3,7 +3,9 @@
 *Tested only with Ubuntu 18.04. Some steps may change for other distros*
 
 ### Installing PostgreSQL
-Make sure to install version 9.6 - *it isn't a part of apt-get by default* If you have an existing instance of PostgreSQL 10 installed, remove by running:
+Make sure to install version 9.6 - *it isn't a part of apt-get by default*.
+
+If you have an existing instance of PostgreSQL 10 installed, remove by running:
 ```
 sudo apt-get --purge remove postgresql
 dpkg -l | grep postgres (to look for postgresfiles in the system)
