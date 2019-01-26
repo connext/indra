@@ -130,7 +130,7 @@ class App extends Component {
   }
 
   async setWalletAndProvider(metamask = false) {
-    this.setState({ authorized: false });
+    this.setState({ authorized: false, usingMetamask: metamask });
     let web3;
     let address;
     // get metamask address defaults
@@ -914,6 +914,7 @@ class App extends Component {
                 tokenContract={this.state.tokenContract}
                 humanTokenAbi={humanTokenAbi}
                 connext={this.state.connext}
+                usingMetamask={this.state.usingMetamask}
               />
             </div>
             <div className="column">
