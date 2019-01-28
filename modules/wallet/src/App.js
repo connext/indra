@@ -111,8 +111,9 @@ class App extends Component {
 
   componentWillMount() {
     const resetHappened = localStorage.getItem("resetHappened");
+    const walletSet = localStorage.getItem("walletSet");
     console.log(`reset value: ${resetHappened}`);
-    if (resetHappened === "true") {
+    if (resetHappened === "true" || walletSet === "true") {
       console.log(`setting modal state`);
       this.setState({ modalOpen: false });
       console.log(`modal state set to true`);
@@ -512,6 +513,7 @@ class App extends Component {
       this.setState({ useDelegatedSigner: false });
       this.setState({ mnemonic: null });
       localStorage.setItem("resetHappened", "true");
+      localStorage.setItem("walletSet","true");
     } else if (choice === "existing") {
       this.setState({ modalOpen: false });
       this.setState({ showWalletOptions: true });
@@ -519,6 +521,7 @@ class App extends Component {
       this.setState({ delegatedSignerSelected: false });
       this.setState({ useDelegatedSigner: false });
       this.setState({ mnemonic: null });
+      localStorage.setItem("walletSet","true");
     }
   }
 
@@ -888,7 +891,7 @@ class App extends Component {
                   variant="contained"
                   onClick={() => this.setState({ modalOpen: true })}
                 >
-                  Select Signer
+                  Reselect Signer
                 </Button>
                 <Button
                   style={{

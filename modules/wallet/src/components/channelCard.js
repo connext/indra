@@ -69,7 +69,7 @@ class ChannelCard extends Component {
           </CopyToClipboard>
         </Typography>
         <Typography variant="h6" style={cardStyle.row}>
-          ETH balance:
+          ETH:
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceWeiUser} Wei </span>
           ) : (
@@ -78,7 +78,7 @@ class ChannelCard extends Component {
         </Typography>
 
         <Typography gutterBottom variant="h6" style={cardStyle.row}>
-          TST balance:{" "}
+          TST:{" "}
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceTokenUser} Wei </span>
           ) : (
@@ -87,7 +87,7 @@ class ChannelCard extends Component {
         </Typography>
 
         <Typography variant="h6" style={cardStyle.row}>
-          Hub ETH balance:{" "}
+          Hub ETH:{" "}
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceWeiHub} Wei </span>
           ) : (
@@ -96,7 +96,7 @@ class ChannelCard extends Component {
         </Typography>
 
         <Typography variant="h6" style={cardStyle.row}>
-          Hub TST balance:{" "}
+          Hub TST:{" "}
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceTokenHub} Wei </span>
           ) : (
