@@ -81,6 +81,7 @@ class DepositCard extends Component {
       // if you are using metamask, deposit directly with connext
       // otherwise, fetch tokens/eth
       if (usingMetamask) {
+        console.log(usingMetamask)
         await connext.deposit({ amountWei: wei, amountToken: tokens, recipient: "user" })
       } else {
         if (wei !== "0") {

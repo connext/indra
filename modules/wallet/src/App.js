@@ -307,10 +307,12 @@ class App extends Component {
         console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
       }
     };
-    browserWalletDeposit();
-    setInterval(() => {
+    if(!this.state.usingMetamask){
       browserWalletDeposit();
-    }, 10000);
+      setInterval(() => {
+        browserWalletDeposit();
+      }, 10000);
+    }
   }
 
   async approvalHandler(evt) {
