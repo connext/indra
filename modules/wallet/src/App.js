@@ -104,7 +104,8 @@ class App extends Component {
       disableButtons: false,
       modalOpen: true,
       mnemonic: null,
-      anchorEl: null
+      anchorEl: null,
+      interval: null
     };
     this.toggleKey = this.toggleKey.bind(this);
   }
@@ -307,12 +308,15 @@ class App extends Component {
         console.log(`Deposit Result: ${JSON.stringify(depositRes, null, 2)}`);
       }
     };
-    if(!this.state.usingMetamask){
-      browserWalletDeposit();
-      setInterval(() => {
+    browserWalletDeposit();
+    const interval = setInterval(() => {
+      if(this.state.usingMetamask){
+        clearInterval(interval)
+      }else{
         browserWalletDeposit();
-      }, 10000);
-    }
+      }
+    }, 10000);
+    this.setState({interval: interval})
   }
 
   async approvalHandler(evt) {
@@ -393,6 +397,7 @@ class App extends Component {
     this.setState({ modalOpen: false });
     this.setState({ useDelegatedSigner: false });
     try {
+      await clearInterval(this.state.interval)
       await this.setWalletAndProvider(true);
       await this.setConnext();
       await this.authorizeHandler();
