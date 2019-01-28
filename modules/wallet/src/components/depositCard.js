@@ -160,8 +160,8 @@ class DepositCard extends Component {
     // if the autosigner is being used, send to that address
     // otherwise, send from metamask to contract
     try {
-      console.log(`Sending eth from ${mmAddr} to ${browserAddr}`)
-      let sentTx = await connext.deposit({ amountWei })
+      console.log(`Sending ${amountWei} wei from ${mmAddr} to ${browserAddr}`)
+      let sentTx = await connext.deposit({ amountWei: amountWei , amountToken: "0", recipient: "user"  })
       console.log(
         `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
         sentTx

@@ -8,11 +8,15 @@ import HelpIcon from "@material-ui/icons/Help";
 import IconButton from "@material-ui/core/IconButton";
 import Popover from "@material-ui/core/Popover";
 import Typography from "@material-ui/core/Typography";
+import Tooltip from "@material-ui/core/Tooltip";
+import InputAdornment from '@material-ui/core/InputAdornment';
+import { BigNumber } from 'bignumber.js'
+
 
 class WithdrawCard extends Component {
   state = {
     checkedA: true,
-    checkedB: true,
+    checkedB: false,
     anchorEl: null,
     withdrawalVal: {
       withdrawalWeiUser: "0",
@@ -94,21 +98,47 @@ class WithdrawCard extends Component {
     );
   }
 
-  async withdrawalHandler(max) {
+  async maxHandler(){
+    let withdrawalVal = {
+      ...this.state.withdrawalVal,
+      tokensToSell:this.props.tokenBalance,
+      withdrawalWeiUser:this.props.balance,
+    }
+    let balance = new BigNumber(this.props.balance);
+    let tokenBalance = new BigNumber(this.props.tokenBalance);
+    let exchangeRate = new BigNumber(this.props.exchangeRate);
+    const tokenBalanceConverted = tokenBalance.dividedBy(exchangeRate);
+    const aggBalance = String(balance.plus(tokenBalanceConverted));
+    console.log(aggBalance)
+    this.setState({
+      withdrawalVal: withdrawalVal,
+      displayVal: aggBalance
+    });
+    
+
+  }
+
+  async withdrawalHandler() {
     let withdrawalVal = {
       ...this.state.withdrawalVal,
       exchangeRate: this.props.exchangeRate
     };
-    if (max) {
-      withdrawalVal.recipient = this.props.metamask.address;
-      withdrawalVal.tokensToSell = this.props.tokenBalance;
-      withdrawalVal.withdrawalWeiUser = this.props.balance;
-    }
     console.log(
       `Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`
     );
-    let withdrawalRes = await this.props.connext.withdraw(withdrawalVal);
-    console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
+    try{
+      if(
+        (this.state.withdrawalVal.withdrawalWeiUser > this.props.balance) 
+        || 
+        (this.state.withdrawalVal.tokensToSell > this.props.tokenBalance)){
+        alert("You tried to withdraw too much! Please enter a valid balance.")
+        throw "Whoops"
+      }
+      let withdrawalRes = await this.props.connext.withdraw(withdrawalVal);
+      console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
+    }catch(e){
+      console.log("Tried to withdraw too much. Sad face.")
+    }
   }
 
   render() {
@@ -167,6 +197,7 @@ class WithdrawCard extends Component {
         <div>
           ETH
           <Switch
+            //disabled={true}
             checked={this.state.checkedB}
             onChange={this.handleChange("checkedB")}
             value="checkedB"
@@ -194,14 +225,38 @@ class WithdrawCard extends Component {
           type="number"
           margin="normal"
           variant="outlined"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Tooltip
+                  disableFocusListener
+                  disableTouchListener
+                  title="Withdraw all funds (ETH and TST) from channel"
+                >
+                <Button variant="outlined"
+                        onClick={() => this.maxHandler()}>
+                  Max
+                </Button>
+                </Tooltip>
+              </InputAdornment>
+            ),
+          }}
         />
+        <Tooltip
+            disableFocusListener
+            disableTouchListener
+            title="TST will be converted to ETH on Withdraw"
+          >
         <Button
           style={cardStyle.button}
-          onClick={() => this.withdrawalHandler()}
+          onClick={() => this.withdrawalHandler(true)}
           variant="contained"
         >
-          Withdraw
+
+          <span>Withdraw</span> 
+          
         </Button>
+        </Tooltip>
       </Card>
     );
   }
