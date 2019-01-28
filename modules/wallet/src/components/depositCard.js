@@ -56,11 +56,13 @@ class DepositCard extends Component {
     if (!this.state.checkedB) {
       await this.setState(oldState => {
         oldState.depositVal.amountWei = value;
+        oldState.depositVal.amountToken = "0"
         return oldState;
       });
     } else if (this.state.checkedB) {
       await this.setState(oldState => {
         oldState.depositVal.amountToken = value;
+        oldState.depositVal.amountWei = "0"
         return oldState;
       });
     }
@@ -157,6 +159,7 @@ class DepositCard extends Component {
       alert("You need to install & unlock metamask to do that");
       return;
     }
+
     // if the autosigner is being used, send to that address
     // otherwise, send from metamask to contract
     try {
