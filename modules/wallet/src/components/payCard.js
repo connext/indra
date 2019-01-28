@@ -64,11 +64,13 @@ class PayCard extends Component {
     if (!this.state.checkedB) {
       await this.setState(oldState => {
         oldState.paymentVal.payments[0].amount.amountWei = value;
+        oldState.paymentVal.payments[0].amount.amountToken = "0";
         return oldState;
       });
     } else if (this.state.checkedB) {
       await this.setState(oldState => {
         oldState.paymentVal.payments[0].amount.amountToken = value;
+        oldState.paymentVal.payments[0].amount.amountWei = "0"
         return oldState;
       });
     }
