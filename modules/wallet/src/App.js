@@ -19,7 +19,7 @@ import ChannelCard from "./components/channelCard";
 import FullWidthTabs from "./components/walletTabs";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
-import HelpIcon from "@material-ui/icons/Help";
+import InfoIcon from "@material-ui/icons/Info";
 import IconButton from "@material-ui/core/IconButton";
 import Modal from "@material-ui/core/Modal";
 import Button from "@material-ui/core/Button";
@@ -609,7 +609,7 @@ class App extends Component {
               variant="contained"
               onClick={this.handleClick}
             >
-              <HelpIcon />
+              <InfoIcon />
             </IconButton>
             <Popover
               id="simple-popper"

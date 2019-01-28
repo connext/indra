@@ -5,29 +5,10 @@ import Typography from "@material-ui/core/Typography";
 import IconButton from "@material-ui/core/IconButton";
 import Popover from "@material-ui/core/Popover";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import Tooltip from "@material-ui/core/Tooltip";
 
 class ChannelCard extends Component {
-  state = {
-    anchorEl: null
-  };
-
-  handleClick = event => {
-    console.log("click handled");
-    this.setState({
-      anchorEl: event.currentTarget
-    });
-  };
-
-  handleClose = () => {
-    this.setState({
-      anchorEl: null
-    });
-  };
-
   render() {
-    const { anchorEl } = this.state;
-    const open = Boolean(anchorEl);
-
     const cardStyle = {
       card: {
         display: "flex",
@@ -72,44 +53,21 @@ class ChannelCard extends Component {
         <Typography variant="h5" style={cardStyle.headerText}>
           Channel Information
         </Typography>
-        <IconButton
-          style={cardStyle.headerIcon}
-          aria-owns={open ? "simple-popper" : undefined}
-          aria-haspopup="true"
-          variant="contained"
-          onClick={this.handleClick}
-        >
-          <HelpIcon />
-        </IconButton>
-        <Popover
-          id="simple-popper"
-          open={open}
-          anchorEl={anchorEl}
-          onClose={this.handleClose}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "center"
-          }}
-          transformOrigin={{
-            vertical: "top",
-            horizontal: "center"
-          }}
-        >
-          <Typography style={cardStyle.popover}>
-            Click on your address to copy it to your clipboard.
-            <br />
-            All balances are in-channel balances.
-          </Typography>
-        </Popover>
+
         <Typography variant="subtitle1" style={cardStyle.row}>
           <CopyToClipboard
             style={cardStyle.clipboard}
             text={this.props.address}
           >
-            <span>{this.props.address}</span>
+            <Tooltip
+              disableFocusListener
+              disableTouchListener
+              title="Click to Copy"
+            >
+              <span>{this.props.address}</span>
+            </Tooltip>
           </CopyToClipboard>
         </Typography>
-
         <Typography variant="h6" style={cardStyle.row}>
           ETH balance:
           {this.props.channelState ? (
