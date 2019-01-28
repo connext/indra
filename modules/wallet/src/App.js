@@ -929,6 +929,11 @@ class App extends Component {
               <WithdrawCard
                 connext={this.state.connext}
                 exchangeRate={this.state.exchangeRate}
+                metamask={this.state.metamask}
+                channelManager={this.state.channelManager}
+                hubWallet={this.state.hubWallet}
+                balance={this.state.balance}
+                tokenBalance={this.state.tokenBalance}
               />
             </div>
           </div>

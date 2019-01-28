@@ -97,17 +97,17 @@ class WithdrawCard extends Component {
   async withdrawalHandler(max) {
     let withdrawalVal = {
       ...this.state.withdrawalVal,
-      exchangeRate: this.state.exchangeRate
+      exchangeRate: this.props.exchangeRate
     };
     if (max) {
-      withdrawalVal.recipient = this.state.metamask.address;
-      withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser;
-      withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser;
+      withdrawalVal.recipient = this.props.metamask.address;
+      withdrawalVal.tokensToSell = this.props.tokenBalance;
+      withdrawalVal.withdrawalWeiUser = this.props.balance;
     }
     console.log(
       `Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`
     );
-    let withdrawalRes = await this.state.connext.withdraw(withdrawalVal);
+    let withdrawalRes = await this.props.connext.withdraw(withdrawalVal);
     console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
   }
 
