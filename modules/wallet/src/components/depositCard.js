@@ -146,12 +146,10 @@ class DepositCard extends Component {
     const browserWei = metamaskProvider.utils.toBN(await metamaskProvider.eth.getBalance(browserAddr))
     if (browserWei.lt(BALANCE_THRESHOLD_WEI)) {
       try {
-        const weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei).toString()
-        console.log(`Adding ${weiDeposit} wei to ${browserAddr} from ${mmAddr} to bring wei balance of wallet to ${BALANCE_THRESHOLD_WEI.toString()}`)
         // safe to use getEther, since if you are using metamask,
         // the condition in the if statement should be false
         // since you are using a default acct with 100 ETH
-        await this.getEther(weiDeposit)
+        await this.getEther("0")
       } catch (e) {
         console.log(
           `Eth sent to: ${store.getState()[0].getAddressString()}.`
@@ -191,11 +189,19 @@ class DepositCard extends Component {
           sentTx
         );
       } else {
-        console.log(`Sending ${amountWei} wei from ${mmAddr} to ${browserAddr}`)
+        // make sure that this brings browser wallet balance up to 40fin
+        // for gas costs
+        let weiDeposit
+        const browserWei = metamaskProvider.utils.toBN(await metamaskProvider.eth.getBalance(browserAddr))
+        if (browserWei.add(amountWei).lt(BALANCE_THRESHOLD_WEI)) {
+          console.log(`Browser wallet balance + deposit below minimum, adding enough to bring total to 40fin`)
+          weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei).toString()
+        }
+        console.log(`Sending ${weiDeposit ? weiDeposit.toString() : amountWei} wei from ${mmAddr} to ${browserAddr}`)
 
         const sentTx = await metamask.sendTransaction({
           to: store.getState()[0].getAddressString(),
-          value: eth.utils.bigNumberify(amountWei),
+          value: weiDeposit ? weiDeposit : eth.utils.bigNumberify(amountWei),
           gasLimit: eth.utils.bigNumberify("21000")
         })
 
