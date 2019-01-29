@@ -110,6 +110,23 @@ class App extends Component {
     this.toggleKey = this.toggleKey.bind(this);
   }
 
+  async checkWindowProvider() {
+    // make sure you are connected to the right provider
+    // get metamask address defaults
+    const windowProvider = window.web3;
+    if (!windowProvider) {
+      console.log("Metamask is not detected.");
+    }
+    const metamaskWeb3 = new Web3(windowProvider.currentProvider);
+    // make sure you are on localhost
+    const networkId = await metamaskWeb3.eth.net.getId()
+    if (networkId != 4447) {
+      // create a pop up to tell them to switch to ganache
+      alert("Uh oh! Doesn't look like you're using a local chain, please make sure your Metamask is connected appropriately to localhost:8545.")
+    }
+    return
+  }
+
   componentWillMount() {
     const resetHappened = localStorage.getItem("resetHappened");
     const walletSet = localStorage.getItem("walletSet");
@@ -123,7 +140,9 @@ class App extends Component {
       console.log(`modal state set to false`);
     }
   }
-  componentDidMount() {
+
+  async componentDidMount() {
+    await this.checkWindowProvider()
     console.log(`didmount modal state: ${this.state.modalOpen}`);
     if (this.state.modalOpen === false) {
       this.chooseWalletHandler("existing");
