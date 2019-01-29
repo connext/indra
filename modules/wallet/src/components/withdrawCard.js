@@ -103,9 +103,9 @@ class WithdrawCard extends Component {
 
     // i dont think we need the aggregate balance here, i think we can show both ETH and Token withdrawals separately
     if (this.state.checkedB) {
-      this.setState({ displayVal: withdrawalVal.withdrawalWeiUser, withdrawalVal });
-    } else {
       this.setState({ displayVal: withdrawalVal.tokensToSell, withdrawalVal });
+    } else {
+      this.setState({ displayVal: withdrawalVal.withdrawalWeiUser, withdrawalVal });
     }
   }
 
