@@ -4,45 +4,31 @@ import HelpIcon from "@material-ui/icons/Help";
 import Typography from "@material-ui/core/Typography";
 import IconButton from "@material-ui/core/IconButton";
 import Popover from "@material-ui/core/Popover";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+import Tooltip from "@material-ui/core/Tooltip";
 
 class ChannelCard extends Component {
-  state = {
-    anchorEl: null
-  };
-
-  handleClick = event => {
-    console.log("click handled");
-    this.setState({
-      anchorEl: event.currentTarget
-    });
-  };
-
-  handleClose = () => {
-    this.setState({
-      anchorEl: null
-    });
-  };
-
   render() {
-    const { anchorEl } = this.state;
-    const open = Boolean(anchorEl);
-
     const cardStyle = {
       card: {
         display: "flex",
         flexWrap: "wrap",
         flexBasis: "100%",
         flexDirection: "row",
-        width: "400px",
+        width: "500px",
+        height: "200px",
         justifyContent: "center",
         padding: "1% 4% 4% 4%",
-        backgroundColor: "#8E98A7",
+        backgroundColor: "#282B2E",
         color: "white"
       },
       row: {
         width: "100%",
         justifyContent: "center",
         color: "white"
+      },
+      clipboard: {
+        cursor: "pointer"
       },
       input: {
         width: "100%"
@@ -52,15 +38,11 @@ class ChannelCard extends Component {
         height: "40px"
       },
       headerText: {
-        paddingTop: "8px",
-        marginLeft: "80px",
-        marginRight: "80px",
-        width: "30%",
+        marginTop: "13px",
+        marginLeft: "30px",
         color: "white"
       },
-      headerIcon: {
-        width: "10%"
-      },
+      headerIcon: {},
       popover: {
         padding: "8px 8px 8px 8px"
       }
@@ -69,54 +51,57 @@ class ChannelCard extends Component {
     return (
       <Card style={cardStyle.card}>
         <Typography variant="h5" style={cardStyle.headerText}>
-          Channel
+          Channel Information
         </Typography>
-        <IconButton
-          style={cardStyle.headerIcon}
-          aria-owns={open ? "simple-popper" : undefined}
-          aria-haspopup="true"
-          variant="contained"
-          onClick={this.handleClick}
-        >
-          <HelpIcon />
-        </IconButton>
-        <Popover
-          id="simple-popper"
-          open={open}
-          anchorEl={anchorEl}
-          onClose={this.handleClose}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "center"
-          }}
-          transformOrigin={{
-            vertical: "top",
-            horizontal: "center"
-          }}
-        >
-          <Typography style={cardStyle.popover}>
-            Refer to this section for information about <br />
-            your offchain balance.
-          </Typography>
-        </Popover>
+
         <Typography variant="subtitle1" style={cardStyle.row}>
-          {this.props.address}
+          <CopyToClipboard
+            style={cardStyle.clipboard}
+            text={this.props.address}
+          >
+            <Tooltip
+              disableFocusListener
+              disableTouchListener
+              title="Click to Copy"
+            >
+              <span>{this.props.address}</span>
+            </Tooltip>
+          </CopyToClipboard>
+        </Typography>
+        <Typography variant="h6" style={cardStyle.row}>
+          ETH:
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceWeiUser} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}> Balance loading</span>
+          )}{" "}
         </Typography>
 
-        <Typography variant="h5" style={cardStyle.row}>
-          ETH: {this.props.channelState ? this.props.channelState.balanceWeiUser : null} Wei
-        </Typography>
-
-        <Typography gutterBottom variant="h5" style={cardStyle.row}>
-          TST: {this.props.channelState ? this.props.channelState.balanceTokenUser : null} Wei
+        <Typography gutterBottom variant="h6" style={cardStyle.row}>
+          TST:{" "}
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceTokenUser} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}> Balance loading</span>
+          )}{" "}
         </Typography>
 
         <Typography variant="h6" style={cardStyle.row}>
-          Hub ETH: {this.props.channelState ? this.props.channelState.balanceWeiHub : null} Wei{" "}
+          Hub ETH:{" "}
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceWeiHub} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}>Balance loading</span>
+          )}{" "}
         </Typography>
 
         <Typography variant="h6" style={cardStyle.row}>
-          Hub TST: {this.props.channelState ? this.props.channelState.balanceTokenHub : null} Wei
+          Hub TST:{" "}
+          {this.props.channelState ? (
+            <span>{this.props.channelState.balanceTokenHub} Wei </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}>Balance loading</span>
+          )}{" "}
         </Typography>
       </Card>
     );

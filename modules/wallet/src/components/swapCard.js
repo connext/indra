@@ -13,7 +13,8 @@ class SwapCard extends Component {
     anchorEl: null,
     displayVal: "0",
     exchangeVal: "0",
-    exchangeRate: "0.00"
+    exchangeRate: "0.00",
+    error: null
   };
 
   handleClick = event => {
@@ -38,13 +39,32 @@ class SwapCard extends Component {
       oldState.exchangeVal = value;
       return oldState;
     });
-    console.log(`Updated exchangeVal: ${JSON.stringify(this.state.exchangeVal, null, 2)}`);
+    console.log(
+      `Updated exchangeVal: ${JSON.stringify(this.state.exchangeVal, null, 2)}`
+    );
   }
 
   async exchangeHandler() {
-    console.log(`Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`);
-    let exchangeRes = await this.props.connext.exchange(this.state.exchangeVal, "wei");
-    console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
+    console.log(
+      `Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`
+    );
+    const { channelState } = this.props
+    this.setState({error: null})
+    try {
+      if(this.state.exchangeVal <= channelState.balanceWeiUser ) {
+        let exchangeRes = await this.props.connext.exchange(
+          this.state.exchangeVal,
+          "wei"
+        );
+        console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
+      } else {
+        throw new Error("Insufficient wei balance")
+      }
+    } catch (e) {
+      console.log(`Error: ${e}`)
+      this.setState({error: e.message})
+    }
+
   }
 
   render() {
@@ -60,7 +80,7 @@ class SwapCard extends Component {
         width: "230px",
         height: "100%",
         justifyContent: "center",
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#FFFFFF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -73,7 +93,9 @@ class SwapCard extends Component {
       },
       button: {
         width: "100%",
-        height: "40px"
+        height: "40px",
+        backgroundColor: "#FCA311",
+        color: "#FFF"
       },
       col1: {
         marginLeft: "55px",
@@ -94,50 +116,25 @@ class SwapCard extends Component {
         <div style={cardStyle.col1}>
           <SwapHoriz style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              {" "}
-              OPTIONAL. If you'd like to swap ETH for <br />
-              tokens, you can do it in-channel.{" "}
-            </Typography>
-          </Popover>
-        </div>
         <div>Only ETH to Token in-channel swaps are currently available.</div>
         <TextField
           style={cardStyle.input}
           id="outlined-number"
           label="Amount (Wei)"
           value={this.state.displayVal}
-          onChange={evt => this.updateExchangeHandler(evt)}
           type="number"
           margin="normal"
           variant="outlined"
+          onChange={evt => this.updateExchangeHandler(evt)}
+          error={this.state.error != null}
+          helperText={this.state.error}
         />
         <div>Rate: 1 ETH = {this.props.exchangeRate} TST</div>
-        <Button style={cardStyle.button} onClick={() => this.exchangeHandler()} variant="contained" color="primary">
+        <Button
+          style={cardStyle.button}
+          onClick={() => this.exchangeHandler()}
+          variant="contained"
+        >
           Swap
         </Button>
       </Card>

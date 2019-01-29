@@ -29,7 +29,9 @@ class PayCard extends Component {
       ]
     },
     displayVal: "0",
-    recipientDisplayVal: "0x0..."
+    recipientDisplayVal: "0x0...",
+    addressError: null,
+    balanceError: null
   };
 
   handleClick = event => {
@@ -64,15 +66,19 @@ class PayCard extends Component {
     if (!this.state.checkedB) {
       await this.setState(oldState => {
         oldState.paymentVal.payments[0].amount.amountWei = value;
+        oldState.paymentVal.payments[0].amount.amountToken = "0";
         return oldState;
       });
     } else if (this.state.checkedB) {
       await this.setState(oldState => {
         oldState.paymentVal.payments[0].amount.amountToken = value;
+        oldState.paymentVal.payments[0].amount.amountWei = "0"
         return oldState;
       });
     }
-    console.log(`Updated paymentVal: ${JSON.stringify(this.state.paymentVal, null, 2)}`);
+    console.log(
+      `Updated paymentVal: ${JSON.stringify(this.state.paymentVal, null, 2)}`
+    );
   }
 
   async updateRecipientHandler(evt) {
@@ -84,13 +90,34 @@ class PayCard extends Component {
       oldState.paymentVal.payments[0].recipient = value;
       return oldState;
     });
-    console.log(`Updated recipient: ${JSON.stringify(this.state.paymentVal.payments[0].recipient, null, 2)}`);
+    console.log(
+      `Updated recipient: ${JSON.stringify(
+        this.state.paymentVal.payments[0].recipient,
+        null,
+        2
+      )}`
+    );
   }
 
   async paymentHandler() {
-    console.log(`Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`);
-    let paymentRes = await this.props.connext.buy(this.state.paymentVal);
-    console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
+    console.log(
+      `Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`
+    );
+    this.setState({addressError: null, balanceError: null})
+    const { channelState, connext, web3 } = this.props;
+
+    if( Number(this.state.paymentVal.payments[0].amount.amountToken) <= Number(channelState.balanceTokenUser) &&
+        Number(this.state.paymentVal.payments[0].amount.amountWei) <= Number(channelState.balanceWeiUser)
+    ) {
+      if(web3.utils.isAddress(this.state.paymentVal.payments[0].recipient)) {
+        let paymentRes = await connext.buy(this.state.paymentVal);
+        console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
+      } else {
+        this.setState({addressError: "Please choose a valid address"})
+      }
+    } else {
+      this.setState({balanceError: "Insufficient balance in channel"})
+    }
   }
 
   render() {
@@ -104,7 +131,7 @@ class PayCard extends Component {
         flexDirection: "row",
         width: "230px",
         justifyContent: "center",
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#FFFFFF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -118,7 +145,9 @@ class PayCard extends Component {
       },
       button: {
         width: "100%",
-        height: "40px"
+        height: "40px",
+        backgroundColor: "#FCA311",
+        color: "#FFF"
       },
       col1: {
         marginLeft: "55px",
@@ -138,39 +167,14 @@ class PayCard extends Component {
         <div style={cardStyle.col1}>
           <SendIcon style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              Here, you can pay a counterparty using <br />
-              your offchain funds. Enter the recipient address and the amount in tokens or ETH, then click Pay.{" "}
-            </Typography>
-          </Popover>
-        </div>
         <div>
           ETH
-          <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
+          <Switch
+            checked={this.state.checkedB}
+            onChange={this.handleChange("checkedB")}
+            value="checkedB"
+            color="primary"
+          />
           TST
         </div>
         <TextField
@@ -182,6 +186,8 @@ class PayCard extends Component {
           onChange={evt => this.updateRecipientHandler(evt)}
           margin="normal"
           variant="outlined"
+          helperText={this.state.addressError}
+          error={this.state.addressError != null}
         />
         <TextField
           style={cardStyle.input}
@@ -193,8 +199,14 @@ class PayCard extends Component {
           type="number"
           margin="normal"
           variant="outlined"
+          helperText={this.state.balanceError}
+          error={this.state.balanceError != null}
         />
-        <Button style={cardStyle.button} onClick={() => this.paymentHandler()} variant="contained" color="primary">
+        <Button
+          style={cardStyle.button}
+          onClick={() => this.paymentHandler()}
+          variant="contained"
+        >
           Pay
         </Button>
       </Card>

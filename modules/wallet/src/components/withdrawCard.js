@@ -8,11 +8,15 @@ import HelpIcon from "@material-ui/icons/Help";
 import IconButton from "@material-ui/core/IconButton";
 import Popover from "@material-ui/core/Popover";
 import Typography from "@material-ui/core/Typography";
+import Tooltip from "@material-ui/core/Tooltip";
+import InputAdornment from "@material-ui/core/InputAdornment";
+import { BigNumber } from "bignumber.js";
+import { Big } from "../utils/bigNumber";
 
 class WithdrawCard extends Component {
   state = {
     checkedA: true,
-    checkedB: true,
+    checkedB: false,
     anchorEl: null,
     withdrawalVal: {
       withdrawalWeiUser: "0",
@@ -20,10 +24,12 @@ class WithdrawCard extends Component {
       withdrawalTokenUser: "0",
       weiToSell: "0",
       exchangeRate: "0.00",
-      recipient: "0x0"
+      recipient: "0x0..."
     },
     displayVal: "0",
-    recipientDisplayVal: "0x0..."
+    recipientDisplayVal: "0x0...",
+    addressError: null,
+    balanceError: null
   };
 
   handleClick = event => {
@@ -40,7 +46,7 @@ class WithdrawCard extends Component {
   };
 
   handleChange = name => event => {
-    var withdrawalValWei = this.state.withdrawalVal.weiToSell;
+    var withdrawalValWei = this.state.withdrawalVal.withdrawalWeiUser;
     var withdrawalValToken = this.state.withdrawalVal.tokensToSell;
     this.setState({ [name]: event.target.checked });
     if (this.state.checkedB) {
@@ -82,16 +88,48 @@ class WithdrawCard extends Component {
     console.log(`Updated recipient: ${JSON.stringify(this.state.withdrawalVal.recipient, null, 2)}`);
   }
 
-  async withdrawalHandler(max) {
-    let withdrawalVal = { ...this.state.withdrawalVal, exchangeRate: this.state.exchangeRate };
-    if (max) {
-      withdrawalVal.recipient = this.state.metamask.address;
-      withdrawalVal.tokensToSell = this.state.channelState.balanceTokenUser;
-      withdrawalVal.withdrawalWeiUser = this.state.channelState.balanceWeiUser;
+  async maxHandler() {
+    let withdrawalVal = {
+      ...this.state.withdrawalVal,
+      tokensToSell: this.props.channelState.balanceTokenUser,
+      withdrawalWeiUser: this.props.channelState.balanceWeiUser
+    };
+    let balance = new BigNumber(this.props.channelState.balanceTokenUser);
+    let tokenBalance = new BigNumber(this.props.channelState.balanceWeiUser);
+    let exchangeRate = new BigNumber(this.props.exchangeRate);
+    const tokenBalanceConverted = tokenBalance.dividedToIntegerBy(exchangeRate);
+    // const aggBalance = String(balance.plus(tokenBalanceConverted));
+    // console.log(aggBalance);
+
+    // i dont think we need the aggregate balance here, i think we can show both ETH and Token withdrawals separately
+    if (this.state.checkedB) {
+      this.setState({ displayVal: withdrawalVal.tokensToSell, withdrawalVal });
+    } else {
+      this.setState({ displayVal: withdrawalVal.withdrawalWeiUser, withdrawalVal });
     }
+  }
+
+  async withdrawalHandler() {
+    let withdrawalVal = {
+      ...this.state.withdrawalVal,
+      exchangeRate: this.props.exchangeRate
+    };
     console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
-    let withdrawalRes = await this.state.connext.withdraw(withdrawalVal);
-    console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
+    this.setState({addressError: null, balanceError: null})
+    const { channelState, connext, web3 } = this.props;
+    if (
+      Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(channelState.balanceWeiUser) &&
+      Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
+    ) {
+      if (web3.utils.isAddress(this.state.withdrawalVal.recipient)){
+        let withdrawalRes = await connext.withdraw(withdrawalVal);
+        console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
+      } else {
+        this.setState({addressError: "Please enter a valid address"})
+      }
+    } else {
+      this.setState({balanceError: "Insufficient balance in channel"})
+    }
   }
 
   render() {
@@ -107,7 +145,7 @@ class WithdrawCard extends Component {
         width: "230px",
         height: "300px",
         justifyContent: "center",
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#FFFFFF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -121,7 +159,9 @@ class WithdrawCard extends Component {
       },
       button: {
         width: "100%",
-        height: "40px"
+        height: "40px",
+        backgroundColor: "#FCA311",
+        color: "#FFF"
       },
       row: {
         width: "100%"
@@ -145,39 +185,15 @@ class WithdrawCard extends Component {
         <div style={cardStyle.col1}>
           <UnarchiveIcon style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              Here, you can withdraw funds from your channel. <br />
-              Enter the recipient address and the amount, then click Withdraw.{" "}
-            </Typography>
-          </Popover>
-        </div>
         <div>
           ETH
-          <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
+          <Switch
+            //disabled={true}
+            checked={this.state.checkedB}
+            onChange={this.handleChange("checkedB")}
+            value="checkedB"
+            color="primary"
+          />
           TST
         </div>
         <TextField
@@ -189,6 +205,8 @@ class WithdrawCard extends Component {
           placeholder="Receiver (0x0...)"
           margin="normal"
           variant="outlined"
+          helperText={this.state.addressError}
+          error={this.state.addressError != null}
         />
         <TextField
           style={cardStyle.input}
@@ -200,10 +218,25 @@ class WithdrawCard extends Component {
           type="number"
           margin="normal"
           variant="outlined"
+          helperText={this.state.balanceError}
+          error={this.state.balanceError != null}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Tooltip disableFocusListener disableTouchListener title="Withdraw all funds (ETH and TST) from channel">
+                  <Button variant="outlined" onClick={() => this.maxHandler()}>
+                    Max
+                  </Button>
+                </Tooltip>
+              </InputAdornment>
+            )
+          }}
         />
-        <Button style={cardStyle.button} onClick={() => this.withdrawalHandler()} variant="contained" color="primary">
-          Withdraw
-        </Button>
+        <Tooltip disableFocusListener disableTouchListener title="TST will be converted to ETH on Withdraw">
+          <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained">
+            <span>Withdraw</span>
+          </Button>
+        </Tooltip>
       </Card>
     );
   }

@@ -12,6 +12,8 @@ import { store } from "../App.js";
 const Web3 = require("web3");
 const eth = require("ethers");
 
+const BALANCE_THRESHOLD_WEI = Web3.utils.toBN(Web3.utils.toWei("40", "finney"));
+
 class DepositCard extends Component {
   state = {
     checkedA: true,
@@ -21,7 +23,8 @@ class DepositCard extends Component {
       amountWei: "0",
       amountToken: "0"
     },
-    displayVal: "0"
+    displayVal: "0",
+    error: null
   };
 
   handleClick = event => {
@@ -56,45 +59,65 @@ class DepositCard extends Component {
     if (!this.state.checkedB) {
       await this.setState(oldState => {
         oldState.depositVal.amountWei = value;
+        oldState.depositVal.amountToken = "0"
         return oldState;
       });
     } else if (this.state.checkedB) {
       await this.setState(oldState => {
         oldState.depositVal.amountToken = value;
+        oldState.depositVal.amountWei = "0"
         return oldState;
       });
     }
-    console.log(`Updated depositVal: ${JSON.stringify(this.state.depositVal, null, 2)}`);
+    console.log(
+      `Updated depositVal: ${JSON.stringify(this.state.depositVal, null, 2)}`
+    );
   }
 
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
-    const { tokenContract, channelManagerAddress: approveFor } = this.props
-
-    let approveTx = await tokenContract.methods.approve(approveFor, this.state.depositVal);
-    console.log(approveTx);
-
     try {
+      const { usingMetamask, connext, metamask } = this.props
       const wei = this.state.depositVal.amountWei;
       const tokens = this.state.depositVal.amountToken;
       console.log(`wei: ${wei}`);
       console.log(`tokens: ${tokens}`);
 
-      if (wei !== "0") {
-        console.log("found wei deposit");
-        await this.getEther(wei);
+      this.setState({error: null})
+      // if you are using metamask, deposit directly with connext
+      // otherwise, fetch tokens/eth
+      console.log('usingMetamask:', usingMetamask)
+      if (usingMetamask) {
+        await connext.deposit({ amountWei: wei, amountToken: tokens, recipient: "user" })
+      } else {
+        if (wei !== "0") {
+          console.log("found wei deposit");
+          if (wei <= (metamask.balance * 1000000000000000000)) {
+            await this.getEther(wei);
+          } else {
+            throw new Error("Insufficient ETH balance in MetaMask")
+          }
+        }
+  
+        if (tokens !== "0") {
+          console.log("found token deposit");
+          if (tokens <= (metamask.tokenBalance * 1000000000000000000)) {
+            await this.getTokens(tokens);
+          } else {
+            throw new Error("Insufficient TST balance in MetaMask")
+          }
+        }
       }
 
-      if (tokens !== "0") {
-        console.log("found token deposit");
-        await this.getTokens(tokens);
-      }
     } catch (e) {
       console.log(`error fetching deposit from metamask: ${e}`);
+      this.setState({error: e.message})
     }
   }
 
   async getTokens(amountToken) {
+    const { tokenContract, humanTokenAbi, } = this.props
+    console.log('tokenContract:', tokenContract)
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
@@ -102,49 +125,112 @@ class DepositCard extends Component {
       return;
     }
     const metamaskProvider = new Web3(web3.currentProvider);
-    const address = (await metamaskProvider.eth.getAccounts())[0];
-    if (!address) {
+    const mmAddr = (await metamaskProvider.eth.getAccounts())[0];
+    const browserAddr = store.getState()[0].getAddressString()
+    if (!mmAddr) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
 
-    const tokenContract = new metamaskProvider.eth.Contract(this.props.humanTokenAbi, this.props.tokenContract.tokenAddress);
+    const tc = new metamaskProvider.eth.Contract(
+      humanTokenAbi,
+      tokenContract._address
+    );
 
-    let tokens = amountToken;
-    console.log(`Sending ${tokens} tokens from ${address} to ${store.getState()[0].getAddressString()}`);
+    console.log(
+      `Sending ${amountToken} tokens from ${mmAddr} to ${browserAddr}`
+    );
 
     console.log("state:");
     console.log(this.state);
 
-    let approveTx = await tokenContract.methods.transfer(store.getState()[0].getAddressString(), tokens).send({
-      from: address,
+    const transferTx = await tc.methods
+    .transfer(browserAddr, amountToken)
+    .send({
+      from: mmAddr,
       gas: "81000"
     });
+    console.log('Token transfer tx:', transferTx);
 
-    console.log(approveTx);
+    // get balance of wallet addr
+    // if there is less than 40fin, deposit for gas allowance
+    const browserWei = metamaskProvider.utils.toBN(await metamaskProvider.eth.getBalance(browserAddr))
+    if (browserWei.lt(BALANCE_THRESHOLD_WEI)) {
+      try {
+        // safe to use getEther, since if you are using metamask,
+        // the condition in the if statement should be false
+        // since you are using a default acct with 100 ETH
+        await this.getEther("0")
+      } catch (e) {
+        console.log(
+          `Eth sent to: ${store.getState()[0].getAddressString()}.`
+        );
+      }
+    }
   }
 
-  // to get tokens from metamask to browser wallet
+  // to get wei from metamask to browser wallet
   async getEther(amountWei) {
+    const { usingMetamask, channelManagerAddress, connext } = this.props
     let web3 = window.web3;
-    console.log(web3);
+    console.log('window.web3', web3);
     if (!web3) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const metamaskProvider = new eth.providers.Web3Provider(web3.currentProvider);
-    const metamask = metamaskProvider.getSigner();
-    const address = (await metamask.provider.listAccounts())[0];
-    if (!address) {
+    const metamaskProvider = new eth.providers.Web3Provider(
+      web3.currentProvider
+    );
+    const mmAddr = (await metamaskProvider.listAccounts())[0];
+    const browserAddr = store.getState()[0].getAddressString()
+    if (!mmAddr) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const sentTx = await metamask.sendTransaction({
-      to: store.getState()[0].getAddressString(),
-      value: eth.utils.bigNumberify(amountWei),
-      gasLimit: eth.utils.bigNumberify("21000")
-    });
-    console.log(`Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `, sentTx);
+
+    // if the autosigner is being used, send to that address
+    // otherwise, send from metamask to contract
+    try {
+      if (usingMetamask) {
+        console.log(`Sending ${amountWei} wei from ${mmAddr} to channel`)
+        const sentTx = await connext.deposit({ amountWei: amountWei , amountToken: "0", recipient: "user"  })
+        console.log(
+          `Eth sent to: ${channelManagerAddress}. Tx: `,
+          sentTx
+        );
+      } else {
+        // make sure that this brings browser wallet balance up to
+        // 40fin for gas costs
+        let weiDeposit
+        const browserWei = Web3.utils.toBN(
+          await metamaskProvider.getBalance(browserAddr)
+        )
+        const amountWeiBN = Web3.utils.toBN(amountWei)
+        // deposit + existing bal should be above threshold
+        if (browserWei.add(amountWeiBN).lt(BALANCE_THRESHOLD_WEI)) {
+          console.log(`Browser wallet balance + requested deposit below minimum, adding enough to bring total to 40fin.`)
+          weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei)
+        }
+
+        console.log(`Sending ${weiDeposit ? weiDeposit.toString() : amountWei} wei from ${mmAddr} to ${browserAddr}`)
+
+        const metamask = metamaskProvider.getSigner();
+        const sentTx = await metamask.sendTransaction({
+          to: browserAddr,
+          value: weiDeposit 
+            ? eth.utils.bigNumberify(weiDeposit.toString()) 
+            : eth.utils.bigNumberify(amountWei),
+          gasLimit: eth.utils.bigNumberify("21000"),
+        })
+
+        console.log(
+          `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
+          sentTx
+        );
+      }
+    } catch (e) {
+      console.warn(`Error sending transaction: ${e.message}`)
+    }
   }
 
   render() {
@@ -158,7 +244,7 @@ class DepositCard extends Component {
         flexDirection: "row",
         width: "230px",
         justifyContent: "center",
-        backgroundColor: "#EAEBEE",
+        backgroundColor: "#FFFFFF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -171,7 +257,9 @@ class DepositCard extends Component {
       },
       button: {
         width: "100%",
-        height: "40px"
+        height: "40px",
+        backgroundColor: "#FCA311",
+        color: "#FFF"
       },
       col1: {
         marginLeft: "55px",
@@ -192,45 +280,16 @@ class DepositCard extends Component {
         <div style={cardStyle.col1}>
           <ArchiveIcon style={cardStyle.icon} />
         </div>
-        <div style={cardStyle.col2}>
-          <IconButton
-            style={cardStyle.helpIcon}
-            aria-owns={open ? "simple-popper" : undefined}
-            aria-haspopup="true"
-            variant="contained"
-            onClick={this.handleClick}
-          >
-            <HelpIcon />
-          </IconButton>
-          <Popover
-            id="simple-popper"
-            open={open}
-            anchorEl={anchorEl}
-            onClose={this.handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center"
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center"
-            }}
-          >
-            <Typography style={cardStyle.popover}>
-              Get tokens or ETH from your MetaMask. <br />
-              Enter the amount in Wei, tokens, or both, and then click Get.{" "}
-            </Typography>
-          </Popover>
-        </div>
+
         <div>
           ETH
-          <Switch checked={this.state.checkedB} onChange={this.handleChange("checkedB")} value="checkedB" color="primary" />
+          <Switch
+            checked={this.state.checkedB}
+            onChange={this.handleChange("checkedB")}
+            value="checkedB"
+            color="primary"
+          />
           TST
-        </div>
-        <div>
-          <Typography>
-            Get more than 40 Finney (40000000000000000 Wei) ETH.
-          </Typography>
         </div>
         <TextField
           style={cardStyle.input}
@@ -241,9 +300,15 @@ class DepositCard extends Component {
           margin="normal"
           variant="outlined"
           onChange={evt => this.updateDepositHandler(evt)}
+          error={this.state.error != null}
+          helperText={this.state.error}
         />
-        <Button style={cardStyle.button} variant="contained" color="primary" onClick={evt => this.depositHandler(evt)}>
-          Get
+        <Button
+          style={cardStyle.button}
+          variant="contained"
+          onClick={evt => this.depositHandler(evt)}
+        >
+          Deposit
         </Button>
       </Card>
     );
