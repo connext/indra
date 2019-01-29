@@ -9,9 +9,8 @@ import IconButton from "@material-ui/core/IconButton";
 import Popover from "@material-ui/core/Popover";
 import Typography from "@material-ui/core/Typography";
 import Tooltip from "@material-ui/core/Tooltip";
-import InputAdornment from '@material-ui/core/InputAdornment';
-import { BigNumber } from 'bignumber.js'
-
+import InputAdornment from "@material-ui/core/InputAdornment";
+import { BigNumber } from "bignumber.js";
 
 class WithdrawCard extends Component {
   state = {
@@ -71,13 +70,7 @@ class WithdrawCard extends Component {
         return oldState;
       });
     }
-    console.log(
-      `Updated withdrawalVal: ${JSON.stringify(
-        this.state.withdrawalVal,
-        null,
-        2
-      )}`
-    );
+    console.log(`Updated withdrawalVal: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
   }
 
   async updateRecipientHandler(evt) {
@@ -89,33 +82,25 @@ class WithdrawCard extends Component {
       oldState.withdrawalVal.recipient = value;
       return oldState;
     });
-    console.log(
-      `Updated recipient: ${JSON.stringify(
-        this.state.withdrawalVal.recipient,
-        null,
-        2
-      )}`
-    );
+    console.log(`Updated recipient: ${JSON.stringify(this.state.withdrawalVal.recipient, null, 2)}`);
   }
 
-  async maxHandler(){
+  async maxHandler() {
     let withdrawalVal = {
       ...this.state.withdrawalVal,
-      tokensToSell:this.props.tokenBalance,
-      withdrawalWeiUser:this.props.balance,
-    }
+      tokensToSell: this.props.tokenBalance,
+      withdrawalWeiUser: this.props.balance
+    };
     let balance = new BigNumber(this.props.balance);
     let tokenBalance = new BigNumber(this.props.tokenBalance);
     let exchangeRate = new BigNumber(this.props.exchangeRate);
     const tokenBalanceConverted = tokenBalance.dividedBy(exchangeRate);
     const aggBalance = String(balance.plus(tokenBalanceConverted));
-    console.log(aggBalance)
+    console.log(aggBalance);
     this.setState({
       withdrawalVal: withdrawalVal,
       displayVal: aggBalance
     });
-    
-
   }
 
   async withdrawalHandler() {
@@ -123,21 +108,16 @@ class WithdrawCard extends Component {
       ...this.state.withdrawalVal,
       exchangeRate: this.props.exchangeRate
     };
-    console.log(
-      `Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`
-    );
-    try{
-      if(
-        (this.state.withdrawalVal.withdrawalWeiUser > this.props.balance) 
-        || 
-        (this.state.withdrawalVal.tokensToSell > this.props.tokenBalance)){
-        alert("You tried to withdraw too much! Please enter a valid balance.")
-        throw "Whoops"
+    console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
+    try {
+      if (this.state.withdrawalVal.withdrawalWeiUser > this.props.balance || this.state.withdrawalVal.tokensToSell > this.props.tokenBalance) {
+        alert("You tried to withdraw too much! Please enter a valid balance.");
+        throw "Whoops";
       }
       let withdrawalRes = await this.props.connext.withdraw(withdrawalVal);
       console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
-    }catch(e){
-      console.log("Tried to withdraw too much. Sad face.")
+    } catch (e) {
+      console.log("Tried to withdraw too much. Sad face.");
     }
   }
 
@@ -228,34 +208,19 @@ class WithdrawCard extends Component {
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <Tooltip
-                  disableFocusListener
-                  disableTouchListener
-                  title="Withdraw all funds (ETH and TST) from channel"
-                >
-                <Button variant="outlined"
-                        onClick={() => this.maxHandler()}>
-                  Max
-                </Button>
+                <Tooltip disableFocusListener disableTouchListener title="Withdraw all funds (ETH and TST) from channel">
+                  <Button variant="outlined" onClick={() => this.maxHandler()}>
+                    Max
+                  </Button>
                 </Tooltip>
               </InputAdornment>
-            ),
+            )
           }}
         />
-        <Tooltip
-            disableFocusListener
-            disableTouchListener
-            title="TST will be converted to ETH on Withdraw"
-          >
-        <Button
-          style={cardStyle.button}
-          onClick={() => this.withdrawalHandler(true)}
-          variant="contained"
-        >
-
-          <span>Withdraw</span> 
-          
-        </Button>
+        <Tooltip disableFocusListener disableTouchListener title="TST will be converted to ETH on Withdraw">
+          <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained">
+            <span>Withdraw</span>
+          </Button>
         </Tooltip>
       </Card>
     );
