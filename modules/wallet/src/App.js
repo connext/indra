@@ -4,7 +4,11 @@ import "./App.css";
 import ProviderOptions from "./utils/ProviderOptions.ts";
 import clientProvider from "./utils/web3/clientProvider.ts";
 import { setWallet } from "./utils/actions.js";
-import { createWallet, createWalletFromKey, findOrCreateWallet } from "./walletGen";
+import {
+  createWallet,
+  createWalletFromKey,
+  findOrCreateWallet
+} from "./walletGen";
 import { createStore } from "redux";
 import axios from "axios";
 import DepositCard from "./components/depositCard";
@@ -115,12 +119,14 @@ class App extends Component {
     }
     const metamaskWeb3 = new Web3(windowProvider.currentProvider);
     // make sure you are on localhost
-    const networkId = await metamaskWeb3.eth.net.getId()
+    const networkId = await metamaskWeb3.eth.net.getId();
     if (networkId != 4447) {
       // create a pop up to tell them to switch to ganache
-      alert("Uh oh! Doesn't look like you're using a local chain, please make sure your Metamask is connected appropriately to localhost:8545.")
+      alert(
+        "Uh oh! Doesn't look like you're using a local chain, please make sure your Metamask is connected appropriately to localhost:8545."
+      );
     }
-    return
+    return;
   }
 
   componentWillMount() {
@@ -138,7 +144,7 @@ class App extends Component {
   }
 
   async componentDidMount() {
-    await this.checkWindowProvider()
+    await this.checkWindowProvider();
     console.log(`didmount modal state: ${this.state.modalOpen}`);
     if (this.state.modalOpen === false) {
       this.chooseWalletHandler("existing");
@@ -234,14 +240,24 @@ class App extends Component {
     });
 
     this.setState({ connext });
-    const channelState = connext.state ? connext.state.persistent.channel : null;
+    const channelState = connext.state
+      ? connext.state.persistent.channel
+      : null;
     this.setState({ channelState });
-    console.log(`This is connext state: ${JSON.stringify(this.state.channelState, null, 2)}`);
+    console.log(
+      `This is connext state: ${JSON.stringify(
+        this.state.channelState,
+        null,
+        2
+      )}`
+    );
   }
 
   async pollExchangeRate() {
     const getRate = async () => {
-      const response = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH");
+      const response = await fetch(
+        "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
+      );
       const json = await response.json();
       console.log("latest ETH->USD exchange rate: ", json.data.rates.USD);
       console.log(`Channel state: ${JSON.stringify(this.state.channelState)}`);
@@ -259,8 +275,12 @@ class App extends Component {
     const browserWalletDeposit = async () => {
       const tokenContract = this.state.tokenContract;
       const balance = await this.state.web3.eth.getBalance(this.state.address);
-      const tokenBalance = await tokenContract.methods.balanceOf(this.state.address).call();
-      console.log(`Polled onchain balance, weiBalance: ${balance}, tokenBalance: ${tokenBalance}`);
+      const tokenBalance = await tokenContract.methods
+        .balanceOf(this.state.address)
+        .call();
+      console.log(
+        `Polled onchain balance, weiBalance: ${balance}, tokenBalance: ${tokenBalance}`
+      );
       if (balance !== "0" || tokenBalance !== "0") {
         this.setState({
           browserWalletDeposit: {
@@ -322,7 +342,9 @@ class App extends Component {
     const toApprove = this.state.approvalWeiUser;
     const toApproveBn = eth.utils.bigNumberify(toApprove);
     const nonce = await web3.eth.getTransactionCount(this.state.wallet.address);
-    const depositResGas = await tokenContract.methods.approve(approveFor, toApproveBn).estimateGas();
+    const depositResGas = await tokenContract.methods
+      .approve(approveFor, toApproveBn)
+      .estimateGas();
     let tx = new Tx({
       to: tokenAddress,
       nonce: nonce,
@@ -387,18 +409,24 @@ class App extends Component {
     console.log(`Option selected:`, selectedWallet);
   };
 
-  async handleMetamaskClose() {
-    this.setState({ modalOpen: false });
+  async handleMetamaskSelect() {
     this.setState({ useDelegatedSigner: false });
+    this.setState({ usingMetamask: true });
     try {
       await clearInterval(this.state.interval);
       await this.setWalletAndProvider(true);
       await this.setConnext();
-      await this.authorizeHandler();
+      const auth = await this.authorizeHandler();
 
       this.pollExchangeRate();
+
+      if (auth){
+        this.closeModal("metamask")
+      }
     } catch (e) {
-      console.log(`failed to set provider or start connext: ${JSON.stringify(e)}`);
+      console.log(
+        `failed to set provider, authorize account, or start connext: ${JSON.stringify(e)}`
+      );
     }
   }
 
@@ -423,10 +451,15 @@ class App extends Component {
       await this.setState({ showWalletOptions: false });
       await this.setState({ walletSet: false });
     }
-    console.log(`Chose wallet: ${JSON.stringify(this.state.useExistingWallet)}`);
+    console.log(
+      `Chose wallet: ${JSON.stringify(this.state.useExistingWallet)}`
+    );
     try {
       if (!this.state.walletSet) {
-        wallet = await this._walletCreateHandler(this.state.useExistingWallet, recovery);
+        wallet = await this._walletCreateHandler(
+          this.state.useExistingWallet,
+          recovery
+        );
         console.log(`wallet: ${wallet}`);
         await this.setWalletAndProvider();
       }
@@ -439,7 +472,9 @@ class App extends Component {
       this.pollExchangeRate();
       this.pollBrowserWallet();
     } catch (e) {
-      console.log(`failed to set provider or start connext ${JSON.stringify(e)}`);
+      console.log(
+        `failed to set provider or start connext ${JSON.stringify(e)}`
+      );
     }
     return wallet;
   }
@@ -460,13 +495,19 @@ class App extends Component {
       wallet = await createWallet(this.state.web3);
     } else if (this.state.useExistingWallet === "recover" && recovery) {
       key = recovery;
-      console.log(`creating wallet using recovery key: ${JSON.stringify(this.state.recovery)}`);
+      console.log(
+        `creating wallet using recovery key: ${JSON.stringify(
+          this.state.recovery
+        )}`
+      );
       wallet = await createWalletFromKey(key);
     }
     if (wallet) {
       console.log(`Wallet created!`);
     } else {
-      alert(`Unable to create wallet. Try refreshing your page and starting over.`);
+      alert(
+        `Unable to create wallet. Try refreshing your page and starting over.`
+      );
     }
     store.dispatch({
       type: "SET_WALLET",
@@ -526,7 +567,11 @@ class App extends Component {
     const web3 = this.state.web3;
     const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
 
-    const hash = web3.utils.sha3(`${HASH_PREAMBLE} ${web3.utils.sha3(challengeRes.data.nonce)} ${web3.utils.sha3("localhost")}`);
+    const hash = web3.utils.sha3(
+      `${HASH_PREAMBLE} ${web3.utils.sha3(
+        challengeRes.data.nonce
+      )} ${web3.utils.sha3("localhost")}`
+    );
 
     const signature = await web3.eth.personal.sign(hash, this.state.address);
 
@@ -547,6 +592,7 @@ class App extends Component {
       const res = await axios.get(`${hubUrl}/auth/status`, opts);
       if (res.data.success) {
         this.setState({ authorized: true });
+        return res.data.success
       } else {
         this.setState({ authorized: false });
       }
@@ -622,57 +668,80 @@ class App extends Component {
                   Step 1: Deposit to channel
                 </Typography>
                 <Typography>
-                  First, you need to send funds to your channel. You can either manually send them to the address shown in the Channel Information, or
-                  you can use the UX below to fetch ETH or tokens from your Metamask account. Enter the amount in Wei, tokens, or both, and then click
-                  Get and sign the popup--we'll do the rest! If you're using an Autosigner, we'll leave a small amount of ETH in the autosigner wallet
-                  to cover gas fees, but you'll get it all back when you withdraw.{" "}
+                  First, you need to send funds to your channel. You can either
+                  manually send them to the address shown in the Channel
+                  Information, or you can use the UX below to fetch ETH or
+                  tokens from your Metamask account. Enter the amount in Wei,
+                  tokens, or both, and then click Get and sign the popup--we'll
+                  do the rest! If you're using an Autosigner, we'll leave a
+                  small amount of ETH in the autosigner wallet to cover gas
+                  fees, but you'll get it all back when you withdraw.{" "}
                 </Typography>
                 <Typography variant="h4" style={{ marginTop: "20px" }}>
                   Step 2: Swap ETH for Tokens
                 </Typography>
                 <Typography>
-                  This step is OPTIONAL. If you'd like to swap ETH for tokens, you can do it in-channel. Just enter the amount of ETH you'd like to
-                  swap, using the exchange rate provided.
+                  This step is OPTIONAL. If you'd like to swap ETH for tokens,
+                  you can do it in-channel. Just enter the amount of ETH you'd
+                  like to swap, using the exchange rate provided.
                 </Typography>
                 <Typography variant="h4" style={{ marginTop: "20px" }}>
                   Step 3: Pay
                 </Typography>
                 <Typography>
-                  Here, you can pay a counterparty using your offchain funds. Enter the recipient address and the amount in tokens or ETH, then click
-                  Pay. Everything's offchain, so no gas is necessary and the payment is instant.{" "}
+                  Here, you can pay a counterparty using your offchain funds.
+                  Enter the recipient address and the amount in tokens or ETH,
+                  then click Pay. Everything's offchain, so no gas is necessary
+                  and the payment is instant.{" "}
                 </Typography>
                 <Typography variant="h4" style={{ marginTop: "20px" }}>
                   Step 4: Withdraw
                 </Typography>
                 <Typography>
-                  When you're done making payments, you'll want to withdraw funds from your channel. Enter the recipient address (most likely an
-                  address that you control) and the amount, then click Withdraw.{" "}
+                  When you're done making payments, you'll want to withdraw
+                  funds from your channel. Enter the recipient address (most
+                  likely an address that you control) and the amount, then click
+                  Withdraw.{" "}
                 </Typography>
                 <Typography variant="h5" style={{ marginTop: "40px" }}>
                   A note about autosigners
                 </Typography>
                 <Typography>
-                  We use autosigners to cut down on the number of MetaMask popups that show up in the course of conducting an offchain transaction. An
-                  autosigner is an inpage wallet which uses a custom Web3 implementation to automatically sign all transactions initiated by the user
-                  via the UX. Private keys are stored securely in browser storage.{" "}
+                  We use autosigners to cut down on the number of MetaMask
+                  popups that show up in the course of conducting an offchain
+                  transaction. An autosigner is an inpage wallet which uses a
+                  custom Web3 implementation to automatically sign all
+                  transactions initiated by the user via the UX. Private keys
+                  are stored securely in browser storage.{" "}
                 </Typography>
               </div>
             </Popover>
           </Toolbar>
         </AppBar>
         <div className="app">
-          <Modal className="modal" aria-labelledby="simple-modal-title" aria-describedby="simple-modal-description" open={this.state.modalOpen}>
+          <Modal
+            className="modal"
+            aria-labelledby="simple-modal-title"
+            aria-describedby="simple-modal-description"
+            open={this.state.modalOpen}
+          >
             <div className="modal_inner">
               <div className="row">
                 <div className="row">
                   <p style={{ fontStyle: "italic" }}>
-                    Choose how you'd like to sign transactions. For most use cases, we recommend using an autosigner to cut down on the number of
-                    popups.
+                    Choose how you'd like to sign transactions. For most use
+                    cases, we recommend using an autosigner to cut down on the
+                    number of popups.
                   </p>
                 </div>
                 <div className="row">
                   <div className="column">
-                    <Button variant="contained" color="primary" disabled={this.state.disableButtons} onClick={() => this.handleMetamaskClose()}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      disabled={this.state.disableButtons}
+                      onClick={() => this.handleMetamaskSelect()}
+                    >
                       Use Metamask to sign
                     </Button>
                   </div>
@@ -690,6 +759,24 @@ class App extends Component {
               </div>
               <div className="row">
                 <div className="column">
+                  {this.state.usingMetamask ? (<div>
+                    <h4>You've selected Metamask as a signer.
+                       Please sign the popup so that we can connect to your account!
+                       This just lets us see your balance--you're not signing away any funds.</h4>
+                  </div>) : null}
+                  <div>
+                              <Button
+                                variant="contained"
+                                onClick={() => this.closeModal("other")}
+                              >
+                                {" "}
+                                Close
+                              </Button>
+                </div>
+                </div>
+              </div>
+              <div className="row">
+                <div className="column">
                   {this.state.delegatedSignerSelected ? (
                     <div>
                       <div>
@@ -698,7 +785,8 @@ class App extends Component {
                             <div>
                               <h4>
                                 You have an autosigner set up already! <br />
-                                You can either use it, recover an old one, or set up an entirely new one.{" "}
+                                You can either use it, recover an old one, or
+                                set up an entirely new one.{" "}
                               </h4>
                               <br />
                             </div>
@@ -710,7 +798,9 @@ class App extends Component {
                                 }}
                                 variant="contained"
                                 color="primary"
-                                onClick={() => this.chooseWalletHandler("existing")}
+                                onClick={() =>
+                                  this.chooseWalletHandler("existing")
+                                }
                               >
                                 Use Existing Signer
                               </Button>
@@ -729,7 +819,9 @@ class App extends Component {
                                   id="outlined-with-placeholder"
                                   label="Mnemonic"
                                   value={this.state.recovery}
-                                  onChange={evt => this.updateWalletHandler(evt)}
+                                  onChange={evt =>
+                                    this.updateWalletHandler(evt)
+                                  }
                                   placeholder="12 word passphrase (e.g. hat avocado green....)"
                                   margin="normal"
                                   variant="outlined"
@@ -745,7 +837,12 @@ class App extends Component {
                                   }}
                                   variant="contained"
                                   color="primary"
-                                  onClick={() => this.chooseWalletHandler("recover", this.state.recovery)}
+                                  onClick={() =>
+                                    this.chooseWalletHandler(
+                                      "recover",
+                                      this.state.recovery
+                                    )
+                                  }
                                 >
                                   Recover Signer from Key
                                 </Button>
@@ -754,33 +851,49 @@ class App extends Component {
                           </div>
                         ) : (
                           <div>
-                            The following mnemonic is the recovery phrase for your signer. Click to copy it to your clipboard
+                            The following mnemonic is the recovery phrase for
+                            your signer. Click to copy it to your clipboard
                             <br />
-                            If you lose it and are locked out of your signer, you will lose access
+                            If you lose it and are locked out of your signer,
+                            you will lose access
                             <br />
                             to any funds remaining in your channel. <br />
                             Keep it secret, keep it safe.
                             <br /> <br />
                             {this.state.toggleKey ? (
                               <div>
-                                <Button variant="contained" color="primary" onClick={evt => this.toggleKey(evt)}>
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={evt => this.toggleKey(evt)}
+                                >
                                   Hide Mnemonic
                                 </Button>
                                 <br />
                                 <br />
-                                <CopyToClipboard style={{ cursor: "pointer" }} text={this.state.mnemonic}>
+                                <CopyToClipboard
+                                  style={{ cursor: "pointer" }}
+                                  text={this.state.mnemonic}
+                                >
                                   <span>{this.state.mnemonic}</span>
                                 </CopyToClipboard>
                               </div>
                             ) : (
-                              <Button variant="contained" color="primary" onClick={evt => this.getKey(evt)}>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={evt => this.getKey(evt)}
+                              >
                                 Show Mnemonic
                               </Button>
                             )}
                             <br />
                             <br />
                             <div>
-                              <Button variant="contained" onClick={() => this.closeModal("other")}>
+                              <Button
+                                variant="contained"
+                                onClick={() => this.closeModal("other")}
+                              >
                                 {" "}
                                 Close
                               </Button>
@@ -795,8 +908,14 @@ class App extends Component {
             </div>
           </Modal>
           <div className="row">
-            <div className="column" style={{ justifyContent: "space-between", flexGrow: 1 }}>
-              <ChannelCard channelState={this.state.channelState} address={this.state.address} />
+            <div
+              className="column"
+              style={{ justifyContent: "space-between", flexGrow: 1 }}
+            >
+              <ChannelCard
+                channelState={this.state.channelState}
+                address={this.state.address}
+              />
             </div>
             <div className="column" style={{ flexGrow: 1 }}>
               <FullWidthTabs
@@ -848,7 +967,10 @@ class App extends Component {
               />
             </div>
             <div className="column">
-              <SwapCard connext={this.state.connext} exchangeRate={this.state.exchangeRate} />
+              <SwapCard
+                connext={this.state.connext}
+                exchangeRate={this.state.exchangeRate}
+              />
             </div>
             <div className="column">
               <PayCard connext={this.state.connext} />
