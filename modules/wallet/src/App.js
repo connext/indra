@@ -46,7 +46,7 @@ const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLo
 
 const HASH_PREAMBLE = "SpankWallet authentication message:";
 
-const BALANCE_THRESHOLD_WEI = eth.utils.parseEther("0.04"); // 10FIN
+const BALANCE_THRESHOLD_WEI = eth.utils.parseEther("0.04"); // 40FIN
 
 const opts = {
   headers: {
@@ -292,12 +292,6 @@ class App extends Component {
         // const sendArgs = {
         //   from: this.state.channelState.user
         // }
-        let approveFor = this.state.channelManager.address;
-        let approveTx = await tokenContract.methods.approve(
-          approveFor,
-          this.state.browserWalletDeposit
-        );
-        console.log(approveTx);
         // const gasEstimate = await approveTx.estimateGas(sendArgs)
         // if (gasEstimate > this.state.browserWalletDeposit.amountWei){
         //   throw "Not enough wei for gas"
