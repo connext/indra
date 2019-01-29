@@ -11,6 +11,7 @@ import Typography from "@material-ui/core/Typography";
 import Tooltip from "@material-ui/core/Tooltip";
 import InputAdornment from "@material-ui/core/InputAdornment";
 import { BigNumber } from "bignumber.js";
+import { Big } from "../utils/bigNumber";
 
 class WithdrawCard extends Component {
   state = {
@@ -88,13 +89,13 @@ class WithdrawCard extends Component {
   async maxHandler() {
     let withdrawalVal = {
       ...this.state.withdrawalVal,
-      tokensToSell: this.props.tokenBalance,
-      withdrawalWeiUser: this.props.balance
+      tokensToSell: this.props.channelState.balanceTokenUser,
+      withdrawalWeiUser: this.props.channelState.balanceWeiUser
     };
-    let balance = new BigNumber(this.props.balance);
-    let tokenBalance = new BigNumber(this.props.tokenBalance);
+    let balance = new BigNumber(this.props.channelState.balanceTokenUser);
+    let tokenBalance = new BigNumber(this.props.channelState.balanceWeiUser);
     let exchangeRate = new BigNumber(this.props.exchangeRate);
-    const tokenBalanceConverted = tokenBalance.dividedBy(exchangeRate);
+    const tokenBalanceConverted = tokenBalance.dividedToIntegerBy(exchangeRate);
     const aggBalance = String(balance.plus(tokenBalanceConverted));
     console.log(aggBalance);
     this.setState({
@@ -110,7 +111,10 @@ class WithdrawCard extends Component {
     };
     console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
     try {
-      if (this.state.withdrawalVal.withdrawalWeiUser > this.props.balance || this.state.withdrawalVal.tokensToSell > this.props.tokenBalance) {
+      if (
+        Big(this.state.withdrawalVal.withdrawalWeiUser).isGreaterThan(this.props.channelState.balanceWeiUser) ||
+        Big(this.state.withdrawalVal.tokensToSell).isGreaterThan(this.props.channelState.balanceTokenUser)
+      ) {
         alert("You tried to withdraw too much! Please enter a valid balance.");
         throw "Whoops";
       }
