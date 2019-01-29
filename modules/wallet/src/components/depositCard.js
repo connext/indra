@@ -12,6 +12,8 @@ import { store } from "../App.js";
 const Web3 = require("web3");
 const eth = require("ethers");
 
+const BALANCE_THRESHOLD_WEI = Web3.utils.toBN(Web3.utils.toWei("40", "finney"));
+
 class DepositCard extends Component {
   state = {
     checkedA: true,
@@ -82,8 +84,8 @@ class DepositCard extends Component {
 
       // if you are using metamask, deposit directly with connext
       // otherwise, fetch tokens/eth
+      console.log('usingMetamask:', usingMetamask)
       if (usingMetamask) {
-        console.log(usingMetamask)
         await connext.deposit({ amountWei: wei, amountToken: tokens, recipient: "user" })
       } else {
         if (wei !== "0") {
@@ -104,6 +106,7 @@ class DepositCard extends Component {
 
   async getTokens(amountToken) {
     const { tokenContract, humanTokenAbi, } = this.props
+    console.log('tokenContract:', tokenContract)
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
@@ -120,7 +123,7 @@ class DepositCard extends Component {
 
     const tc = new metamaskProvider.eth.Contract(
       humanTokenAbi,
-      tokenContract.tokenAddress
+      tokenContract._address
     );
 
     console.log(
@@ -137,7 +140,24 @@ class DepositCard extends Component {
       gas: "81000"
     });
     console.log('Token transfer tx:', transferTx);
-    
+
+    // get balance of wallet addr
+    // if there is less than 40fin, deposit for gas allowance
+    const browserWei = metamaskProvider.utils.toBN(await metamaskProvider.eth.getBalance(browserAddr))
+    if (browserWei.lt(BALANCE_THRESHOLD_WEI)) {
+      try {
+        const weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei).toString()
+        console.log(`Adding ${weiDeposit} wei to ${browserAddr} from ${mmAddr} to bring wei balance of wallet to ${BALANCE_THRESHOLD_WEI.toString()}`)
+        // safe to use getEther, since if you are using metamask,
+        // the condition in the if statement should be false
+        // since you are using a default acct with 100 ETH
+        await this.getEther(weiDeposit)
+      } catch (e) {
+        console.log(
+          `Eth sent to: ${store.getState()[0].getAddressString()}.`
+        );
+      }
+    }
   }
 
   // to get tokens from metamask to browser wallet
@@ -163,12 +183,27 @@ class DepositCard extends Component {
     // if the autosigner is being used, send to that address
     // otherwise, send from metamask to contract
     try {
-      console.log(`Sending ${amountWei} wei from ${mmAddr} to ${browserAddr}`)
-      let sentTx = await connext.deposit({ amountWei: amountWei , amountToken: "0", recipient: "user"  })
-      console.log(
-        `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
-        sentTx
-      );
+      if (usingMetamask) {
+        console.log(`Sending ${amountWei} wei from ${mmAddr} to channel`)
+        const sentTx = await connext.deposit({ amountWei: amountWei , amountToken: "0", recipient: "user"  })
+        console.log(
+          `Eth sent to: ${channelManagerAddress}. Tx: `,
+          sentTx
+        );
+      } else {
+        console.log(`Sending ${amountWei} wei from ${mmAddr} to ${browserAddr}`)
+
+        const sentTx = await metamask.sendTransaction({
+          to: store.getState()[0].getAddressString(),
+          value: eth.utils.bigNumberify(amountWei),
+          gasLimit: eth.utils.bigNumberify("21000")
+        })
+
+        console.log(
+          `Eth sent to: ${store.getState()[0].getAddressString()}. Tx: `,
+          sentTx
+        );
+      }
     } catch (e) {
       console.warn(`Error sending transaction: ${e.message}`)
     }
