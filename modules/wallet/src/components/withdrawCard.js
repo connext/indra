@@ -24,10 +24,10 @@ class WithdrawCard extends Component {
       withdrawalTokenUser: "0",
       weiToSell: "0",
       exchangeRate: "0.00",
-      recipient: this.props.metamask.address
+      recipient: "0x0..."
     },
     displayVal: "0",
-    recipientDisplayVal: this.props.metamask.address,
+    recipientDisplayVal: "0x0...",
     addressError: null,
     balanceError: null
   };
@@ -118,11 +118,11 @@ class WithdrawCard extends Component {
     this.setState({addressError: null, balanceError: null})
     const { channelState, connext, web3 } = this.props;
     if (
-      Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(this.props.channelState.balanceWeiUser) ||
-      Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(this.props.channelState.balanceTokenUser)
+      Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(channelState.balanceWeiUser) &&
+      Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
     ) {
-      if (web3.utils.isAddress(this.state.paymentVal.payments[0].recipient)){
-        let withdrawalRes = await this.props.connext.withdraw(withdrawalVal);
+      if (web3.utils.isAddress(this.state.withdrawalVal.recipient)){
+        let withdrawalRes = await connext.withdraw(withdrawalVal);
         console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
       } else {
         this.setState({addressError: "Please enter a valid address"})
@@ -205,6 +205,8 @@ class WithdrawCard extends Component {
           placeholder="Receiver (0x0...)"
           margin="normal"
           variant="outlined"
+          helperText={this.state.addressError}
+          error={this.state.addressError != null}
         />
         <TextField
           style={cardStyle.input}
@@ -216,6 +218,8 @@ class WithdrawCard extends Component {
           type="number"
           margin="normal"
           variant="outlined"
+          helperText={this.state.balanceError}
+          error={this.state.balanceError != null}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
