@@ -196,6 +196,16 @@ class App extends Component {
       const tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress);
       this.setState({ tokenContract });
       console.log("Set up token contract");
+
+      let mmAddress = (await metamaskWeb3.eth.getAccounts())[0].toLowerCase();
+
+      this.setState({ metamask: 
+       {
+         address: mmAddress,
+         balance: Number( await metamaskWeb3.eth.getBalance(mmAddress)) / 1000000000000000000,
+         tokenBalance: Number(await tokenContract.methods.balanceOf(mmAddress).call()) /1000000000000000000
+       }
+      })
     } catch (error) {
       alert(`Failed to load web3 or Connext. Check console for details.`);
       console.log(error);
@@ -845,6 +855,7 @@ class App extends Component {
                 humanTokenAbi={humanTokenAbi}
                 connext={this.state.connext}
                 usingMetamask={this.state.usingMetamask}
+                metamask={this.state.metamask}
               />
             </div>
             <div className="column">
