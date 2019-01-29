@@ -11,3 +11,4 @@ node_modules
 *.swp
 **/*.DS_Store
 modules/hub/development/data
+modules/wallet/.env

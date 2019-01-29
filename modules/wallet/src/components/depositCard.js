@@ -23,7 +23,8 @@ class DepositCard extends Component {
       amountWei: "0",
       amountToken: "0"
     },
-    displayVal: "0"
+    displayVal: "0",
+    error: null
   };
 
   handleClick = event => {
@@ -76,12 +77,13 @@ class DepositCard extends Component {
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
     try {
-      const { usingMetamask, connext } = this.props
+      const { usingMetamask, connext, metamask } = this.props
       const wei = this.state.depositVal.amountWei;
       const tokens = this.state.depositVal.amountToken;
       console.log(`wei: ${wei}`);
       console.log(`tokens: ${tokens}`);
 
+      this.setState({error: null})
       // if you are using metamask, deposit directly with connext
       // otherwise, fetch tokens/eth
       console.log('usingMetamask:', usingMetamask)
@@ -90,17 +92,26 @@ class DepositCard extends Component {
       } else {
         if (wei !== "0") {
           console.log("found wei deposit");
-          await this.getEther(wei);
+          if (wei <= (metamask.balance * 1000000000000000000)) {
+            await this.getEther(wei);
+          } else {
+            throw new Error("Insufficient ETH balance in MetaMask")
+          }
         }
   
         if (tokens !== "0") {
           console.log("found token deposit");
-          await this.getTokens(tokens);
+          if (tokens <= (metamask.tokenBalance * 1000000000000000000)) {
+            await this.getTokens(tokens);
+          } else {
+            throw new Error("Insufficient TST balance in MetaMask")
+          }
         }
       }
 
     } catch (e) {
       console.log(`error fetching deposit from metamask: ${e}`);
+      this.setState({error: e.message})
     }
   }
 
@@ -289,6 +300,8 @@ class DepositCard extends Component {
           margin="normal"
           variant="outlined"
           onChange={evt => this.updateDepositHandler(evt)}
+          error={this.state.error != null}
+          helperText={this.state.error}
         />
         <Button
           style={cardStyle.button}

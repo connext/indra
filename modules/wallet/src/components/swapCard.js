@@ -13,7 +13,8 @@ class SwapCard extends Component {
     anchorEl: null,
     displayVal: "0",
     exchangeVal: "0",
-    exchangeRate: "0.00"
+    exchangeRate: "0.00",
+    error: null
   };
 
   handleClick = event => {
@@ -47,11 +48,23 @@ class SwapCard extends Component {
     console.log(
       `Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`
     );
-    let exchangeRes = await this.props.connext.exchange(
-      this.state.exchangeVal,
-      "wei"
-    );
-    console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
+    const { channelState } = this.props
+    this.setState({error: null})
+    try {
+      if(this.state.exchangeVal <= channelState.balanceWeiUser ) {
+        let exchangeRes = await this.props.connext.exchange(
+          this.state.exchangeVal,
+          "wei"
+        );
+        console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
+      } else {
+        throw new Error("Insufficient wei balance")
+      }
+    } catch (e) {
+      console.log(`Error: ${e}`)
+      this.setState({error: e.message})
+    }
+
   }
 
   render() {
@@ -109,10 +122,12 @@ class SwapCard extends Component {
           id="outlined-number"
           label="Amount (Wei)"
           value={this.state.displayVal}
-          onChange={evt => this.updateExchangeHandler(evt)}
           type="number"
           margin="normal"
           variant="outlined"
+          onChange={evt => this.updateExchangeHandler(evt)}
+          error={this.state.error != null}
+          helperText={this.state.error}
         />
         <div>Rate: 1 ETH = {this.props.exchangeRate} TST</div>
         <Button

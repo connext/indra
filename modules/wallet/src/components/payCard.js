@@ -29,7 +29,9 @@ class PayCard extends Component {
       ]
     },
     displayVal: "0",
-    recipientDisplayVal: "0x0..."
+    recipientDisplayVal: "0x0...",
+    addressError: null,
+    balanceError: null
   };
 
   handleClick = event => {
@@ -101,8 +103,21 @@ class PayCard extends Component {
     console.log(
       `Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`
     );
-    let paymentRes = await this.props.connext.buy(this.state.paymentVal);
-    console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
+    this.setState({addressError: null, balanceError: null})
+    const { channelState, connext, web3 } = this.props;
+
+    if( Number(this.state.paymentVal.payments[0].amount.amountToken) <= Number(channelState.balanceTokenUser) &&
+        Number(this.state.paymentVal.payments[0].amount.amountWei) <= Number(channelState.balanceWeiUser)
+    ) {
+      if(web3.utils.isAddress(this.state.paymentVal.payments[0].recipient)) {
+        let paymentRes = await connext.buy(this.state.paymentVal);
+        console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
+      } else {
+        this.setState({addressError: "Please choose a valid address"})
+      }
+    } else {
+      this.setState({balanceError: "Insufficient balance in channel"})
+    }
   }
 
   render() {
@@ -171,6 +186,8 @@ class PayCard extends Component {
           onChange={evt => this.updateRecipientHandler(evt)}
           margin="normal"
           variant="outlined"
+          helperText={this.state.addressError}
+          error={this.state.addressError != null}
         />
         <TextField
           style={cardStyle.input}
@@ -182,6 +199,8 @@ class PayCard extends Component {
           type="number"
           margin="normal"
           variant="outlined"
+          helperText={this.state.balanceError}
+          error={this.state.balanceError != null}
         />
         <Button
           style={cardStyle.button}
