@@ -24,10 +24,12 @@ class WithdrawCard extends Component {
       withdrawalTokenUser: "0",
       weiToSell: "0",
       exchangeRate: "0.00",
-      recipient: "0x0"
+      recipient: this.props.metamask.address
     },
     displayVal: "0",
-    recipientDisplayVal: "0x0..."
+    recipientDisplayVal: this.props.metamask.address,
+    addressError: null,
+    balanceError: null
   };
 
   handleClick = event => {
@@ -113,18 +115,20 @@ class WithdrawCard extends Component {
       exchangeRate: this.props.exchangeRate
     };
     console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
-    try {
-      if (
-        Big(this.state.withdrawalVal.withdrawalWeiUser).isGreaterThan(this.props.channelState.balanceWeiUser) ||
-        Big(this.state.withdrawalVal.tokensToSell).isGreaterThan(this.props.channelState.balanceTokenUser)
-      ) {
-        alert("You tried to withdraw too much! Please enter a valid balance.");
-        throw "Whoops";
+    this.setState({addressError: null, balanceError: null})
+    const { channelState, connext, web3 } = this.props;
+    if (
+      Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(this.props.channelState.balanceWeiUser) ||
+      Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(this.props.channelState.balanceTokenUser)
+    ) {
+      if (web3.utils.isAddress(this.state.paymentVal.payments[0].recipient)){
+        let withdrawalRes = await this.props.connext.withdraw(withdrawalVal);
+        console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
+      } else {
+        this.setState({addressError: "Please enter a valid address"})
       }
-      let withdrawalRes = await this.props.connext.withdraw(withdrawalVal);
-      console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
-    } catch (e) {
-      console.log("Tried to withdraw too much. Sad face.");
+    } else {
+      this.setState({balanceError: "Insufficient balance in channel"})
     }
   }
 

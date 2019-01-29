@@ -859,10 +859,18 @@ class App extends Component {
               />
             </div>
             <div className="column">
-              <SwapCard connext={this.state.connext} exchangeRate={this.state.exchangeRate} />
+              <SwapCard 
+                connext={this.state.connext} 
+                exchangeRate={this.state.exchangeRate} 
+                channelState={this.state.channelState}
+              />
             </div>
             <div className="column">
-              <PayCard connext={this.state.connext} />
+              <PayCard 
+                connext={this.state.connext} 
+                channelState={this.state.channelState}
+                web3={this.state.web3}
+              />
             </div>
             <div className="column">
               <WithdrawCard
@@ -872,6 +880,7 @@ class App extends Component {
                 channelManager={this.state.channelManager}
                 hubWallet={this.state.hubWallet}
                 channelState={this.state.channelState}
+                web3={this.state.web3}
               />
             </div>
           </div>

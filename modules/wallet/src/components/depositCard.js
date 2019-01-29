@@ -83,6 +83,7 @@ class DepositCard extends Component {
       console.log(`wei: ${wei}`);
       console.log(`tokens: ${tokens}`);
 
+      this.setState({error: null})
       // if you are using metamask, deposit directly with connext
       // otherwise, fetch tokens/eth
       console.log('usingMetamask:', usingMetamask)
