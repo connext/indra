@@ -15,11 +15,11 @@ class ChannelCard extends Component {
         flexWrap: "wrap",
         flexBasis: "100%",
         flexDirection: "row",
-        width: "400px",
+        width: "500px",
         height: "200px",
         justifyContent: "center",
         padding: "1% 4% 4% 4%",
-        backgroundColor: "#3f516e",
+        backgroundColor: "#282B2E",
         color: "white"
       },
       row: {

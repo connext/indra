@@ -128,7 +128,7 @@ class FullWidthTabs extends React.Component {
       },
       bar: {},
       content: {
-        backgroundColor: "#D5D9DF",
+        backgroundColor: "#FFFFFF",
         boxShadow: "0px 1px 1px 1px #ADB5C1",
         borderRadius: "2px"
       },
@@ -154,7 +154,7 @@ class FullWidthTabs extends React.Component {
             indicatorColor="primary"
             textColor="primary"
             variant="fullWidth"
-            style={{ backgroundColor: "#D5D9DF" }}
+            style={{ backgroundColor: "#FFFFFF" }}
           >
             <Tab label="Metamask" />
             <Tab label="Hub" />

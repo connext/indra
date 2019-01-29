@@ -823,7 +823,7 @@ class App extends Component {
                     width: "235px",
                     marginRight: "5px",
                     color: "#FFF",
-                    backgroundColor: "#7b90b1"
+                    backgroundColor: "#FCA311"
                   }}
                   variant="contained"
                   onClick={() => this.setState({ modalOpen: true })}
@@ -834,7 +834,7 @@ class App extends Component {
                   style={{
                     width: "235px",
                     color: "#FFF",
-                    backgroundColor: "#7b90b1"
+                    backgroundColor: "#FCA311"
                   }}
                   variant="contained"
                   onClick={() => this.collateralHandler()}

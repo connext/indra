@@ -131,7 +131,7 @@ class PayCard extends Component {
         flexDirection: "row",
         width: "230px",
         justifyContent: "center",
-        backgroundColor: "#D5D9DF",
+        backgroundColor: "#FFFFFF",
         padding: "4% 4% 4% 4%"
       },
       icon: {
@@ -146,7 +146,7 @@ class PayCard extends Component {
       button: {
         width: "100%",
         height: "40px",
-        backgroundColor: "#7b90b1",
+        backgroundColor: "#FCA311",
         color: "#FFF"
       },
       col1: {
