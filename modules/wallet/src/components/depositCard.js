@@ -158,11 +158,11 @@ class DepositCard extends Component {
     }
   }
 
-  // to get tokens from metamask to browser wallet
+  // to get wei from metamask to browser wallet
   async getEther(amountWei) {
     const { usingMetamask, channelManagerAddress, connext } = this.props
     let web3 = window.web3;
-    console.log(web3);
+    console.log('window.web3', web3);
     if (!web3) {
       alert("You need to install & unlock metamask to do that");
       return;
@@ -170,8 +170,7 @@ class DepositCard extends Component {
     const metamaskProvider = new eth.providers.Web3Provider(
       web3.currentProvider
     );
-    const metamask = metamaskProvider.getSigner();
-    const mmAddr = (await metamask.provider.listAccounts())[0];
+    const mmAddr = (await metamaskProvider.listAccounts())[0];
     const browserAddr = store.getState()[0].getAddressString()
     if (!mmAddr) {
       alert("You need to install & unlock metamask to do that");
@@ -189,20 +188,28 @@ class DepositCard extends Component {
           sentTx
         );
       } else {
-        // make sure that this brings browser wallet balance up to 40fin
-        // for gas costs
+        // make sure that this brings browser wallet balance up to
+        // 40fin for gas costs
         let weiDeposit
-        const browserWei = metamaskProvider.utils.toBN(await metamaskProvider.eth.getBalance(browserAddr))
-        if (browserWei.add(amountWei).lt(BALANCE_THRESHOLD_WEI)) {
-          console.log(`Browser wallet balance + deposit below minimum, adding enough to bring total to 40fin`)
-          weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei).toString()
+        const browserWei = Web3.utils.toBN(
+          await metamaskProvider.getBalance(browserAddr)
+        )
+        const amountWeiBN = Web3.utils.toBN(amountWei)
+        // deposit + existing bal should be above threshold
+        if (browserWei.add(amountWeiBN).lt(BALANCE_THRESHOLD_WEI)) {
+          console.log(`Browser wallet balance + requested deposit below minimum, adding enough to bring total to 40fin.`)
+          weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei)
         }
+
         console.log(`Sending ${weiDeposit ? weiDeposit.toString() : amountWei} wei from ${mmAddr} to ${browserAddr}`)
 
+        const metamask = metamaskProvider.getSigner();
         const sentTx = await metamask.sendTransaction({
-          to: store.getState()[0].getAddressString(),
-          value: weiDeposit ? weiDeposit : eth.utils.bigNumberify(amountWei),
-          gasLimit: eth.utils.bigNumberify("21000")
+          to: browserAddr,
+          value: weiDeposit 
+            ? eth.utils.bigNumberify(weiDeposit.toString()) 
+            : eth.utils.bigNumberify(amountWei),
+          gasLimit: eth.utils.bigNumberify("21000"),
         })
 
         console.log(
