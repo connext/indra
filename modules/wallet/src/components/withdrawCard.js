@@ -96,12 +96,15 @@ class WithdrawCard extends Component {
     let tokenBalance = new BigNumber(this.props.channelState.balanceWeiUser);
     let exchangeRate = new BigNumber(this.props.exchangeRate);
     const tokenBalanceConverted = tokenBalance.dividedToIntegerBy(exchangeRate);
-    const aggBalance = String(balance.plus(tokenBalanceConverted));
-    console.log(aggBalance);
-    this.setState({
-      withdrawalVal: withdrawalVal,
-      displayVal: aggBalance
-    });
+    // const aggBalance = String(balance.plus(tokenBalanceConverted));
+    // console.log(aggBalance);
+
+    // i dont think we need the aggregate balance here, i think we can show both ETH and Token withdrawals separately
+    if (this.state.checkedB) {
+      this.setState({ displayVal: withdrawalVal.withdrawalWeiUser, withdrawalVal });
+    } else {
+      this.setState({ displayVal: withdrawalVal.tokensToSell, withdrawalVal });
+    }
   }
 
   async withdrawalHandler() {
