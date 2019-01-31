@@ -139,6 +139,33 @@ export class MockChannelManager implements IChannelManager {
     throw new Error('TODO: mock getChannelDetails')
   }
 
+  async startExit(state: ChannelState): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock startExit')
+  }
+  async startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock startExitWithUpdate')
+  }
+  async emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock emptyChannelWithChallenge')
+  }
+  async emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock emptyChannel')
+  }
+  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock startExitThread')
+  }
+  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock startExitThreadWithUpdate')
+  }
+  async challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock challengeThread')
+  }
+  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock emptyThread')
+  }
+  async nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper> {
+    throw new Error('TODO: mock nukeThreads')
+  }
 }
 
 export class MockHub implements IHubAPIClient {
