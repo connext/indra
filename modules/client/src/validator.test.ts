@@ -925,20 +925,24 @@ describe('validator', () => {
 
     // TODO: complete test spec
     // Should test failures of the following cases:
-    // 1. Initial thread state is not contained in the root hash
-    // 2. The following fields have changed from the approved init state:
+    // 1. Initial thread state is not valid (use thread initial state helper)
+    // 2. Initial thread state is not contained in the root hash
+    // 3. The following fields have changed from the approved init state:
     //      - receiver
     //      - sender
     //      - contractAddress
-    // 5. Incorrect signature or signer (not signed by sender or wrong payload)
-    // 6. Sender or hub has sufficient funds
+    // 4. Incorrect signature or signer (not signed by sender or wrong payload)
+    // 5. Sender or hub has sufficient funds
+    // 6. Balances are conserved
     // 7. Reciever wei/token balance must be not negative
     // 8. Sender wei/token balance must be not negative
     // 9. TxCount must not be negative
-    // 10. Sender or receiver isnt channel user
+    // 10. Sender or receiver isnt channel user --> I dont think we need this one if we have 1 and 3 -AB
     // 11. Previous channel state is incorrectly signed
     // 12. Initial thread states are incorrectly signed
     // 13. Final thread state is incorrectly signed
+    // 14. Receiver balances must not decrease as compared to previous thread state
+    // 15. TxCount must be one higher than previous state
 
     const params = createChannelThreadOverrides(2, { sender: t.mkAddress('0x18'), receiver: sampleAddress })
     // contains 2 threads, one where user is sender 
@@ -1158,6 +1162,24 @@ describe('validator', () => {
   })
 
   describe.skip('threadPayment', () => {
+    // Should test the following success cases:
+    // 1. A thread payment from sender to receiver works
+    // 2. Multiple more payments work
+
+    // Should test the following fail cases:
+    // 1. Incorrect thread initial state (use initial state helper)
+    // 2. Same following fields as initial state
+    //        - sender
+    //        - receiver
+    //        - contract address
+    // 3. Incorrect signer
+    // 4. Balances are not conserved
+    // 5. Balances are negative
+    // 6. Receiver balances decrease as compared to previous thread state
+    // 7. TxCount must be one higher than previous thread state
+    // 8. Initial thread states are incorrectly signed
+    // 9. Previous thread state is incorrectly signed(?)
+
     const prev = createThreadState()
     const args = createThreadPaymentArgs()
 
