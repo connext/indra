@@ -8,8 +8,8 @@ Make sure to install version 9.6 - *it isn't a part of apt-get by default*.
 If you have an existing instance of PostgreSQL 10 installed, remove by running:
 ```
 sudo apt-get --purge remove postgresql
-dpkg -l | grep postgres (to look for postgresfiles in the system)
-sudo rm -rf postgresql ... (remove all the files that appeared in the list after running the previous command)
+dpkg -l | grep postgres #(to look for postgresfiles in the system)
+sudo rm -rf postgresql ... #(remove all the files that appeared in the list after running the previous command)
 ```
 Then, set up the source repositories and install.
 ```
@@ -42,8 +42,11 @@ It should prompt you for your password. Then it'll take you to your local linux 
 
 Then, create your user (if it doesn't exist) and set a password:
 ```
+createdb <YOUR_LINUX_USER_NAME>
+psql
 postgres=# CREATE USER <YOUR_LINUX_USER_NAME>;
 postgres=# ALTER USER <YOUR_LINUX_USER_NAME> WITH PASSWORD <ANY_SIMPLE_PASSWORD>;
+
 ```
 Then close the terminal window.
 
@@ -53,7 +56,7 @@ In order to have the `hub-reset` and `hub-run` scripts correctly access your use
 First, `cd ~`
 Then,
 ```
-touch ~/.pgpass && nano ~./pgpass
+touch ~/.pgpass && nano ~/.pgpass
 ```
 
 In the file, add the following lines:
