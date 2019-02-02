@@ -127,9 +127,8 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 
 wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
-	$(docker_run_in_wallet) "rm -f node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
-	$(docker_run_in_wallet) "mv -f node_modules/connext node_modules/.connext.backup"
+	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/wallet-node-modules
 
@@ -152,8 +151,8 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 
 hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
 
