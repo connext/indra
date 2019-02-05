@@ -40,7 +40,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
       return null
     }
 
-    const hash = this.sha3(`${MemoryCRAuthManager.HASH_PREAMBLE} ${this.sha3(nonce)} ${this.sha3(origin)}`)
+    const hash = this.sha3(`${MemoryCRAuthManager.HASH_PREAMBLE}${this.sha3(nonce)}${this.sha3(origin)}`)
     const sigAddr = this.extractAddress(hash, signature)
 
     if (!sigAddr || sigAddr !== address) {
@@ -66,8 +66,9 @@ export class MemoryCRAuthManager implements CRAuthManager {
     try {
       const sig = util.fromRpcSig(signature)
       const prefix = new Buffer(MemoryCRAuthManager.ETH_PREAMBLE)
+      const authHash = Buffer.concat([prefix, new Buffer(String(hashBuf.length)), hashBuf])
       const msg = new util.sha3(
-        Buffer.concat([prefix, new Buffer(String(hashBuf.length)), hashBuf])
+        	authHash.toString('hex')
       )
 
       pub = util.ecrecover(msg, sig.v, sig.r, sig.s)

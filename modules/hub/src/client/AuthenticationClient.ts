@@ -60,7 +60,7 @@ export class AuthenticationClient {
   }
 
   private genHash(nonce: string, origin: string) {
-    let msg = `SpankWallet authentication message: ${this.web3.sha3(nonce)} ${this.web3.sha3(origin)}`
+    let msg = `SpankWallet authentication message:${this.web3.sha3(nonce)}${this.web3.sha3(origin)}`
 
     if (this.web3.currentProvider.isMetaMask) {
       msg = this.web3.sha3(msg)
@@ -74,7 +74,7 @@ export class AuthenticationClient {
         hashBuf,
       ])
 
-      return `0x${util.sha3(buf).toString('hex')}`
+      return `0x${util.sha3(buf.toString('hex'))}`
     }
 
     return this.web3.sha3(msg)
