@@ -2,9 +2,13 @@
 
 Everything you need to set up a Connext payment channel hub.
 
-# Important New Repo Information!
+# To deploy using Docker
 
-We are working on rebuilding our one-step process Docker environment. However, we have been running into lots of intermittent issues so in the meantime, please follow the below directions to get up and running with the new setup:
+`npm start`
+
+(Potentially unstable, see below for [more info](#more-info) re helper scripts and how things work under-the-hood)
+
+# To deploy locally
 
 ### Prerequisite
 * PostgreSQL running locally: `brew install postgres` for Mac. [See here for Linux](https://github.com/ConnextProject/indra/blob/master/docs/LINUX_POSTGRES.md).
@@ -49,22 +53,22 @@ Address: 0x2DA565caa7037Eb198393181089e92181ef5Fb53
 
 Private Key: 54dec5a04356ed96fc469803f3e45b901c69c5d5fd93a34fbf3568cd4c6efadd
 
-The rest of the information in this Readme is potentially unstable or not working.
-============================================================================
+## More info
+#### The user manual for a docker-mode deployment
 
 ## Contents
 
-- [Repo Executive Summary](#Repo-Executive-Summary)
-- [How to get started developing](#How-to-get-started-developing)
-    - [Prerequisites](#Prerequisites)
-    - [TL;DR](#TL;DR)
-    - [Details](#Details)
-    - [How to interact with Hub](#How-to-interact-with-Hub)
- - [Debugging](#Debugging)
-     - [Ethprovider or Ganache not working](#Ethprovider-or-Ganache-not-working)
-     - [Hub errors on start](#Hub-errors-on-start)
-     - [Locked DB](#Locked-DB)
-     - [502 Bad Gateway](#502-Bad-Gateway)
+- [Repo Executive Summary](#repo-executive-summary)
+- [How to get started developing](#how-to-get-started-developing)
+    - [Prerequisites](#prerequisites)
+    - [Details](#details)
+    - [Under the Hood](#under-the-hood)
+    - [How to interact with Hub](#how-to-interact-with-hub)
+ - [Debugging](#debugging)
+    - [Ethprovider or Ganache not working](#ethprovider-or-ganache-not-working)
+    - [Hub errors on start](#hub-errors-on-start)
+    - [Locked DB](#locked-db)
+    - [502 Bad Gateway](#502-bad-gateway)
 
 ## Repo Executive Summary
 
@@ -99,7 +103,7 @@ If you encounter any problems, check out the debugging guide at the bottom of th
 - [Docker](https://www.docker.com/) (required)
 - [Node.js](https://nodejs.org/en/)
 
-### TL;DR
+### Details
 
 **Note**: We have migrated away from using `yarn` due to [yarn issue 2629](https://github.com/yarnpkg/yarn/issues/2629), an unsolved bug in yarn that results in installations randomly failing.
 
@@ -148,7 +152,7 @@ Again, it runs `whoami` to get the current username & tries to use that as the r
 
 If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `bash ops/restart.sh prod`.
 
-### Details
+### Under the Hood
 
 Behind the scenes, `npm start` will run `make` and then `bash ops/deploy.dev.sh`
 

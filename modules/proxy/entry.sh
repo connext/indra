@@ -39,8 +39,6 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
 sed -i 's|$ethprovider|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
 
-cat /etc/nginx/nginx.conf
-
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
   while true
