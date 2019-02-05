@@ -526,7 +526,7 @@ contract("ChannelManager", accounts => {
         assert.equal(reserveToken, 0);
 
         const hubFinalToken = await token.balanceOf(hub.address);
-        hubFinalToken.should.be.bignumber.equal(hubInitialToken);
+        assert.equal(hubFinalToken.eq(hubInitialToken), true)
       });
 
       it("fails with insufficient ETH", async () => {
@@ -537,7 +537,7 @@ contract("ChannelManager", accounts => {
         await token.transfer(cm.address, tokenAmount, { from: hub.address });
         await cm
           .hubContractWithdraw(weiToWithdraw, tokenAmount)
-          .should.be.rejectedWith(`${SolRevert} hubContractWithdraw: Contract wei funds not sufficient to withdraw`);
+          .should.be.rejectedWith(/hubContractWithdraw: Contract wei funds not sufficient to withdraw/);
       });
 
       it("fails with insufficient token", async () => {
@@ -548,7 +548,7 @@ contract("ChannelManager", accounts => {
         await token.transfer(cm.address, tokenAmount, { from: hub.address });
         await cm
           .hubContractWithdraw(weiAmount, tokenToWithdraw)
-          .should.be.rejectedWith(`${SolRevert} hubContractWithdraw: Contract token funds not sufficient to withdraw`);
+          .should.be.rejectedWith(/hubContractWithdraw: Contract token funds not sufficient to withdraw/);
       });
     });
   });
