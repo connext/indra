@@ -540,7 +540,7 @@ contract("ChannelManager", accounts => {
         await token.transfer(cm.address, tokenAmount, { from: hub.address });
         await cm
           .hubContractWithdraw(weiToWithdraw, tokenAmount)
-          .should.be.rejectedWith(`${SolRevert} hubContractWithdraw: Contract wei funds not sufficient to withdraw`);
+          .should.be.rejectedWith(/hubContractWithdraw: Contract wei funds not sufficient to withdraw/);
       });
 
       it("fails with insufficient token", async () => {
@@ -551,7 +551,7 @@ contract("ChannelManager", accounts => {
         await token.transfer(cm.address, tokenAmount, { from: hub.address });
         await cm
           .hubContractWithdraw(weiAmount, tokenToWithdraw)
-          .should.be.rejectedWith(`${SolRevert} hubContractWithdraw: Contract token funds not sufficient to withdraw`);
+          .should.be.rejectedWith(/hubContractWithdraw: Contract token funds not sufficient to withdraw/);
       });
     });
   });
