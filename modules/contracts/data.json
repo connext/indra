@@ -1,0 +1,11 @@
+{
+    "token": {
+        "supply" : "1000000000000000000000000000",
+        "name": "BOOTY",
+        "decimals": "18",
+        "symbol": "BOOTY"
+    },
+    "channelManager": {
+        "challengePeriod": "600"
+    }
+}

@@ -19,6 +19,18 @@ module.exports = {
       gas: 6721975,
       provider: () => new HDWalletProvider(MNEMONIC, ropsten)
     },
+    rinkeby: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "4",
+      gas: 4700000
+    },
+    kovan: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "42",
+      gas: 4700000
+    },
     ganache: {
       host: "127.0.0.1",
       port: 8545,
