@@ -9,7 +9,6 @@ const Token = artifacts.require("./lib/HumanStandardToken.sol");
 const Connext = require("../client/dist/Utils.js");
 const privKeys = require("./privKeys.json")
 
-
 const config = require("../config.json")
 
 const should = require("chai")
@@ -99,7 +98,6 @@ async function updateHash(data, privateKey) {
 async function updateThreadHash(data, privateKey) {
   const hash = await web3.utils.soliditySha3(
     channelManager.address,
-    {type: 'address', value: data.user},
     {type: 'address', value: data.sender},
     {type: 'address', value: data.receiver},
     {type: 'uint256[2]', value: data.weiBalances},
@@ -272,7 +270,6 @@ contract("ChannelManager", accounts => {
             "txCount" : [1,1],
             "threadRoot" : emptyRootHash,
             "threadCount" : 0,
-            "timeout" : 0,
             "proof" : await generateThreadRootHash({
                 "contractAddress" : channelManager.address,
                 "user" : viewer.address,
@@ -291,7 +288,7 @@ contract("ChannelManager", accounts => {
     })
 
     describe('fastEmptyThread', () => {
-        it.only("happy case", async() => {
+        it("happy case", async() => {
             tokenAddress.approve(channelManager.address, 100, {from: hub.address})
             tokenAddress.transfer(channelManager.address, 100, {from: hub.address})
             const weiDeposit = 100

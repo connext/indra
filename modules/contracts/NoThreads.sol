@@ -35,9 +35,7 @@ contract ChannelManager {
         uint256[2] tokenBalances, // [hub, user]
         uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
-        uint256[2] txCount, // [global, onchain]
-        bytes32 threadRoot,
-        uint256 threadCount
+        uint256[2] txCount // [global, onchain]
     );
 
     // Note: unlike the DidUpdateChannel event, the ``DidStartExitChannel``
@@ -48,9 +46,7 @@ contract ChannelManager {
         uint256 senderIdx, // 0: hub, 1: user
         uint256[2] weiBalances, // [hub, user]
         uint256[2] tokenBalances, // [hub, user]
-        uint256[2] txCount, // [global, onchain]
-        bytes32 threadRoot,
-        uint256 threadCount
+        uint256[2] txCount // [global, onchain]
     );
 
     event DidEmptyChannel (
@@ -58,84 +54,24 @@ contract ChannelManager {
         uint256 senderIdx, // 0: hub, 1: user
         uint256[2] weiBalances, // [hub, user]
         uint256[2] tokenBalances, // [hub, user]
-        uint256[2] txCount, // [global, onchain]
-        bytes32 threadRoot,
-        uint256 threadCount
-    );
-
-    event DidStartExitThread (
-        address user,
-        address indexed sender,
-        address indexed receiver,
-        uint256 threadId,
-        address senderAddress, // either hub or user
-        uint256[2] weiBalances, // [sender, receiver]
-        uint256[2] tokenBalances, // [sender, receiver]
-        uint256 txCount
-    );
-
-    event DidChallengeThread (
-        address indexed sender,
-        address indexed receiver,
-        uint256 threadId,
-        address senderAddress, // can be either hub, sender, or receiver
-        uint256[2] weiBalances, // [sender, receiver]
-        uint256[2] tokenBalances, // [sender, receiver]
-        uint256 txCount
-    );
-
-    event DidEmptyThread (
-        address user,
-        address indexed sender,
-        address indexed receiver,
-        uint256 threadId,
-        address senderAddress, // can be anyone
-        uint256[2] channelWeiBalances,
-        uint256[2] channelTokenBalances,
-        uint256[2] channelTxCount,
-        bytes32 channelThreadRoot,
-        uint256 channelThreadCount
-    );
-
-    event DidNukeThreads(
-        address indexed user,
-        address senderAddress, // can be anyone
-        uint256 weiAmount, // amount of wei sent
-        uint256 tokenAmount, // amount of tokens sent
-        uint256[2] channelWeiBalances,
-        uint256[2] channelTokenBalances,
-        uint256[2] channelTxCount,
-        bytes32 channelThreadRoot,
-        uint256 channelThreadCount
+        uint256[2] txCount // [global, onchain]
     );
 
     enum ChannelStatus {
        Open,
-       ChannelDispute,
-       ThreadDispute
+       ChannelDispute
     }
 
     struct Channel {
-        uint256[3] weiBalances; // [hub, user, total]
-        uint256[3] tokenBalances; // [hub, user, total]
+        uint256[2] weiBalances; // [hub, user]
+        uint256[2] tokenBalances; // [hub, user]
         uint256[2] txCount; // persisted onchain even when empty [global, pending]
-        bytes32 threadRoot;
-        uint256 threadCount;
         address exitInitiator;
         uint256 channelClosingTime;
         ChannelStatus status;
     }
 
-    struct Thread {
-        uint256[2] weiBalances; // [sender, receiver]
-        uint256[2] tokenBalances; // [sender, receiver]
-        uint256 txCount; // persisted onchain even when empty
-        uint256 threadClosingTime;
-        bool[2] emptied; // [sender, receiver]
-    }
-
     mapping(address => Channel) public channels;
-    mapping(address => mapping(address => mapping(uint256 => Thread))) threads; // threads[sender][receiver][threadId]
 
     bool locked;
 
@@ -192,8 +128,6 @@ contract ChannelManager {
         uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[2] txCount, // [global, onchain] persisted onchain even when empty
-        bytes32 threadRoot,
-        uint256 threadCount,
         uint256 timeout,
         string sigUser
     ) public noReentrancy onlyHub {
@@ -217,8 +151,6 @@ contract ChannelManager {
             pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             txCount,
-            threadRoot,
-            threadCount,
             timeout,
             "", // skip hub sig verification
             sigUser,
@@ -233,8 +165,6 @@ contract ChannelManager {
 
         // update state variables
         channel.txCount = txCount;
-        channel.threadRoot = threadRoot;
-        channel.threadCount = threadCount;
 
         emit DidUpdateChannel(
             user,
@@ -243,9 +173,7 @@ contract ChannelManager {
             tokenBalances,
             pendingWeiUpdates,
             pendingTokenUpdates,
-            txCount,
-            threadRoot,
-            threadCount
+            txCount
         );
     }
 
@@ -256,8 +184,6 @@ contract ChannelManager {
         uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[2] txCount, // persisted onchain even when empty
-        bytes32 threadRoot,
-        uint256 threadCount,
         uint256 timeout,
         string sigHub
     ) public payable noReentrancy {
@@ -283,8 +209,6 @@ contract ChannelManager {
             pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             txCount,
-            threadRoot,
-            threadCount,
             timeout,
             sigHub,
             "", // skip user sig verification
@@ -302,8 +226,6 @@ contract ChannelManager {
 
         // update state variables
         channel.txCount = txCount;
-        channel.threadRoot = threadRoot;
-        channel.threadCount = threadCount;
 
         emit DidUpdateChannel(
             msg.sender,
@@ -312,9 +234,7 @@ contract ChannelManager {
             tokenBalances,
             pendingWeiUpdates,
             pendingTokenUpdates,
-            channel.txCount,
-            channel.threadRoot,
-            channel.threadCount
+            channel.txCount
         );
     }
 
@@ -343,9 +263,7 @@ contract ChannelManager {
             msg.sender == hub ? 0 : 1,
             [channel.weiBalances[0], channel.weiBalances[1]],
             [channel.tokenBalances[0], channel.tokenBalances[1]],
-            channel.txCount,
-            channel.threadRoot,
-            channel.threadCount
+            channel.txCount
         );
     }
 
@@ -357,8 +275,6 @@ contract ChannelManager {
         uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[2] txCount, // [global, onchain] persisted onchain even when empty
-        bytes32 threadRoot,
-        uint256 threadCount,
         uint256 timeout,
         string sigHub,
         string sigUser
@@ -377,8 +293,6 @@ contract ChannelManager {
             pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             txCount,
-            threadRoot,
-            threadCount,
             timeout,
             sigHub,
             sigUser,
@@ -389,14 +303,13 @@ contract ChannelManager {
         require(txCount[1] >= channel.txCount[1], "onchain txCount must be higher or equal to the current onchain txCount");
 
         // offchain wei/token balances do not exceed onchain total wei/token
-        require(weiBalances[0].add(weiBalances[1]) <= channel.weiBalances[2], "wei must be conserved");
-        require(tokenBalances[0].add(tokenBalances[1]) <= channel.tokenBalances[2], "tokens must be conserved");
+        require(weiBalances[0].add(weiBalances[1]) <= channel.weiBalances[0].add(channel.weiBalances[1]), "wei must be conserved");
+        require(tokenBalances[0].add(tokenBalances[1]) <= channel.tokenBalances[0].add(channel.tokenBalances[1]), "tokens must be conserved");
 
         // pending onchain txs have been executed - force update offchain state to reflect this
         if (txCount[1] == channel.txCount[1]) {
             _applyPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
             _applyPendingUpdates(channel.tokenBalances, tokenBalances, pendingTokenUpdates);
-
         // pending onchain txs have *not* been executed - revert pending deposits and withdrawals back into offchain balances
         } else { //txCount[1] > channel.txCount[1]
             _revertPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
@@ -404,11 +317,7 @@ contract ChannelManager {
         }
 
         // update state variables
-        // only update txCount[0] (global)
-        // - txCount[1] should only be updated by user/hubAuthorizedUpdate
-        channel.txCount[0] = txCount[0];
-        channel.threadRoot = threadRoot;
-        channel.threadCount = threadCount;
+        channel.txCount = txCount;
 
         channel.exitInitiator = msg.sender;
         channel.channelClosingTime = now.add(challengePeriod);
@@ -419,9 +328,7 @@ contract ChannelManager {
             msg.sender == hub ? 0 : 1,
             [channel.weiBalances[0], channel.weiBalances[1]],
             [channel.tokenBalances[0], channel.tokenBalances[1]],
-            channel.txCount,
-            channel.threadRoot,
-            channel.threadCount
+            channel.txCount
         );
     }
 
@@ -433,8 +340,6 @@ contract ChannelManager {
         uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[2] txCount, // persisted onchain even when empty
-        bytes32 threadRoot,
-        uint256 threadCount,
         uint256 timeout,
         string sigHub,
         string sigUser
@@ -455,8 +360,6 @@ contract ChannelManager {
             pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
             txCount,
-            threadRoot,
-            threadCount,
             timeout,
             sigHub,
             sigUser,
@@ -467,23 +370,18 @@ contract ChannelManager {
         require(txCount[1] >= channel.txCount[1], "onchain txCount must be higher or equal to the current onchain txCount");
 
         // offchain wei/token balances do not exceed onchain total wei/token
-        require(weiBalances[0].add(weiBalances[1]) <= channel.weiBalances[2], "wei must be conserved");
-        require(tokenBalances[0].add(tokenBalances[1]) <= channel.tokenBalances[2], "tokens must be conserved");
+        require(weiBalances[0].add(weiBalances[1]) <= channel.weiBalances[0].add(channel.weiBalances[1]), "wei must be conserved");
+        require(tokenBalances[0].add(tokenBalances[1]) <= channel.tokenBalances[0].add(channel.tokenBalances[1]), "tokens must be conserved");
 
         // pending onchain txs have been executed - force update offchain state to reflect this
         if (txCount[1] == channel.txCount[1]) {
             _applyPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
             _applyPendingUpdates(channel.tokenBalances, tokenBalances, pendingTokenUpdates);
-
         // pending onchain txs have *not* been executed - revert pending deposits and withdrawals back into offchain balances
         } else { //txCount[1] > channel.txCount[1]
             _revertPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
             _revertPendingUpdates(channel.tokenBalances, tokenBalances, pendingTokenUpdates);
         }
-
-        // deduct hub/user wei/tokens from total channel balances
-        channel.weiBalances[2] = channel.weiBalances[2].sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
-        channel.tokenBalances[2] = channel.tokenBalances[2].sub(channel.tokenBalances[0]).sub(channel.tokenBalances[1]);
 
         // transfer hub wei balance from channel to reserves
         totalChannelWei = totalChannelWei.sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
@@ -500,19 +398,9 @@ contract ChannelManager {
         channel.tokenBalances[1] = 0;
 
         // update state variables
-        // only update txCount[0] (global)
-        // - txCount[1] should only be updated by user/hubAuthorizedUpdate
-        channel.txCount[0] = txCount[0];
-        channel.threadRoot = threadRoot;
-        channel.threadCount = threadCount;
-
-        if (channel.threadCount > 0) {
-            channel.status = ChannelStatus.ThreadDispute;
-        } else {
-            channel.channelClosingTime = 0;
-            channel.status = ChannelStatus.Open;
-        }
-
+        channel.txCount = txCount;
+        channel.channelClosingTime = 0;
+        channel.status = ChannelStatus.Open;
         channel.exitInitiator = address(0x0);
 
         emit DidEmptyChannel(
@@ -520,9 +408,7 @@ contract ChannelManager {
             msg.sender == hub ? 0 : 1,
             [channel.weiBalances[0], channel.weiBalances[1]],
             [channel.tokenBalances[0], channel.tokenBalances[1]],
-            channel.txCount,
-            channel.threadRoot,
-            channel.threadCount
+            channel.txCount
         );
     }
 
@@ -542,10 +428,6 @@ contract ChannelManager {
           "channel closing time must have passed or msg.sender must be non-exit-initiating party"
         );
 
-        // deduct hub/user wei/tokens from total channel balances
-        channel.weiBalances[2] = channel.weiBalances[2].sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
-        channel.tokenBalances[2] = channel.tokenBalances[2].sub(channel.tokenBalances[0]).sub(channel.tokenBalances[1]);
-
         // transfer hub wei balance from channel to reserves
         totalChannelWei = totalChannelWei.sub(channel.weiBalances[0]).sub(channel.weiBalances[1]);
         // transfer user wei balance to user
@@ -560,13 +442,8 @@ contract ChannelManager {
         channel.tokenBalances[0] = 0;
         channel.tokenBalances[1] = 0;
 
-        if (channel.threadCount > 0) {
-            channel.status = ChannelStatus.ThreadDispute;
-        } else {
-            channel.channelClosingTime = 0;
-            channel.status = ChannelStatus.Open;
-        }
-
+        channel.channelClosingTime = 0;
+        channel.status = ChannelStatus.Open;
         channel.exitInitiator = address(0x0);
 
         emit DidEmptyChannel(
@@ -574,277 +451,7 @@ contract ChannelManager {
             msg.sender == hub ? 0 : 1,
             [channel.weiBalances[0], channel.weiBalances[1]],
             [channel.tokenBalances[0], channel.tokenBalances[1]],
-            channel.txCount,
-            channel.threadRoot,
-            channel.threadCount
-        );
-    }
-
-    // **********************
-    // THREAD DISPUTE METHODS
-    // **********************
-
-    // either party starts exit with initial state
-    function startExitThread(
-        address user,
-        address sender,
-        address receiver,
-        uint256 threadId,
-        uint256[2] weiBalances, // [sender, receiver]
-        uint256[2] tokenBalances, // [sender, receiver]
-        bytes proof,
-        string sig
-    ) public noReentrancy {
-        Channel storage channel = channels[user];
-        require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute phase");
-        require(msg.sender == hub || msg.sender == user, "thread exit initiator must be user or hub");
-        require(user == sender || user == receiver, "user must be thread sender or receiver");
-
-        require(weiBalances[1] == 0 && tokenBalances[1] == 0, "initial receiver balances must be zero");
-
-        Thread storage thread = threads[sender][receiver][threadId];
-
-        require(thread.threadClosingTime == 0, "thread closing time must be zero");
-
-        _verifyThread(sender, receiver, threadId, weiBalances, tokenBalances, 0, proof, sig, channel.threadRoot);
-
-        thread.weiBalances = weiBalances;
-        thread.tokenBalances = tokenBalances;
-        thread.threadClosingTime = now.add(challengePeriod);
-
-        emit DidStartExitThread(
-            user,
-            sender,
-            receiver,
-            threadId,
-            msg.sender,
-            thread.weiBalances,
-            thread.tokenBalances,
-            thread.txCount
-        );
-    }
-
-    // either party starts exit with offchain state
-    function startExitThreadWithUpdate(
-        address user,
-        address[2] threadMembers, //[sender, receiver]
-        uint256 threadId,
-        uint256[2] weiBalances, // [sender, receiver]
-        uint256[2] tokenBalances, // [sender, receiver]
-        bytes proof,
-        string sig,
-        uint256[2] updatedWeiBalances, // [sender, receiver]
-        uint256[2] updatedTokenBalances, // [sender, receiver]
-        uint256 updatedTxCount,
-        string updateSig
-    ) public noReentrancy {
-        Channel storage channel = channels[user];
-        require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute phase");
-        require(msg.sender == hub || msg.sender == user, "thread exit initiator must be user or hub");
-        require(user == threadMembers[0] || user == threadMembers[1], "user must be thread sender or receiver");
-
-        require(weiBalances[1] == 0 && tokenBalances[1] == 0, "initial receiver balances must be zero");
-
-        Thread storage thread = threads[threadMembers[0]][threadMembers[1]][threadId];
-        require(thread.threadClosingTime == 0, "thread closing time must be zero");
-
-        _verifyThread(threadMembers[0], threadMembers[1], threadId, weiBalances, tokenBalances, 0, proof, sig, channel.threadRoot);
-
-        // *********************
-        // PROCESS THREAD UPDATE
-        // *********************
-
-        require(updatedTxCount > 0, "updated thread txCount must be higher than 0");
-        require(updatedWeiBalances[0].add(updatedWeiBalances[1]) == weiBalances[0], "sum of updated wei balances must match sender's initial wei balance");
-        require(updatedTokenBalances[0].add(updatedTokenBalances[1]) == tokenBalances[0], "sum of updated token balances must match sender's initial token balance");
-
-        // Note: explicitly set threadRoot == 0x0 because then it doesn't get checked by _isContained (updated state is not part of root)
-        _verifyThread(threadMembers[0], threadMembers[1], threadId, updatedWeiBalances, updatedTokenBalances, updatedTxCount, "", updateSig, bytes32(0x0));
-
-        thread.weiBalances = updatedWeiBalances;
-        thread.tokenBalances = updatedTokenBalances;
-        thread.txCount = updatedTxCount;
-        thread.threadClosingTime = now.add(challengePeriod);
-
-        emit DidStartExitThread(
-            user,
-            threadMembers[0],
-            threadMembers[1],
-            threadId,
-            msg.sender == hub ? 0 : 1,
-            thread.weiBalances,
-            thread.tokenBalances,
-            thread.txCount
-        );
-    }
-
-    // either hub, sender, or receiver can update the thread state in place
-    function challengeThread(
-        address sender,
-        address receiver,
-        uint256 threadId,
-        uint256[2] weiBalances, // updated weiBalances
-        uint256[2] tokenBalances, // updated tokenBalances
-        uint256 txCount,
-        string sig
-    ) public noReentrancy {
-        require(msg.sender == hub || msg.sender == sender || msg.sender == receiver, "only hub, sender, or receiver can call this function");
-
-        Thread storage thread = threads[sender][receiver][threadId];
-        //verify that thread settlement period has not yet expired
-        require(now < thread.threadClosingTime, "thread closing time must not have passed");
-
-        // assumes that the non-sender has a later thread state than what was being proposed when the thread exit started
-        require(txCount > thread.txCount, "thread txCount must be higher than the current thread txCount");
-        require(weiBalances[0].add(weiBalances[1]) == thread.weiBalances[0].add(thread.weiBalances[1]), "updated wei balances must match sum of thread wei balances");
-        require(tokenBalances[0].add(tokenBalances[1]) == thread.tokenBalances[0].add(thread.tokenBalances[1]), "updated token balances must match sum of thread token balances");
-
-        require(weiBalances[1] >= thread.weiBalances[1] && tokenBalances[1] >= thread.tokenBalances[1], "receiver balances may never decrease");
-
-        // Note: explicitly set threadRoot == 0x0 because then it doesn't get checked by _isContained (updated state is not part of root)
-        _verifyThread(sender, receiver, threadId, weiBalances, tokenBalances, txCount, "", sig, bytes32(0x0));
-
-        // save the thread balances and txCount
-        thread.weiBalances = weiBalances;
-        thread.tokenBalances = tokenBalances;
-        thread.txCount = txCount;
-
-        emit DidChallengeThread(
-            sender,
-            receiver,
-            threadId,
-            msg.sender,
-            thread.weiBalances,
-            thread.tokenBalances,
-            thread.txCount
-        );
-    }
-
-    //After the thread state has been finalized onchain, emptyThread can be called to withdraw funds for each channel separately.
-    function emptyThread(
-        address user,
-        address sender,
-        address receiver,
-        uint256 threadId,
-        uint256[2] weiBalances, // [sender, receiver] -> initial balances
-        uint256[2] tokenBalances, // [sender, receiver] -> initial balances
-        bytes proof,
-        string sig
-    ) public noReentrancy {
-        Channel storage channel = channels[user];
-        require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute");
-        require(msg.sender == hub || msg.sender == user, "only hub or user can empty thread");
-        require(user == sender || user == receiver, "user must be thread sender or receiver");
-
-        require(weiBalances[1] == 0 && tokenBalances[1] == 0, "initial receiver balances must be zero");
-
-        Thread storage thread = threads[sender][receiver][threadId];
-
-        // We check to make sure that the thread state has been finalized
-        require(thread.threadClosingTime != 0 && thread.threadClosingTime < now, "Thread closing time must have passed");
-
-        // Make sure user has not emptied before
-        require(!thread.emptied[user == sender ? 0 : 1], "user cannot empty twice");
-
-        // verify initial thread state.
-        _verifyThread(sender, receiver, threadId, weiBalances, tokenBalances, 0, proof, sig, channel.threadRoot);
-
-        require(thread.weiBalances[0].add(thread.weiBalances[1]) == weiBalances[0], "sum of thread wei balances must match sender's initial wei balance");
-        require(thread.tokenBalances[0].add(thread.tokenBalances[1]) == tokenBalances[0], "sum of thread token balances must match sender's initial token balance");
-
-        // deduct sender/receiver wei/tokens about to be emptied from the thread from the total channel balances
-        channel.weiBalances[2] = channel.weiBalances[2].sub(thread.weiBalances[0]).sub(thread.weiBalances[1]);
-        channel.tokenBalances[2] = channel.tokenBalances[2].sub(thread.tokenBalances[0]).sub(thread.tokenBalances[1]);
-
-        // deduct wei balances from total channel wei and reset thread balances
-        totalChannelWei = totalChannelWei.sub(thread.weiBalances[0]).sub(thread.weiBalances[1]);
-
-        // if user is receiver, send them receiver wei balance
-        if (user == receiver) {
-            user.transfer(thread.weiBalances[1]);
-        // if user is sender, send them remaining sender wei balance
-        } else if (user == sender) {
-            user.transfer(thread.weiBalances[0]);
-        }
-
-        // deduct token balances from channel total balances and reset thread balances
-        totalChannelToken = totalChannelToken.sub(thread.tokenBalances[0]).sub(thread.tokenBalances[1]);
-
-        // if user is receiver, send them receiver token balance
-        if (user == receiver) {
-            require(approvedToken.transfer(user, thread.tokenBalances[1]), "user [receiver] token withdrawal transfer failed");
-        // if user is sender, send them remaining sender token balance
-        } else if (user == sender) {
-            require(approvedToken.transfer(user, thread.tokenBalances[0]), "user [sender] token withdrawal transfer failed");
-        }
-
-        // Record that user has emptied
-        thread.emptied[user == sender ? 0 : 1] = true;
-
-        // decrement the channel threadCount
-        channel.threadCount = channel.threadCount.sub(1);
-
-        // if this is the last thread being emptied, re-open the channel
-        if (channel.threadCount == 0) {
-            channel.threadRoot = bytes32(0x0);
-            channel.channelClosingTime = 0;
-            channel.status = ChannelStatus.Open;
-        }
-
-        emit DidEmptyThread(
-            user,
-            sender,
-            receiver,
-            threadId,
-            msg.sender,
-            [channel.weiBalances[0], channel.weiBalances[1]],
-            [channel.tokenBalances[0], channel.tokenBalances[1]],
-            channel.txCount,
-            channel.threadRoot,
-            channel.threadCount
-        );
-    }
-
-
-    // anyone can call to re-open an account stuck in threadDispute after 10x challengePeriods from channel state finalization
-    function nukeThreads(
-        address user
-    ) public noReentrancy {
-        require(user != hub, "user can not be hub");
-        require(user != address(this), "user can not be channel manager");
-
-        Channel storage channel = channels[user];
-        require(channel.status == ChannelStatus.ThreadDispute, "channel must be in thread dispute");
-        require(channel.channelClosingTime.add(challengePeriod.mul(10)) < now, "channel closing time must have passed by 10 challenge periods");
-
-        // transfer any remaining channel wei to user
-        totalChannelWei = totalChannelWei.sub(channel.weiBalances[2]);
-        user.transfer(channel.weiBalances[2]);
-        uint256 weiAmount = channel.weiBalances[2];
-        channel.weiBalances[2] = 0;
-
-        // transfer any remaining channel tokens to user
-        totalChannelToken = totalChannelToken.sub(channel.tokenBalances[2]);
-        require(approvedToken.transfer(user, channel.tokenBalances[2]), "user token withdrawal transfer failed");
-        uint256 tokenAmount = channel.tokenBalances[2];
-        channel.tokenBalances[2] = 0;
-
-        // reset channel params
-        channel.threadCount = 0;
-        channel.threadRoot = bytes32(0x0);
-        channel.channelClosingTime = 0;
-        channel.status = ChannelStatus.Open;
-
-        emit DidNukeThreads(
-            user,
-            msg.sender,
-            weiAmount,
-            tokenAmount,
-            [channel.weiBalances[0], channel.weiBalances[1]],
-            [channel.tokenBalances[0], channel.tokenBalances[1]],
-            channel.txCount,
-            channel.threadRoot,
-            channel.threadCount
+            channel.txCount
         );
     }
 
@@ -875,8 +482,8 @@ contract ChannelManager {
         require(txCount[1] >= channel.txCount[1], "onchain txCount must be higher or equal to the current onchain txCount");
 
         // offchain wei/token balances do not exceed onchain total wei/token
-        require(weiBalances[0].add(weiBalances[1]) <= channel.weiBalances[2], "wei must be conserved");
-        require(tokenBalances[0].add(tokenBalances[1]) <= channel.tokenBalances[2], "tokens must be conserved");
+        require(weiBalances[0].add(weiBalances[1]) <= channel.weiBalances[0].add(channel.weiBalances[1]), "wei must be conserved");
+        require(tokenBalances[0].add(tokenBalances[1]) <= channel.tokenBalances[0].add(channel.tokenBalances[1]), "tokens must be conserved");
 
         // hub has enough reserves for wei/token deposits for both the user and itself (if isHub, user deposit comes from hub)
         if (isHub) {
@@ -898,7 +505,7 @@ contract ChannelManager {
     }
 
     function _applyPendingUpdates(
-        uint256[3] storage channelBalances,
+        uint256[2] storage channelBalances,
         uint256[2] balances,
         uint256[4] pendingUpdates
     ) internal {
@@ -918,7 +525,6 @@ contract ChannelManager {
         // Assumes the net has *not yet* been added to the balances.
         if (pendingUpdates[2] > pendingUpdates[3]) {
             channelBalances[1] = balances[1].add(pendingUpdates[2].sub(pendingUpdates[3]));
-
         // Otherwise, if the deposit is less than or equal to the withdrawal,
         // Assumes the net has *already* been added to the balances.
         } else {
@@ -927,14 +533,13 @@ contract ChannelManager {
     }
 
     function _revertPendingUpdates(
-        uint256[3] storage channelBalances,
+        uint256[2] storage channelBalances,
         uint256[2] balances,
         uint256[4] pendingUpdates
     ) internal {
         // If the pending update has NOT been executed AND deposits > withdrawals, offchain state was NOT updated with delta, and is thus correct
         if (pendingUpdates[0] > pendingUpdates[1]) {
             channelBalances[0] = balances[0];
-
         // If the pending update has NOT been executed AND deposits < withdrawals, offchain state should have been updated with delta, and must be reverted
         } else {
             channelBalances[0] = balances[0].add(pendingUpdates[1].sub(pendingUpdates[0])); // <- add withdrawal, sub deposit (opposite order as _applyPendingUpdates)
@@ -943,7 +548,6 @@ contract ChannelManager {
         // If the pending update has NOT been executed AND deposits > withdrawals, offchain state was NOT updated with delta, and is thus correct
         if (pendingUpdates[2] > pendingUpdates[3]) {
             channelBalances[1] = balances[1];
-
         // If the pending update has NOT been executed AND deposits > withdrawals, offchain state should have been updated with delta, and must be reverted
         } else {
             channelBalances[1] = balances[1].add(pendingUpdates[3].sub(pendingUpdates[2])); // <- add withdrawal, sub deposit (opposite order as _applyPendingUpdates)
@@ -962,10 +566,6 @@ contract ChannelManager {
 
         totalChannelWei = totalChannelWei.add(pendingWeiUpdates[0]).add(pendingWeiUpdates[2]).sub(pendingWeiUpdates[1]).sub(pendingWeiUpdates[3]);
         totalChannelToken = totalChannelToken.add(pendingTokenUpdates[0]).add(pendingTokenUpdates[2]).sub(pendingTokenUpdates[1]).sub(pendingTokenUpdates[3]);
-
-        // update channel total balances
-        channel.weiBalances[2] = channel.weiBalances[2].add(pendingWeiUpdates[0]).add(pendingWeiUpdates[2]).sub(pendingWeiUpdates[1]).sub(pendingWeiUpdates[3]);
-        channel.tokenBalances[2] = channel.tokenBalances[2].add(pendingTokenUpdates[0]).add(pendingTokenUpdates[2]).sub(pendingTokenUpdates[1]).sub(pendingTokenUpdates[3]);
     }
 
     function _verifySig (
@@ -975,8 +575,6 @@ contract ChannelManager {
         uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
         uint256[2] txCount, // [global, onchain] persisted onchain even when empty
-        bytes32 threadRoot,
-        uint256 threadCount,
         uint256 timeout,
         string sigHub,
         string sigUser,
@@ -995,8 +593,6 @@ contract ChannelManager {
                 pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
                 pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
                 txCount, // persisted onchain even when empty
-                threadRoot,
-                threadCount,
                 timeout
             )
         );
@@ -1008,95 +604,5 @@ contract ChannelManager {
         if (checks[1]) {
             require(user[0] == ECTools.recoverSigner(state, sigUser), "user signature invalid");
         }
-    }
-
-    function _verifyThread(
-        address sender,
-        address receiver,
-        uint256 threadId,
-        uint256[2] weiBalances,
-        uint256[2] tokenBalances,
-        uint256 txCount,
-        bytes proof,
-        string sig,
-        bytes32 threadRoot
-    ) internal view {
-        require(sender != receiver, "sender can not be receiver");
-        require(sender != hub && receiver != hub, "hub can not be sender or receiver");
-        require(sender != address(this) && receiver != address(this), "channel manager can not be sender or receiver");
-
-        bytes32 state = keccak256(
-            abi.encodePacked(
-                address(this),
-                sender,
-                receiver,
-                threadId,
-                weiBalances, // [sender, receiver]
-                tokenBalances, // [sender, receiver]
-                txCount // persisted onchain even when empty
-            )
-        );
-        require(ECTools.isSignedBy(state, sig, sender), "signature invalid");
-
-        if (threadRoot != bytes32(0x0)) {
-            require(_isContained(state, proof, threadRoot), "initial thread state is not contained in threadRoot");
-        }
-    }
-
-    function _isContained(bytes32 _hash, bytes _proof, bytes32 _root) internal pure returns (bool) {
-        bytes32 cursor = _hash;
-        bytes32 proofElem;
-
-        for (uint256 i = 64; i <= _proof.length; i += 32) {
-            assembly { proofElem := mload(add(_proof, i)) }
-
-            if (cursor < proofElem) {
-                cursor = keccak256(abi.encodePacked(cursor, proofElem));
-            } else {
-                cursor = keccak256(abi.encodePacked(proofElem, cursor));
-            }
-        }
-
-        return cursor == _root;
-    }
-
-    function getChannelBalances(address user) constant public returns (
-        uint256 weiHub,
-        uint256 weiUser,
-        uint256 weiTotal,
-        uint256 tokenHub,
-        uint256 tokenUser,
-        uint256 tokenTotal
-    ) {
-        Channel memory channel = channels[user];
-        return (
-            channel.weiBalances[0],
-            channel.weiBalances[1],
-            channel.weiBalances[2],
-            channel.tokenBalances[0],
-            channel.tokenBalances[1],
-            channel.tokenBalances[2]
-        );
-    }
-
-    function getChannelDetails(address user) constant public returns (
-        uint256 txCountGlobal,
-        uint256 txCountChain,
-        bytes32 threadRoot,
-        uint256 threadCount,
-        address exitInitiator,
-        uint256 channelClosingTime,
-        ChannelStatus status
-    ) {
-        Channel memory channel = channels[user];
-        return (
-            channel.txCount[0],
-            channel.txCount[1],
-            channel.threadRoot,
-            channel.threadCount,
-            channel.exitInitiator,
-            channel.channelClosingTime,
-            channel.status
-        );
     }
 }
