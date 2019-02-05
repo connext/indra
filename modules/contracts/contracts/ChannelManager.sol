@@ -1038,7 +1038,9 @@ contract ChannelManager {
         );
         require(ECTools.isSignedBy(state, sig, sender), "signature invalid");
 
-        if (threadRoot != bytes32(0x0)) {
+        // Stronger requirement to cover edge case where threadRoot is maliciously set to 0x0 by hub/sender
+        // For more info, see inclusionBypass.md
+        if(threadRoot != bytes32(0x0) || (threadRoot == bytes32(0x0) && txCount == 0)) {
             require(_isContained(state, proof, threadRoot), "initial thread state is not contained in threadRoot");
         }
     }

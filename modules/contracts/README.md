@@ -1,13 +1,15 @@
 
-(Fully updated 11/21/2018)
+# Installing and Running the Test Suite
 
-# Running the test suite
+Running contract tests requires the latest version of the Connext client. To allow for fast iteration on the client rapidly while working on contract, we import and build the client directly from the `connext-client` repository.
 
-Use the scripts in the package.json to ensure the proper test environment:
+Please use the scripts in the package.json to ensure that this is done correctly.
 
+Dependencies
     # Node and npm versions:
     # node >= v10
     # npm >= v6
+    # ganache-cli >= 6.8.1
     
     # update the connext client repo
     $ cd client
@@ -29,15 +31,21 @@ You can debug the test suite using chrome dev tools:
 
 # DOCUMENT FOR CONTRACT SPEC
 
-Canonical links: [https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-CANONICAL-URLs--AP7jZj1zm4J7XSVcw0Ifk_fBAg-Qpw2NAWgCIdg0Z5G9lpSu](https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-CANONICAL-URLs--AP7jZj1zm4J7XSVcw0Ifk_fBAg-Qpw2NAWgCIdg0Z5G9lpSu)
+You can update and rebuild the client using the client update script
+    $ npm run client-update
 
-Hub/Wallet API spec:
+Pointing the client at a different branch will require some more work
+    $ cd connext-client
+    $ git checkout BRANCH_NAME
+    $ npm install
+    $ npm run build
+    # then cd to root and run tests again
 
-[https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-Hub-Client-APIs--AP3nxlvN~p_IZ_a8UR2C~qshAg-Xon50NikF2iCjTD72vU0g](https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-Hub-Client-APIs--AP3nxlvN~p_IZ_a8UR2C~qshAg-Xon50NikF2iCjTD72vU0g)
+# Diagrams
 
-Contract: [https://github.com/ConnextProject/contracts/blob/master/contracts/ChannelManager.sol](https://github.com/ConnextProject/contracts/blob/master/contracts/ChannelManager.sol)
+Helpful flowcharts: [https://github.com/ConnextProject/contracts/tree/master/docs/diagrams](https://github.com/ConnextProject/contracts/tree/master/docs/diagrams)
 
-Flowcharts: [https://github.com/ConnextProject/contracts/tree/master/docs/diagrams](https://github.com/ConnextProject/contracts/tree/master/docs/diagrams)
+To use these, you'll need to copy paste the .mmd file into [MermaidJS' live GUI](https://mermaidjs.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoiZ3JhcGggVERcbkFbQ2hyaXN0bWFzXSAtLT58R2V0IG1vbmV5fCBCKEdvIHNob3BwaW5nKVxuQiAtLT4gQ3tMZXQgbWUgdGhpbmt9XG5DIC0tPnxPbmV8IERbTGFwdG9wXVxuQyAtLT58VHdvfCBFW2lQaG9uZV1cbkMgLS0-fFRocmVlfCBGW2ZhOmZhLWNhciBDYXJdXG4iLCJtZXJtYWlkIjp7InRoZW1lIjoiZGVmYXVsdCJ9fQ) 
 
 # Channel Manager v1
 
@@ -347,10 +355,15 @@ A thread is opened by reducing the channel balances in the parties' respective c
 
 Threads are closed offchain following the same procedure but in reverse. First, the viewer submits a channel update reintroducing the final thread balances and removing the thread initial state from thread root to the hub.
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 //TODO: Check the diagram for close thread consistency. What happens if Alice closes the thread offchain and then Bob disputes it before countersigning the hub's offchain update?
 >>>>>>> c1e23937daf93294e5e7e6e74db9549186eb3c4a
+=======
+
+//TODO: Check the diagram for close thread consistency. What happens if Alice closes the thread offchain and then Bob disputes it before countersigning the hub's offchain update?
+>>>>>>> c4f6ef72fa330342fc099d68340fb21baf8fd89e
 
 ## ThreadIDs
 
