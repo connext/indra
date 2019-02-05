@@ -2,7 +2,7 @@
 # This script should only be run from the project root of Indra
 set -e
 
-name="connext-client"
+name="contracts"
 repo="git@github.com:ConnextProject/$name.git"
 branch="spank-stable"
 root="`pwd`"
