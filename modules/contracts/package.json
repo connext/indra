@@ -47,8 +47,5 @@
   "engines": {
     "node": ">=10",
     "npm": ">=6"
-  },
-  "devDependencies": {
-    "chai-bignumber": "ameensol/chai-bignumber#master"
   }
 }
