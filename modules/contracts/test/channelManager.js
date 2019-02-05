@@ -142,7 +142,7 @@ function normalize(state) {
 
 async function getSig(state, account) {
   const hash = clientUtils.createChannelStateHash(state);
-  const { signature } = await web3.eth.accounts.sign(hash, account.pk);
+  const signature = await web3.eth.sign(hash, account.address);
   return signature;
 }
 
