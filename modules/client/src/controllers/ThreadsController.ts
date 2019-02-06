@@ -2,6 +2,9 @@ import { Address, Payment, ThreadState, UnsignedThreadState, UpdateRequest } fro
 import { AbstractController } from './AbstractController';
 
 export default class ThreadsController extends AbstractController {
+  // only thread senders should call the openThread function
+  // joining threads that have been initiated with user as receiver
+  // should be handled within the `StateUpdateController`
   async openThread(receiver: Address, balance: Payment): Promise<void> {
     // make sure you do not already have thread open with receiver
     // TODO: should check against client store or against hub endpoint
@@ -44,22 +47,18 @@ export default class ThreadsController extends AbstractController {
       sigUser: newChannelState.sigUser,
     }
 
-    const sync = await this.hub.updateHub([updateRequest], initialState.threadId)
-    this.connext.syncController.handleHubSync(sync)
+    // TODO: make sure the lastThreadUpdateId is correctly
+    // handled within the store
+    const sync = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
+    this.connext.syncController.handleHubSync(sync.updates)
   }
 
-  async joinThread(sender: Address): Promise<void> {
-    // only join thread if one doesnt exist
-    const state = this.getState()
-    const channel = state.persistent.channel
-    const threads = state.persistent.threads
-    const thread = threads.filter(t => t.receiver == channel.user && t.sender == sender)
-    if (thread.length > 0) {
-      throw new Error(`Thread between sender (${sender}) and receiver (${channel.user}) already exists. Thread: ${thread}`)
-    }
-  }
+  // this function should be caller agnostic, either thread sender or
+  // receiver should be able to call the closeThread function
 
-  async closeThread(receiver: Address): Promise<void> {
+  // the opposite thread party should acknowledge the closed thread
+  // via logic in the `StateUpdateController`
+  async closeThread(threadId: number): Promise<void> {
     
   }
 }
