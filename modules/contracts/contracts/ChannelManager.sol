@@ -1062,7 +1062,7 @@ contract ChannelManager {
         return cursor == _root;
     }
 
-    function getChannelBalances(address user) constant public returns (
+    function getChannelBalances(address user) view public returns (
         uint256 weiHub,
         uint256 weiUser,
         uint256 weiTotal,
@@ -1081,7 +1081,7 @@ contract ChannelManager {
         );
     }
 
-    function getChannelDetails(address user) constant public returns (
+    function getChannelDetails(address user) view public returns (
         uint256 txCountGlobal,
         uint256 txCountChain,
         bytes32 threadRoot,
@@ -1099,6 +1099,29 @@ contract ChannelManager {
             channel.exitInitiator,
             channel.channelClosingTime,
             channel.status
+        );
+    }
+
+    function getThread(address sender, address receiver, uint256 threadId) view public returns (
+        uint256 weiSender,
+        uint256 weiReceiver,
+        uint256 tokenSender,
+        uint256 tokenReceiver,
+        uint256 txCount,
+        uint256 threadClosingTime,
+        bool emptiedSender,
+        bool emptiedReceiver
+    ) {
+        Thread storage thread = threads[sender][receiver][threadId];
+        return (
+            thread.weiBalances[0],
+            thread.weiBalances[1],
+            thread.tokenBalances[0],
+            thread.tokenBalances[1],
+            thread.txCount,
+            thread.threadClosingTime,
+            thread.emptied[0],
+            thread.emptied[1]
         );
     }
 }
