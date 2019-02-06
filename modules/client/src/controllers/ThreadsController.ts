@@ -49,8 +49,8 @@ export default class ThreadsController extends AbstractController {
 
     // TODO: make sure the lastThreadUpdateId is correctly
     // handled within the store
-    const sync = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
-    this.connext.syncController.handleHubSync(sync.updates)
+    const hubResponse = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
+    this.connext.syncController.handleHubSync(hubResponse.updates)
   }
 
   // this function should be caller agnostic, either thread sender or
@@ -59,6 +59,31 @@ export default class ThreadsController extends AbstractController {
   // the opposite thread party should acknowledge the closed thread
   // via logic in the `StateUpdateController`
   async closeThread(threadId: number): Promise<void> {
-    
+    const state = this.getState()
+    const channel = state.persistent.channel
+    const threads = state.persistent.threads
+    const thread = threads.filter(t => t.threadId == threadId)
+    if (thread.length != 1) {
+      throw new Error(`Error finding thread with provided threadId: ${threadId}. ${thread.length == 0 ? 'No thread found.' : `Multiple threads with provided ID found ${JSON.stringify(thread)}`}`)
+    }
+
+    // sign channel state
+    const newChannelState = await this.connext.signChannelState(
+      this.validator.generateCloseThread(
+        channel,
+        state.persistent.initialThreadStates,
+        thread[0],
+      )
+    )
+
+    const updateRequest: UpdateRequest = {
+      reason: "CloseThread",
+      args: thread[0],
+      txCount: newChannelState.txCountGlobal, // TODO: channel txCount or threadTxCount
+      sigUser: newChannelState.sigUser,
+    }
+
+    const hubResponse = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
+    this.connext.syncController.handleHubSync(hubResponse.updates)
   }
 }
