@@ -378,7 +378,7 @@ export type ArgsTypes<T=string> =
   | ConfirmPendingArgs
   | InvalidationArgs
   | EmptyChannelArgs
-  | UnsignedThreadState<T>
+  | ThreadState<T>
   | {}
 
 export type ArgTypesBN = ArgsTypes<BN>
@@ -407,8 +407,8 @@ export type UpdateRequestTypes<T=string> = {
   ConfirmPending: UpdateRequest<T, ConfirmPendingArgs>
   Invalidation: UpdateRequest<T, InvalidationArgs>
   EmptyChannel: UpdateRequest<T, EmptyChannelArgs>
-  OpenThread: UpdateRequest<T, UnsignedThreadState<T>>
-  CloseThread: UpdateRequest<T, UnsignedThreadState<T>>
+  OpenThread: UpdateRequest<T, ThreadState<T>>
+  CloseThread: UpdateRequest<T, ThreadState<T>>
 }
 
 export type UpdateArgTypes<T=string> = {
@@ -419,8 +419,8 @@ export type UpdateArgTypes<T=string> = {
   ConfirmPending: ConfirmPendingArgs
   Invalidation: InvalidationArgs
   EmptyChannel: EmptyChannelArgs,
-  OpenThread: UnsignedThreadState<T>
-  CloseThread: UnsignedThreadState<T>
+  OpenThread: ThreadState<T>
+  CloseThread: ThreadState<T>
 }
 
 export type UpdateRequestBN = UpdateRequest<BN>
