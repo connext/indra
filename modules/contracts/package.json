@@ -40,8 +40,8 @@
     "ethjs-provider-http": "^0.1.6",
     "ethjs-rpc": "^0.2.0",
     "ganache-cli": "6.1.8",
-    "truffle-hdwallet-provider": "^1.0.0-web3one.1",
     "truffle": "5.0.0-beta.1",
+    "truffle-hdwallet-provider": "^1.0.0-web3one.1",
     "typechain": "0.3.6"
   },
   "engines": {
@@ -49,6 +49,7 @@
     "npm": ">=6"
   },
   "devDependencies": {
+    "bn-chai": "^1.0.1",
     "chai-bignumber": "ameensol/chai-bignumber#master"
   }
 }
