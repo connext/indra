@@ -12,7 +12,13 @@ const HST = artifacts.require("./HumanStandardToken.sol");
 const { Utils } = require("../../client/dist/Utils");
 const { StateGenerator } = require("../../client/dist/StateGenerator");
 const { Validator } = require("../../client/dist/validator");
-const { convertChannelState, convertDeposit, convertExchange, convertWithdrawal, convertProposePending } = require("../../client/dist/types");
+const { 
+  convertChannelState, 
+  convertDeposit, 
+  convertExchange, 
+  convertWithdrawal, 
+  convertProposePending
+} = require("../../client/dist/types");
 const {
   mkAddress,
   getChannelState,
@@ -46,6 +52,12 @@ const SolRevert = "VM Exception while processing transaction: revert";
 
 const secondsFromNow = seconds => seconds + Math.floor(new Date().getTime() / 1000);
 const minutesFromNow = minutes => secondsFromNow(minutes * 60);
+
+const channelStatus = {
+  Open: 0,
+  ChannelDispute: 1,
+  ThreadDispute: 2
+}
 
 async function snapshot() {
   return new Promise((accept, reject) => {
@@ -144,6 +156,12 @@ async function getSig(state, account) {
   const hash = clientUtils.createChannelStateHash(state);
   const signature = await web3.eth.sign(hash, account.address);
   return signature;
+}
+
+async function getThreadSig(threadState, account) {
+  const hash = clientUtils.createThreadStateHash(threadState)
+  const sig = await web3.eth.sign(hash, account.address)
+  return sig
 }
 
 // Generates an array of incorrect sigs to test each element of state for _verifySig
@@ -257,6 +275,27 @@ async function emptyChannel(state, account, wei = 0) {
   return await cm.emptyChannel(state.user, { from: account.address, value: wei });
 }
 
+async function startExitThread(
+  state, 
+  threadState,
+  proof, 
+  sig, 
+  account
+) {
+  let normalized = normalize(state)
+  return await cm.startExitThread(
+    normalized.user,
+    threadState.sender,
+    threadState.receiver,
+    threadState.threadId,
+    [threadState.balanceWeiSender, 0],
+    [threadState.balanceTokenSender, 0],
+    proof,
+    sig,
+    { from: account.address }
+  )
+}
+
 async function submitUserAuthorized(userAccount, hubAccount, wei = 0, ...overrides) {
   let state = getChannelState(
     "empty",
@@ -291,6 +330,28 @@ async function submitHubAuthorized(userAccount, hubAccount, wei = 0, ...override
   );
   state.sigUser = await getSig(state, userAccount);
   return await hubAuthorizedUpdate(state, hubAccount, wei);
+}
+
+function generateThreadWithinState(_state, threadState) {
+  const threadRoot = clientUtils.generateThreadRootHash([{
+    contractAddress: threadState.contractAddress,
+    sender: threadState.sender,
+    receiver: threadState.receiver,
+    threadId: threadState.threadId,
+    balanceWeiSender: threadState.balanceWeiSender,
+    balanceWeiReceiver: threadState.balanceWeiReceiver,
+    balanceTokenSender: threadState.balanceTokenSender,
+    balanceTokenReceiver: threadState.balanceTokenReceiver,
+    txCount: 0
+  }])
+
+  let stateWithThreads = {
+    ..._state,
+    threadCount: 1,
+    threadRoot
+  }
+
+  return stateWithThreads
 }
 
 let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod;
@@ -450,6 +511,49 @@ contract("ChannelManager", accounts => {
     assert.equal(event.threadRoot, emptyRootHash);
     assert.equal(event.threadCount, 0);
   };
+
+  /**
+   * Fast forward channel to after EmptyChannel is called.
+   * To initiate thread dispute, insert state with thread count and thread root.
+   */
+  async function fastForwardToEmptiedChannel(insertedState) {
+    const deposit = getDepositArgs("empty", {
+      ...insertedState,
+      depositWeiUser: 10,
+      depositTokenUser: 11,
+      depositWeiHub: 12,
+      depositTokenHub: 13,
+      timeout: minutesFromNow(5)
+    });
+    const update = validator.generateProposePendingDeposit(insertedState, deposit);
+    update.sigUser = await getSig(update, viewer);
+
+    let tx = await hubAuthorizedUpdate(update, hub, 0);
+
+    confirmed = await validator.generateConfirmPending(update, {
+      transactionHash: tx.tx
+    });
+    confirmed.sigUser = await getSig(confirmed, viewer);
+    confirmed.sigHub = await getSig(confirmed, hub);
+
+    // initial state is the confirmed values with txCountGlobal rolled back
+    insertedState = {
+      ...confirmed,
+      txCountGlobal: confirmed.txCountGlobal - 1
+    };
+
+    await startExit(insertedState, viewer, 0);
+    viewer.initWeiBalance = await web3.eth.getBalance(viewer.address);
+    viewer.initTokenBalance = await token.balanceOf(viewer.address);
+
+    tx = await emptyChannel(insertedState, hub, 0);
+    insertedState.userWeiTransfer = 10; // initial user balance (10)
+    insertedState.userTokenTransfer = 11; // initial user balance (11)
+    insertedState.initHubReserveWei = initHubReserveWei;
+    insertedState.initHubReserveToken = initHubReserveToken;
+
+    return insertedState
+  }
 
   before("deploy contracts", async () => {
     cm = await CM.deployed();
@@ -2821,11 +2925,13 @@ contract("ChannelManager", accounts => {
   });
 
   describe("startExitThread", () => {
+    let threadState
+    let channelStateWithThreads
     beforeEach(async () => {
       await token.transfer(cm.address, 1000, { from: hub.address });
       await web3.eth.sendTransaction({ from: hub.address, to: cm.address, value: 700 });
 
-      const threadRoot = clientUtils.generateThreadRootHash([{
+      threadState = {
         contractAddress: cm.address,
         sender: viewer.address,
         receiver: performer.address,
@@ -2835,54 +2941,21 @@ contract("ChannelManager", accounts => {
         balanceTokenSender: 10,
         balanceTokenReceiver: 0,
         txCount: 0
-      }])
-
-      let stateWithThreads = {
-        ...state,
-        threadCount: 1,
-        threadRoot
       }
 
-      const deposit = getDepositArgs("empty", {
-        ...stateWithThreads,
-        depositWeiUser: 10,
-        depositTokenUser: 11,
-        depositWeiHub: 12,
-        depositTokenHub: 13,
-        timeout: minutesFromNow(5)
-      });
-      const update = validator.generateProposePendingDeposit(stateWithThreads, deposit);
-      update.sigUser = await getSig(update, viewer);
-
-      let tx = await hubAuthorizedUpdate(update, hub, 0);
-
-      confirmed = await validator.generateConfirmPending(update, {
-        transactionHash: tx.tx
-      });
-      confirmed.sigUser = await getSig(confirmed, viewer);
-      confirmed.sigHub = await getSig(confirmed, hub);
-
-      // initial state is the confirmed values with txCountGlobal rolled back
-      state = {
-        ...confirmed,
-        txCountGlobal: confirmed.txCountGlobal - 1
-      };
-
-      await startExit(state, viewer, 0);
-      viewer.initWeiBalance = await web3.eth.getBalance(viewer.address);
-      viewer.initTokenBalance = await token.balanceOf(viewer.address);
-
-      tx = await emptyChannel(state, hub, 0);
-      state.userWeiTransfer = 10; // initial user balance (10)
-      state.userTokenTransfer = 11; // initial user balance (11)
-      state.initHubReserveWei = initHubReserveWei;
-      state.initHubReserveToken = initHubReserveToken;
-      await verifyEmptyChannel(viewer, state, tx, true);
+      channelStateWithThreads = generateThreadWithinState(state, threadState)
+      await fastForwardToEmptiedChannel(channelStateWithThreads) 
     })
 
     describe("happy case", () => {
       it.only("starts exiting thread", async () => {
+        const channelDetails = await cm.getChannelDetails(viewer.address);
+        channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute)
 
+        const proof = clientUtils.generateThreadProof(threadState, [threadState])
+        const sig = await getThreadSig(threadState, viewer.address)
+
+        await startExitThread(channelStateWithThreads, threadState, proof, sig, viewer)
       })
     })
   })
