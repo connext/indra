@@ -82,6 +82,7 @@ export class PersistentState {
   threads: ThreadState[] = []
   initialThreadStates: ThreadState[] = []
   lastThreadId: number = 0
+  lastThreadUpdateId: number = 0
   syncControllerState = new SyncControllerState()
 }
 
