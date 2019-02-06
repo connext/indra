@@ -9,16 +9,16 @@ const CM = artifacts.require("./ChannelManager.sol");
 const HST = artifacts.require("./HumanStandardToken.sol");
 
 /* Connext Client */
-const { Utils } = require("../../client/dist/Utils");
-const { StateGenerator } = require("../../client/dist/StateGenerator");
-const { Validator } = require("../../client/dist/validator");
+const { Utils } = require("connext/dist/Utils");
+const { StateGenerator } = require("connext/dist/StateGenerator");
+const { Validator } = require("connext/dist/validator");
 const { 
   convertChannelState, 
   convertDeposit, 
   convertExchange, 
   convertWithdrawal, 
   convertProposePending
-} = require("../../client/dist/types");
+} = require("connext/dist/types");
 const {
   mkAddress,
   getChannelState,
@@ -30,8 +30,8 @@ const {
   getPendingArgs,
   assertThreadStateEqual,
   assertChannelStateEqual
-} = require("../../client/dist/testing");
-const { toBN } = require("../../client/dist/helpers/bn");
+} = require("connext/dist/testing");
+const { toBN } = require("connext/dist/helpers/bn");
 const clientUtils = new Utils();
 const sg = new StateGenerator();
 
