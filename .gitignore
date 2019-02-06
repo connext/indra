@@ -1,6 +1,6 @@
 build
 dist
-ganache.log
+ganache*.log
 node_modules
 .bash_history
 .config

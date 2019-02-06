@@ -14,6 +14,7 @@
     "migrate": "node_modules/.bin/truffle migrate",
     "prepare": "npm run build",
     "test:debug": "node --inspect-brk ./node_modules/truffle/build/cli.bundled.js test test/channelManager.js --network=ganache",
+    "test:docker": "bash ops/test.sh",
     "test": "cd ../client && npm run build && cd ../contracts && node_modules/.bin/truffle test test/channelManager.js --network=ganache",
     "test:client": "node_modules/.bin/truffle test test/client.js --network=ganache"
   },
