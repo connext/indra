@@ -105,12 +105,11 @@ export default class StateUpdateController extends AbstractController {
           console.warn(`Not processing updates, channel is not open. Status: ${status}`)
           return null
         } else if (status === "CS_THREAD_DISPUTE") {
-          throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See REB-36. Disabling client.')
+          console.warn(`Not processing updates, channel is not open. Status: ${status}`)
+          return null
         }
         // channel is open
         const item = state.runtime.syncResultsFromHub[0]
-        if (item && item.type == 'thread')
-          throw new Error('REB-36: enable threads!')
 
         // No sync results from hub; nothing to do
         if (!item)
@@ -211,6 +210,8 @@ export default class StateUpdateController extends AbstractController {
       console.log('Channel has exited dispute phase, re-enabling client')
       this.store.dispatch(actions.setChannelStatus("CS_OPEN"))
     }
+
+    // TODO: Write this for nukeThreads
 
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
       update.reason === 'Invalidation' ? latestValidState : prevState,
