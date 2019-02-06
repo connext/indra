@@ -24,11 +24,11 @@ contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(cont
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
 docker_run=docker run --name=$(project)_buidler --tty --rm
-docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
-docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
+docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
 docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder:dev $(id)
+docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)

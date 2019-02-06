@@ -8,14 +8,13 @@
   },
   "scripts": {
     "build": "npm run compile && npm run generate",
-    "client-update": "cd connext-client && git pull && npm install && npm run build && cd ..",
     "compile": "node_modules/.bin/truffle compile",
     "ganache": "node_modules/.bin/ganache-cli -m 'refuse result toy bunker royal small story exhaust know piano base stand'",
     "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir ./build/ts/ './build/contracts/*.json'",
     "migrate": "node_modules/.bin/truffle migrate",
     "prepare": "npm run build",
     "test:debug": "node --inspect-brk ./node_modules/truffle/build/cli.bundled.js test test/channelManager.js --network=ganache",
-    "test": "cd ../client && tsc && cd ../contracts && node_modules/.bin/truffle test test/channelManager.js --network=ganache",
+    "test": "cd ../client && npm run build && cd ../contracts && node_modules/.bin/truffle test test/channelManager.js --network=ganache",
     "test:client": "node_modules/.bin/truffle test test/client.js --network=ganache"
   },
   "repository": {
@@ -28,6 +27,10 @@
     "url": "https://github.com/ConnextProject/contracts/issues"
   },
   "homepage": "https://github.com/ConnextProject/contracts#readme",
+  "engines": {
+    "node": ">=10",
+    "npm": ">=6"
+  },
   "dependencies": {
     "bignumber.js": "^7.2.1",
     "bn.js": "^4.11.8",
@@ -43,10 +46,6 @@
     "truffle": "5.0.0-beta.1",
     "truffle-hdwallet-provider": "^1.0.0-web3one.1",
     "typechain": "0.3.6"
-  },
-  "engines": {
-    "node": ">=10",
-    "npm": ">=6"
   },
   "devDependencies": {
     "bn-chai": "^1.0.1",
