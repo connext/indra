@@ -57,21 +57,16 @@ reset: stop
 	docker volume rm connext_database_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
-clean:
+clean: stop
 	rm -rf build/*
 	rm -rf $(cwd)/modules/**/build
 	rm -rf $(cwd)/modules/**/dist
 
-deep-clean: clean
+deep-clean: stop clean
 	rm -rf $(cwd)/modules/**/node_modules
 
-fuck-it-send-it: deep-clean
-	rm -rf $(cwd)/modules/**/.config
-	rm -rf $(cwd)/modules/**/.node-gyp
-	rm -rf $(cwd)/modules/**/.npm
-	rm -rf $(cwd)/modules/**/package-lock.json
-
 purge: reset deep-clean
+	rm -rf $(cwd)/modules/**/package-lock.json
 
 tags: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
