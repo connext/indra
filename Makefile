@@ -39,7 +39,7 @@ log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
 # Begin Phony Rules
-.PHONY: default all dev prod clean stop purge deploy deploy-live test
+.PHONY: default all dev prod clean stop purge deploy deploy-live
 
 default: dev
 all: dev prod
@@ -90,9 +90,6 @@ deploy-live: prod
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
 
-test: hub
-	bash $(hub)/ops/test.sh
-
 # Begin Real Rules
 
 # Proxy
@@ -122,6 +119,7 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 
 wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
+	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
@@ -146,6 +144,7 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 
 hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
@@ -173,6 +172,7 @@ contract-artifacts: contract-node-modules
 
 contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
+	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
