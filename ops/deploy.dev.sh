@@ -6,7 +6,7 @@ set -e
 
 # set any of these to "yes" to turn on watchers
 watch_ethprovider="no"
-watch_hub="yes"
+watch_hub="no"
 watch_chainsaw="no"
 watch_wallet="no"
 
@@ -95,6 +95,8 @@ services:
     image: $proxy_image
     networks:
       - $project
+    environment:
+      ETH_RPC_URL: $ETH_RPC_URL
     ports:
       - "80:80"
     volumes:

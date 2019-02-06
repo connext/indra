@@ -47,15 +47,19 @@ dev: database ethprovider hub wallet proxy
 prod: database-prod hub-prod proxy-prod
 
 stop: 
-	docker container stop $(project)_buidler 2> /dev/null || true
 	bash ops/stop.sh
+	docker container stop $(project)_buidler 2> /dev/null || true
 	docker container prune -f
 
 reset: stop
-	docker volume rm connext_chain_dev || true
-	rm -f $(contracts)/build/state-hash
-	docker volume rm connext_database_dev || true
+	docker volume rm connext_database_dev connext_chain_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
+
+reset-client:
+	$(log_start)
+	rm -rf modules/client
+	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
+	$(log_finish) && touch build/pull-client
 
 clean: stop
 	rm -rf build/*
@@ -118,9 +122,8 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 
 wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
-	$(docker_run_in_wallet) "rm -f node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
-	$(docker_run_in_wallet) "mv -f node_modules/connext node_modules/.connext.backup"
+	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/wallet-node-modules
 
@@ -143,22 +146,14 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 
 hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
-	$(docker_run_in_hub) "rm -f node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
-	$(docker_run_in_hub) "mv -f node_modules/connext node_modules/.connext.backup"
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
 
 # Client
 
-pull-client:
-	$(log_start)
-	rm -rf modules/client
-	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable
-	mv connext-client modules/client
-	$(log_finish)
-
-client: pull-client builder $(client)/package.json
+client: builder $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/client
