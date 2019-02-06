@@ -56,7 +56,7 @@ reset: stop
 	docker volume rm connext_database_dev connext_chain_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
-reset-client:
+reset-client: stop
 	$(log_start) && echo "prereqs: $<"
 	rm -rf modules/client
 	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
