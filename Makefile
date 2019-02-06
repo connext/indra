@@ -90,6 +90,23 @@ deploy-live: prod
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
 
+# Tests
+
+# set a default test command for convenience
+test: test-contracts
+
+test-contracts: client contract-artifacts
+	bash $(contracts)/ops/test.sh
+
+test-hub: client hub-node-modules
+	echo coming soon!
+
+test-client: client hub-node-modules
+	echo coming soon!
+
+test-integration: dev
+	echo coming soon!
+
 # Begin Real Rules
 
 # Proxy
