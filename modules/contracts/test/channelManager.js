@@ -2816,4 +2816,71 @@ contract("ChannelManager", accounts => {
       });
     });
   });
+
+  describe("startExitThread", () => {
+    beforeEach(async () => {
+      await token.transfer(cm.address, 1000, { from: hub.address });
+      await web3.eth.sendTransaction({ from: hub.address, to: cm.address, value: 700 });
+
+      const threadRoot = clientUtils.generateThreadRootHash([{
+        contractAddress: cm.address,
+        sender: viewer.address,
+        receiver: performer.address,
+        threadId: 0,
+        balanceWeiSender: 10,
+        balanceWeiReceiver: 0,
+        balanceTokenSender: 10,
+        balanceTokenReceiver: 0,
+        txCount: 0
+      }])
+
+      let stateWithThreads = {
+        ...state,
+        threadCount: 1,
+        threadRoot
+      }
+
+      const deposit = getDepositArgs("empty", {
+        ...stateWithThreads,
+        depositWeiUser: 10,
+        depositTokenUser: 11,
+        depositWeiHub: 12,
+        depositTokenHub: 13,
+        timeout: minutesFromNow(5)
+      });
+      const update = validator.generateProposePendingDeposit(stateWithThreads, deposit);
+      update.sigUser = await getSig(update, viewer);
+
+      let tx = await hubAuthorizedUpdate(update, hub, 0);
+
+      confirmed = await validator.generateConfirmPending(update, {
+        transactionHash: tx.tx
+      });
+      confirmed.sigUser = await getSig(confirmed, viewer);
+      confirmed.sigHub = await getSig(confirmed, hub);
+
+      // initial state is the confirmed values with txCountGlobal rolled back
+      state = {
+        ...confirmed,
+        txCountGlobal: confirmed.txCountGlobal - 1
+      };
+
+      await startExit(state, viewer, 0);
+      viewer.initWeiBalance = await web3.eth.getBalance(viewer.address);
+      viewer.initTokenBalance = await token.balanceOf(viewer.address);
+
+      tx = await emptyChannel(state, hub, 0);
+      state.userWeiTransfer = 10; // initial user balance (10)
+      state.userTokenTransfer = 11; // initial user balance (11)
+      state.initHubReserveWei = initHubReserveWei;
+      state.initHubReserveToken = initHubReserveToken;
+      await verifyEmptyChannel(viewer, state, tx, true);
+    })
+
+    describe("happy case", () => {
+      it.only("starts exiting thread", async () => {
+
+      })
+    })
+  })
 });
