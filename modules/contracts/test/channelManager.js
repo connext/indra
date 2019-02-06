@@ -59,6 +59,10 @@ const channelStatus = {
   ThreadDispute: 2
 }
 
+////////////////////////////////////////
+// External Helper Functions
+////////////////////////////////////////
+
 async function snapshot() {
   return new Promise((accept, reject) => {
     ethRPC.sendAsync({ method: `evm_snapshot` }, (err, result) => {
@@ -354,6 +358,10 @@ function generateThreadWithinState(_state, threadState) {
   return stateWithThreads
 }
 
+////////////////////////////////////////
+// Internal Helper Functions
+////////////////////////////////////////
+
 let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod;
 
 contract("ChannelManager", accounts => {
@@ -555,6 +563,10 @@ contract("ChannelManager", accounts => {
     return insertedState
   }
 
+  ////////////////////////////////////////
+  // Test Env Setup
+  ////////////////////////////////////////
+
   before("deploy contracts", async () => {
     cm = await CM.deployed();
     token = await HST.deployed();
@@ -592,6 +604,10 @@ contract("ChannelManager", accounts => {
   afterEach(async () => {
     await restore(snapshotId);
   });
+
+  ////////////////////////////////////////
+  // Tests
+  ////////////////////////////////////////
 
   describe("contract deployment", () => {
     it("verify init parameters", async () => {
@@ -2927,6 +2943,11 @@ contract("ChannelManager", accounts => {
   describe("startExitThread", () => {
     let threadState
     let channelStateWithThreads
+    const happyAssertions = () => {
+      // assert that balances and threadClosingTime is set appropriately in success case
+      return true
+    }
+
     beforeEach(async () => {
       await token.transfer(cm.address, 1000, { from: hub.address });
       await web3.eth.sendTransaction({ from: hub.address, to: cm.address, value: 700 });
@@ -2947,16 +2968,186 @@ contract("ChannelManager", accounts => {
       await fastForwardToEmptiedChannel(channelStateWithThreads) 
     })
 
-    describe("happy case", () => {
-      it.only("starts exiting thread", async () => {
+    describe("happy paths", () => {
+      it("succeeds if sender starts to exit thread", async () => {
         const channelDetails = await cm.getChannelDetails(viewer.address);
         channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute)
-
         const proof = clientUtils.generateThreadProof(threadState, [threadState])
         const sig = await getThreadSig(threadState, viewer)
-
         await startExitThread(channelStateWithThreads, threadState, proof, sig, viewer)
+        happyAssertions();
+      })
+      it("succeeds if receiver starts to exit thread", async () => {
+        happyAssertions();
+      })
+      it("succeeds if hub starts to exit thread", async () => {
+        happyAssertions();
       })
     })
+
+    describe("edge cases", () => {
+      it("succeeds if sender starts to exit thread while reciever is exiting", async () => {})
+      it("succeeds if sender starts to exit thread while hub is exiting", async () => {})
+    })
+
+    describe("assertions", () => {
+      it("fails if channel is not in ThreadDispute", async () => {})
+      it("fails if msg.sender is not either the user or hub", async () => {})
+      it("fails if the user is not the sender or receiver", async () => {})
+      it("fails if the initial receiver balances are not zero", async () => {})
+      it("fails if thread closing time is non-zero & dispute is underway", async () => {})
+      it("fails if thread closing time is non-zero & dispute is over & thread is empty", async () => {})
+      it("fails if any _verifyThread reqs fail", async () => {})
+    })
   })
+
+  describe("startExitThreadWithUpdate", () => {
+    const happyAssertions = () => {
+      // assert that balances, txCount and threadClosingTime are set appropriately in success case
+      return true
+    }
+
+    beforeEach(async () => {/* Setup test env */})
+
+    describe("happy paths", () => {
+      it("succeeds when sender starts exit thread w update", async () => {
+        happyAssertions()
+      })
+      it("succeeds when recipient starts exit thread w update", async () => {
+        happyAssertions()
+      })
+      it("succeeds when hub starts exit thread w update", async () => {
+        happyAssertions()
+      })
+    })
+
+    describe("edge cases", () => {
+      it("succeeds if sender starts to exit thread w update while reciever is exiting", async () => {})
+      it("succeeds if sender starts to exit thread w update while hub is exiting", async () => {})
+      it("succeeds if sender starts to exit thread w an update & update contains no changes", async () => {})
+    })
+
+    describe("assertions", () => {
+      it("fails if channel is not in ThreadDispute", async () => {})
+      it("fails if msg.sender is not either the user or hub", async () => {})
+      it("fails if the user is not the sender or receiver", async () => {})
+      it("fails if the initial receiver balances are not zero", async () => {})
+      it("fails if thread closing time is non-zero & dispute is underway", async () => {})
+      it("fails if thread closing time is non-zero & dispute is over & thread is empty", async () => {})
+      it("fails if any _verifyThread reqs fail", async () => {})
+      it("fails if the updateTxCount is not higher than 0", async () => {})
+      it("fails if wei balances are not equal to sender's initial balance", async () => {})
+      it("fails if token balances are not equal to sender's initial balance", async () => {})
+      it("fails if recipient balance decreases", async () => {/* is this necessary? */})
+    })
+  })
+
+  describe("challengeThread", () => {
+    const happyAssertions = () => {
+      // assert that balances and txCount are correctly set in success case
+      return true
+    }
+
+    beforeEach(async () => {/* Setup test env */})
+
+    describe("happy paths", () => {
+      it("succeeds when sender challenges thread", async () => {
+        happyAssertions()
+      })
+      it("succeeds when reciever challenges thread", async () => {
+        happyAssertions()
+      })
+      it("succeeds when hub challenges thread", async () => {
+        happyAssertions()
+      })
+    })
+
+    describe("edge cases", () => {
+      it("succeeds if sender challenges twice in a row", async () => {})
+    })
+
+    describe("assertions", () => {
+      it("fails if msg.sender is not either the sender, receiver or hub", async () => {})
+      it("fails if now < the thread closing time (thread has already been settled)", async () => {})
+      it("fails if now < the thread closing time (thread exit has not yet started)", async () => {})
+      it("fails if the submitted txCount is not higher than current txCount", async () => {})
+      it("fails if wei balances are not conserved", async () => {})
+      it("fails if token balances are not conserved", async () => {})
+      it("fails if either wei or token balances decrease", async () => {})
+      it("fails if any _verifyThread req fails", async () => {})
+    })
+  })
+
+  describe("emptyThread", () => {
+    const happyAssertions = () => {
+      // assert correct totalChannelWei and totalChannelTokens after thread is emptied
+      // assert correct wei and token transfer if user == receiver
+      // assert correct wei and token transfer if user == sender
+      // assert correct thread.emptied, threadCount in success case
+      // assert channel state correctly reinitialized if threadCount == 0
+      return true
+    }
+
+    beforeEach(async () => {/* Setup test env */})
+
+    describe("happy paths", () => {
+      it("succeeds if sender empties thread then reciever", async () => {
+        happyAssertions()
+      })
+      it("succeeds if reciever empties thread then sender", async () => {
+        happyAssertions()
+      })
+      it("succeeds if hub empties both sides of the thread", async () => {
+        happyAssertions()
+      })
+    })
+
+    describe("edge cases", () => {
+      it("succeeds if sender empties & thread count goes to zero & sender deposits", async () => {})
+    })
+
+    describe("assertions", () => {
+      it("fails if user's channel is not in thread dispute status", async () => {})
+      it("fails if msg.sender is not the hub or user", async () => {})
+      it("fails if the user is not sender or receiver", async () => {})
+      it("fails if the initial receiver balances are not 0", async () => {})
+      it("fails if the thread closing time has not passed (still in dispute)", async () => {})
+      it("fails if the thread closing time is 0 (exit not started)", async () => {})
+      it("fails if the user attempts to empty an already emptied thread", async () => {})
+      it("fails if any _verifyThread req fails", async () => {})
+      it("fails if wei balances are not equal to sender's initial balance", async () => {})
+      it("fails if token balances are not equal to sender's initial balance", async () => {})
+      it("fails if token transfer fails", async () => {/* Might not be possible to hit this one */})
+    })
+  })
+
+  describe("nukeThreads", () => {
+    const happyAssertions = () => {
+      // assert it correctly reduces totalChannelWei and totalChannelToken
+      // assert it correctly reinitializes channel params
+      return true
+    }
+
+    beforeEach(async () => {/* Setup test env */})
+
+    describe("happy paths", () => {
+      it("succeeds if user nukes threads", async () => {
+        happyAssertions()
+      })
+      it("succeeds if hub nukes threads and then deposits", async () => {
+        happyAssertions()
+      })
+    })
+
+    describe("edge cases", () => {})
+
+    describe("assertions", () => {
+      it("fails if user is hub", async () => {})
+      it("fails if user is channelManager", async () => {})
+      it("fails if channel does not have thead dispute status", async () => {})
+      it("fails if closing time + 10x challenge periods habe not elapsed yet", async () => {})
+      it("fails if token transfer fails", async () => {/* Might not be possible to hit this one */})
+    })
+  })
+
 });
