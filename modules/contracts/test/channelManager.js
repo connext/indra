@@ -2953,7 +2953,7 @@ contract("ChannelManager", accounts => {
         channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute)
 
         const proof = clientUtils.generateThreadProof(threadState, [threadState])
-        const sig = await getThreadSig(threadState, viewer.address)
+        const sig = await getThreadSig(threadState, viewer)
 
         await startExitThread(channelStateWithThreads, threadState, proof, sig, viewer)
       })
