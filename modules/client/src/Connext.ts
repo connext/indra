@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -45,6 +45,7 @@ import * as actions from './state/actions';
 import { AbstractController } from './controllers/AbstractController'
 import { EventLog } from 'web3/types';
 import { getChannel } from './lib/getChannel';
+import ThreadsController from './controllers/ThreadsController';
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -75,7 +76,7 @@ export interface IHubAPIClient {
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
   getThreadInitialStates(): Promise<UnsignedThreadState[]>
   getIncomingThreads(): Promise<ThreadRow[]>
-  getThreadByParties(receiver: Address, sender?: Address): Promise<ThreadRow>
+  getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
   getExchangerRates(): Promise<ExchangeRates>
   buy<PurchaseMetaType=any, PaymentMetaType=any>(
@@ -155,17 +156,15 @@ class HubAPIClient implements IHubAPIClient {
     return response.data
   }
 
-  // return all threads bnetween 2 addresses
+  // return all threads between 2 addresses
   async getThreadByParties(
-    receiver: Address,
+    partyB: Address,
+    userIsSender: boolean,
   ): Promise<ThreadRow> {
     // get receiver threads
     const response = await this.networking.get(
-      `thread/${this.user}/to/${receiver}`,
+      `thread/${userIsSender ? this.user : partyB}/to/${userIsSender ? partyB : this.user}`,
     )
-    if (!response.data) {
-      return [] as any
-    }
     return response.data
   }
 
@@ -531,6 +530,7 @@ export class ConnextInternal extends ConnextClient {
   withdrawalController: WithdrawalController
   stateUpdateController: StateUpdateController
   collateralController: CollateralController
+  threadsController: ThreadsController
 
   constructor(opts: ConnextClientOptions) {
     super(opts)
@@ -558,6 +558,7 @@ export class ConnextInternal extends ConnextClient {
     this.withdrawalController = new WithdrawalController('WithdrawalController', this)
     this.stateUpdateController = new StateUpdateController('StateUpdateController', this)
     this.collateralController = new CollateralController('CollateralController', this)
+    this.threadsController = new ThreadsController('ThreadsController', this)
   }
 
   private getControllers(): AbstractController[] {
@@ -633,6 +634,31 @@ export class ConnextInternal extends ConnextClient {
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, true)
+  }
+
+  async signThreadState(state: UnsignedThreadState): Promise<ThreadState> {
+    const userInThread = state.sender == this.opts.user || state.receiver == this.opts.user
+    if (
+      !userInThread ||
+      state.contractAddress != this.opts.contractAddress
+    ) {
+      throw new Error(
+        `Refusing to sign state update which changes user or contract: ` +
+        `expected user: ${this.opts.user}, expected contract: ${this.opts.contractAddress} ` +
+        `actual state: ${JSON.stringify(state)}`
+      )
+    }
+
+    const hash = this.utils.createThreadStateHash(state)
+
+    const sig = await (
+      process.env.DEV
+        ? this.opts.web3.eth.sign(hash, this.opts.user)
+        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
+    )
+
+    console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
+    return addSigToThreadState(state, sig)
   }
 
   public async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>, ): Promise<SignedDepositRequestProposal> {
