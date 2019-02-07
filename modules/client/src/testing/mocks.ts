@@ -1,7 +1,7 @@
 import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
 import { IWeb3TxWrapper } from '../Connext'
 import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync } from '../types'
+import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState } from '../types'
 import { SyncResult } from '../types'
 import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
 import { UnsignedThreadState } from '../types'
@@ -64,12 +64,18 @@ export class MockConnextInternal extends ConnextInternal {
     // sig recover fns with web3 testing in `utils.test`
     this.validator.assertChannelSigner = (channelState: ChannelState, signer: "user" | "hub" = "user"): void => { return }
 
+    this.validator.assertThreadSigner = (thread: ThreadState): void => { return }
+
     after(() => this.stop())
   }
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     const { user, hubAddress } = this.opts
     return addSigToChannelState(state, mkHash('0x987123'), user !== hubAddress)
+  }
+
+  async signThreadState(state: UnsignedThreadState): Promise<ThreadState> {
+    return addSigToThreadState(state, mkHash('0x51512'))
   }
 
   async getContractEvents(eventName: string, fromBlock: number): Promise<EventLog[]> {
