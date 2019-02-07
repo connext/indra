@@ -1,4 +1,4 @@
-import { Address, Payment, ThreadState, UnsignedThreadState, UpdateRequest } from '../types'
+import { Address, Payment, ThreadState, UnsignedThreadState, UpdateRequest, ThreadHistoryItem } from '../types'
 import { AbstractController } from './AbstractController';
 
 export default class ThreadsController extends AbstractController {
@@ -10,11 +10,18 @@ export default class ThreadsController extends AbstractController {
     // TODO: should check against client store or against hub endpoint
     const state = this.getState()
     const channel = state.persistent.channel
-    const threads = state.persistent.threads
-    // TODO: What happens if we have an already closed thread at a different threadID in the state? -- AB
+    const threads = state.persistent.activeThreads
+    const threadHistory = state.persistent.threadHistory
+
     const thread = threads.filter(t => t.receiver == receiver && t.sender == channel.user)
     if (thread.length > 0) {
-      throw new Error(`Thread between sender (${channel.user}) and receiver (${receiver}) already exists. Thread: ${thread}`)
+      throw new Error(`There is an existing active thread between sender (${channel.user}) and receiver (${receiver}). Thread: ${thread}`)
+    }
+
+    // get appropriate thread id
+    const threadHistoryItem = threadHistory.filter(t => t.reciever == receiver && t.sender == channel.user)
+    if (threadHistoryItem.length > 1) {
+      throw new Error(`The thread history is inaccurate, there is more than one entries for the same reciever and sender combo. Thread history: ${JSON.stringify(threadHistory)}`)
     }
 
     // sign initial thread state
@@ -23,7 +30,7 @@ export default class ThreadsController extends AbstractController {
         contractAddress: channel.contractAddress,
         sender: channel.user,
         receiver,
-        threadId: state.persistent.lastThreadId + 1,
+        threadId: threadHistoryItem.length == 0 ? 1 : threadHistoryItem[0].threadId + 1,
         balanceWeiSender: balance.amountWei,
         balanceTokenSender: balance.amountToken,
         balanceWeiReceiver: "0",
@@ -36,7 +43,7 @@ export default class ThreadsController extends AbstractController {
     const newChannelState = await this.connext.signChannelState(
       this.validator.generateOpenThread(
         channel,
-        state.persistent.initialThreadStates,
+        state.persistent.activeInitialThreadStates,
         initialState,
       )
     )
@@ -59,21 +66,22 @@ export default class ThreadsController extends AbstractController {
 
   // the opposite thread party should acknowledge the closed thread
   // via logic in the `StateUpdateController`
-  async closeThread(threadId: number): Promise<void> {
+  // TODO: name parameter better, is sender/receiver/threadid type
+  async closeThread(threadIndicator: ThreadHistoryItem): Promise<void> {
     const state = this.getState()
     const channel = state.persistent.channel
-    const threads = state.persistent.threads
-    // TODO: Should check this with sender, receiver too. Why is this different from above? -- AB
-    const thread = threads.filter(t => t.threadId == threadId)
+    const threads = state.persistent.activeThreads
+
+    const thread = threads.filter(t => t.threadId == threadIndicator.threadId && t.sender == threadIndicator.sender && t.receiver == threadIndicator.reciever)
     if (thread.length != 1) {
-      throw new Error(`Error finding thread with provided threadId: ${threadId}. ${thread.length == 0 ? 'No thread found.' : `Multiple threads with provided ID found ${JSON.stringify(thread)}`}`)
+      throw new Error(`Error finding thread with provided thread information: ${threadIndicator}. ${thread.length == 0 ? 'No thread found.' : `Multiple threads with provided ID found ${JSON.stringify(thread)}`}`)
     }
 
     // sign channel state
     const newChannelState = await this.connext.signChannelState(
       this.validator.generateCloseThread(
         channel,
-        state.persistent.initialThreadStates,
+        state.persistent.activeInitialThreadStates,
         thread[0],
       )
     )
