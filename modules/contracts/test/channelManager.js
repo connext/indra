@@ -1,8 +1,6 @@
 const should = require("chai");
 const HttpProvider = require("ethjs-provider-http");
-const ethjsUtil = require("ethereumjs-util");
 const EthRPC = require("ethjs-rpc");
-const chai = require("chai");
 const BN = require("bn.js");
 const privKeys = require("./privKeys.json");
 const CM = artifacts.require("./ChannelManager.sol");
@@ -14,22 +12,16 @@ const { StateGenerator } = require("../../client/dist/StateGenerator");
 const { Validator } = require("../../client/dist/validator");
 const { 
   convertChannelState, 
-  convertDeposit, 
-  convertExchange, 
   convertWithdrawal, 
   convertProposePending
 } = require("../../client/dist/types");
 const {
-  mkAddress,
   getChannelState,
-  getThreadState,
   getDepositArgs,
   getWithdrawalArgs,
   getExchangeArgs,
   getPaymentArgs,
   getPendingArgs,
-  assertThreadStateEqual,
-  assertChannelStateEqual
 } = require("../../client/dist/testing");
 const { toBN } = require("../../client/dist/helpers/bn");
 const clientUtils = new Utils();
@@ -47,8 +39,6 @@ const emptyRootHash = "0x0000000000000000000000000000000000000000000000000000000
 
 const emptyAddress = "0x0000000000000000000000000000000000000000";
 const someAddress = "0xabcd000000000000000000000000000000000000";
-
-const SolRevert = "VM Exception while processing transaction: revert";
 
 const secondsFromNow = seconds => seconds + Math.floor(new Date().getTime() / 1000);
 const minutesFromNow = minutes => secondsFromNow(minutes * 60);
@@ -2970,7 +2960,7 @@ contract("ChannelManager", accounts => {
     })
 
     describe("happy paths", () => {
-      it("succeeds if sender starts to exit thread", async () => {
+      it.only("succeeds if sender starts to exit thread", async () => {
         const channelDetails = await cm.getChannelDetails(viewer.address);
         channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute)
 
