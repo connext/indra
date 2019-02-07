@@ -1,6 +1,6 @@
 build
 dist
-ganache.log
+ganache*.log
 node_modules
 .bash_history
 .config
@@ -13,6 +13,9 @@ node_modules
 **/*.DS_Store
 modules/hub/development/data
 modules/wallet/.env
+
+cypress/screenshots
+cypress/integration/examples
 
 # remove next line once hub is decoupled from spankchain
 modules/hub/package-lock.json

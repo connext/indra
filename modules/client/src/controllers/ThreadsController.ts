@@ -38,7 +38,6 @@ export default class ThreadsController extends AbstractController {
         txCount: 0
       }
     )
-
     // sign channel state
     const newChannelState = await this.connext.signChannelState(
       this.validator.generateOpenThread(
@@ -47,7 +46,6 @@ export default class ThreadsController extends AbstractController {
         initialState,
       )
     )
-
     const updateRequest: UpdateRequest = {
       reason: "OpenThread",
       args: initialState,

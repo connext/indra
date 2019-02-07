@@ -9,9 +9,10 @@ import Web3 = require('web3')
 import {
   UnsignedChannelState,
   UnsignedThreadState,
-  ChannelState,
-  SignedDepositRequestProposal,
+  ThreadState,
+  convertThreadState,
   Payment,
+  SignedDepositRequestProposal,
 } from './types'
 
 // import types from connext
@@ -187,17 +188,20 @@ export class Utils {
   }
 
   public generateThreadRootHash(
-    threadInitialStates: UnsignedThreadState[],
+    threadInitialStates: ThreadState[],
   ): string {
+    let temp = []
     let threadRootHash
     if (threadInitialStates.length === 0) {
       // reset to initial value -- no open VCs
       threadRootHash = this.emptyRootHash
     } else {
-      const merkle = this.generateThreadMerkleTree(threadInitialStates)
+      for(let i = 0; i < threadInitialStates.length; i++) {
+        temp[i] = convertThreadState("str-unsigned", threadInitialStates[i])
+      }
+      const merkle = this.generateThreadMerkleTree(temp)
       threadRootHash = MerkleUtils.bufferToHex(merkle.getRoot())
     }
-
     return threadRootHash
   }
 
@@ -282,15 +286,4 @@ export class Utils {
 
     return addr
   }
-
-  hasPendingOps(state: ChannelState) {
-    for (let field in state) {
-      if (!field.startsWith('pending'))
-        continue
-      if ((state as any)[field] !== '0')
-        return true
-    }
-    return false
-  }
-
 }

@@ -48,11 +48,8 @@ export class Poller {
       }
 
       const startTime = Date.now()
-      const [[didTimeout, res], err] = await maybe(timeoutPromise(opts.callback(), opts.timeout))
-      if (err) {
-        console.error(`Error polling ${opts.name}:`, err)
-      }
-
+      const maybeRes = maybe(opts.callback())
+      const [didTimeout, _] = await timeoutPromise(maybeRes, opts.timeout)
       if (didTimeout) {
         console.error(
           `Timeout of ${(opts.timeout! / 1000).toFixed()}s waiting for callback on poller ` +
@@ -63,13 +60,17 @@ export class Poller {
           )
         )
 
-        maybe(res).then(([res, err]) => {
+        maybeRes.then(([res, err]) => {
           console.error(
             `Orphaned poller callback on poller ${opts.name} returned after ` +
             `${((Date.now() - startTime) / 1000).toFixed()}s`,
             res || err,
           )
         })
+      } else {
+        const [_, err] = await maybeRes
+        if (err)
+          console.error(`Error polling ${opts.name}:`, err)
       }
 
       this.timeout = setTimeout(poll, opts.interval)

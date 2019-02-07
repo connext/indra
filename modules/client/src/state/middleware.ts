@@ -1,14 +1,12 @@
 import { DepositArgs, ExchangeArgs, SyncResult, UpdateRequest, WithdrawalArgs, ChannelState, ChannelUpdateReason } from '../types'
 import { ConnextState } from './store'
 import * as actions from './actions'
-import { Utils } from '../Utils'
 import { hasPendingOps } from '../hasPendingOps'
 
 
 export function handleStateFlags(args: any): any {
   let didInitialUpdate = false
 
-  const utils = new Utils()
   const { dispatch, getState } = args
 
   return (next: any) => (action: any) => {

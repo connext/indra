@@ -1,6 +1,6 @@
 import { ConnextState } from '../state/store'
 import { ConnextStore } from '../state/store'
-import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState } from '../types'
+import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState } from '../types'
 import { ChannelState, UpdateRequestTypes } from '../types'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
@@ -341,11 +341,10 @@ export default class StateUpdateController extends AbstractController {
           return new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
         }
 
-        // verification of args: timestamp, no user deposits
+        // verification of args
         const tsErr = validateTimestamp(this.store, update.args.timeout)
         if (tsErr)
           throw CollateralError(tsErr)
-
         return
       }
 
@@ -356,10 +355,6 @@ export default class StateUpdateController extends AbstractController {
         // if-and-only-if we have signed it.
         // Note that the `sendDepositToChain` method will validate that the
         // deposit amount is the amount we expect.
-
-        // user signature on the deposit parameters in enforced within the 
-        // deposit controller, and additionally in the validators if it is
-        // included, so no need to check here
         return await this.connext.depositController.sendUserAuthorizedDeposit(prev, update)
       }
 
@@ -440,21 +435,18 @@ export default class StateUpdateController extends AbstractController {
 
     },
 
-    'EmptyChannel': async (prev, update) => {
-      // channel event is checked in the validator
-      return
+    'ConfirmPending': async (prev, update) => {
+
     },
 
-    'ConfirmPending': async (prev, update) => {
-      // throw new Error('BSU-37: merge the PR!')
-      // channel event is checked in the validator
-      return
-    },
     'OpenThread': async (prev, update) => {
       throw new Error('REB-36: enable threads!')
     },
     'CloseThread': async (prev, update) => {
       throw new Error('REB-36: enable threads!')
+    },
+    'EmptyChannel': async (prev, update) => {
+      
     },
   }
 

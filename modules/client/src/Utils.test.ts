@@ -8,7 +8,6 @@ import { MerkleUtils } from './helpers/merkleUtils'
 // import { MerkleTree } from './helpers/merkleTree'
 import MerkleTree from './helpers/merkleTree'
 import * as t from './testing/index'
-import { assert } from './testing'
 
 const utils = new Utils()
 describe('Utils', () => {

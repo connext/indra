@@ -180,7 +180,6 @@ export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string }
   Invalidation: 'Invalidation',
   OpenThread: 'OpenThread',
   CloseThread: 'CloseThread',
-  // unilateral functions
   EmptyChannel: 'EmptyChannel',
 }
 export type ChannelUpdateReason = keyof UpdateRequestTypes
@@ -211,16 +210,14 @@ export type DepositArgs<T=string> = {
   depositWeiUser: T,
   depositTokenHub: T,
   depositTokenUser: T,
-
   timeout: number,
-  sigUser?: string, // optional for hub proposed deposits
+  sigUser?: string,
+  // metadata describing why this deposit was made, used by the hub to track
+  // credits being made to the user's account (see, ex, CoinPaymentsService)
+  reason?: any,
 }
 export type DepositArgsBN = DepositArgs<BN>
 export type DepositArgsBigNumber = DepositArgs<BigNumber>
-
-// this type is used to verify that a user has requested a deposit
-// sent to it from the hub on sync to alleviate bugs found
-// on multidevice. used to submit proposals to hub
 
 export type SignedDepositRequestProposal<T=string> = Payment<T> & {
   sigUser: string
@@ -311,11 +308,8 @@ export type WithdrawalArgs<T=string> = {
 export type WithdrawalArgsBN = WithdrawalArgs<BN>
 export type WithdrawalArgsBigNumber = WithdrawalArgs<BigNumber>
 
-// NOTE: the validators enforce event information
-// against previous is equivalent to the information
-// released by events corresponding to that transaction hash
 export type ConfirmPendingArgs = {
-  transactionHash: Address,
+  transactionHash: Address
 }
 
 /**
@@ -353,7 +347,7 @@ export type ConfirmPendingArgs = {
  * states? (ex, ProposePendingDeposit)
  */
 
-// channel status
+ // channel status
 export const InvalidationReason = {
   CU_INVALID_TIMEOUT: 'CU_INVALID_TIMEOUT', // The invalid state has timed out
   CU_INVALID_REJECTED: 'CU_INVALID_REJECTED', // The state is being rejected (ex, because the exchange rate is invalid)
@@ -375,6 +369,7 @@ export type ArgsTypes<T=string> =
   | PaymentArgs<T>
   | DepositArgs<T>
   | WithdrawalArgs<T>
+  | UnsignedThreadState<T>
   | ConfirmPendingArgs
   | InvalidationArgs
   | EmptyChannelArgs
@@ -397,6 +392,7 @@ export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   // If this update is coming from the hub, this will be the database timestamp
   // when the update was created there.
   createdOn?: Date
+  initialThreadStates?: UnsignedThreadState[]
 }
 
 export type UpdateRequestTypes<T=string> = {
@@ -438,14 +434,8 @@ export type ChannelStateUpdate<T = string> = {
 export type ChannelStateUpdateBN = ChannelStateUpdate<BN>
 export type ChannelStateUpdateBigNumber = ChannelStateUpdate<BigNumber>
 
-export const DisputeStatus = {
-  CD_PENDING: 'CD_PENDING',
-  CD_IN_DISPUTE_PERIOD: 'CD_IN_DISPUTE_PERIOD',
-  CD_FAILED: 'CD_FAILED',
-  CD_FINISHED: 'CD_FINISHED'
-}
-export type DisputeStatus = keyof typeof DisputeStatus
-
+// this is the typical form of responses from POST
+// hub endpoints and the sync endpoint
 export type SyncResult<T = string> =
   | { type: "thread", update: ThreadStateUpdate<T> }
   | { type: "channel", update: UpdateRequest<T> }
@@ -712,13 +702,6 @@ export type WithdrawalParameters<T = string> = {
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
-export const withdrawalParamsNumericFields = [
-  'withdrawalWeiUser',
-  'tokensToSell',
-  'weiToSell',
-  'withdrawalTokenUser',
-]
-
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
@@ -813,9 +796,9 @@ export const argNumericFields: { [Name in keyof UpdateArgTypes]: (keyof UpdateAr
   ] as any,
   ConfirmPending: [],
   Invalidation: [],
-  EmptyChannel: [],
   OpenThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
   CloseThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
+  EmptyChannel: [],
 }
 
 export function convertPayment<To extends NumericTypeName>(to: To, obj: PaymentArgs<any>): PaymentArgs<NumericTypes[To]>
@@ -856,16 +839,12 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
-export function convertWithdrawalParams<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
-  const fromType = getType(obj.tokensToSell)
-  return convertFields(fromType, to, withdrawalParamsNumericFields, obj)
-}
-
 export const proposePendingNumericArgs = [
   'depositWeiUser',
   'depositWeiHub',
   'depositTokenUser',
   'depositTokenHub',
+
   'withdrawalWeiUser',
   'withdrawalWeiHub',
   'withdrawalTokenUser',
@@ -891,9 +870,9 @@ const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
   ProposePendingWithdrawal: convertWithdrawal,
   ConfirmPending: (to: any, args: ConfirmPendingArgs) => args,
   Invalidation: (to: any, args: InvalidationArgs) => args,
-  EmptyChannel: (to: any, args: EmptyChannelArgs) => args,
   OpenThread: convertThreadState,
   CloseThread: convertThreadState,
+  EmptyChannel: (to: any, args: ConfirmPendingArgs) => args,
 }
 
 export function convertArgs<
@@ -909,21 +888,21 @@ export function convertArgs<
 
 /*
 POST /payments/purchase
- 
+
 Accepts:
- 
+
   {
     metadata: MetadataType,
     payments: PurchasePayment[],
   }
- 
+
 Returns:
- 
+
   {
     purchaseId: string,
     updates: SyncResponse,
   }
- 
+
 */
 
 export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD'

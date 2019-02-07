@@ -1,6 +1,6 @@
-import { UpdateRequest, ChannelState, convertChannelState, InvalidationArgs, Sync } from '../types'
 import { assertUnreachable } from '../lib/utils'
 import { Block } from 'web3/eth/types'
+import { UpdateRequest, ChannelState, convertChannelState, InvalidationArgs, Sync } from '../types'
 import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
 import { Poller } from '../lib/poller/Poller'
 import { ConnextInternal } from '../Connext'
@@ -123,7 +123,7 @@ export function filterPendingSyncResults(fromHub: SyncResult[], toHub: UpdateReq
   // to be sent, the corresponding incoming update will be ignored.
   const updateKey = (u: UpdateRequest) => u.id && u.id < 0 ? `unsigned:${u.id}` : `tx:${u.txCount}`
 
-  const existing: { [key: string]: { sigHub: boolean, sigUser: boolean } } = {}
+  const existing: {[key: string]: { sigHub: boolean, sigUser: boolean }} = {}
   toHub.forEach(u => {
     existing[updateKey(u)] = {
       sigHub: !!u.sigHub,
@@ -387,6 +387,32 @@ export default class SyncController extends AbstractController {
     })
   }
 
+  /**
+   * Responsible for handling sync responses from the hub, specifically
+   * the channel status.
+  */
+ public handleHubSync(sync: Sync) {
+  if (this.store.getState().runtime.channelStatus !== sync.status) {
+    this.store.dispatch(actions.setChannelStatus(sync.status))
+  }
+
+  // signing disabled in state update controller based on channel sync status
+  // unconditionally enqueue results
+  this.enqueueSyncResultsFromHub(sync.updates)
+
+  // descriptive status error handling
+  switch (sync.status) {
+    case "CS_OPEN":
+      break
+    case "CS_CHANNEL_DISPUTE":
+      break
+    case "CS_THREAD_DISPUTE":
+      throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')
+    default:
+      assertUnreachable(sync.status)
+  }
+}
+
   private async _flushPendingUpdatesToHub() {
     const state = this.getSyncState()
     if (!state.updatesToSync.length)
@@ -441,32 +467,6 @@ export default class SyncController extends AbstractController {
         ...newState,
         updatesToSync: newState.updatesToSync.slice(state.updatesToSync.length),
       }))
-    }
-  }
-
-  /**
-   * Responsible for handling sync responses from the hub, specifically
-   * the channel status.
-  */
-  public handleHubSync(sync: Sync) {
-    if (this.store.getState().runtime.channelStatus !== sync.status) {
-      this.store.dispatch(actions.setChannelStatus(sync.status))
-    }
-
-    // signing disabled in state update controller based on channel sync status
-    // unconditionally enqueue results
-    this.enqueueSyncResultsFromHub(sync.updates)
-
-    // descriptive status error handling
-    switch (sync.status) {
-      case "CS_OPEN":
-        break
-      case "CS_CHANNEL_DISPUTE":
-        break
-      case "CS_THREAD_DISPUTE":
-        throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')
-      default:
-        assertUnreachable(sync.status)
     }
   }
 

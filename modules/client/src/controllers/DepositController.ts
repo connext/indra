@@ -5,6 +5,8 @@ import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
 import * as actions from "../state/actions"
 import { getChannel } from '../lib/getChannel'
+import { PendingRequestedDeposit } from '../state/store'
+import { toBN } from '../helpers/bn';
 const tokenAbi = require("human-standard-token-abi")
 
 /*
@@ -13,7 +15,7 @@ const tokenAbi = require("human-standard-token-abi")
  * - We can send updates to the hub any time we want (because the hub will
  *   reject them if they are out of sync)
  * - In the case of deposit, the `syncController` will expose a method
- *   called something like "tryEnqueueSyncResultsFromHub", which will add the
+ *   called something like "tryHandleHubSync", which will add the
  *   sync results if the lock isn't held, but ignore them otherwise (ie,
  *   because they will be picked up on the next sync anyway), and this method
  *   will be used by the DepositController.
@@ -21,13 +23,7 @@ const tokenAbi = require("human-standard-token-abi")
 export default class DepositController extends AbstractController {
   private resolvePendingDepositPromise: any = null
 
-  // TODO: should the deposit params (timeout, payment) be saved for sig recovery or just use params sent by hub?
-
   public async requestUserDeposit(deposit: Payment) {
-    const err = this.validator.payment(convertPayment("bn", deposit))
-    if (err) {
-      throw new Error(`Cannot request a negative deposit. Deposit: ${JSON.stringify(deposit, null, 2)}. ` + err)
-    }
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
 
     const sync = await this.hub.requestDeposit(
@@ -132,7 +128,7 @@ export default class DepositController extends AbstractController {
         }
         const call = token.methods.approve(prev.contractAddress, args.depositTokenUser)
         const gasEstimate = await call.estimateGas(sendArgs)
-        sendArgs.gas = this.connext.contract.gasMultiple * gasEstimate
+        sendArgs.gas = toBN(Math.ceil(this.connext.contract.gasMultiple * gasEstimate))
         await call.send(sendArgs)
       }
       console.log('Sending user authorized deposit to chain.')

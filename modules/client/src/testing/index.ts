@@ -597,8 +597,7 @@ const initialDepositArgs: DepositInitial = {
     depositWeiUser: '7',
     depositWeiHub: '8',
     depositTokenHub: '9',
-    timeout: 696969,
-    sigUser: mkHash('0xsigUser')
+    timeout: 696969
   }),
 
   empty: () => ({
@@ -606,8 +605,7 @@ const initialDepositArgs: DepositInitial = {
     depositWeiUser: '0',
     depositWeiHub: '0',
     depositTokenHub: '0',
-    timeout: 696969,
-    sigUser: mkHash('0xsigUser')
+    timeout: 696969
   })
 }
 
