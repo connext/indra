@@ -15,7 +15,7 @@
     "prepare": "npm run build",
     "test:debug": "node --inspect-brk ./node_modules/truffle/build/cli.bundled.js test test/channelManager.js --network=ganache",
     "test:docker": "bash ops/test.sh",
-    "test": "cd ../client && npm run build && cd ../contracts && node_modules/.bin/truffle test test/channelManager.js --network=ganache",
+    "test": "node_modules/.bin/truffle test test/channelManager.js --network=ganache",
     "test:client": "node_modules/.bin/truffle test test/client.js --network=ganache"
   },
   "repository": {
@@ -39,7 +39,6 @@
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
     "chai-subset": "^1.6.0",
-    "connext": "^3.0.1",
     "dotenv": "^6.2.0",
     "ethjs-provider-http": "^0.1.6",
     "ethjs-rpc": "^0.2.0",
