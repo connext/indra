@@ -6,6 +6,6 @@
         "symbol": "BOOTY"
     },
     "channelManager": {
-        "challengePeriod": "600"
+        "challengePeriod": 600
     }
 }
