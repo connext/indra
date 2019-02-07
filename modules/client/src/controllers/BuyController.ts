@@ -5,9 +5,10 @@ import { getActiveThreads } from '@src/lib/getActiveThreads';
 import { toBN } from '@src/helpers/bn';
 
 // TODO: whats the best way to make these easily configurable by the client users? is there a better way than env vars? client instantiated opts?
-export const DEFAULT_THREAD_WEI_VALUE = "10000000000000000"
-export const DEFAULT_THREAD_TOKEN_VALUE = "10000000000000000"
-
+export const DEFAULT_THREAD_VALUES = {
+  amountWei: "10000000000000000", // 10fin
+  amountToken: "10000000000000000",
+}
 
 export default class BuyController extends AbstractController {
   public async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
@@ -44,9 +45,9 @@ export default class BuyController extends AbstractController {
         // thread designed ONLY to handle this larger payment is created
         // and immediately closed
 
-        // here check to see if payment is above defaults
+        // check to see if payment is above defaults
         const paymentBN = convertPayment("bn", payment.amount)
-        const isLargePayment = paymentBN.amountToken.gt(toBN(DEFAULT_THREAD_TOKEN_VALUE)) || paymentBN.amountWei.gt(toBN(DEFAULT_THREAD_WEI_VALUE))
+        const isLargePayment = paymentBN.amountToken.gt(toBN(DEFAULT_THREAD_VALUES.amountToken)) || paymentBN.amountWei.gt(toBN(DEFAULT_THREAD_VALUES.amountWei))
 
         // check to see if you have a thread open
         const potentialThreads = getActiveThreads(this.store).filter(
@@ -60,17 +61,17 @@ export default class BuyController extends AbstractController {
         let thread = potentialThreads[0]
         if (!thread) {
           // no thread -- must open a new one, then make a payment
-          // TODO: add in thread default value for opening and
-          // exceptions for large payments
-          thread = await this.connext.threadsController.openThread(payment.recipient, payment.amount)
+          thread = await this.connext.threadsController.openThread(
+            payment.recipient, 
+            isLargePayment ? payment.amount : DEFAULT_THREAD_VALUES
+          )
+
           // TODO: figure out if this will wait for the channel state to
           // be updated via state update controller (should)
-          await this.connext.awaitPersistentStateSaved()
-          // update new channel state
-          newChannelState = getChannel(this.store)          
-        } else {
+          await this.connext.awaitPersistentStateSaved()        
+        } else { // active thread exists
+          // can handle payment?
           const threadBN = convertThreadState("bn", thread)
-          // thread exists, does it need to be closed and reopened?
           const canAffordPayment = threadBN.balanceTokenSender.gte(paymentBN.amountToken) && threadBN.balanceWeiSender.gte(paymentBN.amountWei)
 
           if (!canAffordPayment) {
@@ -80,12 +81,13 @@ export default class BuyController extends AbstractController {
               reciever: thread.receiver,
               threadId: thread.threadId
             })
-            thread = await this.connext.threadsController.openThread(payment.recipient, payment.amount)
+            thread = await this.connext.threadsController.openThread(
+              payment.recipient, 
+              isLargePayment ? payment.amount : DEFAULT_THREAD_VALUES
+            )
             // TODO: figure out if this will wait for the channel state to
             // be updated via state update controller (should)
             await this.connext.awaitPersistentStateSaved()
-            // update new channel state
-            newChannelState = getChannel(this.store)  
           }
         }
 
@@ -94,12 +96,26 @@ export default class BuyController extends AbstractController {
           this.validator.generateThreadPayment(thread, payment.amount)
         )
 
+        // TODO: make sure the state update controller is able to update
+        // the state of the active thread once the payment is made
         signedPayments.push({
           ...payment,
           type: "PT_THREAD",
           update: { state }
         })
 
+        // close thread if it was exceptionally large
+        if (isLargePayment) {
+          await this.connext.threadsController.closeThread({
+            sender: thread.sender,
+            reciever: thread.receiver,
+            threadId: thread.threadId
+          })
+          await this.connext.awaitPersistentStateSaved()
+        }
+
+        // update new channel state
+        newChannelState = getChannel(this.store)
       } else { // handle channel payments
         const args: PaymentArgs = {
           recipient: 'hub',
