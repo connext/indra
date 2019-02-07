@@ -635,7 +635,7 @@ export class Validator {
     return null
   }
 
-  public generateThreadPayment(prevStr: ThreadState, argsStr: PaymentArgs): UnsignedThreadState {
+  public generateThreadPayment(prevStr: ThreadState, argsStr: Payment): UnsignedThreadState {
     const prev = convertThreadState("bn", prevStr)
     const args = convertThreadPayment("bn", argsStr)
     const error = this.threadPayment(prev, args)
