@@ -670,6 +670,19 @@ export function convertVerboseEvent<To extends NumericTypeName>(to: To, obj: Ver
  ********* WALLET TYPES **********
  *********************************/
 
+// this type is used in the store to help the client
+// track which threadID should be used for each sender/receiver pair.
+// the client store should have an array of these types under `threadHistory`
+// which should only store the latest threadID used for each sender/receiver 
+// combo. (i.e. i open thread1 with B= sender, C=receiver, and close it.
+// when i open a new thread with same sender (B) and receiver (C), the 
+// corresponding thread history item should have the threadId property updated)
+export type ThreadHistoryItem = {
+  sender: Address
+  reciever: Address
+  threadId: number // TODO: rename to latest threadId for clarity...?
+}
+
 // what the wallet submits to client createUpdate functions
 export type Payment<T = string> = {
   amountWei: T
