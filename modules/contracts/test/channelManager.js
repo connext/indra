@@ -2943,9 +2943,10 @@ contract("ChannelManager", accounts => {
   describe("startExitThread", () => {
     let threadState
     let channelStateWithThreads
-    const happyAssertions = () => {
+    const happyAssertions = async () => {
       // assert that balances and threadClosingTime is set appropriately in success case
-      return true
+      const thread = await cm.threads(threadState.sender, threadState.receiver, threadState.threadId)
+      console.log('thread: ', thread);
     }
 
     beforeEach(async () => {
@@ -2972,10 +2973,12 @@ contract("ChannelManager", accounts => {
       it("succeeds if sender starts to exit thread", async () => {
         const channelDetails = await cm.getChannelDetails(viewer.address);
         channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute)
+
         const proof = clientUtils.generateThreadProof(threadState, [threadState])
         const sig = await getThreadSig(threadState, viewer)
+
         await startExitThread(channelStateWithThreads, threadState, proof, sig, viewer)
-        happyAssertions();
+        await happyAssertions();
       })
       it("succeeds if receiver starts to exit thread", async () => {
         happyAssertions();
