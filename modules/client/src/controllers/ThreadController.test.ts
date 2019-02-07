@@ -1,6 +1,6 @@
 import { MockConnextInternal, MockStore } from '../testing/mocks'
 import { mkAddress } from '../testing';
-import { PaymentArgs } from '@src/types';
+import { PaymentArgs, ThreadState } from '@src/types';
 
 describe('ThreadController: unit tests', () => {
     let connext: MockConnextInternal
@@ -11,31 +11,35 @@ describe('ThreadController: unit tests', () => {
     describe('OpenThread', () => {
         beforeEach(async () => {
             mockStore.setChannel({
-                user: sender,
-                balanceWei: [1, 1],
-                balanceToken: [10, 10],
+              user: sender,
+              balanceWei: [1, 1],
+              balanceToken: [10, 10],
+              contractAddress: mkAddress('0xccc')
             })
             connext = new MockConnextInternal({ user: sender, store: mockStore.createStore()})
         })
 
         it('should work for first thread', async () => {
             await connext.start()
-            //generate openThread state and send to hub
+            // generate openThread state and send to hub
             await connext.threadsController.openThread(receiver1, {
                 amountToken: '2',
                 amountWei: '1'
             })
             await new Promise(res => setTimeout(res, 20))
-            //assert that the received update is correct
+            // assert that the received update is correct
             connext.mockHub.assertReceivedUpdate({
-                reason: 'OpenThread',
-                args: {
-                    amountToken: '2',
-                    amountWei: '1',
-                    recipient: receiver1.toString(),
-                } as PaymentArgs,
-                sigUser: true,
-                sigHub: false,
+              reason: 'OpenThread',
+              args: {
+                balanceTokenSender: '2',
+                balanceWeiSender: '1',
+                balanceTokenReceiver: '0',
+                balanceWeiReceiver: '0',
+                sender,
+                receiver: receiver1,
+              } as Partial<ThreadState>,
+              sigUser: true,
+              sigHub: false,
             })
         })
 
