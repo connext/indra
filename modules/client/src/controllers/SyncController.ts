@@ -6,7 +6,7 @@ import { Poller } from '../lib/poller/Poller'
 import { ConnextInternal } from '../Connext'
 import { SyncControllerState, CHANNEL_ZERO_STATE } from '../state/store'
 import getTxCount from '../lib/getTxCount'
-import { getLastThreadId } from '../lib/getLastThreadId'
+import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
 import { maybe, Lock } from '../lib/utils'
@@ -191,7 +191,7 @@ export default class SyncController extends AbstractController {
       const state = this.store.getState()
       const hubSync = await this.hub.sync(
         state.persistent.channel.txCountGlobal,
-        getLastThreadId(this.store),
+        getLastThreadUpdateId(this.store),
       )
       if (!hubSync) {
         console.log('No updates found from the hub to sync')
@@ -395,7 +395,7 @@ export default class SyncController extends AbstractController {
     console.log(`Sending updates to hub: ${state.updatesToSync.map(u => u && u.reason)}`, state.updatesToSync)
     const [res, err] = await maybe(this.hub.updateHub(
       state.updatesToSync,
-      getLastThreadId(this.store),
+      getLastThreadUpdateId(this.store),
     ))
 
     let shouldRemoveUpdates = true

@@ -1,8 +1,8 @@
 import { PurchaseRequest, PurchasePayment, PaymentArgs, SyncResult, convertThreadState, convertPayment, ChannelState } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
-import { getActiveThreads } from '@src/lib/getActiveThreads';
-import { toBN } from '@src/helpers/bn';
+import { getActiveThreads } from '../lib/getActiveThreads';
+import { toBN } from '../helpers/bn';
 
 // TODO: whats the best way to make these easily configurable by the client users? is there a better way than env vars? client instantiated opts?
 export const DEFAULT_THREAD_VALUES = {

@@ -1,6 +1,6 @@
 import getTxCount from '../lib/getTxCount'
 import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateRequestTypes, SyncResult, UpdateRequest, ChannelStateUpdate, convertPayment } from '../types'
-import { getLastThreadId } from '../lib/getLastThreadId'
+import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
 import * as actions from "../state/actions"
@@ -33,7 +33,7 @@ export default class DepositController extends AbstractController {
     const sync = await this.hub.requestDeposit(
       signedRequest,
       getTxCount(this.store),
-      getLastThreadId(this.store)
+      getLastThreadUpdateId(this.store)
     )
 
     this.connext.syncController.handleHubSync(sync)

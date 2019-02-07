@@ -58,7 +58,7 @@ export const dequeueSyncResultsFromHub = setterAction<SyncResult>('runtime.syncR
 export const setChannelStatus = setterAction<ChannelStatus>('runtime.channelStatus')
 
 // Persistent
-export const setLastThreadId = setterAction<number>('persistent.lastThreadId')
+export const setLastThreadUpdateId = setterAction<number>('persistent.lastThreadUpdateId')
 
 export type SetChannelActionArgs = {
   update: UpdateRequest

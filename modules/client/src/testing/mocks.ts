@@ -484,12 +484,12 @@ export class MockStore {
     const thread = getThreadState('empty', overrides)
 
     let {
-      threads,
-      initialThreadStates,
+      activeThreads,
+      threadHistory,
       channel,
+      activeInitialThreadStates,
+      lastThreadUpdateId,
     } = this._initialState.persistent
-
-    threads.push(thread)
 
     const threadBN = convertThreadState('bn', thread)
 
@@ -505,34 +505,35 @@ export class MockStore {
         threadBN.balanceWeiReceiver,
       ),
     })
-    initialThreadStates.push(initialThread)
+
+    activeInitialThreadStates.push(initialThread)
+    activeThreads.push(thread)
 
     const newState = new StateGenerator().openThread(
       convertChannelState('bn', channel),
-      initialThreadStates,
+      activeInitialThreadStates,
       threadBN,
     )
-
-    const latestThreadId = this._initialState.persistent.lastThreadId + 1
 
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
         channel: addSigToChannelState(newState),
-        lastThreadId: latestThreadId,
-        initialThreadStates,
-        threads,
+        threadHistory,
+        activeInitialThreadStates,
+        activeThreads,
+        lastThreadUpdateId: lastThreadUpdateId++,
       },
     }
   }
 
-  public setLastThreadId = (lastThreadId: number) => {
+  public setLastThreadUpdateId = (lastThreadUpdateId: number) => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        lastThreadId,
+        lastThreadUpdateId,
       },
     }
   }

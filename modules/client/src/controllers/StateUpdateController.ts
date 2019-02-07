@@ -174,7 +174,7 @@ export default class StateUpdateController extends AbstractController {
       }
       if (!actionItem.update.id)
         throw new Error('uh oh we should never have a thread update without an ID here')
-      this.store.dispatch(actions.setLastThreadId(actionItem.update.id!))
+      this.store.dispatch(actions.setLastThreadUpdateId(actionItem.update.id!))
       this.flushQueuedActions()
       continue
       */
