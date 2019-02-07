@@ -841,7 +841,7 @@ export class ConnextInternal extends ConnextClient {
       state.contractAddress != this.opts.contractAddress
     ) {
       throw new Error(
-        `Refusing to sign state update which changes user or contract: ` +
+        `Refusing to sign channel state update which changes user or contract: ` +
         `expected user: ${this.opts.user}, expected contract: ${this.opts.contractAddress} ` +
         `actual state: ${JSON.stringify(state)}`
       )
@@ -867,7 +867,7 @@ export class ConnextInternal extends ConnextClient {
       state.contractAddress != this.opts.contractAddress
     ) {
       throw new Error(
-        `Refusing to sign state update which changes user or contract: ` +
+        `Refusing to sign thread state update which changes user or contract: ` +
         `expected user: ${this.opts.user}, expected contract: ${this.opts.contractAddress} ` +
         `actual state: ${JSON.stringify(state)}`
       )
