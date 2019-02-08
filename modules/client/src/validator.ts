@@ -510,13 +510,6 @@ export class Validator {
   }
 
   public closeThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): string | null {
-    const e = this.isValidStateTransitionRequest(
-      prev,
-      { args, reason: "CloseThread", txCount: prev.txCountGlobal, initialThreadStates }
-    )
-    if (e) {
-      return e
-    }
     // NOTE: the initial thread states are states before the thread is
     // closed (corr. to prev open threads)
     const initialState = initialThreadStates.filter(thread => thread.threadId === args.threadId && thread.receiver == args.receiver && thread.sender == args.sender)[0]
@@ -524,36 +517,36 @@ export class Validator {
       return `Thread is not included in channel open threads. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
     }
 
-    // NOTE: in other places previous states are not validated, and technically
-    // the args in this case are a previously signed thread state. We are
-    // performing sig and balance conservation verification here, however,
-    // since the major point of the validators is to ensure the args provided
-    // lead to a valid current state if applied
+    // 1. Check that the initial state makes sense
+    // 2. Check the thread state independently
+    // 3. Check the transition from initial to thread state
+    let errs: any = [
+      this.isValidInitialThreadState(convertThreadState('bn',initialState)),
+      this.isValidThreadState(args),
+      this.isValidThreadStateTransition(convertThreadState('bn', initialState), args),
+    // 4. Then check against prev state
+    //    a. Check that user is sender or receiver
+    //    b. Check that contract address is same as in prev
+    //    c. Check that previous state has correct thread root
+    //    d. Check that previous state has correct thread count
+    //    e. A valid thread closeing channel state can be generated
+      this.userIsNotSenderOrReceiver(prev, args),
+      this.hasInequivalent([prev, args], ['contractAddress']),
+      this.checkThreadRootAndCount(prev, initialThreadStates),
+      this.isValidStateTransitionRequest(
+        prev,
+        { args, reason: "CloseThread", txCount: prev.txCountGlobal, initialThreadStates }
+      )
+    ]
+    // TODO: Why do we need the below? -- AB
+    // if (this.hasTimeout(prev)) {
+    //   errs.push(this.hasTimeout(prev))
+    // }
 
-    // validate the closing thread state is signed
-    try {
-      this.assertThreadSigner(convertThreadState("str", args))
-    } catch (e) {
-      return e.message
-    }
-    if (this.hasTimeout(prev)) {
-      return this.hasTimeout(prev)
-    }
-
-    // and balance is conserved
-    const initAmts = {
-      amountWei: toBN(initialState.balanceWeiSender),
-      amountToken: toBN(initialState.balanceTokenSender)
-    }
-    const finalAmts = {
-      amountWei: args.balanceWeiReceiver.add(args.balanceWeiSender),
-      amountToken: args.balanceTokenReceiver.add(args.balanceTokenSender)
-    }
-    if (this.hasInequivalent([initAmts, finalAmts], Object.keys(finalAmts))) {
-      return `Balances in closing thread state are not conserved. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
-    }
-
-    return null
+    if(errs) 
+      return errs
+    else
+      return null
   }
 
   public generateCloseThread(prevStr: ChannelState, initialThreadStates: ThreadState[], argsStr: ThreadState): UnsignedChannelState {
@@ -818,12 +811,16 @@ export class Validator {
     // 2. Tx count only increases
     // 3. Balances are conserved
     // 4. Contract address is the same
+    // 5. Sender is the same
+    // 6. Receiver is the same
     let errs = [
       this.enforceDelta([prev, args], 1, ['txCount']),
       this.hasNegative({weiDiff: (args.balanceWeiReceiver.sub(prev.balanceWeiReceiver))}, ['weiDiff']),
       this.hasNegative({tokenDiff: (args.balanceTokenReceiver.sub(prev.balanceTokenReceiver))}, ['tokenDiff'])
     ]
     if(prev.contractAddress != args.contractAddress) errs.push(`Contract address must remain the same. Prev state: ${JSON.stringify(convertThreadState("str", prev))}`)
+    if(prev.sender != args.sender) errs.push(`Sender must remain the same. Prev state: ${JSON.stringify(convertThreadState("str", prev))}`)
+    if(prev.receiver != args.receiver) errs.push(`Receiver must remain the same. Prev state: ${JSON.stringify(convertThreadState("str", prev))}`)
     if(prev.balanceWeiSender.add(prev.balanceWeiReceiver) != args.balanceWeiSender.add(args.balanceWeiReceiver)) 
       errs.push(`Wei must be conserved. Prev state: ${JSON.stringify(convertThreadState("str", prev))}. Curr state: ${JSON.stringify(convertThreadState("str", args))}`)
     if(prev.balanceTokenSender.add(prev.balanceTokenReceiver) != args.balanceTokenSender.add(args.balanceTokenReceiver)) 
