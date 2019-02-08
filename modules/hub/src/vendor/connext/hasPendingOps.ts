@@ -1,6 +1,7 @@
-import { ChannelState } from './types'
+import { ChannelState, convertChannelState } from './types'
 
-export function hasPendingOps(state: ChannelState) {
+export function hasPendingOps(stateAny: ChannelState<any>) {
+  const state = convertChannelState('str', stateAny)
   for (let field in state) {
     if (!field.startsWith('pending'))
       continue
@@ -9,4 +10,3 @@ export function hasPendingOps(state: ChannelState) {
   }
   return false
 }
-

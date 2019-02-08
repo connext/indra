@@ -173,6 +173,10 @@ export class MockExchangeRateDao {
       }
     }
   }
+
+  async getUsdRateAtTime(date: Date) {
+    return mockRate
+  }
 }
 
 export const fakeSig = mkSig('0xabc123')
@@ -300,6 +304,17 @@ export class MockChannelManagerContract {
     },
     startExit: () => {
       console.log(`Called mocked contract function startExit`)
+      return {
+        send: async () => {
+          return true
+        },
+        encodeABI: () => {
+          return '0xdeadbeef'
+        },
+      }
+    },
+    emptyChannel: () => {
+      console.log(`Called mocked contract function emptyChannel`)
       return {
         send: async () => {
           return true

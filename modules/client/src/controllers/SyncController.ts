@@ -228,7 +228,7 @@ export default class SyncController extends AbstractController {
     const state = this.getState()
 
     const { channel, channelUpdate } = this.getState().persistent
-    if (!channel.timeout)
+    if (!hasPendingOps(channel))
       return
 
     // Wait until all the hub's sync results have been handled before checking
@@ -238,7 +238,7 @@ export default class SyncController extends AbstractController {
     if (state.runtime.syncResultsFromHub.length > 0)
       return
 
-    const { didEmit, latestBlock } = await this.didContractEmitUpdateEvent(channel)
+    const { didEmit, latestBlock } = await this.didContractEmitUpdateEvent(channel, channelUpdate.createdOn)
     switch (didEmit) {
       case 'unknown':
         // The timeout hasn't expired yet; do nothing.
@@ -270,28 +270,35 @@ export default class SyncController extends AbstractController {
    * Returns 'yes' if it has, 'no' if it has not, and 'unknown' if the
    * channel's timeout has not yet expired.
    */
-  public async didContractEmitUpdateEvent(channel: ChannelState): Promise<{
+  public async didContractEmitUpdateEvent(channel: ChannelState, updateTimestamp?: Date): Promise<{
     didEmit: 'yes' | 'no' | 'unknown'
     latestBlock: Block
     event?: EventLog
   }> {
+    let timeout = channel.timeout
     if (!channel.timeout) {
-      // Note: this isn't a hard or inherent limitation... but do it here for
-      // now to make sure we don't accidentally do Bad Things for states
-      // with pending operations where the timeout = 0.
-      throw new Error(
-        'Cannot check whether the contract has emitted an event ' +
-        'for a state without a timeout. State: ' + JSON.stringify(channel)
-      )
+      if (!updateTimestamp) {
+        // Note: this isn't a hard or inherent limitation... but do it here for
+        // now to make sure we don't accidentally do Bad Things for states
+        // with pending operations where the timeout = 0.
+        throw new Error(
+          'Cannot check whether the contract has emitted an event ' +
+          'for a state without a timeout. State: ' + JSON.stringify(channel)
+        )
+      }
+
+      // If the state doesn't have a timeout, use the update's timestamp + 5 minutes
+      // as an approximate timeout window.
+      timeout = +(new Date(updateTimestamp)) / 1000 + 60 * 5
     }
 
-    let block = await this.findBlockNearestTimeout(channel.timeout)
-    if (block.timestamp < channel.timeout)
+    let block = await this.findBlockNearestTimeout(timeout)
+    if (block.timestamp < timeout)
       return { didEmit: 'unknown', latestBlock: block }
 
     const evts = await this.connext.getContractEvents(
       'DidUpdateChannel',
-      Math.max(block.number - 2000, 0), // 2000 blocks = ~8 hours
+      Math.max(block.number - 4000, 0), // 4000 blocks = ~16 hours
     )
     const event = evts.find(e => e.returnValues.txCount[0] == channel.txCountGlobal)
     if (event)

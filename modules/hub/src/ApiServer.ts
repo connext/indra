@@ -1,3 +1,5 @@
+import { MaybeRes } from './util'
+import { ezPromise, maybe } from './util'
 import Config from './Config'
 import * as express from 'express'
 import * as session from 'express-session'
@@ -42,6 +44,51 @@ const requestLogMiddleware = (req: any, res: any, next: any): any => {
   next()
 }
 
+/**
+ * Adds `getText(): Promise<string>` and `getRawBody(): Promise<Buffer>`
+ * methods to `req`. They will reject if no content-length is provided,
+ * or the content-length > maxSize.
+ */
+function bodyTextMiddleware(opts: { maxSize: number }) {
+  return (req, res, next) => {
+    const rawPromise = ezPromise<MaybeRes<Buffer>>()
+    const textPromise = ezPromise<MaybeRes<string>>()
+
+    req.getRawBody = () => maybe.unwrap(rawPromise.promise)
+    req.getText = () => maybe.unwrap(textPromise.promise)
+
+    const size = +req.headers['content-length']
+    if (size != size || size > opts.maxSize) {
+      const msg = (
+        size > opts.maxSize ?
+          `bodyTextMiddleware: body too large (${size} > ${opts.maxSize}); not parsing.` :
+          `bodyTextMiddleware: no content-length; not parsing body.`
+      )
+      LOG.info(msg)
+      const rej = maybe.reject(new Error(msg))
+      rawPromise.resolve(rej as any)
+      textPromise.resolve(rej as any)
+      return next()
+    }
+
+    const rawData = Buffer.alloc(size)
+    let offset = 0
+    req.on('data', (chunk: Buffer) => {
+      console.log('data!', opts.maxSize)
+      chunk.copy(rawData, offset)
+      offset += chunk.length
+    })
+
+    req.on('end', () => {
+      // Assume UTF-8 because there's no easy way to get the correct charset ¯\_(ツ)_/¯
+      rawPromise.resolve(maybe.accept(rawData))
+      textPromise.resolve(maybe.accept(rawData.toString('utf8')))
+    })
+
+    return next()
+  }
+}
+
 export class ApiServer {
   app: express.Application
 
@@ -62,7 +109,6 @@ export class ApiServer {
       origin: true,
       credentials: true,
     })
-
     this.app.options('*', corsHandler)
     this.app.use(corsHandler)
 
@@ -89,12 +135,15 @@ export class ApiServer {
       }),
     )
 
+    // Note: this needs to come before the `express.json()` middlware, but
+    // after the session middleware. I have no idea why, but if it's before the
+    // session middleware requests hang, and the `express.json()` middleware
+    // reads and exhausts the body, so we can't go after that one.
+    this.app.use(bodyTextMiddleware({ maxSize: 1024 * 1024 * 10 }))
+
     this.app.use(express.json())
-    // TODO: This can probably be removed
-    this.app.use(
-      '/assets',
-      express.static(path.join(__dirname, '../', 'public')),
-    )
+    this.app.use(express.urlencoded())
+
     this.app.use(this.authenticateRoutes.bind(this))
     this.app.use(this.logErrors.bind(this))
 

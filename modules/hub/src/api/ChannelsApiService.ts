@@ -1,3 +1,4 @@
+import { getUserFromRequest } from '../util/request'
 import { default as Config } from '../Config'
 import { convertWithdrawalParameters } from '../vendor/connext/types'
 import { UpdateRequest } from '../vendor/connext/types'
@@ -39,26 +40,8 @@ export class ChannelsApiServiceHandler {
   dao: ChannelsDao
   config: Config
 
-  private getUser(req: express.Request) {
-    const { user } = req.params
-    const hasAccess = (
-      (user && user == req.session!.address) ||
-      req.session!.roles.has(Role.ADMIN) ||
-      req.session!.roles.has(Role.SERVICE)
-    )
-
-    if (!hasAccess) {
-      throw new Error(
-        `Current user '${req.session!.address}' with roles ` +
-        `'${JSON.stringify(Array.from(req.session!.roles))}' is not ` +
-        `authorized to act on behalf of requested user '${user}'.`
-      )
-    }
-    return user
-  }
-
   async doUpdate(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const user = getUserFromRequest(req)
     const { updates, lastThreadUpdateId } = req.body as {
       updates: UpdateRequest[]
       lastThreadUpdateId: number
@@ -103,13 +86,13 @@ export class ChannelsApiServiceHandler {
     )
 
     res.send({
-      error: err ? '' + err + (this.config.isDev ? '\n' + err.stack : '') : null,
+      error: err ? '' + err + (!this.config.isProduction ? '\n' + err.stack : '') : null,
       updates: syncUpdates,
     })
   }
 
   async doRequestDeposit(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const user = getUserFromRequest(req)
     let { depositWei, depositToken, lastChanTx, lastThreadUpdateId, sigUser } = req.body
     if (!depositWei || !depositToken || !user || !sigUser || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
       LOG.warn(
@@ -252,7 +235,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doGetChannelByUser(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const user = getUserFromRequest(req)
     if (!user) {
       LOG.warn(
         'Receiver invalid get channel request. Aborting. Params received: {params}',
@@ -272,7 +255,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doGetChannelDebug(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const user = getUserFromRequest(req)
     const channel = await this.dao.getChannelOrInitialState(user)
     const { updates: recentUpdates } = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,

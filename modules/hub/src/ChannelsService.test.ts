@@ -1,12 +1,14 @@
+import { parameterizedTests } from './testing'
 import { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
-import { getTestRegistry, assert, getFakeClock } from './testing'
+import { getTestRegistry, assert, getFakeClock, nock } from './testing'
 import {
   MockExchangeRateDao,
   MockGasEstimateDao,
   mockRate,
   MockSignerService,
-  fakeSig
+  fakeSig,
+  getTestConfig
 } from './testing/mocks'
 import {
   getChannelState,
@@ -47,6 +49,7 @@ import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/ge
 import Config from './Config';
 import { BigNumber } from 'bignumber.js/bignumber'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
+import { RedisClient } from './RedisClient'
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -113,7 +116,7 @@ describe('ChannelsService', () => {
   const config: Config = registry.get('Config')
   const startExitDao: ChannelDisputesDao = registry.get('ChannelDisputesDao')
 
-  beforeEach(async () => {
+  beforeEach(async function () {
     await registry.clearDatabase()
   })
 
@@ -1007,5 +1010,48 @@ describe('ChannelsService', () => {
 
     const {updates: sync} = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
     assert.deepEqual(sync.map(item => (item.update as UpdateRequest).reason), ['ConfirmPending', 'Invalidation'])
+  })
+})
+
+describe('ChannelsService.shouldCollateralize', () => {
+  const registry = getTestRegistry({
+    Config: getTestConfig({
+      shouldCollateralizeUrl: 'https://example.com/should-collateralize/',
+      isDev: false,
+    }),
+  })
+
+  const service: ChannelsService = registry.get('ChannelsService')
+  const redis: RedisClient = registry.get('RedisClient')
+
+  parameterizedTests([
+    { name: 'works: true', shouldCollateralize: true },
+    { name: 'works: false', shouldCollateralize: false },
+    { name: 'returns false on error', shouldCollateralize: Error('uhoh') },
+  ], async t => {
+    nock('https://example.com')
+      .get(/.*/)
+      .reply(url => {
+        assert.equal(url, '/should-collateralize/0x1234')
+        if (t.shouldCollateralize instanceof Error)
+          throw t.shouldCollateralize
+        return [200, { shouldCollateralize: t.shouldCollateralize }]
+      })
+
+    await redis.flushall()
+    const res = await service.shouldCollateralize('0x1234')
+    const expected = t.shouldCollateralize instanceof Error ? false : t.shouldCollateralize
+    assert.equal(res, expected)
+  })
+
+  it('does not check when NO_CHECK is used', async () => {
+    const registry = getTestRegistry({
+      Config: getTestConfig({
+        shouldCollateralizeUrl: 'NO_CHECK',
+        isDev: false,
+      }),
+    })
+    const service: ChannelsService = registry.get('ChannelsService')
+    assert.equal(await service.shouldCollateralize('0x1234'), true)
   })
 })

@@ -1,15 +1,17 @@
-import { OnchainTransactionRow, TransactionMeta, UnconfirmedTransaction } from '../domain/OnchainTransaction'
+import { OnchainTransactionRow, TransactionMeta, UnconfirmedTransaction, OnchainTransactionState } from '../domain/OnchainTransaction'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { assertUnreachable } from "../util/assertUnreachable";
+import Config from '../Config';
 
 export type TxnStateUpdate = (
   { state: 'submitted' } |
-  { state: 'confirmed', blockNum: Number, blockHash: string, transactionIndex: number } |
+  { state: 'confirmed' | 'failed', blockNum: Number, blockHash: string, transactionIndex: number, reason?: any } |
   { state: 'failed', reason: string }
 )
 
 
 export class OnchainTransactionsDao {
+  constructor(private config: Config) {}
 
   async insertTransaction(db: DBEngine, logicalId: Number | null, meta: TransactionMeta, txn: UnconfirmedTransaction) {
     const res = await db.queryOne(SQL`

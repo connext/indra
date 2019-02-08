@@ -16,7 +16,7 @@ describe('Poller', () => {
     poller = new Poller({
       name: 'test-poller',
       interval: 2,
-      callback,
+      callback: () => callback()
     })
     runs = 0
   })
@@ -52,6 +52,16 @@ describe('Poller', () => {
     })
     await poller.start()
     await sleep(15)
+    expect(runs).greaterThan(2)
+  })
+
+  it('should handle errors in the callback', async () => {
+    callback = async () => {
+      runs += 1
+      throw new Error('uhoh')
+    }
+    await poller.start()
+    await sleep(10)
     expect(runs).greaterThan(2)
   })
 })

@@ -214,6 +214,10 @@ export type DepositArgs<T=string> = {
 
   timeout: number,
   sigUser?: string, // optional for hub proposed deposits
+  // metadata describing why this deposit was made, used by the hub to track
+  // credits being made to the user's account (see, ex, CoinPaymentsService)
+  reason?: any,
+
 }
 export type DepositArgsBN = DepositArgs<BN>
 export type DepositArgsBigNumber = DepositArgs<BigNumber>

@@ -37,7 +37,7 @@ import { ConnextStore, ConnextState, PersistentState } from "./state/store";
 import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
 import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
-import { toBN } from './helpers/bn'
+import { toBN, mul } from './helpers/bn'
 import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import CollateralController from "./controllers/CollateralController";
@@ -401,7 +401,8 @@ export class ChannelManager implements IChannelManager {
       value: state.pendingDepositWeiUser,
     } as any
     const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    
+    sendArgs.gas = toBN(Math.ceil(gasEstimate * this.gasMultiple))
     return new Web3TxWrapper(this.address, 'userAuthorizedUpdate', call.send(sendArgs))
   }
 

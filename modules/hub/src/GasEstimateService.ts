@@ -1,7 +1,6 @@
 import GasEstimateDao from './dao/GasEstimateDao'
 import log from './util/log'
 import { Poller } from './vendor/connext/lib/poller/Poller'
-const { fetch } = require('fetch-ponyfill')()
 
 const LOG = log('GasEstimateService')
 

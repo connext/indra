@@ -1,3 +1,4 @@
+import { redisCache } from './RedisClient'
 import { hasPendingOps } from './vendor/connext/hasPendingOps'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
@@ -38,7 +39,7 @@ import {
   convertWithdrawalParams,
   convertWithdrawal,
 } from './vendor/connext/types'
-import { prettySafeJson, Omit } from './util'
+import { prettySafeJson, Omit, maybe } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
 import ThreadsService from './ThreadsService';
@@ -47,6 +48,7 @@ import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { assertUnreachable } from './util/assertUnreachable';
 import { StateGenerator } from './vendor/connext/StateGenerator';
+import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 
 const LOG = log('ChannelsService')
 
@@ -73,6 +75,7 @@ export default class ChannelsService {
     private db: DBEngine,
     private config: Config,
     private contract: ChannelManager,
+    private coinPaymentsDao: CoinPaymentsDao,
   ) {}
 
   public async doRequestDeposit(
@@ -214,15 +217,44 @@ export default class ChannelsService {
     }
   }
 
+  public async shouldCollateralize(user: string): Promise<boolean> {
+    if (this.config.shouldCollateralizeUrl == 'NO_CHECK')
+      return true
+
+    return await redisCache(this.redis, {
+      key: `should-collateralize:${user}`,
+      timeout: 5 * 60 * 1000,
+    }, async () => {
+      const url = this.config.shouldCollateralizeUrl.replace(/\/*$/, '') + '/' + user
+      LOG.info(`Checking whether ${user} should be collateralized: ${url}...`)
+      const [res, err] = await maybe(fetch(url))
+      if (err) {
+        LOG.error(`Error checking whether ${user} should be collateralized: ${err}`)
+        if (this.config.isDev) {
+          LOG.warn(`DEV ONLY: ignoring error and collateralizing anyway.`)
+          return redisCache.doNotCache(true)
+        }
+        return redisCache.doNotCache(false)
+      }
+
+      const obj = await res.json()
+      LOG.info(`Result of checking whether ${user} should be collateralized: ${JSON.stringify(obj)}`)
+      return obj.shouldCollateralize
+    })
+  }
+
   public async doCollateralizeIfNecessary(
     user: string
   ): Promise<DepositArgs | null> {
+    const shouldCollateralized = await this.shouldCollateralize(user)
+    if (!shouldCollateralized)
+      return
+
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
     // channel checks
     if (channel.status !== 'CS_OPEN') {
-      LOG.error(`channel: ${channel}`)
-      throw new Error('Channel is not open')
+      throw new Error('Channel is not open: ' + user)
     }
 
     if (
@@ -549,6 +581,16 @@ export default class ChannelsService {
     console.log('HUB VER:', hubsVersionOfUpdate)
 
     if (hubsVersionOfUpdate) {
+      if (hubsVersionOfUpdate.invalid) {
+        LOG.error(
+          `Attempt by client to update invalidated state. ` +
+          `State: ${JSON.stringify(hubsVersionOfUpdate)}; ` +
+          `Client update: ${JSON.stringify(update)}. ` +
+          `This may be okay, but logging an error for now to be sure.`
+        )
+        return null
+      }
+
       if (
         hubsVersionOfUpdate.state.sigHub &&
         hubsVersionOfUpdate.state.sigUser
@@ -700,12 +742,21 @@ export default class ChannelsService {
           }
         })
 
-        return await this.saveRedisStateUpdate(
+        const res = await this.saveRedisStateUpdate(
           user,
           redisUpdate,
           update,
           txn.logicalId,
         )
+
+        if (redisUpdate.reason == 'ProposePendingDeposit') {
+          const args = redisUpdate.args as DepositArgs
+          if (args.reason && args.reason.ipn) {
+            await this.coinPaymentsDao.setUserCreditDepositUpdate(args.reason.ipn, res)
+          }
+        }
+
+        return res
 
       case 'Exchange':
         // ensure users cant hold exchanges
@@ -892,7 +943,8 @@ export default class ChannelsService {
     return res
   }
 
-  private async redisSaveUnsignedState(reason: RedisReason, user: string, update: Omit<ChannelStateUpdate, 'state'>) {
+  async redisSaveUnsignedState(reason: RedisReason, user: string, update: Omit<ChannelStateUpdate, 'state'>) {
+    console.log("SAVING:",update)
     const redis = await this.redis.set(
       `PendingStateUpdate:${user}`,
       JSON.stringify({
@@ -965,7 +1017,6 @@ export default class ChannelsService {
     await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
 
     const sigHub = await this.signerService.getSigForChannelState(redisUpdate.state)
-
     return await this.channelsDao.applyUpdateByUser(
       user,
       redisUpdate.reason,

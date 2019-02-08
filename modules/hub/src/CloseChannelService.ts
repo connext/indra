@@ -8,33 +8,37 @@ import { OnchainTransactionService } from './OnchainTransactionService';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import { SignerService } from './SignerService';
+import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
+import { Poller } from './vendor/connext/lib/poller/Poller'
 
 const LOG = log('CloseChannelService')
 
 const POLL_INTERVAL = 1000 * 60 * 3
 
 export class CloseChannelService {
+  private poller: Poller
+
   constructor(
       private onchainTxService: OnchainTransactionService,
       private signerService: SignerService,
+      private onchainTxDao: OnchainTransactionsDao,
       private channelDisputesDao: ChannelDisputesDao,
       private channelsDao: ChannelsDao,
       private contract: ChannelManager,
       private config: Config,
       private web3: any,
       private db: DBEngine
-  ) {}
+  ) {
+    this.poller = new Poller({
+      name: 'CloseChannelService',
+      interval: POLL_INTERVAL,
+      callback: this.pollOnce.bind(this),
+      timeout: POLL_INTERVAL,
+    })
+  }
 
   async poll() {
-    while (true) {
-      const start = Date.now()
-
-      await this.pollOnce()
-
-      const elapsed = start - Date.now()
-      if (elapsed < POLL_INTERVAL)
-        await sleep(POLL_INTERVAL - elapsed)
-    }
+    return this.poller.start()
   }
 
   async pollOnce() {
@@ -42,6 +46,10 @@ export class CloseChannelService {
     const disputePeriod = +(await this.contract.methods.challengePeriod().call({
       from: this.config.hotWalletAddress,
     }))
+    LOG.info(
+      `Checking for disputed channels which can be emptied ` +
+      `(dispute period: ${disputePeriod}; latest block: ${JSON.stringify(latestBlock)})`
+    )
     const channels = await this.channelsDao.getDisputedChannelsForClose(disputePeriod)
     for (const channel of channels) {
       const details = await this.signerService.getChannelDetails(channel.user)
@@ -67,31 +75,21 @@ export class CloseChannelService {
         continue
       }
 
-      // TODO: check to see if we've already got a pending transaction to close
-      // this channel.
-
-      await this.sendEmptyChannel(channel.user)
+      await this.db.withTransaction(() => this.sendEmptyChannelFromTransaction(channel.user))
     }
   }
 
-  public async startEmptyChannelCompleteCallback(txn: OnchainTransactionRow) {
-    const disputeRow = await this.channelDisputesDao.getActive(txn.meta.args.user)
-    if (!disputeRow) {
-      throw new Error(`Callback called for nonexistent dispute, txn: ${prettySafeJson(txn)}`)
-    }
-    LOG.info(`startEmptyChannelCompleteCallback: transaction completed with state {state}, txn: {txn}`, {
-      txn,
-      state: txn.state
-    })
-    if (txn.state === 'failed') {
-      await this.channelDisputesDao.changeStatus(disputeRow.id, 'CD_FAILED')
-    }
-  }
-
-  private async sendEmptyChannel(user: string) {
+  private async sendEmptyChannelFromTransaction(user: string) {
     const disputeRow = await this.channelDisputesDao.getActive(user)
     if (!disputeRow) {
       throw new Error(`No active dispute exists for the user. User: ${prettySafeJson(user)}`)
+    }
+    if (disputeRow.onchainTxIdEmpty) {
+      LOG.info(
+        `Active transaction to empty channel already exists. currentDispute.onchainTxIdEmpty = {onchainTxIdEmpty}`,
+        { onchainTxIdEmpty: disputeRow.onchainTxIdEmpty }
+      )
+      return
     }
     let data = this.contract.methods.emptyChannel(user).encodeABI()
     const txn = await this.onchainTxService.sendTransaction(this.db, {
@@ -107,6 +105,19 @@ export class CloseChannelService {
     })
 
     await this.channelDisputesDao.addEmptyOnchainTx(disputeRow.id, txn)
+  }
+
+  public async startEmptyChannelCompleteCallback(txn: OnchainTransactionRow) {
+    const disputeRow = await this.channelDisputesDao.getActive(txn.meta.args.user)
+    if (!disputeRow) {
+      throw new Error(`Callback called for nonexistent dispute, txn: ${prettySafeJson(txn)}`)
+    }
+    LOG.info(`startEmptyChannelCompleteCallback: transaction completed with state {state}, txn: {txn}`, {
+      txn,
+      state: txn.state
+    })
+    // nothing to do here, chainsaw will pickup the tx and react to it
+    // if the tx fails, we want to leave it as pending.
   }
 
   public async startUnilateralExit(user: string, reason: string): Promise<OnchainTransactionRow> {
