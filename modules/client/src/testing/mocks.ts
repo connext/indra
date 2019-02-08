@@ -1,7 +1,7 @@
 import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
 import { IWeb3TxWrapper } from '../Connext'
 import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem } from '../types'
+import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN } from '../types'
 import { SyncResult } from '../types'
 import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
 import { UnsignedThreadState } from '../types'
@@ -20,6 +20,7 @@ import { createStore } from 'redux'
 import { reducers } from "../state/reducers";
 import BN = require('bn.js')
 import { EventLog } from 'web3/types';
+import { Utils } from '../Utils';
 
 
 export class MockConnextInternal extends ConnextInternal {
@@ -449,8 +450,9 @@ export class MockStore {
   }
 
   public addThread = (overrides: PartialSignedOrSuccinctThread) => {
-    const thread = addSigToThreadState(getThreadState("empty", overrides), mkHash('0xMockUserSig'))
+    const initialThread = addSigToThreadState(getThreadState("empty", overrides), mkHash('0xMockUserSig'))
 
+    // Get state from store
     let {
       activeThreads,
       threadHistory,
@@ -459,40 +461,63 @@ export class MockStore {
       lastThreadUpdateId,
     } = this._initialState.persistent
 
-    const threadBN = convertThreadState('bn', thread)
-
-    const initialThread: ThreadState = convertThreadState("str", {
-      ...thread,
-      txCount: 0,
-      balanceTokenReceiver: toBN(0),
-      balanceWeiReceiver: toBN(0),
-      balanceTokenSender: threadBN.balanceTokenSender.add(threadBN.balanceTokenReceiver),
-      balanceWeiSender: threadBN.balanceWeiSender.add(threadBN.balanceWeiReceiver),
-    })
-    const newInitialThreads = activeInitialThreadStates.concat([initialThread])
-    const newActiveThreads = activeThreads.concat([thread])
-    const newThreadHistory = threadHistory.concat([{ sender: thread.sender, receiver: thread.receiver, threadId: thread.threadId }])
-
+    const initialThreadBN = convertThreadState('bn', initialThread)
+    // Create new openThread state
     let newState = new StateGenerator().openThread(
       convertChannelState('bn', channel),
-      newInitialThreads,
-      threadBN,
+      activeInitialThreadStates,
+      initialThreadBN,
     )
     newState = addSigToChannelState(newState, mkHash('0xMockUserSig'), true)
     newState = addSigToChannelState(newState, mkHash('0xMockHubSig'), false)
+
+    activeInitialThreadStates = activeInitialThreadStates.concat([initialThread])
+    threadHistory = threadHistory.concat([{ sender: initialThread.sender, receiver: initialThread.receiver, threadId: initialThread.threadId }])
+    activeThreads = activeThreads.concat([initialThread])
 
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
         channel: newState as ChannelState,
-        threadHistory: newThreadHistory,
-        activeInitialThreadStates: newInitialThreads,
-        activeThreads: newActiveThreads,
-        lastThreadUpdateId: lastThreadUpdateId, // only updated on thread updates
+        threadHistory,
+        activeInitialThreadStates,
+        activeThreads,
+        lastThreadUpdateId, // only updated on thread updates
       },
     }
   }
+
+  public updateThread = (threadHistoryItem: ThreadHistoryItem, payment: PaymentBN) => {
+    // Get state from store
+    let {
+      activeThreads,
+      lastThreadUpdateId,
+    } = this._initialState.persistent
+
+    const thread = activeThreads.filter(state => (state.sender === threadHistoryItem.sender && 
+      threadHistoryItem.receiver == threadHistoryItem.receiver && state.threadId == threadHistoryItem.threadId))
+      
+    //@ts-ignore
+    const threadBN = convertThreadState('bn', thread)
+
+    // Create thread update
+    let threadUpdate = new StateGenerator().threadPayment(threadBN, payment)
+    threadUpdate = addSigToThreadState(threadUpdate, mkHash('0xMockUserSig'))
+
+    // Update active thread with thread update
+    activeThreads = activeThreads.filter(state => !(state.sender === threadHistoryItem.sender && 
+      threadHistoryItem.receiver == threadHistoryItem.receiver && state.threadId == threadHistoryItem.threadId)).concat([threadUpdate as ThreadState])
+
+    this._initialState = {
+      ...this._initialState,
+      persistent: {
+        ...this._initialState.persistent,
+        activeThreads,
+        lastThreadUpdateId: lastThreadUpdateId++
+      },
+    }
+  }  
 
   public setThreadHistory = (threadHistory: ThreadHistoryItem[]) => {
     this._initialState = {
