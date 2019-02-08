@@ -85,14 +85,19 @@ export class Validator {
       'ProposePendingWithdrawal': this.generateProposePendingWithdrawal.bind(this),
       'ConfirmPending': this.generateConfirmPending.bind(this),
       'Invalidation': this.generateInvalidation.bind(this),
-      'OpenThread': () => this.generateOpenThread.bind(this),
-      'CloseThread': () => this.generateOpenThread.bind(this),
-      'EmptyChannel': () => this.generateEmptyChannel.bind(this),
+      'OpenThread': this.generateOpenThread.bind(this),
+      'CloseThread': this.generateCloseThread.bind(this),
+      'EmptyChannel': this.generateEmptyChannel.bind(this),
     }
   }
 
   public async generateChannelStateFromRequest(prev: ChannelState, request: UpdateRequest): Promise<UnsignedChannelState> {
-    return await this.generateHandlers[request.reason](prev, request.args)
+    if (!request.reason.includes("Thread")) {
+      return await this.generateHandlers[request.reason](prev, request.args)
+    } else {
+      return await this.generateHandlers[request.reason](prev, request.initialThreadStates, request.args)
+    }
+    
   }
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): string | null {
@@ -508,14 +513,14 @@ export class Validator {
   public closeThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): string | null {
     const e = this.isValidStateTransitionRequest(
       prev,
-      { args, reason: "CloseThread", txCount: prev.txCountGlobal }
+      { args, reason: "CloseThread", txCount: prev.txCountGlobal, initialThreadStates }
     )
     if (e) {
       return e
     }
     // NOTE: the initial thread states are states before the thread is
     // closed (corr. to prev open threads)
-    const initialState = initialThreadStates.filter(thread => thread.threadId === args.threadId)[0]
+    const initialState = initialThreadStates.filter(thread => thread.threadId === args.threadId && thread.receiver == args.receiver && thread.sender == args.sender)[0]
     if (!initialState) {
       return `Thread is not included in channel open threads. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
     }
@@ -926,7 +931,7 @@ export class Validator {
     // Note: we do not need to check that delta == thread initial balances
     // since we assume that thread state has already been checked and the
     // current channel state is generated directly from it.
-    if(curr.threadCount != prev.threadCount + 1) {
+    if(Math.abs(curr.threadCount - prev.threadCount) != 1) {
       errs.push(this.enforceDelta([prevBal, currBal], toBN(0), Object.keys(prevBal)))
     } else {
       // TODO enforce delta = 1 for threadcount
