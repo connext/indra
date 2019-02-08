@@ -1064,6 +1064,7 @@ describe('validator', () => {
         }
         // Test against case messages
         const res = validator.closeThread(prev, initialThreadStates, args)
+        console.log(res)
         if (message) {
           assert(res && res.includes(message + ""))
         } else {
