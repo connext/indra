@@ -36,27 +36,31 @@ const config = Config.fromEnv({
 const hub = new PaymentHub(config)
 
 async function run() {
-  if (process.argv[2] === 'chainsaw') {
-
-    await hub.startChainsaw()
-
-  } else if (process.argv[2] === 'exit-channels') {
-
-    await hub.startUnilateralExitChannels(process.argv.slice(3))
-
-  // If the hub is started with the command "process-tx", the next arg
-  // is a transaction hash to process
-  // NOTE - this will override ...
-  // process.argv[3] -> transaction hash
-  } else if (process.argv[2] === 'process-tx') {
-    await hub.processTx(process.argv[3])
-  } else if (process.argv[2] === 'fix-channels') {
-    await hub.fixBrokenChannels()
-  } else {
-
-    await hub.start()
-
+  const subcommands = {
+    'chainsaw': args => hub.startChainsaw(),
+    'exit-channels': args => hub.startUnilateralExitChannels(args),
+    'process-tx': args => hub.processTx(args[0]),
+    'fix-channels': args => hub.fixBrokenChannels(),
+    'burn-booty': args => hub.hubBurnBooty(+args[0]),
+    'hub': args => hub.start(),
   }
+
+  const cmd = process.argv[2] || 'hub'
+  const handler = subcommands[cmd]
+  if (!handler) {
+    console.error('Unknown subcommand: ' + cmd)
+    console.error('Known subcommands: ' + Object.keys(subcommands).join(', '))
+    return
+  }
+
+  await handler(process.argv.slice(3))
+
 }
 
-run().catch(console.error.bind(console))
+run().then(
+  () => process.exit(0),
+  err => {
+    console.error(err)
+    process.exit(1)
+  },
+)

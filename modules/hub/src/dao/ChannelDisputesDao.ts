@@ -133,15 +133,20 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
     return this.inflateRow(
       await this.db.queryOne(SQL`
         SELECT * FROM cm_channel_disputes
-        WHERE
-          channel_id = (
-            SELECT id 
-            FROM cm_channels 
-            WHERE 
-              "user" = ${user} AND 
-              contract = ${this.config.channelManagerAddress}
-          ) AND
-          status IN ('CD_PENDING', 'CD_IN_DISPUTE_PERIOD')
+        WHERE id = (
+          SELECT id
+          FROM _cm_channel_disputes
+          WHERE
+            channel_id = (
+              SELECT id
+              FROM cm_channels
+              WHERE
+                "user" = ${user} AND
+                contract = ${this.config.channelManagerAddress}
+            ) AND
+            status IN ('CD_PENDING', 'CD_IN_DISPUTE_PERIOD')
+          FOR UPDATE
+        )
       `)
     )
   }

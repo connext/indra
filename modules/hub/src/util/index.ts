@@ -218,12 +218,21 @@ export function synchronized(lockName: string) {
  *   console.log('The result:', someResult.res)
  *
  */
-type MaybeRes<T> = [T, any] & { res: T, err: any }
+export type MaybeRes<T> = [T, any] & { res: T, err: any }
 export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
   return (p as Promise<T>).then(
-    res => Object.assign([res, null], { res, err: null }) as any,
-    err => Object.assign([null, err], { res: null, err }) as any,
+    res => maybe.accept(res),
+    err => maybe.reject<T>(err),
   )
+}
+
+maybe.accept = <T>(res: T): MaybeRes<T> => Object.assign([res, null], { res, err: null }) as any
+maybe.reject = <T>(err: any): MaybeRes<T> => Object.assign([null, err], { res: null, err }) as any
+maybe.unwrap = async <T>(p: Promise<MaybeRes<T>>) => {
+  const [res, err] = await p
+  if (err)
+    throw new Error(err)
+  return res
 }
 
 /**
@@ -233,3 +242,56 @@ export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
  * type Bar = Omit<Foo, 'a'> // equivilent to type Bar = { a: string }
  */
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
+
+
+/**
+ * Parse a query string:
+ *
+ *   > parseQueryString('foo=bar')
+ *   {"foo": "bar"}
+ */
+export function parseQueryString(query: string): any {
+  const res = {}
+  for (const bit of query.split('&')) {
+    const pair = bit.split('=');
+    res[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1])
+  }
+  return res
+}
+
+/**
+ * Safely cast a value to an integer:
+ *
+ *   > intVal('42')
+ *   42
+ *   > intVal('asdf')
+ *   Error('Invalid integer: asdf')
+ *   > intVal('1.23')
+ *   Error('Invalid integer: 1.23')
+ */
+export function safeInt(strVal: number | string): number {
+  const intVal = +strVal
+  if (!isFinite(intVal) || Math.floor(intVal) != intVal)
+    throw new Error('Invalid integer: ' + strVal)
+  return intVal
+}
+
+export interface EzPromiseRes<T> {
+  promise: Promise<T>
+  resolve: (val: T) => void
+  reject: (val: any) => void
+}
+
+/**
+ * Returns a promise along side its resolve and reject functions.
+ */
+export function ezPromise<T>(): EzPromiseRes<T> {
+  const res: any = {}
+  const promise = new Promise((resolve, reject) => {
+    res.resolve = resolve
+    res.reject = reject
+  })
+
+  res.promise = promise
+  return res
+}

@@ -44,3 +44,5 @@ BigNumber.prototype.floor = function(): BigNumber {
 BigNumber.prototype.ceil = function(): BigNumber {
   return this.integerValue(BigNumber.ROUND_CEIL)
 }
+
+;(global as any).fetch = require('fetch-ponyfill')().fetch

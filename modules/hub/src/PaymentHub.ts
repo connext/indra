@@ -1,3 +1,4 @@
+import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import { CloseChannelService } from './CloseChannelService'
 import Config from './Config'
 import log from './util/log'
@@ -17,12 +18,14 @@ import abi from './abi/ChannelManager'
 import { EventLog } from 'web3/types'
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
 import { channelNumericFields } from './vendor/connext/types'
-
-const tokenAbi = require('human-standard-token-abi')
+import * as readline from 'readline'
+import { Big } from './util/bigNumber'
+import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
 
 const LOG = log('PaymentHub')
 
 export default class PaymentHub {
+  private web3: any
   private config: Config
   private registry: Registry
 
@@ -32,6 +35,7 @@ export default class PaymentHub {
   private gasEstimateService: GasEstimateService
   private apiServer: ApiServer
   private onchainTransactionService: OnchainTransactionService
+  private coinPaymentsDepositPollingService: CoinPaymentsDepositPollingService
 
   constructor(config: Config) {
     if (!config.ethRpcUrl) {
@@ -44,6 +48,7 @@ export default class PaymentHub {
     const web3New = new Web3(new Web3.providers.HttpProvider(config.ethRpcUrl))
     registry.bind('Config', () => config)
     registry.bind('Web3', () => web3New)
+    this.web3 = web3New
 
     this.config = config
     this.container = new Container(registry)
@@ -53,10 +58,18 @@ export default class PaymentHub {
     this.gasEstimateService = this.container.resolve('GasEstimateService')
     this.apiServer = this.container.resolve('ApiServer')
     this.onchainTransactionService = this.container.resolve('OnchainTransactionService')
+    this.coinPaymentsDepositPollingService = this.container.resolve('CoinPaymentsDepositPollingService')
   }
 
   public async start() {
-    for (let service of ['exchangeRateService', 'gasEstimateService', 'apiServer', 'onchainTransactionService']) {
+    const services = [
+      'exchangeRateService',
+      'gasEstimateService',
+      'apiServer',
+      'onchainTransactionService',
+      'coinPaymentsDepositPollingService',
+    ]
+    for (let service of services) {
       try {
         await (this as any)[service].start()
       } catch (err) {
@@ -64,6 +77,7 @@ export default class PaymentHub {
         process.exit(1)
       }
     }
+    return new Promise(res => {})
   }
 
   public async startChainsaw() {
@@ -73,6 +87,7 @@ export default class PaymentHub {
       chainsaw.poll(),
       channelCloser.poll(),
     ])
+    return new Promise(res => {})
   }
 
   public async startUnilateralExitChannels(channels: string[]) {
@@ -87,7 +102,7 @@ export default class PaymentHub {
 
   public async processTx(txHash: string) {
     const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
-    await chainsaw.processTx(txHash)
+    await chainsaw.processSingleTx(txHash)
   }
 
   public async fixBrokenChannels() {
@@ -279,7 +294,7 @@ $pgsql$;
       where
         "user" = ${user} and
         reason = 'ConfirmPending' AND
-	sig_user is null
+	      sig_user is null
       order by id desc
     `)
     if (confirmPendings.rowCount > 1) {
@@ -406,8 +421,53 @@ $pgsql$;
     const definition = this.registry.get('ChainsawService')
     definition.isSingleton = false
     const chainsaw = container.resolve<ChainsawService>('ChainsawService')
-    await chainsaw.processTx(confirmPending.args.transactionHash)
+    await chainsaw.processSingleTx(confirmPending.args.transactionHash)
 
+  }
+
+  async hubBurnBooty(amount: number) {
+    if (amount <= 0)
+      throw new Error('Aborting: invalid amount of BOOTY: ' + amount)
+
+    function input(msg: string): Promise<string> {
+      process.stdout.write(msg)
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
+      })
+      return new Promise(res => rl.on('line', res))
+    }
+
+    const callArgs = { from: this.config.hotWalletAddress }
+    const tokenContract = new this.web3.eth.Contract(mintAndBurnToken.abi, this.config.tokenContractAddress)
+    const hubBalanceStr = await tokenContract.methods.balanceOf(this.config.hotWalletAddress).call(callArgs)
+    const hubBalance = Big(hubBalanceStr).dividedBy('1e18')
+    console.log(
+      `Current BOOTY (${this.config.tokenContractAddress}) balance of hub ` +
+      `(${this.config.hotWalletAddress}): ${hubBalance.toFixed()}`
+    )
+
+    const toWd = Big(amount).minus(hubBalance)
+    if (toWd.isGreaterThan(0)) {
+      console.log(`Need to hubContractWithdraw ${toWd.toFixed()} BOOTY.`)
+      const amountConfirm = await input(`Please confirm the amount of BOOTY to hubContractWithdraw (${toWd.toFixed()}): `)
+      if (!toWd.isEqualTo(amountConfirm as string))
+        throw new Error(`Aborting: ${amountConfirm} <> ${toWd.toFixed()}`)
+      const contract = this.container.resolve<ChannelManager>('ChannelManagerContract')
+      console.log(`Calling hubContractWithdraw('0', '${toWd.times('1e18').toFixed(0)}')...`)
+      const res = await contract.methods.hubContractWithdraw('0', toWd.times('1e18').toFixed(0)).send(callArgs)
+      console.log('Result of hubContractWithdraw:', res)
+    }
+
+    const amountConfirm = +(await input(`Please confirm the amount of BOOTY to burn (in BOOTY, not BEI; amount: ${amount}): `))
+    if (amountConfirm != amount)
+      throw new Error(`Aborting: ${amount} <> ${amountConfirm}`)
+    const burnAmount = Big(amount).times('1e18').toFixed()
+    console.log(`Calling burn(${burnAmount})...`)
+    const burnCall = tokenContract.methods.burn(burnAmount)
+    const gas = await burnCall.estimateGas(callArgs)
+    console.log(await burnCall.send({ ...callArgs, gas }))
   }
 
 }

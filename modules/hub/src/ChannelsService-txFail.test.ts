@@ -59,7 +59,7 @@ describe('ChannelsService-txFail', () => {
             on: (input, cb) => {
               switch (input) {
                 case 'error':
-                  return cb('This is a fake error')
+                  return cb('nonce too low')
               }
             },
           }
@@ -70,7 +70,7 @@ describe('ChannelsService-txFail', () => {
             on: (input, cb) => {
               switch (input) {
                 case 'error':
-                  return cb('This is a fake error')
+                  return cb('nonce too low')
               }
             },
           }

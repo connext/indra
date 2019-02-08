@@ -67,6 +67,8 @@ export abstract class ContractEvent {
   static fromRow (row: any): ContractEvent {
     // TODO: dispute cases
     switch (row.event_type) {
+      case DidHubContractWithdrawEvent.TYPE:
+        return DidHubContractWithdrawEvent.fromRow(row)
       case DidUpdateChannelEvent.TYPE:
         return DidUpdateChannelEvent.fromRow(row)
       case DidStartExitChannelEvent.TYPE:
@@ -74,7 +76,7 @@ export abstract class ContractEvent {
       case DidEmptyChannelEvent.TYPE:
         return DidEmptyChannelEvent.fromRow(row)
       default:
-        throw new Error('Unknown event.')
+        throw new Error('Unknown event: ' + name)
     }
   }
 }
@@ -103,6 +105,31 @@ export class DidHubContractWithdrawEvent extends ContractEvent {
   }
 
   static fromRawEvent (event: RawContractEvent): DidHubContractWithdrawEvent {
+    return new DidHubContractWithdrawEvent(event)
+  }
+
+  static fromRow (row: any): DidHubContractWithdrawEvent {
+    const {fields} = row
+
+    const event: RawContractEvent = {
+      contract: row.contract,
+      sender: row.sender,
+      timestamp: row.ts,
+      logIndex: row.log_index,
+      channelId: row.channel_id,
+      txIndex: row.tx_index,
+      chainsawId: row.id,
+      log: {
+        blockNumber: row.block_number,
+        transactionHash: row.tx_hash,
+        blockHash: row.block_hash,
+        returnValues: {
+          weiAmount: fields.weiAmount,
+          tokenAmount: fields.tokenAmount,
+        }
+      } as EventLog
+    }
+
     return new DidHubContractWithdrawEvent(event)
   }
 }

@@ -119,7 +119,7 @@ describe('PaymentsService', () => {
         recipient: receiver,
         amount: {
           amountWei: '0',
-          amountToken: '100000',
+          amountToken: '1234',
         },
         meta: {},
         type: 'PT_CHANNEL',
@@ -127,7 +127,7 @@ describe('PaymentsService', () => {
           reason: 'Payment',
           sigUser: mkSig('0xa'),
           txCount: senderChannel.state.txCountGlobal + 2,
-          args: {...paymentArgs, amountToken: '100000'},
+          args: {...paymentArgs, amountToken: '1234'},
         } as UpdateRequest,
       }
     ]
@@ -145,7 +145,7 @@ describe('PaymentsService', () => {
     const tipHub = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(tipHub, {
       reason: 'Payment',
-      args: {...paymentArgs, amountToken: '100000'},
+      args: {...paymentArgs, amountToken: '1234'},
     })
     assert.isOk(tipHub.sigHub)
 
@@ -154,7 +154,8 @@ describe('PaymentsService', () => {
     assert.containSubset(custodialUpdateReceiver, {
       reason: 'Payment',
       args: {
-        ...paymentArgs,
+        amountWei: '0',
+        amountToken: '1234',
         recipient: 'user',
       },
     })

@@ -15,6 +15,7 @@ export type TransactionRequest = {
   to: string
   data?: string
   value?: string
+  gas?: number
   meta?: TransactionMeta
 }
 

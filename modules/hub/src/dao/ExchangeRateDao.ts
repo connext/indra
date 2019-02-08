@@ -3,10 +3,13 @@ import { Client } from 'pg'
 import ExchangeRate from '../domain/ExchangeRate'
 import CurrencyCode from '../domain/CurrencyCode'
 import { Big } from '../util/bigNumber'
+import { BigNumber } from 'bignumber.js/bignumber'
+import { prettySafeJson } from '../util'
 
 export default interface ExchangeRateDao {
   record(retrievedAt: number, rateUsd: string): Promise<ExchangeRate>
   latest(): Promise<ExchangeRate>
+  getUsdRateAtTime(date: Date): Promise<BigNumber>
 }
 
 export class PostgresExchangeRateDao implements ExchangeRateDao {
@@ -36,6 +39,24 @@ export class PostgresExchangeRateDao implements ExchangeRateDao {
         'SELECT * FROM exchange_rates ORDER BY retrievedat DESC LIMIT 1',
       ),
     )
+  }
+
+  public async getUsdRateAtTime(date: Date): Promise<BigNumber> {
+    const res = this.inflateRow(await this.engine.queryOne(SQL`
+      SELECT *
+      FROM exchange_rates
+      WHERE retrievedat < ${+date}
+      ORDER BY retrievedat DESC
+      LIMIT 1
+    `))
+
+    if (res.retrievedAt < (+date) - 1000 * 60 * 60 * 24) {
+      throw new Error(
+        `Exchange rate nearest ${date} (${prettySafeJson(res)}) ` +
+        `is more than 24 hours older than the date; refusing to use it.`,
+      )
+    }
+    return res.rates['USD']
   }
 
   private inflateRow(row: any): ExchangeRate {

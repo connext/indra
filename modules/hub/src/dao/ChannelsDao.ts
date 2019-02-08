@@ -141,19 +141,27 @@ export class PostgresChannelsDao implements ChannelsDao {
     return rows.map(r => this.inflateChannelUpdateRow(r))
   }
 
+  /**
+   * Returns a channel update by txCountGlobal.
+   *
+   * Note: it's possible that the update has been invalidated. It's up to
+   * the caller to check whether the update has been invalidated and deal
+   * with that according.
+   */
   async getChannelUpdateByTxCount(
     user: string,
     txCountGlobal: number,
   ): Promise<ChannelStateUpdateRowBigNum | null> {
-    return this.inflateChannelUpdateRow(
+    // Note: the ordering here is to take invalidated updates into consideration.`
+    return await this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
-        SELECT u.*, c.user, c.contract FROM cm_channel_updates u
-        join cm_channels c on c.id = u.channel_id
+        SELECT *
+        FROM cm_channel_updates
         WHERE 
-        c."user" = ${user.toLowerCase()} AND
-        c.contract = ${this.config.channelManagerAddress.toLowerCase()} and 
-        u.tx_count_global = ${txCountGlobal}
-        ORDER BY u.tx_count_global ASC
+          "user" = ${user.toLowerCase()} AND
+          contract = ${this.config.channelManagerAddress.toLowerCase()} AND
+          tx_count_global = ${txCountGlobal}
+        ORDER BY id DESC
       `),
     )
   }
@@ -326,6 +334,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     // time the dispute was sent to chain. In future we can get more precise
     // by looking at the timestamp from the onchain transaction... but this
     // will be good enough for now.
+    // TODO: This needs to be fixed so it looks at the cm_channel_disputes table
     const { rows } = await this.db.query(SQL`
       SELECT *
       FROM cm_channels
