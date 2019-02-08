@@ -1,7 +1,7 @@
 import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
 import { IWeb3TxWrapper } from '../Connext'
 import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState } from '../types'
+import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem } from '../types'
 import { SyncResult } from '../types'
 import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
 import { UnsignedThreadState } from '../types'
@@ -470,24 +470,37 @@ export class MockStore {
       balanceWeiSender: threadBN.balanceWeiSender.add(threadBN.balanceWeiReceiver),
     })
 
-    activeInitialThreadStates.push(initialThread)
-    activeThreads.push(thread)
+    const newInitialThreads = activeInitialThreadStates.concat([initialThread])
+    const newActiveThreads = activeThreads.concat([thread])
+    const newThreadHistory = threadHistory.concat([{ sender: thread.sender, receiver: thread.receiver, threadId: thread.threadId }])
 
-    const newState = new StateGenerator().openThread(
+    let newState = new StateGenerator().openThread(
       convertChannelState('bn', channel),
       activeInitialThreadStates,
       threadBN,
     )
+    newState = addSigToChannelState(newState, mkHash('0xMockUserSig'), true)
+    newState = addSigToChannelState(newState, mkHash('0xMockHubSig'), false)
 
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        channel: addSigToChannelState(newState),
+        channel: newState as ChannelState,
+        threadHistory: newThreadHistory,
+        activeInitialThreadStates: newInitialThreads,
+        activeThreads: newActiveThreads,
+        lastThreadUpdateId: lastThreadUpdateId, // only updated on thread updates
+      },
+    }
+  }
+
+  public setThreadHistory = (threadHistory: ThreadHistoryItem[]) => {
+    this._initialState = {
+      ...this._initialState,
+      persistent: {
+        ...this._initialState.persistent,
         threadHistory,
-        activeInitialThreadStates,
-        activeThreads,
-        lastThreadUpdateId: lastThreadUpdateId++,
       },
     }
   }
