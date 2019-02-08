@@ -10,19 +10,8 @@ const HST = artifacts.require("./HumanStandardToken.sol");
 const { Utils } = require("../../client/dist/Utils");
 const { StateGenerator } = require("../../client/dist/StateGenerator");
 const { Validator } = require("../../client/dist/validator");
-const { 
-  convertChannelState, 
-  convertWithdrawal, 
-  convertProposePending
-} = require("../../client/dist/types");
-const {
-  getChannelState,
-  getDepositArgs,
-  getWithdrawalArgs,
-  getExchangeArgs,
-  getPaymentArgs,
-  getPendingArgs,
-} = require("../../client/dist/testing");
+const { convertChannelState, convertWithdrawal, convertProposePending } = require("../../client/dist/types");
+const { getChannelState, getDepositArgs, getWithdrawalArgs, getExchangeArgs, getPaymentArgs, getPendingArgs } = require("../../client/dist/testing");
 const { toBN } = require("../../client/dist/helpers/bn");
 const clientUtils = new Utils();
 const sg = new StateGenerator();
@@ -47,7 +36,7 @@ const channelStatus = {
   Open: 0,
   ChannelDispute: 1,
   ThreadDispute: 2
-}
+};
 
 ////////////////////////////////////////
 // External Helper Functions
@@ -153,9 +142,9 @@ async function getSig(state, account) {
 }
 
 async function getThreadSig(threadState, account) {
-  const hash = clientUtils.createThreadStateHash(threadState)
-  const sig = await web3.eth.sign(hash, account.address)
-  return sig
+  const hash = clientUtils.createThreadStateHash(threadState);
+  const sig = await web3.eth.sign(hash, account.address);
+  return sig;
 }
 
 // Generates an array of incorrect sigs to test each element of state for _verifySig
@@ -269,14 +258,8 @@ async function emptyChannel(state, account, wei = 0) {
   return await cm.emptyChannel(state.user, { from: account.address, value: wei });
 }
 
-async function startExitThread(
-  state, 
-  threadState,
-  proof, 
-  sig, 
-  account
-) {
-  let normalized = normalize(state)
+async function startExitThread(state, threadState, proof, sig, account) {
+  let normalized = normalize(state);
   return await cm.startExitThread(
     normalized.user,
     threadState.sender,
@@ -287,7 +270,33 @@ async function startExitThread(
     proof,
     sig,
     { from: account.address }
-  )
+  );
+}
+
+async function startExitThreadWithUpdate(
+  state, 
+  threadStateInitial, 
+  threadStateUpdated, 
+  proof, 
+  sigInital, 
+  sigUpdated, 
+  account
+) {
+  let normalized = normalize(state);
+  return await cm.startExitThreadWithUpdate(
+    normalized.user,
+    [threadStateInitial.sender, threadStateInitial.receiver],
+    threadStateInitial.threadId,
+    [threadStateInitial.balanceWeiSender, 0],
+    [threadStateInitial.balanceTokenSender, 0],
+    proof,
+    sigInital,
+    [threadStateUpdated.balanceWeiSender, threadStateUpdated.balanceWeiReceiver],
+    [threadStateUpdated.balanceTokenSender, threadStateUpdated.balanceTokenReceiver],
+    threadStateUpdated.txCount,
+    sigUpdated,
+    { from: account.address }
+  );
 }
 
 async function submitUserAuthorized(userAccount, hubAccount, wei = 0, ...overrides) {
@@ -327,32 +336,34 @@ async function submitHubAuthorized(userAccount, hubAccount, wei = 0, ...override
 }
 
 function generateThreadWithinState(_state, threadState) {
-  const threadRoot = clientUtils.generateThreadRootHash([{
-    contractAddress: threadState.contractAddress,
-    sender: threadState.sender,
-    receiver: threadState.receiver,
-    threadId: threadState.threadId,
-    balanceWeiSender: threadState.balanceWeiSender,
-    balanceWeiReceiver: threadState.balanceWeiReceiver,
-    balanceTokenSender: threadState.balanceTokenSender,
-    balanceTokenReceiver: threadState.balanceTokenReceiver,
-    txCount: 0
-  }])
+  const threadRoot = clientUtils.generateThreadRootHash([
+    {
+      contractAddress: threadState.contractAddress,
+      sender: threadState.sender,
+      receiver: threadState.receiver,
+      threadId: threadState.threadId,
+      balanceWeiSender: threadState.balanceWeiSender,
+      balanceWeiReceiver: threadState.balanceWeiReceiver,
+      balanceTokenSender: threadState.balanceTokenSender,
+      balanceTokenReceiver: threadState.balanceTokenReceiver,
+      txCount: 0
+    }
+  ]);
 
   let stateWithThreads = {
     ..._state,
     threadCount: 1,
     threadRoot
-  }
+  };
 
-  return stateWithThreads
+  return stateWithThreads;
 }
 
 ////////////////////////////////////////
 // Internal Helper Functions
 ////////////////////////////////////////
 
-let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod;
+let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod, channelStateReceiver;
 
 contract("ChannelManager", accounts => {
   let snapshotId;
@@ -453,7 +464,7 @@ contract("ChannelManager", accounts => {
     const event = getEventParams(tx, "DidStartExitChannel");
     assert.equal(event.user, account.address);
     assert.equal(event.senderIdx, isHub ? 0 : 1);
-    
+
     event.weiBalances[0].should.be.eq.BN(updateBN.balanceWeiHub);
     event.weiBalances[1].should.be.eq.BN(updateBN.balanceWeiUser);
     event.tokenBalances[0].should.be.eq.BN(updateBN.balanceTokenHub);
@@ -514,7 +525,7 @@ contract("ChannelManager", accounts => {
    * Fast forward channel to after EmptyChannel is called.
    * To initiate thread dispute, insert state with thread count and thread root.
    */
-  async function fastForwardToEmptiedChannel(insertedState) {
+  async function fastForwardToEmptiedChannel(insertedState, user) {
     const deposit = getDepositArgs("empty", {
       ...insertedState,
       depositWeiUser: 10,
@@ -524,14 +535,14 @@ contract("ChannelManager", accounts => {
       timeout: minutesFromNow(5)
     });
     const update = validator.generateProposePendingDeposit(insertedState, deposit);
-    update.sigUser = await getSig(update, viewer);
+    update.sigUser = await getSig(update, user);
 
     let tx = await hubAuthorizedUpdate(update, hub, 0);
 
     confirmed = await validator.generateConfirmPending(update, {
       transactionHash: tx.tx
     });
-    confirmed.sigUser = await getSig(confirmed, viewer);
+    confirmed.sigUser = await getSig(confirmed, user);
     confirmed.sigHub = await getSig(confirmed, hub);
 
     // initial state is the confirmed values with txCountGlobal rolled back
@@ -540,9 +551,9 @@ contract("ChannelManager", accounts => {
       txCountGlobal: confirmed.txCountGlobal - 1
     };
 
-    await startExit(insertedState, viewer, 0);
-    viewer.initWeiBalance = await web3.eth.getBalance(viewer.address);
-    viewer.initTokenBalance = await token.balanceOf(viewer.address);
+    await startExit(insertedState, user, 0);
+    user.initWeiBalance = await web3.eth.getBalance(user.address);
+    user.initTokenBalance = await token.balanceOf(user.address);
 
     tx = await emptyChannel(insertedState, hub, 0);
     insertedState.userWeiTransfer = 10; // initial user balance (10)
@@ -550,7 +561,7 @@ contract("ChannelManager", accounts => {
     insertedState.initHubReserveWei = initHubReserveWei;
     insertedState.initHubReserveToken = initHubReserveToken;
 
-    return insertedState
+    return insertedState;
   }
 
   ////////////////////////////////////////
@@ -582,10 +593,19 @@ contract("ChannelManager", accounts => {
   beforeEach(async () => {
     snapshotId = await snapshot();
 
+    // TODO: rename this
     state = getChannelState("empty", {
       contractAddress: cm.address,
       user: viewer.address,
       recipient: viewer.address,
+      txCountGlobal: 0,
+      txCountChain: 0
+    });
+
+    channelStateReceiver = getChannelState("empty", {
+      contractAddress: cm.address,
+      user: performer.address,
+      recipient: performer.address,
       txCountGlobal: 0,
       txCountChain: 0
     });
@@ -639,7 +659,7 @@ contract("ChannelManager", accounts => {
         assert.equal(reserveToken, 0);
 
         const hubFinalToken = await token.balanceOf(hub.address);
-        hubFinalToken.should.be.eq.BN(hubInitialToken)
+        hubFinalToken.should.be.eq.BN(hubInitialToken);
       });
 
       it("fails with insufficient ETH", async () => {
@@ -2931,15 +2951,25 @@ contract("ChannelManager", accounts => {
   });
 
   describe("startExitThread", () => {
-    let threadState
-    let channelStateWithThreads
-    const happyAssertions = async () => {
+    let threadState;
+    let channelStateWithThreadsSender;
+    let channelStateWithThreadsReceiver;
+    const happyAssertions = async threadState => {
       // assert that balances and threadClosingTime is set appropriately in success case
-      const thread = await cm.threads(threadState.sender, threadState.receiver, threadState.threadId)
-      console.log('thread: ', thread);
-    }
+      const thread = await cm.getThread(threadState.sender, threadState.receiver, threadState.threadId);
+
+      thread.weiSender.should.be.eq.BN(threadState.balanceWeiSender);
+      thread.weiReceiver.should.be.eq.BN(threadState.balanceWeiReceiver);
+      thread.tokenSender.should.be.eq.BN(threadState.balanceTokenSender);
+      thread.tokenReceiver.should.be.eq.BN(threadState.balanceTokenReceiver);
+      thread.txCount.should.be.eq.BN(0);
+      thread.threadClosingTime.should.be.gte.BN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 5); // subtract 5 in case test takes too long and second rolls over
+      thread.emptiedSender.should.be.false;
+      thread.emptiedReceiver.should.be.false;
+    };
 
     beforeEach(async () => {
+      // initialize emptied channels on both sides of thread
       await token.transfer(cm.address, 1000, { from: hub.address });
       await web3.eth.sendTransaction({ from: hub.address, to: cm.address, value: 700 });
 
@@ -2953,123 +2983,277 @@ contract("ChannelManager", accounts => {
         balanceTokenSender: 10,
         balanceTokenReceiver: 0,
         txCount: 0
-      }
+      };
 
-      channelStateWithThreads = generateThreadWithinState(state, threadState)
-      await fastForwardToEmptiedChannel(channelStateWithThreads) 
-    })
+      channelStateWithThreadsSender = generateThreadWithinState(state, threadState);
+      await fastForwardToEmptiedChannel(channelStateWithThreadsSender, viewer);
+
+      let channelDetails = await cm.getChannelDetails(viewer.address);
+      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+
+      channelStateWithThreadsReceiver = generateThreadWithinState(channelStateReceiver, threadState);
+      await fastForwardToEmptiedChannel(channelStateWithThreadsReceiver, performer);
+
+      channelDetails = await cm.getChannelDetails(performer.address);
+      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+    });
 
     describe("happy paths", () => {
-      it.only("succeeds if sender starts to exit thread", async () => {
-        const channelDetails = await cm.getChannelDetails(viewer.address);
-        channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute)
+      it("succeeds if sender starts to exit thread", async () => {
+        const proof = clientUtils.generateThreadProof(threadState, [threadState]);
+        const sig = await getThreadSig(threadState, viewer);
 
-        const proof = clientUtils.generateThreadProof(threadState, [threadState])
-        const sig = await getThreadSig(threadState, viewer)
+        await startExitThread(channelStateWithThreadsSender, threadState, proof, sig, viewer);
+        await happyAssertions(threadState);
+      });
 
-        await startExitThread(channelStateWithThreads, threadState, proof, sig, viewer)
-        await happyAssertions();
-      })
       it("succeeds if receiver starts to exit thread", async () => {
-        happyAssertions();
-      })
-      it("succeeds if hub starts to exit thread", async () => {
-        happyAssertions();
-      })
-    })
+        const proof = clientUtils.generateThreadProof(threadState, [threadState]);
+
+        // still need to get sig from viewer
+        const sig = await getThreadSig(threadState, viewer);
+
+        await startExitThread(channelStateWithThreadsReceiver, threadState, proof, sig, performer);
+        await happyAssertions(threadState);
+      });
+
+      it("succeeds if hub starts to exit thread on sender side", async () => {
+        const proof = clientUtils.generateThreadProof(threadState, [threadState]);
+
+        // still need to get sig from viewer
+        const sig = await getThreadSig(threadState, viewer);
+
+        await startExitThread(channelStateWithThreadsSender, threadState, proof, sig, hub);
+        await happyAssertions(threadState);
+      });
+
+      it("succeeds if hub starts to exit thread on receiver side", async () => {
+        const proof = clientUtils.generateThreadProof(threadState, [threadState]);
+
+        // still need to get sig from viewer
+        const sig = await getThreadSig(threadState, viewer);
+
+        await startExitThread(channelStateWithThreadsReceiver, threadState, proof, sig, hub);
+        await happyAssertions(threadState);
+      });
+    });
 
     describe("edge cases", () => {
-      it("succeeds if sender starts to exit thread while reciever is exiting", async () => {})
-      it("succeeds if sender starts to exit thread while hub is exiting", async () => {})
-    })
+      it("succeeds if sender starts to exit thread while reciever is exiting", async () => {});
+      it("succeeds if sender starts to exit thread while hub is exiting", async () => {});
+    });
 
     describe("assertions", () => {
-      it("fails if channel is not in ThreadDispute", async () => {})
-      it("fails if msg.sender is not either the user or hub", async () => {})
-      it("fails if the user is not the sender or receiver", async () => {})
-      it("fails if the initial receiver balances are not zero", async () => {})
-      it("fails if thread closing time is non-zero & dispute is underway", async () => {})
-      it("fails if thread closing time is non-zero & dispute is over & thread is empty", async () => {})
-      it("fails if any _verifyThread reqs fail", async () => {})
-    })
-  })
+      it("fails if channel is not in ThreadDispute", async () => {});
+      it("fails if msg.sender is not either the user or hub", async () => {});
+      it("fails if the user is not the sender or receiver", async () => {});
+      it("fails if the initial receiver balances are not zero", async () => {});
+      it("fails if thread closing time is non-zero & dispute is underway", async () => {});
+      it("fails if thread closing time is non-zero & dispute is over & thread is empty", async () => {});
+      it("fails if any _verifyThread reqs fail", async () => {});
+    });
+  });
 
   describe("startExitThreadWithUpdate", () => {
-    const happyAssertions = () => {
-      // assert that balances, txCount and threadClosingTime are set appropriately in success case
-      return true
-    }
+    let threadStateInitial;
+    let threadStateUpdated;
+    let channelStateWithThreadsSender;
+    let channelStateWithThreadsReceiver;
 
-    beforeEach(async () => {/* Setup test env */})
+    const happyAssertions = async (threadState) => {
+      // assert that balances, txCount and threadClosingTime are set appropriately in success case
+      const thread = await cm.getThread(threadState.sender, threadState.receiver, threadState.threadId);
+
+      thread.weiSender.should.be.eq.BN(threadState.balanceWeiSender);
+      thread.weiReceiver.should.be.eq.BN(threadState.balanceWeiReceiver);
+      thread.tokenSender.should.be.eq.BN(threadState.balanceTokenSender);
+      thread.tokenReceiver.should.be.eq.BN(threadState.balanceTokenReceiver);
+      thread.txCount.should.be.eq.BN(threadState.txCount);
+      thread.threadClosingTime.should.be.gte.BN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 5); // subtract 5 in case test takes too long and second rolls over
+      thread.emptiedSender.should.be.false;
+      thread.emptiedReceiver.should.be.false;
+    };
+
+    beforeEach(async () => {
+      // initialize emptied channels on both sides of thread
+      await token.transfer(cm.address, 1000, { from: hub.address });
+      await web3.eth.sendTransaction({ from: hub.address, to: cm.address, value: 700 });
+
+      threadStateInitial = {
+        contractAddress: cm.address,
+        sender: viewer.address,
+        receiver: performer.address,
+        threadId: 0,
+        balanceWeiSender: 10,
+        balanceWeiReceiver: 0,
+        balanceTokenSender: 10,
+        balanceTokenReceiver: 0,
+        txCount: 0
+      };
+
+      channelStateWithThreadsSender = generateThreadWithinState(state, threadStateInitial);
+      await fastForwardToEmptiedChannel(channelStateWithThreadsSender, viewer);
+
+      let channelDetails = await cm.getChannelDetails(viewer.address);
+      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+
+      channelStateWithThreadsReceiver = generateThreadWithinState(channelStateReceiver, threadStateInitial);
+      await fastForwardToEmptiedChannel(channelStateWithThreadsReceiver, performer);
+
+      channelDetails = await cm.getChannelDetails(performer.address);
+      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+
+      threadStateUpdated = {
+        contractAddress: cm.address,
+        sender: viewer.address,
+        receiver: performer.address,
+        threadId: 0,
+        balanceWeiSender: 8,
+        balanceWeiReceiver: 2,
+        balanceTokenSender: 4,
+        balanceTokenReceiver: 6,
+        txCount: 3
+      };
+    });
 
     describe("happy paths", () => {
       it("succeeds when sender starts exit thread w update", async () => {
-        happyAssertions()
-      })
+        const proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
+
+        // still need to get sig from viewer
+        const sigInital = await getThreadSig(threadStateInitial, viewer);
+        const sigUpdated = await getThreadSig(threadStateUpdated, viewer);
+
+        await startExitThreadWithUpdate(
+          channelStateWithThreadsSender, 
+          threadStateInitial, 
+          threadStateUpdated, 
+          proof, 
+          sigInital,
+          sigUpdated,
+          viewer
+        );
+        await happyAssertions(threadStateUpdated);
+      });
+
       it("succeeds when recipient starts exit thread w update", async () => {
-        happyAssertions()
+        const proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
+
+        // still need to get sig from viewer
+        const sigInital = await getThreadSig(threadStateInitial, viewer);
+        const sigUpdated = await getThreadSig(threadStateUpdated, viewer);
+
+        await startExitThreadWithUpdate(
+          channelStateWithThreadsReceiver, 
+          threadStateInitial, 
+          threadStateUpdated, 
+          proof, 
+          sigInital,
+          sigUpdated,
+          performer
+        );
+        await happyAssertions(threadStateUpdated);
+      });
+
+      it("succeeds when hub starts exit thread w update in sender channel", async () => {
+        const proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
+
+        // still need to get sig from viewer
+        const sigInital = await getThreadSig(threadStateInitial, viewer);
+        const sigUpdated = await getThreadSig(threadStateUpdated, viewer);
+
+        await startExitThreadWithUpdate(
+          channelStateWithThreadsSender, 
+          threadStateInitial, 
+          threadStateUpdated, 
+          proof, 
+          sigInital,
+          sigUpdated,
+          hub
+        );
+        await happyAssertions(threadStateUpdated);
+      });
+
+      it("succeeds when hub starts exit thread w update in recipient channel", async () => {
+        const proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
+
+        // still need to get sig from viewer
+        const sigInital = await getThreadSig(threadStateInitial, viewer);
+        const sigUpdated = await getThreadSig(threadStateUpdated, viewer);
+
+        await startExitThreadWithUpdate(
+          channelStateWithThreadsReceiver, 
+          threadStateInitial, 
+          threadStateUpdated, 
+          proof, 
+          sigInital,
+          sigUpdated,
+          hub
+        );
+        await happyAssertions(threadStateUpdated);
       })
-      it("succeeds when hub starts exit thread w update", async () => {
-        happyAssertions()
-      })
-    })
+    });
 
     describe("edge cases", () => {
-      it("succeeds if sender starts to exit thread w update while reciever is exiting", async () => {})
-      it("succeeds if sender starts to exit thread w update while hub is exiting", async () => {})
-      it("succeeds if sender starts to exit thread w an update & update contains no changes", async () => {})
-    })
+      it("succeeds if sender starts to exit thread w update while reciever is exiting", async () => {});
+      it("succeeds if sender starts to exit thread w update while hub is exiting", async () => {});
+      it("succeeds if sender starts to exit thread w an update & update contains no changes", async () => {});
+    });
 
     describe("assertions", () => {
-      it("fails if channel is not in ThreadDispute", async () => {})
-      it("fails if msg.sender is not either the user or hub", async () => {})
-      it("fails if the user is not the sender or receiver", async () => {})
-      it("fails if the initial receiver balances are not zero", async () => {})
-      it("fails if thread closing time is non-zero & dispute is underway", async () => {})
-      it("fails if thread closing time is non-zero & dispute is over & thread is empty", async () => {})
-      it("fails if any _verifyThread reqs fail", async () => {})
-      it("fails if the updateTxCount is not higher than 0", async () => {})
-      it("fails if wei balances are not equal to sender's initial balance", async () => {})
-      it("fails if token balances are not equal to sender's initial balance", async () => {})
-      it("fails if recipient balance decreases", async () => {/* is this necessary? */})
-    })
-  })
+      it("fails if channel is not in ThreadDispute", async () => {});
+      it("fails if msg.sender is not either the user or hub", async () => {});
+      it("fails if the user is not the sender or receiver", async () => {});
+      it("fails if the initial receiver balances are not zero", async () => {});
+      it("fails if thread closing time is non-zero & dispute is underway", async () => {});
+      it("fails if thread closing time is non-zero & dispute is over & thread is empty", async () => {});
+      it("fails if any _verifyThread reqs fail", async () => {});
+      it("fails if the updateTxCount is not higher than 0", async () => {});
+      it("fails if wei balances are not equal to sender's initial balance", async () => {});
+      it("fails if token balances are not equal to sender's initial balance", async () => {});
+      it("fails if recipient balance decreases", async () => {
+        /* is this necessary? */
+      });
+    });
+  });
 
   describe("challengeThread", () => {
     const happyAssertions = () => {
       // assert that balances and txCount are correctly set in success case
-      return true
-    }
+      return true;
+    };
 
-    beforeEach(async () => {/* Setup test env */})
+    beforeEach(async () => {
+      /* Setup test env */
+    });
 
     describe("happy paths", () => {
       it("succeeds when sender challenges thread", async () => {
-        happyAssertions()
-      })
+        happyAssertions();
+      });
       it("succeeds when reciever challenges thread", async () => {
-        happyAssertions()
-      })
+        happyAssertions();
+      });
       it("succeeds when hub challenges thread", async () => {
-        happyAssertions()
-      })
-    })
+        happyAssertions();
+      });
+    });
 
     describe("edge cases", () => {
-      it("succeeds if sender challenges twice in a row", async () => {})
-    })
+      it("succeeds if sender challenges twice in a row", async () => {});
+    });
 
     describe("assertions", () => {
-      it("fails if msg.sender is not either the sender, receiver or hub", async () => {})
-      it("fails if now < the thread closing time (thread has already been settled)", async () => {})
-      it("fails if now < the thread closing time (thread exit has not yet started)", async () => {})
-      it("fails if the submitted txCount is not higher than current txCount", async () => {})
-      it("fails if wei balances are not conserved", async () => {})
-      it("fails if token balances are not conserved", async () => {})
-      it("fails if either wei or token balances decrease", async () => {})
-      it("fails if any _verifyThread req fails", async () => {})
-    })
-  })
+      it("fails if msg.sender is not either the sender, receiver or hub", async () => {});
+      it("fails if now < the thread closing time (thread has already been settled)", async () => {});
+      it("fails if now < the thread closing time (thread exit has not yet started)", async () => {});
+      it("fails if the submitted txCount is not higher than current txCount", async () => {});
+      it("fails if wei balances are not conserved", async () => {});
+      it("fails if token balances are not conserved", async () => {});
+      it("fails if either wei or token balances decrease", async () => {});
+      it("fails if any _verifyThread req fails", async () => {});
+    });
+  });
 
   describe("emptyThread", () => {
     const happyAssertions = () => {
@@ -3078,69 +3262,76 @@ contract("ChannelManager", accounts => {
       // assert correct wei and token transfer if user == sender
       // assert correct thread.emptied, threadCount in success case
       // assert channel state correctly reinitialized if threadCount == 0
-      return true
-    }
+      return true;
+    };
 
-    beforeEach(async () => {/* Setup test env */})
+    beforeEach(async () => {
+      /* Setup test env */
+    });
 
     describe("happy paths", () => {
       it("succeeds if sender empties thread then reciever", async () => {
-        happyAssertions()
-      })
+        happyAssertions();
+      });
       it("succeeds if reciever empties thread then sender", async () => {
-        happyAssertions()
-      })
+        happyAssertions();
+      });
       it("succeeds if hub empties both sides of the thread", async () => {
-        happyAssertions()
-      })
-    })
+        happyAssertions();
+      });
+    });
 
     describe("edge cases", () => {
-      it("succeeds if sender empties & thread count goes to zero & sender deposits", async () => {})
-    })
+      it("succeeds if sender empties & thread count goes to zero & sender deposits", async () => {});
+    });
 
     describe("assertions", () => {
-      it("fails if user's channel is not in thread dispute status", async () => {})
-      it("fails if msg.sender is not the hub or user", async () => {})
-      it("fails if the user is not sender or receiver", async () => {})
-      it("fails if the initial receiver balances are not 0", async () => {})
-      it("fails if the thread closing time has not passed (still in dispute)", async () => {})
-      it("fails if the thread closing time is 0 (exit not started)", async () => {})
-      it("fails if the user attempts to empty an already emptied thread", async () => {})
-      it("fails if any _verifyThread req fails", async () => {})
-      it("fails if wei balances are not equal to sender's initial balance", async () => {})
-      it("fails if token balances are not equal to sender's initial balance", async () => {})
-      it("fails if token transfer fails", async () => {/* Might not be possible to hit this one */})
-    })
-  })
+      it("fails if user's channel is not in thread dispute status", async () => {});
+      it("fails if msg.sender is not the hub or user", async () => {});
+      it("fails if the user is not sender or receiver", async () => {});
+      it("fails if the initial receiver balances are not 0", async () => {});
+      it("fails if the thread closing time has not passed (still in dispute)", async () => {});
+      it("fails if the thread closing time is 0 (exit not started)", async () => {});
+      it("fails if the user attempts to empty an already emptied thread", async () => {});
+      it("fails if any _verifyThread req fails", async () => {});
+      it("fails if wei balances are not equal to sender's initial balance", async () => {});
+      it("fails if token balances are not equal to sender's initial balance", async () => {});
+      it("fails if token transfer fails", async () => {
+        /* Might not be possible to hit this one */
+      });
+    });
+  });
 
   describe("nukeThreads", () => {
     const happyAssertions = () => {
       // assert it correctly reduces totalChannelWei and totalChannelToken
       // assert it correctly reinitializes channel params
-      return true
-    }
+      return true;
+    };
 
-    beforeEach(async () => {/* Setup test env */})
+    beforeEach(async () => {
+      /* Setup test env */
+    });
 
     describe("happy paths", () => {
       it("succeeds if user nukes threads", async () => {
-        happyAssertions()
-      })
+        happyAssertions();
+      });
       it("succeeds if hub nukes threads and then deposits", async () => {
-        happyAssertions()
-      })
-    })
+        happyAssertions();
+      });
+    });
 
-    describe("edge cases", () => {})
+    describe("edge cases", () => {});
 
     describe("assertions", () => {
-      it("fails if user is hub", async () => {})
-      it("fails if user is channelManager", async () => {})
-      it("fails if channel does not have thead dispute status", async () => {})
-      it("fails if closing time + 10x challenge periods habe not elapsed yet", async () => {})
-      it("fails if token transfer fails", async () => {/* Might not be possible to hit this one */})
-    })
-  })
-
+      it("fails if user is hub", async () => {});
+      it("fails if user is channelManager", async () => {});
+      it("fails if channel does not have thead dispute status", async () => {});
+      it("fails if closing time + 10x challenge periods habe not elapsed yet", async () => {});
+      it("fails if token transfer fails", async () => {
+        /* Might not be possible to hit this one */
+      });
+    });
+  });
 });
