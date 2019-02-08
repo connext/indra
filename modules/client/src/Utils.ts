@@ -1,3 +1,4 @@
+import { convertChannelState } from './types'
 /*********************************
  *********** UTIL FNS ************
  *********************************/
@@ -283,7 +284,8 @@ export class Utils {
     return addr
   }
 
-  hasPendingOps(state: ChannelState) {
+  hasPendingOps(stateAny: ChannelState<any>) {
+    const state = convertChannelState('str', stateAny)
     for (let field in state) {
       if (!field.startsWith('pending'))
         continue

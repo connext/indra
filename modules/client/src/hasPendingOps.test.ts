@@ -3,10 +3,10 @@ import { assert } from './testing'
 
 describe('hasPendingOps', () => {
   const hasPendingOpsTests = [
-    [{ balanceTokenUser: '0', pendingDepositTokenHub: '0' }, false],
-    [{ balanceTokenUser: '1', pendingDepositTokenHub: '0' }, false],
-    [{ balanceTokenUser: '0', pendingDepositTokenHub: '1' }, true],
-    [{ balanceTokenUser: '1', pendingDepositTokenHub: '1' }, true],
+    [{ balanceWeiHub: '0', pendingDepositTokenHub: '0' }, false],
+    [{ balanceWeiHub: '1', pendingDepositTokenHub: '0' }, false],
+    [{ balanceWeiHub: '0', pendingDepositTokenHub: '1' }, true],
+    [{ balanceWeiHub: '1', pendingDepositTokenHub: '1' }, true],
   ]
 
   hasPendingOpsTests.forEach((t: any) => {

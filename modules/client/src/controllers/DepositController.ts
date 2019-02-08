@@ -3,8 +3,7 @@ import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateReque
 import { getLastThreadId } from '../lib/getLastThreadId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
-import * as actions from "../state/actions"
-import { getChannel } from '../lib/getChannel'
+import { toBN } from '../helpers/bn';
 const tokenAbi = require("human-standard-token-abi")
 
 /*
@@ -24,10 +23,6 @@ export default class DepositController extends AbstractController {
   // TODO: should the deposit params (timeout, payment) be saved for sig recovery or just use params sent by hub?
 
   public async requestUserDeposit(deposit: Payment) {
-    const err = this.validator.payment(convertPayment("bn", deposit))
-    if (err) {
-      throw new Error(`Cannot request a negative deposit. Deposit: ${JSON.stringify(deposit, null, 2)}. ` + err)
-    }
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
 
     const sync = await this.hub.requestDeposit(
@@ -132,7 +127,7 @@ export default class DepositController extends AbstractController {
         }
         const call = token.methods.approve(prev.contractAddress, args.depositTokenUser)
         const gasEstimate = await call.estimateGas(sendArgs)
-        sendArgs.gas = this.connext.contract.gasMultiple * gasEstimate
+        sendArgs.gas = toBN(Math.ceil(this.connext.contract.gasMultiple * gasEstimate))
         await call.send(sendArgs)
       }
       console.log('Sending user authorized deposit to chain.')

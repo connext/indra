@@ -1,4 +1,4 @@
-import { DepositArgs, ExchangeArgs, SyncResult, UpdateRequest, WithdrawalArgs, ChannelState, ChannelUpdateReason } from '../types'
+import { SyncResult, } from '../types'
 import { ConnextState } from './store'
 import * as actions from './actions'
 import { Utils } from '../Utils'
@@ -72,6 +72,7 @@ export function handleStateFlags(args: any): any {
       dispatch(actions.updateCanFields({
         canDeposit: !(allBlocked || hasPending),
         canExchange: !allBlocked,
+        awaitingOnchainTransaction: hasPending,
         canWithdraw: !(allBlocked || hasPending),
         canBuy: !allBlocked,
         canCollateralize: !(allBlocked || hasPending),

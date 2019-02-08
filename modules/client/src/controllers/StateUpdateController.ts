@@ -412,7 +412,7 @@ export default class StateUpdateController extends AbstractController {
       }
 
       const { syncController } = this.connext
-      const { didEmit, latestBlock, event } = await syncController.didContractEmitUpdateEvent(prev)
+      const { didEmit, latestBlock, event } = await syncController.didContractEmitUpdateEvent(prev, update.createdOn)
 
       switch (didEmit) {
         case 'unknown':
