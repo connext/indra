@@ -19,9 +19,9 @@ export default class ThreadsController extends AbstractController {
     }
 
     // get appropriate thread id
-    const threadHistoryItem = threadHistory.filter(t => t.reciever == receiver && t.sender == channel.user)
+    const threadHistoryItem = threadHistory.filter(t => t.receiver == receiver && t.sender == channel.user)
     if (threadHistoryItem.length > 1) {
-      throw new Error(`The thread history is inaccurate, there is more than one entries for the same reciever and sender combo. Thread history: ${JSON.stringify(threadHistory)}`)
+      throw new Error(`The thread history is inaccurate, there is more than one entry for the same reciever and sender combo. Thread history: ${JSON.stringify(threadHistory)}`)
     }
 
     // sign initial thread state
@@ -51,6 +51,7 @@ export default class ThreadsController extends AbstractController {
       args: initialState,
       txCount: newChannelState.txCountGlobal,
       sigUser: newChannelState.sigUser,
+      initialThreadStates: state.persistent.activeInitialThreadStates,
     }
 
     // TODO: make sure the lastThreadUpdateId is correctly
@@ -70,17 +71,18 @@ export default class ThreadsController extends AbstractController {
     const state = this.getState()
     const channel = state.persistent.channel
     const threads = state.persistent.activeThreads
+    const initialThreadStates = state.persistent.activeInitialThreadStates
 
-    const thread = threads.filter(t => t.threadId == threadIndicator.threadId && t.sender == threadIndicator.sender && t.receiver == threadIndicator.reciever)
+    const thread = threads.filter(t => t.threadId == threadIndicator.threadId && t.sender == threadIndicator.sender && t.receiver == threadIndicator.receiver)
     if (thread.length != 1) {
-      throw new Error(`Error finding thread with provided thread information: ${threadIndicator}. ${thread.length == 0 ? 'No thread found.' : `Multiple threads with provided ID found ${JSON.stringify(thread)}`}`)
+      throw new Error(`Error finding thread with provided thread information: ${threadIndicator}. ${thread.length == 0 ? 'No thread found.' : `Multiple threads found ${JSON.stringify(thread)}`}`)
     }
 
     // sign channel state
     const newChannelState = await this.connext.signChannelState(
       this.validator.generateCloseThread(
         channel,
-        state.persistent.activeInitialThreadStates,
+        initialThreadStates,
         thread[0],
       )
     )
@@ -90,9 +92,12 @@ export default class ThreadsController extends AbstractController {
       args: thread[0],
       txCount: newChannelState.txCountGlobal, 
       sigUser: newChannelState.sigUser,
+      initialThreadStates: initialThreadStates.filter(t => t.sender != threadIndicator.sender && t.receiver != threadIndicator.receiver && t.threadId != threadIndicator.threadId),
     }
 
     const hubResponse = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
     this.connext.syncController.handleHubSync(hubResponse.updates)
   }
 }
+
+// TODO: will likely need a way to close multiple threads at a time (i.e a performer exits their show and they need to close ALL user threads)
