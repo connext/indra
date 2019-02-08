@@ -543,10 +543,10 @@ export class Validator {
     //   errs.push(this.hasTimeout(prev))
     // }
 
-    if(errs) 
-      return errs
-    else
-      return null
+    if (errs) {
+      return errs /*.filter(x => !!x)[0]*/
+    }
+    return null
   }
 
   public generateCloseThread(prevStr: ChannelState, initialThreadStates: ThreadState[], argsStr: ThreadState): UnsignedChannelState {
@@ -813,19 +813,20 @@ export class Validator {
     // 4. Contract address is the same
     // 5. Sender is the same
     // 6. Receiver is the same
-    let errs = [
-      this.enforceDelta([prev, args], 1, ['txCount']),
+      let errs = [
+      this.hasNegative({diff: (args.txCount - prev.txCount)}, ['diff']),
       this.hasNegative({weiDiff: (args.balanceWeiReceiver.sub(prev.balanceWeiReceiver))}, ['weiDiff']),
-      this.hasNegative({tokenDiff: (args.balanceTokenReceiver.sub(prev.balanceTokenReceiver))}, ['tokenDiff'])
+      this.hasNegative({tokenDiff: (args.balanceTokenReceiver.sub(prev.balanceTokenReceiver))}, ['tokenDiff']),
+      this.hasInequivalent([prev, args], ['contractAddress', 'sender', 'receiver']),
+      this.hasInequivalent([
+        { weiSum: prev.balanceWeiSender.add(prev.balanceWeiReceiver)}, 
+        { weiSum: args.balanceWeiSender.add(args.balanceWeiReceiver)}],
+        ['weiSum']),
+      this.hasInequivalent([
+        { tokenSum: prev.balanceTokenSender.add(prev.balanceTokenReceiver)}, 
+        { tokenSum: args.balanceTokenSender.add(args.balanceTokenReceiver)}],
+        ['tokenSum'])
     ]
-    if(prev.contractAddress != args.contractAddress) errs.push(`Contract address must remain the same. Prev state: ${JSON.stringify(convertThreadState("str", prev))}`)
-    if(prev.sender != args.sender) errs.push(`Sender must remain the same. Prev state: ${JSON.stringify(convertThreadState("str", prev))}`)
-    if(prev.receiver != args.receiver) errs.push(`Receiver must remain the same. Prev state: ${JSON.stringify(convertThreadState("str", prev))}`)
-    if(prev.balanceWeiSender.add(prev.balanceWeiReceiver) != args.balanceWeiSender.add(args.balanceWeiReceiver)) 
-      errs.push(`Wei must be conserved. Prev state: ${JSON.stringify(convertThreadState("str", prev))}. Curr state: ${JSON.stringify(convertThreadState("str", args))}`)
-    if(prev.balanceTokenSender.add(prev.balanceTokenReceiver) != args.balanceTokenSender.add(args.balanceTokenReceiver)) 
-      errs.push(`Tokens must be conserved. Prev state: ${JSON.stringify(convertThreadState("str", prev))}. Curr state: ${JSON.stringify(convertThreadState("str", args))}`)
-
     if (errs) {
       return errs.filter(x => !!x)[0]
     }

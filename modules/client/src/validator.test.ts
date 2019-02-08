@@ -184,6 +184,7 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
     initialThreadStates.push(convertThreadState("str", createThreadState(Object.assign({
       receiver: t.mkAddress(`0x${i + 1}`),
       threadId: 69 + i,
+      txCount: 0,
     }, ...overrides)
     )))
   }
@@ -957,7 +958,8 @@ describe('validator', () => {
     const args = createThreadState({
       ...initialThreadStates[0], // user is receiver
       balanceWei: [3, 2],
-      balanceToken: [2, 3]
+      balanceToken: [2, 3],
+      txCount: 1
     })
 
     const cases = [
