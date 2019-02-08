@@ -155,7 +155,7 @@ describe('ThreadController: unit tests', () => {
         mockStore = new MockStore()
         mockStore.setChannel({
           user: sender,
-          balanceWei: [2, 2],
+          balanceWei: [5, 5],
           balanceToken: [10, 10],
           threadCount: 0,
         })
@@ -184,7 +184,7 @@ describe('ThreadController: unit tests', () => {
           receiver: receiver1,
           threadId: 1,
         })
-        await new Promise(res => setTimeout(res, 50))
+        await new Promise(res => setTimeout(res, 20))
         // assert that the received update is correct
         connext.mockHub.assertReceivedUpdate({
           reason: 'CloseThread',
