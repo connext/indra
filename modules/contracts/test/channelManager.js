@@ -660,11 +660,12 @@ contract("ChannelManager", accounts => {
     validator = new Validator(web3, hub.address);
 
     challengePeriod = +(await cm.challengePeriod.call()).toString();
+
+    snapshotId = await snapshot();
   });
 
   beforeEach(async () => {
-    snapshotId = await snapshot();
-
+    await restore(snapshotId);
     // TODO: rename this
     state = getChannelState("empty", {
       contractAddress: cm.address,
@@ -684,7 +685,6 @@ contract("ChannelManager", accounts => {
   });
 
   afterEach(async () => {
-    await restore(snapshotId);
   });
 
   ////////////////////////////////////////
