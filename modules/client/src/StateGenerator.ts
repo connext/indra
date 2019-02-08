@@ -616,8 +616,8 @@ export class StateGenerator {
       ...prev,
       balanceTokenSender: prev.balanceTokenSender.sub(args.amountToken),
       balanceTokenReceiver: prev.balanceTokenReceiver.add(args.amountToken),
-      balanceWeiSender: prev.balanceTokenSender.sub(args.amountWei),
-      balanceWeiReceiver: prev.balanceTokenReceiver.add(args.amountWei),
+      balanceWeiSender: prev.balanceWeiSender.sub(args.amountWei),
+      balanceWeiReceiver: prev.balanceWeiReceiver.add(args.amountWei),
       txCount: prev.txCount + 1,
     })
   }
