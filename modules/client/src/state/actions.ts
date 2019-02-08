@@ -69,4 +69,4 @@ export const setSyncControllerState = setterAction<SyncControllerState>('persist
 export const setRequestedDeposit = setterAction<PendingRequestedDeposit | null>('persistent.requestedDeposit')
 export const setThreadHistory = setterAction<ThreadHistoryItem[]>('persistent.threadHistory')
 export const setActiveInitialThreadStates = setterAction<ThreadState[]>('persistent.activeInitialThreadStates')
-export const setActiveThreads = setterAction<ThreadState[]>('persistent.threadHistory')
+export const setActiveThreads = setterAction<ThreadState[]>('persistent.activeThreads')
