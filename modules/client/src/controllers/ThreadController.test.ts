@@ -169,7 +169,7 @@ describe('ThreadController: unit tests', () => {
 
       it('closing a thread should work', async () => {
         await connext.start()
-        // generate openThread state and send to hub
+        // generate closeThread state and send to hub
         await connext.threadsController.closeThread({
           sender,
           receiver: receiver1,
@@ -193,7 +193,7 @@ describe('ThreadController: unit tests', () => {
       }) 
 
       it('should fail if there is no active thread matching the one you wish to close', async() => {
-
+        
       })
 
       // NOTE: this likely wont happen, but its good to have it in place anyways

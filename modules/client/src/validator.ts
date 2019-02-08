@@ -461,7 +461,6 @@ export class Validator {
     const userIsSender = args.sender === prev.user
 
     // First check thread state independently
-
     // Then check that thread state against prev channel state:
     // 1. Sender or hub can afford thread
     // 2. Sender or receiver is channel user

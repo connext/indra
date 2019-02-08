@@ -449,7 +449,7 @@ export class MockStore {
   }
 
   public addThread = (overrides: PartialSignedOrSuccinctThread) => {
-    const thread = getThreadState("empty", overrides)
+    const thread = addSigToThreadState(getThreadState("empty", overrides), mkHash('0xMockUserSig'))
 
     let {
       activeThreads,
@@ -469,14 +469,13 @@ export class MockStore {
       balanceTokenSender: threadBN.balanceTokenSender.add(threadBN.balanceTokenReceiver),
       balanceWeiSender: threadBN.balanceWeiSender.add(threadBN.balanceWeiReceiver),
     })
-
     const newInitialThreads = activeInitialThreadStates.concat([initialThread])
     const newActiveThreads = activeThreads.concat([thread])
     const newThreadHistory = threadHistory.concat([{ sender: thread.sender, receiver: thread.receiver, threadId: thread.threadId }])
 
     let newState = new StateGenerator().openThread(
       convertChannelState('bn', channel),
-      activeInitialThreadStates,
+      newInitialThreads,
       threadBN,
     )
     newState = addSigToChannelState(newState, mkHash('0xMockUserSig'), true)
