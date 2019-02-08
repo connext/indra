@@ -669,7 +669,7 @@ export function convertVerboseEvent<To extends NumericTypeName>(to: To, obj: Ver
 // corresponding thread history item should have the threadId property updated)
 export type ThreadHistoryItem = {
   sender: Address
-  reciever: Address
+  receiver: Address
   threadId: number // TODO: rename to latest threadId for clarity...?
 }
 
