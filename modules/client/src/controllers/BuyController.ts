@@ -78,7 +78,7 @@ export default class BuyController extends AbstractController {
             // close thread and reopen
             await this.connext.threadsController.closeThread({
               sender: thread.sender,
-              reciever: thread.receiver,
+              receiver: thread.receiver,
               threadId: thread.threadId
             })
             thread = await this.connext.threadsController.openThread(
@@ -108,7 +108,7 @@ export default class BuyController extends AbstractController {
         if (isLargePayment) {
           await this.connext.threadsController.closeThread({
             sender: thread.sender,
-            reciever: thread.receiver,
+            receiver: thread.receiver,
             threadId: thread.threadId
           })
           await this.connext.awaitPersistentStateSaved()
