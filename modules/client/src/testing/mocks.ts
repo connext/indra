@@ -497,9 +497,8 @@ export class MockStore {
 
     const thread = activeThreads.filter(state => (state.sender === threadHistoryItem.sender && 
       threadHistoryItem.receiver == threadHistoryItem.receiver && state.threadId == threadHistoryItem.threadId))
-      
-    //@ts-ignore
-    const threadBN = convertThreadState('bn', thread)
+
+    const threadBN = convertThreadState('bn', thread[0])
 
     // Create thread update
     let threadUpdate = new StateGenerator().threadPayment(threadBN, payment)
