@@ -588,7 +588,7 @@ export class StateGenerator {
 
   // Use signed thread state because we should only be able to generate a thread closing update on a real thread state update
   public closeThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): UnsignedChannelState {
-    initialThreadStates = initialThreadStates.filter(state => state.sender !== args.sender && state.receiver !== args.receiver && state.threadId !== args.threadId)
+    initialThreadStates = initialThreadStates.filter(state => !(state.sender === args.sender && state.receiver == args.receiver && state.threadId == args.threadId))
     const userIsSender = args.sender === prev.user
     return convertChannelState("str-unsigned", {
       ...prev,

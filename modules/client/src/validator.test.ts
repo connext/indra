@@ -957,31 +957,14 @@ describe('validator', () => {
 
     const args = createThreadState({
       ...initialThreadStates[0], // user is receiver
-      balanceWei: [3, 2],
-      balanceToken: [2, 3],
+      balanceWeiSender: 3,
+      balanceWeiReceiver: 2,
+      balanceTokenSender: 2,
+      balanceTokenReceiver: 3,
       txCount: 1
     })
 
     const cases = [
-      {
-        name: 'should work with user as sender',
-        prev,
-        initialThreadStates,
-        args,
-        sigErr: false, // stubs out sig recover in tests
-        message: null,
-      },
-      {
-        name: 'should work with user as receiver',
-        prev: {...prev, user: sampleAddress2 },
-        initialThreadStates,
-        args,
-        sigErr: false,
-        message: null
-      },
-      // {
-      //   name: 'should work with multiple threads'
-      // },
       // {
       //   name: 'should return a string if the user is not either sender or receiver'
       // },
@@ -1054,6 +1037,25 @@ describe('validator', () => {
       // },
       // {
       //   name: 'should return a string if the previous channel state is incorrectly signed'
+      // },
+      {
+        name: 'should work with user as sender',
+        prev,
+        initialThreadStates,
+        args,
+        sigErr: false, // stubs out sig recover in tests
+        message: null,
+      },
+      {
+        name: 'should work with user as receiver',
+        prev: {...prev, user: sampleAddress2 },
+        initialThreadStates,
+        args,
+        sigErr: false,
+        message: null
+      },
+      // {
+      //   name: 'should work with multiple threads'
       // },
     ]
 

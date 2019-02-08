@@ -520,7 +520,7 @@ export class Validator {
     // 1. Check that the initial state makes sense
     // 2. Check the thread state independently
     // 3. Check the transition from initial to thread state
-    let errs: any = [
+    let errs = [
       this.isValidInitialThreadState(convertThreadState('bn',initialState)),
       this.isValidThreadState(args),
       this.isValidThreadStateTransition(convertThreadState('bn', initialState), args),
@@ -537,14 +537,14 @@ export class Validator {
         prev,
         { args, reason: "CloseThread", txCount: prev.txCountGlobal, initialThreadStates }
       )
-    ]
+    ].filter(x => !!x)[0]
     // TODO: Why do we need the below? -- AB
     // if (this.hasTimeout(prev)) {
     //   errs.push(this.hasTimeout(prev))
     // }
 
     if (errs) {
-      return errs /*.filter(x => !!x)[0]*/
+      return errs 
     }
     return null
   }
