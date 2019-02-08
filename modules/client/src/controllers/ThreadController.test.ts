@@ -45,10 +45,7 @@ describe('ThreadController: unit tests', () => {
           })
         })
 
-        // TODO: what is this testing? everything is mocked so its not really 
-        // like it stays alive? are you looking for threads with the same person
-        // or threads with new receivers
-        it('should work for multiple threads', async() => {
+        it('should work with new sender/receiver', async() => {
           await connext.start()
           // generate openThread state and send to hub
           await connext.threadsController.openThread(receiver1, {
@@ -95,12 +92,6 @@ describe('ThreadController: unit tests', () => {
             sigUser: true,
             sigHub: false,
           })
-
-        })
-
-        // TODO: not really sure what you want to test here, so you can
-        // write this one @Arjun :)
-        it.skip('should work with new sender/receiver', async() => {
 
         })
         

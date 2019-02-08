@@ -1,4 +1,4 @@
-import { PurchaseRequest, PurchasePayment, PaymentArgs, SyncResult, convertThreadState, convertPayment, ChannelState } from '../types'
+import { PurchaseRequest, PurchasePayment, PaymentArgs, SyncResult, convertThreadState, convertPayment, ChannelState, ThreadHistoryItem } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
 import { getActiveThreads } from '../lib/getActiveThreads';
@@ -58,6 +58,7 @@ export default class BuyController extends AbstractController {
           throw new Error(`Multiple active threads detected between sender (${curChannelState.user}) and receiver (${payment.recipient})`)
         }
 
+
         let thread = potentialThreads[0]
         if (!thread) {
           // no thread -- must open a new one, then make a payment
@@ -77,9 +78,9 @@ export default class BuyController extends AbstractController {
           if (!canAffordPayment) {
             // close thread and reopen
             await this.connext.threadsController.closeThread({
-              sender: thread.sender,
-              reciever: thread.receiver,
-              threadId: thread.threadId
+                sender: thread.sender,
+                receiver: thread.receiver,
+                threadId: thread.threadId
             })
             thread = await this.connext.threadsController.openThread(
               payment.recipient, 
@@ -108,7 +109,7 @@ export default class BuyController extends AbstractController {
         if (isLargePayment) {
           await this.connext.threadsController.closeThread({
             sender: thread.sender,
-            reciever: thread.receiver,
+            receiver: thread.receiver,
             threadId: thread.threadId
           })
           await this.connext.awaitPersistentStateSaved()
