@@ -1415,7 +1415,7 @@ contract("ChannelManager", accounts => {
         const deposit = getDepositArgs("empty", {
           ...state,
           depositWeiHub: 10,
-          timeout: new Date().getTime() / 1000 // timeout is now
+          timeout: secondsFromNow(0) // timeout is now
         });
         const update = sg.proposePendingDeposit(state, deposit);
         update.sigUser = await getSig(update, viewer);
