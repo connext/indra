@@ -11,7 +11,7 @@ const { Utils } = require("../../client/dist/Utils");
 const { StateGenerator } = require("../../client/dist/StateGenerator");
 const { Validator } = require("../../client/dist/validator");
 const { convertChannelState, convertWithdrawal, convertProposePending } = require("../../client/dist/types");
-const { getChannelState, getDepositArgs, getWithdrawalArgs, getExchangeArgs, getPaymentArgs, getPendingArgs } = require("../../client/dist/testing");
+const { getChannelState, getThreadState, getDepositArgs, getWithdrawalArgs, getExchangeArgs, getPaymentArgs, getPendingArgs } = require("../../client/dist/testing");
 const { toBN } = require("../../client/dist/helpers/bn");
 const clientUtils = new Utils();
 const sg = new StateGenerator();
@@ -176,6 +176,38 @@ async function generateIncorrectSigs(state, signer) {
 
   return sigArray;
 }
+
+// Generates an array of incorrect sigs to test each element of state for _verifySig
+async function generateIncorrectThreadSigs(state, signer) {
+  let sigArray = new Array();
+  let i = 0;
+
+  //methodology: save element to temp, change element and sign, restore element from temp
+  for (var element in state) {
+    let temp = state[element];
+    //The below if/else gates ensure that state[element] is always changed
+    //if the element is not already it's initial value, reinitialize
+    if (state[element] != getThreadState("empty")[element]) state[element] = getThreadState("empty")[element];
+    //else (i.e. element == initial value) increment that value
+    else state[element] = getThreadState("empty")[element] + 1;
+    //edge case: if element is threadRoot, set to 0x01
+    if (element == "threadRoot") state[element] = "0x0100000000000000000000000000000000000000000000000000000000000000";
+
+    sigArray[i] = await getThreadSig(state, signer);
+
+    state[element] = temp;
+    i++;
+  }
+
+  //for final sig, signer needs to be incorrect
+  //if the expected signer is viewer or performer, then have hub sign
+  if (signer != hub) sigArray[i] = await getThreadSig(state, hub);
+  //if the expected signer is hub, then have viewer sign
+  else sigArray[i] = await getThreadSig(state, viewer);
+
+  return sigArray;
+}
+
 
 // channel update fn wrappers
 async function userAuthorizedUpdate(state, account, wei = 0) {
@@ -3051,6 +3083,22 @@ contract("ChannelManager", accounts => {
       it("fails if thread closing time is non-zero & dispute is underway", async () => {});
       it("fails if thread closing time is non-zero & dispute is over & thread is empty", async () => {});
       it("fails if any _verifyThread reqs fail", async () => {});
+
+      it("fails if sender's signature is invalid (long test)", async () => {
+        const timeout = minutesFromNow(5);
+        const proof = clientUtils.generateThreadProof(threadState, [threadState]);
+        const badSigs = await generateIncorrectThreadSigs(threadState, viewer);
+        for (i = 0; i < badSigs.length; i++) {
+          // console.log(`Now testing signature ${i}: ${badSigs[i]}`)
+          await startExitThread(
+            channelStateWithThreadsReceiver,
+            threadState,
+            proof,
+            badSigs[i],
+            hub
+          ).should.be.rejectedWith("signature invalid");
+        }
+      });
     });
   });
 
@@ -3214,6 +3262,44 @@ contract("ChannelManager", accounts => {
       it("fails if recipient balance decreases", async () => {
         /* is this necessary? */
       });
+
+      it("fails if sender's initial state signature is incorrect (long test)", async () => {
+        const timeout = minutesFromNow(5);
+        const proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
+        const sigUpdated = await getThreadSig(threadStateUpdated, viewer);
+        const badSigs = await generateIncorrectThreadSigs(threadStateInitial, viewer);
+        for (i = 0; i < badSigs.length; i++) {
+          // console.log(`Now testing signature ${i}: ${badSigs[i]}`)
+          await startExitThreadWithUpdate(
+            channelStateWithThreadsReceiver,
+            threadStateInitial,
+            threadStateUpdated,
+            proof,
+            badSigs[i],
+            sigUpdated,
+            hub
+          ).should.be.rejectedWith("signature invalid");
+        }
+      })
+
+      it("fails if sender's updated state signature is incorrect (long test)", async () => {
+        const timeout = minutesFromNow(5);
+        const proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
+        const sigInital = await getThreadSig(threadStateInitial, viewer);
+        const badSigs = await generateIncorrectThreadSigs(threadStateUpdated, viewer);
+        for (i = 0; i < badSigs.length; i++) {
+          // console.log(`Now testing signature ${i}: ${badSigs[i]}`)
+          await startExitThreadWithUpdate(
+            channelStateWithThreadsReceiver,
+            threadStateInitial,
+            threadStateUpdated,
+            proof,
+            sigInital,
+            badSigs[i],
+            hub
+          ).should.be.rejectedWith("signature invalid");
+        }
+      });
     });
   });
 
@@ -3252,6 +3338,7 @@ contract("ChannelManager", accounts => {
       it("fails if token balances are not conserved", async () => {});
       it("fails if either wei or token balances decrease", async () => {});
       it("fails if any _verifyThread req fails", async () => {});
+      it("fails if sender's signature is incorrect (long test)", async () => {})
     });
   });
 
@@ -3299,6 +3386,7 @@ contract("ChannelManager", accounts => {
       it("fails if token transfer fails", async () => {
         /* Might not be possible to hit this one */
       });
+      it("fails if sender's signature is incorrect (long test)", async () => {})
     });
   });
 
