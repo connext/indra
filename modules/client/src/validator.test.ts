@@ -2,7 +2,7 @@ import { assert } from './testing/index'
 import * as t from './testing/index'
 import { Validator } from './validator';
 import * as sinon from 'sinon'
-import { Utils } from './Utils';
+import { Utils, emptyAddress } from './Utils';
 import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, ThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs, PendingArgs, proposePendingNumericArgs, convertProposePending, PendingArgsBN, PendingExchangeArgsBN, InvalidationArgs, UnsignedThreadState, ChannelState } from './types';
 import { toBN } from './helpers/bn';
 import Web3 = require('web3')
@@ -965,85 +965,140 @@ describe('validator', () => {
     })
 
     const cases = [
-      // {
-      //   name: 'should return a string if the user is not either sender or receiver'
-      // },
-      // {
-      //   name: 'should return a string if the args provided is not included in initial state',
-      //   prev,
-      //   initialThreadStates: [initialThreadStates[1]],
-      //   args,
-      //   sigErr: false,
-      //   valid: false,
-      // },
-      // {
-      //   name: 'should return a string if the initial state is not signed'
-      // },
-      // {
-      //   name: 'should return a string if the initial state is not contained in root hash'
-      // },
-      // {
-      //   name: 'should return a string if receiver has changed from initial state'
-      // },
-      // {
-      //   name: 'should return a string if the sender has changed from initial state'
-      // },
-      // {
-      //   name: 'should return a string if the contract address has changed from initial state'
-      // },
-      // {
-      //   name: 'should return a string if the signer did not sign args',
-      //   prev,
-      //   initialThreadStates,
-      //   args,
-      //   sigErr: true, // stubs out sig recover in tests
-      //   valid: false,
-      // },
-      // {
-      //   name: 'should return a string if the final state wei balance is not conserved',
-      //   prev,
-      //   initialThreadStates,
-      //   args: { ...args, balanceWeiSender: toBN(10) },
-      //   sigErr: false, // stubs out sig recover in tests
-      //   valid: false,
-      // },
-      // {
-      //   name: 'should return a string if the final state token balance is not conserved',
-      //   prev,
-      //   initialThreadStates,
-      //   args: { ...args, balanceTokenSender: toBN(10), balanceWeiSender: toBN(10) },
-      //   sigErr: false, // stubs out sig recover in tests
-      //   valid: false,
-      // },
-      // {
-      //   name: 'should return a string if the receiver wei balances are negative'
-      //   prev,
-      //   initialThreadStates,
-      //   args,
-      //   sigErr: false,
-      //   message: null
-      // }, 
-      // {
-      //   name: 'should return a string if the receiver token balances are negative'
-      // },
-      // {
-      //   name: 'should return a string if the sender wei balances are negative'
-      // },
-      // {
-      //   name: 'should return a string if the sender token balances are negative'
-      // },
-      // {
-      //   name: 'should return a string if the txCount is negative'
-      // },
-      // {
-      //   name: 'should return a string if the previous channel state is incorrectly signed'
-      // },
+      {
+        name: 'should return a string if the user is not either sender or receiver',
+        prev: {...prev, user: sampleAddress3},
+        initialThreadStates,
+        args,
+        sigErr: false,
+        message: 'Channel user is not a member of this thread state.'
+      },
+      {
+        name: 'should return a string if the args provided is not included in initial state',
+        prev,
+        initialThreadStates: [initialThreadStates[1]],
+        args,
+        sigErr: false,
+        message: 'Thread is not included in channel open threads.',
+      },
+      {
+        name: 'should return a string if the initial state is not signed',
+        prev,
+        initialThreadStates: [{...initialThreadStates[0], sigA: ''}, initialThreadStates[1]],
+        args,
+        sigErr: true,
+        message: 'Incorrect signer'
+      },
+      {
+        name: 'should return a string if the initial state is not contained in root hash',
+        prev: {...prev, threadRoot: EMPTY_ROOT_HASH},
+        initialThreadStates,
+        args,
+        sigErr: false,
+        message: 'Initial thread states not contained in previous state root hash.'
+      },
+      {
+        name: 'should return a string if receiver has changed from initial state',
+        prev,
+        initialThreadStates,
+        args: {...args, receiver: sampleAddress3},
+        sigErr: false,
+        message: 'Thread is not included in channel open threads.'
+      },
+      {
+        name: 'should return a string if the sender has changed from initial state',
+        prev,
+        initialThreadStates,
+        args: {...args, sender: sampleAddress3},
+        sigErr: false,
+        message: 'Thread is not included in channel open threads.',
+      },
+      {
+        name: 'should return a string if the contract address has changed from initial state',
+        prev,
+        initialThreadStates,
+        args: {...args, contractAddress: emptyAddress},
+        sigErr: false,
+        message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"contractAddress"',
+      },
+      {
+        name: 'should return a string if the signer did not sign args',
+        prev,
+        initialThreadStates,
+        args,
+        sigErr: true, // stubs out sig recover in tests
+        message: 'Incorrect sig',
+      },
+      {
+        name: 'should return a string if the final state wei balance is not conserved',
+        prev,
+        initialThreadStates,
+        args: { ...args, balanceWeiSender: toBN(10) },
+        sigErr: false,
+        message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"weiSum"',
+      },
+      {
+        name: 'should return a string if the final state token balance is not conserved',
+        prev,
+        initialThreadStates,
+        args: { ...args, balanceTokenSender: toBN(10) },
+        sigErr: false, // stubs out sig recover in tests
+        message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"tokenSum"',
+      },
+      {
+        name: 'should return a string if the receiver wei balances are negative',
+        prev,
+        initialThreadStates,
+        args: {...args, balanceWeiReceiver: toBN(-10) },
+        sigErr: false,
+        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceWeiReceiver"'
+      }, 
+      {
+        name: 'should return a string if the receiver token balances are negative',
+        prev,
+        initialThreadStates,
+        args: {...args, balanceTokenReceiver: toBN(-10) },
+        sigErr: false,
+        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceTokenReceiver"'
+      }, 
+      {
+        name: 'should return a string if the sender wei balances are negative',
+        prev,
+        initialThreadStates,
+        args: {...args, balanceWeiSender: toBN(-10) },
+        sigErr: false,
+        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceWeiSender"'
+      }, 
+      {
+        name: 'should return a string if the sender token balances are negative',
+        prev,
+        initialThreadStates,
+        args: {...args, balanceTokenSender: toBN(-10) },
+        sigErr: false,
+        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceTokenSender"'
+      }, 
+      {
+        name: 'should return a string if the txCount is negative',
+        prev,
+        initialThreadStates,
+        args: {...args, txCount: -1 },
+        sigErr: false,
+        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"diff"'
+      }, 
+      {
+        name: 'should return a string if the previous channel state is incorrectly signed',
+        prev: {...prev, sigUser: ''},
+        initialThreadStates,
+        args,
+        sigErr: true,
+        message: 'Incorrect signer'
+      },
       {
         name: 'should work with user as sender',
         prev,
         initialThreadStates,
         args,
-        sigErr: false, // stubs out sig recover in tests
+        sigErr: false,
         message: null,
       },
       {
@@ -1054,9 +1109,14 @@ describe('validator', () => {
         sigErr: false,
         message: null
       },
-      // {
-      //   name: 'should work with multiple threads'
-      // },
+      {
+        name: 'should work with multiple threads',
+        prev,
+        initialThreadStates,
+        args: {...args, threadId: 70},
+        sigErr: false,
+        message: null
+      },
     ]
 
     cases.forEach(async ({ name, prev, initialThreadStates, sigErr, args, message }) => {
@@ -1068,7 +1128,6 @@ describe('validator', () => {
         }
         // Test against case messages
         const res = validator.closeThread(prev, initialThreadStates, args)
-        console.log(res)
         if (message) {
           assert(res && res.includes(message + ""))
         } else {
