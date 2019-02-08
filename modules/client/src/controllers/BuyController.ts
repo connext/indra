@@ -78,9 +78,9 @@ export default class BuyController extends AbstractController {
           if (!canAffordPayment) {
             // close thread and reopen
             await this.connext.threadsController.closeThread({
-                sender: thread.sender,
-                receiver: thread.receiver,
-                threadId: thread.threadId
+              sender: thread.sender,
+              receiver: thread.receiver,
+              threadId: thread.threadId
             })
             thread = await this.connext.threadsController.openThread(
               payment.recipient, 
