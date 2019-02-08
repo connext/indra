@@ -49,10 +49,15 @@ module.exports = {
       gas: 4700000
     }
   },
-  solc: {
-    optimizer: {
-      enabled: true,
-      runs: 1
+  compilers: {
+    solc: {
+      version: "0.4.25",
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 1
+        }
+      }
     }
   },
   mocha: {
