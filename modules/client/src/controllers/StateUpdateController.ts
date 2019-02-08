@@ -1,6 +1,6 @@
 import { ConnextState } from '../state/store'
 import { ConnextStore } from '../state/store'
-import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState } from '../types'
+import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState, ThreadState } from '../types'
 import { ChannelState, UpdateRequestTypes } from '../types'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
@@ -178,6 +178,12 @@ export default class StateUpdateController extends AbstractController {
       this.flushQueuedActions()
       continue
       */
+      // should update the active threads item in the store
+      // with the thread at the new state.
+
+      // this should ALWAYS be signed and final. no additional checking is 
+      // needed (though maybe we want to check the receiver balance increases
+      // and exit thread if it does not?)
       throw new Error('REB-36: enable threads!')
     }
 
@@ -235,6 +241,38 @@ export default class StateUpdateController extends AbstractController {
           sigUser: update.sigUser,
         },
       }))
+
+      // additionally, the client should update the thread properties
+      // within the store if a double signed thread-channel (openThread, 
+      // closeThread) update is returned by the hub
+      if (update.reason.includes("Thread")) {
+        const args = update.args as ThreadState
+        const connextState = this.store.getState()
+        // unconditionally update thread history whether it is open or close
+        // thread
+        const threadHistory = connextState.persistent.threadHistory.concat({ 
+          sender: args.sender, 
+          receiver: args.receiver, 
+          threadId: args.threadId 
+        })
+
+        // update active initial states depending if open or close
+        const prevActiveInitialThreads = connextState.persistent.activeInitialThreadStates
+        const prevActiveThreads = connextState.persistent.activeThreads
+
+        const activeInitialThreadStates = update.reason == "OpenThread" 
+          ? prevActiveInitialThreads.concat(args)
+          : prevActiveInitialThreads.filter(t => t.sender != args.sender && t.receiver != args.receiver && t.threadId != args.threadId)
+
+        const activeThreads = update.reason == "OpenThread"
+          ? prevActiveThreads.concat([args])
+          : prevActiveThreads.filter(t => t.sender != args.sender && t.receiver != args.receiver && t.threadId != args.threadId)
+
+        this.store.dispatch(actions.setThreadHistory(threadHistory))
+        this.store.dispatch(actions.setActiveInitialThreadStates(activeInitialThreadStates))
+        this.store.dispatch(actions.setActiveThreads(activeThreads))
+      }
+      
       return
     }
 
@@ -440,10 +478,38 @@ export default class StateUpdateController extends AbstractController {
     },
 
     'OpenThread': async (prev, update) => {
-      throw new Error('REB-36: enable threads!')
+      // Clients could be receiving openthread updates for 2 reasons:
+      // 1. The hub has countersigned the channel update with the 
+      //    client user as the thread sender (client initiated thread opening)
+      //      - update should have both user and hub sig
+      //        and should not make it to this point in the code
+      // 2. The client is the receiver, and the hub is relaying the information
+      //    that someone would like to open a thread with this person
+      //      - should verify the thread information and update the store
+      //        properties
+      assertSigPresence(update, 'sigHub')
+      // someone is opening a thread with us!
+      // TODO: what should we validate here?
+      
+      // 
     },
     'CloseThread': async (prev, update) => {
-      throw new Error('REB-36: enable threads!')
+      // close thread updates can be pushed to either thread party
+      // by the hub, if they are not the first to exit
+      assertSigPresence(update, 'sigHub')
+
+      // make sure that the thread being closed exists in our local storage
+      // under activeThreads and activeInitialStates
+      // will be removed when hub gets signed channel state (see comment line 
+      // 296)
+      const persistent = this.store.getState().persistent
+      const args = update.args as ThreadState
+      const initialState = persistent.activeInitialThreadStates.filter(t => t.sender == args.sender && t.receiver == args.receiver && t.threadId == args.threadId)[0]
+      const activeThread = persistent.activeThreads.filter(t => t.sender == args.sender && t.receiver == args.receiver && t.threadId == args.threadId)[0]
+      if (!activeThread || !initialState) {
+        throw new Error(`Hub is trying to close thread we have no local record of. Update: ${JSON.stringify(update)}`)
+      }
+      
     },
     'EmptyChannel': async (prev, update) => {
       
