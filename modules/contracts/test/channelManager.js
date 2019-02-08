@@ -2936,7 +2936,7 @@ contract("ChannelManager", accounts => {
       thread.tokenSender.should.be.eq.BN(threadState.balanceTokenSender);
       thread.tokenReceiver.should.be.eq.BN(threadState.balanceTokenReceiver);
       thread.txCount.should.be.eq.BN(threadState.txCount);
-      thread.threadClosingTime.should.be.gte.BN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 1); // subtract 1 in case test takes too long and second rolls over
+      thread.threadClosingTime.should.be.gte.BN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 5); // subtract 5 in case test takes too long and second rolls over
       thread.emptiedSender.should.be.false;
       thread.emptiedReceiver.should.be.false;
     };
@@ -2980,7 +2980,7 @@ contract("ChannelManager", accounts => {
         await happyAssertions(threadState);
       });
 
-      it.only("succeeds if receiver starts to exit thread", async () => {
+      it("succeeds if receiver starts to exit thread", async () => {
         const proof = clientUtils.generateThreadProof(threadState, [threadState]);
 
         // still need to get sig from viewer
@@ -2990,8 +2990,24 @@ contract("ChannelManager", accounts => {
         await happyAssertions(threadState);
       });
 
-      it("succeeds if hub starts to exit thread", async () => {
-        happyAssertions();
+      it("succeeds if hub starts to exit thread on sender side", async () => {
+        const proof = clientUtils.generateThreadProof(threadState, [threadState]);
+
+        // still need to get sig from viewer
+        const sig = await getThreadSig(threadState, viewer);
+
+        await startExitThread(channelStateWithThreadsSender, threadState, proof, sig, hub);
+        await happyAssertions(threadState);
+      });
+
+      it("succeeds if hub starts to exit thread on receiver side", async () => {
+        const proof = clientUtils.generateThreadProof(threadState, [threadState]);
+
+        // still need to get sig from viewer
+        const sig = await getThreadSig(threadState, viewer);
+
+        await startExitThread(channelStateWithThreadsReceiver, threadState, proof, sig, hub);
+        await happyAssertions(threadState);
       });
     });
 
