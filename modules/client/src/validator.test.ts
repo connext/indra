@@ -3,7 +3,7 @@ import * as t from './testing/index'
 import { Validator } from './validator';
 import * as sinon from 'sinon'
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, ThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs, PendingArgs, proposePendingNumericArgs, convertProposePending, PendingArgsBN, PendingExchangeArgsBN, InvalidationArgs, UnsignedThreadState } from './types';
+import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, ThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs, PendingArgs, proposePendingNumericArgs, convertProposePending, PendingArgsBN, PendingExchangeArgsBN, InvalidationArgs, UnsignedThreadState, ChannelState } from './types';
 import { toBN } from './helpers/bn';
 import Web3 = require('web3')
 import { EMPTY_ROOT_HASH } from './lib/constants';
@@ -21,6 +21,8 @@ const eventInputs = [
 ]
 const eventName = `DidUpdateChannel`
 const sampleAddress = "0x0bfa016abfa8f627654b4989da4620271dc77b1c"
+const sampleAddress2 = "0x17b105bcb3f06b3098de6eed0497a3e36aa72471"
+const sampleAddress3 = "0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F"
 const hubAddress = "0xFB482f8f779fd96A857f1486471524808B97452D"
 
 /* Overrides for these fns function must be in the contract format
@@ -916,7 +918,7 @@ describe('validator', () => {
     })
   })
 
-  describe.skip('validator.closeThread', () => {
+  describe('validator.closeThread', () => {
     // Should test success of the following cases:
     // 1. Should work with user as sender
     // 2. Should work with user as reciever
@@ -926,25 +928,20 @@ describe('validator', () => {
     // TODO: complete test spec
     // Should test failures of the following cases:
     // 1. Initial thread state is not valid (use thread initial state helper)
-    // 2. Initial thread state is not contained in the root hash
-    // 3. The following fields have changed from the approved init state:
+    // 2. Initial thread states are incorrectly signed
+    // 3. Initial thread state is not contained in the root hash
+    // 4. The following fields have changed from the approved init state:
     //      - receiver
     //      - sender
     //      - contractAddress
-    // 4. Incorrect signature or signer (not signed by sender or wrong payload)
-    // 5. Sender or hub has sufficient funds
+    // 5. Incorrect signature or signer (not signed by sender or wrong payload)
     // 6. Balances are conserved
     // 7. Reciever wei/token balance must be not negative
     // 8. Sender wei/token balance must be not negative
     // 9. TxCount must not be negative
-    // 10. Sender or receiver isnt channel user --> I dont think we need this one if we have 1 and 3 -AB
-    // 11. Previous channel state is incorrectly signed
-    // 12. Initial thread states are incorrectly signed
-    // 13. Final thread state is incorrectly signed
-    // 14. Receiver balances must not decrease as compared to previous thread state
-    // 15. TxCount must be one higher than previous state
+    // 10. Previous channel state is incorrectly signed
 
-    const params = createChannelThreadOverrides(2, { sender: t.mkAddress('0x18'), receiver: sampleAddress })
+    const params = createChannelThreadOverrides(2, { sender: sampleAddress, receiver: sampleAddress2 })
     // contains 2 threads, one where user is sender 
     // one where user is receiver
     const initialThreadStates = params.initialThreadStates
@@ -965,60 +962,113 @@ describe('validator', () => {
 
     const cases = [
       {
-        name: 'should work',
+        name: 'should work with user as sender',
         prev,
         initialThreadStates,
         args,
         sigErr: false, // stubs out sig recover in tests
-        valid: true,
+        message: null,
       },
       {
-        name: 'should return a string if the args provided is not included in initial states',
-        prev,
-        initialThreadStates: [initialThreadStates[1]],
+        name: 'should work with user as receiver',
+        prev: {...prev, user: sampleAddress2 },
+        initialThreadStates,
         args,
         sigErr: false,
-        valid: false,
+        message: null
       },
-      {
-        name: 'should return a string if the signer did not sign args',
-        prev,
-        initialThreadStates,
-        args,
-        sigErr: true, // stubs out sig recover in tests
-        valid: false,
-      },
-      {
-        name: 'should return a string if the final state wei balance is not conserved',
-        prev,
-        initialThreadStates,
-        args: { ...args, balanceWeiSender: toBN(10) },
-        sigErr: false, // stubs out sig recover in tests
-        valid: false,
-      },
-      {
-        name: 'should return a string if the final state token balance is not conserved',
-        prev,
-        initialThreadStates,
-        args: { ...args, balanceTokenSender: toBN(10), balanceWeiSender: toBN(10) },
-        sigErr: false, // stubs out sig recover in tests
-        valid: false,
-      },
+      // {
+      //   name: 'should work with multiple threads'
+      // },
+      // {
+      //   name: 'should return a string if the user is not either sender or receiver'
+      // },
+      // {
+      //   name: 'should return a string if the args provided is not included in initial state',
+      //   prev,
+      //   initialThreadStates: [initialThreadStates[1]],
+      //   args,
+      //   sigErr: false,
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if the initial state is not signed'
+      // },
+      // {
+      //   name: 'should return a string if the initial state is not contained in root hash'
+      // },
+      // {
+      //   name: 'should return a string if receiver has changed from initial state'
+      // },
+      // {
+      //   name: 'should return a string if the sender has changed from initial state'
+      // },
+      // {
+      //   name: 'should return a string if the contract address has changed from initial state'
+      // },
+      // {
+      //   name: 'should return a string if the signer did not sign args',
+      //   prev,
+      //   initialThreadStates,
+      //   args,
+      //   sigErr: true, // stubs out sig recover in tests
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if the final state wei balance is not conserved',
+      //   prev,
+      //   initialThreadStates,
+      //   args: { ...args, balanceWeiSender: toBN(10) },
+      //   sigErr: false, // stubs out sig recover in tests
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if the final state token balance is not conserved',
+      //   prev,
+      //   initialThreadStates,
+      //   args: { ...args, balanceTokenSender: toBN(10), balanceWeiSender: toBN(10) },
+      //   sigErr: false, // stubs out sig recover in tests
+      //   valid: false,
+      // },
+      // {
+      //   name: 'should return a string if the receiver wei balances are negative'
+      //   prev,
+      //   initialThreadStates,
+      //   args,
+      //   sigErr: false,
+      //   message: null
+      // }, 
+      // {
+      //   name: 'should return a string if the receiver token balances are negative'
+      // },
+      // {
+      //   name: 'should return a string if the sender wei balances are negative'
+      // },
+      // {
+      //   name: 'should return a string if the sender token balances are negative'
+      // },
+      // {
+      //   name: 'should return a string if the txCount is negative'
+      // },
+      // {
+      //   name: 'should return a string if the previous channel state is incorrectly signed'
+      // },
     ]
 
-    cases.forEach(async ({ name, prev, initialThreadStates, sigErr, args, valid }) => {
+    cases.forEach(async ({ name, prev, initialThreadStates, sigErr, args, message }) => {
       it(name, async () => {
-        // ignore recovery by defaul
-        validator.assertThreadSigner = sinon.stub().returns(null)
-        if (sigErr)
-          validator.assertThreadSigner = sinon.stub().throws(new Error(`Incorrect signer`))
-
-        if (valid) {
-          assert.isNull(await validator.closeThread(prev, initialThreadStates, args))
-        } else {
-          assert.exists(await validator.closeThread(prev, initialThreadStates, args))
+        // ignore recovery by default
+        validator.assertThreadSigner = () => {}
+        if (sigErr) {
+          validator.assertThreadSigner = () => { throw new Error(`Incorrect signer`) }
         }
-
+        // Test against case messages
+        const res = validator.closeThread(prev, initialThreadStates, args)
+        if (message) {
+          assert(res && res.includes(message + ""))
+        } else {
+          assert.isNull(res)
+        }
       })
     })
   })
