@@ -87,10 +87,9 @@ export class PersistentState {
 
   activeThreads: ThreadState[] = [] // all open and active threads at latest state
   activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
-  // threadHistory should contain all sender/receiver threads,
-  // with the latest update between them. this is how the client
-  // will generate and track the appropriate threadID for each sender/receiver
-  // combo in their threads. Only the latest sender/receiver thread should be
+  // threadHistory is how the client will generate and track the 
+  // appropriate threadID for each sender/receiver
+  // combo. Only the latest sender/receiver threadId should be
   // included in this history
   threadHistory: ThreadHistoryItem[] = []
   lastThreadUpdateId: number = 0 // global hub db level
