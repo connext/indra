@@ -1,11 +1,11 @@
-import { Address, Payment, ThreadState, UnsignedThreadState, UpdateRequest, ThreadHistoryItem } from '../types'
+import { Address, Payment, ThreadState, UnsignedThreadState, UpdateRequest, ThreadHistoryItem, ChannelState } from '../types'
 import { AbstractController } from './AbstractController';
 
 export default class ThreadsController extends AbstractController {
   // only thread senders should call the openThread function
   // joining threads that have been initiated with user as receiver
   // should be handled within the `StateUpdateController`
-  async openThread(receiver: Address, balance: Payment): Promise<ThreadState> {
+  async openThread(receiver: Address, balance: Payment): Promise<{thread: ThreadState, channel: ChannelState }> {
     // make sure you do not already have thread open with receiver
     // TODO: should check against client store or against hub endpoint
     const state = this.getState()
@@ -53,7 +53,7 @@ export default class ThreadsController extends AbstractController {
     // handled within the store
     const hubResponse = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
     this.connext.syncController.handleHubSync(hubResponse.updates)
-    return initialState // shortcut for access within buycontroller
+    return { thread: initialState, channel: newChannelState } // shortcut for access within buycontroller
   }
 
   // this function should be caller agnostic, either thread sender or
