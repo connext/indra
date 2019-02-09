@@ -1,7 +1,7 @@
 import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
 import { IWeb3TxWrapper } from '../Connext'
 import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN } from '../types'
+import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit } from '../types'
 import { SyncResult } from '../types'
 import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
 import { UnsignedThreadState } from '../types'
@@ -67,6 +67,8 @@ export class MockConnextInternal extends ConnextInternal {
 
     this.validator.assertThreadSigner = (thread: ThreadState): void => { return }
 
+    this.validator.assertDepositRequestSigner = (req: SignedDepositRequestProposal, signer: Address): void => { return }
+
     after(() => this.stop())
   }
 
@@ -77,6 +79,10 @@ export class MockConnextInternal extends ConnextInternal {
 
   async signThreadState(state: UnsignedThreadState): Promise<ThreadState> {
     return addSigToThreadState(state, mkHash('0x51512'))
+  }
+
+  async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>,): Promise<SignedDepositRequestProposal> {
+    return { ...args, sigUser: mkHash('0xalsd23')}
   }
 
   async getContractEvents(eventName: string, fromBlock: number): Promise<EventLog[]> {
@@ -234,7 +240,7 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
-  async requestDeposit(deposit: Payment, txCount: number, lastThreadUpdateId: number): Promise<Sync> {
+  async requestDeposit(deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number): Promise<Sync> {
     return {
       status: 'CS_OPEN',
       updates: [{
@@ -242,6 +248,7 @@ export class MockHub implements IHubAPIClient {
         update: {
           reason: 'ProposePendingDeposit',
           args: getDepositArgs('full', {
+            sigUser: deposit.sigUser,
             depositWeiUser: deposit.amountWei,
             depositTokenUser: deposit.amountToken,
             timeout: parseInt('' + (Date.now() / 1000 + 269)),
