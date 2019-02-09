@@ -586,11 +586,6 @@ contract("ChannelManager", accounts => {
 
     let tx = await hubAuthorizedUpdate(update, hub, 0);
     let channelBalances = await cm.getChannelBalances(viewer.address);
-    for (const [key, val] of Object.entries(channelBalances)) {
-      if (isBN(val)) {
-        channelBalances[key] = val.toString();
-      }
-    }
 
     confirmed = await validator.generateConfirmPending(update, {
       transactionHash: tx.tx
@@ -654,7 +649,7 @@ contract("ChannelManager", accounts => {
     });
 
     channelStateReceiver = getChannelState("empty", {
-      contractAddress: cm.address,
+      contractAddress: cm.address.toLowerCase(),
       user: performer.address,
       recipient: performer.address,
       txCountGlobal: 0,
@@ -2999,9 +2994,9 @@ contract("ChannelManager", accounts => {
         await verifyEmptyChannel(viewer, update, tx, false, false);
       });
     });
-  });
+});
 
-  describe("startExitThread", () => {
+  describe.only("startExitThread", () => {
     let threadState;
     let channelStateWithThreadsSender;
     let channelStateWithThreadsReceiver;
@@ -3043,12 +3038,12 @@ contract("ChannelManager", accounts => {
       channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
 
       // receiver
-      await fastForwardToEmptiedChannel(channelStateReceiver, threadState, performer);
+      channelStateWithThreadsReceiver = await fastForwardToEmptiedChannel(channelStateReceiver, threadState, performer);
       channelDetails = await cm.getChannelDetails(performer.address);
       channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
     });
 
-    describe("happy paths", () => {
+    describe.only("happy paths", () => {
       it("succeeds if sender starts to exit thread", async () => {
         const proof = clientUtils.generateThreadProof(threadState, [threadState]);
         const sig = await getThreadSig(threadState, viewer);
