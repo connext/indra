@@ -13,11 +13,6 @@ export default class ThreadsController extends AbstractController {
     const threads = state.persistent.activeThreads
     const threadHistory = state.persistent.threadHistory
 
-    const thread = threads.filter(t => t.receiver == receiver && t.sender == channel.user)
-    if (thread.length > 0) {
-      throw new Error(`There is an existing active thread between sender (${channel.user}) and receiver (${receiver}). Thread: ${thread}`)
-    }
-
     // get appropriate thread id
     const threadHistoryItem = threadHistory.filter(t => t.receiver == receiver && t.sender == channel.user)
     if (threadHistoryItem.length > 1) {

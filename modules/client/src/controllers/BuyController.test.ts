@@ -126,7 +126,7 @@ describe('BuyController: unit tests', () => {
   // Buy PT_THREAD Failing tests
   // 1. Multiple active threads between sender and receiver
 
-  it('should work for a single thread payment where no open thread exists', async () => {
+  it('should work for a single thread payment to a receiver', async () => {
     console.log("HEREEE----------------------------------")
     await connext.start()
     console.log("STARTED")
@@ -143,17 +143,10 @@ describe('BuyController: unit tests', () => {
     // })
   })
 
-  it('should work for a single thread payment where an open thread exists and can handle the payment', async () => {
-
+  it('should work for a more thread payments to the same receiver', async () => {
   })
 
-  it('should work for a single thread payment where the payment is below threshold but a new thread has to be opened', async () => {
-  })
-
-  it('should work for a single thread payment where the payment is above threshold', async () => {
-  })
-
-  it('should work for a multiple thread payments when a thread that can handle them exists', async () => {
+  it('should work for a single payments to a different receiver', async () => {
   })
 
   afterEach(async () => {
