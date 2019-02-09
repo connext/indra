@@ -3,9 +3,6 @@ import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateReque
 import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
-import * as actions from "../state/actions"
-import { getChannel } from '../lib/getChannel'
-import { PendingRequestedDeposit } from '../state/store'
 import { toBN } from '../helpers/bn';
 const tokenAbi = require("human-standard-token-abi")
 
