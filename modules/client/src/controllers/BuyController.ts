@@ -44,14 +44,16 @@ export default class BuyController extends AbstractController {
       if (payment.type == 'PT_THREAD') {
         
         // Create a new thread for the payment value
-        let thread = await this.connext.threadsController.openThread(
+        const { thread, channel } = await this.connext.threadsController.openThread(
           payment.recipient, 
           payment.amount
         )
 
+        // wait for thread to be added to local store and channel
+        // state/connext persistent state to be updated
         // TODO: figure out if this will wait for the channel state to
         // be updated via state update controller (should)
-        await this.connext.awaitPersistentStateSaved()        
+        // await this.connext.awaitPersistentStateSaved()        
 
         // add thread payment to signed payments
         const state = await this.connext.signThreadState(
@@ -67,7 +69,10 @@ export default class BuyController extends AbstractController {
         })
 
         // update new channel state
-        newChannelState = getChannel(this.store)
+        newChannelState = channel
+
+        // TODO: what happens if you have multiple thread payments
+        // before your thread can be closed? (eg embedded payments)
       } else { // handle channel payments
         const args: PaymentArgs = {
           recipient: 'hub',
