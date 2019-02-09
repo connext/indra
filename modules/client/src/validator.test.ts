@@ -638,7 +638,6 @@ describe('validator', () => {
 
     confirmCases.forEach(async ({ name, prev, stubs, valid }) => {
       it(name, async () => {
-        console.log('prev', convertChannelState("str", prev))
         // set tx receipt stub
         validator.web3.eth.getTransaction = sinon.stub().returns(stubs[0])
         validator.web3.eth.getTransactionReceipt = sinon.stub().returns(stubs[1])
