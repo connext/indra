@@ -148,10 +148,9 @@ describe('ThreadController: unit tests', () => {
     })
 
     describe('CloseThread', () => {
+      let receiver = receiver1
+      let threadId = 1
       beforeEach(() => {
-        let receiver = receiver1
-        let threadId = 1
-
         mockStore = new MockStore()
         mockStore.setChannel({
           user: sender,
@@ -202,12 +201,45 @@ describe('ThreadController: unit tests', () => {
       }) 
 
       it('should fail if there is no active thread matching the one you wish to close', async() => {
-        
+        await connext.start()
+
+        await assert.isRejected(connext.threadsController.closeThread(
+          { sender, receiver: receiver2, threadId: 1 }
+        ), /No thread found./)
       })
 
       // NOTE: this likely wont happen, but its good to have it in place anyways
       it('should fail if there are multiple active threads matching the one you wish to close', async() => {
+        // update the store to be incorrect
+        mockStore = new MockStore()
+        mockStore.setChannel({
+          user: sender,
+          balanceWei: [5, 5],
+          balanceToken: [10, 10],
+          threadCount: 0,
+        })
+        mockStore.addThread({
+          sender,
+          receiver,
+          threadId,
+          balanceTokenSender: '5',
+          balanceWeiSender: '3',
+        })
+        mockStore.addThread({
+          sender,
+          receiver,
+          threadId,
+          balanceTokenSender: '5',
+          balanceWeiSender: '3',
+        })
 
+        connext = new MockConnextInternal({ user: sender, store: mockStore.createStore()})
+
+        await connext.start()
+
+        await assert.isRejected(connext.threadsController.closeThread(
+          { sender, receiver: receiver1, threadId: 1 }
+        ), /Multiple threads found/)
       })
 
       afterEach(async () => {
