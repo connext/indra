@@ -478,15 +478,20 @@ export default class StateUpdateController extends AbstractController {
     },
 
     'OpenThread': async (prev, update) => {
-      // Clients could be receiving openthread updates for 2 reasons:
+      // Clients could be receiving openthread updates when:
       // 1. The hub has countersigned the channel update with the 
       //    client user as the thread sender (client initiated thread opening)
       //      - update should have both user and hub sig
       //        and should not make it to this point in the code
-      // 2. The client is the receiver, and the hub is relaying the information
-      //    that someone would like to open a thread with this person
-      //      - should verify the thread information and update the store
-      //        properties
+      // 2. The client is the receiver, and the hub is letting the client know
+      //    that it has bonded in the channel. In this case:
+      //      1. Client should verify the openThread update for internal consistency
+      //      2. Client should search store for a corresponding thread payment
+      //          a. If no thread payment, client should validate the openThread update, 
+      //             countersign and store it. (i.e. wait for threadUpdate)
+      //          b. If thread payment, client should validate the openThread update against
+      //             the payment. If valid, client should closeThread immediately
+      // 3. The client is the sender and OpenThread is generated from buy controller
       assertSigPresence(update, 'sigHub')
       // someone is opening a thread with us!
       // TODO: what should we validate here?
@@ -494,8 +499,7 @@ export default class StateUpdateController extends AbstractController {
       // 
     },
     'CloseThread': async (prev, update) => {
-      // close thread updates can be pushed to either thread party
-      // by the hub, if they are not the first to exit
+      // Close thread updates should only be received by the sender from the hub
       assertSigPresence(update, 'sigHub')
 
       // make sure that the thread being closed exists in our local storage

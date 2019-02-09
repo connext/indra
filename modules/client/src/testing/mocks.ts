@@ -220,18 +220,26 @@ export class MockHub implements IHubAPIClient {
     const updates = payments.map(p => {
       if ((p.update as UpdateRequest).sigUser) {
         // user signed update, add to recieved
+        console.log("TEST INCLUSION")
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
-      return {
-        type: 'channel',
-        update: {
-          reason: 'Payment',
-          args: getPaymentArgs('full', { amountToken: p.amount.amountToken, amountWei: p.amount.amountWei }),
-          sigHub: mkHash('0x51512'),
-          sigUser: (p.update as UpdateRequest).sigUser || '',
-          txCount: (p.update as UpdateRequest).sigUser ? (p.update as UpdateRequest).txCount! : (p.update as UpdateRequest).txCount! + 1,
-        } as UpdateRequest
-      } as SyncResult
+      if (p.type == 'PT_CHANNEL') {
+        return {
+          type: 'channel',
+          update: {
+            reason: 'Payment',
+            args: getPaymentArgs('full', { amountToken: p.amount.amountToken, amountWei: p.amount.amountWei }),
+            sigHub: mkHash('0x51512'),
+            sigUser: (p.update as UpdateRequest).sigUser || '',
+            txCount: (p.update as UpdateRequest).sigUser ? (p.update as UpdateRequest).txCount! : (p.update as UpdateRequest).txCount! + 1,
+          } as UpdateRequest
+        } as SyncResult
+      } else {
+        return {
+          type: 'thread',
+          update: { state: p.update.state }
+        } as SyncResult
+      }
     })
 
     return {

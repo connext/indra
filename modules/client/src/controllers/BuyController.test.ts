@@ -13,8 +13,8 @@ describe('BuyController: unit tests', () => {
   beforeEach(async () => {
     mockStore.setChannel({
       user,
-      balanceWei: [50000000000000000, 50000000000000000],
-      balanceToken: [100000000000000000, 100000000000000000],
+      balanceWei: [5, 5],
+      balanceToken: [10, 10],
     })
     connext = new MockConnextInternal({ user, store: mockStore.createStore() })
   })
@@ -116,31 +116,19 @@ describe('BuyController: unit tests', () => {
   //   await assert.isRejected(connext.start(), /sigUser not detected in update/)
   // })
 
-  // Buy PT_THREAD Passing tests
-  // 1. Single thread payment when no thread exists
-  // 2. Single thread payment where thread exists and can handle payment
-  // 3. Single thread payment where thread exists and can't handle payment
-  // 4. Single thread payment above the threshold
-  // 5. Multiple thread payments within a thread that can handle hem
-
-  // Buy PT_THREAD Failing tests
-  // 1. Multiple active threads between sender and receiver
-
   it('should work for a single thread payment to a receiver', async () => {
-    console.log("HEREEE----------------------------------")
     await connext.start()
-    console.log("STARTED")
-    // await connext.buyController.buy({
-    //   meta: {},
-    //   payments: [
-    //     {
-    //       amount: { amountToken: '1', amountWei: '0' },
-    //       type: 'PT_THREAD',
-    //       meta: {},
-    //       recipient: receiver,
-    //     },
-    //   ],
-    // })
+    await connext.buyController.buy({
+      meta: {},
+      payments: [
+        {
+          amount: { amountToken: '1', amountWei: '0' },
+          type: 'PT_THREAD',
+          meta: {},
+          recipient: receiver,
+        },
+      ],
+    })
   })
 
   it('should work for a more thread payments to the same receiver', async () => {
