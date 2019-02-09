@@ -75,7 +75,7 @@ export default class ThreadsController extends AbstractController {
 
     const thread = threads.filter(t => t.threadId == threadIndicator.threadId && t.sender == threadIndicator.sender && t.receiver == threadIndicator.receiver)
     if (thread.length != 1) {
-      throw new Error(`Error finding thread with provided thread information: ${threadIndicator}. ${thread.length == 0 ? 'No thread found.' : `Multiple threads found ${JSON.stringify(thread)}`}`)
+      throw new Error(`Error finding thread with provided thread information: ${JSON.stringify(threadIndicator)}. ${thread.length == 0 ? 'No thread found.' : `Multiple threads found ${JSON.stringify(thread)}`}`)
     }
 
     // sign channel state
@@ -92,7 +92,7 @@ export default class ThreadsController extends AbstractController {
       args: thread[0],
       txCount: newChannelState.txCountGlobal, 
       sigUser: newChannelState.sigUser,
-      initialThreadStates: initialThreadStates.filter(t => t.sender != threadIndicator.sender && t.receiver != threadIndicator.receiver && t.threadId != threadIndicator.threadId),
+      initialThreadStates, // corr. to previous initial threads
     }
 
     const hubResponse = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
