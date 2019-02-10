@@ -106,18 +106,18 @@ class PayCard extends Component {
     this.setState({addressError: null, balanceError: null})
     const { channelState, connext, web3 } = this.props;
 
-    if( Number(this.state.paymentVal.payments[0].amount.amountToken) <= Number(channelState.balanceTokenUser) &&
-        Number(this.state.paymentVal.payments[0].amount.amountWei) <= Number(channelState.balanceWeiUser)
-    ) {
+    // if( Number(this.state.paymentVal.payments[0].amount.amountToken) <= Number(channelState.balanceTokenUser) &&
+    //     Number(this.state.paymentVal.payments[0].amount.amountWei) <= Number(channelState.balanceWeiUser)
+    // ) {
       if(web3.utils.isAddress(this.state.paymentVal.payments[0].recipient)) {
         let paymentRes = await connext.buy(this.state.paymentVal);
         console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
       } else {
         this.setState({addressError: "Please choose a valid address"})
       }
-    } else {
-      this.setState({balanceError: "Insufficient balance in channel"})
-    }
+    // } else {
+    //   this.setState({balanceError: "Insufficient balance in channel"})
+    // }
   }
 
   render() {

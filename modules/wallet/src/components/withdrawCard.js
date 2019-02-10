@@ -117,19 +117,19 @@ class WithdrawCard extends Component {
     console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
     this.setState({addressError: null, balanceError: null})
     const { channelState, connext, web3 } = this.props;
-    if (
-      Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(channelState.balanceWeiUser) &&
-      Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
-    ) {
+    // if (
+    //   Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(channelState.balanceWeiUser) &&
+    //   Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
+    // ) {
       if (web3.utils.isAddress(this.state.withdrawalVal.recipient)){
         let withdrawalRes = await connext.withdraw(withdrawalVal);
         console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
       } else {
         this.setState({addressError: "Please enter a valid address"})
       }
-    } else {
-      this.setState({balanceError: "Insufficient balance in channel"})
-    }
+    // } else {
+    //   this.setState({balanceError: "Insufficient balance in channel"})
+    // }
   }
 
   render() {

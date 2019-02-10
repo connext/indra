@@ -95,26 +95,6 @@ describe('ThreadController: unit tests', () => {
           })
 
         })
-        
-        it('should fail if the sender/receiver already have an active thread between them', async() => {
-          // create new connext instance with active thread in place
-          mockStore.addThread({
-            sender,
-            receiver: receiver1,
-            balanceTokenSender: '1',
-            balanceWeiSender: '0',
-          })
-
-          connext = new MockConnextInternal({ user: sender, store: mockStore.createStore()})
-
-          await connext.start()
-
-          await assert.isRejected(connext.threadsController.openThread(receiver1, {
-            amountToken: '1',
-            amountWei: '0'
-          }), /There is an existing active thread/)
-
-        })
 
         it('should fail if the threadHistory is inaccurate', async() => {
           // add an extra thread history item there

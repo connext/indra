@@ -69,11 +69,11 @@ class ChannelCard extends Component {
           </CopyToClipboard>
         </Typography>
         <Typography variant="h6" style={cardStyle.row}>
-          ETH:
+          ETH:{" "}
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceWeiUser} Wei </span>
           ) : (
-            <span style={{ fontStyle: "italic" }}> Balance loading</span>
+            <span> 0</span>
           )}{" "}
         </Typography>
 
@@ -82,7 +82,7 @@ class ChannelCard extends Component {
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceTokenUser} Wei </span>
           ) : (
-            <span style={{ fontStyle: "italic" }}> Balance loading</span>
+            <span> 0</span>
           )}{" "}
         </Typography>
 
@@ -91,7 +91,7 @@ class ChannelCard extends Component {
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceWeiHub} Wei </span>
           ) : (
-            <span style={{ fontStyle: "italic" }}>Balance loading</span>
+            <span> 0</span>
           )}{" "}
         </Typography>
 
@@ -100,7 +100,7 @@ class ChannelCard extends Component {
           {this.props.channelState ? (
             <span>{this.props.channelState.balanceTokenHub} Wei </span>
           ) : (
-            <span style={{ fontStyle: "italic" }}>Balance loading</span>
+            <span> 0</span>
           )}{" "}
         </Typography>
       </Card>

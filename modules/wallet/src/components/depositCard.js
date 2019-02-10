@@ -92,20 +92,20 @@ class DepositCard extends Component {
       } else {
         if (wei !== "0") {
           console.log("found wei deposit");
-          if (wei <= (metamask.balance * 1000000000000000000)) {
+          // if (wei <= (metamask.balance * 1000000000000000000)) {
             await this.getEther(wei);
-          } else {
-            throw new Error("Insufficient ETH balance in MetaMask")
-          }
+        //   } else {
+        //     throw new Error("Insufficient ETH balance in MetaMask")
+        //   }
         }
   
         if (tokens !== "0") {
           console.log("found token deposit");
-          if (tokens <= (metamask.tokenBalance * 1000000000000000000)) {
+          // if (tokens <= (metamask.tokenBalance * 1000000000000000000)) {
             await this.getTokens(tokens);
-          } else {
-            throw new Error("Insufficient TST balance in MetaMask")
-          }
+          // } else {
+          //   throw new Error("Insufficient TST balance in MetaMask")
+          // }
         }
       }
 
