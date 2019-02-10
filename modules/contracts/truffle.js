@@ -1,9 +1,3 @@
-require('dotenv').config();
-var HDWalletProvider = require("truffle-hdwallet-provider");
-
-const MNEMONIC = process.env.MNEMONIC
-const ropsten = `https://ropsten.infura.io/${process.env.INFURA_KEY}`
-
 module.exports = {
   networks: {
     mainnet: {
@@ -13,11 +7,34 @@ module.exports = {
       gas: 4700000
     },
     ropsten: {
-      host: ropsten,
+      host: "127.0.0.1",
       port: 8545,
       network_id: "3",
-      gas: 6721975,
-      provider: () => new HDWalletProvider(MNEMONIC, ropsten)
+      gas: 4700000
+    },
+    rinkeby: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "4",
+      gas: 4700000
+    },
+    kovan: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "42",
+      gas: 4700000
+    },
+    rinkeby: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "4",
+      gas: 4700000
+    },
+    kovan: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "42",
+      gas: 4700000
     },
     ganache: {
       host: "127.0.0.1",
@@ -30,19 +47,17 @@ module.exports = {
       port: 9545,
       network_id: "4447",
       gas: 4700000
-    },
-    docker: {
-      host: "0.0.0.0",
-      port: 8545,
-      network_id: "4447",
-      gas: 6721975,
-      gasPrice: 1
     }
   },
-  solc: {
-    optimizer: {
-      enabled: true,
-      runs: 1
+  compilers: {
+    solc: {
+      version: "0.4.25",
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 1
+        }
+      }
     }
   },
   mocha: {

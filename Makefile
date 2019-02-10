@@ -24,11 +24,11 @@ contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(cont
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
 docker_run=docker run --name=$(project)_buidler --tty --rm
-docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
-docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
+docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
 docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder:dev $(id)
+docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
@@ -39,7 +39,7 @@ log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
 # Begin Phony Rules
-.PHONY: default all dev prod clean stop purge deploy deploy-live test
+.PHONY: default all dev prod clean stop purge deploy deploy-live
 
 default: dev
 all: dev prod
@@ -61,21 +61,16 @@ reset-client:
 	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
 	$(log_finish) && touch build/pull-client
 
-clean:
+clean: stop
 	rm -rf build/*
 	rm -rf $(cwd)/modules/**/build
 	rm -rf $(cwd)/modules/**/dist
 
-deep-clean: clean
+deep-clean: stop clean
 	rm -rf $(cwd)/modules/**/node_modules
 
-fuck-it-send-it: deep-clean
-	rm -rf $(cwd)/modules/**/.config
-	rm -rf $(cwd)/modules/**/.node-gyp
-	rm -rf $(cwd)/modules/**/.npm
-	rm -rf $(cwd)/modules/**/package-lock.json
-
 purge: reset deep-clean
+	rm -rf $(cwd)/modules/**/package-lock.json
 
 tags: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
@@ -95,8 +90,22 @@ deploy-live: prod
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
 
-test: hub
-	bash $(hub)/ops/test.sh
+# Tests
+
+# set a default test command for convenience
+test: test-contracts
+
+test-contracts: client contract-artifacts
+	bash $(contracts)/ops/test.sh
+
+test-hub: client hub-node-modules
+	echo coming soon!
+
+test-client: client hub-node-modules
+	echo coming soon!
+
+test-integration: dev
+	echo coming soon!
 
 # Begin Real Rules
 
@@ -127,6 +136,7 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 
 wallet-node-modules: builder client $(wallet)/package.json
 	$(log_start)
+	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
@@ -151,6 +161,7 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 
 hub-node-modules: builder client $(hub)/package.json
 	$(log_start)
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
@@ -170,7 +181,7 @@ ethprovider: contract-artifacts
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	$(log_finish) && touch build/ethprovider
 
-contract-artifacts: contract-node-modules
+contract-artifacts: $(shell find $(contracts)/contracts $(find_options)) contract-node-modules
 	$(log_start)
 	$(docker_run_in_contracts) "npm run build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
@@ -178,7 +189,10 @@ contract-artifacts: contract-node-modules
 
 contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
+	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
+	$(docker_run_in_contracts) "rm -rf node_modules/connext"
+	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/contract-node-modules
 
 # Database

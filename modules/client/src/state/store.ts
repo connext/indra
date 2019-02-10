@@ -1,10 +1,10 @@
-import { ChannelUpdateReason, ChannelStatus } from '../types'
+import { ChannelStatus, ThreadHistoryItem } from '../types'
 import { UpdateRequest } from '../types'
 //import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
 import { EMPTY_ROOT_HASH } from '../lib/constants'
-import { Store } from 'redux'
-import { ThreadState, ChannelState } from '../types'
-import { SyncResult, Payment } from '../types'
+import { Store } from 'redux';
+import { ThreadState, ChannelState, Payment } from '../types'
+import { SyncResult } from '../types'
 import { ExchangeRateState } from './ConnextState/ExchangeRates'
 
 export const CHANNEL_ZERO_STATE = {
@@ -53,8 +53,14 @@ export class RuntimeState {
   canCollateralize: boolean = false
   exchangeRate: null | ExchangeRateState = null
   syncResultsFromHub: SyncResult[] = []
-  channelStatus: ChannelStatus = "CS_OPEN"
   updateRequestTimeout: number = 60 * 10 // default 10 min
+  channelStatus: ChannelStatus = "CS_OPEN"
+}
+
+export interface PendingRequestedDeposit {
+  amount: Payment
+  requestedOn: number
+  txCount: number | null
 }
 
 export class PersistentState {
@@ -80,10 +86,17 @@ export class PersistentState {
   // reducer in reducers.
   latestValidState: ChannelState = CHANNEL_ZERO_STATE
 
-  threads: ThreadState[] = []
-  initialThreadStates: ThreadState[] = []
-  lastThreadId: number = 0
+  activeThreads: ThreadState[] = [] // all open and active threads at latest state
+  activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
+  // threadHistory is how the client will generate and track the 
+  // appropriate threadID for each sender/receiver
+  // combo. Only the latest sender/receiver threadId should be
+  // included in this history
+  threadHistory: ThreadHistoryItem[] = []
+  lastThreadUpdateId: number = 0 // global hub db level
   syncControllerState = new SyncControllerState()
+
+  requestedDeposit: null | PendingRequestedDeposit = null
 }
 
 export class ConnextState {

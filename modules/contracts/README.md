@@ -1,33 +1,51 @@
 
-(Fully updated 11/21/2018)
+# Installing and Running the Test Suite
 
-# Running the test suite
+Running contract tests requires the latest version of the Connext client. To allow for fast iteration on the client rapidly while working on contract, we import and build the client directly from the `connext-client` repository.
 
-Use the scripts in the package.json to ensure the proper test environment:
+Please use the scripts in the package.json to ensure that this is done correctly.
 
+Dependencies
     # Node and npm versions:
     # node >= v10
     # npm >= v6
+    # ganache-cli >= 6.8.1
     
+    # update the connext client repo
+    $ cd client
+    $ npm i
+
     # install the dev dependencies
     # run ganache in the background (or separate shell) ensuring the proper mnemonic
     # run the primary test suite using truffle network=ganache settings
-    
+
     $ npm i
     $ npm run ganache &
     $ npm test
 
+You can debug the test suite using chrome dev tools:
+
+    $ npm run test:debug
+
+    # browse to chrome://inspect
+
 # DOCUMENT FOR CONTRACT SPEC
 
-Canonical links: [https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-CANONICAL-URLs--AP7jZj1zm4J7XSVcw0Ifk_fBAg-Qpw2NAWgCIdg0Z5G9lpSu](https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-CANONICAL-URLs--AP7jZj1zm4J7XSVcw0Ifk_fBAg-Qpw2NAWgCIdg0Z5G9lpSu)
+You can update and rebuild the client using the client update script
+    $ npm run client-update
 
-Hub/Wallet API spec:
+Pointing the client at a different branch will require some more work
+    $ cd connext-client
+    $ git checkout BRANCH_NAME
+    $ npm install
+    $ npm run build
+    # then cd to root and run tests again
 
-[https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-Hub-Client-APIs--AP3nxlvN~p_IZ_a8UR2C~qshAg-Xon50NikF2iCjTD72vU0g](https://paper.dropbox.com/doc/SpankPay-BOOTY-Drop-2-Hub-Client-APIs--AP3nxlvN~p_IZ_a8UR2C~qshAg-Xon50NikF2iCjTD72vU0g)
+# Diagrams
 
-Contract: [https://github.com/ConnextProject/contracts/blob/master/contracts/ChannelManager.sol](https://github.com/ConnextProject/contracts/blob/master/contracts/ChannelManager.sol)
+Helpful flowcharts: [https://github.com/ConnextProject/contracts/tree/master/docs/diagrams](https://github.com/ConnextProject/contracts/tree/master/docs/diagrams)
 
-Flowcharts: [https://github.com/ConnextProject/contracts/tree/master/docs/diagrams](https://github.com/ConnextProject/contracts/tree/master/docs/diagrams)
+To use these, you'll need to copy paste the .mmd file into [MermaidJS' live GUI](https://mermaidjs.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoiZ3JhcGggVERcbkFbQ2hyaXN0bWFzXSAtLT58R2V0IG1vbmV5fCBCKEdvIHNob3BwaW5nKVxuQiAtLT4gQ3tMZXQgbWUgdGhpbmt9XG5DIC0tPnxPbmV8IERbTGFwdG9wXVxuQyAtLT58VHdvfCBFW2lQaG9uZV1cbkMgLS0-fFRocmVlfCBGW2ZhOmZhLWNhciBDYXJdXG4iLCJtZXJtYWlkIjp7InRoZW1lIjoiZGVmYXVsdCJ9fQ) 
 
 # Channel Manager v1
 
@@ -335,14 +353,24 @@ A thread is opened by reducing the channel balances in the parties' respective c
     4. The hub validates both of these channel updates and countersigns.
     5. Then, the viewer is able to tip the performer by generating new thread states in a similar format to the initial thread state above.
 
-Threads are closed offchain following the same procedure but in reverse. First, the viewer submits a channel update reintroducing the final thread balances and removing the thread initial state from thread root to the hub. 
+Threads are closed offchain following the same procedure but in reverse. First, the viewer submits a channel update reintroducing the final thread balances and removing the thread initial state from thread root to the hub.
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+//TODO: Check the diagram for close thread consistency. What happens if Alice closes the thread offchain and then Bob disputes it before countersigning the hub's offchain update?
+>>>>>>> c1e23937daf93294e5e7e6e74db9549186eb3c4a
+=======
+
+//TODO: Check the diagram for close thread consistency. What happens if Alice closes the thread offchain and then Bob disputes it before countersigning the hub's offchain update?
+>>>>>>> c4f6ef72fa330342fc099d68340fb21baf8fd89e
 
 ## ThreadIDs
 
 Threads are keyed using both sender/receiver addresses as well as a threadId.
 
     // threads[sender][receiver][threadId]
-    mapping(address => mapping(address => mapping(uint256 => Thread))) threads; 
+    mapping(address => mapping(address => mapping(uint256 => Thread))) threads;
 
 When a thread is closed and reopened, the threadId is incremented. This stops replay attacks where an old thread state can be used to dispute a new thread.
 
@@ -1135,6 +1163,7 @@ function challengeThread(
 ```
 ## emptyThread
 
+<<<<<<< HEAD
 Called by any party when the thread dispute timer expires. Uses the latest available onchain state to transfer values. Corollary is `emptyChannel`. Note: this can be called twice per thread; once for each channel.
 
 1. Verifies that the channel state is in `ThreadDispute`.
@@ -1149,6 +1178,16 @@ Called by any party when the thread dispute timer expires. Uses the latest avail
 10. Deducts the onchain thread balances from the global total onchain channel balances (i.e. moves balances back into the hub's reserve) and then transfers onchain thread balances to their respective owners. Note: state is not zeroed out here in order to allow for the other party to call `emptyThread` if needed.
 11. Records that the thread has been emptied for this user's channel which stops reentry of this function.
 12. Decrements the thread count and if the thread count is zero, reopens the channel, reinitializes `threadRoot`, and resets dispute fields.
+=======
+Called by any party when the thread dispute timer expires. Uses the latest available onchain state to transfer values. Corollary is `emptyChannel`.
+
+1. Verifies that the channel state is in `ThreadDispute` and that the thread closing time for the provided user has expired.
+2. Verifies that the thread is exiting. No need to verify anything else since we just use already verified onchain state.
+3. Deducts the onchain thread balances from the onchain channel balances for the provided user's channel.
+4. Deducts the onchain thread balances from the global total onchain channel balances (i.e. moves balances back into the hub's reserve) and then transfers onchain thread balances to their respective owners. Note: state is not zeroed out here in order to allow for `exitSettledThread` to be called by thread counterparty in the event of a separate dispute in the counterparty's channel.
+5. Updates the thread's status to `Settled` which stops reentry to this function.
+6. Decrements the thread count and if the thread count is zero, reopens the channel, reinitializes `threadRoot`, and resets dispute fields.
+>>>>>>> c1e23937daf93294e5e7e6e74db9549186eb3c4a
 ```
 function emptyThread(
     address user,
@@ -1542,7 +1581,7 @@ If the hub == user, the `hub/userAuthorizedUpdate` functions would not allow the
 1. The channel would be looked up by the user, which would fetch the hub's channel with itself.
 2. The call to `_verifyAuthorizedUpdate` would have `isHub = true` and would expect the hub and user balances to come from the hub's contract reserves, which would be fine.
 3. The call to `_verifySig` would check the `sigUser`, which would be expected to be the hub's sig, which would be fine.
-4. 
+4.
 
 ## What if the sender and receiver for a thread are the same?
 

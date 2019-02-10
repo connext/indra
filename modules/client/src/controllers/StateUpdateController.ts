@@ -1,10 +1,9 @@
 import { ConnextState } from '../state/store'
 import { ConnextStore } from '../state/store'
-import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState } from '../types'
+import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState, ThreadState } from '../types'
 import { ChannelState, UpdateRequestTypes } from '../types'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
-import { getChannel } from '../lib/getChannel'
 import { Unsubscribe } from 'redux'
 import { Action } from 'typescript-fsa/lib'
 import { validateTimestamp } from '../lib/timestamp';
@@ -105,12 +104,11 @@ export default class StateUpdateController extends AbstractController {
           console.warn(`Not processing updates, channel is not open. Status: ${status}`)
           return null
         } else if (status === "CS_THREAD_DISPUTE") {
-          throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See REB-36. Disabling client.')
+          console.warn(`Not processing updates, channel is not open. Status: ${status}`)
+          return null
         }
         // channel is open
         const item = state.runtime.syncResultsFromHub[0]
-        if (item && item.type == 'thread')
-          throw new Error('REB-36: enable threads!')
 
         // No sync results from hub; nothing to do
         if (!item)
@@ -165,21 +163,49 @@ export default class StateUpdateController extends AbstractController {
   public async handleSyncItem(item: SyncResult) {
     this._queuedActions = []
 
-    if (item.type === 'thread') {
-      /*
-      const update = actionItem.update
-      const err = this.connext.validator.threadPayment(update.state)
-      if (err) {
-        console.error('Invalid thread signatures detected:', err, update)
-        throw new Error('Invalid thread signatures: ' + err)
+    if (item.type === 'thread') { // handle thread updates
+      console.log(`Received a thread payment from the hub. Sync item: ${JSON.stringify(item)}`)
+      // since threads are single-payment constructs, received thread
+      // payments here should suggest that the thread is ready to be
+      // closed if user == recipient
+      
+      // should update the active threads item in the store
+      // with the thread at the new state.
+      const newThreadState = item.update.state
+      this.connext.validator.assertThreadSigner(newThreadState)
+
+      // TODO: should we validate anything about the transition
+      // or assume the validators have validated the update
+      // as it was created?
+
+      // should update the store with the new active thread state
+      const prevThreads = this.getState().persistent.activeThreads.filter(
+        t => t.threadId == newThreadState.threadId && t.sender == newThreadState.sender && t.receiver == newThreadState.receiver
+      )
+      if (prevThreads.length != 1) {
+        throw new Error(`Error finding previous thread state corresponding to given new thread state: ${JSON.stringify(newThreadState)}. ${prevThreads.length == 0 ? 'No thread found.' : `Multiple threads found ${JSON.stringify(prevThreads)}`}`)
       }
-      if (!actionItem.update.id)
-        throw new Error('uh oh we should never have a thread update without an ID here')
-      this.store.dispatch(actions.setLastThreadId(actionItem.update.id!))
-      this.flushQueuedActions()
-      continue
-      */
-      throw new Error('REB-36: enable threads!')
+
+      if (!item.update.id) {
+        throw new Error(`Uh oh! Thread update should definitely have the threadID at this point! Sync item: ${JSON.stringify(item)}`)
+      }
+
+      // update the latest id
+      this.store.dispatch(actions.setLastThreadUpdateId(item.update.id))
+      
+      // close the thread if the user is the receiver
+      const channel = this.getState().persistent.channel
+      if (channel.user == newThreadState.receiver) {
+        await this.connext.threadsController.closeThread({
+          sender: newThreadState.sender,
+          receiver: newThreadState.receiver,
+          threadId: newThreadState.threadId,
+        })
+
+        this.flushQueuedActions()
+        await this.connext.awaitPersistentStateSaved()
+      }
+      return
     }
 
     const update = item.update
@@ -212,6 +238,8 @@ export default class StateUpdateController extends AbstractController {
       this.store.dispatch(actions.setChannelStatus("CS_OPEN"))
     }
 
+    // TODO: Write this for nukeThreads
+
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
       update.reason === 'Invalidation' ? latestValidState : prevState,
       update
@@ -234,6 +262,38 @@ export default class StateUpdateController extends AbstractController {
           sigUser: update.sigUser,
         },
       }))
+
+      // additionally, the client should update the thread properties
+      // within the store if a double signed thread-channel (openThread, 
+      // closeThread) update is returned by the hub
+      if (update.reason.includes("Thread")) {
+        const args = update.args as ThreadState
+        const connextState = this.store.getState()
+        // unconditionally update thread history whether it is open or close
+        // thread
+        const threadHistory = connextState.persistent.threadHistory.concat({ 
+          sender: args.sender, 
+          receiver: args.receiver, 
+          threadId: args.threadId 
+        })
+
+        // update active initial states depending if open or close
+        const prevActiveInitialThreads = connextState.persistent.activeInitialThreadStates
+        const prevActiveThreads = connextState.persistent.activeThreads
+
+        const activeInitialThreadStates = update.reason == "OpenThread" 
+          ? prevActiveInitialThreads.concat(args)
+          : prevActiveInitialThreads.filter(t => t.sender != args.sender && t.receiver != args.receiver && t.threadId != args.threadId)
+
+        const activeThreads = update.reason == "OpenThread"
+          ? prevActiveThreads.concat([args])
+          : prevActiveThreads.filter(t => t.sender != args.sender && t.receiver != args.receiver && t.threadId != args.threadId)
+
+        this.store.dispatch(actions.setThreadHistory(threadHistory))
+        this.store.dispatch(actions.setActiveInitialThreadStates(activeInitialThreadStates))
+        this.store.dispatch(actions.setActiveThreads(activeThreads))
+      }
+      
       return
     }
 
@@ -340,11 +400,10 @@ export default class StateUpdateController extends AbstractController {
           return new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
         }
 
-        // verification of args: timestamp, no user deposits
+        // verification of args
         const tsErr = validateTimestamp(this.store, update.args.timeout)
         if (tsErr)
           throw CollateralError(tsErr)
-
         return
       }
 
@@ -355,10 +414,6 @@ export default class StateUpdateController extends AbstractController {
         // if-and-only-if we have signed it.
         // Note that the `sendDepositToChain` method will validate that the
         // deposit amount is the amount we expect.
-
-        // user signature on the deposit parameters in enforced within the 
-        // deposit controller, and additionally in the validators if it is
-        // included, so no need to check here
         return await this.connext.depositController.sendUserAuthorizedDeposit(prev, update)
       }
 
@@ -387,7 +442,6 @@ export default class StateUpdateController extends AbstractController {
     },
 
     'Invalidation': async (prev, update) => {
-
       // NOTE (BSU-72): this will break in two ways if the hub tries to
       // invalidate a state without a timeout:
       // 1. The txCountGlobal will not necessarily be the most recent (ex,
@@ -439,21 +493,56 @@ export default class StateUpdateController extends AbstractController {
 
     },
 
-    'EmptyChannel': async (prev, update) => {
-      // channel event is checked in the validator
-      return
+    'ConfirmPending': async (prev, update) => {
+
     },
 
-    'ConfirmPending': async (prev, update) => {
-      // throw new Error('BSU-37: merge the PR!')
-      // channel event is checked in the validator
-      return
-    },
     'OpenThread': async (prev, update) => {
-      throw new Error('REB-36: enable threads!')
+      // Clients could be receiving open thread updates when:
+      // 1. The hub has countersigned the channel update with the 
+      //    client user as the thread sender (client initiated thread 
+      //    opening)
+      //      - update should have both user and hub sig
+      //        and should not make it to this point in the code
+      // 2. The client is the receiver, and the hub is letting the client 
+      //    know that it has bonded in the channel. In this case:
+      //      - client should verify it is the receiver and cosign
+      //        and validate the thread update (store is updated  on
+      //        second round of syncing when both sigs present)
+      assertSigPresence(update, 'sigHub')
+      if (update.args.receiver != prev.user) {
+        throw new Error(`Something funny is going on. Client has received an open thread update from the hub, where the client is the sender. Somehow, this was missing a user sig. See comments in source. Update: ${JSON.stringify(update)}, previous: ${JSON.stringify(prev)}`)
+      }
+      // someone is opening a thread with us!
     },
     'CloseThread': async (prev, update) => {
-      throw new Error('REB-36: enable threads!')
+      // Close thread updates can be received in the following
+      // conditions:
+      //  1. Sender is receiving a close thread notification from the hub
+      //     indicating that the receiver has gotten the payment
+      //        - sender should validate + countersign the update
+      //  2. Receiver is getting acknowledgment from the hub that the
+      //     thread has been removed from their channel state
+      //        - the update should have both sigs, and should not
+      //          make it to this point in the code
+      assertSigPresence(update, 'sigHub')
+      if (update.args.sender != prev.user) {
+        throw new Error(`Something funny is going on. Client has received a close thread update from the hub, where the client is the receiver. Somehow, this was missing a user sig. See comments in source. Update: ${JSON.stringify(update)}, previous: ${JSON.stringify(prev)}`)
+      }
+      // make sure that the thread being closed exists in our local 
+      // storage under activeThreads and activeInitialStates
+      // will be removed when hub gets signed channel state (see comment  
+      // line 296)
+      const persistent = this.store.getState().persistent
+      const args = update.args as ThreadState
+      const initialState = persistent.activeInitialThreadStates.filter(t => t.sender == args.sender && t.receiver == args.receiver && t.threadId == args.threadId)[0]
+      const activeThread = persistent.activeThreads.filter(t => t.sender == args.sender && t.receiver == args.receiver && t.threadId == args.threadId)[0]
+      if (!activeThread || !initialState) {
+        throw new Error(`Hub is trying to close thread we have no local record of. Update: ${JSON.stringify(update)}`)
+      }
+    },
+    'EmptyChannel': async (prev, update) => {
+      
     },
   }
 

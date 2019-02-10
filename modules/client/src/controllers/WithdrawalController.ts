@@ -16,11 +16,10 @@ import getTxCount from '../lib/getTxCount';
 
 export default class WithdrawalController extends AbstractController {
   public requestUserWithdrawal = async (withdrawalStr: WithdrawalParameters): Promise<void> => {
-    const err = this.validator.withdrawalParams(convertWithdrawalParameters("bn", withdrawalStr))
-    if (err) {
-      throw new Error(`Invalid withdrawal parameters detected: ${JSON.stringify(withdrawalStr, null, 2)}`)
-    }
     const sync = await this.hub.requestWithdrawal(withdrawalStr, getTxCount(this.store))
     this.connext.syncController.handleHubSync(sync)
+
+    // TODO: use connext validation on the args (REB-10)
   }
+
 }
