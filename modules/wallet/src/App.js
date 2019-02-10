@@ -238,8 +238,6 @@ class App extends Component {
     await connext.start(); // start polling
     //console.log('Pollers started! Good morning :)')
     connext.on("onStateChange", state => {
-      console.log("Connext user address", connext.opts.user)
-      console.log("Delegate address ", this.state.address)
       console.log("Connext state changed:", state);
       this.setState({
         channelState: state.persistent.channel
@@ -254,7 +252,6 @@ class App extends Component {
     setInterval(async () => {
       await this.getRate();
       await this.browserWalletDeposit();
-      console.log(`Channel state: ${JSON.stringify(this.state.channelState)}`);
     }, 1000)
   }
   
@@ -275,9 +272,6 @@ class App extends Component {
     const tokenBalance = await tokenContract.methods
       .balanceOf(address)
       .call();
-    console.log(
-      `Polled onchain balance, weiBalance: ${balance}, tokenBalance: ${tokenBalance}`
-    );
     if (balance !== "0" || tokenBalance !== "0") {
       if (eth.utils.bigNumberify(balance).lte(DEPOSIT_MINIMUM_WEI)) {
         // don't autodeposit anything under the threshold
