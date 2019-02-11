@@ -22,6 +22,7 @@ docker run \
   --tmpfs=/chaindata \
   --entrypoint=bash \
   connext_builder:dev -c '
+    set -e
     PATH=./node_modules/.bin:$PATH
     echo "Starting Ganache.."
     ganache-cli --networkId=4447 --db="/chaindata" > ops/ganache-test.log &

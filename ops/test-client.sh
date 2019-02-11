@@ -20,6 +20,7 @@ docker run \
   --volume=$dir:/root \
   --entrypoint=bash \
   connext_builder:dev -c '
+    set -e
     PATH=./node_modules/.bin:$PATH
     echo "Running tests.."
     mocha \

@@ -94,12 +94,12 @@ deploy-live: prod
 # Tests
 
 # set a default test command for convenience
-test: test-client test-contracts test-hub
+test: test-client test-contracts # TODO: test-hub test-integration
 
 test-contracts: contract-artifacts
 	bash ops/test-contracts.sh
 
-test-hub:
+test-hub: hub database ethprovider
 	bash ops/test-hub.sh
 	echo coming soon!
 
@@ -177,7 +177,7 @@ hub-node-modules: builder client $(hub)/package.json
 
 # Contracts
 
-ethprovider: contract-artifacts
+ethprovider: $(shell find $(contracts)/ops $(find_options)) contract-artifacts
 	$(log_start)
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	$(log_finish) && touch build/ethprovider
