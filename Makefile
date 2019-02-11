@@ -38,6 +38,7 @@ install=npm install --prefer-offline --unsafe-perm
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
+########################################
 # Begin Phony Rules
 .PHONY: default all dev prod clean stop purge deploy deploy-live
 
@@ -95,7 +96,7 @@ deploy-live: prod
 # set a default test command for convenience
 test: test-contracts
 
-test-contracts: client contract-artifacts
+test-contracts: contract-artifacts
 	bash $(contracts)/ops/test.sh
 
 test-hub: client hub-node-modules
@@ -107,6 +108,7 @@ test-client: client hub-node-modules
 test-integration: dev
 	echo coming soon!
 
+########################################
 # Begin Real Rules
 
 # Proxy
@@ -167,13 +169,6 @@ hub-node-modules: builder client $(hub)/package.json
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
 	$(log_finish) && touch build/hub-node-modules
 
-# Client
-
-client: builder $(client)/package.json
-	$(log_start)
-	$(docker_run_in_client) "$(install)"
-	$(log_finish) && touch build/client
-
 # Contracts
 
 ethprovider: contract-artifacts
@@ -181,19 +176,27 @@ ethprovider: contract-artifacts
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	$(log_finish) && touch build/ethprovider
 
-contract-artifacts: $(shell find $(contracts)/contracts $(find_options)) contract-node-modules
+contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
 	$(log_start)
 	$(docker_run_in_contracts) "npm run build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
 	$(log_finish) && touch build/contract-artifacts
 
-contract-node-modules: builder $(contracts)/package.json
+contract-node-modules: client $(contracts)/package.json
 	$(log_start)
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_contracts) "cd ../client && $(install)"
 	$(log_finish) && touch build/contract-node-modules
+
+# Client
+
+client: builder $(client)/package.json
+	$(log_start)
+	$(docker_run_in_client) "$(install)"
+	$(log_finish) && touch build/client
 
 # Database
 
