@@ -10,14 +10,15 @@ root=`pwd | sed 's/indra.*/indra/'`
 POSTGRES_DB="test_$project"
 POSTGRES_USER="$project"
 POSTGRES_PASSWORD="$project"
-POSTGRES_HOST="${project}_test_database"
-REDIS_HOST="${project}_test_redis"
-ETHPROVIDER_HOST="${project}_test_ethprovider"
-
+POSTGRES_HOST="${project}_database_test"
 DATABASE="$POSTGRES_HOST:5432"
 DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DATABASE/$POSTGRES_DB"
+
+REDIS_HOST="${project}_redis_test"
 REDIS="$REDIS_HOST:6379"
 REDIS_URL="redis://$REDIS"
+
+ETHPROVIDER_HOST="${project}_ethprovider_test"
 ETH_RPC_URL="$ETHPROVIDER_HOST:8545"
 
 # Kill the test database when this script exits
@@ -63,18 +64,19 @@ docker run --tty --name ${project}_tester --network=$project \
   --env POSTGRES_DB=$POSTGRES_DB \
   --env POSTGRES_USER=$POSTGRES_USER \
   --env POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-  --env POSTGRES_URL=$POSTGRES_URL \
   --env DATABASE=$DATABASE \
+  --env DATABASE_URL_TEST=$DATABASE_URL \
   --env REDIS=$REDIS \
-  --env ETH_RPC_URL=$ETH_RPC_URL \
+  --env REDIS_URL_TEST=$REDIS_URL \
+  --env ETH_RPC_URL_TEST=$ETH_RPC_URL \
   --volume $root/modules/hub:/root \
   --entrypoint=bash ${project}_hub:dev -c '
     set -e
-    echo "Waiting for $POSTGRES_HOST:5433 & $DATABASE && $REDIS && $ETH_RPC_URL to wake up.."
+    echo "Waiting for $POSTGRES_HOST:5433 & $DATABASE && $REDIS && $ETH_RPC_URL_TEST to wake up.."
     bash ops/wait-for.sh -t 60 $POSTGRES_HOST:5433 2> /dev/null
     bash ops/wait-for.sh -t 60 $DATABASE 2> /dev/null
     bash ops/wait-for.sh -t 60 $REDIS 2> /dev/null
-    bash ops/wait-for.sh -t 60 $ETH_RPC_URL 2> /dev/null
+    bash ops/wait-for.sh -t 60 $ETH_RPC_URL_TEST 2> /dev/null
     ./node_modules/.bin/mocha \
       -r ./dist/register/common.js \
       -r ./dist/register/testing.js \
