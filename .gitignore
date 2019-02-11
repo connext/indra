@@ -15,6 +15,7 @@ modules/hub/development/data
 modules/wallet/.env
 
 cypress/screenshots
+cypress/videos
 cypress/integration/examples
 
 # remove next line once hub is decoupled from spankchain

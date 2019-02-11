@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Activating tester.."
+echo "Activating hub tester.."
 date "+%s" > /tmp/timestamp
 
 project=connext
@@ -28,7 +28,7 @@ function cleanup {
   docker container stop $ETHPROVIDER_HOST 2> /dev/null || true
   docker container stop $POSTGRES_HOST 2> /dev/null || true
   docker container stop ${project}_tester 2> /dev/null || true
-  echo "Testing complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
+  echo "Testing hub complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
 }
 trap cleanup EXIT
 

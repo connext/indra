@@ -4,11 +4,11 @@ set -e
 # get absolute path of indra/modules/contracts
 dir=`pwd | sed 's/indra.*/indra/'`/modules/contracts
 
-echo "Activating tester.."
+echo "Activating contracts tester.."
 date "+%s" > /tmp/timestamp
 
 function cleanup {
-  echo "Testing complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
+  echo "Testing contracts complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
 }
 trap cleanup EXIT
 

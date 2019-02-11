@@ -4,7 +4,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: make test
+      - run: make test-all
   deploy:
     machine: true
     steps:

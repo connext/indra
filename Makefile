@@ -93,8 +93,10 @@ deploy-live: prod
 
 # Tests
 
-# set a default test command for convenience
-test: test-client test-contracts test-hub # TODO: test-integration
+# set a default test command for developer convenience
+test: test-default
+test-default: test-client
+test-all: test-client test-contracts test-hub test-integration
 
 test-contracts: contract-artifacts
 	bash ops/test-contracts.sh
@@ -105,11 +107,10 @@ test-hub: hub database ethprovider
 test-client: client
 	bash ops/test-client.sh
 
-test-integration: dev
-	# npm run start
-	# cypress run
-	echo coming soon!
-	
+test-integration: prod
+	npm run prod
+	cypress run
+	npm stop
 
 ########################################
 # Begin Real Rules
