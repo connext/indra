@@ -505,7 +505,7 @@ export type ThreadStatus = keyof typeof ThreadStatus
 export type ThreadStateUpdate<T = string> = {
   // reason: "Payment"
   id?: number
-  createdOn?: Date
+  createdOn?: Date // present once it is added to the hub
   state: ThreadState<T> // signed or unsigned?
   metadata?: Object
 }
