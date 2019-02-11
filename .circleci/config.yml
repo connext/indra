@@ -15,3 +15,12 @@ workflows:
   build_and_test:
     jobs:
       - test
+
+# keep the npm cache around to speed up installs
+cache:
+  directories:
+  - "$HOME/modules/client/.npm"
+  - "$HOME/modules/contracts/.npm"
+  - "$HOME/modules/database/.npm"
+  - "$HOME/modules/hub/.npm"
+  - "$HOME/modules/wallet/.npm"
