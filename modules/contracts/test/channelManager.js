@@ -192,14 +192,15 @@ async function generateIncorrectThreadSigs(state, signer) {
 
   //methodology: save element to temp, change element and sign, restore element from temp
   for (var element in state) {
+
     let temp = state[element];
     //The below if/else gates ensure that state[element] is always changed
     //if the element is not already it's initial value, reinitialize
     if (state[element] != getThreadState("empty")[element]) state[element] = getThreadState("empty")[element];
     //else (i.e. element == initial value) increment that value
     else state[element] = getThreadState("empty")[element] + 1;
-    //edge case: if element is threadRoot, set to 0x01
-    if (element == "threadRoot") state[element] = "0x0100000000000000000000000000000000000000000000000000000000000000";
+    //edge case: this one will be handled by changing the signer below
+    if (element == 'sigA') continue
 
     sigArray[i] = await getThreadSig(state, signer);
 
@@ -333,6 +334,7 @@ async function startExitThreadWithUpdate(state, threadStateInitial, threadStateU
 
 async function emptyThread(state, threadState, proof, sig, account) {
   let normalized = normalize(state);
+  /*
   console.log(`emptying thread with params:
     user: ${normalized.user},
     sender: ${threadState.sender},
@@ -344,6 +346,7 @@ async function emptyThread(state, threadState, proof, sig, account) {
     sig: ${sig},
     ${JSON.stringify({ from: account.address })}
   `);
+  */
   return await cm.emptyThread(
     normalized.user,
     threadState.sender,
@@ -447,7 +450,7 @@ contract("ChannelManager", accounts => {
 
     // check exit params
     channelDetails.channelClosingTime.should.be.eq.BN(state.channelClosingTime ? state.channelClosingTime : 0);
-    assert.equal(channelDetails.exitInitiator, state.exitInitiator || emptyAddress);
+    assert.equal(channelDetails.exitInitiator.toLowerCase(), (state.exitInitiator || emptyAddress).toLowerCase());
     assert.equal(channelDetails.status, state.status ? state.status : 0);
   };
 
@@ -499,7 +502,7 @@ contract("ChannelManager", accounts => {
     const blockTime = await getBlockTimeByTxHash(tx.tx);
 
     // explicitely set so they can be checked by verifyChannelDetails
-    update.exitInitiator = isHub ? hub.address : account.address;
+    update.exitInitiator = (isHub ? hub.address : account.address).toLowerCase();
     update.status = 1;
     update.channelClosingTime = blockTime + challengePeriod;
 
@@ -509,7 +512,7 @@ contract("ChannelManager", accounts => {
     const updateBN = convertChannelState("bn", update);
 
     const event = getEventParams(tx, "DidStartExitChannel");
-    assert.equal(event.user, account.address);
+    assert.equal(event.user.toLowerCase(), account.address.toLowerCase());
     assert.equal(event.senderIdx, isHub ? 0 : 1);
 
     event.weiBalances[0].should.be.eq.BN(updateBN.balanceWeiHub);
@@ -555,7 +558,7 @@ contract("ChannelManager", accounts => {
     hubReserveToken.should.be.eq.BN(state.initHubReserveToken - state.userTokenTransfer);
 
     const event = getEventParams(tx, "DidEmptyChannel");
-    assert.equal(event.user, account.address);
+    assert.equal(event.user.toLowerCase(), account.address.toLowerCase());
     assert.equal(event.senderIdx, isHub ? 0 : 1);
 
     event.weiBalances[0].should.be.eq.BN(0);
@@ -2994,7 +2997,7 @@ contract("ChannelManager", accounts => {
         await verifyEmptyChannel(viewer, update, tx, false, false);
       });
     });
-});
+  });
 
   describe("startExitThread", () => {
     let threadState;
@@ -3152,7 +3155,7 @@ contract("ChannelManager", accounts => {
       channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
 
       // receiver
-      await fastForwardToEmptiedChannel(channelStateReceiver, threadStateInitial, performer);
+      channelStateWithThreadsReceiver = await fastForwardToEmptiedChannel(channelStateReceiver, threadStateInitial, performer);
       channelDetails = await cm.getChannelDetails(performer.address);
       channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
 
