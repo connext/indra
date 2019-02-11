@@ -19,7 +19,7 @@ docker run \
   connext_builder:dev -c '
     PATH=./node_modules/.bin:$PATH
     echo "Starting Ganache.."
-    ganache-cli --db="/chaindata" > ops/ganache-test.log &
+    ganache-cli --networkId=4447 --db="/chaindata" > ops/ganache-test.log &
     echo "Running tests.."
     truffle test test/channelManager.js --network=ganache
   '
