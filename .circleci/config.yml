@@ -1,20 +1,40 @@
 version: 2
+
 jobs:
-  test:
+  test-client:
     machine: true
     steps:
       - checkout
-      - run: make test-all
+      - run: make test-client
+  test-contracts:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-contracts
+  test-hub:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-hub
+  test-integration:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-integration
   deploy:
     machine: true
     steps:
       - checkout
       - run: make deploy
+
 workflows:
   version: 2
-  build_and_test:
+  test_everything:
     jobs:
-      - test
+      - test-client
+      - test-contracts
+      - test-hub
+      - test-integration
 
 # keep the npm cache around to speed up installs
 cache:

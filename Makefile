@@ -108,6 +108,7 @@ test-client: client
 	bash ops/test-client.sh
 
 test-integration: prod
+	npm stop
 	npm run prod
 	cypress run
 	npm stop
