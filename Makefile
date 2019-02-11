@@ -195,7 +195,7 @@ contract-node-modules: client $(contracts)/package.json
 
 # Client
 
-client: builder $(client)/package.json
+client: builder $(shell find $(client)/src) $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/client
