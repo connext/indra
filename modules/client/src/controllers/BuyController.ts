@@ -73,6 +73,7 @@ export default class BuyController extends AbstractController {
 
         // TODO: what happens if you have multiple thread payments
         // before your thread can be closed? (eg embedded payments)
+        // PUNT on this -- AB
       } else { // handle channel payments
         const args: PaymentArgs = {
           recipient: 'hub',

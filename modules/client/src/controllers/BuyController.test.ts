@@ -131,10 +131,10 @@ describe('BuyController: unit tests', () => {
     })
   })
 
-  it('should work for a more thread payments to the same receiver', async () => {
+  it('should work for a more threads to the same receiver', async () => {
   })
 
-  it('should work for a single payments to a different receiver', async () => {
+  it('should work for a thread payment to a different receiver', async () => {
   })
 
   afterEach(async () => {

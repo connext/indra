@@ -12,6 +12,7 @@ describe('mergeSyncResults', () => {
       type: 'channel',
       update: {
         reason: 'Payment',
+        createdOn: new Date(),
         args: { expectedPos: txCount } as any,
         txCount,
         sigHub: sigs == 'hub' || sigs == 'both' ? 'sig-hub' : undefined,

@@ -33,7 +33,80 @@ function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
  */
 export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult[] {
   let channelUpdates = xs.filter(u => u.type == 'channel').concat(ys.filter(u => u.type == 'channel'))
+  channelUpdates.sort((a,b) => {
+    let n1 = a.update as UpdateRequest
+    let n2 = b.update as UpdateRequest
+    // All updates should have a createdOn field
+    if (!n1.createdOn || !n2.createdOn) {
+      throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+    }
+    if (!n1.txCount) return 1
+    if (!n2.txCount) return -1
+    return n1.txCount - n2.txCount
+  })
+
+  const deduped = channelUpdates.slice(0, 1)
+  let next : UpdateRequest;
+  for (let next of channelUpdates.slice(1)) {
+    const cur = deduped[deduped.length - 1]
+
+    if (next.update.txCount && next.update.txCount < cur.update.txCount!) {
+      throw new Error(
+        `next update txCount should never be < cur: ` +
+        `${JSON.stringify(next.update)} >= ${JSON.stringify(cur.update)}`
+      )
+    }
+
+    if (!next.update.txCount || next.update.txCount > cur.update.txCount!) {
+      deduped.push(next)
+      continue
+    }
+
+    // The current and next updates both have the same txCount. Double check
+    // that they both match (they *should* always match, because if they
+    // don't it means that the hub has sent us two different updates with the
+    // same txCount, and that is Very Bad. But better safe than sorry.)
+    const nextSigs = next.update
+    const curSigs = cur.update
+    const nextAndCurMatch = (
+      next.update.reason == cur.update.reason &&
+      ((nextSigs.sigHub && curSigs.sigHub) ? nextSigs.sigHub == curSigs.sigHub : true) &&
+      ((nextSigs.sigUser && curSigs.sigUser) ? nextSigs.sigUser == curSigs.sigUser : true)
+    )
+    if (!nextAndCurMatch) {
+      throw new Error(
+        `Got two updates from the hub with the same txCount but different ` +
+        `reasons or signatures: ${JSON.stringify(next.update)} != ${JSON.stringify(cur.update)}`
+      )
+    }
+
+    // If the two updates have different sigs (ex, the next update is the
+    // countersigned version of the prev), then keep both
+    if (nextSigs.sigHub != cur.update.sigHub || nextSigs.sigUser != cur.update.sigUser) {
+      deduped.push(next)
+      continue
+    }
+
+    // Otherwise the updates are identical; ignore the "next" update.
+  }
+
+  return deduped
+}
+
   let threadUpdates = xs.filter(u => u.type == 'thread').concat(ys.filter(u => u.type == 'thread'))
+  threadUpdates.sort((a,b) => {
+    let n1 = a.update as ThreadStateUpdate
+    let n2 = b.update as ThreadStateUpdate
+    if (!n1.createdOn || !n2.createdOn) {
+      throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+    }
+    if (n1.createdOn > n2.createdOn)
+    return 1;
+    else if (n1.createdOn < n2.createdOn)
+      return -1;
+    else
+      return 0;
+  })
 
   let curChan = 0
   let curThread = 0
@@ -46,29 +119,58 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     curChan < channelUpdates.length ||
     curThread < threadUpdates.length
   ) {
-    const chanUp = channelUpdates[curChan].update as UpdateRequest
-    const threadUp = threadUpdates[curThread].update as ThreadStateUpdate
+    let chanUp, threadUp
 
-    // check for unsigned
-    if (!chanUp.txCount && !unsigned) 
-      unsigned = chanUp
+    // We want to iterate over every sync result, validate that it has a created on and then push it to channel or thread and increment counter
+    // This needs to happen with the following logic:
+    //  1. When there is a chan update and no thread update, chan update should be pushed and curChan incremented
+    //  2. When there is a thread update and no chan update, thread update should be pushedand curThread incremented
+    //  3. When there are both, channel update should be pushed if channel was created before thread OR
+    //       if they were created at the same time but the chan update reason is open thread
 
-    // all updates being returned from hub should have a created
-    // on field
-    if (!chanUp.createdOn || !threadUp.createdOn) {
-      throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+    if (channelUpdates[curChan]) {
+      chanUp = channelUpdates[curChan].update as UpdateRequest
+
+      // check for unsigned
+      if (!chanUp.txCount && !unsigned) 
+        unsigned = chanUp
+
+      if (!threadUpdates[curThread] && res.indexOf({ type: 'channel', update: chanUp}) == -1) {
+        console.log("================")
+        console.log(curChan)
+        //@ts-ignore
+        console.log(chanUp.txCount - 1)
+        curChan += 1
+        pushChannel(chanUp)
+      }
     }
 
-    const shouldAdd = chanUp && chanUp.createdOn && (
-      !threadUp || chanUp.createdOn < threadUp.createdOn ||
-      (chanUp.createdOn == threadUp.createdOn && chanUp.reason == 'OpenThread')
-    )
-    if (shouldAdd && res.indexOf({ type: 'channel', update: chanUp}) == -1) {
-      curChan += 1
-      pushChannel(chanUp)
-    } else if (!shouldAdd && res.indexOf({ type: 'thread', update: threadUp }) == -1){
-      curThread += 1
-      pushThread(threadUp)
+    if (threadUpdates[curThread]) {
+      threadUp = threadUpdates[curThread].update as ThreadStateUpdate
+
+      if (!threadUp.createdOn)
+        throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+      
+      if (!threadUp.state.sigA) 
+        throw new Error(`Thread update does not contain a signature, this likely means this function was called incorrectly.`)
+      
+      if (!channelUpdates[curChan] && res.indexOf({ type: 'thread', update: threadUp }) == -1) {
+        curThread += 1
+        pushThread(threadUp)
+      }
+    }
+
+    if (chanUp && threadUp) {
+      // @ts-ignore
+      const shouldAdd = !threadUp || chanUp.createdOn < threadUp.createdOn ||
+        (chanUp.createdOn == threadUp.createdOn && chanUp.reason == 'OpenThread')
+      if (shouldAdd && res.indexOf({ type: 'channel', update: chanUp}) == -1) {
+        curChan += 1
+        pushChannel(chanUp)
+      } else if (!shouldAdd && res.indexOf({ type: 'thread', update: threadUp }) == -1){
+        curThread += 1
+        pushThread(threadUp)
+      }
     }
   }
 
@@ -396,8 +498,6 @@ export default class SyncController extends AbstractController {
 
   // signing disabled in state update controller based on channel sync status
   // unconditionally enqueue results
-  console.log("HERREE-----------------------")
-  console.log(sync.updates)
   this.enqueueSyncResultsFromHub(sync.updates)
 
   // descriptive status error handling

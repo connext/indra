@@ -228,6 +228,7 @@ export class MockHub implements IHubAPIClient {
           type: 'channel',
           update: {
             reason: 'Payment',
+            createdOn: new Date(),
             args: getPaymentArgs('full', { amountToken: p.amount.amountToken, amountWei: p.amount.amountWei }),
             sigHub: mkHash('0x51512'),
             sigUser: (p.update as UpdateRequest).sigUser || '',
@@ -237,7 +238,7 @@ export class MockHub implements IHubAPIClient {
       } else {
         return {
           type: 'thread',
-          update: { state: p.update.state }
+          update: { state: p.update.state, id: p.update.state.threadId, createdOn: new Date() }
         } as SyncResult
       }
     })
@@ -255,6 +256,7 @@ export class MockHub implements IHubAPIClient {
         type: 'channel',
         update: {
           reason: 'ProposePendingDeposit',
+          createdOn: new Date(),
           args: getDepositArgs('full', {
             sigUser: deposit.sigUser,
             depositWeiUser: deposit.amountWei,
@@ -277,6 +279,7 @@ export class MockHub implements IHubAPIClient {
         type: 'channel',
         update: {
           reason: 'ProposePendingWithdrawal',
+          createdOn: new Date(),
           args: getWithdrawalArgs('empty', {
             ...res,
             targetWeiHub: '0',
@@ -301,6 +304,7 @@ export class MockHub implements IHubAPIClient {
         type: 'channel',
         update: {
           reason: 'Exchange',
+          createdOn: new Date(),
           args: getExchangeArgs('full', {
             exchangeRate: '5',
             tokensToSell: toBN(tokensToSell),
@@ -325,6 +329,7 @@ export class MockHub implements IHubAPIClient {
         type: 'channel',
         update: {
           reason: 'ProposePendingDeposit',
+          createdOn: new Date(),
           args: getDepositArgs('full', {
             depositTokenHub: toBN(69),
             depositTokenUser: toBN(0),
@@ -343,6 +348,7 @@ export class MockHub implements IHubAPIClient {
       ...this.receivedUpdateRequests,
       ...updates,
     ]
+    let createdOn = new Date;
     return {
       error: null,
       updates: {
@@ -351,6 +357,7 @@ export class MockHub implements IHubAPIClient {
           type: 'channel' as 'channel',
           update: {
             ...up,
+            createdOn,
             sigHub: up.sigHub || '0xMockHubSig',
           },
         }))
@@ -359,6 +366,7 @@ export class MockHub implements IHubAPIClient {
   }
 
   async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
+    update.createdOn = new Date();
     return update
   }
   getLatestChannelState(): Promise<ChannelState | null>  {
