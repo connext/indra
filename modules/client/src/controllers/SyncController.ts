@@ -31,8 +31,36 @@ function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
  * runtime state. Both arrays of sync results should have fields that are given 
  * by the hub (e.g createdOn will not be null)
  */
+
+/*
+  This function needs to dedupe states, sort channel states by txCount, sort thread states by createdOn,
+  and then sort both against each other so that openThread channel states are always before thread updates
+  
+  Constraints:
+  1. All states need to have a createdOn field
+  2. States that are not signed or have no txCount should be appended
+  3. States are passed in as SyncResult but then need to be casted either ThreadUpdateStates or UpdateRequests
+*/
+
 export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult[] {
   let channelUpdates = xs.filter(u => u.type == 'channel').concat(ys.filter(u => u.type == 'channel'))
+  
+  let sortAndDedupe = (arr : SyncResult[]) => {
+    let output
+    for(let i = 0; i < arr.length; i++) {
+      if(arr[i].type == 'channel')
+        arr[i] = arr[i].update as UpdateRequest
+      else if(arr[i].type == 'thread')
+        arr[i] = arr[i].update as ThreadStateUpdate
+      else 
+        throw new Error(`SortAndDedupe: array must be of type syncresult`)
+    }
+  }
+  
+  for(let i = 0; i < channelUpdates.length; i++) {
+    
+  }
+
   channelUpdates.sort((a,b) => {
     let n1 = a.update as UpdateRequest
     let n2 = b.update as UpdateRequest
@@ -46,17 +74,17 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   })
 
   const deduped = channelUpdates.slice(0, 1)
-  let next : UpdateRequest;
   for (let next of channelUpdates.slice(1)) {
     const cur = deduped[deduped.length - 1]
 
+    //@ts-ignore
     if (next.update.txCount && next.update.txCount < cur.update.txCount!) {
       throw new Error(
         `next update txCount should never be < cur: ` +
         `${JSON.stringify(next.update)} >= ${JSON.stringify(cur.update)}`
       )
     }
-
+    //@ts-ignore
     if (!next.update.txCount || next.update.txCount > cur.update.txCount!) {
       deduped.push(next)
       continue
