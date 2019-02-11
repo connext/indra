@@ -1,12 +1,14 @@
 version: 2
 jobs:
   test:
+    machine: true
     steps:
-      - checkout circle-ci
+      - checkout
       - run: make test
   deploy:
+    machine: true
     steps:
-      - checkout circle-ci
+      - checkout
       - run: make deploy
 workflows:
   version: 2
