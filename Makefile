@@ -142,6 +142,7 @@ wallet-node-modules: builder client $(wallet)/package.json
 	$(docker_run_in_wallet) "$(install)"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_wallet) "cd ../client && $(install)"
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
@@ -167,6 +168,7 @@ hub-node-modules: builder client $(hub)/package.json
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_hub) "cd ../client && $(install)"
 	$(log_finish) && touch build/hub-node-modules
 
 # Contracts
