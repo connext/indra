@@ -45,6 +45,7 @@ export default interface ChannelsDao {
   getRecentTippers(user: string): Promise<number>
   getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBigNum>
   getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
+  getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
   getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
 }
@@ -298,6 +299,22 @@ export class PostgresChannelsDao implements ChannelsDao {
           "user" = ${user.toLowerCase()} AND
           contract = ${this.config.channelManagerAddress.toLowerCase()} AND
           timeout = 0 AND
+          sig_hub IS NOT NULL AND
+          sig_user IS NOT NULL AND
+          invalid IS NULL
+        ORDER BY tx_count_global DESC
+        LIMIT 1
+      `),
+    )
+  }
+
+  async getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null> {
+    return this.inflateChannelUpdateRow(
+      await this.db.queryOne(SQL`
+        SELECT * FROM cm_channel_updates 
+        WHERE 
+          "user" = ${user.toLowerCase()} AND
+          contract = ${this.config.channelManagerAddress.toLowerCase()} AND
           sig_hub IS NOT NULL AND
           sig_user IS NOT NULL AND
           invalid IS NULL
