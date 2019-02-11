@@ -2,11 +2,11 @@ version: 2
 jobs:
   test:
     steps:
-      - checkout master
+      - checkout circle-ci
       - run: make test
   deploy:
     steps:
-      - checkout master
+      - checkout circle-ci
       - run: make deploy
 workflows:
   version: 2
