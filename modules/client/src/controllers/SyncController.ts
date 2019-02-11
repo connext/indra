@@ -396,6 +396,8 @@ export default class SyncController extends AbstractController {
 
   // signing disabled in state update controller based on channel sync status
   // unconditionally enqueue results
+  console.log("HERREE-----------------------")
+  console.log(sync.updates)
   this.enqueueSyncResultsFromHub(sync.updates)
 
   // descriptive status error handling
