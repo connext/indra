@@ -1,7 +1,7 @@
 import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
 import { IWeb3TxWrapper } from '../Connext'
 import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit } from '../types'
+import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit, ThreadStateUpdate } from '../types'
 import { SyncResult } from '../types'
 import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
 import { UnsignedThreadState } from '../types'
@@ -358,6 +358,15 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
+  async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
+    return update
+  }
+  getLatestChannelState(): Promise<ChannelState | null>  {
+    let store = new MockStore
+    //@ts-ignore
+    return store._initialState.persistent.channel as ChannelState | null
+  }
+
   assertReceivedUpdate(expected: PartialUpdateRequest) {
     for (let req of this.receivedUpdateRequests as any[]) {
       if (typeof expected.sigUser == 'boolean')
@@ -553,13 +562,13 @@ export class MockStore {
     }
   }
 
-  public setSyncControllerState = (updatesToSync: UpdateRequest[]) => {
+  public setSyncControllerState = (syncResults: SyncResult[]) => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
         syncControllerState: {
-          updatesToSync,
+          updatesToSync: syncResults,
         }
       }
     }

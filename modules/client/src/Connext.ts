@@ -122,7 +122,7 @@ class HubAPIClient implements IHubAPIClient {
   async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
     // 'POST /:sender/to/:receiver/update': 'doUpdateThread'
     try {
-      const res = await this.networking.post(`thread/${update.state.sender}/${update.state.receiver}`, {
+      const res = await this.networking.post(`thread/${update.state.sender}/to/${update.state.receiver}/update`, {
         update
       })
       return res.data

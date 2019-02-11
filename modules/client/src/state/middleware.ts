@@ -45,12 +45,18 @@ export function handleStateFlags(args: any): any {
       let hasPending = hasPendingOps(channel)
 
       updatesToSync.forEach(update => {
-        isUnsigned = isUnsigned || !(update.sigHub && update.sigUser)
-        hasTimeout = hasTimeout || 'timeout' in update.args ? !!(update.args as any).timeout : false
-        hasPending = hasPending || (
-          update.reason == 'ProposePendingDeposit' ||
-          update.reason == 'ProposePendingWithdrawal'
-        )
+        if(update.type == 'channel') {
+          isUnsigned = isUnsigned || !(update.update.sigHub && update.update.sigUser)
+          hasTimeout = hasTimeout || 'timeout' in update.update.args ? !!(update.update.args as any).timeout : false
+          hasPending = hasPending || (
+            update.update.reason == 'ProposePendingDeposit' ||
+            update.update.reason == 'ProposePendingWithdrawal'
+          )
+        } else if (update.type == 'thread') {
+          //TODO Does anything happen here?
+        } else {
+          throw new Error("Middleware: Update type is not either channel or thread!")
+        }
       })
 
       syncResultsFromHub.forEach((result: SyncResult) => {
