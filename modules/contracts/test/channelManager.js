@@ -2996,7 +2996,7 @@ contract("ChannelManager", accounts => {
     });
 });
 
-  describe.only("startExitThread", () => {
+  describe("startExitThread", () => {
     let threadState;
     let channelStateWithThreadsSender;
     let channelStateWithThreadsReceiver;
@@ -3043,7 +3043,7 @@ contract("ChannelManager", accounts => {
       channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
     });
 
-    describe.only("happy paths", () => {
+    describe("happy paths", () => {
       it("succeeds if sender starts to exit thread", async () => {
         const proof = clientUtils.generateThreadProof(threadState, [threadState]);
         const sig = await getThreadSig(threadState, viewer);
