@@ -94,19 +94,23 @@ deploy-live: prod
 # Tests
 
 # set a default test command for convenience
-test: test-contracts
+test: test-client test-contracts
 
 test-contracts: contract-artifacts
-	bash $(contracts)/ops/test.sh
+	bash ops/test-contracts.sh
 
-test-hub: client hub-node-modules
+test-hub:
+	# bash $(hub)/ops/test.sh
 	echo coming soon!
 
-test-client: client hub-node-modules
-	echo coming soon!
+test-client: client
+	bash ops/test-client.sh
 
 test-integration: dev
+	# npm run start
+	# cypress run
 	echo coming soon!
+	
 
 ########################################
 # Begin Real Rules
