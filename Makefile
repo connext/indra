@@ -34,7 +34,7 @@ docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
-install=npm install --prefer-offline --unsafe-perm
+install=npm install --prefer-offline --unsafe-perm > /dev/null
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
