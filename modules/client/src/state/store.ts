@@ -1,4 +1,4 @@
-import { ChannelStatus, ThreadHistoryItem } from '../types'
+import { ChannelStatus, ThreadHistoryItem, ThreadStateUpdate } from '../types'
 import { UpdateRequest } from '../types'
 //import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
 import { EMPTY_ROOT_HASH } from '../lib/constants'
@@ -41,7 +41,7 @@ export const CHANNEL_ZERO_STATE = {
 
 export class SyncControllerState {
   // Updates we need to send back to the hub
-  updatesToSync: UpdateRequest[] = []
+  updatesToSync: SyncResult[] = []
 }
 
 export class RuntimeState {
