@@ -1,0 +1,15 @@
+version: 2
+jobs:
+  test:
+    steps:
+      - checkout master
+      - run: make test
+  deploy:
+    steps:
+      - checkout master
+      - run: make deploy
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - test
