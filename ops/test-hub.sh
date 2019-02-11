@@ -34,6 +34,8 @@ trap cleanup EXIT
 
 docker container prune -f
 
+docker network create --attachable $project 2> /dev/null || true
+
 # Start test redis
 echo "Starting redis.."
 docker run --detach --name=$REDIS_HOST --network=$project redis:5-alpine
