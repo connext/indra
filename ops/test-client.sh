@@ -7,6 +7,11 @@ dir=`pwd | sed 's/indra.*/indra/'`/modules/client
 echo "Activating tester.."
 date "+%s" > /tmp/timestamp
 
+function cleanup {
+  echo "Testing complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
+}
+trap cleanup EXIT
+
 docker run \
   --interactive \
   --tty \
@@ -23,5 +28,3 @@ docker run \
       -r ./src/register/testing.ts \
       "src/**/*.test.ts" --exit
   '
-
-echo "Testing complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"

@@ -94,13 +94,13 @@ deploy-live: prod
 # Tests
 
 # set a default test command for convenience
-test: test-client test-contracts
+test: test-client test-contracts test-hub
 
 test-contracts: contract-artifacts
 	bash ops/test-contracts.sh
 
 test-hub:
-	# bash $(hub)/ops/test.sh
+	bash ops/test-hub.sh
 	echo coming soon!
 
 test-client: client
