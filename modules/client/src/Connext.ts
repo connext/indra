@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -78,7 +78,7 @@ export interface IHubAPIClient {
   getIncomingThreads(): Promise<ThreadRow[]>
   getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
-  getExchangerRates(): Promise<ExchangeRates>
+  getExchangerRates(): Promise<ExchangeRates> // TODO: name is typo
   buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
@@ -91,6 +91,8 @@ export interface IHubAPIClient {
     error: string | null
     updates: Sync
   }>
+  updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
+  getLatestChannelState(): Promise<ChannelState | null>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -102,6 +104,34 @@ class HubAPIClient implements IHubAPIClient {
     this.user = user
     this.networking = networking
     this.tokenName = tokenName
+  }
+
+  async getLatestChannelState(): Promise<ChannelState | null> {
+    try {
+      const res = await this.networking.get(`channel/${this.user}/latest-update`)
+      return res.data
+    } catch (e) {
+      if (e.statusCode === 404) {
+        console.log(`Channel not found for user ${this.user}`)
+        return null
+      }
+      throw e
+    }
+  }
+
+  async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
+    // 'POST /:sender/to/:receiver/update': 'doUpdateThread'
+    try {
+      const res = await this.networking.post(`thread/${update.state.sender}/${update.state.receiver}`, {
+        update
+      })
+      return res.data
+    } catch (e) {
+      if (e.statusCode === 404) {
+        throw new Error(`Thread not found for sender ${update.state.sender} and receiver ${update.state.receiver}`)
+      }
+      throw e
+    }
   }
 
   async getChannel(): Promise<ChannelRow> {
