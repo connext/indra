@@ -25,7 +25,7 @@ function getHash {
 function migrate {
   echo && echo "Migration activated! New state: `getHash`" 
   $truffle compile
-  $truffle migrate --reset
+  $truffle migrate --reset --network=ganache
   getHash > build/state-hash
 }
 
