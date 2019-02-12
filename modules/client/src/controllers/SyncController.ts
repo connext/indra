@@ -50,31 +50,34 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     if (arr.length == 0) {
       return [] as UpdateRequest[]
     }
-    else i = arr.length - 1
+    else i = 0
 
-    // Iterate down through array comparing each state against previous for duplicates
-    while (i > 0) {
+    // Iterate through array comparing each state against next for duplicates
+    while (i < arr.length - 1) {
       //@ts-ignore
-      if (!arr.txCount || arr[i].txCount > arr[i-1].txCount)
-        output[i] = arr[i]
-      else if (arr[i].txCount == arr[i-1].txCount) {
+      if (!arr[i].txCount || arr[i].txCount < arr[i+1].txCount) {
+        output.push(arr[i])
+      } else if (arr[i].txCount == arr[i+1].txCount) {
         // Are the reasons and sigs the same?
+        console.log("Same tx count update")
+        console.log("Do both have sig hubs? ", ((arr[i].sigHub != undefined && arr[i+1].sigHub != undefined) ? arr[i].sigHub == arr[i+1].sigHub : true))
+        console.log("Do both have sig users? ", (arr[i].sigUser != undefined && arr[i+1].sigUser != undefined))
         const nextAndCurMatch = (
-          arr[i].reason == arr[i-1].reason &&
-          ((arr[i].sigHub && arr[i-1].sigHub) ? arr[i].sigHub == arr[i-1].sigHub : true) &&
-          ((arr[i].sigUser && arr[i-1].sigUser) ? arr[i].sigUser == arr[i-1].sigUser : true)
+          arr[i+1].reason == arr[i].reason &&
+          ((arr[i].sigHub != undefined && arr[i+1].sigHub != undefined) ? arr[i].sigHub == arr[i+1].sigHub : true) &&
+          ((arr[i].sigUser != undefined && arr[i+1].sigUser != undefined) ? arr[i].sigUser == arr[i+1].sigUser : true)
         )
         if (!nextAndCurMatch)
           throw new Error(
             `Got two updates from the hub with the same txCount but different ` +
-            `reasons or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i-1])}`
+            `reasons or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
           )
         // If they match, skip pushing to output
       } else throw new Error("deduped: must use pre-sorted channel array as arg")
-      i--;
+      i++;
     }
-    // Handle special zero case
-    output[0] = arr[0]
+    // Handle special case
+    output.push(arr[arr.length - 1])
 
     return output as UpdateRequest[]
   }
@@ -86,30 +89,30 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     if (arr.length == 0) {
       return [] as ThreadStateUpdate[]
     }
-    else i = arr.length - 1
+    else i = 0
 
     // Iterate down through array comparing each state against previous for duplicates
-    while (i > 0) {
+    while (i < arr.length - 1) {
       //@ts-ignore
-      if (!arr.txCount || arr[i].createdOn > arr[i-1].createdOn)
-        output[i] = arr[i]
-      else if (arr[i].createdOn == arr[i-1].createdOn) {
+      if (arr[i].createdOn < arr[i+1].createdOn) {
+        output.push(arr[i])
+      } else if (arr[i].createdOn == arr[i+1].createdOn) {
         // Are the reasons and sigs the same?
         const nextAndCurMatch = (
-          arr[i].state.threadId == arr[i-1].state.threadId &&
-          ((arr[i].state.sigA && arr[i-1].state.sigA) ? arr[i].state.sigA == arr[i-1].state.sigA : true)
+          arr[i+1].state.threadId == arr[i].state.threadId &&
+          ((arr[i].state.sigA && arr[i+1].state.sigA) ? arr[i].state.sigA == arr[i+1].state.sigA : true)
         )
         if (!nextAndCurMatch)
           throw new Error(
             `Got two updates from the hub with the same createdOn but different ` +
-            `threadIds or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i-1])}`
+            `threadIds or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
           )
         // If they match, skip pushing to output
       } else throw new Error("deduped: must use pre-sorted thread array as arg")
-      i--;
+      i++;
     }
-    // Handle special zero case
-    output[0] = arr[0]
+    // Handle special case
+    output.push(arr[arr.length - 1])
 
     return output as ThreadStateUpdate[]
   }

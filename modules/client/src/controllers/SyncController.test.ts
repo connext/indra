@@ -57,18 +57,19 @@ describe('mergeSyncResults', () => {
 
   it('should not merge sigs', () => {
     const actual = mergeSyncResults([mkResult(1, 'user')], [mkResult(2), mkResult(1, 'hub')])
+    console.log("ACTUAL: ", actual)
     assert.containSubset(actual[0], {
       update: {
         txCount: 1,
-        sigUser: 'sig-user',
-        sigHub: undefined,
+        sigUser: undefined,
+        sigHub: 'sig-hub',
       },
     })
     assert.containSubset(actual[1], {
       update: {
         txCount: 1,
-        sigUser: undefined,
-        sigHub: 'sig-hub',
+        sigUser: 'sig-user',
+        sigHub:  undefined,
       },
     })
     assert.containSubset(actual[2], {
