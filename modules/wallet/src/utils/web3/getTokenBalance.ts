@@ -1,7 +1,19 @@
 import Web3 from 'web3'
 import Currency from "connext/dist/lib/currency/Currency";
 import { HumanStandardToken } from "./HumanStandardToken";
-const tokenABI = require('human-standard-token-abi')
+import { Weth } from "./Weth";
+const humanTokenAbi = require("./abi/humanToken.json");
+const wethAbi = require("./abi/weth.json");
+
+let tokenABI: any[]
+let Token: any
+if (process.env.NODE_ENV === "production") {
+  tokenABI = wethAbi
+  Token = Weth
+} else {
+  tokenABI = humanTokenAbi
+  Token = HumanStandardToken
+}
 
 const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS
 
@@ -11,7 +23,7 @@ export default async function getTokenBalance(
   token: string = tokenAddress!
 ): Promise<Currency> {
 
-  const contract = new web3.eth.Contract(tokenABI, token) as HumanStandardToken
+  const contract = new web3.eth.Contract(tokenABI, token)
 
   try {
     const amount = await contract

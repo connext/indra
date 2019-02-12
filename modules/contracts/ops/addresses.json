@@ -7,11 +7,25 @@
         "links": {},
         "address": "0x2511919A60c8E7eE29CC994c5ec40fB406bc073D",
         "transactionHash": "0xe5bebbe1fc8eee050241acb577fcd10509f0db07fddb53c4d70b3d284b8d3c3e"
+      },
+      "4": {
+        "events": {},
+        "links": {},
+        "address": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51",
+        "transactionHash": "0x7ac0c900c04f042a64e5bfe9fec5b909dbe3e2f1cea71fd781c7f89929f3db42"
       }
     }
   },
   "ChannelManager": {
     "networks": {
+      "4": {
+        "events": {},
+        "links": {
+          "ECTools": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51"
+        },
+        "address": "0x6A32cC9507760Daf8BDaC4D5f4CCfE9d6E985cB4",
+        "transactionHash": "0xae443dca0e23a2ff245d50c90f25af95e66a3d3c56cd1d7a87860ffd0e1e2711"
+      },
       "3": {
         "events": {},
         "links": {

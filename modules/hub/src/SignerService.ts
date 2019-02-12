@@ -1,8 +1,10 @@
+import * as fs from 'fs'
 import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
 import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/connext/types'
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
+import { ethUtils } from 'ethereumjs-util'
 
 export class SignerService {
   constructor(
@@ -30,11 +32,26 @@ export class SignerService {
     return await this.web3.eth.getBlock('latest')
   }
 
+  // NOTE: not being used right now
+  // (might be used later in OnchainTransactionService)
+  public async signTransaction(tx: Object): Promise<string> {
+    return await this.web3.eth.signTransaction(tx)
+  }
+
+  public async sign(message: string): Promise<string> {
+    if (process.env.PRIVATE_KEY_FILE) {
+      const pk = Buffer.from(fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8'), 'hex')
+      return await ethUtils.ecsign(Buffer.from(message, 'hex'), pk)
+    } else {
+      return await this.web3.eth.sign(message, this.config.hotWalletAddress)
+    }
+  }
+
   public async getSigForChannelState(
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    return await this.web3.eth.sign(stateHash, this.config.hotWalletAddress)
+    return await this.sign(stateHash)
   }
 
   public async signChannelState(

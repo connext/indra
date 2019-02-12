@@ -1,3 +1,9 @@
+require('dotenv').config();
+var HDWalletProvider = require("truffle-hdwallet-provider");
+
+const MNEMONIC = process.env.MNEMONIC
+const rinkeby = `https://rinkeby.infura.io/${process.env.INFURA_KEY}`
+
 module.exports = {
   networks: {
     mainnet: {
@@ -6,16 +12,23 @@ module.exports = {
       network_id: "1",
       gas: 4700000
     },
-    ropsten: {
-      host: "127.0.0.1",
+    rinkebyLive: {
+      host: rinkeby,
       port: 8545,
-      network_id: "3",
-      gas: 4700000
+      network_id: "4",
+      gas: 6721975,
+      provider: () => new HDWalletProvider(MNEMONIC, rinkeby)
     },
     rinkeby: {
       host: "127.0.0.1",
       port: 8545,
       network_id: "4",
+      gas: 4700000
+    },
+    ropsten: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "3",
       gas: 4700000
     },
     kovan: {

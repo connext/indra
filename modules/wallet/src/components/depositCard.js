@@ -116,24 +116,24 @@ class DepositCard extends Component {
   }
 
   async getTokens(amountToken) {
-    const { tokenContract, humanTokenAbi, } = this.props
+    const { tokenContract, tokenAbi, } = this.props
     console.log('tokenContract:', tokenContract)
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [3]");
       return;
     }
     const metamaskProvider = new Web3(web3.currentProvider);
     const mmAddr = (await metamaskProvider.eth.getAccounts())[0];
     const browserAddr = store.getState()[0].getAddressString()
     if (!mmAddr) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [4]");
       return;
     }
 
     const tc = new metamaskProvider.eth.Contract(
-      humanTokenAbi,
+      tokenAbi,
       tokenContract._address
     );
 
@@ -175,7 +175,7 @@ class DepositCard extends Component {
     let web3 = window.web3;
     console.log('window.web3', web3);
     if (!web3) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [1]");
       return;
     }
     const metamaskProvider = new eth.providers.Web3Provider(
@@ -184,7 +184,7 @@ class DepositCard extends Component {
     const mmAddr = (await metamaskProvider.listAccounts())[0];
     const browserAddr = store.getState()[0].getAddressString()
     if (!mmAddr) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [2]");
       return;
     }
 
