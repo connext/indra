@@ -15,7 +15,7 @@ VPATH=build:$(contracts)/build:$(hub)/dist
 SHELL=/bin/bash
 
 # Fetch Prerequisites
-find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*"
+find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 
 # Setup docker run time
@@ -38,6 +38,7 @@ install=npm install --prefer-offline --unsafe-perm
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
+########################################
 # Begin Phony Rules
 .PHONY: default all dev prod clean stop purge deploy deploy-live
 
@@ -55,8 +56,8 @@ reset: stop
 	docker volume rm connext_database_dev connext_chain_dev || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
-reset-client:
-	$(log_start)
+reset-client: stop
+	$(log_start) && echo "prereqs: $<"
 	rm -rf modules/client
 	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
 	$(log_finish) && touch build/pull-client
@@ -92,129 +93,138 @@ deploy-live: prod
 
 # Tests
 
-# set a default test command for convenience
-test: test-contracts
+# set a default test command for developer convenience
+test: test-default
+test-default: test-client
+test-all: test-client test-contracts test-hub test-integration
 
-test-contracts: client contract-artifacts
-	bash $(contracts)/ops/test.sh
+test-contracts: contract-artifacts
+	bash ops/test-contracts.sh
 
-test-hub: client hub-node-modules
-	echo coming soon!
+test-hub: hub database ethprovider
+	bash ops/test-hub.sh
 
-test-client: client hub-node-modules
-	echo coming soon!
+test-client: client
+	bash ops/test-client.sh
 
-test-integration: dev
-	echo coming soon!
+test-e2e: root-node-modules prod
+	npm stop
+	npm run prod
+	./node_modules/.bin/cypress run
+	npm stop
 
+########################################
 # Begin Real Rules
 
 # Proxy
 
 proxy-prod: wallet-prod $(shell find $(proxy) $(find_options))
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch build/proxy-prod
 
 proxy: $(shell find $(proxy) $(find_options))
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch build/proxy
 
 # Wallet
 
 wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/wallet-prod
 
 wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
 
 wallet-node-modules: builder client $(wallet)/package.json
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	$(docker_run_in_wallet) "$(install)"
+	$(docker_run_in_wallet) "$(install)" > /dev/null
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_wallet) "cd ../client && $(install)" > /dev/null
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
 
 hub-prod: hub-js
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
 	$(log_finish) && touch build/hub-prod
 
 hub: hub-js $(hub)/ops/dev.entry.sh
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
 	$(log_finish) && touch build/hub
 
 hub-js: hub-node-modules $(shell find $(hub) $(find_options))
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
 
 hub-node-modules: builder client $(hub)/package.json
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
-	$(docker_run_in_hub) "$(install)"
+	$(docker_run_in_hub) "$(install)" > /dev/null
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_hub) "cd ../client && $(install)" > /dev/null
 	$(log_finish) && touch build/hub-node-modules
-
-# Client
-
-client: builder $(client)/package.json
-	$(log_start)
-	$(docker_run_in_client) "$(install)"
-	$(log_finish) && touch build/client
 
 # Contracts
 
-ethprovider: contract-artifacts
-	$(log_start)
+ethprovider: $(shell find $(contracts)/ops $(find_options)) contract-artifacts
+	$(log_start) && echo "prereqs: $<"
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	$(log_finish) && touch build/ethprovider
 
-contract-artifacts: $(shell find $(contracts)/contracts $(find_options)) contract-node-modules
-	$(log_start)
+contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
+	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "npm run build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
 	$(log_finish) && touch build/contract-artifacts
 
-contract-node-modules: builder $(contracts)/package.json
-	$(log_start)
+contract-node-modules: client $(contracts)/package.json
+	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
-	$(docker_run_in_contracts) "$(install)"
+	$(docker_run_in_contracts) "$(install)" > /dev/null
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_contracts) "cd ../client && $(install)" > /dev/null
 	$(log_finish) && touch build/contract-node-modules
+
+# Client
+
+client: builder $(shell find $(client)/src) $(client)/package.json
+	$(log_start) && echo "prereqs: $<"
+	$(docker_run_in_client) "$(install)" > /dev/null
+	$(log_finish) && touch build/client
 
 # Database
 
 database-prod: database
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	docker tag $(project)_database:dev $(project)_database:latest
 	$(log_finish) && touch build/database-prod
 
 database: database-node-modules migration-templates $(db_prereq)
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	$(log_finish) && touch build/database
 
 migration-templates: $(shell find $(db) $(find_options))
-	$(log_start)
+	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_db) "make"
 	$(log_finish) && touch build/migration-templates
 
 database-node-modules: builder $(db)/package.json
-	$(log_start)
-	$(docker_run_in_db) "$(install)"
+	$(log_start) && echo "prereqs: $<"
+	$(docker_run_in_db) "$(install)" > /dev/null
 	$(log_finish) && touch build/database-node-modules
 
 # Builder
@@ -222,3 +232,8 @@ builder: ops/builder.dockerfile
 	$(log_start) && echo "prereqs: $<"
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
 	$(log_finish) && touch build/builder
+
+root-node-modules: package.json
+	$(log_start) && echo "prereqs: $<"
+	$(install)
+	$(log_finish) && touch build/root-node-modules

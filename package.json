@@ -5,6 +5,7 @@
   "description": "Deployment for Connext hub infrastructure",
   "license": "ISC",
   "scripts": {
+    "cypress": "./node_modules/.bin/cypress open",
     "build": "make dev",
     "db": "bash ops/db.sh",
     "logs": "bash ops/logs.sh",
@@ -16,5 +17,8 @@
     "stop": "bash ops/stop.sh",
     "clean": "make clean",
     "deep-clean": "make deep-clean"
+  },
+  "dependencies": {
+    "cypress": "^3.1.5"
   }
 }

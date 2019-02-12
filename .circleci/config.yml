@@ -1,0 +1,46 @@
+version: 2
+
+jobs:
+  test-client:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-client
+  test-contracts:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-contracts
+  test-hub:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-hub
+  test-e2e:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-e2e
+  deploy:
+    machine: true
+    steps:
+      - checkout
+      - run: make deploy
+
+workflows:
+  version: 2
+  test_everything:
+    jobs:
+      - test-client
+      - test-contracts
+      - test-hub
+      - test-e2e
+
+# keep the npm cache around to speed up installs
+cache:
+  directories:
+  - "$HOME/modules/client/.npm"
+  - "$HOME/modules/contracts/.npm"
+  - "$HOME/modules/database/.npm"
+  - "$HOME/modules/hub/.npm"
+  - "$HOME/modules/wallet/.npm"

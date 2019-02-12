@@ -139,6 +139,18 @@ class App extends Component {
   // ************************************************* //    
 
   async setWindowWeb3() {
+
+    // Ask permission to view accounts
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum);
+      try {
+        // Request account access if needed
+        await window.ethereum.enable();
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
     const windowProvider = window.web3;
     if (!windowProvider) {
       alert("Metamask is not detected.");

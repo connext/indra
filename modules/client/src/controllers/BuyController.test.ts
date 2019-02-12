@@ -116,6 +116,7 @@ describe('BuyController: unit tests', () => {
   //   await assert.isRejected(connext.start(), /sigUser not detected in update/)
   // })
 
+/*
   it('should work for a single thread payment to a receiver', async () => {
     await connext.start()
     await connext.buyController.buy({
@@ -130,6 +131,7 @@ describe('BuyController: unit tests', () => {
       ],
     })
   })
+*/
 
   it('should work for a more threads to the same receiver', async () => {
   })

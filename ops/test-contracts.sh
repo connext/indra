@@ -4,8 +4,13 @@ set -e
 # get absolute path of indra/modules/contracts
 dir=`pwd | sed 's/indra.*/indra/'`/modules/contracts
 
-echo "Activating tester.."
+echo "Activating contracts tester.."
 date "+%s" > /tmp/timestamp
+
+function cleanup {
+  echo "Testing contracts complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
+}
+trap cleanup EXIT
 
 docker run \
   --interactive \
@@ -17,11 +22,10 @@ docker run \
   --tmpfs=/chaindata \
   --entrypoint=bash \
   connext_builder:dev -c '
+    set -e
     PATH=./node_modules/.bin:$PATH
     echo "Starting Ganache.."
-    ganache-cli --db="/chaindata" > ops/ganache-test.log &
+    ganache-cli --networkId=4447 --db="/chaindata" > ops/ganache-test.log &
     echo "Running tests.."
     truffle test test/channelManager.js --network=ganache
   '
-
-echo "Testing complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
