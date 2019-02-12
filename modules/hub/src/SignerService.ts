@@ -4,7 +4,7 @@ import Config from './Config'
 import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/connext/types'
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
-import ethUtils from 'ethereumjs-util'
+import { ethUtils } from 'ethereumjs-util'
 
 export class SignerService {
   constructor(
