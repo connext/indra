@@ -141,13 +141,14 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
 	$(log_finish) && touch build/wallet
 
-wallet-node-modules: builder client $(wallet)/package.json
+wallet-node-modules: client $(wallet)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)" > /dev/null
-	$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_wallet) "cd ../client && $(install)" > /dev/null
+	# Don't dynamically link the local client until it's more stable, use the one from npm for now
+	#$(docker_run_in_wallet) "rm -rf node_modules/connext"
+	#$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
+	#$(docker_run_in_wallet) "cd ../client && $(install)" > /dev/null
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
