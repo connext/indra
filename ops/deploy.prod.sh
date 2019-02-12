@@ -18,7 +18,7 @@ INFURA_KEY=$INFURA_KEY; [[ -n "$INFURA_KEY" ]] || INFURA_KEY="abc123"
 SERVICE_USER_KEY="foo"
 
 # ethereum settings
-ETH_RPC_URL="https://rinkeby.infura.io/$INFURA_KEY"
+ETH_RPC_URL="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INFURA_KEY"
 WALLET_ADDRESS="0x742072C92D39c936fCAC59a6d5fA6Ad16b88b27e"
 HOT_WALLET_ADDRESS="0x742072C92D39c936fCAC59a6d5fA6Ad16b88b27e"
 CHANNEL_MANAGER_ADDRESS="0x6A32cC9507760Daf8BDaC4D5f4CCfE9d6E985cB4" # see modules/contracts/ops/addresses.json
