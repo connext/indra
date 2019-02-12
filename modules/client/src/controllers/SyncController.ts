@@ -43,101 +43,128 @@ function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
 */
 
 export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult[] {
-  let channelUpdates = xs.filter(u => u.type == 'channel').concat(ys.filter(u => u.type == 'channel'))
-  
-  let sortAndDedupe = (arr : SyncResult[]) => {
-    let output
+  // Helper which takes in a sorted channel update request array and returns a deduped version
+  const dedupeChannel = (arr : UpdateRequest[]): UpdateRequest[] => {
+    let output = []
+    let i
+    if (arr.length == 0) {
+      return [] as UpdateRequest[]
+    }
+    else i = arr.length - 1
+
+    // Iterate down through array comparing each state against previous for duplicates
+    while (i > 0) {
+      //@ts-ignore
+      if (!arr.txCount || arr[i].txCount > arr[i-1].txCount)
+        output[i] = arr[i]
+      else if (arr[i].txCount == arr[i-1].txCount) {
+        // Are the reasons and sigs the same?
+        const nextAndCurMatch = (
+          arr[i].reason == arr[i-1].reason &&
+          ((arr[i].sigHub && arr[i-1].sigHub) ? arr[i].sigHub == arr[i-1].sigHub : true) &&
+          ((arr[i].sigUser && arr[i-1].sigUser) ? arr[i].sigUser == arr[i-1].sigUser : true)
+        )
+        if (!nextAndCurMatch)
+          throw new Error(
+            `Got two updates from the hub with the same txCount but different ` +
+            `reasons or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i-1])}`
+          )
+        // If they match, skip pushing to output
+      } else throw new Error("deduped: must use pre-sorted channel array as arg")
+      i--;
+    }
+    // Handle special zero case
+    output[0] = arr[0]
+
+    return output as UpdateRequest[]
+  }
+
+  // Helper which takes in a sorted thread update array and returns a deduped version
+  const dedupeThread = (arr : ThreadStateUpdate[]): ThreadStateUpdate[] => {
+    let output = []
+    let i
+    if (arr.length == 0) {
+      return [] as ThreadStateUpdate[]
+    }
+    else i = arr.length - 1
+
+    // Iterate down through array comparing each state against previous for duplicates
+    while (i > 0) {
+      //@ts-ignore
+      if (!arr.txCount || arr[i].createdOn > arr[i-1].createdOn)
+        output[i] = arr[i]
+      else if (arr[i].createdOn == arr[i-1].createdOn) {
+        // Are the reasons and sigs the same?
+        const nextAndCurMatch = (
+          arr[i].state.threadId == arr[i-1].state.threadId &&
+          ((arr[i].state.sigA && arr[i-1].state.sigA) ? arr[i].state.sigA == arr[i-1].state.sigA : true)
+        )
+        if (!nextAndCurMatch)
+          throw new Error(
+            `Got two updates from the hub with the same createdOn but different ` +
+            `threadIds or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i-1])}`
+          )
+        // If they match, skip pushing to output
+      } else throw new Error("deduped: must use pre-sorted thread array as arg")
+      i--;
+    }
+    // Handle special zero case
+    output[0] = arr[0]
+
+    return output as ThreadStateUpdate[]
+  }
+
+  // Converts an array of SyncResults into either ThreadStateUpate[] or UpdateRequest[]
+  const convert = (arr: SyncResult[]): ThreadStateUpdate[] | UpdateRequest[] => {
+    let output = []
     for(let i = 0; i < arr.length; i++) {
       if(arr[i].type == 'channel')
-        arr[i] = arr[i].update as UpdateRequest
-      else if(arr[i].type == 'thread')
-        arr[i] = arr[i].update as ThreadStateUpdate
-      else 
-        throw new Error(`SortAndDedupe: array must be of type syncresult`)
+        output[i] = arr[i].update as UpdateRequest
+      if(arr[i].type == 'thread')
+        output[i] = arr[i].update as ThreadStateUpdate
     }
+    return output as ThreadStateUpdate[] | UpdateRequest[]
   }
-  
-  for(let i = 0; i < channelUpdates.length; i++) {
-    
-  }
+
+  // Get channel states, convert them, sort, and then dedupe.
+
+  let channelUpdates = convert(xs.filter(u => u.type == 'channel').concat(ys.filter(u => u.type == 'channel'))) as UpdateRequest[]
 
   channelUpdates.sort((a,b) => {
-    let n1 = a.update as UpdateRequest
-    let n2 = b.update as UpdateRequest
+
     // All updates should have a createdOn field
-    if (!n1.createdOn || !n2.createdOn) {
+    if (!a.createdOn || !b.createdOn) {
       throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
     }
-    if (!n1.txCount) return 1
-    if (!n2.txCount) return -1
-    return n1.txCount - n2.txCount
+    if (!a.txCount) return 1
+    if (!b.txCount) return -1
+    return a.txCount - b.txCount
   })
 
-  const deduped = channelUpdates.slice(0, 1)
-  for (let next of channelUpdates.slice(1)) {
-    const cur = deduped[deduped.length - 1]
+  channelUpdates = dedupeChannel(channelUpdates)
 
-    //@ts-ignore
-    if (next.update.txCount && next.update.txCount < cur.update.txCount!) {
-      throw new Error(
-        `next update txCount should never be < cur: ` +
-        `${JSON.stringify(next.update)} >= ${JSON.stringify(cur.update)}`
-      )
-    }
-    //@ts-ignore
-    if (!next.update.txCount || next.update.txCount > cur.update.txCount!) {
-      deduped.push(next)
-      continue
-    }
+  // Get thread states, convert, sort, dedupe.
 
-    // The current and next updates both have the same txCount. Double check
-    // that they both match (they *should* always match, because if they
-    // don't it means that the hub has sent us two different updates with the
-    // same txCount, and that is Very Bad. But better safe than sorry.)
-    const nextSigs = next.update
-    const curSigs = cur.update
-    const nextAndCurMatch = (
-      next.update.reason == cur.update.reason &&
-      ((nextSigs.sigHub && curSigs.sigHub) ? nextSigs.sigHub == curSigs.sigHub : true) &&
-      ((nextSigs.sigUser && curSigs.sigUser) ? nextSigs.sigUser == curSigs.sigUser : true)
-    )
-    if (!nextAndCurMatch) {
-      throw new Error(
-        `Got two updates from the hub with the same txCount but different ` +
-        `reasons or signatures: ${JSON.stringify(next.update)} != ${JSON.stringify(cur.update)}`
-      )
-    }
-
-    // If the two updates have different sigs (ex, the next update is the
-    // countersigned version of the prev), then keep both
-    if (nextSigs.sigHub != cur.update.sigHub || nextSigs.sigUser != cur.update.sigUser) {
-      deduped.push(next)
-      continue
-    }
-
-    // Otherwise the updates are identical; ignore the "next" update.
-  }
-
-  return deduped
-}
-
-  let threadUpdates = xs.filter(u => u.type == 'thread').concat(ys.filter(u => u.type == 'thread'))
+  let threadUpdates = convert(xs.filter(u => u.type == 'thread').concat(ys.filter(u => u.type == 'thread'))) as ThreadStateUpdate[]
+  
   threadUpdates.sort((a,b) => {
-    let n1 = a.update as ThreadStateUpdate
-    let n2 = b.update as ThreadStateUpdate
-    if (!n1.createdOn || !n2.createdOn) {
+    if (!a.createdOn || !b.createdOn) {
       throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
     }
-    if (n1.createdOn > n2.createdOn)
+    if (a.createdOn > b.createdOn)
     return 1;
-    else if (n1.createdOn < n2.createdOn)
+    else if (a.createdOn < b.createdOn)
       return -1;
     else
       return 0;
   })
 
+  threadUpdates = dedupeThread(threadUpdates)
+
   let curChan = 0
   let curThread = 0
+
+  // Merge sort channel and thread states arrays
 
   let res: SyncResult[] = []
   let unsigned
@@ -157,7 +184,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     //       if they were created at the same time but the chan update reason is open thread
 
     if (channelUpdates[curChan]) {
-      chanUp = channelUpdates[curChan].update as UpdateRequest
+      chanUp = channelUpdates[curChan]
 
       // check for unsigned
       if (!chanUp.txCount && !unsigned) 
@@ -174,7 +201,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     }
 
     if (threadUpdates[curThread]) {
-      threadUp = threadUpdates[curThread].update as ThreadStateUpdate
+      threadUp = threadUpdates[curThread]
 
       if (!threadUp.createdOn)
         throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
