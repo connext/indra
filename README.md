@@ -2,13 +2,20 @@
 
 Everything you need to set up a Connext payment channel hub.
 
-# To deploy using Docker
+## Contents
+ - [To deploy using Docker](#to-deploy-using-docker)
+ - [To deploy locally](#to-deploy-locally)
+ - [Repo executive summary](#repo-executive-summary)
+ - [Local development](#local-development)
+ - [Deploying to production](#deploying-to-production)
+ - [How to interact with Hub](#how-to-interact-with-hub)
+ - [Debugging & Troubleshooting](#debugging)
+
+## To deploy using Docker
 
 `npm start`
 
-(Potentially unstable, see below for [more info](#more-info) re helper scripts and how things work under-the-hood)
-
-# To deploy locally
+## To deploy locally
 
 ### Prerequisite
 * PostgreSQL running locally: `brew install postgres` for Mac. [See here for Linux](https://github.com/ConnextProject/indra/blob/master/docs/LINUX_POSTGRES.md).
@@ -53,23 +60,6 @@ Address: 0x2DA565caa7037Eb198393181089e92181ef5Fb53
 
 Private Key: 54dec5a04356ed96fc469803f3e45b901c69c5d5fd93a34fbf3568cd4c6efadd
 
-## More info
-#### The user manual for a docker-mode deployment
-
-## Contents
-
-- [Repo Executive Summary](#repo-executive-summary)
-- [How to get started developing](#how-to-get-started-developing)
-    - [Prerequisites](#prerequisites)
-    - [Details](#details)
-    - [Under the Hood](#under-the-hood)
-    - [How to interact with Hub](#how-to-interact-with-hub)
- - [Debugging](#debugging)
-    - [Ethprovider or Ganache not working](#ethprovider-or-ganache-not-working)
-    - [Hub errors on start](#hub-errors-on-start)
-    - [Locked DB](#locked-db)
-    - [502 Bad Gateway](#502-bad-gateway)
-
 ## Repo Executive Summary
 
 You can run this project locally in dev-mode with `npm start` (or `npm restart`). Stop it with `npm stop`
@@ -95,19 +85,15 @@ Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'`
 
 If you encounter any problems, check out the debugging guide at the bottom of this doc. For any unanswered questions, reach out on our Discord channel & we'll be happy to help.
 
-## How to get started developing
+Discord: https://discord.gg/SmMSFf
 
-### Prerequisites
+## Local Development
+
+**Prerequisites**
 
 - Make (required, probably already installed)
 - [Docker](https://www.docker.com/) (required)
 - [Node.js](https://nodejs.org/en/)
-
-### Details
-
-**Note**: We have migrated away from using `yarn` due to [yarn issue 2629](https://github.com/yarnpkg/yarn/issues/2629), an unsolved bug in yarn that results in installations randomly failing.
-
-**Local development is easy**
 
 `npm start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost`
 
@@ -117,13 +103,17 @@ A couple sets of `node_modules` will be installed when running `npm start` and t
 
 There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are off by default. The wallet aka UI will always be watched as it's served by a webpack-dev-server. If you expect to be actively developing any other modules, you can turn on watchers for those too. Careful, turning on all the watchers will increase the start-up time and drain your computer's battery more quickly.
 
-**To deploy to production: First, deploy the contract & docker images**
+## Deploying to Production
 
+### First, push the production images
+ 
 Before running make deploy, check the `modules/wallet/ops/prod.env` file as this will contain your wallet's prod-mode env vars. (TODO: build this dynamically from the env vars in `ops/deploy.prod.sh`) If these vars look good, then run:
 
 `make deploy` <- this will build the project's docker images and push them to docker hub.
 
 When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make deploy`.
+
+### Second, deploy the contracts
 
 To deploy the ChannelManager Contract:
 
@@ -131,12 +121,12 @@ To deploy the ChannelManager Contract:
 make contract-artifacts
 # the space at the beginning of the command below will prevent this
 # command (& the mnemoic) from being stored in your shell's history
-  MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network ropsten
+  MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network=ropstenLive
 ```
 
 The above will output the address your ChannelManager contract was deployed to. Add this address to the address book at `modules/contracts/ops/addresses.json` and to the env vars on top of `ops/deploy.prod.sh`. You'll also want to add the token address and address[0] of the mnemonic you used to deploy to `ops/deploy.prod.sh`.
 
-**Then, deploy your payment hub**
+### Third, setup the production server
 
 If you're deploying to a server on AWS or Digital Ocean, ssh into that server and make sure all of `git`, `make` and `docker` are installed on the machine you're deploying to.
 
@@ -148,6 +138,8 @@ Next step is to obtain your private key (eg by loading the mnemonic into MetaMas
 
 Run `docker secret ls` to ensure it's been created. Now, you're ready to deploy. To deploy the payment hub, run:
 
+### Lastly, deploy
+
 ```
 git clone https://github.com/ConnextProject/indra.git
 cp indra
@@ -158,39 +150,11 @@ The `DOMAINNAME=example.com` prefix sets an env var that allows correct configur
 
 Assuming the docker images have been built & pushed to a registry, `bash ops/deploy.prod.sh` will pull & deploy them in an environment suitable for production.
 
-Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying.
+Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying. (eg change it to connextproject dockerhub
 
 If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `bash ops/restart.sh prod`.
 
-### Under the Hood
-
-Behind the scenes, `npm start` will run `make` and then `bash ops/deploy.dev.sh`
-
-`make` does the following:
-
-1. Build the builder. This project relies on various build tools like c compilers & python & a specific version of nodejs. Rather than making you, the developer, figure out how to make nvm play nice with npm, we'll use Docker to build the build environment for you. Based on the builder Dockerfile in the top-level ops folder.
-
-2. Install dependencies. For example, to install stuff needed by the contracts module, we take the `modules/contracts` dir and mount it into a builder container. This container runs `npm install` which usually requires compiling some crazy c modules. When it's done, the container exits and a freshly built `node_modules` is left behind in the directory that was mounted..
-
-3. Build stuff. Like it step 2, we stick the dir we're interested in into the builder docker container & build what's needed.
-
-`bash ops/deploy.dev.sh` starts 7 containers:
-
- 1. Proxy: an nginx server that sits in front of both the hub & the wallet. Useful for preventing CORS problems.
-
- 2. Wallet: A webpack-dev-server that watches & serves data from the wallet module.
-
- 3. Hub: Manages your payment channel.
-
- 4. Chainsaw: Watches for interesting blockchain events & processes them as needed
-
- 5. Ethprovider: Runs contract migrations & starts a ganache testnet
-
- 6. Database: Runs db migrations then starts the database
-
- 7. Redis: Depended on by the hub & chainsaw
-
-### How to interact with Hub
+## How to interact with Hub
 
  1. AuthApiService
   - GET /auth/status: returns success and address if a valid auth token is provided
@@ -212,6 +176,7 @@ Behind the scenes, `npm start` will run `make` and then `bash ops/deploy.dev.sh`
       - lastChanTx
       - lastThreadUpdateId
 
+TODO: Fill this in better
 
 ## Debugging
 
