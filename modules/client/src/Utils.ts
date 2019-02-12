@@ -160,7 +160,7 @@ export class Utils {
     threadState: UnsignedThreadState,
     sig: string,
   ): string {
-    console.log('recovering signer from state:', threadState)
+    // console.log('recovering signer from state:', threadState)
     const hash: any = this.createThreadStateHash(threadState)
     return this.recoverSigner(hash, sig)
   }
@@ -283,7 +283,7 @@ export class Utils {
     )
     const addrBuf = util.pubToAddress(pubKey)
     const addr = util.bufferToHex(addrBuf)
-    console.log('recovered:', addr)
+    // console.log('recovered:', addr)
 
     return addr
   }

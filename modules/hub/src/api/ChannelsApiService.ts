@@ -256,7 +256,7 @@ export class ChannelsApiServiceHandler {
   }
 
   async doGetLatestDoubleSignedState(req: express.Request, res: express.Response) {
-    const user = this.getUser(req)
+    const user = getUserFromRequest(req)
     if (!user) {
       LOG.warn(
         'Receiver invalid get channel request. Aborting. Params received: {params}',
