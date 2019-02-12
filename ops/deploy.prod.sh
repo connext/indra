@@ -5,7 +5,7 @@ set -e
 # ENV VARS
 
 project=connext
-registry="docker.io/`whoami`"
+registry="connextproject"
 number_of_services=5
 
 # set defaults for some core env vars
