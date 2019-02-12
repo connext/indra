@@ -107,10 +107,10 @@ test-hub: hub database ethprovider
 test-client: client
 	bash ops/test-client.sh
 
-test-integration: prod
+test-e2e: root-node-modules prod
 	npm stop
 	npm run prod
-	cypress run
+	./node_modules/.bin/cypress run
 	npm stop
 
 ########################################
@@ -232,3 +232,8 @@ builder: ops/builder.dockerfile
 	$(log_start) && echo "prereqs: $<"
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
 	$(log_finish) && touch build/builder
+
+root-node-modules: package.json
+	$(log_start) && echo "prereqs: $<"
+	$(install)
+	$(log_finish) && touch build/root-node-modules
