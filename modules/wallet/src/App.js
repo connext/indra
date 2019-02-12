@@ -162,8 +162,8 @@ class App extends Component {
       );
     } else {
       console.log("SETTING WEB3 ", web3)
-      this.setState({web3})
     }
+    this.setState({web3})
     return;
   }
 
@@ -698,7 +698,6 @@ class App extends Component {
                 tokenContract={this.state.tokenContract}
                 tokenAbi={tokenAbi}
                 connext={this.state.connext}
-                usingMetamask={this.state.usingMetamask}
                 metamask={this.state.metamask}
               />
             </div>
