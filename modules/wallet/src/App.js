@@ -33,7 +33,16 @@ const Web3 = require("web3");
 const Tx = require("ethereumjs-tx");
 const eth = require("ethers");
 const humanTokenAbi = require("./abi/humanToken.json");
+const wethAbi = require("./abi/weth.json");
 require("dotenv").config();
+
+let tokenAbi
+if (process.env.NODE_ENV === "production"){
+  tokenAbi = wethAbi
+} else {
+  tokenAbi = humanTokenAbi
+}
+
 
 console.log(`starting app in env: ${JSON.stringify(process.env, null, 1)}`);
 const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase();
@@ -41,6 +50,8 @@ const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase();
 const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS.toLowerCase();
 const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS.toLowerCase();
 const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLowerCase();
+
+console.log(`Using token ${tokenAddress} with abi: ${tokenAbi}`)
 
 const HASH_PREAMBLE = "SpankWallet authentication message:";
 const DEPOSIT_MINIMUM_WEI = eth.utils.parseEther("0.04"); // 40FIN
@@ -159,7 +170,7 @@ class App extends Component {
   async setTokenContract() {
     try {
       let { web3, tokenContract } = this.state;
-      tokenContract = new web3.eth.Contract(humanTokenAbi, tokenAddress);
+      tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
       this.setState({tokenContract});
       console.log("Set up token contract details")
     } catch (e) {
@@ -685,7 +696,7 @@ class App extends Component {
                 balance={this.state.balance}
                 tokenBalance={this.state.tokenBalance}
                 tokenContract={this.state.tokenContract}
-                humanTokenAbi={humanTokenAbi}
+                tokenAbi={tokenAbi}
                 connext={this.state.connext}
                 usingMetamask={this.state.usingMetamask}
                 metamask={this.state.metamask}

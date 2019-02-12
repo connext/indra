@@ -25,7 +25,7 @@ function getHash {
 function migrate {
   echo && echo "Migration activated! New state: `getHash`" 
   $truffle compile
-  $truffle migrate --reset --network docker
+  $truffle migrate --reset
   getHash > build/state-hash
 }
 

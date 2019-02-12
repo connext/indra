@@ -116,7 +116,7 @@ class DepositCard extends Component {
   }
 
   async getTokens(amountToken) {
-    const { tokenContract, humanTokenAbi, } = this.props
+    const { tokenContract, tokenAbi, } = this.props
     console.log('tokenContract:', tokenContract)
     let web3 = window.web3;
     console.log(web3);
@@ -133,7 +133,7 @@ class DepositCard extends Component {
     }
 
     const tc = new metamaskProvider.eth.Contract(
-      humanTokenAbi,
+      tokenAbi,
       tokenContract._address
     );
 
