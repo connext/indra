@@ -134,9 +134,19 @@ make contract-artifacts
   MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network ropsten
 ```
 
+The above will output the address your ChannelManager contract was deployed to. Add this address to the address book at `modules/contracts/ops/addresses.json` and to the env vars on top of `ops/deploy.prod.sh`. You'll also want to add the token address and address[0] of the mnemonic you used to deploy to `ops/deploy.prod.sh`.
+
 **Then, deploy your payment hub**
 
-If you're deploying to a server on AWS or Digital Ocean, ssh into that server and make sure all of `git`, `make` and `docker` are installed on the machine you're deploying to. To deploy the payment hub, run:
+If you're deploying to a server on AWS or Digital Ocean, ssh into that server and make sure all of `git`, `make` and `docker` are installed on the machine you're deploying to.
+
+Next step is to obtain your private key (eg by loading the mnemonic into MetaMask then exporting your private key) and load it into a docker secret called `private_key` on the server where you'll be deploying the hub with a command like this: (Note the space at the beginning to avoid saving your private key in your shell's history)
+
+```
+ echo 'c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3' | tr -d ' \n\r' | docker secret create private_key -
+```
+
+Run `docker secret ls` to ensure it's been created. Now, you're ready to deploy. To deploy the payment hub, run:
 
 ```
 git clone https://github.com/ConnextProject/indra.git
