@@ -30,11 +30,19 @@ export class SignerService {
     return await this.web3.eth.getBlock('latest')
   }
 
+  public async signTransaction(tx: Object): Promise<string> {
+    return await this.web3.eth.signTransaction(tx)
+  }
+
+  public async sign(message: string): Promise<string> {
+    return await this.web3.eth.sign(message, this.config.hotWalletAddress)
+  }
+
   public async getSigForChannelState(
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    return await this.web3.eth.sign(stateHash, this.config.hotWalletAddress)
+    return await this.sign(stateHash)
   }
 
   public async signChannelState(

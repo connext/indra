@@ -215,8 +215,8 @@ export default class ChainsawService {
     )
     const hash = this.utils.createChannelStateHash(state)
 
-    //const sigHub = '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-    const sigHub = await this.web3.eth.sign(hash, this.config.hotWalletAddress)
+    const sigHub = await this.signerService.sign(hash);
+
     await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.config.hotWalletAddress, {
       ...state,
       sigHub
