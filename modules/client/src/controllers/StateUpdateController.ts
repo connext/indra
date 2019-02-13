@@ -179,23 +179,34 @@ export default class StateUpdateController extends AbstractController {
       // as it was created?
 
       // should update the store with the new active thread state
-      const prevThreads = this.getState().persistent.activeThreads.filter(
+      const persistent = this.getState().persistent
+      const prevThreadState = persistent.activeThreads.filter(
         t => t.threadId == newThreadState.threadId && t.sender == newThreadState.sender && t.receiver == newThreadState.receiver
       )
-      if (prevThreads.length != 1) {
-        throw new Error(`Error finding previous thread state corresponding to given new thread state: ${JSON.stringify(newThreadState)}. ${prevThreads.length == 0 ? 'No thread found.' : `Multiple threads found ${JSON.stringify(prevThreads)}`}`)
+
+      if (prevThreadState.length != 1) {
+        throw new Error(`Error finding previous thread state corresponding to given new thread state. New state: ${JSON.stringify(newThreadState)}. ${prevThreadState.length == 0 ? 'No thread found.' : `Multiple threads found ${JSON.stringify(prevThreadState)}`}`)
       }
 
+      const newActiveThreads = persistent.activeThreads.filter(
+        t => t.threadId != newThreadState.threadId && t.sender != newThreadState.sender && t.receiver != newThreadState.receiver
+      ).concat([newThreadState])
+
       if (!item.update.id) {
-        throw new Error(`Uh oh! Thread update should definitely have the threadID at this point! Sync item: ${JSON.stringify(item)}`)
+        throw new Error(`Uh oh! Thread update should definitely have the id at this point! Sync item: ${JSON.stringify(item)}`)
       }
 
       // update the latest id
       this.store.dispatch(actions.setLastThreadUpdateId(item.update.id))
+      // update active threads state
+      this.store.dispatch(actions.setActiveThreads(newActiveThreads))
+
+      await this.connext.awaitPersistentStateSaved()
       
       // close the thread if the user is the receiver
-      const channel = this.getState().persistent.channel
+      const channel = persistent.channel
       if (channel.user == newThreadState.receiver) {
+        console.log('Closing thread after payment receipt.')
         await this.connext.threadsController.closeThread({
           sender: newThreadState.sender,
           receiver: newThreadState.receiver,
