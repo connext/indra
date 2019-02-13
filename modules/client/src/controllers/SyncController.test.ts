@@ -158,8 +158,9 @@ describe('filterPendingSyncResults', () => {
 
       fromHub: [ mkFromHub({ txCount: 4 }), mkFromHub({ txCount: 5 }) ],
 
-      toHub: [
-        {
+      toHub: [{
+        type: 'channel', 
+        update: {
           reason: 'Invalidation',
           args: {
             previousValidTxCount: 4,
@@ -167,7 +168,7 @@ describe('filterPendingSyncResults', () => {
           },
           sigUser: true,
           txCount: 6,
-        },
+        }},
       ],
 
       expected: [ { txCount: 4 } ],
@@ -184,12 +185,13 @@ describe('filterPendingSyncResults', () => {
         })
       ],
 
-      toHub: [
-        {
+      toHub: [{
+        type: 'channel',
+        update: {
           txCount: 5,
           sigUser: true,
         },
-      ],
+      }],
 
       expected: [
         {
@@ -205,13 +207,14 @@ describe('filterPendingSyncResults', () => {
 
       fromHub: [ mkFromHub({ txCount: 5, sigHub: true, sigUser: true }) ],
 
-      toHub: [
-        {
+      toHub: [{
+        type: 'channel',
+        update: {
           txCount: 5,
           sigHub: true,
           sigUser: true,
         },
-      ],
+      }],
 
       expected: [
         {
@@ -227,13 +230,14 @@ describe('filterPendingSyncResults', () => {
 
       fromHub: [ mkFromHub({ txCount: 5, sigHub: true }) ],
 
-      toHub: [
-        {
+      toHub: [{
+        type: 'channel',
+        update: {
           txCount: 5,
           sigHub: true,
           sigUser: true,
         },
-      ],
+      }],
 
       expected: [],
     },
@@ -243,12 +247,13 @@ describe('filterPendingSyncResults', () => {
 
       fromHub: [ mkFromHub({ id: -69 }) ],
 
-      toHub: [
-        {
+      toHub: [{
+        type: 'channel',
+        update: {
           id: -69,
           sigUser: true,
         },
-      ],
+      }],
 
       expected: [],
     },
