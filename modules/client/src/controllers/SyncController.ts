@@ -289,7 +289,6 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   let res: SyncResult[] = []
   const pushChannel = (update: UpdateRequest) => res.push({ type: 'channel', update })
   const pushThread = (update: ThreadStateUpdate) => res.push({ type: 'thread', update })
-  // const unsigned = channelUpdates && channelUpdates[channelUpdates.length - 1].txCount ? null : channelUpdates[channelUpdates.length - 1]
 
   while (
     curChan < channelUpdates.length ||
