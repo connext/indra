@@ -1,15 +1,14 @@
 import { assertUnreachable } from '../lib/utils'
 import { Block } from 'web3/eth/types'
-import { UpdateRequest, ChannelState, convertChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes } from '../types'
+import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes } from '../types'
 import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
 import { Poller } from '../lib/poller/Poller'
 import { ConnextInternal } from '../Connext'
-import { SyncControllerState, CHANNEL_ZERO_STATE } from '../state/store'
-import getTxCount from '../lib/getTxCount'
+import { SyncControllerState } from '../state/store'
 import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
-import { maybe, Lock } from '../lib/utils'
+import { maybe } from '../lib/utils'
 import Semaphore = require('semaphore')
 import { getChannel } from '../lib/getChannel';
 import { EventLog } from 'web3/types'
