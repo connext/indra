@@ -142,13 +142,19 @@ describe('mergeSyncResults', () => {
 })
 
 describe('filterPendingSyncResults', () => {
-  function mkFromHub(opts: any) {
-    return {
+  function mkFromHub(opts: any, thread = true) {
+    return thread ? {
       type:  'channel',
       update: {
         reason: 'Payment',
         ...opts,
       },
+    } : {
+      type: 'thread',
+      update: {
+        createdOn: new Date(1994, 1, 3),
+        ...opts,
+      }
     }
   }
 
@@ -172,6 +178,37 @@ describe('filterPendingSyncResults', () => {
       ],
 
       expected: [ { txCount: 4 } ],
+    },
+
+    {
+      name: 'toHub contains thread updates',
+
+      fromHub: [ mkFromHub({ txCount: 4 }) ],
+
+      toHub: [{
+        type: 'thread', 
+        update: {
+          state: { sigA: 'sigA'},
+        }},
+      ],
+
+      expected: [ { txCount: 4 } ],
+    },
+
+    {
+      name: 'fromHub contains duplicate thread updates',
+
+      fromHub: [ mkFromHub({ txCount: 4 }), mkFromHub({ state: { sigA: 'sigA'} }, false) ],
+
+      toHub: [{
+        type: 'thread', 
+        update: {
+          state: { sigA: 'sigA'},
+          createdOn: new Date(1994, 1, 3)
+        }},
+      ],
+
+      expected: [ { txCount: 4 }, { createdOn: new Date(1994, 1, 3) } ],
     },
 
     {
