@@ -309,7 +309,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
 
     // TODO: ^^^ this is the exact logic that is implemented on the hub side
     // and the code should be reused or copy-pasted to reduce mental surface
-    // area. Both work though.
+    // area. (ChannelsService.ts lines 855 - 893) Both work though.
 
     if (channelUpdates[curChan]) {
       chanUp = channelUpdates[curChan]
