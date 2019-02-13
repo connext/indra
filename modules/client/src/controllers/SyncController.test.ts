@@ -1,18 +1,18 @@
-import { SyncResult, convertChannelState, InvalidationArgs, UpdateRequest } from '../types'
+import { SyncResult, convertChannelState, InvalidationArgs, UpdateRequest, ChannelUpdateReason } from '../types'
 import { mergeSyncResults, filterPendingSyncResults } from './SyncController'
-import { assert, getChannelState, mkAddress, mkHash, parameterizedTests, updateObj, getChannelStateUpdate } from '../testing'
+import { assert, getChannelState, mkAddress, mkHash, parameterizedTests, updateObj, getChannelStateUpdate, getThreadState } from '../testing'
 import { MockConnextInternal, MockStore, MockHub, MockWeb3 } from '../testing/mocks';
 import { StateGenerator } from '../StateGenerator';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
 describe('mergeSyncResults', () => {
-  function mkResult(txCount: number | null, sigs: 'hub' | 'user' | 'both' = 'both'): SyncResult {
+  function mkChanResult(txCount: number | null, sigs: 'hub' | 'user' | 'both' = 'both', reason: ChannelUpdateReason = 'Payment', createdOn: Date = new Date()): SyncResult {
     return {
       type: 'channel',
       update: {
-        reason: 'Payment',
-        createdOn: new Date(),
+        reason,
+        createdOn,
         args: { expectedPos: txCount } as any,
         txCount,
         sigHub: sigs == 'hub' || sigs == 'both' ? 'sig-hub' : undefined,
@@ -21,17 +21,27 @@ describe('mergeSyncResults', () => {
     }
   }
 
-  const tests = [
-    ['empty', [], []],
-    ['only old', [], [mkResult(1)]],
-    ['only new', [mkResult(1)], []],
-    ['both old', [mkResult(1)], [mkResult(2)]],
-    ['both new', [mkResult(2)], [mkResult(1)]],
-    ['both new', [mkResult(1)], [mkResult(1)]],
-    ['mixed', [mkResult(1), mkResult(2)], [mkResult(3), mkResult(2)]],
+  function mkThreadResult(createdOn: Date | undefined, sigA: string = mkHash(Math.random().toString())): SyncResult {
+    return {
+      type: 'thread',
+      update: {
+        createdOn, // present once it is added to the hub
+        state: getThreadState('full', { sigA, }), // signed or unsigned?
+      }
+    }
+  }
+
+  const chanTests = [
+    ['empty only channel', [], []],
+    ['only old only channel', [], [mkChanResult(1)]],
+    ['only new only channel', [mkChanResult(1)], []],
+    ['both old only channel', [mkChanResult(1)], [mkChanResult(2)]],
+    ['both new only channel', [mkChanResult(2)], [mkChanResult(1)]],
+    ['both new only channel', [mkChanResult(1)], [mkChanResult(1)]],
+    ['mixed only channel', [mkChanResult(1), mkChanResult(2)], [mkChanResult(3), mkChanResult(2)]],
   ]
 
-  tests.forEach(([name, xs, ys]) => {
+  chanTests.forEach(([name, xs, ys]) => {
     it(name as any, () => {
       const actual = mergeSyncResults(xs as any, ys as any)
       const expectedCount = Math.max(0, ...[...xs as any, ...ys as any].map(x => x.update.txCount))
@@ -55,21 +65,64 @@ describe('mergeSyncResults', () => {
     })
   })
 
+  const today = new Date(1994, 1, 3)
+  const earlier = new Date(1994, 1, 2)
+  const later = new Date(1994, 1, 4)
+  const threadTests = [
+    ['only old only threads', [], [mkThreadResult(today)], [mkThreadResult(today)]],
+
+    ['only new only threads', [mkThreadResult(today)], [], [mkThreadResult(today)]],
+
+    ['both old and new only threads', [mkThreadResult(today)], [mkThreadResult(later)], [mkThreadResult(today), mkThreadResult(later)]],
+
+    ['both old and new only threads', [mkThreadResult(earlier)], [mkThreadResult(today)], [mkThreadResult(earlier), mkThreadResult(today)]],
+
+    ['duplicates only threads', [mkThreadResult(today, mkHash('0xIdentical'))], [mkThreadResult(today, mkHash('0xIdentical'))], [mkThreadResult(today, mkHash('0xIdentical'))]],
+
+    ['mixed only threads', [mkThreadResult(earlier, mkHash('0xearly')), mkThreadResult(today, mkHash('0xtoday'))], [mkThreadResult(today, mkHash('0xtoday')), mkThreadResult(later, mkHash('0xlater'))], [mkThreadResult(earlier, mkHash('0xearly')), mkThreadResult(today, mkHash('0xtoday')), mkThreadResult(later, mkHash('0xlater'))]],
+  ]
+
+  threadTests.forEach(([name, xs, ys, expected]) => {
+    it(name as any, () => {
+      const actual = mergeSyncResults(xs as any, ys as any)
+      assert.equal(actual.length, expected.length)
+      for (let i = 0; i < actual.length; i += 1) {
+        assert.containSubset(actual[i].update, { createdOn: (expected[i] as any).update.createdOn }, `Mismatch at item ${i + 1}. Item: ${JSON.stringify(actual[i])}, expected: ${JSON.stringify(expected[i])}`)
+      }
+    })
+  })
+
+  it('should work with both channels and threads', () => {
+    const prevChanOps = [mkChanResult(1)]
+    const threadOpen = [mkChanResult(2, 'user', 'OpenThread')]
+    const threadOps = [mkThreadResult(today), mkThreadResult(later)]
+    const threadClose = [mkChanResult(3, 'user', 'CloseThread', later)]
+    
+    const oldArr = prevChanOps.concat(threadOpen).concat([threadOps[0]])
+    const newArr = threadOpen.concat(threadOps).concat(threadClose)
+
+    const expected = prevChanOps.concat(threadOpen).concat(threadOps).concat(threadClose)
+
+    const actual = mergeSyncResults(oldArr, newArr)
+
+    assert.equal(actual.length, expected.length)
+    assert.containSubset(actual, expected)
+  })
+
   it('should not merge sigs', () => {
-    const actual = mergeSyncResults([mkResult(1, 'user')], [mkResult(2), mkResult(1, 'hub')])
-    console.log("ACTUAL: ", actual)
+    const actual = mergeSyncResults([mkChanResult(1, 'user')], [mkChanResult(2), mkChanResult(1, 'hub')])
     assert.containSubset(actual[0], {
       update: {
         txCount: 1,
-        sigUser: undefined,
-        sigHub: 'sig-hub',
+        sigUser: 'sig-user',
+        sigHub:  undefined,
       },
     })
     assert.containSubset(actual[1], {
       update: {
         txCount: 1,
-        sigUser: 'sig-user',
-        sigHub:  undefined,
+        sigUser: undefined,
+        sigHub: 'sig-hub',
       },
     })
     assert.containSubset(actual[2], {
@@ -82,7 +135,7 @@ describe('mergeSyncResults', () => {
   })
 
   it('should handle null states', () => {
-    const actual = mergeSyncResults([mkResult(null), mkResult(1)], [mkResult(null), mkResult(2)])
+    const actual = mergeSyncResults([mkChanResult(null), mkChanResult(1)], [mkChanResult(null), mkChanResult(2)])
     assert.deepEqual(actual.map(t => (t.update as any).txCount), [1, 2, null])
   })
 
