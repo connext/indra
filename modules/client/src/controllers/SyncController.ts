@@ -45,76 +45,183 @@ function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
 export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult[] {
   // Helper which takes in a sorted channel update request array and returns a deduped version
   const dedupeChannel = (arr : UpdateRequest[]): UpdateRequest[] => {
-    let output = []
-    let i
-    if (arr.length == 0) {
-      return [] as UpdateRequest[]
-    }
-    else i = 0
+    const deduped = arr.slice(0, 1)
+    for (let next of arr.slice(1)) {
+      const cur = deduped[deduped.length - 1]
 
-    // Iterate through array comparing each state against next for duplicates
-    while (i < arr.length - 1) {
-      //@ts-ignore
-      if (!arr[i].txCount || arr[i].txCount < arr[i+1].txCount) {
-        output.push(arr[i])
-      } else if (arr[i].txCount == arr[i+1].txCount) {
-        // Are the reasons and sigs the same?
-        console.log("Same tx count update")
-        console.log("Do both have sig hubs? ", ((arr[i].sigHub != undefined && arr[i+1].sigHub != undefined) ? arr[i].sigHub == arr[i+1].sigHub : true))
-        console.log("Do both have sig users? ", (arr[i].sigUser != undefined && arr[i+1].sigUser != undefined))
-        const nextAndCurMatch = (
-          arr[i+1].reason == arr[i].reason &&
-          ((arr[i].sigHub != undefined && arr[i+1].sigHub != undefined) ? arr[i].sigHub == arr[i+1].sigHub : true) &&
-          ((arr[i].sigUser != undefined && arr[i+1].sigUser != undefined) ? arr[i].sigUser == arr[i+1].sigUser : true)
+      if (next.txCount && next.txCount < cur.txCount!) {
+        throw new Error(
+          `next update txCount should never be < cur: ` +
+          `${JSON.stringify(next)} >= ${JSON.stringify(cur)}`
         )
-        if (!nextAndCurMatch)
-          throw new Error(
-            `Got two updates from the hub with the same txCount but different ` +
-            `reasons or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
-          )
-        // If they match, skip pushing to output
-      } else throw new Error("deduped: must use pre-sorted channel array as arg")
-      i++;
-    }
-    // Handle special case
-    output.push(arr[arr.length - 1])
+      }
 
-    return output as UpdateRequest[]
+      if (!next.txCount || next.txCount > cur.txCount!) {
+        deduped.push(next)
+        continue
+      }
+
+      // The current and next updates both have the same txCount. Double check
+      // that they both match (they *should* always match, because if they
+      // don't it means that the hub has sent us two different updates with the
+      // same txCount, and that is Very Bad. But better safe than sorry.)
+      const nextAndCurMatch = (
+        next.reason == cur.reason &&
+        ((next.sigHub && cur.sigHub) ? next.sigHub == cur.sigHub : true) &&
+        ((next.sigUser && cur.sigUser) ? next.sigUser == cur.sigUser : true)
+      )
+      if (!nextAndCurMatch) {
+        throw new Error(
+          `Got two updates from the hub with the same txCount but different ` +
+          `reasons or signatures: ${JSON.stringify(next)} != ${JSON.stringify(cur)}`
+        )
+      }
+
+      // If the two updates have different sigs (ex, the next update is the
+      // countersigned version of the prev), then keep both
+      if (next.sigHub != cur.sigHub || next.sigUser != cur.sigUser) {
+        deduped.push(next)
+        continue
+      }
+
+      // Otherwise the updates are identical; ignore the "next" update.
+    }
+
+    return deduped
+    // TODO: below is arjuns implementation, this does not handle null states
+    // appropriately. In the "should handle null", it does NOT handle the 
+    // case where arr[i+1].txCount = null, and will throw an error
+    // since the core logic is the same, i kept the in prod implementation
+    // (but feel free to revert + fix if desired)
+
+
+    // console.log('deduping array:', arr)
+    // if (arr.length == 0) {
+    //   return [] as UpdateRequest[]
+    // }
+    // let output = []
+    // let i = 0
+
+    // // Iterate through array comparing each state against next for duplicates
+    // while (i < arr.length - 1) {
+    //   console.log('output', output)
+    //   console.log('arr[i]', arr[i])
+    //   console.log('arr[i+1]', arr[i+1])
+    //   // evaluates to true if both txCounts exist and are different
+    //   // OR if one tx count is null, and the other exists
+    //   const diffTxCounts = arr[i].txCount && arr[i+1].txCount &&
+    //     (arr[i] as any).txCount < (arr[i+1] as any).txCount
+
+    //   console.log('diffTxCounts', arr[i].txCount && arr[i+1].txCount)
+      
+    //   if (!arr[i].txCount || !arr[i+1].txCount || diffTxCounts) {
+    //     output.push(arr[i])
+    //   } else if (arr[i].txCount == arr[i+1].txCount) {
+    //     // Are the reasons and sigs the same?
+    //     console.log("Same tx count update")
+    //     console.log("Do both have sig hubs? ", (!!arr[i].sigHub && !!arr[i+1].sigHub))
+    //     console.log("Do both have sig users? ", (!!arr[i].sigUser && !!arr[i+1].sigUser))
+    //     const nextAndCurMatch = (
+    //       arr[i+1].reason == arr[i].reason &&
+    //       ((arr[i+1].sigHub && arr[i].sigHub) ? arr[i+1].sigHub == arr[i].sigHub : true) &&
+    //       ((arr[i+1].sigUser && arr[i].sigUser) ? arr[i+1].sigUser == arr[i].sigUser : true)
+    //     )
+
+    //     if (!nextAndCurMatch) {
+    //       throw new Error(
+    //         `Got two updates from the hub with the same txCount but different ` +
+    //         `reasons or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
+    //       )
+    //     }
+
+    //     // if the two updates have different sigs (ie one is countersigned
+    //     // version of the previous), then keep both versions
+    //     if (arr[i].sigHub != arr[i+1].sigHub || arr[i].sigUser != arr[i+1].sigUser) {
+    //       console.log('found update with different sigs and same txCount, adding to array')
+    //       output.push(arr[i])
+    //     }
+        
+    //     // If they match, skip pushing to output
+    //   } else {
+    //     // falls into this code block if arr[i+1].txCount is null
+    //     throw new Error("deduped: must use pre-sorted channel array as arg")
+    //   }
+    //   i++;
+    // }
+
+    // // Handle special case
+    // output.push(arr[arr.length - 1])
+
+    // return output
   }
 
   // Helper which takes in a sorted thread update array and returns a deduped version
   const dedupeThread = (arr : ThreadStateUpdate[]): ThreadStateUpdate[] => {
-    let output = []
-    let i
-    if (arr.length == 0) {
-      return [] as ThreadStateUpdate[]
-    }
-    else i = 0
-
-    // Iterate down through array comparing each state against previous for duplicates
-    while (i < arr.length - 1) {
-      //@ts-ignore
-      if (arr[i].createdOn < arr[i+1].createdOn) {
-        output.push(arr[i])
-      } else if (arr[i].createdOn == arr[i+1].createdOn) {
-        // Are the reasons and sigs the same?
-        const nextAndCurMatch = (
-          arr[i+1].state.threadId == arr[i].state.threadId &&
-          ((arr[i].state.sigA && arr[i+1].state.sigA) ? arr[i].state.sigA == arr[i+1].state.sigA : true)
+    const deduped = arr.slice(0, 1)
+    for (let next of arr.slice(1)) {
+      const cur = deduped[deduped.length - 1]
+      if (!next.createdOn || !cur.createdOn) {
+        throw new Error(`This function has been called incorrecty. Should only be deduping threads that come from the hub, meaning they have a 'createdOn' field. See comments in the source.`)
+      }
+      // ensure the array is sorted appropriately
+      if (next.createdOn < cur.createdOn) {
+        throw new Error(
+          `next update createdOn should never be < cur: ` +
+          `${JSON.stringify(next)} >= ${JSON.stringify(cur)}`
         )
-        if (!nextAndCurMatch)
-          throw new Error(
-            `Got two updates from the hub with the same createdOn but different ` +
-            `threadIds or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
-          )
-        // If they match, skip pushing to output
-      } else throw new Error("deduped: must use pre-sorted thread array as arg")
-      i++;
-    }
-    // Handle special case
-    output.push(arr[arr.length - 1])
+      }
 
-    return output as ThreadStateUpdate[]
+      if (next.createdOn != cur.createdOn) {
+        deduped.push(next)
+        continue
+      } 
+      
+      // the updates have the same createdOn date
+      // check the sigs to see if they are duplicates.
+      // safe because at no point should unsigned thread states
+      // arrive here, and no 2 threads should have identical sigs
+      if (next.state.sigA != cur.state.sigA) {
+        deduped.push(next)
+        continue
+      }
+      
+    }
+    return deduped
+
+    // TODO: rewrote this so its easier to read and mirrors the channel
+    // deduping algo. no need to check threadId if you are signing changing
+    // threadIds
+    // if (arr.length == 0) {
+    //   return [] as ThreadStateUpdate[]
+    // }
+    // let output = []
+    // let i = 0
+
+    // // Iterate down through array comparing each state against previous for 
+    // // duplicates
+    // while (i < arr.length - 1) {
+    //   //@ts-ignore
+    //   if (arr[i].createdOn < arr[i+1].createdOn) {
+    //     output.push(arr[i])
+    //   } else if (arr[i].createdOn == arr[i+1].createdOn) {
+    //     // Are the reasons and sigs the same?
+    //     const nextAndCurMatch = (
+    //       arr[i+1].state.threadId == arr[i].state.threadId &&
+    //       ((arr[i].state.sigA && arr[i+1].state.sigA) ? arr[i].state.sigA == arr[i+1].state.sigA : true)
+    //     )
+    //     if (!nextAndCurMatch)
+    //       throw new Error(
+    //         `Got two updates from the hub with the same createdOn but different ` +
+    //         `threadIds or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
+    //       )
+    //     // If they match, skip pushing to output
+    //   } else throw new Error("deduped: must use pre-sorted thread array as arg")
+    //   i++;
+    // }
+    // // Handle special case
+    // output.push(arr[arr.length - 1])
+
+    // return output as ThreadStateUpdate[]
   }
 
   // Converts an array of SyncResults into either ThreadStateUpate[] or UpdateRequest[]
@@ -130,11 +237,9 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   }
 
   // Get channel states, convert them, sort, and then dedupe.
-
   let channelUpdates = convert(xs.filter(u => u.type == 'channel').concat(ys.filter(u => u.type == 'channel'))) as UpdateRequest[]
 
   channelUpdates.sort((a,b) => {
-
     // All updates should have a createdOn field
     if (!a.createdOn || !b.createdOn) {
       throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
@@ -144,18 +249,31 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     return a.txCount - b.txCount
   })
 
+  // ensure there is only one state with a null txCount
+  let hasNull = false
+  channelUpdates = channelUpdates.filter(s => {
+    if (!s.txCount) {
+      if (hasNull)
+        return false
+      hasNull = true
+      return true
+    }
+
+    return true
+  })
+
   channelUpdates = dedupeChannel(channelUpdates)
 
   // Get thread states, convert, sort, dedupe.
-
   let threadUpdates = convert(xs.filter(u => u.type == 'thread').concat(ys.filter(u => u.type == 'thread'))) as ThreadStateUpdate[]
   
   threadUpdates.sort((a,b) => {
     if (!a.createdOn || !b.createdOn) {
       throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
     }
+
     if (a.createdOn > b.createdOn)
-    return 1;
+      return 1;
     else if (a.createdOn < b.createdOn)
       return -1;
     else
@@ -168,36 +286,40 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   let curThread = 0
 
   // Merge sort channel and thread states arrays
-
   let res: SyncResult[] = []
-  let unsigned
   const pushChannel = (update: UpdateRequest) => res.push({ type: 'channel', update })
   const pushThread = (update: ThreadStateUpdate) => res.push({ type: 'thread', update })
+  // const unsigned = channelUpdates && channelUpdates[channelUpdates.length - 1].txCount ? null : channelUpdates[channelUpdates.length - 1]
+
   while (
     curChan < channelUpdates.length ||
     curThread < threadUpdates.length
   ) {
     let chanUp, threadUp
 
-    // We want to iterate over every sync result, validate that it has a created on and then push it to channel or thread and increment counter
+    // We want to iterate over every sync result, validate that it has a 
+    // created on and then push it to channel or thread and increment counter
     // This needs to happen with the following logic:
-    //  1. When there is a chan update and no thread update, chan update should be pushed and curChan incremented
-    //  2. When there is a thread update and no chan update, thread update should be pushedand curThread incremented
-    //  3. When there are both, channel update should be pushed if channel was created before thread OR
-    //       if they were created at the same time but the chan update reason is open thread
+    //  1. When there is a chan update and no thread update, chan update should 
+    //     be pushed and curChan incremented
+    //  2. When there is a thread update and no chan update, thread update 
+    //     should be pushed and curThread incremented
+    //  3. When there are both, channel update should be pushed if channel was 
+    //     created before thread OR if they were created at the same time but 
+    //     the chan update reason is open thread
+
+    // TODO: ^^^ this is the exact logic that is implemented on the hub side
+    // and the code should be reused or copy-pasted to reduce mental surface
+    // area. Both work though.
 
     if (channelUpdates[curChan]) {
       chanUp = channelUpdates[curChan]
 
-      // check for unsigned
-      if (!chanUp.txCount && !unsigned) 
-        unsigned = chanUp
+      if (!chanUp.createdOn) {
+        throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+      }
 
-      if (!threadUpdates[curThread] && res.indexOf({ type: 'channel', update: chanUp}) == -1) {
-        console.log("================")
-        console.log(curChan)
-        //@ts-ignore
-        console.log(chanUp.txCount - 1)
+      if (!threadUpdates[curThread]) {
         curChan += 1
         pushChannel(chanUp)
       }
@@ -212,31 +334,24 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
       if (!threadUp.state.sigA) 
         throw new Error(`Thread update does not contain a signature, this likely means this function was called incorrectly.`)
       
-      if (!channelUpdates[curChan] && res.indexOf({ type: 'thread', update: threadUp }) == -1) {
+      if (!channelUpdates[curChan]) {
         curThread += 1
         pushThread(threadUp)
       }
     }
 
     if (chanUp && threadUp) {
-      // @ts-ignore
-      const shouldAdd = !threadUp || chanUp.createdOn < threadUp.createdOn ||
+      const shouldAdd = !threadUp || (chanUp as any).createdOn < (threadUp as any).createdOn ||
         (chanUp.createdOn == threadUp.createdOn && chanUp.reason == 'OpenThread')
-      if (shouldAdd && res.indexOf({ type: 'channel', update: chanUp}) == -1) {
+      if (shouldAdd) {
         curChan += 1
         pushChannel(chanUp)
-      } else if (!shouldAdd && res.indexOf({ type: 'thread', update: threadUp }) == -1){
+      } else {
         curThread += 1
         pushThread(threadUp)
       }
     }
   }
-
-  // add any state that is unsigned by both parties (null txCount)
-  // to the end of the queue (should always be a channel update, threads are 
-  // never unsigned)
-  if (unsigned) 
-    pushChannel(unsigned)
 
   return res
 }
