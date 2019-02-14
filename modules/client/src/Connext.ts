@@ -231,15 +231,19 @@ class HubAPIClient implements IHubAPIClient {
 
   // post to hub telling user wants to deposit
   requestDeposit = async (
-    deposit: Payment,
+    deposit: SignedDepositRequestProposal,
     txCount: number,
     lastThreadUpdateId: number,
   ): Promise<Sync> => {
+    if (!deposit.sigUser) {
+      throw new Error(`No signature detected on the deposit request. Deposit: ${deposit}, txCount: ${txCount}, lastThreadUpdateId: ${lastThreadUpdateId}`)
+    }
     const response = await this.networking.post(
       `channel/${this.user}/request-deposit`,
       {
         depositWei: deposit.amountWei,
         depositToken: deposit.amountToken,
+        sigUser: deposit.sigUser,
         lastChanTx: txCount,
         lastThreadUpdateId,
       },
