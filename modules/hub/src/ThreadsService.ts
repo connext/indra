@@ -128,14 +128,14 @@ export default class ThreadsService {
     let threadInitialStates = await this.threadsDao.getThreadInitialStatesByUser(
       thread.sender
     )
-    let unsignedThreadStates = threadInitialStates.map(thread =>
-      convertThreadState('str-unsigned', thread.state)
+    let threadStates = threadInitialStates.map(thread =>
+      convertThreadState('str', thread.state)
     )
-    unsignedThreadStates.push(convertThreadState('str', thread) as UnsignedThreadState)
+    threadStates.push(convertThreadState('str', thread))
 
     const unsignedChannelStateSender = this.validator.generateOpenThread(
       convertChannelState('str', channelSender.state),
-      unsignedThreadStates,
+      threadStates,
       convertThreadState('str', thread)
     )
     const channelStateSender = await this.signerService.signChannelState(
@@ -148,14 +148,14 @@ export default class ThreadsService {
     threadInitialStates = await this.threadsDao.getThreadInitialStatesByUser(
       thread.receiver
     )
-    unsignedThreadStates = threadInitialStates.map(thread =>
-      convertThreadState('str-unsigned', thread.state)
+    threadStates = threadInitialStates.map(thread =>
+      convertThreadState('str', thread.state)
     )
-    unsignedThreadStates.push(convertThreadState('str', thread) as UnsignedThreadState)
+    threadStates.push(convertThreadState('str', thread))
 
     const unsignedChannelStateReceiver = this.validator.generateOpenThread(
       convertChannelState('str', channelReceiver.state),
-      unsignedThreadStates,
+      threadStates,
       convertThreadState('str', thread)
     )
     const channelStateReceiver = await this.signerService.signChannelState(

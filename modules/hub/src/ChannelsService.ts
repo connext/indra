@@ -36,7 +36,7 @@ import {
   ChannelStateBN,
   InvalidationArgs,
   Sync,
-  convertWithdrawalParams,
+  convertWithdrawalParameters,
   convertWithdrawal,
 } from './vendor/connext/types'
 import { prettySafeJson, Omit, maybe } from './util'
@@ -341,9 +341,10 @@ export default class ChannelsService {
       withdrawalTokenUser: params.withdrawalTokenUser || new BigNumber(0),
     }
 
-    const hasNegative = this.validator.withdrawalParams(convertWithdrawalParams('bn', params))
-    if (hasNegative)
-      throw new Error(`Invalid withdrawal: ${hasNegative}`)
+    // TODO:
+    // const hasNegative = this.validator.withdrawalParams(convertWithdrawalParameters('bn', params))
+    // if (hasNegative)
+    //   throw new Error(`Invalid withdrawal: ${hasNegative}`)
 
     if (!params.weiToSell.isZero() || !params.withdrawalTokenUser.isZero()) {
       throw new Error(
@@ -645,7 +646,7 @@ export default class ChannelsService {
       case 'Payment':
         unsignedChannelStateCurrent = this.validator.generateChannelPayment(
           convertChannelState("str", signedChannelStatePrevious),
-          convertPayment('str', update.args as PaymentArgs)
+          convertPayment("str", update.args as PaymentArgs)
         )
         this.validator.assertChannelSigner({
           ...unsignedChannelStateCurrent,

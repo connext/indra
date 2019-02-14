@@ -78,9 +78,15 @@ export default class PaymentsService {
       if (payment.type == 'PT_CHANNEL') {
         // normal payment
         // TODO: should we check if recipient == hub here?
+        if (payment.update.reason !== 'Payment' && payment.update.reason !== 'OpenThread') {
+          throw new Error(
+            `Payment updates must be either reason = "Payment" or reason = "OpenThread"` +
+            `payment: ${prettySafeJson(payment)}`
+          )
+        }
         row = await this.channelsService.doUpdateFromWithinTransaction(user, {
           args: payment.update.args,
-          reason: 'Payment',
+          reason: payment.update.reason,
           sigUser: payment.update.sigUser,
           txCount: payment.update.txCount
         })

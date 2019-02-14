@@ -16,7 +16,7 @@ while true; do
             ;;
         hub*)
             dst="../modules/hub/src/vendor/connext/"
-            exclude="--exclude controllers/** --exclude testing/** --exclude Connext.ts --exclude lib/currency/** --exclude state/actions.ts --exclude state/reducers.ts --exclude state/middleware.ts"
+            exclude="--exclude controllers/** --exclude testing/** --exclude Connext.ts --exclude lib/currency/** --exclude state/actions.ts --exclude state/reducers.ts --exclude state/middleware.ts --exclude index.ts"
             ;;
         *)
             echo "USAGE: $0 [hub|wallet]"
@@ -24,7 +24,7 @@ while true; do
     esac
 
     set -x
-    rsync -avl --exclude '*.test.ts' --exclude 'register/**' --exclude 'testing/**' --exclude '.*' ${exclude-} --delete-excluded --prune-empty-dirs ../modules/client/src "$dst"
+    rsync -avl --exclude '*.test.ts' --exclude 'register/**' --exclude 'testing/**' --exclude '.*' ${exclude-} --delete-excluded --prune-empty-dirs ../modules/client/src/* "$dst"
 
     # Avoid these lines if not MacOS
     # TODO implement linux equivalent
