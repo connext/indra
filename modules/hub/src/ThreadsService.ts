@@ -250,17 +250,8 @@ export default class ThreadsService {
     let threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
       sender
     )
-    // remove this thread and cast as string type
-    let threadStates = threadStatesBigNum
-      .filter(
-        update =>
-          !(
-            update.state.sender === thread.state.sender &&
-            update.state.receiver === thread.state.receiver &&
-            update.state.contractAddress === this.config.channelManagerAddress
-          )
-      )
-      .map(t => convertThreadState('str', t.state))
+
+    let threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
 
     const unsignedChannelUpdateSender = this.validator.generateCloseThread(
       convertChannelState('str', channelSender.state),
@@ -280,16 +271,7 @@ export default class ThreadsService {
       receiver
     )
     // remove this thread and cast as string type
-    threadStates = threadStatesBigNum
-      .filter(
-        update =>
-          !(
-            update.state.sender === thread.state.sender &&
-            update.state.receiver === thread.state.receiver &&
-            update.state.contractAddress === this.config.channelManagerAddress
-          )
-      )
-      .map(t => convertThreadState('str', t.state))
+    threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
 
     const unsignedChannelUpdateReceiver = this.validator.generateCloseThread(
       convertChannelState('str', channelReceiver.state),
