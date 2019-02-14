@@ -131,7 +131,6 @@ export default class ThreadsService {
     let threadStates = threadInitialStates.map(thread =>
       convertThreadState('str', thread.state)
     )
-    threadStates.push(convertThreadState('str', thread))
 
     const unsignedChannelStateSender = this.validator.generateOpenThread(
       convertChannelState('str', channelSender.state),
@@ -151,7 +150,6 @@ export default class ThreadsService {
     threadStates = threadInitialStates.map(thread =>
       convertThreadState('str', thread.state)
     )
-    threadStates.push(convertThreadState('str', thread))
 
     const unsignedChannelStateReceiver = this.validator.generateOpenThread(
       convertChannelState('str', channelReceiver.state),
