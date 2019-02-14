@@ -1,7 +1,7 @@
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
 import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
-import { mkAddress, mkSig, assertChannelStateEqual } from "./testing/stateUtils";
+import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { MockSignerService, testChannelManagerAddress, testHotWalletAddress } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
@@ -361,8 +361,38 @@ describe('PaymentsService', () => {
       } as ThreadStateUpdate,
     }]
 
-    const purchase = await service.doPurchase(senderChannel.user, {}, payments)
-    console.log('purchase: ', purchase);
+    await service.doPurchase(senderChannel.user, {}, payments)
+
+    let sync = await channelsService.getChannelAndThreadUpdatesForSync(senderChannel.user, 0, 0)
+    sync.updates.forEach((s, index) => {
+      switch (index) {
+        case 1:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadState)
+          break
+        case 2:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadUpdate)
+          break
+        case 3:
+          assert.equal((s.update as UpdateRequest).reason, 'OpenThread')
+          break
+      }
+    });
+
+    sync = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
+    sync.updates.forEach((s, index) => {
+      console.log(JSON.stringify(s.update, null, 2));
+      switch (index) {
+        case 1:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadState)
+          break
+        case 2:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadUpdate)
+          break
+        case 3:
+          assert.equal((s.update as UpdateRequest).reason, 'OpenThread')
+          break
+      }
+    });
   })
 
 })
