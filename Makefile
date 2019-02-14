@@ -1,5 +1,5 @@
 project=connext
-registry=docker.io/$(shell whoami)
+registry=docker.io/connextproject
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
