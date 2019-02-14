@@ -24,7 +24,8 @@ class PayCard extends Component {
           amount: {
             amountWei: "0",
             amountToken: "0"
-          }
+          },
+          type: "PT_THREAD"
         }
       ]
     },
