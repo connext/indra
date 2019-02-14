@@ -3,11 +3,11 @@ import PaymentsService from "./PaymentsService";
 import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
-import { MockSignerService, testChannelManagerAddress, testHotWalletAddress } from "./testing/mocks";
+import { MockSignerService, testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import { StateGenerator } from "./vendor/connext/StateGenerator";
-import { toWeiString } from "./util/bigNumber";
+import { toWeiString, Big } from "./util/bigNumber";
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 
 describe('PaymentsService', () => {
@@ -330,6 +330,12 @@ describe('PaymentsService', () => {
       })
     )
 
+    const openThread = stateGenerator.openThread(
+      convertChannelState('bn', senderChannel.state),
+      [],
+      convertThreadState('bn', threadState)
+    )
+
     const payments: PurchasePayment[] = [{
       recipient: testHotWalletAddress,
       amount: {
@@ -341,7 +347,7 @@ describe('PaymentsService', () => {
       update: {
         reason: 'OpenThread',
         sigUser: mkSig('0xa'),
-        txCount: senderChannel.state.txCountGlobal + 1,
+        txCount: openThread.txCountGlobal,
         args: threadState,
       } as UpdateRequest,
     }, {
@@ -393,6 +399,23 @@ describe('PaymentsService', () => {
           break
       }
     });
+
+    const update = await channelsService.doUpdates(receiverChannel.user, [{
+      reason: 'CloseThread',
+      args: threadUpdate,
+      txCount: receiverChannel.state.txCountGlobal + 2,
+      sigUser: mkSig('0xa')
+    }])
+
+    console.log('update: ', update);
+    assertChannelStateEqual(update[0].state, {
+      ...receiverChannel.state,
+      txCountGlobal: receiverChannel.state.txCountGlobal + 2,
+      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).plus(threadUpdate.balanceTokenReceiver).toFixed(),
+      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).minus(threadUpdate.balanceTokenReceiver).toFixed(),
+      sigUser: mkSig('0xa'),
+      sigHub: fakeSig
+    })
   })
 
 })
