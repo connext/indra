@@ -22,6 +22,9 @@ Everything you need to set up a Connext payment channel hub.
 * Redis running locally: `brew install redis` for Mac. `sudo apt-get install redis` for Linux.
 * Yarn: `brew install yarn` for Mac. `sudo apt-get install yarn` for Linux.
 
+Before starting, make sure your PostgreSQL and Redis services are running:
+`brew services start redis`, `brew services start postgresql` on mac.
+
 Run the following steps in order. For each section, use a separate terminal window. Closing the terminal window will stop the process.
 
 ### Ganache
