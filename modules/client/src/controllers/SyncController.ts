@@ -231,7 +231,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     if (channelUpdates[curChan]) {
       chanUp = channelUpdates[curChan]
 
-      if (!chanUp.createdOn && curChan == channelUpdates.length) {
+      if (!chanUp.createdOn && curChan == channelUpdates.length - 1) {
         // this is the unsigned update being returned from the hub
         // since this update is stored in redis, it will not have
         // a created on field. push the channel, and break out of the
@@ -241,7 +241,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
         continue
       }
 
-      if (!chanUp.createdOn && curChan != channelUpdates.length) {
+      if (!chanUp.createdOn && curChan != channelUpdates.length - 1) {
         throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
       }
 
