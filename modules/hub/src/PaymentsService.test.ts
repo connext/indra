@@ -306,7 +306,7 @@ describe('PaymentsService', () => {
 
     const receiverChannel = await channelUpdateFactory(registry, { 
       user: mkAddress('0xb'), 
-      balanceTokenHub: toWeiString(1) 
+      balanceTokenHub: toWeiString(100) 
     })
 
     const threadState: ThreadState = {
@@ -345,7 +345,7 @@ describe('PaymentsService', () => {
         args: threadState,
       } as UpdateRequest,
     }, {
-      recipient: 'hub',
+      recipient: receiverChannel.user,
       amount: {
         amountWei: '0',
         amountToken: toWeiString(1),
@@ -357,7 +357,7 @@ describe('PaymentsService', () => {
         state: {
           ...threadUpdate,
           sigA: mkSig('0xa')
-        }
+        },
       } as ThreadStateUpdate,
     }]
 
