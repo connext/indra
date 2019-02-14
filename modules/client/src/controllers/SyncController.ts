@@ -1,6 +1,6 @@
 import { assertUnreachable } from '../lib/utils'
 import { Block } from 'web3/eth/types'
-import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes } from '../types'
+import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes, convertThreadState } from '../types'
 import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
 import { Poller } from '../lib/poller/Poller'
 import { ConnextInternal } from '../Connext'
@@ -87,71 +87,6 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     }
 
     return deduped
-    // TODO: below is arjuns implementation, this does not handle null states
-    // appropriately. In the "should handle null", it does NOT handle the 
-    // case where arr[i+1].txCount = null, and will throw an error
-    // since the core logic is the same, i kept the in prod implementation
-    // (but feel free to revert + fix if desired)
-
-
-    // console.log('deduping array:', arr)
-    // if (arr.length == 0) {
-    //   return [] as UpdateRequest[]
-    // }
-    // let output = []
-    // let i = 0
-
-    // // Iterate through array comparing each state against next for duplicates
-    // while (i < arr.length - 1) {
-    //   console.log('output', output)
-    //   console.log('arr[i]', arr[i])
-    //   console.log('arr[i+1]', arr[i+1])
-    //   // evaluates to true if both txCounts exist and are different
-    //   // OR if one tx count is null, and the other exists
-    //   const diffTxCounts = arr[i].txCount && arr[i+1].txCount &&
-    //     (arr[i] as any).txCount < (arr[i+1] as any).txCount
-
-    //   console.log('diffTxCounts', arr[i].txCount && arr[i+1].txCount)
-      
-    //   if (!arr[i].txCount || !arr[i+1].txCount || diffTxCounts) {
-    //     output.push(arr[i])
-    //   } else if (arr[i].txCount == arr[i+1].txCount) {
-    //     // Are the reasons and sigs the same?
-    //     console.log("Same tx count update")
-    //     console.log("Do both have sig hubs? ", (!!arr[i].sigHub && !!arr[i+1].sigHub))
-    //     console.log("Do both have sig users? ", (!!arr[i].sigUser && !!arr[i+1].sigUser))
-    //     const nextAndCurMatch = (
-    //       arr[i+1].reason == arr[i].reason &&
-    //       ((arr[i+1].sigHub && arr[i].sigHub) ? arr[i+1].sigHub == arr[i].sigHub : true) &&
-    //       ((arr[i+1].sigUser && arr[i].sigUser) ? arr[i+1].sigUser == arr[i].sigUser : true)
-    //     )
-
-    //     if (!nextAndCurMatch) {
-    //       throw new Error(
-    //         `Got two updates from the hub with the same txCount but different ` +
-    //         `reasons or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
-    //       )
-    //     }
-
-    //     // if the two updates have different sigs (ie one is countersigned
-    //     // version of the previous), then keep both versions
-    //     if (arr[i].sigHub != arr[i+1].sigHub || arr[i].sigUser != arr[i+1].sigUser) {
-    //       console.log('found update with different sigs and same txCount, adding to array')
-    //       output.push(arr[i])
-    //     }
-        
-    //     // If they match, skip pushing to output
-    //   } else {
-    //     // falls into this code block if arr[i+1].txCount is null
-    //     throw new Error("deduped: must use pre-sorted channel array as arg")
-    //   }
-    //   i++;
-    // }
-
-    // // Handle special case
-    // output.push(arr[arr.length - 1])
-
-    // return output
   }
 
   // Helper which takes in a sorted thread update array and returns a deduped version
@@ -186,41 +121,6 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
       
     }
     return deduped
-
-    // TODO: rewrote this so its easier to read and mirrors the channel
-    // deduping algo. no need to check threadId if you are signing changing
-    // threadIds
-    // if (arr.length == 0) {
-    //   return [] as ThreadStateUpdate[]
-    // }
-    // let output = []
-    // let i = 0
-
-    // // Iterate down through array comparing each state against previous for 
-    // // duplicates
-    // while (i < arr.length - 1) {
-    //   //@ts-ignore
-    //   if (arr[i].createdOn < arr[i+1].createdOn) {
-    //     output.push(arr[i])
-    //   } else if (arr[i].createdOn == arr[i+1].createdOn) {
-    //     // Are the reasons and sigs the same?
-    //     const nextAndCurMatch = (
-    //       arr[i+1].state.threadId == arr[i].state.threadId &&
-    //       ((arr[i].state.sigA && arr[i+1].state.sigA) ? arr[i].state.sigA == arr[i+1].state.sigA : true)
-    //     )
-    //     if (!nextAndCurMatch)
-    //       throw new Error(
-    //         `Got two updates from the hub with the same createdOn but different ` +
-    //         `threadIds or signatures: ${JSON.stringify(arr[i])} != ${JSON.stringify(arr[i+1])}`
-    //       )
-    //     // If they match, skip pushing to output
-    //   } else throw new Error("deduped: must use pre-sorted thread array as arg")
-    //   i++;
-    // }
-    // // Handle special case
-    // output.push(arr[arr.length - 1])
-
-    // return output as ThreadStateUpdate[]
   }
 
   // Converts an array of SyncResults into either ThreadStateUpate[] or UpdateRequest[]
@@ -240,9 +140,9 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
 
   channelUpdates.sort((a,b) => {
     // All updates should have a createdOn field
-    if (!a.createdOn || !b.createdOn) {
-      throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
-    }
+    // if (!a.createdOn || !b.createdOn) {
+    //   throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+    // }
     if (!a.txCount) return 1
     if (!b.txCount) return -1
     return a.txCount - b.txCount
@@ -293,8 +193,6 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     curChan < channelUpdates.length ||
     curThread < threadUpdates.length
   ) {
-    let chanUp, threadUp
-
     // We want to iterate over every sync result, validate that it has a 
     // created on and then push it to channel or thread and increment counter
     // This needs to happen with the following logic:
@@ -310,10 +208,40 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     // and the code should be reused or copy-pasted to reduce mental surface
     // area. (ChannelsService.ts lines 855 - 893) Both work though.
 
+  //   const chan = channelUpdates[curChan]
+  //   const thread = threadUpdates[curThread]
+
+  //   const pushChan =
+  //     chan &&
+  //     (!thread ||
+  //       (chan as any).createdOn < (thread as any).createdOn ||
+  //       (chan.createdOn == thread.createdOn && chan.reason == 'OpenThread'))
+
+  //   if (pushChan) {
+  //     curChan += 1
+  //     pushChannel(chan)
+  //   } else {
+  //     curThread += 1
+  //     pushThread(thread)
+  //   }
+  // }
+
+    let chanUp, threadUp
+
     if (channelUpdates[curChan]) {
       chanUp = channelUpdates[curChan]
 
-      if (!chanUp.createdOn) {
+      if (!chanUp.createdOn && curChan == channelUpdates.length) {
+        // this is the unsigned update being returned from the hub
+        // since this update is stored in redis, it will not have
+        // a created on field. push the channel, and break out of the
+        // loop
+        curChan += 1
+        pushChannel(chanUp)
+        continue
+      }
+
+      if (!chanUp.createdOn && curChan != channelUpdates.length) {
         throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
       }
 
@@ -350,6 +278,11 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
       }
     }
   }
+
+  // // check if last update was unsigned
+  // if (!channelUpdates[channelUpdates.length - 1].createdOn) {
+  //   pushChannel(channelUpdates[channelUpdates.length - 1])
+  // }
 
   return res
 }
@@ -780,7 +713,11 @@ export default class SyncController extends AbstractController {
       return
 
     const oldSyncResults = this.getState().runtime.syncResultsFromHub
+    console.log('** MERGING **')
+    console.log('** old **', JSON.stringify(oldSyncResults, null, 2))
+    console.log('** updates **:', JSON.stringify(updates, null, 2))
     const merged = mergeSyncResults(oldSyncResults, updates)
+    console.log('** merged **:', JSON.stringify(merged, null, 2))
     const filtered = filterPendingSyncResults(merged, this.getSyncState().updatesToSync)
 
     console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${filtered.length}:`, filtered)
