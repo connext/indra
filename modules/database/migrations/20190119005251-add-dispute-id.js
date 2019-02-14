@@ -16,11 +16,7 @@ exports.setup = function(options, seedLink) {
 
 exports.up = function(db) {
   return db.runSql(`
-    INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-      SELECT 'cm_channel_update_reason'::regtype::oid, 'EmptyChannel', ( SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'cm_channel_update_reason'::regtype );
-
     ALTER TABLE _cm_channels ADD COLUMN channel_dispute_id BIGINT NULL;
-    
     ALTER TABLE _cm_channels DROP CONSTRAINT _cm_channels_check;
     ALTER TABLE _cm_channels ADD CONSTRAINT _cm_channels_check CHECK (
       CASE status
