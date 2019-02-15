@@ -369,10 +369,10 @@ export class MockHub implements IHubAPIClient {
     update.createdOn = new Date();
     return update
   }
-  getLatestChannelState(): Promise<ChannelState | null>  {
+  getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>  {
     let store = new MockStore
     //@ts-ignore
-    return store._initialState.persistent.channel as ChannelState | null
+    return {state: store._initialState.persistent.channel, update: store._initialState.persistent.channelUpdate}
   }
 
   assertReceivedUpdate(expected: PartialUpdateRequest) {
