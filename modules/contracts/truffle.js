@@ -1,65 +1,57 @@
 require('dotenv').config();
-var HDWalletProvider = require("truffle-hdwallet-provider");
+const fs = require('fs')
+const HDWalletProvider = require("truffle-hdwallet-provider");
+const PrivateKeyProvider = require("truffle-privatekey-provider");
 
-const MNEMONIC = process.env.MNEMONIC
-const rinkeby = `https://rinkeby.infura.io/${process.env.INFURA_KEY}`
+const getProvider = (network) => {
+  let url
+  if (process.env.ETH_PROVIDER) {
+    url = process.env.ETH_PROVIDER
+  } else if (network && process.env.API_KEY) {
+    url = `https://${network}.infura.io/${process.env.API_KEY}`
+  } else if (process.env.API_KEY) {
+    url = `https://infura.io/${process.env.API_KEY}`
+  } else {
+    url = 'http://127.0.0.1:8545'
+  }
+  if (process.env.PRIVATE_KEY_FILE) {
+    const key = fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8');
+    return PrivateKeyProvider(url, key)
+  } else if (process.env.MNEMONIC) {
+    return HDWalletProvider(url, process.env.MNEMONIC)
+  } else {
+    // Use truffle's default when no env vars are provided
+    return new Web3.providers.HttpProvider(url)
+  }
+}
 
 module.exports = {
   networks: {
     mainnet: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "1",
-      gas: 4700000
-    },
-    rinkebyLive: {
-      host: rinkeby,
-      port: 8545,
-      network_id: "4",
-      gas: 6721975,
-      provider: () => new HDWalletProvider(MNEMONIC, rinkeby)
-    },
-    rinkeby: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "4",
-      gas: 4700000
+      provider: () => getProvider(),
+      network_id: "1"
     },
     ropsten: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "3",
-      gas: 4700000
-    },
-    kovan: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "42",
-      gas: 4700000
+      provider: () => getProvider("ropsten"),
+      network_id: "3"
     },
     rinkeby: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "4",
-      gas: 4700000
+      provider: () => getProvider("rinkeby"),
+      network_id: "4"
     },
     kovan: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "42",
-      gas: 4700000
+      provider: () => getProvider("kovan"),
+      network_id: "42"
     },
     ganache: {
-      host: "127.0.0.1",
-      port: 8545,
+      provider: () => getProvider(),
       network_id: "4447",
       gas: 6721975
     },
     development: {
-      host: "127.0.0.1",
-      port: 9545,
+      provider: () => getProvider(),
       network_id: "4447",
-      gas: 4700000
+      gas: 6721975
     }
   },
   compilers: {
