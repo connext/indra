@@ -10,7 +10,23 @@ jobs:
     executor: executor
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - node-modules-{{ .Branch }}
       - run: make prod
+      - save_cache:
+          key: node-modules-{{ .Branch }}
+          paths:
+            - "modules/client/.npm"
+            - "modules/client/node_modules"
+            - "modules/contracts/.npm"
+            - "modules/contracts/node_modules"
+            - "modules/database/.npm"
+            - "modules/database/node_modules"
+            - "modules/hub/.npm"
+            - "modules/hub/node_modules"
+            - "modules/wallet/.npm"
+            - "modules/wallet/node_modules"
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
@@ -21,6 +37,7 @@ jobs:
   test-client:
     executor: executor
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/workspace
       - run: make test-client
@@ -28,6 +45,7 @@ jobs:
   test-contracts:
     executor: executor
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/workspace
       - run: make test-contracts
@@ -35,6 +53,7 @@ jobs:
   test-hub:
     executor: executor
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/workspace
       - run: make test-hub
@@ -42,6 +61,7 @@ jobs:
   test-e2e:
     executor: executor
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/workspace
       - run: make test-e2e
@@ -49,6 +69,7 @@ jobs:
   push-images:
     executor: executor
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/workspace
       - run: make push
@@ -56,6 +77,7 @@ jobs:
   push-live-images:
     executor: executor
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/workspace
       - run: make push-live
@@ -131,8 +153,3 @@ workflows:
 # keep the npm cache around to speed up installs
 cache:
   directories:
-  - "$HOME/modules/client/.npm"
-  - "$HOME/modules/contracts/.npm"
-  - "$HOME/modules/database/.npm"
-  - "$HOME/modules/hub/.npm"
-  - "$HOME/modules/wallet/.npm"
