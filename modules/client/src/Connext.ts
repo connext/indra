@@ -845,11 +845,20 @@ export class ConnextInternal extends ConnextClient {
 
   async start() {
     this.store = await this.getStore()
-    this.store.subscribe(() => {
+    this.store.subscribe(async () => {
       const state = this.store.getState()
       this.emit('onStateChange', state)
-      this._saveState(state)
+      await this._saveState(state)
     })
+
+    // TODO: appropriately set the latest
+    // valid state ??
+    const channelAndUpdate = await this.hub.getLatestChannelStateAndUpdate()
+    console.log('Found latest double signed state:', JSON.stringify(channelAndUpdate, null, 2))
+    if (channelAndUpdate) {
+      this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
+      this.emit('onStateChange', this.store.getState())
+    }
 
     // Start all controllers
     for (let controller of this.getControllers()) {
