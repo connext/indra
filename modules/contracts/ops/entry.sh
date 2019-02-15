@@ -1,21 +1,24 @@
 #!/bin/bash
 
+########################################
+# Set env vars
+
+ganache_net_id=4447
 ganache_rpc_port=8545
 migration_flag_port=8544
 
-mkdir -p /data build/contracts
-ganache=./node_modules/.bin/ganache-cli
-truffle=./node_modules/.bin/truffle
+if [[ -n "$ETH_NETWORK" ]]
+then network=$ETH_NETWORK
+else network="ganache"
+fi
 
-# Set default env vars
-netid=$ETH_NETWORK_ID
-[[ -n "$netid" ]] || netid=4447
-mnemonic=$ETH_MNEMONIC
-[[ -n "$mnemonic" ]] || mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+if [[ -n "$ETH_MNEMONIC" ]]
+then mnemonic=$ETH_MNEMONIC
+else mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+fi
 
-echo "Starting Ganache with options: netid=$netid, mnemonic=$mnemonic..."
-$ganache --host="0.0.0.0" --port="$ganache_rpc_port" --db="/data" --mnemonic="$mnemonic" --networkId="$netid" --blockTime=3 > ops/ganache.log &
-sleep 5
+########################################
+# Setup some helper functions
 
 function getHash {
   find build/contracts contracts migrations -type f -not -name "*.swp" \
@@ -24,16 +27,10 @@ function getHash {
 
 function migrate {
   echo && echo "Migration activated! New state: `getHash`" 
-  $truffle compile
-  $truffle migrate --reset --network=ganache
+  ./node_modules/.bin/truffle compile
+  ./node_modules/.bin/truffle migrate --reset --network=ganache
   getHash > build/state-hash
 }
-
-# Do we need to do an initial migration?
-if [[ "`getHash`" != "`cat build/state-hash || true`" ]]
-then migrate
-else echo "Contracts & migrations are up to date"
-fi
 
 function signal_migrations_complete {
   echo "===> Signalling the completion of migrations..."
@@ -53,10 +50,45 @@ function watch {
   done
 }
 
-if [[ "$1" == "yes" ]]
+########################################
+# Migrate (& maybe start watcher)
+
+# Start ganache if we're in dev-mode
+if [[ "$network" == "ganache" ]]
 then
-  signal_migrations_complete &
-  watch
+  mkdir -p /data build/contracts
+  ganache=./node_modules/.bin/ganache-cli
+  echo "Starting Ganache with netid=$netid"
+  $ganache \
+    --host="0.0.0.0" \
+    --port="$ganache_rpc_port" \
+    --db="/data" \
+    --mnemonic="$mnemonic" \
+    --networkId="$ganache_net_id" \
+    --blockTime=3 > ops/ganache.log &
+  sleep 5
+
+  # Do we need to do an initial migration?
+  if [[ "`getHash`" != "`cat build/state-hash || true`" ]]
+  then migrate
+  else echo "Contracts & migrations are up to date"
+  fi
+
+  if [[ "$1" == "yes" ]]
+  then
+    signal_migrations_complete &
+    watch
+  else
+    signal_migrations_complete
+  fi
+
 else
-  signal_migrations_complete
+  echo "Deploying in prod or staging mode"
+
+  export API_KEY=$API_KEY
+  export ETH_PROVIDER=$ETH_PROVIDER
+  export ETH_NETWORK_ID=$ETH_NETWORK_ID
+
+  # TODO sanity check: does our given net id match what our provider gives us?
+  ./node_modules/.bin/truffle migrate --reset --network=$network
 fi

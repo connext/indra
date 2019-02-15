@@ -45,7 +45,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 default: dev
 all: dev prod
 dev: database ethprovider hub wallet proxy
-prod: database-prod hub-prod proxy-prod
+prod: database-prod hub-prod proxy-prod ethprovider-prod
 
 stop: 
 	bash ops/stop.sh
@@ -178,6 +178,11 @@ hub-node-modules: builder client $(hub)/package.json
 	$(log_finish) && touch build/hub-node-modules
 
 # Contracts
+
+ethprovider-prod: ethprovider
+	$(log_start) && echo "prereqs: $<"
+	docker tag $(project)_ethprovider:dev $(project)_ethprovider:latest
+	$(log_finish) && touch build/ethprovider-prod
 
 ethprovider: $(shell find $(contracts)/ops $(find_options)) contract-artifacts
 	$(log_start) && echo "prereqs: $<"

@@ -27,7 +27,7 @@ EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 
 # ethereum settings
 ETH_RPC_URL="http://ethprovider:8545"
-ETH_NETWORK_ID="4447"
+ETH_NETWORK="ganache"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 # database settings
@@ -172,7 +172,7 @@ services:
     image: $ethprovider_image
     command: "$watch_ethprovider"
     environment:
-      ETH_NETWORK_ID: $ETH_NETWORK_ID
+      ETH_NETWORK: $ETH_NETWORK
       ETH_MNEMONIC: $ETH_MNEMONIC
     networks:
       - $project
