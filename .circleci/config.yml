@@ -1,89 +1,44 @@
-version: 2.1
-
-executors:
-  executor:
-    machine: true
-    working_directory: /tmp/workspace
+version: 2
 
 jobs:
-  build:
-    executor: executor
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - node-modules-{{ .Branch }}
-      - run: make prod
-      - save_cache:
-          key: node-modules-{{ .Branch }}
-          paths:
-            - "modules/client/.npm"
-            - "modules/client/node_modules"
-            - "modules/contracts/.npm"
-            - "modules/contracts/node_modules"
-            - "modules/database/.npm"
-            - "modules/database/node_modules"
-            - "modules/hub/.npm"
-            - "modules/hub/node_modules"
-            - "modules/wallet/.npm"
-            - "modules/wallet/node_modules"
-      - persist_to_workspace:
-          root: /tmp/workspace
-          paths:
-            - build
-            - modules
-            - node_modules
-
   test-client:
-    executor: executor
+    machine: true
     steps:
       - checkout
-      - attach_workspace:
-          at: /tmp/workspace
       - run: make test-client
 
   test-contracts:
-    executor: executor
+    machine: true
     steps:
       - checkout
-      - attach_workspace:
-          at: /tmp/workspace
       - run: make test-contracts
 
   test-hub:
-    executor: executor
+    machine: true
     steps:
       - checkout
-      - attach_workspace:
-          at: /tmp/workspace
       - run: make test-hub
 
   test-e2e:
-    executor: executor
+    machine: true
     steps:
       - checkout
-      - attach_workspace:
-          at: /tmp/workspace
       - run: make test-e2e
 
   push-images:
-    executor: executor
+    machine: true
     steps:
       - checkout
-      - attach_workspace:
-          at: /tmp/workspace
       - run: make push
 
   push-live-images:
-    executor: executor
+    machine: true
     steps:
       - checkout
-      - attach_workspace:
-          at: /tmp/workspace
       - run: make push-live
 
   deploy-staging:
-    executor: executor
+    machine: true
     steps:
       - run: |
           ssh dev@staging.bohendo.com bash -c '
@@ -94,7 +49,7 @@ jobs:
           '
 
   deploy-live:
-    executor: executor
+    machine: true
     steps:
       - run: |
           ssh dev@staging.bohendo.com bash -c '
@@ -105,23 +60,13 @@ jobs:
           '
 
 workflows:
-  version: 2.1
-
+  version: 2
   test-and-deploy:
     jobs:
-      - build
-      - test-client:
-          requires:
-            - build
-      - test-contracts:
-          requires:
-            - build
-      - test-hub:
-          requires:
-            - build
-      - test-e2e:
-          requires:
-            - build
+      - test-client
+      - test-contracts
+      - test-hub
+      - test-e2e
       - push-images:
           requires:
             - test-client
@@ -149,7 +94,3 @@ workflows:
               only: master
           requires:
             - push-live-images
-
-# keep the npm cache around to speed up installs
-cache:
-  directories:
