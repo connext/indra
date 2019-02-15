@@ -156,7 +156,7 @@ Assuming the docker images have been built & pushed to a registry, `bash ops/dep
 
 Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying. (eg change it to connextproject dockerhub
 
-If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `bash ops/restart.sh prod`.
+If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `make push && bash ops/restart.sh prod`.
 
 ## How to interact with Hub
 
@@ -180,7 +180,7 @@ If your hub is already deployed & you want to redeploy to apply changes you've m
       - lastChanTx
       - lastThreadUpdateId
 
-TODO: Fill this in better
+TODO: Complete this section
 
 ## Debugging
 
@@ -192,44 +192,51 @@ Full error message:
 docker: Error response from daemon: Conflict. The container name "/connext_buidler" is already in use by container "6d37b932d8047e16f4a8fdf58780fe6974e6beef58bf4cc5e48d00d3e94a67c3". You have to remove (or rename) that container to be able to reuse that name.
 ```
 
-You probably started to build something and then stopped it with ctrl-c. It only looks like the build stopped: the builder process is still hanging out in the background wrapping up what it was working on. If you wait for a few seconds, this problem will sometimes just go away as the builder finishes & exits.
+You probably started to build something and then stopped it with ctrl-c. It only looks like the build stopped: the builder process is still hanging out in the background wrapping up what it was working on. If you wait for a few seconds, this problem will usually go away as the builder finishes & exits.
 
-To speed things up, run `make stop` to tell the builder to hurry up & finish and then wait for the builder to exit.
+To speed things up, run `make stop` to tell the builder to hurry up & finish and then pause until the builder is done & has exited.
 
+### Hub errors on start
+
+We've seen some non-deterministic errors on `npm start` where some part of the startup process errors out and the Hub doesn't launch properly. Here are ways to restart the app, in increasing orders of aggressiveness:
+
+- Restart the app: `npm restart`
+- Delete all persistent data (ie database & testnet chain data) and restart: `make reset && npm start`
+- Rebuild everything and restart: `make clean && npm start`
+- Reinstall dependencies and rebuild everything and restart: `make deep-clean && npm start`
+- Remove package-locks and reinstall everything and delete persistent data and rebuild everything and restart: `make purge && npm start`
 
 ### Ethprovider or Ganache not working
 
 ```
+cat -> curleth.sh <<EOF
 #!/bin/bash
 url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
 echo "Sending $1 query to provider: $url"
 curl -H "Content-Type: application/json" -X POST --data '{"id":31415,"jsonrpc":"2.0","method":"'$1'","params":'$2'}' $url
+EOF
 ```
 
-This lets us do a simple `curleth net_version '[]'` as a sanity check to make sure the ethprovider is alive & listening. If not, curl gives more useful errors that direct you towards investigating either metamask or ganache.
+This lets us do a simple `bash curleth.sh net_version '[]'` as a sanity check to make sure the ethprovider is alive & listening. If not, curl might give more useful errors that direct you towards investigating either metamask or ganache.
 
 One other sanity check is to run `docker service ls` and make sure that you see an ethprovider service that has port 8545 exposed.
 
-You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is alive & run `ps` to see if it's even running.
+You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
 
 Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
 
-### Hub errors on start
-
-We've seen some non-deterministic errors on `npm start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
-
-- Running `npm start` again
-- Rebuild everything then restart: `make clean && npm start`
-- Remove build artifacts & persistent data storage and restart: `make purge && npm start`
-
 ### Locked DB
 
-We've seen the database get locked on startup. Sometimes, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
+We've seen the database get locked on startup when it crashes without exiting properly. Usually, this happens as a result of errors in the database migrations, this is especially common if db migrations have been updated recently.
+
+Running `bash ops/unlock-db.sh` will unlock the database. Sometimes, this is all you need to do & things will start working.
+
+Sometimes, if the database is corrupt, you'll want to run `make reset && npm start` to wipe out the old data and start the app again fresh. Note: `make reset` will only wipe out dev-mode data, so if you encounter this problem in production.. We're in for a tough time.
 
 ### 502 Bad Gateway
 
 This is a pretty common error--it's either due to a locked DB 
-(see [Locked DB](#Locker-DB)) or slow startup. 
+(see above) or slow startup. 
 
-To debug: run `yarn logs database`, and see if the DB is locked. If so, unlock it. If it's not locked, run `yarn logs wallet` to see if the wallet front-end has compiled. Most likely, the wallet is just taking a long time to compile and it's manifesting as a 502 error.
+To debug: run `npm run logs database`, and see if the DB is locked. If so, unlock it. If it's not locked, run `npm run logs wallet` to see if the wallet front-end has compiled. Most likely, the wallet is just taking a long time to compile and it's manifesting as a 502 error.
 
