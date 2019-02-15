@@ -64,7 +64,8 @@ export type SetChannelActionArgs = {
   update: UpdateRequest
   state: ChannelState
 }
-export const setChannel = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
+export const setChannelAndUpdate = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
+export const setChannel = setterAction<ChannelState>('persistent.channel')
 export const setSyncControllerState = setterAction<SyncControllerState>('persistent.syncControllerState')
 export const setRequestedDeposit = setterAction<PendingRequestedDeposit | null>('persistent.requestedDeposit')
 export const setThreadHistory = setterAction<ThreadHistoryItem[]>('persistent.threadHistory')
