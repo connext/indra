@@ -265,7 +265,7 @@ export default class StateUpdateController extends AbstractController {
     // necessarily a hard requirement - right now we're sending all states
     // on every sync - but it would be nice if we can make that guarantee.
     if (update.sigHub && update.sigUser) {
-      this.store.dispatch(actions.setChannel({
+      this.store.dispatch(actions.setChannelAndUpdate({
         update: update,
         state: {
           ...nextState,
