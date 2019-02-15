@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -92,7 +92,7 @@ export interface IHubAPIClient {
     updates: Sync
   }>
   updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
-  getLatestChannelState(): Promise<ChannelState | null>
+  getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -106,15 +106,19 @@ class HubAPIClient implements IHubAPIClient {
     this.tokenName = tokenName
   }
 
-  async getLatestChannelState(): Promise<ChannelState | null> {
+  async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
     try {
       const res = await this.networking.get(`channel/${this.user}/latest-update`)
-      return res.data
+      if (!res.data) {
+        return null
+      }
+      return { state: res.data.state, update: channelUpdateToUpdateRequest(res.data) }
     } catch (e) {
-      if (e.statusCode === 404) {
+      if (e.status == 404) {
         console.log(`Channel not found for user ${this.user}`)
         return null
       }
+      console.log('Error getting latest state:', e)
       throw e
     }
   }
