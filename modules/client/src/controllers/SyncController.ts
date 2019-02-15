@@ -588,8 +588,8 @@ export default class SyncController extends AbstractController {
  public handleHubSync(sync: Sync) {
     if (this.store.getState().runtime.channelStatus !== sync.status) {
       this.store.dispatch(actions.setChannelStatus(sync.status))
-    }
-    
+    }   
+     
     // signing disabled in state update controller based on channel sync status
     // unconditionally enqueue results
     this.enqueueSyncResultsFromHub(sync.updates)
