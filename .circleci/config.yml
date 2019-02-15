@@ -3,7 +3,7 @@ version: 2.1
 executors:
   executor:
     machine: true
-    working_directory: /tmp
+    working_directory: /tmp/workspace
 
 jobs:
   build:
@@ -12,7 +12,7 @@ jobs:
       - checkout
       - run: make prod
       - persist_to_workspace:
-          root: /tmp
+          root: /tmp/workspace
           paths:
             - build
             - modules
@@ -22,57 +22,65 @@ jobs:
     executor: executor
     steps:
       - attach_workspace:
-          at: /tmp
+          at: /tmp/workspace
       - run: make test-client
 
   test-contracts:
     executor: executor
     steps:
       - attach_workspace:
-          at: /tmp
+          at: /tmp/workspace
       - run: make test-contracts
 
   test-hub:
     executor: executor
     steps:
       - attach_workspace:
-          at: /tmp
+          at: /tmp/workspace
       - run: make test-hub
 
   test-e2e:
     executor: executor
     steps:
       - attach_workspace:
-          at: /tmp
+          at: /tmp/workspace
       - run: make test-e2e
 
   push-images:
     executor: executor
     steps:
       - attach_workspace:
-          at: /tmp
+          at: /tmp/workspace
       - run: make push
 
   push-live-images:
     executor: executor
     steps:
       - attach_workspace:
-          at: /tmp
+          at: /tmp/workspace
       - run: make push-live
 
   deploy-staging:
     executor: executor
     steps:
-      - attach_workspace:
-          at: /tmp
-      - run: ssh dev@staging.bohendo.com bash -c "cd indra && git pull && bash ops/restart prod"
+      - run: |
+          ssh dev@staging.bohendo.com bash -c '
+            rm -rf indra
+            git clone https://github.com/ConnextProject/indra.git
+            cd indra
+            bash ops/restart prod
+          '
 
   deploy-live:
     executor: executor
     steps:
-      - attach_workspace:
-          at: /tmp
-      - run: ssh dev@staging.bohendo.com bash -c "cd indra && git pull && MODE=live bash ops/restart prod"
+      - run: |
+          ssh dev@staging.bohendo.com bash -c '
+            rm -rf indra
+            git clone https://github.com/ConnextProject/indra.git
+            cd indra
+            MODE=live bash ops/restart prod
+          '
 
 workflows:
   version: 2.1
