@@ -1,6 +1,6 @@
 import { assertUnreachable } from '../lib/utils'
 import { Block } from 'web3/eth/types'
-import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes, convertThreadState } from '../types'
+import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes, channelUpdateToUpdateRequest } from '../types'
 import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
 import { Poller } from '../lib/poller/Poller'
 import { ConnextInternal } from '../Connext'
@@ -13,17 +13,6 @@ import Semaphore = require('semaphore')
 import { getChannel } from '../lib/getChannel';
 import { EventLog } from 'web3/types'
 import { hasPendingOps } from '../hasPendingOps'
-
-function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
-  return {
-    id: up.id,
-    reason: up.reason,
-    args: up.args,
-    txCount: up.state.txCountGlobal,
-    sigHub: up.state.sigHub,
-    sigUser: up.state.sigUser,
-  }
-}
 
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 
@@ -298,6 +287,11 @@ export function filterPendingSyncResults(fromHub: SyncResult[], toHub: SyncResul
   // the hub. Additionally, if there is an invalidation in the queue of updates
   // to be sent, the corresponding incoming update will be ignored.
 
+  // TODO: first ensure that any updates from or to hub are for the instantiated
+  // user, hub currently does not return user for channels, users must 
+  // reinstantiate connext
+
+
   const updateKey = (x: SyncResult) => {
     if (x.type == 'channel') {
       return x.update.id && x.update.id < 0 ? `unsigned:${x.update.id}` : `tx:${x.update.txCount}`
@@ -376,13 +370,8 @@ export default class SyncController extends AbstractController {
   async sync() {
     try {
       const state = this.store.getState()
-      let txCount = state.persistent.channel.txCountGlobal
-      // TODO: fix the txCount with the state update controller
-      // // ensure txCount is the latest
-      // if (txCount == 0) {
-      //   const latest = await this.hub.getLatestChannelState()
-      //   txCount = latest ? latest.txCountGlobal : txCount
-      // }
+      const txCount = state.persistent.channel.txCountGlobal
+      
       const hubSync = await this.hub.sync(
         txCount,
         getLastThreadUpdateId(this.store),
@@ -391,6 +380,7 @@ export default class SyncController extends AbstractController {
         console.log('No updates found from the hub to sync')
         return
       }
+
       this.handleHubSync(hubSync)
     } catch (e) {
       console.error('Sync error:', e)
@@ -596,26 +586,26 @@ export default class SyncController extends AbstractController {
    * the channel status.
   */
  public handleHubSync(sync: Sync) {
-  if (this.store.getState().runtime.channelStatus !== sync.status) {
-    this.store.dispatch(actions.setChannelStatus(sync.status))
-  }
+    if (this.store.getState().runtime.channelStatus !== sync.status) {
+      this.store.dispatch(actions.setChannelStatus(sync.status))
+    }
+    
+    // signing disabled in state update controller based on channel sync status
+    // unconditionally enqueue results
+    this.enqueueSyncResultsFromHub(sync.updates)
 
-  // signing disabled in state update controller based on channel sync status
-  // unconditionally enqueue results
-  this.enqueueSyncResultsFromHub(sync.updates)
-
-  // descriptive status error handling
-  switch (sync.status) {
-    case "CS_OPEN":
-      break
-    case "CS_CHANNEL_DISPUTE":
-      break
-    case "CS_THREAD_DISPUTE":
-      throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')
-    default:
-      assertUnreachable(sync.status)
+    // descriptive status error handling
+    switch (sync.status) {
+      case "CS_OPEN":
+        break
+      case "CS_CHANNEL_DISPUTE":
+        break
+      case "CS_THREAD_DISPUTE":
+        throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')
+      default:
+        assertUnreachable(sync.status)
+    }
   }
-}
 
   private async _flushPendingUpdatesToHub() {
     const state = this.getSyncState()
@@ -636,8 +626,6 @@ export default class SyncController extends AbstractController {
       getLastThreadUpdateId(this.store),
     ))
 
-    // TODO: will you ever have to add thread updates here
-    // most thread updates are sent via the buy controller
     const threadSync = state.updatesToSync.filter(u => u.type == "thread")
     const threadUp = threadSync.map(u => u.update) as ThreadStateUpdate[]
     console.log(`Sending thread updates to hub: ${threadUp.length}`, threadSync)
