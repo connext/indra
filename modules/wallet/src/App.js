@@ -258,7 +258,6 @@ class App extends Component {
 
   async pollConnextState() {
     let connext = this.state.connext
-    await connext.start(); // start polling
     //console.log('Pollers started! Good morning :)')
     connext.on("onStateChange", state => {
       console.log("Connext state changed:", state);
@@ -267,6 +266,7 @@ class App extends Component {
         connextState: state,
       });
     });
+    await connext.start();
   }
 
   async poller() {
