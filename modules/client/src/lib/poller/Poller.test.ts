@@ -28,7 +28,7 @@ describe('Poller', () => {
   it('should run function once every intervalLength', async () => {
     await poller.start()
     expect(runs).to.equal(1)
-    await sleep(10)
+    await sleep(12)
     expect(runs).greaterThan(3)
   })
 
