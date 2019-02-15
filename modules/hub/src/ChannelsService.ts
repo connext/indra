@@ -927,9 +927,10 @@ export default class ChannelsService {
   }
 
   public async getLatestDoubleSignedState(user: string) {
-    return channelStateUpdateRowBigNumToString(
+    const row = await this.channelsDao.getLatestDoubleSignedState(user)
+    return row ? channelStateUpdateRowBigNumToString(
       await this.channelsDao.getLatestDoubleSignedState(user)
-    )
+    ) : null
   }
 
   public async redisGetUnsignedState(

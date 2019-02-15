@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -92,7 +92,7 @@ export interface IHubAPIClient {
     updates: Sync
   }>
   updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
-  getLatestChannelState(): Promise<ChannelState | null>
+  getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -106,15 +106,19 @@ class HubAPIClient implements IHubAPIClient {
     this.tokenName = tokenName
   }
 
-  async getLatestChannelState(): Promise<ChannelState | null> {
+  async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
     try {
       const res = await this.networking.get(`channel/${this.user}/latest-update`)
-      return res.data
+      if (!res.data) {
+        return null
+      }
+      return { state: res.data.state, update: channelUpdateToUpdateRequest(res.data) }
     } catch (e) {
-      if (e.statusCode === 404) {
+      if (e.status == 404) {
         console.log(`Channel not found for user ${this.user}`)
         return null
       }
+      console.log('Error getting latest state:', e)
       throw e
     }
   }
@@ -231,15 +235,19 @@ class HubAPIClient implements IHubAPIClient {
 
   // post to hub telling user wants to deposit
   requestDeposit = async (
-    deposit: Payment,
+    deposit: SignedDepositRequestProposal,
     txCount: number,
     lastThreadUpdateId: number,
   ): Promise<Sync> => {
+    if (!deposit.sigUser) {
+      throw new Error(`No signature detected on the deposit request. Deposit: ${deposit}, txCount: ${txCount}, lastThreadUpdateId: ${lastThreadUpdateId}`)
+    }
     const response = await this.networking.post(
       `channel/${this.user}/request-deposit`,
       {
         depositWei: deposit.amountWei,
         depositToken: deposit.amountToken,
+        sigUser: deposit.sigUser,
         lastChanTx: txCount,
         lastThreadUpdateId,
       },
@@ -837,11 +845,19 @@ export class ConnextInternal extends ConnextClient {
 
   async start() {
     this.store = await this.getStore()
-    this.store.subscribe(() => {
+    this.store.subscribe(async () => {
       const state = this.store.getState()
       this.emit('onStateChange', state)
-      this._saveState(state)
+      await this._saveState(state)
     })
+
+    // TODO: appropriately set the latest
+    // valid state ??
+    const channelAndUpdate = await this.hub.getLatestChannelStateAndUpdate()
+    console.log('Found latest double signed state:', JSON.stringify(channelAndUpdate, null, 2))
+    if (channelAndUpdate) {
+      this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
+    }
 
     // Start all controllers
     for (let controller of this.getControllers()) {
@@ -924,7 +940,7 @@ export class ConnextInternal extends ConnextClient {
         : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
     )
 
-    console.log(`Signing deposit request ${args}. Sig: ${sig}`)
+    console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 
