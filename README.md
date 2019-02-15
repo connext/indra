@@ -110,11 +110,12 @@ There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are 
 
 ### First, push the production images
  
-Before running make deploy, check the `modules/wallet/ops/prod.env` file as this will contain your wallet's prod-mode env vars. (TODO: build this dynamically from the env vars in `ops/deploy.prod.sh`) If these vars look good, then run:
+Before building & pushing docker images, check the `modules/wallet/ops/prod.env` file as this will contain your wallet's prod-mode env vars. (TODO: build this dynamically from the env vars in `ops/deploy.prod.sh`) If these vars look good, then run:
 
-`make deploy` <- this will build the project's docker images and push them to docker hub.
+`make push` <- this will build the project's docker images (with `latest` tags) and push them to docker hub.
+`make push-live` <- this will build the project's docker images (with version tags, specified by version field in package.json) and push them to docker hub.
 
-When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make deploy`.
+When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make push`.
 
 ### Second, deploy the contracts
 

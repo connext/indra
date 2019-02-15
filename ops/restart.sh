@@ -11,7 +11,7 @@ make $flag
 if [[ "$flag" == "prod" || "$flag" == "dev" ]]
 then
   if [[ "$flag" == "prod" ]]
-  then make deploy
+  then make push
   fi
   bash $ops/stop.sh
   bash ops/deploy.$flag.sh
