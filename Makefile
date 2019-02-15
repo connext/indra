@@ -45,7 +45,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 default: dev
 all: dev prod
 dev: database ethprovider hub wallet proxy
-prod: database-prod hub-prod proxy-prod root-node-modules
+prod: database-prod hub-prod proxy-prod
 
 stop: 
 	bash ops/stop.sh

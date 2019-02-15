@@ -42,24 +42,14 @@ jobs:
   deploy-staging:
     machine: true
     steps:
-      - run: |
-          ssh $STAGING bash -c '
-            rm -rf indra
-            git clone https://github.com/ConnextProject/indra.git
-            cd indra
-            bash ops/restart prod
-          '
+      - run: ssh $STAGING "bash -c 'rm -rf indra && git clone https://github.com/ConnextProject/indra.git'"
+      - run: ssh $STAGING "bash -c 'cd indra && git checkout "$CIRCLE_BRANCH "&& DOMAINNAME="$STAGING_URL "bash ops/restart.sh prod'"
 
   deploy-live:
     machine: true
     steps:
-      - run: |
-          ssh $PRODUCTION bash -c '
-            rm -rf indra
-            git clone https://github.com/ConnextProject/indra.git
-            cd indra
-            MODE=live bash ops/restart prod
-          '
+      - run: ssh $PRODUCTION "bash -c 'rm -rf indra && git clone https://github.com/ConnextProject/indra.git'"
+      - run: ssh $PRODUCTION "bash -c 'cd indra && MODE=live DOMAINNAME="$PRODUCTION_URL "bash ops/restart.sh prod'"
 
 workflows:
   version: 2
