@@ -1,78 +1,103 @@
-version: 2
+version: 2.1
+
+executors:
+  executor:
+    machine: true
+    working_directory: /tmp
 
 jobs:
+  build:
+    executor: executor
+    steps:
+      - checkout
+      - run: make prod
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - build
+            - modules
+            - node_modules
+
   test-client:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: make test-client
+
   test-contracts:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: make test-contracts
+
   test-hub:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: make test-hub
+
   test-e2e:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: make test-e2e
+
   push-images:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: make push
+
   push-live-images:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: make push-live
+
   deploy-staging:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: ssh dev@staging.bohendo.com bash -c "cd indra && git pull && bash ops/restart prod"
+
   deploy-live:
-    machine: true
+    executor: executor
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp
       - run: ssh dev@staging.bohendo.com bash -c "cd indra && git pull && MODE=live bash ops/restart prod"
 
 workflows:
-  version: 2
-  test:
-    jobs:
-      - test-client
-      - test-contracts
-      - test-hub
-      - test-e2e
+  version: 2.1
 
-  deploy-staging:
+  test-and-deploy:
     jobs:
-      - test-client
-      - test-contracts
-      - test-hub
-      - test-e2e
+      - build
+      - test-client:
+          requires:
+            - build
+      - test-contracts:
+          requires:
+            - build
+      - test-hub:
+          requires:
+            - build
+      - test-e2e:
+          requires:
+            - build
       - push-images:
           requires:
             - test-client
             - test-contracts
             - test-hub
             - test-e2e
-      - deploy-staging:
-          requires:
-            - push-images
-
-  deploy-live:
-    jobs:
-      - test-client
-      - test-contracts
-      - test-hub
-      - test-e2e
       - push-live-images:
           filters:
             branches:
@@ -82,7 +107,16 @@ workflows:
             - test-contracts
             - test-hub
             - test-e2e
+      - deploy-staging:
+          filters:
+            branches:
+              ignore: master
+          requires:
+            - push-images
       - deploy-live:
+          filters:
+            branches:
+              only: master
           requires:
             - push-live-images
 
