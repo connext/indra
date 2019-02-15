@@ -117,11 +117,16 @@ Tweak, check, tweak, check, commit. Time to deploy?
 Go to CircleCI -> Settings -> Build Settings -> Environment Variables
 
  - `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `repository` vars at the top of the Makefile & `ops/deploy.prod.sh`.
- - `STAGING_URL` & `PRODUCTION_URL`: The URL from which the Indra application will be served. If `STAGING_URL=staging.bohendo.com` then DNS needs to be properly configured so that `staging.bohendo.com` will resolve to the IP address of your staging server. After deploying, the application will be accessible from `https://staging.bohendo.com` after deploying and the admin should have ssh access via `ssh dev@$STAGING_URL` after completing the next step.
+ - `STAGING_URL` & `PRODUCTION_URL`: The URL from which the Indra application will be served.
+
+If `STAGING_URL=staging.bohendo.com` then
+ - DNS needs to be properly configured so that `staging.bohendo.com` will resolve to the IP address of your staging server
+ - The admin should have ssh access via `ssh dev@$STAGING_URL` after completing the next step.
+ - The application will be accessible from `https://staging.bohendo.com` after deploying.
 
 ### Second, setup the production server
 
-**Once per server**: `bash ops/setup-ubuntu.sh $SERVER_IP`. For best results, run this script on a fresh Ubuntu VM.
+**Once per server**: `bash ops/setup-ubuntu.sh $SERVER_IP`. For best results, run this script with a `$SERVER_IP` that points to a fresh Ubuntu VM.
 
 We need to be able to ssh into either `root@$SERVER_IP` or `dev@$SERVER_IP`. If root, this script will setup a dev user and disable root login for security.
 
