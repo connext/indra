@@ -857,7 +857,6 @@ export class ConnextInternal extends ConnextClient {
     console.log('Found latest double signed state:', JSON.stringify(channelAndUpdate, null, 2))
     if (channelAndUpdate) {
       this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
-      this.emit('onStateChange', this.store.getState())
     }
 
     // Start all controllers
