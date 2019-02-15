@@ -7,12 +7,19 @@ key_name=private_key
 ########################################
 # Verify env vars
 
-if [[ -z "$ETH_PROVIDER" && -z "$API_KEY" ]]
-then echo "Expected to see either an \$ETH_PROVIDER or \$API_KEY env var, aborting" && exit
+if [[ -n "$1" ]]
+then network="$1"
+elif [[ -z "$ETH_NETWORK" ]]
+then network="$ETH_NETWORK"
+else
+  echo "Expected to see \$ETH_NETWORK passed as an arg or env var (eg \"rinkeby\"), aborting"
+  exit
 fi
 
-if [[ -z "$ETH_NETWORK" ]]
-then echo "Expected to see an \$ETH_NETWORK env var (eg \"rinkeby\")" && exit
+if [[ -z "$ETH_PROVIDER" && -z "$API_KEY" ]]
+then
+  echo "Expected to see either an \$ETH_PROVIDER or \$API_KEY env var, aborting"
+  exit
 fi
 
 ########################################
@@ -48,10 +55,11 @@ make ethprovider-prod
 # Deploy contracts
 docker service create \
   --tty --interactive \
-  --env="API_KEY=$API_KEY"
-  --env="ETH_PROVIDER=$ETH_PROVIDER"
-  --env="ETH_NETWORK=$ETH_NETWORK"
-  --mount="type=volume,source=`pwd`/modules/contracts,target=/root"
+  --name="${project}_contractor_migrator" \
+  --env="API_KEY=$API_KEY" \
+  --env="ETH_PROVIDER=$ETH_PROVIDER" \
+  --env="ETH_NETWORK=$ETH_NETWORK" \
+  --mount="type=volume,source=`pwd`/modules/contracts,target=/root" \
   --restart-condition=none \
   --secret private_key \
   ${project}_ethprovider

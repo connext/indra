@@ -45,7 +45,8 @@
     "truffle": "^5.0.0-beta.2",
     "truffle-hdwallet-provider": "^1.0.0-web3one.1",
     "truffle-privatekey-provider": "^1.1.0",
-    "typechain": "0.3.6"
+    "typechain": "0.3.6",
+    "web3": "^1.0.0-beta.46"
   },
   "devDependencies": {
     "bn-chai": "^1.0.1",

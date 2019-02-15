@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 ########################################
 # Set env vars
@@ -17,19 +18,28 @@ then mnemonic=$ETH_MNEMONIC
 else mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 fi
 
+export API_KEY=$API_KEY
+export ETH_MNEMONIC=$ETH_MNEMONIC
+export ETH_NETWORK=$ETH_NETWORK
+export ETH_PROVIDER=$ETH_PROVIDER
+export PRIVATE_KEY_FILE=$PRIVATE_KEY_FILE
+
 ########################################
 # Setup some helper functions
 
 function getHash {
-  find build/contracts contracts migrations -type f -not -name "*.swp" \
+  find build/contracts contracts migrations ops/addresses.json -type f -not -name "*.swp" \
     | xargs cat | sha256sum | tr -d ' -'
 }
 
 function migrate {
-  echo && echo "Migration activated! New state: `getHash`" 
-  ./node_modules/.bin/truffle compile
-  ./node_modules/.bin/truffle migrate --reset --network=ganache
-  getHash > build/state-hash
+  if [[ "`getHash`" != "`cat build/state-hash 2> /dev/null || true`" ]]
+  then
+    echo && echo "Migration activated! New state: `getHash`" 
+    ./node_modules/.bin/truffle compile
+    ./node_modules/.bin/truffle migrate --reset --network=$network
+    getHash > build/state-hash
+  fi
 }
 
 function signal_migrations_complete {
@@ -42,11 +52,7 @@ function signal_migrations_complete {
 function watch {
   echo "Watching contract src & artifacts for changes.."
   while true
-  do
-    if [[ "`getHash`" == "`cat build/state-hash`" ]]
-    then sleep 2
-    else migrate
-    fi
+  do migrate && sleep 2
   done
 }
 
@@ -58,7 +64,7 @@ if [[ "$network" == "ganache" ]]
 then
   mkdir -p /data build/contracts
   ganache=./node_modules/.bin/ganache-cli
-  echo "Starting Ganache with netid=$netid"
+  echo "Starting Ganache.."
   $ganache \
     --host="0.0.0.0" \
     --port="$ganache_rpc_port" \
@@ -68,11 +74,8 @@ then
     --blockTime=3 > ops/ganache.log &
   sleep 5
 
-  # Do we need to do an initial migration?
-  if [[ "`getHash`" != "`cat build/state-hash || true`" ]]
-  then migrate
-  else echo "Contracts & migrations are up to date"
-  fi
+  # Do an initial migration if needed
+  migrate
 
   if [[ "$1" == "yes" ]]
   then
@@ -86,8 +89,10 @@ else
   echo "Deploying in prod or staging mode"
 
   export API_KEY=$API_KEY
+  export ETH_MNEMONIC=$ETH_MNEMONIC
+  export ETH_NETWORK=$ETH_NETWORK
   export ETH_PROVIDER=$ETH_PROVIDER
-  export ETH_NETWORK_ID=$ETH_NETWORK_ID
+  export PRIVATE_KEY_FILE=$PRIVATE_KEY_FILE
 
   # TODO sanity check: does our given net id match what our provider gives us?
   ./node_modules/.bin/truffle migrate --reset --network=$network
