@@ -50,37 +50,41 @@ workflows:
       - test-contracts
       - test-hub
       - test-e2e
+
   deploy-staging:
     jobs:
       - test-client
       - test-contracts
       - test-hub
       - test-e2e
-      - push-images
-      - deploy-stagin:
+      - push-images:
           requires:
             - test-client
             - test-contracts
             - test-hub
             - test-e2e
+      - deploy-staging:
+          requires:
             - push-images
+
   deploy-live:
     jobs:
       - test-client
       - test-contracts
       - test-hub
       - test-e2e
-      - push-live-images
-      - deploy-live:
+      - push-live-images:
+          filters:
+            branches:
+              only: master
           requires:
             - test-client
             - test-contracts
             - test-hub
             - test-e2e
+      - deploy-live:
+          requires:
             - push-live-images
-          filters:
-            branches:
-              only: master
 
 # keep the npm cache around to speed up installs
 cache:
