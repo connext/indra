@@ -29,12 +29,14 @@ jobs:
     machine: true
     steps:
       - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push
 
   push-live-images:
     machine: true
     steps:
       - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push-live
 
   deploy-staging:
