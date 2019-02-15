@@ -108,57 +108,67 @@ There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are 
 
 ## Deploying to Production
 
-### First, push the production images
- 
-Before building & pushing docker images, check the `modules/wallet/ops/prod.env` file as this will contain your wallet's prod-mode env vars. (TODO: build this dynamically from the env vars in `ops/deploy.prod.sh`) If these vars look good, then run:
+Tweak, check, tweak, check, commit. Time to deploy?
 
-`make push` <- this will build the project's docker images (with `latest` tags) and push them to docker hub.
-`make push-live` <- this will build the project's docker images (with version tags, specified by version field in package.json) and push them to docker hub.
+### First, setup CircleCI Environment Variables
 
-When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make push`.
+**Once per CircleCI account or organization**: Run `ssh-keygen -t rsa -b 4096 -C "circleci" -m pem -f .ssh/circleci` to generate a new ssh key pair. Load the private key (`.ssh/circleci`) into CircleCI -> Settings -> Permissions -> SSH Permissions.
+
+Go to CircleCI -> Settings -> Build Settings -> Environment Variables
+
+ - `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `repository` vars at the top of the Makefile & `ops/deploy.prod.sh`.
+ - `STAGING` & `PRODUCTION`: The machines that we'll ssh into during deployment. Using the private ssh key saved in CircleCI (Settings -> Permissions -> SSH Permissions), we should be able to run `ssh $PRODUCTION` to gain shell access to our production server. Might look something like: `dev@staging.bohendo.com`
+ - `STAGING_URL` & `PRODUCTION_URL`: The URL from which the Indra application will be served. If `PRODUCTION_URL=staging.bohendo.com` then the application will be accessible from `https://staging.bohendo.com`
+
+### Second, setup the production server
+
+You only need to run this once per server: `bash ops/setup-ubuntu.sh`. For best results, run this script on a fresh Ubuntu VM.
+
+The above expects to find CircleCI's public key in `~/.ssh/circleci.pub`.
+
+This script will also load your hub's wallet mnemonic into a docker secret stored on the server.
 
 ### Second, deploy the contracts
 
 To deploy the ChannelManager Contract:
 
 ```
-make contract-artifacts
-# the space at the beginning of the command below will prevent this
-# command (& the mnemoic) from being stored in your shell's history
-  MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network=ropstenLive
+# build everything you need for contract deployment with:
+make ethprovider
+
+# the spaces at the beginning of these commands will prevent them
+# (& their secrets) from being stored in your shell's history
+  export MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  export ETH_PROVIDER="https://rinkeby.infura.io/abc123xzy"
+
+./node_modules/.bin/truffle migrate --network=rinkebyLive
 ```
 
-The above will output the address your ChannelManager contract was deployed to. Add this address to the address book at `modules/contracts/ops/addresses.json` and to the env vars on top of `ops/deploy.prod.sh`. You'll also want to add the token address and address[0] of the mnemonic you used to deploy to `ops/deploy.prod.sh`.
+The above will output the address your ChannelManager contract was deployed to.
 
-### Third, setup the production server
+Add this new contract address & the token address & the account[0] you used in the migrations to the address book at `modules/contracts/ops/addresses.json`, the env vars in `modules/wallet/ops/prod.env`, and to the env vars on top of `ops/deploy.prod.sh`. TODO: Automate this.
 
-If you're deploying to a server on AWS or Digital Ocean, ssh into that server and make sure all of `git`, `make` and `docker` are installed on the machine you're deploying to.
-
-Next step is to obtain your private key (eg by loading the mnemonic into MetaMask then exporting your private key) and load it into a docker secret called `private_key` on the server where you'll be deploying the hub with a command like this: (Note the space at the beginning to avoid saving your private key in your shell's history)
+### Third, give it one final test
 
 ```
- echo 'c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3' | tr -d ' \n\r' | docker secret create private_key -
+make test-all
 ```
 
-Run `docker secret ls` to ensure it's been created. Now, you're ready to deploy. To deploy the payment hub, run:
+The above command will build everything that's needed to run the full test suite and then run 3 sets of unit tests for (the client, contracts, and hub) plus a set of integration tests on the production-mode deployment.
 
-### Lastly, deploy
+If all tests are green, we're good to go
+
+### Lastly, activate the CI pipeline
 
 ```
-git clone https://github.com/ConnextProject/indra.git
-cp indra
-DOMAINNAME=example.com bash ops/deploy.prod.sh
+git push
 ```
 
-The `DOMAINNAME=example.com` prefix sets an env var that allows correct configuration of an https connection from which the wallet UI can be served securely. Make sure that your production server is reachable at the domain name you specify. You can also add this env var to your server's `~/.bashrc` if you don't want to specify the domain name during every deployment.
+This will trigger the CI pipeline that will run all test suites and, if none fail, deploy this app to production.
 
-Assuming the docker images have been built & pushed to a registry, `bash ops/deploy.prod.sh` will pull & deploy them in an environment suitable for production.
+Pushing to any branch other than master will trigger a deployment to the $STAGING server specified by CircleCI. Pushing or merging into master will deploy to the $PRODUCTION server.
 
-Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying. (eg change it to connextproject dockerhub
-
-If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `make push && bash ops/restart.sh prod`.
-
-## How to interact with Hub
+## How to interact with the Hub
 
  1. AuthApiService
   - GET /auth/status: returns success and address if a valid auth token is provided
