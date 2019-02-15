@@ -105,7 +105,11 @@ class PayCard extends Component {
       `Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`
     );
     this.setState({addressError: null, balanceError: null})
-    const { channelState, connext, web3 } = this.props;
+    const { channelState, connext, web3, connextState } = this.props;
+    if (!connextState || !connextState.runtime.canBuy) {
+      console.log('Cannot buy')
+      return
+    }
 
     // if( Number(this.state.paymentVal.payments[0].amount.amountToken) <= Number(channelState.balanceTokenUser) &&
     //     Number(this.state.paymentVal.payments[0].amount.amountWei) <= Number(channelState.balanceWeiUser)
@@ -123,6 +127,7 @@ class PayCard extends Component {
 
   render() {
     const { anchorEl } = this.state;
+    const { connextState } = this.props
     const open = Boolean(anchorEl);
     const cardStyle = {
       card: {
@@ -207,6 +212,7 @@ class PayCard extends Component {
           style={cardStyle.button}
           onClick={() => this.paymentHandler()}
           variant="contained"
+          disabled={!connextState || !connextState.runtime.canBuy}
         >
           Pay
         </Button>
