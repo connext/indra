@@ -16,6 +16,7 @@ export function handleStateFlags(args: any): any {
     // this is to block any action which is already pending
     if (
       !didInitialUpdate ||
+      action.type === 'connext/setChannelAndUpdate' ||
       action.type === 'connext/set:runtime.syncResultsFromHub' ||
       action.type === 'connext/set:persistent.channel' ||
       action.type === 'connext/set:persistent.syncControllerState' ||
