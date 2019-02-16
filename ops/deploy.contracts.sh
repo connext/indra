@@ -1,19 +1,17 @@
 #!/bin/bash
-set -e
 
 project=connext
 key_name=private_key
+name=${project}_migrator
 
 ########################################
 # Verify env vars
 
 if [[ -n "$1" ]]
 then network="$1"
-elif [[ -z "$ETH_NETWORK" ]]
+elif [[ -n "$ETH_NETWORK" ]]
 then network="$ETH_NETWORK"
-else
-  echo "Expected to see \$ETH_NETWORK passed as an arg or env var (eg \"rinkeby\"), aborting"
-  exit
+else network="ganache"
 fi
 
 if [[ -z "$ETH_PROVIDER" && -z "$API_KEY" ]]
@@ -22,9 +20,22 @@ then
   exit
 fi
 
+echo "Deploying contracts to $network via provider: $ETH_PROVIDER"
+sleep 1 # give the user a sec to ctrl-c in case above is wrong
+
+# Remove the migration service when we're done
+function cleanup {
+  echo
+  echo "Contract deployment complete, removing service:"
+  docker service remove $name 2> /dev/null || true
+  echo "Done!"
+}
+trap cleanup EXIT
+
 ########################################
 # Load private key into secret store
 
+echo
 if [[ -n "`docker secret ls | grep " $key_name"`" ]]
 then
   echo "A secret called $key_name already exists, skipping key load"
@@ -49,17 +60,31 @@ fi
 ########################################
 # Make everything that we need
 
+echo
 make ethprovider-prod
 
 ########################################
 # Deploy contracts
+
+echo
+echo "Deploying contract migrator..."
+echo
+
 docker service create \
-  --tty --interactive \
-  --name="${project}_contractor_migrator" \
+  --detach \
+  --name="$name" \
   --env="API_KEY=$API_KEY" \
   --env="ETH_PROVIDER=$ETH_PROVIDER" \
   --env="ETH_NETWORK=$ETH_NETWORK" \
-  --mount="type=volume,source=`pwd`/modules/contracts,target=/root" \
+  --mount="type=volume,source=connext_chain_dev,target=/data" \
+  --mount="type=bind,source=`pwd`/modules/contracts,target=/root" \
   --restart-condition=none \
   --secret private_key \
   ${project}_ethprovider
+
+docker service logs --follow $name &
+
+# Wait for the migrator container to exit..
+while [[ -z "`docker container ls -a | grep "$name" | grep "Exited"`" ]]
+do sleep 1
+done
