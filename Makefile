@@ -96,16 +96,16 @@ push-live: prod
 # set a default test command for developer convenience
 test: test-default
 test-default: test-client
-test-all: test-client test-contracts test-hub test-integration
+test-all: test-client test-contracts test-hub test-e2e
+
+test-client: client
+	bash ops/test-client.sh
 
 test-contracts: contract-artifacts
 	bash ops/test-contracts.sh
 
 test-hub: hub database ethprovider
 	bash ops/test-hub.sh
-
-test-client: client
-	bash ops/test-client.sh
 
 test-e2e: root-node-modules prod
 	npm stop

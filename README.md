@@ -5,15 +5,50 @@ Everything you need to set up a Connext payment channel hub.
 ## Contents
  - [To deploy using Docker](#to-deploy-using-docker)
  - [To deploy locally](#to-deploy-locally)
- - [Repo executive summary](#repo-executive-summary)
- - [Local development](#local-development)
  - [Deploying to production](#deploying-to-production)
  - [How to interact with Hub](#how-to-interact-with-hub)
  - [Debugging & Troubleshooting](#debugging)
 
+For local development, you can either deploy the app in docker containers, or deploy it locally. See the next two sections for details.
+
+If you encounter any problems, check out the debugging guide at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or  reach out on our Discord channel & we'll be happy to help.
+
+Discord Invitation: https://discord.gg/SmMSFf
+
 ## To deploy using Docker
 
-`npm start`
+**Prerequisites**
+
+- `make`
+- [`docker`](https://www.docker.com/)
+- [`node` and `npm`](https://nodejs.org/en/)
+
+To build & deploy in dev-mode, just run: `npm start`
+
+Once all the pieces are awake, the app will be available at `http://localhost`. (The wallet takes a long time to wake up, monitor it's progress with `npm run logs wallet`)
+
+Beware: the first time this is run it will take a long time but have no fear: downloads will be cached & many build steps won't need to be repeated so subsequent builds will go much more quickly.
+
+Useful scripts:
+ - `npm start`: Builds everything & then starts the app
+ - `npm run dls`: Show all running services (groups of containers) plus list all running containers.
+ - `npm run db`: Opens a console attached to the running app's database. You can also run `npm run db '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details) and then exit.
+ - `npm run logs wallet`: Monitor the wallet's logs. Similar commands can be run to monitor logs for the `proxy`, `hub`, `chainsaw`, `ethprovider` (for migrations output), `ganache` (for log of rpc calls to ganache), `database`, or `redis`.
+ - `npm stop`: Stop the app once it's been started
+ - `npm restart`: Stop the app & start it again, rebuilding anything that's out of date
+ - `npm run reset`: Stops the app & removes all persistent data (eg database & chaindata)
+ - `npm run clean`: Stops the app & deletes all build artifacts. Downloaded data (eg `node_modules`) isn't removed.
+ - `npm run deep-clean`: Stops the app & deletes all build artifacts & deletes downloaded data.
+ - `npm run prod`: Start the app in production-mode
+
+There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are off by default. The wallet aka UI will always be watched as it's served by a webpack-dev-server. If you expect to be actively developing any other modules, you can turn on watchers for those too and they'll be dynamically rebuild/redeployed on source-code changed without needing to restart the app. Careful, turning on all the watchers will increase the start-up time and drain your computer's battery more quickly.
+
+Test suites:
+ - `npm run test-client`: client unit tests
+ - `npm run test-contracts`: contract unit tests
+ - `npm run test-hub`: hub unit tests
+ - `npm run test-e2e`: starts the app in production mode and then runs cypress integration tests
+ - `npm run test-all`: Run all test suites
 
 ## To deploy locally
 
@@ -63,49 +98,6 @@ Address: 0x2DA565caa7037Eb198393181089e92181ef5Fb53
 
 Private Key: 54dec5a04356ed96fc469803f3e45b901c69c5d5fd93a34fbf3568cd4c6efadd
 
-## Repo Executive Summary
-
-You can run this project locally in dev-mode with `npm start` (or `npm restart`). Stop it with `npm stop`
-
-The above start command will build anything needed for you but you can also build stuff manually with `make`.
-
-Once everything builds & starts up, play with the app at `http://localhost` (the wallet module takes the longest to wake up, monitor it with `npm run logs wallet`)
-
-You can wipe all persistent data and restart the app with a fresh db using `npm run reset`
-
-You can run Indra in production-mode with `npm run prod` (or `npm restart prod`).
-
-This repo is split into modules. Each module, ie `name`, in general, has source code in `modules/name/src` that the build/deploy tools in `modules/name/ops` use to build stuff that's output to either `modules/name/build` or `modules/name/dist`.
-
-At runtime, most modules are run in their own docker container(s). These docker containers are built according to dockerfiles found in `modules/name/ops/*.dockerfile` and, on startup, run the scripts found in `modules/name/ops/*.entry.sh`
-
-See all running containers with: `docker service ls`.
-
-You can see the logs for some container with: `npm run logs name`. Where "name" would be `hub` for the docker container `connext_hub`.
-The ethprovider has two sets of logs: `npm run logs ethprovider` will show migration logs and `npm run logs ganache` will show output from ganache.
-
-Once the app is running, you can execute db commands with `bash ops/db.sh '\d+'` or open a db console with just `bash ops/db.sh`
-
-If you encounter any problems, check out the debugging guide at the bottom of this doc. For any unanswered questions, reach out on our Discord channel & we'll be happy to help.
-
-Discord: https://discord.gg/SmMSFf
-
-## Local Development
-
-**Prerequisites**
-
-- Make (required, probably already installed)
-- [Docker](https://www.docker.com/) (required)
-- [Node.js](https://nodejs.org/en/)
-
-`npm start` <- This will take care of building everything & will launch a Connext hub in development-mode, available from your browser at `localhost`
-
-Beware: the first time this is run it will take a long time but have no fear: subsequent builds will go much more quickly.
-
-A couple sets of `node_modules` will be installed when running `npm start` and this might strain your network connection. Occasionally, packages will get half downloaded & then the connection is lost resulting in "unexpected EOF" or "file not found" errors. Generally, trying again is likely all you need to proceed. If you see the same error more than once then some half-downloaded file is likely jamming up the works. Run `make deep-clean` to scrub any `node_modules` & lock files & caches that might be causing trouble. Then, give `npm start` another try & things will hopefully be good to go.
-
-There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are off by default. The wallet aka UI will always be watched as it's served by a webpack-dev-server. If you expect to be actively developing any other modules, you can turn on watchers for those too. Careful, turning on all the watchers will increase the start-up time and drain your computer's battery more quickly.
-
 ## Deploying to Production
 
 Tweak, check, tweak, check, commit. Time to deploy?
@@ -128,7 +120,7 @@ If `STAGING_URL=staging.bohendo.com` then
 
 **Once per server**: `bash ops/setup-ubuntu.sh $SERVER_IP`. For best results, run this script with a `$SERVER_IP` that points to a fresh Ubuntu VM.
 
-We need to be able to ssh into either `root@$SERVER_IP` or `dev@$SERVER_IP`. If root, this script will setup a dev user and disable root login for security.
+We need to be able to ssh into either `root@$SERVER_IP` or `dev@$SERVER_IP`. If root, this script will setup the dev user and disable root login for security.
 
 The setup script expects to find CircleCI's public key in `~/.ssh/circleci.pub`.
 
