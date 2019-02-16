@@ -42,7 +42,7 @@
     "ethjs-provider-http": "^0.1.6",
     "ethjs-rpc": "^0.2.0",
     "ganache-cli": "6.1.8",
-    "truffle": "^5.0.0-beta.2",
+    "truffle": "^5.0.4",
     "truffle-hdwallet-provider": "^1.0.0-web3one.1",
     "truffle-privatekey-provider": "^1.1.0",
     "typechain": "0.3.6",

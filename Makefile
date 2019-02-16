@@ -189,7 +189,7 @@ ethprovider: $(shell find $(contracts)/ops $(find_options)) contract-artifacts
 	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	$(log_finish) && touch build/ethprovider
 
-contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
+contract-artifacts: contract-node-modules $(shell find $(contracts)/truffle.js $(contracts)/contracts $(contracts)/migrations $(find_options))
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "npm run build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"

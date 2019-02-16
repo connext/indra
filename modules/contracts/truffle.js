@@ -16,11 +16,14 @@ const getProvider = (network) => {
   }
   if (process.env.PRIVATE_KEY_FILE) {
     const key = fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8');
+    console.log(`Returning provider using private key + ${url} for network ${network}`)
     return new PrivateKeyProvider(url, key)
   } else if (process.env.ETH_MNEMONIC) {
+    console.log(`Returning provider using hd wallet + ${url} for network ${network}`)
     return new HDWalletProvider(url, process.env.ETH_MNEMONIC)
   } else {
     // Use truffle's default when no env vars are provided
+    console.log(`Returning http provider via ${url} for network ${network}`)
     return new Web3.providers.HttpProvider(url)
   }
 }
@@ -44,12 +47,15 @@ module.exports = {
       network_id: "42"
     },
     ganache: {
+//      host: 'localhost',
+//      port: '8545',
       provider: () => getProvider("ganache"),
       network_id: "4447",
       gas: 6721975
     },
     development: {
-      provider: () => getProvider("ganache"),
+      host: 'localhost',
+      port: '8545',
       network_id: "4447",
       gas: 6721975
     }

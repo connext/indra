@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 ########################################
 # Set env vars
@@ -24,9 +23,7 @@ export ETH_NETWORK=$ETH_NETWORK
 export ETH_PROVIDER=$ETH_PROVIDER
 export PRIVATE_KEY_FILE=$PRIVATE_KEY_FILE
 
-echo "The eth provider has awoken in env:"
-env
-echo
+# echo "The eth provider has awoken in env:"; env; echo
 
 ########################################
 # Setup some helper functions
@@ -63,23 +60,14 @@ function getAddress {
 }
 
 function getHash {
-  find build/contracts contracts migrations ops/addresses.json -type f -not -name "*.swp" \
+  find contracts migrations ops/addresses.json -type f -not -name "*.swp" \
     | xargs cat | sha256sum | tr -d ' -'
 }
 
 function migrate {
-  echo "Checking network conditions before migrating.."
-  # Do we have access to relevant contract addresses?
-  # If not, migrate
-  # If so, do these addresses have the expected bytecode?
-  # If not, migrate
-  if [[ "`getHash`" != "`cat build/state-hash 2> /dev/null || true`" ]]
-  then
-    echo && echo "Migration activated! New state: `getHash`" 
-    ./node_modules/.bin/truffle compile
-    ./node_modules/.bin/truffle migrate --reset --network=$network
-    getHash > build/state-hash
-  fi
+  echo && echo "Migrating contracts to network $network" 
+  ./node_modules/.bin/truffle migrate --verbose-rpc --reset --network=$network
+  echo "Migrations complete, exit code: $?"
 }
 
 function signal_migrations_complete {
@@ -134,28 +122,51 @@ checkNetwork $network $netid
 ECToolsAddress="`getAddress ECTools $netid`"
 ChannelManagerAddress="`getAddress ChannelManager $netid`"
 
+ExpectedECToolsCode="`cat build/contracts/ECTools.json | jq .deployedBytecode | tr -d '"'`"
+ExpectedChannelManagerCode="`cat build/contracts/ChannelManager.json | jq .deployedBytecode | tr -d '"'`"
+
+shouldMigrate="no"
+
+# If this network doesn't have addresses for either of these contracts, then migrate
+
+# If this network ha addresses for these contracts but the code is different, them re-migrate
+
+if [[ "${#ECToolsAddress}" == "42" ]]
+then
+  ECToolsCode="`curleth eth_getCode '[\"'"$ECToolsAddress"'\",\"latest\"]'`"
+fi
+
+if [[ "${#ChannelManagerAddress}" == "42" ]]
+then
+  ChannelManagerCode="`curleth eth_getCode '[\"'"$ChannelManagerAddress"'\",\"latest\"]'`"
+fi
+
 echo "ECToolsAddress=$ECToolsAddress"
 echo "ChannelManagerAddress=$ChannelManagerAddress"
+echo "ECToolsCode=$ECToolsCode"
+echo "ChannelManagerCode=$ChannelManagerCode"
+
+if [[ "${#ECToolsAddress}" != "42" || "${#ChannelManagerAddress}" != "42" ]]
+then shouldMigrate="yes"
+fi
 
 ########################################
-# Migrate (& maybe start watcher)
+# Migrate
 
-echo "Migrations activated!"
+echo "eth_accounts returns: `curleth 'eth_accounts' '[]'`"
 
-exit
+if [[ "$shouldMigrate" == "yes" ]]
+then echo "Migrations activated!" && migrate
+fi
 
-migrate
+########################################
+# In dev-mode, signal completion & start watchers
 
-if [[ "$1" == "yes" ]]
+if [[ "$network" == "ganache" && "$1" == "yes" ]]
 then
   signal_migrations_complete &
   watch
-else
+elif [[ "$network" == "ganache" && "$1" == "no" ]]
+then
   signal_migrations_complete
 fi
-
-echo "Deploying in prod or staging mode"
-
-# TODO sanity check: does our given net id match what our provider gives us?
-./node_modules/.bin/truffle migrate --reset --network=$network
-

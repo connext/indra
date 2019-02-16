@@ -2,6 +2,8 @@ const EC = artifacts.require("./ECTools.sol");
 const CM = artifacts.require("./ChannelManager.sol");
 const HumanStandardToken = artifacts.require("./HumanStandardToken.sol");
 
+console.log(`Migration step 2 activated!`)
+
 // TODO: TEST ALL THIS, ESP ECTOOLS STUFF, but we should definitely have it
 module.exports = async function(deployer, network, accounts) {
   const data = require('../data.json')
