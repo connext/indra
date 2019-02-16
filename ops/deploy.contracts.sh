@@ -1,41 +1,36 @@
 #!/bin/bash
+set -e
 
 project=connext
 key_name=private_key
 name=${project}_migrator
 
 ########################################
-# Verify env vars
+# Setup env vars
+
+INFURA_KEY=$INFURA_KEY
 
 if [[ -n "$1" ]]
-then network="$1"
+then ETH_NETWORK="$1"
 elif [[ -n "$ETH_NETWORK" ]]
-then network="$ETH_NETWORK"
-else network="ganache"
+then ETH_NETWORK="$ETH_NETWORK"
+else ETH_NETWORK="ganache"
 fi
 
-# Overwrite the existing ETH_PROVIDER if in dev-mode
-if [[ "$network" == "ganache" ]]
-then export ETH_PROVIDER="localhost:8545"
+if [[ -z "$ETH_PROVIDER" || "$ETH_NETWORK" == "ganache" ]]
+then ETH_PROVIDER="http://localhost:8545"
 fi
 
-if [[ -z "$ETH_PROVIDER" && -z "$API_KEY" ]]
-then
-  echo "Expected to see either an \$ETH_PROVIDER or \$API_KEY env var, aborting"
-  exit
+if [[ -z "$ETH_MNEMONIC" ]]
+then ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 fi
 
-echo "Deploying contracts to $network via provider: $ETH_PROVIDER"
+if [[ -z "$PRIVATE_KEY_FILE" ]]
+then PRIVATE_KEY_FILE="/run/secrets/private_key"
+fi
+
+echo "Deploying contracts to $ETH_NETWORK via provider: $ETH_PROVIDER"
 sleep 1 # give the user a sec to ctrl-c in case above is wrong
-
-# Remove the migration service when we're done
-function cleanup {
-  echo
-  echo "Contract deployment complete, removing service:"
-  docker service remove $name 2> /dev/null || true
-  echo "Done!"
-}
-trap cleanup EXIT
 
 ########################################
 # Load private key into secret store
@@ -44,7 +39,7 @@ echo
 if [[ -n "`docker secret ls | grep " $key_name"`" ]]
 then
   echo "A secret called $key_name already exists, skipping key load"
-  echo "Remove existing secret with: docker secret rm $key_name"
+  echo "Remove existing secret to reset: docker secret rm $key_name"
 
 else 
   # Prepare to set or use our user's password
@@ -69,6 +64,18 @@ echo
 make ethprovider-prod
 
 ########################################
+# Remove the migration service when we're done
+
+function cleanup {
+  echo
+  echo "Contract deployment complete, removing service:"
+  docker service remove $name 2> /dev/null || true
+  kill $logs_pid
+  echo "Done!"
+}
+trap cleanup EXIT
+
+########################################
 # Deploy contracts
 
 echo
@@ -78,18 +85,22 @@ echo
 docker service create \
   --detach \
   --name="$name" \
-  --env="API_KEY=$API_KEY" \
-  --env="ETH_PROVIDER=$ETH_PROVIDER" \
+  --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
   --env="ETH_NETWORK=$ETH_NETWORK" \
+  --env="ETH_PROVIDER=$ETH_PROVIDER" \
+  --env="INFURA_KEY=$INFURA_KEY" \
+  --env="PRIVATE_KEY_FILE=$PRIVATE_KEY_FILE" \
   --mount="type=volume,source=connext_chain_dev,target=/data" \
   --mount="type=bind,source=`pwd`/modules/contracts,target=/root" \
   --restart-condition=none \
   --secret private_key \
   ${project}_ethprovider
 
-docker service logs --follow $name &
+docker service logs --raw --follow $name &
+logs_pid=$!
 
-# Wait for the migrator container to exit..
+# Wait for the first migrator container to exit..
 while [[ -z "`docker container ls -a | grep "$name" | grep "Exited"`" ]]
 do sleep 1
 done
+sleep 1

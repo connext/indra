@@ -1,32 +1,63 @@
 #!/bin/bash
 
 ########################################
-# Set env vars
+# env setup
 
 ganache_net_id=4447
 ganache_rpc_port=8545
 migration_flag_port=8544
 
-if [[ -n "$ETH_NETWORK" ]]
-then network=$ETH_NETWORK
-else network="ganache"
-fi
-
-if [[ -n "$ETH_MNEMONIC" ]]
-then mnemonic=$ETH_MNEMONIC
-else mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-fi
-
-export API_KEY=$API_KEY
-export ETH_MNEMONIC=$ETH_MNEMONIC
-export ETH_NETWORK=$ETH_NETWORK
-export ETH_PROVIDER=$ETH_PROVIDER
-export PRIVATE_KEY_FILE=$PRIVATE_KEY_FILE
-
-# echo "The eth provider has awoken in env:"; env; echo
+#export ETH_MNEMONIC="$ETH_MNEMONIC"
+#export ETH_NETWORK="$ETH_NETWORK"
+#export ETH_PROVIDER="$ETH_PROVIDER"
+#export INFURA_KEY=$INFURA_KEY
+#export PRIVATE_KEY_FILE="$PRIVATE_KEY_FILE"
 
 ########################################
 # Setup some helper functions
+
+function curleth {
+  curl --silent \
+    --header "Content-Type: application/json" \
+    --request POST \
+    --data '{"id":31415,"jsonrpc":"2.0","method":"'"$1"'","params":'"$2"'}' \
+    $ETH_PROVIDER \
+      | jq .result \
+      | tr -d '"\n\r'
+}
+
+########################################
+# Start local testnet if in dev mode
+
+if [[ "$ETH_NETWORK" == "ganache" ]]
+then
+  echo "Starting Ganache.."
+  mkdir -p /data build/contracts
+  ./node_modules/.bin/ganache-cli \
+    --host="0.0.0.0" \
+    --port="$ganache_rpc_port" \
+    --db="/data" \
+    --mnemonic="$ETH_MNEMONIC" \
+    --networkId="$ganache_net_id" \
+    --blockTime=3 > ops/ganache.log &
+  # Wait for ganache to start responding
+  while [[ -z "`curleth net_version '[]'`" ]]
+  do sleep 1
+  done
+fi
+
+########################################
+# migrate migration script
+
+echo "Running migration script.."
+echo
+
+node ops/migrate.js
+
+exit
+
+########################################
+# TODO: delete this
 
 function checkNetwork {
   if [[ "$1" == "mainnet" && "$2" == "1" ]]
@@ -40,19 +71,9 @@ function checkNetwork {
   elif [[ "$1" == "ganache" && "$2" == "4447" ]]
   then true
   else
-    echo "Network $network doesn't match chain id ($netid) of provider: $ETH_PROVIDER"
+    echo "Network $ETH_NETWORK doesn't match chain id ($netid) of provider: $ETH_PROVIDER"
     exit 1
   fi
-}
-
-function curleth {
-  curl --silent \
-    --header "Content-Type: application/json" \
-    --request POST \
-    --data '{"id":31415,"jsonrpc":"2.0","method":"'"$1"'","params":'"$2"'}' \
-    $ETH_PROVIDER \
-      | jq .result \
-      | tr -d '"\n\r'
 }
 
 function getAddress {
@@ -65,8 +86,8 @@ function getHash {
 }
 
 function migrate {
-  echo && echo "Migrating contracts to network $network" 
-  ./node_modules/.bin/truffle migrate --verbose-rpc --reset --network=$network
+  echo && echo "Migrating contracts to network $ETH_NETWORK" 
+  ./node_modules/.bin/truffle migrate --verbose-rpc --reset --network=$ETH_NETWORK
   echo "Migrations complete, exit code: $?"
 }
 
@@ -85,36 +106,16 @@ function watch {
 }
 
 ########################################
-# Start local testnet if in dev mode
-
-if [[ "$network" == "ganache" ]]
-then
-  echo "Starting Ganache.."
-  mkdir -p /data build/contracts
-  ./node_modules/.bin/ganache-cli \
-    --host="0.0.0.0" \
-    --port="$ganache_rpc_port" \
-    --db="/data" \
-    --mnemonic="$mnemonic" \
-    --networkId="$ganache_net_id" \
-    --blockTime=3 > ops/ganache.log &
-  # Wait for ganache to start responding
-  while [[ -z "`curleth net_version '[]'`" ]]
-  do sleep 1
-  done
-fi
-
-########################################
 # Make some sanity checks
 
 if [[ -z "$ETH_PROVIDER" ]]
 then echo "ETH_PROVIDER env var not available, aborting" && exit
-else echo "Preparing migrations for $network against provider: $ETH_PROVIDER"
+else echo "Preparing migrations for $ETH_NETWORK against provider: $ETH_PROVIDER"
 fi
 
 netid="`curleth net_version '[]'`"
 
-checkNetwork $network $netid
+checkNetwork $ETH_NETWORK $netid
 
 ########################################
 # Decide whether or not to migrate
@@ -162,11 +163,11 @@ fi
 ########################################
 # In dev-mode, signal completion & start watchers
 
-if [[ "$network" == "ganache" && "$1" == "yes" ]]
+if [[ "$ETH_NETWORK" == "ganache" && "$1" == "yes" ]]
 then
   signal_migrations_complete &
   watch
-elif [[ "$network" == "ganache" && "$1" == "no" ]]
+elif [[ "$ETH_NETWORK" == "ganache" && "$1" == "no" ]]
 then
   signal_migrations_complete
 fi

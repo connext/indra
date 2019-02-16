@@ -184,12 +184,12 @@ ethprovider-prod: ethprovider
 	docker tag $(project)_ethprovider:dev $(project)_ethprovider:latest
 	$(log_finish) && touch build/ethprovider-prod
 
-ethprovider: $(shell find $(contracts)/ops $(find_options)) contract-artifacts
+ethprovider: contract-artifacts $(contracts)/ops/ethprovider.dockerfile
 	$(log_start) && echo "prereqs: $<"
-	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
+	docker build --file $(contracts)/ops/ethprovider.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	$(log_finish) && touch build/ethprovider
 
-contract-artifacts: contract-node-modules $(shell find $(contracts)/truffle.js $(contracts)/contracts $(contracts)/migrations $(find_options))
+contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(contracts)/migrations $(find_options))
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "npm run build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"

@@ -39,6 +39,7 @@
     "chai-bignumber": "^2.0.2",
     "chai-subset": "^1.6.0",
     "dotenv": "^6.2.0",
+    "ethers": "^4.0.25",
     "ethjs-provider-http": "^0.1.6",
     "ethjs-rpc": "^0.2.0",
     "ganache-cli": "6.1.8",

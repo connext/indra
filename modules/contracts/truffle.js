@@ -1,55 +1,8 @@
-const fs = require('fs')
-const HDWalletProvider = require("truffle-hdwallet-provider");
-const PrivateKeyProvider = require("truffle-privatekey-provider");
-const Web3 = require('web3');
-
-const getProvider = (network) => {
-  let url
-  if (process.env.ETH_PROVIDER) {
-    url = process.env.ETH_PROVIDER
-  } else if (network === "mainnet" && process.env.API_KEY) {
-    url = `https://infura.io/${process.env.API_KEY}`
-  } else if (process.env.API_KEY) {
-    url = `https://${network}.infura.io/${process.env.API_KEY}`
-  } else {
-    url = 'http://127.0.0.1:8545'
-  }
-  if (process.env.PRIVATE_KEY_FILE) {
-    const key = fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8');
-    console.log(`Returning provider using private key + ${url} for network ${network}`)
-    return new PrivateKeyProvider(url, key)
-  } else if (process.env.ETH_MNEMONIC) {
-    console.log(`Returning provider using hd wallet + ${url} for network ${network}`)
-    return new HDWalletProvider(url, process.env.ETH_MNEMONIC)
-  } else {
-    // Use truffle's default when no env vars are provided
-    console.log(`Returning http provider via ${url} for network ${network}`)
-    return new Web3.providers.HttpProvider(url)
-  }
-}
-
 module.exports = {
   networks: {
-    mainnet: {
-      provider: () => getProvider("mainnet"),
-      network_id: "1"
-    },
-    ropsten: {
-      provider: () => getProvider("ropsten"),
-      network_id: "3"
-    },
-    rinkeby: {
-      provider: () => getProvider("rinkeby"),
-      network_id: "4"
-    },
-    kovan: {
-      provider: () => getProvider("kovan"),
-      network_id: "42"
-    },
     ganache: {
-//      host: 'localhost',
-//      port: '8545',
-      provider: () => getProvider("ganache"),
+      host: 'localhost',
+      port: '8545',
       network_id: "4447",
       gas: 6721975
     },
