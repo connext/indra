@@ -93,6 +93,7 @@ export interface IHubAPIClient {
   }>
   updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
+  getLatestStateNoPendingOps(): Promise<ChannelState | null>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -104,6 +105,23 @@ class HubAPIClient implements IHubAPIClient {
     this.user = user
     this.networking = networking
     this.tokenName = tokenName
+  }
+
+  async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
+    try {
+      const res = await this.networking.get(`channel/${this.user}/latest-state-no-pending`)
+      if (!res.data) {
+        return null
+      }
+      return res.data
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Channel not found for user ${this.user}`)
+        return null
+      }
+      console.log('Error getting latest state no pending ops:', e)
+      throw e
+    }
   }
 
   async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
@@ -857,6 +875,11 @@ export class ConnextInternal extends ConnextClient {
     console.log('Found latest double signed state:', JSON.stringify(channelAndUpdate, null, 2))
     if (channelAndUpdate) {
       this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
+      // also update the latest valid state
+      const latestValid = await this.hub.getLatestStateNoPendingOps()
+      if (latestValid) {
+        this.store.dispatch(actions.setLatestValidState(latestValid))
+      }
     }
 
     // Start all controllers
