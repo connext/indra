@@ -14,6 +14,11 @@ then network="$ETH_NETWORK"
 else network="ganache"
 fi
 
+# Overwrite the existing ETH_PROVIDER if in dev-mode
+if [[ "$network" == "ganache" ]]
+then export ETH_PROVIDER="localhost:8545"
+fi
+
 if [[ -z "$ETH_PROVIDER" && -z "$API_KEY" ]]
 then
   echo "Expected to see either an \$ETH_PROVIDER or \$API_KEY env var, aborting"
