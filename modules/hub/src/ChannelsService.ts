@@ -846,12 +846,14 @@ export default class ChannelsService {
       channelTxCount,
     )
 
-    console.log("RESULT:", JSON.stringify(channelUpdates, null, 2))
+    console.log("CHANNEL UPDATE RESULT:", JSON.stringify(channelUpdates, null, 2))
 
     const threadUpdates = await this.threadsDao.getThreadUpdatesForSync(
       user,
       lastThreadUpdateId,
     )
+
+    console.log("THREAD UPDATE RESULT:", JSON.stringify(threadUpdates, null, 2))
 
     let curChan = 0
     let curThread = 0
