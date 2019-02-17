@@ -44,7 +44,7 @@ export class PostgresGlobalSettingsDao implements GlobalSettingsDao {
     this.cache = {
       withdrawalsEnabled: true,
       paymentsEnabled: true,
-      threadsEnabled: false
+      threadsEnabled: true
     };
   }
 
