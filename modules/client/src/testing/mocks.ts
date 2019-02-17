@@ -188,6 +188,10 @@ export class MockHub implements IHubAPIClient {
     return { id: 0, state: getChannelState('full'), status: 'CS_OPEN' }
   }
 
+  async getThreads(): Promise<ThreadRow[]> {
+    return []
+  }
+
   async getChannelStateAtNonce(): Promise<ChannelStateUpdate> {
     return {
       args: {} as ExchangeArgs,
@@ -196,7 +200,7 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
-  async getThreadInitialStates(): Promise<UnsignedThreadState[]> {
+  async getThreadInitialStates(): Promise<ThreadState[]> {
     return [getThreadState('full')]
   }
 
