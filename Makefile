@@ -50,6 +50,7 @@ prod: database-prod hub-prod proxy-prod ethprovider-prod
 stop: 
 	bash ops/stop.sh
 	docker container stop $(project)_buidler 2> /dev/null || true
+	docker container stop ganache 2> /dev/null || true
 	docker container prune -f
 
 reset: stop

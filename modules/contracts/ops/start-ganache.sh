@@ -2,7 +2,7 @@
 
 name=ganache
 ganache_net_id=4447
-ganache_rpc_port=8546
+ganache_rpc_port=8545
 dir=`pwd | sed 's/indra.*/indra/'`/modules/contracts
 
 if [[ -n "`docker container ls | grep $name`" ]]
@@ -16,6 +16,7 @@ echo "Starting Ganache.."
 
 docker run \
   --rm \
+  --detach \
   --name="$name" \
   --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
   --volume="connext_chain_dev:/data" \
@@ -24,16 +25,14 @@ docker run \
   --entrypoint=bash \
   connext_ethprovider -c "
     echo lets go ganache diggy
-    ./node_modules/.bin/ganache-cli \
+    exec ./node_modules/.bin/ganache-cli \
       --host=0.0.0.0 \
       --port=$ganache_rpc_port \
       --db=/data \
       --mnemonic=\"$ETH_MNEMONIC\" \
       --networkId=$ganache_net_id \
       --blockTime=3 > ops/ganache.log
-  " &
-
-echo "Launched.."
+  "
 
 sleep 1
-docker container logs --follow $name
+echo "Ganache launched successfully"
