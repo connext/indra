@@ -14,6 +14,7 @@ import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
 import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
+import GlobalSettingsDao from './dao/GlobalSettingsDao';
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -32,6 +33,7 @@ export default class PaymentsService {
   private validator: Validator
   private config: Config
   private db: DBEngine
+  private gsd: GlobalSettingsDao
 
   constructor(
     channelsService: ChannelsService,
@@ -43,6 +45,7 @@ export default class PaymentsService {
     validator: Validator,
     config: Config,
     db: DBEngine,
+    gsd: GlobalSettingsDao
   ) {
     this.channelsService = channelsService
     this.threadsService = threadsService
@@ -53,6 +56,7 @@ export default class PaymentsService {
     this.validator = validator
     this.config = config
     this.db = db
+    this.gsd = gsd
   }
 
   public async doPurchase(
@@ -60,6 +64,7 @@ export default class PaymentsService {
     meta: any,
     payments: PurchasePayment[],
   ): Promise<MaybeResult<{ purchaseId: string }>> {
+    // await this.gsd.toggleThreadsEnabled(true)
     return this.db.withTransaction(() => this._doPurchase(user, meta, payments))
   }
 
