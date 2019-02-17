@@ -458,7 +458,7 @@ export class Validator {
 
     // If user is sender then that means that prev is sender-hub channel
     // If user is receiver then that means that prev is hub-receiver channel
-    const userIsSender = args.sender === prev.user
+    const userIsSender = args.sender == prev.user
 
     // First check thread state independently
     // Then check that thread state against prev channel state:
@@ -772,7 +772,7 @@ export class Validator {
     try {
       this.assertThreadSigner(convertThreadState('str', args))
     } catch (e) {
-      return e.message
+      errs.push('Error asserting thread signer: ' + e.message)
     }
 
     if (errs) {
