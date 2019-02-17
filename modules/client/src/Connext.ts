@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -74,8 +74,9 @@ export interface ConnextOptions {
 export interface IHubAPIClient {
   getChannel(): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
-  getThreadInitialStates(): Promise<UnsignedThreadState[]>
+  getThreadInitialStates(): Promise<ThreadState[]>
   getIncomingThreads(): Promise<ThreadRow[]>
+  getThreads(): Promise<ThreadRow[]>
   getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
   getExchangerRates(): Promise<ExchangeRates> // TODO: name is typo
@@ -186,10 +187,21 @@ class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getThreadInitialStates(): Promise<UnsignedThreadState[]> {
+  async getThreadInitialStates(): Promise<ThreadState[]> {
     // get the current channel state and return it
     const response = await this.networking.get(
       `thread/${this.user}/initial-states`,
+    )
+    if (!response.data) {
+      return []
+    }
+    return response.data
+  }
+
+  async getThreads(): Promise<ThreadRow[]> {
+    // get the current channel state and return it
+    const response = await this.networking.get(
+      `thread/${this.user}/active`,
     )
     if (!response.data) {
       return []
@@ -876,10 +888,28 @@ export class ConnextInternal extends ConnextClient {
     if (channelAndUpdate) {
       this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
       // also update the latest valid state
-      const latestValid = await this.hub.getLatestStateNoPendingOps()
-      if (latestValid) {
-        this.store.dispatch(actions.setLatestValidState(latestValid))
-      }
+      // const latestValid = await this.hub.getLatestStateNoPendingOps()
+      // if (latestValid) {
+      //   this.store.dispatch(actions.setLatestValidState(latestValid))
+      // }
+      // if the thread count is greater than 0,
+      // also update the activeThreads, threadHistory, initial states
+      const initialStates = await this.hub.getThreadInitialStates()
+      console.log('threadRows:',await this.hub.getThreads())
+      console.log('initialStates:', initialStates)
+      const threadRows = (await this.hub.getThreads()).sort((a, b) => a.id - b.id)
+      const threadHistory = threadRows.map(t => {
+        return {
+          sender: t.state.sender,
+          receiver: t.state.receiver,
+          threadId: t.state.threadId,
+        }
+      }).sort((a: ThreadHistoryItem, b: ThreadHistoryItem) => a.threadId - b.threadId)
+      console.log('threadRows:', threadRows)
+      this.store.dispatch(actions.setLastThreadUpdateId(threadRows[threadRows.length - 1].id))
+      this.store.dispatch(actions.setActiveInitialThreadStates(initialStates))
+      this.store.dispatch(actions.setActiveThreads(threadRows.map(t => t.state)))
+      this.store.dispatch(actions.setThreadHistory(threadHistory))
     }
 
     // Start all controllers
