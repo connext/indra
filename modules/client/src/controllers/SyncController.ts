@@ -706,7 +706,11 @@ export default class SyncController extends AbstractController {
     console.log('** updates **:', JSON.stringify(updates, null, 2))
     const merged = mergeSyncResults(oldSyncResults, updates)
     console.log('** merged **:', JSON.stringify(merged, null, 2))
-    const filtered = filterPendingSyncResults(merged, this.getSyncState().updatesToSync)
+    const updatesToSync = this.getSyncState().updatesToSync
+    console.log('** updatesToSync **', updatesToSync)
+    const filtered = filterPendingSyncResults(merged, updatesToSync)
+
+    console.log('** filtered **:', JSON.stringify(filtered, null, 2))
 
     console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${filtered.length}:`, filtered)
     this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
