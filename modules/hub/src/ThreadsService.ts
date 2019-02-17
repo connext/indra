@@ -114,7 +114,7 @@ export default class ThreadsService {
       channelReceiverState.balanceTokenHub.isLessThan(thread.balanceTokenSender)
     ) {
       LOG.info(
-        `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)},
+        `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)}, thread: ${prettySafeJson(thread)},
         hub deposit must be completed before thread can be opened`
       )
       // unsigned state for hub deposit will be returned in the next sync response
@@ -166,14 +166,14 @@ export default class ThreadsService {
       'OpenThread',
       thread.sender,
       channelStateSender,
-      convertThreadState('str-unsigned', thread)
+      convertThreadState('str', thread)
     )
     const insertedChannelReceiver = await this.channelsDao.applyUpdateByUser(
       thread.receiver,
       'OpenThread',
       thread.receiver,
       channelStateReceiver,
-      convertThreadState('str-unsigned', thread)
+      convertThreadState('str', thread)
     )
     await this.threadsDao.applyThreadUpdate(
       convertThreadState('str', thread),
@@ -312,6 +312,15 @@ export default class ThreadsService {
     )
   }
 
+  public async getThreadsActive(user: string): Promise<ThreadRow[]> {
+    const threadsOpen = await this.threadsDao.getThreadInitialStatesByUser(user)
+    let threadsActive = []
+    threadsActive = threadsOpen.map(async t => {
+      return await this.threadsDao.getThread(t.state.sender, t.state.receiver)
+    })
+    return threadsActive
+  }
+
   public async getThread(
     sender: string,
     receiver: string
@@ -333,9 +342,10 @@ export default class ThreadsService {
   }
 
   async ensureEnabled() {
-    const enabled = (await this.globalSettings.fetch()).threadsEnabled
-    if (!enabled) {
-      throw new Error('Threads are disabled.')
-    }
+    // const enabled = (await this.globalSettings.toggleThreadsEnabled(true))
+    // console.log('&&&&& enabled:', enabled)
+    // if (!enabled) {
+    //   throw new Error('Threads are disabled.')
+    // }
   }
 }
