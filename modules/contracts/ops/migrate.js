@@ -2,8 +2,10 @@ const crypto = require('crypto')
 const fs = require('fs')
 const eth = require('ethers')
 const solc = require('solc')
+const linker = require('solc/linker')
 const ChannelManagerArtifacts = require('../build/contracts/ChannelManager.json')
 const TokenArtifacts = require('../build/contracts/Token.json')
+const HumanStandardTokenArtifacts = require('../build/contracts/HumanStandardToken.json')
 const ECToolsArtifacts = require('../build/contracts/ECTools.json')
 
 const cwd = process.cwd()
@@ -56,6 +58,9 @@ const getWallet = (network) => {
   console.log(`Configured wallet with address=${wallet.address} nonce=${nonce} balance=${balance}`)
   console.log(`Connected to network: ${netId}`)
 
+  ////////////////////////////////////////
+  // Deploy ECTools if needed
+
   console.log(`\nChecking for ECTools..`)
 
   let ECToolsSavedAddress
@@ -94,13 +99,69 @@ const getWallet = (network) => {
     ecTools.codeHash = hash(await wallet.provider.getCode(ecTools.address))
     console.log(`ECTools deployed to address ${ecTools.address} with code hash ${ecTools.codeHash.substring(0,8)}... via transaction ${ecTools.deployTransaction.hash}`)
     addresses.ECTools.networks[netId] = { "address" : ecTools.address, "codeHash": ecTools.codeHash }
+    ECToolsSavedAddress = ecTools.address
   }
 
-/* TODO: how should we handle linkages?
-  console.log(`deploying the ChannelManager`)
-  let channelManager = await ChannelManagerFactory.deploy()
+  ////////////////////////////////////////
+  // Deploy a new token if needed
+
+  console.log(`\nChecking for a valid token`)
+
+  const tstSupply = "1000000000000000000000000000"
+  const tstName = "Test Token"
+  const tstDecimals = "18"
+  const tstSymbol = "TST"
+
+  let tokenAddress
+  try {
+    tokenAddress = addresses.Token.networks[netId].address
+    const tokenName = addresses.Token.networks[netId].name
+    console.log(`Found token address for ${tokenName} in our address book: ${tokenAddress}`)
+  } catch (e) {
+    console.log(`A token address has not been saved to our address book yet`)
+    tokenAddress = undefined
+  }
+
+  if (!tokenAddress && netId === 4447) {
+    console.log(`Deploying a new HumanStandardToken contract..`)
+
+    console.log(`Before: wallet nonce=${await wallet.getTransactionCount()} provider nonce=${await wallet.provider.getTransactionCount(wallet.address)}`)
+    const hsToken = await eth.ContractFactory.fromSolidity(HumanStandardTokenArtifacts).connect(wallet).deploy(
+      tstSupply,
+      tstName,
+      tstDecimals,
+      tstSymbol
+    )
+    await wallet.provider.waitForTransaction(hsToken.deployTransaction)
+    console.log(`After: wallet nonce=${await wallet.getTransactionCount()} provider nonce=${await wallet.provider.getTransactionCount(wallet.address)}`)
+
+    tokenAddress = hsToken.address
+    console.log(`wallet keys: ${Object.keys(wallet)} && provider keys: ${Object.keys(wallet.provider)}`)
+    console.log(`Success, deployed to address ${tokenAddress}`)
+    addresses.Tokens.networks[netId] = { "address": tokenAddress, "name": tstSymbol.toLowerCase() }
+  } else if (!tokenAddress) {
+    console.error(`If we're not in dev-mode, then a token needs to already have been deployed & saved in our address book`)
+    process.exit(1)
+  }
+
+  console.log(`wallet nonce=${await wallet.getTransactionCount()} provider nonce=${await wallet.provider.getTransactionCount(wallet.address)}`)
+
+  ////////////////////////////////////////
+  // Deploy the ChannelManager if needed
+
+  const challengePeriod = 600
+
+  const ChannelManagerBytecode = linker.linkBytecode(ChannelManagerArtifacts.bytecode, {
+    'ECTools': ECToolsSavedAddress
+  })
+
+  console.log(`deploying the ChannelManager with params: hub=${wallet.address} challengePeriod=${challengePeriod} token=${tokenAddress}`)
+  const channelManager = await (new eth.ContractFactory(
+    ChannelManagerArtifacts.abi,
+    ChannelManagerBytecode,
+    wallet
+  )).deploy(wallet.address, challengePeriod, tokenAddress)
   console.log(`deployed the ChannelManager, got: ${Object.keys(channelManager)}`)
-*/
 
   ////////////////////////////////////////
   // Save Artifacts to Filesystem
