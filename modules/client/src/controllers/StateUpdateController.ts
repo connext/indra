@@ -164,6 +164,10 @@ export default class StateUpdateController extends AbstractController {
     this._queuedActions = []
 
     if (item.type === 'thread') { // handle thread updates
+      if (item.update.state.txCount == 0) {
+        console.log(`Received opening thread state, should be handled in OpenThread channel update. State: ${JSON.stringify(this.getState(), null, 2)}`)
+        return
+      }
       console.log(`Received a thread payment from the hub. Sync item: ${JSON.stringify(item)}`)
       // since threads are single-payment constructs, received thread
       // payments here should suggest that the thread is ready to be
@@ -197,7 +201,7 @@ export default class StateUpdateController extends AbstractController {
       }
 
       // update the latest id
-      this.store.dispatch(actions.setLastThreadUpdateId(item.update.id))
+      this.store.dispatch(actions.setLastThreadUpdateId(Number(item.update.id)))
       // update active threads state
       this.store.dispatch(actions.setActiveThreads(newActiveThreads))
 
@@ -219,7 +223,7 @@ export default class StateUpdateController extends AbstractController {
       return
     }
 
-    const update = item.update
+    let update = item.update
     console.log(`Applying update from hub: ${update.reason} txCount=${update.txCount}:`, update)
 
     const connextState = this.getState()
@@ -251,6 +255,12 @@ export default class StateUpdateController extends AbstractController {
 
     // TODO: Write this for nukeThreads
 
+    // add initial thread states from our store if the update
+    // type includes threads
+    if (update.reason.includes('Thread')) {
+      update.initialThreadStates = connextState.persistent.activeInitialThreadStates
+    }
+
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
       update.reason === 'Invalidation' ? latestValidState : prevState,
       update
@@ -279,7 +289,6 @@ export default class StateUpdateController extends AbstractController {
       // closeThread) update is returned by the hub
       if (update.reason.includes("Thread")) {
         const args = update.args as ThreadState
-        const connextState = this.store.getState()
         // unconditionally update thread history whether it is open or close
         // thread
         const threadHistory = connextState.persistent.threadHistory.concat({ 
