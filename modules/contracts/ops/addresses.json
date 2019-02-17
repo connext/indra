@@ -1,5 +1,4 @@
 {
-
   "Tokens": {
     "networks": {
       "1": {
@@ -12,7 +11,6 @@
       }
     }
   },
-
   "ECTools": {
     "networks": {
       "3": {
@@ -20,27 +18,29 @@
       },
       "4": {
         "address": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51"
+      },
+      "4447": {
+        "address": "0x74e3FC764c2474f25369B9d021b7F92e8441A2Dc",
+        "codeHash": "6809b82b6d05c436e8ee33609ad2d1f6ee79e9100c5e997a592963680ba898dc"
       }
     }
   },
-
   "ChannelManager": {
     "networks": {
-      "4": {
-        "links": {
-          "ECTools": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51",
-          "Token": ""
-        },
-        "address": "0xA49E15AFDB211B154873fc3D5ADD45C7c6c658f6"
-      },
       "3": {
         "links": {
           "ECTools": "0x2511919A60c8E7eE29CC994c5ec40fB406bc073D",
           "Token": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51"
         },
         "address": "0x8BA9df707565Ef788D0C72D41db8efbBADf41240"
+      },
+      "4": {
+        "links": {
+          "ECTools": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51",
+          "Token": ""
+        },
+        "address": "0xA49E15AFDB211B154873fc3D5ADD45C7c6c658f6"
       }
     }
   }
-
 }
