@@ -8,9 +8,16 @@ const TokenArtifacts = require('../build/contracts/Token.json')
 const HumanStandardTokenArtifacts = require('../build/contracts/HumanStandardToken.json')
 const ECToolsArtifacts = require('../build/contracts/ECTools.json')
 
+console.log(`Migrations activated in env: ${JSON.stringify(process.env,null,2)}`)
+
 const cwd = process.cwd()
-const HOME = `${cwd.substring(0,cwd.indexOf('indra')+5)}/modules/contracts`
-const addressesPath = `${HOME}/ops/addresses.json`
+let HOME
+if (cwd.indexOf('indra') !== -1) {
+  HOME = `${cwd.substring(0,cwd.indexOf('indra')+5)}/modules/contracts`
+} else {
+  HOME = '/root'
+}
+const addressesPath = `${HOME}/address-book.json`
 const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'))
 
 const hash = (message) => {
@@ -96,6 +103,7 @@ const getWallet = (network) => {
   if (!ECToolsSavedAddress || !ECToolsCodeMatches) {
     console.log(`Deploying a new ECTools contract..`)
     const ecTools = await eth.ContractFactory.fromSolidity(ECToolsArtifacts).connect(wallet).deploy()
+    await wallet.provider.waitForTransaction(ecTools.deployTransaction.hash)
     ecTools.codeHash = hash(await wallet.provider.getCode(ecTools.address))
     console.log(`ECTools deployed to address ${ecTools.address} with code hash ${ecTools.codeHash.substring(0,8)}... via transaction ${ecTools.deployTransaction.hash}`)
     addresses.ECTools.networks[netId] = { "address" : ecTools.address, "codeHash": ecTools.codeHash }
@@ -115,53 +123,73 @@ const getWallet = (network) => {
   let tokenAddress
   try {
     tokenAddress = addresses.Token.networks[netId].address
-    const tokenName = addresses.Token.networks[netId].name
+    const tokenName = addresses.Token.networks[netId].name || 'unknown'
     console.log(`Found token address for ${tokenName} in our address book: ${tokenAddress}`)
   } catch (e) {
     console.log(`A token address has not been saved to our address book yet`)
     tokenAddress = undefined
   }
 
-  if (!tokenAddress && netId === 4447) {
+  // Has this address been deployed?
+  let tokenCode
+  if (tokenAddress) {
+    tokenCode = await wallet.provider.getCode(ECToolsSavedAddress)
+    if (tokenCode === "0x") {
+      console.log(`A contract has not been deployed to the provided token address`)
+    }
+  }
+
+  if ((!tokenCode || !tokenAddress) && netId === 4447) {
     console.log(`Deploying a new HumanStandardToken contract..`)
 
-    console.log(`Before: wallet nonce=${await wallet.getTransactionCount()} provider nonce=${await wallet.provider.getTransactionCount(wallet.address)}`)
     const hsToken = await eth.ContractFactory.fromSolidity(HumanStandardTokenArtifacts).connect(wallet).deploy(
       tstSupply,
       tstName,
       tstDecimals,
       tstSymbol
     )
-    await wallet.provider.waitForTransaction(hsToken.deployTransaction)
-    console.log(`After: wallet nonce=${await wallet.getTransactionCount()} provider nonce=${await wallet.provider.getTransactionCount(wallet.address)}`)
+    await wallet.provider.waitForTransaction(hsToken.deployTransaction.hash)
 
     tokenAddress = hsToken.address
-    console.log(`wallet keys: ${Object.keys(wallet)} && provider keys: ${Object.keys(wallet.provider)}`)
     console.log(`Success, deployed to address ${tokenAddress}`)
-    addresses.Tokens.networks[netId] = { "address": tokenAddress, "name": tstSymbol.toLowerCase() }
+    addresses.Token.networks[netId] = { "address": tokenAddress, "name": tstSymbol.toLowerCase() }
   } else if (!tokenAddress) {
     console.error(`If we're not in dev-mode, then a token needs to already have been deployed & saved in our address book`)
     process.exit(1)
   }
 
-  console.log(`wallet nonce=${await wallet.getTransactionCount()} provider nonce=${await wallet.provider.getTransactionCount(wallet.address)}`)
-
   ////////////////////////////////////////
   // Deploy the ChannelManager if needed
 
+  console.log(`\nChecking for a valid ChannelManager`)
   const challengePeriod = 600
 
+  let ChannelManagerSavedAddress
+  try {
+    ChannelManagerSavedAddress = addresses.ChannelManager.networks[netId].address
+    console.log(`Found ChannelManager address in our address book: ${ChannelManagerSavedAddress}`)
+  } catch (e) {
+    console.log(`An ChannelManager address has not been saved to our address book`)
+    ChannelManagerSavedAddress = undefined
+  }
+
+  // TODO: Check to see if it's linked to the expected ECTools and Token contracts
+
+  if (!ChannelManagerSavedAddress) {
+  console.log(`deploying the ChannelManager with params: hub=${wallet.address} challengePeriod=${challengePeriod} token=${tokenAddress}`)
   const ChannelManagerBytecode = linker.linkBytecode(ChannelManagerArtifacts.bytecode, {
     'ECTools': ECToolsSavedAddress
   })
-
-  console.log(`deploying the ChannelManager with params: hub=${wallet.address} challengePeriod=${challengePeriod} token=${tokenAddress}`)
   const channelManager = await (new eth.ContractFactory(
     ChannelManagerArtifacts.abi,
     ChannelManagerBytecode,
     wallet
   )).deploy(wallet.address, challengePeriod, tokenAddress)
-  console.log(`deployed the ChannelManager, got: ${Object.keys(channelManager)}`)
+  const channelManagerAddress = channelManager.address
+  addresses.ChannelManager.networks[netId] = { "address": channelManagerAddress }
+  // TODO: Save ECTools/Token links to addressbook
+  console.log(`Success, deployed ChannelManger to address ${channelManagerAddress}`)
+  }
 
   ////////////////////////////////////////
   // Save Artifacts to Filesystem
@@ -175,19 +203,14 @@ const getWallet = (network) => {
     try {
       fs.unlinkSync(addressesPath)
       fs.writeFileSync(addressesPath, JSON.stringify(addresses,null,2))
+      console.log(`Done!`)
     } catch (e) {
       console.log(`Error saving artifacts: ${e}`)
     }
 
   } else {
-    console.log(`\nNo changes to artifacts..`)
+    console.log(`\nNo changes to artifacts. Done!`)
 
   }
-
-  console.log(`verifying code hash..`)
-  const addressesReloaded = JSON.parse(fs.readFileSync(addressesPath, 'utf8'))
-  const codeHashReloaded = hash(await wallet.provider.getCode(addressesReloaded.ECTools.networks[netId].address))
-  console.log(`Saved code hash: ${addressesReloaded.ECTools.networks[netId].codeHash.substring(0,8)} and deployed code hash: ${codeHashReloaded.substring(0,8)}`)
-
 
 })();

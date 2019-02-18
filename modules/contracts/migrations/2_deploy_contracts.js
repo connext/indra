@@ -6,8 +6,8 @@ console.log(`Migration step 2 activated!`)
 
 // TODO: TEST ALL THIS, ESP ECTOOLS STUFF, but we should definitely have it
 module.exports = async function(deployer, network, accounts) {
-  const data = require('../data.json')
-  const addresses = require('../ops/addresses.json')
+  const data = require('../ops/data.json')
+  const addresses = require('../ops/address-book.json')
 
   console.log(`web3.version= ${web3.version}`)
   const netid = await web3.eth.net.getId()

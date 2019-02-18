@@ -1,5 +1,5 @@
 {
-  "Tokens": {
+  "Token": {
     "networks": {
       "1": {
         "name": "dai",
@@ -8,6 +8,10 @@
       "4": {
         "name": "weth",
         "address": "0xc778417e063141139fce010982780140aa0cd5ab"
+      },
+      "4447": {
+        "address": "0xD95B1DbEc167C6cf547d018dDEcF41a4cb2e2f73",
+        "name": "tst"
       }
     }
   },
@@ -40,6 +44,9 @@
           "Token": ""
         },
         "address": "0xA49E15AFDB211B154873fc3D5ADD45C7c6c658f6"
+      },
+      "4447": {
+        "address": "0xD95B1DbEc167C6cf547d018dDEcF41a4cb2e2f73"
       }
     }
   }

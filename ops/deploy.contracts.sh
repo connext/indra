@@ -25,10 +25,6 @@ if [[ -z "$ETH_MNEMONIC" ]]
 then ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 fi
 
-if [[ -z "$PRIVATE_KEY_FILE" ]]
-then PRIVATE_KEY_FILE="/run/secrets/private_key"
-fi
-
 echo "Deploying contracts to $ETH_NETWORK via provider: $ETH_PROVIDER"
 sleep 1 # give the user a sec to ctrl-c in case above is wrong
 
