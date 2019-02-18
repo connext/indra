@@ -188,7 +188,15 @@ export class MockHub implements IHubAPIClient {
     return { id: 0, state: getChannelState('full'), status: 'CS_OPEN' }
   }
 
-  async getThreads(): Promise<ThreadRow[]> {
+  async getActiveThreads(): Promise<ThreadState[]> {
+    return []
+  }
+
+  async getLastThreadUpdateId(): Promise<number> {
+    return 0
+  }
+
+  async getAllThreads(): Promise<ThreadState[]> {
     return []
   }
 
