@@ -17,7 +17,7 @@ if (cwd.indexOf('indra') !== -1) {
 } else {
   HOME = '/root'
 }
-const addressesPath = `${HOME}/address-book.json`
+const addressesPath = `${HOME}/ops/address-book.json`
 const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'))
 
 const hash = (message) => {

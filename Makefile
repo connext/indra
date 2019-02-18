@@ -33,7 +33,7 @@ docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
-install=npm install --prefer-offline --unsafe-perm
+install=npm install --prefer-offline --unsafe-perm > /dev/null
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
@@ -144,11 +144,11 @@ wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
 wallet-node-modules: client $(wallet)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	$(docker_run_in_wallet) "$(install)" > /dev/null
+	$(docker_run_in_wallet) "$(install)"
 	# Don't dynamically link the local client until it's more stable, use the one from npm for now
 	#$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	#$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
-	#$(docker_run_in_wallet) "cd ../client && $(install)" > /dev/null
+	#$(docker_run_in_wallet) "cd ../client && $(install)"
 	$(log_finish) && touch build/wallet-node-modules
 
 # Hub
@@ -171,10 +171,10 @@ hub-js: hub-node-modules $(shell find $(hub) $(find_options))
 hub-node-modules: builder client $(hub)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
-	$(docker_run_in_hub) "$(install)" > /dev/null
+	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_hub) "cd ../client && $(install)" > /dev/null
+	$(docker_run_in_hub) "cd ../client && $(install)"
 	$(log_finish) && touch build/hub-node-modules
 
 # Contracts
@@ -198,17 +198,17 @@ contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(
 contract-node-modules: client $(contracts)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
-	$(docker_run_in_contracts) "$(install)" > /dev/null
+	$(docker_run_in_contracts) "$(install)"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_contracts) "cd ../client && $(install)" > /dev/null
+	$(docker_run_in_contracts) "cd ../client && $(install)"
 	$(log_finish) && touch build/contract-node-modules
 
 # Client
 
 client: builder $(shell find $(client)/src) $(client)/package.json
 	$(log_start) && echo "prereqs: $<"
-	$(docker_run_in_client) "$(install)" > /dev/null
+	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/client
 
 # Database
@@ -230,7 +230,7 @@ migration-templates: $(shell find $(db) $(find_options))
 
 database-node-modules: builder $(db)/package.json
 	$(log_start) && echo "prereqs: $<"
-	$(docker_run_in_db) "$(install)" > /dev/null
+	$(docker_run_in_db) "$(install)"
 	$(log_finish) && touch build/database-node-modules
 
 # Builder

@@ -172,7 +172,7 @@ services:
     image: $ethprovider_image
     command: "$watch_ethprovider"
     environment:
-      ETH_PROVIDER: "localhost:8545"
+      ETH_PROVIDER: $ETH_RPC_URL
       ETH_NETWORK: $ETH_NETWORK
       ETH_MNEMONIC: $ETH_MNEMONIC
     networks:
