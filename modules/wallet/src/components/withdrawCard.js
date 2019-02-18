@@ -65,11 +65,13 @@ class WithdrawCard extends Component {
     if (!this.state.checkedB) {
       await this.setState(oldState => {
         oldState.withdrawalVal.withdrawalWeiUser = value;
+        oldState.withdrawalVal.tokensToSell = '0';
         return oldState;
       });
     } else if (this.state.checkedB) {
       await this.setState(oldState => {
         oldState.withdrawalVal.tokensToSell = value;
+        oldState.withdrawalVal.withdrawalWeiUser = '0';
         return oldState;
       });
     }
@@ -121,16 +123,12 @@ class WithdrawCard extends Component {
       console.log('Cannot withdraw')
       return
     }
-    // if (
-    //   Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(channelState.balanceWeiUser) &&
-    //   Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
-    // ) {
-      if (web3.utils.isAddress(this.state.withdrawalVal.recipient)){
-        let withdrawalRes = await connext.withdraw(withdrawalVal);
-        console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
-      } else {
-        this.setState({addressError: "Please enter a valid address"})
-      }
+    if (web3.utils.isAddress(this.state.withdrawalVal.recipient)){
+      let withdrawalRes = await connext.withdraw(withdrawalVal);
+      console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
+    } else {
+      this.setState({addressError: "Please enter a valid address"})
+    }
     // } else {
     //   this.setState({balanceError: "Insufficient balance in channel"})
     // }
