@@ -5,14 +5,9 @@ project=connext
 ops="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 flag=$1; [[ -n "$flag" ]] || flag=dev
 
-make $flag
-
 # If we're restarting the whole thing
 if [[ "$flag" == "prod" || "$flag" == "dev" ]]
 then
-  if [[ "$flag" == "prod" ]]
-  then make deploy
-  fi
   bash $ops/stop.sh
   bash ops/deploy.$flag.sh
 

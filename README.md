@@ -108,56 +108,73 @@ There are a handful of watcher flags at the top of `ops/deploy.dev.sh` that are 
 
 ## Deploying to Production
 
-### First, push the production images
- 
-Before running make deploy, check the `modules/wallet/ops/prod.env` file as this will contain your wallet's prod-mode env vars. (TODO: build this dynamically from the env vars in `ops/deploy.prod.sh`) If these vars look good, then run:
+Tweak, check, tweak, check, commit. Time to deploy?
 
-`make deploy` <- this will build the project's docker images and push them to docker hub.
+### First, setup CircleCI Environment Variables
 
-When pushing images to dockerhub, it's assumed that your account's username (obtained by running the `whoami` shell command) is also your docker hub username and that you've already run `docker login`. If these usernames are different, change the `registry` variable at the top of the Makefile before running `make deploy`.
+**Once per CircleCI account or organization**: Run `ssh-keygen -t rsa -b 4096 -C "circleci" -m pem -f .ssh/circleci` to generate a new ssh key pair. Load the private key (`.ssh/circleci`) into CircleCI -> Settings -> Permissions -> SSH Permissions.
+
+Go to CircleCI -> Settings -> Build Settings -> Environment Variables
+
+ - `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `repository` vars at the top of the Makefile & `ops/deploy.prod.sh`.
+ - `STAGING_URL` & `PRODUCTION_URL`: The URL from which the Indra application will be served.
+
+If `STAGING_URL=staging.bohendo.com` then
+ - DNS needs to be properly configured so that `staging.bohendo.com` will resolve to the IP address of your staging server
+ - The admin should have ssh access via `ssh dev@$STAGING_URL` after completing the next step.
+ - The application will be accessible from `https://staging.bohendo.com` after deploying.
+
+### Second, setup the production server
+
+**Once per server**: `bash ops/setup-ubuntu.sh $SERVER_IP`. For best results, run this script with a `$SERVER_IP` that points to a fresh Ubuntu VM.
+
+We need to be able to ssh into either `root@$SERVER_IP` or `dev@$SERVER_IP`. If root, this script will setup a dev user and disable root login for security.
+
+The setup script expects to find CircleCI's public key in `~/.ssh/circleci.pub`.
+
+This script will also load your hub's private key into a docker secret stored on the server. You'll have to copy/paste it into the terminal, I usually load my mnemonic into metamask and then export the private key from there.
 
 ### Second, deploy the contracts
 
 To deploy the ChannelManager Contract:
 
 ```
-make contract-artifacts
-# the space at the beginning of the command below will prevent this
-# command (& the mnemoic) from being stored in your shell's history
-  MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" INFURA_KEY="abc123xyz" ./node_modules/.bin/truffle migrate --network=ropstenLive
+# build everything you need for contract deployment with:
+make ethprovider
+
+# the spaces at the beginning of these commands will prevent them
+# (& their secrets) from being stored in your shell's history
+  export MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  export ETH_PROVIDER="https://rinkeby.infura.io/abc123xzy"
+
+./node_modules/.bin/truffle migrate --network=rinkebyLive
 ```
 
-The above will output the address your ChannelManager contract was deployed to. Add this address to the address book at `modules/contracts/ops/addresses.json` and to the env vars on top of `ops/deploy.prod.sh`. You'll also want to add the token address and address[0] of the mnemonic you used to deploy to `ops/deploy.prod.sh`.
+The above will output the address your ChannelManager contract was deployed to.
 
-### Third, setup the production server
+Add this new contract address & the token address & the account[0] you used in the migrations to the address book at `modules/contracts/ops/addresses.json`, the env vars in `modules/wallet/ops/prod.env`, and to the env vars on top of `ops/deploy.prod.sh`. TODO: Automate this.
 
-If you're deploying to a server on AWS or Digital Ocean, ssh into that server and make sure all of `git`, `make` and `docker` are installed on the machine you're deploying to.
-
-Next step is to obtain your private key (eg by loading the mnemonic into MetaMask then exporting your private key) and load it into a docker secret called `private_key` on the server where you'll be deploying the hub with a command like this: (Note the space at the beginning to avoid saving your private key in your shell's history)
+### Third, give it one final test
 
 ```
- echo 'c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3' | tr -d ' \n\r' | docker secret create private_key -
+make test-all
 ```
 
-Run `docker secret ls` to ensure it's been created. Now, you're ready to deploy. To deploy the payment hub, run:
+The above command will build everything that's needed to run the full test suite and then run 3 sets of unit tests for (the client, contracts, and hub) plus a set of integration tests on the production-mode deployment.
 
-### Lastly, deploy
+If all tests are green, we're good to go
+
+### Lastly, activate the CI pipeline
 
 ```
-git clone https://github.com/ConnextProject/indra.git
-cp indra
-DOMAINNAME=example.com bash ops/deploy.prod.sh
+git push
 ```
 
-The `DOMAINNAME=example.com` prefix sets an env var that allows correct configuration of an https connection from which the wallet UI can be served securely. Make sure that your production server is reachable at the domain name you specify. You can also add this env var to your server's `~/.bashrc` if you don't want to specify the domain name during every deployment.
+This will trigger the CI pipeline that will run all test suites and, if none fail, deploy this app to production.
 
-Assuming the docker images have been built & pushed to a registry, `bash ops/deploy.prod.sh` will pull & deploy them in an environment suitable for production.
+Pushing to any branch other than master will trigger a deployment to the $STAGING server specified by CircleCI. Pushing or merging into master will deploy to the $PRODUCTION server.
 
-Again, it runs `whoami` to get the current username & tries to use that as the registry name to pull docker images from. If your docker hub username is different, then update the registry var at the top of the `deploy.prod.sh` script before deploying. (eg change it to connextproject dockerhub
-
-If your hub is already deployed & you want to redeploy to apply changes you've made, all you need to do is checkout the branch you want to deploy (and pull if necessary) then run `bash ops/restart.sh prod`.
-
-## How to interact with Hub
+## How to interact with the Hub
 
  1. AuthApiService
   - GET /auth/status: returns success and address if a valid auth token is provided
@@ -179,7 +196,7 @@ If your hub is already deployed & you want to redeploy to apply changes you've m
       - lastChanTx
       - lastThreadUpdateId
 
-TODO: Fill this in better
+TODO: Complete this section
 
 ## Debugging
 
@@ -191,44 +208,51 @@ Full error message:
 docker: Error response from daemon: Conflict. The container name "/connext_buidler" is already in use by container "6d37b932d8047e16f4a8fdf58780fe6974e6beef58bf4cc5e48d00d3e94a67c3". You have to remove (or rename) that container to be able to reuse that name.
 ```
 
-You probably started to build something and then stopped it with ctrl-c. It only looks like the build stopped: the builder process is still hanging out in the background wrapping up what it was working on. If you wait for a few seconds, this problem will sometimes just go away as the builder finishes & exits.
+You probably started to build something and then stopped it with ctrl-c. It only looks like the build stopped: the builder process is still hanging out in the background wrapping up what it was working on. If you wait for a few seconds, this problem will usually go away as the builder finishes & exits.
 
-To speed things up, run `make stop` to tell the builder to hurry up & finish and then wait for the builder to exit.
+To speed things up, run `make stop` to tell the builder to hurry up & finish and then pause until the builder is done & has exited.
 
+### Hub errors on start
+
+We've seen some non-deterministic errors on `npm start` where some part of the startup process errors out and the Hub doesn't launch properly. Here are ways to restart the app, in increasing orders of aggressiveness:
+
+- Restart the app: `npm restart`
+- Delete all persistent data (ie database & testnet chain data) and restart: `make reset && npm start`
+- Rebuild everything and restart: `make clean && npm start`
+- Reinstall dependencies and rebuild everything and restart: `make deep-clean && npm start`
+- Remove package-locks and reinstall everything and delete persistent data and rebuild everything and restart: `make purge && npm start`
 
 ### Ethprovider or Ganache not working
 
 ```
+cat -> curleth.sh <<EOF
 #!/bin/bash
 url=$ETH_PROVIDER; [[ $url ]] || url=http://localhost:8545
 echo "Sending $1 query to provider: $url"
 curl -H "Content-Type: application/json" -X POST --data '{"id":31415,"jsonrpc":"2.0","method":"'$1'","params":'$2'}' $url
+EOF
 ```
 
-This lets us do a simple `curleth net_version '[]'` as a sanity check to make sure the ethprovider is alive & listening. If not, curl gives more useful errors that direct you towards investigating either metamask or ganache.
+This lets us do a simple `bash curleth.sh net_version '[]'` as a sanity check to make sure the ethprovider is alive & listening. If not, curl might give more useful errors that direct you towards investigating either metamask or ganache.
 
 One other sanity check is to run `docker service ls` and make sure that you see an ethprovider service that has port 8545 exposed.
 
-You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is alive & run `ps` to see if it's even running.
+You can also run `docker exec -it connext_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
 
 Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
 
-### Hub errors on start
-
-We've seen some non-deterministic errors on `npm start` where some part of the startup process errors out and the Hub doesn't launch properly. We're still trying to track down the cause, but here's what's worked for community members after seeing an error:
-
-- Running `npm start` again
-- Rebuild everything then restart: `make clean && npm start`
-- Remove build artifacts & persistent data storage and restart: `make purge && npm start`
-
 ### Locked DB
 
-We've seen the database get locked on startup. Sometimes, this manifests as `502 Bad Gateway` when you try to load the wallet UX. The cause is unclear at the moment (for some reason the db didn't shut down properly last time), but running `bash ops/unlock-db.sh` followed by `yarn restart` should fix the problem.
+We've seen the database get locked on startup when it crashes without exiting properly. Usually, this happens as a result of errors in the database migrations, this is especially common if db migrations have been updated recently.
+
+Running `bash ops/unlock-db.sh` will unlock the database. Sometimes, this is all you need to do & things will start working.
+
+Sometimes, if the database is corrupt, you'll want to run `make reset && npm start` to wipe out the old data and start the app again fresh. Note: `make reset` will only wipe out dev-mode data, so if you encounter this problem in production.. We're in for a tough time.
 
 ### 502 Bad Gateway
 
 This is a pretty common error--it's either due to a locked DB 
-(see [Locked DB](#Locker-DB)) or slow startup. 
+(see above) or slow startup. 
 
-To debug: run `yarn logs database`, and see if the DB is locked. If so, unlock it. If it's not locked, run `yarn logs wallet` to see if the wallet front-end has compiled. Most likely, the wallet is just taking a long time to compile and it's manifesting as a 502 error.
+To debug: run `npm run logs database`, and see if the DB is locked. If so, unlock it. If it's not locked, run `npm run logs wallet` to see if the wallet front-end has compiled. Most likely, the wallet is just taking a long time to compile and it's manifesting as a 502 error.
 

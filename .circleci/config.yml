@@ -6,41 +6,83 @@ jobs:
     steps:
       - checkout
       - run: make test-client
+
   test-contracts:
     machine: true
     steps:
       - checkout
       - run: make test-contracts
+
   test-hub:
     machine: true
     steps:
       - checkout
       - run: make test-hub
+
   test-e2e:
     machine: true
     steps:
       - checkout
       - run: make test-e2e
-  deploy:
+
+  push-images:
     machine: true
     steps:
       - checkout
-      - run: make deploy
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push
+
+  push-live-images:
+    machine: true
+    steps:
+      - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push-live
+
+  deploy-staging:
+    machine: true
+    steps:
+      - run: ssh dev@$STAGING_URL "bash -c 'rm -rf indra && git clone https://github.com/ConnextProject/indra.git'"
+      - run: ssh dev@$STAGING_URL "bash -c 'cd indra && git checkout "$CIRCLE_BRANCH "&& DOMAINNAME="$STAGING_URL "bash ops/restart.sh prod'"
+
+  deploy-live:
+    machine: true
+    steps:
+      - run: ssh dev@$PRODUCTION_URL "bash -c 'rm -rf indra && git clone https://github.com/ConnextProject/indra.git'"
+      - run: ssh dev@$PRODUCTION_URL "bash -c 'cd indra && MODE=live DOMAINNAME="$PRODUCTION_URL "bash ops/restart.sh prod'"
 
 workflows:
   version: 2
-  test_everything:
+  test-and-deploy:
     jobs:
       - test-client
       - test-contracts
       - test-hub
       - test-e2e
-
-# keep the npm cache around to speed up installs
-cache:
-  directories:
-  - "$HOME/modules/client/.npm"
-  - "$HOME/modules/contracts/.npm"
-  - "$HOME/modules/database/.npm"
-  - "$HOME/modules/hub/.npm"
-  - "$HOME/modules/wallet/.npm"
+      - push-images:
+          requires:
+            - test-client
+            - test-contracts
+            - test-hub
+            - test-e2e
+      - push-live-images:
+          filters:
+            branches:
+              only: master
+          requires:
+            - test-client
+            - test-contracts
+            - test-hub
+            - test-e2e
+      - deploy-staging:
+          filters:
+            branches:
+              ignore: master
+          requires:
+            - push-images
+      - deploy-live:
+          filters:
+            branches:
+              only: master
+          requires:
+            - push-live-images

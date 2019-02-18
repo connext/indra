@@ -40,7 +40,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod clean stop purge deploy deploy-live
+.PHONY: default all dev prod clean stop purge push push-live
 
 default: dev
 all: dev prod
@@ -78,12 +78,12 @@ tags: prod
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:latest
 	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:latest
 
-deploy: tags
+push: tags
 	docker push $(registry)/$(project)_database:latest
 	docker push $(registry)/$(project)_hub:latest
 	docker push $(registry)/$(project)_proxy:latest
 
-deploy-live: prod
+push-live: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:$(version)
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:$(version)
 	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:$(version)
