@@ -292,14 +292,14 @@ export default class ThreadsService {
       'CloseThread',
       channelUpdateSender.user,
       channelUpdateSender,
-      convertThreadState('str-unsigned', thread.state)
+      convertThreadState('str', thread.state)
     )
     const channelRowReceiver = await this.channelsDao.applyUpdateByUser(
       channelUpdateReceiver.user,
       'CloseThread',
       channelUpdateReceiver.user,
       channelUpdateReceiver,
-      convertThreadState('str-unsigned', thread.state)
+      convertThreadState('str', thread.state)
     )
     await this.threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
 
@@ -312,13 +312,15 @@ export default class ThreadsService {
     )
   }
 
-  public async getThreadsActive(user: string): Promise<ThreadRow[]> {
-    const threadsOpen = await this.threadsDao.getThreadInitialStatesByUser(user)
-    let threadsActive = []
-    threadsActive = threadsOpen.map(async t => {
-      return await this.threadsDao.getThread(t.state.sender, t.state.receiver)
-    })
-    return threadsActive
+  public async getThreadsActive(user: string): Promise<ThreadState[]> {
+    return (await this.threadsDao.getThreadsActive(user)).map(
+      thread => convertThreadState('str', thread.state)
+    )
+  }
+
+  public async getThreads(user: string): Promise<ThreadState[]> {
+    const threads = await this.threadsDao.getThreads(user)
+    return threads.map(t => convertThreadState('str', t.state))
   }
 
   public async getThread(
@@ -339,6 +341,10 @@ export default class ThreadsService {
     return (await this.threadsDao.getThreadsIncoming(user)).map(thread => {
       return { ...thread, state: convertThreadState('str', thread.state) }
     })
+  }
+
+  public async doGetLastUpdateId(user: string): Promise<number> {
+    return (await this.threadsDao.getLastThreadUpdateId(user))
   }
 
   async ensureEnabled() {
