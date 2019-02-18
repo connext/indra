@@ -77,7 +77,11 @@ class DepositCard extends Component {
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
     try {
-      const { usingMetamask, connext, metamask } = this.props
+      const { usingMetamask, connext, metamask, connextState } = this.props
+      if (!connextState || !connextState.runtime.canDeposit) {
+        console.warn('Cannot deposit into channel')
+        return
+      }
       const wei = this.state.depositVal.amountWei;
       const tokens = this.state.depositVal.amountToken;
       console.log(`wei: ${wei}`);
@@ -235,6 +239,7 @@ class DepositCard extends Component {
 
   render() {
     const { anchorEl } = this.state;
+    const { connextState } = this.props
     const open = Boolean(anchorEl);
     const cardStyle = {
       card: {
@@ -307,6 +312,7 @@ class DepositCard extends Component {
           style={cardStyle.button}
           variant="contained"
           onClick={evt => this.depositHandler(evt)}
+          disabled={!connextState || !connextState.runtime.canDeposit}
         >
           Deposit
         </Button>

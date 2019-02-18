@@ -48,18 +48,22 @@ class SwapCard extends Component {
     console.log(
       `Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`
     );
-    const { channelState } = this.props
-    this.setState({error: null})
+    const { channelState, connextState } = this.props
+    if (!connextState || !connextState.runtime.canExchange) {
+      console.log('Cannot exchange')
+      return
+    }
+    this.setState({ error: null })
     try {
-      // if(this.state.exchangeVal <= channelState.balanceWeiUser ) {
+      if(this.state.exchangeVal <= channelState.balanceWeiUser ) {
         let exchangeRes = await this.props.connext.exchange(
           this.state.exchangeVal,
           "wei"
         );
         console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
-      // } else {
-      //   throw new Error("Insufficient wei balance")
-      // }
+      } else {
+        throw new Error("Insufficient wei balance")
+      }
     } catch (e) {
       console.log(`Error: ${e}`)
       this.setState({error: e.message})
@@ -69,6 +73,7 @@ class SwapCard extends Component {
 
   render() {
     const { anchorEl } = this.state;
+    const { connextState } = this.props
     const open = Boolean(anchorEl);
 
     const cardStyle = {
@@ -134,6 +139,7 @@ class SwapCard extends Component {
           style={cardStyle.button}
           onClick={() => this.exchangeHandler()}
           variant="contained"
+          disabled={!connextState || !connextState.runtime.canExchange}
         >
           Swap
         </Button>
