@@ -2,30 +2,20 @@ const EC = artifacts.require("./ECTools.sol");
 const CM = artifacts.require("./ChannelManager.sol");
 const HumanStandardToken = artifacts.require("./HumanStandardToken.sol");
 
-console.log(`Migration step 2 activated!`)
-
 // TODO: TEST ALL THIS, ESP ECTOOLS STUFF, but we should definitely have it
 module.exports = async function(deployer, network, accounts) {
   const data = require('../ops/data.json')
-  const addresses = require('../ops/address-book.json')
-
-  console.log(`web3.version= ${web3.version}`)
-  const netid = await web3.eth.net.getId()
-  console.log(`Attached to network id ${netid}`)
 
   let tokenAddress
 
   if (network === "mainnet") {
-    // tokenAddress = addresses.Tokens.networks["1"].Booty
-    tokenAddress = addresses.Tokens.networks["1"].Dai
+    // TODO change to BOOTY address for mainnet spanks
+    tokenAddress = "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359" // DAI
 
     // TODO: use deployed ECTools
     await deployer.deploy(EC);
     await deployer.link(EC, CM);
-  } else if (network === "rinkeby") {
-
-    tokenAddress = addresses.Tokens.networks["4"].Weth
-
+  } else if (network === "rinkeby" || network === "rinkebyLive") {
     tokenAddress = "0xc778417e063141139fce010982780140aa0cd5ab" // Rinkeby WETH
 
     // use deployed version of ECTools

@@ -1,16 +1,40 @@
 module.exports = {
   networks: {
+    mainnet: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "1",
+      gas: 4700000
+    },
+    rinkeby: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "4",
+      gas: 4700000
+    },
+    ropsten: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "3",
+      gas: 4700000
+    },
+    kovan: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "42",
+      gas: 4700000
+    },
     ganache: {
-      host: 'localhost',
-      port: '8545',
+      host: "127.0.0.1",
+      port: 8545,
       network_id: "4447",
       gas: 6721975
     },
     development: {
-      host: 'localhost',
-      port: '8545',
+      host: "127.0.0.1",
+      port: 9545,
       network_id: "4447",
-      gas: 6721975
+      gas: 4700000
     }
   },
   compilers: {

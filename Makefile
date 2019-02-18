@@ -16,7 +16,6 @@ SHELL=/bin/bash
 
 # Fetch Prerequisites
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
-contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -190,7 +189,7 @@ ethprovider: contract-artifacts $(contracts)/ops/ethprovider.dockerfile
 	docker build --file $(contracts)/ops/ethprovider.dockerfile --tag $(project)_ethprovider:dev $(contracts)
 	$(log_finish) && touch build/ethprovider
 
-contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(contracts)/migrations $(find_options))
+contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "npm run build"
 	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
