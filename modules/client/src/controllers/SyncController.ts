@@ -371,7 +371,7 @@ export default class SyncController extends AbstractController {
     try {
       const state = this.store.getState()
       const txCount = state.persistent.channel.txCountGlobal
-      
+
       const hubSync = await this.hub.sync(
         txCount,
         getLastThreadUpdateId(this.store),
