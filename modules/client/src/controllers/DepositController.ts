@@ -22,14 +22,17 @@ export default class DepositController extends AbstractController {
 
   public async requestUserDeposit(deposit: Payment) {
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
-
-    const sync = await this.hub.requestDeposit(
-      signedRequest,
-      getTxCount(this.store),
-      getLastThreadUpdateId(this.store)
-    )
-
-    this.connext.syncController.handleHubSync(sync)
+    
+    try {
+      const sync = await this.hub.requestDeposit(
+        signedRequest,
+        getTxCount(this.store),
+        getLastThreadUpdateId(this.store)
+      )
+      this.connext.syncController.handleHubSync(sync)
+    } catch (e) {
+      console.warn('Error requesting deposit', e)
+    }
 
     // There can only be one pending deposit at a time, so it's safe to return
     // a promise that will resolve/reject when we eventually hear back from the

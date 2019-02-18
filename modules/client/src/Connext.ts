@@ -928,7 +928,7 @@ export class ConnextInternal extends ConnextClient {
         : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
     )
 
-    console.log(`Signing deposit request ${args}. Sig: ${sig}`)
+    console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 

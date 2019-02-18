@@ -116,7 +116,11 @@ class WithdrawCard extends Component {
     };
     console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
     this.setState({addressError: null, balanceError: null})
-    const { channelState, connext, web3 } = this.props;
+    const { channelState, connext, web3, connextState } = this.props;
+    if (!connextState || !connextState.runtime.canWithdraw) {
+      console.log('Cannot withdraw')
+      return
+    }
     // if (
     //   Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(channelState.balanceWeiUser) &&
     //   Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
@@ -134,6 +138,7 @@ class WithdrawCard extends Component {
 
   render() {
     const { anchorEl } = this.state;
+    const { connextState } = this.props
     const open = Boolean(anchorEl);
 
     const cardStyle = {
@@ -224,7 +229,7 @@ class WithdrawCard extends Component {
             endAdornment: (
               <InputAdornment position="end">
                 <Tooltip disableFocusListener disableTouchListener title="Withdraw all funds (ETH and TST) from channel">
-                  <Button variant="outlined" onClick={() => this.maxHandler()}>
+                  <Button variant="outlined" onClick={() => this.maxHandler()} disabled={!connextState || !connextState.runtime.canWithdraw}>
                     Max
                   </Button>
                 </Tooltip>

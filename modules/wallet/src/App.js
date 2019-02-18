@@ -263,7 +263,8 @@ class App extends Component {
     connext.on("onStateChange", state => {
       console.log("Connext state changed:", state);
       this.setState({
-        channelState: state.persistent.channel
+        channelState: state.persistent.channel,
+        connextState: state,
       });
     });
   }
@@ -289,14 +290,21 @@ class App extends Component {
   }
 
   async browserWalletDeposit() {
+    if (!this.state.connextState || !this.state.connextState.runtime.canDeposit) {
+      console.log('Cannot deposit.')
+      return
+    }
+
+    // if a deposit has been requested, then you shou
     let address = this.state.address;
     const tokenContract = this.state.tokenContract;
     const balance = await this.state.web3.eth.getBalance(address);
     const tokenBalance = await tokenContract.methods
       .balanceOf(address)
       .call();
+    console.log('browser wallet wei balance:', balance)
     if (balance !== "0" || tokenBalance !== "0") {
-      if (eth.utils.bigNumberify(balance).lte(DEPOSIT_MINIMUM_WEI)) {
+      if (eth.utils.bigNumberify(balance).lt(DEPOSIT_MINIMUM_WEI)) {
         // don't autodeposit anything under the threshold
         return;
       }
@@ -322,6 +330,10 @@ class App extends Component {
           .toString(),
         amountToken: tokenBalance
       };
+      if (actualDeposit.amountToken == "0" && actualDeposit.amountWei == "0") {
+        console.log('Actual deposit value is 0 for both wei and tokens. Not depositing.')
+        return
+      }
       // TODO does this need to be in the state?
       console.log(`Depositing: ${JSON.stringify(actualDeposit, null, 2)}`);
       console.log("********", this.state.connext.opts.tokenAddress);
@@ -448,7 +460,7 @@ class App extends Component {
   // ** wrapper for ethers getBalance. probably breaks for tokens
 
   render() {
-    const { anchorEl } = this.state;
+    const { anchorEl, connextState } = this.state;
     const open = Boolean(anchorEl);
     return (
       <div>
@@ -694,6 +706,7 @@ class App extends Component {
                   }}
                   variant="contained"
                   onClick={() => this.collateralHandler()}
+                  disabled={!connextState || !connextState.runtime.canWithdraw}
                 >
                   Request Collateral
                 </Button>
@@ -711,6 +724,7 @@ class App extends Component {
                 tokenAbi={tokenAbi}
                 connext={this.state.connext}
                 metamask={this.state.metamask}
+                connextState={this.state.connextState}
               />
             </div>
             <div className="column">
@@ -718,13 +732,15 @@ class App extends Component {
                 connext={this.state.connext} 
                 exchangeRate={this.state.exchangeRate} 
                 channelState={this.state.channelState}
+                connextState={this.state.connextState}
               />
             </div>
             <div className="column">
               <PayCard 
-                connext={this.state.connext} 
+                connext={this.state.connext}
                 channelState={this.state.channelState}
                 web3={this.state.web3}
+                connextState={this.state.connextState} 
               />
             </div>
             <div className="column">
@@ -736,6 +752,7 @@ class App extends Component {
                 hubWallet={this.state.hubWallet}
                 channelState={this.state.channelState}
                 web3={this.state.web3}
+                connextState={this.state.connextState} 
               />
             </div>
           </div>
