@@ -134,8 +134,7 @@ class WithdrawCard extends Component {
       return
     }
     if (web3.utils.isAddress(withdrawalVal.recipient)){
-      let withdrawalRes = await connext.withdraw(withdrawalVal);
-      console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
+      await connext.withdraw(withdrawalVal);
     } else {
       this.setState({addressError: "Please enter a valid address"})
     }
@@ -270,7 +269,7 @@ class WithdrawCard extends Component {
           }}
         />
         <Tooltip disableFocusListener disableTouchListener title="TST will be converted to ETH on Withdraw">
-          <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained">
+          <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained" disabled={!connextState || !connextState.runtime.canWithdraw}>
             <span>Withdraw</span>
           </Button>
         </Tooltip>

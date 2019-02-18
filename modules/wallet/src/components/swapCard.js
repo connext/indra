@@ -56,11 +56,10 @@ class SwapCard extends Component {
     this.setState({ error: null })
     try {
       if(this.state.exchangeVal <= channelState.balanceWeiUser ) {
-        let exchangeRes = await this.props.connext.exchange(
+        await this.props.connext.exchange(
           this.state.exchangeVal,
           "wei"
         );
-        console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
       } else {
         throw new Error("Insufficient wei balance")
       }
