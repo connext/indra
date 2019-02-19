@@ -74,7 +74,7 @@ docker run --tty --name ${project}_tester --network=$project \
   --env REDIS_URL_TEST=$REDIS_URL \
   --env ETH_RPC_URL_TEST=$ETH_RPC_URL \
   --volume $root/modules/hub:/root \
-  --entrypoint=bash ${project}_hub:dev -c '
+  --entrypoint=bash ${project}_builder -c '
     set -e
     echo "Waiting for $POSTGRES_HOST:5433 & $DATABASE && $REDIS && $ETH_RPC_URL_TEST to wake up.."
     bash ops/wait-for.sh -t 60 $POSTGRES_HOST:5433 2> /dev/null

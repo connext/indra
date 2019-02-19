@@ -57,7 +57,7 @@ reset: stop
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
 reset-client: stop
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	rm -rf modules/client
 	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
 	$(log_finish) && touch build/pull-client
@@ -119,25 +119,25 @@ test-e2e: root-node-modules prod
 # Proxy
 
 proxy-prod: wallet-prod $(shell find $(proxy) $(find_options))
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch build/proxy-prod
 
 proxy: $(shell find $(proxy) $(find_options))
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch build/proxy
 
 # Wallet
 
 wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options))
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/wallet-prod
 
 wallet: $(wallet)/package.json
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
 	# Don't dynamically link the local client until it's more stable, use the one from npm for now
@@ -150,17 +150,17 @@ wallet: $(wallet)/package.json
 # Hub
 
 hub-prod: hub
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
 	$(log_finish) && touch build/hub-prod
 
 hub: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
 
 hub-node-modules: builder $(hub)/package.json
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
@@ -172,12 +172,12 @@ hub-node-modules: builder $(hub)/package.json
 # Contracts
 
 contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_contracts) "npm run build"
 	$(log_finish) && touch build/contract-artifacts
 
 contract-node-modules: builder $(contracts)/package.json
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
@@ -189,45 +189,45 @@ contract-node-modules: builder $(contracts)/package.json
 # Client
 
 client: client-node-modules $(shell find $(client)/src)
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_client) "npm build"
 	$(log_finish) && touch build/client-node-modules
 
 client-node-modules: builder $(client)/package.json
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/client-node-modules
 
 # Database
 
 database-prod: database
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	docker tag $(project)_database:dev $(project)_database:latest
 	$(log_finish) && touch build/database-prod
 
 database: database-node-modules migration-templates $(db_prereq)
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	$(log_finish) && touch build/database
 
-migration-templates: $(shell find $(db) $(find_options))
-	$(log_start) && echo "prereqs: $<"
+migration-templates: $(shell find $(db)/ops $(db)/migrations $(db)/templates $(find_options))
+	$(log_start)
 	$(docker_run_in_db) "make"
 	$(log_finish) && touch build/migration-templates
 
 database-node-modules: builder $(db)/package.json
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(docker_run_in_db) "$(install)"
 	$(log_finish) && touch build/database-node-modules
 
 # Builder, etc
 
 builder: ops/builder.dockerfile
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch build/builder
 
 root-node-modules: package.json
-	$(log_start) && echo "prereqs: $<"
+	$(log_start)
 	$(install)
 	$(log_finish) && touch build/root-node-modules
