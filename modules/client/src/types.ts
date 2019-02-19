@@ -703,6 +703,13 @@ export type WithdrawalParameters<T = string> = {
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
+export const withdrawalParamsNumericFields = [
+  'withdrawalWeiUser',
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalTokenUser',
+]
+
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
