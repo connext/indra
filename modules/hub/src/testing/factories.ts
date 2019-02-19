@@ -3,9 +3,11 @@ import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChan
 import { default as ChannelsDao } from "../dao/ChannelsDao";
 import { Big } from "../util/bigNumber";
 import { default as ThreadsDao } from "../dao/ThreadsDao";
-import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes } from "../vendor/connext/types";
+import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes, convertChannelState, convertThreadState } from "../vendor/connext/types";
 import BN = require('bn.js')
 import ExchangeRateDao from "../dao/ExchangeRateDao";
+import { StateGenerator } from "../vendor/connext/StateGenerator"
+const sg = new StateGenerator()
 
 export function tokenVal(x: number | string): string {
   return Big(x).times(1e18).toFixed()
@@ -45,15 +47,16 @@ export function channelNextState(prevState: ChannelState, next: PartialSignedOrS
 export async function channelAndThreadFactory(registry: TestServiceRegistry, sender?: string, receiver?: string) {
   const threadsDao: ThreadsDao = registry.get('ThreadsDao')
 
-  // open performer channel
-  const perf = await channelUpdateFactory(registry, {
-    user: receiver || mkAddress('0xf'),
-  })
-
   // open user channel
-  const user = await channelUpdateFactory(registry, {
+  let user = await channelUpdateFactory(registry, {
     user: sender || mkAddress('0xb'),
     balanceTokenUser: tokenVal(69),
+  })
+
+  // open performer channel
+  let perf = await channelUpdateFactory(registry, {
+    user: receiver || mkAddress('0xf'),
+    balanceTokenHub: tokenVal(69),
   })
 
   let thread = getThreadState('signed', {
@@ -61,11 +64,27 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
     receiver: perf.user,
     balanceTokenSender: tokenVal(10),
   })
+
+  const userUpdate = await sg.openThread(
+    convertChannelState('bn', user.state),
+    [],
+    convertThreadState('bn', thread)
+  )
+  user = await channelUpdateFactory(registry, userUpdate)
+
+  const perfUpdate = await sg.openThread(
+    convertChannelState('bn', perf.state),
+    [],
+    convertThreadState('bn', thread)
+  )
+  perf = await channelUpdateFactory(registry, perfUpdate)
+
   await threadsDao.applyThreadUpdate(thread, user.update.id)
 
   return {
     user,
     performer: perf,
+    thread
   }
 }
 
