@@ -107,8 +107,20 @@ const deployContract = async (name, artifacts, args) => {
     process.exit(1)
   }
 
-  console.log(`\nPreparing to migrate contracts to network ${netId}`)
-  console.log(`Hub Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`)
+  // Sanity check: Is our eth provider serving us the correct network?
+  const net = process.env.ETH_NETWORK
+  if (((net === "mainnet" || net === "live") && netId == 1) ||
+      (net === "ropsten" && netId == 3) ||
+      ((net === "rinkeby" || net === "staging") && netId == 4) ||
+      (net === "kovan" && netId == 42) ||
+      (net === "ganache" && netId == 4447)) {
+    console.log(`\nPreparing to migrate contracts to ${net} network (${netId})`)
+    console.log(`Hub Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`)
+  } else {
+    console.error(`Given network (${net}) doesn't match the network ID from provider: ${netId}`)
+    process.exit(1)
+  }
+
 
   ////////////////////////////////////////
   // Deploy a new ECTools if needed
@@ -177,14 +189,14 @@ const deployContract = async (name, artifacts, args) => {
       isDeployed = false
     }
 
-    if (channelManagerHub !== wallet.address) {
+    if (channelManagerHub.toLowerCase() !== wallet.address.toLowerCase()) {
       console.log(`This ChannelManager's hub doesn't match the current wallet`)
       console.log(`${channelManagerHub} !== ${wallet.address}`)
       isDeployed = false
     }
 
     channelManagerToken = await channelManager.functions.approvedToken()
-    if (channelManagerToken !== tokenAddress) {
+    if (channelManagerToken.toLowerCase() !== tokenAddress.toLowerCase()) {
       console.log(`This ChannelManager's approvedToken doesn't match the given token`)
       console.log(`${channelManagerToken} !== ${tokenAddress}`)
       isDeployed = false
