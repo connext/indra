@@ -27,9 +27,9 @@ describe('WithdrawalController: unit tests', () => {
 
     const params: WithdrawalParameters = {
       exchangeRate: '5',
-      recipient: mkAddress('0xRRR'),
+      recipient: mkAddress('0xAAA'),
       tokensToSell: '50',
-      withdrawalWeiUser: '5',
+      withdrawalWeiUser: '0',
       weiToSell: '0',
     }
 
@@ -43,7 +43,7 @@ describe('WithdrawalController: unit tests', () => {
       reason: 'ProposePendingWithdrawal',
       args: {
         exchangeRate: '5',
-        recipient: mkAddress('0xRRR'),
+        recipient: mkAddress('0xAAA'),
         tokensToSell: '50',
         weiToSell: '0',
         targetWeiUser: '0',

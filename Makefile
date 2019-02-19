@@ -144,6 +144,7 @@ wallet: $(wallet)/package.json
 	#$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	#$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
 	#$(docker_run_in_wallet) "cd ../client && $(install)"
+	#@touch build/client && touch build/client-node-modules
 	$(log_finish) && touch build/wallet
 
 # Hub
@@ -170,6 +171,7 @@ hub-node-modules: builder $(hub)/package.json
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
 	$(docker_run_in_hub) "cd ../client && $(install)"
+	@touch build/client && touch build/client-node-modules
 	$(log_finish) && touch build/hub-node-modules
 
 # Contracts
@@ -186,14 +188,20 @@ contract-node-modules: $(contracts)/package.json
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
 	$(docker_run_in_contracts) "cd ../client && $(install)"
+	@touch build/client && touch build/client-node-modules
 	$(log_finish) && touch build/contract-node-modules
 
 # Client
 
-client: builder $(shell find $(client)/src) $(client)/package.json
+client: client-node-modules $(shell find $(client)/src)
+	$(log_start) && echo "prereqs: $<"
+	$(docker_run_in_client) "npm build"
+	$(log_finish) && touch build/client-node-modules
+
+client-node-modules: builder $(client)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_client) "$(install)"
-	$(log_finish) && touch build/client
+	$(log_finish) && touch build/client-node-modules
 
 # Database
 
