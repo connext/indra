@@ -8,7 +8,7 @@ function load_secret {
   if [[ -n "`docker secret ls | grep " $name"`" ]]
   then echo "A secret called $name already exists, aborting"
        echo "Remove existing secret to reset: docker secret rm $name"
-       exit 1
+       exit
   fi
 
   echo "Copy your secret to your clipboard"

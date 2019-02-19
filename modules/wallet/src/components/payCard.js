@@ -4,15 +4,11 @@ import Button from "@material-ui/core/Button";
 import SendIcon from "@material-ui/icons/Send";
 import TextField from "@material-ui/core/TextField";
 import Switch from "@material-ui/core/Switch";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
-import Typography from "@material-ui/core/Typography";
 
 class PayCard extends Component {
   state = {
     checkedA: true,
-    checkedB: true,
+    checkedB: false, // default to always being tokens
     anchorEl: null,
     paymentVal: {
       meta: {
@@ -25,7 +21,7 @@ class PayCard extends Component {
             amountWei: "0",
             amountToken: "0"
           },
-          type: "PT_THREAD"
+          type: "PT_CHANNEL"
         }
       ]
     },
@@ -64,13 +60,13 @@ class PayCard extends Component {
     this.setState({
       displayVal: evt.target.value
     });
-    if (!this.state.checkedB) {
+    if (this.state.checkedB) {
       await this.setState(oldState => {
         oldState.paymentVal.payments[0].amount.amountWei = value;
         oldState.paymentVal.payments[0].amount.amountToken = "0";
         return oldState;
       });
-    } else if (this.state.checkedB) {
+    } else if (!this.state.checkedB) {
       await this.setState(oldState => {
         oldState.paymentVal.payments[0].amount.amountToken = value;
         oldState.paymentVal.payments[0].amount.amountWei = "0"
@@ -101,34 +97,38 @@ class PayCard extends Component {
   }
 
   async paymentHandler() {
-    console.log(
-      `Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`
-    );
     this.setState({addressError: null, balanceError: null})
-    const { channelState, connext, web3, connextState } = this.props;
+    const { connext, web3, connextState } = this.props;
     if (!connextState || !connextState.runtime.canBuy) {
       console.log('Cannot buy')
       return
     }
 
-    // if( Number(this.state.paymentVal.payments[0].amount.amountToken) <= Number(channelState.balanceTokenUser) &&
-    //     Number(this.state.paymentVal.payments[0].amount.amountWei) <= Number(channelState.balanceWeiUser)
-    // ) {
-      if(web3.utils.isAddress(this.state.paymentVal.payments[0].recipient)) {
-        let paymentRes = await connext.buy(this.state.paymentVal);
-        console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
-      } else {
-        this.setState({addressError: "Please choose a valid address"})
-      }
-    // } else {
-    //   this.setState({balanceError: "Insufficient balance in channel"})
-    // }
+    let foundError = false
+    // validate amount
+    if(web3.utils.toBN(this.state.paymentVal.payments[0].amount.amountToken).gt(web3.utils.toBN(channelState.balanceTokenUser))) {
+      foundError = true
+      this.setState({ balanceError: "Payment cannot exceed channel balance" })
+    }
+
+    // validate address
+    if(!web3.utils.isAddress(this.state.paymentVal.payments[0].recipient)) {
+      foundError = true
+      this.setState({addressError: "Please choose a valid address"})
+    }
+
+    if (!foundError) {
+      console.log(
+        `Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`
+      );
+      let paymentRes = await connext.buy(this.state.paymentVal);
+      console.log(`Payment result: ${JSON.stringify(paymentRes, null, 2)}`);
+    }
+    return
   }
 
   render() {
-    const { anchorEl } = this.state;
     const { connextState } = this.props
-    const open = Boolean(anchorEl);
     const cardStyle = {
       card: {
         display: "flex",
@@ -174,6 +174,9 @@ class PayCard extends Component {
           <SendIcon style={cardStyle.icon} />
         </div>
         <div>
+          Enter TST payment
+        </div>
+        {/* <div>
           ETH
           <Switch
             checked={this.state.checkedB}
@@ -182,7 +185,7 @@ class PayCard extends Component {
             color="primary"
           />
           TST
-        </div>
+        </div> */}
         <TextField
           style={cardStyle.input}
           id="outlined-with-placeholder"
