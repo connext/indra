@@ -70,6 +70,10 @@ trap cleanup EXIT
 ########################################
 # Deploy contracts
 
+if [[ "$ETH_NETWORK" != "ganache" ]]
+then SECRET_ENV="--env=PRIVATE_KEY_FILE=/run/secrets/$PRIVATE_KEY_FILE --secret=$PRIVATE_KEY_FILE"
+fi
+
 echo
 echo "Deploying contract deployer..."
 
@@ -81,11 +85,10 @@ docker service create \
   --env="ETH_NETWORK=$ETH_NETWORK" \
   --env="ETH_PROVIDER=$ETH_PROVIDER" \
   --env="INFURA_KEY=$INFURA_KEY" \
-  --env="PRIVATE_KEY_FILE=/run/secrets/$PRIVATE_KEY_FILE" \
   --mount="type=volume,source=connext_chain_dev,target=/data" \
   --mount="type=bind,source=$cwd/modules/contracts,target=/root" \
   --restart-condition="none" \
-  --secret="$PRIVATE_KEY_FILE" \
+  $SECRET_ENV \
   --entrypoint "bash ops/entry.sh" \
   ${project}_builder:dev 2> /dev/null
 `"
