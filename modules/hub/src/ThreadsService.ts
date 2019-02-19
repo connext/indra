@@ -64,7 +64,7 @@ export default class ThreadsService {
     }
 
     // make sure no open thread exists
-    const existing = await this.threadsDao.getThread(thread.sender, thread.receiver)
+    const existing = await this.threadsDao.getActiveThread(thread.sender, thread.receiver)
     if (existing) {
       throw new Error(
         `Thread exists already: ${JSON.stringify(existing, null, 2)}`
@@ -189,7 +189,7 @@ export default class ThreadsService {
     update: ThreadStateBigNum
   ): Promise<ThreadStateUpdateRow> {
     await this.ensureEnabled()
-    const thread = await this.threadsDao.getThread(sender, receiver)
+    const thread = await this.threadsDao.getActiveThread(sender, receiver)
     if (!thread || thread.status !== 'CT_OPEN') {
       throw new Error(`Thread is invalid: ${thread}`)
     }
@@ -241,7 +241,7 @@ export default class ThreadsService {
       )
     }
 
-    const thread = await this.threadsDao.getThread(sender, receiver)
+    const thread = await this.threadsDao.getActiveThread(sender, receiver)
     if (!thread || thread.status !== 'CT_OPEN') {
       throw new Error(`Thread is invalid: ${thread}`)
     }
@@ -250,7 +250,7 @@ export default class ThreadsService {
     let threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
       sender
     )
-
+    // cast as string type
     let threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
 
     const unsignedChannelUpdateSender = this.validator.generateCloseThread(
@@ -270,7 +270,7 @@ export default class ThreadsService {
     threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
       receiver
     )
-    // remove this thread and cast as string type
+    // cast as string type
     threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
 
     const unsignedChannelUpdateReceiver = this.validator.generateCloseThread(
@@ -327,7 +327,7 @@ export default class ThreadsService {
     sender: string,
     receiver: string
   ): Promise<ThreadRow | null> {
-    const thread = await this.threadsDao.getThread(sender, receiver)
+    const thread = await this.threadsDao.getActiveThread(sender, receiver)
     if (!thread) {
       return null
     }
