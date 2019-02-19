@@ -83,7 +83,7 @@ describe.skip('ThreadsDao', () => {
 
     const res = await threadsDao.applyThreadUpdate(threadStateInitial, update.id)
 
-    let thread = await threadsDao.getThread(sender, receiver)
+    let thread = await threadsDao.getActiveThread(sender, receiver)
     console.log('thread: ', thread);
     assertThreadStateEqual(convertThreadState('str', thread.state), {
       balanceWeiSender: threadStateInitial.balanceWeiSender,
@@ -114,7 +114,7 @@ describe.skip('ThreadsDao', () => {
 
     await threadsDao.applyThreadUpdate(threadStateUpdate)
 
-    thread = await threadsDao.getThread(sender, receiver)
+    thread = await threadsDao.getActiveThread(sender, receiver)
     assertThreadStateEqual(convertThreadState('str', thread.state), {
       balanceWeiSender: threadStateUpdate.balanceWeiSender,
       balanceWeiReceiver: threadStateUpdate.balanceWeiReceiver,
