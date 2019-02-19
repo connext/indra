@@ -47,8 +47,8 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 
 proxy_image=${project}_proxy:dev
 wallet_image=${project}_builder
-hub_image=${project}_hub:dev
-chainsaw_image=${project}_hub:dev
+hub_image=${project}_builder
+chainsaw_image=${project}_builder
 ethprovider_image=${project}_builder
 database_image=${project}_database:dev
 redis_image=redis:5-alpine

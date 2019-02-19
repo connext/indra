@@ -149,17 +149,12 @@ wallet: $(wallet)/package.json
 
 # Hub
 
-hub-prod: hub-js
+hub-prod: hub
 	$(log_start) && echo "prereqs: $<"
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
 	$(log_finish) && touch build/hub-prod
 
-hub: hub-js $(hub)/ops/dev.entry.sh
-	$(log_start) && echo "prereqs: $<"
-	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
-	$(log_finish) && touch build/hub
-
-hub-js: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
+hub: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
