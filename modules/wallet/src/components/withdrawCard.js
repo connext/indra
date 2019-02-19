@@ -4,14 +4,8 @@ import Button from "@material-ui/core/Button";
 import UnarchiveIcon from "@material-ui/icons/Unarchive";
 import TextField from "@material-ui/core/TextField";
 import Switch from "@material-ui/core/Switch";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
-import Typography from "@material-ui/core/Typography";
 import Tooltip from "@material-ui/core/Tooltip";
 import InputAdornment from "@material-ui/core/InputAdornment";
-import { BigNumber } from "bignumber.js";
-import { Big } from "../utils/bigNumber";
 
 class WithdrawCard extends Component {
   state = {
@@ -94,12 +88,6 @@ class WithdrawCard extends Component {
       tokensToSell: this.props.channelState.balanceTokenUser,
       withdrawalWeiUser: this.props.channelState.balanceWeiUser
     };
-    let balance = new BigNumber(this.props.channelState.balanceTokenUser);
-    let tokenBalance = new BigNumber(this.props.channelState.balanceWeiUser);
-    let exchangeRate = new BigNumber(this.props.exchangeRate);
-    const tokenBalanceConverted = tokenBalance.dividedToIntegerBy(exchangeRate);
-    // const aggBalance = String(balance.plus(tokenBalanceConverted));
-    // console.log(aggBalance);
 
     // i dont think we need the aggregate balance here, i think we can show both ETH and Token withdrawals separately
     if (this.state.checkedB) {
@@ -116,7 +104,7 @@ class WithdrawCard extends Component {
     };
     console.log(`Withdrawing: ${JSON.stringify(this.state.withdrawalVal, null, 2)}`);
     this.setState({addressError: null, balanceError: null})
-    const { channelState, connext, web3, connextState } = this.props;
+    const { connext, web3, connextState } = this.props;
     if (!connextState || !connextState.runtime.canWithdraw) {
       console.log('Cannot withdraw')
       return
@@ -126,6 +114,7 @@ class WithdrawCard extends Component {
     //   Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
     // ) {
       if (web3.utils.isAddress(this.state.withdrawalVal.recipient)){
+        console.log('withdrawalVal: ', withdrawalVal);
         let withdrawalRes = await connext.withdraw(withdrawalVal);
         console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
       } else {
@@ -137,9 +126,7 @@ class WithdrawCard extends Component {
   }
 
   render() {
-    const { anchorEl } = this.state;
     const { connextState } = this.props
-    const open = Boolean(anchorEl);
 
     const cardStyle = {
       card: {

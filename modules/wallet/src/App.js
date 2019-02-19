@@ -6,8 +6,6 @@ import clientProvider from "./utils/web3/clientProvider.ts";
 import { setWallet } from "./utils/actions.js";
 import {
   createWallet,
-  createWalletFromKey,
-  findOrCreateWallet,
   createWalletFromMnemonic
 } from "./walletGen";
 import { createStore } from "redux";
@@ -168,7 +166,7 @@ class App extends Component {
     }
     const web3 = new Web3(windowProvider.currentProvider);
     // make sure you are on localhost
-    if (await web3.eth.net.getId() != 4447) {
+    if (await web3.eth.net.getId() !== 4447) {
       alert(
         "Uh oh! Doesn't look like you're using a local chain, please make sure your Metamask is connected appropriately to localhost:8545."
       );
@@ -330,7 +328,7 @@ class App extends Component {
           .toString(),
         amountToken: tokenBalance
       };
-      if (actualDeposit.amountToken == "0" && actualDeposit.amountWei == "0") {
+      if (actualDeposit.amountToken === "0" && actualDeposit.amountWei === "0") {
         console.log('Actual deposit value is 0 for both wei and tokens. Not depositing.')
         return
       }
@@ -466,7 +464,7 @@ class App extends Component {
       <div>
         <AppBar position="sticky" color="secondary">
           <Toolbar>
-            <img src={Connext} style={{ width: "60px", height: "60px" }} />
+            <img src={Connext} style={{ width: "60px", height: "60px" }} alt="" />
             <Typography variant="h6" style={{ flexGrow: 1 }} />
             <IconButton
               color="inherit"

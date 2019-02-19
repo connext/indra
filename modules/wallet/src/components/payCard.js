@@ -4,10 +4,6 @@ import Button from "@material-ui/core/Button";
 import SendIcon from "@material-ui/icons/Send";
 import TextField from "@material-ui/core/TextField";
 import Switch from "@material-ui/core/Switch";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
-import Typography from "@material-ui/core/Typography";
 
 class PayCard extends Component {
   state = {
@@ -25,7 +21,7 @@ class PayCard extends Component {
             amountWei: "0",
             amountToken: "0"
           },
-          type: "PT_THREAD"
+          type: "PT_CHANNEL"
         }
       ]
     },
@@ -105,7 +101,7 @@ class PayCard extends Component {
       `Submitting payment: ${JSON.stringify(this.state.paymentVal, null, 2)}`
     );
     this.setState({addressError: null, balanceError: null})
-    const { channelState, connext, web3, connextState } = this.props;
+    const { connext, web3, connextState } = this.props;
     if (!connextState || !connextState.runtime.canBuy) {
       console.log('Cannot buy')
       return
@@ -126,9 +122,7 @@ class PayCard extends Component {
   }
 
   render() {
-    const { anchorEl } = this.state;
     const { connextState } = this.props
-    const open = Boolean(anchorEl);
     const cardStyle = {
       card: {
         display: "flex",
