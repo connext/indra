@@ -50,6 +50,7 @@ import Config from './Config';
 import { BigNumber } from 'bignumber.js/bignumber'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { RedisClient } from './RedisClient'
+import ThreadsService from './ThreadsService';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -115,6 +116,7 @@ describe('ChannelsService', () => {
   const paymentsService: PaymentsService = registry.get('PaymentsService')
   const config: Config = registry.get('Config')
   const startExitDao: ChannelDisputesDao = registry.get('ChannelDisputesDao')
+  const threadsService: ThreadsService = registry.get('ThreadsService')
 
   beforeEach(async function () {
     await registry.clearDatabase()
@@ -1010,6 +1012,17 @@ describe('ChannelsService', () => {
 
     const {updates: sync} = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
     assert.deepEqual(sync.map(item => (item.update as UpdateRequest).reason), ['ConfirmPending', 'Invalidation'])
+  })
+
+  it('does not return sync updates from closed threads', async () => {
+    const channel = await channelAndThreadFactory(registry)
+    await threadsService.close(channel.user.user, channel.performer.user, mkSig('0xa'), true)
+    const t = await threadsDao.getThread(channel.user.user, channel.performer.user, channel.thread.threadId)
+    assert.equal(t.status, 'CT_CLOSED')
+
+    const sync = await service.getChannelAndThreadUpdatesForSync(channel.user.user, 0, 0)
+    const threadUpdates = sync.updates.filter(update => update.type === 'thread')
+    assert.deepEqual(threadUpdates, [])
   })
 })
 
