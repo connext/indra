@@ -2,12 +2,12 @@
   "Token": {
     "networks": {
       "1": {
-        "name": "dai",
-        "address": "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359"
+        "address": "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359",
+        "name": "dai"
       },
       "4": {
-        "name": "weth",
-        "address": "0xc778417e063141139fce010982780140aa0cd5ab"
+        "address": "0xc778417e063141139fce010982780140aa0cd5ab",
+        "name": "weth"
       },
       "4447": {
         "address": "0xD95B1DbEc167C6cf547d018dDEcF41a4cb2e2f73",
@@ -24,8 +24,9 @@
         "address": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51"
       },
       "4447": {
-        "address": "0x74e3FC764c2474f25369B9d021b7F92e8441A2Dc",
-        "codeHash": "6809b82b6d05c436e8ee33609ad2d1f6ee79e9100c5e997a592963680ba898dc"
+        "address": "0xbbE595Df857805ab3734f15BE990f9A30CBB89F3",
+        "compiledCodeHash": "acc8122e680445b5efbbc3120624cc893a1ed2d4dd58ce1d6e0d1e9d0f1b3585",
+        "deployedCodeHash": "2cdce5de5cbc4c3db04023d5870897e113d2e8c0f3596b5b9caf94385c64b290"
       }
     }
   },

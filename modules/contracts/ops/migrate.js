@@ -8,7 +8,10 @@ const TokenArtifacts = require('../build/contracts/Token.json')
 const HumanStandardTokenArtifacts = require('../build/contracts/HumanStandardToken.json')
 const ECToolsArtifacts = require('../build/contracts/ECTools.json')
 
-console.log(`Migrations activated in env: ${JSON.stringify(process.env,null,2)}`)
+//console.log(`Migrations activated in env: ${JSON.stringify(process.env,null,2)}`)
+
+////////////////////////////////////////
+// Environment Setup
 
 const cwd = process.cwd()
 let HOME
@@ -20,35 +23,20 @@ if (cwd.indexOf('indra') !== -1) {
 const addressesPath = `${HOME}/ops/address-book.json`
 const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'))
 
+////////////////////////////////////////
+// Helper Functions
+
 const hash = (message) => {
   return crypto.createHash('sha256').update(message).digest('hex')
 }
 
-const getWallet = (network) => {
-  let provider
-  if (process.env.ETH_PROVIDER) {
-    console.log(`Connecting to provider ${process.env.ETH_PROVIDER}`)
-    provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER)
-  } else if (process.env.INFURA_KEY) {
-    console.log(`Connecting to infura`)
-    provider = new eth.providers.InfuraProvider(network, process.env.INFURA_KEY)
-  } else {
-    console.log(`Connecting to default provider`)
-    provider = eth.providers.getDefaultProvider(network)
+const getSavedData = (contractName, property, netId) => {
+  let savedData
+  try {
+    return addresses[contractName].networks[netId][property]
+  } catch (e) {
+    return undefined
   }
-
-  let signer
-  if (process.env.PRIVATE_KEY_FILE) {
-    console.log(`Using private key to sign`)
-    signer = new eth.Wallet(fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8'))
-  } else if (process.env.ETH_MNEMONIC) {
-    console.log(`Using mnemonic to sign`)
-    signer = eth.Wallet.fromMnemonic(process.env.ETH_MNEMONIC)
-  } else {
-    console.error(`Couldn't setup signer: no private key or mnemonic found`)
-    process.exit(1)
-  }
-  return signer.connect(provider)
 }
 
 ////////////////////////////////////////
@@ -56,58 +44,104 @@ const getWallet = (network) => {
 
 ;(async function() {
 
-  const wallet = getWallet('ganache')
+  // Setup signer & connect to eth provider
 
-  const balance = await wallet.getBalance()
-  const nonce = await wallet.getTransactionCount()
-  const netId = (await wallet.provider.getNetwork()).chainId
+  let provider
+  if (process.env.ETH_PROVIDER) {
+    provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER)
+  } else if (process.env.INFURA_KEY) {
+    provider = new eth.providers.InfuraProvider(network, process.env.INFURA_KEY)
+  } else {
+    provider = eth.providers.getDefaultProvider(network)
+  }
 
-  console.log(`Configured wallet with address=${wallet.address} nonce=${nonce} balance=${balance}`)
-  console.log(`Connected to network: ${netId}`)
+  let signer
+  if (process.env.PRIVATE_KEY_FILE) {
+    signer = new eth.Wallet(fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8'))
+  } else if (process.env.ETH_MNEMONIC) {
+    signer = eth.Wallet.fromMnemonic(process.env.ETH_MNEMONIC)
+  } else {
+    console.error(`Couldn't setup signer: no private key or mnemonic found`)
+    process.exit(1)
+  }
+
+  const wallet = signer.connect(provider)
+
+  console.log(`\nPreparing to migrate contracts using account ${wallet.address} `)
+
+  let balance, nonce, netId
+  try {
+    balance = await wallet.getBalance()
+    nonce = await wallet.getTransactionCount()
+    netId = (await wallet.provider.getNetwork()).chainId
+  } catch (e) {
+    console.error(`Couldn't connect to eth provider: ${JSON.stringify(provider,null,2)}`)
+    process.exit(1)
+  }
+
+  console.log(`Connected to provider for network ${netId}, Wallet status: nonce=${nonce} balance=${balance}`)
 
   ////////////////////////////////////////
   // Deploy ECTools if needed
 
-  console.log(`\nChecking for ECTools..`)
+  console.log(`\nChecking ECTools contract..`)
 
-  let ECToolsSavedAddress
-  try {
-    ECToolsSavedAddress = addresses.ECTools.networks[netId].address
-    console.log(`Found ECTools address in our address book: ${ECToolsSavedAddress}`)
-  } catch (e) {
-    console.log(`An ECTools address has not been saved to our address book`)
-    ECToolsSavedAddress = undefined
+  let shouldMigrateECTools = false
+  let ECToolsAddress
+  let ECToolsCompiledCodeHash
+  let ECToolsDeployedCodeHash
+
+  const ECToolsSavedAddress = getSavedData('ECTools', 'address', netId)
+  if (!ECToolsSavedAddress) {
+    console.log(`Couldn't find a saved address for ECTools.`)
+    shouldMigrateECTools = true
   }
 
-  let ECToolsSavedCodeHash
-  try {
-    ECToolsSavedCodeHash = addresses.ECTools.networks[netId].codeHash
-  } catch (e) {
-    console.log(`An ECTools code hash has not been saved to our address book`)
-    ECToolsSavedCodeHash = undefined
+  const ECToolsSavedCompiledCodeHash = getSavedData('ECTools', 'compiledCodeHash', netId)
+  ECToolsCompiledCodeHash = hash(ECToolsArtifacts.bytecode)
+  if (!shouldMigrateECTools && ECToolsCompiledCodeHash !== ECToolsSavedCompiledCodeHash) {
+    console.log(`Source code of ECTools code has been updated.`)
+    shouldMigrateECTools = true
   }
 
-  let ECToolsCodeMatches = false
-  if (ECToolsSavedAddress && ECToolsSavedCodeHash) {
-    const ECToolsDeployedCodeHash = hash(await wallet.provider.getCode(ECToolsSavedAddress))
+  const ECToolsSavedDeployedCodeHash = getSavedData('ECTools', 'deployedCodeHash', netId)
+  if (!shouldMigrateECTools && !ECToolsSavedDeployedCodeHash) {
+    console.log(`Couldn't find hash of the code we expect to be deployed for ECTools.`)
+    shouldMigrateECTools = true
+  }
+
+  if (!shouldMigrateECTools) {
+    ECToolsDeployedCodeHash = hash(await wallet.provider.getCode(ECToolsSavedAddress))
     if (ECToolsDeployedCodeHash === hash("0x")) {
-      console.log(`ECTools doesn't appear to have been deployed to saved address..`)
-    } else if (ECToolsDeployedCodeHash !== ECToolsSavedCodeHash) {
-      console.log(`Deployed ECTools has different bytecode (hash=${ECToolsDeployedCodeHash.substring(0,8)}...) than what's saved (hash=${ECToolsSavedCodeHash.substring(0,8)}...)`)
-    } else {
-      console.log(`ECTools has been deployed and the bytecode matches what we expected, no action required`)
-      ECToolsCodeMatches = true
+      console.log(`Saved ECTools address doesn't contain any bytecode.`)
+      shouldMigrateECTools = true
+    } else if (ECToolsDeployedCodeHash !== ECToolsSavedDeployedCodeHash) {
+      console.log(`Deployed ECTools has different bytecode than what we expected.`)
+      shouldMigrateECTools = true
     }
   }
 
-  if (!ECToolsSavedAddress || !ECToolsCodeMatches) {
+  // Migate!
+  if (shouldMigrateECTools) {
     console.log(`Deploying a new ECTools contract..`)
-    const ecTools = await eth.ContractFactory.fromSolidity(ECToolsArtifacts).connect(wallet).deploy()
-    await wallet.provider.waitForTransaction(ecTools.deployTransaction.hash)
-    ecTools.codeHash = hash(await wallet.provider.getCode(ecTools.address))
-    console.log(`ECTools deployed to address ${ecTools.address} with code hash ${ecTools.codeHash.substring(0,8)}... via transaction ${ecTools.deployTransaction.hash}`)
-    addresses.ECTools.networks[netId] = { "address" : ecTools.address, "codeHash": ecTools.codeHash }
-    ECToolsSavedAddress = ecTools.address
+    const ecToolsFactory = eth.ContractFactory.fromSolidity(ECToolsArtifacts)
+    const ecTools = await ecToolsFactory.connect(wallet).deploy()
+    let txHash = ecTools.deployTransaction.hash
+    console.log(`Sent transaction to deploy ECTools, txHash: ${txHash}`)
+    await wallet.provider.waitForTransaction(txHash)
+    ECToolsAddress = ecTools.address
+    ECToolsDeployedCodeHash = hash(await wallet.provider.getCode(ECToolsAddress))
+    console.log(`ECTools has beed deployed to address: ${ECToolsAddress}`)
+    console.log(`ECTools deployed code hash: ${ECToolsDeployedCodeHash.substring(0,16)}...`)
+    // Update address-book w new info
+    addresses.ECTools.networks[netId] = {
+      "address" : ECToolsAddress,
+      "compiledCodeHash": ECToolsCompiledCodeHash,
+      "deployedCodeHash": ECToolsDeployedCodeHash
+    }
+  } else {
+    ECToolsAddress = ECToolsSavedAddress
+    console.log(`ECTools is up to date, no action required. Address: ${ECToolsAddress}`)
   }
 
   ////////////////////////////////////////

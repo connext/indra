@@ -57,7 +57,7 @@ fi
 # Make everything that we need
 
 echo
-make ethprovider-prod
+make contract-artifacts
 
 ########################################
 # Remove the migration service when we're done
