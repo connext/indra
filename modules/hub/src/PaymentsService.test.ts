@@ -21,11 +21,6 @@ describe('PaymentsService', () => {
   const stateGenerator: StateGenerator = registry.get('StateGenerator')
   const globalSettingsDao: GlobalSettingsDao = registry.get('GlobalSettingsDao')
 
-  before(async() => {
-    await globalSettingsDao.insertDefaults()
-    await globalSettingsDao.toggleThreadsEnabled(true)
-  })
-
   beforeEach(async () => {
     await registry.clearDatabase()
   })
@@ -407,7 +402,6 @@ describe('PaymentsService', () => {
       sigUser: mkSig('0xa')
     }])
 
-    console.log('update: ', update);
     assertChannelStateEqual(update[0].state, {
       ...receiverChannel.state,
       txCountGlobal: receiverChannel.state.txCountGlobal + 2,
