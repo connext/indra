@@ -26,5 +26,5 @@ MD5 (../modules/hub/src/vendor/connext/lib/web3/toFinney.ts) = ec62852935525283c
 MD5 (../modules/hub/src/vendor/connext/state/ConnextState/CurrencyTypes.ts) = eeffb2fbb7a8ebf8137a8a8105a89d76
 MD5 (../modules/hub/src/vendor/connext/state/ConnextState/ExchangeRates.ts) = 4d97b1feecf6f3081081b8857a138ffd
 MD5 (../modules/hub/src/vendor/connext/state/store.ts) = 93472789e1ae58b9fefbc26b5d2d87d0
-MD5 (../modules/hub/src/vendor/connext/types.ts) = 8347c18bafa0ac01db1773253ac8a71b
+MD5 (../modules/hub/src/vendor/connext/types.ts) = 29a47698c535010f8e167e1b36d1361b
 MD5 (../modules/hub/src/vendor/connext/validator.ts) = cae4d0c14547554fc86d407562fb8c09
