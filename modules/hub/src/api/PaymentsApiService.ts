@@ -1,4 +1,3 @@
-import { Big } from "../util/bigNumber";
 import DBEngine from '../DBEngine'
 import * as express from 'express'
 import { ApiService } from './ApiService'
@@ -8,11 +7,10 @@ import { PaymentMetaDao } from '../dao/PaymentMetaDao'
 import { Role } from '../Role'
 import WithdrawalsService from '../WithdrawalsService'
 import ExchangeRateDao from '../dao/ExchangeRateDao'
-import { Payment, PurchasePayment, UpdateRequest } from '../vendor/connext/types'
+import { PurchasePayment, UpdateRequest } from '../vendor/connext/types'
 import { default as ThreadsService } from "../ThreadsService";
 import { default as ChannelsService } from "../ChannelsService";
 import { default as Config } from "../Config";
-import { PurchaseRowWithPayments } from "../domain/Purchase";
 import PaymentsService from "../PaymentsService";
 
 const LOG = log('PaymentsApiService')
@@ -72,7 +70,7 @@ export class PaymentsApiServiceHandler {
       return res.send(400).json(result.msg)
     }
 
-    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount)) - 1
+    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount).filter(f => typeof f === "number")) - 1
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
       req.session!.address,
       lastChanTx,
