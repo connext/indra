@@ -1,27 +1,19 @@
-const crypto = require('crypto')
 const fs = require('fs')
 const eth = require('ethers')
-const solc = require('solc')
 const linker = require('solc/linker')
 const channelManagerArtifacts = require('../build/contracts/ChannelManager.json')
 const humanStandardTokenArtifacts = require('../build/contracts/HumanStandardToken.json')
 const ecToolsArtifacts = require('../build/contracts/ECTools.json')
 
-//console.log(`Migrations activated in env: ${JSON.stringify(process.env,null,2)}`)
-
 ////////////////////////////////////////
 // Environment Setup
 
 const cwd = process.cwd()
-let HOME
-if (cwd.indexOf('indra') !== -1) {
-  HOME = `${cwd.substring(0,cwd.indexOf('indra')+5)}/modules/contracts`
-} else {
-  HOME = '/root'
-}
+let HOME = (cwd.indexOf('indra') !== -1)  ?
+  `${cwd.substring(0,cwd.indexOf('indra')+5)}/modules/contracts` :
+  `/root`
 const addressesPath = `${HOME}/ops/address-book.json`
 const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'))
-
 // Global scope vars
 var netId
 var wallet
@@ -29,12 +21,7 @@ var wallet
 ////////////////////////////////////////
 // Helper Functions
 
-const hash = (message) => {
-  return crypto.createHash('sha256').update(message).digest('hex')
-}
-
 const getSavedData = (contractName, property) => {
-  let savedData
   try {
     return addresses[contractName].networks[netId][property]
   } catch (e) {
@@ -44,19 +31,12 @@ const getSavedData = (contractName, property) => {
 
 // Write addresses to disk if anything has changed
 const saveAddresses = (addresses) => {
-  const oldAddresses = JSON.stringify(JSON.parse(fs.readFileSync(addressesPath, 'utf8')))
-  const newAddresses = JSON.stringify(addresses)
-  if (oldAddresses !== newAddresses) {
-    console.log(`Saving updated migration artifacts..`)
-    try {
-      fs.unlinkSync(addressesPath)
-      fs.writeFileSync(addressesPath, JSON.stringify(addresses,null,2))
-      console.log(`Success!`)
-    } catch (e) {
-      console.log(`Error saving artifacts: ${e}`)
-    }
-  } else {
-    console.log(`No artifact changes to save`)
+  console.log(`Saving updated migration artifacts`)
+  try {
+    fs.unlinkSync(addressesPath)
+    fs.writeFileSync(addressesPath, JSON.stringify(addresses,null,2))
+  } catch (e) {
+    console.log(`Error saving artifacts: ${e}`)
   }
 }
 
@@ -66,49 +46,45 @@ const contractIsDeployed = async (address) => {
     console.log(`This contract is not in our address book.`)
     return false
   }
-  const deployedCode = await wallet.provider.getCode(address)
-  if (deployedCode === "0x00") {
+  if ((await wallet.provider.getCode(address)) === "0x00") {
     console.log(`No bytecode exists at the address in our address book`)
     return false
   }
   return true
 }
 
+// Deploy contract & write resulting addresses to our address-book file
 const deployContract = async (name, artifacts, args) => {
-  console.log(`Deploying a new ${name} contract..`)
   const factory = eth.ContractFactory.fromSolidity(artifacts)
+  console.log(`Deploying a new ${name} contract..`)
   const contract = await factory.connect(wallet).deploy(...args.map(a=>a.value))
   const txHash = contract.deployTransaction.hash
   console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`)
   await wallet.provider.waitForTransaction(txHash)
   const address = contract.address
   console.log(`${name} has been deployed to address: ${address}`)
-  // Update address-book w new info
+  // Update address-book w new address + the args we deployed with
   const saveArgs = {}
   args.forEach(a=> saveArgs[a.name] = a.value)
-  addresses[name].networks[netId] = {
-    "address" : address,
-    ...saveArgs
-  }
+  addresses[name].networks[netId] = { address, ...saveArgs }
   saveAddresses(addresses)
   return address
 }
 
-// Begin executing main migration script
+////////////////////////////////////////
+// Begin executing main migration script in async wrapper function
+// First, setup signer & connect to eth provider
+
 ;(async function() {
-
-  ////////////////////////////////////////
-  // Setup signer & connect to eth provider
-
   let provider, signer, balance, nonce, isDeployed
   let ecToolsAddress, tokenAddress, channelManagerAddress
 
   if (process.env.ETH_PROVIDER) {
     provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER)
   } else if (process.env.INFURA_KEY) {
-    provider = new eth.providers.InfuraProvider(network, process.env.INFURA_KEY)
+    provider = new eth.providers.InfuraProvider(process.env.ETH_NETWORK, process.env.INFURA_KEY)
   } else {
-    provider = eth.providers.getDefaultProvider(network)
+    provider = eth.providers.getDefaultProvider(process.env.ETH_NETWORK)
   }
 
   if (process.env.PRIVATE_KEY_FILE) {
@@ -122,8 +98,6 @@ const deployContract = async (name, artifacts, args) => {
 
   wallet = signer.connect(provider) // saved to global scope
 
-  console.log(`\nPreparing to migrate contracts using hub account ${wallet.address} `)
-
   try {
     netId = (await wallet.provider.getNetwork()).chainId // saved to global scope
     balance = eth.utils.formatEther(await wallet.getBalance())
@@ -133,12 +107,13 @@ const deployContract = async (name, artifacts, args) => {
     process.exit(1)
   }
 
-  console.log(`Connected to provider for network ${netId}, Wallet status: nonce=${nonce} balance=${balance}`)
+  console.log(`\nPreparing to migrate contracts to network ${netId}`)
+  console.log(`Hub Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`)
 
   ////////////////////////////////////////
   // Deploy a new ECTools if needed
 
-  console.log(`\nChecking ECTools contract..`)
+  console.log(`\nChecking for valid ECTools..`)
   const ecToolsSavedAddress = getSavedData('ECTools', 'address')
 
   if (await contractIsDeployed(ecToolsSavedAddress)) {
@@ -151,7 +126,7 @@ const deployContract = async (name, artifacts, args) => {
   ////////////////////////////////////////
   // Deploy a new token if needed
 
-  console.log(`\nChecking for a valid token`)
+  console.log(`\nChecking for a valid token..`)
   const tokenSavedAddress = getSavedData('tokens', 'address')
   const tokenSupply = getSavedData('tokens', 'supply') || '1000000000000000000000000000' 
   const tokenName = getSavedData('tokens', 'name') || 'Test' 
@@ -174,10 +149,9 @@ const deployContract = async (name, artifacts, args) => {
   }
 
   ////////////////////////////////////////
-  // Check to see if we need to deploy a new ChannelManager
+  // Deploy a new ChannelManager if needed
 
-  console.log(`\nChecking for a valid ChannelManager`)
-
+  console.log(`\nChecking for a valid ChannelManager..`)
   const channelManagerSavedAddress = getSavedData('ChannelManager', 'address')
   const channelManagerSavedHub = getSavedData('ChannelManager', 'address')
   const channelManagerSavedToken = getSavedData('ChannelManager', 'address')
@@ -193,8 +167,8 @@ const deployContract = async (name, artifacts, args) => {
       provider
     )
 
-    let channelManagerHub
-    let channelManagerToken
+    // Additional check: do the given ChannelManager's hub & token addresses match
+    let channelManagerHub, channelManagerToken
     try {
       channelManagerHub = await channelManager.hub()
       channelManagerToken = await channelManager.functions.approvedToken()
@@ -217,17 +191,15 @@ const deployContract = async (name, artifacts, args) => {
     }
   }
 
+  // Done with checks, time to deploy the ChannelManager if needed
   if (isDeployed) {
     channelManagerAddress = channelManagerSavedAddress
     console.log(`ChannelManager is up to date, no action required\nAddress: ${channelManagerAddress}`)
-
-  // If migration flag, then deploy a new ChannelManager contract
   } else {
-
+    // Link the ECTools address into ChannelManager bytecode
     channelManagerArtifacts.bytecode = linker.linkBytecode(channelManagerArtifacts.bytecode, {
       'ECTools': ecToolsAddress
     })
-
     channelManagerAddress = await deployContract('ChannelManager', channelManagerArtifacts, [
       { name: 'hub', value: wallet.address },
       { name: 'challengePeriod', value: challengePeriod },
@@ -241,6 +213,6 @@ const deployContract = async (name, artifacts, args) => {
   console.log(`\nAll done!`)
   const spent = balance - eth.utils.formatEther(await wallet.getBalance())
   const nTx = (await wallet.getTransactionCount()) - nonce
-  console.log(`Sent ${nTx} transaction${nTx === 1 ? '' : 's'} & paid ${spent} ETH in gas`)
+  console.log(`Sent ${nTx} transaction${nTx === 1 ? '' : 's'} & spent ${spent} ETH`)
 
 })();

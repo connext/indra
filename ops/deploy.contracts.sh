@@ -3,7 +3,7 @@ set -e
 
 project=connext
 key_name=private_key
-name=${project}_migrator
+name=${project}_contract_deployer
 cwd="`pwd`"
 
 ########################################
@@ -33,26 +33,8 @@ sleep 1 # give the user a sec to ctrl-c in case above is wrong
 # Load private key into secret store
 
 echo
-if [[ -n "`docker secret ls | grep " $key_name"`" ]]
-then
-  echo "A secret called $key_name already exists, skipping key load"
-  echo "Remove existing secret to reset: docker secret rm $key_name"
-
-else 
-  # Prepare to set or use our user's password
-  echo "Copy the hub's private key to your clipboard"
-  echo "Paste it below & hit enter"
-  echo -n "> "
-  read -s key
-  echo
-
-  id="`echo $key | tr -d ' \n\r' | docker secret create $key_name -`"
-  if [[ "$?" == "0" ]]
-  then echo "Successfully loaded private key into secret store"
-       echo "name=$key_name id=$id"
-  else echo "Something went wrong creating secret called $key_name"
-  fi
-fi
+echo "Load the Hub's private key into the secret store"
+bash ops/load-secret.sh $key_name
 
 ########################################
 # Make everything that we need
@@ -61,7 +43,7 @@ echo
 make contract-artifacts
 
 ########################################
-# Remove the migration service when we're done
+# Remove this deployer service when we're done
 
 function cleanup {
   echo
@@ -94,13 +76,13 @@ docker service create \
   --entrypoint "bash ops/entry.sh" \
   ${project}_builder:dev 2> /dev/null
 `"
-echo "Success! Deployer service id=$id"
+echo "Success! Deployer service started with id: $id"
 echo
 
 docker service logs --raw --follow $name &
 logs_pid=$!
 
-# Wait for the first migrator container to exit..
+# Wait for the deployer to exit..
 while [[ -z "`docker container ls -a | grep "$name" | grep "Exited"`" ]]
 do sleep 1
 done
