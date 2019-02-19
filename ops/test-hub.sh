@@ -52,10 +52,12 @@ docker run --detach --name=$POSTGRES_HOST --network=$project \
 # Start test ethprovider
 echo "Starting ethprovider.."
 docker run --detach --name=$ETHPROVIDER_HOST --network=$project \
-  --env ETH_NETWORK_ID=4447 \
+  --env ETH_NETWORK=ganache \
   --env ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" \
+  --env ETH_PROVIDER="http://$ETH_RPC_URL" \
   --volume $root/modules/contracts:/root \
-  ${project}_ethprovider:dev
+  --entrypoint "bash" \
+  ${project}_builder:dev ops/entry.sh
 
 # Run tests
 echo "Starting hub tester.."

@@ -84,7 +84,7 @@ const deployContract = async (name, artifacts, args) => {
   } else if (process.env.INFURA_KEY) {
     provider = new eth.providers.InfuraProvider(process.env.ETH_NETWORK, process.env.INFURA_KEY)
   } else {
-    provider = eth.providers.getDefaultProvider(process.env.ETH_NETWORK)
+    provider = eth.getDefaultProvider(process.env.ETH_NETWORK)
   }
 
   if (process.env.PRIVATE_KEY_FILE) {
