@@ -33,23 +33,12 @@ echo "Running migration script.."
 node ops/migrate.js
 
 ########################################
-# In dev-mode, signal completion & start watchers
+# In dev-mode, signal that we're done deploying contracts
 
-function signal_migrations_complete {
+if [[ "$ETH_NETWORK" == "ganache" && "$1" == "signal" ]]
+then
   echo "===> Signalling the completion of migrations..."
   while true # unix.stackexchange.com/a/37762
   do sleep 2 && echo 'eth migrations complete' | nc -lk -p $migration_flag_port
   done > /dev/null
-}
-
-if [[ "$ETH_NETWORK" == "ganache" && "$1" == "yes" ]]
-then
-  signal_migrations_complete &
-  echo "Watching contract src & artifacts for changes.."
-  while true
-  do node ops/migrate.js && sleep 5
-  done
-elif [[ "$ETH_NETWORK" == "ganache" && "$1" == "no" ]]
-then
-  signal_migrations_complete
 fi

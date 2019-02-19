@@ -177,7 +177,6 @@ hub-node-modules: builder client $(hub)/package.json
 contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "npm run build"
-	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
 	$(log_finish) && touch build/contract-artifacts
 
 contract-node-modules: client $(contracts)/package.json
