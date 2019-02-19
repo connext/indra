@@ -24,7 +24,11 @@ export default interface ThreadsDao {
     receiver: string,
     status: ThreadStatus,
   ): Promise<void>
-  getThread(sender: string, receiver: string): Promise<ThreadRowBigNum | null>
+  getThread(sender: string, receiver: string, threadId: number): Promise<ThreadRowBigNum | null>
+  getActiveThread(
+    sender: string,
+    receiver: string,
+  ): Promise<ThreadRowBigNum | null>
   getThreads(user: string): Promise<ThreadRowBigNum[]>
   getThreadsActive(user: string): Promise<ThreadRowBigNum[]>
   getLastThreadUpdateId(user: string): Promise<number>
@@ -125,6 +129,24 @@ export class PostgresThreadsDao implements ThreadsDao {
   }
 
   public async getThread(
+    sender: string,
+    receiver: string,
+    threadId: number
+  ): Promise<ThreadRowBigNum | null> {
+    return this.inflateThreadRow(
+      await this.db.queryOne(SQL`
+      SELECT *
+      FROM cm_threads
+      WHERE
+        contract = ${this.config.channelManagerAddress} AND
+        sender = ${sender} AND
+        receiver = ${receiver} AND
+        thread_id = ${threadId}
+    `),
+    )
+  }
+
+  public async getActiveThread(
     sender: string,
     receiver: string,
   ): Promise<ThreadRowBigNum | null> {
@@ -240,6 +262,7 @@ export class PostgresThreadsDao implements ThreadsDao {
       WHERE
         contract = ${this.config.channelManagerAddress} AND
         (sender = ${user} OR receiver = ${user}) AND
+        status = 'CT_OPEN' AND
         id >= ${lastId}
       ORDER BY id ASC
     `)
