@@ -341,10 +341,9 @@ export default class ChannelsService {
       withdrawalTokenUser: params.withdrawalTokenUser || new BigNumber(0),
     }
 
-    // TODO:
-    // const hasNegative = this.validator.withdrawalParams(convertWithdrawalParameters('bn', params))
-    // if (hasNegative)
-    //   throw new Error(`Invalid withdrawal: ${hasNegative}`)
+    const hasNegative = this.validator.withdrawalParams(convertWithdrawalParameters('bn', params))
+    if (hasNegative)
+      throw new Error(`Invalid withdrawal: ${hasNegative}`)
 
     if (!params.weiToSell.isZero() || !params.withdrawalTokenUser.isZero()) {
       throw new Error(
@@ -871,9 +870,11 @@ export default class ChannelsService {
 
       const pushChan =
         chan &&
-        (!thread ||
-          chan.createdOn < thread.createdOn ||
-          (chan.createdOn == thread.createdOn && chan.reason == 'OpenThread'))
+        (
+          !thread ||
+            chan.createdOn < thread.createdOn ||
+            (chan.createdOn == thread.createdOn && chan.reason == 'OpenThread')
+        )
 
       if (pushChan) {
         curChan += 1
