@@ -40,7 +40,7 @@ Run the following from `modules/hub`.
 * `bash development/hub-run` - Runs hub and chainsaw.
 
 ### Wallet
-Run the following from `modules/wallet`.
+Run the following from `modules/wallet`. 
 
 * Add the following to a file called `.env` inside `modules/wallet`. Do not commit this file to Git:
 ```
@@ -50,6 +50,7 @@ REACT_APP_ETHPROVIDER_URL=http://localhost:8545
 REACT_APP_HUB_WALLET_ADDRESS=0xfb482f8f779fd96a857f1486471524808b97452d
 REACT_APP_CHANNEL_MANAGER_ADDRESS=0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42
 REACT_APP_TOKEN_ADDRESS=0xd01c08c7180eae392265d8c7df311cf5a93f1b73
+REACT_APP_WITHDRAWAL_MINIMUM=10000000000000
 ```
 * `npm install` - Install dependencies.
 * `npm start` - Runs the local dev server at `http://localhost:3000`.

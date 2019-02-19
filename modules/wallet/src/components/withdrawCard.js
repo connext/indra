@@ -40,30 +40,44 @@ class WithdrawCard extends Component {
   };
 
   handleChange = name => event => {
-    var withdrawalValWei = this.state.withdrawalVal.withdrawalWeiUser;
-    var withdrawalValToken = this.state.withdrawalVal.tokensToSell;
+    const { channelState } = this.props
+    const withdrawalVal = this.state.withdrawalVal;
+    let displayed = this.state.displayVal;
     this.setState({ [name]: event.target.checked });
+    let updatedWithdrawalVal
+    let tokensToSell = '0'
+    let withdrawalWeiUser = '0'
     if (this.state.checkedB) {
-      this.setState({ displayVal: withdrawalValWei });
+      if (this.state.clickedMax) {
+        displayed = channelState.balanceWeiUser
+        tokensToSell = channelState.balanceTokenUser
+      }
+      updatedWithdrawalVal = { ...withdrawalVal, tokensToSell, withdrawalWeiUser: displayed }
     } else {
-      this.setState({ displayVal: withdrawalValToken });
+      if (this.state.clickedMax) {
+        displayed = channelState.balanceTokenUser
+        withdrawalWeiUser = channelState.balanceWeiUser
+      }
+      updatedWithdrawalVal = { ...withdrawalVal, withdrawalWeiUser, tokensToSell: displayed}
     }
-    console.log(`displaying: ${this.state.displayVal}`);
+    this.setState({ withdrawalVal: updatedWithdrawalVal, displayVal: displayed })
+    console.log('displayVal:', displayed)
+    console.log(`Updated Withdrawal: ${JSON.stringify(updatedWithdrawalVal, null, 2)}`);
   };
 
   async updateWithdrawHandler(evt) {
-    this.setState({
-      displayVal: evt.target.value
-    });
     var value = evt.target.value;
+    this.setState({ clickedMax: false, displayVal: value })
     if (!this.state.checkedB) {
       await this.setState(oldState => {
         oldState.withdrawalVal.withdrawalWeiUser = value;
+        oldState.withdrawalVal.tokensToSell = '0';
         return oldState;
       });
     } else if (this.state.checkedB) {
       await this.setState(oldState => {
         oldState.withdrawalVal.tokensToSell = value;
+        oldState.withdrawalVal.withdrawalWeiUser = '0';
         return oldState;
       });
     }
@@ -83,10 +97,11 @@ class WithdrawCard extends Component {
   }
 
   async maxHandler() {
+    this.setState({ clickedMax: true })
     let withdrawalVal = {
       ...this.state.withdrawalVal,
       tokensToSell: this.props.channelState.balanceTokenUser,
-      withdrawalWeiUser: this.props.channelState.balanceWeiUser
+      withdrawalWeiUser: this.props.channelState.balanceWeiUser,
     };
 
     // i dont think we need the aggregate balance here, i think we can show both ETH and Token withdrawals separately
@@ -95,9 +110,11 @@ class WithdrawCard extends Component {
     } else {
       this.setState({ displayVal: withdrawalVal.withdrawalWeiUser, withdrawalVal });
     }
+    console.log('Updated withdrawal val:', JSON.stringify(withdrawalVal, null, 2))
   }
 
   async withdrawalHandler() {
+    const minWithdrawal = process.env.REACT_APP_WITHDRAWAL_MINIMUM
     let withdrawalVal = {
       ...this.state.withdrawalVal,
       exchangeRate: this.props.exchangeRate
@@ -109,20 +126,38 @@ class WithdrawCard extends Component {
       console.log('Cannot withdraw')
       return
     }
-    // if (
-    //   Big(this.state.withdrawalVal.withdrawalWeiUser).isLessThanOrEqualTo(channelState.balanceWeiUser) &&
-    //   Big(this.state.withdrawalVal.tokensToSell).isLessThanOrEqualTo(channelState.balanceTokenUser)
-    // ) {
-      if (web3.utils.isAddress(this.state.withdrawalVal.recipient)){
-        console.log('withdrawalVal: ', withdrawalVal);
-        let withdrawalRes = await connext.withdraw(withdrawalVal);
-        console.log(`Withdrawal result: ${JSON.stringify(withdrawalRes, null, 2)}`);
-      } else {
-        this.setState({addressError: "Please enter a valid address"})
-      }
-    // } else {
-    //   this.setState({balanceError: "Insufficient balance in channel"})
-    // }
+    if (web3.utils.isAddress(withdrawalVal.recipient)){
+      await connext.withdraw(withdrawalVal);
+    } else {
+      this.setState({addressError: "Please enter a valid address"})
+    }
+    // check that the balance is above the minimum
+    if ( // withdrawaing only wei
+      withdrawalVal.withdrawalWeiUser != "0" && 
+      withdrawalVal.tokensToSell == "0" && 
+      web3.utils.toBN(withdrawalVal.withdrawalWeiUser).lt(web3.utils.toBN(minWithdrawal))
+    ) {
+      this.setState({ balanceError: `Below minimum withdrawal amount of ${minWithdrawal} wei`})
+    } else if ( // only withdrawaing tokens
+      withdrawalVal.tokensToSell != "0" && 
+      withdrawalVal.withdrawalWeiUser == "0" &&
+      web3.utils.toBN(withdrawalVal.tokensToSell).lt(web3.utils.toBN(minWithdrawal))
+    ) {
+      this.setState({ balanceError: `Below minimum withdrawal amount of ${minWithdrawal} tokens`})
+    } else if ( // max is selected, check both wei and tokens
+      this.state.clickedMax && 
+      (
+        web3.utils.toBN(withdrawalVal.tokensToSell).lt(web3.utils.toBN(minWithdrawal)) &&
+        web3.utils.toBN(withdrawalVal.withdrawalWeiUser).lt(web3.utils.toBN(minWithdrawal))
+      )
+    ) {
+      this.setState({ balanceError: `Below minimum withdrawal amount at maximum withdrawal. `})
+    } else if ( // check zero balances
+      withdrawalVal.withdrawalWeiUser == '0' && 
+      withdrawalVal.tokensToSell == "0"
+    ) {
+      this.setState({ balanceError: `Enter a withdrawal amount above 0`})
+    }
   }
 
   render() {
@@ -205,9 +240,9 @@ class WithdrawCard extends Component {
           id="outlined-number"
           label="Amount (Wei)"
           placeholder="Amount (Wei)"
-          value={this.state.displayVal}
+          value={this.state.clickedMax ? "Max Selected" : this.state.displayVal}
           onChange={evt => this.updateWithdrawHandler(evt)}
-          type="number"
+          type={this.state.clickedMax ? "string" : "number"}
           margin="normal"
           variant="outlined"
           helperText={this.state.balanceError}
@@ -225,7 +260,7 @@ class WithdrawCard extends Component {
           }}
         />
         <Tooltip disableFocusListener disableTouchListener title="TST will be converted to ETH on Withdraw">
-          <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained">
+          <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained" disabled={!connextState || !connextState.runtime.canWithdraw}>
             <span>Withdraw</span>
           </Button>
         </Tooltip>
