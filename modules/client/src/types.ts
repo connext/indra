@@ -169,6 +169,13 @@ export const ChannelStatus = {
 }
 export type ChannelStatus = keyof typeof ChannelStatus
 
+export const DisputeStatus = {
+  CD_PENDING: 'CD_PENDING',
+  CD_IN_DISPUTE_PERIOD: 'CD_IN_DISPUTE_PERIOD',
+  CD_FAILED: 'CD_FAILED',
+  CD_FINISHED: 'CD_FINISHED'
+}
+export type DisputeStatus = keyof typeof DisputeStatus
 
 // channel update reasons
 export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string } = {
