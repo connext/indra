@@ -1,5 +1,5 @@
 import { subOrZero, objMap } from './StateGenerator'
-import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal } from './types'
+import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
 import Web3 = require('web3')
@@ -39,15 +39,14 @@ import {
   ConfirmPendingArgs,
   convertThreadPayment,
   Payment,
-  convertArgs
+  convertArgs,
+  withdrawalParamsNumericFields
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
 import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { TransactionReceipt } from 'web3/types'
-import { assert } from './testing';
-import { util } from 'prettier';
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -255,6 +254,16 @@ export class Validator {
     }
 
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
+  }
+
+  public withdrawalParams = (params: WithdrawalParametersBN): string | null => {
+    if (+params.exchangeRate != +params.exchangeRate || +params.exchangeRate < 0)
+      return 'invalid exchange rate: ' + params.exchangeRate
+    return this.hasNegative(params, withdrawalParamsNumericFields)
+  }
+
+  public payment = (params: PaymentBN): string | null => {
+    return this.hasNegative(params, argNumericFields.Payment)
   }
 
   public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {
