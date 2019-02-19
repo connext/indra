@@ -2,23 +2,20 @@
 set -e
 
 ####################
+# Make sure contracts are migrated
+
+bash ops/deploy.contracts.sh ganache
+
+####################
 # ENV VARS
 
 # set any of these to "yes" to turn on watchers
-watch_ethprovider="no"
 watch_hub="no"
 watch_chainsaw="no"
 watch_wallet="no"
 
 project=connext
 number_of_services=7
-proxy_image=${project}_proxy:dev
-wallet_image=${project}_builder:dev
-hub_image=${project}_hub:dev
-chainsaw_image=${project}_hub:dev
-redis_image=redis:5-alpine
-database_image=${project}_database:dev
-ethprovider_image=${project}_builder:dev
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -28,11 +25,14 @@ EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 # ethereum settings
 ETH_RPC_URL="http://ethprovider:8545"
 ETH_NETWORK="ganache"
+ETH_NETWORK_ID="4447"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
-HUB_WALLET_ADDRESS=""
-CHANNEL_MANAGER_ADDRESS=""
-TOKEN_ADDRESS=""
+addressBook="modules/contracts/ops/address-book.json"
+
+HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
+CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
+TOKEN_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].approvedToken`"
 
 # database settings
 REDIS_URL="redis://redis:6379"
@@ -44,6 +44,14 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 
 ####################
 # Deploy according to above configuration
+
+proxy_image=${project}_proxy:dev
+wallet_image=${project}_builder:dev
+hub_image=${project}_hub:dev
+chainsaw_image=${project}_hub:dev
+ethprovider_image=${project}_builder:dev
+database_image=${project}_database:dev
+redis_image=redis:5-alpine
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -138,7 +146,11 @@ services:
     environment:
       NODE_ENV: $MODE
       ETH_MNEMONIC: $ETH_MNEMONIC
+      ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_RPC_URL: $ETH_RPC_URL
+      HUB_WALLET_ADDRESS: $HUB_WALLET_ADDRESS
+      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
+      TOKEN_ADDRESS: $TOKEN_ADDRESS
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
@@ -162,7 +174,11 @@ services:
     environment:
       NODE_ENV: $MODE
       ETH_MNEMONIC: $ETH_MNEMONIC
+      ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_RPC_URL: $ETH_RPC_URL
+      HUB_WALLET_ADDRESS: $HUB_WALLET_ADDRESS
+      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
+      TOKEN_ADDRESS: $TOKEN_ADDRESS
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
@@ -178,7 +194,7 @@ services:
   ethprovider:
     image: $ethprovider_image
     entrypoint: bash ops/entry.sh
-    command: "$watch_ethprovider"
+    command: signal
     environment:
       ETH_PROVIDER: $ETH_RPC_URL
       ETH_NETWORK: $ETH_NETWORK
