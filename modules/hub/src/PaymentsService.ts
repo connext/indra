@@ -44,8 +44,7 @@ export default class PaymentsService {
     channelsDao: ChannelsDao,
     validator: Validator,
     config: Config,
-    db: DBEngine,
-    gsd: GlobalSettingsDao
+    db: DBEngine
   ) {
     this.channelsService = channelsService
     this.threadsService = threadsService
@@ -56,7 +55,6 @@ export default class PaymentsService {
     this.validator = validator
     this.config = config
     this.db = db
-    this.gsd = gsd
   }
 
   public async doPurchase(
@@ -64,7 +62,6 @@ export default class PaymentsService {
     meta: any,
     payments: PurchasePayment[],
   ): Promise<MaybeResult<{ purchaseId: string }>> {
-    // await this.gsd.toggleThreadsEnabled(true)
     return this.db.withTransaction(() => this._doPurchase(user, meta, payments))
   }
 
