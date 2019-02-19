@@ -367,7 +367,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       validator: Validator,
       config: Config,
       db: DBEngine,
-      gsd: GlobalSettingsDao,
     ) => new PaymentsService(
       channelsService,
       threadsService,
@@ -378,7 +377,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       validator,
       config,
       db,
-      gsd,
     ),
     dependencies: [
       'ChannelsService',
@@ -391,7 +389,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'DBEngine',
       'ChannelManagerContract',
-      'GlobalSettingsDao'
     ],
   },
 
