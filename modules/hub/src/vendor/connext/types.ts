@@ -710,9 +710,27 @@ export type WithdrawalParameters<T = string> = {
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
+export const withdrawalParamsNumericFields = [
+  'withdrawalWeiUser',
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalTokenUser',
+]
+
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
+
+export function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
+  return {
+    id: up.id,
+    reason: up.reason,
+    args: up.args,
+    txCount: up.state.txCountGlobal,
+    sigHub: up.state.sigHub,
+    sigUser: up.state.sigUser,
+  }
+}
 
 // util to convert from string to bn for all types
 export const channelNumericFields = [

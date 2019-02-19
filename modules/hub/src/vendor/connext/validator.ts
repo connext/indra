@@ -1,5 +1,5 @@
 import { subOrZero, objMap } from './StateGenerator'
-import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal } from './types'
+import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
 import Web3 = require('web3')
@@ -39,7 +39,8 @@ import {
   ConfirmPendingArgs,
   convertThreadPayment,
   Payment,
-  convertArgs
+  convertArgs,
+  withdrawalParamsNumericFields
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
@@ -255,6 +256,16 @@ export class Validator {
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
   }
 
+  public withdrawalParams = (params: WithdrawalParametersBN): string | null => {
+    if (+params.exchangeRate != +params.exchangeRate || +params.exchangeRate < 0)
+      return 'invalid exchange rate: ' + params.exchangeRate
+    return this.hasNegative(params, withdrawalParamsNumericFields)
+  }
+
+  public payment = (params: PaymentBN): string | null => {
+    return this.hasNegative(params, argNumericFields.Payment)
+  }
+
   public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {
     const errs = [
       this.isValidStateTransitionRequest(
@@ -456,7 +467,7 @@ export class Validator {
 
     // If user is sender then that means that prev is sender-hub channel
     // If user is receiver then that means that prev is hub-receiver channel
-    const userIsSender = args.sender === prev.user
+    const userIsSender = args.sender == prev.user
 
     // First check thread state independently
     // Then check that thread state against prev channel state:
@@ -770,7 +781,7 @@ export class Validator {
     try {
       this.assertThreadSigner(convertThreadState('str', args))
     } catch (e) {
-      return e.message
+      errs.push('Error asserting thread signer: ' + e.message)
     }
 
     if (errs) {
