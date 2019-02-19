@@ -835,8 +835,8 @@ export default class ChannelsService {
 
   public async getChannelAndThreadUpdatesForSync(
     user: string,
-    channelTxCount: number,
-    lastThreadUpdateId: number,
+    channelTxCount: number = 0,
+    lastThreadUpdateId: number = 0,
   ): Promise<Sync> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
     console.log('channel: ', channel);
