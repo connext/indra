@@ -46,10 +46,10 @@ POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 # Deploy according to above configuration
 
 proxy_image=${project}_proxy:dev
-wallet_image=${project}_builder:dev
+wallet_image=${project}_builder
 hub_image=${project}_hub:dev
 chainsaw_image=${project}_hub:dev
-ethprovider_image=${project}_builder:dev
+ethprovider_image=${project}_builder
 database_image=${project}_database:dev
 redis_image=redis:5-alpine
 

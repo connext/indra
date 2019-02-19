@@ -181,7 +181,7 @@ contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(
 	$(docker_run_in_contracts) "npm run build"
 	$(log_finish) && touch build/contract-artifacts
 
-contract-node-modules: $(contracts)/package.json
+contract-node-modules: builder $(contracts)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"

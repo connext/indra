@@ -17,7 +17,7 @@ describe('WithdrawalController: unit tests', () => {
     // add channel with initial booty balance to exchange and withdraw
     mockStore.setChannel({
       user,
-      balanceWei: [10, 0],
+      balanceWei: [10, 5],
       balanceToken: [0, 50],
     })
     mockStore.setExchangeRate({ 'USD': '5' })
@@ -29,7 +29,7 @@ describe('WithdrawalController: unit tests', () => {
       exchangeRate: '5',
       recipient: mkAddress('0xAAA'),
       tokensToSell: '50',
-      withdrawalWeiUser: '0',
+      withdrawalWeiUser: '5',
       weiToSell: '0',
     }
 

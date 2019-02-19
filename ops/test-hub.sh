@@ -57,7 +57,7 @@ docker run --detach --name=$ETHPROVIDER_HOST --network=$project \
   --env ETH_PROVIDER="http://$ETH_RPC_URL" \
   --volume $root/modules/contracts:/root \
   --entrypoint "bash" \
-  ${project}_builder:dev ops/entry.sh
+  ${project}_builder ops/entry.sh
 
 # Run tests
 echo "Starting hub tester.."
