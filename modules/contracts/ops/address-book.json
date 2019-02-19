@@ -10,9 +10,9 @@
         "name": "Weth"
       },
       "4447": {
-        "address": "0xA509542aDa3196a38bD6fD03b253547EE09220C4",
-        "name": "Test",
+        "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da",
         "supply": "1000000000000000000000000000",
+        "name": "Test",
         "decimals": "18",
         "symbol": "TST"
       }
@@ -27,34 +27,23 @@
         "address": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51"
       },
       "4447": {
-        "address": "0xABa7902442c5739c6f0c182691d48D63d06A212E",
-        "compiledCodeHash": "acc8122e680445b5efbbc3120624cc893a1ed2d4dd58ce1d6e0d1e9d0f1b3585",
-        "deployedCodeHash": "9b46fddde2bcd9d02bc123db4e33eb09a79687130ba60d00c0b30d296c48bba8"
+        "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0"
       }
     }
   },
   "ChannelManager": {
     "networks": {
       "3": {
-        "links": {
-          "ECTools": "0x2511919A60c8E7eE29CC994c5ec40fB406bc073D"
-        },
         "address": "0x8BA9df707565Ef788D0C72D41db8efbBADf41240"
       },
       "4": {
-        "links": {
-          "ECTools": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51"
-        },
         "address": "0xA49E15AFDB211B154873fc3D5ADD45C7c6c658f6"
       },
       "4447": {
-        "links": {
-          "ECTools": "0xABa7902442c5739c6f0c182691d48D63d06A212E"
-        },
-        "address": "0x2e335F247E91caa168c64b63104C4475b2af3942",
-        "challengePeriod": "600",
+        "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10",
         "hub": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
-        "approvedToken": "0xA509542aDa3196a38bD6fD03b253547EE09220C4"
+        "challengePeriod": "600",
+        "approvedToken": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da"
       }
     }
   }

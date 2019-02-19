@@ -53,7 +53,7 @@ stop:
 	docker container prune -f
 
 reset: stop
-	docker volume rm connext_database_dev connext_chain_dev || true
+	docker volume rm connext_database_dev connext_chain_dev 2> /dev/null || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
 reset-client: stop

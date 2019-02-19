@@ -4,6 +4,7 @@ set -e
 project=connext
 key_name=private_key
 name=${project}_migrator
+cwd="`pwd`"
 
 ########################################
 # Setup env vars
@@ -75,9 +76,9 @@ trap cleanup EXIT
 # Deploy contracts
 
 echo
-echo "Deploying contract migrator..."
-echo
+echo "Deploying contract deployer..."
 
+id="`
 docker service create \
   --detach \
   --name="$name" \
@@ -87,10 +88,14 @@ docker service create \
   --env="INFURA_KEY=$INFURA_KEY" \
   --env="PRIVATE_KEY_FILE=$PRIVATE_KEY_FILE" \
   --mount="type=volume,source=connext_chain_dev,target=/data" \
-  --mount="type=bind,source=`pwd`/modules/contracts,target=/root" \
+  --mount="type=bind,source=$cwd/modules/contracts,target=/root" \
   --restart-condition=none \
   --secret private_key \
-  ${project}_ethprovider
+  --entrypoint "bash ops/entry.sh" \
+  ${project}_builder:dev 2> /dev/null
+`"
+echo "Success! Deployer service id=$id"
+echo
 
 docker service logs --raw --follow $name &
 logs_pid=$!
