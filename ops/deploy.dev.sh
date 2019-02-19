@@ -13,12 +13,12 @@ watch_wallet="no"
 project=connext
 number_of_services=7
 proxy_image=${project}_proxy:dev
-wallet_image=${project}_wallet:dev
+wallet_image=${project}_builder:dev
 hub_image=${project}_hub:dev
 chainsaw_image=${project}_hub:dev
 redis_image=redis:5-alpine
 database_image=${project}_database:dev
-ethprovider_image=${project}_ethprovider:dev
+ethprovider_image=${project}_builder:dev
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -29,6 +29,10 @@ EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 ETH_RPC_URL="http://ethprovider:8545"
 ETH_NETWORK="ganache"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+
+HUB_WALLET_ADDRESS=""
+CHANNEL_MANAGER_ADDRESS=""
+TOKEN_ADDRESS=""
 
 # database settings
 REDIS_URL="redis://redis:6379"
@@ -104,6 +108,7 @@ services:
 
   wallet:
     image: $wallet_image
+    entrypoint: bash ops/entry.sh
     command: "$watch_wallet"
     networks:
       - $project
@@ -122,6 +127,7 @@ services:
 
   hub:
     image: $hub_image
+    entrypoint: bash ops/dev.entry.sh
     command: hub $watch_hub
     networks:
       - $project
@@ -147,6 +153,7 @@ services:
 
   chainsaw:
     image: $chainsaw_image
+    entrypoint: bash ops/dev.entry.sh
     command: chainsaw $watch_chainsaw
     networks:
       - $project
@@ -170,6 +177,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
+    entrypoint: bash ops/entry.sh
     command: "$watch_ethprovider"
     environment:
       ETH_PROVIDER: $ETH_RPC_URL

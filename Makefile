@@ -23,7 +23,7 @@ find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
 docker_run=docker run --name=$(project)_buidler --tty --rm
-docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
+docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev  $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(contracts):/root $(project)_builder:dev $(id)
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
 docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder:dev $(id)
@@ -43,8 +43,8 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database ethprovider hub wallet proxy
-prod: database-prod hub-prod proxy-prod ethprovider-prod
+dev: database hub wallet proxy
+prod: database-prod hub-prod proxy-prod
 
 stop: 
 	bash ops/stop.sh
@@ -130,18 +130,13 @@ proxy: $(shell find $(proxy) $(find_options))
 
 # Wallet
 
-wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
+wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options))
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/wallet-prod
 
-wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
-	$(log_start) && echo "prereqs: $<"
-	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
-	$(log_finish) && touch build/wallet
-
-wallet-node-modules: client $(wallet)/package.json
+wallet: client $(wallet)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
@@ -163,7 +158,7 @@ hub: hub-js $(hub)/ops/dev.entry.sh
 	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
 	$(log_finish) && touch build/hub
 
-hub-js: hub-node-modules $(shell find $(hub) $(find_options))
+hub-js: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
@@ -178,16 +173,6 @@ hub-node-modules: builder client $(hub)/package.json
 	$(log_finish) && touch build/hub-node-modules
 
 # Contracts
-
-ethprovider-prod: ethprovider
-	$(log_start) && echo "prereqs: $<"
-	docker tag $(project)_ethprovider:dev $(project)_ethprovider:latest
-	$(log_finish) && touch build/ethprovider-prod
-
-ethprovider: contract-artifacts $(contracts)/ops/ethprovider.dockerfile
-	$(log_start) && echo "prereqs: $<"
-	docker build --file $(contracts)/ops/ethprovider.dockerfile --tag $(project)_ethprovider:dev $(contracts)
-	$(log_finish) && touch build/ethprovider
 
 contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
 	$(log_start) && echo "prereqs: $<"
