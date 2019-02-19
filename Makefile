@@ -104,7 +104,7 @@ test-client: client
 test-contracts: contract-artifacts
 	bash ops/test-contracts.sh
 
-test-hub: hub database ethprovider
+test-hub: hub database
 	bash ops/test-hub.sh
 
 test-e2e: root-node-modules prod
@@ -136,7 +136,7 @@ wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/wallet-prod
 
-wallet: client $(wallet)/package.json
+wallet: $(wallet)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
@@ -144,7 +144,7 @@ wallet: client $(wallet)/package.json
 	#$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	#$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
 	#$(docker_run_in_wallet) "cd ../client && $(install)"
-	$(log_finish) && touch build/wallet-node-modules
+	$(log_finish) && touch build/wallet
 
 # Hub
 
@@ -163,7 +163,7 @@ hub-js: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/hub-js
 
-hub-node-modules: builder client $(hub)/package.json
+hub-node-modules: builder $(hub)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
@@ -179,7 +179,7 @@ contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(
 	$(docker_run_in_contracts) "npm run build"
 	$(log_finish) && touch build/contract-artifacts
 
-contract-node-modules: client $(contracts)/package.json
+contract-node-modules: $(contracts)/package.json
 	$(log_start) && echo "prereqs: $<"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
@@ -217,7 +217,8 @@ database-node-modules: builder $(db)/package.json
 	$(docker_run_in_db) "$(install)"
 	$(log_finish) && touch build/database-node-modules
 
-# Builder
+# Builder, etc
+
 builder: ops/builder.dockerfile
 	$(log_start) && echo "prereqs: $<"
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .

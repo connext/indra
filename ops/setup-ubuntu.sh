@@ -16,6 +16,12 @@ if [[ ! -f "$pubkey" ]]
 then echo "Couldn't find the CI public key: $pubkey" && exit
 fi
 
+# Prepare to load the hub's private key into the server's secret store
+echo "Copy the hub's private key to your clipboard then paste it below & hit enter (no echo)"
+echo -n "> "
+read -s key
+echo
+
 # Prepare to set or use our user's password
 echo "Set a new sudo password for REMOTE machine.. and again to confirm (no echo)"
 echo -n "> "
@@ -28,13 +34,6 @@ echo
 if [[ "$password" != "$confirm" ]]
 then echo "Passwords did not match, aborting" && exit
 fi
-
-# Prepare to set or use our user's password
-echo "Copy the hub's private key to your clipboard"
-echo "Paste it below & hit enter"
-echo -n "> "
-read -s key
-echo
 
 # If we can login as root then setup a sudo user & turn off root login
 if ssh -q root@$hostname exit 2> /dev/null
