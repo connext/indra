@@ -118,8 +118,6 @@ services:
   hub:
     image: $hub_image
     command: hub
-    ports:
-      - '3000:8080'
     depends_on:
       - database
       - chainsaw

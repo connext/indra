@@ -97,6 +97,7 @@ class PayCard extends Component {
   }
 
   async paymentHandler() {
+    const { channelState } = this.props
     this.setState({addressError: null, balanceError: null})
     const { connext, web3, connextState } = this.props;
     if (!connextState || !connextState.runtime.canBuy) {

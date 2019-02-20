@@ -19,7 +19,7 @@ docker run \
   --name=connext_tester \
   --volume=$dir:/root \
   --entrypoint=bash \
-  connext_builder:dev -c '
+  connext_builder -c '
     set -e
     PATH=./node_modules/.bin:$PATH
     echo "Running tests.."
