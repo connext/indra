@@ -157,7 +157,7 @@ hub-prod: hub
 hub: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
-	$(log_finish) && touch build/hub-js
+	$(log_finish) && touch build/hub
 
 hub-node-modules: builder $(hub)/package.json
 	$(log_start)
