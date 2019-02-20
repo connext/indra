@@ -95,8 +95,6 @@ export class PersistentState {
   threadHistory: ThreadHistoryItem[] = []
   lastThreadUpdateId: number = 0 // global hub db level
   syncControllerState = new SyncControllerState()
-
-  requestedDeposit: null | PendingRequestedDeposit = null
 }
 
 export class ConnextState {
