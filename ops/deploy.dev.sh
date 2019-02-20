@@ -216,7 +216,6 @@ services:
       - $project
     ports:
       - "5432:5432"
-      - "5433:5433"
     secrets:
       - connext_database_dev
     volumes:
