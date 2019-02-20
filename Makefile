@@ -118,7 +118,7 @@ test-e2e: root-node-modules prod
 
 # Proxy
 
-proxy-prod: wallet-prod $(shell find $(proxy) $(find_options))
+proxy-prod: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch build/$@
