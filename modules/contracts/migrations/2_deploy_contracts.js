@@ -16,7 +16,7 @@ module.exports = async function(deployer, network, accounts) {
     await deployer.deploy(EC);
     await deployer.link(EC, CM);
   } else if (network === "rinkeby" || network === "rinkebyLive") {
-    tokenAddress = "0xc778417e063141139fce010982780140aa0cd5ab" // Rinkeby WETH
+    tokenAddress = "0x9bC493a46985564A8d01776D7012331E55e9d860" // Rinkeby contract
 
     // use deployed version of ECTools
     const deployedEC = await EC.at('0xf6B5eed0b9cC2948cBD95C788Db7457B54d80c44')
