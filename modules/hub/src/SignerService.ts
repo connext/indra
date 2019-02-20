@@ -4,7 +4,7 @@ import Config from './Config'
 import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/connext/types'
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
-import { ethUtils } from 'ethereumjs-util'
+import * as ethUtils from 'ethereumjs-util'
 
 export class SignerService {
   constructor(
@@ -41,7 +41,15 @@ export class SignerService {
   public async sign(message: string): Promise<string> {
     if (process.env.PRIVATE_KEY_FILE) {
       const pk = Buffer.from(fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8'), 'hex')
-      return await ethUtils.ecsign(Buffer.from(message, 'hex'), pk)
+      let msg
+      if (message.substring(0,2) === '0x') {
+        msg = Buffer.from(message.substring(2), 'hex')
+      } else {
+        msg = Buffer.from(message, 'hex')
+      }
+      const sig = await ethUtils.ecsign(msg, pk)
+      const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
+      return out
     } else {
       return await this.web3.eth.sign(message, this.config.hotWalletAddress)
     }

@@ -1,0 +1,62 @@
+{
+  "tokens": {
+    "networks": {
+      "1": {
+        "address": "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359",
+        "name": "Dai"
+      },
+      "4": {
+        "address": "0xc778417e063141139fce010982780140aa0cd5ab",
+        "name": "Weth"
+      },
+      "4447": {
+        "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da",
+        "supply": "1000000000000000000000000000",
+        "name": "Test",
+        "decimals": "18",
+        "symbol": "TST"
+      }
+    }
+  },
+  "ECTools": {
+    "networks": {
+      "1": {
+        "address": "0x94d397E39DCc523C8E7D86f127E81522d94f1F2b"
+      },
+      "3": {
+        "address": "0x2511919A60c8E7eE29CC994c5ec40fB406bc073D"
+      },
+      "4": {
+        "address": "0xaA7DE2f0E59408Ad2dF06DE11a32702b13006A51"
+      },
+      "4447": {
+        "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0"
+      }
+    }
+  },
+  "ChannelManager": {
+    "networks": {
+      "1": {
+        "address": "0xDE789db3Be8F7a482304723448df08fa7773B2b8",
+        "hub": "0x557f0e214c8e8607a2c1E910802ACA23c6C0E72e",
+        "challengePeriod": "600",
+        "approvedToken": "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359"
+      },
+      "3": {
+        "address": "0x8BA9df707565Ef788D0C72D41db8efbBADf41240"
+      },
+      "4": {
+        "address": "0x2D25db0aD73984562fA47b935D4aa94F60ad3bBc",
+        "hub": "0x742072C92D39c936fCAC59a6d5fA6Ad16b88b27e",
+        "challengePeriod": "600",
+        "approvedToken": "0xc778417e063141139fce010982780140aa0cd5ab"
+      },
+      "4447": {
+        "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10",
+        "hub": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
+        "challengePeriod": "600",
+        "approvedToken": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da"
+      }
+    }
+  }
+}

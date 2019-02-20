@@ -4,7 +4,7 @@ const HumanStandardToken = artifacts.require("./HumanStandardToken.sol");
 
 // TODO: TEST ALL THIS, ESP ECTOOLS STUFF, but we should definitely have it
 module.exports = async function(deployer, network, accounts) {
-  const data = require('../data.json')
+  const data = require('../ops/data.json')
 
   let tokenAddress
 

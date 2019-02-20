@@ -5,18 +5,23 @@
   "description": "Deployment for Connext hub infrastructure",
   "license": "ISC",
   "scripts": {
+    "clean": "make clean",
     "cypress": "./node_modules/.bin/cypress open",
-    "build": "make dev",
     "db": "bash ops/db.sh",
+    "dls": "docker service ls && echo '=====' && docker container ls",
+    "deep-clean": "make deep-clean",
     "logs": "bash ops/logs.sh",
+    "prod": "make prod && bash ops/deploy.prod.sh",
     "rebuild": "make clean && make",
-    "reset": "make reset && bash ops/restart.sh",
+    "reset": "make reset",
     "restart": "bash ops/restart.sh",
     "start": "make dev && bash ops/deploy.dev.sh",
-    "prod": "make prod && bash ops/deploy.prod.sh",
     "stop": "bash ops/stop.sh",
-    "clean": "make clean",
-    "deep-clean": "make deep-clean"
+    "test-all": "make test-all",
+    "test-client": "make test-client",
+    "test-contracts": "make test-contracts",
+    "test-e2e": "make test-e2e",
+    "test-hub": "make test-hub"
   },
   "dependencies": {
     "cypress": "^3.1.5"

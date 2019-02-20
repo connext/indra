@@ -21,7 +21,7 @@ docker run \
   --volume=$dir/../client:/client \
   --tmpfs=/chaindata \
   --entrypoint=bash \
-  connext_builder:dev -c '
+  connext_builder -c '
     set -e
     PATH=./node_modules/.bin:$PATH
     echo "Starting Ganache.."

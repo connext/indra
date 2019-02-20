@@ -24,7 +24,7 @@ const { toBN } = require("../../client/dist/helpers/bn");
 const clientUtils = new Utils();
 const sg = new StateGenerator();
 
-const data = require("../data.json");
+const data = require("../ops/data.json");
 
 should
   .use(require("chai-as-promised"))
