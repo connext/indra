@@ -57,7 +57,7 @@ docker run --detach --name=$ETHPROVIDER_HOST --network=$project \
   --env ETH_PROVIDER="http://$ETH_RPC_URL" \
   --volume $root/modules/contracts:/root \
   --entrypoint "bash" \
-  ${project}_builder ops/entry.sh
+  ${project}_builder ops/entry.sh "signal"
 
 # Run tests
 echo "Starting hub tester.."
@@ -76,11 +76,10 @@ docker run --tty --name ${project}_tester --network=$project \
   --volume $root/modules/hub:/root \
   --entrypoint=bash ${project}_builder -c '
     set -e
-    echo "Waiting for $POSTGRES_HOST:5433 & $DATABASE && $REDIS && $ETH_RPC_URL_TEST to wake up.."
-    bash ops/wait-for.sh -t 60 $POSTGRES_HOST:5433 2> /dev/null
-    bash ops/wait-for.sh -t 60 $DATABASE 2> /dev/null
-    bash ops/wait-for.sh -t 60 $REDIS 2> /dev/null
-    bash ops/wait-for.sh -t 60 $ETH_RPC_URL_TEST 2> /dev/null
+    echo "Waiting for $REDIS..." && bash ops/wait-for.sh -t 60 $REDIS 2> /dev/null
+    echo "Waiting for $POSTGRES_HOST:5431..." && bash ops/wait-for.sh -t 60 $POSTGRES_HOST:5431 2> /dev/null
+    echo "Waiting for $DATABASE..." && bash ops/wait-for.sh -t 60 $DATABASE 2> /dev/null
+    echo "Waiting for $ETH_RPC_URL_TEST" && bash ops/wait-for.sh -t 60 $ETH_RPC_URL_TEST 2> /dev/null
     ./node_modules/.bin/mocha \
       -r ./dist/register/common.js \
       -r ./dist/register/testing.js \
