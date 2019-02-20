@@ -60,7 +60,7 @@ reset-client: stop
 	$(log_start)
 	rm -rf modules/client
 	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
-	$(log_finish) && touch build/pull-client
+	$(log_finish) && touch build/$@
 
 clean: stop
 	rm -rf build/*
@@ -121,12 +121,12 @@ test-e2e: root-node-modules prod
 proxy-prod: wallet-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
-	$(log_finish) && touch build/proxy-prod
+	$(log_finish) && touch build/$@
 
 proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
-	$(log_finish) && touch build/proxy
+	$(log_finish) && touch build/$@
 
 # Wallet
 
@@ -134,7 +134,7 @@ wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options
 	$(log_start)
 	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
 	$(docker_run_in_wallet) "npm run build"
-	$(log_finish) && touch build/wallet-prod
+	$(log_finish) && touch build/$@
 
 wallet: $(wallet)/package.json
 	$(log_start)
@@ -145,19 +145,19 @@ wallet: $(wallet)/package.json
 	#$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
 	#$(docker_run_in_wallet) "cd ../client && $(install)"
 	#@touch build/client && touch build/client-node-modules
-	$(log_finish) && touch build/wallet
+	$(log_finish) && touch build/$@
 
 # Hub
 
 hub-prod: hub
 	$(log_start)
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
-	$(log_finish) && touch build/hub-prod
+	$(log_finish) && touch build/$@
 
 hub: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
-	$(log_finish) && touch build/hub
+	$(log_finish) && touch build/$@
 
 hub-node-modules: builder $(hub)/package.json
 	$(log_start)
@@ -167,14 +167,14 @@ hub-node-modules: builder $(hub)/package.json
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
 	$(docker_run_in_hub) "cd ../client && $(install)"
 	@touch build/client && touch build/client-node-modules
-	$(log_finish) && touch build/hub-node-modules
+	$(log_finish) && touch build/$@
 
 # Contracts
 
 contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
 	$(log_start)
 	$(docker_run_in_contracts) "npm run build"
-	$(log_finish) && touch build/contract-artifacts
+	$(log_finish) && touch build/$@
 
 contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
@@ -184,50 +184,50 @@ contract-node-modules: builder $(contracts)/package.json
 	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
 	$(docker_run_in_contracts) "cd ../client && $(install)"
 	@touch build/client && touch build/client-node-modules
-	$(log_finish) && touch build/contract-node-modules
+	$(log_finish) && touch build/$@
 
 # Client
 
 client: client-node-modules $(shell find $(client)/src)
 	$(log_start)
 	$(docker_run_in_client) "npm build"
-	$(log_finish) && touch build/client-node-modules
+	$(log_finish) && touch build/$@
 
 client-node-modules: builder $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "$(install)"
-	$(log_finish) && touch build/client-node-modules
+	$(log_finish) && touch build/$@
 
 # Database
 
 database-prod: database
 	$(log_start)
 	docker tag $(project)_database:dev $(project)_database:latest
-	$(log_finish) && touch build/database-prod
+	$(log_finish) && touch build/$@
 
 database: database-node-modules migration-templates $(db_prereq)
 	$(log_start)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
-	$(log_finish) && touch build/database
+	$(log_finish) && touch build/$@
 
 migration-templates: $(shell find $(db)/ops $(db)/migrations $(db)/templates $(find_options))
 	$(log_start)
 	$(docker_run_in_db) "make"
-	$(log_finish) && touch build/migration-templates
+	$(log_finish) && touch build/$@
 
 database-node-modules: builder $(db)/package.json
 	$(log_start)
 	$(docker_run_in_db) "$(install)"
-	$(log_finish) && touch build/database-node-modules
+	$(log_finish) && touch build/$@
 
 # Builder, etc
 
 builder: ops/builder.dockerfile
 	$(log_start)
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
-	$(log_finish) && touch build/builder
+	$(log_finish) && touch build/$@
 
 root-node-modules: package.json
 	$(log_start)
 	$(install)
-	$(log_finish) && touch build/root-node-modules
+	$(log_finish) && touch build/$@
