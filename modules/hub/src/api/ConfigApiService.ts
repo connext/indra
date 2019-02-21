@@ -31,7 +31,7 @@ class ConfigApiServiceHandler {
     } = this.config
     return res.send({
       channelManagerAddress,
-      hotWalletAddress,
+      hubAddress: hotWalletAddress,
       tokenContractAddress,
       ethRpcUrl,
       beiMaxCollateralization: beiMaxCollateralization.toString(),
