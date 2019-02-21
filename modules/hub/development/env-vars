@@ -5,6 +5,7 @@ export HOT_WALLET_ADDRESS="0xfb482f8f779fd96a857f1486471524808b97452d"
 export SERVICE_USER_KEY="omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD"
 export TOKEN_CONTRACT_ADDRESS="0xd01c08c7180eae392265d8c7df311cf5a93f1b73"
 export DATABASE_URL=postgresql://localhost:5432/sc-hub
+export PRIVATE_KEY_FILE=./development/private-key
 
 # Vynos
 export NETWORK_NAME=ganache
