@@ -49,7 +49,7 @@ export class SignerService {
       }
       const sig = await ethUtils.ecsign(msg, pk)
       const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
-      console.log(`Hub (${ethUtils.privateToAddress(pk)}) signed message="${message}" & produced sig ${out}`)
+      console.log(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed message="${message}" & produced sig ${out}`)
       return out
     } else {
       return await this.web3.eth.sign(message, this.config.hotWalletAddress)
