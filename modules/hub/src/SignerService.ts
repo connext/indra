@@ -42,16 +42,16 @@ export class SignerService {
     if (process.env.PRIVATE_KEY_FILE) {
       const pkString = fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8')
       const pk = ethUtils.toBuffer(ethUtils.addHexPrefix(pkString))
-      const fingerprint = ethUtils.toBuffer(ethUtils.addHexPrefix(String(message)))
+      const fingerprint = ethUtils.toBuffer(String(message))
       const prefix = ethUtils.toBuffer('\x19Ethereum Signed Message:\n');
-      const prefixedMsg = ethUtils.keccak256([
+      const prefixedMsg = ethUtils.keccak256(Buffer.concat([
         prefix,
         ethUtils.toBuffer(String(fingerprint.length)),
         fingerprint
-      ])
+      ]))
       const sig = await ethUtils.ecsign(ethUtils.toBuffer(prefixedMsg), pk)
       const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
-      console.log(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed message="${message}" & produced sig ${out}`)
+      console.log(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}") & produced sig ${out}`)
       return out
     } else {
       return await this.web3.eth.sign(message, this.config.hotWalletAddress)
