@@ -1,5 +1,5 @@
 import { subOrZero, objMap } from './StateGenerator'
-import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal } from './types'
+import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN, withdrawalParamsNumericFields } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
 import Web3 = require('web3')
@@ -46,8 +46,6 @@ import { Utils } from './Utils'
 import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { TransactionReceipt } from 'web3/types'
-import { assert } from './testing';
-import { util } from 'prettier';
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -191,6 +189,22 @@ export class Validator {
       return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
+    // ensure the deposit is correctly signed by user if the sig user
+    // exists
+    if (args.sigUser) {
+      try {
+        const argsStr = convertDeposit("str", args)
+        const proposal: SignedDepositRequestProposal = {
+          amountToken: argsStr.depositTokenUser,
+          amountWei: argsStr.depositWeiUser,
+          sigUser: args.sigUser,
+        }
+        this.assertDepositRequestSigner(proposal, prev.user)
+      } catch (e) {
+        return `Invalid signer detected. ` + e.message + ` (prev: ${this.logChannel(prev)}, args: ${this.logArgs(args, "ProposePendingDeposit")}`
+      }
+    }
+
     return null
   }
 
@@ -255,6 +269,16 @@ export class Validator {
     }
 
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
+  }
+
+  public withdrawalParams = (params: WithdrawalParametersBN): string | null => {
+    if (+params.exchangeRate != +params.exchangeRate || +params.exchangeRate < 0)
+      return 'invalid exchange rate: ' + params.exchangeRate
+    return this.hasNegative(params, withdrawalParamsNumericFields)
+  }
+
+  public payment = (params: PaymentBN): string | null => {
+    return this.hasNegative(params, argNumericFields.Payment)
   }
 
   public proposePendingWithdrawal = (prev: ChannelStateBN, args: WithdrawalArgsBN): string | null => {
@@ -328,6 +352,16 @@ export class Validator {
     }
 
     return null
+  }
+
+  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
+    const prev = convertChannelState("bn", prevStr)
+    const error = await this.confirmPending(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+
+    return this.stateGenerator.confirmPending(prev)
   }
 
   public async emptyChannel(prev: ChannelStateBN, args: EmptyChannelArgs): Promise<string | null> {
@@ -405,16 +439,6 @@ export class Validator {
     // For an empty channel, the generator should rely on an empty channel
     // event. All channel information should be reset from the contract.
     return this.stateGenerator.emptyChannel(matchingEvent)
-  }
-
-  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
-    const prev = convertChannelState("bn", prevStr)
-    const error = await this.confirmPending(prev, args)
-    if (error) {
-      throw new Error(error)
-    }
-
-    return this.stateGenerator.confirmPending(prev)
   }
 
   // NOTE: the prev here is NOT the previous state in the state-chain 
