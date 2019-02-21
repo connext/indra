@@ -177,16 +177,16 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       gasEstimateDao: GasEstimateDao,
       onchainTransactionDao: OnchainTransactionsDao,
       db: DBEngine,
-      container: Container,
-      config: Config
-    ) => new OnchainTransactionService(web3, gasEstimateDao, onchainTransactionDao, db, container, config),
+      signerService: SignerService,
+      container: Container
+    ) => new OnchainTransactionService(web3, gasEstimateDao, onchainTransactionDao, db, signerService, container),
     dependencies: [
       'Web3',
       'GasEstimateDao',
       'OnchainTransactionsDao',
       'DBEngine',
-      'Container',
-      'Config'
+      'SignerService',
+      'Container'
     ],
     isSingleton: true,
   },
