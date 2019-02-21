@@ -18,20 +18,6 @@ export default class ConfigApiService extends ApiService<ConfigApiServiceHandler
   }
 }
 
-type ConfigAddresses = {
-  channelManager: Address,
-  tokenContract: Address,
-  hubWallet: Address,
-  rpcUrl: string,
-}
-
-type NetworksAvailable = {
-  'local': 'local',
-  'mainnet': 'mainnet',
-  'rinkeby': 'rinkeby',
-}
-type NetworkAvailable = keyof NetworksAvailable
-
 class ConfigApiServiceHandler {
   config: Config
 
@@ -48,7 +34,7 @@ class ConfigApiServiceHandler {
       hotWalletAddress,
       tokenContractAddress,
       ethRpcUrl,
-      beiMaxCollateralization,
+      beiMaxCollateralization: beiMaxCollateralization.toString(),
     })
   }
 
