@@ -50,9 +50,9 @@ export class SignerService {
         data: txn.data
       }
       const tx = new Tx(rawTx)
-      tx.sign(pk);
-      const serializedTx = tx.serialize();
-      return serializedTx
+      tx.sign(pk)
+      const serializedTx = tx.serialize()
+      return '0x' + serializedTx.toString('hex')
     } else {
       return (await this.web3.eth.signTransaction(txn)).raw
     }
