@@ -38,16 +38,18 @@ export class SignerService {
     return await this.web3.eth.signTransaction(tx)
   }
 
-  public async sign(message: string): Promise<string> {
+  public async signMessage(message: string): Promise<string> {
     if (process.env.PRIVATE_KEY_FILE) {
-      const pk = Buffer.from(fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8'), 'hex')
-      let msg
-      if (message.substring(0,2) === '0x') {
-        msg = Buffer.from(message.substring(2), 'hex')
-      } else {
-        msg = Buffer.from(message, 'hex')
-      }
-      const sig = await ethUtils.ecsign(msg, pk)
+      const pkString = fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8')
+      const pk = ethUtils.toBuffer(ethUtils.addHexPrefix(pkString))
+      const fingerprint = ethUtils.toBuffer(ethUtils.addHexPrefix(String(message)))
+      const prefix = ethUtils.toBuffer('\x19Ethereum Signed Message:\n');
+      const prefixedMsg = ethUtils.keccak256([
+        prefix,
+        ethUtils.toBuffer(String(fingerprint.length)),
+        fingerprint
+      ])
+      const sig = await ethUtils.ecsign(ethUtils.toBuffer(prefixedMsg), pk)
       const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
       console.log(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed message="${message}" & produced sig ${out}`)
       return out
@@ -60,7 +62,7 @@ export class SignerService {
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    return await this.sign(stateHash)
+    return await this.signMessage(stateHash)
   }
 
   public async signChannelState(
