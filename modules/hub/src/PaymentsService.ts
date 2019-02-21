@@ -75,7 +75,7 @@ export default class PaymentsService {
       let row: { id?: number }
       let afterPayment = null
 
-      if (payment.type == 'PT_CHANNEL') {
+      if (payment.type == 'PT_CHANNEL' || payment.type == 'PT_LINK') {
         // normal payment
         // TODO: should we check if recipient == hub here?
         row = await this.channelsService.doUpdateFromWithinTransaction(user, {
