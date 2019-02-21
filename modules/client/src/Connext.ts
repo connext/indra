@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, HubConfig } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -64,8 +64,8 @@ export interface ContractOptions {
 export interface ConnextOptions {
   web3: Web3
   hubUrl: string
-  contractAddress: string
-  hubAddress: Address
+  contractAddress?: string
+  hubAddress?: Address
   hub?: IHubAPIClient
   tokenAddress?: Address
   tokenName?: string
@@ -93,17 +93,23 @@ export interface IHubAPIClient {
   }>
   updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
   getLatestChannelState(): Promise<ChannelState | null>
+  config(): Promise<HubConfig>
 }
 
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
-  private tokenName?: string
+  // private tokenName?: string
 
   constructor(user: Address, networking: Networking, tokenName?: string) {
     this.user = user
     this.networking = networking
-    this.tokenName = tokenName
+    // this.tokenName = tokenName
+  }
+
+  async config(): Promise<HubConfig> {
+    const res = await this.networking.get(`config`)
+    return res.data
   }
 
   async getLatestChannelState(): Promise<ChannelState | null> {
@@ -306,11 +312,11 @@ class HubAPIClient implements IHubAPIClient {
 export interface ConnextOptions {
   web3: Web3
   hubUrl: string
-  contractAddress: string
-  hubAddress: Address
+  contractAddress?: string
+  hubAddress?: Address
   hub?: IHubAPIClient
   tokenAddress?: Address
-  tokenName?: string
+  // tokenName?: string
 }
 
 export abstract class IWeb3TxWrapper {
@@ -680,10 +686,10 @@ export class ChannelManager implements IChannelManager {
 export interface ConnextClientOptions {
   web3: Web3
   hubUrl: string
-  contractAddress: string
-  hubAddress: Address
-  tokenAddress: Address
-  tokenName: string
+  contractAddress?: string
+  hubAddress?: Address
+  tokenAddress?: Address
+  tokenName?: string
   user: string
   gasMultiple?: number
 
@@ -701,12 +707,36 @@ export interface ConnextClientOptions {
   contract?: IChannelManager
 }
 
+function hubConfigToClientOpts(config: HubConfig) {
+  return {
+    contractAddress: config.channelManagerAddress,
+    hubAddress: config.hubAddress,
+    tokenAddress: config.tokenAddress,
+  }
+}
 
 /**
  * Used to get an instance of ConnextClient.
  */
-export function getConnextClient(opts: ConnextClientOptions): ConnextClient {
-  return new ConnextInternal(opts)
+export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
+  // create a new hub and pass into the client
+  let hub = opts.hub
+  if (!hub) {
+    hub = new HubAPIClient(
+      opts.user,
+      new Networking(opts.hubUrl),
+    )
+  }
+  const hubOpts = hubConfigToClientOpts(await hub.config())
+  let merged = {}
+  for (let k in opts) {
+    if ((opts as any)[k]) {
+      continue
+    }
+    (merged as any)[k] = (hubOpts as any)[k]
+  }
+  
+  return new ConnextInternal(({ ...merged, hub }) as any)
 }
 
 /**
@@ -839,6 +869,20 @@ export class ConnextInternal extends ConnextClient {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
+  async syncConfig() {
+    const config = await this.hub.config()
+    const opts = this.opts
+    const adjusted = Object.keys(opts).map(k => {
+      if (k || Object.keys(opts).indexOf(k) == -1) {
+        // user supplied, igonore
+        return (opts as any)[k]
+      }
+
+      return (config as any)[k]
+    })
+    return adjusted
+  }
+
   async start() {
     this.store = await this.getStore()
     this.store.subscribe(() => {
@@ -846,6 +890,9 @@ export class ConnextInternal extends ConnextClient {
       this.emit('onStateChange', state)
       this._saveState(state)
     })
+
+    // before starting controllers, sync values
+    await this.syncConfig()
 
     // Start all controllers
     for (let controller of this.getControllers()) {
