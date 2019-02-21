@@ -7,9 +7,9 @@ export type Address = string
 
 // alias functions
 // @ts-ignore
-export const isBN = Web3.utils.isBN
+export const isBN = BN.isBN
 // @ts-ignore
-export const isBigNum = Web3.utils.isBigNumber
+export const isBigNum = BigNumber.isBigNumber
 
 /*********************************
  ****** CONSTRUCTOR TYPES ********

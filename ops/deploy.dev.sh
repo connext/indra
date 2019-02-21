@@ -2,23 +2,20 @@
 set -e
 
 ####################
+# Make sure contracts are migrated
+
+bash ops/deploy.contracts.sh ganache
+
+####################
 # ENV VARS
 
 # set any of these to "yes" to turn on watchers
-watch_ethprovider="no"
 watch_hub="no"
 watch_chainsaw="no"
 watch_wallet="no"
 
 project=connext
 number_of_services=7
-proxy_image=${project}_proxy:dev
-wallet_image=${project}_wallet:dev
-hub_image=${project}_hub:dev
-chainsaw_image=${project}_hub:dev
-redis_image=redis:5-alpine
-database_image=${project}_database:dev
-ethprovider_image=${project}_ethprovider:dev
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -27,19 +24,33 @@ EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 
 # ethereum settings
 ETH_RPC_URL="http://ethprovider:8545"
+ETH_NETWORK="ganache"
 ETH_NETWORK_ID="4447"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
+addressBook="modules/contracts/ops/address-book.json"
+
+HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
+CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
+TOKEN_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].approvedToken`"
+
 # database settings
 REDIS_URL="redis://redis:6379"
-POSTGRES_HOST="database"
-POSTGRES_PORT="5432"
+POSTGRES_URL="database:5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
 POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 
 ####################
 # Deploy according to above configuration
+
+proxy_image=${project}_proxy:dev
+wallet_image=${project}_builder
+hub_image=${project}_builder
+chainsaw_image=${project}_builder
+ethprovider_image=${project}_builder
+database_image=${project}_database:dev
+redis_image=redis:5-alpine
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -104,6 +115,7 @@ services:
 
   wallet:
     image: $wallet_image
+    entrypoint: bash ops/entry.sh
     command: "$watch_wallet"
     networks:
       - $project
@@ -122,6 +134,7 @@ services:
 
   hub:
     image: $hub_image
+    entrypoint: bash ops/dev.entry.sh
     command: hub $watch_hub
     networks:
       - $project
@@ -132,12 +145,15 @@ services:
     environment:
       NODE_ENV: $MODE
       ETH_MNEMONIC: $ETH_MNEMONIC
+      ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_RPC_URL: $ETH_RPC_URL
+      HUB_WALLET_ADDRESS: $HUB_WALLET_ADDRESS
+      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
+      TOKEN_ADDRESS: $TOKEN_ADDRESS
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_URL: $POSTGRES_URL
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
     volumes:
@@ -147,6 +163,7 @@ services:
 
   chainsaw:
     image: $chainsaw_image
+    entrypoint: bash ops/dev.entry.sh
     command: chainsaw $watch_chainsaw
     networks:
       - $project
@@ -155,12 +172,15 @@ services:
     environment:
       NODE_ENV: $MODE
       ETH_MNEMONIC: $ETH_MNEMONIC
+      ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_RPC_URL: $ETH_RPC_URL
+      HUB_WALLET_ADDRESS: $HUB_WALLET_ADDRESS
+      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
+      TOKEN_ADDRESS: $TOKEN_ADDRESS
       SERVICE_USER_KEY: $SERVICE_USER_KEY
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_URL: $POSTGRES_URL
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
     volumes:
@@ -170,9 +190,11 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: "$watch_ethprovider"
+    entrypoint: bash ops/entry.sh
+    command: signal
     environment:
-      ETH_NETWORK_ID: $ETH_NETWORK_ID
+      ETH_PROVIDER: $ETH_RPC_URL
+      ETH_NETWORK: $ETH_NETWORK
       ETH_MNEMONIC: $ETH_MNEMONIC
     networks:
       - $project
@@ -194,7 +216,6 @@ services:
       - $project
     ports:
       - "5432:5432"
-      - "5433:5433"
     secrets:
       - connext_database_dev
     volumes:

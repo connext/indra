@@ -17,7 +17,7 @@ describe('WithdrawalController: unit tests', () => {
     // add channel with initial booty balance to exchange and withdraw
     mockStore.setChannel({
       user,
-      balanceWei: [10, 0],
+      balanceWei: [10, 5],
       balanceToken: [0, 50],
     })
     mockStore.setExchangeRate({ 'USD': '5' })
@@ -27,7 +27,7 @@ describe('WithdrawalController: unit tests', () => {
 
     const params: WithdrawalParameters = {
       exchangeRate: '5',
-      recipient: mkAddress('0xRRR'),
+      recipient: mkAddress('0xAAA'),
       tokensToSell: '50',
       withdrawalWeiUser: '5',
       weiToSell: '0',
@@ -43,7 +43,7 @@ describe('WithdrawalController: unit tests', () => {
       reason: 'ProposePendingWithdrawal',
       args: {
         exchangeRate: '5',
-        recipient: mkAddress('0xRRR'),
+        recipient: mkAddress('0xAAA'),
         tokensToSell: '50',
         weiToSell: '0',
         targetWeiUser: '0',

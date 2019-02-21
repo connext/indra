@@ -656,12 +656,12 @@ export class Validator {
   }
 
   private conditions: any = {
-    'non-zero': (x: any) => w3utils.isBN(x) ? !x.isZero() : parseInt(x, 10) !== 0,
-    'zero': (x: any) => w3utils.isBN(x) ? x.isZero() : parseInt(x, 10) === 0,
-    'non-negative': (x: any) => w3utils.isBN(x) ? !x.isNeg() : parseInt(x, 10) >= 0,
-    'negative': (x: any) => w3utils.isBN(x) ? x.isNeg() : parseInt(x, 10) < 0,
-    'equivalent': (x: any, val: BN | string | number) => w3utils.isBN(x) ? x.eq(val) : x === val,
-    'non-equivalent': (x: any, val: BN | string | number) => w3utils.isBN(x) ? !x.eq(val) : x !== val,
+    'non-zero': (x: any) => BN.isBN(x) ? !x.isZero() : parseInt(x, 10) !== 0,
+    'zero': (x: any) => BN.isBN(x) ? x.isZero() : parseInt(x, 10) === 0,
+    'non-negative': (x: any) => BN.isBN(x) ? !x.isNeg() : parseInt(x, 10) >= 0,
+    'negative': (x: any) => BN.isBN(x) ? x.isNeg() : parseInt(x, 10) < 0,
+    'equivalent': (x: any, val: BN | string | number) => BN.isBN(x) ? x.eq(val as any) : x === val,
+    'non-equivalent': (x: any, val: BN | string | number) => BN.isBN(x) ? !x.eq(val as any) : x !== val,
   }
 
   // NOTE: objs are converted to lists if they are singular for iterative

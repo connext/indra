@@ -4,7 +4,10 @@ import Config from './Config'
 import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/connext/types'
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
-import { ethUtils } from 'ethereumjs-util'
+import * as ethUtils from 'ethereumjs-util'
+import { RawTransaction } from './domain/OnchainTransaction';
+
+const Tx = require('ethereumjs-tx');
 
 export class SignerService {
   constructor(
@@ -32,16 +35,44 @@ export class SignerService {
     return await this.web3.eth.getBlock('latest')
   }
 
-  // NOTE: not being used right now
-  // (might be used later in OnchainTransactionService)
-  public async signTransaction(tx: Object): Promise<string> {
-    return await this.web3.eth.signTransaction(tx)
+  // TODO: reconcile these two functions, is there a way to do this through web3 directly?
+  // https://web3js.readthedocs.io/en/1.0/web3-eth.html#id74
+  public async signTransaction(txn: RawTransaction): Promise<string> {
+    if (this.config.privateKeyFile) {
+      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
+      const pk = new Buffer(pkString, 'hex')
+      const rawTx = {
+        nonce: txn.nonce,
+        gasPrice: txn.gasPrice,
+        gasLimit: txn.gas,
+        to: txn.to,
+        value: txn.value,
+        data: txn.data
+      }
+      const tx = new Tx(rawTx)
+      tx.sign(pk)
+      const serializedTx = tx.serialize()
+      return '0x' + serializedTx.toString('hex')
+    } else {
+      return (await this.web3.eth.signTransaction(txn)).raw
+    }
   }
 
-  public async sign(message: string): Promise<string> {
-    if (process.env.PRIVATE_KEY_FILE) {
-      const pk = Buffer.from(fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8'), 'hex')
-      return await ethUtils.ecsign(Buffer.from(message, 'hex'), pk)
+  public async signMessage(message: string): Promise<string> {
+    if (this.config.privateKeyFile) {
+      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
+      const pk = ethUtils.toBuffer(ethUtils.addHexPrefix(pkString))
+      const fingerprint = ethUtils.toBuffer(String(message))
+      const prefix = ethUtils.toBuffer('\x19Ethereum Signed Message:\n');
+      const prefixedMsg = ethUtils.keccak256(Buffer.concat([
+        prefix,
+        ethUtils.toBuffer(String(fingerprint.length)),
+        fingerprint
+      ]))
+      const sig = await ethUtils.ecsign(ethUtils.toBuffer(prefixedMsg), pk)
+      const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
+      console.log(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}") & produced sig ${out}`)
+      return out
     } else {
       return await this.web3.eth.sign(message, this.config.hotWalletAddress)
     }
@@ -51,7 +82,7 @@ export class SignerService {
     state: UnsignedChannelState | ChannelState,
   ): Promise<string> {
     const stateHash = this.utils.createChannelStateHash(state)
-    return await this.sign(stateHash)
+    return await this.signMessage(stateHash)
   }
 
   public async signChannelState(
