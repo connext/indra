@@ -154,7 +154,7 @@ export class OnchainTransactionService {
       // Verify that the callback exists before doing anything else
       this.lookupCallback(meta.completeCallback)
     }
-
+    
     const nonce = Math.max(
       await this.web3.eth.getTransactionCount(txnRequest.from),
       (await db.queryOne(SQL`
@@ -258,8 +258,8 @@ export class OnchainTransactionService {
         from: txn.from,
         to: txn.to,
         value: txn.value || '0',
-        gasPrice: txn.gasPrice,
-        gas: txn.gas.toString(),
+        gasPrice: `0x${txn.gasPrice}`,
+        gas: `0x${txn.gas}`,
         data: txn.data || '0x',
         nonce: txn.nonce.toString(),
       })
