@@ -5,6 +5,9 @@ import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
+import { RawTransaction } from './domain/OnchainTransaction';
+
+const Tx = require('ethereumjs-tx');
 
 export class SignerService {
   constructor(
@@ -32,15 +35,32 @@ export class SignerService {
     return await this.web3.eth.getBlock('latest')
   }
 
-  // NOTE: not being used right now
-  // (might be used later in OnchainTransactionService)
-  public async signTransaction(tx: Object): Promise<string> {
-    return await this.web3.eth.signTransaction(tx)
+  // TODO: reconcile these two functions, is there a way to do this through web3 directly?
+  // https://web3js.readthedocs.io/en/1.0/web3-eth.html#id74
+  public async signTransaction(txn: RawTransaction): Promise<string> {
+    if (this.config.privateKeyFile) {
+      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
+      const pk = new Buffer(pkString, 'hex')
+      const rawTx = {
+        nonce: txn.nonce,
+        gasPrice: txn.gasPrice,
+        gasLimit: txn.gas,
+        to: txn.to,
+        value: txn.value,
+        data: txn.data
+      }
+      const tx = new Tx(rawTx)
+      tx.sign(pk);
+      const serializedTx = tx.serialize();
+      return serializedTx
+    } else {
+      return (await this.web3.eth.signTransaction(txn)).raw
+    }
   }
 
   public async signMessage(message: string): Promise<string> {
-    if (process.env.PRIVATE_KEY_FILE) {
-      const pkString = fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8')
+    if (this.config.privateKeyFile) {
+      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
       const pk = ethUtils.toBuffer(ethUtils.addHexPrefix(pkString))
       const fingerprint = ethUtils.toBuffer(String(message))
       const prefix = ethUtils.toBuffer('\x19Ethereum Signed Message:\n');
