@@ -8,7 +8,7 @@ import { default as DBEngine, SQL } from "./DBEngine";
 import { default as GasEstimateDao } from "./dao/GasEstimateDao";
 import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson } from "./util";
 import { Container } from "./Container";
-import Config from "./Config";
+import { SignerService } from "./SignerService";
 const Tx = require('ethereumjs-tx')
 const Web3 = require('web3')
 
@@ -120,9 +120,9 @@ export class OnchainTransactionService {
     private web3: any, 
     private gasEstimateDao: GasEstimateDao, 
     private onchainTransactionDao: OnchainTransactionsDao, 
-    private db: DBEngine, 
-    private container: Container,
-    private config: Config
+    private db: DBEngine,
+    private signerService: SignerService,
+    private container: Container
   ) {}
 
   lookupCallback(name: string): (tx: OnchainTransactionRow) => Promise<void> {
@@ -254,20 +254,20 @@ export class OnchainTransactionService {
       // Use the data hash to simplify tracking in logs until we're able to
       // calculate the actual hash
       const dataHash = md5(txn.data)
-      const signedTx = await this.web3.eth.signTransaction({
+      const signedTx = await this.signerService.signTransaction({
         from: txn.from,
         to: txn.to,
         value: txn.value || '0',
         gasPrice: txn.gasPrice,
-        gas: txn.gas,
+        gas: txn.gas.toString(),
         data: txn.data || '0x',
-        nonce: txn.nonce,
-      }, this.config.hotWalletAddress)
+        nonce: txn.nonce.toString(),
+      })
       LOG.info(`signedTx: ${prettySafeJson(signedTx)}`)
       const error = await new Promise<string | null>(res => {
         // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
         LOG.info(`Submitting transaction nonce=${txn.nonce} data-hash=${dataHash}: ${prettySafeJson(txn)}...`)
-        const tx = this.web3.eth.sendSignedTransaction(signedTx.raw)
+        const tx = this.web3.eth.sendSignedTransaction(signedTx)
         tx.on('transactionHash', hash => {
           // TODO: REB-61
           this.db.query(SQL`
