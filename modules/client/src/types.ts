@@ -169,6 +169,15 @@ export const ChannelStatus = {
 }
 export type ChannelStatus = keyof typeof ChannelStatus
 
+// dispute statuses, for use by the hub
+export const DisputeStatus = {
+  CD_PENDING: 'CD_PENDING',
+  CD_IN_DISPUTE_PERIOD: 'CD_IN_DISPUTE_PERIOD',
+  CD_FAILED: 'CD_FAILED',
+  CD_FINISHED: 'CD_FINISHED'
+}
+export type DisputeStatus = keyof typeof DisputeStatus
+
 
 // channel update reasons
 export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string } = {
@@ -370,7 +379,6 @@ export type ArgsTypes<T=string> =
   | PaymentArgs<T>
   | DepositArgs<T>
   | WithdrawalArgs<T>
-  | UnsignedThreadState<T>
   | ConfirmPendingArgs
   | InvalidationArgs
   | EmptyChannelArgs
@@ -393,7 +401,7 @@ export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   // If this update is coming from the hub, this will be the database timestamp
   // when the update was created there.
   createdOn?: Date
-  initialThreadStates?: UnsignedThreadState[]
+  initialThreadStates?: ThreadState[]
 }
 
 export type UpdateRequestTypes<T=string> = {
@@ -707,6 +715,13 @@ export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
  ******* TYPE CONVERSIONS ********
  *********************************/
 
+export const withdrawalParamsNumericFields = [
+  'withdrawalWeiUser',
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalTokenUser',
+]
+
 // util to convert from string to bn for all types
 export const channelNumericFields = [
   'balanceWeiUser',
@@ -840,12 +855,16 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
+export function convertWithdrawalParams<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, withdrawalParamsNumericFields, obj)
+}
+
 export const proposePendingNumericArgs = [
   'depositWeiUser',
   'depositWeiHub',
   'depositTokenUser',
   'depositTokenHub',
-
   'withdrawalWeiUser',
   'withdrawalWeiHub',
   'withdrawalTokenUser',
@@ -873,7 +892,7 @@ const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
   Invalidation: (to: any, args: InvalidationArgs) => args,
   OpenThread: convertThreadState,
   CloseThread: convertThreadState,
-  EmptyChannel: (to: any, args: ConfirmPendingArgs) => args,
+  EmptyChannel: (to: any, args: EmptyChannelArgs) => args,
 }
 
 export function convertArgs<
