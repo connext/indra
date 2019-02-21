@@ -40,7 +40,7 @@ export class SignerService {
   public async signTransaction(txn: RawTransaction): Promise<string> {
     if (this.config.privateKeyFile) {
       const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
-      const pk = new Buffer(pkString, 'hex')
+      const pk = Buffer.from(pkString, 'hex')
       const rawTx = {
         nonce: txn.nonce,
         gasPrice: txn.gasPrice,
