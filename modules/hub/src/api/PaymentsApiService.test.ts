@@ -4,6 +4,7 @@ import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal, channelNextState } from "../testing/factories";
 import { PaymentMetaDao } from "../dao/PaymentMetaDao";
 import Config from "../Config";
+import { emptyAddress } from "../vendor/connext/Utils";
 
 describe('PaymentsApiService', () => {
   const registry = getTestRegistry({
@@ -110,4 +111,58 @@ describe('PaymentsApiService', () => {
     const { purchaseId } = res.body
     assert.ok(purchaseId)
   })
+
+  it('should work for sending linked payments', async () => {
+    const chan = await channelUpdateFactory(registry, {
+      balanceTokenUser: tokenVal(10),
+    })
+
+    const res = await app.withUser(chan.user).request
+      .post('/payments/purchase')
+      .send({
+        meta: {},
+        payments: [
+          {
+            recipient: emptyAddress,
+            amount: {
+              amountWei: '0',
+              amountToken: tokenVal(1),
+            },
+            meta: {},
+            type: 'PT_LINK',
+            secret: 'sadlkj',
+            update: {
+              reason: 'Payment',
+              sigUser: chan.state.sigUser,
+              txCount: chan.state.txCountGlobal + 1,
+              args: {
+                amountWei: '0',
+                amountToken: tokenVal(1),
+                recipient: 'hub'
+              }
+            },
+          }
+        ] as PurchasePayment[]
+      })
+
+    assert.equal(res.status, 200, JSON.stringify(res.body))
+    const { purchaseId } = res.body
+    assert.ok(purchaseId)
+
+    const payments = await paymentMetaDao.byPurchase(purchaseId)
+    assert.containSubset(payments[0], {
+      recipient: emptyAddress,
+      sender: chan.user,
+      amount: {
+        amountWei: '0',
+        amountToken: tokenVal(1),
+      },
+      type: 'PT_CHANNEL',
+    })
+
+    const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
+    console.log('linked', linked)
+  })
+
+  it('should work for users redeeming payments', async () => {})
 })
