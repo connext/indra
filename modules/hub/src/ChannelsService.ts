@@ -246,6 +246,16 @@ export default class ChannelsService {
   public async doCollateralizeIfNecessary(
     user: string
   ): Promise<DepositArgs | null> {
+    const depositArgs = await this.getCollateralDepositArgs(user)
+
+    await this.redisSaveUnsignedState('hub-authorized', user, {
+      args: depositArgs,
+      reason: 'ProposePendingDeposit'
+    })
+    return depositArgs
+  }
+
+  public async getCollateralDepositArgs(user): Promise<DepositArgs | null> {
     const shouldCollateralized = await this.shouldCollateralize(user)
     if (!shouldCollateralized)
       return
@@ -315,11 +325,6 @@ export default class ChannelsService {
       timeout: 0,
       sigUser: null,
     }
-
-    await this.redisSaveUnsignedState('hub-authorized', user, {
-      args: depositArgs,
-      reason: 'ProposePendingDeposit'
-    })
     return depositArgs
   }
 
