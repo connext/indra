@@ -642,9 +642,9 @@ export class Validator {
     }
   }
 
-  private cantAffordFromBalance(state: ChannelStateBN, value: Partial<PaymentBN>, payor: "hub" | "user", currency?: "token" | "wei"): string | null
-  private cantAffordFromBalance(state: ThreadStateBN, value: Partial<PaymentBN>, payor: "sender", currency?: "token" | "wei"): string | null
-  private cantAffordFromBalance(state: ChannelStateBN | ThreadStateBN, value: Partial<PaymentBN>, payor: "hub" | "user" | "sender", currency?: "token" | "wei"): string | null {
+  public cantAffordFromBalance(state: ChannelStateBN, value: Partial<PaymentBN>, payor: "hub" | "user", currency?: "token" | "wei"): string | null
+  public cantAffordFromBalance(state: ThreadStateBN, value: Partial<PaymentBN>, payor: "sender", currency?: "token" | "wei"): string | null
+  public cantAffordFromBalance(state: ChannelStateBN | ThreadStateBN, value: Partial<PaymentBN>, payor: "hub" | "user" | "sender", currency?: "token" | "wei"): string | null {
     const prefix = "balance"
     const currencies = currency ? [currency] : ["token", "wei"]
 
