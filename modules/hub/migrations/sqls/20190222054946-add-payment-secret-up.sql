@@ -1,7 +1,7 @@
 /* Replace with your SQL commands */
 ALTER TABLE _payments
   ADD COLUMN secret text NULL;
-
+ALTER TABLE _payments ADD CONSTRAINT _unique_secret UNIQUE (secret);
 ALTER TABLE _payments DROP CONSTRAINT _payments_check;
 
 -- ALTER TABLE _payments ADD CONSTRAINT _payments_check
