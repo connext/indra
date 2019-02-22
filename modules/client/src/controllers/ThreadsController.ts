@@ -1,4 +1,4 @@
-import { Address, Payment, ThreadState, UnsignedThreadState, UpdateRequest, ThreadHistoryItem, ChannelState } from '../types'
+import { Address, Payment, ThreadState, UnsignedThreadState, UpdateRequest, ThreadHistoryItem, ChannelState, ChannelStateUpdate } from '../types'
 import { AbstractController } from './AbstractController';
 
 export default class ThreadsController extends AbstractController {
@@ -52,6 +52,7 @@ export default class ThreadsController extends AbstractController {
     // TODO: make sure the lastThreadUpdateId is correctly
     // handled within the store
     const hubResponse = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
+    console.log('hubResponse:', hubResponse)
     this.connext.syncController.handleHubSync(hubResponse.updates)
     return { thread: initialState, channel: newChannelState } // shortcut for access within buycontroller
   }
@@ -82,16 +83,13 @@ export default class ThreadsController extends AbstractController {
       )
     )
 
-    const updateRequest: UpdateRequest = {
+    const update: ChannelStateUpdate = {
       reason: "CloseThread",
       args: thread[0],
-      txCount: newChannelState.txCountGlobal, 
-      sigUser: newChannelState.sigUser,
-      initialThreadStates, // corr. to previous initial threads
+      state: newChannelState,
     }
 
-    const hubResponse = await this.hub.updateHub([updateRequest], state.persistent.lastThreadUpdateId)
-    this.connext.syncController.handleHubSync(hubResponse.updates)
+    await this.connext.syncController.sendUpdateToHub(update)
   }
 }
 

@@ -9,9 +9,11 @@ import {
   UnsignedThreadState,
   UnsignedThreadStateBN,
   convertThreadState,
+  ThreadState,
   ThreadStateBN,
   convertChannelState,
   PaymentBN,
+  Payment,
   UnsignedChannelStateBN,
   PendingArgsBN,
   PendingExchangeArgsBN,
@@ -146,15 +148,19 @@ export class StateGenerator {
       'ProposePendingDeposit': this.proposePendingDeposit.bind(this),
       'ProposePendingWithdrawal': this.proposePendingWithdrawal.bind(this),
       'ConfirmPending': this.confirmPending.bind(this),
+      'OpenThread': this.openThread.bind(this),
       'Invalidation': this.invalidation.bind(this),
+      'CloseThread': this.closeThread.bind(this),
       'EmptyChannel': this.emptyChannel.bind(this),
-      'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
-      'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
     }
   }
 
   public createChannelStateFromRequest(prev: ChannelStateBN, request: UpdateRequestBN): UnsignedChannelState {
-    return this.stateTransitionHandlers[request.reason](prev, request.args)
+    if(request.reason == 'OpenThread' || request.reason == 'CloseThread') {
+      return this.stateTransitionHandlers[request.reason](prev, request.initialThreadStates, request.args)
+    } else {
+      return this.stateTransitionHandlers[request.reason](prev, request.args)
+    }
   }
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): UnsignedChannelState {
@@ -518,9 +524,6 @@ export class StateGenerator {
     // prev.balance = [0, 1]
     // prev.pending = [0, 0, 1, 2]
     // final.balance = [0, 1]
-
-    // the only event values used directly are the pending operations
-    // and the txCountChain
     return convertChannelState("str-unsigned", {
       ...prev,
       balanceWeiHub: prev.pendingDepositWeiHub.gt(prev.pendingWithdrawalWeiHub)
@@ -535,7 +538,6 @@ export class StateGenerator {
       balanceTokenUser: prev.pendingDepositTokenUser.gt(prev.pendingWithdrawalTokenUser)
         ? prev.balanceTokenUser.add(prev.pendingDepositTokenUser).sub(prev.pendingWithdrawalTokenUser)
         : prev.balanceTokenUser,
-      // reset pending values
       pendingDepositWeiHub: toBN(0),
       pendingDepositWeiUser: toBN(0),
       pendingDepositTokenHub: toBN(0),
@@ -544,12 +546,7 @@ export class StateGenerator {
       pendingWithdrawalWeiUser: toBN(0),
       pendingWithdrawalTokenHub: toBN(0),
       pendingWithdrawalTokenUser: toBN(0),
-      // account for offchain updates by using prev txCountGlobal
       txCountGlobal: prev.txCountGlobal + 1,
-      // use chain tx count from event
-      txCountChain: prev.txCountChain,
-      // ^ enforced in validation to be equal
-      // reset recipient + timeout
       recipient: prev.user,
       timeout: 0,
     })
@@ -573,10 +570,9 @@ export class StateGenerator {
     })
   }
 
-
-  // TODO: should the args be a signed thread state or unsigned thread state?
-  public openThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: UnsignedThreadStateBN): UnsignedChannelState {
-    initialThreadStates.push(convertThreadState("str-unsigned", args))
+  // Use signed thread state since only sender will ever call openThread and sender signs initial thread state
+  public openThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): UnsignedChannelState {
+    const initThreads = initialThreadStates.concat([convertThreadState("str", args)])
     return convertChannelState("str-unsigned", {
       ...prev,
       balanceWeiHub: args.sender === prev.user ? prev.balanceWeiHub : prev.balanceWeiHub.sub(args.balanceWeiSender),
@@ -584,15 +580,15 @@ export class StateGenerator {
       balanceTokenHub: args.sender === prev.user ? prev.balanceTokenHub : prev.balanceTokenHub.sub(args.balanceTokenSender),
       balanceTokenUser: args.sender === prev.user ? prev.balanceTokenUser.sub(args.balanceTokenSender) : prev.balanceTokenUser,
       txCountGlobal: prev.txCountGlobal + 1,
-      threadRoot: this.utils.generateThreadRootHash(initialThreadStates),
-      threadCount: initialThreadStates.length,
+      threadRoot: this.utils.generateThreadRootHash(initThreads),
+      threadCount: initThreads.length,
       timeout: 0,
     })
   }
 
-  // TODO: should the args be a signed thread state or unsigned thread state?
-  public closeThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: UnsignedThreadStateBN): UnsignedChannelState {
-    initialThreadStates = initialThreadStates.filter(state => state.sender !== args.sender && state.receiver !== args.receiver)
+  // Use signed thread state because we should only be able to generate a thread closing update on a real thread state update
+  public closeThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): UnsignedChannelState {
+    initialThreadStates = initialThreadStates.filter(state => !(state.sender === args.sender && state.receiver == args.receiver && state.threadId == args.threadId))
     const userIsSender = args.sender === prev.user
     return convertChannelState("str-unsigned", {
       ...prev,
@@ -620,8 +616,8 @@ export class StateGenerator {
       ...prev,
       balanceTokenSender: prev.balanceTokenSender.sub(args.amountToken),
       balanceTokenReceiver: prev.balanceTokenReceiver.add(args.amountToken),
-      balanceWeiSender: prev.balanceTokenSender.sub(args.amountWei),
-      balanceWeiReceiver: prev.balanceTokenReceiver.add(args.amountWei),
+      balanceWeiSender: prev.balanceWeiSender.sub(args.amountWei),
+      balanceWeiReceiver: prev.balanceWeiReceiver.add(args.amountWei),
       txCount: prev.txCount + 1,
     })
   }

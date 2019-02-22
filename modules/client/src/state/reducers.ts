@@ -2,6 +2,7 @@ import { isFunction } from '../lib/utils'
 import {ConnextState} from './store'
 import {reducerWithInitialState, ReducerBuilder} from 'typescript-fsa-reducers/dist'
 import * as actions from './actions'
+import { UpdateRequest, ChannelState } from '@src/types';
 
 export let reducers = reducerWithInitialState(new ConnextState())
 
@@ -13,30 +14,38 @@ export let reducers = reducerWithInitialState(new ConnextState())
 //     return { ...state, someValue: action.value }
 //   })
 
-reducers = reducers.case(actions.setChannel, (state, action) => {
+export function handleChannelChange(state: ConnextState, channel: ChannelState, update?: UpdateRequest) {
   const hasPending = (
-    Object.keys(action.state)
-      .some(field => field.startsWith('pending') && (action.state as any)[field] != '0')
+    Object.keys(channel)
+      .some(field => field.startsWith('pending') && (channel as any)[field] != '0')
   )
   if (!hasPending) {
     state = {
       ...state,
       persistent: {
         ...state.persistent,
-        latestValidState: action.state,
+        latestValidState: channel,
       },
     }
+  }
+
+  if (!update) {
+    update = state.persistent.channelUpdate
   }
 
   return {
     ...state,
     persistent: {
       ...state.persistent,
-      channel: action.state,
-      channelUpdate: action.update,
+      channel: channel,
+      channelUpdate: update,
     },
   }
-})
+}
+
+reducers = reducers.case(actions.setChannelAndUpdate, (state, action) => handleChannelChange(state, action.state, action.update))
+
+reducers = reducers.case(actions.setChannel, (state, action) => handleChannelChange(state, action))
 
 for (let action of Object.values(actions) as any[]) {
   if (isFunction(action && action.handler))

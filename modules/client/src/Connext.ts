@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -46,6 +46,7 @@ import { AbstractController } from './controllers/AbstractController'
 import { EventLog } from 'web3/types';
 import { getChannel } from './lib/getChannel';
 import ThreadsController from './controllers/ThreadsController';
+import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -74,8 +75,11 @@ export interface ConnextOptions {
 export interface IHubAPIClient {
   getChannel(): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
-  getThreadInitialStates(): Promise<UnsignedThreadState[]>
+  getThreadInitialStates(): Promise<ThreadState[]>
   getIncomingThreads(): Promise<ThreadRow[]>
+  getActiveThreads(): Promise<ThreadState[]>
+  getLastThreadUpdateId(): Promise<number>
+  getAllThreads(): Promise<ThreadState[]>
   getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
   getExchangerRates(): Promise<ExchangeRates> // TODO: name is typo
@@ -92,7 +96,8 @@ export interface IHubAPIClient {
     updates: Sync
   }>
   updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
-  getLatestChannelState(): Promise<ChannelState | null>
+  getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
+  getLatestStateNoPendingOps(): Promise<ChannelState | null>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -106,15 +111,53 @@ class HubAPIClient implements IHubAPIClient {
     this.tokenName = tokenName
   }
 
-  async getLatestChannelState(): Promise<ChannelState | null> {
+  async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
     try {
-      const res = await this.networking.get(`channel/${this.user}/latest-update`)
+      const res = await this.networking.get(`channel/${this.user}/latest-no-pending`)
+      if (!res.data) {
+        return null
+      }
       return res.data
     } catch (e) {
-      if (e.statusCode === 404) {
+      if (e.status == 404) {
         console.log(`Channel not found for user ${this.user}`)
         return null
       }
+      console.log('Error getting latest state no pending ops:', e)
+      throw e
+    }
+  }
+
+  async getLastThreadUpdateId(): Promise<number> {
+    try {
+      const res = await this.networking.get(`thread/${this.user}/last-update-id`)
+      if (!res.data) {
+        return 0
+      }
+      return res.data
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Thread update not found for user ${this.user}`)
+        return 0
+      }
+      console.log('Error getting latest state no pending ops:', e)
+      throw e
+    }
+  }
+
+  async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
+    try {
+      const res = await this.networking.get(`channel/${this.user}/latest-update`)
+      if (!res.data) {
+        return null
+      }
+      return { state: res.data.state, update: channelUpdateToUpdateRequest(res.data) }
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Channel not found for user ${this.user}`)
+        return null
+      }
+      console.log('Error getting latest state:', e)
       throw e
     }
   }
@@ -164,10 +207,32 @@ class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getThreadInitialStates(): Promise<UnsignedThreadState[]> {
+  async getThreadInitialStates(): Promise<ThreadState[]> {
     // get the current channel state and return it
     const response = await this.networking.get(
       `thread/${this.user}/initial-states`,
+    )
+    if (!response.data) {
+      return []
+    }
+    return response.data
+  }
+
+  async getActiveThreads(): Promise<ThreadState[]> {
+    // get the current channel state and return it
+    const response = await this.networking.get(
+      `thread/${this.user}/active`,
+    )
+    if (!response.data) {
+      return []
+    }
+    return response.data
+  }
+
+  async getAllThreads(): Promise<ThreadState[]> {
+    // get the current channel state and return it
+    const response = await this.networking.get(
+      `thread/${this.user}/all`,
     )
     if (!response.data) {
       return []
@@ -841,11 +906,64 @@ export class ConnextInternal extends ConnextClient {
 
   async start() {
     this.store = await this.getStore()
-    this.store.subscribe(() => {
+    this.store.subscribe(async () => {
       const state = this.store.getState()
       this.emit('onStateChange', state)
-      this._saveState(state)
+      await this._saveState(state)
     })
+
+    // TODO: appropriately set the latest
+    // valid state ??
+    const channelAndUpdate = await this.hub.getLatestChannelStateAndUpdate()
+    console.log('Found latest double signed state:', JSON.stringify(channelAndUpdate, null, 2))
+    if (channelAndUpdate) {
+      this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
+      
+      // update the latest valid state
+      const latestValid = await this.hub.getLatestStateNoPendingOps()
+      console.log('latestValid:', latestValid)
+      if (latestValid) {
+        this.store.dispatch(actions.setLatestValidState(latestValid))
+      }
+      // unconditionally update last thread update id, thread history
+      const lastThreadUpdateId = await this.hub.getLastThreadUpdateId()
+      console.log('lastThreadUpdateId:', lastThreadUpdateId)
+      this.store.dispatch(actions.setLastThreadUpdateId(lastThreadUpdateId))
+      // extract thread history, sort by descending threadId
+      const threadHistoryDuplicates = (await this.hub.getAllThreads()).map(t => {
+        return {
+          sender: t.sender,
+          receiver: t.receiver,
+          threadId: t.threadId,
+        }
+      }).sort((a, b) => b.threadId - a.threadId)
+      console.log('threadHistoryDuplicates', threadHistoryDuplicates)
+      // filter duplicates
+      const threadHistory = threadHistoryDuplicates.filter((thread, i) => {
+        const search = JSON.stringify({ 
+          sender: thread.sender,
+          receiver: thread.receiver
+        })
+        const elts = threadHistoryDuplicates.map(t => {
+          return JSON.stringify({ sender: t.sender, receiver: t.receiver })
+        })
+        return elts.indexOf(search) == i
+      })
+      console.log('threadHistory:', threadHistory)
+      this.store.dispatch(actions.setThreadHistory(threadHistory))
+
+      // if thread count is greater than 0, update
+      // activeThreads, initial states
+      if (channelAndUpdate.state.threadCount > 0) {
+        const initialStates = await this.hub.getThreadInitialStates()
+        console.log('initialStates:', initialStates)
+        this.store.dispatch(actions.setActiveInitialThreadStates(initialStates))
+
+        const threadRows = await this.hub.getActiveThreads()
+        console.log('threadRows:', threadRows)
+        this.store.dispatch(actions.setActiveThreads(threadRows))
+      }
+    }
 
     // Start all controllers
     for (let controller of this.getControllers()) {

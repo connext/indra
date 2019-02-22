@@ -255,7 +255,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   GlobalSettingsDao: {
-    factory: (db: DBEngine<Client>) => new PostgresGlobalSettingsDao(db),
+    factory: (db: DBEngine<Client>) => 
+      new PostgresGlobalSettingsDao(db),
     dependencies: ['DBEngine'],
     isSingleton: true
   },
@@ -368,7 +369,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       validator: Validator,
       config: Config,
       db: DBEngine,
-      contract: ChannelManager,
     ) => new PaymentsService(
       channelsService,
       threadsService,

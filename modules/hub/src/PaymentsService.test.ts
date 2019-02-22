@@ -1,13 +1,14 @@
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
-import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs } from "./vendor/connext/types";
-import { mkAddress, mkSig, assertChannelStateEqual } from "./testing/stateUtils";
+import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
+import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
-import { MockSignerService } from "./testing/mocks";
+import { MockSignerService, testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import { StateGenerator } from "./vendor/connext/StateGenerator";
-import { toWeiString } from "./util/bigNumber";
+import { toWeiString, Big } from "./util/bigNumber";
+import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 
 describe('PaymentsService', () => {
   const registry = getTestRegistry({
@@ -18,6 +19,7 @@ describe('PaymentsService', () => {
   const channelsService: ChannelsService = registry.get('ChannelsService')
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  const globalSettingsDao: GlobalSettingsDao = registry.get('GlobalSettingsDao')
 
   beforeEach(async () => {
     await registry.clearDatabase()
@@ -288,6 +290,125 @@ describe('PaymentsService', () => {
     )
     assertChannelStateEqual(collateralState, {
       pendingDepositTokenHub: toWeiString(30)
+    })
+  })
+
+  it('single thread payment e2e', async () => {
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: mkAddress('0xa'),
+      balanceTokenUser: toWeiString(5),
+    })
+
+    const receiverChannel = await channelUpdateFactory(registry, { 
+      user: mkAddress('0xb'), 
+      balanceTokenHub: toWeiString(100) 
+    })
+
+    const threadState: ThreadState = {
+      balanceWeiSender: '0',
+      balanceWeiReceiver: '0',
+      balanceTokenSender: toWeiString(1),
+      balanceTokenReceiver: '0',
+      contractAddress: testChannelManagerAddress,
+      sender: senderChannel.user,
+      receiver: receiverChannel.user,
+      sigA: mkSig("0xa"),
+      threadId: 0,
+      txCount: 0
+    }
+
+    const threadUpdate = stateGenerator.threadPayment(
+      convertThreadState('bn', threadState), 
+      convertPayment('bn', {
+        amountToken: toWeiString(0.1),
+        amountWei: 0
+      })
+    )
+
+    const openThread = stateGenerator.openThread(
+      convertChannelState('bn', senderChannel.state),
+      [],
+      convertThreadState('bn', threadState)
+    )
+
+    const payments: PurchasePayment[] = [{
+      recipient: testHotWalletAddress,
+      amount: {
+        amountWei: '0',
+        amountToken: toWeiString(1),
+      },
+      meta: {},
+      type: 'PT_CHANNEL',
+      update: {
+        reason: 'OpenThread',
+        sigUser: mkSig('0xa'),
+        txCount: openThread.txCountGlobal,
+        args: threadState,
+      } as UpdateRequest,
+    }, {
+      recipient: receiverChannel.user,
+      amount: {
+        amountWei: '0',
+        amountToken: toWeiString(1),
+      },
+      meta: {},
+      type: 'PT_THREAD',
+      update: {
+        createdOn: new Date(),
+        state: {
+          ...threadUpdate,
+          sigA: mkSig('0xa')
+        },
+      } as ThreadStateUpdate,
+    }]
+
+    await service.doPurchase(senderChannel.user, {}, payments)
+
+    let sync = await channelsService.getChannelAndThreadUpdatesForSync(senderChannel.user, 0, 0)
+    sync.updates.forEach((s, index) => {
+      switch (index) {
+        case 1:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadState)
+          break
+        case 2:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadUpdate)
+          break
+        case 3:
+          assert.equal((s.update as UpdateRequest).reason, 'OpenThread')
+          break
+      }
+    });
+
+    sync = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
+    sync.updates.forEach((s, index) => {
+      console.log(JSON.stringify(s.update, null, 2));
+      switch (index) {
+        case 1:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadState)
+          break
+        case 2:
+          assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadUpdate)
+          break
+        case 3:
+          assert.equal((s.update as UpdateRequest).reason, 'OpenThread')
+          break
+      }
+    });
+
+    const update = await channelsService.doUpdates(receiverChannel.user, [{
+      reason: 'CloseThread',
+      args: threadUpdate,
+      txCount: receiverChannel.state.txCountGlobal + 2,
+      sigUser: mkSig('0xa')
+    }])
+
+    assertChannelStateEqual(update[0].state, {
+      ...receiverChannel.state,
+      txCountGlobal: receiverChannel.state.txCountGlobal + 2,
+      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).plus(threadUpdate.balanceTokenReceiver).toFixed(),
+      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).minus(threadUpdate.balanceTokenReceiver).toFixed(),
+      sigUser: mkSig('0xa'),
+      sigHub: fakeSig
     })
   })
 

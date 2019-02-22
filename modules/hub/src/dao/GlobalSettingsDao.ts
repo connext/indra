@@ -31,7 +31,7 @@ export class PostgresGlobalSettingsDao implements GlobalSettingsDao {
       try {
         await c.query('TRUNCATE global_settings');
         await c.query(
-          'INSERT INTO global_settings (withdrawals_enabled, payments_enabled, threads_enabled) VALUES (true, true, false)'
+          'INSERT INTO global_settings (withdrawals_enabled, payments_enabled, threads_enabled) VALUES (true, true, true)'
         );
       } catch (e) {
         await c.query('ROLLBACK');
@@ -44,7 +44,7 @@ export class PostgresGlobalSettingsDao implements GlobalSettingsDao {
     this.cache = {
       withdrawalsEnabled: true,
       paymentsEnabled: true,
-      threadsEnabled: false
+      threadsEnabled: true
     };
   }
 
