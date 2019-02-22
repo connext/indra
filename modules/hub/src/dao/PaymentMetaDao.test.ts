@@ -98,7 +98,6 @@ describe('PaymentMetaDao', () => {
   })
 
   it('getLinkedPayment should properly return the linked payment', async () => {
-    // first insert payment (ensure works with null recipient)
     // create an update in the channel
     const chan = await channelUpdateFactory(registry)
 
@@ -139,18 +138,20 @@ describe('PaymentMetaDao', () => {
         amountWei: '0',
       },
       recipient: emptyAddress,
-      secret: "secret-string",
+      secret: "secreter-string",
       meta: {
         foo: 42,
       },
     })
-    
-    const res = await paymentMetDao.getLinkedPayment("secret-string")
-    console.log('found existing linked payment', res)
-    const id = await paymentMetDao.redeemLinkedPayment("secret-string", mkAddress('0xRRR'))
-    assert.exists(id)
 
-    const updated = await paymentMetDao.getLinkedPayment("secret-string")
-    console.log('updated value', updated)
+    const redeemer = "0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e"
+
+    const unredeemed = await paymentMetDao.getLinkedPayment("secreter-string")
+
+    const row = await paymentMetDao.redeemLinkedPayment("secreter-string", "0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e")
+
+    assert.containSubset(row, { ...unredeemed, 
+      recipient: redeemer.toLowerCase()
+    })
   })
 })
