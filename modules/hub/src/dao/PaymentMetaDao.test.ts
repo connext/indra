@@ -5,6 +5,7 @@ import { default as ChannelsDao } from "./ChannelsDao";
 import { getThreadState, getChannelState } from "../testing/stateUtils";
 import { PaymentMetaDao } from "./PaymentMetaDao";
 import { default as DBEngine, SQL } from "../DBEngine";
+import { emptyAddress } from '../vendor/connext/Utils';
 
 describe('PaymentMetaDao', () => {
   const registry = getTestRegistry()
@@ -105,5 +106,52 @@ describe('PaymentMetaDao', () => {
       'sender': '0xb000000000000000000000000000000000000000',
     })
 
+  })
+
+  describe('getLinkedPayment', () => {
+    it('getLinkedPayment should properly return the linked payment', async () => {
+      // first insert payment (ensure works with null recipient)
+      // create an update in the channel
+      const state = getChannelState('signed', {
+        user: s.user.user,
+        txCountGlobal: 2,
+      })
+      let chanUpdate = await s.channelsDao.applyUpdateByUser(s.user.user, 'ConfirmPending', s.user.user, state, {})
+
+      // save a string with empty payment for this update
+      await s.paymentMetDao.save('abc123', chanUpdate.id, {
+        type: 'PT_LINK',
+        amount: {
+          amountToken: tokenVal(2),
+          amountWei: '0',
+        },
+        recipient: emptyAddress,
+        secret: "secret-string",
+        meta: {
+          foo: 42,
+        },
+      })
+
+      console.log('saved!', await s.db.queryOne(SQL`SELECT * FROM payments WHERE secret IS NOT NULL`))
+
+      const res = await s.paymentMetDao.getLinkedPayment("secret-string")
+
+      console.log('res:', res)
+
+      assert.containSubset(res, {
+        amount: { amountToken: tokenVal(2), amountWei: '0'},
+        secret: "secret-string",
+        recipient: emptyAddress,
+        'meta': {
+          'foo': 42,
+        },
+      })
+    })
+  })
+
+  describe('redeemLinkedPayment', () => {
+    it('redeemLinkedPayment should properly add the recipient to the udpate', async () => {
+
+    })
   })
 })
