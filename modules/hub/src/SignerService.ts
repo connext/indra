@@ -5,9 +5,8 @@ import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
-import { RawTransaction } from './domain/OnchainTransaction';
-
-const Tx = require('ethereumjs-tx');
+import { OnchainTransactionRow } from './domain/OnchainTransaction';
+import { onchainTxnToRawTx } from './util/ethTransaction';
 
 export class SignerService {
   constructor(
@@ -37,24 +36,25 @@ export class SignerService {
 
   // TODO: reconcile these two functions, is there a way to do this through web3 directly?
   // https://web3js.readthedocs.io/en/1.0/web3-eth.html#id74
-  public async signTransaction(txn: RawTransaction): Promise<string> {
+  public async signTransaction(txn: OnchainTransactionRow): Promise<string> {
+    const rawTx = onchainTxnToRawTx(txn)
     if (this.config.privateKeyFile) {
       const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
       const pk = Buffer.from(pkString, 'hex')
-      const rawTx = {
-        nonce: txn.nonce,
-        gasPrice: txn.gasPrice,
-        gasLimit: txn.gas,
-        to: txn.to,
-        value: txn.value,
-        data: txn.data
-      }
-      const tx = new Tx(rawTx)
-      tx.sign(pk)
-      const serializedTx = tx.serialize()
-      return '0x' + serializedTx.toString('hex')
+
+      // @ts-ignore
+      rawTx.sign(pk)
+      // @ts-ignore
+      return '0x' + rawTx.serialize().toString('hex')
     } else {
-      return (await this.web3.eth.signTransaction(txn)).raw
+      return (await this.web3.eth.signTransaction({
+        nonce: rawTx.nonce,
+        gasPrice: rawTx.gasPrice,
+        gasLimit: rawTx.gasLimit,
+        to: rawTx.to,
+        value: rawTx.value,
+        data: rawTx.data
+      })).raw
     }
   }
 
