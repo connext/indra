@@ -12,7 +12,7 @@ import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
-import { PurchaseRowWithPayments } from "./domain/Purchase";
+import { PurchaseRowWithPayments, PurchasePaymentRow } from "./domain/Purchase";
 import { default as log } from './util/log'
 import { ChannelStateUpdateRow } from './domain/Channel';
 import { emptyAddress } from './vendor/connext/Utils';
@@ -156,7 +156,7 @@ export default class PaymentsService {
     }
   }
 
-  public async doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: number }>> {
+  public async doRedeem(user: string, secret: string): Promise<MaybeResult<{ paymentRow: PurchasePaymentRow }>> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
     // channel checks
     if (channel.status !== 'CS_OPEN') {
@@ -197,7 +197,7 @@ export default class PaymentsService {
     }
 
     // mark the payment as redeemed by updating the recipient field
-    const purchaseId = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
+    const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
 
     // Check to see if collateral is needed
     // TODO: clean up collateralization on redemptions? or only with
@@ -209,7 +209,7 @@ export default class PaymentsService {
 
     return {
       error: false,
-      res: { purchaseId }
+      res: { paymentRow: redeemedPaymentRow }
     }
   }
 
