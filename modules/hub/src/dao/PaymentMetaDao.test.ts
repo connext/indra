@@ -1,5 +1,5 @@
 import { assert, getTestRegistry } from '../testing'
-import { channelAndThreadFactory, tokenVal } from "../testing/factories";
+import { channelAndThreadFactory, tokenVal, channelUpdateFactory } from "../testing/factories";
 import { default as ThreadsDao } from "./ThreadsDao";
 import { default as ChannelsDao } from "./ChannelsDao";
 import { getThreadState, getChannelState } from "../testing/stateUtils";
@@ -9,53 +9,41 @@ import { emptyAddress } from '../vendor/connext/Utils';
 
 describe('PaymentMetaDao', () => {
   const registry = getTestRegistry()
-  let s: {
-    db: DBEngine
-    channelsDao: ChannelsDao
-    threadsDao: ThreadsDao
-    paymentMetDao: PaymentMetaDao
-    user: any
-    performer: any
-  }
+  const db = registry.get('DBEngine')
+  const channelsDao = registry.get('ChannelsDao')
+  const threadsDao = registry.get('ThreadsDao')
+  const paymentMetDao = registry.get('PaymentMetaDao')
 
-  before(async () => {
+  beforeEach(async () => {
     await registry.clearDatabase()
-    const parties = await channelAndThreadFactory(registry);
-
-    s = {
-      db: registry.get('DBEngine'),
-      channelsDao: registry.get('ChannelsDao'),
-      threadsDao: registry.get('ThreadsDao'),
-      paymentMetDao: registry.get('PaymentMetaDao'),
-      user: parties.user,
-      performer: parties.performer
-    }
   })
 
   it('should work with thread payments', async () => {
+    const parties = await channelAndThreadFactory(registry);
+    
     // create an update in the thread
-    let threadUpdate = await s.threadsDao.applyThreadUpdate(getThreadState('signed', {
-      sender: s.user.user,
-      receiver: s.performer.user,
+    let threadUpdate = await threadsDao.applyThreadUpdate(getThreadState('signed', {
+      sender: parties.user.user,
+      receiver: parties.performer.user,
       balanceTokenSender: tokenVal(9),
       balanceTokenReceiver: tokenVal(1),
       txCount: 2,
     }))
 
     // save a payment for this update
-    await s.paymentMetDao.save('abc123', threadUpdate.id, {
+    await paymentMetDao.save('abc123', threadUpdate.id, {
       type: 'PT_THREAD',
       amount: {
         amountToken: tokenVal(1),
         amountWei: '0',
       },
-      recipient: s.performer.user,
+      recipient: parties.performer.user,
       meta: {
         foo: 42,
       },
     })
 
-    let res = await s.db.queryOne(SQL`SELECT * FROM payments`)
+    let res = await db.queryOne(SQL`SELECT * FROM payments`)
     assert.containSubset(res, {
       'amount_token': tokenVal(1),
       'amount_wei': '0',
@@ -72,27 +60,28 @@ describe('PaymentMetaDao', () => {
   })
 
   it('should work with channel payments', async () => {
+    const parties = await channelAndThreadFactory(registry);
     // create an update in the channel
     const state = getChannelState('signed', {
-      user: s.user.user,
+      user: parties.user.user,
       txCountGlobal: 2,
     })
-    let chanUpdate = await s.channelsDao.applyUpdateByUser(s.user.user, 'ConfirmPending', s.user.user, state, {})
+    let chanUpdate = await channelsDao.applyUpdateByUser(parties.user.user, 'ConfirmPending', parties.user.user, state, {})
 
     // save a payment for this update
-    await s.paymentMetDao.save('abc123', chanUpdate.id, {
+    await paymentMetDao.save('abc123', chanUpdate.id, {
       type: 'PT_CHANNEL',
       amount: {
         amountToken: tokenVal(2),
         amountWei: '0',
       },
-      recipient: s.performer.user,
+      recipient: parties.performer.user,
       meta: {
         foo: 42,
       },
     })
 
-    let res = await s.db.queryOne(SQL`SELECT * FROM payments WHERE custodian_address IS NOT NULL`)
+    let res = await db.queryOne(SQL`SELECT * FROM payments WHERE custodian_address IS NOT NULL`)
     assert.containSubset(res, {
       'amount_token': tokenVal(2),
       'amount_wei': '0',
@@ -108,50 +97,38 @@ describe('PaymentMetaDao', () => {
 
   })
 
-  describe('getLinkedPayment', () => {
-    it('getLinkedPayment should properly return the linked payment', async () => {
-      // first insert payment (ensure works with null recipient)
-      // create an update in the channel
-      const state = getChannelState('signed', {
-        user: s.user.user,
-        txCountGlobal: 2,
-      })
-      let chanUpdate = await s.channelsDao.applyUpdateByUser(s.user.user, 'ConfirmPending', s.user.user, state, {})
+  it('getLinkedPayment should properly return the linked payment', async () => {
+    // first insert payment (ensure works with null recipient)
+    // create an update in the channel
+    const chan = await channelUpdateFactory(registry)
 
-      // save a string with empty payment for this update
-      await s.paymentMetDao.save('abc123', chanUpdate.id, {
-        type: 'PT_LINK',
-        amount: {
-          amountToken: tokenVal(2),
-          amountWei: '0',
-        },
-        recipient: emptyAddress,
-        secret: "secret-string",
-        meta: {
-          foo: 42,
-        },
-      })
+    // save a string with empty payment for this update
+    await paymentMetDao.save('abc123', chan.update.id, {
+      type: 'PT_LINK',
+      amount: {
+        amountToken: tokenVal(2),
+        amountWei: '0',
+      },
+      recipient: emptyAddress,
+      secret: "secret-string",
+      meta: {
+        foo: 42,
+      },
+    })
 
-      console.log('saved!', await s.db.queryOne(SQL`SELECT * FROM payments WHERE secret IS NOT NULL`))
+    const res = await paymentMetDao.getLinkedPayment("secret-string")
 
-      const res = await s.paymentMetDao.getLinkedPayment("secret-string")
-
-      console.log('res:', res)
-
-      assert.containSubset(res, {
-        amount: { amountToken: tokenVal(2), amountWei: '0'},
-        secret: "secret-string",
-        recipient: emptyAddress,
-        'meta': {
-          'foo': 42,
-        },
-      })
+    assert.containSubset(res, {
+      amount: { amountToken: tokenVal(2), amountWei: '0'},
+      secret: "secret-string",
+      recipient: emptyAddress,
+      'meta': {
+        'foo': 42,
+      },
     })
   })
 
-  describe('redeemLinkedPayment', () => {
-    it('redeemLinkedPayment should properly add the recipient to the udpate', async () => {
+  it('redeemLinkedPayment should properly add the recipient to the udpate', async () => {
 
-    })
   })
 })

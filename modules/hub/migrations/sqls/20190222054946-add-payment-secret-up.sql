@@ -60,6 +60,6 @@ SELECT
   p.secret
 FROM (
   _payments p
-  JOIN cm_channel_updates up ON ((up.id = p.channel_update_id))
+  LEFT JOIN cm_channel_updates up ON ((up.id = p.channel_update_id))
 );
 
