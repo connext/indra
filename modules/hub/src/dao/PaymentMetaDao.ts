@@ -20,7 +20,7 @@ export interface PaymentMetaDao {
 
   getLinkedPayment(secret: string): Promise<PurchasePaymentRow> 
 
-  redeemLinkedPayment(user: string, secret: string): Promise<number> 
+  redeemLinkedPayment(user: string, secret: string): Promise<PurchasePaymentRow> 
 
   /*
 
@@ -57,7 +57,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       )
       VALUES (
         ${purchaseId}, ${payment.recipient},
-        ${payment.type == 'PT_CHANNEL' ? updateId : null},
+        ${payment.type == 'PT_CHANNEL' || 'PT_LINK' ? updateId : null},
         ${payment.type == 'PT_THREAD' ? updateId : null},
         ${payment.amount.amountWei}, ${payment.amount.amountToken},
         ${payment.secret},
@@ -81,27 +81,33 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
   }
 
   public async getLinkedPayment(secret: string): Promise<PurchasePaymentRow> {
-    return this.rowToPaymentSummary(
-      await this.db.queryOne(SQL`
-        SELECT * from payments
-        WHERE
-          "secret" = ${secret}
-          AND recipient = ${emptyAddress}
-        ORDER BY created_on DESC
-      `)
-    )
+    const row = await this.db.queryOne(SQL`
+      SELECT * from payments
+      WHERE
+        "secret" = ${secret}
+        AND recipient = ${emptyAddress}
+      ORDER BY created_on DESC
+    `)
+    return this.rowToPaymentSummary(row)
   }
 
   public async redeemLinkedPayment(secret: string, recipient: string) {
-    const { id } = await this.db.queryOne(SQL`
-      UPDATE payments
-      SET recipient = ${recipient.toLowerCase()}
+    await this.db.queryOne(SQL`
+      UPDATE _payments
+      SET "recipient" = ${recipient.toLowerCase()}
       WHERE
         "secret" = ${secret}
-        AND recipient = "${emptyAddress}"
+        AND "recipient" = ${emptyAddress};
+    `)
+    
+    const updated = await this.db.queryOne(SQL`
+      SELECT * from payments
+      WHERE
+        "secret" = ${secret}
+        AND recipient = ${recipient}
       ORDER BY created_on DESC
     `)
-    return id
+    return this.rowToPaymentSummary(updated)
   }
 
   /*
