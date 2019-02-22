@@ -12,8 +12,8 @@ import { Payment, PurchasePayment, UpdateRequest } from '../vendor/connext/types
 import { default as ThreadsService } from "../ThreadsService";
 import { default as ChannelsService } from "../ChannelsService";
 import { default as Config } from "../Config";
-import { PurchaseRowWithPayments } from "../domain/Purchase";
 import PaymentsService from "../PaymentsService";
+import PaymentsDao from "../dao/PaymentsDao";
 
 const LOG = log('PaymentsApiService')
 
@@ -21,6 +21,7 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
   namespace = 'payments'
   routes = {
     'POST /purchase': 'doPurchase',
+    'POST /redeem/:user': 'doRedeem',
     //'GET /booty-load-limit': 'doBootyLimit',
     //'GET /:token?': 'doByToken',
     'GET /purchase/:id': 'doPurchaseById',
@@ -31,6 +32,7 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
   handler = PaymentsApiServiceHandler
   dependencies = {
     'paymentMetaDao': 'PaymentMetaDao',
+    'paymentsDao': 'PaymentsDao',
     'exRateDao': 'ExchangeRateDao',
     'db': 'DBEngine',
     'config': 'Config',
@@ -46,6 +48,7 @@ export class PaymentsApiServiceHandler {
   threadService: ThreadsService
   channelService: ChannelsService
   paymentMetaDao: PaymentMetaDao
+  paymentsDao: PaymentsDao
   withdrawalsService: WithdrawalsService
   exRateDao: ExchangeRateDao
   db: DBEngine
@@ -132,4 +135,40 @@ export class PaymentsApiServiceHandler {
 
     res.send(purchase)
   }
+
+  async doRedeem(req: express.Request, res: express.Response) {
+    const user = req.session!.address
+    const { secret } = req.body
+    if (!user || !secret) {
+      LOG.warn(
+        'Received invalid update state request. Aborting. Body received: {body}, Params received: {params}',
+        {
+          body: JSON.stringify(req.body),
+          params: JSON.stringify(req.params),
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    const result = await this.paymentsService.doRedeem(user, secret)
+    if (result.error != false) {
+      LOG.warn(result.msg)
+      return res.send(400).json(result.msg)
+    }
+
+    const chan = await this.channelService.getChannel(user)
+    // TODO: fix for thread updates
+    // last update id is currently 0 hardcoded
+    const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
+      req.session!.address,
+      chan ? chan.state.txCountGlobal : 0,
+      0,
+    )
+
+    res.send({
+      purchaseId: result.res.purchaseId,
+      sync: updates,
+    })
+  }
+
 }
