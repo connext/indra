@@ -1,6 +1,6 @@
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "./vendor/connext/types";
+import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment, DepositArgs, convertDeposit } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -14,6 +14,8 @@ import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
 import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
+import { ChannelStateUpdateRow } from './domain/Channel';
+import { emptyAddress } from './vendor/connext/Utils';
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -75,7 +77,7 @@ export default class PaymentsService {
       let row: { id?: number }
       let afterPayment = null
 
-      if (payment.type == 'PT_CHANNEL' || payment.type == 'PT_LINK') {
+      if (payment.type == 'PT_CHANNEL') {
         // normal payment
         // TODO: should we check if recipient == hub here?
         row = await this.channelsService.doUpdateFromWithinTransaction(user, {
@@ -98,6 +100,23 @@ export default class PaymentsService {
           payment.recipient,
           convertThreadState('bignumber', payment.update.state),
         )
+      } else if (payment.type == 'PT_LINK') {
+        if (payment.recipient != emptyAddress) {
+          throw new Error(`Linked payments must have no recipient`)
+        }
+
+        if (!payment.secret) {
+          throw new Error(`No secret detected on linked payment.`)
+        }
+
+        // update users channel
+        row = await this.channelsService.doUpdateFromWithinTransaction(user, {
+          args: payment.update.args,
+          reason: 'Payment',
+          sigUser: payment.update.sigUser,
+          txCount: payment.update.txCount
+        })
+
       } else {
         assertUnreachable(payment, 'invalid payment type: ' + (payment as any).type)
       }
@@ -136,6 +155,63 @@ export default class PaymentsService {
     }
   }
 
+  public async doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: number }>> {
+    const channel = await this.channelsDao.getChannelOrInitialState(user)
+    // channel checks
+    if (channel.status !== 'CS_OPEN') {
+      throw new Error('Channel is not open: ' + user)
+    }
+
+    const payment = await this.paymentMetaDao.getLinkedPayment(secret)
+    // is user has channel, do payment, otherwise collateralize
+    const prev = convertChannelState('bn', channel.state)
+    const amt = convertPayment('bn', payment.amount)
+    if (!this.validator.cantAffordFromBalance(prev, amt, "user")) {
+      // hub can afford payment from existing channel balance
+      // proceed with normal channel payment
+      const row = await this.channelsService.doUpdateFromWithinTransaction(
+        user, {
+          args: { ...payment.amount, recipient: "user" },
+          reason: 'Payment',
+          txCount: prev.txCountGlobal + 1,
+        }
+      )
+    } else {
+      // propose a hub authorized update paying user in channel
+      // directly, in addition to making a collateral deposit
+      // if needed
+      const collateralStr = await this.channelsService.getCollateralDepositArgs(user)
+      const collateralDeposit = convertDeposit("bignumber", collateralStr)
+      const finalDeposit = { 
+        ...collateralDeposit, 
+        depositWeiUser: payment.amount.amountWei,
+        depositTokenUser: payment.amount.amountToken,
+      }
+      
+      // sign the final deposit state, and save to redis
+      await this.channelsService.redisSaveUnsignedState('hub-authorized', user, {
+        args: finalDeposit,
+        reason: 'ProposePendingDeposit'
+      })
+    }
+
+    // mark the payment as redeemed by updating the recipient field
+    const purchaseId = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
+
+    // Check to see if collateral is needed
+    // TODO: clean up collateralization on redemptions? or only with
+    // additional usage
+    const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
+    if (err) {
+      LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+    }
+
+    return {
+      error: false,
+      res: { purchaseId }
+    }
+  }
+
   public async doPurchaseById(id: string): Promise<PurchaseRowWithPayments> {
     const payments = await this.paymentMetaDao.byPurchase(id)
     if (!payments.length)
@@ -163,7 +239,7 @@ export default class PaymentsService {
     }
   }
 
-  private async doInstantCustodialPayment(payment: PurchasePayment, paymentId: number): Promise<void> {
+  public async doInstantCustodialPayment(payment: PurchasePayment, paymentId: number): Promise<void> {
     const paymentUpdate = payment.update as UpdateRequest
 
     const recipientChannel = await this.channelsDao.getChannelByUser(payment.recipient)
