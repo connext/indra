@@ -223,7 +223,7 @@ export class MockHub implements IHubAPIClient {
         console.log("TEST INCLUSION")
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
-      if (p.type == 'PT_CHANNEL') {
+      if (p.type == 'PT_CHANNEL' || 'PT_LINK') {
         return {
           type: 'channel',
           update: {
@@ -238,7 +238,11 @@ export class MockHub implements IHubAPIClient {
       } else {
         return {
           type: 'thread',
-          update: { state: p.update.state, id: p.update.state.threadId, createdOn: new Date() }
+          update: { 
+            state: (p.update as any).state, 
+            id: (p.update as any).state.threadId, 
+            createdOn: new Date() 
+          }
         } as SyncResult
       }
     })
