@@ -1,5 +1,5 @@
 import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate } from './types'
-import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
+import { SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
 import { createStore, Action, applyMiddleware } from 'redux'
@@ -24,7 +24,6 @@ import {
   ChannelStateUpdate,
   Payment,
   addSigToChannelState,
-  SyncResult,
   ChannelRow,
   ThreadRow,
   UnsignedThreadState,
@@ -37,14 +36,12 @@ import { ConnextStore, ConnextState, PersistentState } from "./state/store";
 import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
 import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
-import { toBN, mul } from './helpers/bn'
+import { toBN } from './helpers/bn'
 import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import CollateralController from "./controllers/CollateralController";
-import * as actions from './state/actions';
 import { AbstractController } from './controllers/AbstractController'
 import { EventLog } from 'web3/types';
-import { getChannel } from './lib/getChannel';
 import ThreadsController from './controllers/ThreadsController';
 
 type Address = string
