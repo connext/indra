@@ -2,6 +2,7 @@ import {PurchasePaymentRow} from '../domain/Purchase'
 import DBEngine, {SQL} from '../DBEngine'
 import {PurchasePaymentSummary} from '../vendor/connext/types'
 import Config from '../Config'
+import { emptyAddress } from '../vendor/connext/Utils';
 
 export interface PaymentMetaDao {
   save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number>
@@ -16,6 +17,10 @@ export interface PaymentMetaDao {
   */
 
   byPurchase (id: string): Promise<PurchasePaymentRow[]>
+
+  getLinkedPayment(secret: string): Promise<PurchasePaymentRow> 
+
+  redeemLinkedPayment(user: string, secret: string): Promise<number> 
 
   /*
 
@@ -47,6 +52,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
         channel_update_id,
         thread_update_id,
         amount_wei, amount_token,
+        secret,
         meta
       )
       VALUES (
@@ -54,6 +60,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
         ${payment.type == 'PT_CHANNEL' ? updateId : null},
         ${payment.type == 'PT_THREAD' ? updateId : null},
         ${payment.amount.amountWei}, ${payment.amount.amountToken},
+        ${payment.secret},
         ${JSON.stringify(payment.meta)}::jsonb
       ) RETURNING id
     `)
@@ -71,6 +78,31 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     `)
 
     return res.rows.map((row: any) => this.rowToPaymentSummary(row))
+  }
+
+  public async getLinkedPayment(secret: string): Promise<PurchasePaymentRow> {
+    return this.rowToPaymentSummary(
+      await this.db.queryOne(SQL`
+        SELECT * from payments
+        WHERE
+          "secret" = ${secret}
+          AND recipient = ${emptyAddress}
+        ORDER BY created_on DESC
+      `)
+    )
+  }
+
+  public async redeemLinkedPayment(secret: string, recipient: string) {
+    const { id } = await this.db.queryOne(SQL`
+      UPDATE payments
+      SET recipient = ${recipient.toLowerCase()}
+      WHERE
+        "secret" = ${secret}
+        AND recipient = "${emptyAddress}"
+      ORDER BY created_on DESC
+      RETURNING id
+    `)
+    return id
   }
 
   /*
@@ -158,6 +190,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       createdOn: row.created_on,
       purchaseId: row.purchase_id,
       sender: row.sender,
+      secret: row.secret,
       recipient: row.recipient,
       amount: {
         amountWei: row.amount_wei,
