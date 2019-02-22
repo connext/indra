@@ -127,6 +127,7 @@ export default class PaymentsService {
       const paymentId = await this.paymentMetaDao.save(purchaseId, row.id, {
         recipient: payment.recipient,
         amount: payment.amount,
+        secret: payment.secret,
         type: payment.type,
         meta: {
           ...meta,

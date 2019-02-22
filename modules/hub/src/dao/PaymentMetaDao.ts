@@ -100,7 +100,6 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
         "secret" = ${secret}
         AND recipient = "${emptyAddress}"
       ORDER BY created_on DESC
-      RETURNING id
     `)
     return id
   }
@@ -185,6 +184,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
   }
 
   private rowToPaymentSummary(row: any): PurchasePaymentRow {
+    console.log('transforming row', row)
     return {
       id: Number(row.id),
       createdOn: row.created_on,

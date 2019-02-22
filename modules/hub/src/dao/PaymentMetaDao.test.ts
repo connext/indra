@@ -2,7 +2,7 @@ import { assert, getTestRegistry } from '../testing'
 import { channelAndThreadFactory, tokenVal, channelUpdateFactory } from "../testing/factories";
 import { default as ThreadsDao } from "./ThreadsDao";
 import { default as ChannelsDao } from "./ChannelsDao";
-import { getThreadState, getChannelState } from "../testing/stateUtils";
+import { getThreadState, getChannelState, mkAddress } from "../testing/stateUtils";
 import { PaymentMetaDao } from "./PaymentMetaDao";
 import { default as DBEngine, SQL } from "../DBEngine";
 import { emptyAddress } from '../vendor/connext/Utils';
@@ -129,6 +129,28 @@ describe('PaymentMetaDao', () => {
   })
 
   it('redeemLinkedPayment should properly add the recipient to the udpate', async () => {
+    const chan = await channelUpdateFactory(registry)
 
+    // save a string with empty payment for this update
+    await paymentMetDao.save('abc123', chan.update.id, {
+      type: 'PT_LINK',
+      amount: {
+        amountToken: tokenVal(2),
+        amountWei: '0',
+      },
+      recipient: emptyAddress,
+      secret: "secret-string",
+      meta: {
+        foo: 42,
+      },
+    })
+    
+    const res = await paymentMetDao.getLinkedPayment("secret-string")
+    console.log('found existing linked payment', res)
+    const id = await paymentMetDao.redeemLinkedPayment("secret-string", mkAddress('0xRRR'))
+    assert.exists(id)
+
+    const updated = await paymentMetDao.getLinkedPayment("secret-string")
+    console.log('updated value', updated)
   })
 })
