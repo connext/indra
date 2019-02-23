@@ -159,10 +159,68 @@ describe('PaymentsApiService', () => {
       },
       type: 'PT_LINK',
     })
+  })
+
+  it('should work for users redeeming payments', async () => {
+    const chan = await channelUpdateFactory(registry, {
+      balanceTokenUser: tokenVal(10),
+    })
+
+    // add linked payment to the db
+    await app.withUser(chan.user).request
+    .post('/payments/purchase')
+    .send({
+      meta: {},
+      payments: [
+        {
+          recipient: emptyAddress,
+          amount: {
+            amountWei: '0',
+            amountToken: tokenVal(1),
+          },
+          meta: {},
+          type: 'PT_LINK',
+          secret: 'sadlkj',
+          update: {
+            reason: 'Payment',
+            sigUser: chan.state.sigUser,
+            txCount: chan.state.txCountGlobal + 1,
+            args: {
+              amountWei: '0',
+              amountToken: tokenVal(1),
+              recipient: 'hub'
+            }
+          },
+        }
+      ] as PurchasePayment[]
+    })
+
+    console.log('linked payment inserted into db')
+
+    // redeem with address not in db
+    const redeemer = "0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e".toLowerCase()
+    const res = await app.withUser(redeemer).request
+      .post(`/payments/redeem/${redeemer}`)
+      .send({ secret: "sadlkj"})
+
+    assert.equal(res.status, 200, JSON.stringify(res.body))
+    const { paymentRow } = res.body
+    console.log('paymentRow', res.body)
+    assert.ok(paymentRow)
+
+    const payments = await paymentMetaDao.byPurchase(paymentRow.purchaseId)
+    assert.containSubset(payments[0], {
+      recipient: redeemer,
+      sender: chan.user,
+      amount: {
+        amountWei: '0',
+        amountToken: tokenVal(1),
+      },
+      type: 'PT_LINK',
+      secret: "sadlkj"
+    })
 
     const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
     console.log('linked', linked)
   })
-
-  it('should work for users redeeming payments', async () => {})
 })
