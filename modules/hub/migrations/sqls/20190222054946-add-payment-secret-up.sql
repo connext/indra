@@ -21,7 +21,7 @@ SELECT
   p.amount_wei,
   p.amount_token,
   p.meta,
-  CASE WHEN p.recipient LIKE '0x0000000000000000000000000000000000000000' AND p.secret IS NOT NULL
+  CASE WHEN p.secret IS NOT NULL
   	   THEN 'PT_LINK'::text 
   	   ELSE 'PT_CHANNEL'::text
   	   END AS payment_type,
