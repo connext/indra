@@ -23,7 +23,7 @@ Discord Invitation: https://discord.gg/SmMSFf
 - [`docker`](https://www.docker.com/)
 - [`node` and `npm`](https://nodejs.org/en/)
 
-To build & deploy in dev-mode, just run: `npm start`
+To build & deploy in dev-mode, clone the repository and then run: `npm start`
 
 Once all the pieces are awake, the app will be available at `http://localhost`. (The wallet takes a long time to wake up, monitor it's progress with `npm run logs wallet`)
 
