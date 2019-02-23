@@ -232,7 +232,7 @@ export class PostgresThreadsDao implements ThreadsDao {
       LIMIT 1
       `),
     )
-    return up.id
+    return up && up.id ? up.id : 0
   }
 
   public async getThreadInitialStatesByUser(
