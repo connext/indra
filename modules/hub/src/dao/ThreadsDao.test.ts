@@ -11,7 +11,6 @@ import {
   assert,
 } from '../testing/stateUtils'
 import { convertThreadState } from '../vendor/connext/types'
-import eraseDb from '../testing/eraseDb';
 import { channelAndThreadFactory } from '../testing/factories';
 import { testChannelManagerAddress } from '../testing/mocks';
 
@@ -22,13 +21,10 @@ describe('ThreadsDao', () => {
   const db: DBEngine = registry.get('DBEngine')
 
   beforeEach(async () => {
-    // TODO: how to use test utils to not do this
-    await eraseDb(db)
+    await registry.clearDatabase()
   })
 
   afterEach(async () => {
-    // TODO: how to use test utils to not do this
-    await eraseDb(db)
   })
 
   it('should insert and update threads', async () => {
@@ -67,8 +63,16 @@ describe('ThreadsDao', () => {
   })
 
   it('getLastThreadUpdateId should return correct update id', async () => {
-    const thread = await channelAndThreadFactory(registry)
-    const id = await threadsDao.getLastThreadUpdateId(thread.user.user)
-    assert.equal(id, 1)
+    const thread = await channelAndThreadFactory(registry, mkAddress('0xe'), mkAddress('0xf'))
+
+    const threadStateUpdate = getThreadState('signed', {
+      ...thread.thread,
+      txCount: thread.thread.txCount + 1,
+    })
+
+    await threadsDao.applyThreadUpdate(threadStateUpdate)
+
+    const id = await threadsDao.getLastThreadUpdateId(mkAddress('0xe'))
+    assert.ok(id > 0)
   })
 })
