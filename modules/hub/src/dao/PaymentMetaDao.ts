@@ -91,23 +91,25 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     return this.rowToPaymentSummary(row)
   }
 
-  public async redeemLinkedPayment(secret: string, recipient: string) {
+  public async redeemLinkedPayment(user: string, secret: string) {
     await this.db.queryOne(SQL`
       UPDATE _payments
-      SET "recipient" = ${recipient.toLowerCase()}
+      SET "recipient" = ${user.toLowerCase()}
       WHERE
         "secret" = ${secret}
         AND "recipient" = ${emptyAddress};
     `)
+
     
     const updated = await this.db.queryOne(SQL`
       SELECT * from payments
       WHERE
         "secret" = ${secret}
-        AND recipient = ${recipient}
+        AND recipient = ${user}
       ORDER BY created_on DESC
     `)
-    return this.rowToPaymentSummary(updated)
+
+    return updated as PurchasePaymentRow
   }
 
   /*
@@ -190,7 +192,6 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
   }
 
   private rowToPaymentSummary(row: any): PurchasePaymentRow {
-    console.log('transforming row', row)
     return {
       id: Number(row.id),
       createdOn: row.created_on,
