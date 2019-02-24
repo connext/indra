@@ -281,7 +281,7 @@ describe('ChannelsService', () => {
     const weiDeposit = toWeiBigNum(0.1)
     const user = mkAddress('0xa')
 
-    assert.isRejected(service.doRequestDeposit(user, weiDeposit, Big(0), ""),
+    await assert.isRejected(service.doRequestDeposit(user, weiDeposit, Big(0), ""),
       /No signature detected/
     )
   })
@@ -851,15 +851,6 @@ describe('ChannelsService', () => {
     )
 
     assert.deepEqual(syncUpdates.map(s => s.type), ['channel', 'thread'])
-  })
-
-  it('should only sign zero-thread states', async () => {
-    assert.isRejected(channelUpdateFactory(registry, {
-      threadCount: 1,
-      threadRoot: mkHash('0xbad'),
-      balanceTokenUser: 10000,
-      balanceWeiUser: 9999
-    }))
   })
 
   it('should not recollateralize with pending states', async () => {
