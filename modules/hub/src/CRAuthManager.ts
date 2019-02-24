@@ -60,15 +60,17 @@ export class MemoryCRAuthManager implements CRAuthManager {
 
   private extractAddress (hash: string, signature: string): string | null {
     const hashBuf = new Buffer(hash.split('x')[1], 'hex')
-
+    console.log("Hash sent to extract", hash)
     let pub
 
     try {
       const sig = util.fromRpcSig(signature)
       const prefix = new Buffer(MemoryCRAuthManager.ETH_PREAMBLE)
       const authHash = Buffer.concat([prefix, new Buffer(String(hashBuf.length)), hashBuf])
+      const authHashHex = authHash.toString('hex')
+
       const msg = new util.sha3(
-        	authHash.toString('hex')
+        authHashHex
       )
 
       pub = util.ecrecover(msg, sig.v, sig.r, sig.s)
@@ -84,3 +86,4 @@ export class MemoryCRAuthManager implements CRAuthManager {
     return this.web3.utils.sha3(data)
   }
 }
+// {"depositWei":"100000","depositToken":"0","sigUser":"0xd05d4d88bd90dd17ad2e2373871009f8012ce4a31d49f90973ff7af020ac088f069fc4c06018e9bd4c8d815290bb066919f36783070539ff3595c8228945a0741b","lastChanTx":6,"lastThreadUpdateId":0}
