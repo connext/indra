@@ -142,7 +142,8 @@ class ThreadsApiServiceHandler {
       )
       return res.sendStatus(400)
     }
-    res.send(await this.threadsService.doGetLastUpdateId(user))
+    const latest = await this.threadsService.doGetLastUpdateId(user)
+    res.json({ latestThreadUpdateId: latest })
   }
 
   async doGetThreadsActive(req: express.Request, res: express.Response) {

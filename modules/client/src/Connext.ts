@@ -134,7 +134,7 @@ class HubAPIClient implements IHubAPIClient {
       if (!res.data) {
         return 0
       }
-      return res.data
+      return res.data.latestThreadUpdateId
     } catch (e) {
       if (e.status == 404) {
         console.log(`Thread update not found for user ${this.user}`)
