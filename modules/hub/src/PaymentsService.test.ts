@@ -357,22 +357,26 @@ describe('PaymentsService', () => {
     }
     const payments: PurchasePayment[] = [
       {
-        recipient: receiver,
+        recipient: emptyAddress,
         amount: {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
         meta: {},
-        type: 'PT_CHANNEL',
+        secret: 'secret',
+        type: 'PT_LINK',
         update: {
           reason: 'Payment',
           sigUser: mkSig('0xa'),
           txCount: senderChannel.state.txCountGlobal + 1,
           args: paymentArgs,
-        } as UpdateRequest,
+        },
       }
     ]
 
+    // add linked payment to db
+    // TODO: probably a cleaner way to add this to the db
+    // should check with rahul
     await service.doPurchase(sender, {}, payments)
 
     const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
@@ -395,6 +399,8 @@ describe('PaymentsService', () => {
     assert.isOk(custodialUpdateSender.sigHub)
   })
 
-  it('should redeem a linked payment by deposit into redeemers channel from hub reserves if redeemer not ', async () => {})
+  it('should redeem a linked payment by deposit into redeemers channel from hub reserves if redeemer not collateralized (or channel does not exist)', async () => {
+    
+  })
 
 })
