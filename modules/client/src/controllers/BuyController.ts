@@ -48,21 +48,13 @@ export default class BuyController extends AbstractController {
         const { thread, channel } = await this.connext.threadsController.openThread(
           payment.recipient, 
           payment.amount
-        )
-
-        // wait for thread to be added to local store and channel
-        // state/connext persistent state to be updated
-        // TODO: figure out if this will wait for the channel state to
-        // be updated via state update controller (should)
-        // await this.connext.awaitPersistentStateSaved()        
+        )      
 
         // add thread payment to signed payments
         const state = await this.connext.signThreadState(
           this.validator.generateThreadPayment(thread, payment.amount)
         )
 
-        // TODO: make sure the state update controller is able to update
-        // the state of the active thread once the payment is made
         signedPayments.push({
           ...payment,
           type: "PT_THREAD",
