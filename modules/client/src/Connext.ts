@@ -44,6 +44,7 @@ import { AbstractController } from './controllers/AbstractController'
 import { EventLog } from 'web3/types';
 import ThreadsController from './controllers/ThreadsController';
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
+import { RedeemController } from './controllers/RedeemController';
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -878,6 +879,7 @@ export class ConnextInternal extends ConnextClient {
   stateUpdateController: StateUpdateController
   collateralController: CollateralController
   threadsController: ThreadsController
+  redeemController: RedeemController
 
   constructor(opts: ConnextClientOptions) {
     super(opts)
@@ -912,6 +914,7 @@ export class ConnextInternal extends ConnextClient {
     this.stateUpdateController = new StateUpdateController('StateUpdateController', this)
     this.collateralController = new CollateralController('CollateralController', this)
     this.threadsController = new ThreadsController('ThreadsController', this)
+    this.redeemController = new RedeemController('RedeemController', this)
   }
 
   private getControllers(): AbstractController[] {
@@ -1039,7 +1042,7 @@ export class ConnextInternal extends ConnextClient {
       type: 'bytes32', value: Web3.utils.randomHex(32)
     })
   }
-  
+
   async sign(hash: string, user: string) {
     return await (
       this.opts.web3.eth.personal
