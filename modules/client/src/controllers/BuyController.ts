@@ -1,8 +1,8 @@
 import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
-import { assertUnreachable } from '@src/lib/utils';
-import { emptyAddress } from '@src/Utils';
+import { assertUnreachable } from '../lib/utils';
+import { emptyAddress } from '../Utils';
 
 // **********************************************//
 //
