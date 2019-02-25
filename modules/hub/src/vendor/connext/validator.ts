@@ -1,5 +1,5 @@
 import { subOrZero, objMap } from './StateGenerator'
-import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN, withdrawalParamsNumericFields } from './types'
+import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
 import Web3 = require('web3')
@@ -40,6 +40,7 @@ import {
   convertThreadPayment,
   Payment,
   convertArgs,
+  withdrawalParamsNumericFields
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
@@ -354,6 +355,16 @@ export class Validator {
     return null
   }
 
+  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
+    const prev = convertChannelState("bn", prevStr)
+    const error = await this.confirmPending(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+
+    return this.stateGenerator.confirmPending(prev)
+  }
+
   public async emptyChannel(prev: ChannelStateBN, args: EmptyChannelArgs): Promise<string | null> {
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
@@ -429,16 +440,6 @@ export class Validator {
     // For an empty channel, the generator should rely on an empty channel
     // event. All channel information should be reset from the contract.
     return this.stateGenerator.emptyChannel(matchingEvent)
-  }
-
-  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
-    const prev = convertChannelState("bn", prevStr)
-    const error = await this.confirmPending(prev, args)
-    if (error) {
-      throw new Error(error)
-    }
-
-    return this.stateGenerator.confirmPending(prev)
   }
 
   // NOTE: the prev here is NOT the previous state in the state-chain 

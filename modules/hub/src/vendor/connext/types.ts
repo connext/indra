@@ -377,7 +377,6 @@ export type ArgsTypes<T=string> =
   | PaymentArgs<T>
   | DepositArgs<T>
   | WithdrawalArgs<T>
-  | UnsignedThreadState<T>
   | ConfirmPendingArgs
   | InvalidationArgs
   | EmptyChannelArgs
@@ -720,11 +719,6 @@ export const withdrawalParamsNumericFields = [
   'weiToSell',
   'withdrawalTokenUser',
 ]
-
-/*********************************
- ******* TYPE CONVERSIONS ********
- *********************************/
-
 export function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
   return {
     id: up.id,
@@ -869,12 +863,16 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
+export function convertWithdrawalParams<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, withdrawalParamsNumericFields, obj)
+}
+
 export const proposePendingNumericArgs = [
   'depositWeiUser',
   'depositWeiHub',
   'depositTokenUser',
   'depositTokenHub',
-
   'withdrawalWeiUser',
   'withdrawalWeiHub',
   'withdrawalTokenUser',
