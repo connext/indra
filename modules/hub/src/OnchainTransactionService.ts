@@ -1,4 +1,3 @@
-import { UnconfirmedTransaction } from "./domain/OnchainTransaction";
 import { assertUnreachable } from "./util/assertUnreachable";
 import { OnchainTransactionsDao, TxnStateUpdate } from "./dao/OnchainTransactionsDao";
 import { TransactionRequest, OnchainTransactionRow } from "./domain/OnchainTransaction";
@@ -6,30 +5,11 @@ import * as crypto from 'crypto'
 import log from './util/log'
 import { default as DBEngine, SQL } from "./DBEngine";
 import { default as GasEstimateDao } from "./dao/GasEstimateDao";
-import { sleep, synchronized, maybe, Lock, Omit } from "./util";
+import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson } from "./util";
 import { Container } from "./Container";
-const Tx = require('ethereumjs-tx')
-const Web3 = require('web3')
+import { SignerService } from "./SignerService";
 
 const LOG = log('OnchainTransactionService')
-
-/**
- * Converts an UnconfirmedTransaction to an instance of Tx from ethereumjs-tx
- */
-function txnToTx(txn: Omit<UnconfirmedTransaction, 'hash'>): any {
-  return new Tx({
-    from: txn.from,
-    to: txn.to,
-    value: Web3.utils.numberToHex(txn.value),
-    gas: Web3.utils.numberToHex(txn.gas),
-    gasPrice: Web3.utils.numberToHex(txn.gasPrice),
-    data: txn.data,
-    nonce: Web3.utils.numberToHex(txn.nonce),
-    r: txn.signature && txn.signature.r,
-    s: txn.signature && txn.signature.s,
-    v: txn.signature && Web3.utils.numberToHex(txn.signature.v),
-  })
-}
 
 function md5(data: string) {
   if (!data && data !== '')
@@ -37,22 +17,6 @@ function md5(data: string) {
   const hash = crypto.createHash('md5')
   hash.update(data)
   return hash.digest('hex')
-}
-
-/**
- * Serializes a transaction to a raw string.
- */
-function serializeTxn(txn: Omit<UnconfirmedTransaction, 'hash'>): string {
-  const tx = txnToTx(txn)
-  return '0x' + tx.serialize().toString('hex')
-}
-
-/**
- * Serializes a transaction to a raw string.
- */
-function generateHash(txn: Omit<UnconfirmedTransaction, 'hash'>, includeSig: boolean = true): string {
-  const tx = txnToTx(txn)
-  return '0x' + tx.hash(includeSig).toString('hex')
 }
 
 
@@ -119,7 +83,8 @@ export class OnchainTransactionService {
     private web3: any, 
     private gasEstimateDao: GasEstimateDao, 
     private onchainTransactionDao: OnchainTransactionsDao, 
-    private db: DBEngine, 
+    private db: DBEngine,
+    private signerService: SignerService,
     private container: Container
   ) {}
 
@@ -152,7 +117,7 @@ export class OnchainTransactionService {
       // Verify that the callback exists before doing anything else
       this.lookupCallback(meta.completeCallback)
     }
-
+    
     const nonce = Math.max(
       await this.web3.eth.getTransactionCount(txnRequest.from),
       (await db.queryOne(SQL`
@@ -252,18 +217,12 @@ export class OnchainTransactionService {
       // Use the data hash to simplify tracking in logs until we're able to
       // calculate the actual hash
       const dataHash = md5(txn.data)
+      const signedTx = await this.signerService.signTransaction(txn)
+      LOG.info(`signedTx: ${prettySafeJson(signedTx)}`)
       const error = await new Promise<string | null>(res => {
         // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
-        LOG.info(`Submitting transaction nonce=${txn.nonce} data-hash=${dataHash}: ${JSON.stringify(txn)}...`)
-        const tx = this.web3.eth.sendTransaction({
-          from: txn.from,
-          to: txn.to,
-          value: txn.value || '0',
-          gasPrice: txn.gasPrice,
-          gas: txn.gas,
-          data: txn.data || '0x',
-          nonce: txn.nonce,
-        })
+        LOG.info(`Submitting transaction nonce=${txn.nonce} data-hash=${dataHash}: ${prettySafeJson(txn)}...`)
+        const tx = this.web3.eth.sendSignedTransaction(signedTx)
         tx.on('transactionHash', hash => {
           // TODO: REB-61
           this.db.query(SQL`

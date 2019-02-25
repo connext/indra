@@ -180,6 +180,13 @@ export const ChannelStatus = {
 }
 export type ChannelStatus = keyof typeof ChannelStatus
 
+export const DisputeStatus = {
+  CD_PENDING: 'CD_PENDING',
+  CD_IN_DISPUTE_PERIOD: 'CD_IN_DISPUTE_PERIOD',
+  CD_FAILED: 'CD_FAILED',
+  CD_FINISHED: 'CD_FINISHED'
+}
+export type DisputeStatus = keyof typeof DisputeStatus
 
 // channel update reasons
 export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string } = {
@@ -714,9 +721,27 @@ export type WithdrawalParameters<T = string> = {
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
+export const withdrawalParamsNumericFields = [
+  'withdrawalWeiUser',
+  'tokensToSell',
+  'weiToSell',
+  'withdrawalTokenUser',
+]
+
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
+
+export function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
+  return {
+    id: up.id,
+    reason: up.reason,
+    args: up.args,
+    txCount: up.state.txCountGlobal,
+    sigHub: up.state.sigHub,
+    sigUser: up.state.sigUser,
+  }
+}
 
 // util to convert from string to bn for all types
 export const channelNumericFields = [

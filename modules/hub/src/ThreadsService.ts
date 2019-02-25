@@ -64,7 +64,7 @@ export default class ThreadsService {
     }
 
     // make sure no open thread exists
-    const existing = await this.threadsDao.getThread(thread.sender, thread.receiver)
+    const existing = await this.threadsDao.getActiveThread(thread.sender, thread.receiver)
     if (existing) {
       throw new Error(
         `Thread exists already: ${JSON.stringify(existing, null, 2)}`
@@ -114,7 +114,7 @@ export default class ThreadsService {
       channelReceiverState.balanceTokenHub.isLessThan(thread.balanceTokenSender)
     ) {
       LOG.info(
-        `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)},
+        `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)}, thread: ${prettySafeJson(thread)},
         hub deposit must be completed before thread can be opened`
       )
       // unsigned state for hub deposit will be returned in the next sync response
@@ -128,14 +128,13 @@ export default class ThreadsService {
     let threadInitialStates = await this.threadsDao.getThreadInitialStatesByUser(
       thread.sender
     )
-    let unsignedThreadStates = threadInitialStates.map(thread =>
-      convertThreadState('str-unsigned', thread.state)
+    let threadStates = threadInitialStates.map(thread =>
+      convertThreadState('str', thread.state)
     )
-    unsignedThreadStates.push(convertThreadState('str', thread) as UnsignedThreadState)
 
     const unsignedChannelStateSender = this.validator.generateOpenThread(
       convertChannelState('str', channelSender.state),
-      unsignedThreadStates,
+      threadStates,
       convertThreadState('str', thread)
     )
     const channelStateSender = await this.signerService.signChannelState(
@@ -148,14 +147,13 @@ export default class ThreadsService {
     threadInitialStates = await this.threadsDao.getThreadInitialStatesByUser(
       thread.receiver
     )
-    unsignedThreadStates = threadInitialStates.map(thread =>
-      convertThreadState('str-unsigned', thread.state)
+    threadStates = threadInitialStates.map(thread =>
+      convertThreadState('str', thread.state)
     )
-    unsignedThreadStates.push(convertThreadState('str', thread) as UnsignedThreadState)
 
     const unsignedChannelStateReceiver = this.validator.generateOpenThread(
       convertChannelState('str', channelReceiver.state),
-      unsignedThreadStates,
+      threadStates,
       convertThreadState('str', thread)
     )
     const channelStateReceiver = await this.signerService.signChannelState(
@@ -168,14 +166,14 @@ export default class ThreadsService {
       'OpenThread',
       thread.sender,
       channelStateSender,
-      convertThreadState('str-unsigned', thread)
+      convertThreadState('str', thread)
     )
     const insertedChannelReceiver = await this.channelsDao.applyUpdateByUser(
       thread.receiver,
       'OpenThread',
       thread.receiver,
       channelStateReceiver,
-      convertThreadState('str-unsigned', thread)
+      convertThreadState('str', thread)
     )
     await this.threadsDao.applyThreadUpdate(
       convertThreadState('str', thread),
@@ -191,7 +189,7 @@ export default class ThreadsService {
     update: ThreadStateBigNum
   ): Promise<ThreadStateUpdateRow> {
     await this.ensureEnabled()
-    const thread = await this.threadsDao.getThread(sender, receiver)
+    const thread = await this.threadsDao.getActiveThread(sender, receiver)
     if (!thread || thread.status !== 'CT_OPEN') {
       throw new Error(`Thread is invalid: ${thread}`)
     }
@@ -243,7 +241,7 @@ export default class ThreadsService {
       )
     }
 
-    const thread = await this.threadsDao.getThread(sender, receiver)
+    const thread = await this.threadsDao.getActiveThread(sender, receiver)
     if (!thread || thread.status !== 'CT_OPEN') {
       throw new Error(`Thread is invalid: ${thread}`)
     }
@@ -252,17 +250,8 @@ export default class ThreadsService {
     let threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
       sender
     )
-    // remove this thread and cast as string type
-    let threadStates = threadStatesBigNum
-      .filter(
-        update =>
-          !(
-            update.state.sender === thread.state.sender &&
-            update.state.receiver === thread.state.receiver &&
-            update.state.contractAddress === this.config.channelManagerAddress
-          )
-      )
-      .map(t => convertThreadState('str', t.state))
+    // cast as string type
+    let threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
 
     const unsignedChannelUpdateSender = this.validator.generateCloseThread(
       convertChannelState('str', channelSender.state),
@@ -281,17 +270,8 @@ export default class ThreadsService {
     threadStatesBigNum = await this.threadsDao.getThreadInitialStatesByUser(
       receiver
     )
-    // remove this thread and cast as string type
-    threadStates = threadStatesBigNum
-      .filter(
-        update =>
-          !(
-            update.state.sender === thread.state.sender &&
-            update.state.receiver === thread.state.receiver &&
-            update.state.contractAddress === this.config.channelManagerAddress
-          )
-      )
-      .map(t => convertThreadState('str', t.state))
+    // cast as string type
+    threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
 
     const unsignedChannelUpdateReceiver = this.validator.generateCloseThread(
       convertChannelState('str', channelReceiver.state),
@@ -312,14 +292,14 @@ export default class ThreadsService {
       'CloseThread',
       channelUpdateSender.user,
       channelUpdateSender,
-      convertThreadState('str-unsigned', thread.state)
+      convertThreadState('str', thread.state)
     )
     const channelRowReceiver = await this.channelsDao.applyUpdateByUser(
       channelUpdateReceiver.user,
       'CloseThread',
       channelUpdateReceiver.user,
       channelUpdateReceiver,
-      convertThreadState('str-unsigned', thread.state)
+      convertThreadState('str', thread.state)
     )
     await this.threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
 
@@ -332,11 +312,22 @@ export default class ThreadsService {
     )
   }
 
+  public async getThreadsActive(user: string): Promise<ThreadState[]> {
+    return (await this.threadsDao.getThreadsActive(user)).map(
+      thread => convertThreadState('str', thread.state)
+    )
+  }
+
+  public async getThreads(user: string): Promise<ThreadState[]> {
+    const threads = await this.threadsDao.getThreads(user)
+    return threads.map(t => convertThreadState('str', t.state))
+  }
+
   public async getThread(
     sender: string,
     receiver: string
   ): Promise<ThreadRow | null> {
-    const thread = await this.threadsDao.getThread(sender, receiver)
+    const thread = await this.threadsDao.getActiveThread(sender, receiver)
     if (!thread) {
       return null
     }
@@ -352,10 +343,15 @@ export default class ThreadsService {
     })
   }
 
+  public async doGetLastUpdateId(user: string): Promise<number> {
+    return (await this.threadsDao.getLastThreadUpdateId(user))
+  }
+
   async ensureEnabled() {
-    const enabled = (await this.globalSettings.fetch()).threadsEnabled
-    if (!enabled) {
-      throw new Error('Threads are disabled.')
-    }
+    // const enabled = (await this.globalSettings.toggleThreadsEnabled(true))
+    // console.log('&&&&& enabled:', enabled)
+    // if (!enabled) {
+    //   throw new Error('Threads are disabled.')
+    // }
   }
 }

@@ -74,7 +74,7 @@ export class AuthenticationClient {
         hashBuf,
       ])
 
-      return `0x${util.sha3(buf).toString('hex')}`
+      return `0x${util.sha3(buf.toString('hex'))}`
     }
 
     return this.web3.sha3(msg)

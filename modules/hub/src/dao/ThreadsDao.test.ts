@@ -2,111 +2,50 @@ import * as chai from 'chai'
 chai.use(require('@spankchain/chai-subset'))
 import DBEngine from '../DBEngine'
 import { BigNumber } from 'bignumber.js'
-import { getTestRegistry, getTestConfig } from '../testing'
+import { getTestRegistry } from '../testing'
 import { PostgresThreadsDao } from './ThreadsDao'
 import {
-  getChannelState,
   getThreadState,
   assertThreadStateEqual,
   mkAddress,
-  mkSig,
+  assert,
 } from '../testing/stateUtils'
-import { insertChannel } from '../testing/dbUtils'
-import { ChannelState, convertThreadState } from '../vendor/connext/types'
-import { PostgresChannelsDao } from './ChannelsDao'
-import eraseDb from '../testing/eraseDb';
+import { convertThreadState } from '../vendor/connext/types'
+import { channelAndThreadFactory } from '../testing/factories';
+import { testChannelManagerAddress } from '../testing/mocks';
 
-describe.skip('ThreadsDao', () => {
-  const registry = getTestRegistry({
-    Config: getTestConfig({
-      channelManagerAddress: '0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42',
-    }),
-  })
+describe('ThreadsDao', () => {
+  const registry = getTestRegistry()
 
   const threadsDao: PostgresThreadsDao = registry.get('ThreadsDao')
-  const channelsDao: PostgresChannelsDao = registry.get('ChannelsDao')
   const db: DBEngine = registry.get('DBEngine')
 
   beforeEach(async () => {
-    // TODO: how to use test utils to not do this
-    await eraseDb(db)
+    await registry.clearDatabase()
   })
 
   afterEach(async () => {
-    // TODO: how to use test utils to not do this
-    await eraseDb(db)
   })
 
   it('should insert and update threads', async () => {
-    const hub = mkAddress('0xccc')
-    const sender = mkAddress('0xaaa')
-    const receiver = mkAddress('0xbbb')
-    const contractAddress = '0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42'
-    const sigHub = mkSig('0xa')
-    const sigUser = mkSig('0xb')
-    const sigSender = mkSig('0xc')
+    const chans = await channelAndThreadFactory(registry)
 
-    const channelSender = getChannelState('empty', {
-      contractAddress,
-      user: sender,
-      sigHub,
-      sigUser,
-    })
-    const channelReceiver = getChannelState('empty', {
-      contractAddress,
-      user: receiver,
-      sigHub,
-      sigUser,
-    })
-
-    await insertChannel(db, hub, channelSender)
-    await insertChannel(db, hub, channelReceiver)
-
-    const channelUpdate: ChannelState = { ...channelSender, txCountGlobal: 1 }
-    const update = await channelsDao.applyUpdateByUser(
-      sender,
-      'OpenThread',
-      sender,
-      channelUpdate,
-      {}
-    )
-
-    const threadStateInitial = getThreadState('empty', {
-      contractAddress,
-      user: sender,
-      sender,
-      receiver,
-      balanceWeiSender: '10',
-      balanceTokenSender: '20',
-      sigA: sigSender,
-    })
-
-    const res = await threadsDao.applyThreadUpdate(threadStateInitial, update.id)
-
-    let thread = await threadsDao.getThread(sender, receiver)
-    console.log('thread: ', thread);
+    let thread = await threadsDao.getActiveThread(chans.user.user, chans.performer.user)
     assertThreadStateEqual(convertThreadState('str', thread.state), {
-      balanceWeiSender: threadStateInitial.balanceWeiSender,
-      balanceTokenSender: threadStateInitial.balanceTokenSender,
+      balanceWeiSender: chans.thread.balanceWeiSender,
+      balanceTokenSender: chans.thread.balanceTokenSender,
     })
 
-    const threadStateUpdate = getThreadState('full', {
-      contractAddress,
-      sender,
-      receiver,
-      balanceWei: [
-        new BigNumber(threadStateInitial.balanceWeiSender)
-          .minus(new BigNumber(5))
-          .toFixed(),
-        new BigNumber(threadStateInitial.balanceWeiReceiver)
-          .plus(new BigNumber(5))
-          .toFixed(),
-      ],
+    const threadStateUpdate = getThreadState('signed', {
+      contractAddress: testChannelManagerAddress,
+      sender: chans.user.user,
+      receiver: chans.performer.user,
+      txCount: chans.thread.txCount + 1,
       balanceToken: [
-        new BigNumber(threadStateInitial.balanceTokenSender)
+        new BigNumber(chans.thread.balanceTokenSender)
           .minus(new BigNumber(8))
           .toFixed(),
-        new BigNumber(threadStateInitial.balanceTokenReceiver)
+        new BigNumber(chans.thread.balanceTokenReceiver)
           .plus(new BigNumber(8))
           .toFixed(),
       ],
@@ -114,12 +53,26 @@ describe.skip('ThreadsDao', () => {
 
     await threadsDao.applyThreadUpdate(threadStateUpdate)
 
-    thread = await threadsDao.getThread(sender, receiver)
-    assertThreadStateEqual(convertThreadState('str', thread.state), {
-      balanceWeiSender: threadStateUpdate.balanceWeiSender,
-      balanceWeiReceiver: threadStateUpdate.balanceWeiReceiver,
-      balanceTokenSender: threadStateUpdate.balanceTokenSender,
-      balanceTokenReceiver: threadStateUpdate.balanceTokenReceiver,
+    thread = await threadsDao.getActiveThread(chans.user.user, chans.performer.user)
+    assertThreadStateEqual(convertThreadState('str', thread.state), threadStateUpdate)
+  })
+
+  it('getLastThreadUpdateId should return 0 if no thread exists', async () => {
+    const id = await threadsDao.getLastThreadUpdateId(mkAddress('0xabcdabcd'))
+    assert.equal(id, 0)
+  })
+
+  it('getLastThreadUpdateId should return correct update id', async () => {
+    const thread = await channelAndThreadFactory(registry, mkAddress('0xe'), mkAddress('0xf'))
+
+    const threadStateUpdate = getThreadState('signed', {
+      ...thread.thread,
+      txCount: thread.thread.txCount + 1,
     })
+
+    await threadsDao.applyThreadUpdate(threadStateUpdate)
+
+    const id = await threadsDao.getLastThreadUpdateId(mkAddress('0xe'))
+    assert.ok(id > 0)
   })
 })

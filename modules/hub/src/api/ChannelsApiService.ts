@@ -26,7 +26,8 @@ export default class ChannelsApiService extends ApiService<
     'GET /:user/sync': 'doSync', // params: lastChanTx=1&lastThreadUpdateId=2
     'GET /:user/debug': 'doGetChannelDebug',
     'GET /:user': 'doGetChannelByUser',
-    'GET /:user/latest-update': 'doGetLatestDoubleSignedState'
+    'GET /:user/latest-update': 'doGetLatestDoubleSignedState',
+    'GET /:user/latest-no-pending': 'doGetLastStateNoPendingOps',
   }
   handler = ChannelsApiServiceHandler
   dependencies = {
@@ -253,6 +254,26 @@ export class ChannelsApiServiceHandler {
     }
 
     res.send(channel)
+  }
+
+  async doGetLastStateNoPendingOps(req: express.Request, res: express.Response) {
+    const user = getUserFromRequest(req)
+    if (!user) {
+      LOG.warn(
+        'Receiver invalid get channel request. Aborting. Params received: {params}',
+        {
+          params: JSON.stringify(req.params),
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    const channel = await this.channelsService.getLastStateNoPendingOps(user)
+    if (!channel) {
+      return res.sendStatus(404)
+    }
+
+    res.send(channel.state)
   }
 
   async doGetLatestDoubleSignedState(req: express.Request, res: express.Response) {

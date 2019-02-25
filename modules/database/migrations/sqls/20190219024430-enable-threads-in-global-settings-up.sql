@@ -1,0 +1,1 @@
+update global_settings set threads_enabled = TRUE;
