@@ -57,7 +57,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       )
       VALUES (
         ${purchaseId}, ${payment.recipient},
-        ${payment.type == 'PT_CHANNEL' || 'PT_LINK' ? updateId : null},
+        ${payment.type == 'PT_CHANNEL' || payment.type == 'PT_LINK' ? updateId : null},
         ${payment.type == 'PT_THREAD' ? updateId : null},
         ${payment.amount.amountWei}, ${payment.amount.amountToken},
         ${payment.secret},
