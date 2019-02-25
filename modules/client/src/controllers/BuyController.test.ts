@@ -1,6 +1,6 @@
 import { MockConnextInternal, MockStore } from '../testing/mocks'
 import { assert, mkHash } from '../testing/index'
-import { PaymentArgs, } from '@src/types'
+import { PaymentArgs, } from '../types'
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
