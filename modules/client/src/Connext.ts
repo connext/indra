@@ -900,6 +900,12 @@ export class ConnextInternal extends ConnextClient {
       this.opts.tokenName,
     )
 
+    //const hubConfig = await this.hub.config()
+    //console.log(`Received config from hub: ${JSON.stringify(hubConfig,null,2)}`)
+
+    opts.hubAddress = opts.hubAddress || ''//hubConfig.hubAddress
+    opts.contractAddress = opts.contractAddress || ''//hubConfig.contractAddress
+
     this.validator = new Validator(opts.web3, opts.hubAddress)
     this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
 
@@ -1182,7 +1188,7 @@ export class ConnextInternal extends ConnextClient {
     const state = new ConnextState()
     state.persistent.channel = {
       ...state.persistent.channel,
-      contractAddress: this.opts.contractAddress,
+      contractAddress: this.opts.contractAddress || '', // TODO: how to handle this while undefined?
       user: this.opts.user,
       recipient: this.opts.user,
     }

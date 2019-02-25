@@ -33,7 +33,7 @@ docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
-install=npm install --prefer-offline --unsafe-perm > /dev/null
+install=npm install --prefer-offline --unsafe-perm
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
@@ -190,7 +190,7 @@ contract-node-modules: builder $(contracts)/package.json
 
 client: client-node-modules $(shell find $(client)/src)
 	$(log_start)
-	$(docker_run_in_client) "npm build"
+	$(docker_run_in_client) "npm run build"
 	$(log_finish) && touch build/$@
 
 client-node-modules: builder $(client)/package.json
