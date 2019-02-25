@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import * as actions from './state/actions'
 import { PurchaseRequest } from './types'
@@ -98,7 +98,7 @@ export interface IHubAPIClient {
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
   config(): Promise<HubConfig>
-  redeem(secret: string): Promise<Sync>
+  redeem(secret: string): Promise<PurchasePaymentHubResponse>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -298,7 +298,7 @@ class HubAPIClient implements IHubAPIClient {
     return data
   }
 
-  async redeem(secret: string): Promise<Sync> {
+  async redeem(secret: string): Promise<PurchasePaymentHubResponse> {
     const response = await this.networking.post(
       `payments/redeem/${this.user}`,
       { secret },
@@ -858,8 +858,8 @@ export abstract class ConnextClient extends EventEmitter {
     await this.internal.collateralController.requestCollateral()
   }
 
-  async redeem(secret: string): Promise<void> {
-    await this.internal.redeemController.redeem(secret)
+  async redeem(secret: string): Promise<{ purchaseId: string }> {
+    return await this.internal.redeemController.redeem(secret)
   }
 }
 
