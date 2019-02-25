@@ -119,7 +119,7 @@ describe('PaymentMetaDao', () => {
 
     assert.containSubset(res, {
       amount: { amountToken: tokenVal(2), amountWei: '0'},
-      secret: "secret-string",
+      secret: "secretss",
       recipient: emptyAddress,
       'meta': {
         'foo': 42,
@@ -127,7 +127,7 @@ describe('PaymentMetaDao', () => {
     })
   })
 
-  it('redeemLinkedPayment should properly add the recipient to the udpate', async () => {
+  it('redeemLinkedPayment should properly add the recipient to the update', async () => {
     const chan = await channelUpdateFactory(registry)
 
     // save a string with empty payment for this update
@@ -138,20 +138,20 @@ describe('PaymentMetaDao', () => {
         amountWei: '0',
       },
       recipient: emptyAddress,
-      secret: "secreter-string",
+      secret: "asdkjf",
       meta: {
         foo: 42,
       },
     })
 
-    const redeemer = "0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e"
+    const redeemer = "0xd01c08c7180eae392265d8c7df311cf5a93f1b73"
 
-    const unredeemed = await paymentMetDao.getLinkedPayment("secreter-string")
+    const unredeemed = await paymentMetDao.getLinkedPayment("asdkjf")
 
-    const row = await paymentMetDao.redeemLinkedPayment("secreter-string", "0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e")
+    const row = await paymentMetDao.redeemLinkedPayment(redeemer, "asdkjf")
 
     assert.containSubset(row, { ...unredeemed, 
-      recipient: redeemer.toLowerCase()
+      recipient: redeemer
     })
   })
 })
