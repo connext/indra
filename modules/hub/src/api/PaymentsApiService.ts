@@ -165,7 +165,7 @@ export class PaymentsApiServiceHandler {
     )
 
     res.send({
-      purchaseId: result.res.paymentRow.purchaseId,
+      purchaseId: result.res.purchaseId,
       sync: updates,
     })
   }
