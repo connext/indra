@@ -8,7 +8,12 @@ ALTER TABLE _payments DROP CONSTRAINT _payments_check;
 --  ((((channel_update_id IS NULL) AND (thread_update_id IS NOT NULL)) OR ((channel_update_id IS NOT NULL) AND (thread_update_id IS NULL))))
 
 ALTER TABLE _payments
-  ADD CONSTRAINT _payments_check CHECK ((((channel_update_id IS NULL) AND (thread_update_id IS NOT NULL)) OR ((channel_update_id IS NOT NULL) AND (thread_update_id IS NULL)) OR ((channel_update_id IS NULL) AND (thread_update_id IS NULL) AND (secret IS NOT NULL))));
+  ADD CONSTRAINT _payments_check CHECK ((
+    ((channel_update_id IS NULL) AND (thread_update_id IS NOT NULL)) OR 
+    ((channel_update_id IS NOT NULL) AND (thread_update_id IS NULL)) 
+    OR 
+    ((channel_update_id IS NULL) AND (thread_update_id IS NULL) AND (secret IS NOT NULL))
+  ));
 
 CREATE OR REPLACE VIEW payments AS
 SELECT
