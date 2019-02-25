@@ -1,8 +1,6 @@
-import { PurchaseRequest, PurchasePayment, PaymentArgs, SyncResult, convertThreadState, convertPayment, ChannelState, ThreadHistoryItem } from '../types'
+import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
-import { getActiveThreads } from '../lib/getActiveThreads';
-import { toBN } from '../helpers/bn';
 import { assertUnreachable } from '@src/lib/utils';
 import { emptyAddress } from '@src/Utils';
 
@@ -100,7 +98,7 @@ export default class BuyController extends AbstractController {
           // 2. User is the redeemer, in which case the response
           //    should be handled via the 'RedeemController', 
           //    where the user posts to a separate endpoint (not buy)
-          
+
           // check that a secret exists
           if (!payment.secret) {
             throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
