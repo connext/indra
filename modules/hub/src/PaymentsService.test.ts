@@ -387,6 +387,8 @@ describe('PaymentsService', () => {
     })
     assert.isOk(custodialUpdateSender.sigHub)
 
+    await service.doRedeem(receiver, 'secret')
+
     const {updates: receiverUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
     const custodialUpdateReceiver = receiverUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(custodialUpdateReceiver, {
