@@ -195,7 +195,6 @@ class App extends Component {
 
   async setTokenContract() {
     try {
-      console.log(`Setting up token..`)
       let { web3, connext, tokenContract } = this.state;
       const tokenAddress = connext.opts.tokenAddress
       tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
