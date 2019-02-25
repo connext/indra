@@ -104,8 +104,8 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       SELECT * from payments
       WHERE
         "secret" = ${secret}
-        AND recipient = ${user}
-      ORDER BY created_on DESC
+        AND "recipient" = ${user.toLowerCase()}
+      ORDER BY created_on DESC;
     `)
 
     return this.rowToPaymentSummary(updated)
