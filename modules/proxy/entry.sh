@@ -3,14 +3,53 @@
 # Set default email & domain name
 email=$EMAIL; [[ -n "$email" ]] || email=noreply@example.com
 domain=$DOMAINNAME; [[ -n "$domain" ]] || domain=localhost
-echo "domain=$domain email=$email"
+echo "domain=$domain email=$email mode=$MODE"
 
+# Provide a message indicating that we're still waiting for everything to wake up
+function loading_msg {
+  while true # unix.stackexchange.com/a/37762
+  do echo 'Waiting for the rest of the app to wake up..' | nc -lk -p 80
+  done > /dev/null
+}
+loading_msg &
+loading_pid="$!"
+
+########################################
 # Wait for downstream services to wake up
-ethprovider="${ETH_RPC_URL#*://}"
-echo "waiting for wallet:3000 & hub:8080 & $ethprovider"
-[[ "$MODE" == "dev" ]] && bash wait_for.sh -t 60 wallet:3000 2> /dev/null
-bash wait_for.sh -t 60 hub:8080 2> /dev/null
-bash wait_for.sh -t 60 $ethprovider 2> /dev/null
+# Define service hostnames & ports we depend on
+hub=hub:8080
+eth="${ETH_RPC_URL#*://}"
+wallet=wallet:3000
+
+echo "Waiting for $eth to wake up..." && bash wait_for.sh -t 60 $eth 2> /dev/null
+echo "Waiting for $hub to wake up..." && bash wait_for.sh -t 60 $hub 2> /dev/null
+# Do a more thorough check to ensure the hub is online
+while true
+do
+  if curl -s http://$hub/config > /dev/null
+  then break
+  else sleep 2
+  fi
+done
+
+if [[ "$MODE" == "dev" ]]
+then
+  echo "waiting for $wallet..." && bash wait_for.sh -t 60 $wallet 2> /dev/null
+  # Do a more thorough check to ensure the wallet is online
+  while true
+  do
+    if curl -s http://$wallet > /dev/null
+    then break
+    else sleep 2
+    fi
+  done
+fi
+
+# Kill the loading message server
+kill "$loading_pid" && pkill nc
+
+########################################
+# Setup SSL Certs
 
 letsencrypt=/etc/letsencrypt/live
 devcerts=$letsencrypt/localhost
@@ -60,5 +99,6 @@ then
 fi
 
 sleep 3 # give renewcerts a sec to do it's first check
+
 echo "Entrypoint finished, executing nginx..."; echo
 exec nginx

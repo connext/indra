@@ -1,6 +1,6 @@
 FROM alpine:3.8
 
-RUN apk add --update --no-cache bash certbot iputils nginx openssl && \
+RUN apk add --update --no-cache bash certbot curl iputils nginx openssl && \
     openssl dhparam -out /etc/ssl/dhparam.pem 2048 && \
     ln -fs /dev/stdout /var/log/nginx/access.log && \
     ln -fs /dev/stdout /var/log/nginx/error.log
