@@ -41,15 +41,12 @@ if (process.env.NODE_ENV === "production"){
   tokenAbi = humanTokenAbi
 }
 
-
 console.log(`starting app in env: ${JSON.stringify(process.env, null, 1)}`);
 const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase();
 //const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL.toLowerCase()
 const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS.toLowerCase();
 const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS.toLowerCase();
 const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLowerCase();
-
-console.log(`Using token ${tokenAddress} with abi: ${tokenAbi}`)
 
 const HASH_PREAMBLE = "SpankWallet authentication message:";
 const DEPOSIT_MINIMUM_WEI = eth.utils.parseEther("0.04"); // 40FIN
@@ -755,7 +752,7 @@ class App extends Component {
             </div>
           </div>
           <div className="row">
-            <div className="column">Made with 💛 by the Connext Team</div>
+            <div className="column">Made with <span role="img" aria-labelledby="love">💛</span> by the Connext Team</div>
           </div>
         </div>
       </div>

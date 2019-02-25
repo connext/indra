@@ -3,7 +3,7 @@ import Card from "@material-ui/core/Card";
 import Button from "@material-ui/core/Button";
 import SendIcon from "@material-ui/icons/Send";
 import TextField from "@material-ui/core/TextField";
-import Switch from "@material-ui/core/Switch";
+//import Switch from "@material-ui/core/Switch";
 
 class PayCard extends Component {
   state = {

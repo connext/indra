@@ -4,10 +4,10 @@ import Button from "@material-ui/core/Button";
 import ArchiveIcon from "@material-ui/icons/Archive";
 import TextField from "@material-ui/core/TextField";
 import Switch from "@material-ui/core/Switch";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
-import Typography from "@material-ui/core/Typography";
+//import HelpIcon from "@material-ui/icons/Help";
+//import IconButton from "@material-ui/core/IconButton";
+//import Popover from "@material-ui/core/Popover";
+//import Typography from "@material-ui/core/Typography";
 import { store } from "../App.js";
 const Web3 = require("web3");
 const eth = require("ethers");
@@ -77,7 +77,7 @@ class DepositCard extends Component {
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
     try {
-      const { usingMetamask, connext, metamask, connextState } = this.props
+      const { usingMetamask, connext/*, metamask*/, connextState } = this.props
       if (!connextState || !connextState.runtime.canDeposit) {
         console.warn('Cannot deposit into channel')
         return
@@ -238,9 +238,9 @@ class DepositCard extends Component {
   }
 
   render() {
-    const { anchorEl } = this.state;
+    //const { anchorEl } = this.state;
     const { connextState } = this.props
-    const open = Boolean(anchorEl);
+    //const open = Boolean(anchorEl);
     const cardStyle = {
       card: {
         display: "flex",
