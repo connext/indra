@@ -1036,9 +1036,16 @@ export class ConnextInternal extends ConnextClient {
     await super.stop()
   }
 
-
   dispatch(action: Action): void {
     this.store.dispatch(action)
+  }
+
+  async sign(hash, user) {
+    return await (
+      process.env.DEV || user === hubAddress
+        ? this.opts.web3.eth.sign(hash, user)
+        : (this.opts.web3.eth.personal.sign as any)(hash, user)
+    )
   }
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
@@ -1056,11 +1063,7 @@ export class ConnextInternal extends ConnextClient {
     const hash = this.utils.createChannelStateHash(state)
 
     const { user, hubAddress } = this.opts
-    const sig = await (
-      process.env.DEV || user === hubAddress
-        ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, user)
-    )
+    const sig = await this.sign(hash, user)
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, true)
@@ -1081,11 +1084,7 @@ export class ConnextInternal extends ConnextClient {
 
     const hash = this.utils.createThreadStateHash(state)
 
-    const sig = await (
-      process.env.DEV
-        ? this.opts.web3.eth.sign(hash, this.opts.user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
-    )
+    const sig = await this.sign(hash, this.opts.user)
 
     console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
     return addSigToThreadState(state, sig)
@@ -1093,11 +1092,7 @@ export class ConnextInternal extends ConnextClient {
 
   public async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>, ): Promise<SignedDepositRequestProposal> {
     const hash = this.utils.createDepositRequestProposalHash(args)
-    const sig = await (
-      process.env.DEV
-        ? this.opts.web3.eth.sign(hash, this.opts.user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
-    )
+    const sig = await this.sign(hash, this.opts.user)
 
     console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
