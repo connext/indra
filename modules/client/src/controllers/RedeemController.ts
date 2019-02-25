@@ -7,6 +7,7 @@ export class RedeemController extends AbstractController {
     if (!Web3.utils.isHex(secret)) {
       throw new Error(`The secret provided is not a hex string. Was it generated using the 'generateSecret' method of connext? Secret: ${secret}`)
     }
+
     try {
       const res = await this.hub.redeem(secret)
       this.connext.syncController.handleHubSync(res.sync)
@@ -14,5 +15,6 @@ export class RedeemController extends AbstractController {
     } catch (e) {
       throw new Error(`Error redeeming payment with secret: ${secret}` + e.message)
     }
+    
   }
 }
