@@ -857,6 +857,10 @@ export abstract class ConnextClient extends EventEmitter {
   async requestCollateral(): Promise<void> {
     await this.internal.collateralController.requestCollateral()
   }
+
+  async redeem(secret: string): Promise<void> {
+    await this.internal.redeemController.redeem(secret)
+  }
 }
 
 /**
