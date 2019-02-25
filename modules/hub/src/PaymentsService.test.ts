@@ -401,8 +401,63 @@ describe('PaymentsService', () => {
     assert.isOk(custodialUpdateSender.sigHub)
   })
 
-  it('should redeem a linked payment by deposit into redeemers channel from hub reserves if redeemer not collateralized (or channel does not exist)', async () => {
-    
+  it('should redeem a linked payment by deposit into redeemers channel from hub reserves if redeemer not collateralized or channel does not exist', async () => {
+    const sender = mkAddress('0xa')
+    const receiver = mkAddress('0xb')
+
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: sender,
+      balanceTokenUser: tokenVal(5),
+    })
+
+    const paymentArgs: PaymentArgs = {
+      amountWei: '0',
+      amountToken: tokenVal(1),
+      recipient: 'hub'
+    }
+    const payments: PurchasePayment[] = [
+      {
+        recipient: emptyAddress,
+        amount: {
+          amountWei: '0',
+          amountToken: tokenVal(1),
+        },
+        meta: {},
+        secret: 'secret',
+        type: 'PT_LINK',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 1,
+          args: paymentArgs,
+        },
+      }
+    ]
+
+    // add linked payment to db
+    // TODO: probably a cleaner way to add this to the db
+    // should check with rahul
+    await service.doPurchase(sender, {}, payments)
+
+    const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
+    const custodialUpdateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
+    assert.containSubset(custodialUpdateSender, {
+      reason: 'Payment',
+      args: paymentArgs,
+    })
+    assert.isOk(custodialUpdateSender.sigHub)
+
+    await service.doRedeem(receiver, 'secret')
+
+    const {updates: receiverUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
+    const custodialUpdateReceiver = receiverUpdates[receiverUpdates.length - 1].update as UpdateRequest
+    assert.containSubset(custodialUpdateReceiver, {
+      reason: 'ProposePendingDeposit',
+      args: {
+        depositTokenUser: tokenVal(1),
+      },
+    })
+    assert.isOk(custodialUpdateSender.sigHub)
   })
 
 })
