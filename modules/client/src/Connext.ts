@@ -97,17 +97,16 @@ export interface IHubAPIClient {
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
   config(): Promise<HubConfig>
+  redeem(secret: string): Promise<Sync>
 }
 
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
-  // private tokenName?: string
 
   constructor(user: Address, networking: Networking, tokenName?: string) {
     this.user = user
     this.networking = networking
-    // this.tokenName = tokenName
   }
 
   async config(): Promise<HubConfig> {
@@ -296,6 +295,14 @@ class HubAPIClient implements IHubAPIClient {
   ): Promise<PurchasePaymentHubResponse> {
     const { data } = await this.networking.post('payments/purchase', { meta, payments })
     return data
+  }
+
+  async redeem(secret: string): Promise<Sync> {
+    const response = await this.networking.post(
+      `payments/redeem/${this.user}`,
+      { secret },
+    )
+    return response.data
   }
 
   // post to hub telling user wants to deposit
@@ -1027,6 +1034,12 @@ export class ConnextInternal extends ConnextClient {
     this.store.dispatch(action)
   }
 
+  generateSecret(): string {
+    return Web3.utils.soliditySha3({
+      type: 'bytes32', value: Web3.utils.randomHex(32)
+    })
+  }
+  
   async sign(hash: string, user: string) {
     return await (
       this.opts.web3.eth.personal
