@@ -189,6 +189,30 @@ export class MockHub implements IHubAPIClient {
     return {} as any
   }
 
+  async redeem(secret: string): Promise<PurchasePaymentHubResponse> {
+    // NOTE: by default assumes this is redeemers first payment
+    // if this is not what you are testing against, must use
+    // the patch functions in test
+    return {
+      purchaseId: 'async-payment-bb',
+      sync: { status: "CS_OPEN", 
+      updates: [{
+        type: 'channel',
+        update: {
+          reason: 'ProposePendingDeposit',
+          createdOn: new Date(),
+          args: getDepositArgs('full', {
+            depositToken: [0, 1],
+            depositWei: [0, 0],
+          }),
+          sigHub: mkHash('0x51512'),
+          sigUser: '',
+          txCount: 1,
+        },
+      }]}
+    }
+  }
+
   async getChannel(): Promise<ChannelRow> {
     return { id: 0, state: getChannelState('full'), status: 'CS_OPEN' }
   }
