@@ -119,7 +119,7 @@ describe('PaymentMetaDao', () => {
 
     assert.containSubset(res, {
       amount: { amountToken: tokenVal(2), amountWei: '0'},
-      secret: "secretss",
+      secret: "secret-string",
       recipient: emptyAddress,
       'meta': {
         'foo': 42,
