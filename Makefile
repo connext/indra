@@ -43,7 +43,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database hub wallet proxy
+dev: database hub wallet proxy client
 prod: database-prod hub-prod proxy-prod
 
 stop: 
@@ -196,7 +196,7 @@ client: client-node-modules $(shell find $(client)/src)
 client-node-modules: builder $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "$(install)"
-	$(log_finish) && touch build/$@
+	$(log_finish) && touch build/$@ && touch build/client
 
 # Database
 

@@ -793,6 +793,7 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
     )
   }
   const hubOpts = hubConfigToClientOpts(await hub.config())
+  console.log(`Retrieved options from the hub: ${JSON.stringify(hubOpts,null,2)}`)
   let merged = {}
   for (let k in opts) {
     if ((opts as any)[k]) {
@@ -800,6 +801,7 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
     }
     (merged as any)[k] = (hubOpts as any)[k]
   }
+  console.log(`Initializing connext client with opts: ${JSON.stringify(merged,null,2)}`)
   
   return new ConnextInternal(({ ...merged, hub }) as any)
 }
@@ -1040,11 +1042,11 @@ export class ConnextInternal extends ConnextClient {
     this.store.dispatch(action)
   }
 
-  async sign(hash, user) {
+  async sign(hash: string, user: string) {
     return await (
-      process.env.DEV || user === hubAddress
-        ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, user)
+      this.opts.web3.eth.personal
+        ? (this.opts.web3.eth.personal.sign as any)(hash, user)
+        : this.opts.web3.eth.sign(hash, user)
     )
   }
 
