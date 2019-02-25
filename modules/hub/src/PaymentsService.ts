@@ -156,7 +156,17 @@ export default class PaymentsService {
     }
   }
 
-  public async doRedeem(user: string, secret: string): Promise<MaybeResult<{ paymentRow: PurchasePaymentRow }>> {
+  // TODO: Need to check with Rahul about whether or not the public
+  // wrapper is needed and how to handle a meta object here (same as 
+  // above?)
+  public async doRedeem(
+    user: string,
+    secret: string,
+  ): Promise<MaybeResult<{ purchaseId: string }>> {
+    return this.db.withTransaction(() => this._doRedeem(user, secret))
+  }
+
+  private async _doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: string }>> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
     // channel checks
     if (channel.status !== 'CS_OPEN') {
@@ -209,7 +219,7 @@ export default class PaymentsService {
 
     return {
       error: false,
-      res: { paymentRow: redeemedPaymentRow }
+      res: { purchaseId: redeemedPaymentRow.purchaseId }
     }
   }
 
