@@ -1,5 +1,6 @@
 import uuid = require('uuid')
 import log from './util/log'
+import Web3 from 'web3'
 
 const util = require('ethereumjs-util')
 
@@ -18,7 +19,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
 
   private static HASH_PREAMBLE = 'SpankWallet authentication message:'
 
-  private web3: any
+  private web3: Web3
 
   private nonces: { [s: string]: number } = {}
 
@@ -40,7 +41,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
       return null
     }
 
-    const hash = this.sha3(`${MemoryCRAuthManager.HASH_PREAMBLE}${this.sha3(nonce)}${this.sha3(origin)}`)
+    const hash = this.sha3(`${MemoryCRAuthManager.HASH_PREAMBLE} ${this.sha3(nonce)} ${this.sha3(origin)}`)
     const sigAddr = this.extractAddress(hash, signature)
 
     if (!sigAddr || sigAddr !== address) {
@@ -59,31 +60,37 @@ export class MemoryCRAuthManager implements CRAuthManager {
   }
 
   private extractAddress (hash: string, signature: string): string | null {
-    const hashBuf = new Buffer(hash.split('x')[1], 'hex')
     console.log("Hash sent to extract", hash)
-    let pub
+    let addr
 
     try {
-      const sig = util.fromRpcSig(signature)
-      const prefix = new Buffer(MemoryCRAuthManager.ETH_PREAMBLE)
-      const authHash = Buffer.concat([prefix, new Buffer(String(hashBuf.length)), hashBuf])
-      const authHashHex = authHash.toString('hex')
-
-      const msg = new util.sha3(
-        authHashHex
+      let fingerprint = util.toBuffer(String(hash))
+      const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
+      const prefixedMsg = util.keccak256(
+        Buffer.concat([
+          prefix,
+          util.toBuffer(String(fingerprint.length)),
+          fingerprint,
+        ]),
       )
-
-      pub = util.ecrecover(msg, sig.v, sig.r, sig.s)
+      const res = util.fromRpcSig(signature)
+      const pubKey = util.ecrecover(
+        util.toBuffer(prefixedMsg),
+        res.v,
+        res.r,
+        res.s,
+      )
+      const addrBuf = util.pubToAddress(pubKey)
+      addr = util.bufferToHex(addrBuf)
     } catch (e) {
       LOG.warn('Caught error trying to recover public key:', e)
       return null
     }
 
-    return '0x' + util.publicToAddress(pub).toString('hex')
+    return addr
   }
 
   private sha3 (data: string): string {
     return this.web3.utils.sha3(data)
   }
 }
-// {"depositWei":"100000","depositToken":"0","sigUser":"0xd05d4d88bd90dd17ad2e2373871009f8012ce4a31d49f90973ff7af020ac088f069fc4c06018e9bd4c8d815290bb066919f36783070539ff3595c8228945a0741b","lastChanTx":6,"lastThreadUpdateId":0}
