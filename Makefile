@@ -136,15 +136,14 @@ wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/$@
 
-wallet: $(wallet)/package.json
+wallet: builder $(wallet)/package.json
 	$(log_start)
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
-	# Don't dynamically link the local client until it's more stable, use the one from npm for now
-	#$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	#$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
-	#$(docker_run_in_wallet) "cd ../client && $(install)"
-	#@touch build/client && touch build/client-node-modules
+	$(docker_run_in_wallet) "rm -rf node_modules/connext"
+	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_wallet) "cd ../client && $(install)"
+	@touch build/client && touch build/client-node-modules
 	$(log_finish) && touch build/$@
 
 # Hub
