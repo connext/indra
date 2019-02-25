@@ -2,18 +2,6 @@
 ALTER TABLE _payments
   ADD COLUMN secret text NULL;
 ALTER TABLE _payments ADD CONSTRAINT _unique_secret UNIQUE (secret);
-ALTER TABLE _payments DROP CONSTRAINT _payments_check;
-
--- ALTER TABLE _payments ADD CONSTRAINT _payments_check
---  ((((channel_update_id IS NULL) AND (thread_update_id IS NOT NULL)) OR ((channel_update_id IS NOT NULL) AND (thread_update_id IS NULL))))
-
-ALTER TABLE _payments
-  ADD CONSTRAINT _payments_check CHECK ((
-    ((channel_update_id IS NULL) AND (thread_update_id IS NOT NULL)) OR 
-    ((channel_update_id IS NOT NULL) AND (thread_update_id IS NULL)) 
-    OR 
-    ((channel_update_id IS NULL) AND (thread_update_id IS NULL) AND (secret IS NOT NULL))
-  ));
 
 CREATE OR REPLACE VIEW payments AS
 SELECT
@@ -34,7 +22,7 @@ SELECT
   p.secret
 FROM (
   _payments p
-  LEFT JOIN cm_channel_updates up ON ((up.id = p.channel_update_id)))
+  JOIN cm_channel_updates up ON ((up.id = p.channel_update_id)))
 UNION ALL
 SELECT
   p.id,
