@@ -133,19 +133,19 @@ class WithdrawCard extends Component {
     }
     // check that the balance is above the minimum
     if ( // withdrawaing only wei
-      withdrawalVal.withdrawalWeiUser != "0" && 
-      withdrawalVal.tokensToSell == "0" && 
+      withdrawalVal.withdrawalWeiUser !== "0" &&
+      withdrawalVal.tokensToSell === "0" &&
       web3.utils.toBN(withdrawalVal.withdrawalWeiUser).lt(web3.utils.toBN(minWithdrawal))
     ) {
       this.setState({ balanceError: `Below minimum withdrawal amount of ${minWithdrawal} wei`})
     } else if ( // only withdrawaing tokens
-      withdrawalVal.tokensToSell != "0" && 
-      withdrawalVal.withdrawalWeiUser == "0" &&
+      withdrawalVal.tokensToSell !== "0" &&
+      withdrawalVal.withdrawalWeiUser === "0" &&
       web3.utils.toBN(withdrawalVal.tokensToSell).lt(web3.utils.toBN(minWithdrawal))
     ) {
       this.setState({ balanceError: `Below minimum withdrawal amount of ${minWithdrawal} tokens`})
     } else if ( // max is selected, check both wei and tokens
-      this.state.clickedMax && 
+      this.state.clickedMax &&
       (
         web3.utils.toBN(withdrawalVal.tokensToSell).lt(web3.utils.toBN(minWithdrawal)) &&
         web3.utils.toBN(withdrawalVal.withdrawalWeiUser).lt(web3.utils.toBN(minWithdrawal))
@@ -153,8 +153,8 @@ class WithdrawCard extends Component {
     ) {
       this.setState({ balanceError: `Below minimum withdrawal amount at maximum withdrawal. `})
     } else if ( // check zero balances
-      withdrawalVal.withdrawalWeiUser == '0' && 
-      withdrawalVal.tokensToSell == "0"
+      withdrawalVal.withdrawalWeiUser === '0' &&
+      withdrawalVal.tokensToSell === "0"
     ) {
       this.setState({ balanceError: `Enter a withdrawal amount above 0`})
     }
@@ -233,7 +233,7 @@ class WithdrawCard extends Component {
           margin="normal"
           variant="outlined"
           helperText={this.state.addressError}
-          error={this.state.addressError != null}
+          error={this.state.addressError !== null}
         />
         <TextField
           style={cardStyle.input}
@@ -246,23 +246,27 @@ class WithdrawCard extends Component {
           margin="normal"
           variant="outlined"
           helperText={this.state.balanceError}
-          error={this.state.balanceError != null}
+          error={this.state.balanceError !== null}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
                 <Tooltip disableFocusListener disableTouchListener title="Withdraw all funds (ETH and TST) from channel">
-                  <Button variant="outlined" onClick={() => this.maxHandler()} disabled={!connextState || !connextState.runtime.canWithdraw}>
-                    Max
-                  </Button>
+                  <div>
+                    <Button variant="outlined" onClick={() => this.maxHandler()} disabled={!connextState || !connextState.runtime.canWithdraw}>
+                      Max
+                    </Button>
+                  </div>
                 </Tooltip>
               </InputAdornment>
             )
           }}
         />
         <Tooltip disableFocusListener disableTouchListener title="TST will be converted to ETH on Withdraw">
-          <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained" disabled={!connextState || !connextState.runtime.canWithdraw}>
-            <span>Withdraw</span>
-          </Button>
+          <div>
+            <Button style={cardStyle.button} onClick={() => this.withdrawalHandler(true)} variant="contained" disabled={!connextState || !connextState.runtime.canWithdraw}>
+              <span>Withdraw</span>
+            </Button>
+          </div>
         </Tooltip>
       </Card>
     );

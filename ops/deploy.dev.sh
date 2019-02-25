@@ -12,7 +12,7 @@ set -e
 # set any of these to "yes" to turn on watchers
 watch_hub="no"
 watch_chainsaw="no"
-watch_wallet="no"
+watch_wallet="yes"
 
 project=connext
 number_of_services=7
@@ -27,12 +27,14 @@ ETH_RPC_URL="http://ethprovider:8545"
 ETH_NETWORK="ganache"
 ETH_NETWORK_ID="4447"
 ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 
 addressBook="modules/contracts/ops/address-book.json"
 
 HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
 CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
 TOKEN_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].approvedToken`"
+PRIVATE_KEY_FILE="/run/secrets/private_key_dev"
 
 # database settings
 REDIS_URL="redis://redis:6379"
@@ -76,6 +78,7 @@ function new_secret {
 }
 
 new_secret connext_database_dev
+new_secret private_key_dev "$private_key"
 
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
 then
@@ -93,6 +96,8 @@ networks:
 
 secrets:
   connext_database_dev:
+    external: true
+  private_key_dev:
     external: true
 
 volumes:
@@ -121,11 +126,7 @@ services:
     networks:
       - $project
     environment:
-      NODE_ENV: $MODE
-      SERVICE_USER_KEY: $SERVICE_USER_KEY
-      ETH_MNEMONIC: $ETH_MNEMONIC
-      ETHPROVIDER_URL: "http://localhost:8545"
-      HUB_URL: "http://localhost/hub"
+      NODE_ENV: development
     ports:
       - "3000:3000"
     volumes:
@@ -143,8 +144,10 @@ services:
       - "8080:8080"
     secrets:
       - connext_database_dev
+      - private_key_dev
     environment:
       NODE_ENV: $MODE
+      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
       ETH_MNEMONIC: $ETH_MNEMONIC
       ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_RPC_URL: $ETH_RPC_URL
@@ -170,8 +173,10 @@ services:
       - $project
     secrets:
       - connext_database_dev
+      - private_key_dev
     environment:
       NODE_ENV: $MODE
+      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
       ETH_MNEMONIC: $ETH_MNEMONIC
       ETH_NETWORK_ID: $ETH_NETWORK_ID
       ETH_RPC_URL: $ETH_RPC_URL

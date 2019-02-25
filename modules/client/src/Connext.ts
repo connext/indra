@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
@@ -65,8 +65,9 @@ export interface ContractOptions {
 export interface ConnextOptions {
   web3: Web3
   hubUrl: string
-  contractAddress: string
-  hubAddress: Address
+  ethNetworkId?: string
+  contractAddress?: string
+  hubAddress?: Address
   hub?: IHubAPIClient
   tokenAddress?: Address
   tokenName?: string
@@ -98,17 +99,23 @@ export interface IHubAPIClient {
   updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
+  config(): Promise<HubConfig>
 }
 
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
-  private tokenName?: string
+  // private tokenName?: string
 
   constructor(user: Address, networking: Networking, tokenName?: string) {
     this.user = user
     this.networking = networking
-    this.tokenName = tokenName
+    // this.tokenName = tokenName
+  }
+
+  async config(): Promise<HubConfig> {
+    const res = await this.networking.get(`config`)
+    return res.data
   }
 
   async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
@@ -364,18 +371,6 @@ class HubAPIClient implements IHubAPIClient {
     )
     return response.data
   }
-}
-
-// connext constructor options
-// NOTE: could extend ContractOptions, doesnt for future readability
-export interface ConnextOptions {
-  web3: Web3
-  hubUrl: string
-  contractAddress: string
-  hubAddress: Address
-  hub?: IHubAPIClient
-  tokenAddress?: Address
-  tokenName?: string
 }
 
 export abstract class IWeb3TxWrapper {
@@ -745,11 +740,12 @@ export class ChannelManager implements IChannelManager {
 export interface ConnextClientOptions {
   web3: Web3
   hubUrl: string
-  contractAddress: string
-  hubAddress: Address
-  tokenAddress: Address
-  tokenName: string
   user: string
+  ethNetworkId?: string
+  contractAddress?: string
+  hubAddress?: Address
+  tokenAddress?: Address
+  tokenName?: string
   gasMultiple?: number
 
   // Clients should pass in these functions which the ConnextClient will use
@@ -766,12 +762,36 @@ export interface ConnextClientOptions {
   contract?: IChannelManager
 }
 
+function hubConfigToClientOpts(config: HubConfig) {
+  return {
+    contractAddress: config.channelManagerAddress,
+    hubAddress: config.hubWalletAddress,
+    tokenAddress: config.tokenAddress,
+    ethNetworkId: config.ethNetworkId,
+  }
+}
 
 /**
  * Used to get an instance of ConnextClient.
  */
-export function getConnextClient(opts: ConnextClientOptions): ConnextClient {
-  return new ConnextInternal(opts)
+export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
+  // create a new hub and pass into the client
+  let hub = opts.hub
+  if (!hub) {
+    hub = new HubAPIClient(
+      opts.user,
+      new Networking(opts.hubUrl),
+    )
+  }
+  const hubOpts = hubConfigToClientOpts(await hub.config())
+  let merged = { ...opts }
+  for (let k in hubOpts) {
+    if ((opts as any)[k]) {
+      continue
+    }
+    (merged as any)[k] = (hubOpts as any)[k]
+  }
+  return new ConnextInternal({ ...merged })
 }
 
 /**
@@ -870,6 +890,12 @@ export class ConnextInternal extends ConnextClient {
       this.opts.tokenName,
     )
 
+    //const hubConfig = await this.hub.config()
+    //console.log(`Received config from hub: ${JSON.stringify(hubConfig,null,2)}`)
+
+    opts.hubAddress = opts.hubAddress || ''//hubConfig.hubAddress
+    opts.contractAddress = opts.contractAddress || ''//hubConfig.contractAddress
+
     this.validator = new Validator(opts.web3, opts.hubAddress)
     this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
 
@@ -904,6 +930,20 @@ export class ConnextInternal extends ConnextClient {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
+  async syncConfig() {
+    const config = await this.hub.config()
+    const opts = this.opts
+    const adjusted = Object.keys(opts).map(k => {
+      if (k || Object.keys(opts).indexOf(k) == -1) {
+        // user supplied, igonore
+        return (opts as any)[k]
+      }
+
+      return (config as any)[k]
+    })
+    return adjusted
+  }
+
   async start() {
     this.store = await this.getStore()
     this.store.subscribe(async () => {
@@ -911,6 +951,9 @@ export class ConnextInternal extends ConnextClient {
       this.emit('onStateChange', state)
       await this._saveState(state)
     })
+
+    // before starting controllers, sync values
+    await this.syncConfig()
 
     // TODO: appropriately set the latest
     // valid state ??
@@ -983,9 +1026,16 @@ export class ConnextInternal extends ConnextClient {
     await super.stop()
   }
 
-
   dispatch(action: Action): void {
     this.store.dispatch(action)
+  }
+
+  async sign(hash: string, user: string) {
+    return await (
+      this.opts.web3.eth.personal
+        ? (this.opts.web3.eth.personal.sign as any)(hash, user)
+        : this.opts.web3.eth.sign(hash, user)
+    )
   }
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
@@ -1003,11 +1053,7 @@ export class ConnextInternal extends ConnextClient {
     const hash = this.utils.createChannelStateHash(state)
 
     const { user, hubAddress } = this.opts
-    const sig = await (
-      process.env.DEV || user === hubAddress
-        ? this.opts.web3.eth.sign(hash, user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, user)
-    )
+    const sig = await this.sign(hash, user)
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, true)
@@ -1028,11 +1074,7 @@ export class ConnextInternal extends ConnextClient {
 
     const hash = this.utils.createThreadStateHash(state)
 
-    const sig = await (
-      process.env.DEV
-        ? this.opts.web3.eth.sign(hash, this.opts.user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
-    )
+    const sig = await this.sign(hash, this.opts.user)
 
     console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
     return addSigToThreadState(state, sig)
@@ -1040,11 +1082,7 @@ export class ConnextInternal extends ConnextClient {
 
   public async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>, ): Promise<SignedDepositRequestProposal> {
     const hash = this.utils.createDepositRequestProposalHash(args)
-    const sig = await (
-      process.env.DEV
-        ? this.opts.web3.eth.sign(hash, this.opts.user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
-    )
+    const sig = await this.sign(hash, this.opts.user)
 
     console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
@@ -1135,7 +1173,7 @@ export class ConnextInternal extends ConnextClient {
     const state = new ConnextState()
     state.persistent.channel = {
       ...state.persistent.channel,
-      contractAddress: this.opts.contractAddress,
+      contractAddress: this.opts.contractAddress || '', // TODO: how to handle this while undefined?
       user: this.opts.user,
       recipient: this.opts.user,
     }

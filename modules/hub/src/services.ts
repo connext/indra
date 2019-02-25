@@ -66,6 +66,7 @@ import { default as ChannelManagerABI } from './abi/ChannelManager'
 import { CloseChannelService } from './CloseChannelService'
 import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDisputesDao';
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
+import ConfigApiService from './api/ConfigApiService';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -163,6 +164,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       ChannelsApiService,
       BrandingApiService,
       AuthApiService,
+      ConfigApiService,
       ExchangeRateApiService,
       ThreadsApiService,
       PaymentsApiService,

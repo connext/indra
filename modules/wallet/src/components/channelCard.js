@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 import Card from "@material-ui/core/Card";
-import HelpIcon from "@material-ui/icons/Help";
 import Typography from "@material-ui/core/Typography";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
+//import HelpIcon from "@material-ui/icons/Help";
+//import IconButton from "@material-ui/core/IconButton";
+//import Popover from "@material-ui/core/Popover";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import Tooltip from "@material-ui/core/Tooltip";
 
