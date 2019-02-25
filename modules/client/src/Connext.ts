@@ -65,6 +65,7 @@ export interface ContractOptions {
 export interface ConnextOptions {
   web3: Web3
   hubUrl: string
+  ethNetworkId?: string
   contractAddress?: string
   hubAddress?: Address
   hub?: IHubAPIClient
@@ -370,18 +371,6 @@ class HubAPIClient implements IHubAPIClient {
     )
     return response.data
   }
-}
-
-// connext constructor options
-// NOTE: could extend ContractOptions, doesnt for future readability
-export interface ConnextOptions {
-  web3: Web3
-  hubUrl: string
-  contractAddress?: string
-  hubAddress?: Address
-  hub?: IHubAPIClient
-  tokenAddress?: Address
-  // tokenName?: string
 }
 
 export abstract class IWeb3TxWrapper {
@@ -751,11 +740,12 @@ export class ChannelManager implements IChannelManager {
 export interface ConnextClientOptions {
   web3: Web3
   hubUrl: string
+  user: string
+  ethNetworkId?: string
   contractAddress?: string
   hubAddress?: Address
   tokenAddress?: Address
   tokenName?: string
-  user: string
   gasMultiple?: number
 
   // Clients should pass in these functions which the ConnextClient will use
@@ -773,10 +763,12 @@ export interface ConnextClientOptions {
 }
 
 function hubConfigToClientOpts(config: HubConfig) {
+  console.log(`HubConfig keys: ${Object.keys(config)}`)
   return {
     contractAddress: config.channelManagerAddress,
-    hubAddress: config.hubAddress,
+    hubAddress: config.hubWalletAddress,
     tokenAddress: config.tokenAddress,
+    ethNetworkId: config.ethNetworkId,
   }
 }
 
@@ -793,17 +785,15 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
     )
   }
   const hubOpts = hubConfigToClientOpts(await hub.config())
-  console.log(`Retrieved options from the hub: ${JSON.stringify(hubOpts,null,2)}`)
-  let merged = {}
-  for (let k in opts) {
+  console.log(`Got hub options: ${JSON.stringify(hubOpts,null,2)}`)
+  let merged = { ...opts }
+  for (let k in hubOpts) {
     if ((opts as any)[k]) {
       continue
     }
     (merged as any)[k] = (hubOpts as any)[k]
   }
-  console.log(`Initializing connext client with opts: ${JSON.stringify(merged,null,2)}`)
-  
-  return new ConnextInternal(({ ...merged, hub }) as any)
+  return new ConnextInternal({ ...merged })
 }
 
 /**

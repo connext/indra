@@ -5,6 +5,7 @@ import { toWeiBigNum } from './util/bigNumber';
 
 const ENV_VARS = [
   'ETH_RPC_URL',
+  'ETH_NETWORK_ID',
   'DATABASE_URL',
   'CHANNEL_MANAGER_ADDRESS',
   'AUTH_REALM',
@@ -65,6 +66,7 @@ export default class Config {
   public isStage = env == 'staging'
   public isDev = env == 'development'
   public ethRpcUrl: string = ''
+  public ethNetworkId: string = ''
   public databaseUrl: string = ''
   public redisUrl: string = ''
   public channelManagerAddress: string = ''

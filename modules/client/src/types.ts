@@ -23,9 +23,10 @@ export interface ContractOptions {
 // config that could be returned from hub
 export type HubConfig<T=string> = ContractOptions & {
   channelManagerAddress: Address,
-  hubAddress: Address,
-  tokenContractAddress: Address,
+  hubWalletAddress: Address,
+  tokenAddress: Address,
   ethRpcUrl: string,
+  ethNetworkId: string,
   beiMaxCollateralization: T
 }
 export type HubConfigBN = HubConfig<BN>

@@ -12,5 +12,5 @@ fi
 
 # Start wallet react app
 echo "Starting wallet dev server..."
-cd /root && echo "cwd=`pwd`"
+cd /root
 exec npm start
