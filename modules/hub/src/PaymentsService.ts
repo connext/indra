@@ -177,7 +177,7 @@ export default class PaymentsService {
     // is user has channel, do payment, otherwise collateralize
     const prev = convertChannelState('bn', channel.state)
     const amt = convertPayment('bn', payment.amount)
-    if (!this.validator.cantAffordFromBalance(prev, amt, "user")) {
+    if (!this.validator.cantAffordFromBalance(prev, amt, "hub")) {
       // hub can afford payment from existing channel balance
       // proceed with normal channel payment
       const row = await this.channelsService.doUpdateFromWithinTransaction(
@@ -192,9 +192,8 @@ export default class PaymentsService {
       // directly, in addition to making a collateral deposit
       // if needed
       const collateralStr = await this.channelsService.getCollateralDepositArgs(user)
-      const collateralDeposit = convertDeposit("bignumber", collateralStr)
       const finalDeposit = { 
-        ...collateralDeposit, 
+        ...collateralStr, 
         depositWeiUser: payment.amount.amountWei,
         depositTokenUser: payment.amount.amountToken,
       }
