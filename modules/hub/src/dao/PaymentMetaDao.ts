@@ -85,7 +85,6 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       SELECT * from payments
       WHERE
         "secret" = ${secret}
-        AND recipient = ${emptyAddress}
       ORDER BY created_on DESC
     `)
     return this.rowToPaymentSummary(row)
@@ -109,7 +108,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       ORDER BY created_on DESC
     `)
 
-    return updated as PurchasePaymentRow
+    return this.rowToPaymentSummary(updated)
   }
 
   /*
