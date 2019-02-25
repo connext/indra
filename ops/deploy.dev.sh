@@ -12,7 +12,7 @@ set -e
 # set any of these to "yes" to turn on watchers
 watch_hub="no"
 watch_chainsaw="no"
-watch_wallet="no"
+watch_wallet="yes"
 
 project=connext
 number_of_services=7
@@ -121,11 +121,7 @@ services:
     networks:
       - $project
     environment:
-      NODE_ENV: $MODE
-      SERVICE_USER_KEY: $SERVICE_USER_KEY
-      ETH_MNEMONIC: $ETH_MNEMONIC
-      ETHPROVIDER_URL: "http://localhost:8545"
-      HUB_URL: "http://localhost/hub"
+      NODE_ENV: development
     ports:
       - "3000:3000"
     volumes:

@@ -763,7 +763,6 @@ export interface ConnextClientOptions {
 }
 
 function hubConfigToClientOpts(config: HubConfig) {
-  console.log(`HubConfig keys: ${Object.keys(config)}`)
   return {
     contractAddress: config.channelManagerAddress,
     hubAddress: config.hubWalletAddress,
@@ -785,7 +784,6 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
     )
   }
   const hubOpts = hubConfigToClientOpts(await hub.config())
-  console.log(`Got hub options: ${JSON.stringify(hubOpts,null,2)}`)
   let merged = { ...opts }
   for (let k in hubOpts) {
     if ((opts as any)[k]) {

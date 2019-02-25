@@ -136,7 +136,12 @@ wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/$@
 
-wallet: builder $(wallet)/package.json
+wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_wallet) "rm -f .env && cp ops/dev.env .env"
+	$(log_finish) && touch build/$@
+
+wallet-node-modules: builder $(wallet)/package.json
 	$(log_start)
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
