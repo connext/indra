@@ -204,11 +204,11 @@ describe('PaymentsApiService', () => {
       .send({ secret: "sadlkj"})
 
     assert.equal(res.status, 200, JSON.stringify(res.body))
-    const { paymentRow } = res.body
-    console.log('paymentRow', res.body)
-    assert.ok(paymentRow)
+    const { purchaseId, sync } = res.body
+    assert.ok(sync)
+    assert.ok(purchaseId)
 
-    const payments = await paymentMetaDao.byPurchase(paymentRow.purchaseId)
+    const payments = await paymentMetaDao.byPurchase(purchaseId)
     assert.containSubset(payments[0], {
       recipient: redeemer,
       sender: chan.user,
@@ -221,6 +221,15 @@ describe('PaymentsApiService', () => {
     })
 
     const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
-    console.log('linked', linked)
+    assert.containSubset(linked, {
+      recipient: redeemer,
+      sender: chan.user,
+      amount: {
+        amountWei: '0',
+        amountToken: tokenVal(1),
+      },
+      type: 'PT_LINK',
+      secret: "sadlkj"
+    })
   })
 })
