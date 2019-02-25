@@ -3,6 +3,8 @@ import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
 import { getActiveThreads } from '../lib/getActiveThreads';
 import { toBN } from '../helpers/bn';
+import { assertUnreachable } from '@src/lib/utils';
+import { emptyAddress } from '@src/Utils';
 
 // **********************************************//
 //
@@ -42,53 +44,98 @@ export default class BuyController extends AbstractController {
     let curChannelState = getChannel(this.store)
     for (const payment of purchase.payments) {
       let newChannelState = null
-      if (payment.type == 'PT_THREAD') {
-        
-        // Create a new thread for the payment value
-        const { thread, channel } = await this.connext.threadsController.openThread(
-          payment.recipient, 
-          payment.amount
-        )      
+      switch (payment.type) {
+        case 'PT_THREAD':
+          // Create a new thread for the payment value
+          const { thread, channel } = await this.connext.threadsController.openThread(
+            payment.recipient, 
+            payment.amount
+          )      
 
-        // add thread payment to signed payments
-        const state = await this.connext.signThreadState(
-          this.validator.generateThreadPayment(thread, payment.amount)
-        )
-
-        signedPayments.push({
-          ...payment,
-          type: "PT_THREAD",
-          update: { state }
-        })
-
-        // update new channel state
-        newChannelState = channel
-
-        // TODO: what happens if you have multiple thread payments
-        // before your thread can be closed? (eg embedded payments)
-        // PUNT on this -- AB
-      } else { // handle channel payments
-        const args: PaymentArgs = {
-          recipient: 'hub',
-          ...payment.amount
-        }
-        newChannelState = await this.connext.signChannelState(
-          this.validator.generateChannelPayment(
-            curChannelState,
-            args,
+          // add thread payment to signed payments
+          const state = await this.connext.signThreadState(
+            this.validator.generateThreadPayment(thread, payment.amount)
           )
-        )
 
-        signedPayments.push({
-          ...payment,
-          type: 'PT_CHANNEL',
-          update: {
-            reason: 'Payment',
-            args: args,
-            sigUser: newChannelState.sigUser,
-            txCount: newChannelState.txCountGlobal,
-          },
-        })
+          signedPayments.push({
+            ...payment,
+            type: "PT_THREAD",
+            update: { state }
+          })
+
+          // update new channel state
+          newChannelState = channel
+
+          // TODO: what happens if you have multiple thread payments
+          // before your thread can be closed? (eg embedded payments)
+          // PUNT on this -- AB
+          break
+        case 'PT_CHANNEL':
+          const chanArgs: PaymentArgs = {
+            recipient: 'hub',
+            ...payment.amount
+          }
+          newChannelState = await this.connext.signChannelState(
+            this.validator.generateChannelPayment(
+              curChannelState,
+              chanArgs,
+            )
+          )
+
+          signedPayments.push({
+            ...payment,
+            type: 'PT_CHANNEL',
+            update: {
+              reason: 'Payment',
+              args: chanArgs,
+              sigUser: newChannelState.sigUser,
+              txCount: newChannelState.txCountGlobal,
+            },
+          })
+          break
+        case 'PT_LINK':
+          // the pt link payment type has 2 cases
+          // 1. User is the sender, in which case it should
+          //    be handled like normal channel updates
+          // 2. User is the redeemer, in which case the response
+          //    should be handled via the 'RedeemController', 
+          //    where the user posts to a separate endpoint (not buy)
+          
+          // check that a secret exists
+          if (!payment.secret) {
+            throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
+          }
+
+          const linkArgs: PaymentArgs = {
+            recipient: 'hub',
+            ...payment.amount
+          }
+
+          newChannelState = await this.connext.signChannelState(
+            this.validator.generateChannelPayment(
+              curChannelState,
+              linkArgs,
+            )
+          )
+
+          signedPayments.push({
+            ...payment,
+            type: 'PT_LINK',
+            recipient: emptyAddress,
+            update: {
+              reason: 'Payment',
+              args: linkArgs,
+              sigUser: newChannelState.sigUser,
+              txCount: newChannelState.txCountGlobal,
+            },
+          })
+          break
+        default:
+          assertUnreachable(payment.type)   
+      }
+
+      if (!newChannelState) {
+        throw new Error(`We should never get here. Something has gone wrong with 'assertUnreachable'. Buy controller could not generate new channel state.`)
       }
 
       curChannelState = newChannelState
