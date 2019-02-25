@@ -50,6 +50,7 @@ import Config from './Config';
 import { BigNumber } from 'bignumber.js/bignumber'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { RedisClient } from './RedisClient'
+import ThreadsService from './ThreadsService';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -115,6 +116,7 @@ describe('ChannelsService', () => {
   const paymentsService: PaymentsService = registry.get('PaymentsService')
   const config: Config = registry.get('Config')
   const startExitDao: ChannelDisputesDao = registry.get('ChannelDisputesDao')
+  const threadsService: ThreadsService = registry.get('ThreadsService')
 
   beforeEach(async function () {
     await registry.clearDatabase()
@@ -279,7 +281,7 @@ describe('ChannelsService', () => {
     const weiDeposit = toWeiBigNum(0.1)
     const user = mkAddress('0xa')
 
-    assert.isRejected(service.doRequestDeposit(user, weiDeposit, Big(0), ""),
+    await assert.isRejected(service.doRequestDeposit(user, weiDeposit, Big(0), ""),
       /No signature detected/
     )
   })
@@ -851,15 +853,6 @@ describe('ChannelsService', () => {
     assert.deepEqual(syncUpdates.map(s => s.type), ['channel', 'thread'])
   })
 
-  it('should only sign zero-thread states', async () => {
-    assert.isRejected(channelUpdateFactory(registry, {
-      threadCount: 1,
-      threadRoot: mkHash('0xbad'),
-      balanceTokenUser: 10000,
-      balanceWeiUser: 9999
-    }))
-  })
-
   it('should not recollateralize with pending states', async () => {
     const channel = await channelUpdateFactory(registry, {
       pendingDepositTokenHub: '1'
@@ -1010,6 +1003,17 @@ describe('ChannelsService', () => {
 
     const {updates: sync} = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
     assert.deepEqual(sync.map(item => (item.update as UpdateRequest).reason), ['ConfirmPending', 'Invalidation'])
+  })
+
+  it('does not return sync updates from closed threads', async () => {
+    const channel = await channelAndThreadFactory(registry)
+    await threadsService.close(channel.user.user, channel.performer.user, mkSig('0xa'), true)
+    const t = await threadsDao.getThread(channel.user.user, channel.performer.user, channel.thread.threadId)
+    assert.equal(t.status, 'CT_CLOSED')
+
+    const sync = await service.getChannelAndThreadUpdatesForSync(channel.user.user, 0, 0)
+    const threadUpdates = sync.updates.filter(update => update.type === 'thread')
+    assert.deepEqual(threadUpdates, [])
   })
 })
 

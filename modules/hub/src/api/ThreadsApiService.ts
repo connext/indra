@@ -19,6 +19,9 @@ export default class ThreadsApiService extends ApiService<
     'GET /:sender/to/:receiver': 'doGetThread',
     'GET /:user/initial-states': 'doGetInitialStates',
     'GET /:user/incoming': 'doGetThreadsIncoming',
+    'GET /:user/active': 'doGetThreadsActive',
+    'GET /:user/last-update-id': 'doGetLastUpdateId',
+    'GET /:user/all': 'doGetThreads'
   }
   handler = ThreadsApiServiceHandler
   dependencies = {
@@ -112,6 +115,50 @@ class ThreadsApiServiceHandler {
     }
 
     res.send(await this.threadsService.getThreadsIncoming(user))
+  }
+
+  async doGetThreads(req: express.Request, res: express.Response) {
+    const { user } = req.params
+    if (!user) {
+      LOG.warn(
+        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
+        {
+          params: JSON.stringify(req.params),
+        },
+      )
+      return res.sendStatus(400)
+    }
+    res.send(await this.threadsService.getThreads(user))
+  }
+
+  async doGetLastUpdateId(req: express.Request, res: express.Response) {
+    const { user } = req.params
+    if (!user) {
+      LOG.warn(
+        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
+        {
+          params: JSON.stringify(req.params),
+        },
+      )
+      return res.sendStatus(400)
+    }
+    const latest = await this.threadsService.doGetLastUpdateId(user)
+    res.json({ latestThreadUpdateId: latest })
+  }
+
+  async doGetThreadsActive(req: express.Request, res: express.Response) {
+    const { user } = req.params
+    if (!user) {
+      LOG.warn(
+        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
+        {
+          params: JSON.stringify(req.params),
+        },
+      )
+      return res.sendStatus(400)
+    }
+
+    res.send(await this.threadsService.getThreadsActive(user))
   }
 
   async ensureThreadsEnabled(req: express.Request, res: express.Response): Promise<boolean> {

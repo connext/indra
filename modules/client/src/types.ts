@@ -169,7 +169,6 @@ export const ChannelStatus = {
 }
 export type ChannelStatus = keyof typeof ChannelStatus
 
-// dispute statuses, for use by the hub
 export const DisputeStatus = {
   CD_PENDING: 'CD_PENDING',
   CD_IN_DISPUTE_PERIOD: 'CD_IN_DISPUTE_PERIOD',
@@ -177,7 +176,6 @@ export const DisputeStatus = {
   CD_FINISHED: 'CD_FINISHED'
 }
 export type DisputeStatus = keyof typeof DisputeStatus
-
 
 // channel update reasons
 export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string } = {
@@ -721,6 +719,16 @@ export const withdrawalParamsNumericFields = [
   'weiToSell',
   'withdrawalTokenUser',
 ]
+export function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
+  return {
+    id: up.id,
+    reason: up.reason,
+    args: up.args,
+    txCount: up.state.txCountGlobal,
+    sigHub: up.state.sigHub,
+    sigUser: up.state.sigUser,
+  }
+}
 
 // util to convert from string to bn for all types
 export const channelNumericFields = [

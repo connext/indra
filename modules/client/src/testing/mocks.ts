@@ -188,6 +188,18 @@ export class MockHub implements IHubAPIClient {
     return { id: 0, state: getChannelState('full'), status: 'CS_OPEN' }
   }
 
+  async getActiveThreads(): Promise<ThreadState[]> {
+    return []
+  }
+
+  async getLastThreadUpdateId(): Promise<number> {
+    return 0
+  }
+
+  async getAllThreads(): Promise<ThreadState[]> {
+    return []
+  }
+
   async getChannelStateAtNonce(): Promise<ChannelStateUpdate> {
     return {
       args: {} as ExchangeArgs,
@@ -196,7 +208,7 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
-  async getThreadInitialStates(): Promise<UnsignedThreadState[]> {
+  async getThreadInitialStates(): Promise<ThreadState[]> {
     return [getThreadState('full')]
   }
 
@@ -373,10 +385,16 @@ export class MockHub implements IHubAPIClient {
     update.createdOn = new Date();
     return update
   }
-  getLatestChannelState(): Promise<ChannelState | null>  {
-    let store = new MockStore
-    //@ts-ignore
-    return store._initialState.persistent.channel as ChannelState | null
+  
+  async getLatestChannelStateAndUpdate() {
+    return null
+    // let store = new MockStore()
+    // //@ts-ignore
+    // return {state: store._initialState.persistent.channel, update: store._initialState.persistent.channelUpdate}
+  }
+
+  async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
+    return null
   }
 
   assertReceivedUpdate(expected: PartialUpdateRequest) {

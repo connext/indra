@@ -39,7 +39,7 @@ import {
   ConfirmPendingArgs,
   convertThreadPayment,
   Payment,
-  convertArgs
+  convertArgs,
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
@@ -354,16 +354,6 @@ export class Validator {
     return null
   }
 
-  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
-    const prev = convertChannelState("bn", prevStr)
-    const error = await this.confirmPending(prev, args)
-    if (error) {
-      throw new Error(error)
-    }
-
-    return this.stateGenerator.confirmPending(prev)
-  }
-
   public async emptyChannel(prev: ChannelStateBN, args: EmptyChannelArgs): Promise<string | null> {
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
@@ -441,6 +431,16 @@ export class Validator {
     return this.stateGenerator.emptyChannel(matchingEvent)
   }
 
+  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
+    const prev = convertChannelState("bn", prevStr)
+    const error = await this.confirmPending(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+
+    return this.stateGenerator.confirmPending(prev)
+  }
+
   // NOTE: the prev here is NOT the previous state in the state-chain 
   // of events. Instead it is the previously "valid" update, meaning the 
   // previously double signed upate with no pending ops
@@ -482,7 +482,7 @@ export class Validator {
 
     // If user is sender then that means that prev is sender-hub channel
     // If user is receiver then that means that prev is hub-receiver channel
-    const userIsSender = args.sender === prev.user
+    const userIsSender = args.sender == prev.user
 
     // First check thread state independently
     // Then check that thread state against prev channel state:
@@ -796,7 +796,7 @@ export class Validator {
     try {
       this.assertThreadSigner(convertThreadState('str', args))
     } catch (e) {
-      return e.message
+      errs.push('Error asserting thread signer: ' + e.message)
     }
 
     if (errs) {

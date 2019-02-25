@@ -5,6 +5,8 @@ import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
+import { OnchainTransactionRow } from './domain/OnchainTransaction';
+import { onchainTxnToRawTx } from './util/ethTransaction';
 
 export class SignerService {
   constructor(
@@ -32,15 +34,33 @@ export class SignerService {
     return await this.web3.eth.getBlock('latest')
   }
 
-  // NOTE: not being used right now
-  // (might be used later in OnchainTransactionService)
-  public async signTransaction(tx: Object): Promise<string> {
-    return await this.web3.eth.signTransaction(tx)
+  // TODO: reconcile these two functions, is there a way to do this through web3 directly?
+  // https://web3js.readthedocs.io/en/1.0/web3-eth.html#id74
+  public async signTransaction(txn: OnchainTransactionRow): Promise<string> {
+    const rawTx = onchainTxnToRawTx(txn)
+    if (this.config.privateKeyFile) {
+      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
+      const pk = Buffer.from(pkString, 'hex')
+
+      // @ts-ignore
+      rawTx.sign(pk)
+      // @ts-ignore
+      return '0x' + rawTx.serialize().toString('hex')
+    } else {
+      return (await this.web3.eth.signTransaction({
+        nonce: rawTx.nonce,
+        gasPrice: rawTx.gasPrice,
+        gasLimit: rawTx.gasLimit,
+        to: rawTx.to,
+        value: rawTx.value,
+        data: rawTx.data
+      })).raw
+    }
   }
 
   public async signMessage(message: string): Promise<string> {
-    if (process.env.PRIVATE_KEY_FILE) {
-      const pkString = fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8')
+    if (this.config.privateKeyFile) {
+      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
       const pk = ethUtils.toBuffer(ethUtils.addHexPrefix(pkString))
       const fingerprint = ethUtils.toBuffer(String(message))
       const prefix = ethUtils.toBuffer('\x19Ethereum Signed Message:\n');

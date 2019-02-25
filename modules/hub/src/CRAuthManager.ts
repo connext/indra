@@ -1,5 +1,6 @@
 import uuid = require('uuid')
 import log from './util/log'
+import Web3 from 'web3'
 
 const util = require('ethereumjs-util')
 
@@ -18,7 +19,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
 
   private static HASH_PREAMBLE = 'SpankWallet authentication message:'
 
-  private web3: any
+  private web3: Web3
 
   private nonces: { [s: string]: number } = {}
 
@@ -59,24 +60,34 @@ export class MemoryCRAuthManager implements CRAuthManager {
   }
 
   private extractAddress (hash: string, signature: string): string | null {
-    const hashBuf = new Buffer(hash.split('x')[1], 'hex')
-
-    let pub
+    console.log("Hash sent to extract", hash)
+    let addr
 
     try {
-      const sig = util.fromRpcSig(signature)
-      const prefix = new Buffer(MemoryCRAuthManager.ETH_PREAMBLE)
-      const msg = new util.sha3(
-        Buffer.concat([prefix, new Buffer(String(hashBuf.length)), hashBuf])
+      let fingerprint = util.toBuffer(String(hash))
+      const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
+      const prefixedMsg = util.keccak256(
+        Buffer.concat([
+          prefix,
+          util.toBuffer(String(fingerprint.length)),
+          fingerprint,
+        ]),
       )
-
-      pub = util.ecrecover(msg, sig.v, sig.r, sig.s)
+      const res = util.fromRpcSig(signature)
+      const pubKey = util.ecrecover(
+        util.toBuffer(prefixedMsg),
+        res.v,
+        res.r,
+        res.s,
+      )
+      const addrBuf = util.pubToAddress(pubKey)
+      addr = util.bufferToHex(addrBuf)
     } catch (e) {
       LOG.warn('Caught error trying to recover public key:', e)
       return null
     }
 
-    return '0x' + util.publicToAddress(pub).toString('hex')
+    return addr
   }
 
   private sha3 (data: string): string {

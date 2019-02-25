@@ -66,16 +66,16 @@ describe.skip('WithdrawalsService', () => {
         withdrawalsEnabled: false
       })
 
-      return assert.isRejected(ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10)))
+      return await assert.isRejected(ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10)))
     })
 
-    it('throws an error if the withdrawal cannot be created', () => {
+    it('throws an error if the withdrawal cannot be created', async () => {
       sDao.fetch = sinon.stub().resolves({
         withdrawalsEnabled: true
       })
 
       wDao.createChannelDisbursement = sinon.stub().withArgs('0xbeef', '0xcafe', sinon.match.any).rejects()
-      return assert.isRejected(ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10)))
+      return await assert.isRejected(ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10)))
     })
 
     describe('transaction states', () => {

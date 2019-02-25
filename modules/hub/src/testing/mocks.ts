@@ -135,13 +135,15 @@ class MockValidator extends Validator {
   }
 }
 
+export const testChannelManagerAddress = mkAddress('0xCCC')
+export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
 export const getTestConfig = (overrides?: any) => ({
   ...Config.fromEnv(),
   databaseUrl,
   redisUrl,
   sessionSecret: 'hummus',
-  hotWalletAddress: '0x7776900000000000000000000000000000000000',
-  channelManagerAddress: mkAddress('0xCCC'),
+  hotWalletAddress: testHotWalletAddress,
+  channelManagerAddress: testChannelManagerAddress,
   ...(overrides || {}),
 })
 

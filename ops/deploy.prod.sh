@@ -25,6 +25,7 @@ HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETW
 CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
 TOKEN_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].approvedToken`"
 PRIVATE_KEY_FILE="/run/secrets/private_key"
+SHOULD_COLLATERALIZE_URL="NO_CHECK"
 
 # database settings
 REDIS_URL="redis://redis:6379"
@@ -139,6 +140,7 @@ services:
       POSTGRES_URL: $POSTGRES_URL
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
+      SHOULD_COLLATERALIZE_URL: $SHOULD_COLLATERALIZE_URL
 
   chainsaw:
     image: $hub_image
@@ -163,6 +165,7 @@ services:
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
       REDIS_URL: $REDIS_URL
+      SHOULD_COLLATERALIZE_URL: $SHOULD_COLLATERALIZE_URL
 
   redis:
     image: $redis_image

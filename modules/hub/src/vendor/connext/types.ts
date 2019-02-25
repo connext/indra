@@ -169,7 +169,6 @@ export const ChannelStatus = {
 }
 export type ChannelStatus = keyof typeof ChannelStatus
 
-// dispute statuses, for use by the hub
 export const DisputeStatus = {
   CD_PENDING: 'CD_PENDING',
   CD_IN_DISPUTE_PERIOD: 'CD_IN_DISPUTE_PERIOD',
@@ -177,7 +176,6 @@ export const DisputeStatus = {
   CD_FINISHED: 'CD_FINISHED'
 }
 export type DisputeStatus = keyof typeof DisputeStatus
-
 
 // channel update reasons
 export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string } = {
@@ -379,6 +377,7 @@ export type ArgsTypes<T=string> =
   | PaymentArgs<T>
   | DepositArgs<T>
   | WithdrawalArgs<T>
+  | UnsignedThreadState<T>
   | ConfirmPendingArgs
   | InvalidationArgs
   | EmptyChannelArgs
@@ -722,6 +721,21 @@ export const withdrawalParamsNumericFields = [
   'withdrawalTokenUser',
 ]
 
+/*********************************
+ ******* TYPE CONVERSIONS ********
+ *********************************/
+
+export function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
+  return {
+    id: up.id,
+    reason: up.reason,
+    args: up.args,
+    txCount: up.state.txCountGlobal,
+    sigHub: up.state.sigHub,
+    sigUser: up.state.sigUser,
+  }
+}
+
 // util to convert from string to bn for all types
 export const channelNumericFields = [
   'balanceWeiUser',
@@ -855,16 +869,12 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
-export function convertWithdrawalParams<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
-  const fromType = getType(obj.tokensToSell)
-  return convertFields(fromType, to, withdrawalParamsNumericFields, obj)
-}
-
 export const proposePendingNumericArgs = [
   'depositWeiUser',
   'depositWeiHub',
   'depositTokenUser',
   'depositTokenHub',
+
   'withdrawalWeiUser',
   'withdrawalWeiHub',
   'withdrawalTokenUser',

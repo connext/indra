@@ -14,7 +14,7 @@ describe('PaymentsDao', () => {
   })
 
   it('should reject when there is no linked payments', async () => {
-    assert.isRejected(paymentsDao.createCustodialPayment(0, 1))
+    await assert.isRejected(paymentsDao.createCustodialPayment(0, 1))
   })
 
   it('should reject when recipient is different than disbursed user', async () => {
@@ -35,7 +35,7 @@ describe('PaymentsDao', () => {
     })
     
     r = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
-    assert.isRejected(paymentsDao.createCustodialPayment(paymentId, r.update.id))
+    await assert.isRejected(paymentsDao.createCustodialPayment(paymentId, r.update.id))
   })
 
   it('should create a custodial payment', async () => {

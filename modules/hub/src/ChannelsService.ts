@@ -36,7 +36,7 @@ import {
   ChannelStateBN,
   InvalidationArgs,
   Sync,
-  convertWithdrawalParams,
+  convertWithdrawalParameters,
   convertWithdrawal,
 } from './vendor/connext/types'
 import { prettySafeJson, Omit, maybe } from './util'
@@ -346,7 +346,7 @@ export default class ChannelsService {
       withdrawalTokenUser: params.withdrawalTokenUser || new BigNumber(0),
     }
 
-    const hasNegative = this.validator.withdrawalParams(convertWithdrawalParams('bn', params))
+    const hasNegative = this.validator.withdrawalParams(convertWithdrawalParameters('bn', params))
     if (hasNegative)
       throw new Error(`Invalid withdrawal: ${hasNegative}`)
 
@@ -650,7 +650,7 @@ export default class ChannelsService {
       case 'Payment':
         unsignedChannelStateCurrent = this.validator.generateChannelPayment(
           convertChannelState("str", signedChannelStatePrevious),
-          convertPayment('str', update.args as PaymentArgs)
+          convertPayment("str", update.args as PaymentArgs)
         )
         this.validator.assertChannelSigner({
           ...unsignedChannelStateCurrent,
@@ -840,8 +840,8 @@ export default class ChannelsService {
 
   public async getChannelAndThreadUpdatesForSync(
     user: string,
-    channelTxCount: number,
-    lastThreadUpdateId: number,
+    channelTxCount: number = 0,
+    lastThreadUpdateId: number = 0,
   ): Promise<Sync> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
     console.log('channel: ', channel);
@@ -850,12 +850,14 @@ export default class ChannelsService {
       channelTxCount,
     )
 
-    console.log("RESULT:", JSON.stringify(channelUpdates, null, 2))
+    console.log("CHANNEL UPDATE RESULT:", JSON.stringify(channelUpdates, null, 2))
 
     const threadUpdates = await this.threadsDao.getThreadUpdatesForSync(
       user,
       lastThreadUpdateId,
     )
+
+    console.log("THREAD UPDATE RESULT:", JSON.stringify(threadUpdates, null, 2))
 
     let curChan = 0
     let curThread = 0
@@ -873,9 +875,11 @@ export default class ChannelsService {
 
       const pushChan =
         chan &&
-        (!thread ||
-          chan.createdOn < thread.createdOn ||
-          (chan.createdOn == thread.createdOn && chan.reason == 'OpenThread'))
+        (
+          !thread ||
+            chan.createdOn < thread.createdOn ||
+            (chan.createdOn == thread.createdOn && chan.reason == 'OpenThread')
+        )
 
       if (pushChan) {
         curChan += 1
@@ -931,9 +935,13 @@ export default class ChannelsService {
   }
 
   public async getLatestDoubleSignedState(user: string) {
-    return channelStateUpdateRowBigNumToString(
-      await this.channelsDao.getLatestDoubleSignedState(user)
-    )
+    const row = await this.channelsDao.getLatestDoubleSignedState(user)
+    return row ? channelStateUpdateRowBigNumToString(row) : null
+  }
+
+  public async getLastStateNoPendingOps(user: string) {
+    const row = await this.channelsDao.getLastStateNoPendingOps(user)
+    return row ? channelStateUpdateRowBigNumToString(row) : null
   }
 
   public async redisGetUnsignedState(

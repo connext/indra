@@ -177,14 +177,16 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       gasEstimateDao: GasEstimateDao,
       onchainTransactionDao: OnchainTransactionsDao,
       db: DBEngine,
-      container: Container,
-    ) => new OnchainTransactionService(web3, gasEstimateDao, onchainTransactionDao, db, container),
+      signerService: SignerService,
+      container: Container
+    ) => new OnchainTransactionService(web3, gasEstimateDao, onchainTransactionDao, db, signerService, container),
     dependencies: [
       'Web3',
       'GasEstimateDao',
       'OnchainTransactionsDao',
       'DBEngine',
-      'Container',
+      'SignerService',
+      'Container'
     ],
     isSingleton: true,
   },
@@ -253,7 +255,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   GlobalSettingsDao: {
-    factory: (db: DBEngine<Client>) => new PostgresGlobalSettingsDao(db),
+    factory: (db: DBEngine<Client>) => 
+      new PostgresGlobalSettingsDao(db),
     dependencies: ['DBEngine'],
     isSingleton: true
   },
@@ -366,7 +369,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       validator: Validator,
       config: Config,
       db: DBEngine,
-      contract: ChannelManager,
     ) => new PaymentsService(
       channelsService,
       threadsService,

@@ -28,6 +28,17 @@ describe('OnchainTransactionService', function() {
         },
       }
     },
+    sendSignedTransaction: () => {
+      return {
+        on: (input, cb) => {
+          if (input == 'error') {
+            console.log("HERE:")
+            setTimeout(cb(errorResponse), 1)
+          }
+        },
+      }
+    },
+    signTransaction: () => Promise.resolve({ raw: "0xbeef" })
   }
   const txService: OnchainTransactionService = registry.get('OnchainTransactionService')
   const db: DBEngine = registry.get('DBEngine')

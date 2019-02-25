@@ -164,6 +164,25 @@ export default class StateUpdateController extends AbstractController {
     this._queuedActions = []
 
     if (item.type === 'thread') { // handle thread updates
+      if (item.update.state.txCount == 0) {
+        console.log(`Received opening thread state, should be handled in OpenThread channel update. State: ${JSON.stringify(this.getState(), null, 2)}`)
+        return
+      }
+
+      if (!item.update.id) {
+        throw new Error(`Uh oh! Thread update should definitely have the id at this point! Sync item: ${JSON.stringify(item)}`)
+      }
+
+      const persistent = this.getState().persistent
+
+      // do nothing if update is below latest in store
+      if (item.update.id <= persistent.lastThreadUpdateId) {
+        // TODO: handle case where thread update is one
+        // we need to close as a receiver
+        console.warn(`Received old thread update, doing nothing.`)
+        return
+      }
+
       console.log(`Received a thread payment from the hub. Sync item: ${JSON.stringify(item)}`)
       // since threads are single-payment constructs, received thread
       // payments here should suggest that the thread is ready to be
@@ -179,7 +198,6 @@ export default class StateUpdateController extends AbstractController {
       // as it was created?
 
       // should update the store with the new active thread state
-      const persistent = this.getState().persistent
       const prevThreadState = persistent.activeThreads.filter(
         t => t.threadId == newThreadState.threadId && t.sender == newThreadState.sender && t.receiver == newThreadState.receiver
       )
@@ -192,12 +210,8 @@ export default class StateUpdateController extends AbstractController {
         t => t.threadId != newThreadState.threadId && t.sender != newThreadState.sender && t.receiver != newThreadState.receiver
       ).concat([newThreadState])
 
-      if (!item.update.id) {
-        throw new Error(`Uh oh! Thread update should definitely have the id at this point! Sync item: ${JSON.stringify(item)}`)
-      }
-
       // update the latest id
-      this.store.dispatch(actions.setLastThreadUpdateId(item.update.id))
+      this.store.dispatch(actions.setLastThreadUpdateId(Number(item.update.id)))
       // update active threads state
       this.store.dispatch(actions.setActiveThreads(newActiveThreads))
 
@@ -219,7 +233,7 @@ export default class StateUpdateController extends AbstractController {
       return
     }
 
-    const update = item.update
+    let update = item.update
     console.log(`Applying update from hub: ${update.reason} txCount=${update.txCount}:`, update)
 
     const connextState = this.getState()
@@ -251,6 +265,12 @@ export default class StateUpdateController extends AbstractController {
 
     // TODO: Write this for nukeThreads
 
+    // add initial thread states from our store if the update
+    // type includes threads
+    if (update.reason.includes('Thread')) {
+      update.initialThreadStates = connextState.persistent.activeInitialThreadStates
+    }
+
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
       update.reason === 'Invalidation' ? latestValidState : prevState,
       update
@@ -265,7 +285,7 @@ export default class StateUpdateController extends AbstractController {
     // necessarily a hard requirement - right now we're sending all states
     // on every sync - but it would be nice if we can make that guarantee.
     if (update.sigHub && update.sigUser) {
-      this.store.dispatch(actions.setChannel({
+      this.store.dispatch(actions.setChannelAndUpdate({
         update: update,
         state: {
           ...nextState,
@@ -279,14 +299,27 @@ export default class StateUpdateController extends AbstractController {
       // closeThread) update is returned by the hub
       if (update.reason.includes("Thread")) {
         const args = update.args as ThreadState
-        const connextState = this.store.getState()
         // unconditionally update thread history whether it is open or close
-        // thread
-        const threadHistory = connextState.persistent.threadHistory.concat({ 
-          sender: args.sender, 
-          receiver: args.receiver, 
-          threadId: args.threadId 
+        // thread.
+        let wasDuplicate = false
+        const threadHistory = connextState.persistent.threadHistory.map(t => {
+          if (t.receiver == args.receiver && t.sender == args.sender) {
+            // update the threadId in history with the one in args
+            wasDuplicate = true
+            return { ...t, threadId: args.threadId }
+          } else {
+            // otherwise, return the thread history item
+            return t
+          }
         })
+        // if this is new sender/receiver combo, push the thread history item
+        if (!wasDuplicate) {
+          threadHistory.push({ 
+            threadId: args.threadId,
+            sender: args.sender,
+            receiver: args.receiver,
+          })
+        }
 
         // update active initial states depending if open or close
         const prevActiveInitialThreads = connextState.persistent.activeInitialThreadStates

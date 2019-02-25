@@ -14,7 +14,7 @@
     "prod": "make prod && bash ops/deploy.prod.sh",
     "rebuild": "make clean && make",
     "reset": "make reset",
-    "restart": "bash ops/restart.sh",
+    "restart": "make dev && bash ops/restart.sh",
     "start": "make dev && bash ops/deploy.dev.sh",
     "stop": "bash ops/stop.sh",
     "test-all": "make test-all",

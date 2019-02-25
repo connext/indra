@@ -16,6 +16,7 @@ import { PurchaseRowWithPayments, PurchasePaymentRow } from "./domain/Purchase";
 import { default as log } from './util/log'
 import { ChannelStateUpdateRow } from './domain/Channel';
 import { emptyAddress } from './vendor/connext/Utils';
+import GlobalSettingsDao from './dao/GlobalSettingsDao';
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -34,6 +35,7 @@ export default class PaymentsService {
   private validator: Validator
   private config: Config
   private db: DBEngine
+  private gsd: GlobalSettingsDao
 
   constructor(
     channelsService: ChannelsService,
@@ -44,7 +46,7 @@ export default class PaymentsService {
     channelsDao: ChannelsDao,
     validator: Validator,
     config: Config,
-    db: DBEngine,
+    db: DBEngine
   ) {
     this.channelsService = channelsService
     this.threadsService = threadsService
@@ -80,9 +82,15 @@ export default class PaymentsService {
       if (payment.type == 'PT_CHANNEL') {
         // normal payment
         // TODO: should we check if recipient == hub here?
+        if (payment.update.reason !== 'Payment' && payment.update.reason !== 'OpenThread') {
+          throw new Error(
+            `Payment updates must be either reason = "Payment" or reason = "OpenThread"` +
+            `payment: ${prettySafeJson(payment)}`
+          )
+        }
         row = await this.channelsService.doUpdateFromWithinTransaction(user, {
           args: payment.update.args,
-          reason: 'Payment',
+          reason: payment.update.reason,
           sigUser: payment.update.sigUser,
           txCount: payment.update.txCount
         })

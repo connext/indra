@@ -3,8 +3,8 @@ set -e
 
 ####################
 # Make sure contracts are migrated
-
-bash ops/deploy.contracts.sh ganache
+# This is optional, it's also done by the ethprovider when it starts up
+#ETH_PROVIDER="http://localhost:8545" bash ops/deploy.contracts.sh ganache
 
 ####################
 # ENV VARS
@@ -108,6 +108,7 @@ services:
       - $project
     environment:
       ETH_RPC_URL: $ETH_RPC_URL
+      MODE: dev
     ports:
       - "80:80"
     volumes:

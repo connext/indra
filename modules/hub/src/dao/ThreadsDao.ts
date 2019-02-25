@@ -8,6 +8,8 @@ import {
 } from '../domain/Thread'
 import { BigNumber } from 'bignumber.js'
 import { ThreadState, ThreadStatus } from '../vendor/connext/types'
+import { getLastThreadUpdateId } from '../vendor/connext/lib/getLastThreadUpdateId';
+import { getActiveThreads } from '../vendor/connext/lib/getActiveThreads';
 
 export default interface ThreadsDao {
   applyThreadUpdate(
@@ -22,7 +24,14 @@ export default interface ThreadsDao {
     receiver: string,
     status: ThreadStatus,
   ): Promise<void>
-  getThread(sender: string, receiver: string): Promise<ThreadRowBigNum | null>
+  getThread(sender: string, receiver: string, threadId: number): Promise<ThreadRowBigNum | null>
+  getActiveThread(
+    sender: string,
+    receiver: string,
+  ): Promise<ThreadRowBigNum | null>
+  getThreads(user: string): Promise<ThreadRowBigNum[]>
+  getThreadsActive(user: string): Promise<ThreadRowBigNum[]>
+  getLastThreadUpdateId(user: string): Promise<number>
   getThreadUpdateLatest(
     sender: string,
     receiver: string,
@@ -122,6 +131,24 @@ export class PostgresThreadsDao implements ThreadsDao {
   public async getThread(
     sender: string,
     receiver: string,
+    threadId: number
+  ): Promise<ThreadRowBigNum | null> {
+    return this.inflateThreadRow(
+      await this.db.queryOne(SQL`
+      SELECT *
+      FROM cm_threads
+      WHERE
+        contract = ${this.config.channelManagerAddress} AND
+        sender = ${sender} AND
+        receiver = ${receiver} AND
+        thread_id = ${threadId}
+    `),
+    )
+  }
+
+  public async getActiveThread(
+    sender: string,
+    receiver: string,
   ): Promise<ThreadRowBigNum | null> {
     return this.inflateThreadRow(
       await this.db.queryOne(SQL`
@@ -134,6 +161,33 @@ export class PostgresThreadsDao implements ThreadsDao {
         status <> 'CT_CLOSED'
     `),
     )
+  }
+
+  public async getThreads(
+    user: string,
+  ): Promise<ThreadRowBigNum[]> {
+    const { rows } = await this.db.query(SQL`
+      SELECT *
+      FROM cm_threads
+      WHERE
+        contract = ${this.config.channelManagerAddress} AND
+        (sender = ${user} OR receiver = ${user})
+    `)
+    return rows.map(row => this.inflateThreadRow(row))
+  }
+
+  public async getThreadsActive(
+    user: string,
+  ): Promise<ThreadRowBigNum[]> {
+    const { rows } = await this.db.query(SQL`
+      SELECT *
+      FROM cm_threads
+      WHERE
+        contract = ${this.config.channelManagerAddress} AND
+        (sender = ${user} OR receiver = ${user}) AND
+        status <> 'CT_CLOSED'
+    `)
+    return rows.map(row => this.inflateThreadRow(row))
   }
 
   public async getThreadById(id: number): Promise<ThreadRowBigNum> {
@@ -157,11 +211,28 @@ export class PostgresThreadsDao implements ThreadsDao {
           contract = ${this.config.channelManagerAddress} AND
           sender = ${sender} AND
           receiver = ${receiver} AND
-          thread_status <> 'CT_CLOSED'
+          status <> 'CT_CLOSED'
         ORDER BY tx_count DESC
         LIMIT 1
       `),
     )
+  }
+
+  public async getLastThreadUpdateId(
+    user: string,
+  ): Promise<number> {
+    const up = this.inflateThreadUpdate(
+      await this.db.queryOne(SQL`
+      SELECT *
+      FROM cm_thread_updates
+      WHERE
+        contract = ${this.config.channelManagerAddress} AND
+        (sender = ${user} OR receiver = ${user})
+      ORDER BY id DESC
+      LIMIT 1
+      `),
+    )
+    return up && up.id ? up.id : 0
   }
 
   public async getThreadInitialStatesByUser(
@@ -191,6 +262,7 @@ export class PostgresThreadsDao implements ThreadsDao {
       WHERE
         contract = ${this.config.channelManagerAddress} AND
         (sender = ${user} OR receiver = ${user}) AND
+        status = 'CT_OPEN' AND
         id >= ${lastId}
       ORDER BY id ASC
     `)
