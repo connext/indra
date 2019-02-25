@@ -33,7 +33,7 @@ docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
-install=npm install --prefer-offline --unsafe-perm > /dev/null
+install=npm install --prefer-offline --unsafe-perm
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
@@ -43,7 +43,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database hub wallet proxy
+dev: database hub wallet proxy client
 prod: database-prod hub-prod proxy-prod
 
 stop: 
@@ -136,15 +136,19 @@ wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options
 	$(docker_run_in_wallet) "npm run build"
 	$(log_finish) && touch build/$@
 
-wallet: $(wallet)/package.json
+wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_wallet) "rm -f .env && cp ops/dev.env .env"
+	$(log_finish) && touch build/$@
+
+wallet-node-modules: builder $(wallet)/package.json
 	$(log_start)
 	$(docker_run_in_wallet) "rm -rf node_modules/connext"
 	$(docker_run_in_wallet) "$(install)"
-	# Don't dynamically link the local client until it's more stable, use the one from npm for now
-	#$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	#$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
-	#$(docker_run_in_wallet) "cd ../client && $(install)"
-	#@touch build/client && touch build/client-node-modules
+	$(docker_run_in_wallet) "rm -rf node_modules/connext"
+	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_wallet) "cd ../client && $(install)"
+	@touch build/client && touch build/client-node-modules
 	$(log_finish) && touch build/$@
 
 # Hub
@@ -190,13 +194,13 @@ contract-node-modules: builder $(contracts)/package.json
 
 client: client-node-modules $(shell find $(client)/src)
 	$(log_start)
-	$(docker_run_in_client) "npm build"
+	$(docker_run_in_client) "npm run build"
 	$(log_finish) && touch build/$@
 
 client-node-modules: builder $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "$(install)"
-	$(log_finish) && touch build/$@
+	$(log_finish) && touch build/$@ && touch build/client
 
 # Database
 

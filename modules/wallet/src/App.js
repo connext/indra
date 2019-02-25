@@ -41,15 +41,9 @@ if (process.env.NODE_ENV === "production"){
   tokenAbi = humanTokenAbi
 }
 
-
 console.log(`starting app in env: ${JSON.stringify(process.env, null, 1)}`);
 const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase();
 //const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL.toLowerCase()
-const tokenAddress = process.env.REACT_APP_TOKEN_ADDRESS.toLowerCase();
-const hubWalletAddress = process.env.REACT_APP_HUB_WALLET_ADDRESS.toLowerCase();
-const channelManagerAddress = process.env.REACT_APP_CHANNEL_MANAGER_ADDRESS.toLowerCase();
-
-console.log(`Using token ${tokenAddress} with abi: ${tokenAbi}`)
 
 const HASH_PREAMBLE = "SpankWallet authentication message:";
 const DEPOSIT_MINIMUM_WEI = eth.utils.parseEther("0.04"); // 40FIN
@@ -81,18 +75,18 @@ class App extends Component {
         tokenBalance: 0
       },
       hubWallet: {
-        address: hubWalletAddress,
+        address: '0x00',
         balance: 0,
         tokenBalance: 0
       },
       channelManager: {
-        address: channelManagerAddress,
+        address: '0x00',
         balance: 0,
         tokenBalance: 0
       },
       authorized: "false",
       approvalWeiUser: "10000",
-      recipient: hubWalletAddress,
+      recipient: '0x00',
       channelState: null,
       exchangeRate: "0.00",
       anchorEl: null,
@@ -123,22 +117,20 @@ class App extends Component {
   }
 
   async componentDidMount() {
-    // Set up state
     await this.setWindowWeb3();
-    await this.setTokenContract();
-    await this.setMetamaskDetails();
-    await this.setHubDetails();
-    await this.setChannelManagerDetails();
-
     // If a browser address exists, instantiate connext
     if (this.state.delegateSigner) {
       await this.setConnext();
       await this.authorizeHandler();
-
-      console.log(this.state.connext)
+      await this.setTokenContract();
+      await this.setHubDetails();
+      await this.setChannelManagerDetails();
+      await this.setMetamaskDetails();
       await this.pollConnextState();
       await this.poller();
-    } else {// Else, we wait for user to finish selecting through modal which will refresh page when done
+
+    // Else, we wait for user to finish selecting through modal which will refresh page when done
+    } else {
       this.setState({ modalOpen: true });
     }
   }
@@ -148,7 +140,6 @@ class App extends Component {
   // ************************************************* //    
 
   async setWindowWeb3() {
-
     // Ask permission to view accounts
     if (window.ethereum) {
       window.web3 = new Web3(window.ethereum);
@@ -159,7 +150,6 @@ class App extends Component {
         console.error(error)
       }
     }
-
     const windowProvider = window.web3;
     if (!windowProvider) {
       alert("Metamask is not detected.");
@@ -170,21 +160,76 @@ class App extends Component {
       alert(
         "Uh oh! Doesn't look like you're using a local chain, please make sure your Metamask is connected appropriately to localhost:8545."
       );
-    } else {
-      console.log("SETTING WEB3 ", web3)
     }
     this.setState({web3})
     return;
   }
 
+  async setConnext() {
+    // const { hubWallet, channelManager, tokenContract, address } = this.state;
+    const { address } = this.state;
+    const providerOpts = new ProviderOptions(store).approving();
+    const provider = clientProvider(providerOpts);
+    const web3 = new Web3(provider);
+    const opts = {
+      web3,
+      hubUrl: hubUrl, //http://localhost/hub,
+      user: address
+    };
+    // *** Instantiate the connext client ***
+    const connext = await getConnextClient(opts);
+    console.log(`Successfully set up connext! Connext config:`);
+    console.log(`  - tokenAddress: ${connext.opts.tokenAddress}`);
+    console.log(`  - hubAddress: ${connext.opts.hubAddress}`);
+    console.log(`  - contractAddress: ${connext.opts.contractAddress}`);
+    console.log(`  - ethNetworkId: ${connext.opts.ethNetworkId}`);
+    this.setState({
+      connext,
+      customWeb3: web3,
+      tokenAddress: connext.opts.tokenAddress,
+      channelManagerAddress: connext.opts.contractAddress,
+      hubWalletAddress: connext.opts.hubAddress,
+      ethNetworkId: connext.opts.ethNetworkId
+    });
+  }
+
   async setTokenContract() {
     try {
-      let { web3, tokenContract } = this.state;
+      let { web3, connext, tokenContract } = this.state;
+      const tokenAddress = connext.opts.tokenAddress
       tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
-      this.setState({tokenContract});
-      console.log("Set up token contract details")
+      this.setState({ tokenContract });
+      console.log(`Done setting up token contract at ${tokenAddress}`)
     } catch (e) {
       console.log("Error setting token contract")
+      console.log(e)
+    }
+  }
+
+  async setHubDetails() {
+    try {
+      let {connext, web3, hubWallet, tokenContract} = this.state;
+      hubWallet.address = connext.opts.hubAddress
+      hubWallet.balance = await web3.eth.getBalance(hubWallet.address);
+      hubWallet.tokenBalance = await tokenContract.methods.balanceOf(hubWallet.address).call();
+      this.setState({ hubWallet })
+      console.log(`Done setting hub details for address ${hubWallet.address}`)
+    } catch (e) {
+      console.log("Error setting hub details")
+      console.log(e)
+    }
+  }
+
+  async setChannelManagerDetails() {
+    try {
+      let {connext, web3, channelManager, tokenContract} = this.state;
+      channelManager.address = connext.opts.contractAddress
+      channelManager.balance = await web3.eth.getBalance(channelManager.address);
+      channelManager.tokenBalance = await tokenContract.methods.balanceOf(channelManager.address.toString()).call();
+      this.setState({channelManager})
+      console.log(`Done setting channel manager details for address ${channelManager.address}`)
+    } catch (e) {
+      console.log("Error setting Channel Manager details")
       console.log(e)
     }
   }
@@ -196,58 +241,11 @@ class App extends Component {
       metamask.balance = await web3.eth.getBalance(metamask.address);
       metamask.tokenBalance = await tokenContract.methods.balanceOf(metamask.address).call();
       this.setState({metamask});
-      console.log("Set up metamask details")
+      console.log(`Done setting metamask details for address ${metamask.address}`)
     } catch (e) {
       console.log("Error setting Metamask details")
       console.log(e)
     }
-  }
-
-  async setChannelManagerDetails() {
-    // try {
-      let {web3, channelManager, tokenContract} = this.state;
-      channelManager.balance = await web3.eth.getBalance(channelManager.address);
-      channelManager.tokenBalance = await tokenContract.methods.balanceOf(channelManager.address.toString()).call();
-      this.setState({channelManager})
-      console.log("Set up channel manager details")
-    // } catch (e) {
-    //   console.log("Error setting Channel Manager details")
-    //   console.log(e)
-    // }
-  }
-
-  async setHubDetails() {
-    try {
-      let {web3, hubWallet, tokenContract} = this.state;
-      hubWallet.balance = await web3.eth.getBalance(hubWallet.address);
-      hubWallet.tokenBalance = await tokenContract.methods.balanceOf(hubWallet.address).call();
-    } catch (e) {
-      console.log("Error setting hub details")
-      console.log(e)
-    }
-  }
-
-  async setConnext() {
-    const { hubWallet, channelManager, tokenContract, address } = this.state;
-
-    const providerOpts = new ProviderOptions(store).approving();
-    const provider = clientProvider(providerOpts);
-    const web3 = new Web3(provider);
-
-    const opts = {
-      web3,
-      hubAddress: hubWallet.address, //"0xfb482f8f779fd96a857f1486471524808b97452d" ,
-      hubUrl: hubUrl, //http://localhost:8080,
-      contractAddress: channelManager.address, //"0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42",
-      user: address,
-      tokenAddress: tokenContract.options.address
-    };
-    console.log("Setting up connext with opts:", opts);
-
-    // *** Instantiate the connext client ***
-    const connext = getConnextClient(opts);
-    console.log("Successfully set up connext!");
-    this.setState({ connext, address, customWeb3: web3 });
   }
 
   // ************************************************* //
@@ -300,7 +298,7 @@ class App extends Component {
     const tokenBalance = await tokenContract.methods
       .balanceOf(address)
       .call();
-    console.log('browser wallet wei balance:', balance)
+    //console.log('browser wallet wei balance:', balance)
     if (balance !== "0" || tokenBalance !== "0") {
       if (eth.utils.bigNumberify(balance).lt(DEPOSIT_MINIMUM_WEI)) {
         // don't autodeposit anything under the threshold
@@ -414,9 +412,9 @@ class App extends Component {
   }
 
   async approvalHandler() {
-    const {tokenContract, address } = this.state;
+    const {channelManager, tokenContract, address } = this.state;
     const web3 = this.state.customWeb3;
-    const approveFor = channelManagerAddress;
+    const approveFor = channelManager.address;
     const toApprove = this.state.approvalWeiUser;
     const toApproveBn = eth.utils.bigNumberify(toApprove);
     const nonce = await web3.eth.getTransactionCount(address);
@@ -424,7 +422,7 @@ class App extends Component {
       .approve(approveFor, toApproveBn)
       .estimateGas();
     let tx = new Tx({
-      to: tokenAddress,
+      to: tokenContract.address,
       nonce: nonce,
       from: address,
       gasLimit: depositResGas * 2,
@@ -755,7 +753,7 @@ class App extends Component {
             </div>
           </div>
           <div className="row">
-            <div className="column">Made with 💛 by the Connext Team</div>
+            <div className="column">Made with <span role="img" aria-labelledby="love">💛</span> by the Connext Team</div>
           </div>
         </div>
       </div>

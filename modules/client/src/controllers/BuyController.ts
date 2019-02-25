@@ -23,14 +23,15 @@ import { toBN } from '../helpers/bn';
 
 export default class BuyController extends AbstractController {
   public async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
-    // Small hack to inject the hub's address; can be removed eventually
+    /*
     purchase = {
       ...purchase,
       payments: purchase.payments.map(payment => ({
         ...payment,
-        recipient: payment.recipient === '$$HUB$$' ? process.env.HUB_ADDRESS! : payment.recipient
+        recipient: payment.recipient
       })),
     }
+    */
 
     // Sign the payments
     const signedPayments: PurchasePayment[] = []

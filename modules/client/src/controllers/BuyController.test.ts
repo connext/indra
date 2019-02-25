@@ -28,7 +28,7 @@ describe('BuyController: unit tests', () => {
   //         amount: { amountToken: '1', amountWei: '0' },
   //         type: 'PT_CHANNEL',
   //         meta: {},
-  //         recipient: '$$HUB$$',
+  //         recipient: process.env.HUB_ADDRESS,
   //       },
   //     ],
   //   })

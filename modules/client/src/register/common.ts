@@ -15,7 +15,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Enable more verbose debug logging outside of production
-if (process.env.NODE_ENV != 'production') {
+if (process.env.NODE_ENV !== 'production') {
   let debug = require('debug')
   debug.enable([
     '*',

@@ -3,10 +3,10 @@ import Card from "@material-ui/core/Card";
 import Button from "@material-ui/core/Button";
 import SwapHoriz from "@material-ui/icons/SwapHoriz";
 import TextField from "@material-ui/core/TextField";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
-import Typography from "@material-ui/core/Typography";
+//import HelpIcon from "@material-ui/icons/Help";
+//import IconButton from "@material-ui/core/IconButton";
+//import Popover from "@material-ui/core/Popover";
+//import Typography from "@material-ui/core/Typography";
 
 class SwapCard extends Component {
   state = {
@@ -71,9 +71,9 @@ class SwapCard extends Component {
   }
 
   render() {
-    const { anchorEl } = this.state;
+    //const { anchorEl } = this.state;
     const { connextState } = this.props
-    const open = Boolean(anchorEl);
+    //const open = Boolean(anchorEl);
 
     const cardStyle = {
       card: {
