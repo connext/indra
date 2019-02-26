@@ -165,13 +165,17 @@ describe('PaymentsApiService', () => {
     })
   })
 
-  it('should work for users redeeming payments', async () => {
-    const chan = await channelUpdateFactory(registry, {
+  it('should work for users redeeming payments when they have a collateralized channel', async () => {
+    const senderChan = await channelUpdateFactory(registry, {
       balanceTokenUser: tokenVal(10),
     })
 
+    const redeemerChan = await channelUpdateFactory(registry, {
+      balanceTokenHub: tokenVal(10),
+    })
+
     // add linked payment to the db
-    await app.withUser(chan.user).request
+    await app.withUser(senderChan.user).request
     .post('/payments/purchase')
     .send({
       meta: {},
@@ -187,8 +191,8 @@ describe('PaymentsApiService', () => {
           secret: 'sadlkj',
           update: {
             reason: 'Payment',
-            sigUser: chan.state.sigUser,
-            txCount: chan.state.txCountGlobal + 1,
+            sigUser: senderChan.state.sigUser,
+            txCount: senderChan.state.txCountGlobal + 1,
             args: {
               amountWei: '0',
               amountToken: tokenVal(1),
@@ -202,7 +206,7 @@ describe('PaymentsApiService', () => {
     console.log('linked payment inserted into db')
 
     // redeem with address not in db
-    const redeemer = "0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e".toLowerCase()
+    const redeemer = redeemerChan.user.toLowerCase()
     const res = await app.withUser(redeemer).request
       .post(`/payments/redeem/${redeemer}`)
       .send({ secret: "sadlkj"})
@@ -215,7 +219,7 @@ describe('PaymentsApiService', () => {
     const payments = await paymentMetaDao.byPurchase(purchaseId)
     assert.containSubset(payments[0], {
       recipient: redeemer,
-      sender: chan.user,
+      sender: senderChan.user,
       amount: {
         amountWei: '0',
         amountToken: tokenVal(1),
@@ -227,7 +231,7 @@ describe('PaymentsApiService', () => {
     const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
     assert.containSubset(linked, {
       recipient: redeemer,
-      sender: chan.user,
+      sender: senderChan.user,
       amount: {
         amountWei: '0',
         amountToken: tokenVal(1),
