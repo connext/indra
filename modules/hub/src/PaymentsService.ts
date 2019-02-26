@@ -174,7 +174,7 @@ export default class PaymentsService {
     return this.db.withTransaction(() => this._doRedeem(user, secret))
   }
 
-  private async _doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: string }>> {
+  private async _doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: string | null }>> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
     // channel checks
     if (channel.status !== 'CS_OPEN') {
@@ -182,43 +182,38 @@ export default class PaymentsService {
     }
 
     const payment = await this.paymentMetaDao.getLinkedPayment(secret)
-    // is user has channel, do payment, otherwise collateralize
+    // if hub can afford the payment, sign and forward payment
+    // otherwise, collateralize the channel
     const prev = convertChannelState('bn', channel.state)
     const amt = convertPayment('bn', payment.amount)
+    let redeemedPaymentRow = null
     if (!this.validator.cantAffordFromBalance(prev, amt, "hub")) {
       // hub can afford payment from existing channel balance
-      // proceed with normal channel payment
-      const row = await this.channelsService.doUpdateFromWithinTransaction(
-        user, {
-          args: { ...payment.amount, recipient: "user" },
+      // proceed with custodial payment
+      const purchasePayment: PurchasePayment = {
+        secret,
+        recipient: user,
+        amount: payment.amount,
+        meta: payment.meta,
+        type: 'PT_LINK',
+        update: {
           reason: 'Payment',
-          txCount: prev.txCountGlobal + 1,
+          args: {
+            amountToken: payment.amount.amountToken,
+            amountWei: payment.amount.amountWei,
+            recipient: 'user',
+          },
+          txCount: null,
         }
-      )
-    } else {
-      // propose a hub authorized update paying user in channel
-      // directly, in addition to making a collateral deposit
-      // if needed
-      const collateralStr = await this.channelsService.getCollateralDepositArgs(user)
-      const finalDeposit = { 
-        ...collateralStr, 
-        depositWeiUser: payment.amount.amountWei,
-        depositTokenUser: payment.amount.amountToken,
       }
+      await this.doInstantCustodialPayment(purchasePayment, payment.id)
       
-      // sign the final deposit state, and save to redis
-      await this.channelsService.redisSaveUnsignedState('hub-authorized', user, {
-        args: finalDeposit,
-        reason: 'ProposePendingDeposit'
-      })
+      // mark the payment as redeemed by updating the recipient field
+      redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
     }
 
-    // mark the payment as redeemed by updating the recipient field
-    const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
-
-    // Check to see if collateral is needed
-    // TODO: clean up collateralization on redemptions? or only with
-    // additional usage
+    // Check to see if collateral is needed, regardless if hub
+    // can afford payment
     const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
     if (err) {
       LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
@@ -226,7 +221,9 @@ export default class PaymentsService {
 
     return {
       error: false,
-      res: { purchaseId: redeemedPaymentRow.purchaseId }
+      res: { 
+        purchaseId: redeemedPaymentRow ? redeemedPaymentRow.purchaseId : null 
+      }
     }
   }
 
