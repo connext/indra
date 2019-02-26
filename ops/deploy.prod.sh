@@ -33,7 +33,7 @@ POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
 POSTGRES_USER="connext"
 POSTGRES_DB="connext"
-POSTGRES_PASSWORD_FILE="/run/secrets/connext_database"
+POSTGRES_PASSWORD_FILE="/run/secrets/indra_database"
 
 ####################
 # Deploy according to above configuration
@@ -100,7 +100,8 @@ secrets:
     external: true
 
 volumes:
-  database:
+  connext_database:
+    external: true
   certs:
 
 services:
@@ -181,7 +182,7 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     volumes:
-      - database:/var/lib/postgresql/data
+      - connext_database:/var/lib/postgresql/data
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
