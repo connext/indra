@@ -115,7 +115,7 @@ services:
       ETH_RPC_URL: $ETH_RPC_URL
       MODE: dev
     ports:
-      - "80:80"
+      - "6180:80"
     volumes:
       - certs:/etc/letsencrypt
 
@@ -127,8 +127,6 @@ services:
       - $project
     environment:
       NODE_ENV: development
-    ports:
-      - "3000:3000"
     volumes:
       - `pwd`/modules/wallet:/root
       - `pwd`/modules/client:/client
@@ -231,8 +229,6 @@ services:
     image: $redis_image
     networks:
       - $project
-    ports:
-      - "6379:6379"
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
