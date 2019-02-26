@@ -205,7 +205,10 @@ export default class PaymentsService {
           args: {
             amountToken: payment.amount.amountToken,
             amountWei: payment.amount.amountWei,
-            recipient: 'user',
+            recipient: 'hub',
+            // NOTE: args to user are generated in 
+            // `doInstantCustodialPayment`, this is a small hack
+            // to allow the hub to forward the payment
           },
           txCount: null,
         }
