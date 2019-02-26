@@ -56,13 +56,15 @@ stop:
 	bash ops/stop.sh
 
 clean: stop
+	docker container prune -f
 	rm -rf build/*
 
-deep-clean: stop clean
+deep-clean: clean
 	rm -rf $(cwd)/modules/**/build
 	rm -rf $(cwd)/modules/**/dist
 
 reset: stop
+	docker container prune -f
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true

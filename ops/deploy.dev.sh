@@ -34,7 +34,7 @@ addressBook="modules/contracts/ops/address-book.json"
 HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
 CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
 TOKEN_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].approvedToken`"
-PRIVATE_KEY_FILE="/run/secrets/private_key_dev"
+PRIVATE_KEY_FILE="/run/secrets/hub_key_ganache"
 
 # database settings
 REDIS_URL="redis://redis:6379"
@@ -78,7 +78,7 @@ function new_secret {
 }
 
 new_secret ${project}_database_dev
-new_secret private_key_dev "$private_key"
+new_secret hub_key_ganache "$private_key"
 
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
 then
@@ -97,7 +97,7 @@ networks:
 secrets:
   ${project}_database_dev:
     external: true
-  private_key_dev:
+  hub_key_ganache:
     external: true
 
 volumes:
@@ -142,7 +142,7 @@ services:
       - "8080:8080"
     secrets:
       - ${project}_database_dev
-      - private_key_dev
+      - hub_key_ganache
     environment:
       NODE_ENV: $MODE
       PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
@@ -171,7 +171,7 @@ services:
       - $project
     secrets:
       - ${project}_database_dev
-      - private_key_dev
+      - hub_key_ganache
     environment:
       NODE_ENV: $MODE
       PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
