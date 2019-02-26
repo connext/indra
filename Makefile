@@ -39,7 +39,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod stop clean deep-clean reset purge push push-live
+.PHONY: default all dev prod stop clean deep-clean reset purge push push-live backup
 
 default: dev
 all: dev prod
@@ -85,6 +85,9 @@ push-live: prod
 	docker push $(registry)/$(project)_database:$(version)
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
+
+backup:
+	bash ops/backup.sh
 
 ########################################
 # Begin Tests
