@@ -151,9 +151,13 @@ export default class PaymentsService {
         await this.doInstantCustodialPayment(p.payment, p.paymentId)
       } finally {
         // Check to see if collateral is needed, even if the tip failed
-        const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(p.payment.recipient))
-        if (err) {
-          LOG.error(`Error recollateralizing ${p.payment.recipient}: ${'' + err}\n${err.stack}`)
+        // if the payment isnt going to an empty addr (as is the) case
+        // for PT_LINK
+        if (p.payment.recipient !== emptyAddress) {
+          const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(p.payment.recipient))
+          if (err) {
+            LOG.error(`Error recollateralizing ${p.payment.recipient}: ${'' + err}\n${err.stack}`)
+          }
         }
       }
     }
@@ -186,11 +190,11 @@ export default class PaymentsService {
     // otherwise, collateralize the channel
     const prev = convertChannelState('bn', channel.state)
     const amt = convertPayment('bn', payment.amount)
-    let redeemedPaymentRow = null
+    let purchasePayment
     if (!this.validator.cantAffordFromBalance(prev, amt, "hub")) {
       // hub can afford payment from existing channel balance
       // proceed with custodial payment
-      const purchasePayment: PurchasePayment = {
+      purchasePayment = {
         secret,
         recipient: user,
         amount: payment.amount,
@@ -206,24 +210,27 @@ export default class PaymentsService {
           txCount: null,
         }
       }
-      await this.doInstantCustodialPayment(purchasePayment, payment.id)
-      
-      // mark the payment as redeemed by updating the recipient field
-      redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
     }
 
-    // Check to see if collateral is needed, regardless if hub
-    // can afford payment
-    const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
-    if (err) {
-      LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+    let purchaseId = null
+    try {
+      if (purchasePayment) {
+        await this.doInstantCustodialPayment(purchasePayment, payment.id)
+        // mark the payment as redeemed by updating the recipient field
+        const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
+        purchaseId = redeemedPaymentRow.purchaseId
+      }
+    } finally {
+      // always check for collateralization
+      const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
+      if (err) {
+        LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+      }
     }
 
     return {
       error: false,
-      res: { 
-        purchaseId: redeemedPaymentRow ? redeemedPaymentRow.purchaseId : null 
-      }
+      res: { purchaseId } // will be null if fails
     }
   }
 
