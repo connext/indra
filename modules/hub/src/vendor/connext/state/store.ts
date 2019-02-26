@@ -1,7 +1,7 @@
 import { ChannelStatus, ThreadHistoryItem, ThreadStateUpdate } from '../types'
 import { UpdateRequest } from '../types'
 //import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
-import { EMPTY_ROOT_HASH } from '../lib/constants'
+import { EMPTY_ROOT_HASH, ZERO_ADDRESS } from '../lib/constants'
 import { Store } from 'redux';
 import { ThreadState, ChannelState, Payment } from '../types'
 import { SyncResult } from '../types'
@@ -10,7 +10,7 @@ import { ExchangeRateState } from './ConnextState/ExchangeRates'
 export const CHANNEL_ZERO_STATE = {
   user: '0x0',
   recipient: '0x0',
-  contractAddress: process.env.CONTRACT_ADDRESS!,
+  contractAddress: ZERO_ADDRESS,
   balanceWeiUser: '0',
   balanceWeiHub: '0',
   balanceTokenUser: '0',

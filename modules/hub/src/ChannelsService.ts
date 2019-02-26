@@ -652,6 +652,11 @@ export default class ChannelsService {
           convertChannelState("str", signedChannelStatePrevious),
           convertPayment("str", update.args as PaymentArgs)
         )
+        // if the user is redeeming a payment, there will
+        // be no sigUser on the update. redeemed payments
+        // are determined by the secret
+        // check if payment exists as 'PT_LINK' and is still
+        // available to redeem
         this.validator.assertChannelSigner({
           ...unsignedChannelStateCurrent,
           sigUser: update.sigUser

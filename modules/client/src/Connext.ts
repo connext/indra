@@ -941,6 +941,10 @@ export class ConnextInternal extends ConnextClient {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
+  // async redeem(secret: string): Promise<{ purchaseId: string }> {
+  //   return await this.redeemController.redeem(secret)
+  // }
+
   async syncConfig() {
     const config = await this.hub.config()
     const opts = this.opts
