@@ -3,7 +3,6 @@ set -e
 
 # get absolute path of this module
 dir=`pwd | sed 's/indra.*/indra/'`/modules/client
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
 echo "Activating client tester.."
 date "+%s" > /tmp/timestamp
@@ -17,10 +16,10 @@ docker run \
   --interactive \
   --tty \
   --rm \
-  --name=${project}_tester \
+  --name=connext_tester \
   --volume=$dir:/root \
   --entrypoint=bash \
-  ${project}_builder -c '
+  connext_builder -c '
     set -e
     PATH=./node_modules/.bin:$PATH
     echo "Running tests.."

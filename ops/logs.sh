@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+project=connext
 name=$1
 shift
 

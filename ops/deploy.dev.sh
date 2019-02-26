@@ -14,7 +14,7 @@ watch_hub="no"
 watch_chainsaw="no"
 watch_wallet="yes"
 
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+project=connext
 number_of_services=7
 
 # set defaults for some core env vars
@@ -41,7 +41,7 @@ REDIS_URL="redis://redis:6379"
 POSTGRES_URL="database:5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/${project}_database_dev"
+POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
 
 ####################
 # Deploy according to above configuration
@@ -77,7 +77,7 @@ function new_secret {
   fi
 }
 
-new_secret ${project}_database_dev
+new_secret connext_database_dev
 new_secret private_key_dev "$private_key"
 
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
@@ -95,7 +95,7 @@ networks:
     external: true
 
 secrets:
-  ${project}_database_dev:
+  connext_database_dev:
     external: true
   private_key_dev:
     external: true
@@ -141,7 +141,7 @@ services:
     ports:
       - "8080:8080"
     secrets:
-      - ${project}_database_dev
+      - connext_database_dev
       - private_key_dev
     environment:
       NODE_ENV: $MODE
@@ -170,7 +170,7 @@ services:
     networks:
       - $project
     secrets:
-      - ${project}_database_dev
+      - connext_database_dev
       - private_key_dev
     environment:
       NODE_ENV: $MODE
@@ -221,7 +221,7 @@ services:
     ports:
       - "5432:5432"
     secrets:
-      - ${project}_database_dev
+      - connext_database_dev
     volumes:
       - database_dev:/var/lib/postgresql/data
 

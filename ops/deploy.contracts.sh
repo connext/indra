@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+project=connext
 name=${project}_contract_deployer
 key_name=hub_key
 cwd="`pwd`"
@@ -85,7 +85,7 @@ docker service create \
   --env="ETH_NETWORK=$ETH_NETWORK" \
   --env="ETH_PROVIDER=$ETH_PROVIDER" \
   --env="INFURA_KEY=$INFURA_KEY" \
-  --mount="type=volume,source=${project}_chain_dev,target=/data" \
+  --mount="type=volume,source=connext_chain_dev,target=/data" \
   --mount="type=bind,source=$cwd/modules/contracts,target=/root" \
   --restart-condition="none" \
   $SECRET_ENV \

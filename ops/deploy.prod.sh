@@ -4,7 +4,7 @@ set -e
 ####################
 # ENV VARS
 
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+project=connext
 registry="connextproject"
 number_of_services=5
 
@@ -31,9 +31,9 @@ SHOULD_COLLATERALIZE_URL="NO_CHECK"
 REDIS_URL="redis://redis:6379"
 POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
-POSTGRES_USER="connext"
-POSTGRES_DB="connext"
-POSTGRES_PASSWORD_FILE="/run/secrets/indra_database"
+POSTGRES_USER="$project"
+POSTGRES_DB="$project"
+POSTGRES_PASSWORD_FILE="/run/secrets/connext_database"
 
 ####################
 # Deploy according to above configuration
@@ -86,7 +86,7 @@ function new_secret {
   fi
 }
 
-new_secret ${project}_database
+new_secret connext_database
 new_secret private_key $PRIVATE_KEY
 
 mkdir -p /tmp/$project
@@ -94,14 +94,13 @@ cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
 secrets:
-  ${project}_database:
+  connext_database:
     external: true
   private_key:
     external: true
 
 volumes:
-  connext_database:
-    external: true
+  database:
   certs:
 
 services:
@@ -125,7 +124,7 @@ services:
       - database
       - chainsaw
     secrets:
-      - ${project}_database
+      - connext_database
       - private_key
     environment:
       NODE_ENV: production
@@ -149,7 +148,7 @@ services:
     depends_on:
       - postgres
     secrets:
-      - ${project}_database
+      - connext_database
       - private_key
     environment:
       NODE_ENV: production
@@ -176,13 +175,13 @@ services:
     deploy:
       mode: global
     secrets:
-      - ${project}_database
+      - connext_database
     environment:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     volumes:
-      - connext_database:/var/lib/postgresql/data
+      - database:/var/lib/postgresql/data
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
