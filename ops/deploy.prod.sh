@@ -4,7 +4,7 @@ set -e
 ####################
 # ENV VARS
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 registry="connextproject"
 number_of_services=5
 

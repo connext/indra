@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 ops="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 flag=$1; [[ -n "$flag" ]] || flag=dev
 

@@ -1,5 +1,5 @@
-project=connext
 registry=docker.io/connextproject
+project=$(shell cat package.json | grep '"name":' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -51,17 +51,17 @@ stop:
 
 clean: stop
 	rm -rf build/*
+
+deep-clean: stop clean
 	rm -rf $(cwd)/modules/**/build
 	rm -rf $(cwd)/modules/**/dist
 
-deep-clean: stop clean
-	rm -rf $(cwd)/modules/**/node_modules
-
 reset: stop
-	docker volume rm connext_database_dev connext_chain_dev 2> /dev/null || true
+	docker volume rm $(project)_database_dev $(project)_chain_dev 2> /dev/null || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
 purge: reset deep-clean
+	rm -rf $(cwd)/modules/**/node_modules
 	rm -rf $(cwd)/modules/**/package-lock.json
 
 push: tags

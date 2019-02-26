@@ -14,7 +14,7 @@ watch_hub="no"
 watch_chainsaw="no"
 watch_wallet="yes"
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 number_of_services=7
 
 # set defaults for some core env vars
@@ -115,7 +115,7 @@ services:
       ETH_RPC_URL: $ETH_RPC_URL
       MODE: dev
     ports:
-      - "6180:80"
+      - "3001:80"
     volumes:
       - certs:/etc/letsencrypt
 

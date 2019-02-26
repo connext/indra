@@ -4,7 +4,7 @@ set -e
 echo "Activating hub tester.."
 date "+%s" > /tmp/timestamp
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 root=`pwd | sed 's/indra.*/indra/'`
 
 POSTGRES_DB="test_$project"

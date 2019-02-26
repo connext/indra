@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 service=${project}_database
 
 service_id="`docker service ps -q $service | head -n 1`"
