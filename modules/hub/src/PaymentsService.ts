@@ -190,7 +190,7 @@ export default class PaymentsService {
     // otherwise, collateralize the channel
     const prev = convertChannelState('bn', channel.state)
     const amt = convertPayment('bn', payment.amount)
-    let purchasePayment
+    let purchasePayment = null
     if (!this.validator.cantAffordFromBalance(prev, amt, "hub")) {
       // hub can afford payment from existing channel balance
       // proceed with custodial payment
