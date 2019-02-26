@@ -31,9 +31,9 @@ SHOULD_COLLATERALIZE_URL="NO_CHECK"
 REDIS_URL="redis://redis:6379"
 POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
-POSTGRES_USER="$project"
-POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/${project}_database"
+POSTGRES_USER="connext"
+POSTGRES_DB="connext"
+POSTGRES_PASSWORD_FILE="/run/secrets/connext_database"
 
 ####################
 # Deploy according to above configuration
