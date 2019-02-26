@@ -46,6 +46,12 @@ all: dev prod
 dev: database hub wallet proxy client
 prod: database-prod hub-prod proxy-prod
 
+start: dev
+	bash ops/deploy.dev.sh
+
+start-prod: prod
+	bash ops/deploy.prod.sh
+
 stop: 
 	bash ops/stop.sh
 
