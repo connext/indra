@@ -33,7 +33,7 @@ POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/connext_database"
+POSTGRES_PASSWORD_FILE="/run/secrets/${project}_database"
 
 ####################
 # Deploy according to above configuration
@@ -86,7 +86,7 @@ function new_secret {
   fi
 }
 
-new_secret connext_database
+new_secret ${project}_database
 new_secret private_key $PRIVATE_KEY
 
 mkdir -p /tmp/$project
@@ -94,7 +94,7 @@ cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
 secrets:
-  connext_database:
+  ${project}_database:
     external: true
   private_key:
     external: true
@@ -124,7 +124,7 @@ services:
       - database
       - chainsaw
     secrets:
-      - connext_database
+      - ${project}_database
       - private_key
     environment:
       NODE_ENV: production
@@ -148,7 +148,7 @@ services:
     depends_on:
       - postgres
     secrets:
-      - connext_database
+      - ${project}_database
       - private_key
     environment:
       NODE_ENV: production
@@ -175,7 +175,7 @@ services:
     deploy:
       mode: global
     secrets:
-      - connext_database
+      - ${project}_database
     environment:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_DB: $POSTGRES_DB

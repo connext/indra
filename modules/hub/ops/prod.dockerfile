@@ -1,4 +1,4 @@
-FROM connext_builder
+FROM indra_builder
 
 COPY modules/hub/package.json package.json
 COPY modules/hub/package-lock.json package-lock.json

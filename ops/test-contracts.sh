@@ -3,6 +3,7 @@ set -e
 
 # get absolute path of indra/modules/contracts
 dir=`pwd | sed 's/indra.*/indra/'`/modules/contracts
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
 echo "Activating contracts tester.."
 date "+%s" > /tmp/timestamp
@@ -16,12 +17,12 @@ docker run \
   --interactive \
   --tty \
   --rm \
-  --name=connext_tester \
+  --name=${project}_tester \
   --volume=$dir:/root \
   --volume=$dir/../client:/client \
   --tmpfs=/chaindata \
   --entrypoint=bash \
-  connext_builder -c '
+  ${project}_builder -c '
     set -e
     PATH=./node_modules/.bin:$PATH
     echo "Starting Ganache.."
