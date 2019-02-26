@@ -18,7 +18,7 @@ then ETH_NETWORK="$ETH_NETWORK"
 else ETH_NETWORK="ganache"
 fi
 
-if [[ -z "$ETH_PROVIDER" && "$ETH_NETWORK" == "ganache" ]]
+if [[ "$ETH_NETWORK" == "ganache" ]]
 then ETH_PROVIDER="http://localhost:8545"
 fi
 

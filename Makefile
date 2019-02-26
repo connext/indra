@@ -63,7 +63,8 @@ deep-clean: stop clean
 	rm -rf $(cwd)/modules/**/dist
 
 reset: stop
-	docker volume rm $(project)_database_dev $(project)_chain_dev 2> /dev/null || true
+	docker volume rm $(project)_database_dev 2> /dev/null || true
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
 
 purge: reset deep-clean
