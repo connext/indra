@@ -45,7 +45,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database hub proxy client dashboard-node-modules
+dev: database hub proxy client dashboard
 prod: database-prod hub-prod proxy-prod
 
 start: dev
@@ -211,6 +211,11 @@ client-node-modules: builder $(client)/package.json
 dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_dashboard) "npm run build"
+	$(log_finish) && touch build/$@
+
+dashboard: dashboard-node-modules $(shell find $(dashboard)/ops $(find_options))
+	$(log_start)
+	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
 	$(log_finish) && touch build/$@
 
 dashboard-node-modules: builder $(dashboard)/package.json
