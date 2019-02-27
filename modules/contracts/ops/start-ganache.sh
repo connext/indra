@@ -24,7 +24,7 @@ docker run \
   --volume="$dir:/root" \
   --publish="$ganache_rpc_port:$ganache_rpc_port" \
   --entrypoint=bash \
-  ${project}_ethprovider -c "
+  ${project}_builder -c "
     echo lets go ganache diggy
     exec ./node_modules/.bin/ganache-cli \
       --host=0.0.0.0 \

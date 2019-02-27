@@ -15,7 +15,7 @@ watch_chainsaw="no"
 watch_wallet="yes"
 
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-number_of_services=7
+number_of_services=8
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -52,6 +52,7 @@ hub_image=${project}_builder
 chainsaw_image=${project}_builder
 ethprovider_image=${project}_builder
 database_image=${project}_database:dev
+dashboard_image=${project}_builder
 redis_image=redis:5-alpine
 
 # turn on swarm mode if it's not already on
@@ -118,6 +119,16 @@ services:
       - "3001:80"
     volumes:
       - certs:/etc/letsencrypt
+
+  dashboard:
+    image: $dashboard_image
+    entrypoint: npm start
+    networks:
+      - $project
+    environment:
+      NODE_ENV: development
+    volumes:
+      - `pwd`/modules/dashboard:/root
 
   wallet:
     image: $wallet_image
