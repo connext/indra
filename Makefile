@@ -92,7 +92,7 @@ push-live: prod
 	docker push $(registry)/$(project)_proxy:$(version)
 
 backup:
-	bash ops/backup.sh
+	bash $(db)/ops/backup-db.sh
 
 ########################################
 # Begin Tests

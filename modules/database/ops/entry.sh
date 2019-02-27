@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# backup every half hour
+backup_frequency=1800
+
 echo "===> Starting database in env:"
 env
 
@@ -41,18 +44,25 @@ then
   done
 fi
 
-# Start database in foreground to serve requests from hub
+# Stop the db instance used to run migrations
 echo "===> Stopping old database.."
 kill $PID
 while [[ -f "/var/lib/postgresql/data/postmaster.pid" ]]
 do echo "===> Waiting for lock to be released..." && sleep 2
 done
 
-# Have requests to port 5431 returns "done" a la unix.stackexchange.com/a/37762
 echo "===> Signalling the completion of migrations..."
-while true
+while true # unix.stackexchange.com/a/37762
 do echo 'db migrations complete' | nc -lk -p 5431
 done > /dev/null &
 
+# Setup remote backups & start backing up the db periodically
+bash ops/configure-remote-backup.sh
+echo "===> Backup watcher started..."
+while true
+do sleep $backup_frequency && bash ops/backup-db.sh
+done &
+
+# Start database in foreground to serve requests from hub
 echo "===> Starting new database.."
 exec /docker-entrypoint.sh postgres
