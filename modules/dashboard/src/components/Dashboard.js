@@ -97,11 +97,6 @@ const styles = theme => ({
   card: {
     minWidth: 275
   },
-  bullet: {
-    display: "inline-block",
-    margin: "0 2px",
-    transform: "scale(0.8)"
-  },
   title: {
     fontSize: 14
   },
@@ -111,20 +106,32 @@ const styles = theme => ({
 });
 
 const ContractInfoCard = props => {
-  const { classes, wei, token } = props;
-  const bull = <span className={classes.bullet}>•</span>;
+  const { classes, wei, token, loading, handleRefresh, contractAddress } = props;
   return (
     <Card className={classes.card}>
       <CardContent>
-        <Typography variant="h5" component="h2">
-          Reserve ETH: {parseFloat(wei.formatted).toFixed(2)}... ({wei.raw} Wei)
-        </Typography>
-        <Typography variant="h5" component="h2">
-          Reserve DAI: {parseFloat(token.formatted).toFixed(2)}... ({token.raw} Wei)
-        </Typography>
+        {loading ? (
+          <Typography variant="h5" component="h2">
+            Loading...
+          </Typography>
+        ) : (
+          <>
+            <Typography className={classes.pos} color="textSecondary">
+              <a href={`https://rinkeby.etherscan.io/address/${contractAddress}`} target="_blank">{contractAddress}</a>
+            </Typography>
+            <Typography variant="h5" component="h2">
+              {parseFloat(wei.formatted).toFixed(2)}... ETH ({wei.raw} Wei)
+            </Typography>
+            <Typography variant="h5" component="h2">
+              ${parseFloat(token.formatted).toFixed(2)}... DAI ({token.raw} Dei)
+            </Typography>
+          </>
+        )}
       </CardContent>
       <CardActions>
-        <Button size="small">Refresh</Button>
+        <Button size="small" onClick={handleRefresh}>
+          Refresh
+        </Button>
       </CardActions>
     </Card>
   );
@@ -142,15 +149,19 @@ class Dashboard extends React.Component {
     token: {
       raw: 0,
       formatted: 0
-    }
+    },
+    loadingContract: false
   };
 
   async componentDidMount() {
     await this.getContractInfo();
   }
 
-  async getContractInfo() {
+  getContractInfo = async () => {
     const { web3 } = this.props;
+    this.setState({
+      loadingContract: true
+    });
     console.log("Investigating contract at:", process.env.REACT_APP_CM_ADDRESS);
 
     const cm = new web3.eth.Contract(ChannelManagerAbi.abi, process.env.REACT_APP_CM_ADDRESS);
@@ -168,9 +179,10 @@ class Dashboard extends React.Component {
       token: {
         raw: token,
         formatted: web3.utils.fromWei(token)
-      }
-    })
-  }
+      },
+      loadingContract: false
+    });
+  };
 
   handleDrawerOpen = () => {
     this.setState({ open: true });
@@ -182,7 +194,7 @@ class Dashboard extends React.Component {
 
   render() {
     const { classes } = this.props;
-    const { wei, token } = this.state
+    const { wei, token, loadingContract } = this.state;
 
     return (
       <div className={classes.root}>
@@ -222,12 +234,18 @@ class Dashboard extends React.Component {
         <main className={classes.content}>
           <div className={classes.appBarSpacer} />
           <Typography variant="h4" gutterBottom component="h2">
-            Orders
+            Contract Reserves
           </Typography>
           <Typography component="div" className={classes.chartContainer} />
-            <ContractInfoCardStyled wei={wei} token={token} />
+          <ContractInfoCardStyled
+            wei={wei}
+            token={token}
+            handleRefresh={this.getContractInfo}
+            loading={loadingContract}
+            contractAddress={process.env.REACT_APP_CM_ADDRESS}
+          />
           <Typography variant="h4" gutterBottom component="h2">
-            Products
+            Channels
           </Typography>
           <div className={classes.tableContainer}>
             <SimpleTable />
