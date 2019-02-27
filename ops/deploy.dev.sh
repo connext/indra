@@ -12,10 +12,9 @@ set -e
 # set any of these to "yes" to turn on watchers
 watch_hub="no"
 watch_chainsaw="no"
-watch_wallet="yes"
 
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-number_of_services=8
+number_of_services=7
 
 # set defaults for some core env vars
 MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
@@ -47,7 +46,6 @@ POSTGRES_PASSWORD_FILE="/run/secrets/${project}_database_dev"
 # Deploy according to above configuration
 
 proxy_image=${project}_proxy:dev
-wallet_image=${project}_builder
 hub_image=${project}_builder
 chainsaw_image=${project}_builder
 ethprovider_image=${project}_builder
@@ -129,19 +127,6 @@ services:
       NODE_ENV: development
     volumes:
       - `pwd`/modules/dashboard:/root
-
-  wallet:
-    image: $wallet_image
-    entrypoint: bash ops/entry.sh
-    command: "$watch_wallet"
-    networks:
-      - $project
-    environment:
-      NODE_ENV: development
-    volumes:
-      - `pwd`/modules/wallet:/root
-      - `pwd`/modules/client:/client
-      - `pwd`/modules/contracts/build/contracts:/contracts
 
   hub:
     image: $hub_image
