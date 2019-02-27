@@ -25,7 +25,7 @@ Discord Invitation: https://discord.gg/SmMSFf
 
 To build & deploy in dev-mode, clone the repository and then run: `npm start`
 
-Once all the pieces are awake, the app will be available at `http://localhost`. (The wallet takes a long time to wake up, monitor it's progress with `npm run logs wallet`)
+Once all the pieces are awake, the app will be available at `http://localhost:3001`. (The wallet takes a long time to wake up, monitor it's progress with `npm run logs wallet`)
 
 Beware: the first time this is run it will take a long time but have no fear: downloads will be cached & many build steps won't need to be repeated so subsequent builds will go much more quickly.
 

@@ -22,7 +22,7 @@ find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path
 # On Mac the docker-VM care of this for us so pass root's id (noop)
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
-docker_run=docker run --name=$(project)_buidler --tty --rm
+docker_run=docker run --name=$(project)_builder --tty --rm
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder  $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(contracts):/root $(project)_builder $(id)
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder $(id)
@@ -39,7 +39,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod clean stop purge push push-live
+.PHONY: default all dev prod stop clean deep-clean reset purge push push-live
 
 default: dev
 all: dev prod
@@ -48,19 +48,6 @@ prod: database-prod hub-prod proxy-prod
 
 stop: 
 	bash ops/stop.sh
-	docker container stop $(project)_buidler 2> /dev/null || true
-	docker container stop ganache 2> /dev/null || true
-	docker container prune -f
-
-reset: stop
-	docker volume rm connext_database_dev connext_chain_dev 2> /dev/null || true
-	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
-
-reset-client: stop
-	$(log_start)
-	rm -rf modules/client
-	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
-	$(log_finish) && touch build/$@
 
 clean: stop
 	rm -rf build/*
@@ -70,15 +57,17 @@ clean: stop
 deep-clean: stop clean
 	rm -rf $(cwd)/modules/**/node_modules
 
+reset: stop
+	docker volume rm connext_database_dev connext_chain_dev 2> /dev/null || true
+	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
+
 purge: reset deep-clean
 	rm -rf $(cwd)/modules/**/package-lock.json
 
-tags: prod
+push: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:latest
 	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:latest
-
-push: tags
 	docker push $(registry)/$(project)_database:latest
 	docker push $(registry)/$(project)_hub:latest
 	docker push $(registry)/$(project)_proxy:latest
@@ -91,7 +80,8 @@ push-live: prod
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
 
-# Tests
+########################################
+# Begin Tests
 
 # set a default test command for developer convenience
 test: test-default
