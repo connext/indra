@@ -9,6 +9,7 @@ db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
 wallet=$(cwd)/modules/wallet
+dashboard=$(cwd)/modules/dashboard
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 VPATH=build:$(contracts)/build:$(hub)/dist
@@ -28,6 +29,7 @@ docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(cont
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder $(id)
 docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
+docker_run_in_dashboard=$(docker_run) --volume=$(dashboard):/root $(project)_builder $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
@@ -43,7 +45,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database hub wallet proxy client
+dev: database hub wallet proxy client dashboard-node-modules
 prod: database-prod hub-prod proxy-prod
 
 start: dev
@@ -120,7 +122,7 @@ test-e2e: root-node-modules prod
 
 # Proxy
 
-proxy-prod: $(shell find $(proxy) $(find_options))
+proxy-prod: dashboard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch build/$@
@@ -203,6 +205,18 @@ client-node-modules: builder $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/$@ && touch build/client
+
+# Dashboard
+
+dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_dashboard) "npm run build"
+	$(log_finish) && touch build/$@
+
+dashboard-node-modules: builder $(dashboard)/package.json
+	$(log_start)
+	$(docker_run_in_dashboard) "$(install)"
+	$(log_finish) && touch build/$@
 
 # Database
 
