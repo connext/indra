@@ -45,7 +45,7 @@ fi
 if [[ "$should_restore_backup" == "yes" ]]
 then
   echo "Restoring db snapshot from file $backup_file"
-  psql --username=$POSTGRES_USER $POSTGRES_DB < $backup_file
+  #psql --username=$POSTGRES_USER $POSTGRES_DB < $backup_file
   echo "Done restoring db snapshot"
 fi
 
