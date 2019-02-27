@@ -39,5 +39,25 @@ SELECT
   p.secret
 FROM (
   _payments p
-  JOIN cm_thread_updates up ON ((up.id = p.thread_update_id)))
+  JOIN cm_thread_updates up ON ((up.id = p.thread_update_id)));
 
+
+CREATE OR REPLACE FUNCTION custodial_payments_pre_insert_update_trigger() RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+declare
+  payment_recipient csw_eth_address;
+  disbursement_user csw_eth_address;
+begin
+  payment_recipient := (select recipient from _payments where id = NEW.payment_id);
+  disbursement_user := (select "user" from _cm_channel_updates where id = NEW.disbursement_id);
+  if payment_recipient <> disbursement_user AND payment_recipient <> '0x0000000000000000000000000000000000000000' then
+    raise exception 'payment_recipient = % is not the same as disbursement_user = %, (custodial_payment = %)',
+    payment_recipient,
+    disbursement_user,
+    NEW;
+  end if;
+
+  return NEW;
+end;
+$$;
