@@ -178,11 +178,15 @@ services:
     secrets:
       - ${project}_database
     environment:
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+      ETH_NETWORK: $ETH_NETWORK
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     volumes:
       - connext_database:/var/lib/postgresql/data
+      - `pwd`/modules/database/ops:/root/ops
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

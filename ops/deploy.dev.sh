@@ -207,6 +207,7 @@ services:
   database:
     image: $database_image
     environment:
+      ETH_NETWORK: $ETH_NETWORK
       POSTGRES_USER: $project
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
@@ -220,6 +221,7 @@ services:
       - ${project}_database_dev
     volumes:
       - database_dev:/var/lib/postgresql/data
+      - `pwd`/modules/database:/root
 
   redis:
     image: $redis_image

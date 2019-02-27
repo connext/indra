@@ -7,7 +7,7 @@ logging=ops/backup-logging.json
 if [[ -z "`which aws`" ]]
 then echo "You need the aws cli installed to do this. If you're on Mac, try: brew install awscli" && exit
 elif [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]
-then echo "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY env vars are needed to setup remote storage" && exit
+then echo "No access keys found, couldn't configure remote storage" && exit
 fi
 
 # Create bucket if it doesn't exist
