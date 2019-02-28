@@ -186,6 +186,9 @@ export default class PaymentsService {
     }
 
     const payment = await this.paymentMetaDao.getLinkedPayment(secret)
+    if (!payment || payment.recipient != emptyAddress) {
+      throw new Error('Error finding payment, or payment has been redeemed.')
+    }
     // if hub can afford the payment, sign and forward payment
     // otherwise, collateralize the channel
     const prev = convertChannelState('bn', channel.state)
@@ -225,9 +228,9 @@ export default class PaymentsService {
       }
     } finally {
       // always check for collateralization
-      const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
+      const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
       if (err) {
-        LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+        LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
       }
     }
 
