@@ -184,9 +184,9 @@ class Dashboard extends React.Component {
     const config = await (await fetch(`${this.state.hubUrl}/config`)).json();
     console.log(`Got hub config: ${JSON.stringify(config,null,2)}`);
     this.setState(state => {
-      state.tokenAddress = config.tokenAddress
-      state.channelManager.address = config.channelManagerAddress
-      state.hubWallet.address = config.hubWalletAddress
+      state.tokenAddress = config.tokenAddress.toLowerCase()
+      state.channelManager.address = config.channelManagerAddress.toLowerCase()
+      state.hubWallet.address = config.hubWalletAddress.toLowerCase()
       return state
     });
   }
