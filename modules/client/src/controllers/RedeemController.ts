@@ -13,7 +13,7 @@ export class RedeemController extends AbstractController {
       this.connext.syncController.handleHubSync(res.sync)
       return { purchaseId: res.purchaseId }
     } catch (e) {
-      throw new Error(`Error redeeming payment with secret: ${secret}` + e.message)
+      throw new Error(`Error redeeming payment with secret: ${secret}. ` + e.message)
     }
     
   }
