@@ -194,15 +194,17 @@ export default class PaymentsService {
     const prev = convertChannelState('bn', channel.state)
     const amt = convertPayment('bn', payment.amount)
 
+    // always check for collateralization regardless of payment status
+    const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
+    if (err) {
+      LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
+    }
+
     if (this.validator.cantAffordFromBalance(prev, amt, "hub")) {
       // hub cannot afford payment, collateralize and return
-      const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
-      if (err) {
-        LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
-      }
       return {
-        error: true,
-        msg: "Hub cannot afford to forward payment. Channel undercollateralized."
+        error: false,
+        res: { purchaseId: null }
       }
     }
 
@@ -233,12 +235,8 @@ export default class PaymentsService {
       // mark the payment as redeemed by updating the recipient field
       const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
       purchaseId = redeemedPaymentRow.purchaseId
-    } finally {
-      // always check for collateralization regardless of payment status
-      const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
-      if (err) {
-        LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
-      }
+    } catch (e) {
+      LOG.error("Error with redeeming payment. Error: {e}", { e })
     }
 
     return {
