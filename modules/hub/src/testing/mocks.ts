@@ -114,7 +114,7 @@ class MockWeb3Provider {
   }
 }
 
-class MockValidator extends Validator {
+export class MockValidator extends Validator {
   constructor() {
     super({} as any, '0xfoobar')
   }
