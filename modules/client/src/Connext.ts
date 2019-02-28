@@ -299,11 +299,20 @@ class HubAPIClient implements IHubAPIClient {
   }
 
   async redeem(secret: string): Promise<PurchasePaymentHubResponse> {
-    const response = await this.networking.post(
-      `payments/redeem/${this.user}`,
-      { secret },
-    )
-    return response.data
+    try {
+      const response = await this.networking.post(
+        `payments/redeem/${this.user}`,
+        { secret },
+      )
+      return response.data
+    } catch (e) {
+      console.log(e.message)
+      if (e.message.indexOf("Payment has been redeemed.") != -1) {
+        throw new Error(`Payment has been redeemed.`)
+      }
+      throw e
+    }
+    
   }
 
   // post to hub telling user wants to deposit
