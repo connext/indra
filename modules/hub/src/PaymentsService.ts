@@ -193,41 +193,48 @@ export default class PaymentsService {
     // otherwise, collateralize the channel
     const prev = convertChannelState('bn', channel.state)
     const amt = convertPayment('bn', payment.amount)
-    let purchasePayment = null
-    if (!this.validator.cantAffordFromBalance(prev, amt, "hub")) {
-      // hub can afford payment from existing channel balance
-      // proceed with custodial payment
-      purchasePayment = {
-        secret,
-        recipient: user,
-        amount: payment.amount,
-        meta: payment.meta,
-        type: 'PT_LINK',
-        update: {
-          reason: 'Payment',
-          args: {
-            amountToken: payment.amount.amountToken,
-            amountWei: payment.amount.amountWei,
-            recipient: 'hub',
-            // NOTE: args to user are generated in 
-            // `doInstantCustodialPayment`, this is a small hack
-            // to allow the hub to forward the payment
-          },
-          txCount: null,
-        }
+
+    if (this.validator.cantAffordFromBalance(prev, amt, "hub")) {
+      // hub cannot afford payment, collateralize and return
+      const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
+      if (err) {
+        LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
+      }
+      return {
+        error: true,
+        msg: "Hub cannot afford to forward payment. Channel undercollateralized."
+      }
+    }
+
+    // hub can afford from balance
+    const purchasePayment: PurchasePayment = {
+      secret,
+      recipient: user,
+      amount: payment.amount,
+      meta: payment.meta,
+      type: 'PT_LINK',
+      update: {
+        reason: 'Payment',
+        args: {
+          amountToken: payment.amount.amountToken,
+          amountWei: payment.amount.amountWei,
+          recipient: 'hub',
+          // NOTE: args to user are generated in 
+          // `doInstantCustodialPayment`, this is a small hack
+          // to allow the hub to forward the payment
+        },
+        txCount: null,
       }
     }
 
     let purchaseId = null
     try {
-      if (purchasePayment) {
-        await this.doInstantCustodialPayment(purchasePayment, payment.id)
-        // mark the payment as redeemed by updating the recipient field
-        const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
-        purchaseId = redeemedPaymentRow.purchaseId
-      }
+      await this.doInstantCustodialPayment(purchasePayment, payment.id)
+      // mark the payment as redeemed by updating the recipient field
+      const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
+      purchaseId = redeemedPaymentRow.purchaseId
     } finally {
-      // always check for collateralization
+      // always check for collateralization regardless of payment status
       const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
       if (err) {
         LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
