@@ -188,21 +188,8 @@ export default class PaymentsService {
     // the payment being made to the hub, except:
     // 1) it will be sent to to the recipient's channel, and
     // 2) the recipient is the user, not the hub
-    const argsHubToRecipient = {...paymentArgs, recipient: 'user'} as PaymentArgs
-
-    const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
-      convertChannelState('str', recipientChannel.state),
-      argsHubToRecipient
-    )
-    const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
-    const disbursement = await this.channelsDao.applyUpdateByUser(
-      payment.recipient,
-      'Payment',
-      this.config.hotWalletAddress,
-      signedStateHubToRecipient,
-      argsHubToRecipient
-    )
-
+    const disbursement = await this.channelsService.doSendPayment(payment.recipient, Big(paymentArgs.amountWei), Big(paymentArgs.amountToken))
+    
     // Link the payment (ie, the Payment row which references the
     // paying-user -> hub state update) to the disbursement.
     return await this.paymentsDao.createCustodialPayment(paymentId, disbursement.id)
