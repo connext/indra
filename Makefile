@@ -70,7 +70,7 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
-	#rm -f $(db)/snapshots/ganache-*
+	rm -f $(db)/snapshots/ganache-*
 
 purge: reset deep-clean
 	rm -rf $(cwd)/modules/**/node_modules
