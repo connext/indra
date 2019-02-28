@@ -1,5 +1,5 @@
 import { parameterizedTests } from './testing'
-import { PostgresChannelsDao } from './dao/ChannelsDao'
+import ChannelsDao, { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
 import { getTestRegistry, assert, getFakeClock, nock } from './testing'
 import {
@@ -8,7 +8,9 @@ import {
   mockRate,
   MockSignerService,
   fakeSig,
-  getTestConfig
+  getTestConfig,
+  testHotWalletAddress,
+  MockValidator
 } from './testing/mocks'
 import {
   getChannelState,
@@ -35,6 +37,8 @@ import {
   InvalidationArgs,
   WithdrawalArgs,
   WithdrawalParametersBigNumber,
+  DepositArgsBigNumber,
+  ConfirmPendingArgs,
 } from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
@@ -42,6 +46,7 @@ import {
   channelUpdateFactory,
   tokenVal,
   channelAndThreadFactory,
+  exchangeRateFactory,
 } from './testing/factories'
 import { StateGenerator } from './vendor/connext/StateGenerator'
 import PaymentsService from './PaymentsService';
@@ -51,6 +56,7 @@ import { BigNumber } from 'bignumber.js/bignumber'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { RedisClient } from './RedisClient'
 import ThreadsService from './ThreadsService';
+import { Validator } from './vendor/connext/validator';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -1057,5 +1063,57 @@ describe('ChannelsService.shouldCollateralize', () => {
     })
     const service: ChannelsService = registry.get('ChannelsService')
     assert.equal(await service.shouldCollateralize('0x1234'), true)
+  })
+})
+
+describe('ChannelsService - refund user gas is a number', () => {
+  const registry = getTestRegistry({
+    Config: getTestConfig({
+      userGasRefundAmount: Big(99999)
+    }),
+    Validator: new class MockVal extends MockValidator {
+      parseDidUpdateChannelTxReceipt() {
+        return {
+          sender: mkAddress('0xAAA'),
+        }
+      }
+    }
+  })
+
+  const service: ChannelsService = registry.get('ChannelsService')
+  const channelsDao: ChannelsDao = registry.get('ChannelsDao')
+  const stateGenerator: StateGenerator = registry.get('StateGenerator')
+
+  it('deposits enough to cover user gas', async () => {
+    await service.doRequestDeposit(mkAddress('0xa'), Big(100), Big(0), mkSig())
+    const updates = await service.getChannelAndThreadUpdatesForSync(mkAddress('0xa'), 0, 0)
+    const depositTokenHub = mockRate.multipliedBy(100).plus(99999)
+    assert.containSubset((updates.updates[0].update as UpdateRequest).args, {
+      depositTokenHub: depositTokenHub.toFixed(),
+      depositWeiUser: '100'
+    })
+  })
+
+  it('pays user back for gas', async () => {
+    const chan = await channelUpdateFactory(registry, {
+      balanceTokenHub: toWeiString(10)
+    })
+    const update = stateGenerator.confirmPending(convertChannelState('bn', chan.state))
+    await channelsDao.applyUpdateByUser(chan.user, 'ConfirmPending', chan.user, {...update, sigHub: mkSig()}, { transactionHash: mkHash('0xbbb') })
+    await service.doUpdates(chan.user, [{
+      args: { transactionHash: mkHash('0xbbb') } as ConfirmPendingArgs,
+      reason: 'ConfirmPending',
+      sigUser: mkSig(),
+      sigHub: mkSig(),
+      txCount: chan.state.txCountGlobal + 1
+    }])
+    const updates = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    const latest = updates.updates.pop().update as UpdateRequest
+    assert.equal(latest.reason, 'Payment')
+    assert.containSubset(latest.args, {
+      amountToken: '99999',
+      amountWei: '0',
+      recipient: 'user'
+    } as PaymentArgs)
   })
 })
