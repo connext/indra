@@ -186,8 +186,14 @@ export default class PaymentsService {
     }
 
     const payment = await this.paymentMetaDao.getLinkedPayment(secret)
-    if (!payment || payment.recipient != emptyAddress) {
-      throw new Error('Error finding payment, or payment has been redeemed.')
+    if (!payment) {
+      throw new Error('Error finding payment.')
+    }
+    if (payment.recipient != emptyAddress) {
+      return {
+        error: true,
+        msg: 'Payment has been redeemed.'
+      }
     }
     // if hub can afford the payment, sign and forward payment
     // otherwise, collateralize the channel
