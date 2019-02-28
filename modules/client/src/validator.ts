@@ -1062,7 +1062,7 @@ export class Validator {
     return parsed
   }
 
-  private parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
+  public parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
     if (!txReceipt.logs) {
       return null
     }
