@@ -248,6 +248,10 @@ export default class ChannelsService {
   ): Promise<DepositArgs | null> {
     const depositArgs = await this.getCollateralDepositArgs(user)
 
+    if (!depositArgs) {
+      return
+    }
+
     await this.redisSaveUnsignedState('hub-authorized', user, {
       args: depositArgs,
       reason: 'ProposePendingDeposit'
@@ -258,7 +262,7 @@ export default class ChannelsService {
   public async getCollateralDepositArgs(user): Promise<DepositArgs | null> {
     const shouldCollateralized = await this.shouldCollateralize(user)
     if (!shouldCollateralized)
-      return
+      return null
 
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
