@@ -249,7 +249,7 @@ export default class ChannelsService {
     const depositArgs = await this.getCollateralDepositArgs(user)
 
     if (!depositArgs) {
-      return
+      return null
     }
 
     await this.redisSaveUnsignedState('hub-authorized', user, {
