@@ -147,7 +147,7 @@ export class PaymentsApiServiceHandler {
         },
       )
       return res.sendStatus(400)
-    }
+    } 
 
     const result = await this.paymentsService.doRedeem(user, secret)
     if (result.error != false) {
