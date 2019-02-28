@@ -38,6 +38,8 @@ import {
   Sync,
   convertWithdrawalParameters,
   convertWithdrawal,
+  PaymentArgsBigNumber,
+  ConfirmPendingArgs,
 } from './vendor/connext/types'
 import { prettySafeJson, Omit, maybe } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
@@ -71,12 +73,36 @@ export default class ChannelsService {
     private channelDisputesDao: ChannelDisputesDao,
     private generator: StateGenerator,
     private validator: Validator,
+    private web3: any,
     private redis: RedisClient,
     private db: DBEngine,
     private config: Config,
     private contract: ChannelManager,
     private coinPaymentsDao: CoinPaymentsDao,
   ) {}
+
+  public async doSendPayment(
+    to: string,
+    amountWei: BigNumber,
+    amountToken: BigNumber
+  ): Promise<ChannelStateUpdateRowBigNum> {
+    const channel = await this.channelsDao.getChannelOrInitialState(to)
+
+    const paymentArgs: PaymentArgsBigNumber = { amountToken, amountWei, recipient: 'user' }
+
+    const unsignedState = this.validator.generateChannelPayment(
+      convertChannelState('str', channel.state),
+      convertPayment('str', paymentArgs)
+    )
+    const signedState = await this.signerService.signChannelState(unsignedState)
+    return await this.channelsDao.applyUpdateByUser(
+      to,
+      'Payment',
+      this.config.hotWalletAddress,
+      signedState,
+      paymentArgs
+    )
+  }
 
   public async doRequestDeposit(
     user: string,
@@ -147,7 +173,7 @@ export default class ChannelsService {
       .plus(userBootyCurrentlyInChannel)
       .plus(channel.state.balanceTokenHub)
 
-    const hubBootyDeposit = BigNumber.max(0, (
+    let hubBootyDeposit = BigNumber.max(0, (
       bootyRequestToDeposit.isLessThanOrEqualTo(channel.state.balanceTokenHub) ?
         // if we already have enough booty to collateralize the user channel, dont deposit
         Big(0) :
@@ -160,6 +186,9 @@ export default class ChannelsService {
           // fund the up to the amount the user put in
           bootyRequestToDeposit.minus(channel.state.balanceTokenHub)
     ))
+    
+    LOG.info(`Adding ${this.config.userGasRefundAmount.toFixed()} extra to hub collateralization as a gas refund.`)
+    hubBootyDeposit = hubBootyDeposit.plus(this.config.userGasRefundAmount)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
@@ -627,13 +656,37 @@ export default class ChannelsService {
 
       // if hub signed already, save and continue
       if (signedChannelStateHub.sigHub) {
-        return (await this.channelsDao.applyUpdateByUser(
+        const appliedUpdate = await this.channelsDao.applyUpdateByUser(
           user,
           update.reason,
           user,
           { ...signedChannelStateHub, sigUser: update.sigUser },
           update.args
-        ))
+        )
+
+        // check if deposit is confirmed, if so send user refund for gas
+        try {
+          if (
+            update.reason === 'ConfirmPending' && 
+            (update.args as ConfirmPendingArgs).transactionHash && 
+            this.config.userGasRefundAmount.isGreaterThan(0)
+          ) {
+            const confirmArgs = update.args as ConfirmPendingArgs
+            confirmArgs.transactionHash
+            const receipt = await this.web3.eth.getTransactionReceipt(confirmArgs.transactionHash)
+            const event = this.validator.parseDidUpdateChannelTxReceipt(receipt)
+            if (event.sender !== user) {
+              LOG.info(`User ${user} did not send the tx, no need to refund gas costs. event: ${prettySafeJson(event)}`)
+              return appliedUpdate
+            }
+            LOG.info(`Sending payment of ${this.config.userGasRefundAmount}`)
+            await this.doSendPayment(user, Big(0), this.config.userGasRefundAmount)
+          }
+        } catch (e) {
+          LOG.error(`Error refunding gas to user ${user}, ${e}`)
+        } finally {
+          return appliedUpdate
+        }
       }
     }
 
@@ -729,12 +782,14 @@ export default class ChannelsService {
           redisUpdate.state.sigUser,
         ).encodeABI()
 
+        let completeCallback = 'ChannelsService.invalidateUpdate'
+
         let txn = await this.onchainTxService.sendTransaction(this.db, {
           from: this.config.hotWalletAddress,
           to: this.config.channelManagerAddress,
           data,
           meta: {
-            completeCallback: 'ChannelsService.invalidateUpdate',
+            completeCallback,
             args: {
               user,
               lastInvalidTxCount: redisUpdate.state.txCountGlobal
