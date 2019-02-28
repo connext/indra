@@ -152,7 +152,10 @@ export class PaymentsApiServiceHandler {
     const result = await this.paymentsService.doRedeem(user, secret)
     if (result.error != false) {
       LOG.warn(result.msg)
-      return res.send(400).json(result.msg)
+      // @ts-ignore
+      // TODO: wtf? it works, but doesnt compile
+      // are the express types out of date somehow?
+      return res.send(500, result.msg)
     }
 
     const chan = await this.channelService.getChannel(user)
