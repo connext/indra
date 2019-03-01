@@ -174,11 +174,11 @@ export default class PaymentsService {
   public async doRedeem(
     user: string,
     secret: string,
-  ): Promise<MaybeResult<{ purchaseId: string }>> {
+  ): Promise<MaybeResult<{ purchaseId: string, amount: Payment }>> {
     return this.db.withTransaction(() => this._doRedeem(user, secret))
   }
 
-  private async _doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: string | null }>> {
+  private async _doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: string | null, amount: Payment | null }>> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
     // channel checks
     if (channel.status !== 'CS_OPEN') {
@@ -210,7 +210,7 @@ export default class PaymentsService {
       // hub cannot afford payment, collateralize and return
       return {
         error: false,
-        res: { purchaseId: null }
+        res: { purchaseId: null, amount: null }
       }
     }
 
@@ -236,18 +236,20 @@ export default class PaymentsService {
     }
 
     let purchaseId = null
+    let amount = null
     try {
       await this.doInstantCustodialPayment(purchasePayment, payment.id)
       // mark the payment as redeemed by updating the recipient field
       const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
       purchaseId = redeemedPaymentRow.purchaseId
+      amount = redeemedPaymentRow.amount
     } catch (e) {
       LOG.error("Error with redeeming payment. Error: {e}", { e })
     }
 
     return {
       error: false,
-      res: { purchaseId } // will be null if fails
+      res: { purchaseId, amount, } // will be null if fails
     }
   }
 
