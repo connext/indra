@@ -190,6 +190,22 @@ export class Validator {
       return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
+    // ensure the deposit is correctly signed by user if the sig user
+    // exists
+    if (args.sigUser) {
+      try {
+        const argsStr = convertDeposit("str", args)
+        const proposal: SignedDepositRequestProposal = {
+          amountToken: argsStr.depositTokenUser,
+          amountWei: argsStr.depositWeiUser,
+          sigUser: args.sigUser,
+        }
+        this.assertDepositRequestSigner(proposal, prev.user)
+      } catch (e) {
+        return `Invalid signer detected. ` + e.message + ` (prev: ${this.logChannel(prev)}, args: ${this.logArgs(args, "ProposePendingDeposit")}`
+      }
+    }
+
     return null
   }
 
@@ -339,6 +355,16 @@ export class Validator {
     return null
   }
 
+  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
+    const prev = convertChannelState("bn", prevStr)
+    const error = await this.confirmPending(prev, args)
+    if (error) {
+      throw new Error(error)
+    }
+
+    return this.stateGenerator.confirmPending(prev)
+  }
+
   public async emptyChannel(prev: ChannelStateBN, args: EmptyChannelArgs): Promise<string | null> {
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
@@ -414,16 +440,6 @@ export class Validator {
     // For an empty channel, the generator should rely on an empty channel
     // event. All channel information should be reset from the contract.
     return this.stateGenerator.emptyChannel(matchingEvent)
-  }
-
-  public async generateConfirmPending(prevStr: ChannelState, args: ConfirmPendingArgs): Promise<UnsignedChannelState> {
-    const prev = convertChannelState("bn", prevStr)
-    const error = await this.confirmPending(prev, args)
-    if (error) {
-      throw new Error(error)
-    }
-
-    return this.stateGenerator.confirmPending(prev)
   }
 
   // NOTE: the prev here is NOT the previous state in the state-chain 
@@ -613,7 +629,7 @@ export class Validator {
   }
 
   public assertThreadSigner(threadState: ThreadState): void {
-    if (this.utils.recoverSignerFromThreadState(threadState, threadState.sigA) !== threadState.sender) {
+    if (this.utils.recoverSignerFromThreadState(threadState, threadState.sigA) !== threadState.sender.toLowerCase()) {
       throw new Error(`Thread state is not correctly signed. threadState: ${JSON.stringify(threadState)}`)
     }
   }
@@ -627,9 +643,9 @@ export class Validator {
     }
   }
 
-  private cantAffordFromBalance(state: ChannelStateBN, value: Partial<PaymentBN>, payor: "hub" | "user", currency?: "token" | "wei"): string | null
-  private cantAffordFromBalance(state: ThreadStateBN, value: Partial<PaymentBN>, payor: "sender", currency?: "token" | "wei"): string | null
-  private cantAffordFromBalance(state: ChannelStateBN | ThreadStateBN, value: Partial<PaymentBN>, payor: "hub" | "user" | "sender", currency?: "token" | "wei"): string | null {
+  public cantAffordFromBalance(state: ChannelStateBN, value: Partial<PaymentBN>, payor: "hub" | "user", currency?: "token" | "wei"): string | null
+  public cantAffordFromBalance(state: ThreadStateBN, value: Partial<PaymentBN>, payor: "sender", currency?: "token" | "wei"): string | null
+  public cantAffordFromBalance(state: ChannelStateBN | ThreadStateBN, value: Partial<PaymentBN>, payor: "hub" | "user" | "sender", currency?: "token" | "wei"): string | null {
     const prefix = "balance"
     const currencies = currency ? [currency] : ["token", "wei"]
 

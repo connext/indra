@@ -246,9 +246,23 @@ export default class ChannelsService {
   public async doCollateralizeIfNecessary(
     user: string
   ): Promise<DepositArgs | null> {
+    const depositArgs = await this.getCollateralDepositArgs(user)
+
+    if (!depositArgs) {
+      return null
+    }
+
+    await this.redisSaveUnsignedState('hub-authorized', user, {
+      args: depositArgs,
+      reason: 'ProposePendingDeposit'
+    })
+    return depositArgs
+  }
+
+  public async getCollateralDepositArgs(user): Promise<DepositArgs | null> {
     const shouldCollateralized = await this.shouldCollateralize(user)
     if (!shouldCollateralized)
-      return
+      return null
 
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
@@ -315,11 +329,6 @@ export default class ChannelsService {
       timeout: 0,
       sigUser: null,
     }
-
-    await this.redisSaveUnsignedState('hub-authorized', user, {
-      args: depositArgs,
-      reason: 'ProposePendingDeposit'
-    })
     return depositArgs
   }
 
@@ -647,6 +656,11 @@ export default class ChannelsService {
           convertChannelState("str", signedChannelStatePrevious),
           convertPayment("str", update.args as PaymentArgs)
         )
+        // if the user is redeeming a payment, there will
+        // be no sigUser on the update. redeemed payments
+        // are determined by the secret
+        // check if payment exists as 'PT_LINK' and is still
+        // available to redeem
         this.validator.assertChannelSigner({
           ...unsignedChannelStateCurrent,
           sigUser: update.sigUser

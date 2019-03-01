@@ -189,6 +189,34 @@ export class MockHub implements IHubAPIClient {
     return {} as any
   }
 
+  async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }> {
+    // NOTE: by default assumes this is redeemers first payment
+    // if this is not what you are testing against, must use
+    // the patch functions in test
+    return {
+      purchaseId: 'async-payment-bb',
+      sync: { status: "CS_OPEN", 
+      updates: [{
+        type: 'channel',
+        update: {
+          reason: 'ProposePendingDeposit',
+          createdOn: new Date(),
+          args: getDepositArgs('full', {
+            depositToken: [0, 1],
+            depositWei: [0, 0],
+          }),
+          sigHub: mkHash('0x51512'),
+          sigUser: '',
+          txCount: 1,
+        },
+      }]},
+      amount: {
+        amountWei: '0',
+        amountToken: '1',
+      }
+    }
+  }
+
   async getChannel(): Promise<ChannelRow> {
     return { id: 0, state: getChannelState('full'), status: 'CS_OPEN' }
   }
@@ -240,7 +268,7 @@ export class MockHub implements IHubAPIClient {
         console.log("TEST INCLUSION")
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
-      if (p.type == 'PT_CHANNEL') {
+      if (p.type == 'PT_CHANNEL' || 'PT_LINK') {
         return {
           type: 'channel',
           update: {
@@ -255,7 +283,11 @@ export class MockHub implements IHubAPIClient {
       } else {
         return {
           type: 'thread',
-          update: { state: p.update.state, id: p.update.state.threadId, createdOn: new Date() }
+          update: { 
+            state: (p.update as any).state, 
+            id: (p.update as any).state.threadId, 
+            createdOn: new Date() 
+          }
         } as SyncResult
       }
     })
