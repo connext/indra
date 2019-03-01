@@ -778,10 +778,10 @@ export interface ConnextClientOptions {
 
 function hubConfigToClientOpts(config: HubConfig) {
   return {
-    contractAddress: config.channelManagerAddress,
-    hubAddress: config.hubWalletAddress,
-    tokenAddress: config.tokenAddress,
-    ethNetworkId: config.ethNetworkId,
+    contractAddress: config.channelManagerAddress.toLowerCase(),
+    hubAddress: config.hubWalletAddress.toLowerCase(),
+    tokenAddress: config.tokenAddress.toLowerCase(),
+    ethNetworkId: config.ethNetworkId.toLowerCase(),
   }
 }
 

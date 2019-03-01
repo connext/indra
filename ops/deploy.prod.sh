@@ -6,20 +6,24 @@ set -e
 
 project=connext
 registry="connextproject"
-number_of_services=5
+number_of_services=6
 
 # set defaults for some core env vars
-MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
-DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
-EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
-INFURA_KEY=$INFURA_KEY; [[ -n "$INFURA_KEY" ]] || INFURA_KEY="abc123"
-INGESTION_KEY=$INGESTION_KEY; [[ -n "$INGESTION_KEY" ]] || INGESTION_KEY="abc123"
+MODE="${MODE:-development}"
+DOMAINNAME="${DOMAINNAME:-localhost}"
+EMAIL="${EMAIL:-noreply@gmail.com}"
+INFURA_KEY="${INFURA_KEY:-abc123}"
+INGESTION_KEY="${INGESTION_KEY:-abc123}"
 
 # misc settings
 SERVICE_USER_KEY="foo"
 
 # ethereum settings
-addressBook="modules/contracts/ops/address-book.json"
+# Allow contract address overrides if an address book is present in project root
+if [[ -f "address-book.json" ]]
+then addressBook="address-book.json"
+else addressBook="modules/contracts/ops/address-book.json"
+fi
 ETH_RPC_URL="https://eth-rinkeby.alchemyapi.io/jsonrpc/RvyVeludt7uwmt2JEF2a1PvHhJd5c07b"
 ETH_NETWORK_ID="4"
 HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
@@ -110,8 +114,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - LOGDNA_KEY: $INGESTION_KEY
-      - TAGS: logdna
+      LOGDNA_KEY: $INGESTION_KEY
+      TAGS: logdna
 
   proxy:
     image: $proxy_image
