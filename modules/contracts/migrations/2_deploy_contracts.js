@@ -16,12 +16,12 @@ module.exports = async function(deployer, network, accounts) {
     await deployer.deploy(EC);
     await deployer.link(EC, CM);
   } else if (network === "rinkeby" || network === "rinkebyLive") {
-    tokenAddress = "0x9bC493a46985564A8d01776D7012331E55e9d860" // Rinkeby contract
+    tokenAddress = "0x0fbE13fcF9C8B33a5c20FA93160DED33D4dF702E" // Rinkeby contract
 
-    // use deployed version of ECTools
-    const deployedEC = await EC.at('0xf6B5eed0b9cC2948cBD95C788Db7457B54d80c44')
-    await deployer.link(deployedEC, CM);
-  } else if (network !== "mainnet" && network !== "rinkeby") {
+    // TODO: use deployed version of ECTools
+    await deployer.deploy(EC);
+    await deployer.link(EC, CM);
+  } else {
     web3.utils.toBN(web3.utils.toWei("696969", "ether"));
     await deployer.deploy(
       HumanStandardToken,
