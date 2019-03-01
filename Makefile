@@ -231,12 +231,12 @@ database-prod: database
 	docker tag $(project)_database:dev $(project)_database:latest
 	$(log_finish) && touch build/$@
 
-database: database-node-modules migration-templates $(db_prereq)
+database: database-node-modules migration-templates $(shell find $(db)/ops $(find_options))
 	$(log_start)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	$(log_finish) && touch build/$@
 
-migration-templates: $(shell find $(db)/ops $(db)/migrations $(db)/templates $(find_options))
+migration-templates: $(db)/ops/ejs-render.js $(shell find $(db)/migrations $(db)/templates $(find_options))
 	$(log_start)
 	$(docker_run_in_db) "make"
 	$(log_finish) && touch build/$@
