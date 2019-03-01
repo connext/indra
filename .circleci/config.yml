@@ -19,6 +19,12 @@ jobs:
       - checkout
       - run: make test-hub
 
+  test-e2e:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-e2e
+
   push-images:
     machine: true
     steps:
@@ -53,11 +59,13 @@ workflows:
       - test-client
       - test-contracts
       - test-hub
+      - test-e2e
       - push-images:
           requires:
             - test-client
             - test-contracts
             - test-hub
+            - test-e2e
       - push-live-images:
           filters:
             branches:
@@ -66,6 +74,7 @@ workflows:
             - test-client
             - test-contracts
             - test-hub
+            - test-e2e
       - deploy-staging:
           filters:
             branches:
