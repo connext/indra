@@ -16,11 +16,9 @@ import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import { mainListItems } from "./listItems";
-import SimpleTable from "./SimpleTable";
-import Card from "@material-ui/core/Card";
-import CardActions from "@material-ui/core/CardActions";
-import CardContent from "@material-ui/core/CardContent";
-import Button from "@material-ui/core/Button";
+import ChannelDetails from "./ChannelDetails";
+import { ContractInfoCardStyled } from "./ContractInfoCard";
+import {ChannelInfoCardStyled} from "./ChannelInfoCard";
 const ChannelManagerAbi = require("../abi/ChannelManager.json");
 
 const drawerWidth = 240;
@@ -95,50 +93,13 @@ const styles = theme => ({
   h5: {
     marginBottom: theme.spacing.unit * 2
   },
-  card: {
-    minWidth: 275
-  },
+
   title: {
     fontSize: 14
-  },
-  pos: {
-    marginBottom: 12
   }
 });
 
-const ContractInfoCard = props => {
-  const { classes, wei, token, loading, handleRefresh, contractAddress } = props;
-  return (
-    <Card className={classes.card}>
-      <CardContent>
-        {loading ? (
-          <Typography variant="h5" component="h2">
-            Loading...
-          </Typography>
-        ) : (
-          <>
-            <Typography className={classes.pos} color="textSecondary">
-              <a href={`https://rinkeby.etherscan.io/address/${contractAddress}`} target="_blank">{contractAddress}</a>
-            </Typography>
-            <Typography variant="h5" component="h2">
-              {parseFloat(wei.formatted).toFixed(2)}... ETH ({wei.raw} Wei)
-            </Typography>
-            <Typography variant="h5" component="h2">
-              ${parseFloat(token.formatted).toFixed(2)}... DAI ({token.raw} Dei)
-            </Typography>
-          </>
-        )}
-      </CardContent>
-      <CardActions>
-        <Button size="small" onClick={handleRefresh}>
-          Refresh
-        </Button>
-      </CardActions>
-    </Card>
-  );
-};
 
-const ContractInfoCardStyled = withStyles(styles)(ContractInfoCard);
 
 class Dashboard extends React.Component {
   state = {
@@ -247,11 +208,13 @@ class Dashboard extends React.Component {
             loading={loadingContract}
             contractAddress={process.env.REACT_APP_CM_ADDRESS}
           />
+          <ChannelInfoCardStyled />
           <Typography variant="h4" gutterBottom component="h2">
             Channels
           </Typography>
+            
           <div className={classes.tableContainer}>
-            <SimpleTable />
+            <ChannelDetails />
           </div>
         </main>
       </div>

@@ -22,7 +22,7 @@ const styles = theme => ({
 class Index extends React.Component {
   constructor(props) {
     super(props);
-    const web3 = new Web3(process.env.REACT_APP_RPC_URL);
+    const web3 = new Web3(process.env.REACT_APP_RINKEBY_RPC_URL);
     this.state = {
       web3
     };
