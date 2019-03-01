@@ -57,9 +57,9 @@ export class OnchainTransactionsDao {
       SELECT *
       FROM onchain_transactions_raw
       WHERE logical_id = ${logicalId}
-      FOR UPDATE
       ORDER BY id DESC
       LIMIT 1
+      FOR UPDATE
     `)
 
     return row && this.inflateRow(row)
