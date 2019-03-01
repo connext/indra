@@ -414,6 +414,10 @@ export default class SyncController extends AbstractController {
     const { channel, channelUpdate } = this.getState().persistent
     if (!hasPendingOps(channel))
       return
+    
+    // do not invalidate any states without a timeout
+    if (channel.timeout == 0) 
+      return
 
     // Wait until all the hub's sync results have been handled before checking
     // if we need to invalidate (the current state might be invalid, but the
