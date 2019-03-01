@@ -14,6 +14,9 @@ node_modules
 modules/hub/development/data
 modules/wallet/.env
 
+# per-project address book overrides
+address-book.json
+
 cypress/screenshots
 cypress/videos
 cypress/integration/examples
