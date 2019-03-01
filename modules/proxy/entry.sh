@@ -19,7 +19,7 @@ loading_pid="$!"
 # Define service hostnames & ports we depend on
 hub=hub:8080
 eth="${ETH_RPC_URL#*://}"
-wallet=wallet:3000
+dashboard=dashboard:3000
 
 echo "Waiting for $eth to wake up..." && bash wait_for.sh -t 60 $eth 2> /dev/null
 echo "Waiting for $hub to wake up..." && bash wait_for.sh -t 60 $hub 2> /dev/null
@@ -34,11 +34,11 @@ done
 
 if [[ "$MODE" == "dev" ]]
 then
-  echo "waiting for $wallet..." && bash wait_for.sh -t 60 $wallet 2> /dev/null
-  # Do a more thorough check to ensure the wallet is online
+  echo "waiting for $dashboard..." && bash wait_for.sh -t 60 $dashboard 2> /dev/null
+  # Do a more thorough check to ensure the dashboard is online
   while true
   do
-    if curl -s http://$wallet > /dev/null
+    if curl -s http://$dashboard > /dev/null
     then break
     else sleep 2
     fi

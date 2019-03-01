@@ -1,5 +1,6 @@
 #!/bin/bash
 
+project=indra
 name=ganache
 ganache_net_id=4447
 ganache_rpc_port=8545
@@ -19,11 +20,11 @@ docker run \
   --detach \
   --name="$name" \
   --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
-  --volume="connext_chain_dev:/data" \
+  --volume="${project}_chain_dev:/data" \
   --volume="$dir:/root" \
   --publish="$ganache_rpc_port:$ganache_rpc_port" \
   --entrypoint=bash \
-  connext_ethprovider -c "
+  ${project}_builder -c "
     echo lets go ganache diggy
     exec ./node_modules/.bin/ganache-cli \
       --host=0.0.0.0 \

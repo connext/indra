@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 name=${project}_contract_deployer
 key_name=hub_key
 cwd="`pwd`"
@@ -18,7 +18,7 @@ then ETH_NETWORK="$ETH_NETWORK"
 else ETH_NETWORK="ganache"
 fi
 
-if [[ -z "$ETH_PROVIDER" && "$ETH_NETWORK" == "ganache" ]]
+if [[ "$ETH_NETWORK" == "ganache" ]]
 then ETH_PROVIDER="http://localhost:8545"
 fi
 
@@ -85,7 +85,7 @@ docker service create \
   --env="ETH_NETWORK=$ETH_NETWORK" \
   --env="ETH_PROVIDER=$ETH_PROVIDER" \
   --env="INFURA_KEY=$INFURA_KEY" \
-  --mount="type=volume,source=connext_chain_dev,target=/data" \
+  --mount="type=volume,source=${project}_chain_dev,target=/data" \
   --mount="type=bind,source=$cwd/modules/contracts,target=/root" \
   --restart-condition="none" \
   $SECRET_ENV \

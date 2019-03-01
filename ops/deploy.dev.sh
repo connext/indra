@@ -12,15 +12,14 @@ set -e
 # set any of these to "yes" to turn on watchers
 watch_hub="no"
 watch_chainsaw="no"
-watch_wallet="yes"
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 number_of_services=7
 
 # set defaults for some core env vars
-MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
-DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
-EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
+MODE="${MODE:-development}"
+DOMAINNAME="${DOMAINNAME:-localhost}"
+EMAIL="${EMAIL:-noreply@gmail.com}"
 
 # ethereum settings
 ETH_RPC_URL="http://ethprovider:8545"
@@ -34,24 +33,24 @@ addressBook="modules/contracts/ops/address-book.json"
 HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
 CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
 TOKEN_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].approvedToken`"
-PRIVATE_KEY_FILE="/run/secrets/private_key_dev"
+PRIVATE_KEY_FILE="/run/secrets/hub_key_ganache"
 
 # database settings
 REDIS_URL="redis://redis:6379"
 POSTGRES_URL="database:5432"
 POSTGRES_USER="$project"
 POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
+POSTGRES_PASSWORD_FILE="/run/secrets/${project}_database_dev"
 
 ####################
 # Deploy according to above configuration
 
 proxy_image=${project}_proxy:dev
-wallet_image=${project}_builder
 hub_image=${project}_builder
 chainsaw_image=${project}_builder
 ethprovider_image=${project}_builder
 database_image=${project}_database:dev
+dashboard_image=${project}_builder
 redis_image=redis:5-alpine
 
 # turn on swarm mode if it's not already on
@@ -77,8 +76,8 @@ function new_secret {
   fi
 }
 
-new_secret connext_database_dev
-new_secret private_key_dev "$private_key"
+new_secret ${project}_database_dev
+new_secret hub_key_ganache "$private_key"
 
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
 then
@@ -95,9 +94,9 @@ networks:
     external: true
 
 secrets:
-  connext_database_dev:
+  ${project}_database_dev:
     external: true
-  private_key_dev:
+  hub_key_ganache:
     external: true
 
 volumes:
@@ -119,18 +118,15 @@ services:
     volumes:
       - certs:/etc/letsencrypt
 
-  wallet:
-    image: $wallet_image
-    entrypoint: bash ops/entry.sh
-    command: "$watch_wallet"
+  dashboard:
+    image: $dashboard_image
+    entrypoint: npm start
     networks:
       - $project
     environment:
       NODE_ENV: development
     volumes:
-      - `pwd`/modules/wallet:/root
-      - `pwd`/modules/client:/client
-      - `pwd`/modules/contracts/build/contracts:/contracts
+      - `pwd`/modules/dashboard:/root
 
   hub:
     image: $hub_image
@@ -141,8 +137,8 @@ services:
     ports:
       - "8080:8080"
     secrets:
-      - connext_database_dev
-      - private_key_dev
+      - ${project}_database_dev
+      - hub_key_ganache
     environment:
       NODE_ENV: $MODE
       PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
@@ -170,8 +166,8 @@ services:
     networks:
       - $project
     secrets:
-      - connext_database_dev
-      - private_key_dev
+      - ${project}_database_dev
+      - hub_key_ganache
     environment:
       NODE_ENV: $MODE
       PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
@@ -211,6 +207,7 @@ services:
   database:
     image: $database_image
     environment:
+      ETH_NETWORK: $ETH_NETWORK
       POSTGRES_USER: $project
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
@@ -221,9 +218,10 @@ services:
     ports:
       - "5432:5432"
     secrets:
-      - connext_database_dev
+      - ${project}_database_dev
     volumes:
       - database_dev:/var/lib/postgresql/data
+      - `pwd`/modules/database:/root
 
   redis:
     image: $redis_image

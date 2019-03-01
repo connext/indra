@@ -1,58 +1,110 @@
 #!/bin/bash
 set -e
 
-echo "===> Starting database in env:"
+########################################
+## Setup Env
+
+# 60 sec/min * 30 min = 1800
+backup_frequency="1800"
+should_restore_backup="no"
+backup_file="snapshots/`ls snapshots | sort -r | head -n 1`"
+
+########################################
+## Helper functions
+
+function log {
+  echo "[ENTRY] $1"
+}
+
+function unlock {
+  lock="/var/lib/postgresql/data/postmaster.pid"
+  sleep 2
+  while [[ -f "$lock" ]]
+  do
+    mode=${1:-fast}
+    postmaster="`head -n1 $lock`"
+    log "Waiting on lock for pid $postmaster to be released..."
+    if [[ -n "`ps -o pid | grep $postmaster`" ]]
+    then log "Process $postmaster is running, killing it now.." && kill $postmaster
+    else log "Process $postmaster is NOT running, removing the lock now.." && rm $lock
+    fi
+    sleep 2
+  done
+}
+
+# Set an exit trap so that the database will do one final backup before shutting down
+function cleanup {
+  log "Database exiting, creating final snapshot"
+  bash ops/backup.sh
+  log "Shutting the database down"
+  kill "$db_pid"
+  unlock smart
+  log "Clean exit."
+}
+
+trap cleanup SIGTERM
+
+########################################
+## Execute
+
+log "Starting database in env:"
 env
 
-# Start temporary database in background to run migrations
-while [[ -f "/var/lib/postgresql/data/postmaster.pid" ]]
-do echo "===> Waiting for lock to be released..." && sleep 2
-done
+# Is this a fresh database? Should we restore data from a snapshot?
+if [[ ! -f "/var/lib/postgresql/data/PG_VERSION" && -f "$backup_file" ]]
+then 
+  log "Fresh postgres db started w backup present, we'll restore: $backup_file"
+  should_restore_backup="yes"
+else log "Database exists or no snapshots found"
+fi
+
+# Start temp database & wait until it wakes up
+log "Starting temp database for migrations/recovery.."
+unlock fast
 /docker-entrypoint.sh postgres &
 PID=$!
-ops/wait-for-it.sh 127.0.0.1:5432
-echo "===> Good morning, Postgres!"
+while ! psql -U $POSTGRES_USER -d $POSTGRES_DB -c "select 1" > /dev/null 2>&1
+do log "Waiting for db to wake up.." && sleep 1
+done
+log "Good morning, Postgres!"
+
+# Maybe restore data from snapshot
+if [[ "$should_restore_backup" == "yes" ]]
+then
+  log "Restoring db snapshot from file $backup_file"
+  psql --username=$POSTGRES_USER $POSTGRES_DB < $backup_file
+  log "Done restoring db snapshot"
+fi
 
 # Run migrations
-echo "===> Running migrations..."
-migrate=./node_modules/.bin/db-migrate
-if [[ -z "POSTGRES_PASSWORD" ]]
-then POSTGRES_PASSWORD="`cat $POSTGRES_PASSWORD_FILE`"
+log "Running migrations..."
+if [[ -n "POSTGRES_PASSWORD_FILE" ]]
+then export POSTGRES_PASSWORD="`cat $POSTGRES_PASSWORD_FILE`"
 fi
-$migrate up --config ops/config.json --verbose all
+./node_modules/.bin/db-migrate up --config ops/config.json
+log "Migrations complete!"
 if [[ -n "POSTGRES_PASSWORD_FILE" ]]
 then unset POSTGRES_PASSWORD
 fi
 
-# Turn this off until we can confirm it's supposed to work
-if [[ -n "$TEST" ]]
-then
-  echo "===> Testing migration results..."
-  outf="/tmp/migration-test-results"
-  for f in test/*.sql
-  do
-    echo "Testing: $f"
-    psql --username=$POSTGRES_USER $POSTGRES_DB < "$f" > "$outf"
-    diff -u "$f.expected" "$outf" || {
-      echo "Oh no.. hint: run cp $outf \"$PWD/$f.expected\""
-      exit 1
-    }
-    echo "Okay!"
-  done
-fi
-
-# Start database in foreground to serve requests from hub
-echo "===> Stopping old database.."
+log "Stopping old database.."
 kill $PID
-while [[ -f "/var/lib/postgresql/data/postmaster.pid" ]]
-do echo "===> Waiting for lock to be released..." && sleep 2
-done
+unlock smart
 
-# Have requests to port 5431 returns "done" a la unix.stackexchange.com/a/37762
-echo "===> Signalling the completion of migrations..."
-while true
+# Start migrations signaller
+log "===> Starting migrations signaller"
+while true # unix.stackexchange.com/a/37762
 do echo 'db migrations complete' | nc -lk -p 5431
 done > /dev/null &
 
-echo "===> Starting new database.."
-exec /docker-entrypoint.sh postgres
+# Start backing up the db periodically
+log "===> Starting backer upper"
+while true
+do sleep $backup_frequency && bash ops/backup.sh
+done &
+
+# Start database to serve requests from clients
+log "===> Starting new database.."
+/docker-entrypoint.sh postgres &
+db_pid=$!
+wait "$db_pid"

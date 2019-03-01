@@ -68,7 +68,7 @@ const deployContract = async (name, artifacts, args) => {
   args.forEach(a=> saveArgs[a.name] = a.value)
   addresses[name].networks[netId] = { address, ...saveArgs }
   saveAddresses(addresses)
-  return address
+  return contract
 }
 
 ////////////////////////////////////////
@@ -77,7 +77,7 @@ const deployContract = async (name, artifacts, args) => {
 
 ;(async function() {
   let provider, signer, balance, nonce, isDeployed
-  let ecToolsAddress, tokenAddress, channelManagerAddress
+  let ecToolsAddress, token, tokenAddress, channelManager, channelManagerAddress
 
   if (process.env.ETH_PROVIDER) {
     provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER)
@@ -132,7 +132,7 @@ const deployContract = async (name, artifacts, args) => {
     ecToolsAddress = ecToolsSavedAddress
     console.log(`ECTools is up to date, no action required\nAddress: ${ecToolsAddress}`)
   } else {
-    ecToolsAddress = await deployContract('ECTools', ecToolsArtifacts, [])
+    ecToolsAddress = (await deployContract('ECTools', ecToolsArtifacts, [])).address
   }
 
   ////////////////////////////////////////
@@ -140,21 +140,27 @@ const deployContract = async (name, artifacts, args) => {
 
   console.log(`\nChecking for a valid token..`)
   const tokenSavedAddress = getSavedData('tokens', 'address')
-  const tokenSupply = getSavedData('tokens', 'supply') || '1000000000000000000000000000' 
-  const tokenName = getSavedData('tokens', 'name') || 'Test' 
-  const tokenDecimals = getSavedData('tokens', 'decimals') || '18' 
-  const tokenSymbol = getSavedData('tokens', 'symbol') || 'TST' 
+  const tokenSupply = getSavedData('tokens', 'supply') || eth.utils.parseEther('10000000')
+  const tokenName = getSavedData('tokens', 'name') || 'MockDai'
+  const tokenDecimals = getSavedData('tokens', 'decimals') || '18'
+  const tokenSymbol = getSavedData('tokens', 'symbol') || 'MDA'
 
   if (await contractIsDeployed(tokenSavedAddress)) {
+    token = new eth.Contract(
+      tokenSavedAddress,
+      humanStandardTokenArtifacts.abi,
+      provider
+    )
     tokenAddress = tokenSavedAddress
     console.log(`${tokenName} token is up to date, no action required\nAddress: ${tokenAddress}`)
-  } else if (netId === 4447) { // We should only deploy new token contracts in dev-mode
-    tokenAddress = await deployContract('tokens', humanStandardTokenArtifacts, [
+  } else if (netId !== 1) { // We should only deploy new token contracts in dev-mode
+    token = await deployContract('tokens', humanStandardTokenArtifacts, [
       { name: 'supply', value: tokenSupply },
       { name: 'name', value: tokenName },
       { name: 'decimals', value: tokenDecimals },
       { name: 'symbol', value: tokenSymbol }
     ])
+    tokenAddress = token.address
   } else {
     console.error(`A properly deployed token must be included in our address book`)
     process.exit(1)
@@ -173,7 +179,7 @@ const deployContract = async (name, artifacts, args) => {
 
   // Flag for migration if we aren't linked to the correct token/hub
   if (isDeployed) {
-    const channelManager = new eth.Contract(
+    channelManager = new eth.Contract(
       channelManagerSavedAddress,
       channelManagerArtifacts.abi,
       provider
@@ -212,11 +218,40 @@ const deployContract = async (name, artifacts, args) => {
     channelManagerArtifacts.bytecode = linker.linkBytecode(channelManagerArtifacts.bytecode, {
       'ECTools': ecToolsAddress
     })
-    channelManagerAddress = await deployContract('ChannelManager', channelManagerArtifacts, [
+    channelManager = await deployContract('ChannelManager', channelManagerArtifacts, [
       { name: 'hub', value: wallet.address },
       { name: 'challengePeriod', value: challengePeriod },
       { name: 'approvedToken', value: tokenAddress }
     ])
+  }
+
+  ////////////////////////////////////////
+  // In dev-mode, automatically give the contract funds for collateral
+
+  const ethCollateral = eth.utils.parseEther('3')
+  const tokenCollateral = eth.utils.parseEther('10000')
+
+  if (netId !== 1) {
+    console.log(`\nGiving the ChannelManager some collateral..`)
+    const currentEthCollateral = await channelManager.getHubReserveWei()
+    const currentTokenCollateral = await channelManager.getHubReserveTokens()
+    if (currentEthCollateral.eq(eth.utils.bigNumberify('0'))) {
+      let tx = await wallet.sendTransaction({ to: channelManager.address, value: ethCollateral })
+      await wallet.provider.waitForTransaction(tx.hash)
+      console.log(`Collateralized contract w ${eth.utils.formatEther(ethCollateral)} Eth`)
+      console.log(`Transaction hash: ${tx.hash}`)
+    } else {
+      console.log(`Contract has enough Eth: ${eth.utils.formatEther(currentEthCollateral)}`)
+    }
+    if (currentTokenCollateral.eq(eth.utils.bigNumberify('0'))) {
+      token = token.connect(wallet)
+      let tx = await token.transfer(channelManager.address, tokenCollateral)
+      await wallet.provider.waitForTransaction(tx.hash)
+      console.log(`Collateralized contract w ${eth.utils.formatEther(tokenCollateral)} tokens`)
+      console.log(`Transaction hash: ${tx.hash}`)
+    } else {
+      console.log(`Contract has enough tokens: ${eth.utils.formatEther(currentTokenCollateral)}`)
+    }
   }
 
   ////////////////////////////////////////

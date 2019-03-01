@@ -4,7 +4,7 @@ set -e
 ####################
 # ENV VARS
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 registry="connextproject"
 number_of_services=6
 
@@ -25,6 +25,7 @@ then addressBook="address-book.json"
 else addressBook="modules/contracts/ops/address-book.json"
 fi
 ETH_RPC_URL="https://eth-rinkeby.alchemyapi.io/jsonrpc/RvyVeludt7uwmt2JEF2a1PvHhJd5c07b"
+ETH_NETWORK="rinkeby"
 ETH_NETWORK_ID="4"
 HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
 CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
@@ -36,9 +37,9 @@ SHOULD_COLLATERALIZE_URL="NO_CHECK"
 REDIS_URL="redis://redis:6379"
 POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
-POSTGRES_USER="$project"
-POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/connext_database"
+POSTGRES_USER="connext"
+POSTGRES_DB="connext"
+POSTGRES_PASSWORD_FILE="/run/secrets/indra_database"
 
 ####################
 # Deploy according to above configuration
@@ -91,7 +92,7 @@ function new_secret {
   fi
 }
 
-new_secret connext_database
+new_secret ${project}_database
 new_secret private_key $PRIVATE_KEY
 
 mkdir -p /tmp/$project
@@ -99,13 +100,14 @@ cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
 secrets:
-  connext_database:
+  ${project}_database:
     external: true
   private_key:
     external: true
 
 volumes:
-  database:
+  ${project}_database:
+    external: true
   certs:
 
 services:
@@ -136,7 +138,7 @@ services:
       - database
       - chainsaw
     secrets:
-      - connext_database
+      - ${project}_database
       - private_key
     environment:
       NODE_ENV: production
@@ -160,7 +162,7 @@ services:
     depends_on:
       - postgres
     secrets:
-      - connext_database
+      - ${project}_database
       - private_key
     environment:
       NODE_ENV: production
@@ -187,13 +189,17 @@ services:
     deploy:
       mode: global
     secrets:
-      - connext_database
+      - ${project}_database
     environment:
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+      ETH_NETWORK: $ETH_NETWORK
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     volumes:
-      - database:/var/lib/postgresql/data
+      - ${project}_database:/var/lib/postgresql/data
+      - `pwd`/modules/database/ops:/root/ops
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

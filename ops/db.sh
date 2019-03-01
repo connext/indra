@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-project=connext
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 username=$project
 database=$project
 
