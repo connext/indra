@@ -17,9 +17,9 @@ project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 number_of_services=7
 
 # set defaults for some core env vars
-MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
-DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
-EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
+MODE="${MODE:-development}"
+DOMAINNAME="${DOMAINNAME:-localhost}"
+EMAIL="${EMAIL:-noreply@gmail.com}"
 
 # ethereum settings
 ETH_RPC_URL="http://ethprovider:8545"
