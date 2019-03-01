@@ -140,10 +140,10 @@ const deployContract = async (name, artifacts, args) => {
 
   console.log(`\nChecking for a valid token..`)
   const tokenSavedAddress = getSavedData('tokens', 'address')
-  const tokenSupply = getSavedData('tokens', 'supply') || '1000000000000000000000000000' 
-  const tokenName = getSavedData('tokens', 'name') || 'Test' 
-  const tokenDecimals = getSavedData('tokens', 'decimals') || '18' 
-  const tokenSymbol = getSavedData('tokens', 'symbol') || 'TST' 
+  const tokenSupply = getSavedData('tokens', 'supply') || eth.utils.parseEther('10000000')
+  const tokenName = getSavedData('tokens', 'name') || 'MockDai'
+  const tokenDecimals = getSavedData('tokens', 'decimals') || '18'
+  const tokenSymbol = getSavedData('tokens', 'symbol') || 'MDA'
 
   if (await contractIsDeployed(tokenSavedAddress)) {
     token = new eth.Contract(
@@ -153,7 +153,7 @@ const deployContract = async (name, artifacts, args) => {
     )
     tokenAddress = tokenSavedAddress
     console.log(`${tokenName} token is up to date, no action required\nAddress: ${tokenAddress}`)
-  } else if (netId === 4447) { // We should only deploy new token contracts in dev-mode
+  } else if (netId !== 1) { // We should only deploy new token contracts in dev-mode
     token = await deployContract('tokens', humanStandardTokenArtifacts, [
       { name: 'supply', value: tokenSupply },
       { name: 'name', value: tokenName },
@@ -228,10 +228,10 @@ const deployContract = async (name, artifacts, args) => {
   ////////////////////////////////////////
   // In dev-mode, automatically give the contract funds for collateral
 
-  const ethCollateral = eth.utils.parseEther('10')
+  const ethCollateral = eth.utils.parseEther('3')
   const tokenCollateral = eth.utils.parseEther('10000')
 
-  if (netId === 4447) {
+  if (netId !== 1) {
     console.log(`\nGiving the ChannelManager some collateral..`)
     const currentEthCollateral = await channelManager.getHubReserveWei()
     const currentTokenCollateral = await channelManager.getHubReserveTokens()
