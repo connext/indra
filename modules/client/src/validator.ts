@@ -629,7 +629,7 @@ export class Validator {
   }
 
   public assertThreadSigner(threadState: ThreadState): void {
-    if (this.utils.recoverSignerFromThreadState(threadState, threadState.sigA) !== threadState.sender) {
+    if (this.utils.recoverSignerFromThreadState(threadState, threadState.sigA) !== threadState.sender.toLowerCase()) {
       throw new Error(`Thread state is not correctly signed. threadState: ${JSON.stringify(threadState)}`)
     }
   }
