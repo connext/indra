@@ -427,7 +427,8 @@ export class PostgresChannelsDao implements ChannelsDao {
         chainsawId: Number(row.chainsaw_event_id),
         createdOn: row.created_on,
         args: convertArgs('bignumber', row.reason, row.args),
-        invalid: row.invalid
+        invalid: row.invalid,
+        onchainTxLogicalId: row.onchain_tx_logical_id
       }
     )
   }
