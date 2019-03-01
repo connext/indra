@@ -13,6 +13,7 @@ MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
 DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
 EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
 INFURA_KEY=$INFURA_KEY; [[ -n "$INFURA_KEY" ]] || INFURA_KEY="abc123"
+INGESTION_KEY=$INGESTION_KEY; [[ -n "$INGESTION_KEY" ]] || INGESTION_KEY="abc123"
 
 # misc settings
 SERVICE_USER_KEY="foo"
@@ -104,6 +105,13 @@ volumes:
   certs:
 
 services:
+  logdna:
+    image: logdna/logspout:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - LOGDNA_KEY: $INGESTION_KEY
+      - TAGS: logdna
 
   proxy:
     image: $proxy_image
