@@ -1,6 +1,5 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
-import { BigNumber } from 'bignumber.js'
 import { toWeiBigNum } from './util/bigNumber';
 
 const ENV_VARS = [

@@ -389,7 +389,6 @@ export type ArgsTypes<T=string> =
   | PaymentArgs<T>
   | DepositArgs<T>
   | WithdrawalArgs<T>
-  | UnsignedThreadState<T>
   | ConfirmPendingArgs
   | InvalidationArgs
   | EmptyChannelArgs
@@ -412,7 +411,7 @@ export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   // If this update is coming from the hub, this will be the database timestamp
   // when the update was created there.
   createdOn?: Date
-  initialThreadStates?: UnsignedThreadState[]
+  initialThreadStates?: ThreadState[]
 }
 
 export type UpdateRequestTypes<T=string> = {
@@ -722,17 +721,16 @@ export type WithdrawalParameters<T = string> = {
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
+/*********************************
+ ******* TYPE CONVERSIONS ********
+ *********************************/
+
 export const withdrawalParamsNumericFields = [
   'withdrawalWeiUser',
   'tokensToSell',
   'weiToSell',
   'withdrawalTokenUser',
 ]
-
-/*********************************
- ******* TYPE CONVERSIONS ********
- *********************************/
-
 export function channelUpdateToUpdateRequest(up: ChannelStateUpdate): UpdateRequest {
   return {
     id: up.id,
@@ -877,12 +875,16 @@ export function convertWithdrawal<To extends NumericTypeName>(to: To, obj: Withd
   return convertFields(fromType, to, argNumericFields.ProposePendingWithdrawal, obj)
 }
 
+export function convertWithdrawalParams<To extends NumericTypeName>(to: To, obj: WithdrawalParameters<any>): WithdrawalParameters<NumericTypes[To]> {
+  const fromType = getType(obj.tokensToSell)
+  return convertFields(fromType, to, withdrawalParamsNumericFields, obj)
+}
+
 export const proposePendingNumericArgs = [
   'depositWeiUser',
   'depositWeiHub',
   'depositTokenUser',
   'depositTokenHub',
-
   'withdrawalWeiUser',
   'withdrawalWeiHub',
   'withdrawalTokenUser',
@@ -910,7 +912,7 @@ const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
   Invalidation: (to: any, args: InvalidationArgs) => args,
   OpenThread: convertThreadState,
   CloseThread: convertThreadState,
-  EmptyChannel: (to: any, args: ConfirmPendingArgs) => args,
+  EmptyChannel: (to: any, args: EmptyChannelArgs) => args,
 }
 
 export function convertArgs<
@@ -943,7 +945,7 @@ Returns:
 
 */
 
-export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD'
+export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD' | 'PT_LINK'
 
 
 export interface PurchaseRequest<MetadataType=any, PaymentMetadataType=any> {
@@ -978,6 +980,8 @@ export type PurchasePayment<MetadataType=any> = ({
   // will be the thread recipient.
   recipient: string
 
+  secret?: string
+
   // A convenience field summarizing the change in balance of the underlying
   // channel or thread.
   // For example, if this is a non-custodial payment for 1 BOOTY, the `amount`
@@ -1000,6 +1004,10 @@ export type PurchasePayment<MetadataType=any> = ({
       type: 'PT_THREAD'
       // See note above
       update: ThreadStateUpdate
+    } |
+    {
+      type: 'PT_LINK'
+      update: UpdateRequest<string, PaymentArgs> // TODO: restrict to payment only?
     }
   ))
 
