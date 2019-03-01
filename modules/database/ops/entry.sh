@@ -65,7 +65,6 @@ do echo 'db migrations complete' | nc -lk -p 5431
 done > /dev/null &
 
 # Setup remote backups & start backing up the db periodically
-bash ops/configure-remote-backup.sh
 echo "[ENTRY] ===> Starting backer upper"
 while true
 do sleep $backup_frequency && bash ops/backup.sh
