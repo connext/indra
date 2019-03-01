@@ -19,7 +19,7 @@ fi
 
 # Start temporary database in background to run migrations
 while [[ -f "/var/lib/postgresql/data/postmaster.pid" ]]
-do echo "[ENTRY] Waiting for lock to be released..." && sleep 2
+do echo "[ENTRY] Waiting for lock to be released..." && sleep 5
 done
 /docker-entrypoint.sh postgres &
 PID=$!
@@ -74,10 +74,13 @@ done &
 function finish {
   echo "[ENTRY] Database exiting, doing one final backup"
   bash ops/backup.sh
+  kill "$db_pid"
   echo "[ENTRY] Done, database exiting.."
 }
-trap finish EXIT
+trap finish SIGTERM
 
-# Start database in foreground to serve requests from hub
+# Start database to serve requests from clients
 echo "[ENTRY] ===> Starting new database.."
-exec /docker-entrypoint.sh postgres
+/docker-entrypoint.sh postgres &
+db_pid=$!
+wait "$db_pid"
