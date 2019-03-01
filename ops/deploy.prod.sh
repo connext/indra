@@ -106,7 +106,7 @@ secrets:
     external: true
 
 volumes:
-  connext_database:
+  ${project}_database:
     external: true
   certs:
 
@@ -198,7 +198,7 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     volumes:
-      - connext_database:/var/lib/postgresql/data
+      - ${project}_database:/var/lib/postgresql/data
       - `pwd`/modules/database/ops:/root/ops
 EOF
 
