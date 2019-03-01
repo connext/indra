@@ -189,7 +189,7 @@ export class MockHub implements IHubAPIClient {
     return {} as any
   }
 
-  async redeem(secret: string): Promise<PurchasePaymentHubResponse> {
+  async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }> {
     // NOTE: by default assumes this is redeemers first payment
     // if this is not what you are testing against, must use
     // the patch functions in test
@@ -209,7 +209,11 @@ export class MockHub implements IHubAPIClient {
           sigUser: '',
           txCount: 1,
         },
-      }]}
+      }]},
+      amount: {
+        amountWei: '0',
+        amountToken: '1',
+      }
     }
   }
 
