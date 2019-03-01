@@ -19,7 +19,11 @@ INGESTION_KEY="${INGESTION_KEY:-abc123}"
 SERVICE_USER_KEY="foo"
 
 # ethereum settings
-addressBook="modules/contracts/ops/address-book.json"
+# Allow contract address overrides if an address book is present in project root
+if [[ -f "address-book.json" ]]
+then addressBook="address-book.json"
+else addressBook="modules/contracts/ops/address-book.json"
+fi
 ETH_RPC_URL="https://eth-rinkeby.alchemyapi.io/jsonrpc/RvyVeludt7uwmt2JEF2a1PvHhJd5c07b"
 ETH_NETWORK_ID="4"
 HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
