@@ -6,7 +6,7 @@ set -e
 
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 registry="connextproject"
-number_of_services=5
+number_of_services=6
 
 # set defaults for some core env vars
 MODE="${MODE:-development}"
