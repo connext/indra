@@ -623,7 +623,7 @@ export class Validator {
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr) {
+    if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr.toLowerCase()) {
       throw new Error(`Channel state is not correctly signed by ${signer}. channelState: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
@@ -638,7 +638,7 @@ export class Validator {
     if (!req.sigUser) {
       throw new Error(`No signature detected on deposit request. (request: ${JSON.stringify(req)}, signer: ${signer})`)
     }
-    if (this.utils.recoverSignerFromDepositRequest(req) !== signer) {
+    if (this.utils.recoverSignerFromDepositRequest(req) !== signer.toLowerCase()) {
       throw new Error(`Deposit request proposal is not correctly signed by intended signer. (request: ${JSON.stringify(req)}, signer: ${signer})`)
     }
   }
