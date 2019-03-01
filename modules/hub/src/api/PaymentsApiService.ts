@@ -169,6 +169,7 @@ export class PaymentsApiServiceHandler {
 
     res.send({
       purchaseId: result.res.purchaseId,
+      amount: result.res.amount,
       sync: updates,
     })
   }
