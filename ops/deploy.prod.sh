@@ -25,6 +25,7 @@ then addressBook="address-book.json"
 else addressBook="modules/contracts/ops/address-book.json"
 fi
 ETH_RPC_URL="https://eth-rinkeby.alchemyapi.io/jsonrpc/RvyVeludt7uwmt2JEF2a1PvHhJd5c07b"
+ETH_NETWORK="rinkeby"
 ETH_NETWORK_ID="4"
 HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
 CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
