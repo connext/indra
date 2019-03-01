@@ -12,9 +12,8 @@ import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
-import { PurchaseRowWithPayments, PurchasePaymentRow } from "./domain/Purchase";
+import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
-import { ChannelStateUpdateRow } from './domain/Channel';
 import { emptyAddress } from './vendor/connext/Utils';
 import GlobalSettingsDao from './dao/GlobalSettingsDao';
 
