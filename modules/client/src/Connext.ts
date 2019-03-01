@@ -45,7 +45,6 @@ import { EventLog } from 'web3/types';
 import ThreadsController from './controllers/ThreadsController';
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { RedeemController } from './controllers/RedeemController';
-import { objMap } from './StateGenerator';
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -756,10 +755,10 @@ export interface ConnextClientOptions {
   web3: Web3
   hubUrl: string
   user: string
+  contractAddress: string
+  hubAddress: Address
+  tokenAddress: Address
   ethNetworkId?: string
-  contractAddress?: string
-  hubAddress?: Address
-  tokenAddress?: Address
   tokenName?: string
   gasMultiple?: number
 
@@ -827,9 +826,6 @@ export abstract class ConnextClient extends EventEmitter {
 
   constructor(opts: ConnextClientOptions) {
     super()
-
-    // lower case all opts
-    opts = objMap(opts, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
 
     this.opts = opts
     this.internal = this as any
@@ -901,9 +897,6 @@ export class ConnextInternal extends ConnextClient {
   constructor(opts: ConnextClientOptions) {
     super(opts)
 
-    // lower case all string options
-    opts = objMap(opts, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
-
     // Internal things
     // The store shouldn't be used by anything before calling `start()`, so
     // leave it null until then.
@@ -916,8 +909,9 @@ export class ConnextInternal extends ConnextClient {
       this.opts.tokenName,
     )
 
-    opts.hubAddress = opts.hubAddress || ''//hubConfig.hubAddress
-    opts.contractAddress = opts.contractAddress || ''//hubConfig.contractAddress
+    opts.user = opts.user.toLowerCase()
+    opts.hubAddress = opts.hubAddress.toLowerCase()
+    opts.contractAddress = opts.contractAddress.toLowerCase()
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
     this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
