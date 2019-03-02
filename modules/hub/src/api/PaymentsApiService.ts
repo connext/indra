@@ -137,8 +137,8 @@ export class PaymentsApiServiceHandler {
 
   async doRedeem(req: express.Request, res: express.Response) {
     const user = req.session!.address
-    const { secret } = req.body
-    if (!user || !secret) {
+    const { secret, lastThreadUpdateId, lastChanTx } = req.body
+    if (!user || !secret || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
       LOG.warn(
         'Received invalid update state request. Aborting. Body received: {body}, Params received: {params}',
         {
@@ -155,16 +155,13 @@ export class PaymentsApiServiceHandler {
       // @ts-ignore
       // TODO: wtf? it works, but doesnt compile
       // are the express types out of date somehow?
-      return res.send(500, result.msg)
+      return res.send(400, result.msg)
     }
 
-    const chan = await this.channelService.getChannel(user)
-    // TODO: fix for thread updates
-    // last update id is currently 0 hardcoded
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
       req.session!.address,
-      chan ? chan.state.txCountGlobal : 0,
-      0,
+      lastChanTx,
+      lastThreadUpdateId,
     )
 
     res.send({
