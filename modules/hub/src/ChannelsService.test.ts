@@ -1,5 +1,5 @@
 import { parameterizedTests } from './testing'
-import { PostgresChannelsDao } from './dao/ChannelsDao'
+import ChannelsDao, { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
 import { getTestRegistry, assert, getFakeClock, nock } from './testing'
 import {
@@ -51,6 +51,8 @@ import { BigNumber } from 'bignumber.js/bignumber'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { RedisClient } from './RedisClient'
 import ThreadsService from './ThreadsService';
+import DBEngine from './DBEngine';
+import { sleep } from './util';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -61,6 +63,23 @@ function fieldsToWei<T>(obj: T): T {
 }
 
 const contract = mkAddress('0xCCC')
+
+function web3ContractMock() {
+  this.methods = {
+    hubAuthorizedUpdate: () => {
+      return {
+        send: async () => {
+          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          return true
+        },
+        encodeABI: async () => {
+          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          return true
+        },
+      }
+    },
+  }
+}
 
 describe('ChannelsService', () => {
   const clock = getFakeClock()
@@ -1057,5 +1076,114 @@ describe('ChannelsService.shouldCollateralize', () => {
     })
     const service: ChannelsService = registry.get('ChannelsService')
     assert.equal(await service.shouldCollateralize('0x1234'), true)
+  })
+
+  describe('ChannelsService-txFail', () => {
+    const registry = getTestRegistry({
+      Web3: {
+        ...Web3,
+        eth: {
+          Contract: web3ContractMock,
+          sign: async () => {
+            return
+          },
+          getTransactionCount: async () => {
+            return 1
+          },
+          estimateGas: async () => {
+            return 1000
+          },
+          signTransaction: async () => {
+            return {
+              tx: {
+                hash: mkHash('0xaaa'),
+                r: mkHash('0xabc'),
+                s: mkHash('0xdef'),
+                v: '0x27',
+              },
+            }
+          },
+          sendSignedTransaction: () => {
+            console.log(`Called mocked web3 function sendSignedTransaction`)
+            return {
+              on: (input, cb) => {
+                switch (input) {
+                  case 'error':
+                    return cb('nonce too low')
+                }
+              },
+            }
+          },
+          sendTransaction: () => {
+            console.log(`Called mocked web3 function sendTransaction`)
+            return {
+              on: (input, cb) => {
+                switch (input) {
+                  case 'error':
+                    return cb('nonce too low')
+                }
+              },
+            }
+          },
+        },
+      },
+      ExchangeRateDao: new MockExchangeRateDao(),
+      GasEstimateDao: new MockGasEstimateDao(),
+      SignerService: new MockSignerService()
+    })
+  
+    const service: ChannelsService = registry.get('ChannelsService')
+    const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  
+    beforeEach(async () => {
+      await registry.clearDatabase()
+    })
+  
+    it('should invalidate a failing hub authorized update', async () => {
+      let channel = await channelUpdateFactory(registry)
+      await service.doCollateralizeIfNecessary(channel.user)
+      let { updates: sync } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+      let latest = sync.pop()
+      assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
+  
+      await service.doUpdates(channel.user, [{
+        reason: 'ProposePendingDeposit',
+        args: convertDeposit('bignumber', (latest.update as UpdateRequest).args as DepositArgs),
+        txCount: channel.state.txCountGlobal + 1,
+        sigUser: mkSig('0xc')
+      }])
+  
+      // need to sleep here to let the async process fail
+      sleep(50)
+  
+      let { updates: sync2 } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+      latest = sync2.pop()
+      assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
+      const generated = stateGenerator.invalidation(
+        convertChannelState('bn', channel.state), 
+        {
+          lastInvalidTxCount: channel.state.txCountGlobal + 1,
+          previousValidTxCount: channel.state.txCountGlobal,
+          reason: 'CU_INVALID_ERROR'
+        }
+      )
+      assertChannelStateEqual(generated, {
+        pendingDepositToken: [0, 0],
+        pendingDepositWei: [0, 0],
+        pendingWithdrawalToken: [0, 0],
+        pendingWithdrawalWei: [0, 0],
+      })
+    })
+  
+    // TODO: make this work again
+    // it('should move a disputed channel back to open if tx fails', async () => {
+    //   const channel = await channelUpdateFactory(registry)
+    //   await service.startUnilateralExit(channel.user, 'this is a test')
+    //   // need to sleep here to let the async process fail
+    //   await sleep(20)
+  
+    //   const { status } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    //   assert.equal(status, 'CS_OPEN')
+    // })
   })
 })
