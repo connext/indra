@@ -98,7 +98,7 @@ export interface IHubAPIClient {
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
   config(): Promise<HubConfig>
-  redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }>
+  redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -298,11 +298,15 @@ class HubAPIClient implements IHubAPIClient {
     return data
   }
 
-  async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
+  async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
     try {
       const response = await this.networking.post(
         `payments/redeem/${this.user}`,
-        { secret },
+        { 
+          secret,
+          lastChanTx: txCount,
+          lastThreadUpdateId, 
+        },
       )
       return response.data
     } catch (e) {
