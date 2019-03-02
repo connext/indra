@@ -811,7 +811,6 @@ describe('ChannelsService', () => {
     }])
 
     const deposit = await channelsDao.getChannelUpdateByTxCount(chan.user, chan.state.txCountGlobal + 1)
-    console.log('deposit: ', deposit);
     let tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
     assert.equal(tx.state, 'submitted')
 
@@ -822,7 +821,8 @@ describe('ChannelsService', () => {
         reason: 'CU_INVALID_ERROR',
       } as InvalidationArgs,
       reason: 'Invalidation',
-      txCount: chan.state.txCountGlobal + 2
+      txCount: chan.state.txCountGlobal + 2,
+      sigUser: mkSig()
     }])
 
     sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
@@ -833,7 +833,86 @@ describe('ChannelsService', () => {
     assert.equal(tx.state, 'submitted')
   })
 
-  it('allows invalidation and marks a new onchain tx as failed', async () => {})
+  it('allows invalidation and marks a new onchain tx as failed', async () => {
+    const registry = getTestRegistry({
+      Web3: {
+        ...Web3,
+        eth: {
+          sign: async () => {
+            return
+          },
+          getTransactionCount: async () => {
+            return 1
+          },
+          estimateGas: async () => {
+            return 1000
+          },
+          signTransaction: async () => {
+            return {
+              tx: {
+                hash: mkHash('0xaaa'),
+                r: mkHash('0xabc'),
+                s: mkHash('0xdef'),
+                v: '0x27',
+              },
+            }
+          },
+          sendSignedTransaction: () => {
+            console.log(`Called mocked web3 function sendSignedTransaction`)
+            return {
+              on: (input, cb) => {
+                switch (input) {
+                  case 'error':
+                    return cb('Invalid JSON RPC response')
+                }
+              },
+            }
+          },
+          sendTransaction: function () {
+            console.log(`Called mocked web3 function sendTransaction`)
+            return this.sendSignedTransaction()
+          },
+        },
+      },
+      GasEstimateDao: new MockGasEstimateDao()
+    })
+    const service: ChannelsService = registry.get('ChannelsService')
+
+    const chan = await channelUpdateFactory(registry)
+    await service.doCollateralizeIfNecessary(chan.user)
+    let sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    let latest = sync.updates.pop()
+
+    // simulate collateralization
+    await service.doUpdates(chan.user, [{
+      args: convertDeposit('bignumber', (latest.update as UpdateRequest).args as DepositArgs),
+      reason: 'ProposePendingDeposit',
+      txCount: chan.state.txCountGlobal + 1,
+      sigUser: mkSig()
+    }])
+
+    const deposit = await channelsDao.getChannelUpdateByTxCount(chan.user, chan.state.txCountGlobal + 1)
+    let tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'new')
+
+    await service.doUpdates(chan.user, [{
+      args: {
+        previousValidTxCount: chan.state.txCountGlobal,
+        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        reason: 'CU_INVALID_ERROR',
+      } as InvalidationArgs,
+      reason: 'Invalidation',
+      txCount: chan.state.txCountGlobal + 2,
+      sigUser: mkSig()
+    }])
+
+    sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    latest = sync.updates.pop()
+    assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
+
+    tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'failed')
+  })
 
   describe('Withdrawal generated cases', () => {
     function makeBigNumsBigger(x: any) {
