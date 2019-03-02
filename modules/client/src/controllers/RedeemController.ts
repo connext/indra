@@ -1,6 +1,6 @@
 import { AbstractController } from "./AbstractController";
 import Web3 = require('web3')
-import { UpdateRequest, PaymentArgs, Payment } from "@src/types";
+import { UpdateRequest, PaymentArgs, Payment } from "../types";
 
 export class RedeemController extends AbstractController {
   public redeem = async (secret: string): Promise<{ purchaseId: string, amount: Payment }> => {
@@ -9,8 +9,13 @@ export class RedeemController extends AbstractController {
       throw new Error(`The secret provided is not a hex string. Was it generated using the 'generateSecret' method of connext? Secret: ${secret}`)
     }
 
+    const state = this.getState()
+
     try {
-      const { purchaseId, sync, amount } = await this.hub.redeem(secret)
+      const { purchaseId, sync, amount } = await this.hub.redeem(
+        secret, 
+        state.persistent.channel.txCountGlobal, state.persistent.lastThreadUpdateId,
+      )
       this.connext.syncController.handleHubSync(sync)
       // get amount of purchase
       return { purchaseId, amount }
