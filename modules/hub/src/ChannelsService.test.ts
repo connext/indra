@@ -35,6 +35,8 @@ import {
   InvalidationArgs,
   WithdrawalArgs,
   WithdrawalParametersBigNumber,
+  UpdateRequestBigNumber,
+  DepositArgsBigNumber,
 } from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
@@ -53,6 +55,7 @@ import { RedisClient } from './RedisClient'
 import ThreadsService from './ThreadsService';
 import DBEngine from './DBEngine';
 import { sleep } from './util';
+import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -136,6 +139,8 @@ describe('ChannelsService', () => {
   const config: Config = registry.get('Config')
   const startExitDao: ChannelDisputesDao = registry.get('ChannelDisputesDao')
   const threadsService: ThreadsService = registry.get('ThreadsService')
+  const onchainTxDao: OnchainTransactionsDao = registry.get('OnchainTransactionsDao')
+  const db: DBEngine = registry.get('DBEngine')
 
   beforeEach(async function () {
     await registry.clearDatabase()
@@ -780,6 +785,56 @@ describe('ChannelsService', () => {
     )
   })
 
+  it('does not check when NO_CHECK is used', async () => {
+    const registry = getTestRegistry({
+      Config: getTestConfig({
+        shouldCollateralizeUrl: 'NO_CHECK',
+        isDev: false,
+      }),
+    })
+    const service: ChannelsService = registry.get('ChannelsService')
+    assert.equal(await service.shouldCollateralize('0x1234'), true)
+  })
+
+  it('does not invalidate when there is a submitted tx', async () => {
+    const chan = await channelUpdateFactory(registry)
+    await service.doCollateralizeIfNecessary(chan.user)
+    let sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    const latest = sync.updates.pop()
+
+    // simulate collateralization
+    await service.doUpdates(chan.user, [{
+      args: convertDeposit('bignumber', (latest.update as UpdateRequest).args as DepositArgs),
+      reason: 'ProposePendingDeposit',
+      txCount: chan.state.txCountGlobal + 1,
+      sigUser: mkSig()
+    }])
+
+    const deposit = await channelsDao.getChannelUpdateByTxCount(chan.user, chan.state.txCountGlobal + 1)
+    console.log('deposit: ', deposit);
+    let tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'submitted')
+
+    await service.doUpdates(chan.user, [{
+      args: {
+        previousValidTxCount: chan.state.txCountGlobal,
+        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        reason: 'CU_INVALID_ERROR',
+      } as InvalidationArgs,
+      reason: 'Invalidation',
+      txCount: chan.state.txCountGlobal + 2
+    }])
+
+    sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    const invalidation = sync.updates.filter(u => (u.update as UpdateRequest).reason === 'Invalidation')
+    assert.isEmpty(invalidation)
+
+    tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'submitted')
+  })
+
+  it('allows invalidation and marks a new onchain tx as failed', async () => {})
+
   describe('Withdrawal generated cases', () => {
     function makeBigNumsBigger(x: any) {
       for (let key in x) if (isBigNum(x[key])) x[key] = x[key].times('1e18')
@@ -1065,17 +1120,6 @@ describe('ChannelsService.shouldCollateralize', () => {
     const res = await service.shouldCollateralize('0x1234')
     const expected = t.shouldCollateralize instanceof Error ? false : t.shouldCollateralize
     assert.equal(res, expected)
-  })
-
-  it('does not check when NO_CHECK is used', async () => {
-    const registry = getTestRegistry({
-      Config: getTestConfig({
-        shouldCollateralizeUrl: 'NO_CHECK',
-        isDev: false,
-      }),
-    })
-    const service: ChannelsService = registry.get('ChannelsService')
-    assert.equal(await service.shouldCollateralize('0x1234'), true)
   })
 
   describe('ChannelsService-txFail', () => {
