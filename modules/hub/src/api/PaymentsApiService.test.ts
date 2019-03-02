@@ -225,7 +225,9 @@ describe('PaymentsApiService', () => {
         amountToken: tokenVal(1),
       },
       type: 'PT_LINK',
-      secret: "sadlkj"
+      secret: "sadlkj",
+      lastChanTx: 0,
+      lastThreadUpdate: 0,
     })
 
     const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
