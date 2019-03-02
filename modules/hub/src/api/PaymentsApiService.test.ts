@@ -205,11 +205,14 @@ describe('PaymentsApiService', () => {
 
     console.log('linked payment inserted into db')
 
-    // redeem with address not in db
     const redeemer = redeemerChan.user.toLowerCase()
     const res = await app.withUser(redeemer).request
       .post(`/payments/redeem/${redeemer}`)
-      .send({ secret: "sadlkj"})
+      .send({ 
+        secret: "sadlkj",
+        lastChanTx: redeemerChan.state.txCountGlobal,
+        lastThreadUpdateId: 0,
+      })
 
     assert.equal(res.status, 200, JSON.stringify(res.body))
     const { purchaseId, sync } = res.body
@@ -225,9 +228,7 @@ describe('PaymentsApiService', () => {
         amountToken: tokenVal(1),
       },
       type: 'PT_LINK',
-      secret: "sadlkj",
-      lastChanTx: 0,
-      lastThreadUpdate: 0,
+      secret: "sadlkj"
     })
 
     const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
