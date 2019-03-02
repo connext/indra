@@ -140,7 +140,7 @@ export class PaymentsApiServiceHandler {
     const { secret, lastThreadUpdateId, lastChanTx } = req.body
     if (!user || !secret || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
       LOG.warn(
-        'Received invalid update state request. Aborting. Body received: {body}, Params received: {params}',
+        'Received invalid update redeem request. Aborting. Body received: {body}, Params received: {params}',
         {
           body: JSON.stringify(req.body),
           params: JSON.stringify(req.params),
