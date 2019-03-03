@@ -189,6 +189,16 @@ export class MockHub implements IHubAPIClient {
     return {} as any
   }
 
+  async authChallenge(): Promise<string> {
+    return 'nonce'
+  }
+  async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
+    return 'hub-token-returned'
+  }
+  async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
+    return { success: true, address: mkAddress('0xUUU') }
+  }
+
   async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }> {
     // NOTE: by default assumes this is redeemers first payment
     // if this is not what you are testing against, must use
