@@ -119,8 +119,8 @@ class HubAPIClient implements IHubAPIClient {
   }
 
   async authChallenge(): Promise<string> {
-    const res = await this.networking.get(`auth/challenge`)
-    return res.data
+    const res = await this.networking.post(`auth/challenge`, {})
+    return res.data.nonce
   }
 
   async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
@@ -130,7 +130,7 @@ class HubAPIClient implements IHubAPIClient {
       origin,
       signature
     })
-    return res.data
+    return res.data.token
   }
 
   async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
@@ -785,6 +785,7 @@ export interface ConnextClientOptions {
   contractAddress: string
   hubAddress: Address
   tokenAddress: Address
+  origin?: string // origin of requests
   ethNetworkId?: string
   tokenName?: string
   gasMultiple?: number
@@ -975,6 +976,28 @@ export class ConnextInternal extends ConnextClient {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
+  async auth(origin: string,): Promise<string | null> {
+    // check the status, return if already authed
+    const status = await this.hub.getAuthStatus()
+    if (status.success && status.address && status.address == this.opts.user) {
+      // TODO: what if i want to get this cookie?
+      console.log('address already authed')
+      return null
+    }
+    // first get the nonce
+    const nonce = await this.hub.authChallenge()
+
+    // create hash and sign
+    const preamble = "SpankWallet authentication message:";
+    const web3 = this.opts.web3
+    const hash = web3.utils.sha3(`${preamble} ${web3.utils.sha3(nonce)} ${web3.utils.sha3(origin)}`);
+    const signature = await (web3.eth.personal.sign as any)(hash, this.opts.user);
+
+    // return to hub
+    const auth = await this.hub.authResponse(nonce, this.opts.user, origin, signature)
+    return auth // the cookie
+  }
+
   async syncConfig() {
     const config = await this.hub.config()
     const opts = this.opts
@@ -999,6 +1022,14 @@ export class ConnextInternal extends ConnextClient {
 
     // before starting controllers, sync values
     await this.syncConfig()
+
+    // also auth
+    const cookie = await this.auth(this.opts.origin!)
+    console.log('cookie:', cookie)
+    if (!cookie) {
+      console.log('Error authing')
+      return
+    }
 
     // TODO: appropriately set the latest
     // valid state ??
