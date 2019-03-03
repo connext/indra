@@ -8,13 +8,7 @@ var port = 9999;
 
 //pg setup
 const { Client } = require('pg')
-const client = new Client({
-    user: 'user',
-    host: 'localhost',
-    database: 'sc-hub',
-    password: 'password',
-    port: 5432,
-  })
+
 
 
 // CORS
@@ -28,7 +22,16 @@ app.all("/*", function(req, res, next) {
 let contractAddress = '0x2932b7a2355d6fecc4b5c0b6bd44cc31df247a2e';
 
 queryDb = async (query) =>{
+    const client = new Client({
+        user: 'user',
+        host: 'localhost',
+        database: 'sc-hub',
+        password: 'password',
+        port: 5432,
+      });
+
     let dbRes;
+
     try{
         //connect to DB client
         await client.connect()
@@ -84,28 +87,28 @@ app.get('/channels/open', async function (req, res) {
  * ************************************/
 
 // total
-app.get('/payments/total', function (req, res) {
+app.get('/payments/total', async function (req, res) {
     let query = 
         `SELECT count(*) 
           FROM _payments`;
-    let dbRes = queryDb(query);
+    let dbRes = await queryDb(query);
     res.send(dbRes)
   });
 
 // trailing 24hrs
-app.get('/payments/trailing24', function (req, res) {
+app.get('/payments/trailing24', async function (req, res) {
     let query = 
         `SELECT count(*)
         FROM _payments a 
         INNER JOIN _cm_channel_updates b
         ON a.id = b.id
         WHERE b.created_on > now() - interval '1 day'`;
-    let dbRes = queryDb(query);
+    let dbRes = await queryDb(query);
     res.send(dbRes)
 });
 
 // average
-app.get('/payments/average', function (req, res) {
+app.get('/payments/average/all', async function (req, res) {
     let query = 
         `
         WITH payment_counts as(
@@ -116,12 +119,32 @@ app.get('/payments/average', function (req, res) {
         SELECT token_sum/count as avg_token_payment,
                 token_sum/count as avg_wei_payment
         FROM payment_counts`;
-    let dbRes = queryDb(query);
+    let dbRes = await queryDb(query);
     res.send(dbRes)
 });
 
+// average trailing 24
+app.get('/payments/average/trailing24', async function (req, res) {
+    let query = 
+        `
+        WITH payment_counts as(
+          SELECT sum(amount_token) as token_sum,
+                sum(amount_wei) as wei_sum,
+                 count(*)
+          FROM _payments a
+          INNER JOIN _cm_channel_updates b
+            ON a.id = b.id
+            WHERE b.created_on > now() - interval '1 day')
+        SELECT token_sum/count as avg_token_payment,
+                token_sum/count as avg_wei_payment
+        FROM payment_counts`;
+    let dbRes = await queryDb(query);
+    res.send(dbRes)
+});
+
+
 // by ID
-app.get('/payments/:id', function (req, res) {
+app.get('/payments/:id', async function (req, res) {
     let id = req.params.id;
     let query = 
         SQL`SELECT * 
@@ -129,7 +152,7 @@ app.get('/payments/:id', function (req, res) {
         WHERE purchase_id = ${id}
         LIMIT 10;`
 
-    let dbRes = queryDb(query);
+    let dbRes = await queryDb(query);
     res.send(dbRes)
 });
 
@@ -138,26 +161,37 @@ app.get('/payments/:id', function (req, res) {
  * ************************************/
 
 //trailing 24 hrs
-app.get('/gascost/trailing24', function (req, res) {
+app.get('/gascost/trailing24', async function (req, res) {
     let query = 
         SQL`SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
             AND "from" = ${contractAddress}
             AND confirmed_on > now() - interval '1 day'`;
-    let dbRes = queryDb(query);
+    let dbRes = await queryDb(query);
     res.send(dbRes)
 });
 
 //trailing week
-app.get('/gascost/trailingweek', function (req, res) {
+app.get('/gascost/trailingweek', async function (req, res) {
     let query = 
         SQL`SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
             AND "from" = ${contractAddress}
             AND confirmed_on > now() - interval '1 week'`;
-    let dbRes = queryDb(query);
+    let dbRes = await queryDb(query);
+    res.send(dbRes)
+});
+
+//trailing week
+app.get('/gascost/all', async function (req, res) {
+    let query = 
+        SQL`SELECT sum(gas)
+        FROM onchain_transactions_raw
+        WHERE state = 'confirmed'
+            AND "from" = ${contractAddress}`;
+    let dbRes = await queryDb(query);
     res.send(dbRes)
 });
 
@@ -167,7 +201,7 @@ app.get('/gascost/trailingweek', function (req, res) {
 
 
 //withdrawal averages
-app.get('/withdrawals/average', function (req, res) {
+app.get('/withdrawals/average', async function (req, res) {
     let query = 
         `
         SELECT sum(pending_withdrawal_wei_user)/count(*) as avg_withdrawal_wei,
@@ -175,19 +209,32 @@ app.get('/withdrawals/average', function (req, res) {
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingWithdrawal'
             AND balance_wei_user = 0`;
-    let dbRes = queryDb(query);
+    let dbRes = await queryDb(query);
+    res.send(dbRes)
+});
+
+// withdrawal count
+app.get('/withdrawals/total', async function (req, res) {
+    let query = 
+        `SELECT count(*)
+        FROM _cm_channel_updates
+        WHERE reason = 'ProposePendingWithdrawal'
+        AND balance_wei_user = 0`;
+    let dbRes = await queryDb(query);
     res.send(dbRes)
 });
 
 // withdrawal frequency
-app.get('/withdrawals/frequency', function (req, res) {
+app.get('/withdrawals/frequency', async function (req, res) {
     let query = 
         `SELECT date_part('day', created_on) as day, count(*)
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingWithdrawal'
         AND balance_wei_user = 0
-        GROUP BY 1`;
-    let dbRes = queryDb(query);
+        GROUP BY 1
+        ORDER BY 1
+        LIMIT 7`;
+    let dbRes = await queryDb(query);
     res.send(dbRes)
 });
 
@@ -210,6 +257,13 @@ app.get('/collateralization/summary', function (req, res) {
     let dbRes = queryDb(query);
     res.send(dbRes)
 });
+
+
+/*************************************** 
+ *              Deposits               *
+ * ************************************/
+
+// TODO
 
 
 /*************************************** 

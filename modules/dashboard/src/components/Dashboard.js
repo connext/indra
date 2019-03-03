@@ -19,6 +19,9 @@ import { mainListItems } from "./listItems";
 import ChannelDetails from "./ChannelDetails";
 import { ContractInfoCardStyled } from "./ContractInfoCard";
 import {ChannelInfoCardStyled} from "./ChannelInfoCard";
+import { PaymentInfoCardStyled } from "./PaymentInfoCard";
+import { GasCostCardStyled } from "./GasCostCard";
+import { WithdrawalsStyled } from "./Withdrawals";
 const ChannelManagerAbi = require("../abi/ChannelManager.json");
 
 const drawerWidth = 240;
@@ -209,6 +212,9 @@ class Dashboard extends React.Component {
             contractAddress={process.env.REACT_APP_CM_ADDRESS}
           />
           <ChannelInfoCardStyled />
+          <PaymentInfoCardStyled />
+          <WithdrawalsStyled />
+          <GasCostCardStyled />
           <Typography variant="h4" gutterBottom component="h2">
             Channels
           </Typography>

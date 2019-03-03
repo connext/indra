@@ -10,7 +10,8 @@ import axios from 'axios';
 
 const styles = theme => ({
     card: {
-        minWidth: 275
+        minWidth: 275,
+        textAlign:"left"
       },
     });
 
@@ -34,13 +35,13 @@ class ChannelInfoCard extends Component{
   setChannelBalances = async() => {
     const res = await axios.get(`http://localhost:9999/channels/averages`)
     console.log(res)
-    this.setState({avgTokenBalance: res.data[0].avg_token,
+    this.setState({avgTokenBalance: res.data[0].avg_tokens,
                     avgWeiBalance: res.data[0].avg_wei});
   }
 
   componentDidMount = async() =>{
-    this.setChannels()
-    //this.setChannelBalances()
+    await this.setChannels()
+    await this.setChannelBalances()
   }
 
   render(){
