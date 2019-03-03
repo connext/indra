@@ -72,6 +72,9 @@ export interface ConnextOptions {
 }
 
 export interface IHubAPIClient {
+  authChallenge(): Promise<string>
+  authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string>
+  getAuthStatus(): Promise<{ success: boolean, address?: Address }>
   getChannel(): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
   getThreadInitialStates(): Promise<ThreadState[]>
@@ -112,6 +115,26 @@ class HubAPIClient implements IHubAPIClient {
 
   async config(): Promise<HubConfig> {
     const res = await this.networking.get(`config`)
+    return res.data
+  }
+
+  async authChallenge(): Promise<string> {
+    const res = await this.networking.get(`auth/challenge`)
+    return res.data
+  }
+
+  async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
+    const res = await this.networking.post(`auth/response`, {
+      nonce,
+      address,
+      origin,
+      signature
+    })
+    return res.data
+  }
+
+  async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
+    const res = await this.networking.get(`auth/status`)
     return res.data
   }
 
