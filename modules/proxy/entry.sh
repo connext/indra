@@ -18,11 +18,8 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 hub=hub:8080
-eth="${ETH_RPC_URL#*://}"
 dashboard=dashboard_server:9999
 dashboard_client=dashboard:3000
-
-echo "Waiting for $eth to wake up..." && bash wait_for.sh -t 60 $eth 2> /dev/null
 
 echo "Waiting for $hub to wake up..." && bash wait_for.sh -t 60 $hub 2> /dev/null
 # Do a more thorough check to ensure the hub is online
