@@ -19,7 +19,8 @@ Discord Invitation: https://discord.gg/SmMSFf
 
 **Prerequisites**
 
-- `make`
+- `make`: (probably already installed) Install w `brew install make` or `apt install make` or similar.
+- `jq`: (probably not installed yet) Install w `brew install jq` or `apt install jq` or similar.
 - [`docker`](https://www.docker.com/)
 - [`node` and `npm`](https://nodejs.org/en/)
 
