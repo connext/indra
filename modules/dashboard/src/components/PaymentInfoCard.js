@@ -6,7 +6,7 @@ import { TextField } from "@material-ui/core";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import axios from "axios";
+import get from "../get";
 
 const styles = theme => ({
   card: {
@@ -31,29 +31,29 @@ class PaymentInfoCard extends Component {
   }
 
   setTotal = async () => {
-    const res = await axios.get(`${this.props.apiUrl}/payments/total`);
-    console.log(res);
-    this.setState({ totalPayments: res.data[0].count });
-    console.log(`payments found: ${this.state.totalPayments}`);
+    const res = await get(`payments/total`);
+    if (res) {
+      this.setState({ totalPayments: res.count });
+    } else {
+      this.setState({ totalPayments: 0 });
+    }
   };
 
   setTrailing = async () => {
-    const res = await axios.get(`${this.props.apiUrl}/payments/trailing24`);
-    console.log(res);
-    if (res.data[0].count) {
-      this.setState({ paymentsLastDay: res.data[0].count });
+    const res = await get(`payments/trailing24`);
+    if (res) {
+      this.setState({ paymentsLastDay: res.count });
     } else {
       this.setState({ paymentsLastDay: "N/A" });
     }
   };
 
   setAverage = async () => {
-    const res = await axios.get(`${this.props.apiUrl}/payments/average/all`);
-    console.log(res);
-    if (res.data[0].avg_wei_payment || res.data[0].avg_token_payment) {
+    const res = await get(`payments/average/all`);
+    if (res && res.avg_wei_payment && res.avg_token_payment) {
       this.setState({
-        averagePaymentWei: res.data[0].avg_wei_payment,
-        averagePaymentToken: res.data[0].avg_token_payment
+        averagePaymentWei: res.avg_wei_payment,
+        averagePaymentToken: res.avg_token_payment
       });
     } else {
       this.setState({
@@ -64,14 +64,11 @@ class PaymentInfoCard extends Component {
   };
 
   setAverageTrailing = async () => {
-    const res = await axios.get(
-      `${this.props.apiUrl}/payments/average/trailing24`
-    );
-    console.log(res);
-    if (res.data[0].avg_wei_payment || res.data[0].avg_token_payment) {
+    const res = await get(`payments/average/trailing24`);
+    if (res && res.avg_wei_payment && res.avg_token_payment) {
       this.setState({
-        averagePaymentWeiLastDay: res.data[0].avg_wei_payment,
-        averagePaymentTokenLastDay: res.data[0].avg_token_payment
+        averagePaymentWeiLastDay: res.avg_wei_payment,
+        averagePaymentTokenLastDay: res.avg_token_payment
       });
     } else {
       this.setState({
@@ -82,11 +79,9 @@ class PaymentInfoCard extends Component {
   };
 
   searchById = async id => {
-    let urlString = `${this.props.apiUrl}/payments/${id}`;
-    const res = await axios.get(urlString);
-    console.log(res.data);
-    if (res.data && res.data.length>0) {
-      this.setState({ paymentInfo: res.data });
+    const res = await get(`payments/${id}`);
+    if (res) {
+      this.setState({ paymentInfo: res });
     } else {
       this.setState({ paymentInfo: "ID not found" });
     }

@@ -5,7 +5,7 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import axios from "axios";
+import get from "../get";
 
 const styles = theme => ({
   card: {
@@ -26,12 +26,11 @@ class Withdrawals extends Component {
   }
 
   setAverage = async () => {
-    const res = await axios.get(`${this.props.apiUrl}/withdrawals/average`);
-    console.log(res);
-    if (res.data[0].avg_withdrawal_wei || res.data[0].avg_withdrawal_token) {
+    const res = await get(`withdrawals/average`);
+    if (res && res.avg_withdrawal_wei && res.avg_withdrawal_token) {
       this.setState({
-        withdrawalAverageToken: res.data[0].avg_withdrawal_token,
-        withdrawalAverageWei: res.data[0].avg_withdrawal_wei
+        withdrawalAverageToken: res.avg_withdrawal_token,
+        withdrawalAverageWei: res.avg_withdrawal_wei
       });
     } else {
       this.setState({
@@ -42,20 +41,18 @@ class Withdrawals extends Component {
   };
 
   setTotal = async () => {
-    const res = await axios.get(`${this.props.apiUrl}/withdrawals/total`);
-    console.log(res);
-    if (res.data[0].count) {
-      this.setState({ withdrawalTotal: res.data[0].count });
+    const res = await get(`withdrawals/total`);
+    if (res && res.count) {
+      this.setState({ withdrawalTotal: res.count });
     } else {
       this.setState({ gasLastWeek: "N/A" });
     }
   };
 
   setFrequency = async () => {
-    const res = await axios.get(`${this.props.apiUrl}/withdrawals/frequency`);
-    console.log(res);
-    if (res.data.length > 0) {
-      this.setState({ withdrawalBreakdown: JSON.stringify(res.data[0]) });
+    const res = await get(`withdrawals/frequency`);
+    if (res) {
+      this.setState({ withdrawalBreakdown: JSON.stringify(res) });
     } else {
       this.setState({ withdrawalBreakdown: "N/A" });
     }

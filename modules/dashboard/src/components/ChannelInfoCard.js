@@ -5,7 +5,7 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import axios from 'axios';
+import get from '../get';
 
 
 const styles = theme => ({
@@ -26,16 +26,21 @@ class ChannelInfoCard extends Component{
   }
 
   setChannels = async() => {
-    const res = await axios.get(`${this.props.apiUrl}/channels/open`)
-    console.log(res)
-    this.setState({openChannels: res.data[0].count});
+    const res = await get(`channels/open`)
+    if (res) {
+      this.setState({openChannels: res.count});
+    } else {
+      this.setState({openChannels: 0});
+    }
   }
 
   setChannelBalances = async() => {
-    const res = await axios.get(`${this.props.apiUrl}/channels/averages`)
-    console.log(res)
-    this.setState({avgTokenBalance: res.data[0].avg_tokens,
-                    avgWeiBalance: res.data[0].avg_wei});
+    const res = await get(`channels/averages`)
+    if (res) {
+      this.setState({avgTokenBalance: res.avg_tokens, avgWeiBalance: res.avg_wei});
+    } else {
+      this.setState({avgTokenBalance: 0, avgWeiBalance: 0});
+    }
   }
 
   componentDidMount = async() =>{

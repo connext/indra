@@ -267,10 +267,15 @@ class Dashboard extends React.Component {
             loading={loadingContract}
             contractAddress={this.state.channelManager.address}
           />
+          <div className={classes.appBarSpacer} />
           <ChannelInfoCardStyled apiUrl={this.props.apiUrl}/>
+          <div className={classes.appBarSpacer} />
           <PaymentInfoCardStyled apiUrl={this.props.apiUrl}/>
+          <div className={classes.appBarSpacer} />
           <WithdrawalsStyled apiUrl={this.props.apiUrl}/>
+          <div className={classes.appBarSpacer} />
           <GasCostCardStyled apiUrl={this.props.apiUrl} />
+          <div className={classes.appBarSpacer} />
           <Typography variant="h4" gutterBottom component="h2">
             Channels
           </Typography>

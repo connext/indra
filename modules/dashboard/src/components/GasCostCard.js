@@ -5,7 +5,7 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import axios from 'axios';
+import get from '../get';
 
 
 const styles = theme => ({
@@ -26,29 +26,27 @@ class GasCostCard extends Component{
   }
 
   setGas = async() => {
-    const res = await axios.get(`${this.props.apiUrl}/gascost/all`)
-    console.log(res)
-    if(res.data[0].sum){
-    this.setState({gasTotal: res.data[0].sum});
+    const res = await get(`gascost/all`)
+    if (res && res.sum){
+      this.setState({gasTotal: res.sum});
     }else{
       this.setState ({gasTotal: 0})
     }
   }
 
   setGasLastWeek = async() => {
-    const res = await axios.get(`${this.props.apiUrl}/gascost/trailingweek`)
-    console.log(res)
-    if(res.data[0].sum){
-      this.setState({gasLastWeek: res.data[0].sum});
-      }else{
+    const res = await get(`gascost/trailingweek`)
+    if (res && res.sum) {
+        this.setState({gasLastWeek: res.sum});
+    } else {
         this.setState ({gasLastWeek: 0})
-      }  }
+    }
+  }
 
   setGasLastDay = async() => {
-    const res = await axios.get(`${this.props.apiUrl}/gascost/trailing24`)
-    console.log(res)
-    if(res.data[0].sum){
-      this.setState({gasLastDay: res.data[0].sum});
+    const res = await get(`gascost/trailing24`)
+    if(res && res.sum){
+      this.setState({gasLastDay: res.sum});
       }else{
         this.setState ({gasLastDay: 0})
       }  }
