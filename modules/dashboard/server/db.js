@@ -4,7 +4,14 @@ const { Pool } = require('pg');
 const host = process.env.POSTGRES_URL || 'localhost:5432'
 const user = process.env.POSTGRES_USER || 'indra'
 const database = process.env.POSTGRES_DB || 'indra'
-const password = fs.readFileSync(process.env.POSTGRES_PASSWORD_FILE, 'utf8')
+let password
+if (process.env.POSTGRES_PASSWORD_FILE) {
+  password = fs.readFileSync(process.env.POSTGRES_PASSWORD_FILE, 'utf8')
+} else if (process.env.POSTGRES_PASSWORD) {
+  password = process.env.POSTGRES_PASSWORD
+} else {
+  password = 'supersecret'
+}
 
 const pool = new Pool({
   connectionString: `postgres://${user}:${password}@${host}/${database}`
