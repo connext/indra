@@ -43,8 +43,8 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database hub proxy client dashboard
-prod: database-prod hub-prod proxy-prod dashboard-prod
+dev: database hub proxy client dashboard-server
+prod: database-prod hub-prod proxy-prod dashboard-server-prod
 
 start: dev
 	bash ops/deploy.dev.sh
@@ -139,7 +139,7 @@ proxy: $(shell find $(proxy) $(find_options))
 
 dashboard-server-prod: dashboard-prod
 	$(log_start)
-	docker build --file $(dashboard)/ops/server.dockerfile --tag $(project)_dashboard:latest $(dashboard)
+	docker build --file $(dashboard)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard)
 	$(log_finish) && touch build/$@
 
 dashboard-server: dashboard
