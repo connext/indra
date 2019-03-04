@@ -124,7 +124,7 @@ then
   exit
 fi
 
-mkdir -p /tmp/$project
+mkdir -p /tmp/$project modules/database/snapshots
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -230,7 +230,7 @@ services:
       POSTGRES_USER: $postgres_user
     volumes:
       - ${project}_database:/var/lib/postgresql/data
-      - `pwd`/modules/database/ops:/root/ops
+      - `pwd`/modules/database/snapshots:/root/snapshots
 
   logdna:
     image: logdna/logspout:latest

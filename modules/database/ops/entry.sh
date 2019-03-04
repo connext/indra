@@ -47,8 +47,7 @@ trap cleanup SIGTERM
 ########################################
 ## Execute
 
-log "Starting database in env:"
-env
+log "Good morning"
 
 # Is this a fresh database? Should we restore data from a snapshot?
 if [[ ! -f "/var/lib/postgresql/data/PG_VERSION" && -f "$backup_file" ]]
