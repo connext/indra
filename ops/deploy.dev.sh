@@ -121,7 +121,7 @@ services:
     volumes:
       - certs:/etc/letsencrypt
 
-  dashboard:
+  dashboard_client:
     image: $dashboard_image
     entrypoint: npm start
     environment:
@@ -131,7 +131,7 @@ services:
     volumes:
       - `pwd`/modules/dashboard:/root
 
-  dashboard_server:
+  dashboard:
     image: $dashboard_image
     entrypoint: nodemon server/server.js
     environment:

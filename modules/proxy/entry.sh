@@ -18,8 +18,8 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 hub=hub:8080
-dashboard=dashboard_server:9999
-dashboard_client=dashboard:3000
+dashboard=dashboard:9999
+dashboard_client=dashboard_client:3000
 
 echo "Waiting for $hub to wake up..." && bash wait_for.sh -t 60 $hub 2> /dev/null
 # Do a more thorough check to ensure the hub is online
