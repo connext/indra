@@ -8,7 +8,6 @@ client=$(cwd)/modules/client
 db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
-wallet=$(cwd)/modules/wallet
 dashboard=$(cwd)/modules/dashboard
 
 # Specify make-specific variables (VPATH = prerequisite search path)
@@ -27,7 +26,6 @@ docker_run=docker run --name=$(project)_builder --tty --rm
 docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder  $(id)
 docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(contracts):/root $(project)_builder $(id)
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder $(id)
-docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
 docker_run_in_dashboard=$(docker_run) --volume=$(dashboard):/root $(project)_builder $(id)
 
@@ -45,8 +43,8 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database hub proxy client dashboard
-prod: database-prod hub-prod proxy-prod
+dev: database hub proxy client dashboard-server
+prod: database-prod hub-prod proxy-prod dashboard-server-prod
 
 start: dev
 	bash ops/deploy.dev.sh
@@ -80,17 +78,21 @@ push: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:latest
 	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:latest
+	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:latest
 	docker push $(registry)/$(project)_database:latest
 	docker push $(registry)/$(project)_hub:latest
 	docker push $(registry)/$(project)_proxy:latest
+	docker push $(registry)/$(project)_dashboard:latest
 
 push-live: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:$(version)
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:$(version)
 	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:$(version)
+	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:$(version)
 	docker push $(registry)/$(project)_database:$(version)
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
+	docker push $(registry)/$(project)_dashboard:$(version)
 
 backup:
 	bash $(db)/ops/run-backup.sh
@@ -133,27 +135,33 @@ proxy: $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch build/$@
 
-# Wallet
+# Dashboard Server
 
-wallet-prod: wallet contract-artifacts $(shell find $(wallet)/src $(find_options))
+dashboard-server-prod: dashboard-prod
 	$(log_start)
-	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
-	$(docker_run_in_wallet) "npm run build"
+	docker build --file $(dashboard)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard)
 	$(log_finish) && touch build/$@
 
-wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
+dashboard-server: dashboard
 	$(log_start)
-	$(docker_run_in_wallet) "rm -f .env && cp ops/dev.env .env"
+	docker build --file $(dashboard)/ops/dev.dockerfile --tag $(project)_dashboard:dev $(dashboard)
 	$(log_finish) && touch build/$@
 
-wallet-node-modules: builder $(wallet)/package.json
+# Dashboard Client
+
+dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	$(docker_run_in_wallet) "$(install)"
-	$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_wallet) "cd ../client && $(install)"
-	@touch build/client && touch build/client-node-modules
+	$(docker_run_in_dashboard) "npm run build"
+	$(log_finish) && touch build/$@
+
+dashboard: dashboard-node-modules $(dashboard)/ops/dev.env
+	$(log_start)
+	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
+	$(log_finish) && touch build/$@
+
+dashboard-node-modules: builder $(dashboard)/package.json
+	$(log_start)
+	$(docker_run_in_dashboard) "$(install)"
 	$(log_finish) && touch build/$@
 
 # Hub
@@ -206,23 +214,6 @@ client-node-modules: builder $(client)/package.json
 	$(log_start)
 	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/$@ && touch build/client
-
-# Dashboard
-
-dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(find_options))
-	$(log_start)
-	$(docker_run_in_dashboard) "npm run build"
-	$(log_finish) && touch build/$@
-
-dashboard: dashboard-node-modules $(shell find $(dashboard)/ops $(find_options))
-	$(log_start)
-	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
-	$(log_finish) && touch build/$@
-
-dashboard-node-modules: builder $(dashboard)/package.json
-	$(log_start)
-	$(docker_run_in_dashboard) "$(install)"
-	$(log_finish) && touch build/$@
 
 # Database
 

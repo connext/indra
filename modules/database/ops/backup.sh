@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-project="connext"
+project="indra"
 bucket_name=backups.hub.connext.network
 lifecycle=ops/backup-lifecycle.json
 if [[ -n "$ETH_NETWORK" ]]

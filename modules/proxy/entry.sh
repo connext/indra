@@ -18,30 +18,27 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 hub=hub:8080
-eth="${ETH_RPC_URL#*://}"
-dashboard=dashboard:3000
+dashboard=dashboard:9999
+dashboard_client=dashboard_client:3000
 
-echo "Waiting for $eth to wake up..." && bash wait_for.sh -t 60 $eth 2> /dev/null
 echo "Waiting for $hub to wake up..." && bash wait_for.sh -t 60 $hub 2> /dev/null
 # Do a more thorough check to ensure the hub is online
-while true
-do
-  if curl -s http://$hub/config > /dev/null
-  then break
-  else sleep 2
-  fi
+while ! curl -s http://$hub/config > /dev/null
+do sleep 2
+done
+
+echo "waiting for $dashboard..." && bash wait_for.sh -t 60 $dashboard 2> /dev/null
+# Do a more thorough check to ensure the dashboard is online
+while ! curl -s http://$dashboard > /dev/null
+do sleep 2
 done
 
 if [[ "$MODE" == "dev" ]]
 then
-  echo "waiting for $dashboard..." && bash wait_for.sh -t 60 $dashboard 2> /dev/null
+  echo "waiting for $dashboard_client..." && bash wait_for.sh -t 60 $dashboard_client 2> /dev/null
   # Do a more thorough check to ensure the dashboard is online
-  while true
-  do
-    if curl -s http://$dashboard > /dev/null
-    then break
-    else sleep 2
-    fi
+  while ! curl -s http://$dashboard_client > /dev/null
+  do sleep 2
   done
 fi
 
@@ -76,7 +73,8 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$ethprovider|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
+sed -i 's|$ETH_RPC_URL|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
+sed -i 's|$DASHBOARD_URL|'"$DASHBOARD_URL"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {

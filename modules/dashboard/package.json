@@ -5,11 +5,16 @@
   "dependencies": {
     "@material-ui/core": "latest",
     "@material-ui/icons": "^3.0.2",
+    "axios": "^0.18.0",
     "classnames": "^2.2.6",
+    "express": "^4.16.4",
+    "nodemon": "^1.18.10",
+    "pg": "^7.8.1",
     "prop-types": "latest",
     "react": "latest",
     "react-dom": "latest",
     "react-scripts": "latest",
+    "sql-template-strings": "^2.2.2",
     "web3": "^1.0.0-beta.46"
   },
   "scripts": {

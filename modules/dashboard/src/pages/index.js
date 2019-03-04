@@ -22,9 +22,8 @@ const styles = theme => ({
 class Index extends React.Component {
   constructor(props) {
     super(props);
-    const web3 = new Web3(props.ethUrl);
     this.state = {
-      web3
+      web3: new Web3(props.ethUrl)
     };
   }
   render() {
@@ -32,7 +31,7 @@ class Index extends React.Component {
     const { web3 } = this.state;
     return (
       <div className={classes.root}>
-        <Dashboard web3={web3} hubUrl={this.props.hubUrl} />
+        <Dashboard web3={web3} hubUrl={this.props.hubUrl} apiUrl={this.props.apiUrl}/>
       </div>
     );
   }
