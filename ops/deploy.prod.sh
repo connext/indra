@@ -59,7 +59,7 @@ fi
 
 hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
 channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
-token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedtoken`"
+token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
 
 # Figure out which images we should use
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
