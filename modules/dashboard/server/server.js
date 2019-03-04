@@ -8,15 +8,18 @@ const port = 9999;
 
 const contractAddress = '0x2932b7a2355d6fecc4b5c0b6bd44cc31df247a2e';
 
+// Helper function: log each outgoing response before sending
+const send = (req, res, data) => {
+  if (typeof data == 'object') {
+    data = JSON.stringify(data);
+  }
+  console.log(`=> ${req.method} ${req.url} => (200) Sent ${data.length} char${data.length === 1? '' : 's'} of data`)
+  res.status(200).send(data);
+}
+
 /***************************************
  *      Universal Middleware           *
  * ************************************/
-
-// First, log each request
-app.use(function (req, res, next) {
-  console.log(`=> ${req.method} ${req.url}`)
-  next()
-})
 
 // Second, set CORS headers
 app.use("/*", function(req, res, next) {
@@ -26,11 +29,14 @@ app.use("/*", function(req, res, next) {
     return next();
 });
 
+/***************************************
+ *              Misc                   *
+ * ************************************/
+
 // HOME GET TESTING
 app.get('/test', function (req, res) {
-    let dbRes = ["hello","world"]
-    res.send(dbRes)
-  })
+    send(req, res, ["hello","world"])
+})
 
 /***************************************
  *              Channels               *
@@ -38,7 +44,7 @@ app.get('/test', function (req, res) {
 
 // open channels count
 app.get('/channels/open', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         SELECT count(distinct id)
         FROM _cm_channels
         WHERE status = 'CS_OPEN'
@@ -47,7 +53,7 @@ app.get('/channels/open', async function (req, res) {
 
 // average balances
 app.get('/channels/averages', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         WITH channel_count as(
             SELECT sum(balance_wei_user) as wei_total,
                    sum(balance_token_user) as token_total,
@@ -67,7 +73,7 @@ app.get('/channels/averages', async function (req, res) {
 
 // total
 app.get('/payments/total', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         SELECT count(*)
         FROM _payments
     `));
@@ -75,7 +81,7 @@ app.get('/payments/total', async function (req, res) {
 
 // trailing 24hrs
 app.get('/payments/trailing24', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         SELECT count(*)
         FROM _payments a
         INNER JOIN _cm_channel_updates b
@@ -86,7 +92,7 @@ app.get('/payments/trailing24', async function (req, res) {
 
 // average
 app.get('/payments/average/all', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         WITH payment_counts as(
           SELECT sum(amount_token) as token_sum,
                 sum(amount_wei) as wei_sum,
@@ -100,7 +106,7 @@ app.get('/payments/average/all', async function (req, res) {
 
 // average trailing 24
 app.get('/payments/average/trailing24', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         WITH payment_counts as(
           SELECT sum(amount_token) as token_sum,
                 sum(amount_wei) as wei_sum,
@@ -118,7 +124,7 @@ app.get('/payments/average/trailing24', async function (req, res) {
 
 // by ID
 app.get('/payments/:id', async function (req, res) {
-    res.send(await query(SQL`SELECT *
+    send(req, res, await query(SQL`SELECT *
         FROM _payments
         WHERE purchase_id = ${req.params.id}
         LIMIT 10
@@ -131,7 +137,7 @@ app.get('/payments/:id', async function (req, res) {
 
 //trailing 24 hrs
 app.get('/gascost/trailing24', async function (req, res) {
-    res.send(await query(SQL`
+    send(req, res, await query(SQL`
         SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
@@ -142,7 +148,7 @@ app.get('/gascost/trailing24', async function (req, res) {
 
 //trailing week
 app.get('/gascost/trailingweek', async function (req, res) {
-    res.send(await query(SQL`SELECT sum(gas)
+    send(req, res, await query(SQL`SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
             AND "from" = ${contractAddress}
@@ -152,7 +158,7 @@ app.get('/gascost/trailingweek', async function (req, res) {
 
 //trailing week
 app.get('/gascost/all', async function (req, res) {
-    res.send(await query(SQL`
+    send(req, res, await query(SQL`
         SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
@@ -167,7 +173,7 @@ app.get('/gascost/all', async function (req, res) {
 
 //withdrawal averages
 app.get('/withdrawals/average', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         SELECT sum(pending_withdrawal_wei_user)/count(*) as avg_withdrawal_wei,
               sum(pending_withdrawal_token_user)/count(*) as avg_withdrawal_token
         FROM _cm_channel_updates
@@ -178,7 +184,7 @@ app.get('/withdrawals/average', async function (req, res) {
 
 // withdrawal count
 app.get('/withdrawals/total', async function (req, res) {
-    res.send(await query(`SELECT count(*)
+    send(req, res, await query(`SELECT count(*)
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingWithdrawal'
         AND balance_wei_user = 0
@@ -187,7 +193,7 @@ app.get('/withdrawals/total', async function (req, res) {
 
 // withdrawal frequency
 app.get('/withdrawals/frequency', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         SELECT date_part('day', created_on) as day, count(*)
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingWithdrawal'
@@ -206,7 +212,7 @@ app.get('/withdrawals/frequency', async function (req, res) {
 // hub collateralization frequency
 // need to make this more efficient (add subquery, right now it's counting (*) twice for every single row)
 app.get('/collateralization/summary', async function (req, res) {
-    res.send(await query(`
+    send(req, res, await query(`
         SELECT date_part('day', created_on) as day,
                 count(*) as collateralizations,
                 sum(pending_deposit_token_hub)/count(*) as avg_value
@@ -231,12 +237,17 @@ app.get('/collateralization/summary', async function (req, res) {
 
 // user updates, last 10
 app.get('/users/:id', async function (req, res) {
-    res.send(await query(SQL`
+    send(req, res, await query(SQL`
         SELECT *
         FROM _cm_channel_updates
         WHERE user = ${req.params.id}
         LIMIT 10
     `));
 });
+
+app.use(function (req, res) {
+    console.log(`<= 404 Couldn't find ${req.url}`)
+    res.status(404).send(`Couldn't find ${req.url}`)
+})
 
 app.listen(port, () => console.log(`Listening on port ${port}!`))
