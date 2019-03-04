@@ -6,9 +6,9 @@ import * as serviceWorker from './serviceWorker';
 console.log(`Starting dashboard in env: ${JSON.stringify(process.env,null,2)}`)
 
 const publicUrl = process.env.PUBLIC_URL || `http://localhost:3000`
-const apiUrl = process.env.REACT_APP_API_URL || `${publicUrl}/api/dashboard`
-const hubUrl = process.env.REACT_APP_HUB_URL || `${publicUrl}/api/hub`
-const ethUrl = process.env.REACT_APP_ETH_URL || `${publicUrl}/api/eth`
+const apiUrl = process.env.REACT_APP_API_URL || `/api/dashboard`
+const hubUrl = process.env.REACT_APP_HUB_URL || `/api/hub`
+const ethUrl = process.env.REACT_APP_ETH_URL || `/api/eth`
 
 ReactDOM.render(<Index ethUrl={ethUrl} hubUrl={hubUrl} apiUrl={apiUrl}/>, document.getElementById('root'));
 
