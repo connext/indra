@@ -31,14 +31,14 @@ class PaymentInfoCard extends Component {
   }
 
   setTotal = async () => {
-    const res = await axios.get(`http://localhost:9999/payments/total`);
+    const res = await axios.get(`${this.props.apiUrl}/payments/total`);
     console.log(res);
     this.setState({ totalPayments: res.data[0].count });
     console.log(`payments found: ${this.state.totalPayments}`);
   };
 
   setTrailing = async () => {
-    const res = await axios.get(`http://localhost:9999/payments/trailing24`);
+    const res = await axios.get(`${this.props.apiUrl}/payments/trailing24`);
     console.log(res);
     if (res.data[0].count) {
       this.setState({ paymentsLastDay: res.data[0].count });
@@ -48,7 +48,7 @@ class PaymentInfoCard extends Component {
   };
 
   setAverage = async () => {
-    const res = await axios.get(`http://localhost:9999/payments/average/all`);
+    const res = await axios.get(`${this.props.apiUrl}/payments/average/all`);
     console.log(res);
     if (res.data[0].avg_wei_payment || res.data[0].avg_token_payment) {
       this.setState({
@@ -65,7 +65,7 @@ class PaymentInfoCard extends Component {
 
   setAverageTrailing = async () => {
     const res = await axios.get(
-      `http://localhost:9999/payments/average/trailing24`
+      `${this.props.apiUrl}/payments/average/trailing24`
     );
     console.log(res);
     if (res.data[0].avg_wei_payment || res.data[0].avg_token_payment) {
@@ -82,7 +82,7 @@ class PaymentInfoCard extends Component {
   };
 
   searchById = async id => {
-    let urlString = `http://localhost:9999/payments/${id}`;
+    let urlString = `${this.props.apiUrl}/payments/${id}`;
     const res = await axios.get(urlString);
     console.log(res.data);
     if (res.data && res.data.length>0) {

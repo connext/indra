@@ -19,21 +19,20 @@ class ChannelInfoCard extends Component{
   constructor(props) {
     super(props)
     this.state={
-    openChannels:null,
-    avgWeiBalance:null,
-    avgTokenBalance:null
+      openChannels:null,
+      avgWeiBalance:null,
+      avgTokenBalance:null
+    }
   }
-}
-
 
   setChannels = async() => {
-    const res = await axios.get(`http://localhost:9999/channels/open`)
+    const res = await axios.get(`${this.props.apiUrl}/channels/open`)
     console.log(res)
     this.setState({openChannels: res.data[0].count});
   }
 
   setChannelBalances = async() => {
-    const res = await axios.get(`http://localhost:9999/channels/averages`)
+    const res = await axios.get(`${this.props.apiUrl}/channels/averages`)
     console.log(res)
     this.setState({avgTokenBalance: res.data[0].avg_tokens,
                     avgWeiBalance: res.data[0].avg_wei});

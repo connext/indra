@@ -267,16 +267,18 @@ class Dashboard extends React.Component {
             loading={loadingContract}
             contractAddress={this.state.channelManager.address}
           />
-          <ChannelInfoCardStyled />
-          <PaymentInfoCardStyled />
-          <WithdrawalsStyled />
-          <GasCostCardStyled />
+          <ChannelInfoCardStyled apiUrl={this.props.apiUrl}/>
+          <PaymentInfoCardStyled apiUrl={this.props.apiUrl}/>
+          <WithdrawalsStyled apiUrl={this.props.apiUrl}/>
+          <GasCostCardStyled apiUrl={this.props.apiUrl} />
           <Typography variant="h4" gutterBottom component="h2">
             Channels
           </Typography>
             
           <div className={classes.tableContainer}>
-            <ChannelDetails />
+            <ChannelDetails
+              apiUrl={this.props.apiUrl}
+            />
           </div>
         </main>
       </div>

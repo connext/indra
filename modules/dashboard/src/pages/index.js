@@ -31,7 +31,7 @@ class Index extends React.Component {
     const { web3 } = this.state;
     return (
       <div className={classes.root}>
-        <Dashboard web3={web3} hubUrl={this.props.hubUrl} />
+        <Dashboard web3={web3} hubUrl={this.props.hubUrl} apiUrl={this.props.apiUrl}/>
       </div>
     );
   }

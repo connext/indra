@@ -26,7 +26,7 @@ class Withdrawals extends Component {
   }
 
   setAverage = async () => {
-    const res = await axios.get(`http://localhost:9999/withdrawals/average`);
+    const res = await axios.get(`${this.props.apiUrl}/withdrawals/average`);
     console.log(res);
     if (res.data[0].avg_withdrawal_wei || res.data[0].avg_withdrawal_token) {
       this.setState({
@@ -42,7 +42,7 @@ class Withdrawals extends Component {
   };
 
   setTotal = async () => {
-    const res = await axios.get(`http://localhost:9999/withdrawals/total`);
+    const res = await axios.get(`${this.props.apiUrl}/withdrawals/total`);
     console.log(res);
     if (res.data[0].count) {
       this.setState({ withdrawalTotal: res.data[0].count });
@@ -52,7 +52,7 @@ class Withdrawals extends Component {
   };
 
   setFrequency = async () => {
-    const res = await axios.get(`http://localhost:9999/withdrawals/frequency`);
+    const res = await axios.get(`${this.props.apiUrl}/withdrawals/frequency`);
     console.log(res);
     if (res.data.length > 0) {
       this.setState({ withdrawalBreakdown: JSON.stringify(res.data[0]) });

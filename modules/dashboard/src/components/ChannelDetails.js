@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from "react";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
@@ -19,44 +19,53 @@ const styles = {
   },
 };
 
-let id = 0;
-async function createData(){
-  let res = await axios.get(`http://localhost:9999/test`)
-  let data = res.data[id]
-  id += 1;
-  return { id, data };
-}
+class ChannelDetails extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      classes: props.classes,
+      data: []
+    }
+  }
 
-const data = [
-  createData(),
-  createData(),
-];
+  async componentDidMount() {
+    let id = 0;
+    const createData = async () => {
+      let res = await axios.get(`${this.props.apiUrl}/test`)
+      let data = res.data[id]
+      id += 1;
+      return { id, data };
+    }
+    let data = this.state.data
+    data.push(await createData())
+    data.push(await createData())
+    this.setState({
+      data
+    });
+  }
 
-console.log(data);
-
-function ChannelDetails(props) {
-  const { classes } = props;
-
-  return (
-    <Paper className={classes.root}>
-      <Table className={classes.table}>
-        <TableHead>
-          <TableRow>
-            <TableCell>Text</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {data.map(n => (
-            <TableRow key={n.id}>
-              <TableCell component="th" scope="row">
-                {n.data}
-              </TableCell>
+  render () {
+    return (
+      <Paper className={this.state.classes.root}>
+        <Table className={this.state.classes.table}>
+          <TableHead>
+            <TableRow>
+              <TableCell>Text</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Paper>
-  );
+          </TableHead>
+          <TableBody>
+            {this.state.data.map(n => (
+              <TableRow key={n.id}>
+                <TableCell component="th" scope="row">
+                  {n.data}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
+    );
+  };
 }
 
 ChannelDetails.propTypes = {

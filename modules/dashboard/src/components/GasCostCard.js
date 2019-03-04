@@ -19,14 +19,14 @@ class GasCostCard extends Component{
   constructor(props) {
     super(props)
     this.state={
-    gasTotal:null,
-    gasLastWeek:null,
-    gasLastDay:null
+      gasTotal:null,
+      gasLastWeek:null,
+      gasLastDay:null
+    }
   }
-}
 
   setGas = async() => {
-    const res = await axios.get(`http://localhost:9999/gascost/all`)
+    const res = await axios.get(`${this.props.apiUrl}/gascost/all`)
     console.log(res)
     if(res.data[0].sum){
     this.setState({gasTotal: res.data[0].sum});
@@ -36,7 +36,7 @@ class GasCostCard extends Component{
   }
 
   setGasLastWeek = async() => {
-    const res = await axios.get(`http://localhost:9999/gascost/trailingweek`)
+    const res = await axios.get(`${this.props.apiUrl}/gascost/trailingweek`)
     console.log(res)
     if(res.data[0].sum){
       this.setState({gasLastWeek: res.data[0].sum});
@@ -45,7 +45,7 @@ class GasCostCard extends Component{
       }  }
 
   setGasLastDay = async() => {
-    const res = await axios.get(`http://localhost:9999/gascost/trailing24`)
+    const res = await axios.get(`${this.props.apiUrl}/gascost/trailing24`)
     console.log(res)
     if(res.data[0].sum){
       this.setState({gasLastDay: res.data[0].sum});
