@@ -135,15 +135,26 @@ proxy: $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch build/$@
 
-# Dashboard
+# Dashboard Server
+
+dashboard-server-prod: dashboard-prod
+	$(log_start)
+	docker build --file $(dashboard)/ops/server.dockerfile --tag $(project)_dashboard:latest $(dashboard)
+	$(log_finish) && touch build/$@
+
+dashboard-server: dashboard
+	$(log_start)
+	docker build --file $(dashboard)/ops/dev.dockerfile --tag $(project)_dashboard:dev $(dashboard)
+	$(log_finish) && touch build/$@
+
+# Dashboard Client
 
 dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_dashboard) "npm run build"
-	docker build --file $(dashboard)/ops/server.dockerfile --tag $(project)_dashboard:latest $(dashboard)
 	$(log_finish) && touch build/$@
 
-dashboard: dashboard-node-modules $(shell find $(dashboard)/ops $(find_options))
+dashboard: dashboard-node-modules $(dashboard)/ops/dev.env
 	$(log_start)
 	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
 	$(log_finish) && touch build/$@
