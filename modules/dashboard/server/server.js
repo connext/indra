@@ -35,7 +35,7 @@ app.use("/*", function(req, res, next) {
 
 // HOME GET TESTING
 app.get('/test', function (req, res) {
-    send(req, res, ["hello","world"])
+    send(req, res, {rows:["hello","world"]})
 })
 
 /***************************************
