@@ -2,8 +2,8 @@ const fs = require('fs');
 const { Pool } = require('pg');
 
 const host = process.env.POSTGRES_URL || 'localhost:5432'
-const user = process.env.POSTGRES_USER || 'indra'
-const database = process.env.POSTGRES_DB || 'indra'
+const user = process.env.POSTGRES_USER || 'user'
+const database = process.env.POSTGRES_DB || 'database'
 let password
 if (process.env.POSTGRES_PASSWORD_FILE) {
   password = fs.readFileSync(process.env.POSTGRES_PASSWORD_FILE, 'utf8')

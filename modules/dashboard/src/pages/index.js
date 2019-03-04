@@ -11,6 +11,8 @@ import { withStyles } from "@material-ui/core/styles";
 import withRoot from "../withRoot";
 import Dashboard from "../components/Dashboard";
 import Web3 from "web3";
+import { BrowserRouter as Router, Route } from "react-router-dom";
+
 
 const styles = theme => ({
   root: {

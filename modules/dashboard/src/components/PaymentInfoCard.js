@@ -7,12 +7,26 @@ import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
 import get from "../get";
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import { VictoryChart, VictoryLine, VictoryLabel, VictoryAxis } from "victory";
+
 
 const styles = theme => ({
   card: {
-    minWidth: 275,
-    textAlign: "left"
-  }
+    minWidth: "40%",
+    textAlign: "left",
+    marginBottom:"3%"
+  },
+  content: {
+    flexGrow: 1,
+    padding: theme.spacing.unit * 3,
+    height: "100vh",
+    overflow: "auto"
+  },
 });
 
 class PaymentInfoCard extends Component {
@@ -26,7 +40,8 @@ class PaymentInfoCard extends Component {
       averagePaymentWeiLastDay: null,
       averagePaymentTokenLastDay: null,
       idInput: "",
-      paymentInfo: null
+      paymentInfo: null,
+      freqArray: null
     };
   }
 
@@ -80,10 +95,112 @@ class PaymentInfoCard extends Component {
 
   searchById = async id => {
     const res = await get(`payments/${id}`);
-    if (res) {
+    if (res.length>0) {
       this.setState({ paymentInfo: res });
     } else {
       this.setState({ paymentInfo: "ID not found" });
+    }
+  };
+
+  setFrequency = async() =>{
+    const res = get(`payments/frequency`);
+    if (res.data){
+      this.setState({freqArray: res.data})
+    }
+  }
+
+  setChart = () => {
+    // TESTING DATA
+    // let data = [
+    //   { day: 1, count: 10 },
+    //   { day: 2, count: 14 },
+    //   { day: 3, count: 8 }
+    // ];
+    // const toRender = (
+    //   <VictoryChart width={140} height={140}
+    //     style={{
+    //       labels:{
+    //         fontSize:4
+    //       }
+    //     }}>
+    //       <VictoryLabel x={50} y={40}
+    //         text="Payments this Week"
+    //         style={{fontSize:4}}
+    //       />
+    //       <VictoryLine
+            
+    //         x="day"
+    //         y="count"
+    //         standalone={false}
+    //         style={{ data: { strokeWidth: 0.1 } }}
+    //         data={data}
+    //       />
+    //       <VictoryAxis
+    //         domain={{y: [0, 100] }}
+    //         dependentAxis={true}
+    //         label="Withdrawals"
+    //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+    //       />
+    //       <VictoryAxis
+    //         dependentAxis={false}
+    //         domain={{ x: [0, 7]}}
+    //         tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
+    //         label="Day"
+    //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+    //       />
+    // </VictoryChart> 
+    // );
+    // console.log(toRender);
+    // return toRender;
+
+    
+    if (this.state.freqArray) {
+      // TESTING DATA
+      // let data = [
+      //   {day:"1", count:10},
+      //   {day:"2", count:14},
+      //   {day:"3", count:8}
+      // ]
+
+    const toRender = (
+      <VictoryChart width={140} height={140}
+        style={{
+          labels:{
+            fontSize:4
+          }
+        }}>
+          <VictoryLabel x={50} y={40}
+            text="Payments this Week"
+            style={{fontSize:4}}
+          />
+          <VictoryLine
+            
+            x="day"
+            y="count"
+            standalone={false}
+            style={{ data: { strokeWidth: 0.1 } }}
+            data={this.state.freqArray}
+          />
+          <VictoryAxis
+            domain={{y: [0, 100] }}
+            dependentAxis={true}
+            label="Withdrawals"
+            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+          />
+          <VictoryAxis
+            dependentAxis={false}
+            domain={{ x: [0, 7]}}
+            tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
+            label="Day"
+            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+          />
+    </VictoryChart> 
+    );
+    console.log(toRender);
+    return toRender
+      //this.setState({ withdrawalBreakdown: JSON.stringify(res) });
+    } else {
+      console.warn(`Missing data for chart`)
     }
   };
 
@@ -96,32 +213,83 @@ class PaymentInfoCard extends Component {
     await this.setTotal();
     await this.setAverage();
     await this.setAverageTrailing();
+    await this.setFrequency();
   };
 
   render() {
     const { classes } = this.props;
+    const PaymentFrequency = this.setChart();
+
     return (
+      <div className={classes.content}>
       <Card className={classes.card}>
-        <CardContent>
-          <Typography variant="h4">
-            Total Payments via Hub: {this.state.totalPayments}
-          </Typography>
-          <Typography variant="h6">
-            Average Token Payment: {this.state.averagePaymentToken}
-          </Typography>
-          <Typography variant="h6">
-            Average Wei Payment: {this.state.averagePaymentWei}
-          </Typography>
-          <Typography variant="h4">
-            Payments in last 24 hrs: {this.state.paymentsLastDay}
-          </Typography>
-          <Typography variant="h6">
-            Average Token Payment: {this.state.averagePaymentTokenLastDay}
-          </Typography>
-          <Typography variant="h6">
-            Average Wei Payment: {this.state.averagePaymentWeiLastDay}
-          </Typography>
-          <Typography variant="h4">Search by payment ID</Typography>
+      <CardContent>
+        <Typography variant="h5" style={{marginBotton:"5%"}}>Payment Summary Statistics</Typography>
+            <Table className={classes.table}>
+              <TableHead>
+                <TableRow>
+                  <TableCell />
+                  <TableCell>
+                    <Typography variant="h6"> Value </Typography>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell component="th" scope="row">
+                    <Typography variant="h6">Count</Typography>
+                  </TableCell>
+                  <TableCell component="th" scope="row">
+                  {this.state.totalPayments}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th" scope="row">
+                    <Typography variant="h6">Average Token Payment</Typography>
+                  </TableCell>
+                  <TableCell component="th" scope="row">
+                  {this.state.averagePaymentToken}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th" scope="row">
+                    <Typography variant="h6">Average Wei Payment</Typography>
+                  </TableCell>
+                  <TableCell component="th" scope="row">
+                  {this.state.averagePaymentWei}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th" scope="row">
+                    <Typography variant="h6">Count (Last 24 hours)</Typography>
+                  </TableCell>
+                  <TableCell component="th" scope="row">
+                  {this.state.paymentsLastDay}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th" scope="row">
+                    <Typography variant="h6">Average Token Payment (Last 24 hours)</Typography>
+                  </TableCell>
+                  <TableCell component="th" scope="row">
+                  {this.state.averagePaymentTokenLastDay}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th" scope="row">
+                    <Typography variant="h6">Average Wei Payment (Last 24 hours)</Typography>
+                  </TableCell>
+                  <TableCell component="th" scope="row">
+                  {this.state.averagePaymentWeiLastDay}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+        </CardContent>
+      </Card>
+      <Card className={classes.card}>
+      <CardContent>
+        <Typography variant="h5" style={{marginBotton:"5%"}}>Payment Search</Typography>
           <div>
             <TextField
               id="outlined"
@@ -131,7 +299,7 @@ class PaymentInfoCard extends Component {
               margin="normal"
               variant="outlined"
             />
-            <Button variant="contained" onClick={() => this.searchById()}>Search</Button>
+            <Button variant="contained" onClick={() => this.searchById(this.state.idInput)}>Search</Button>
           </div>
           <div>
             {this.state.paymentInfo ? (
@@ -140,6 +308,13 @@ class PaymentInfoCard extends Component {
           </div>
         </CardContent>
       </Card>
+      <Card className={classes.card}>
+      <div style={{marginTop:"-20%"}}>
+
+       {PaymentFrequency}
+      </div>
+      </Card>
+      </div>
     );
   }
 }

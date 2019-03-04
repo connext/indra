@@ -5,6 +5,11 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
 import get from '../get';
 
 
@@ -13,7 +18,11 @@ const styles = theme => ({
         minWidth: 275,
         textAlign:"left"
       },
+    table: {
+      maxWidth:"50%"
+    }
     });
+
 
 class ChannelInfoCard extends Component{
   constructor(props) {
@@ -53,15 +62,47 @@ class ChannelInfoCard extends Component{
     return (
       <Card className={classes.card}>
         <CardContent>
-          <Typography variant="h4">
-          Open Channels: {this.state.openChannels}
-          </Typography>
-          <Typography variant="h4">
-          Average Wei Balance: {this.state.avgWeiBalance}
-          </Typography>
-          <Typography variant="h4">
-          Average Token Balance: {this.state.avgTokenBalance}
-          </Typography>
+        <Table className={classes.table}>
+          {/* <TableHead>
+            <TableRow>
+              <TableCell/>
+              <TableCell>Number</TableCell>
+            </TableRow>
+          </TableHead> */}
+          <TableBody>
+              <TableRow >
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">
+                  Open Channels
+                  </Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {this.state.openChannels}
+                </TableCell>
+              </TableRow>
+              <TableRow >
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">
+                  Average Channel Wei Balance
+                  </Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                {this.state.avgWeiBalance}
+                </TableCell>
+              </TableRow>
+              <TableRow >
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">
+                  Average Channel Token Balance
+                  </Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                {this.state.avgTokenBalance}
+                </TableCell>
+              </TableRow>
+          </TableBody>
+        </Table>
+
         </CardContent>
       </Card>
     );

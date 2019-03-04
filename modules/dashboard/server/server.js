@@ -51,6 +51,7 @@ app.get('/channels/open', async function (req, res) {
     `));
 });
 
+
 // average balances
 app.get('/channels/averages', async function (req, res) {
     send(req, res, await query(`
@@ -128,6 +129,17 @@ app.get('/payments/:id', async function (req, res) {
         FROM _payments
         WHERE purchase_id = ${req.params.id}
         LIMIT 10
+    `));
+});
+
+// frequency summary
+app.get('/payments/frequency', async function (req, res) {
+    send(req, res, await query(`
+        SELECT date_part('day', created_on) as day, count(*)
+        FROM _payments a
+        INNER JOIN _cm_channel_updates b
+        ON a.id = b.id
+        WHERE b.created_on > now() - interval '1 day'
     `));
 });
 
@@ -228,7 +240,38 @@ app.get('/collateralization/summary', async function (req, res) {
  *              Deposits               *
  * ************************************/
 
-// TODO
+//withdrawal averages
+app.get('/deposits/average', async function (req, res) {
+    send(req, res, await query(`
+        SELECT sum(pending_deposit_wei_user)/count(*) as avg_deposit_wei,
+              sum(pending_deposit_token_user)/count(*) as avg_deposit_token
+        FROM _cm_channel_updates
+        WHERE reason = 'ProposePendingDeposit'
+            AND (pending_deposit_wei_user <> 0 OR pending_deposit_token_user <> 0)
+    `));
+});
+
+// withdrawal count
+app.get('/deposits/total', async function (req, res) {
+    send(req, res, await query(`SELECT count(*)
+        FROM _cm_channel_updates
+        WHERE reason = 'ProposePendingDeposit'
+            AND (pending_deposit_wei_user <> 0 OR pending_deposit_token_user <> 0)
+    `));
+});
+
+// withdrawal frequency
+app.get('/deposits/frequency', async function (req, res) {
+    send(req, res, await query(`
+        SELECT date_part('day', created_on) as day, count(*)
+        FROM _cm_channel_updates
+        WHERE reason = 'ProposePendingDeposit'
+            AND (pending_deposit_wei_user != 0 || pending_deposit_token_user != 0)
+        GROUP BY 1
+        ORDER BY 1
+        LIMIT 7
+    `));
+});
 
 
 /***************************************
@@ -236,12 +279,12 @@ app.get('/collateralization/summary', async function (req, res) {
  * ************************************/
 
 // user updates, last 10
-app.get('/users/:id', async function (req, res) {
+app.get('/users/:id/:number', async function (req, res) {
     send(req, res, await query(SQL`
         SELECT *
         FROM _cm_channel_updates
         WHERE user = ${req.params.id}
-        LIMIT 10
+        LIMIT ${req.params.number}
     `));
 });
 

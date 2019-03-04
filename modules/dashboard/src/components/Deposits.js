@@ -25,97 +25,95 @@ const styles = theme => ({
     height: "100vh",
     overflow: "auto"
   },
-  table: {
-    maxWidth:"50%"
-  }
 });
 
-class Withdrawals extends Component {
+class Deposits extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      withdrawalAverageWei: null,
-      withdrawalAverageToken: null,
-      withdrawalTotal: null,
-      withdrawalBreakdown: null,
-      freqArray:null,
+      depositAverageWei: null,
+      depositAverageToken: null,
+      depositTotal: null,
+      depositBreakdown: null,
+      freqArray: null
     };
   }
 
   setAverage = async () => {
-    const res = await get(`withdrawals/average`);
-    if (res && res.avg_withdrawal_wei && res.avg_withdrawal_token) {
+    const res = await get(`deposits/average`);
+    if (res && res.avg_deposit_wei && res.avg_deposit_token) {
       this.setState({
-        withdrawalAverageToken: res.avg_withdrawal_token,
-        withdrawalAverageWei: res.avg_withdrawal_wei
+        depositAverageToken: res.avg_deposit_token,
+        depositAverageWei: res.avg_deposit_wei
       });
     } else {
       this.setState({
-        withdrawalAverageToken: "N/A",
-        withdrawalAverageWei: "N/A"
+        depositAverageToken: "N/A",
+        depositAverageWei: "N/A"
       });
     }
   };
 
   setTotal = async () => {
-    const res = await get(`withdrawals/total`);
+    const res = await get(`deposits/total`);
     if (res && res.count) {
-      this.setState({ withdrawalTotal: res.count });
+      this.setState({ depositTotal: res.count });
     } else {
-      this.setState({ withdrawalTotal: "N/A" });
+      this.setState({ depositTotal: "N/A" });
     }
   };
 
   setFrequency = async() =>{
-    const res = get(`withdrawals/frequency`);
+    const res = get(`deposits/frequency`);
     if (res.data){
       this.setState({freqArray: res.data})
     }
   }
 
-  setChart = () => {
-    // // TESTING DATA
-    // let data = [
-    //   { day: 1, count: 10 },
-    //   { day: 2, count: 14 },
-    //   { day: 3, count: 8 }
-    // ];
-    // const toRender = (
-    //   <VictoryChart width={140} height={140}
-    //     style={{
-    //       labels:{
-    //         fontSize:4
-    //       }
-    //     }}>
-    //       <VictoryLabel x={50} y={40}
-    //         text="Withdrawals this Week"
-    //         style={{fontSize:4}}
-    //       />
-    //       <VictoryLine
-            
-    //         x="day"
-    //         y="count"
-    //         standalone={false}
-    //         style={{ data: { strokeWidth: 0.1 } }}
-    //         data={data}
-    //       />
-    //       <VictoryAxis
-    //         domain={{y: [0, 100] }}
-    //         dependentAxis={true}
-    //         label="Withdrawals"
-    //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-    //       />
-    //       <VictoryAxis
-    //         dependentAxis={false}
-    //         domain={{ x: [0, 7]}}
-    //         tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
-    //         label="Day"
-    //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-    //       />
-    // </VictoryChart> 
-    // );
-    // console.log(toRender);
-    // return toRender;
+  setFrequency = () => {
+
+    // TESTING DATA
+  //   let data = [
+  //     {day:1, count:10},
+  //     {day:2, count:14},
+  //     {day:3, count:8}
+  //   ]
+  //   const toRender = (
+  //     <VictoryChart width={140} height={140}
+  //     style={{
+  //       labels:{
+  //         fontSize:4
+  //       }
+  //     }}>
+  //       <VictoryLabel x={50} y={40}
+  //         text="Deposits this Week"
+  //         style={{fontSize:4}}
+  //       />
+  //       <VictoryLine
+          
+  //         x="day"
+  //         y="count"
+  //         standalone={false}
+  //         style={{ data: { strokeWidth: 0.1 } }}
+  //         data={data}
+  //       />
+  //       <VictoryAxis
+  //         domain={{y: [0, 100] }}
+  //         dependentAxis={true}
+  //         label="Deposits"
+  //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+  //       />
+  //       <VictoryAxis
+  //         dependentAxis={false}
+  //         domain={{ x: [0, 7]}}
+  //         tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
+  //         label="Day"
+  //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+  //       />
+  // </VictoryChart> 
+  //   );
+  //   console.log(toRender);
+  //   return toRender
 
     if (this.state.freqArray) {
       // TESTING DATA
@@ -127,42 +125,42 @@ class Withdrawals extends Component {
 
     const toRender = (
       <VictoryChart width={140} height={140}
-        style={{
-          labels:{
-            fontSize:4
-          }
-        }}>
-          <VictoryLabel x={50} y={40}
-            text="Withdrawals this Week"
-            style={{fontSize:4}}
-          />
-          <VictoryLine
-            
-            x="day"
-            y="count"
-            standalone={false}
-            style={{ data: { strokeWidth: 0.1 } }}
-            data={this.state.freqArray}
-          />
-          <VictoryAxis
-            domain={{y: [0, 100] }}
-            dependentAxis={true}
-            label="Withdrawals"
-            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-          />
-          <VictoryAxis
-            dependentAxis={false}
-            domain={{ x: [0, 7]}}
-            tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
-            label="Day"
-            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-          />
-    </VictoryChart> 
-    );
+      style={{
+        labels:{
+          fontSize:4
+        }
+      }}>
+        <VictoryLabel x={50} y={40}
+          text="Deposits this Week"
+          style={{fontSize:4}}
+        />
+        <VictoryLine
+          
+          x="day"
+          y="count"
+          standalone={false}
+          style={{ data: { strokeWidth: 0.1 } }}
+          data={this.state.freqArray}
+        />
+        <VictoryAxis
+          domain={{y: [0, 100] }}
+          dependentAxis={true}
+          label="Deposits"
+          style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+        />
+        <VictoryAxis
+          dependentAxis={false}
+          domain={{ x: [0, 7]}}
+          tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
+          label="Day"
+          style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+        />
+  </VictoryChart> 
+    ); 
+
     console.log(toRender);
     return toRender
     } else {
-
       console.warn(`Missing data for chart`)
     }
   };
@@ -175,12 +173,12 @@ class Withdrawals extends Component {
 
   render = () => {
     const { classes } = this.props;
-    const WithdrawalFrequency = this.setChart();
+    const DepositFrequency =  this.setFrequency()
     return (
       <div className={classes.content}>
       <Card className={classes.card}>
       <CardContent>
-        <Typography variant="h5" style={{marginBotton:"5%"}}>Withdrawal Summary Statistics</Typography>
+        <Typography variant="h5" style={{marginBotton:"5%"}}>Deposit Summary Statistics</Typography>
             <Table className={classes.table}>
               <TableHead>
                 <TableRow>
@@ -196,7 +194,7 @@ class Withdrawals extends Component {
                     <Typography variant="h6">Count</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                    {this.state.withdrawalTotal}
+                    {this.state.depositTotal}
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -204,7 +202,7 @@ class Withdrawals extends Component {
                     <Typography variant="h6">Average Token Value</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.withdrawalAverageToken}
+                  {this.state.depositAverageToken}
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -212,7 +210,7 @@ class Withdrawals extends Component {
                     <Typography variant="h6">Average Wei Value</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.withdrawalAverageWei}
+                  {this.state.depositAverageWei}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -221,12 +219,12 @@ class Withdrawals extends Component {
       </Card>
       <Card className={classes.card}>
       <div style={{marginTop:"-20%"}}>
-            {WithdrawalFrequency}
+            {DepositFrequency}
             </div>
       </Card>
       </div>
     );
-  };
+  }
 }
 
-export const WithdrawalsStyled = withStyles(styles)(Withdrawals);
+export const DepositsStyled = withStyles(styles)(Deposits);
