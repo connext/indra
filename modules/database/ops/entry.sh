@@ -7,7 +7,7 @@ set -e
 # 60 sec/min * 30 min = 1800
 backup_frequency="1800"
 should_restore_backup="no"
-backup_file="snapshots/`ls snapshots | sort -r | head -n 1`"
+backup_file="snapshots/`ls snapshots | grep "$ETH_NETWORK" | sort -r | head -n 1`"
 
 ########################################
 ## Helper functions
