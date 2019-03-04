@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const publicUrl = process.env.PUBLIC_URL || `http://localhost:3000`
-const apiUrl = process.env.REACT_APP_API_URL || `${publicUrl}/api/dashboard`
+const apiUrl = process.env.REACT_APP_API_URL || `/api/dashboard`
 
 const get = async (url) => {
     console.log(`Getting ${url}...`)
