@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Set default email & domain name
-email=$EMAIL; [[ -n "$email" ]] || email=noreply@example.com
-domain=$DOMAINNAME; [[ -n "$domain" ]] || domain=localhost
-echo "domain=$domain email=$email mode=$MODE"
+email="${EMAIL:-noreply@gmail.com}"
+domain="${DOMAINNAME:-localhost}"
+dashboard_url="${DASHBOARD_URL:-dashboard}"
+echo "domain=$domain email=$email dashboard=$dashboard_url mode=$MODE"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -74,7 +75,7 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
 sed -i 's|$ETH_RPC_URL|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
-sed -i 's|$DASHBOARD_URL|'"$DASHBOARD_URL"'|' /etc/nginx/nginx.conf
+sed -i 's|$DASHBOARD_URL|'"$dashboard_url"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
