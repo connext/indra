@@ -136,10 +136,10 @@ services:
     entrypoint: nodemon server/server.js
     environment:
       NODE_ENV: development
-      POSTGRES_USER: $postgres_user
-      POSTGRES_PASSWORD_FILE: $postgres_password_file
-      POSTGRES_URL: $postgres_url
       POSTGRES_DB: $postgres_db
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_USER: $postgres_user
+      POSTGRES_URL: $postgres_url
     networks:
       - $project
     secrets:

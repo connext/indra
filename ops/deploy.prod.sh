@@ -37,8 +37,7 @@ project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
 # database settings
 redis_url="redis://redis:6379"
-postgres_host="database"
-postgres_port="5432"
+postgres_url="database:5432"
 postgres_user="$project"
 postgres_db="$project"
 postgres_password_file="/run/secrets/indra_database"
@@ -160,6 +159,7 @@ services:
     environment:
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_URL: $postgres_url
       POSTGRES_USER: $postgres_user
 
   hub:
