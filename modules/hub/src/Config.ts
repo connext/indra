@@ -1,6 +1,5 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
-import { BigNumber } from 'bignumber.js'
 import { toWeiBigNum } from './util/bigNumber';
 
 const ENV_VARS = [
@@ -53,7 +52,7 @@ export default class Config {
     ENV_VARS.forEach((v: string) => {
       const val: any = process.env[v]
       if (val !== undefined)
-        (instance as any)[camelize(v, '_')] = val
+        (instance as any)[camelize(v, '_')] = v.endsWith('ADDRESS') ? val.toLowerCase() : val
     })
 
     for (let key in (overrides || {}))

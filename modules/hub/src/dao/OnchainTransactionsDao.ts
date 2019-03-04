@@ -46,6 +46,7 @@ export class OnchainTransactionsDao {
       WHERE
         state <> 'failed' AND
         state <> 'confirmed'
+      FOR UPDATE
     `)
 
     return rows.map(row => this.inflateRow(row))
@@ -58,6 +59,7 @@ export class OnchainTransactionsDao {
       WHERE logical_id = ${logicalId}
       ORDER BY id DESC
       LIMIT 1
+      FOR UPDATE
     `)
 
     return row && this.inflateRow(row)

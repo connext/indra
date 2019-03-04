@@ -10,11 +10,11 @@ import List from "@material-ui/core/List";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
-import Badge from "@material-ui/core/Badge";
+//import Badge from "@material-ui/core/Badge";
 import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
-import NotificationsIcon from "@material-ui/icons/Notifications";
+//import NotificationsIcon from "@material-ui/icons/Notifications";
 import { mainListItems } from "./listItems";
 import ChannelDetails from "./ChannelDetails";
 import { ContractInfoCardStyled } from "./ContractInfoCard";
@@ -23,6 +23,7 @@ import { PaymentInfoCardStyled } from "./PaymentInfoCard";
 import { GasCostCardStyled } from "./GasCostCard";
 import { WithdrawalsStyled } from "./Withdrawals";
 const ChannelManagerAbi = require("../abi/ChannelManager.json");
+const TokenAbi = require("../abi/Token.json");
 
 const drawerWidth = 240;
 
@@ -102,24 +103,74 @@ const styles = theme => ({
   }
 });
 
-
-
 class Dashboard extends React.Component {
-  state = {
-    open: false,
-    wei: {
-      raw: 0,
-      formatted: 0
-    },
-    token: {
-      raw: 0,
-      formatted: 0
-    },
-    loadingContract: false
-  };
+  constructor(props) {
+    super(props)
+    this.state = {
+      hubUrl: this.props.hubUrl,
+      open: false,
+      channelManager: {
+        address: '0x',
+        wei: {
+          raw: 0,
+          formatted: 0
+        },
+        token: {
+          raw: 0,
+          formatted: 0
+        },
+      },
+      hubWallet: {
+        address: '0x',
+        wei: {
+          raw: 0,
+          formatted: 0
+        },
+        token: {
+          raw: 0,
+          formatted: 0
+        },
+      },
+      loadingWallet: false,
+      loadingContract: false
+    };
+  }
 
   async componentDidMount() {
+    await this.getHubConfig();
     await this.getContractInfo();
+    await this.getWalletInfo(this.state.hubWallet.address);
+  }
+
+  async getHubConfig() {
+    const config = await (await fetch(`${this.state.hubUrl}/config`)).json();
+    console.log(`Got hub config: ${JSON.stringify(config,null,2)}`);
+    this.setState(state => {
+      state.tokenAddress = config.tokenAddress.toLowerCase()
+      state.channelManager.address = config.channelManagerAddress.toLowerCase()
+      state.hubWallet.address = config.hubWalletAddress.toLowerCase()
+      return state
+    });
+  }
+
+  getWalletInfo = async (address) => {
+    const { web3 } = this.props;
+    this.setState({
+      loadingWallet: true
+    });
+    const wei = await web3.eth.getBalance(address)
+    console.log("wallet wei: ", wei);
+    const tokenContract = new web3.eth.Contract(TokenAbi.abi, this.state.tokenAddress);
+    const token = (await tokenContract.methods.balanceOf(address).call())[0]
+    console.log("wallet token: ", token)
+    this.setState(state => {
+      state.hubWallet.wei.raw = wei
+      state.hubWallet.wei.formatted = web3.utils.fromWei(wei)
+      state.hubWallet.token.raw = token
+      state.hubWallet.token.formatted = web3.utils.fromWei(token)
+      state.loadingWallet = false
+      return state
+    });
   }
 
   getContractInfo = async () => {
@@ -127,25 +178,19 @@ class Dashboard extends React.Component {
     this.setState({
       loadingContract: true
     });
-    console.log("Investigating contract at:", process.env.REACT_APP_CM_ADDRESS);
-
-    const cm = new web3.eth.Contract(ChannelManagerAbi.abi, process.env.REACT_APP_CM_ADDRESS);
-
+    console.log("Investigating contract at:", this.state.channelManager.address);
+    const cm = new web3.eth.Contract(ChannelManagerAbi.abi, this.state.channelManager.address);
     const wei = await cm.methods.getHubReserveWei().call();
-    console.log("wei: ", wei);
-    const token = await cm.methods.getHubReserveTokens().call();
-    console.log("token: ", token);
-
-    this.setState({
-      wei: {
-        raw: wei,
-        formatted: web3.utils.fromWei(wei)
-      },
-      token: {
-        raw: token,
-        formatted: web3.utils.fromWei(token)
-      },
-      loadingContract: false
+    console.log("contract wei: ", wei);
+    const token = await cm.methods.getHubReserveTokens().call()
+    console.log("contract token: ", token);
+    this.setState(state => {
+      state.channelManager.wei.raw = wei
+      state.channelManager.wei.formatted = web3.utils.fromWei(wei)
+      state.channelManager.token.raw = token
+      state.channelManager.token.formatted = web3.utils.fromWei(token)
+      state.loadingContract = false
+      return state
     });
   };
 
@@ -163,7 +208,7 @@ class Dashboard extends React.Component {
 
   render() {
     const { classes } = this.props;
-    const { wei, token, loadingContract, open } = this.state;
+    const { loadingWallet, loadingContract, open } = this.state;
 
     return (
       <div className={classes.root}>
@@ -199,17 +244,28 @@ class Dashboard extends React.Component {
           <List>{mainListItems}</List>
         </Drawer>
         <main className={classes.content}>
+          <Typography variant="h4" gutterBottom component="h2">
+            Hub Wallet Reserves
+          </Typography>
+          <Typography component="div" className={classes.chartContainer} />
+          <ContractInfoCardStyled
+            wei={this.state.hubWallet.wei}
+            token={this.state.hubWallet.token}
+            handleRefresh={() => this.getWalletInfo(this.state.hubWallet.address)}
+            loading={loadingWallet}
+            contractAddress={this.state.hubWallet.address}
+          />
           <div className={classes.appBarSpacer} />
           <Typography variant="h4" gutterBottom component="h2">
             Contract Reserves
           </Typography>
           <Typography component="div" className={classes.chartContainer} />
           <ContractInfoCardStyled
-            wei={wei}
-            token={token}
+            wei={this.state.channelManager.wei}
+            token={this.state.channelManager.token}
             handleRefresh={this.getContractInfo}
             loading={loadingContract}
-            contractAddress={process.env.REACT_APP_CM_ADDRESS}
+            contractAddress={this.state.channelManager.address}
           />
           <ChannelInfoCardStyled />
           <PaymentInfoCardStyled />

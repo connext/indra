@@ -12,6 +12,7 @@ import { default as ThreadsService } from "../ThreadsService";
 import { default as ChannelsService } from "../ChannelsService";
 import { default as Config } from "../Config";
 import PaymentsService from "../PaymentsService";
+import PaymentsDao from "../dao/PaymentsDao";
 
 const LOG = log('PaymentsApiService')
 
@@ -19,6 +20,7 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
   namespace = 'payments'
   routes = {
     'POST /purchase': 'doPurchase',
+    'POST /redeem/:user': 'doRedeem',
     //'GET /booty-load-limit': 'doBootyLimit',
     //'GET /:token?': 'doByToken',
     'GET /purchase/:id': 'doPurchaseById',
@@ -29,6 +31,7 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
   handler = PaymentsApiServiceHandler
   dependencies = {
     'paymentMetaDao': 'PaymentMetaDao',
+    'paymentsDao': 'PaymentsDao',
     'exRateDao': 'ExchangeRateDao',
     'db': 'DBEngine',
     'config': 'Config',
@@ -44,6 +47,7 @@ export class PaymentsApiServiceHandler {
   threadService: ThreadsService
   channelService: ChannelsService
   paymentMetaDao: PaymentMetaDao
+  paymentsDao: PaymentsDao
   withdrawalsService: WithdrawalsService
   exRateDao: ExchangeRateDao
   db: DBEngine
@@ -130,4 +134,41 @@ export class PaymentsApiServiceHandler {
 
     res.send(purchase)
   }
+
+  async doRedeem(req: express.Request, res: express.Response) {
+    const user = req.session!.address
+    const { secret, lastThreadUpdateId, lastChanTx } = req.body
+    if (!user || !secret || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
+      LOG.warn(
+        'Received invalid update redeem request. Aborting. Body received: {body}, Params received: {params}',
+        {
+          body: JSON.stringify(req.body),
+          params: JSON.stringify(req.params),
+        },
+      )
+      return res.sendStatus(400)
+    } 
+
+    const result = await this.paymentsService.doRedeem(user, secret)
+    if (result.error != false) {
+      LOG.warn(result.msg)
+      // @ts-ignore
+      // TODO: wtf? it works, but doesnt compile
+      // are the express types out of date somehow?
+      return res.send(400, result.msg)
+    }
+
+    const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
+      req.session!.address,
+      lastChanTx,
+      lastThreadUpdateId,
+    )
+
+    res.send({
+      purchaseId: result.res.purchaseId,
+      amount: result.res.amount,
+      sync: updates,
+    })
+  }
+
 }

@@ -46,9 +46,9 @@ import ThreadsService from './ThreadsService';
 import { SignerService } from './SignerService';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import { assertUnreachable } from './util/assertUnreachable';
 import { StateGenerator } from './vendor/connext/StateGenerator';
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
+import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 
 const LOG = log('ChannelsService')
 
@@ -69,6 +69,7 @@ export default class ChannelsService {
     private threadsDao: ThreadsDao,
     private exchangeRateDao: ExchangeRateDao,
     private channelDisputesDao: ChannelDisputesDao,
+    private onchainTxDao: OnchainTransactionsDao,
     private generator: StateGenerator,
     private validator: Validator,
     private redis: RedisClient,
@@ -246,9 +247,23 @@ export default class ChannelsService {
   public async doCollateralizeIfNecessary(
     user: string
   ): Promise<DepositArgs | null> {
+    const depositArgs = await this.getCollateralDepositArgs(user)
+
+    if (!depositArgs) {
+      return null
+    }
+
+    await this.redisSaveUnsignedState('hub-authorized', user, {
+      args: depositArgs,
+      reason: 'ProposePendingDeposit'
+    })
+    return depositArgs
+  }
+
+  public async getCollateralDepositArgs(user): Promise<DepositArgs | null> {
     const shouldCollateralized = await this.shouldCollateralize(user)
     if (!shouldCollateralized)
-      return
+      return null
 
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
@@ -315,11 +330,6 @@ export default class ChannelsService {
       timeout: 0,
       sigUser: null,
     }
-
-    await this.redisSaveUnsignedState('hub-authorized', user, {
-      args: depositArgs,
-      reason: 'ProposePendingDeposit'
-    })
     return depositArgs
   }
 
@@ -647,6 +657,11 @@ export default class ChannelsService {
           convertChannelState("str", signedChannelStatePrevious),
           convertPayment("str", update.args as PaymentArgs)
         )
+        // if the user is redeeming a payment, there will
+        // be no sigUser on the update. redeemed payments
+        // are determined by the secret
+        // check if payment exists as 'PT_LINK' and is still
+        // available to redeem
         this.validator.assertChannelSigner({
           ...unsignedChannelStateCurrent,
           sigUser: update.sigUser
@@ -784,9 +799,7 @@ export default class ChannelsService {
           })
           return
         }
-        // TODO REB-12: make sure that event has not made it to chain. This
-        // is currently being done by the client, but should be moved into
-        // the validator so it's part of the validation here too.
+
         unsignedChannelStateCurrent = this.validator.generateInvalidation(
           convertChannelState('str', lastStateNoPendingOps.state),
           update.args as InvalidationArgs
@@ -795,6 +808,31 @@ export default class ChannelsService {
           ...unsignedChannelStateCurrent,
           sigUser: update.sigUser
         })
+
+        // make sure onchain tx isnt in flight
+        const startTxCount = (update.args as InvalidationArgs).previousValidTxCount + 1 // first invalid state is one higher than previous valid
+        const endTxCount = (update.args as InvalidationArgs).lastInvalidTxCount
+        for (let txCount = startTxCount; txCount <= endTxCount; txCount++) {
+          const toBeInvalidated = await this.channelsDao.getChannelUpdateByTxCount(user, txCount)
+          // not a tx the hub sent, candidate or invalidation
+          if (!toBeInvalidated.onchainTxLogicalId) {
+            continue
+          }
+
+          const onchainTx = await this.onchainTxDao.getTransactionByLogicalId(this.db, toBeInvalidated.onchainTxLogicalId)
+          // if state isnt new or failed, it means its in flight, so dont accept the invalidation
+          if (onchainTx.state !== 'failed' && onchainTx.state !== 'new') {
+            LOG.warn(`Client sent an invalidation for a state that might still complete, user: ${user}, update: ${prettySafeJson(update)}`)
+            return
+          }
+
+          // mark as failed so we dont keep trying to send it
+          if (onchainTx.state === 'new') {
+            await this.onchainTxDao.updateTransactionState(this.db, onchainTx.id, { state: 'failed', reason: `Invalidated by update.txCountGlobal: ${update.txCount}` })
+          }
+        }
+        // proceed with invalidation
+
         sigHub = await this.signerService.getSigForChannelState(unsignedChannelStateCurrent)
         const u = await this.channelsDao.applyUpdateByUser(
           user,

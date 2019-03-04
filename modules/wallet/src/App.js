@@ -30,16 +30,8 @@ import { Typography } from "@material-ui/core";
 const Web3 = require("web3");
 const Tx = require("ethereumjs-tx");
 const eth = require("ethers");
-const humanTokenAbi = require("./abi/humanToken.json");
-const wethAbi = require("./abi/weth.json");
+const tokenAbi = require("./abi/humanToken.json");
 require("dotenv").config();
-
-let tokenAbi
-if (process.env.NODE_ENV === "production"){
-  tokenAbi = wethAbi
-} else {
-  tokenAbi = humanTokenAbi
-}
 
 console.log(`starting app in env: ${JSON.stringify(process.env, null, 1)}`);
 const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase();
@@ -121,6 +113,7 @@ class App extends Component {
     // If a browser address exists, instantiate connext
     if (this.state.delegateSigner) {
       await this.setConnext();
+      await this.checkNetIds();
       await this.authorizeHandler();
       await this.setTokenContract();
       await this.setHubDetails();
@@ -156,11 +149,6 @@ class App extends Component {
     }
     const web3 = new Web3(windowProvider.currentProvider);
     // make sure you are on localhost
-    if (await web3.eth.net.getId() !== 4447) {
-      alert(
-        "Uh oh! Doesn't look like you're using a local chain, please make sure your Metamask is connected appropriately to localhost:8545."
-      );
-    }
     this.setState({web3})
     return;
   }
@@ -170,9 +158,9 @@ class App extends Component {
     const { address } = this.state;
     const providerOpts = new ProviderOptions(store).approving();
     const provider = clientProvider(providerOpts);
-    const web3 = new Web3(provider);
+    const customWeb3 = new Web3(provider);
     const opts = {
-      web3,
+      web3: customWeb3,
       hubUrl: hubUrl, //http://localhost/hub,
       user: address
     };
@@ -183,9 +171,10 @@ class App extends Component {
     console.log(`  - hubAddress: ${connext.opts.hubAddress}`);
     console.log(`  - contractAddress: ${connext.opts.contractAddress}`);
     console.log(`  - ethNetworkId: ${connext.opts.ethNetworkId}`);
+
     this.setState({
       connext,
-      customWeb3: web3,
+      customWeb3,
       tokenAddress: connext.opts.tokenAddress,
       channelManagerAddress: connext.opts.contractAddress,
       hubWalletAddress: connext.opts.hubAddress,
@@ -193,13 +182,28 @@ class App extends Component {
     });
   }
 
+  async checkNetIds() {
+    const { web3, connext, customWeb3 } = this.state
+    const walletNetId = String(await customWeb3.eth.net.getId())
+    const metamaskNetId = String(await web3.eth.net.getId())
+    if (walletNetId !== metamaskNetId || walletNetId !== connext.opts.ethNetworkId) {
+      alert(`
+        WARNING: network id mismatch.\n
+        Metamask network: ${metamaskNetId}\n
+        Wallet network: ${walletNetId}\n
+        Hub network: ${connext.opts.ethNetworkId}
+      `);
+    } else {
+      console.log(`All providers are using network ${walletNetId}`)
+    }
+  }
+
   async setTokenContract() {
     try {
       let { web3, connext, tokenContract } = this.state;
-      const tokenAddress = connext.opts.tokenAddress
-      tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
+      tokenContract = new web3.eth.Contract(tokenAbi, connext.opts.tokenAddress);
       this.setState({ tokenContract });
-      console.log(`Done setting up token contract at ${tokenAddress}`)
+      console.log(`Done setting up token contract at ${tokenContract._address}`)
     } catch (e) {
       console.log("Error setting token contract")
       console.log(e)
@@ -211,7 +215,9 @@ class App extends Component {
       let {connext, web3, hubWallet, tokenContract} = this.state;
       hubWallet.address = connext.opts.hubAddress
       hubWallet.balance = await web3.eth.getBalance(hubWallet.address);
+      console.log(`ping ${tokenContract._address}`)
       hubWallet.tokenBalance = await tokenContract.methods.balanceOf(hubWallet.address).call();
+      console.log(`ping ${hubWallet.tokenBalance}`)
       this.setState({ hubWallet })
       console.log(`Done setting hub details for address ${hubWallet.address}`)
     } catch (e) {

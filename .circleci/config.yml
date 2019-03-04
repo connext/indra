@@ -43,12 +43,14 @@ jobs:
     machine: true
     steps:
       - run: ssh ubuntu@$STAGING_URL "bash -c 'git clone https://github.com/ConnextProject/indra.git || true'"
-      - run: ssh ubuntu@$STAGING_URL "bash -c 'cd indra && git checkout "$CIRCLE_BRANCH "&& DOMAINNAME="$STAGING_URL "bash ops/restart.sh prod'"
+      - run: ssh ubuntu@$STAGING_URL "bash -c 'cd indra && git fetch && git reset --hard origin/"$CIRCLE_BRANCH "'"
+      - run: ssh ubuntu@$STAGING_URL "bash -c 'cd indra && DOMAINNAME="$STAGING_URL "bash ops/restart.sh prod'"
 
   deploy-live:
     machine: true
     steps:
       - run: ssh ubuntu@$PRODUCTION_URL "bash -c 'git clone https://github.com/ConnextProject/indra.git || true'"
+      - run: ssh ubuntu@$PRODUCTION_URL "bash -c 'cd indra && git fetch && git reset --hard origin/master'"
       - run: ssh ubuntu@$PRODUCTION_URL "bash -c 'cd indra && MODE=live DOMAINNAME="$PRODUCTION_URL "bash ops/restart.sh prod'"
 
 workflows:

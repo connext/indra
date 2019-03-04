@@ -1,5 +1,5 @@
-project=connext
 registry=docker.io/connextproject
+project=$(shell cat package.json | grep '"name":' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -9,6 +9,7 @@ db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
 wallet=$(cwd)/modules/wallet
+dashboard=$(cwd)/modules/dashboard
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 VPATH=build:$(contracts)/build:$(hub)/dist
@@ -28,6 +29,7 @@ docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(cont
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder $(id)
 docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
+docker_run_in_dashboard=$(docker_run) --volume=$(dashboard):/root $(project)_builder $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
@@ -39,29 +41,39 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod stop clean deep-clean reset purge push push-live
+.PHONY: default all dev prod stop clean deep-clean reset purge push push-live backup
 
 default: dev
 all: dev prod
-dev: database hub wallet proxy client
+dev: database hub proxy client dashboard
 prod: database-prod hub-prod proxy-prod
+
+start: dev
+	bash ops/deploy.dev.sh
+
+start-prod: prod
+	bash ops/deploy.prod.sh
 
 stop: 
 	bash ops/stop.sh
 
 clean: stop
+	docker container prune -f
 	rm -rf build/*
+
+deep-clean: clean
 	rm -rf $(cwd)/modules/**/build
 	rm -rf $(cwd)/modules/**/dist
 
-deep-clean: stop clean
-	rm -rf $(cwd)/modules/**/node_modules
-
 reset: stop
-	docker volume rm connext_database_dev connext_chain_dev 2> /dev/null || true
+	docker container prune -f
+	docker volume rm $(project)_database_dev 2> /dev/null || true
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
 	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
+	rm -f $(db)/snapshots/ganache-*
 
 purge: reset deep-clean
+	rm -rf $(cwd)/modules/**/node_modules
 	rm -rf $(cwd)/modules/**/package-lock.json
 
 push: prod
@@ -79,6 +91,9 @@ push-live: prod
 	docker push $(registry)/$(project)_database:$(version)
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
+
+backup:
+	bash $(db)/ops/run-backup.sh
 
 ########################################
 # Begin Tests
@@ -99,7 +114,7 @@ test-hub: hub database
 
 test-e2e: root-node-modules prod
 	npm stop
-	npm run prod
+	npm run start-prod
 	./node_modules/.bin/cypress run
 	npm stop
 
@@ -108,7 +123,7 @@ test-e2e: root-node-modules prod
 
 # Proxy
 
-proxy-prod: $(shell find $(proxy) $(find_options))
+proxy-prod: dashboard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch build/$@
@@ -192,6 +207,23 @@ client-node-modules: builder $(client)/package.json
 	$(docker_run_in_client) "$(install)"
 	$(log_finish) && touch build/$@ && touch build/client
 
+# Dashboard
+
+dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_dashboard) "npm run build"
+	$(log_finish) && touch build/$@
+
+dashboard: dashboard-node-modules $(shell find $(dashboard)/ops $(find_options))
+	$(log_start)
+	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
+	$(log_finish) && touch build/$@
+
+dashboard-node-modules: builder $(dashboard)/package.json
+	$(log_start)
+	$(docker_run_in_dashboard) "$(install)"
+	$(log_finish) && touch build/$@
+
 # Database
 
 database-prod: database
@@ -199,12 +231,12 @@ database-prod: database
 	docker tag $(project)_database:dev $(project)_database:latest
 	$(log_finish) && touch build/$@
 
-database: database-node-modules migration-templates $(db_prereq)
+database: database-node-modules migration-templates $(shell find $(db)/ops $(find_options))
 	$(log_start)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	$(log_finish) && touch build/$@
 
-migration-templates: $(shell find $(db)/ops $(db)/migrations $(db)/templates $(find_options))
+migration-templates: $(db)/ops/ejs-render.js $(shell find $(db)/migrations $(db)/templates $(find_options))
 	$(log_start)
 	$(docker_run_in_db) "make"
 	$(log_finish) && touch build/$@

@@ -1,9 +1,9 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
+import * as actions from './state/actions'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
 import { createStore, Action, applyMiddleware } from 'redux'
-require('dotenv').config()
 import { EventEmitter } from 'events'
 import Web3 = require('web3')
 // local imports
@@ -24,7 +24,6 @@ import {
   ChannelStateUpdate,
   Payment,
   addSigToChannelState,
-  SyncResult,
   ChannelRow,
   ThreadRow,
   UnsignedThreadState,
@@ -37,16 +36,15 @@ import { ConnextStore, ConnextState, PersistentState } from "./state/store";
 import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
 import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
-import { toBN, mul } from './helpers/bn'
+import { toBN } from './helpers/bn'
 import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import CollateralController from "./controllers/CollateralController";
-import * as actions from './state/actions';
 import { AbstractController } from './controllers/AbstractController'
 import { EventLog } from 'web3/types';
-import { getChannel } from './lib/getChannel';
 import ThreadsController from './controllers/ThreadsController';
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
+import { RedeemController } from './controllers/RedeemController';
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -100,17 +98,16 @@ export interface IHubAPIClient {
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
   config(): Promise<HubConfig>
+  redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
 }
 
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
-  // private tokenName?: string
 
   constructor(user: Address, networking: Networking, tokenName?: string) {
     this.user = user
     this.networking = networking
-    // this.tokenName = tokenName
   }
 
   async config(): Promise<HubConfig> {
@@ -299,6 +296,27 @@ class HubAPIClient implements IHubAPIClient {
   ): Promise<PurchasePaymentHubResponse> {
     const { data } = await this.networking.post('payments/purchase', { meta, payments })
     return data
+  }
+
+  async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
+    try {
+      const response = await this.networking.post(
+        `payments/redeem/${this.user}`,
+        { 
+          secret,
+          lastChanTx: txCount,
+          lastThreadUpdateId, 
+        },
+      )
+      return response.data
+    } catch (e) {
+      console.log(e.message)
+      if (e.message.indexOf("Payment has been redeemed.") != -1) {
+        throw new Error(`Payment has been redeemed.`)
+      }
+      throw e
+    }
+    
   }
 
   // post to hub telling user wants to deposit
@@ -741,10 +759,10 @@ export interface ConnextClientOptions {
   web3: Web3
   hubUrl: string
   user: string
+  contractAddress: string
+  hubAddress: Address
+  tokenAddress: Address
   ethNetworkId?: string
-  contractAddress?: string
-  hubAddress?: Address
-  tokenAddress?: Address
   tokenName?: string
   gasMultiple?: number
 
@@ -764,10 +782,10 @@ export interface ConnextClientOptions {
 
 function hubConfigToClientOpts(config: HubConfig) {
   return {
-    contractAddress: config.channelManagerAddress,
-    hubAddress: config.hubWalletAddress,
-    tokenAddress: config.tokenAddress,
-    ethNetworkId: config.ethNetworkId,
+    contractAddress: config.channelManagerAddress.toLowerCase(),
+    hubAddress: config.hubWalletAddress.toLowerCase(),
+    tokenAddress: config.tokenAddress.toLowerCase(),
+    ethNetworkId: config.ethNetworkId.toLowerCase(),
   }
 }
 
@@ -852,6 +870,10 @@ export abstract class ConnextClient extends EventEmitter {
   async requestCollateral(): Promise<void> {
     await this.internal.collateralController.requestCollateral()
   }
+
+  async redeem(secret: string): Promise<{ purchaseId: string }> {
+    return await this.internal.redeemController.redeem(secret)
+  }
 }
 
 /**
@@ -874,6 +896,7 @@ export class ConnextInternal extends ConnextClient {
   stateUpdateController: StateUpdateController
   collateralController: CollateralController
   threadsController: ThreadsController
+  redeemController: RedeemController
 
   constructor(opts: ConnextClientOptions) {
     super(opts)
@@ -890,11 +913,9 @@ export class ConnextInternal extends ConnextClient {
       this.opts.tokenName,
     )
 
-    //const hubConfig = await this.hub.config()
-    //console.log(`Received config from hub: ${JSON.stringify(hubConfig,null,2)}`)
-
-    opts.hubAddress = opts.hubAddress || ''//hubConfig.hubAddress
-    opts.contractAddress = opts.contractAddress || ''//hubConfig.contractAddress
+    opts.user = opts.user.toLowerCase()
+    opts.hubAddress = opts.hubAddress.toLowerCase()
+    opts.contractAddress = opts.contractAddress.toLowerCase()
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
     this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
@@ -908,6 +929,7 @@ export class ConnextInternal extends ConnextClient {
     this.stateUpdateController = new StateUpdateController('StateUpdateController', this)
     this.collateralController = new CollateralController('CollateralController', this)
     this.threadsController = new ThreadsController('ThreadsController', this)
+    this.redeemController = new RedeemController('RedeemController', this)
   }
 
   private getControllers(): AbstractController[] {
@@ -1030,6 +1052,12 @@ export class ConnextInternal extends ConnextClient {
     this.store.dispatch(action)
   }
 
+  generateSecret(): string {
+    return Web3.utils.soliditySha3({
+      type: 'bytes32', value: Web3.utils.randomHex(32)
+    })
+  }
+
   async sign(hash: string, user: string) {
     return await (
       this.opts.web3.eth.personal
@@ -1040,8 +1068,8 @@ export class ConnextInternal extends ConnextClient {
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
-      state.user != this.opts.user ||
-      state.contractAddress != this.opts.contractAddress
+      state.user.toLowerCase() != this.opts.user.toLowerCase() ||
+      state.contractAddress.toLowerCase()!= (this.opts.contractAddress as any).toLowerCase()
     ) {
       throw new Error(
         `Refusing to sign channel state update which changes user or contract: ` +
