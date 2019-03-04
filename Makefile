@@ -72,7 +72,6 @@ reset: stop
 
 purge: reset deep-clean
 	rm -rf $(cwd)/modules/**/node_modules
-	rm -rf $(cwd)/modules/**/package-lock.json
 
 push: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
