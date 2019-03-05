@@ -11,6 +11,8 @@ import { withStyles } from "@material-ui/core/styles";
 import withRoot from "../withRoot";
 import Dashboard from "../components/Dashboard";
 import Web3 from "web3";
+import { BrowserRouter as Router, Route } from "react-router-dom";
+
 
 const styles = theme => ({
   root: {
@@ -22,9 +24,8 @@ const styles = theme => ({
 class Index extends React.Component {
   constructor(props) {
     super(props);
-    const web3 = new Web3(props.ethUrl);
     this.state = {
-      web3
+      web3: new Web3(props.ethUrl)
     };
   }
   render() {
@@ -32,7 +33,7 @@ class Index extends React.Component {
     const { web3 } = this.state;
     return (
       <div className={classes.root}>
-        <Dashboard web3={web3} hubUrl={this.props.hubUrl} />
+        <Dashboard web3={web3} hubUrl={this.props.hubUrl} apiUrl={this.props.apiUrl}/>
       </div>
     );
   }
