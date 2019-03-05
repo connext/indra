@@ -249,7 +249,7 @@ docker stack deploy -c /tmp/$project/docker-compose.yml $project
 rm -rf /tmp/$project
 
 echo -n "Waiting for the $project stack to wake up."
-while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" == "$number_of_services" ]]
+while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]
 do echo -n "." && sleep 2
 done
 echo " Good Morning!"
