@@ -40,7 +40,7 @@ redis_url="redis://redis:6379"
 postgres_url="database:5432"
 postgres_user="$project"
 postgres_db="$project"
-postgres_password_file="/run/secrets/indra_database"
+postgres_password_file="/run/secrets/${project}_database"
 
 # ethereum settings
 # Allow contract address overrides if an address book is present in project root
