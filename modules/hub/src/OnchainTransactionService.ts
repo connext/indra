@@ -121,11 +121,14 @@ export class OnchainTransactionService {
     const nonce = Math.max(
       await this.web3.eth.getTransactionCount(txnRequest.from),
       (await db.queryOne(SQL`
-        select coalesce(max(nonce), 0) + 1 as nonce
-        from onchain_transactions_raw
-        where
-          "from" = ${txnRequest.from} and
-          state <> 'failed'
+        select coalesce((
+          select nonce from onchain_transactions_raw 
+          where
+            "from" = ${txnRequest.from} and
+            state <> 'failed'
+          order by nonce desc 
+          for update
+        ), 0)
       `)).nonce,
     )
 
@@ -252,6 +255,9 @@ export class OnchainTransactionService {
 
       switch (errorReason) {
         case 'permanent':
+          // check nonce of latest onchain
+          // for each nonce we have thats <= to that
+
           // In the future we'll be able to be more intelligent about retrying (ex,
           // with a new nonce or more gas) here... but for now, just fail.
           LOG.error(`Permanent error sending transaction: ${error}. Transaction: ${JSON.stringify(txn)}`)
