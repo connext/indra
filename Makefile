@@ -115,7 +115,7 @@ test-hub: hub database
 
 test-e2e: root-node-modules prod
 	npm stop
-	npm run start-prod
+	MODE=test npm run start-prod
 	./node_modules/.bin/cypress run
 	npm stop
 
