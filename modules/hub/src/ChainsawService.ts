@@ -209,10 +209,23 @@ export default class ChainsawService {
     }
 
     const prev = await this.channelsDao.getChannelOrInitialState(event.user)
-    const state = await this.validator.generateConfirmPending(
-      convertChannelState('str', prev.state),
-      { transactionHash: event.txHash }
-    )
+    if (prev.status == "CS_CHAINSAW_ERROR") {
+      // if there was a previous chainsaw error, return
+      // and do not process event
+      return
+    }
+    let state
+    try {
+      state = await this.validator.generateConfirmPending(
+        convertChannelState('str', prev.state),
+        { transactionHash: event.txHash }
+      )
+    } catch (e) {
+      // switch channel status to cs chainsaw error and break out of
+      // function
+      await this.channelsDao.changeChannelStatus(event.user, "CS_CHAINSAW_ERROR")
+      return
+    }
     const hash = this.utils.createChannelStateHash(state)
 
     const sigHub = await this.signerService.signMessage(hash);
