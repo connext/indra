@@ -37,8 +37,8 @@ SHOULD_COLLATERALIZE_URL="NO_CHECK"
 REDIS_URL="redis://redis:6379"
 POSTGRES_HOST="database"
 POSTGRES_PORT="5432"
-POSTGRES_USER="connext"
-POSTGRES_DB="connext"
+POSTGRES_USER="indra"
+POSTGRES_DB="indra"
 POSTGRES_PASSWORD_FILE="/run/secrets/indra_database"
 
 ####################
