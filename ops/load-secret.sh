@@ -12,7 +12,7 @@ function load_secret {
   fi
 
   echo "Copy your $name secret to your clipboard"
-  echo "Paste it below & hit enter"
+  echo "Paste it below & hit enter (no echo)"
   echo -n "> "
   read -s secret
   echo

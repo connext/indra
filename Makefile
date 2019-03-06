@@ -39,7 +39,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod stop clean deep-clean reset purge push push-live backup
+.PHONY: default all dev prod stop clean reset purge push push-live backup
 
 default: dev
 all: dev prod
@@ -58,20 +58,38 @@ stop:
 clean: stop
 	docker container prune -f
 	rm -rf build/*
+	rm -rf modules/**/build
+	rm -rf modules/**/dist
 
-deep-clean: clean
-	rm -rf $(cwd)/modules/**/build
-	rm -rf $(cwd)/modules/**/dist
-
-reset: stop
+reset-base: stop
 	docker container prune -f
 	docker volume rm $(project)_database_dev 2> /dev/null || true
+
+reset-client: reset-base
+	rm -rf build/client*  $(client)/dist $(client)/node_modules
+
+reset-contracts: reset-base
+	rm -f build/contract* $(contracts)/build/* $(contracts)/node_modules
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
-	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
+
+reset-dashboard: reset-base
+	rm -f build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
+
+reset-database: reset-base
+	rm -f build/database* $(db)/build/* $(db)/node_modules
+	docker volume rm $(project)_database_dev 2> /dev/null || true
+
+reset-hub: reset-base
+	rm -f build/hub* $(hub)/dist/* $(hub)/node_modules
+
+reset: reset-base
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
+	docker volume rm $(project)_database_dev 2> /dev/null || true
 	rm -f $(db)/snapshots/ganache-*
 
-purge: reset deep-clean
-	rm -rf $(cwd)/modules/**/node_modules
+purge: reset-data clean
+	rm -rf modules/**/node_modules
 
 push: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
@@ -217,12 +235,12 @@ database-prod: database
 	docker tag $(project)_database:dev $(project)_database:latest
 	$(log_finish) && touch build/$@
 
-database: database-node-modules migration-templates $(shell find $(db)/ops $(find_options))
+database: database-node-modules database-migrations $(shell find $(db)/ops $(find_options))
 	$(log_start)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
 	$(log_finish) && touch build/$@
 
-migration-templates: $(db)/ops/ejs-render.js $(shell find $(db)/migrations $(db)/templates $(find_options))
+database-migrations: $(db)/ops/ejs-render.js $(shell find $(db)/migrations $(db)/templates $(find_options))
 	$(log_start)
 	$(docker_run_in_db) "make"
 	$(log_finish) && touch build/$@
