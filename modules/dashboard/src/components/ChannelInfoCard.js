@@ -53,8 +53,10 @@ class ChannelInfoCard extends Component{
     const { web3 } = this.props;
     const res = await get(`channels/averages`)
     if (res) {
-      let tokenDeposit = web3.utils.toBN(Math.trunc(res.avg_tokens))
-      let weiDeposit = web3.utils.toBN(Math.trunc(res.avg_wei))
+      let tokenDeposit = String(Math.trunc(res.avg_tokens));
+      let weiDeposit = String(Math.trunc(res.avg_wei));
+
+      console.log(`tokens: ${tokenDeposit}, wei: ${weiDeposit}`)
       this.setState(state => {
                     state.avgTokenBalance.raw = res.avg_tokens
                     state.avgTokenBalance.formatted = web3.utils.fromWei(tokenDeposit)

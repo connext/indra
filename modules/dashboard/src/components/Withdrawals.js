@@ -53,8 +53,8 @@ class Withdrawals extends Component {
     const {web3} = this.props;
     const res = await get(`withdrawals/average`);
     if (res && res.avg_withdrawal_wei && res.avg_withdrawal_token) {
-      let tokenWithdrawal = web3.utils.toBN(Math.trunc(res.avg_withdrawal_token))
-      let weiWithdrawal = web3.utils.toBN(Math.trunc(res.avg_withdrawal_wei))
+      let tokenWithdrawal = String(Math.trunc(res.avg_withdrawal_token))
+      let weiWithdrawal = String(Math.trunc(res.avg_withdrawal_wei))
 
       this.setState(state => {
         state.withdrawalAverageToken.raw = res.avg_withdrawal_token
