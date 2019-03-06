@@ -43,8 +43,8 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: database hub proxy client dashboard
-prod: database-prod hub-prod proxy-prod dashboard-server-prod
+dev: pre-commit-hook database hub proxy client dashboard
+prod: pre-commit-hook database-prod hub-prod proxy-prod dashboard-server-prod
 
 start: dev
 	bash ops/deploy.dev.sh
@@ -242,4 +242,11 @@ builder: ops/builder.dockerfile
 root-node-modules: package.json
 	$(log_start)
 	$(install)
+	$(log_finish) && touch build/$@
+
+pre-commit-hook: ops/pre-commit.sh
+	$(log_start)
+	rm -f .git/hooks/pre-commit
+	cp ops/pre-commit.sh .git/hooks/pre-commit
+	chmod +x .git/hooks/pre-commit
 	$(log_finish) && touch build/$@
