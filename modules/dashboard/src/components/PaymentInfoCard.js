@@ -102,8 +102,8 @@ class PaymentInfoCard extends Component {
 
     const res = await get(`payments/average/trailing24`);
     if (res && res.avg_wei_payment && res.avg_token_payment) {
-      let tokenPayment = web3.utils.toBN(Math.trunc(res.avg_token_payment));
-      let weiPayment = web3.utils.toBN(Math.trunc(res.avg_wei_payment));
+      let tokenPayment = String(Math.trunc(res.avg_token_payment));
+      let weiPayment = String(Math.trunc(res.avg_wei_payment));
       this.setState(state => {
         state.averagePaymentWeiLastDay.raw = res.avg_wei_payment
         state.averagePaymentTokenLastDay.raw = res.avg_token_payment

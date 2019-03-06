@@ -52,8 +52,8 @@ class Deposits extends Component {
 
     const res = await get(`deposits/average`);
     if (res && res.avg_deposit_wei && res.avg_deposit_token) {
-      let tokenDeposit = web3.utils.toBN(Math.trunc(res.avg_deposit_token))
-      let weiDeposit = web3.utils.toBN(Math.trunc(res.avg_deposit_wei))
+      let tokenDeposit = String(Math.trunc(res.avg_deposit_token))
+      let weiDeposit = String(Math.trunc(res.avg_deposit_wei))
       this.setState(state => {
         state.depositAverageToken.raw = res.avg_deposit_token
         state.depositAverageToken.formatted = web3.utils.fromWei(tokenDeposit);
