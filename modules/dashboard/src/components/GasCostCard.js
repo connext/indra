@@ -5,6 +5,7 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
+import Button from "@material-ui/core/Button";
 import get from "../get";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -38,41 +39,54 @@ class GasCostCard extends Component {
     };
   }
 
-  setGas = async () => {
-    const res = await get(`gascost/all`);
+  setGas = async (address) => {
+    const res = await get(`gascost/all/${address}`);
     if (res && res.sum) {
-      this.setState({ gasTotal: res.sum });
+      let gas = this.props.web3.utils.fromWei(res.sum);
+
+      this.setState({ gasTotal: gas });
     } else {
       this.setState({ gasTotal: 0 });
     }
   };
 
-  setGasLastWeek = async () => {
-    const res = await get(`gascost/trailingweek`);
+  setGasLastWeek = async (address) => {
+    const res = await get(`gascost/trailingweek/${address}`);
     if (res && res.sum) {
-      this.setState({ gasLastWeek: res.sum });
+      let gas = this.props.web3.utils.fromWei(res.sum);
+      this.setState({ gasLastWeek: gas });
     } else {
       this.setState({ gasLastWeek: 0 });
     }
   };
 
-  setGasLastDay = async () => {
-    const res = await get(`gascost/trailing24`);
+  setGasLastDay = async (address) => {
+    const res = await get(`gascost/trailing24/${address}`);
     if (res && res.sum) {
-      this.setState({ gasLastDay: res.sum });
+      let gas = this.props.web3.utils.fromWei(res.sum);
+
+      this.setState({ gasLastDay: gas });
     } else {
       this.setState({ gasLastDay: 0 });
     }
   };
 
+  _handleRefresh = async() =>{
+    const { hubWallet } = this.props;
+    await this.setGas(hubWallet.address);
+    await this.setGasLastDay(hubWallet.address);
+    await this.setGasLastWeek(hubWallet.address);
+  }
+
   componentDidMount = async () => {
-    await this.setGas();
-    await this.setGasLastDay();
-    await this.setGasLastWeek();
+    const { hubWallet } = this.props;
+    await this.setGas(hubWallet.address);
+    await this.setGasLastDay(hubWallet.address);
+    await this.setGasLastWeek(hubWallet.address);
   };
 
   render() {
-    const { classes } = this.props;
+    const { web3, classes } = this.props;
     return (
       <div className={classes.content}>
         <Card className={classes.card}>
@@ -82,7 +96,7 @@ class GasCostCard extends Component {
                 <TableRow>
                   <TableCell />
                   <TableCell>
-                    <Typography variant="h6"> Gas Paid by Hub</Typography>
+                    <Typography variant="h6"> Gas Paid by Hub (ETH)</Typography>
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -114,6 +128,9 @@ class GasCostCard extends Component {
               </TableBody>
             </Table>
           </CardContent>
+          <Button variant="contained" onClick={() =>this._handleRefresh()}>
+            Refresh
+          </Button>
         </Card>
       </div>
     );

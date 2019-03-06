@@ -6,7 +6,7 @@ const query = require('./db');
 const app = express();
 const port = 9999;
 
-const contractAddress = '0x2932b7a2355d6fecc4b5c0b6bd44cc31df247a2e';
+//const contractAddress = '0x627306090abab3a6e1400e9345bc60c78a8bef57';
 
 // Helper function: log each outgoing response before sending
 const send = (req, res, data) => {
@@ -86,7 +86,7 @@ app.get('/payments/trailing24', async function (req, res) {
         SELECT count(*)
         FROM _payments a
         INNER JOIN _cm_channel_updates b
-        ON a.id = b.id
+        ON a.channel_update_id = b.id
         WHERE b.created_on > now() - interval '1 day'
     `));
 });
@@ -114,7 +114,7 @@ app.get('/payments/average/trailing24', async function (req, res) {
                  count(*)
           FROM _payments a
           INNER JOIN _cm_channel_updates b
-            ON a.id = b.id
+            ON a.channel_update_id = b.id
             WHERE b.created_on > now() - interval '1 day')
         SELECT token_sum/count as avg_token_payment,
                 token_sum/count as avg_wei_payment
@@ -127,7 +127,7 @@ app.get('/payments/average/trailing24', async function (req, res) {
 app.get('/payments/:id', async function (req, res) {
     send(req, res, await query(SQL`SELECT *
         FROM _payments
-        WHERE purchase_id = ${req.params.id}
+        WHERE "purchase_id" = ${req.params.id}
         LIMIT 10
     `));
 });
@@ -135,11 +135,11 @@ app.get('/payments/:id', async function (req, res) {
 // frequency summary
 app.get('/payments/frequency', async function (req, res) {
     send(req, res, await query(`
-        SELECT date_part('day', created_on) as day, count(*)
+        SELECT date_part('day', "created_on") as day, count(1)::int as count
         FROM _payments a
         INNER JOIN _cm_channel_updates b
-        ON a.id = b.id
-        WHERE b.created_on > now() - interval '1 day'
+        ON a."channel_update_id" = b."id"
+        WHERE b."created_on" > now() - interval '1 day'
     `));
 });
 
@@ -148,33 +148,33 @@ app.get('/payments/frequency', async function (req, res) {
  * ************************************/
 
 //trailing 24 hrs
-app.get('/gascost/trailing24', async function (req, res) {
+app.get('/gascost/trailing24/:contractAddress', async function (req, res) {
     send(req, res, await query(SQL`
         SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
-            AND "from" = ${contractAddress}
+            AND "from" = ${req.params.contractAddress}
             AND confirmed_on > now() - interval '1 day'
     `));
 });
 
 //trailing week
-app.get('/gascost/trailingweek', async function (req, res) {
+app.get('/gascost/trailingweek/:contractAddress', async function (req, res) {
     send(req, res, await query(SQL`SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
-            AND "from" = ${contractAddress}
+            AND "from" = ${req.params.contractAddress}
             AND confirmed_on > now() - interval '1 week'
     `));
 });
 
 //trailing week
-app.get('/gascost/all', async function (req, res) {
+app.get('/gascost/all/:contractAddress', async function (req, res) {
     send(req, res, await query(SQL`
         SELECT sum(gas)
         FROM onchain_transactions_raw
         WHERE state = 'confirmed'
-        AND "from" = ${contractAddress}
+        AND "from" = ${req.params.contractAddress}
     `));
 });
 
@@ -206,7 +206,7 @@ app.get('/withdrawals/total', async function (req, res) {
 // withdrawal frequency
 app.get('/withdrawals/frequency', async function (req, res) {
     send(req, res, await query(`
-        SELECT date_part('day', created_on) as day, count(*)
+        SELECT date_part('day', created_on) as day, count(*)::int
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingWithdrawal'
         AND balance_wei_user = 0
@@ -263,10 +263,10 @@ app.get('/deposits/total', async function (req, res) {
 // withdrawal frequency
 app.get('/deposits/frequency', async function (req, res) {
     send(req, res, await query(`
-        SELECT date_part('day', created_on) as day, count(*)
+        SELECT date_part('day', created_on) as day, count(*)::int
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingDeposit'
-            AND (pending_deposit_wei_user != 0 || pending_deposit_token_user != 0)
+            AND (pending_deposit_wei_user <> 0 OR pending_deposit_token_user <> 0)
         GROUP BY 1
         ORDER BY 1
         LIMIT 7
@@ -281,9 +281,11 @@ app.get('/deposits/frequency', async function (req, res) {
 // user updates, last 10
 app.get('/users/:id/:number', async function (req, res) {
     send(req, res, await query(SQL`
-        SELECT *
+        SELECT "user", "reason", "created_on", "balance_wei_hub","balance_wei_user","balance_token_hub","balance_token_user",
+        "pending_deposit_wei_user","pending_deposit_token_hub","pending_deposit_wei_hub", "pending_deposit_token_user","pending_withdrawal_wei_hub",
+        "pending_withdrawal_wei_user","pending_withdrawal_token_hub","pending_withdrawal_token_user"
         FROM _cm_channel_updates
-        WHERE user = ${req.params.id}
+        WHERE "user" = ${req.params.id}
         LIMIT ${req.params.number}
     `));
 });

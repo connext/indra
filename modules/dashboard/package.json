@@ -7,6 +7,7 @@
     "@material-ui/icons": "^3.0.2",
     "axios": "^0.18.0",
     "classnames": "^2.2.6",
+    "ethers": "^4.0.26",
     "express": "^4.16.4",
     "nodemon": "^1.18.10",
     "pg": "^7.8.1",

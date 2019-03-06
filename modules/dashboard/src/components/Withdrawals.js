@@ -4,6 +4,7 @@ import Card from "@material-ui/core/Card";
 //import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
+import Button from "@material-ui/core/Button";
 import { withStyles } from "@material-ui/core/styles";
 import get from "../get";
 import { VictoryChart, VictoryLine, VictoryLabel, VictoryAxis } from "victory";
@@ -34,25 +35,39 @@ class Withdrawals extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      withdrawalAverageWei: null,
-      withdrawalAverageToken: null,
+      withdrawalAverageWei: {
+        raw:null,
+        formatted:null
+      },
+      withdrawalAverageToken: {
+        raw:null,
+        formatted:null
+      },
       withdrawalTotal: null,
-      withdrawalBreakdown: null,
-      freqArray:null,
+      freqArray:[],
+      WithdrawalFrequency:null
     };
   }
 
   setAverage = async () => {
+    const {web3} = this.props;
     const res = await get(`withdrawals/average`);
     if (res && res.avg_withdrawal_wei && res.avg_withdrawal_token) {
-      this.setState({
-        withdrawalAverageToken: res.avg_withdrawal_token,
-        withdrawalAverageWei: res.avg_withdrawal_wei
+      let tokenWithdrawal = web3.utils.toBN(Math.trunc(res.avg_withdrawal_token))
+      let weiWithdrawal = web3.utils.toBN(Math.trunc(res.avg_withdrawal_wei))
+
+      this.setState(state => {
+        state.withdrawalAverageToken.raw = res.avg_withdrawal_token
+        state.withdrawalAverageToken.formatted = web3.utils.fromWei(tokenWithdrawal);
+        state.withdrawalAverageWei.raw = res.avg_withdrawal_wei
+        state.withdrawalAverageWei.formatted = web3.utils.fromWei(weiWithdrawal);
+        return state
       });
     } else {
-      this.setState({
-        withdrawalAverageToken: "N/A",
-        withdrawalAverageWei: "N/A"
+      this.setState(state => {
+        state.withdrawalAverageToken.formatted= "N/A"
+        state.withdrawalAverageWei.formatted= "N/A"
+        return state
       });
     }
   };
@@ -74,56 +89,6 @@ class Withdrawals extends Component {
   }
 
   setChart = () => {
-    // // TESTING DATA
-    // let data = [
-    //   { day: 1, count: 10 },
-    //   { day: 2, count: 14 },
-    //   { day: 3, count: 8 }
-    // ];
-    // const toRender = (
-    //   <VictoryChart width={140} height={140}
-    //     style={{
-    //       labels:{
-    //         fontSize:4
-    //       }
-    //     }}>
-    //       <VictoryLabel x={50} y={40}
-    //         text="Withdrawals this Week"
-    //         style={{fontSize:4}}
-    //       />
-    //       <VictoryLine
-            
-    //         x="day"
-    //         y="count"
-    //         standalone={false}
-    //         style={{ data: { strokeWidth: 0.1 } }}
-    //         data={data}
-    //       />
-    //       <VictoryAxis
-    //         domain={{y: [0, 100] }}
-    //         dependentAxis={true}
-    //         label="Withdrawals"
-    //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-    //       />
-    //       <VictoryAxis
-    //         dependentAxis={false}
-    //         domain={{ x: [0, 7]}}
-    //         tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
-    //         label="Day"
-    //         style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-    //       />
-    // </VictoryChart> 
-    // );
-    // console.log(toRender);
-    // return toRender;
-
-    if (this.state.freqArray) {
-      // TESTING DATA
-      // let data = [
-      //   {day:"1", count:10},
-      //   {day:"2", count:14},
-      //   {day:"3", count:8}
-      // ]
 
     const toRender = (
       <VictoryChart width={140} height={140}
@@ -161,21 +126,26 @@ class Withdrawals extends Component {
     );
     console.log(toRender);
     return toRender
-    } else {
+  };
 
-      console.warn(`Missing data for chart`)
-    }
+  _handleRefresh = async () => {
+    await this.setTotal();
+    await this.setAverage();
+    await this.setFrequency();
+    this.setState({ WithdrawalFrequency: this.setChart()});
   };
 
   componentDidMount = async () => {
     await this.setTotal();
     await this.setAverage();
     await this.setFrequency();
+    this.setState({ WithdrawalFrequency: this.setChart()});
   };
 
   render = () => {
     const { classes } = this.props;
-    const WithdrawalFrequency = this.setChart();
+    const {WithdrawalFrequency} = this.state;
+    
     return (
       <div className={classes.content}>
       <Card className={classes.card}>
@@ -204,20 +174,23 @@ class Withdrawals extends Component {
                     <Typography variant="h6">Average Token Value</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.withdrawalAverageToken}
+                  {this.state.withdrawalAverageToken.formatted}
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell component="th" scope="row">
-                    <Typography variant="h6">Average Wei Value</Typography>
+                    <Typography variant="h6">Average ETH Value</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.withdrawalAverageWei}
+                  {this.state.withdrawalAverageWei.formatted}
                   </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </CardContent>
+          <Button variant="contained" onClick={() =>this._handleRefresh()}>
+            Refresh
+          </Button>
       </Card>
       <Card className={classes.card}>
       <div style={{marginTop:"-20%"}}>
