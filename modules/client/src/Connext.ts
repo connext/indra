@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult, convertChannelState, convertPayment } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import * as actions from './state/actions'
 import { PurchaseRequest } from './types'
@@ -73,6 +73,7 @@ export interface ConnextOptions {
 
 export interface IHubAPIClient {
   getChannel(): Promise<ChannelRow>
+  getChannelByUser(user: Address): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
   getThreadInitialStates(): Promise<ThreadState[]>
   getIncomingThreads(): Promise<ThreadRow[]>
@@ -90,6 +91,7 @@ export interface IHubAPIClient {
   requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
   requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
   requestCollateral(txCountGlobal: number): Promise<Sync>
+  recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string | null> 
   updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{
     error: string | null
     updates: Sync
@@ -181,17 +183,21 @@ class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getChannel(): Promise<ChannelRow> {
+  async getChannelByUser(user: Address): Promise<ChannelRow> {
     // get the current channel state and return it
     try {
-      const res = await this.networking.get(`channel/${this.user}`)
+      const res = await this.networking.get(`channel/${user}`)
       return res.data
     } catch (e) {
       if (e.statusCode === 404) {
-        throw new Error(`Channel not found for user ${this.user}`)
+        throw new Error(`Channel not found for user ${user}`)
       }
       throw e
     }
+  }
+
+  async getChannel(): Promise<ChannelRow> {
+    return await this.getChannelByUser(this.user)
   }
 
   // return state at specified global nonce
@@ -294,8 +300,36 @@ class HubAPIClient implements IHubAPIClient {
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
   ): Promise<PurchasePaymentHubResponse> {
-    const { data } = await this.networking.post('payments/purchase', { meta, payments })
-    return data
+    try {
+      const { data } = await this.networking.post('payments/purchase', { meta, payments })
+      return data
+    } catch (e) {
+      throw e
+    }
+  }
+
+  // returns null if the hub can facilitate the payment
+  // of the specified amount in the recipients channel
+  async recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string | null> {
+    // get recipients channel
+    let channel
+    try {
+      channel = await this.getChannelByUser(recipient)
+    } catch (e) {
+      if (e.status == 404) {
+        return `Recipient channel does not exist. Recipient: ${recipient}.`
+      }
+      throw e
+    }
+
+    // check if hub can afford payment
+    const chanBN = convertChannelState("bn", channel.state)
+    const amtBN = convertPayment("bn", amount)
+    if (chanBN.balanceWeiHub.lt(amtBN.amountWei) || chanBN.balanceTokenHub.lt(amtBN.amountToken)) {
+      return `Recipient needs collateral to facilitate payment.`
+    }
+    // otherwise, no collateral is needed to make payment
+    return null
   }
 
   async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
@@ -950,6 +984,10 @@ export class ConnextInternal extends ConnextClient {
 
   async withdrawal(params: WithdrawalParameters): Promise<void> {
     await this.withdrawalController.requestUserWithdrawal(params)
+  }
+
+  async recipientNeedsCollateral(recipient: Address, amount: Payment) {
+    return await this.hub.recipientNeedsCollateral(recipient, amount)
   }
 
   async syncConfig() {
