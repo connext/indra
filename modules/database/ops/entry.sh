@@ -47,6 +47,11 @@ trap cleanup SIGTERM
 ########################################
 ## Execute
 
+if [[ "$MODE" == "dev" ]]
+then
+  log "Starting app in env: `env`"
+fi
+
 log "Good morning"
 
 # Is this a fresh database? Should we restore data from a snapshot?

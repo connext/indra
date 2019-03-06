@@ -225,6 +225,7 @@ services:
     deploy:
       mode: global
     environment:
+      MODE: dev
       ETH_NETWORK: $eth_network
       POSTGRES_USER: $project
       POSTGRES_DB: $project
