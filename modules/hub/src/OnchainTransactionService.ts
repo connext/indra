@@ -127,8 +127,9 @@ export class OnchainTransactionService {
             "from" = ${txnRequest.from} and
             state <> 'failed'
           order by nonce desc 
+          limit 1
           for update
-        ), 0)
+        ), 0) as nonce
       `)).nonce,
     )
 
