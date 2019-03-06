@@ -7,7 +7,7 @@ set -e
 # 60 sec/min * 30 min = 1800
 backup_frequency="1800"
 should_restore_backup="no"
-backup_file="snapshots/`ls snapshots | sort -r | head -n 1`"
+backup_file="snapshots/`ls snapshots | grep "$ETH_NETWORK" | sort -r | head -n 1`"
 
 ########################################
 ## Helper functions
@@ -47,8 +47,12 @@ trap cleanup SIGTERM
 ########################################
 ## Execute
 
-log "Starting database in env:"
-env
+if [[ "$MODE" == "dev" ]]
+then
+  log "Starting app in env: `env`"
+fi
+
+log "Good morning"
 
 # Is this a fresh database? Should we restore data from a snapshot?
 if [[ ! -f "/var/lib/postgresql/data/PG_VERSION" && -f "$backup_file" ]]
