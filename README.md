@@ -205,6 +205,22 @@ ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash -c 'cd indra && MODE=hotfix ops/
 
 Beware, CircleCI manages the env vars previously mentioned. If you don't deploy via CircleCI, then you need to manage these env vars manually by adding them to the server's `~/.bashrc`. Check out the server's current env vars with: `ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP env` and make sure it looks good before doing a manual deployment.
 
+### Ongoing: Dealing w stuff in production
+
+Monitor the prod hub's logs with
+
+```
+ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/logs.sh hub
+```
+
+The ChannelManager contract needs collateral to keep doing it's thing. Make sure the hub's wallet has enough funds before deploying. Funds can be moved from the hub's wallet to the contract manually via:
+
+```
+ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 eth
+# To move Eth, or to move tokens:
+ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 1000 token
+```
+
 ## How to interact with the Hub
 
  1. AuthApiService

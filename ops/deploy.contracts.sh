@@ -12,9 +12,7 @@ INFURA_KEY=$INFURA_KEY
 
 if [[ -n "$1" ]]
 then ETH_NETWORK="$1"
-elif [[ -n "$ETH_NETWORK" ]]
-then ETH_NETWORK="$ETH_NETWORK"
-else ETH_NETWORK="ganache"
+else ETH_NETWORK="${ETH_NETWORK:-ganache}"
 fi
 
 if [[ "$ETH_NETWORK" == "ganache" ]]
@@ -104,4 +102,3 @@ logs_pid=$!
 while [[ -z "`docker container ls -a | grep "$name" | grep "Exited"`" ]]
 do sleep 1
 done
-sleep 1
