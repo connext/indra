@@ -69,24 +69,24 @@ reset-client: reset-base
 	rm -rf build/client*  $(client)/dist $(client)/node_modules
 
 reset-contracts: reset-base
-	rm -f build/contract* $(contracts)/build/* $(contracts)/node_modules
+	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-dashboard: reset-base
-	rm -f build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules
+	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-database: reset-base
-	rm -f build/database* $(db)/build/* $(db)/node_modules
+	rm -rf build/database* $(db)/build/* $(db)/node_modules
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 
 reset-hub: reset-base
-	rm -f build/hub* $(hub)/dist/* $(hub)/node_modules
+	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules
 
 reset: reset-base
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 	docker volume rm $(project)_database_dev 2> /dev/null || true
-	rm -f $(db)/snapshots/ganache-*
+	rm -rf $(db)/snapshots/ganache-*
 
 purge: reset-data clean
 	rm -rf modules/**/node_modules
