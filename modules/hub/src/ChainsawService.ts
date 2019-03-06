@@ -229,7 +229,9 @@ export default class ChainsawService {
       // switch channel status to cs chainsaw error and break out of
       // function
       LOG.error('Error updating user {user} channel, changing status to CS_CHAINSAW_ERROR. Error: {e}', { user: event.user, e })
-      await this.channelsDao.changeChannelStatus(event.user, "CS_CHAINSAW_ERROR")
+      // update the channel to insert chainsaw error event
+      // id, which will trigger the status change check
+      await this.channelsDao.addChainsawErrorId(event.user, event.chainsawId!)
       // insert poll event with error
       return 'SKIP_EVENTS'
     }
