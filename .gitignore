@@ -1,0 +1,27 @@
+build
+dist
+ganache*.log
+node_modules
+.bash_history
+.config
+.env
+.node-gyp
+.npm
+.npmrc
+.node_repl_history
+*.swp
+**/*.DS_Store
+modules/hub/development/data
+modules/wallet/.env
+
+# per-project address book overrides
+address-book.json
+
+cypress/screenshots
+cypress/videos
+cypress/integration/examples
+
+modules/database/snapshots/*
+
+# remove next line once hub is decoupled from spankchain
+modules/hub/package-lock.json
