@@ -1,7 +1,7 @@
 import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
 import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
-import DBEngine from './DBEngine'
+import DBEngine, { SQL } from './DBEngine'
 import ChannelsDao, {PostgresChannelsDao} from './dao/ChannelsDao'
 import {ChannelManager} from './ChannelManager'
 import abi, {BYTECODE} from './abi/ChannelManager'
@@ -49,6 +49,9 @@ describe('ChainsawService::mocked Web3', function() {
   beforeEach(async () => {
     // ensure that fetchEvents will not return any new events
     // by making the top block the same as the last block on event (1)
+    if (registry)
+      await registry.clearDatabase()
+
     registry = getTestRegistry({
       Web3: {
         ...Web3,
@@ -59,12 +62,16 @@ describe('ChainsawService::mocked Web3', function() {
       },
       SignerService: {
         signMessage: async () => { return mkSig() }
+      },
+      ChannelManager: {
+        _address: CM_ADDRESS,
       }
     })
     chan1 = await channelUpdateFactory(registry)
-
     chainsawDao = registry.get('ChainsawDao')
     cs = registry.get('ChainsawService')
+    // @ts-ignore
+    cs.contract._address = CM_ADDRESS
     chanDao = registry.get('ChannelsDao')
     dbEngine = registry.get('DBEngine')
     const config = registry.get('Config')
@@ -163,9 +170,31 @@ describe('ChainsawService::mocked Web3', function() {
      })
   })
 
-  // afterEach(async () => {
-  //   await registry.clearDatabase()
-  // })
+  describe('pollOnce', () => {
+    it('should process events with passing transactions, and record failed event transactions', async () => {
+      // manually update the 
+      await cs.pollOnce()
+      // because of how the events were inserted (ie block number)
+      // the fetchEvents portion of this function should return without
+      // inserting any new events
+
+      // check chainsaw poll event tables were updated
+      const { rows } = await dbEngine.query(SQL`
+        SELECT *
+        FROM chainsaw_poll_events
+        WHERE
+          "poll_type" <> 'FETCH_EVENTS';
+      `)
+      assert.lengthOf(rows, 2)
+      // channel should fail
+      const failChan = await chanDao.getChannelByUser(chan1.user)
+      assert.equal(failChan.status, "CS_CHAINSAW_ERROR")
+      assert.containSubset(failChan.state, chan1.state)
+      // TODO: figure out better way to mock validator here
+      // so possible to test mixed success and failure cases
+      // safe to not test since changes additive
+    })
+  })
 })
 
 describe.skip('ChainsawService', function() {
