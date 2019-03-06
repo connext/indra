@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-//import Button from "@material-ui/core/Button";
+import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 //import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
@@ -29,8 +29,14 @@ class ChannelInfoCard extends Component{
     super(props)
     this.state={
       openChannels:null,
-      avgWeiBalance:null,
-      avgTokenBalance:null
+      avgWeiBalance:{
+        raw:null,
+        formatted:null
+      },
+      avgTokenBalance:{
+        raw:null,
+        formatted:null
+      }
     }
   }
 
@@ -44,12 +50,25 @@ class ChannelInfoCard extends Component{
   }
 
   setChannelBalances = async() => {
+    const { web3 } = this.props;
     const res = await get(`channels/averages`)
     if (res) {
-      this.setState({avgTokenBalance: res.avg_tokens, avgWeiBalance: res.avg_wei});
+      let tokenDeposit = web3.utils.toBN(Math.trunc(res.avg_tokens))
+      let weiDeposit = web3.utils.toBN(Math.trunc(res.avg_wei))
+      this.setState(state => {
+                    state.avgTokenBalance.raw = res.avg_tokens
+                    state.avgTokenBalance.formatted = web3.utils.fromWei(tokenDeposit)
+                    state.avgWeiBalance.raw = res.avg_wei
+                    state.avgWeiBalance.formatted = web3.utils.fromWei(weiDeposit)
+                    return state});
     } else {
       this.setState({avgTokenBalance: 0, avgWeiBalance: 0});
     }
+  }
+
+  _handleRefresh = async() =>{
+    await this.setChannels()
+    await this.setChannelBalances()
   }
 
   componentDidMount = async() =>{
@@ -87,7 +106,7 @@ class ChannelInfoCard extends Component{
                   </Typography>
                 </TableCell>
                 <TableCell component="th" scope="row">
-                {this.state.avgWeiBalance}
+                {this.state.avgWeiBalance.formatted}
                 </TableCell>
               </TableRow>
               <TableRow >
@@ -97,13 +116,16 @@ class ChannelInfoCard extends Component{
                   </Typography>
                 </TableCell>
                 <TableCell component="th" scope="row">
-                {this.state.avgTokenBalance}
+                {this.state.avgTokenBalance.formatted}
                 </TableCell>
               </TableRow>
           </TableBody>
         </Table>
 
         </CardContent>
+        <Button variant="contained" onClick={() =>this._handleRefresh()}>
+            Refresh
+          </Button>
       </Card>
     );
   };

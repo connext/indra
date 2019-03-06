@@ -35,10 +35,22 @@ class PaymentInfoCard extends Component {
     this.state = {
       totalPayments: null,
       paymentsLastDay: null,
-      averagePaymentWei: null,
-      averagePaymentToken: null,
-      averagePaymentWeiLastDay: null,
-      averagePaymentTokenLastDay: null,
+      averagePaymentWei: {
+        raw:null,
+        formatted:null
+      },
+      averagePaymentToken: {
+        raw:null,
+        formatted:null
+      },
+      averagePaymentWeiLastDay: {
+        raw:null,
+        formatted:null
+      },
+      averagePaymentTokenLastDay: {
+        raw:null,
+        formatted:null
+      },
       idInput: "",
       paymentInfo: null,
       freqArray: null
@@ -64,31 +76,46 @@ class PaymentInfoCard extends Component {
   };
 
   setAverage = async () => {
+    const {web3} = this.props;
     const res = await get(`payments/average/all`);
     if (res && res.avg_wei_payment && res.avg_token_payment) {
-      this.setState({
-        averagePaymentWei: res.avg_wei_payment,
-        averagePaymentToken: res.avg_token_payment
+      let tokenDeposit = web3.utils.toBN(Math.trunc(res.avg_token_payment));
+      let weiDeposit = web3.utils.toBN(Math.trunc(res.avg_wei_payment));
+      this.setState(state => {
+        state.averagePaymentWei.raw = res.avg_wei_payment
+        state.averagePaymentToken.raw = res.avg_token_payment
+        state.averagePaymentWei.formatted = web3.utils.fromWei(weiDeposit)
+        state.averagePaymentToken.formatted = web3.utils.fromWei(tokenDeposit)
+        return state
       });
     } else {
-      this.setState({
-        averagePaymentWei: "N/A",
-        averagePaymentToken: "N/A"
+      this.setState(state => {
+        state.averagePaymentWei.formatted = "N/A"
+        state.averagePaymentToken.formatted = "N/A"
+        return state
       });
     }
   };
 
   setAverageTrailing = async () => {
+    const {web3} = this.props;
+
     const res = await get(`payments/average/trailing24`);
     if (res && res.avg_wei_payment && res.avg_token_payment) {
-      this.setState({
-        averagePaymentWeiLastDay: res.avg_wei_payment,
-        averagePaymentTokenLastDay: res.avg_token_payment
+      let tokenPayment = web3.utils.toBN(Math.trunc(res.avg_token_payment));
+      let weiPayment = web3.utils.toBN(Math.trunc(res.avg_wei_payment));
+      this.setState(state => {
+        state.averagePaymentWeiLastDay.raw = res.avg_wei_payment
+        state.averagePaymentTokenLastDay.raw = res.avg_token_payment
+        state.averagePaymentWeiLastDay.formatted = web3.utils.fromWei(weiPayment)
+        state.averagePaymentTokenLastDay.formatted = web3.utils.fromWei(tokenPayment)
+        return state
       });
     } else {
-      this.setState({
-        averagePaymentWeiLastDay: "N/A",
-        averagePaymentTokenLastDay: "N/A"
+      this.setState(state =>{
+        state.averagePaymentWeiLastDay.formatted = "N/A"
+        state.averagePaymentTokenLastDay.formatted = "N/A"
+        return state
       });
     }
   };
@@ -103,7 +130,7 @@ class PaymentInfoCard extends Component {
   };
 
   setFrequency = async() =>{
-    const res = get(`payments/frequency`);
+    const res = await get(`payments/frequency`);
     if (res.data){
       this.setState({freqArray: res.data})
     }
@@ -208,12 +235,20 @@ class PaymentInfoCard extends Component {
     this.setState({ idInput: evt.target.value });
   };
 
+  _handleRefresh = async () => {
+    await this.setTrailing();
+    await this.setTotal();
+    await this.setAverage();
+    await this.setAverageTrailing();
+    //await this.setFrequency();
+  };
+
   componentDidMount = async () => {
     await this.setTrailing();
     await this.setTotal();
     await this.setAverage();
     await this.setAverageTrailing();
-    await this.setFrequency();
+    //await this.setFrequency();
   };
 
   render() {
@@ -248,15 +283,15 @@ class PaymentInfoCard extends Component {
                     <Typography variant="h6">Average Token Payment</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.averagePaymentToken}
+                  {this.state.averagePaymentToken.formatted}
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell component="th" scope="row">
-                    <Typography variant="h6">Average Wei Payment</Typography>
+                    <Typography variant="h6">Average ETH Payment</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.averagePaymentWei}
+                  {this.state.averagePaymentWei.formatted}
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -272,20 +307,23 @@ class PaymentInfoCard extends Component {
                     <Typography variant="h6">Average Token Payment (Last 24 hours)</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.averagePaymentTokenLastDay}
+                  {this.state.averagePaymentTokenLastDay.formatted}
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell component="th" scope="row">
-                    <Typography variant="h6">Average Wei Payment (Last 24 hours)</Typography>
+                    <Typography variant="h6">Average ETH Payment (Last 24 hours)</Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                  {this.state.averagePaymentWeiLastDay}
+                  {this.state.averagePaymentWeiLastDay.formatted}
                   </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
         </CardContent>
+        <Button variant="contained" onClick={() =>this._handleRefresh()}>
+            Refresh
+          </Button>
       </Card>
       <Card className={classes.card}>
       <CardContent>
@@ -293,7 +331,7 @@ class PaymentInfoCard extends Component {
           <div>
             <TextField
               id="outlined"
-              label="Payment ID"
+              label="Purchase ID"
               value={this.state.idInput}
               onChange={evt => this.handleChange(evt)}
               margin="normal"

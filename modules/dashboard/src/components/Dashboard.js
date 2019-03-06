@@ -115,28 +115,8 @@ class Dashboard extends React.Component {
     this.state = {
       hubUrl: this.props.hubUrl,
       open: false,
-      channelManager: {
-        address: '0x',
-        wei: {
-          raw: 0,
-          formatted: 0
-        },
-        token: {
-          raw: 0,
-          formatted: 0
-        },
-      },
-      hubWallet: {
-        address: '0x',
-        wei: {
-          raw: 0,
-          formatted: 0
-        },
-        token: {
-          raw: 0,
-          formatted: 0
-        },
-      },
+      channelManager: this.props.channelManager,
+      hubWallet: this.props.hubWallet,
       loadingWallet: false,
       loadingContract: false
     };
@@ -157,7 +137,7 @@ class Dashboard extends React.Component {
 
   render() {
     const { web3, hubUrl, apiUrl, classes } = this.props;
-    const { loadingWallet, loadingContract, open } = this.state;
+    const { loadingWallet, loadingContract, open, channelManager, hubWallet } = this.state;
 
     return (
       
@@ -200,7 +180,7 @@ class Dashboard extends React.Component {
               exact
               path="/"
               render={props => (
-                <Home web3={web3} hubUrl={hubUrl} apiUrl={apiUrl}/>
+                <Home hubWallet={hubWallet} channelManager={channelManager} web3={web3} hubUrl={hubUrl} apiUrl={apiUrl}/>
               )}
             />
       <Route
@@ -235,7 +215,7 @@ class Dashboard extends React.Component {
         exact
         path="/gas"
         render={props => (
-          <GasCostCardStyled web3={web3} hubUrl={hubUrl} apiUrl={apiUrl}/>
+          <GasCostCardStyled hubWallet={hubWallet} channelManager={channelManager} web3={web3} hubUrl={hubUrl} apiUrl={apiUrl}/>
         )}
       />
       </div>

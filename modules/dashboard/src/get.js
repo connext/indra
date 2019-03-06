@@ -5,7 +5,8 @@ const apiUrl = process.env.REACT_APP_API_URL || `http://localhost:9999`
 const get = async (url) => {
     console.log(`Getting ${url}...`)
     const res = await axios.get(`${apiUrl}/${url}`)
-    if (res.data && res.data.rows && res.data.rows.length === 0) {
+    console.log(res);
+    if (res.data && res.data.rows && res.data.rows.length === 0 && !res.data.fields) {
       console.log(`Got zero rows from ${url}`)
       return []
     } else if (res.data && res.data.rows && res.data.rows.length === 1) {
