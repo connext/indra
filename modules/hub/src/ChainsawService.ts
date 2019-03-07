@@ -1,5 +1,5 @@
 import { convertChannelState, EmptyChannelArgs } from './vendor/connext/types'
-import ChainsawDao from './dao/ChainsawDao'
+import ChainsawDao, { PollType } from './dao/ChainsawDao'
 import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
 import Config from './Config'
@@ -31,7 +31,7 @@ export default class ChainsawService {
     private utils: Utils, 
     private config: Config, 
     private db: DBEngine, 
-    private validator: Validator
+    public validator: Validator
   ) {}
 
   async poll() {
@@ -63,15 +63,16 @@ export default class ChainsawService {
   /**
    * Process a single transaction by hash. Can be used by scripts that need to force a re-process.
    */
-  async processSingleTx(txHash: string) {
+  async processSingleTx(txHash: string): Promise<PollType> {
     const event = await this.chainsawDao.eventByHash(txHash)
     LOG.info('Processing event: {event}', { event })
 
+    let res
     switch (event.TYPE) {
       case DidHubContractWithdrawEvent.TYPE:
         break
       case DidUpdateChannelEvent.TYPE:
-        await this.processDidUpdateChannel(event.chainsawId, event as DidUpdateChannelEvent)
+      res = await this.processDidUpdateChannel(event.chainsawId, event as DidUpdateChannelEvent)
         break
       case DidStartExitChannelEvent.TYPE:
         await this.processDidStartExitChannel(event.chainsawId, event as DidStartExitChannelEvent)
@@ -91,6 +92,7 @@ export default class ChainsawService {
         })
         break
     }
+    return res ? res : 'PROCESS_EVENTS'
   }
 
   private async doFetchEvents() {
@@ -158,7 +160,9 @@ export default class ChainsawService {
   }
 
   private async doProcessEvents() {
-    const last = await this.chainsawDao.lastPollFor(this.contract._address, 'PROCESS_EVENTS')
+    // should look for either successfully processed, or
+    // last skipped events
+    const last = await this.chainsawDao.lastProcessEventPoll(this.contract._address)
     const ingestedEvents = await this.chainsawDao.eventsSince(this.contract._address, last.blockNumber, last.txIndex)
 
     if (!ingestedEvents.length) {
@@ -166,17 +170,18 @@ export default class ChainsawService {
     }
 
     for (let event of ingestedEvents) {
-      await this.processSingleTx(event.event.txHash)
+      // returns either 'PROCESS_EVENTS' or 'SKIP_EVENTS'
+      const pollType = await this.processSingleTx(event.event.txHash)
       await this.chainsawDao.recordPoll(
         event.event.blockNumber,
         event.event.txIndex,
         this.contract._address,
-        'PROCESS_EVENTS',
+        pollType,
       )
     }
   }
 
-  private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent) {
+  private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent): Promise<PollType> {
     if (event.txCountGlobal > 1) {
       const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(
         event.user,
@@ -209,10 +214,27 @@ export default class ChainsawService {
     }
 
     const prev = await this.channelsDao.getChannelOrInitialState(event.user)
-    const state = await this.validator.generateConfirmPending(
-      convertChannelState('str', prev.state),
-      { transactionHash: event.txHash }
-    )
+    if (prev.status == "CS_CHAINSAW_ERROR") {
+      // if there was a previous chainsaw error, return
+      // and do not process event
+      return
+    }
+    let state
+    try {
+      state = await this.validator.generateConfirmPending(
+        convertChannelState('str', prev.state),
+        { transactionHash: event.txHash }
+      )
+    } catch (e) {
+      // switch channel status to cs chainsaw error and break out of
+      // function
+      LOG.error('Error updating user {user} channel, changing status to CS_CHAINSAW_ERROR. Error: {e}', { user: event.user, e })
+      // update the channel to insert chainsaw error event
+      // id, which will trigger the status change check
+      await this.channelsDao.addChainsawErrorId(event.user, event.chainsawId!)
+      // insert poll event with error
+      return 'SKIP_EVENTS'
+    }
     const hash = this.utils.createChannelStateHash(state)
 
     const sigHub = await this.signerService.signMessage(hash);
@@ -221,6 +243,7 @@ export default class ChainsawService {
       ...state,
       sigHub
     } as ChannelState, { transactionHash: event.txHash } as ConfirmPendingArgs, chainsawId)
+    return 'PROCESS_EVENTS'
   }
 
   private async processDidStartExitChannel(chainsawId: number, event: DidStartExitChannelEvent) {

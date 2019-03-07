@@ -590,7 +590,8 @@ export default class SyncController extends AbstractController {
    * the channel status.
   */
  public handleHubSync(sync: Sync) {
-    if (this.store.getState().runtime.channelStatus !== sync.status) {
+   const state = this.store.getState()
+    if (state.runtime.channelStatus !== sync.status) {
       this.store.dispatch(actions.setChannelStatus(sync.status))
     }   
      
@@ -603,6 +604,8 @@ export default class SyncController extends AbstractController {
       case "CS_OPEN":
         break
       case "CS_CHANNEL_DISPUTE":
+      case "CS_CHAINSAW_ERROR":
+        console.warn(`Channel error with hub (status: ${sync.status}), please contact admin. Channel: ${JSON.stringify(state.persistent.channel, null, 2)}`)
         break
       case "CS_THREAD_DISPUTE":
         throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')

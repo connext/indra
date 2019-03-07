@@ -7,6 +7,8 @@ import {
   ChannelStateBigNumber,
   convertArgs,
   InvalidationArgs,
+  ChannelStatus,
+  Address,
 } from '../vendor/connext/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
@@ -48,6 +50,7 @@ export default interface ChannelsDao {
   getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
   getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
+  addChainsawErrorId(user: Address, id: number): Promise<void>
 }
 
 export function getChannelInitialState(
@@ -90,6 +93,23 @@ export class PostgresChannelsDao implements ChannelsDao {
   constructor(db: DBEngine<Client>, config: Config) {
     this.db = db
     this.config = config
+  }
+
+  async addChainsawErrorId(user: Address, id: number): Promise<void> {
+    // Note: the `FOR UPDATE` here will ensure that we acquire a lock on the
+    // channel for the duration of this transaction. This will make sure that
+    // only one request can update a channel at a time, to prevent race
+    // conditions where two threads try to get the channel to create a new
+    // state on top of it and both end up generating an update with the same
+    // txCount.
+    await this.db.queryOne(SQL`
+      UPDATE _cm_channels
+      SET "chainsaw_error_event_id" = ${id}
+      WHERE
+        "user" = ${user.toLowerCase()} AND
+        "contract" = ${this.config.channelManagerAddress.toLowerCase()}
+      RETURNING id
+    `)
   }
 
   // gets latest state of channel
