@@ -20,10 +20,19 @@ export class TestServiceRegistry {
   overrides: any
   registry: Registry
   container: Container
+  currentTest: any
 
   constructor(overrides?: any) {
     this.overrides = overrides || {}
     this.reset()
+
+    const _this = this
+    beforeEach(function() {
+      _this.currentTest = this
+    })
+    afterEach(function() {
+      _this.currentTest = null
+    })
   }
 
   reset() {
@@ -50,6 +59,12 @@ export class TestServiceRegistry {
   }
 
   async clearDatabase() {
+    // For some reason this can be a little bit slow, which causes random
+    // timeout failures in `before`. Increase the timeout here to avoid those.
+    if (this.currentTest && this.currentTest.timeout() < 9069) {
+      this.currentTest.timeout(9069)
+    }
+
     await Promise.all([
       this.get('RedisClient').flushall(),
       this.get('PgPoolService').clearDatabase(),
@@ -124,11 +139,11 @@ afterEach(() => {
   nock.cleanAll()
 })
 
-before(() => {
+beforeEach(() => {
   nock.disableNetConnect()
 
   // Allow connections to the server that will be started by supertest.
-  nock.enableNetConnect('127.0.0.1')
+  nock.enableNetConnect(/127.0.0.1|localhost/)
 })
 
 after(() => {
@@ -155,5 +170,14 @@ chai.use(require('chai-as-promised'))
 export const assert = chai.assert
 ;(assert.containSubset as any).options.check = (expected: any, actual: any) => {
   if (isBigNumber(actual))
-    return actual.eq(actual)
+    return actual.eq(expected)
+}
+
+export function parameterizedTests<TestInput>(
+  inputs: (TestInput & { name: string })[],
+  func: (input: TestInput) => any
+) {
+  inputs.forEach(input => {
+    it(input.name, () => func(input))
+  })
 }

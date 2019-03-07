@@ -15,7 +15,18 @@ export type TransactionRequest = {
   to: string
   data?: string
   value?: string
+  gas?: number
   meta?: TransactionMeta
+}
+
+export type RawTransaction = {
+  from: string
+  to: string
+  value: string
+  gas: string
+  gasPrice: string
+  data: string
+  nonce: string
 }
 
 export type UnconfirmedTransaction = {

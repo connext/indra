@@ -2,9 +2,10 @@ import { assert } from './testing/index'
 import * as t from './testing/index'
 import { StateGenerator, calculateExchange } from './StateGenerator';
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs, VerboseChannelEvent, VerboseChannelEventBN, UnsignedChannelState, convertVerboseEvent, EmptyChannelArgs } from './types';
+import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs } from './types';
 import { getChannelState, getWithdrawalArgs } from './testing'
 import { toBN } from './helpers/bn';
+import { createSign } from 'crypto';
 
 
 const sg = new StateGenerator()
@@ -13,24 +14,13 @@ const utils = new Utils()
 function createHigherNoncedChannelState(
   prev: ChannelStateBN,
   ...overrides: t.PartialSignedOrSuccinctChannel[]
-): UnsignedChannelState {
+) {
   const state = t.getChannelState('empty', {
     recipient: prev.user,
     ...overrides[0],
     txCountGlobal: prev.txCountGlobal + 1,
   })
   return convertChannelState("str-unsigned", state)
-}
-
-function createConfirmPendingArgs(
-  prev: ChannelStateBN,
-  ...overrides: Partial<VerboseChannelEventBN>[]
-) {
-  const event = Object.assign({
-    ...convertChannelState("bn-unsigned", prev),
-    sender: prev.user,
-  }, overrides)
-  return { transactionHash: t.mkAddress('0xTTTT'), event }
 }
 
 function createHigherNoncedThreadState(
@@ -41,8 +31,9 @@ function createHigherNoncedThreadState(
     ...prev, // for address vars
     ...overrides[0],
     txCount: prev.txCount + 1,
+    sigA: t.mkHash('buttstuff'),
   })
-  return convertThreadState("str-unsigned", state)
+  return convertThreadState("bn", state)
 }
 
 function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]) {
@@ -139,7 +130,6 @@ describe('StateGenerator', () => {
         depositWeiUser: '3',
         depositTokenHub: '1',
         depositTokenUser: '9',
-        sigUser: t.mkHash('0xsigUser'),
         timeout: 600
       })
 
@@ -353,25 +343,6 @@ describe('StateGenerator', () => {
     })
   })
 
-  describe('emptyChannel', () => {
-    it('should work', async () => {
-      const prev = createPreviousChannelState({
-        pendingDepositWei: [0, 0,],
-        pendingDepositToken: [0, 0],
-        pendingWithdrawalWei: [0, 0],
-        pendingWithdrawalToken: [0, 0],
-        txCount: [3, 2],
-      })
-      const event: VerboseChannelEventBN = { ...convertChannelState("bn-unsigned", prev), sender: prev.user }
-      const args: EmptyChannelArgs = {
-        transactionHash: t.mkHash('0xTTT')
-      }
-
-      const curr = sg.emptyChannel(event)
-      assert.deepEqual(curr, { ...convertChannelState("str-unsigned", prev), txCountGlobal: prev.txCountGlobal + 1, })
-    })
-  })
-
   describe('calculateExchange', () => {
     type ExchangeTest = {
       seller: 'user' | 'hub'
@@ -500,7 +471,7 @@ describe('StateGenerator', () => {
         balanceWei: [9, 1],
       })
 
-      const curr = sg.closeThread(prev, [convertThreadState("str", initialThread)], convertThreadState("bn-unsigned", currThread))
+      const curr = sg.closeThread(prev, [convertThreadState("str", initialThread)], currThread)
 
       assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceToken: [11, 9],
@@ -525,7 +496,7 @@ describe('StateGenerator', () => {
         balanceWei: [9, 1],
       })
 
-      const curr = sg.closeThread(prev, [convertThreadState("str", initialThread)], convertThreadState("bn-unsigned", currThread))
+      const curr = sg.closeThread(prev, [convertThreadState("str", initialThread)], currThread)
 
       assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceToken: [9, 11],
@@ -548,16 +519,18 @@ describe('StateGenerator', () => {
 
       const curr = sg.threadPayment(prev, convertThreadPayment("bn", payment))
 
-      assert.deepEqual(curr, createHigherNoncedThreadState(prev, {
+      const check = createHigherNoncedThreadState(prev, {
         balanceToken: [0, 10],
-        balanceWei: [0, 10],
-      }))
+        balanceWei: [0, 10]
+      })
+
+      assert.deepEqual(curr, convertThreadState("str-unsigned", check))
     })
   })
 
   describe('confirmPending', () => {
     it('should confirm a pending deposit', async () => {
-      const prev: ChannelStateBN = createPreviousChannelState({
+      const prev = createPreviousChannelState({
         pendingDepositToken: [8, 4],
         pendingDepositWei: [1, 6],
         recipient: t.mkHash('0x222')
@@ -568,15 +541,13 @@ describe('StateGenerator', () => {
       // back to the user.
       assert.notEqual(prev.recipient, prev.user)
 
-      const expected = createHigherNoncedChannelState(prev, {
+      const curr = sg.confirmPending(prev)
+
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceToken: [8, 4],
         balanceWei: [1, 6],
         recipient: prev.user,
-      })
-
-      const curr = sg.confirmPending(prev)
-
-      assert.deepEqual(curr, expected)
+      }))
     })
 
     it('should confirm a pending withdrawal', async () => {
@@ -585,14 +556,11 @@ describe('StateGenerator', () => {
         pendingWithdrawalWei: [1, 6],
       })
 
-      const expected = createHigherNoncedChannelState(prev, {
-        recipient: prev.user,
-      })
-
       const curr = sg.confirmPending(prev)
 
-
-      assert.deepEqual(curr, expected)
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
+        recipient: prev.user,
+      }))
     })
 
     it('should confirm a pending withdrawal with a hub deposit into user channel equal to withdrawal wei', async () => {
@@ -602,13 +570,11 @@ describe('StateGenerator', () => {
         pendingWithdrawalToken: [7, 0],
       })
 
-      const expected = createHigherNoncedChannelState(prev, {
-        recipient: prev.user,
-      })
-
       const curr = sg.confirmPending(prev)
 
-      assert.deepEqual(curr, expected)
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
+        recipient: prev.user,
+      }))
     })
 
     it('should confirm a pending withdrawal with a hub deposit into user channel equal to withdrawal token', async () => {
@@ -618,13 +584,11 @@ describe('StateGenerator', () => {
         pendingWithdrawalWei: [7, 0],
       })
 
-      const expected = createHigherNoncedChannelState(prev, {
-        recipient: prev.user,
-      })
-
       const curr = sg.confirmPending(prev)
 
-      assert.deepEqual(curr, expected)
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
+        recipient: prev.user,
+      }))
     })
 
     it('should confirm a pending withdrawal with a hub deposit into user channel less than withdrawal wei', async () => {
@@ -634,13 +598,11 @@ describe('StateGenerator', () => {
         pendingWithdrawalToken: [60, 0],
       })
 
-      const expected = createHigherNoncedChannelState(prev, {
-        recipient: prev.user,
-      })
-
       const curr = sg.confirmPending(prev)
 
-      assert.deepEqual(curr, expected)
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
+        recipient: prev.user,
+      }))
     })
 
     it('should confirm a pending withdrawal with a hub deposit into user channel less than withdrawal token', async () => {
@@ -650,13 +612,11 @@ describe('StateGenerator', () => {
         pendingWithdrawalWei: [3, 0],
       })
 
-      const expected = createHigherNoncedChannelState(prev, {
-        recipient: prev.user,
-      })
-
       const curr = sg.confirmPending(prev)
 
-      assert.deepEqual(curr, expected)
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
+        recipient: prev.user,
+      }))
     })
 
     it('should confirm a pending withdrawal with a hub deposit into user channel greater than withdrawal wei', async () => {
@@ -665,14 +625,11 @@ describe('StateGenerator', () => {
         pendingWithdrawalWei: [10, 7],
       })
 
-      const expected = createHigherNoncedChannelState(prev, {
+      const curr = sg.confirmPending(prev)
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceWei: [0, 5],
         recipient: prev.user,
-      })
-
-      const curr = sg.confirmPending(prev)
-
-      assert.deepEqual(curr, expected)
+      }))
     })
 
     it('should confirm a pending withdrawal with a hub deposit into user channel greater than withdrawal token', async () => {
@@ -681,14 +638,12 @@ describe('StateGenerator', () => {
         pendingWithdrawalToken: [10, 7],
       })
 
-      const expected = createHigherNoncedChannelState(prev, {
-        recipient: prev.user,
-        balanceToken: [0, 5]
-      })
-
       const curr = sg.confirmPending(prev)
 
-      assert.deepEqual(curr, expected)
+      assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
+        recipient: prev.user,
+        balanceToken: [0, 5]
+      }))
     })
   })
 })

@@ -61,13 +61,36 @@ export default class ChainsawService {
   }
 
   /**
-   * Process a single transaction by hash. Intended to be used by scripts that need to force a re-process.
+   * Process a single transaction by hash. Can be used by scripts that need to force a re-process.
    */
-  async processTx(txHash: string) {
-    const tx = await this.chainsawDao.eventByHash(txHash)
-    if (tx.TYPE != 'DidUpdateChannel')
-      throw new Error('Tx must be a "DidUpdateChannel", but got: ' + tx.TYPE)
-    await this.processDidUpdateChannel(tx.chainsawId, tx as DidUpdateChannelEvent)
+  async processSingleTx(txHash: string) {
+    const event = await this.chainsawDao.eventByHash(txHash)
+    LOG.info('Processing event: {event}', { event })
+
+    switch (event.TYPE) {
+      case DidHubContractWithdrawEvent.TYPE:
+        break
+      case DidUpdateChannelEvent.TYPE:
+        await this.processDidUpdateChannel(event.chainsawId, event as DidUpdateChannelEvent)
+        break
+      case DidStartExitChannelEvent.TYPE:
+        await this.processDidStartExitChannel(event.chainsawId, event as DidStartExitChannelEvent)
+        break
+      case DidEmptyChannelEvent.TYPE:
+        try {
+          await this.db.withTransaction({ savepoint: true }, () => {
+            return this.processDidEmptyChannel(event.chainsawId, event as DidEmptyChannelEvent)
+          })
+        } catch (e) {
+          LOG.error(`Error processing DidEmptyChannelEvent (IGNORING THIS FOR NOW): ${'' + e}\n${e.stack}`)
+        }
+        break
+      default:
+        LOG.info('Got type {type}. Not implemented yet.', {
+          type: event.TYPE
+        })
+        break
+    }
   }
 
   private async doFetchEvents() {
@@ -142,57 +165,45 @@ export default class ChainsawService {
       return
     }
 
-    for (let i = 0; i < ingestedEvents.length; i++) {
-      let event = ingestedEvents[i]
-
-      switch (event.event.TYPE) {
-        case DidHubContractWithdrawEvent.TYPE:
-          break
-        case DidUpdateChannelEvent.TYPE:
-          await this.processDidUpdateChannel(event.id, event.event as DidUpdateChannelEvent)
-          await this.chainsawDao.recordPoll(
-            event.event.blockNumber,
-            event.event.txIndex,
-            this.contract._address,
-            'PROCESS_EVENTS',
-          )
-          break
-        case DidStartExitChannelEvent.TYPE:
-          await this.processDidStartExitChannel(event.id, event.event as DidStartExitChannelEvent)
-          await this.chainsawDao.recordPoll(
-            event.event.blockNumber,
-            event.event.txIndex,
-            this.contract._address,
-            'PROCESS_EVENTS',
-          )
-          break
-        case DidEmptyChannelEvent.TYPE:
-          await this.processDidEmptyChannel(event.id, event.event as DidStartExitChannelEvent)
-          await this.chainsawDao.recordPoll(
-            event.event.blockNumber,
-            event.event.txIndex,
-            this.contract._address,
-            'PROCESS_EVENTS',
-          )
-          break
-        default:
-          LOG.info('Got type {type}. Not implemented yet.', {
-            type: event.event.TYPE
-          })
-      }
+    for (let event of ingestedEvents) {
+      await this.processSingleTx(event.event.txHash)
+      await this.chainsawDao.recordPoll(
+        event.event.blockNumber,
+        event.event.txIndex,
+        this.contract._address,
+        'PROCESS_EVENTS',
+      )
     }
   }
 
   private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent) {
     if (event.txCountGlobal > 1) {
-      const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(event.user, event.txCountGlobal)
+      const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(
+        event.user,
+        event.txCountGlobal,
+      )
       if (!knownEvent) {
         // This means there is an event on chain which we don't have a copy of
         // in our database. This is a Very Big Problem, so crash hard here
         // and handle it manually.
-        LOG.error('CRITICAL: Event broadcast on chain, but not found in the database. This should never happen! Event body: {event}', { event: JSON.stringify(event) })
+        const msg = (
+          `CRITICAL: Event broadcast on chain, but not found in the database. ` +
+          `This should never happen! Event body: ${JSON.stringify(event)}`
+        )
+        LOG.error(msg)
         if (this.config.isProduction)
-          throw new Error('Event broadcast on chain, but not found in the database! THIS IS PROBABLY BAD! See comments in code.')
+          throw new Error(msg)
+        return
+      }
+
+      if (knownEvent.invalid) {
+        const msg = (
+          `CRITICAL: Event broadcast on chain, but our version has been invalidated. ` +
+          `This should never happen! Event body: ${JSON.stringify(event)}`
+        )
+        LOG.error(msg)
+        if (this.config.isProduction)
+          throw new Error(msg)
         return
       }
     }
@@ -204,8 +215,8 @@ export default class ChainsawService {
     )
     const hash = this.utils.createChannelStateHash(state)
 
-    //const sigHub = '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-    const sigHub = await this.web3.eth.sign(hash, this.config.hotWalletAddress)
+    const sigHub = await this.signerService.signMessage(hash);
+
     await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.config.hotWalletAddress, {
       ...state,
       sigHub

@@ -7,6 +7,7 @@ import { ConnextInternal } from '../Connext';
 import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
 import getTxCount from '../lib/getTxCount';
 import BigNumber from 'bignumber.js';
+import { toBN } from '../helpers/bn';
 
 const ONE_MINUTE = 1000 * 60
 
@@ -77,6 +78,13 @@ export class ExchangeController extends AbstractController {
   public exchange = async (toSell: string, currency: "wei" | "token") => {
     const weiToSell = currency === "wei" ? toSell : '0'
     const tokensToSell = currency === "token" ? toSell : '0'
+    // before requesting exchange, verify the user has enough wei 
+    // and tokens
+    const channel = this.getState().persistent.channel
+    if (toBN(channel.balanceWeiUser).lt(toBN(weiToSell)) || toBN(channel.balanceTokenUser).lt(toBN(tokensToSell))) {
+      console.error(`User does not have sufficient wei or token for exchange. Wei: ${weiToSell}, tokens: ${tokensToSell}, channel: ${JSON.stringify(channel, null, 2)}`)
+      return
+    }
     const sync = await this.hub.requestExchange(weiToSell, tokensToSell, getTxCount(this.store))
     this.connext.syncController.handleHubSync(sync)
 

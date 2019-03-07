@@ -1,16 +1,53 @@
 #!/bin/bash
 
 # Set default email & domain name
-email=$EMAIL; [[ -n "$email" ]] || email=noreply@example.com
-domain=$DOMAINNAME; [[ -n "$domain" ]] || domain=localhost
-echo "domain=$domain email=$email"
+email="${EMAIL:-noreply@gmail.com}"
+domain="${DOMAINNAME:-localhost}"
+dashboard_url="${DASHBOARD_URL:-dashboard}"
+echo "domain=$domain email=$email dashboard=$dashboard_url mode=$MODE"
 
+# Provide a message indicating that we're still waiting for everything to wake up
+function loading_msg {
+  while true # unix.stackexchange.com/a/37762
+  do echo 'Waiting for the rest of the app to wake up..' | nc -lk -p 80
+  done > /dev/null
+}
+loading_msg &
+loading_pid="$!"
+
+########################################
 # Wait for downstream services to wake up
-ethprovider="${ETH_RPC_URL#*://}"
-echo "waiting for wallet:3000 & hub:8080 & $ethprovider"
-[[ "$MODE" == "dev" ]] && bash wait_for.sh -t 60 wallet:3000 2> /dev/null
-bash wait_for.sh -t 60 hub:8080 2> /dev/null
-bash wait_for.sh -t 60 $ethprovider 2> /dev/null
+# Define service hostnames & ports we depend on
+hub=hub:8080
+dashboard=dashboard:9999
+dashboard_client=dashboard_client:3000
+
+echo "Waiting for $hub to wake up..." && bash wait_for.sh -t 60 $hub 2> /dev/null
+# Do a more thorough check to ensure the hub is online
+while ! curl -s http://$hub/config > /dev/null
+do sleep 2
+done
+
+echo "waiting for $dashboard..." && bash wait_for.sh -t 60 $dashboard 2> /dev/null
+# Do a more thorough check to ensure the dashboard is online
+while ! curl -s http://$dashboard > /dev/null
+do sleep 2
+done
+
+if [[ "$MODE" == "dev" ]]
+then
+  echo "waiting for $dashboard_client..." && bash wait_for.sh -t 60 $dashboard_client 2> /dev/null
+  # Do a more thorough check to ensure the dashboard is online
+  while ! curl -s http://$dashboard_client > /dev/null
+  do sleep 2
+  done
+fi
+
+# Kill the loading message server
+kill "$loading_pid" && pkill nc
+
+########################################
+# Setup SSL Certs
 
 letsencrypt=/etc/letsencrypt/live
 devcerts=$letsencrypt/localhost
@@ -37,7 +74,8 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$ethprovider|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
+sed -i 's|$ETH_RPC_URL|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
+sed -i 's|$DASHBOARD_URL|'"$dashboard_url"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
@@ -60,5 +98,6 @@ then
 fi
 
 sleep 3 # give renewcerts a sec to do it's first check
+
 echo "Entrypoint finished, executing nginx..."; echo
 exec nginx

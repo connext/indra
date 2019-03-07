@@ -4,10 +4,10 @@ import Button from "@material-ui/core/Button";
 import ArchiveIcon from "@material-ui/icons/Archive";
 import TextField from "@material-ui/core/TextField";
 import Switch from "@material-ui/core/Switch";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
-import Typography from "@material-ui/core/Typography";
+//import HelpIcon from "@material-ui/icons/Help";
+//import IconButton from "@material-ui/core/IconButton";
+//import Popover from "@material-ui/core/Popover";
+//import Typography from "@material-ui/core/Typography";
 import { store } from "../App.js";
 const Web3 = require("web3");
 const eth = require("ethers");
@@ -77,7 +77,11 @@ class DepositCard extends Component {
   // deposit handler should simply get amounts from metamask and let the balance poller deposit into the channel
   async depositHandler() {
     try {
-      const { usingMetamask, connext, metamask } = this.props
+      const { usingMetamask, connext/*, metamask*/, connextState } = this.props
+      if (!connextState || !connextState.runtime.canDeposit) {
+        console.warn('Cannot deposit into channel')
+        return
+      }
       const wei = this.state.depositVal.amountWei;
       const tokens = this.state.depositVal.amountToken;
       console.log(`wei: ${wei}`);
@@ -92,20 +96,20 @@ class DepositCard extends Component {
       } else {
         if (wei !== "0") {
           console.log("found wei deposit");
-          if (wei <= (metamask.balance * 1000000000000000000)) {
+          // if (wei <= (metamask.balance * 1000000000000000000)) {
             await this.getEther(wei);
-          } else {
-            throw new Error("Insufficient ETH balance in MetaMask")
-          }
+        //   } else {
+        //     throw new Error("Insufficient ETH balance in MetaMask")
+        //   }
         }
   
         if (tokens !== "0") {
           console.log("found token deposit");
-          if (tokens <= (metamask.tokenBalance * 1000000000000000000)) {
+          // if (tokens <= (metamask.tokenBalance * 1000000000000000000)) {
             await this.getTokens(tokens);
-          } else {
-            throw new Error("Insufficient TST balance in MetaMask")
-          }
+          // } else {
+          //   throw new Error("Insufficient TST balance in MetaMask")
+          // }
         }
       }
 
@@ -116,24 +120,24 @@ class DepositCard extends Component {
   }
 
   async getTokens(amountToken) {
-    const { tokenContract, humanTokenAbi, } = this.props
+    const { tokenContract, tokenAbi, } = this.props
     console.log('tokenContract:', tokenContract)
     let web3 = window.web3;
     console.log(web3);
     if (!web3) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [3]");
       return;
     }
     const metamaskProvider = new Web3(web3.currentProvider);
     const mmAddr = (await metamaskProvider.eth.getAccounts())[0];
     const browserAddr = store.getState()[0].getAddressString()
     if (!mmAddr) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [4]");
       return;
     }
 
     const tc = new metamaskProvider.eth.Contract(
-      humanTokenAbi,
+      tokenAbi,
       tokenContract._address
     );
 
@@ -175,7 +179,7 @@ class DepositCard extends Component {
     let web3 = window.web3;
     console.log('window.web3', web3);
     if (!web3) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [1]");
       return;
     }
     const metamaskProvider = new eth.providers.Web3Provider(
@@ -184,7 +188,7 @@ class DepositCard extends Component {
     const mmAddr = (await metamaskProvider.listAccounts())[0];
     const browserAddr = store.getState()[0].getAddressString()
     if (!mmAddr) {
-      alert("You need to install & unlock metamask to do that");
+      alert("You need to install & unlock metamask to do that [2]");
       return;
     }
 
@@ -234,8 +238,9 @@ class DepositCard extends Component {
   }
 
   render() {
-    const { anchorEl } = this.state;
-    const open = Boolean(anchorEl);
+    //const { anchorEl } = this.state;
+    const { connextState } = this.props
+    //const open = Boolean(anchorEl);
     const cardStyle = {
       card: {
         display: "flex",
@@ -307,6 +312,7 @@ class DepositCard extends Component {
           style={cardStyle.button}
           variant="contained"
           onClick={evt => this.depositHandler(evt)}
+          disabled={!connextState || !connextState.runtime.canDeposit}
         >
           Deposit
         </Button>

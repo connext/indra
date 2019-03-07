@@ -1,12 +1,14 @@
-import { PostgresChannelsDao } from './dao/ChannelsDao'
+import { parameterizedTests } from './testing'
+import ChannelsDao, { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
-import { getTestRegistry, assert, getFakeClock } from './testing'
+import { getTestRegistry, assert, getFakeClock, nock } from './testing'
 import {
   MockExchangeRateDao,
   MockGasEstimateDao,
   mockRate,
   MockSignerService,
-  fakeSig
+  fakeSig,
+  getTestConfig
 } from './testing/mocks'
 import {
   getChannelState,
@@ -33,6 +35,8 @@ import {
   InvalidationArgs,
   WithdrawalArgs,
   WithdrawalParametersBigNumber,
+  UpdateRequestBigNumber,
+  DepositArgsBigNumber,
 } from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
@@ -47,6 +51,11 @@ import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/ge
 import Config from './Config';
 import { BigNumber } from 'bignumber.js/bignumber'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
+import { RedisClient } from './RedisClient'
+import ThreadsService from './ThreadsService';
+import DBEngine from './DBEngine';
+import { sleep } from './util';
+import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -57,6 +66,23 @@ function fieldsToWei<T>(obj: T): T {
 }
 
 const contract = mkAddress('0xCCC')
+
+function web3ContractMock() {
+  this.methods = {
+    hubAuthorizedUpdate: () => {
+      return {
+        send: async () => {
+          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          return true
+        },
+        encodeABI: async () => {
+          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          return true
+        },
+      }
+    },
+  }
+}
 
 describe('ChannelsService', () => {
   const clock = getFakeClock()
@@ -112,8 +138,11 @@ describe('ChannelsService', () => {
   const paymentsService: PaymentsService = registry.get('PaymentsService')
   const config: Config = registry.get('Config')
   const startExitDao: ChannelDisputesDao = registry.get('ChannelDisputesDao')
+  const threadsService: ThreadsService = registry.get('ThreadsService')
+  const onchainTxDao: OnchainTransactionsDao = registry.get('OnchainTransactionsDao')
+  const db: DBEngine = registry.get('DBEngine')
 
-  beforeEach(async () => {
+  beforeEach(async function () {
     await registry.clearDatabase()
   })
 
@@ -276,7 +305,7 @@ describe('ChannelsService', () => {
     const weiDeposit = toWeiBigNum(0.1)
     const user = mkAddress('0xa')
 
-    assert.isRejected(service.doRequestDeposit(user, weiDeposit, Big(0), ""),
+    await assert.isRejected(service.doRequestDeposit(user, weiDeposit, Big(0), ""),
       /No signature detected/
     )
   })
@@ -756,6 +785,135 @@ describe('ChannelsService', () => {
     )
   })
 
+  it('does not check when NO_CHECK is used', async () => {
+    const registry = getTestRegistry({
+      Config: getTestConfig({
+        shouldCollateralizeUrl: 'NO_CHECK',
+        isDev: false,
+      }),
+    })
+    const service: ChannelsService = registry.get('ChannelsService')
+    assert.equal(await service.shouldCollateralize('0x1234'), true)
+  })
+
+  it('does not invalidate when there is a submitted tx', async () => {
+    const chan = await channelUpdateFactory(registry)
+    await service.doCollateralizeIfNecessary(chan.user)
+    let sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    const latest = sync.updates.pop()
+
+    // simulate collateralization
+    await service.doUpdates(chan.user, [{
+      args: convertDeposit('bignumber', (latest.update as UpdateRequest).args as DepositArgs),
+      reason: 'ProposePendingDeposit',
+      txCount: chan.state.txCountGlobal + 1,
+      sigUser: mkSig()
+    }])
+
+    const deposit = await channelsDao.getChannelUpdateByTxCount(chan.user, chan.state.txCountGlobal + 1)
+    let tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'submitted')
+
+    await service.doUpdates(chan.user, [{
+      args: {
+        previousValidTxCount: chan.state.txCountGlobal,
+        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        reason: 'CU_INVALID_ERROR',
+      } as InvalidationArgs,
+      reason: 'Invalidation',
+      txCount: chan.state.txCountGlobal + 2,
+      sigUser: mkSig()
+    }])
+
+    sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    const invalidation = sync.updates.filter(u => (u.update as UpdateRequest).reason === 'Invalidation')
+    assert.isEmpty(invalidation)
+
+    tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'submitted')
+  })
+
+  it('allows invalidation and marks a new onchain tx as failed', async () => {
+    const registry = getTestRegistry({
+      Web3: {
+        ...Web3,
+        eth: {
+          sign: async () => {
+            return
+          },
+          getTransactionCount: async () => {
+            return 1
+          },
+          estimateGas: async () => {
+            return 1000
+          },
+          signTransaction: async () => {
+            return {
+              tx: {
+                hash: mkHash('0xaaa'),
+                r: mkHash('0xabc'),
+                s: mkHash('0xdef'),
+                v: '0x27',
+              },
+            }
+          },
+          sendSignedTransaction: () => {
+            console.log(`Called mocked web3 function sendSignedTransaction`)
+            return {
+              on: (input, cb) => {
+                switch (input) {
+                  case 'error':
+                    return cb('Invalid JSON RPC response')
+                }
+              },
+            }
+          },
+          sendTransaction: function () {
+            console.log(`Called mocked web3 function sendTransaction`)
+            return this.sendSignedTransaction()
+          },
+        },
+      },
+      GasEstimateDao: new MockGasEstimateDao()
+    })
+    const service: ChannelsService = registry.get('ChannelsService')
+
+    const chan = await channelUpdateFactory(registry)
+    await service.doCollateralizeIfNecessary(chan.user)
+    let sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    let latest = sync.updates.pop()
+
+    // simulate collateralization
+    await service.doUpdates(chan.user, [{
+      args: convertDeposit('bignumber', (latest.update as UpdateRequest).args as DepositArgs),
+      reason: 'ProposePendingDeposit',
+      txCount: chan.state.txCountGlobal + 1,
+      sigUser: mkSig()
+    }])
+
+    const deposit = await channelsDao.getChannelUpdateByTxCount(chan.user, chan.state.txCountGlobal + 1)
+    let tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'new')
+
+    await service.doUpdates(chan.user, [{
+      args: {
+        previousValidTxCount: chan.state.txCountGlobal,
+        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        reason: 'CU_INVALID_ERROR',
+      } as InvalidationArgs,
+      reason: 'Invalidation',
+      txCount: chan.state.txCountGlobal + 2,
+      sigUser: mkSig()
+    }])
+
+    sync = await service.getChannelAndThreadUpdatesForSync(chan.user, 0, 0)
+    latest = sync.updates.pop()
+    assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
+
+    tx = await onchainTxDao.getTransactionByLogicalId(db, deposit.onchainTxLogicalId)
+    assert.equal(tx.state, 'failed')
+  })
+
   describe('Withdrawal generated cases', () => {
     function makeBigNumsBigger(x: any) {
       for (let key in x) if (isBigNum(x[key])) x[key] = x[key].times('1e18')
@@ -846,15 +1004,6 @@ describe('ChannelsService', () => {
     )
 
     assert.deepEqual(syncUpdates.map(s => s.type), ['channel', 'thread'])
-  })
-
-  it('should only sign zero-thread states', async () => {
-    assert.isRejected(channelUpdateFactory(registry, {
-      threadCount: 1,
-      threadRoot: mkHash('0xbad'),
-      balanceTokenUser: 10000,
-      balanceWeiUser: 9999
-    }))
   })
 
   it('should not recollateralize with pending states', async () => {
@@ -1007,5 +1156,157 @@ describe('ChannelsService', () => {
 
     const {updates: sync} = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
     assert.deepEqual(sync.map(item => (item.update as UpdateRequest).reason), ['ConfirmPending', 'Invalidation'])
+  })
+
+  it('does not return sync updates from closed threads', async () => {
+    const channel = await channelAndThreadFactory(registry)
+    await threadsService.close(channel.user.user, channel.performer.user, mkSig('0xa'), true)
+    const t = await threadsDao.getThread(channel.user.user, channel.performer.user, channel.thread.threadId)
+    assert.equal(t.status, 'CT_CLOSED')
+
+    const sync = await service.getChannelAndThreadUpdatesForSync(channel.user.user, 0, 0)
+    const threadUpdates = sync.updates.filter(update => update.type === 'thread')
+    assert.deepEqual(threadUpdates, [])
+  })
+})
+
+describe('ChannelsService.shouldCollateralize', () => {
+  const registry = getTestRegistry({
+    Config: getTestConfig({
+      shouldCollateralizeUrl: 'https://example.com/should-collateralize/',
+      isDev: false,
+    }),
+  })
+
+  const service: ChannelsService = registry.get('ChannelsService')
+  const redis: RedisClient = registry.get('RedisClient')
+
+  parameterizedTests([
+    { name: 'works: true', shouldCollateralize: true },
+    { name: 'works: false', shouldCollateralize: false },
+    { name: 'returns false on error', shouldCollateralize: Error('uhoh') },
+  ], async t => {
+    nock('https://example.com')
+      .get(/.*/)
+      .reply(url => {
+        assert.equal(url, '/should-collateralize/0x1234')
+        if (t.shouldCollateralize instanceof Error)
+          throw t.shouldCollateralize
+        return [200, { shouldCollateralize: t.shouldCollateralize }]
+      })
+
+    await redis.flushall()
+    const res = await service.shouldCollateralize('0x1234')
+    const expected = t.shouldCollateralize instanceof Error ? false : t.shouldCollateralize
+    assert.equal(res, expected)
+  })
+
+  describe('ChannelsService-txFail', () => {
+    const registry = getTestRegistry({
+      Web3: {
+        ...Web3,
+        eth: {
+          Contract: web3ContractMock,
+          sign: async () => {
+            return
+          },
+          getTransactionCount: async () => {
+            return 1
+          },
+          estimateGas: async () => {
+            return 1000
+          },
+          signTransaction: async () => {
+            return {
+              tx: {
+                hash: mkHash('0xaaa'),
+                r: mkHash('0xabc'),
+                s: mkHash('0xdef'),
+                v: '0x27',
+              },
+            }
+          },
+          sendSignedTransaction: () => {
+            console.log(`Called mocked web3 function sendSignedTransaction`)
+            return {
+              on: (input, cb) => {
+                switch (input) {
+                  case 'error':
+                    return cb('nonce too low')
+                }
+              },
+            }
+          },
+          sendTransaction: () => {
+            console.log(`Called mocked web3 function sendTransaction`)
+            return {
+              on: (input, cb) => {
+                switch (input) {
+                  case 'error':
+                    return cb('nonce too low')
+                }
+              },
+            }
+          },
+        },
+      },
+      ExchangeRateDao: new MockExchangeRateDao(),
+      GasEstimateDao: new MockGasEstimateDao(),
+      SignerService: new MockSignerService()
+    })
+  
+    const service: ChannelsService = registry.get('ChannelsService')
+    const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  
+    beforeEach(async () => {
+      await registry.clearDatabase()
+    })
+  
+    it('should invalidate a failing hub authorized update', async () => {
+      let channel = await channelUpdateFactory(registry)
+      await service.doCollateralizeIfNecessary(channel.user)
+      let { updates: sync } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+      let latest = sync.pop()
+      assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
+  
+      await service.doUpdates(channel.user, [{
+        reason: 'ProposePendingDeposit',
+        args: convertDeposit('bignumber', (latest.update as UpdateRequest).args as DepositArgs),
+        txCount: channel.state.txCountGlobal + 1,
+        sigUser: mkSig('0xc')
+      }])
+  
+      // need to sleep here to let the async process fail
+      sleep(50)
+  
+      let { updates: sync2 } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+      latest = sync2.pop()
+      assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
+      const generated = stateGenerator.invalidation(
+        convertChannelState('bn', channel.state), 
+        {
+          lastInvalidTxCount: channel.state.txCountGlobal + 1,
+          previousValidTxCount: channel.state.txCountGlobal,
+          reason: 'CU_INVALID_ERROR'
+        }
+      )
+      assertChannelStateEqual(generated, {
+        pendingDepositToken: [0, 0],
+        pendingDepositWei: [0, 0],
+        pendingWithdrawalToken: [0, 0],
+        pendingWithdrawalWei: [0, 0],
+      })
+    })
+  
+    // TODO: make this work again
+    // it('should move a disputed channel back to open if tx fails', async () => {
+    //   const channel = await channelUpdateFactory(registry)
+    //   await service.startUnilateralExit(channel.user, 'this is a test')
+    //   // need to sleep here to let the async process fail
+    //   await sleep(20)
+  
+    //   const { status } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    //   assert.equal(status, 'CS_OPEN')
+    // })
   })
 })

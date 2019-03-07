@@ -15,8 +15,13 @@ import { Utils } from '../vendor/connext/Utils';
 import Config from '../Config';
 import { ChannelManagerChannelDetails } from '../vendor/connext/types';
 
-const Web3 = require('web3')
+const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432';
+const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6';
+const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545';
 
+console.log(`test urls: database=${databaseUrl} redis=${redisUrl} provider=${providerUrl}`)
+
+const Web3 = require('web3')
 let pgIsDirty = true
 
 export class PgPoolServiceForTest extends PgPoolService {
@@ -130,13 +135,15 @@ class MockValidator extends Validator {
   }
 }
 
+export const testChannelManagerAddress = mkAddress('0xCCC')
+export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
 export const getTestConfig = (overrides?: any) => ({
   ...Config.fromEnv(),
-  databaseUrl: process.env.DATABASE_URL_TEST!,
-  redisUrl: 'redis://localhost:6379/6',
+  databaseUrl,
+  redisUrl,
   sessionSecret: 'hummus',
-  hotWalletAddress: '0x7776900000000000000000000000000000000000',
-  channelManagerAddress: mkAddress('0xCCC'),
+  hotWalletAddress: testHotWalletAddress,
+  channelManagerAddress: testChannelManagerAddress,
   ...(overrides || {}),
 })
 
@@ -172,6 +179,10 @@ export class MockExchangeRateDao {
         USD: mockRate
       }
     }
+  }
+
+  async getUsdRateAtTime(date: Date) {
+    return mockRate
   }
 }
 
@@ -309,6 +320,17 @@ export class MockChannelManagerContract {
         },
       }
     },
+    emptyChannel: () => {
+      console.log(`Called mocked contract function emptyChannel`)
+      return {
+        send: async () => {
+          return true
+        },
+        encodeABI: () => {
+          return '0xdeadbeef'
+        },
+      }
+    },
     challengePeriod: () => {
       return {
         call: async () => {
@@ -345,8 +367,7 @@ export const mockServices: any = {
   },
 
   'Web3': {
-    // TODO: Finish this: new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'))
-    factory: () => new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545')),
+    factory: () => new Web3(new Web3.providers.HttpProvider(providerUrl)),
     dependencies: []
   },
 

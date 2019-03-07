@@ -1,49 +1,22 @@
-import { UnconfirmedTransaction } from "./domain/OnchainTransaction";
 import { assertUnreachable } from "./util/assertUnreachable";
 import { OnchainTransactionsDao, TxnStateUpdate } from "./dao/OnchainTransactionsDao";
 import { TransactionRequest, OnchainTransactionRow } from "./domain/OnchainTransaction";
+import * as crypto from 'crypto'
 import log from './util/log'
 import { default as DBEngine, SQL } from "./DBEngine";
 import { default as GasEstimateDao } from "./dao/GasEstimateDao";
-import { sleep, synchronized, maybe, Lock, Omit } from "./util";
+import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson } from "./util";
 import { Container } from "./Container";
-const Tx = require('ethereumjs-tx')
-const Web3 = require('web3')
+import { SignerService } from "./SignerService";
 
 const LOG = log('OnchainTransactionService')
 
-/**
- * Converts an UnconfirmedTransaction to an instance of Tx from ethereumjs-tx
- */
-function txnToTx(txn: Omit<UnconfirmedTransaction, 'hash'>): any {
-  return new Tx({
-    from: txn.from,
-    to: txn.to,
-    value: Web3.utils.numberToHex(txn.value),
-    gas: Web3.utils.numberToHex(txn.gas),
-    gasPrice: Web3.utils.numberToHex(txn.gasPrice),
-    data: txn.data,
-    nonce: Web3.utils.numberToHex(txn.nonce),
-    r: txn.signature && txn.signature.r,
-    s: txn.signature && txn.signature.s,
-    v: txn.signature && Web3.utils.numberToHex(txn.signature.v),
-  })
-}
-
-/**
- * Serializes a transaction to a raw string.
- */
-function serializeTxn(txn: Omit<UnconfirmedTransaction, 'hash'>): string {
-  const tx = txnToTx(txn)
-  return '0x' + tx.serialize().toString('hex')
-}
-
-/**
- * Serializes a transaction to a raw string.
- */
-function generateHash(txn: Omit<UnconfirmedTransaction, 'hash'>, includeSig: boolean = true): string {
-  const tx = txnToTx(txn)
-  return '0x' + tx.hash(includeSig).toString('hex')
+function md5(data: string) {
+  if (!data && data !== '')
+    return `<empty: ${data}>`
+  const hash = crypto.createHash('md5')
+  hash.update(data)
+  return hash.digest('hex')
 }
 
 
@@ -110,7 +83,8 @@ export class OnchainTransactionService {
     private web3: any, 
     private gasEstimateDao: GasEstimateDao, 
     private onchainTransactionDao: OnchainTransactionsDao, 
-    private db: DBEngine, 
+    private db: DBEngine,
+    private signerService: SignerService,
     private container: Container
   ) {}
 
@@ -143,15 +117,19 @@ export class OnchainTransactionService {
       // Verify that the callback exists before doing anything else
       this.lookupCallback(meta.completeCallback)
     }
-
+    
     const nonce = Math.max(
       await this.web3.eth.getTransactionCount(txnRequest.from),
       (await db.queryOne(SQL`
-        select coalesce(max(nonce), 0) + 1 as nonce
-        from onchain_transactions_raw
-        where
-          "from" = ${txnRequest.from} and
-          state <> 'failed'
+        select coalesce((
+          select nonce from onchain_transactions_raw 
+          where
+            "from" = ${txnRequest.from} and
+            state <> 'failed'
+          order by nonce desc 
+          limit 1
+          for update
+        ), 0) as nonce
       `)).nonce,
     )
 
@@ -159,7 +137,10 @@ export class OnchainTransactionService {
     if (!gasPrice)
       throw new Error('gasEstimateDao.latest() returned null')
 
-    const gasAmount = this.web3.utils.hexToNumber(await this.web3.eth.estimateGas({ ...web3TxRequest }))
+    const gasAmount = this.web3.utils.hexToNumber(
+      txnRequest.gas ||
+      await this.web3.eth.estimateGas({ ...web3TxRequest })
+    )
 
     const unsignedTx = {
       from: txnRequest.from,
@@ -174,7 +155,7 @@ export class OnchainTransactionService {
     LOG.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)
 
     /* TODO: REB-61
-    const sig = await this.web3.eth.signTransaction({ ...unsignedTx })
+    const sig = await this.signerService.signTransaction({ ...unsignedTx });
     const tx = {
       ...unsignedTx,
       hash: sig.tx.hash,
@@ -199,8 +180,13 @@ export class OnchainTransactionService {
     return txnRow
   }
 
+  async start() {
+    LOG.info(`Starting OnchainTransactionService...`)
+    this.runPoller()
+  }
+
   @synchronized('stopped')
-  async start(pollInterval?: number) {
+  async runPoller(pollInterval?: number) {
     this.running = true
     while (this.running) {
       try {
@@ -232,9 +218,15 @@ export class OnchainTransactionService {
 
   private async processPendingTxn(txn: OnchainTransactionRow): Promise<void> {
     if (txn.state == 'new') {
-      const error = await new Promise(res => {
+      // Use the data hash to simplify tracking in logs until we're able to
+      // calculate the actual hash
+      const dataHash = md5(txn.data)
+      const signedTx = await this.signerService.signTransaction(txn)
+      LOG.info(`signedTx: ${prettySafeJson(signedTx)}`)
+      const error = await new Promise<string | null>(res => {
         // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
-        const tx = this.web3.eth.sendTransaction(txn)
+        LOG.info(`Submitting transaction nonce=${txn.nonce} data-hash=${dataHash}: ${prettySafeJson(txn)}...`)
+        const tx = this.web3.eth.sendSignedTransaction(signedTx)
         tx.on('transactionHash', hash => {
           // TODO: REB-61
           this.db.query(SQL`
@@ -242,41 +234,63 @@ export class OnchainTransactionService {
             SET hash = ${hash}
             WHERE id = ${txn.id}
           `)
+          txn.hash = hash
           res(null)
         })
-        tx.on('error', err => res(err))
+        tx.on('error', err => res('' + err))
       })
 
-      LOG.info('Sending transaction {txn.hash}: {res}', {
+      const errorReason = this.getErrorReason(error)
+      LOG.info('Transaction nonce={txn.nonce} data-hash={dataHash} sent: {txn.hash}: {res}', {
         txn,
-        res: error ? '' + error : 'ok!',
+        dataHash,
+        res: error ? '' + error + ` (${errorReason})`: 'ok!',
       })
 
-      if (!error || this.errorIsTxnAlreadyImported(error)) {
+      if (!error || errorReason == 'already-imported') {
         await this.updateTxState(txn, {
           state: 'submitted',
         })
         return
       }
 
-      if (this.web3ErrorIsTemporary(error)) {
-        // If the error is temporary (ex, network error), do nothing; this txn
-        // will be retried on the next loop.
-        LOG.warning(`Temporary error while submitting tx '${txn.hash}': ${'' + error} (will retry)`)
-        return
+      switch (errorReason) {
+        case 'permanent':
+          // check nonce of latest onchain
+          // for each nonce we have thats <= to that
+
+          // In the future we'll be able to be more intelligent about retrying (ex,
+          // with a new nonce or more gas) here... but for now, just fail.
+          LOG.error(`Permanent error sending transaction: ${error}. Transaction: ${JSON.stringify(txn)}`)
+          await this.updateTxState(txn, {
+            state: 'failed',
+            reason: '' + error,
+          })
+          break
+
+        case 'temporary':
+          // If the error is temporary (ex, network error), do nothing; this txn
+          // will be retried on the next loop.
+          LOG.warning(`Temporary error while submitting tx '${txn.hash}': ${'' + error} (will retry)`)
+          break
+
+        case 'unknown':
+          LOG.error(
+            `Unknown error sending transaction! Refusing to do anything until ` +
+            `this error is added to 'OnchainTransactionService.knownTxnErrorMessages': ` +
+            `${error}`
+          )
+          break
+
+        default:
+          assertUnreachable(errorReason, 'unexpected error reason: ' + errorReason)
       }
 
-      // In the future we'll be able to be more intelligent about retrying (ex,
-      // with a new nonce or more gas) here... but for now, just fail.
-      await this.updateTxState(txn, {
-        state: 'failed',
-        reason: '' + error,
-      })
       return
     }
 
     if (txn.state == 'submitted') {
-      const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash)) as any
+      const [tx, err] = await maybe(this.web3.eth.getTransactionReceipt(txn.hash))
       LOG.info('State of {txn.hash}: {res}', {
         txn,
         res: JSON.stringify(tx || err),
@@ -309,10 +323,11 @@ export class OnchainTransactionService {
       }
 
       await this.updateTxState(txn, {
-        state: 'confirmed',
+        state: tx.status ? 'confirmed' : 'failed',
         blockNum: tx.blockNumber,
         blockHash: tx.blockHash,
         transactionIndex: tx.transactionIndex,
+        reason: tx.status ? null : 'EVM revert',
       })
 
       return
@@ -361,11 +376,23 @@ export class OnchainTransactionService {
     }
   }
 
-  web3ErrorIsTemporary(err: any) {
-    return ('' + err).indexOf('Invalid JSON RPC response: ""') >= 0
+  knownTxnErrorMessages = {
+    'known transaction:': 'already-imported',
+    'same hash was already imported': 'already-imported',
+    'nonce too low': 'permanent',
+    'replacement transaction underpriced': 'permanent',
+    'does not have enough funds': 'permanent',
+    'Invalid JSON RPC response:': 'temporary',
   }
 
-  errorIsTxnAlreadyImported(err: any) {
-    return ('' + err).indexOf('same hash was already imported') >= 0
+  getErrorReason(errMsg: string): null | 'already-imported' | 'permanent' | 'temporary' | 'unknown' {
+    if (!errMsg)
+      return null
+    for (const key in this.knownTxnErrorMessages) {
+      if (errMsg.indexOf(key) >= 0)
+        return this.knownTxnErrorMessages[key]
+    }
+
+    return 'unknown'
   }
 }

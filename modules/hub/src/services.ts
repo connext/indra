@@ -1,3 +1,5 @@
+import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
+import { CoinPaymentsService } from './coinpayments/CoinPaymentsService'
 import {
   Registry,
   PartialServiceDefinitions,
@@ -57,9 +59,14 @@ import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
 import { StateGenerator } from './vendor/connext/StateGenerator';
 import { SignerService } from './SignerService';
 import PaymentsService from './PaymentsService';
+import { NgrokService } from './NgrokService'
+import { CoinPaymentsApiClient } from './coinpayments/CoinPaymentsApiClient'
+import { CoinPaymentsApiService } from './coinpayments/CoinPaymentsApiService'
 import { default as ChannelManagerABI } from './abi/ChannelManager'
 import { CloseChannelService } from './CloseChannelService'
 import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDisputesDao';
+import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
+import ConfigApiService from './api/ConfigApiService';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -122,16 +129,18 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     factory: (
       onchainTxService: OnchainTransactionService,
       signerService: SignerService,
+      onchainTransactionDao: OnchainTransactionsDao,
       channelDisputesDao: ChannelDisputesDao,
       channelsDao: ChannelsDao,
       contract: ChannelManager,
       config: Config,
       web3: any,
       db: DBEngine,
-    ) => new CloseChannelService(onchainTxService, signerService, channelDisputesDao, channelsDao, contract, config, web3, db),
+    ) => new CloseChannelService(onchainTxService, signerService, onchainTransactionDao, channelDisputesDao, channelsDao, contract, config, web3, db),
     dependencies: [
       'OnchainTransactionService',
       'SignerService',
+      'OnchainTransactionsDao',
       'ChannelDisputesDao',
       'ChannelsDao',
       'ChannelManagerContract',
@@ -155,9 +164,11 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       ChannelsApiService,
       BrandingApiService,
       AuthApiService,
+      ConfigApiService,
       ExchangeRateApiService,
       ThreadsApiService,
       PaymentsApiService,
+      CoinPaymentsApiService,
     ],
     isSingleton: true,
   },
@@ -168,14 +179,16 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       gasEstimateDao: GasEstimateDao,
       onchainTransactionDao: OnchainTransactionsDao,
       db: DBEngine,
-      container: Container,
-    ) => new OnchainTransactionService(web3, gasEstimateDao, onchainTransactionDao, db, container),
+      signerService: SignerService,
+      container: Container
+    ) => new OnchainTransactionService(web3, gasEstimateDao, onchainTransactionDao, db, signerService, container),
     dependencies: [
       'Web3',
       'GasEstimateDao',
       'OnchainTransactionsDao',
       'DBEngine',
-      'Container',
+      'SignerService',
+      'Container'
     ],
     isSingleton: true,
   },
@@ -183,6 +196,12 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   CRAuthManager: {
     factory: (web3: any) => new MemoryCRAuthManager(web3),
     dependencies: ['Web3'],
+    isSingleton: true,
+  },
+
+  NgrokService: {
+    factory: (config: Config) => new NgrokService(config),
+    dependencies: ['Config'],
     isSingleton: true,
   },
 
@@ -201,12 +220,30 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     isSingleton: true,
   },
 
+  // TODO: Make sure this is started when the hub starts
+  CoinPaymentsDepositPollingService: {
+    factory: (
+      config: Config,
+      db: DBEngine,
+      service: CoinPaymentsService,
+      dao: CoinPaymentsDao,
+    ) => new CoinPaymentsDepositPollingService(config, db, service, dao),
+    dependencies: [
+      'Config',
+      'DBEngine',
+      'CoinPaymentsService',
+      'CoinPaymentsDao',
+    ],
+    isSingleton: true,
+  },
+
   //
   // Factories
   //
 
   OnchainTransactionsDao: {
-    factory: () => new OnchainTransactionsDao(),
+    factory: (config: Config) => new OnchainTransactionsDao(config),
+    dependencies: ['Config']
   },
 
   PaymentMetaDao: {
@@ -220,7 +257,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   GlobalSettingsDao: {
-    factory: (db: DBEngine<Client>) => new PostgresGlobalSettingsDao(db),
+    factory: (db: DBEngine<Client>) => 
+      new PostgresGlobalSettingsDao(db),
     dependencies: ['DBEngine'],
     isSingleton: true
   },
@@ -333,7 +371,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       validator: Validator,
       config: Config,
       db: DBEngine,
-      contract: ChannelManager,
     ) => new PaymentsService(
       channelsService,
       threadsService,
@@ -368,12 +405,14 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       threadsDao: ThreadsDao,
       exchangeRateDao: ExchangeRateDao,
       channelDisputesDao: ChannelDisputesDao,
+      onchainTransactionDao: OnchainTransactionsDao,
       generator: StateGenerator,
       validation: Validator,
       redis: RedisClient,
       db: DBEngine,
       config: Config,
       contract: ChannelManager,
+      coinPaymentsDao: CoinPaymentsDao,
     ) =>
       new ChannelsService(
         onchainTx,
@@ -383,12 +422,14 @@ export const serviceDefinitions: PartialServiceDefinitions = {
         threadsDao,
         exchangeRateDao,
         channelDisputesDao,
+        onchainTransactionDao,
         generator,
         validation,
         redis,
         db,
         config,
         contract,
+        coinPaymentsDao,
       ),
     dependencies: [
       'OnchainTransactionService',
@@ -398,12 +439,14 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'ThreadsDao',
       'ExchangeRateDao',
       'ChannelDisputesDao',
+      'OnchainTransactionsDao',
       'StateGenerator',
       'Validator',
       'RedisClient',
       'DBEngine',
       'Config',
       'ChannelManagerContract',
+      'CoinPaymentsDao',
     ],
   },
 
@@ -424,5 +467,38 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'GlobalSettingsDao'
     ],
+  },
+
+  CoinPaymentsApiClient: {
+    factory: (config: Config, ngrok: NgrokService) => new CoinPaymentsApiClient(config, ngrok),
+    dependencies: ['Config', 'NgrokService'],
+  },
+
+  CoinPaymentsService: {
+    factory: (
+      config: Config,
+      api: CoinPaymentsApiClient,
+      dao: CoinPaymentsDao,
+      db: DBEngine,
+      channelsService: ChannelsService,
+      channelDao: ChannelsDao,
+      exchangeRateDao: ExchangeRateDao,
+    ) => new CoinPaymentsService(config, api, dao, db, channelsService, channelDao, exchangeRateDao),
+    dependencies: [
+      'Config',
+      'CoinPaymentsApiClient',
+      'CoinPaymentsDao',
+      'DBEngine',
+      'ChannelsService',
+      'ChannelsDao',
+      'ExchangeRateDao',
+    ],
+  },
+
+  CoinPaymentsDao: {
+    factory: (
+      db: DBEngine,
+    ) => new CoinPaymentsDao(db),
+    dependencies: ['DBEngine'],
   },
 }

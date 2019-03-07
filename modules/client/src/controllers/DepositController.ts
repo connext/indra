@@ -1,6 +1,6 @@
 import getTxCount from '../lib/getTxCount'
 import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateRequestTypes, SyncResult, UpdateRequest, ChannelStateUpdate, convertPayment } from '../types'
-import { getLastThreadId } from '../lib/getLastThreadId'
+import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
 import { AbstractController } from "./AbstractController";
 import { validateTimestamp } from "../lib/timestamp";
 import { toBN } from '../helpers/bn';
@@ -12,7 +12,7 @@ const tokenAbi = require("human-standard-token-abi")
  * - We can send updates to the hub any time we want (because the hub will
  *   reject them if they are out of sync)
  * - In the case of deposit, the `syncController` will expose a method
- *   called something like "tryEnqueueSyncResultsFromHub", which will add the
+ *   called something like "tryHandleHubSync", which will add the
  *   sync results if the lock isn't held, but ignore them otherwise (ie,
  *   because they will be picked up on the next sync anyway), and this method
  *   will be used by the DepositController.
@@ -20,18 +20,19 @@ const tokenAbi = require("human-standard-token-abi")
 export default class DepositController extends AbstractController {
   private resolvePendingDepositPromise: any = null
 
-  // TODO: should the deposit params (timeout, payment) be saved for sig recovery or just use params sent by hub?
-
   public async requestUserDeposit(deposit: Payment) {
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
-
-    const sync = await this.hub.requestDeposit(
-      signedRequest,
-      getTxCount(this.store),
-      getLastThreadId(this.store)
-    )
-
-    this.connext.syncController.handleHubSync(sync)
+    
+    try {
+      const sync = await this.hub.requestDeposit(
+        signedRequest,
+        getTxCount(this.store),
+        getLastThreadUpdateId(this.store)
+      )
+      this.connext.syncController.handleHubSync(sync)
+    } catch (e) {
+      console.warn('Error requesting deposit', e)
+    }
 
     // There can only be one pending deposit at a time, so it's safe to return
     // a promise that will resolve/reject when we eventually hear back from the

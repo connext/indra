@@ -1,0 +1,90 @@
+version: 2
+
+jobs:
+  test-client:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-client
+
+  test-contracts:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-contracts
+
+  test-hub:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-hub
+
+  test-e2e:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-e2e
+
+  push-images:
+    machine: true
+    steps:
+      - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push
+
+  push-live-images:
+    machine: true
+    steps:
+      - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push-live
+
+  deploy-staging:
+    machine: true
+    steps:
+      - run: ssh ubuntu@$STAGING_URL "bash -c 'git clone https://github.com/ConnextProject/indra.git || true'"
+      - run: ssh ubuntu@$STAGING_URL "bash -c 'cd indra && git fetch && git reset --hard origin/"$CIRCLE_BRANCH "'"
+      - run: ssh ubuntu@$STAGING_URL "bash -c 'cd indra && DOMAINNAME="$STAGING_URL "bash ops/restart.sh prod'"
+
+  deploy-live:
+    machine: true
+    steps:
+      - run: ssh ubuntu@$PRODUCTION_URL "bash -c 'git clone https://github.com/ConnextProject/indra.git || true'"
+      - run: ssh ubuntu@$PRODUCTION_URL "bash -c 'cd indra && git fetch && git reset --hard origin/master'"
+      - run: ssh ubuntu@$PRODUCTION_URL "bash -c 'cd indra && MODE=live DOMAINNAME="$PRODUCTION_URL "bash ops/restart.sh prod'"
+
+workflows:
+  version: 2
+  test-and-deploy:
+    jobs:
+      - test-client
+      - test-contracts
+      - test-hub
+      - test-e2e
+      - push-images:
+          requires:
+            - test-client
+            - test-contracts
+            - test-hub
+            - test-e2e
+      - push-live-images:
+          filters:
+            branches:
+              only: master
+          requires:
+            - test-client
+            - test-contracts
+            - test-hub
+            - test-e2e
+      - deploy-staging:
+          filters:
+            branches:
+              ignore: master
+          requires:
+            - push-images
+      - deploy-live:
+          filters:
+            branches:
+              only: master
+          requires:
+            - push-live-images

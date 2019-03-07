@@ -2,41 +2,57 @@
 set -e
 
 ####################
-# ENV VARS
+# External Env Vars
 
-# set any of these to "yes" to turn on watchers
-watch_ethprovider="no"
+# None needed for dev-mode deployment
+
+####################
+# Internal Config
+
+# NOTE: Gotta update this manually when adding/removing services :/
+number_of_services=8
+
+# set any watch vars to "yes" to turn on watchers
 watch_hub="no"
 watch_chainsaw="no"
-watch_wallet="no"
 
-project=connext
-number_of_services=7
-proxy_image=${project}_proxy:dev
-wallet_image=${project}_wallet:dev
-hub_image=${project}_hub:dev
-chainsaw_image=${project}_hub:dev
-redis_image=redis:5-alpine
-database_image=${project}_database:dev
-ethprovider_image=${project}_ethprovider:dev
-
-# set defaults for some core env vars
-MODE=$MODE; [[ -n "$MODE" ]] || MODE=development
-DOMAINNAME=$DOMAINNAME; [[ -n "$DOMAINNAME" ]] || DOMAINNAME=localhost
-EMAIL=$EMAIL; [[ -n "$EMAIL" ]] || EMAIL=noreply@gmail.com
+service_user_key="foo"
 
 # ethereum settings
-ETH_RPC_URL="http://ethprovider:8545"
-ETH_NETWORK_ID="4447"
-ETH_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+# Allow contract address overrides if an address book is present in project root
+if [[ -f "address-book.json" ]]
+then addressBook="address-book.json"
+else addressBook="modules/contracts/ops/address-book.json"
+fi
+
+eth_rpc_url="http://ethprovider:8545"
+eth_network="ganache"
+eth_network_id="4447"
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
+
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+
+hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
+channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
+token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
+private_key_file="/run/secrets/hub_key_ganache"
 
 # database settings
-REDIS_URL="redis://redis:6379"
-POSTGRES_HOST="database"
-POSTGRES_PORT="5432"
-POSTGRES_USER="$project"
-POSTGRES_DB="$project"
-POSTGRES_PASSWORD_FILE="/run/secrets/connext_database_dev"
+redis_url="redis://redis:6379"
+postgres_url="database:5432"
+postgres_user="$project"
+postgres_db="$project"
+postgres_password_file="/run/secrets/${project}_database_dev"
+
+# docker images
+proxy_image=${project}_proxy:dev
+hub_image=${project}_builder
+chainsaw_image=${project}_builder
+ethprovider_image=${project}_builder
+dashboard_image=${project}_builder
+database_image=${project}_database:dev
+redis_image=redis:5-alpine
 
 ####################
 # Deploy according to above configuration
@@ -64,7 +80,8 @@ function new_secret {
   fi
 }
 
-new_secret connext_database_dev
+new_secret ${project}_database_dev
+new_secret hub_key_ganache "$private_key"
 
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
 then
@@ -81,7 +98,9 @@ networks:
     external: true
 
 secrets:
-  connext_database_dev:
+  ${project}_database_dev:
+    external: true
+  hub_key_ganache:
     external: true
 
 volumes:
@@ -90,56 +109,69 @@ volumes:
   certs:
 
 services:
-
   proxy:
     image: $proxy_image
+    environment:
+      ETH_RPC_URL: $eth_rpc_url
+      MODE: dev
     networks:
       - $project
-    environment:
-      ETH_RPC_URL: $ETH_RPC_URL
     ports:
-      - "80:80"
+      - "3000:80"
     volumes:
       - certs:/etc/letsencrypt
 
-  wallet:
-    image: $wallet_image
-    command: "$watch_wallet"
+  dashboard_client:
+    image: $dashboard_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
     networks:
       - $project
-    environment:
-      NODE_ENV: $MODE
-      SERVICE_USER_KEY: $SERVICE_USER_KEY
-      ETH_MNEMONIC: $ETH_MNEMONIC
-      ETHPROVIDER_URL: "http://localhost:8545"
-      HUB_URL: "http://localhost/hub"
-    ports:
-      - "3000:3000"
     volumes:
-      - `pwd`/modules/wallet:/root
-      - `pwd`/modules/client:/client
-      - `pwd`/modules/contracts/build/contracts:/contracts
+      - `pwd`/modules/dashboard:/root
+
+  dashboard:
+    image: $dashboard_image
+    entrypoint: nodemon server/server.js
+    environment:
+      NODE_ENV: development
+      POSTGRES_DB: $postgres_db
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_USER: $postgres_user
+      POSTGRES_URL: $postgres_url
+    networks:
+      - $project
+    secrets:
+      - ${project}_database_dev
+    volumes:
+      - `pwd`/modules/dashboard:/root
 
   hub:
     image: $hub_image
-    command: hub $watch_hub
+    entrypoint: bash ops/dev.entry.sh hub $watch_hub
+    environment:
+      NODE_ENV: development
+      PRIVATE_KEY_FILE: $private_key_file
+      ETH_MNEMONIC: $eth_mnemonic
+      ETH_NETWORK_ID: $eth_network_id
+      ETH_RPC_URL: $eth_rpc_url
+      HUB_WALLET_ADDRESS: $hub_wallet_address
+      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
+      TOKEN_ADDRESS: $token_address
+      SERVICE_USER_KEY: $service_user_key
+      POSTGRES_USER: $postgres_user
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_URL: $postgres_url
+      POSTGRES_DB: $postgres_db
+      REDIS_URL: $redis_url
     networks:
       - $project
     ports:
       - "8080:8080"
     secrets:
-      - connext_database_dev
-    environment:
-      NODE_ENV: $MODE
-      ETH_MNEMONIC: $ETH_MNEMONIC
-      ETH_RPC_URL: $ETH_RPC_URL
-      SERVICE_USER_KEY: $SERVICE_USER_KEY
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      REDIS_URL: $REDIS_URL
+      - ${project}_database_dev
+      - hub_key_ganache
     volumes:
       - `pwd`/modules/hub:/root
       - `pwd`/modules/client:/client
@@ -147,22 +179,27 @@ services:
 
   chainsaw:
     image: $chainsaw_image
-    command: chainsaw $watch_chainsaw
+    entrypoint: bash ops/dev.entry.sh chainsaw $watch_chainsaw
+    environment:
+      NODE_ENV: development
+      PRIVATE_KEY_FILE: $private_key_file
+      ETH_MNEMONIC: $eth_mnemonic
+      ETH_NETWORK_ID: $eth_network_id
+      ETH_RPC_URL: $eth_rpc_url
+      HUB_WALLET_ADDRESS: $hub_wallet_address
+      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
+      TOKEN_ADDRESS: $token_address
+      SERVICE_USER_KEY: $service_user_key
+      POSTGRES_USER: $postgres_user
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_URL: $postgres_url
+      POSTGRES_DB: $postgres_db
+      REDIS_URL: $redis_url
     networks:
       - $project
     secrets:
-      - connext_database_dev
-    environment:
-      NODE_ENV: $MODE
-      ETH_MNEMONIC: $ETH_MNEMONIC
-      ETH_RPC_URL: $ETH_RPC_URL
-      SERVICE_USER_KEY: $SERVICE_USER_KEY
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      REDIS_URL: $REDIS_URL
+      - ${project}_database_dev
+      - hub_key_ganache
     volumes:
       - `pwd`/modules/hub:/root
       - `pwd`/modules/client:/client
@@ -170,10 +207,11 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: "$watch_ethprovider"
+    entrypoint: bash ops/entry.sh signal
     environment:
-      ETH_NETWORK_ID: $ETH_NETWORK_ID
-      ETH_MNEMONIC: $ETH_MNEMONIC
+      ETH_PROVIDER: $eth_rpc_url
+      ETH_NETWORK: $eth_network
+      ETH_MNEMONIC: $eth_mnemonic
     networks:
       - $project
     ports:
@@ -184,42 +222,35 @@ services:
 
   database:
     image: $database_image
-    environment:
-      POSTGRES_USER: $project
-      POSTGRES_DB: $project
-      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
     deploy:
       mode: global
+    environment:
+      MODE: dev
+      ETH_NETWORK: $eth_network
+      POSTGRES_USER: $project
+      POSTGRES_DB: $project
+      postgres_password_file: $postgres_password_file
     networks:
       - $project
     ports:
       - "5432:5432"
-      - "5433:5433"
     secrets:
-      - connext_database_dev
+      - ${project}_database_dev
     volumes:
       - database_dev:/var/lib/postgresql/data
+      - `pwd`/modules/database:/root
 
   redis:
     image: $redis_image
     networks:
       - $project
-    ports:
-      - "6379:6379"
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 rm -rf /tmp/$project
 
 echo -n "Waiting for the $project stack to wake up."
-while true
-do
-    num_awake="`docker container ls | grep $project | wc -l | sed 's/ //g'`"
-    sleep 3
-    if [[ "$num_awake" == "$number_of_services" ]]
-    then break
-    else echo -n "."
-    fi
+while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]
+do echo -n "." && sleep 2
 done
 echo " Good Morning!"
-sleep 3

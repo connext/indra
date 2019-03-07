@@ -1,20 +1,30 @@
 {
   "name": "indra",
-  "version": "0.0.0",
+  "version": "0.1.3",
   "author": "Connext & Friends",
   "description": "Deployment for Connext hub infrastructure",
   "license": "ISC",
   "scripts": {
-    "build": "make dev",
-    "db": "bash ops/db.sh",
-    "logs": "bash ops/logs.sh",
-    "rebuild": "make clean && make",
-    "reset": "make reset && bash ops/restart.sh",
-    "restart": "bash ops/restart.sh",
-    "start": "make dev && bash ops/deploy.dev.sh",
-    "prod": "make prod && bash ops/deploy.prod.sh",
-    "stop": "bash ops/stop.sh",
     "clean": "make clean",
-    "deep-clean": "make deep-clean"
+    "cypress": "./node_modules/.bin/cypress open",
+    "db": "bash ops/db.sh",
+    "dls": "docker service ls && echo '=====' && docker container ls",
+    "deep-clean": "make deep-clean",
+    "logs": "bash ops/logs.sh",
+    "rebuild": "make clean && make dev",
+    "reset": "make reset",
+    "restart": "make dev && bash ops/restart.sh",
+    "restart-prod": "make prod && bash ops/restart.sh prod",
+    "start": "make start",
+    "start-prod": "make start-prod",
+    "stop": "make stop",
+    "test-all": "make test-all",
+    "test-client": "make test-client",
+    "test-contracts": "make test-contracts",
+    "test-e2e": "make test-e2e",
+    "test-hub": "make test-hub"
+  },
+  "dependencies": {
+    "cypress": "^3.1.5"
   }
 }

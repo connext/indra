@@ -2,11 +2,14 @@ import { channelUpdateFactory } from './testing/factories'
 import { getTestRegistry, assert, getFakeClock } from './testing'
 import { CloseChannelService } from './CloseChannelService';
 import ChannelsService from './ChannelsService';
-import { mkHash } from './testing/stateUtils';
+import { mkHash, assertChannelStateEqual } from './testing/stateUtils';
 import Web3 = require('web3')
 import ChannelsDao from './dao/ChannelsDao';
 import { setFakeClosingTime } from './testing/mocks';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
+import { UpdateRequest } from './vendor/connext/types';
+import { channelRowBigNumToString } from './domain/Channel';
+import { sleep } from './vendor/connext/lib/utils';
 
 
 describe('CloseChannelService', () => {
@@ -62,7 +65,7 @@ describe('CloseChannelService', () => {
         getBlock: async () => {
           return {
             // timestamp: Math.floor(Date.now() / 1000)
-            timestamp: 0
+            timestamp: 2
           }
         }
       },
@@ -90,7 +93,7 @@ describe('CloseChannelService', () => {
   it('should send a close channel when dispute period ends', async () => {
     const channel = await channelUpdateFactory(registry)
     await closeChannelService.startUnilateralExit(channel.user, "This is a test.")
-    const dbChannel = await channelsDao.getChannelByUser(channel.user)
+    let dbChannel = await channelsDao.getChannelByUser(channel.user)
     assert.equal(dbChannel.status, 'CS_CHANNEL_DISPUTE')
 
     // need to await here bc fake clock is at 0
@@ -98,10 +101,18 @@ describe('CloseChannelService', () => {
     setFakeClosingTime(Math.floor(Date.now() / 1000))
     await clock.awaitTicks(650 * 1000)
     await closeChannelService.pollOnce()
+    // await sleep(20)
+    // await new Promise(res => setTimeout(res, 20))
+
+    dbChannel = await channelsDao.getChannelByUser(channel.user)
+    const chanString = channelRowBigNumToString(dbChannel)
+    console.log('chanString: ', chanString);
+    assertChannelStateEqual(chanString.state, {
+      balanceWei: [0,0],
+      balanceToken: [0,0]
+    })
 
     // lots of mocking
-
-    assert.isTrue(true)
   })
 
   it('should ignore channels that have been closed on chain', async () => {

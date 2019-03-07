@@ -613,7 +613,8 @@ begin
                 from _cm_channel_updates as u
                 where
                   channel_id = channel.id and
-                  tx_count_global = json_not_null(update_obj, 'txCountGlobal', 'uint256')::bigint
+                  tx_count_global = json_not_null(update_obj, 'txCountGlobal', 'uint256')::bigint and
+                  invalid is null
                 );
 
   if update_row.id is not null then

@@ -1,15 +1,17 @@
-import { OnchainTransactionRow, TransactionMeta, UnconfirmedTransaction } from '../domain/OnchainTransaction'
+import { OnchainTransactionRow, TransactionMeta, UnconfirmedTransaction, OnchainTransactionState } from '../domain/OnchainTransaction'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { assertUnreachable } from "../util/assertUnreachable";
+import Config from '../Config';
 
 export type TxnStateUpdate = (
   { state: 'submitted' } |
-  { state: 'confirmed', blockNum: Number, blockHash: string, transactionIndex: number } |
+  { state: 'confirmed' | 'failed', blockNum: Number, blockHash: string, transactionIndex: number, reason?: any } |
   { state: 'failed', reason: string }
 )
 
 
 export class OnchainTransactionsDao {
+  constructor(private config: Config) {}
 
   async insertTransaction(db: DBEngine, logicalId: Number | null, meta: TransactionMeta, txn: UnconfirmedTransaction) {
     const res = await db.queryOne(SQL`
@@ -44,6 +46,7 @@ export class OnchainTransactionsDao {
       WHERE
         state <> 'failed' AND
         state <> 'confirmed'
+      FOR UPDATE
     `)
 
     return rows.map(row => this.inflateRow(row))
@@ -56,6 +59,7 @@ export class OnchainTransactionsDao {
       WHERE logical_id = ${logicalId}
       ORDER BY id DESC
       LIMIT 1
+      FOR UPDATE
     `)
 
     return row && this.inflateRow(row)

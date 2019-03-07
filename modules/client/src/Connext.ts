@@ -1,9 +1,9 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult, convertChannelState, convertPayment } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
+import * as actions from './state/actions'
 import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
 import { createStore, Action, applyMiddleware } from 'redux'
-require('dotenv').config()
 import { EventEmitter } from 'events'
 import Web3 = require('web3')
 // local imports
@@ -24,7 +24,6 @@ import {
   ChannelStateUpdate,
   Payment,
   addSigToChannelState,
-  SyncResult,
   ChannelRow,
   ThreadRow,
   UnsignedThreadState,
@@ -37,14 +36,15 @@ import { ConnextStore, ConnextState, PersistentState } from "./state/store";
 import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
 import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
-import { toBN, mul } from './helpers/bn'
+import { toBN } from './helpers/bn'
 import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import CollateralController from "./controllers/CollateralController";
-import * as actions from './state/actions';
 import { AbstractController } from './controllers/AbstractController'
 import { EventLog } from 'web3/types';
-import { getChannel } from './lib/getChannel';
+import ThreadsController from './controllers/ThreadsController';
+import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
+import { RedeemController } from './controllers/RedeemController';
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -63,8 +63,9 @@ export interface ContractOptions {
 export interface ConnextOptions {
   web3: Web3
   hubUrl: string
-  contractAddress: string
-  hubAddress: Address
+  ethNetworkId?: string
+  contractAddress?: string
+  hubAddress?: Address
   hub?: IHubAPIClient
   tokenAddress?: Address
   tokenName?: string
@@ -72,12 +73,16 @@ export interface ConnextOptions {
 
 export interface IHubAPIClient {
   getChannel(): Promise<ChannelRow>
+  getChannelByUser(user: Address): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
-  getThreadInitialStates(): Promise<UnsignedThreadState[]>
+  getThreadInitialStates(): Promise<ThreadState[]>
   getIncomingThreads(): Promise<ThreadRow[]>
-  getThreadByParties(receiver: Address, sender?: Address): Promise<ThreadRow>
+  getActiveThreads(): Promise<ThreadState[]>
+  getLastThreadUpdateId(): Promise<number>
+  getAllThreads(): Promise<ThreadState[]>
+  getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
-  getExchangerRates(): Promise<ExchangeRates>
+  getExchangerRates(): Promise<ExchangeRates> // TODO: name is typo
   buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
@@ -86,34 +91,113 @@ export interface IHubAPIClient {
   requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
   requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
   requestCollateral(txCountGlobal: number): Promise<Sync>
+  recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string | null> 
   updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{
     error: string | null
     updates: Sync
   }>
+  updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
+  getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
+  getLatestStateNoPendingOps(): Promise<ChannelState | null>
+  config(): Promise<HubConfig>
+  redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
 }
 
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
-  private tokenName?: string
 
   constructor(user: Address, networking: Networking, tokenName?: string) {
     this.user = user
     this.networking = networking
-    this.tokenName = tokenName
   }
 
-  async getChannel(): Promise<ChannelRow> {
-    // get the current channel state and return it
+  async config(): Promise<HubConfig> {
+    const res = await this.networking.get(`config`)
+    return res.data
+  }
+
+  async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
     try {
-      const res = await this.networking.get(`channel/${this.user}`)
+      const res = await this.networking.get(`channel/${this.user}/latest-no-pending`)
+      if (!res.data) {
+        return null
+      }
+      return res.data
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Channel not found for user ${this.user}`)
+        return null
+      }
+      console.log('Error getting latest state no pending ops:', e)
+      throw e
+    }
+  }
+
+  async getLastThreadUpdateId(): Promise<number> {
+    try {
+      const res = await this.networking.get(`thread/${this.user}/last-update-id`)
+      if (!res.data) {
+        return 0
+      }
+      return res.data.latestThreadUpdateId
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Thread update not found for user ${this.user}`)
+        return 0
+      }
+      console.log('Error getting latest state no pending ops:', e)
+      throw e
+    }
+  }
+
+  async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
+    try {
+      const res = await this.networking.get(`channel/${this.user}/latest-update`)
+      if (!res.data) {
+        return null
+      }
+      return { state: res.data.state, update: channelUpdateToUpdateRequest(res.data) }
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Channel not found for user ${this.user}`)
+        return null
+      }
+      console.log('Error getting latest state:', e)
+      throw e
+    }
+  }
+
+  async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
+    // 'POST /:sender/to/:receiver/update': 'doUpdateThread'
+    try {
+      const res = await this.networking.post(`thread/${update.state.sender}/to/${update.state.receiver}/update`, {
+        update
+      })
       return res.data
     } catch (e) {
       if (e.statusCode === 404) {
-        throw new Error(`Channel not found for user ${this.user}`)
+        throw new Error(`Thread not found for sender ${update.state.sender} and receiver ${update.state.receiver}`)
       }
       throw e
     }
+  }
+
+  async getChannelByUser(user: Address): Promise<ChannelRow> {
+    // get the current channel state and return it
+    try {
+      const res = await this.networking.get(`channel/${user}`)
+      return res.data
+    } catch (e) {
+      if (e.statusCode === 404) {
+        throw new Error(`Channel not found for user ${user}`)
+      }
+      throw e
+    }
+  }
+
+  async getChannel(): Promise<ChannelRow> {
+    return await this.getChannelByUser(this.user)
   }
 
   // return state at specified global nonce
@@ -133,10 +217,32 @@ class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getThreadInitialStates(): Promise<UnsignedThreadState[]> {
+  async getThreadInitialStates(): Promise<ThreadState[]> {
     // get the current channel state and return it
     const response = await this.networking.get(
       `thread/${this.user}/initial-states`,
+    )
+    if (!response.data) {
+      return []
+    }
+    return response.data
+  }
+
+  async getActiveThreads(): Promise<ThreadState[]> {
+    // get the current channel state and return it
+    const response = await this.networking.get(
+      `thread/${this.user}/active`,
+    )
+    if (!response.data) {
+      return []
+    }
+    return response.data
+  }
+
+  async getAllThreads(): Promise<ThreadState[]> {
+    // get the current channel state and return it
+    const response = await this.networking.get(
+      `thread/${this.user}/all`,
     )
     if (!response.data) {
       return []
@@ -155,17 +261,15 @@ class HubAPIClient implements IHubAPIClient {
     return response.data
   }
 
-  // return all threads bnetween 2 addresses
+  // return all threads between 2 addresses
   async getThreadByParties(
-    receiver: Address,
+    partyB: Address,
+    userIsSender: boolean,
   ): Promise<ThreadRow> {
     // get receiver threads
     const response = await this.networking.get(
-      `thread/${this.user}/to/${receiver}`,
+      `thread/${userIsSender ? this.user : partyB}/to/${userIsSender ? partyB : this.user}`,
     )
-    if (!response.data) {
-      return [] as any
-    }
     return response.data
   }
 
@@ -196,8 +300,57 @@ class HubAPIClient implements IHubAPIClient {
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
   ): Promise<PurchasePaymentHubResponse> {
-    const { data } = await this.networking.post('payments/purchase', { meta, payments })
-    return data
+    try {
+      const { data } = await this.networking.post('payments/purchase', { meta, payments })
+      return data
+    } catch (e) {
+      throw e
+    }
+  }
+
+  // returns null if the hub can facilitate the payment
+  // of the specified amount in the recipients channel
+  async recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string | null> {
+    // get recipients channel
+    let channel
+    try {
+      channel = await this.getChannelByUser(recipient)
+    } catch (e) {
+      if (e.status == 404) {
+        return `Recipient channel does not exist. Recipient: ${recipient}.`
+      }
+      throw e
+    }
+
+    // check if hub can afford payment
+    const chanBN = convertChannelState("bn", channel.state)
+    const amtBN = convertPayment("bn", amount)
+    if (chanBN.balanceWeiHub.lt(amtBN.amountWei) || chanBN.balanceTokenHub.lt(amtBN.amountToken)) {
+      return `Recipient needs collateral to facilitate payment.`
+    }
+    // otherwise, no collateral is needed to make payment
+    return null
+  }
+
+  async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
+    try {
+      const response = await this.networking.post(
+        `payments/redeem/${this.user}`,
+        { 
+          secret,
+          lastChanTx: txCount,
+          lastThreadUpdateId, 
+        },
+      )
+      return response.data
+    } catch (e) {
+      console.log(e.message)
+      if (e.message.indexOf("Payment has been redeemed.") != -1) {
+        throw new Error(`Payment has been redeemed.`)
+      }
+      throw e
+    }
+    
   }
 
   // post to hub telling user wants to deposit
@@ -272,18 +425,6 @@ class HubAPIClient implements IHubAPIClient {
   }
 }
 
-// connext constructor options
-// NOTE: could extend ContractOptions, doesnt for future readability
-export interface ConnextOptions {
-  web3: Web3
-  hubUrl: string
-  contractAddress: string
-  hubAddress: Address
-  hub?: IHubAPIClient
-  tokenAddress?: Address
-  tokenName?: string
-}
-
 export abstract class IWeb3TxWrapper {
   abstract awaitEnterMempool(): Promise<void>
 
@@ -335,11 +476,30 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
   }
 }
 
+export type ChannelManagerChannelDetails = {
+  txCountGlobal: number
+  txCountChain: number
+  threadRoot: string
+  threadCount: number
+  exitInitiator: string
+  channelClosingTime: number
+  status: string
+}
+
 export interface IChannelManager {
   gasMultiple: number
   userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
   getPastEvents(user: Address, eventName: string, fromBlock: number): Promise<EventLog[]>
   getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
+  startExit(state: ChannelState): Promise<IWeb3TxWrapper>
+  startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
+  emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper>
+  emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper>
+  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
+  startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
+  challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper>
+  emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
+  nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper>
 }
 
 export class ChannelManager implements IChannelManager {
@@ -406,6 +566,214 @@ export class ChannelManager implements IChannelManager {
     return new Web3TxWrapper(this.address, 'userAuthorizedUpdate', call.send(sendArgs))
   }
 
+  async startExit(state: ChannelState) {
+    const call = this.cm.methods.startExit(
+      state.user
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'startExit', call.send(sendArgs))
+  }
+
+  async startExitWithUpdate(state: ChannelState) {
+    const call = this.cm.methods.startExitWithUpdate(
+      [ state.user, state.recipient ],
+      [
+        state.balanceWeiHub,
+        state.balanceWeiUser,
+      ],
+      [
+        state.balanceTokenHub,
+        state.balanceTokenUser,
+      ],
+      [
+        state.pendingDepositWeiHub,
+        state.pendingWithdrawalWeiHub,
+        state.pendingDepositWeiUser,
+        state.pendingWithdrawalWeiUser,
+      ],
+      [
+        state.pendingDepositTokenHub,
+        state.pendingWithdrawalTokenHub,
+        state.pendingDepositTokenUser,
+        state.pendingWithdrawalTokenUser,
+      ],
+      [state.txCountGlobal, state.txCountChain],
+      state.threadRoot,
+      state.threadCount,
+      state.timeout,
+      state.sigHub as string,
+      state.sigUser as string,
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'startExitWithUpdate', call.send(sendArgs))
+  }
+
+  async emptyChannelWithChallenge(state: ChannelState) {
+    const call = this.cm.methods.emptyChannelWithChallenge(
+      [ state.user, state.recipient ],
+      [
+        state.balanceWeiHub,
+        state.balanceWeiUser,
+      ],
+      [
+        state.balanceTokenHub,
+        state.balanceTokenUser,
+      ],
+      [
+        state.pendingDepositWeiHub,
+        state.pendingWithdrawalWeiHub,
+        state.pendingDepositWeiUser,
+        state.pendingWithdrawalWeiUser,
+      ],
+      [
+        state.pendingDepositTokenHub,
+        state.pendingWithdrawalTokenHub,
+        state.pendingDepositTokenUser,
+        state.pendingWithdrawalTokenUser,
+      ],
+      [state.txCountGlobal, state.txCountChain],
+      state.threadRoot,
+      state.threadCount,
+      state.timeout,
+      state.sigHub as string,
+      state.sigUser as string,
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'emptyChannelWithChallenge', call.send(sendArgs))
+  }
+
+  async emptyChannel(state: ChannelState) {
+    const call = this.cm.methods.emptyChannel(
+      state.user,
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'emptyChannel', call.send(sendArgs))
+  }
+
+  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any) {
+    const call = this.cm.methods.startExitThread(
+      state.user,
+      threadState.sender,
+      threadState.receiver,
+      threadState.threadId,
+      [threadState.balanceWeiSender, threadState.balanceWeiReceiver],
+      [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
+      proof,
+      threadState.sigA,
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'startExitThread', call.send(sendArgs))
+  }
+
+  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any) {
+    const call = this.cm.methods.startExitThreadWithUpdate(
+      state.user,
+      [threadInitialState.sender, threadInitialState.receiver],
+      threadInitialState.threadId,
+      [threadInitialState.balanceWeiSender, threadInitialState.balanceWeiReceiver],
+      [threadInitialState.balanceTokenSender, threadInitialState.balanceTokenReceiver],
+      proof,
+      threadInitialState.sigA,
+      [threadUpdateState.balanceWeiSender, threadUpdateState.balanceWeiReceiver],
+      [threadUpdateState.balanceTokenSender, threadUpdateState.balanceTokenReceiver],
+      threadUpdateState.txCount,
+      threadUpdateState.sigA
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'startExitThreadWithUpdate', call.send(sendArgs))
+  }
+
+  async challengeThread(state: ChannelState, threadState: ThreadState) {
+    const call = this.cm.methods.challengeThread(
+      threadState.sender, 
+      threadState.receiver,
+      threadState.threadId,
+      [threadState.balanceWeiSender, threadState.balanceWeiReceiver],
+      [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
+      threadState.txCount,
+      threadState.sigA
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'challengeThread', call.send(sendArgs))
+  }
+
+  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any) {
+    const call = this.cm.methods.emptyThread(
+      state.user,
+      threadState.sender,
+      threadState.receiver,
+      threadState.threadId,
+      [threadState.balanceWeiSender, threadState.balanceWeiReceiver],
+      [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
+      proof,
+      threadState.sigA,
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'emptyThread', call.send(sendArgs))
+  }
+
+  async nukeThreads(state: ChannelState) {
+    const call = this.cm.methods.nukeThreads(
+      state.user
+    )
+
+    const sendArgs = {
+      from: state.user,
+      value: 0,
+    } as any
+    const gasEstimate = await call.estimateGas(sendArgs)
+    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
+    return new Web3TxWrapper(this.address, 'nukeThreads', call.send(sendArgs))
+  }
+
   async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
     const res = await this.cm.methods.getChannelDetails(user).call({ from: user })
     return {
@@ -424,11 +792,12 @@ export class ChannelManager implements IChannelManager {
 export interface ConnextClientOptions {
   web3: Web3
   hubUrl: string
+  user: string
   contractAddress: string
   hubAddress: Address
   tokenAddress: Address
-  tokenName: string
-  user: string
+  ethNetworkId?: string
+  tokenName?: string
   gasMultiple?: number
 
   // Clients should pass in these functions which the ConnextClient will use
@@ -445,12 +814,36 @@ export interface ConnextClientOptions {
   contract?: IChannelManager
 }
 
+function hubConfigToClientOpts(config: HubConfig) {
+  return {
+    contractAddress: config.channelManagerAddress.toLowerCase(),
+    hubAddress: config.hubWalletAddress.toLowerCase(),
+    tokenAddress: config.tokenAddress.toLowerCase(),
+    ethNetworkId: config.ethNetworkId.toLowerCase(),
+  }
+}
 
 /**
  * Used to get an instance of ConnextClient.
  */
-export function getConnextClient(opts: ConnextClientOptions): ConnextClient {
-  return new ConnextInternal(opts)
+export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
+  // create a new hub and pass into the client
+  let hub = opts.hub
+  if (!hub) {
+    hub = new HubAPIClient(
+      opts.user,
+      new Networking(opts.hubUrl),
+    )
+  }
+  const hubOpts = hubConfigToClientOpts(await hub.config())
+  let merged = { ...opts }
+  for (let k in hubOpts) {
+    if ((opts as any)[k]) {
+      continue
+    }
+    (merged as any)[k] = (hubOpts as any)[k]
+  }
+  return new ConnextInternal({ ...merged })
 }
 
 /**
@@ -511,6 +904,10 @@ export abstract class ConnextClient extends EventEmitter {
   async requestCollateral(): Promise<void> {
     await this.internal.collateralController.requestCollateral()
   }
+
+  async redeem(secret: string): Promise<{ purchaseId: string }> {
+    return await this.internal.redeemController.redeem(secret)
+  }
 }
 
 /**
@@ -532,6 +929,8 @@ export class ConnextInternal extends ConnextClient {
   withdrawalController: WithdrawalController
   stateUpdateController: StateUpdateController
   collateralController: CollateralController
+  threadsController: ThreadsController
+  redeemController: RedeemController
 
   constructor(opts: ConnextClientOptions) {
     super(opts)
@@ -548,6 +947,10 @@ export class ConnextInternal extends ConnextClient {
       this.opts.tokenName,
     )
 
+    opts.user = opts.user.toLowerCase()
+    opts.hubAddress = opts.hubAddress.toLowerCase()
+    opts.contractAddress = opts.contractAddress.toLowerCase()
+
     this.validator = new Validator(opts.web3, opts.hubAddress)
     this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
 
@@ -559,6 +962,8 @@ export class ConnextInternal extends ConnextClient {
     this.withdrawalController = new WithdrawalController('WithdrawalController', this)
     this.stateUpdateController = new StateUpdateController('StateUpdateController', this)
     this.collateralController = new CollateralController('CollateralController', this)
+    this.threadsController = new ThreadsController('ThreadsController', this)
+    this.redeemController = new RedeemController('RedeemController', this)
   }
 
   private getControllers(): AbstractController[] {
@@ -581,13 +986,87 @@ export class ConnextInternal extends ConnextClient {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
+  async recipientNeedsCollateral(recipient: Address, amount: Payment) {
+    return await this.hub.recipientNeedsCollateral(recipient, amount)
+  }
+
+  async syncConfig() {
+    const config = await this.hub.config()
+    const opts = this.opts
+    const adjusted = Object.keys(opts).map(k => {
+      if (k || Object.keys(opts).indexOf(k) == -1) {
+        // user supplied, igonore
+        return (opts as any)[k]
+      }
+
+      return (config as any)[k]
+    })
+    return adjusted
+  }
+
   async start() {
     this.store = await this.getStore()
-    this.store.subscribe(() => {
+    this.store.subscribe(async () => {
       const state = this.store.getState()
       this.emit('onStateChange', state)
-      this._saveState(state)
+      await this._saveState(state)
     })
+
+    // before starting controllers, sync values
+    await this.syncConfig()
+
+    // TODO: appropriately set the latest
+    // valid state ??
+    const channelAndUpdate = await this.hub.getLatestChannelStateAndUpdate()
+    console.log('Found latest double signed state:', JSON.stringify(channelAndUpdate, null, 2))
+    if (channelAndUpdate) {
+      this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
+      
+      // update the latest valid state
+      const latestValid = await this.hub.getLatestStateNoPendingOps()
+      console.log('latestValid:', latestValid)
+      if (latestValid) {
+        this.store.dispatch(actions.setLatestValidState(latestValid))
+      }
+      // unconditionally update last thread update id, thread history
+      const lastThreadUpdateId = await this.hub.getLastThreadUpdateId()
+      console.log('lastThreadUpdateId:', lastThreadUpdateId)
+      this.store.dispatch(actions.setLastThreadUpdateId(lastThreadUpdateId))
+      // extract thread history, sort by descending threadId
+      const threadHistoryDuplicates = (await this.hub.getAllThreads()).map(t => {
+        return {
+          sender: t.sender,
+          receiver: t.receiver,
+          threadId: t.threadId,
+        }
+      }).sort((a, b) => b.threadId - a.threadId)
+      console.log('threadHistoryDuplicates', threadHistoryDuplicates)
+      // filter duplicates
+      const threadHistory = threadHistoryDuplicates.filter((thread, i) => {
+        const search = JSON.stringify({ 
+          sender: thread.sender,
+          receiver: thread.receiver
+        })
+        const elts = threadHistoryDuplicates.map(t => {
+          return JSON.stringify({ sender: t.sender, receiver: t.receiver })
+        })
+        return elts.indexOf(search) == i
+      })
+      console.log('threadHistory:', threadHistory)
+      this.store.dispatch(actions.setThreadHistory(threadHistory))
+
+      // if thread count is greater than 0, update
+      // activeThreads, initial states
+      if (channelAndUpdate.state.threadCount > 0) {
+        const initialStates = await this.hub.getThreadInitialStates()
+        console.log('initialStates:', initialStates)
+        this.store.dispatch(actions.setActiveInitialThreadStates(initialStates))
+
+        const threadRows = await this.hub.getActiveThreads()
+        console.log('threadRows:', threadRows)
+        this.store.dispatch(actions.setActiveThreads(threadRows))
+      }
+    }
 
     // Start all controllers
     for (let controller of this.getControllers()) {
@@ -607,18 +1086,31 @@ export class ConnextInternal extends ConnextClient {
     await super.stop()
   }
 
-
   dispatch(action: Action): void {
     this.store.dispatch(action)
   }
 
+  generateSecret(): string {
+    return Web3.utils.soliditySha3({
+      type: 'bytes32', value: Web3.utils.randomHex(32)
+    })
+  }
+
+  async sign(hash: string, user: string) {
+    return await (
+      this.opts.web3.eth.personal
+        ? (this.opts.web3.eth.personal.sign as any)(hash, user)
+        : this.opts.web3.eth.sign(hash, user)
+    )
+  }
+
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
-      state.user != this.opts.user ||
-      state.contractAddress != this.opts.contractAddress
+      state.user.toLowerCase() != this.opts.user.toLowerCase() ||
+      state.contractAddress.toLowerCase()!= (this.opts.contractAddress as any).toLowerCase()
     ) {
       throw new Error(
-        `Refusing to sign state update which changes user or contract: ` +
+        `Refusing to sign channel state update which changes user or contract: ` +
         `expected user: ${this.opts.user}, expected contract: ${this.opts.contractAddress} ` +
         `actual state: ${JSON.stringify(state)}`
       )
@@ -626,25 +1118,39 @@ export class ConnextInternal extends ConnextClient {
 
     const hash = this.utils.createChannelStateHash(state)
 
-    const sig = await (
-      process.env.DEV
-        ? this.opts.web3.eth.sign(hash, this.opts.user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
-    )
+    const { user, hubAddress } = this.opts
+    const sig = await this.sign(hash, user)
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, true)
   }
 
+  async signThreadState(state: UnsignedThreadState): Promise<ThreadState> {
+    const userInThread = state.sender == this.opts.user || state.receiver == this.opts.user
+    if (
+      !userInThread ||
+      state.contractAddress != this.opts.contractAddress
+    ) {
+      throw new Error(
+        `Refusing to sign thread state update which changes user or contract: ` +
+        `expected user: ${this.opts.user}, expected contract: ${this.opts.contractAddress} ` +
+        `actual state: ${JSON.stringify(state)}`
+      )
+    }
+
+    const hash = this.utils.createThreadStateHash(state)
+
+    const sig = await this.sign(hash, this.opts.user)
+
+    console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
+    return addSigToThreadState(state, sig)
+  }
+
   public async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>, ): Promise<SignedDepositRequestProposal> {
     const hash = this.utils.createDepositRequestProposalHash(args)
-    const sig = await (
-      process.env.DEV
-        ? this.opts.web3.eth.sign(hash, this.opts.user)
-        : (this.opts.web3.eth.personal.sign as any)(hash, this.opts.user)
-    )
+    const sig = await this.sign(hash, this.opts.user)
 
-    console.log(`Signing deposit request ${args}. Sig: ${sig}`)
+    console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 
@@ -733,7 +1239,7 @@ export class ConnextInternal extends ConnextClient {
     const state = new ConnextState()
     state.persistent.channel = {
       ...state.persistent.channel,
-      contractAddress: this.opts.contractAddress,
+      contractAddress: this.opts.contractAddress || '', // TODO: how to handle this while undefined?
       user: this.opts.user,
       recipient: this.opts.user,
     }

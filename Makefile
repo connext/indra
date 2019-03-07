@@ -1,5 +1,5 @@
-project=connext
-registry=docker.io/$(shell whoami)
+registry=docker.io/connextproject
+project=$(shell cat package.json | grep '"name":' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -8,27 +8,26 @@ client=$(cwd)/modules/client
 db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
-wallet=$(cwd)/modules/wallet
+dashboard=$(cwd)/modules/dashboard
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 VPATH=build:$(contracts)/build:$(hub)/dist
 SHELL=/bin/bash
 
 # Fetch Prerequisites
-find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*"
-contracts_src=$(shell find $(contracts)/contracts $(contracts)/migrations $(contracts)/ops $(find_options))
+find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
 # On Mac the docker-VM care of this for us so pass root's id (noop)
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
-docker_run=docker run --name=$(project)_buidler --tty --rm
-docker_run_in_contracts=$(docker_run) --volume=$(contracts):/root $(project)_builder:dev $(id)
-docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder:dev $(id)
-docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder:dev $(id)
-docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder:dev $(id)
-docker_run_in_wallet=$(docker_run) --volume=$(client):/client --volume=$(wallet):/root $(project)_builder:dev $(id)
+docker_run=docker run --name=$(project)_builder --tty --rm
+docker_run_in_client=$(docker_run) --volume=$(client):/root $(project)_builder  $(id)
+docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(contracts):/root $(project)_builder $(id)
+docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder $(id)
+docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
+docker_run_in_dashboard=$(docker_run) --volume=$(dashboard):/root $(project)_builder $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
@@ -38,173 +37,234 @@ install=npm install --prefer-offline --unsafe-perm
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
+########################################
 # Begin Phony Rules
-.PHONY: default all dev prod clean stop purge deploy deploy-live test
+.PHONY: default all dev prod stop clean reset purge push push-live backup
 
 default: dev
 all: dev prod
-dev: database ethprovider hub wallet proxy
-prod: database-prod hub-prod proxy-prod
+dev: pre-commit-hook database hub proxy client dashboard
+prod: pre-commit-hook database-prod hub-prod proxy-prod dashboard-server-prod
+
+start: dev
+	bash ops/deploy.dev.sh
+
+start-prod: prod
+	bash ops/deploy.prod.sh
 
 stop: 
 	bash ops/stop.sh
-	docker container stop $(project)_buidler 2> /dev/null || true
+
+clean: stop
 	docker container prune -f
-
-reset: stop
-	docker volume rm connext_database_dev connext_chain_dev || true
-	docker volume rm `docker volume ls -q | grep "[0-9a-f]\{64\}" | tr '\n' ' '` 2> /dev/null || true
-
-reset-client:
-	$(log_start)
-	rm -rf modules/client
-	git clone git@github.com:ConnextProject/connext-client.git --branch spank-stable modules/client
-	$(log_finish) && touch build/pull-client
-
-clean:
 	rm -rf build/*
-	rm -rf $(cwd)/modules/**/build
-	rm -rf $(cwd)/modules/**/dist
+	rm -rf modules/**/build
+	rm -rf modules/**/dist
 
-deep-clean: clean
-	rm -rf $(cwd)/modules/**/node_modules
+reset-base: stop
+	docker container prune -f
+	docker volume rm $(project)_database_dev 2> /dev/null || true
 
-fuck-it-send-it: deep-clean
-	rm -rf $(cwd)/modules/**/.config
-	rm -rf $(cwd)/modules/**/.node-gyp
-	rm -rf $(cwd)/modules/**/.npm
-	rm -rf $(cwd)/modules/**/package-lock.json
+reset-client: reset-base
+	rm -rf build/client*  $(client)/dist $(client)/node_modules
 
-purge: reset deep-clean
+reset-contracts: reset-base
+	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
-tags: prod
+reset-dashboard: reset-base
+	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
+
+reset-database: reset-base
+	rm -rf build/database* $(db)/build/* $(db)/node_modules
+	docker volume rm $(project)_database_dev 2> /dev/null || true
+
+reset-hub: reset-base
+	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules
+
+reset: reset-base
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
+	docker volume rm $(project)_database_dev 2> /dev/null || true
+	rm -rf $(db)/snapshots/ganache-*
+
+purge: reset-data clean
+	rm -rf modules/**/node_modules
+
+push: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:latest
 	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:latest
-
-deploy: tags
+	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:latest
 	docker push $(registry)/$(project)_database:latest
 	docker push $(registry)/$(project)_hub:latest
 	docker push $(registry)/$(project)_proxy:latest
+	docker push $(registry)/$(project)_dashboard:latest
 
-deploy-live: prod
+push-live: prod
 	docker tag $(project)_database:latest $(registry)/$(project)_database:$(version)
 	docker tag $(project)_hub:latest $(registry)/$(project)_hub:$(version)
 	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:$(version)
+	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:$(version)
 	docker push $(registry)/$(project)_database:$(version)
 	docker push $(registry)/$(project)_hub:$(version)
 	docker push $(registry)/$(project)_proxy:$(version)
+	docker push $(registry)/$(project)_dashboard:$(version)
 
-test: hub
-	bash $(hub)/ops/test.sh
+backup:
+	bash $(db)/ops/run-backup.sh
 
+########################################
+# Begin Tests
+
+# set a default test command for developer convenience
+test: test-default
+test-default: test-client
+test-all: test-client test-contracts test-hub test-e2e
+
+test-client: client
+	bash ops/test-client.sh
+
+test-contracts: contract-artifacts
+	bash ops/test-contracts.sh
+
+test-hub: hub database
+	bash ops/test-hub.sh
+
+test-e2e: root-node-modules prod
+	npm stop
+	MODE=test npm run start-prod
+	./node_modules/.bin/cypress run
+	npm stop
+
+########################################
 # Begin Real Rules
 
 # Proxy
 
-proxy-prod: wallet-prod $(shell find $(proxy) $(find_options))
+proxy-prod: dashboard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
-	$(log_finish) && touch build/proxy-prod
+	$(log_finish) && touch build/$@
 
 proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
-	$(log_finish) && touch build/proxy
+	$(log_finish) && touch build/$@
 
-# Wallet
+# Dashboard Server
 
-wallet-prod: wallet-node-modules $(shell find $(wallet)/src $(find_options))
+dashboard-server-prod: dashboard-prod
 	$(log_start)
-	$(docker_run_in_wallet) "rm -f .env && cp ops/prod.env .env"
-	$(docker_run_in_wallet) "npm run build"
-	$(log_finish) && touch build/wallet-prod
+	docker build --file $(dashboard)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard)
+	$(log_finish) && touch build/$@
 
-wallet: wallet-node-modules $(shell find $(wallet)/src $(find_options))
-	$(log_start)
-	docker build --file $(wallet)/ops/dev.dockerfile --tag $(project)_wallet:dev $(wallet)
-	$(log_finish) && touch build/wallet
+# Dashboard Client
 
-wallet-node-modules: builder client $(wallet)/package.json
+dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(dashboard)/ops $(find_options))
 	$(log_start)
-	$(docker_run_in_wallet) "$(install)"
-	$(docker_run_in_wallet) "rm -rf node_modules/connext"
-	$(docker_run_in_wallet) "ln -s ../../client node_modules/connext"
-	$(log_finish) && touch build/wallet-node-modules
+	$(docker_run_in_dashboard) "cp -f ops/prod.env .env"
+	$(docker_run_in_dashboard) "npm run build"
+	$(log_finish) && touch build/$@
+
+dashboard: dashboard-node-modules $(dashboard)/ops/dev.env
+	$(log_start)
+	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
+	$(log_finish) && touch build/$@
+
+dashboard-node-modules: builder $(dashboard)/package.json
+	$(log_start)
+	$(docker_run_in_dashboard) "$(install)"
+	$(log_finish) && touch build/$@
 
 # Hub
 
-hub-prod: hub-js
+hub-prod: hub
 	$(log_start)
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
-	$(log_finish) && touch build/hub-prod
+	$(log_finish) && touch build/$@
 
-hub: hub-js $(hub)/ops/dev.entry.sh
-	$(log_start)
-	docker build --file $(hub)/ops/dev.dockerfile --tag $(project)_hub:dev $(hub)
-	$(log_finish) && touch build/hub
-
-hub-js: hub-node-modules $(shell find $(hub) $(find_options))
+hub: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
-	$(log_finish) && touch build/hub-js
+	$(log_finish) && touch build/$@
 
-hub-node-modules: builder client $(hub)/package.json
+hub-node-modules: builder $(hub)/package.json
 	$(log_start)
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
-	$(log_finish) && touch build/hub-node-modules
-
-# Client
-
-client: builder $(client)/package.json
-	$(log_start)
-	$(docker_run_in_client) "$(install)"
-	$(log_finish) && touch build/client
+	$(docker_run_in_hub) "cd ../client && $(install)"
+	@touch build/client && touch build/client-node-modules
+	$(log_finish) && touch build/$@
 
 # Contracts
 
-ethprovider: contract-artifacts
-	$(log_start)
-	docker build --file $(contracts)/ops/truffle.dockerfile --tag $(project)_ethprovider:dev $(contracts)
-	$(log_finish) && touch build/ethprovider
-
-contract-artifacts: contract-node-modules
+contract-artifacts: contract-node-modules $(shell find $(contracts)/contracts $(find_options))
 	$(log_start)
 	$(docker_run_in_contracts) "npm run build"
-	$(docker_run_in_contracts) "bash ops/inject-addresses.sh"
-	$(log_finish) && touch build/contract-artifacts
+	$(log_finish) && touch build/$@
 
 contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
+	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
-	$(log_finish) && touch build/contract-node-modules
+	$(docker_run_in_contracts) "rm -rf node_modules/connext"
+	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
+	$(docker_run_in_contracts) "cd ../client && $(install)"
+	@touch build/client && touch build/client-node-modules
+	$(log_finish) && touch build/$@
+
+# Client
+
+client: client-node-modules $(shell find $(client)/src)
+	$(log_start)
+	$(docker_run_in_client) "npm run build"
+	$(log_finish) && touch build/$@
+
+client-node-modules: builder $(client)/package.json
+	$(log_start)
+	$(docker_run_in_client) "$(install)"
+	$(log_finish) && touch build/$@ && touch build/client
 
 # Database
 
 database-prod: database
 	$(log_start)
 	docker tag $(project)_database:dev $(project)_database:latest
-	$(log_finish) && touch build/database-prod
+	$(log_finish) && touch build/$@
 
-database: database-node-modules migration-templates $(db_prereq)
+database: database-node-modules database-migrations $(shell find $(db)/ops $(find_options))
 	$(log_start)
 	docker build --file $(db)/ops/db.dockerfile --tag $(project)_database:dev $(db)
-	$(log_finish) && touch build/database
+	$(log_finish) && touch build/$@
 
-migration-templates: $(shell find $(db) $(find_options))
+database-migrations: $(db)/ops/ejs-render.js $(shell find $(db)/migrations $(db)/templates $(find_options))
 	$(log_start)
 	$(docker_run_in_db) "make"
-	$(log_finish) && touch build/migration-templates
+	$(log_finish) && touch build/$@
 
 database-node-modules: builder $(db)/package.json
 	$(log_start)
 	$(docker_run_in_db) "$(install)"
-	$(log_finish) && touch build/database-node-modules
+	$(log_finish) && touch build/$@
 
-# Builder
+# Builder, etc
+
 builder: ops/builder.dockerfile
-	$(log_start) && echo "prereqs: $<"
-	docker build --file ops/builder.dockerfile --tag $(project)_builder:dev .
-	$(log_finish) && touch build/builder
+	$(log_start)
+	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
+	$(log_finish) && touch build/$@
+
+root-node-modules: package.json
+	$(log_start)
+	$(install)
+	$(log_finish) && touch build/$@
+
+pre-commit-hook: ops/pre-commit.sh
+	$(log_start)
+	rm -f .git/hooks/pre-commit
+	cp ops/pre-commit.sh .git/hooks/pre-commit
+	chmod +x .git/hooks/pre-commit
+	$(log_finish) && touch build/$@

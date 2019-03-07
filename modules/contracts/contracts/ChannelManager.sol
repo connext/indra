@@ -130,7 +130,7 @@ contract ChannelManager {
         uint256[2] weiBalances; // [sender, receiver]
         uint256[2] tokenBalances; // [sender, receiver]
         uint256 txCount; // persisted onchain even when empty
-        uint256 threadClosingTime; 
+        uint256 threadClosingTime;
         bool[2] emptied; // [sender, receiver]
     }
 
@@ -396,6 +396,7 @@ contract ChannelManager {
         if (txCount[1] == channel.txCount[1]) {
             _applyPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
             _applyPendingUpdates(channel.tokenBalances, tokenBalances, pendingTokenUpdates);
+
         // pending onchain txs have *not* been executed - revert pending deposits and withdrawals back into offchain balances
         } else { //txCount[1] > channel.txCount[1]
             _revertPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
@@ -403,7 +404,9 @@ contract ChannelManager {
         }
 
         // update state variables
-        channel.txCount = txCount;
+        // only update txCount[0] (global)
+        // - txCount[1] should only be updated by user/hubAuthorizedUpdate
+        channel.txCount[0] = txCount[0];
         channel.threadRoot = threadRoot;
         channel.threadCount = threadCount;
 
@@ -471,6 +474,7 @@ contract ChannelManager {
         if (txCount[1] == channel.txCount[1]) {
             _applyPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
             _applyPendingUpdates(channel.tokenBalances, tokenBalances, pendingTokenUpdates);
+
         // pending onchain txs have *not* been executed - revert pending deposits and withdrawals back into offchain balances
         } else { //txCount[1] > channel.txCount[1]
             _revertPendingUpdates(channel.weiBalances, weiBalances, pendingWeiUpdates);
@@ -496,7 +500,9 @@ contract ChannelManager {
         channel.tokenBalances[1] = 0;
 
         // update state variables
-        channel.txCount = txCount;
+        // only update txCount[0] (global)
+        // - txCount[1] should only be updated by user/hubAuthorizedUpdate
+        channel.txCount[0] = txCount[0];
         channel.threadRoot = threadRoot;
         channel.threadCount = threadCount;
 
@@ -897,18 +903,10 @@ contract ChannelManager {
         uint256[4] pendingUpdates
     ) internal {
         // update hub balance
-        // 1: { weiBalances: [100, 100] }
-        // 1: { weiBalances: [100, 100], pendingWeiUpdates: [0, 0, 100, 50] } <- deposit > withdrawal, don't update offchain [COMMITTED ONCHAIN]
-        // 1: { weiBalances: [110, 90], pendingWeiUpdates: [0, 0, 100, 50] } <- user pays hub [OFFCHAIN UPDATE]
-        // 1: { weiBalances: [110, 140] <- final (apply pending updates)
         // If the deposit is greater than the withdrawal, add the net of deposit minus withdrawal to the balances.
         // Assumes the net has *not yet* been added to the balances.
         if (pendingUpdates[0] > pendingUpdates[1]) {
             channelBalances[0] = balances[0].add(pendingUpdates[0].sub(pendingUpdates[1]));
-        // 2: { weiBalances: [100, 100] }
-        // 2: { weiBalances: [100, 50], pendingWeiUpdates: [0, 0, 50, 100] } <- deposit < withdrawal, add delta offchain [COMMITTED ONCHAIN]
-        // 2: { weiBalances: [110, 40], pendingWeiUpdates: [0, 0, 50, 100] } <- user pays hub [OFFCHAIN UPDATE]
-        // 2: { weiBalances: [110, 40] <- final (discard pending updates)
         // Otherwise, if the deposit is less than or equal to the withdrawal,
         // Assumes the net has *already* been added to the balances.
         } else {
@@ -921,10 +919,6 @@ contract ChannelManager {
         if (pendingUpdates[2] > pendingUpdates[3]) {
             channelBalances[1] = balances[1].add(pendingUpdates[2].sub(pendingUpdates[3]));
 
-        // 0: { weiBalances: [100, 100] }
-        // 0: { weiBalances: [100, 50], pendingWeiUpdates: [0, 0, 0, 50] } <- deposit < withdrawal, add delta offchain [COMMITTED ONCHAIN]
-        // 0: { weiBalances: [110, 50], pendingWeiUpdates: [0, 0, 0, 50] } <- user pays hub [OFFCHAIN UPDATE]
-        // 0: { weiBalances: [110, 40] <- final (discard pending updates)
         // Otherwise, if the deposit is less than or equal to the withdrawal,
         // Assumes the net has *already* been added to the balances.
         } else {
@@ -937,18 +931,10 @@ contract ChannelManager {
         uint256[2] balances,
         uint256[4] pendingUpdates
     ) internal {
-        // 1: { weiBalances: [100, 100] }
-        // 1: { weiBalances: [100, 100], pendingWeiUpdates: [0, 0, 100, 50] } <- deposit > withdrawal, don't update offchain [NOT COMMITTED ONCHAIN]
-        // 1: { weiBalances: [110, 90], pendingWeiUpdates: [0, 0, 100, 50] } <- user pays hub [OFFCHAIN UPDATE]
-        // 1: { weiBalances: [110, 90] <- final (discard pending updates)
         // If the pending update has NOT been executed AND deposits > withdrawals, offchain state was NOT updated with delta, and is thus correct
         if (pendingUpdates[0] > pendingUpdates[1]) {
             channelBalances[0] = balances[0];
 
-        // 2: { weiBalances: [100, 100] }
-        // 2: { weiBalances: [100, 50], pendingWeiUpdates: [0, 0, 50, 100] } <- deposit < withdrawal, add delta offchain [NOT COMMITTED ONCHAIN]
-        // 2: { weiBalances: [110, 40], pendingWeiUpdates: [0, 0, 50, 100] } <- user pays hub [OFFCHAIN UPDATE]
-        // 2: { weiBalances: [110, 90] <- final (revert pending updates)
         // If the pending update has NOT been executed AND deposits < withdrawals, offchain state should have been updated with delta, and must be reverted
         } else {
             channelBalances[0] = balances[0].add(pendingUpdates[1].sub(pendingUpdates[0])); // <- add withdrawal, sub deposit (opposite order as _applyPendingUpdates)
@@ -1052,7 +1038,9 @@ contract ChannelManager {
         );
         require(ECTools.isSignedBy(state, sig, sender), "signature invalid");
 
-        if (threadRoot != bytes32(0x0)) {
+        // Stronger requirement to cover edge case where threadRoot is maliciously set to 0x0 by hub/sender
+        // For more info, see inclusionBypass.md
+        if(threadRoot != bytes32(0x0) || (threadRoot == bytes32(0x0) && txCount == 0)) {
             require(_isContained(state, proof, threadRoot), "initial thread state is not contained in threadRoot");
         }
     }
@@ -1072,5 +1060,68 @@ contract ChannelManager {
         }
 
         return cursor == _root;
+    }
+
+    function getChannelBalances(address user) view public returns (
+        uint256 weiHub,
+        uint256 weiUser,
+        uint256 weiTotal,
+        uint256 tokenHub,
+        uint256 tokenUser,
+        uint256 tokenTotal
+    ) {
+        Channel memory channel = channels[user];
+        return (
+            channel.weiBalances[0],
+            channel.weiBalances[1],
+            channel.weiBalances[2],
+            channel.tokenBalances[0],
+            channel.tokenBalances[1],
+            channel.tokenBalances[2]
+        );
+    }
+
+    function getChannelDetails(address user) view public returns (
+        uint256 txCountGlobal,
+        uint256 txCountChain,
+        bytes32 threadRoot,
+        uint256 threadCount,
+        address exitInitiator,
+        uint256 channelClosingTime,
+        ChannelStatus status
+    ) {
+        Channel memory channel = channels[user];
+        return (
+            channel.txCount[0],
+            channel.txCount[1],
+            channel.threadRoot,
+            channel.threadCount,
+            channel.exitInitiator,
+            channel.channelClosingTime,
+            channel.status
+        );
+    }
+
+    function getThread(address sender, address receiver, uint256 threadId) view public returns (
+        uint256 weiSender,
+        uint256 weiReceiver,
+        uint256 tokenSender,
+        uint256 tokenReceiver,
+        uint256 txCount,
+        uint256 threadClosingTime,
+        bool emptiedSender,
+        bool emptiedReceiver
+    ) {
+        Thread storage thread = threads[sender][receiver][threadId];
+        return (
+            thread.weiBalances[0],
+            thread.weiBalances[1],
+            thread.tokenBalances[0],
+            thread.tokenBalances[1],
+            thread.txCount,
+            thread.threadClosingTime,
+            thread.emptied[0],
+            thread.emptied[1]
+        );
     }
 }

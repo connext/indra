@@ -34,10 +34,18 @@ export class Networking {
     res = await fetch(`${this.baseUrl}/${url}`, opts)
 
     if (res.status < 200 || res.status > 299) {
+      let text
+      try {
+        text = await res.text()
+      } catch (e) {
+        text = res.statusText
+      }
+
+
       throw errorResponse(
         res.status,
         res.body,
-        `Received non-200 response: ${res.status}`,
+        `Received non-200 response: ${text}`,
       )
     }
 

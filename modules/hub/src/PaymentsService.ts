@@ -1,6 +1,6 @@
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment } from "./vendor/connext/types";
+import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment, DepositArgs, convertDeposit } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -14,6 +14,8 @@ import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
 import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
+import { emptyAddress } from './vendor/connext/Utils';
+import GlobalSettingsDao from './dao/GlobalSettingsDao';
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -32,6 +34,7 @@ export default class PaymentsService {
   private validator: Validator
   private config: Config
   private db: DBEngine
+  private gsd: GlobalSettingsDao
 
   constructor(
     channelsService: ChannelsService,
@@ -42,7 +45,7 @@ export default class PaymentsService {
     channelsDao: ChannelsDao,
     validator: Validator,
     config: Config,
-    db: DBEngine,
+    db: DBEngine
   ) {
     this.channelsService = channelsService
     this.threadsService = threadsService
@@ -78,9 +81,15 @@ export default class PaymentsService {
       if (payment.type == 'PT_CHANNEL') {
         // normal payment
         // TODO: should we check if recipient == hub here?
+        if (payment.update.reason !== 'Payment' && payment.update.reason !== 'OpenThread') {
+          throw new Error(
+            `Payment updates must be either reason = "Payment" or reason = "OpenThread"` +
+            `payment: ${prettySafeJson(payment)}`
+          )
+        }
         row = await this.channelsService.doUpdateFromWithinTransaction(user, {
           args: payment.update.args,
-          reason: 'Payment',
+          reason: payment.update.reason,
           sigUser: payment.update.sigUser,
           txCount: payment.update.txCount
         })
@@ -98,6 +107,23 @@ export default class PaymentsService {
           payment.recipient,
           convertThreadState('bignumber', payment.update.state),
         )
+      } else if (payment.type == 'PT_LINK') {
+        if (payment.recipient != emptyAddress) {
+          throw new Error(`Linked payments must have no recipient`)
+        }
+
+        if (!payment.secret) {
+          throw new Error(`No secret detected on linked payment.`)
+        }
+
+        // update users channel
+        row = await this.channelsService.doUpdateFromWithinTransaction(user, {
+          args: payment.update.args,
+          reason: 'Payment',
+          sigUser: payment.update.sigUser,
+          txCount: payment.update.txCount
+        })
+
       } else {
         assertUnreachable(payment, 'invalid payment type: ' + (payment as any).type)
       }
@@ -108,6 +134,7 @@ export default class PaymentsService {
       const paymentId = await this.paymentMetaDao.save(purchaseId, row.id, {
         recipient: payment.recipient,
         amount: payment.amount,
+        secret: payment.secret,
         type: payment.type,
         meta: {
           ...meta,
@@ -115,7 +142,7 @@ export default class PaymentsService {
         },
       })
       if (afterPayment)
-        await afterPayment(paymentId)
+        afterPayment(paymentId)
     }
 
     for (let p of custodialPayments) {
@@ -123,9 +150,13 @@ export default class PaymentsService {
         await this.doInstantCustodialPayment(p.payment, p.paymentId)
       } finally {
         // Check to see if collateral is needed, even if the tip failed
-        const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(p.payment.recipient))
-        if (err) {
-          LOG.error(`Error recollateralizing ${p.payment.recipient}: ${'' + err}\n${err.stack}`)
+        // if the payment isnt going to an empty addr (as is the) case
+        // for PT_LINK
+        if (p.payment.recipient !== emptyAddress) {
+          const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(p.payment.recipient))
+          if (err) {
+            LOG.error(`Error recollateralizing ${p.payment.recipient}: ${'' + err}\n${err.stack}`)
+          }
         }
       }
     }
@@ -133,6 +164,91 @@ export default class PaymentsService {
     return {
       error: false,
       res: { purchaseId }
+    }
+  }
+
+  // TODO: Need to check with Rahul about whether or not the public
+  // wrapper is needed and how to handle a meta object here (same as 
+  // above?)
+  public async doRedeem(
+    user: string,
+    secret: string,
+  ): Promise<MaybeResult<{ purchaseId: string, amount: Payment }>> {
+    return this.db.withTransaction(() => this._doRedeem(user, secret))
+  }
+
+  private async _doRedeem(user: string, secret: string): Promise<MaybeResult<{ purchaseId: string | null, amount: Payment | null }>> {
+    const channel = await this.channelsDao.getChannelOrInitialState(user)
+    // channel checks
+    if (channel.status !== 'CS_OPEN') {
+      throw new Error('Channel is not open: ' + user)
+    }
+
+    const payment = await this.paymentMetaDao.getLinkedPayment(secret)
+    if (!payment) {
+      throw new Error('Error finding payment.')
+    }
+    if (payment.recipient != emptyAddress) {
+      return {
+        error: true,
+        msg: 'Payment has been redeemed.'
+      }
+    }
+    // if hub can afford the payment, sign and forward payment
+    // otherwise, collateralize the channel
+    const prev = convertChannelState('bn', channel.state)
+    const amt = convertPayment('bn', payment.amount)
+
+    // always check for collateralization regardless of payment status
+    const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
+    if (err) {
+      LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
+    }
+
+    if (this.validator.cantAffordFromBalance(prev, amt, "hub")) {
+      // hub cannot afford payment, collateralize and return
+      return {
+        error: false,
+        res: { purchaseId: null, amount: null }
+      }
+    }
+
+    // hub can afford from balance
+    const purchasePayment: PurchasePayment = {
+      secret,
+      recipient: user,
+      amount: payment.amount,
+      meta: payment.meta,
+      type: 'PT_LINK',
+      update: {
+        reason: 'Payment',
+        args: {
+          amountToken: payment.amount.amountToken,
+          amountWei: payment.amount.amountWei,
+          recipient: 'hub',
+          // NOTE: args to user are generated in 
+          // `doInstantCustodialPayment`, this is a small hack
+          // to allow the hub to forward the payment
+        },
+        txCount: null,
+      }
+    }
+
+    let purchaseId = null
+    let amount = null
+    try {
+      await this.doInstantCustodialPayment(purchasePayment, payment.id)
+      // mark the payment as redeemed by updating the recipient field
+      const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
+      purchaseId = redeemedPaymentRow.purchaseId
+      amount = redeemedPaymentRow.amount
+    } catch (e) {
+      LOG.error("Error with redeeming payment. Error: {e}", { e })
+    }
+
+    return {
+      error: false,
+      res: { purchaseId, amount, } // will be null if fails
     }
   }
 
@@ -163,7 +279,7 @@ export default class PaymentsService {
     }
   }
 
-  private async doInstantCustodialPayment(payment: PurchasePayment, paymentId: number): Promise<void> {
+  public async doInstantCustodialPayment(payment: PurchasePayment, paymentId: number): Promise<void> {
     const paymentUpdate = payment.update as UpdateRequest
 
     const recipientChannel = await this.channelsDao.getChannelByUser(payment.recipient)

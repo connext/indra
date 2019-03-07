@@ -1,6 +1,5 @@
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import log from './util/log'
-const fetchPonyfill = require('fetch-ponyfill')
 
 const LOG = log('ExchangeRateService')
 
@@ -13,7 +12,7 @@ interface RateResponse {
 }
 
 export default class ExchangeRateService {
-  static fetch = fetchPonyfill().fetch
+  static fetch = fetch
 
   private static POLL_INTERVAL_MS = 60000
 

@@ -1,5 +1,5 @@
 import { subOrZero, objMap } from './StateGenerator'
-import { convertProposePending, InvalidationArgs, ArgsTypes, SignedDepositRequestProposal, EmptyChannelArgs, VerboseChannelEventBN, ChannelEventReason, EventInputs, convertVerboseEvent, makeEventVerbose } from './types'
+import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
 import Web3 = require('web3')
@@ -40,9 +40,7 @@ import {
   convertThreadPayment,
   Payment,
   convertArgs,
-  WithdrawalParametersBN,
-  withdrawalParamsNumericFields,
-  convertWithdrawalParams
+  withdrawalParamsNumericFields
 } from './types'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
@@ -86,14 +84,19 @@ export class Validator {
       'ProposePendingWithdrawal': this.generateProposePendingWithdrawal.bind(this),
       'ConfirmPending': this.generateConfirmPending.bind(this),
       'Invalidation': this.generateInvalidation.bind(this),
+      'OpenThread': this.generateOpenThread.bind(this),
+      'CloseThread': this.generateCloseThread.bind(this),
       'EmptyChannel': this.generateEmptyChannel.bind(this),
-      'OpenThread': () => { throw new Error('REB-36: enbable threads!') },
-      'CloseThread': () => { throw new Error('REB-36: enbable threads!') },
     }
   }
 
   public async generateChannelStateFromRequest(prev: ChannelState, request: UpdateRequest): Promise<UnsignedChannelState> {
-    return await this.generateHandlers[request.reason](prev, request.args)
+    if (!request.reason.includes("Thread")) {
+      return await this.generateHandlers[request.reason](prev, request.args)
+    } else {
+      return await this.generateHandlers[request.reason](prev, request.initialThreadStates, request.args)
+    }
+    
   }
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): string | null {
@@ -152,7 +155,7 @@ export class Validator {
     if (args.tokensToSell.gt(toBN(0)) && args.weiToSell.gt(toBN(0)) ||
       args.tokensToSell.isZero() && args.weiToSell.isZero()
     ) {
-      return `Exchanges cannot sell both wei and tokens simultaneously (args: ${JSON.stringify(args)}, prev: ${this.logChannel(prev)})`
+      return `Exchanges cannot sell both wei and tokens simultaneously (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
     return null
@@ -184,7 +187,7 @@ export class Validator {
     }
 
     if (args.timeout < 0) {
-      return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${this.logChannel(prev)})`
+      return `Timeouts must be zero or greater when proposing a deposit. (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
     }
 
     // ensure the deposit is correctly signed by user if the sig user
@@ -308,70 +311,45 @@ export class Validator {
   }
 
   public async confirmPending(prev: ChannelStateBN, args: ConfirmPendingArgs): Promise<string | null> {
-    // apply .toLowerCase to all strings on the prev object
-    // (contractAddress, user, recipient, threadRoot, sigHub)
-    prev = objMap(prev, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
+    const e = this.isValidStateTransitionRequest(
+      prev,
+      { args, reason: "ConfirmPending", txCount: prev.txCountGlobal }
+    )
+    if (e) {
+      return e
+    }
 
     // validate on chain information
-    // const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransaction(args.transactionHash) as any
+    const txHash = args.transactionHash
+    const tx = await this.web3.eth.getTransaction(txHash) as any
+    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
 
-    // return out of fn on transaction errors
+    // apply .toLowerCase to all strings on the prev object
+    // (contractAddress, user, recipient, threadRoot, sigHub)
+    for (let field in prev) {
+      if (typeof (prev as any)[field] === "string") {
+        (prev as any)[field] = (prev as any)[field].toLowerCase()
+      }
+    }
+
     if (!tx || !tx.blockHash) {
-      return `Transaction to contract not found. (txHash: ${args.transactionHash}, prev: ${this.logChannel(prev)})`
+      return `Transaction to contract not found. (txHash: ${txHash}, prev: ${JSON.stringify(prev)})`
     }
 
     if (tx.to.toLowerCase() !== prev.contractAddress.toLowerCase()) {
-      return `Transaction is not for the correct channel manager contract. (txHash: ${args.transactionHash}, contractAddress: ${tx.contractAddress}, prev: ${this.logChannel(prev)})`
+      return `Transaction is not for the correct channel manager contract. (txHash: ${txHash}, contractAddress: ${tx.contractAddress}, prev: ${JSON.stringify(prev)})`
     }
 
     // parse event values
-    const receipt = await this.web3.eth.getTransactionReceipt(args.transactionHash)
-    let events = []
-    try {
-      events = this.parseChannelEventTxReceipt("DidUpdateChannel", receipt, prev.contractAddress)
-    } catch (e) {
-      return e.message
-    }
-    if (events.length === 0) {
-      return `Event not able to be parsed or not found. Args: ${args}`
+    const event = this.parseDidUpdateChannelTxReceipt(receipt)
+
+    if (event.sender.toLowerCase() !== prev.user.toLowerCase() && event.sender.toLowerCase() !== this.hubAddress) {
+      return `Transaction sender is not member of the channel (txHash: ${txHash}, event: ${JSON.stringify(event)}, prev: ${JSON.stringify(prev)})`
     }
 
-    // find matching event
-    const matchingEvent = this.findMatchingEvent(prev, events)
-    if (!matchingEvent) {
-      return `No event matching the contractAddress, user, and txCountChain of the previous state could be found in the events parsed. Tx: ${args.transactionHash}, prev: ${this.logChannel(prev)}, events: ${JSON.stringify(events)}`
-    }
-
-    if (matchingEvent.sender.toLowerCase() !== prev.user &&
-      matchingEvent.sender.toLowerCase() !== this.hubAddress) {
-      return `Transaction sender is not member of the channel (txHash: ${args.transactionHash}, event: ${JSON.stringify(event)}, prev: ${this.logChannel(prev)})`
-    }
-
-    // all pending values from the event as well as the txCountChain and
-    // timeout must all be equivalent. other fields may have been updated
-    // with allowable offchain state updates. also exclude fields in event
-    // that are not in the channel (`sender`)
-    const keysToCheck = channelNumericFields.filter(f => f.startsWith('pending'))
-    const str = this.hasInequivalent(
-      [matchingEvent, prev],
-      keysToCheck
-    )
-    if (str) {
-      return `Decoded tx event values are not properly reflected in the previous state. ` + str + `. (txHash: ${args.transactionHash}, events[${events.indexOf(matchingEvent)}]: ${JSON.stringify(matchingEvent)}, prev: ${this.logChannel(prev)})`
-    }
-
-    // add to args to create request
-    const err = this.isValidStateTransitionRequest(
-      prev,
-      {
-        reason: "ConfirmPending",
-        args,
-        txCount: prev.txCountGlobal,
-      }
-    )
-    if (err) {
-      return err
+    // compare values against previous
+    if (this.hasInequivalent([event, prev], Object.keys(event).filter(key => key !== "sender"))) {
+      return `Decoded tx event values are not properly reflected in the previous state. ` + this.hasInequivalent([event, prev], Object.keys(event).filter(key => key !== "sender")) + `. (txHash: ${txHash}, event: ${JSON.stringify(event)}, prev: ${JSON.stringify(prev)})`
     }
 
     return null
@@ -464,11 +442,11 @@ export class Validator {
     return this.stateGenerator.emptyChannel(matchingEvent)
   }
 
-  // NOTE: the prev here is NOT the previous state in the state-chain
-  // of events. Instead it is the previously "valid" update, meaning the
+  // NOTE: the prev here is NOT the previous state in the state-chain 
+  // of events. Instead it is the previously "valid" update, meaning the 
   // previously double signed upate with no pending ops
   public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs) {
-    // state should not
+    // state should not 
     if (args.lastInvalidTxCount < args.previousValidTxCount) {
       return `Previous valid nonce is higher than the nonce of the state to be invalidated. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
     }
@@ -489,7 +467,7 @@ export class Validator {
     return null
   }
 
-  public generateInvalidation(prevStr: ChannelState, argsStr: InvalidationArgs): UnsignedChannelState {
+  public generateInvalidation(prevStr: ChannelState, argsStr: InvalidationArgs) {
     const prev = convertChannelState("bn", prevStr)
     const args = convertArgs("bn", "Invalidation", argsStr)
     const error = this.invalidation(prev, args)
@@ -500,60 +478,52 @@ export class Validator {
     return this.stateGenerator.invalidation(prev, args)
   }
 
-  public openThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null {
+  public openThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): string | null {
     // NOTE: tests mock web3. signing is tested in Utils
-    const userIsSender = args.sender === prev.user
-    try {
-      this.assertThreadSigner(convertThreadState("str", args))
-    } catch (e) {
-      return e.message
-    }
 
+    // If user is sender then that means that prev is sender-hub channel
+    // If user is receiver then that means that prev is hub-receiver channel
+    const userIsSender = args.sender == prev.user
+
+    // First check thread state independently
+    // Then check that thread state against prev channel state:
+    // 1. Sender or hub can afford thread
+    // 2. Sender or receiver is channel user
+    // 3. Check that contract address for thread is the same as that for prev
+    // 4. Check that previous state has correct thread root
+    // 5. Check that previous state has correct thread count
+    // 6. A valid thread opening channel state can be generated
     const errs = [
+      this.isValidInitialThreadState(args),
+      this.userIsNotSenderOrReceiver(prev, args),
       this.cantAffordFromBalance(
         prev,
         { amountToken: args.balanceTokenSender, amountWei: args.balanceWeiSender },
-        userIsSender ? "user" : "hub"),
+        userIsSender ? "user" : "hub",
+      ),
+      this.hasInequivalent([prev, args], ['contractAddress']),
+      this.checkThreadRootAndCount(prev, initialThreadStates),
       this.isValidStateTransitionRequest(
         prev,
-        { args, reason: "OpenThread", txCount: prev.txCountGlobal }
-      ),
-      this.hasTimeout(prev),
-      this.hasNonzero(
-        args,
-        ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver']
+        { args, reason: "OpenThread", txCount: prev.txCountGlobal, initialThreadStates }
       ),
     ].filter(x => !!x)[0]
+
+    //  TODO what happens with prev states that have timeouts?
 
     if (errs) {
       return errs
     }
 
-    if (prev.contractAddress !== args.contractAddress) {
-      return `Invalid initial thread state for channel: ${prev.contractAddress !== args.contractAddress ? 'contract address of thread invalid' : '' + this.hasNonzero(args, ['txCount', 'balanceWeiReceiver', 'balanceTokenReceiver'])}. (args: ${JSON.stringify(args)}, prev: ${this.logChannel(prev)})`
-    }
-
-    // must be channel user, cannot open with yourself
-    if (!userIsSender && args.receiver !== prev.user || userIsSender && args.receiver === args.sender) {
-      return `Invalid thread members (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${this.logChannel(prev)})`
-    }
-
-
     // NOTE: no way to check if receiver has a channel with the hub
     // must be checked wallet-side and hub-side, respectively
-    // - potential attack vector:
-    //      - hub could potentially have fake "performer" accounts,
-    //        and steal money from the user without them knowing
 
-    // NOTE: threadID must be validated hub side and client side
-    // there is no way for the validators to have information about this
-    // - potential attack vector:
-    //      - double spend of threads with same IDs (?)
+    // NOTE: threadID is validated at the controller level since validator has no context about it
 
     return null
   }
 
-  public generateOpenThread(prevStr: ChannelState, initialThreadStates: UnsignedThreadState[], argsStr: ThreadState): UnsignedChannelState {
+  public generateOpenThread(prevStr: ChannelState, initialThreadStates: ThreadState[], argsStr: ThreadState): UnsignedChannelState {
     const prev = convertChannelState("bn", prevStr)
     const args = convertThreadState("bn", argsStr)
     const error = this.openThread(prev, initialThreadStates, args)
@@ -564,54 +534,47 @@ export class Validator {
     return this.stateGenerator.openThread(prev, initialThreadStates, args)
   }
 
-  public closeThread(prev: ChannelStateBN, initialThreadStates: UnsignedThreadState[], args: ThreadStateBN): string | null {
-    const e = this.isValidStateTransitionRequest(
-      prev,
-      { args, reason: "CloseThread", txCount: prev.txCountGlobal }
-    )
-    if (e) {
-      return e
-    }
+  public closeThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): string | null {
     // NOTE: the initial thread states are states before the thread is
     // closed (corr. to prev open threads)
-    const initialState = initialThreadStates.filter(thread => thread.threadId === args.threadId)[0]
+    const initialState = initialThreadStates.filter(thread => thread.threadId === args.threadId && thread.receiver == args.receiver && thread.sender == args.sender)[0]
     if (!initialState) {
-      return `Thread is not included in channel open threads. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${this.logChannel(prev)})`
+      return `Thread is not included in channel open threads. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${JSON.stringify(prev)})`
     }
 
-    // NOTE: in other places previous states are not validated, and technically
-    // the args in this case are a previously signed thread state. We are
-    // performing sig and balance conservation verification here, however,
-    // since the major point of the validators is to ensure the args provided
-    // lead to a valid current state if applied
+    // 1. Check that the initial state makes sense
+    // 2. Check the thread state independently
+    // 3. Check the transition from initial to thread state
+    let errs = [
+      this.isValidInitialThreadState(convertThreadState('bn',initialState)),
+      this.isValidThreadState(args),
+      this.isValidThreadStateTransition(convertThreadState('bn', initialState), args),
+    // 4. Then check against prev state
+    //    a. Check that user is sender or receiver
+    //    b. Check that contract address is same as in prev
+    //    c. Check that previous state has correct thread root
+    //    d. Check that previous state has correct thread count
+    //    e. A valid thread closeing channel state can be generated
+      this.userIsNotSenderOrReceiver(prev, args),
+      this.hasInequivalent([prev, args], ['contractAddress']),
+      this.checkThreadRootAndCount(prev, initialThreadStates),
+      this.isValidStateTransitionRequest(
+        prev,
+        { args, reason: "CloseThread", txCount: prev.txCountGlobal, initialThreadStates }
+      )
+    ].filter(x => !!x)[0]
+    // TODO: Why do we need the below? -- AB
+    // if (this.hasTimeout(prev)) {
+    //   errs.push(this.hasTimeout(prev))
+    // }
 
-    // validate the closing thread state is signed
-    try {
-      this.assertThreadSigner(convertThreadState("str", args))
-    } catch (e) {
-      return e.message
+    if (errs) {
+      return errs 
     }
-    if (this.hasTimeout(prev)) {
-      return this.hasTimeout(prev)
-    }
-
-    // and balance is conserved
-    const initAmts = {
-      amountWei: toBN(initialState.balanceWeiSender),
-      amountToken: toBN(initialState.balanceTokenSender)
-    }
-    const finalAmts = {
-      amountWei: args.balanceWeiReceiver.add(args.balanceWeiSender),
-      amountToken: args.balanceTokenReceiver.add(args.balanceTokenSender)
-    }
-    if (this.hasInequivalent([initAmts, finalAmts], Object.keys(finalAmts))) {
-      return `Balances in closing thread state are not conserved. (args: ${JSON.stringify(args)}, initialThreadStates: ${JSON.stringify(initialThreadStates)}, prev: ${this.logChannel(prev)})`
-    }
-
     return null
   }
 
-  public generateCloseThread(prevStr: ChannelState, initialThreadStates: UnsignedThreadState[], argsStr: ThreadState): UnsignedChannelState {
+  public generateCloseThread(prevStr: ChannelState, initialThreadStates: ThreadState[], argsStr: ThreadState): UnsignedChannelState {
     const prev = convertChannelState("bn", prevStr)
     const args = convertThreadState("bn", argsStr)
     const error = this.closeThread(prev, initialThreadStates, args)
@@ -635,7 +598,7 @@ export class Validator {
     return null
   }
 
-  public generateThreadPayment(prevStr: ThreadState, argsStr: PaymentArgs): UnsignedThreadState {
+  public generateThreadPayment(prevStr: ThreadState, argsStr: Payment): UnsignedThreadState {
     const prev = convertThreadState("bn", prevStr)
     const args = convertThreadPayment("bn", argsStr)
     const error = this.threadPayment(prev, args)
@@ -660,14 +623,14 @@ export class Validator {
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr) {
-      throw new Error(`Channel state is not correctly signed by ${signer}. channelState: ${JSON.stringify(channelState)}, sig: ${sig}`)
+    if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr.toLowerCase()) {
+      throw new Error(`Channel state is not correctly signed by ${signer}. Detected: ${this.utils.recoverSignerFromChannelState(channelState, sig)}. Channel state: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
 
   public assertThreadSigner(threadState: ThreadState): void {
-    if (this.utils.recoverSignerFromThreadState(threadState, threadState.sigA) !== threadState.sender) {
-      throw new Error(`Thread state is not correctly signed. threadState: ${JSON.stringify(threadState)}`)
+    if (this.utils.recoverSignerFromThreadState(threadState, threadState.sigA) !== threadState.sender.toLowerCase()) {
+      throw new Error(`Thread state is not correctly signed. Detected: ${this.utils.recoverSignerFromThreadState(threadState, threadState.sigA)}. threadState: ${JSON.stringify(threadState)}`)
     }
   }
 
@@ -675,14 +638,14 @@ export class Validator {
     if (!req.sigUser) {
       throw new Error(`No signature detected on deposit request. (request: ${JSON.stringify(req)}, signer: ${signer})`)
     }
-    if (this.utils.recoverSignerFromDepositRequest(req) !== signer) {
-      throw new Error(`Deposit request proposal is not correctly signed by intended signer. (request: ${JSON.stringify(req)}, signer: ${signer})`)
+    if (this.utils.recoverSignerFromDepositRequest(req) !== signer.toLowerCase()) {
+      throw new Error(`Deposit request proposal is not correctly signed by intended signer. Detected: ${this.utils.recoverSignerFromDepositRequest(req)}. (request: ${JSON.stringify(req)}, signer: ${signer})`)
     }
   }
 
-  private cantAffordFromBalance(state: ChannelStateBN, value: Partial<PaymentBN>, payor: "hub" | "user", currency?: "token" | "wei"): string | null
-  private cantAffordFromBalance(state: ThreadStateBN, value: Partial<PaymentBN>, payor: "sender", currency?: "token" | "wei"): string | null
-  private cantAffordFromBalance(state: ChannelStateBN | ThreadStateBN, value: Partial<PaymentBN>, payor: "hub" | "user" | "sender", currency?: "token" | "wei"): string | null {
+  public cantAffordFromBalance(state: ChannelStateBN, value: Partial<PaymentBN>, payor: "hub" | "user", currency?: "token" | "wei"): string | null
+  public cantAffordFromBalance(state: ThreadStateBN, value: Partial<PaymentBN>, payor: "sender", currency?: "token" | "wei"): string | null
+  public cantAffordFromBalance(state: ChannelStateBN | ThreadStateBN, value: Partial<PaymentBN>, payor: "hub" | "user" | "sender", currency?: "token" | "wei"): string | null {
     const prefix = "balance"
     const currencies = currency ? [currency] : ["token", "wei"]
 
@@ -709,12 +672,12 @@ export class Validator {
   }
 
   private conditions: any = {
-    'non-zero': (x: any) => w3utils.isBN(x) ? !x.isZero() : parseInt(x, 10) !== 0,
-    'zero': (x: any) => w3utils.isBN(x) ? x.isZero() : parseInt(x, 10) === 0,
-    'non-negative': (x: any) => w3utils.isBN(x) ? !x.isNeg() : parseInt(x, 10) >= 0,
-    'negative': (x: any) => w3utils.isBN(x) ? x.isNeg() : parseInt(x, 10) < 0,
-    'equivalent': (x: any, val: BN | string | number) => w3utils.isBN(x) ? x.eq(val) : x === val,
-    'non-equivalent': (x: any, val: BN | string | number) => w3utils.isBN(x) ? !x.eq(val) : x !== val,
+    'non-zero': (x: any) => BN.isBN(x) ? !x.isZero() : parseInt(x, 10) !== 0,
+    'zero': (x: any) => BN.isBN(x) ? x.isZero() : parseInt(x, 10) === 0,
+    'non-negative': (x: any) => BN.isBN(x) ? !x.isNeg() : parseInt(x, 10) >= 0,
+    'negative': (x: any) => BN.isBN(x) ? x.isNeg() : parseInt(x, 10) < 0,
+    'equivalent': (x: any, val: BN | string | number) => BN.isBN(x) ? x.eq(val as any) : x === val,
+    'non-equivalent': (x: any, val: BN | string | number) => BN.isBN(x) ? !x.eq(val as any) : x !== val,
   }
 
   // NOTE: objs are converted to lists if they are singular for iterative
@@ -787,6 +750,114 @@ export class Validator {
     return this.hasInequivalent([deltas, k], fields)
   }
 
+  private userIsNotSenderOrReceiver(prev: ChannelStateBN, args: ThreadStateBN): string | null {
+    if(prev.user !== args.sender && prev.user !== args.receiver) {
+      return `Channel user is not a member of this thread state. Channel state; ${JSON.stringify(convertChannelState("str", prev))}. 
+      Thread state; ${JSON.stringify(convertThreadState("str", args))}`
+    }
+    return null
+  }
+
+  private isValidThreadState(args: ThreadStateBN): string | null {
+    // CHECKED ON CURRENT STATE
+    // 1. Values are not negative
+    // 2. Sender cannot be receiver
+    // 3. Sender or receiver cannot be hub
+    // 4. Sender or receiver cannot be contract
+    // 5. Incorrect signature
+    // 6. Sender, receiver, contract have valid addresses
+    // first convert args to lower case
+    args = objMap(args, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
+
+    let errs = [
+      this.hasNegative(args, argNumericFields.OpenThread),
+      this.validateAddress(args.sender),
+      this.validateAddress(args.receiver),
+      this.validateAddress(args.contractAddress),
+    ]
+    if (args.sender.toLowerCase() == args.receiver.toLowerCase()) {
+      errs.push(`Sender cannot be receiver. Thread state: ${JSON.stringify(convertThreadState("str", args))}`)
+    }
+    if (args.sender == args.contractAddress) {
+      errs.push(`Sender cannot be contract. Thread state: ${JSON.stringify(convertThreadState("str", args))}`)
+    }
+
+    if (args.receiver == args.contractAddress) {
+      errs.push(`Receiver cannot be contract. Thread state: ${JSON.stringify(convertThreadState("str", args))}`)
+    }
+
+    if (args.sender == this.hubAddress) {
+      errs.push(`Sender cannot be hub. Thread state: ${JSON.stringify(convertThreadState("str", args))}`)
+    }
+    
+    if (args.receiver == this.hubAddress) {
+      errs.push(`Receiver cannot be hub. Thread state: ${JSON.stringify(convertThreadState("str", args))}`)
+    }
+    
+    try {
+      this.assertThreadSigner(convertThreadState('str', args))
+    } catch (e) {
+      errs.push('Error asserting thread signer: ' + e.message)
+    }
+
+    if (errs) {
+      return errs.filter(x => !!x)[0]
+    }
+    return null
+  }
+
+  private checkThreadRootAndCount(prev: ChannelStateBN, initialThreadStates: ThreadState[]): string | null {
+    if(this.utils.generateThreadRootHash(initialThreadStates) != prev.threadRoot)
+      return `Initial thread states not contained in previous state root hash. Calculated hash: ${this.utils.generateThreadRootHash(initialThreadStates)}. Expected hash: ${prev.threadRoot}`
+    if(initialThreadStates.length != prev.threadCount)
+      return `Initial thread states array length is not same as previous thread count. Calculated thread count: ${initialThreadStates.length}. Expected thread count: ${prev.threadCount}`
+
+    return null
+  }
+
+  private isValidInitialThreadState(args: ThreadStateBN): string | null {
+    //CHECKED ON INITIAL STATE
+    // 1. Receiver wei balance is zero
+    // 2. Receiver token balance is zero
+    // 3. TxCount is zero
+    const errs = [
+      this.hasNonzero(args, ['balanceWeiReceiver', 'balanceTokenReceiver', 'txCount']),
+      this.isValidThreadState(args)
+    ]
+    if (errs) {
+      return errs.filter(x => !!x)[0]
+    }
+    return null
+  }
+
+  private isValidThreadStateTransition(prev: ThreadStateBN, args: ThreadStateBN): string | null {
+    // CHECKED ON STATE TRANSITION
+    // 1. Receiver balances only increase
+    // 2. Tx count only increases
+    // 3. Balances are conserved
+    // 4. Contract address is the same
+    // 5. Sender is the same
+    // 6. Receiver is the same
+      let errs = [
+      this.hasNegative({diff: (args.txCount - prev.txCount)}, ['diff']),
+      this.hasNegative({weiDiff: (args.balanceWeiReceiver.sub(prev.balanceWeiReceiver))}, ['weiDiff']),
+      this.hasNegative({tokenDiff: (args.balanceTokenReceiver.sub(prev.balanceTokenReceiver))}, ['tokenDiff']),
+      this.hasInequivalent([prev, args], ['contractAddress', 'sender', 'receiver']),
+      this.hasInequivalent([
+        { weiSum: prev.balanceWeiSender.add(prev.balanceWeiReceiver)}, 
+        { weiSum: args.balanceWeiSender.add(args.balanceWeiReceiver)}],
+        ['weiSum']),
+      this.hasInequivalent([
+        { tokenSum: prev.balanceTokenSender.add(prev.balanceTokenReceiver)}, 
+        { tokenSum: args.balanceTokenSender.add(args.balanceTokenReceiver)}],
+        ['tokenSum'])
+    ]
+    if (errs) {
+      return errs.filter(x => !!x)[0]
+    }
+    return null
+  }
+
   /** NOTE: this function is called within every validator function EXCEPT for the invalidation generator. This is update is an offchain construction to recover from invalid updates without disputing or closing your channel. For this reason, the contract would never see it's transition of de-acknowledgment as "valid" without advance knowledge that it was an invalidation update or a unless it was double signed.
    */
   private isValidStateTransition(prev: ChannelStateBN, curr: UnsignedChannelStateBN): string | null {
@@ -796,7 +867,7 @@ export class Validator {
     ] as (string | null)[]
     // assume the previous should always have at least one sig
     if (prev.txCountChain > 0 && !prev.sigHub && !prev.sigUser) {
-      errs.push(`No signature detected on the previous state. (prev: ${this.logChannel(prev)}, curr: ${JSON.stringify(curr)})`)
+      errs.push(`No signature detected on the previous state. (prev: ${JSON.stringify(prev)}, curr: ${JSON.stringify(curr)})`)
     }
 
     const prevPending = this.hasPendingOps(prev)
@@ -806,21 +877,18 @@ export class Validator {
     if (currPending && !prevPending) {
       errs.push(this.enforceDelta([prev, curr], 1, ['txCountChain']))
     } else {
-      // NOTE: on confirmPending validator, equivalence between event
-      // values and previous values is enforced
-      // it is also enforced that there are pending values
       errs.push(this.enforceDelta([prev, curr], 0, ['txCountChain']))
     }
 
-    // calculate the out of channel balance that could be used in
+    // calculate the out of channel balance that could be used in 
     // transition. could include previous pending updates and the
     // reserves.
     //
     // hub will use reserves if it cannot afford the current withdrawal
-    // requested by user from the available balance that exists in the
+    // requested by user from the available balance that exists in the 
     // channel state
-    //
-    // out of channel balance amounts should be "subtracted" from
+    // 
+    // out of channel balance amounts should be "subtracted" from 
     // channel balance calculations. This way, we can enforce that
     // out of channel balances are accounted for in the
     // previous balance calculations
@@ -869,14 +937,29 @@ export class Validator {
 
     }
 
-    // reserves are only accounted for in channel balances in propose
+    // reserves are only accounted for in channel balances in propose 
     // pending states, where they are deducted to illustrate their
     // brief lifespan in the channel where they are
     // immediately deposited and withdrawn
     const prevBal = this.calculateChannelTotals(prev, reserves)
     const currBal = this.calculateChannelTotals(curr, compiledPending)
 
-    errs.push(this.enforceDelta([prevBal, currBal], toBN(0), Object.keys(prevBal)))
+    // if the state transition is a thread open or close, then total 
+    // balances will be decreased or increased without a pending op 
+    // occurring. In this case, we should ignore the enforceDelta check.
+    // We can determine if this is a thread open or close by checking 
+    // to see if threadCount is incremented/decremented
+
+    // Note: we do not need to check that delta == thread initial balances
+    // since we assume that thread state has already been checked and the
+    // current channel state is generated directly from it.
+    if(Math.abs(curr.threadCount - prev.threadCount) != 1) {
+      errs.push(this.enforceDelta([prevBal, currBal], toBN(0), Object.keys(prevBal)))
+    } else {
+      // TODO enforce delta = 1 for threadcount
+      // TODO check threadroot != threadroot
+    }
+
     if (errs) {
       return errs.filter(x => !!x)[0]
     }
@@ -884,10 +967,10 @@ export class Validator {
   }
 
   private isValidStateTransitionRequest(prev: ChannelStateBN, request: UpdateRequest): string | null {
-    // @ts-ignore TODO: wtf
+    // @ts-ignore TODO: wtf 
     const args = convertArgs("bn", request.reason, request.args)
     // will fail on generation in wd if negative args supplied
-    let err = this.hasNegative(args, (argNumericFields)[request.reason])
+    let err = this.hasNegative(args, argNumericFields[request.reason])
     if (err) {
       return err
     }
@@ -995,27 +1078,83 @@ export class Validator {
     return parsed
   }
 
-  /*
-  event DidStartExitChannel (
-        address indexed user,
-        uint256 senderIdx, // 0: hub, 1: user
-        uint256[2] weiBalances, // [hub, user]
-        uint256[2] tokenBalances, // [hub, user]
-        uint256[2] txCount, // [global, onchain]
-        bytes32 threadRoot,
-        uint256 threadCount
-    );
+  private parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
+    if (!txReceipt.logs) {
+      return null
+    }
 
-    event DidEmptyChannel (
-        address indexed user,
-        uint256 senderIdx, // 0: hub, 1: user
-        uint256[2] weiBalances, // [hub, user]
-        uint256[2] tokenBalances, // [hub, user]
-        uint256[2] txCount, // [global, onchain]
-        bytes32 threadRoot,
-        uint256 threadCount
+    const inputs = [
+      { type: 'address', name: 'user', indexed: true },
+      { type: 'uint256', name: 'senderIdx' },
+      { type: 'uint256[2]', name: 'weiBalances' },
+      { type: 'uint256[2]', name: 'tokenBalances' },
+      { type: 'uint256[4]', name: 'pendingWeiUpdates' },
+      { type: 'uint256[4]', name: 'pendingTokenUpdates' },
+      { type: 'uint256[2]', name: 'txCount' },
+      { type: 'bytes32', name: 'threadRoot' },
+      { type: 'uint256', name: 'threadCount' },
+    ]
+
+    const eventTopic = this.web3.eth.abi.encodeEventSignature({
+      name: 'DidUpdateChannel',
+      type: 'event',
+      inputs,
+    })
+
+    /*
+    ContractEvent.fromRawEvent({
+      log: log,
+      txIndex: log.transactionIndex,
+      logIndex: log.logIndex,
+      contract: this.contract._address,
+      sender: txsIndex[log.transactionHash].from,
+      timestamp: blockIndex[log.blockNumber].timestamp * 1000
+    })
+    */
+
+    let raw = {} as any
+    txReceipt.logs.forEach((log) => {
+      if (log.topics.indexOf(eventTopic) > -1) {
+        let tmp = this.web3.eth.abi.decodeLog(inputs, log.data, log.topics) as any
+        Object.keys(tmp).forEach((field) => {
+          if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
+            raw[field] = tmp[field]
+          }
+        })
+      }
+      // NOTE: The second topic in the log with the events topic
+      // is the indexed user.
+      raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
+    })
+
+    /*
+    event DidUpdateChannel (
+      address indexed user,
+      uint256 senderIdx, // 0: hub, 1: user
+      uint256[2] weiBalances, // [hub, user]
+      uint256[2] tokenBalances, // [hub, user]
+      uint256[4] pendingWeiUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
+      uint256[4] pendingTokenUpdates, // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
+      uint256[2] txCount, // [global, onchain]
+      bytes32 threadRoot,
+      uint256 threadCount
     );
-  */
+    */
+
+    return {
+      user: raw.user,
+      sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
+      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0]),
+      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2]),
+      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0]),
+      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2]),
+      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1]),
+      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3]),
+      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1]),
+      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3]),
+      txCountChain: parseInt(raw.txCount[1], 10),
+    }
+  }
 
   private logChannel(prev: ChannelStateBN | UnsignedChannelStateBN) {
     if (!(prev as ChannelStateBN).sigUser) {

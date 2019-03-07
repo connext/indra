@@ -52,6 +52,7 @@ export type ChannelStateUpdateRow<T = string> = ChannelStateUpdate<T> & {
   channelId?: number
   chainsawId?: number
   invalid?: InvalidationReason
+  onchainTxLogicalId?: number
 }
 
 export type ChannelStateUpdateRowBigNum = ChannelStateUpdateRow<BigNumber>

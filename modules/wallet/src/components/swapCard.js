@@ -3,10 +3,10 @@ import Card from "@material-ui/core/Card";
 import Button from "@material-ui/core/Button";
 import SwapHoriz from "@material-ui/icons/SwapHoriz";
 import TextField from "@material-ui/core/TextField";
-import HelpIcon from "@material-ui/icons/Help";
-import IconButton from "@material-ui/core/IconButton";
-import Popover from "@material-ui/core/Popover";
-import Typography from "@material-ui/core/Typography";
+//import HelpIcon from "@material-ui/icons/Help";
+//import IconButton from "@material-ui/core/IconButton";
+//import Popover from "@material-ui/core/Popover";
+//import Typography from "@material-ui/core/Typography";
 
 class SwapCard extends Component {
   state = {
@@ -48,15 +48,18 @@ class SwapCard extends Component {
     console.log(
       `Exchanging: ${JSON.stringify(this.state.exchangeVal, null, 2)}`
     );
-    const { channelState } = this.props
-    this.setState({error: null})
+    const { channelState, connextState } = this.props
+    if (!connextState || !connextState.runtime.canExchange) {
+      console.log('Cannot exchange')
+      return
+    }
+    this.setState({ error: null })
     try {
       if(this.state.exchangeVal <= channelState.balanceWeiUser ) {
-        let exchangeRes = await this.props.connext.exchange(
+        await this.props.connext.exchange(
           this.state.exchangeVal,
           "wei"
         );
-        console.log(`Exchange Result: ${JSON.stringify(exchangeRes, null, 2)}`);
       } else {
         throw new Error("Insufficient wei balance")
       }
@@ -68,8 +71,9 @@ class SwapCard extends Component {
   }
 
   render() {
-    const { anchorEl } = this.state;
-    const open = Boolean(anchorEl);
+    //const { anchorEl } = this.state;
+    const { connextState } = this.props
+    //const open = Boolean(anchorEl);
 
     const cardStyle = {
       card: {
@@ -134,6 +138,7 @@ class SwapCard extends Component {
           style={cardStyle.button}
           onClick={() => this.exchangeHandler()}
           variant="contained"
+          disabled={!connextState || !connextState.runtime.canExchange}
         >
           Swap
         </Button>
