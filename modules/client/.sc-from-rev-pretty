@@ -1,26 +1,12 @@
-commit bfc927ac27ae13078b134ddb86cc7539b9248422
+commit 310119eb1ee22764b39a0512a44b9b64fbac4022
+Merge: 7090322c0 6c984b977
 Author: David Wolever <david@wolever.net>
-Date:   Tue Mar 5 18:45:21 2019 -0500
+Date:   Wed Mar 6 19:39:00 2019 -0500
 
-    Fix toString() in doRequestDeposit
+    Merge pull request #1385 from SpankChain/bignumber-to-string
     
-    Otherwise it formats as scientific notation
+    Error if BigNumber.toString is used
 
-diff --git a/hub/src/ChannelsService.ts b/hub/src/ChannelsService.ts
-index 310e30ec6..ac44f3d90 100644
---- a/hub/src/ChannelsService.ts
-+++ b/hub/src/ChannelsService.ts
-@@ -98,8 +98,8 @@ export default class ChannelsService {
- 
-     // assert user signed parameters
-     this.validator.assertDepositRequestSigner({
--      amountToken: depositToken.toString(),
--      amountWei: depositWei.toString(),
-+      amountToken: depositToken.toFixed(),
-+      amountWei: depositWei.toFixed(),
-       sigUser,
-     }, user)
- 
 On branch develop
 Your branch is up to date with 'origin/develop'.
 
