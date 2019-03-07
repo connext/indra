@@ -9,4 +9,10 @@ set -eu
 cd "$(dirname "$0")"
 
 set -x
-rsync -avl --exclude 'dist' --exclude 'node_modules' --exclude 'copy-sc-client' --prune-empty-dirs ../../../camsite/client/ .
+
+clientdir=../../../camsite/client/
+
+rsync -avl --delete --exclude 'dist' --exclude '.sc-from-*' --exclude 'node_modules' --exclude 'copy-sc-client' --prune-empty-dirs "$clientdir" .
+git -C "$clientdir" rev-parse HEAD > .sc-from-rev
+git -C "$clientdir" show HEAD > .sc-from-rev-pretty
+git -C "$clientdir" status >> .sc-from-rev-pretty
