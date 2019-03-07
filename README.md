@@ -221,7 +221,28 @@ ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 
 ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 1000 token
 ```
 
-## How to interact with the Hub
+## How to interact with an Indra hub
+
+A prod-mode indra hub exposes the following API ([source](https://github.com/ConnextProject/indra/blob/master/modules/proxy/prod.conf#L53)):
+
+ - `/api/hub` is the prefix for the hub's api
+ - `/api/hub/config` returns the hub's config for example
+ - `/api/eth` connects to the hub's eth provider
+ - `/api/dashboard` connects to a server that gives the admin dashboard it's info
+ - `/dashboard/` serves html/css/js for the dashboard client
+ - anything else, redirects the user to a daicard client
+
+### ..from a [dai card](https://github.com/ConnextProject/card)
+
+Dai card in production runs a proxy with endpoints:
+
+ - `/api/rinkeby/hub` -> `https://rinkeby.hub.connext.network/api/hub`
+ - `/api/rinkeby/eth` -> `https://rinkeby.hub.connext.network/api/eth`
+ - `/api/mainnet/hub` -> `https://hub.connext.network/api/hub`
+ - `/api/mainnet/eth` -> `https://hub.connext.network/api/eth`
+ - anything else: serves the daicard html/css/js files
+
+### Hub API
 
  1. AuthApiService
   - GET /auth/status: returns success and address if a valid auth token is provided
