@@ -1,0 +1,12 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+set -x
+rsync -avl --exclude 'dist' --exclude 'node_modules' --exclude 'copy-sc-client' --prune-empty-dirs ../../../camsite/client/ .
