@@ -48,28 +48,19 @@ docker exec -i $container_id node - <<EOF
   const fs = require("fs")
   const eth = require("ethers")
   const abi = (require("./dist/abi/MintAndBurnToken.js")).ABI.abi
-
   const key = "0x" + fs.readFileSync("/run/secrets/$secret", "utf8")
   const channelManagerAddress = process.env.CHANNEL_MANAGER_ADDRESS
   const value = eth.utils.parseEther("$value")
-  let ethBalance, tokenBalance, tx, provider
-
-  if (process.env.ETH_NETWORK_ID === "1") {
-    provider = new eth.providers.JsonRpcProvider(process.env.ETH_RPC_URL, eth.providers.networks.homestead)
-  } else if (process.env.ETH_NETWORK_ID === "4") {
-    provider = new eth.providers.JsonRpcProvider(process.env.ETH_RPC_URL, eth.providers.networks.rinkeby)
-  } else {
-    provider = new eth.providers.JsonRpcProvider(process.env.ETH_RPC_URL)
-  }
-
-  const url = (provider.connection || provider).url
+  const provider = new eth.providers.JsonRpcProvider(process.env.ETH_RPC_URL)
+  const url = provider.connection.url
   const wallet = new eth.Wallet(key, provider)
   const token = new eth.Contract(process.env.TOKEN_ADDRESS, abi, wallet)
+  let ethBalance, tokenBalance, tx
 
   // Start async part of script, first print network id
   ;(async function () {
-    await provider.ready
-    console.log("Using provider for chain id "+process.env.ETH_NETWORK_ID+" at url: "+url)
+    const chainId = (await provider.getNetwork()).chainId
+    console.log("Using provider for chain id "+chainId+" at url: "+url)
 
     // Print hub balance before
     ethBalance = eth.utils.formatEther(await wallet.getBalance())
