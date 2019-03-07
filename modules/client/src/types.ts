@@ -917,7 +917,7 @@ Returns:
  
 */
 
-export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD'
+export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD' | 'PT_CUSTODIAL'
 
 
 export interface PurchaseRequest<MetadataType=any, PaymentMetadataType=any> {
@@ -968,6 +968,10 @@ export type PurchasePayment<MetadataType=any> = ({
       // When a purchase is being sent from the Wallet -> Hub the update should
       // be signed by the wallet.
       // The hub's counter-signed updates will be included in the SyncResponse.
+      update: UpdateRequest
+    } |
+    {
+      type: 'PT_CUSTODIAL'
       update: UpdateRequest
     } |
     {

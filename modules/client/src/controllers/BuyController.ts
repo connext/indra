@@ -22,6 +22,9 @@ export default class BuyController extends AbstractController {
       if (payment.type == 'PT_THREAD')
         throw new Error('TODO: REB-36 (enable threads)')
 
+      if (payment.type != 'PT_CHANNEL' && payment.type != 'PT_CUSTODIAL')
+        throw new Error('Invalid payment type: ' + payment.type)
+
       const args: PaymentArgs = {
         recipient: 'hub',
         ...payment.amount
@@ -35,7 +38,7 @@ export default class BuyController extends AbstractController {
 
       signedPayments.push({
         ...payment,
-        type: 'PT_CHANNEL',
+        type: payment.type as any,
         update: {
           reason: 'Payment',
           args: args,
