@@ -4,6 +4,8 @@
  * Does some minimal environment configuration.
  */
 
+require('./bignumber.ts')
+
 // Bluebird has the ability to include the entire call stack in a Promise (ie,
 // including the original caller).
 // This incurs a 4x-5x performance penalty, though, so only use it in dev +

@@ -1,0 +1,16 @@
+commit 310119eb1ee22764b39a0512a44b9b64fbac4022
+Merge: 7090322c0 6c984b977
+Author: David Wolever <david@wolever.net>
+Date:   Wed Mar 6 19:39:00 2019 -0500
+
+    Merge pull request #1385 from SpankChain/bignumber-to-string
+    
+    Error if BigNumber.toString is used
+
+On branch develop
+Your branch is up to date with 'origin/develop'.
+
+You are currently bisecting, started from branch 'develop'.
+  (use "git bisect reset" to get back to the original branch)
+
+nothing to commit, working tree clean

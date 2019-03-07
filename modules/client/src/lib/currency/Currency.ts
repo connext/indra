@@ -159,11 +159,11 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
     }
 
     let amount = options.decimals === undefined
-      ? amountBigNum.toString(10)
-      : amountBigNum.toNumber().toFixed(options.decimals)
+      ? amountBigNum.toFormat()
+      : amountBigNum.toFormat(options.decimals)
 
     if (!options.showTrailingZeros) {
-      amount = parseFloat(amount).toString()
+      amount = amount.replace(/\.?0*$/, '')
     }
 
     return `${symbol}${amount}`

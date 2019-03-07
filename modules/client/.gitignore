@@ -7,3 +7,6 @@ test/tests.txt
 .env
 *.sw[opq]
 tags
+.yalc/
+yalc.lock
+.env
