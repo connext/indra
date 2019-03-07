@@ -58,6 +58,8 @@ export class MockConnextInternal extends ConnextInternal {
       ...opts,
     } as any)
 
+    this.auth = async () => { return null }
+
     this.mockContract = this.contract as MockChannelManager
     this.mockHub = this.hub as MockHub
 
