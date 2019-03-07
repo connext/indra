@@ -3,13 +3,14 @@
 set -e
 
 hostname="$1"
+network="${2:-rinkeby}"
 user="ubuntu"
-key_name="private_key" # name of docker secret to store private key in
+key_name="hub_key_$network" # name of docker secret to store private key in
 pubkey="$HOME/.ssh/circleci.pub"
 prvkey="$HOME/.ssh/connext-aws"
 
 # Sanity checks
-if [[ -z "$1" || -n "$2" ]]
+if [[ -z "$1" ]]
 then echo "Provide the server's hostname or ip address as the first ($1) & only arg ($2)" && exit
 fi
 
@@ -22,7 +23,7 @@ then echo "Couldn't find the CI public key: $pubkey" && exit
 fi
 
 # Prepare to load the hub's private key into the server's secret store
-echo "Copy the hub's private key to your clipboard then paste it below & hit enter (no echo)"
+echo "Copy the $key_name secret to your clipboard then paste it below & hit enter (no echo)"
 echo -n "> "
 read -s key
 echo

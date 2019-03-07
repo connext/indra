@@ -2,21 +2,45 @@
 set -e
 
 ####################
-# ENV VARS
+# External Env Vars
 
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+# Config
+INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
+INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
+INDRA_MODE="${INDRA_MODE:-development}" # set to "live" to use versioned docker images
+INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-rinkeby}"
+
+# Auth & API Keys
+INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
+INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
+INDRA_ETH_RPC_KEY="${INDRA_ETH_RPC_KEY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
+INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}" # For LogDna
+INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
+INDRA_DASHBOARD_URL="${INDRA_DASHBOARD_URL:-dashboarddd}"
+
+####################
+# Internal Config
+
+# NOTE: Gotta update this manually when adding/removing services :/
+number_of_services=7
+
+should_collateralize_url="NO_CHECK"
+
+eth_rpc_url="https://eth-$INDRA_ETH_NETWORK.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY"
+
+private_key_name="hub_key_$INDRA_ETH_NETWORK"
+private_key_file="/run/secrets/$private_key_name"
+
+# Docker image settings
 registry="connextproject"
-number_of_services=6
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
-# set defaults for some core env vars
-MODE="${MODE:-development}"
-DOMAINNAME="${DOMAINNAME:-localhost}"
-EMAIL="${EMAIL:-noreply@gmail.com}"
-INFURA_KEY="${INFURA_KEY:-abc123}"
-INGESTION_KEY="${INGESTION_KEY:-abc123}"
-
-# misc settings
-SERVICE_USER_KEY="foo"
+# database settings
+redis_url="redis://redis:6379"
+postgres_url="database:5432"
+postgres_user="$project"
+postgres_db="$project"
+postgres_password_file="/run/secrets/${project}_database"
 
 # ethereum settings
 # Allow contract address overrides if an address book is present in project root
@@ -24,43 +48,40 @@ if [[ -f "address-book.json" ]]
 then addressBook="address-book.json"
 else addressBook="modules/contracts/ops/address-book.json"
 fi
-ETH_RPC_URL="https://eth-rinkeby.alchemyapi.io/jsonrpc/RvyVeludt7uwmt2JEF2a1PvHhJd5c07b"
-ETH_NETWORK="rinkeby"
-ETH_NETWORK_ID="4"
-HUB_WALLET_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].hub`"
-CHANNEL_MANAGER_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].address`"
-TOKEN_ADDRESS="`cat $addressBook | jq .ChannelManager.networks[\\"$ETH_NETWORK_ID\\"].approvedToken`"
-PRIVATE_KEY_FILE="/run/secrets/private_key"
-SHOULD_COLLATERALIZE_URL="NO_CHECK"
 
-# database settings
-REDIS_URL="redis://redis:6379"
-POSTGRES_HOST="database"
-POSTGRES_PORT="5432"
-POSTGRES_USER="connext"
-POSTGRES_DB="connext"
-POSTGRES_PASSWORD_FILE="/run/secrets/indra_database"
+if [[ "$INDRA_ETH_NETWORK" == "mainnet" ]]
+then eth_network_id="1"
+elif [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
+then eth_network_id="4"
+else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit
+fi
 
-####################
-# Deploy according to above configuration
+hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
+channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
+token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
 
 # Figure out which images we should use
-if [[ "$DOMAINNAME" != "localhost" ]]
+if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
-  if [[ "$MODE" == "live" ]]
+  if [[ "$INDRA_MODE" == "live" ]]
   then version="`cat package.json | jq .version | tr -d '"'`"
   else version="latest"
   fi
   proxy_image="$registry/${project}_proxy:$version"
+  dashboard_image="$registry/${project}_dashboard:$version"
   database_image="$registry/${project}_database:$version"
   hub_image="$registry/${project}_hub:$version"
   redis_image="redis:5-alpine"
 else
   proxy_image=${project}_proxy:latest
+  dashboard_image=${project}_dashboard:latest
   database_image=${project}_database:latest
   hub_image=${project}_hub:latest
   redis_image=redis:5-alpine
 fi
+
+####################
+# Deploy according to above configuration
 
 echo "Deploying images: $database_image and $hub_image and $proxy_image"
 
@@ -73,7 +94,7 @@ function pull_if_unavailable {
   fi
 }
 
-if [[ "$DOMAINNAME" != "localhost" ]]
+if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
   pull_if_unavailable $database_image
   pull_if_unavailable $hub_image
@@ -83,7 +104,7 @@ fi
 function new_secret {
   secret=$2
   if [[ -z "$secret" ]]
-  then secret=`head -c 32 /dev/urandom | xxd -plain -c 32 | tr -d '\n\r'`
+  then secret=`head -c 64 /dev/urandom | xxd -plain -c 64 | tr -d '\n\r'`
   fi
   if [[ -z "`docker secret ls -f name=$1 | grep -w $1`" ]]
   then
@@ -93,16 +114,29 @@ function new_secret {
 }
 
 new_secret ${project}_database
-new_secret private_key $PRIVATE_KEY
 
-mkdir -p /tmp/$project
+# Ensure we have a private key available
+if [[ -z "`docker secret ls -f name=$private_key_name | grep -w $private_key_name`" ]]
+then
+  if [[ "$MODE" == "test" ]]
+  then
+    echo "Test mode, creating throwaway private key"
+    new_secret $private_key_name
+  else
+    echo "Error, a secret called $private_key_file must be loaded into the secret store"
+    echo "Copy the hub's key to your clipboard & run: bash ops/load-secret.sh $private_key_name"
+    exit
+  fi
+fi
+
+mkdir -p /tmp/$project modules/database/snapshots
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
 secrets:
   ${project}_database:
     external: true
-  private_key:
+  $private_key_name:
     external: true
 
 volumes:
@@ -111,25 +145,28 @@ volumes:
   certs:
 
 services:
-  logdna:
-    image: logdna/logspout:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      LOGDNA_KEY: $INGESTION_KEY
-      TAGS: logdna
-
   proxy:
     image: $proxy_image
     environment:
-      DOMAINNAME: $DOMAINNAME
-      EMAIL: $EMAIL
-      ETH_RPC_URL: $ETH_RPC_URL
+      DOMAINNAME: $INDRA_DOMAINNAME
+      EMAIL: $INDRAS_EMAIL
+      ETH_RPC_URL: $eth_rpc_url
+      DASHBOARD_URL: $INDRA_DASHBOARD_URL
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - certs:/etc/letsencrypt
+
+  dashboard:
+    image: $dashboard_image
+    secrets:
+      - ${project}_database
+    environment:
+      POSTGRES_DB: $postgres_db
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_URL: $postgres_url
+      POSTGRES_USER: $postgres_user
 
   hub:
     image: $hub_image
@@ -139,22 +176,22 @@ services:
       - chainsaw
     secrets:
       - ${project}_database
-      - private_key
+      - $private_key_name
     environment:
+      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
+      ETH_NETWORK_ID: $eth_network_id
+      ETH_RPC_URL: $eth_rpc_url
+      HUB_WALLET_ADDRESS: $hub_wallet_address
       NODE_ENV: production
-      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
-      ETH_NETWORK_ID: $ETH_NETWORK_ID
-      ETH_RPC_URL: $ETH_RPC_URL
-      HUB_WALLET_ADDRESS: $HUB_WALLET_ADDRESS
-      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
-      TOKEN_ADDRESS: $TOKEN_ADDRESS
-      SERVICE_USER_KEY: $SERVICE_USER_KEY
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
-      POSTGRES_URL: $POSTGRES_URL
-      POSTGRES_DB: $POSTGRES_DB
-      REDIS_URL: $REDIS_URL
-      SHOULD_COLLATERALIZE_URL: $SHOULD_COLLATERALIZE_URL
+      POSTGRES_DB: $postgres_db
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_URL: $postgres_url
+      POSTGRES_USER: $postgres_user
+      PRIVATE_KEY_FILE: $private_key_file
+      REDIS_URL: $redis_url
+      SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
+      SHOULD_COLLATERALIZE_URL: $should_collateralize_url
+      TOKEN_ADDRESS: $token_address
 
   chainsaw:
     image: $hub_image
@@ -163,23 +200,23 @@ services:
       - postgres
     secrets:
       - ${project}_database
-      - private_key
+      - $private_key_name
     environment:
+      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
+      ETH_NETWORK_ID: $eth_network_id
+      ETH_RPC_URL: $eth_rpc_url
+      HUB_WALLET_ADDRESS: $hub_wallet_address
       NODE_ENV: production
       POLLING_INTERVAL: 2000
-      PRIVATE_KEY_FILE: $PRIVATE_KEY_FILE
-      SERVICE_USER_KEY: $SERVICE_USER_KEY
-      ETH_RPC_URL: $ETH_RPC_URL
-      HUB_WALLET_ADDRESS: $HUB_WALLET_ADDRESS
-      CHANNEL_MANAGER_ADDRESS: $CHANNEL_MANAGER_ADDRESS
-      TOKEN_ADDRESS: $TOKEN_ADDRESS
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      REDIS_URL: $REDIS_URL
-      SHOULD_COLLATERALIZE_URL: $SHOULD_COLLATERALIZE_URL
+      POSTGRES_DB: $postgres_db
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_URL: $postgres_url
+      POSTGRES_USER: $postgres_user
+      PRIVATE_KEY_FILE: $private_key_file
+      REDIS_URL: $redis_url
+      SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
+      SHOULD_COLLATERALIZE_URL: $should_collateralize_url
+      TOKEN_ADDRESS: $token_address
 
   redis:
     image: $redis_image
@@ -191,29 +228,30 @@ services:
     secrets:
       - ${project}_database
     environment:
-      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-      ETH_NETWORK: $ETH_NETWORK
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_PASSWORD_FILE: $POSTGRES_PASSWORD_FILE
+      AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
+      ETH_NETWORK: $INDRA_ETH_NETWORK
+      POSTGRES_DB: $postgres_db
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_USER: $postgres_user
     volumes:
       - ${project}_database:/var/lib/postgresql/data
-      - `pwd`/modules/database/ops:/root/ops
+      - `pwd`/modules/database/snapshots:/root/snapshots
+
+  logdna:
+    image: logdna/logspout:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      LOGDNA_KEY: $INDRA_LOGDNA_KEY
+      TAGS: logdna
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 rm -rf /tmp/$project
 
 echo -n "Waiting for the $project stack to wake up."
-while true
-do
-    num_awake="`docker container ls | grep $project | wc -l | sed 's/ //g'`"
-    sleep 3
-    if [[ "$num_awake" == "$number_of_services" ]]
-    then break
-    else echo -n "."
-    fi
+while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]
+do echo -n "." && sleep 2
 done
 echo " Good Morning!"
-sleep 3

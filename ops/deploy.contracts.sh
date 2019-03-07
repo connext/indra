@@ -3,7 +3,6 @@ set -e
 
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 name=${project}_contract_deployer
-key_name=hub_key
 cwd="`pwd`"
 
 ########################################
@@ -13,9 +12,7 @@ INFURA_KEY=$INFURA_KEY
 
 if [[ -n "$1" ]]
 then ETH_NETWORK="$1"
-elif [[ -n "$ETH_NETWORK" ]]
-then ETH_NETWORK="$ETH_NETWORK"
-else ETH_NETWORK="ganache"
+else ETH_NETWORK="${ETH_NETWORK:-ganache}"
 fi
 
 if [[ "$ETH_NETWORK" == "ganache" ]]
@@ -39,7 +36,10 @@ sleep 1 # give the user a sec to ctrl-c in case above is wrong
 # Load private key into secret store
 # Unless we're using ganache, in which case we'll use the ETH_MNEMONIC
 
-PRIVATE_KEY_FILE=${key_name}_$ETH_NETWORK
+# Docker swarm mode needs to be enabled to use the secret store
+docker swarm init "--advertise-addr=\$privateip" 2> /dev/null || true
+
+PRIVATE_KEY_FILE=hub_key_$ETH_NETWORK
 if [[ "$ETH_NETWORK" != "ganache" ]]
 then
   echo
@@ -102,4 +102,3 @@ logs_pid=$!
 while [[ -z "`docker container ls -a | grep "$name" | grep "Exited"`" ]]
 do sleep 1
 done
-sleep 1

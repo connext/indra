@@ -9,4 +9,6 @@ COPY ops/wait-for.sh /root/wait-for.sh
 COPY modules/proxy/prod.conf /etc/nginx/nginx.conf
 COPY modules/proxy/entry.sh /root/entry.sh
 
+COPY modules/dashboard/build /var/www/html
+
 ENTRYPOINT ["bash", "/root/entry.sh"]

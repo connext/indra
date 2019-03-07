@@ -142,7 +142,7 @@ export default class PaymentsService {
         },
       })
       if (afterPayment)
-        await afterPayment(paymentId)
+        afterPayment(paymentId)
     }
 
     for (let p of custodialPayments) {

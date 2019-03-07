@@ -69,6 +69,7 @@ export default class BuyController extends AbstractController {
           // PUNT on this -- AB
           break
         case 'PT_CHANNEL':
+        case 'PT_CUSTODIAL':
           const chanArgs: PaymentArgs = {
             recipient: 'hub',
             ...payment.amount
@@ -82,7 +83,7 @@ export default class BuyController extends AbstractController {
 
           signedPayments.push({
             ...payment,
-            type: 'PT_CHANNEL',
+            type: payment.type as any,
             update: {
               reason: 'Payment',
               args: chanArgs,

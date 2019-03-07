@@ -237,7 +237,10 @@ export class ChannelsApiServiceHandler {
   }
 
   async doGetChannelByUser(req: express.Request, res: express.Response) {
-    const user = getUserFromRequest(req)
+    // const user = getUserFromRequest(req)
+    const { user } = req.params
+    // TODO: we get the user from the params like this in other places,
+    // but does not seem to check the auth?
     if (!user) {
       LOG.warn(
         'Receiver invalid get channel request. Aborting. Params received: {params}',

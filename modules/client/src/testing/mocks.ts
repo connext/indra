@@ -198,6 +198,14 @@ export class MockHub implements IHubAPIClient {
   async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
     return { success: true, address: mkAddress('0xUUU') }
   }
+  
+  async getChannelByUser(recipient: string): Promise<ChannelRow> {
+    return { id: 0, state: getChannelState('full', { user: recipient }), status: 'CS_OPEN' }
+  }
+
+  async recipientNeedsCollateral(): Promise<string | null> {
+    return null
+  }
 
   async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }> {
     // NOTE: by default assumes this is redeemers first payment
