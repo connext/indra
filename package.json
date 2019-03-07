@@ -1,0 +1,20 @@
+{
+  "name": "indra",
+  "version": "0.0.0",
+  "author": "Connext & Friends",
+  "description": "Deployment for Connext hub infrastructure",
+  "license": "ISC",
+  "scripts": {
+    "build": "make dev",
+    "db": "bash ops/db.sh",
+    "logs": "bash ops/logs.sh",
+    "rebuild": "make clean && make",
+    "reset": "make reset && bash ops/restart.sh",
+    "restart": "bash ops/restart.sh",
+    "start": "make dev && bash ops/deploy.dev.sh",
+    "prod": "make prod && bash ops/deploy.prod.sh",
+    "stop": "bash ops/stop.sh",
+    "clean": "make clean",
+    "deep-clean": "make deep-clean"
+  }
+}

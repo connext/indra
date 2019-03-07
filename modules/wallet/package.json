@@ -1,0 +1,53 @@
+{
+  "name": "connext-starter-kit",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "@material-ui/core": "^3.9.0",
+    "@material-ui/icons": "^3.0.2",
+    "@material-ui/styles": "^3.0.0-alpha.8",
+    "@types/bluebird": "^3.5.25",
+    "@types/semaphore": "^1.1.0",
+    "@types/web3": "^1.0.14",
+    "axios": "^0.18.0",
+    "bignumber.js": "^8.0.1",
+    "bip39": "2.3.1",
+    "bluebird": "^3.5.3",
+    "chai": "^4.2.0",
+    "connext": "^3.0.2",
+    "eth-sig-util": "^2.1.0",
+    "ethereumjs-tx": "^1.3.7",
+    "ethereumjs-util": "5.2.0",
+    "ethereumjs-wallet": "0.6.0",
+    "ethers": "^4.0.20",
+    "mocha": "^5.2.0",
+    "react": "^16.6.3",
+    "react-copy-to-clipboard": "^5.0.1",
+    "react-dom": "^16.6.3",
+    "react-scripts": "2.1.1",
+    "react-select": "^2.2.0",
+    "react-swipeable-views": "^0.13.0",
+    "redux": "^4.0.1",
+    "semaphore": "^1.1.0",
+    "typescript": "^3.2.2",
+    "typescript-fsa": "^3.0.0-beta-2",
+    "typescript-fsa-reducers": "^1.1.0",
+    "web3": "^1.0.0-beta.36",
+    "web3-provider-engine": "^14.1.0"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
+}

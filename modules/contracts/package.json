@@ -1,0 +1,42 @@
+{
+  "name": "contracts",
+  "version": "0.0.1",
+  "description": "Connext contracts",
+  "main": "build",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "npm run compile && npm run generate",
+    "compile": "node_modules/.bin/truffle compile",
+    "ganache": "node_modules/.bin/ganache-cli -m 'refuse result toy bunker royal small story exhaust know piano base stand'",
+    "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir ./build/ts/ './build/contracts/*.json'",
+    "migrate": "node_modules/.bin/truffle migrate",
+    "test": "node_modules/.bin/truffle test test/channelManager.js --network=ganache"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConnextProject/contracts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ConnextProject/contracts/issues"
+  },
+  "homepage": "https://github.com/ConnextProject/contracts#readme",
+  "dependencies": {
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.2",
+    "connext": "^3.0.1",
+    "dotenv": "^6.2.0",
+    "ganache-cli": "6.1.8",
+    "truffle": "5.0.0-beta.1",
+    "truffle-hdwallet-provider": "^1.0.0-web3one.1",
+    "typechain": "0.3.6"
+  },
+  "engines": {
+    "node": ">=10",
+    "npm": ">=6"
+  }
+}

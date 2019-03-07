@@ -1,0 +1,235 @@
+import { BigNumber } from 'bignumber.js'
+import { Big } from './bigNumber';
+import Web3 = require('web3')
+
+export function isBigNumber(x: any) {
+  return !!x && typeof x == 'object' && (
+    x instanceof BigNumber ||
+    ('s' in x && 'e' in x && 'c' in x)
+  )
+}
+
+export function objValuesBigNumToString(x: any): any {
+  const res = {}
+  Object.entries(x).forEach(([key, val]) => {
+    if (!val) {
+      res[key] = val
+    } else {
+      res[key] = isBigNumber(val) ? (val as BigNumber).toFixed() : val
+    }
+  })
+  return res
+}
+
+export function objValuesBigNumToBN(x: any): any {
+  const res = {}
+  Object.entries(x).forEach(([key, val]) => {
+    if (!val) {
+      res[key] = val
+    } else {
+      // @ts-ignore
+      res[key] = isBigNumber(val) ? Web3.utils.toBN(val) : val
+    }
+  })
+  return res
+}
+
+export function objValuesStringToBigNum(x: any, fields: string[]): any {
+  const res = {}
+  Object.entries(x).forEach(([key, val]) => {
+    if (!val) {
+      res[key] = val
+    } else {
+      res[key] = fields.includes(key) ? Big(val as any): val
+    }
+  })
+  return res
+}
+
+/**
+ * Shorten a string.
+ *
+ * > shorten('abc')
+ * 'abc'
+ * > shorten('abcdefg', 4)
+ * 'ab…fg'
+ */
+export function shorten(s: string, len: number = 500) {
+  if (!s || s.length <= len)
+    return s
+
+  return s.slice(0, len / 2) + '…' + s.slice(s.length - len / 2)
+}
+
+/**
+ * Safely call JSON.stringify(...) on an object, catching any possible error.
+ * Additionally, if `{ shorten: ... }` is provided, the output will be
+ * shortened (rendering it potentially invalid JSON).
+ */
+export function safeJson(obj, opts?: { shorten?: number }) {
+  opts = opts || {}
+  let res
+  try {
+    res = JSON.stringify(obj)
+  } catch (e) {
+    res = JSON.stringify({
+      error: 'safeJson error: ' + e,
+      originalObj: '' + obj,
+    })
+  }
+  if (opts.shorten)
+    res = shorten(res, opts.shorten)
+  return res
+}
+
+
+/**
+ * Safely call JSON.stringify(...) on an object, catching any possible error.
+ * Additionally, if `{ shorten: ... }` is provided, the output will be
+ * shortened (rendering it potentially invalid JSON).
+ */
+export function prettySafeJson(obj, opts?: { shorten?: number }) {
+  opts = opts || {}
+  let res
+  try {
+    res = JSON.stringify(obj, null, 2)
+  } catch (e) {
+    res = JSON.stringify({
+      error: 'safeJson error: ' + e,
+      originalObj: '' + obj,
+    }, null, 2)
+  }
+  if (opts.shorten)
+    res = shorten(res, opts.shorten)
+  return res
+}
+
+/**
+ * Sleep for a certain amount of time.
+ *
+ * Usage:
+ * > await sleep(1000)
+ */
+export function sleep(duration: number) {
+  return new Promise(res => setTimeout(res, duration))
+}
+
+
+/**
+ * A simple lock that can be used with async/await.
+ *
+ * For example:
+ *
+ *  funcLock = Lock.released()
+ *
+ *  // NOTE: this pattern is implemented by the `synchronized` decorator, below.
+ *  async function lockedFunction() {
+ *    await this.funcLock
+ *    this.funcLock = new Lock()
+ *    try {
+ *      ... do stuff ...
+ *    } finally {
+ *      this.funcLock.release()
+ *    }
+ *  }
+ *
+ */
+export class Lock implements PromiseLike<void> {
+  _resolve: () => void
+  _p: Promise<void>
+
+  then: any
+  catch: any
+
+  constructor() {
+    this._p = new Promise(res => this._resolve = res)
+    this.then = this._p.then.bind(this._p)
+    this.catch = this._p.catch.bind(this._p)
+  }
+
+  static released() {
+    return new Lock().release()
+  }
+
+  release() {
+    this._resolve()
+    return this
+  }
+}
+
+/**
+ * Synchronize (ie, lock so as to allow only allow one concurrent caller) a
+ * method.
+ *
+ * For example:
+ *
+ *   class MyClass {
+ *
+ *     fooLock = Lock.release()
+ *
+ *     @synchronized('fooLock')
+ *     async foo(msg: string) {
+ *       await sleep(1000)
+ *       console.log('msg:', msg)
+ *     }
+ *   }
+ *
+ *   > x = new MyClass()
+ *   > x.foo('first')
+ *   > x.foo('second')
+ *   ... 1 second ...
+ *   msg: first
+ *   ... 1 more second ...
+ *   msg: second
+ */
+export function synchronized(lockName: string) {
+  return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
+    const oldFunc = descriptor.value
+    descriptor.value = async function(...args: any[]) {
+      await this[lockName]
+      this[lockName] = new Lock()
+      try {
+        return await oldFunc.apply(this, args)
+      } finally {
+        this[lockName].release()
+      }
+    }
+    return descriptor
+  }
+}
+
+/**
+ * Catches any exception which might be raised by a promise and returns a
+ * tuple of [result, error], where either the result or the error will be
+ * undefined:
+ *
+ *   let [res, error] = await maybe(someApi.get(...))
+ *   if (err) {
+ *     return `Oh no there was an error: ${err}`
+ *   }
+ *   console.log('The result:', res)
+ *
+ * The result is also an object with `res` and `err` fields:
+ *
+ *   let someResult = await maybe(someApi.get(...))
+ *   if (someResult.err) {
+ *     return `Oh no there was an error: ${someResult.err}`
+ *   }
+ *   console.log('The result:', someResult.res)
+ *
+ */
+type MaybeRes<T> = [T, any] & { res: T, err: any }
+export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
+  return (p as Promise<T>).then(
+    res => Object.assign([res, null], { res, err: null }) as any,
+    err => Object.assign([null, err], { res: null, err }) as any,
+  )
+}
+
+/**
+ * Omit a key from a type:
+ *
+ * type Foo = { a: string, b: string }
+ * type Bar = Omit<Foo, 'a'> // equivilent to type Bar = { a: string }
+ */
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>

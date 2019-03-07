@@ -1,0 +1,41 @@
+version: '2'
+services:
+  hub:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile.hub
+    ports:
+    - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+      - truffle
+    environment:
+      DATABASE_URL: "postgresql://spankchain@postgres/hub"
+      REDIS_URL: "redis://redis:6379"
+      WALLET_ADDRESS: "0x58e95845a3c2740f4b1b4c639a75ada64ef0b72f"
+      CHANNEL_MANAGER_ADDRESS: "0xdec16622bfe1f0cdaf6f7f20437d2a040cccb0a1"
+      ETH_RPC_URL: "http://truffle:8545"
+      HOT_WALLET_ADDRESS: "0x58e95845a3c2740f4b1b4c639a75ada64ef0b72f"
+      TOKEN_CONTRACT_ADDRESS: "0x60019570eb1dd355b5c01040b16f16040a200897"
+  postgres:
+    image: postgres:alpine
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: spankchain
+      POSTGRES_DB: hub
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+  truffle:
+    build:
+      context: ./build
+      dockerfile: Dockerfile.truffle
+    ports:
+      - "8545:8545"
+    tty: true
+    stdin_open: true

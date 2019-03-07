@@ -1,0 +1,25 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+name="${1-}"
+if [[ -z "$name" ]]; then
+    echo "USAGE: $0 NAME"
+    exit 1
+fi
+
+dir="snapshots/$name-$(date "+%Y-%m-%dT%H:%M:%S")"
+if [[ -d "$dir" ]]; then
+    echo "ERROR: $dir exists!"
+    exit 1
+fi
+mkdir -p "$dir"
+tar -cz -C data/ -f "$dir/ganache-data.tar.gz" ganache-data
+pg_dump sc-hub > "$dir/sc-hub.sql"
+pg_dump sc-camsite > "$dir/sc-camsite.sql"

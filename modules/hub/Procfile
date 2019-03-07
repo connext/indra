@@ -1,0 +1,3 @@
+redis: redis-server --save "" --appendonly no
+ganache: ./development/ganache-run 6.9
+hub: ./development/hub-run

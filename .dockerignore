@@ -1,0 +1,9 @@
+node_modules
+modules/database/node_modules
+modules/contracts/node_modules
+modules/wallet/node_modules
+modules/**/.config
+modules/**/.npm
+modules/**/.git
+modules/**/.node-gyp
+build

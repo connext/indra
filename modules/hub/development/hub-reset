@@ -1,0 +1,25 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+psql postgres <<EOF
+SELECT pg_terminate_backend(pg_stat_activity.pid)
+FROM pg_stat_activity
+WHERE pg_stat_activity.datname = 'sc-hub'
+  AND pid <> pg_backend_pid();
+EOF
+dropdb --if-exists sc-hub
+createdb sc-hub
+
+cd ..
+
+[ -e .env-vars ] && . .env-vars
+[ ! -e database.json ] && cp database.json-skeleton database.json
+
+yarn migrate

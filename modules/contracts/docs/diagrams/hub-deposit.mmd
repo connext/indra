@@ -1,0 +1,36 @@
+sequenceDiagram
+
+    # title <u>Hub Deposit</u>
+
+    # aliases
+    participant Contract
+    participant User
+    participant Hub
+
+    Note over Hub: Decides to deposit <br> 100 wei, 69 BOOTY
+
+    Hub->>User: Request Deposit Approval
+
+    Note over Hub,User: <br> State: <br> { pendingDepositWei: [100, 0] //[hub, user], <br> pendingDepositToken: [69, 0], <br> weiBalances: [0, 10], <br> tokenBalances: [0, 69] <br> txCount: [5, 2], <br> timeout: 0}
+
+    Note over User: Verify state, sign
+
+    User->>Hub: /channel/:address/verifyHubDeposit
+
+    Note over User,Hub: <br> State: <br> { pendingDepositWei: [100, 0], <br> pendingDepositToken: [69, 0], <br> weiBalances: [0, 10], <br> tokenBalances: [0, 69] <br> txCount: [5, 2], <br> timeout: 0, <br> sigA: 0xf1a }
+
+    Hub-->Hub: Verify approval, cosign
+
+    Note over Hub,User: <br> State: <br> { pendingDepositWei: [100, 0] //[hub, user], <br> pendingDepositToken: [69, 0], <br> weiBalances: [0, 10], <br> tokenBalances: [0, 69] <br> txCount: [5, 2], <br> timeout: 0, <br> sigA: 0xf1a, <br> sigI: 0xce2 }
+
+    Hub->>Contract: hubAuthorizedStateUpdate
+
+    Note over Contract: Update Confirmed!
+
+    Hub->>User: Request deposit acknowledgment
+    Note over User,Hub: <br> State: <br> { weiBalances: [100, 10], <br> tokenBalances: [69, 69] <br> txCount: [6, 2], <br> timeout: 0, <br> sigI: 0xce2 }
+
+    Note over User: Verify state, cosign
+
+    User->>Hub: Confirm deposit
+    Note over User,Hub: <br> State: <br> { weiBalances: [100, 10], <br> tokenBalances: [69, 69] <br> txCount: [6, 2], <br> timeout: 0, <br> sigI: 0xce2, <br> sigA: 0xf1a  }
