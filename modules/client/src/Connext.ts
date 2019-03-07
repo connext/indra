@@ -1004,7 +1004,9 @@ export class ConnextInternal extends ConnextClient {
 
     // return to hub
     const auth = await this.hub.authResponse(nonce, this.opts.user, origin, signature)
-    return auth // the cookie
+    const cookie = `hub.sid=${auth}`
+    document.cookie = cookie;
+    return null
   }
 
   async recipientNeedsCollateral(recipient: Address, amount: Payment) {
@@ -1055,10 +1057,9 @@ export class ConnextInternal extends ConnextClient {
     await this.syncConfig()
 
     // also auth
-    const cookie = await this.auth(this.opts.origin!)
-    console.log('cookie:', cookie)
-    if (!cookie) {
-      console.log('Error authing')
+    const authRes = await this.auth(this.opts.origin!)
+    if (authRes) {
+      console.warn('Error authing, cannot start')
       return
     }
 
