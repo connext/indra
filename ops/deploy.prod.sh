@@ -139,6 +139,11 @@ services:
       EMAIL: $INDRAS_EMAIL
       ETH_RPC_URL: $eth_rpc_url
       DASHBOARD_URL: $INDRA_DASHBOARD_URL
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
     ports:
       - "80:80"
       - "443:443"
@@ -147,13 +152,13 @@ services:
 
   dashboard:
     image: $dashboard_image
-    secrets:
-      - ${project}_database
     environment:
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_URL: $postgres_url
       POSTGRES_USER: $postgres_user
+    secrets:
+      - ${project}_database
 
   hub:
     image: $hub_image
@@ -161,9 +166,6 @@ services:
     depends_on:
       - database
       - chainsaw
-    secrets:
-      - ${project}_database
-      - $private_key_name
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
@@ -179,15 +181,20 @@ services:
       SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
+    secrets:
+      - ${project}_database
+      - $private_key_name
 
   chainsaw:
     image: $hub_image
     command: chainsaw
     depends_on:
       - postgres
-    secrets:
-      - ${project}_database
-      - $private_key_name
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
@@ -204,6 +211,14 @@ services:
       SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
+    secrets:
+      - ${project}_database
+      - $private_key_name
 
   redis:
     image: $redis_image
