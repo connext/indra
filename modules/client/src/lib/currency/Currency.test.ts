@@ -2,6 +2,7 @@ import {assert, expect} from 'chai'
 import Currency from './Currency'
 import CurrencyConvertable from './CurrencyConvertable';
 import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
+import { parameterizedTests } from '../../testing'
 
 describe('Currency', () => {
   it('should return formatted currency', () => {
@@ -52,5 +53,19 @@ describe('Currency', () => {
         .floor()
         .amount
     ).eq('69')
+  })
+
+  describe('format', () => {
+    parameterizedTests([
+      { name: 'zeros', input: 1, opts: { showTrailingZeros: true, decimals: 2 }, expected: '$1.00' },
+      { name: 'no zeros 1', input: 1, opts: { showTrailingZeros: false, decimals: 2 }, expected: '$1' },
+      { name: 'no zeros 2', input: 1.1, opts: { showTrailingZeros: false, decimals: 2 }, expected: '$1.1' },
+      { name: 'decimals 1', input: 1.234, opts: { decimals: 2 }, expected: '$1.23' },
+      { name: 'decimals 2', input: 1.234, opts: { decimals: 0 }, expected: '$1' },
+      { name: 'decimals 3', input: 1.234, opts: undefined, expected: '$1.23' },
+      { name: 'intcomma', input: 1234567.89, opts: undefined, expected: '$1,234,567.89' },
+    ], t => {
+      assert.equal(Currency.USD(t.input).format(t.opts), t.expected)
+    })
   })
 })
