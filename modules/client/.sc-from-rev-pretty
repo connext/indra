@@ -1,0 +1,30 @@
+commit bfc927ac27ae13078b134ddb86cc7539b9248422
+Author: David Wolever <david@wolever.net>
+Date:   Tue Mar 5 18:45:21 2019 -0500
+
+    Fix toString() in doRequestDeposit
+    
+    Otherwise it formats as scientific notation
+
+diff --git a/hub/src/ChannelsService.ts b/hub/src/ChannelsService.ts
+index 310e30ec6..ac44f3d90 100644
+--- a/hub/src/ChannelsService.ts
++++ b/hub/src/ChannelsService.ts
+@@ -98,8 +98,8 @@ export default class ChannelsService {
+ 
+     // assert user signed parameters
+     this.validator.assertDepositRequestSigner({
+-      amountToken: depositToken.toString(),
+-      amountWei: depositWei.toString(),
++      amountToken: depositToken.toFixed(),
++      amountWei: depositWei.toFixed(),
+       sigUser,
+     }, user)
+ 
+On branch develop
+Your branch is up to date with 'origin/develop'.
+
+You are currently bisecting, started from branch 'develop'.
+  (use "git bisect reset" to get back to the original branch)
+
+nothing to commit, working tree clean
