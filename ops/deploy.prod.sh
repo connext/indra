@@ -104,7 +104,7 @@ fi
 function new_secret {
   secret=$2
   if [[ -z "$secret" ]]
-  then secret=`head -c 64 /dev/urandom | xxd -plain -c 64 | tr -d '\n\r'`
+  then secret=`head -c 32 /dev/urandom | xxd -plain -c 32 | tr -d '\n\r'`
   fi
   if [[ -z "`docker secret ls -f name=$1 | grep -w $1`" ]]
   then
@@ -114,20 +114,7 @@ function new_secret {
 }
 
 new_secret ${project}_database
-
-# Ensure we have a private key available
-if [[ -z "`docker secret ls -f name=$private_key_name | grep -w $private_key_name`" ]]
-then
-  if [[ "$MODE" == "test" ]]
-  then
-    echo "Test mode, creating throwaway private key"
-    new_secret $private_key_name
-  else
-    echo "Error, a secret called $private_key_file must be loaded into the secret store"
-    echo "Copy the hub's key to your clipboard & run: bash ops/load-secret.sh $private_key_name"
-    exit
-  fi
-fi
+new_secret $private_key_name
 
 mkdir -p /tmp/$project modules/database/snapshots
 cat - > /tmp/$project/docker-compose.yml <<EOF
