@@ -94,7 +94,7 @@ export class SCLogger {
     const c = console as any
 
     if (process.env.NODE_ENV !== 'production' || !this.logdna) {
-      (c[level] || console.log)(`${level}: ${msg || this.name}`)
+      (c[level] || console.log)(`${this.name} ${level}: ${msg || this.name}`)
     }
 
     if (this.logdna) {

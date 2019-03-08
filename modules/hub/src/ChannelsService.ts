@@ -38,6 +38,7 @@ import {
   Sync,
   convertWithdrawalParameters,
   convertWithdrawal,
+  convertArgs,
 } from './vendor/connext/types'
 import { prettySafeJson, Omit, maybe } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
@@ -99,8 +100,8 @@ export default class ChannelsService {
 
     // assert user signed parameters
     this.validator.assertDepositRequestSigner({
-      amountToken: depositToken.toString(),
-      amountWei: depositWei.toString(),
+      amountToken: depositToken.toFixed(),
+      amountWei: depositWei.toFixed(),
       sigUser,
     }, user)
 
@@ -376,8 +377,8 @@ export default class ChannelsService {
     if (exchangeRateDelta.gt(allowableDelta)) {
       throw new Error(
         `Proposed exchange rate (${params.exchangeRate}) differs from current ` +
-        `rate (${currentExchangeRateBigNum.toFixed()}) by ${exchangeRateDelta.toString()} ` +
-        `which is more than the allowable delta of ${allowableDelta.toString()}`
+        `rate (${currentExchangeRateBigNum.toFixed()}) by ${exchangeRateDelta.toFixed()} ` +
+        `which is more than the allowable delta of ${allowableDelta.toFixed()}`
       )
     }
 
@@ -917,7 +918,7 @@ export default class ChannelsService {
       if (pushChan) {
         curChan += 1
         pushChannel({
-          args: chan.args,
+          args: convertArgs('str', chan.reason, chan.args as any),
           reason: chan.reason,
           sigUser: chan.state.sigUser,
           sigHub: chan.state.sigHub,

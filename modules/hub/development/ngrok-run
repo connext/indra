@@ -1,0 +1,27 @@
+#!/bin/bash
+# STOP! Before going any further, think: are you going to regret the decision
+# to write this script?
+#     Deciding to write this in bash was not one of my better decisions.
+#     -- https://twitter.com/alex_gaynor/status/369892494114164736
+
+IFS="`printf "\n\t"`"
+set -eu
+cd "$(dirname "$0")"
+
+if [[ -z "$(which ngrok)" ]]; then
+    echo "ERROR: ngrok not found"
+    echo "Hint:"
+    echo "  brew cask install ngrok"
+    exit 1
+fi
+
+cat > /tmp/sc-ngrok-config.yaml <<EOF
+log: /tmp/sc-ngrok.log
+web_addr: localhost:6940
+tunnels:
+  hub:
+    addr: 8080
+    proto: http
+EOF
+
+ngrok start --config=/tmp/sc-ngrok-config.yaml --all

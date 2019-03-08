@@ -31,7 +31,7 @@ describe('PaymentMetaDao', () => {
     }))
 
     // save a payment for this update
-    await paymentMetDao.save('abc123', threadUpdate.id, {
+    await paymentMetDao.save('abc123', {
       type: 'PT_THREAD',
       amount: {
         amountToken: tokenVal(1),
@@ -61,6 +61,7 @@ describe('PaymentMetaDao', () => {
 
   it('should work with channel payments', async () => {
     const parties = await channelAndThreadFactory(registry);
+
     // create an update in the channel
     const state = getChannelState('signed', {
       user: parties.user.user,
@@ -69,7 +70,7 @@ describe('PaymentMetaDao', () => {
     let chanUpdate = await channelsDao.applyUpdateByUser(parties.user.user, 'ConfirmPending', parties.user.user, state, {})
 
     // save a payment for this update
-    await paymentMetDao.save('abc123', chanUpdate.id, {
+    await paymentMetDao.save('abc123', {
       type: 'PT_CHANNEL',
       amount: {
         amountToken: tokenVal(2),
@@ -81,7 +82,7 @@ describe('PaymentMetaDao', () => {
       },
     })
 
-    let res = await db.queryOne(SQL`SELECT * FROM payments WHERE custodian_address IS NOT NULL`)
+    let res = await db.queryOne(SQL`SELECT * FROM payments`)
     assert.containSubset(res, {
       'amount_token': tokenVal(2),
       'amount_wei': '0',

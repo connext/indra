@@ -8,7 +8,8 @@ import {
   mockRate,
   MockSignerService,
   fakeSig,
-  getTestConfig
+  getTestConfig,
+  getMockWeb3
 } from './testing/mocks'
 import {
   getChannelState,
@@ -87,47 +88,7 @@ function web3ContractMock() {
 describe('ChannelsService', () => {
   const clock = getFakeClock()
   const registry = getTestRegistry({
-    Web3: {
-      ...Web3,
-      eth: {
-        sign: async () => {
-          return
-        },
-        getTransactionCount: async () => {
-          return 1
-        },
-        estimateGas: async () => {
-          return 1000
-        },
-        signTransaction: async () => {
-          return {
-            tx: {
-              hash: mkHash('0xaaa'),
-              r: mkHash('0xabc'),
-              s: mkHash('0xdef'),
-              v: '0x27',
-            },
-          }
-        },
-        sendSignedTransaction: () => {
-          console.log(`Called mocked web3 function sendSignedTransaction`)
-          return {
-            on: (input, cb) => {
-              switch (input) {
-                case 'transactionHash':
-                  return cb(mkHash('0xbeef'))
-                case 'error':
-                  return cb(null)
-              }
-            },
-          }
-        },
-        sendTransaction: function () {
-          console.log(`Called mocked web3 function sendTransaction`)
-          return this.sendSignedTransaction()
-        },
-      },
-    },
+    Web3: getMockWeb3(),
     GasEstimateDao: new MockGasEstimateDao()
   })
 
@@ -1252,7 +1213,6 @@ describe('ChannelsService.shouldCollateralize', () => {
       },
       ExchangeRateDao: new MockExchangeRateDao(),
       GasEstimateDao: new MockGasEstimateDao(),
-      SignerService: new MockSignerService()
     })
   
     const service: ChannelsService = registry.get('ChannelsService')

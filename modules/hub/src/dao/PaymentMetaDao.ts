@@ -5,7 +5,7 @@ import Config from '../Config'
 import { emptyAddress } from '../vendor/connext/Utils';
 
 export interface PaymentMetaDao {
-  save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number>
+  save (purchaseId: string, payment: PurchasePaymentSummary): Promise<number>
 
   historyByUser (address: string): Promise<PurchasePaymentRow[]>
 
@@ -41,7 +41,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     this.config = config
   }
 
-  public async save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number> {
+  public async save (purchaseId: string, payment: PurchasePaymentSummary): Promise<number> {
     // Note: this only returns the ID because returning a full
     // `PurchasePaymentRow` would require a second query to hit the `payments`
     // view, and at the moment none of the callers of this function need the
@@ -49,16 +49,12 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     const { id } = await this.db.queryOne(SQL`
       INSERT INTO _payments (
         purchase_id, recipient,
-        channel_update_id,
-        thread_update_id,
         amount_wei, amount_token,
         secret,
         meta
       )
       VALUES (
         ${purchaseId}, ${payment.recipient},
-        ${payment.type == 'PT_CHANNEL' || payment.type == 'PT_LINK' ? updateId : null},
-        ${payment.type == 'PT_THREAD' ? updateId : null},
         ${payment.amount.amountWei}, ${payment.amount.amountToken},
         ${payment.secret},
         ${JSON.stringify(payment.meta)}::jsonb

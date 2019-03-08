@@ -28,6 +28,18 @@ env:
   SERVICE_USER_KEY: 'nnWZrKw7WuE0K1JWb2PHup42xEVrLDnkMTcEbqecF3NeuLcleGl7crJwo2Hc0Uh'
   CHANNEL_MANAGER_ADDRESS: '0xbf2aeab03b82c182599930217272ef0fc5cf662b'
   TOKEN_CONTRACT_ADDRESS: '0x6b01c3170ae1efebee1a3159172cb3f7a5ecf9e5'
+  SHOULD_COLLATERALIZE_URL: 'https://beta.spankchain.com/api/model-signup/should-collateralize/'
+  COINPAYMENTS_MERCHANT_ID: '512d176ab9e95cc6aad809f3d4b091c3'
+  COINPAYMENTS_API_KEY: 'dd2575c2077afbd83d3097c5ed9d73cac0c2c63a4801496af1474028b162d7af'
+
+# Environment variabes retrieved from secrets.
+#
+#   FOO: 'bar.baz'
+#
+# Means "Set environment variable FOO to the 'baz' key in secret 'bar'."
+env_secrets:
+  COINPAYMENTS_API_SECRET: 'coinpayments.api_secret'
+  COINPAYMENTS_IPN_SECRET: 'coinpayments.ipn_secret'
 
 redis:
   usePassword: false

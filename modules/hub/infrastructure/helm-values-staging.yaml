@@ -32,6 +32,7 @@ env:
   SERVICE_USER_KEY: 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
   CHANNEL_MANAGER_ADDRESS: '0x2e478F306B438C7653D60fd380e406Fa71e06B40'
   TOKEN_CONTRACT_ADDRESS: '0xb92139a108ae4d03112bafc76307360d575c0403'
+  SHOULD_COLLATERALIZE_URL: 'https://camsite-staging.spankdev.com/api/model-signup/should-collateralize/'
 
 redis:
   usePassword: false

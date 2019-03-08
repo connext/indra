@@ -46,16 +46,18 @@ export type PartialSignedOrSuccinctChannel = Partial<SuccinctChannelState & Chan
 
 export type PartialSignedOrSuccinctThread = Partial<SuccinctThreadState & ThreadState<string | number | BN>>
 
+function toFixedString(v: any) {
+  return v.toFixed ? v.toFixed() : v.toString()
+}
 
 export function expandSuccinctChannel(s: SignedOrSuccinctChannel): ChannelState<string>
 export function expandSuccinctChannel(s: PartialSignedOrSuccinctChannel): Partial<ChannelState<string>>
-
 export function expandSuccinctChannel(s: SignedOrSuccinctChannel | Partial<SignedOrSuccinctChannel>) {
   let res = {} as any
   Object.entries(s).forEach(([name, value]) => {
     if (Array.isArray(value)) {
       let suffixes = ['Hub', 'User']
-      let cast = (x: any) => x.toString()
+      let cast = (x: any) => toFixedString(x)
       if (name == 'txCount') {
         suffixes = ['Global', 'Chain']
         cast = (x: any) => x
@@ -64,7 +66,7 @@ export function expandSuccinctChannel(s: SignedOrSuccinctChannel | Partial<Signe
       res[name + suffixes[1]] = cast(value[1])
     } else {
       if (name.endsWith('Hub') || name.endsWith('User'))
-        value = (!value && value != 0) ? value : value.toString()
+        value = (!value && value != 0) ? value : toFixedString(value)
       res[name] = value
     }
   })
@@ -80,12 +82,12 @@ export function expandSuccinctThread(s: SignedOrSuccinctThread | Partial<SignedO
   Object.entries(s).forEach(([name, value]) => {
     if (Array.isArray(value)) {
       let suffixes = ['Sender', 'Receiver']
-      let cast = (x: any) => x.toString()
+      let cast = (x: any) => toFixedString(x)
       res[name + suffixes[0]] = cast(value[0])
       res[name + suffixes[1]] = cast(value[1])
     } else {
       if (name.endsWith('Sender') || name.endsWith('Receiver'))
-        value = (!value && value != 0) ? value : value.toString()
+        value = (!value && value != 0) ? value : toFixedString(value)
       res[name] = value
     }
   })
@@ -103,7 +105,7 @@ export function makeSuccinctChannel(s: SignedOrSuccinctChannel | Partial<SignedO
           name = name.replace(suffix, '')
           if (!res[name])
             res[name] = ['0', '0']
-          res[name][idx % 2] = idx < 2 ? value && value.toString() : value
+          res[name][idx % 2] = idx < 2 ? value && toFixedString(value ): value
           didMatchSuffix = true
         }
       })
@@ -126,7 +128,7 @@ export function makeSuccinctThread(s: SignedOrSuccinctThread | Partial<SignedOrS
           name = name.replace(suffix, '')
           if (!res[name])
             res[name] = ['0', '0']
-          res[name][idx % 2] = idx < 2 ? value && value.toString() : value
+          res[name][idx % 2] = idx < 2 ? value && toFixedString(value ): value
           didMatchSuffix = true
         }
       })

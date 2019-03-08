@@ -12,9 +12,7 @@ import { emptyAddress } from "./vendor/connext/Utils";
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 
 describe('PaymentsService', () => {
-  const registry = getTestRegistry({
-    SignerService: new MockSignerService()
-  })
+  const registry = getTestRegistry()
 
   const service: PaymentsService = registry.get('PaymentsService')
   const channelsService: ChannelsService = registry.get('ChannelsService')
@@ -246,7 +244,7 @@ describe('PaymentsService', () => {
       convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(30)
+      pendingDepositTokenHub: toWeiString(10)
     })
   })
 
