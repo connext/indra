@@ -3,9 +3,6 @@
 var dbm;
 var type;
 var seed;
-var fs = require('fs');
-var path = require('path');
-var Promise;
 
 /**
   * We receive the dbmigrate dependency from dbmigrate initially.
@@ -18,12 +15,11 @@ exports.setup = function(options, seedLink) {
 };
 
 exports.up = function(db) {
-  db.endMigration()
-  return db.runSql(`ALTER TYPE cm_channel_status ADD VALUE 'CS_CHAINSAW_ERROR';`)
+  return null;
 };
 
 exports.down = function(db) {
-  return null
+  return null;
 };
 
 exports._meta = {
