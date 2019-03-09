@@ -6,7 +6,8 @@ import Config from '../Config';
 export type TxnStateUpdate = (
   { state: 'submitted' } |
   { state: 'confirmed' | 'failed', blockNum: Number, blockHash: string, transactionIndex: number, reason?: any } |
-  { state: 'failed', reason: string }
+  { state: 'failed', reason: string } |
+  { state: 'pending-failure' }
 )
 
 
@@ -83,6 +84,9 @@ export class OnchainTransactionsDao {
         updates = updates.append(SQL`,
           failed_reason = ${s.reason}
         `)
+        break
+      
+      case 'pending-failure':
         break
 
       default:
