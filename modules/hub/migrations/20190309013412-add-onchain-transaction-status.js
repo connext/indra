@@ -15,7 +15,8 @@ exports.setup = function(options, seedLink) {
 };
 
 exports.up = function(db) {
-  return null;
+  db.endMigration()
+  return db.runSql(`ALTER TYPE cm_channel_status ADD VALUE 'CS_CHAINSAW_ERROR';`)
 };
 
 exports.down = function(db) {
