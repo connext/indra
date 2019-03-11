@@ -76,18 +76,22 @@ app.get('/channels/averages', async function (req, res) {
 app.get('/payments/total', async function (req, res) {
     send(req, res, await query(`
         SELECT count(*)
-        FROM _payments
+        FROM payments
     `));
   });
 
 // trailing 24hrs
 app.get('/payments/trailing24', async function (req, res) {
+
+    // SELECT count(*)
+    // FROM _payments a
+    // INNER JOIN _cm_channel_updates b
+    // ON a.channel_update_id = b.id
+    // WHERE b.created_on > now() - interval '1 day'
     send(req, res, await query(`
-        SELECT count(*)
-        FROM _payments a
-        INNER JOIN _cm_channel_updates b
-        ON a.channel_update_id = b.id
-        WHERE b.created_on > now() - interval '1 day'
+    SELECT count(*)
+    FROM payments 
+    where created_on > now() - interval '1 day'
     `));
 });
 
@@ -112,10 +116,8 @@ app.get('/payments/average/trailing24', async function (req, res) {
           SELECT sum(amount_token) as token_sum,
                 sum(amount_wei) as wei_sum,
                  count(*)
-          FROM _payments a
-          INNER JOIN _cm_channel_updates b
-            ON a.channel_update_id = b.id
-            WHERE b.created_on > now() - interval '1 day')
+          FROM payments a
+          WHERE created_on > now() - interval '1 day')
         SELECT token_sum/count as avg_token_payment,
                 token_sum/count as avg_wei_payment
         FROM payment_counts
@@ -150,9 +152,9 @@ app.get('/payments/frequency', async function (req, res) {
 //trailing 24 hrs
 app.get('/gascost/trailing24/:contractAddress', async function (req, res) {
     send(req, res, await query(SQL`
-        SELECT sum(gas)
+        SELECT sum(("gas" * "gas_price"))
         FROM onchain_transactions_raw
-        WHERE state = 'confirmed'
+        WHERE "state" = 'confirmed'
             AND "from" = ${req.params.contractAddress}
             AND confirmed_on > now() - interval '1 day'
     `));
@@ -160,9 +162,9 @@ app.get('/gascost/trailing24/:contractAddress', async function (req, res) {
 
 //trailing week
 app.get('/gascost/trailingweek/:contractAddress', async function (req, res) {
-    send(req, res, await query(SQL`SELECT sum(gas)
+    send(req, res, await query(SQL`SELECT sum(("gas" * "gas_price"))
         FROM onchain_transactions_raw
-        WHERE state = 'confirmed'
+        WHERE "state" = 'confirmed'
             AND "from" = ${req.params.contractAddress}
             AND confirmed_on > now() - interval '1 week'
     `));
@@ -171,9 +173,9 @@ app.get('/gascost/trailingweek/:contractAddress', async function (req, res) {
 //trailing week
 app.get('/gascost/all/:contractAddress', async function (req, res) {
     send(req, res, await query(SQL`
-        SELECT sum(gas)
+        SELECT sum(("gas" * "gas_price"))
         FROM onchain_transactions_raw
-        WHERE state = 'confirmed'
+        WHERE "state" = 'confirmed'
         AND "from" = ${req.params.contractAddress}
     `));
 });
@@ -286,6 +288,7 @@ app.get('/users/:id/:number', async function (req, res) {
         "pending_withdrawal_wei_user","pending_withdrawal_token_hub","pending_withdrawal_token_user"
         FROM _cm_channel_updates
         WHERE "user" = ${req.params.id}
+        ORDER BY "created_on" DESC
         LIMIT ${req.params.number}
     `));
 });
