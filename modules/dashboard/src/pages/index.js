@@ -133,6 +133,8 @@ class Index extends React.Component {
           web3={web3}
           hubUrl={this.props.hubUrl}
           apiUrl={this.props.apiUrl}
+          getContractInfo={this.getContractInfo}
+          getWalletInfo={this.getWalletInfo}
         />
       </div>
     );

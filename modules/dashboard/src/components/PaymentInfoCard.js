@@ -79,8 +79,8 @@ class PaymentInfoCard extends Component {
     const {web3} = this.props;
     const res = await get(`payments/average/all`);
     if (res && res.avg_wei_payment && res.avg_token_payment) {
-      let tokenDeposit = web3.utils.toBN(Math.trunc(res.avg_token_payment));
-      let weiDeposit = web3.utils.toBN(Math.trunc(res.avg_wei_payment));
+      let tokenDeposit = String(Math.trunc(res.avg_token_payment));
+      let weiDeposit = String(Math.trunc(res.avg_wei_payment));
       this.setState(state => {
         state.averagePaymentWei.raw = res.avg_wei_payment
         state.averagePaymentToken.raw = res.avg_token_payment
