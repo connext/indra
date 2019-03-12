@@ -339,6 +339,20 @@ export class OnchainTransactionService {
         return
       }
 
+      const [txReceipt, errReceipt] = await maybe(this.web3.eth.getTransaction(txn.hash))
+      LOG.info('State of {txn.hash}: {res}', {
+        txn,
+        res: JSON.stringify(txReceipt || errReceipt),
+      })
+      if (errReceipt) {
+        // TODO: what errors can happen here?
+        LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + errReceipt} (will retry)`)
+        return
+      }
+      if (!txReceipt) {
+        return
+      }
+
       // otherwise we have both tx and blockNumber, so we can put a final state
       await this.updateTxState(txn, {
         state: tx.status ? 'confirmed' : 'failed',
@@ -349,6 +363,10 @@ export class OnchainTransactionService {
       })
 
       return
+    }
+
+    if (txn.state == 'pending-failure') {
+      
     }
 
     // This really shouldn't happened, but it's safe to ignore if it does.

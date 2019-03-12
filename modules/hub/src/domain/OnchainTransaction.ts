@@ -51,7 +51,7 @@ export type ConfirmedTransaction = UnconfirmedTransaction & {
   transactionIndex: string | null
 }
 
-export type OnchainTransactionState = 'new' | 'submitted' | 'confirmed' | 'failed'
+export type OnchainTransactionState = 'new' | 'submitted' | 'confirmed' | 'pending-failure' | 'failed'
 
 export type OnchainTransactionRow = {
   id: number
