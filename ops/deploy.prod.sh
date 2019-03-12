@@ -13,7 +13,9 @@ INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-rinkeby}"
 # Auth & API Keys
 INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
 INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
-INDRA_ETH_RPC_KEY="${INDRA_ETH_RPC_KEY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
+# INDRA_ETH_RPC_KEY="${INDRA_ETH_RPC_KEY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
+INDRA_ETH_RPC_KEY_MAINNET="${INDRA_ETH_RPC_KEY:-qHg6U3i7dKa4cJdMagOljenupIraBE1V}"
+INDRA_ETH_RPC_KEY_RINKEBY="${INDRA_ETH_RPC_KEY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}" # For LogDna
 INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
 INDRA_DASHBOARD_URL="${INDRA_DASHBOARD_URL:-dashboarddd}"
@@ -26,7 +28,7 @@ number_of_services=7
 
 should_collateralize_url="NO_CHECK"
 
-eth_rpc_url="https://eth-$INDRA_ETH_NETWORK.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY"
+# eth_rpc_url="https://eth-$INDRA_ETH_NETWORK.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY"
 
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
 private_key_file="/run/secrets/$private_key_name"
@@ -50,9 +52,13 @@ else addressBook="modules/contracts/ops/address-book.json"
 fi
 
 if [[ "$INDRA_ETH_NETWORK" == "mainnet" ]]
-then eth_network_id="1"
+then 
+  eth_network_id="1"
+  eth_rpc_url="https://eth-mainnet.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_MAINNET"
 elif [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
-then eth_network_id="4"
+then 
+  eth_network_id="4"
+  eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_RINKEBY"
 else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit
 fi
 
