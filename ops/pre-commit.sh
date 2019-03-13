@@ -30,7 +30,13 @@ then
   read -p "Are you sure you want CI to override version $version docker images? (y/n) " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]
-  then echo "Good choice" && exit 1
+  then echo "Good choice" && exit 1 # abort!
   else echo "Hope you know what you're doing";echo
   fi
+fi
+
+# Tag this commit (or move the old tag to this commit)
+if [[ -z "`git tag -l v$version`" ]]
+then echo "no tag yet" && git tag v$version
+else echo "yes tag yet"
 fi
