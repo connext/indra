@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # Thanks to https://stackoverflow.com/a/5180310 for getting staged changes
 version="`git show :package.json | grep '"version":' | awk -F '"' '{print $4}'`"
@@ -7,10 +8,10 @@ wegood="yes"
 branch="`git symbolic-ref HEAD | sed -e 's|.*/\(.*\)|\1|'`"
 
 if [[ "$branch" != "master" ]]
-then echo "Skipping pre-commit hook for branch $branch" && exit
+then echo "Skipping pre-push hook for branch $branch" && exit
 fi
 
-echo "Pre-commit hook activated for $branch branch (staged package.json version: $version)"
+echo "Pre-push hook activated for $branch branch (staged package.json version: $version)"
 
 echo
 for image in database hub proxy
@@ -26,7 +27,7 @@ echo
 if [[ "$wegood" == "no" ]]
 then
   exec < /dev/tty # Thanks to https://stackoverflow.com/a/10015707
-  echo "It's recommended you increment the version in package.json before commiting to master"
+  echo "It's recommended you increment the version in package.json before pushing to master"
   read -p "Are you sure you want CI to override version $version docker images? (y/n) " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -36,7 +37,5 @@ then
 fi
 
 # Tag this commit (or move the old tag to this commit)
-if [[ -z "`git tag -l v$version`" ]]
-then echo "no tag yet" && git tag v$version
-else echo "yes tag yet"
-fi
+version="`git show :package.json | grep '"version":' | awk -F '"' '{print $4}'`"
+git tag -f v$version
