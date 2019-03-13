@@ -88,7 +88,7 @@ reset: reset-base
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	rm -rf $(db)/snapshots/ganache-*
 
-purge: reset-data clean
+purge: reset clean
 	rm -rf modules/**/node_modules
 
 push: prod
