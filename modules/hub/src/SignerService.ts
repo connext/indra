@@ -7,6 +7,9 @@ import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import { onchainTxnToRawTx } from './util/ethTransaction';
+import log from './util/log'
+
+const LOG = log('SignerService')
 
 export class SignerService {
   constructor(
@@ -71,9 +74,9 @@ export class SignerService {
       ]))
       const sig = await ethUtils.ecsign(ethUtils.toBuffer(prefixedMsg), pk)
       const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
-      console.log(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed a message:`)
-      console.log(`message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}")`)
-      console.log(`sig=${out}`)
+      LOG.info(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed a message:`)
+      LOG.info(`message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}")`)
+      LOG.info(`sig=${out}`)
       return out
     } else {
       return await this.web3.eth.sign(message, this.config.hotWalletAddress)

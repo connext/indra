@@ -162,7 +162,7 @@ export class ApiServer {
 
   private setupRoutes() {
     this.apiServices.forEach(s => {
-      LOG.debug(`Setting up API service at /{namespace}.`, {
+      LOG.info(`Setting up API service at /{namespace}.`, {
         namespace: s.namespace,
       })
       this.app.use(`/${s.namespace}`, s.getRouter())

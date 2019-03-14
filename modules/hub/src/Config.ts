@@ -84,7 +84,7 @@ export default class Config {
   //   { shouldCollateralize: true | false }
   //
   // If the value is 'NO_CHECK' then no check will be performed.
-  public shouldCollateralizeUrl: string | 'NO_CHECK' = ''
+  public shouldCollateralizeUrl: string | 'NO_CHECK' = 'NO_CHECK'
   public recipientAddress: string = ''
   public hotWalletAddress: string = ''
   public hotWalletMinBalanceEth: string = '6.9'
