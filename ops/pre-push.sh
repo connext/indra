@@ -36,4 +36,4 @@ fi
 # Tag this commit (or move the old tag to this commit)
 version="`git show :package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 git tag -f v$version
-echo;echo "You should run: git push origin v$version";echo
+echo;echo "You should run: git push origin v$version" --no-verify;echo
