@@ -186,13 +186,13 @@ export class OnchainTransactionService {
   }
 
   @synchronized('stopped')
-  async runPoller(pollInterval?: number) {
+  async runPoller(pollInterval: number = 1000) {
     this.running = true
     while (this.running) {
       try {
         await this.poll()
         if (this.running)
-          await sleep(pollInterval = 1000)
+          await sleep(pollInterval)
       } catch (e) {
         LOG.error(`Error polling pending transactions (will retry in 30s): ${'' + e}\n${e.stack}`)
         if (this.running)
