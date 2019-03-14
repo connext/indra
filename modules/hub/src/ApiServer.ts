@@ -28,17 +28,14 @@ const requestLogMiddleware = (req: any, res: any, next: any): any => {
   res.on('finish', () => {
     const remoteAddr = req.ip || req.headers['x-forwarded-for'] || req.address
     let duration = Date.now() - req._startTime
-    requestLog.info('{remoteAddr} {method} {url} -> {statusCode} ({size} bytes; {duration})', {
+    requestLog.info('{remoteAddr} {method} {url} {inSize} -> {statusCode} ({outSize}; {duration})', {
       remoteAddr,
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
-      size: res.get('content-length') || '?',
-      query: req.query,
-      host: req.hostname,
-      reqHeaders: req.headers,
-      resHeaders: res.getHeaders(),
-      duration: (duration / 1000).toFixed(3),
+      inSize: (req.get('content-length') || '0') + ' bytes',
+      outSize: (res.get('content-length') || '?') + ' bytes',
+      duration: (duration / 1000).toFixed(3) + 'ms',
     })
   })
   next()
@@ -64,7 +61,7 @@ function bodyTextMiddleware(opts: { maxSize: number }) {
           `bodyTextMiddleware: body too large (${size} > ${opts.maxSize}); not parsing.` :
           `bodyTextMiddleware: no content-length; not parsing body.`
       )
-      LOG.info(msg)
+      LOG.debug(msg)
       const rej = maybe.reject(new Error(msg))
       rawPromise.resolve(rej as any)
       textPromise.resolve(rej as any)
@@ -74,7 +71,7 @@ function bodyTextMiddleware(opts: { maxSize: number }) {
     const rawData = Buffer.alloc(size)
     let offset = 0
     req.on('data', (chunk: Buffer) => {
-      console.log('data!', opts.maxSize)
+      LOG.debug(`Data! max size: ${opts.maxSize}`)
       chunk.copy(rawData, offset)
       offset += chunk.length
     })

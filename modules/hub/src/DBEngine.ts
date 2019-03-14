@@ -211,12 +211,12 @@ export class PgPoolService {
     var connectCount = 0
     pool.on('connect', () => {
       connectCount += 1
-      LOG.info('Allocating new Postgres connection (active connections: {connectCount})', { connectCount })
+      LOG.debug('Allocating new Postgres connection (active connections: {connectCount})', { connectCount })
     })
 
     pool.on('remove', () => {
       connectCount -= 1
-      LOG.info('Removing Postgres connection from pool (active connections: {connectCount})', { connectCount })
+      LOG.debug('Removing Postgres connection from pool (active connections: {connectCount})', { connectCount })
     })
 
     return pool

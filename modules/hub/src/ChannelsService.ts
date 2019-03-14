@@ -586,8 +586,8 @@ export default class ChannelsService {
 
     console.log('USER:', user)
     console.log('CM:', this.config.channelManagerAddress)
-    console.log('CURRENT:', channel)
-    console.log('UPDATE:', update)
+    console.log('CURRENT:', prettySafeJson(channel))
+    console.log('UPDATE:', prettySafeJson(update))
     console.log('HUB VER:', hubsVersionOfUpdate)
 
     if (hubsVersionOfUpdate) {
@@ -627,7 +627,7 @@ export default class ChannelsService {
         hubsVersionOfUpdate.state,
       )
 
-      console.log('HUB SIGNED:', signedChannelStateHub)
+      console.log('HUB SIGNED:', prettySafeJson(signedChannelStateHub))
 
       // verify user sig on hub's data
       this.validator.assertChannelSigner({
@@ -877,20 +877,20 @@ export default class ChannelsService {
     lastThreadUpdateId: number = 0,
   ): Promise<Sync> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
-    console.log('channel: ', channel);
+    console.log('channel: ', prettySafeJson(channel));
     const channelUpdates = await this.channelsDao.getChannelUpdatesForSync(
       user,
       channelTxCount,
     )
 
-    console.log("CHANNEL UPDATE RESULT:", JSON.stringify(channelUpdates, null, 2))
+    console.log("CHANNEL UPDATE RESULT:", prettySafeJson(channelUpdates))
 
     const threadUpdates = await this.threadsDao.getThreadUpdatesForSync(
       user,
       lastThreadUpdateId,
     )
 
-    console.log("THREAD UPDATE RESULT:", JSON.stringify(threadUpdates, null, 2))
+    console.log("THREAD UPDATE RESULT:", prettySafeJson(threadUpdates))
 
     let curChan = 0
     let curThread = 0
@@ -996,7 +996,7 @@ export default class ChannelsService {
   }
 
   async redisSaveUnsignedState(reason: RedisReason, user: string, update: Omit<ChannelStateUpdate, 'state'>) {
-    console.log("SAVING:",update)
+    console.log("SAVING:", prettySafeJson(update))
     const redis = await this.redis.set(
       `PendingStateUpdate:${user}`,
       JSON.stringify({

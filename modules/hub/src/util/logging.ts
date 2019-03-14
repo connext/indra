@@ -1,5 +1,8 @@
 import { prettySafeJson } from ".";
 
+// TOOD: incorporate this into Config or use env vars or something
+const logLevelLimit = 20
+
 /*
 
 Logs messages to both console.log and logdna!
@@ -93,7 +96,7 @@ export class SCLogger {
 
     const c = console as any
 
-    if (process.env.NODE_ENV !== 'production' || !this.logdna) {
+    if ((process.env.NODE_ENV !== 'production' || !this.logdna) && levelno >= logLevelLimit) {
       (c[level] || console.log)(`${level}: ${msg || this.name}`)
     }
 

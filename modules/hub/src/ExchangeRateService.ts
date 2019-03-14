@@ -41,7 +41,7 @@ export default class ExchangeRateService {
       return
     }
 
-    LOG.info('Fetching latest exchange rate.')
+    LOG.debug('Fetching latest exchange rate.')
 
     ExchangeRateService.fetch(ExchangeRateService.COINBASE_URL)
       .then((res: Response) => res.json())
