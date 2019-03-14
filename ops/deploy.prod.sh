@@ -28,6 +28,8 @@ number_of_services=7
 
 should_collateralize_url="NO_CHECK"
 
+bei_min_collateralization="10000000000000000000"
+
 # eth_rpc_url="https://eth-$INDRA_ETH_NETWORK.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY"
 
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
@@ -187,6 +189,7 @@ services:
       SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
+      BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
     logging:
       driver: "json-file"
       options:
