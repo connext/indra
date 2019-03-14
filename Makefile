@@ -45,7 +45,6 @@ default: dev
 all: dev prod
 dev: hooks database hub proxy client dashboard
 prod: hooks database-prod hub-prod proxy-prod dashboard-server-prod
-hooks: pre-push-hook
 
 start: dev
 	bash ops/deploy.dev.sh
@@ -263,9 +262,9 @@ root-node-modules: package.json
 	$(install)
 	$(log_finish) && touch build/$@
 
-pre-push-hook: ops/pre-push.sh
+hooks: ops/pre-push.sh
 	$(log_start)
-	rm -f .git/hooks/pre-push
+	rm -f .git/hooks/*
 	cp ops/pre-push.sh .git/hooks/pre-push
 	chmod +x .git/hooks/pre-push
 	$(log_finish) && touch build/$@
