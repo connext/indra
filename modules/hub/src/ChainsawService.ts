@@ -63,7 +63,7 @@ export default class ChainsawService {
   /**
    * Process a single transaction by hash. Can be used by scripts that need to force a re-process.
    */
-  async processSingleTx(txHash: string): Promise<PollType> {
+  async processSingleTx(txHash: string, force: boolean = false): Promise<PollType> {
     const event = await this.chainsawDao.eventByHash(txHash)
     LOG.info('Processing event: {event}', { event })
 
@@ -72,7 +72,7 @@ export default class ChainsawService {
       case DidHubContractWithdrawEvent.TYPE:
         break
       case DidUpdateChannelEvent.TYPE:
-      res = await this.processDidUpdateChannel(event.chainsawId, event as DidUpdateChannelEvent)
+      res = await this.processDidUpdateChannel(event.chainsawId, event as DidUpdateChannelEvent, force)
         break
       case DidStartExitChannelEvent.TYPE:
         await this.processDidStartExitChannel(event.chainsawId, event as DidStartExitChannelEvent)
@@ -181,7 +181,7 @@ export default class ChainsawService {
     }
   }
 
-  private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent): Promise<PollType> {
+  private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent, force: boolean = false): Promise<PollType> {
     if (event.txCountGlobal > 1) {
       const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(
         event.user,
@@ -214,10 +214,11 @@ export default class ChainsawService {
     }
 
     const prev = await this.channelsDao.getChannelOrInitialState(event.user)
-    if (prev.status == "CS_CHAINSAW_ERROR") {
+    if (prev.status == "CS_CHAINSAW_ERROR" && !force) {
+      console.log('force: ', force);
       // if there was a previous chainsaw error, return
       // and do not process event
-      return
+      return 'SKIP_EVENTS'
     }
     let state
     try {
@@ -225,6 +226,9 @@ export default class ChainsawService {
         convertChannelState('str', prev.state),
         { transactionHash: event.txHash }
       )
+      if (prev.status == "CS_CHAINSAW_ERROR") {
+        await this.channelsDao.removeChainsawErrorId(event.user)
+      }
     } catch (e) {
       // switch channel status to cs chainsaw error and break out of
       // function

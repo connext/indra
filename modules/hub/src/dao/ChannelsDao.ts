@@ -51,6 +51,7 @@ export default interface ChannelsDao {
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
   getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
   addChainsawErrorId(user: Address, id: number): Promise<void>
+  removeChainsawErrorId(user: Address): Promise<void>
 }
 
 export function getChannelInitialState(
@@ -96,15 +97,20 @@ export class PostgresChannelsDao implements ChannelsDao {
   }
 
   async addChainsawErrorId(user: Address, id: number): Promise<void> {
-    // Note: the `FOR UPDATE` here will ensure that we acquire a lock on the
-    // channel for the duration of this transaction. This will make sure that
-    // only one request can update a channel at a time, to prevent race
-    // conditions where two threads try to get the channel to create a new
-    // state on top of it and both end up generating an update with the same
-    // txCount.
     await this.db.queryOne(SQL`
       UPDATE _cm_channels
       SET "chainsaw_error_event_id" = ${id}
+      WHERE
+        "user" = ${user.toLowerCase()} AND
+        "contract" = ${this.config.channelManagerAddress.toLowerCase()}
+      RETURNING id
+    `)
+  }
+
+  async removeChainsawErrorId(user: Address): Promise<void> {
+    await this.db.queryOne(SQL`
+      UPDATE _cm_channels
+      SET "chainsaw_error_event_id" = NULL
       WHERE
         "user" = ${user.toLowerCase()} AND
         "contract" = ${this.config.channelManagerAddress.toLowerCase()}

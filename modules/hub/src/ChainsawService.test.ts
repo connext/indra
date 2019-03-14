@@ -187,12 +187,38 @@ describe('ChainsawService::mocked Web3', function() {
       `)
       assert.lengthOf(rows, 2)
       // channel should fail
-      const failChan = await chanDao.getChannelByUser(chan1.user)
+      let failChan = await chanDao.getChannelByUser(chan1.user)
       assert.equal(failChan.status, "CS_CHAINSAW_ERROR")
       assert.containSubset(failChan.state, chan1.state)
       // TODO: figure out better way to mock validator here
       // so possible to test mixed success and failure cases
       // safe to not test since changes additive
+
+      registry = getTestRegistry({
+        Web3: {
+          ...Web3,
+          eth: {
+            getBlockNumber: async () => { return 1 },
+            sign: async () => { return mkSig() }
+          }
+        },
+        SignerService: {
+          signMessage: async () => { return mkSig() }
+        },
+        Validator: {
+          generateConfirmPending: async (prev, args) => {
+            return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
+          }
+        },
+        ChannelManager: {
+          _address: CM_ADDRESS,
+        }
+      })
+      cs = registry.get('ChainsawService')
+      const pollType = await cs.processSingleTx(failedTxHash, true)
+      assert.equal(pollType, 'PROCESS_EVENTS')
+      failChan = await chanDao.getChannelByUser(chan1.user)
+      assert.equal(failChan.status, "CS_OPEN")
     })
   })
 })
