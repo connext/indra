@@ -102,7 +102,7 @@ export default class PaymentHub {
 
   public async processTx(txHash: string) {
     const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
-    await chainsaw.processSingleTx(txHash)
+    await chainsaw.processSingleTx(txHash, true)
   }
 
   public async fixBrokenChannels() {
