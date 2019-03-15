@@ -97,6 +97,8 @@ export default class Config {
   public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 20)
   public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 30)
   public beiMaxCollateralization = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION || 169)
+  public beiMinCollateralizationMultiple = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION_MULTIPLE || 0.5)
+  public beiMaxCollateralizationMultiple = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION_MULTIPLE || 1.5)
   public threadBeiLimit = toWeiBigNum(process.env.THREAD_BEI_LIMIT || 10)
   public channelBeiDeposit = this.channelBeiLimit.plus(1069)
   public privateKeyFile: string = ''
