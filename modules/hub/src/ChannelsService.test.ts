@@ -522,17 +522,23 @@ describe('ChannelsService', () => {
       convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
-    const collateralizationTarget = 5 * 10 * 2.5 - 5
+    // target should be:
+    // num tippers * threadBeiLimit * max collat multiple - bal token hub
+    const collateralizationTarget = Big(5)
+      .times(config.beiMinCollateralization)
+      .times(config.maxCollateralizationMultiple)
+      .minus(toWeiString(5))
+      .toFixed()
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: toWeiString(collateralizationTarget)
+      pendingDepositTokenHub: collateralizationTarget
     })
   })
 
   it('should collateralize to the max amount', async () => {
-    const channel = await channelUpdateFactory(registry, { balanceTokenHub: toWeiString(10) })
+    const channel = await channelUpdateFactory(registry, { balanceTokenHub: toWeiString(20) })
 
-    for (let i = 0; i < 10; i++) {
-      const tipper = await channelUpdateFactory(registry, { user: mkAddress(`0x${i}`), balanceTokenUser: toWeiString(5) })
+    for (let i = 0; i < 20; i++) {
+      const tipper = await channelUpdateFactory(registry, { user: mkAddress(`0x${i.toString() + 'f'}`), balanceTokenUser: toWeiString(5) })
       await paymentsService.doPurchase(tipper.user, {}, [{
         recipient: channel.user,
         meta: {},
@@ -563,9 +569,8 @@ describe('ChannelsService', () => {
       convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
-    const collateralizationTarget = 169
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: toWeiString(collateralizationTarget)
+      pendingDepositTokenHub: config.beiMaxCollateralization.toString()
     })
   }).timeout(5000)
 
