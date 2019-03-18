@@ -203,14 +203,14 @@ export default class ChannelsService {
       toWeiBigNum(10)
 
     return {
-      minAmount: BigNumber.max(baseMin, baseTarget).times(0.5),
+      minAmount: BigNumber.max(baseMin, baseTarget).times(this.config.minCollateralizationMultiple),
 
       maxAmount: BigNumber.min(
         this.config.beiMaxCollateralization,
 
         BigNumber.max(
           baseMin,
-          baseTarget.times(2.5),
+          baseTarget.times(this.config.maxCollateralizationMultiple),
         ),
       ),
 

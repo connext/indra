@@ -271,7 +271,7 @@ export class PostgresChannelsDao implements ChannelsDao {
       FROM payments
         WHERE
           recipient = ${user} AND
-          created_on > NOW() - interval '10 minutes'
+          created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
     `)
 
     return parseInt(num_tippers)
