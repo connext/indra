@@ -43,31 +43,31 @@ jobs:
     machine: true
     steps:
       - run:
-        command: |
-          ssh ubuntu@$STAGING_URL "bash -s" <<EOF
-            git clone https://github.com/ConnextProject/indra.git || true
-            cd indra
-            git fetch
-            git reset --hard origin/$CIRCLE_BRANCH
-            export MODE="staging"
-            export DOMAINNAME="$STAGING_URL"
-            bash ops/restart.sh prod
-          EOF
+          command: |
+            ssh ubuntu@$STAGING_URL "bash -s" <<EOF
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
+              git fetch
+              git reset --hard origin/$CIRCLE_BRANCH
+              export MODE="staging"
+              export DOMAINNAME="$STAGING_URL"
+              bash ops/restart.sh prod
+            EOF
 
   deploy-live:
     machine: true
     steps:
       - run:
-        command: |
-          ssh ubuntu@$STAGING_URL "bash -s" <<EOF
-            git clone https://github.com/ConnextProject/indra.git || true
-            cd indra
-            git fetch
-            git reset --hard origin/master
-            export MODE="live"
-            export DOMAINNAME="$PRODUCTION_URL"
-            bash ops/restart.sh prod
-          EOF
+          command: |
+            ssh ubuntu@$STAGING_URL "bash -s" <<EOF
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
+              git fetch
+              git reset --hard origin/master
+              export MODE="live"
+              export DOMAINNAME="$PRODUCTION_URL"
+              bash ops/restart.sh prod
+            EOF
 
 workflows:
   version: 2
