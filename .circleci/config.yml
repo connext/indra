@@ -49,6 +49,7 @@ jobs:
             cd indra
             git fetch
             git reset --hard origin/$CIRCLE_BRANCH
+            export MODE="staging"
             export DOMAINNAME="$STAGING_URL"
             bash ops/restart.sh prod
           EOF
