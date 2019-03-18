@@ -8,7 +8,7 @@ set -e
 INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-rinkeby}"
-INDRA_MODE="${INDRA_MODE:-development}" # set to "live" to use versioned docker images
+INDRA_MODE="${INDRA_MODE:-staging}" # set to "live" to use versioned docker images
 
 # Auth & API Keys
 INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
