@@ -60,7 +60,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
   }
 
   private extractAddress (hash: string, signature: string): string | null {
-    console.log("Hash sent to extract", hash)
+    LOG.debug(`Hash sent to extract: ${hash}`)
     let addr
 
     try {

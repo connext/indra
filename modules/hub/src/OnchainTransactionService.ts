@@ -66,7 +66,7 @@ function md5(data: string) {
  *
  *      class MyService {
  *        async completionCallback(txn: OnchainTransactionRow) {
- *          console.log('Transaction completed:', txn)
+ *          LOG.info('Transaction completed:', txn)
  *        }
  *      }
  *

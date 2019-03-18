@@ -50,13 +50,13 @@ export default class ChainsawService {
     try {
       await this.db.withTransaction(() => this.doFetchEvents())
     } catch (e) {
-      LOG.error('Fetching events failed: {e}', { e })
+      LOG.error(`Fetching events failed: ${e}`)
     }
 
     try {
       await this.db.withTransaction(() => this.doProcessEvents())
     } catch (e) {
-      LOG.error('Processing events failed: {e}', { e })
+      LOG.error(`Processing events failed: ${e}`)
     }
   }
 
@@ -65,7 +65,7 @@ export default class ChainsawService {
    */
   async processSingleTx(txHash: string, force: boolean = false): Promise<PollType> {
     const event = await this.chainsawDao.eventByHash(txHash)
-    LOG.info('Processing event: {event}', { event })
+    LOG.info(`Processing event: ${event}`)
 
     let res
     switch (event.TYPE) {
@@ -87,9 +87,7 @@ export default class ChainsawService {
         }
         break
       default:
-        LOG.info('Got type {type}. Not implemented yet.', {
-          type: event.TYPE
-        })
+        LOG.info(`Got type { type: ${event.TYPE} }. Not implemented yet.`)
         break
     }
     return res ? res : 'PROCESS_EVENTS'
@@ -108,10 +106,7 @@ export default class ChainsawService {
 
     const fromBlock = lastBlock + 1
 
-    LOG.info('Synchronizing chain data between blocks {fromBlock} and {toBlock}', {
-      fromBlock,
-      toBlock
-    })
+    LOG.info(`Synchronizing chain data between blocks ${fromBlock} and ${toBlock}`)
 
     const events = await this.contract.getPastEvents('allEvents', {
       fromBlock,
@@ -146,13 +141,9 @@ export default class ChainsawService {
     })
 
     if (channelEvents.length) {
-      LOG.info('Inserting new transactions: {transactions}', {
-        transactions: channelEvents.map((e: ContractEvent) => e.txHash)
-      })
+      LOG.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
       await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract._address)
-      LOG.info('Successfully inserted {num} transactions.', {
-        num: channelEvents.length
-      })
+      LOG.info(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
       LOG.info('No new transactions found; nothing to do.')
       await this.chainsawDao.recordPoll(toBlock, null, this.contract._address, 'FETCH_EVENTS')
@@ -215,7 +206,7 @@ export default class ChainsawService {
 
     const prev = await this.channelsDao.getChannelOrInitialState(event.user)
     if (prev.status == "CS_CHAINSAW_ERROR" && !force) {
-      console.log('force: ', force);
+      LOG.debug(`force: ${force}`);
       // if there was a previous chainsaw error, return
       // and do not process event
       return 'SKIP_EVENTS'
@@ -232,7 +223,7 @@ export default class ChainsawService {
     } catch (e) {
       // switch channel status to cs chainsaw error and break out of
       // function
-      LOG.error('Error updating user {user} channel, changing status to CS_CHAINSAW_ERROR. Error: {e}', { user: event.user, e })
+      LOG.error(`Error updating user ${event.user} channel, changing status to CS_CHAINSAW_ERROR. Error: ${e}`)
       // update the channel to insert chainsaw error event
       // id, which will trigger the status change check
       await this.channelsDao.addChainsawErrorId(event.user, event.chainsawId!)
