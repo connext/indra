@@ -1,7 +1,6 @@
 import { prettySafeJson } from ".";
 
-// TOOD: incorporate this into Config or use env vars or something
-const logLevelLimit = 20
+const logLevelLimit = parseInt(process.env.LOG_LEVEL, 10) || 20
 
 /*
 
