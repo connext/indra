@@ -103,6 +103,7 @@ function pull_if_unavailable {
     fi
   fi
 }
+pull_if_unavailable $dashboard_image
 pull_if_unavailable $database_image
 pull_if_unavailable $hub_image
 pull_if_unavailable $redis_image
