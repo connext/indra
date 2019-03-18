@@ -16,6 +16,7 @@ import {
   ChannelStateUpdateRowBigNum,
   ChannelRowBigNum,
 } from '../domain/Channel'
+import { prettySafeJson } from '../util'
 import { Big } from '../util/bigNumber'
 import { emptyRootHash } from '../vendor/connext/Utils'
 import { default as log } from '../util/log'
@@ -203,12 +204,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     onchainLogicalId?: number,
   ): Promise<ChannelStateUpdateRowBigNum> {
 
-    LOG.info('Applying channel update to {user}: {reason}({args}) -> {state}', {
-      user,
-      reason,
-      args: JSON.stringify(args),
-      state: JSON.stringify(state),
-    })
+    LOG.info(`Applying channel update to ${user}: ${reason}(${prettySafeJson(args)}) -> ${prettySafeJson(state)}`)
 
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
