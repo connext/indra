@@ -243,12 +243,12 @@ export default class ChainsawService {
       let attempt = await this.redisGetRetryAttempt(event.user)
       LOG.error(
         'Error updating user {user} channel, Error: {e} attempt {attempt} of {NUM_RETRY_ATTEMPTS}', 
-        { user: event.user, e, NUM_RETRY_ATTEMPTS }
+        { user: event.user, e, NUM_RETRY_ATTEMPTS, attempt }
       )
       // 10 retries until failing permenently
       // return 'RETRY' so caller knows to not record a poll and retry this event
       if (attempt < NUM_RETRY_ATTEMPTS) {
-        await this.redisSetRetryAttempt(event.user, attempt++)
+        await this.redisSetRetryAttempt(event.user, ++attempt)
         return 'RETRY'
       }
 
@@ -303,12 +303,10 @@ export default class ChainsawService {
   private async redisGetRetryAttempt(user: string): Promise<number> {
     let attempt = await this.redis.get(`ChainsawRetry:${user}`)
     let attemptNum: number
-    try {
-      attemptNum = parseInt(attempt)
-    } catch (e) {
+    attemptNum = parseInt(attempt)
+    if (isNaN(attemptNum)) {
       attemptNum = 0
-    } finally {
-      return attemptNum
     }
+    return attemptNum
   }
 }
