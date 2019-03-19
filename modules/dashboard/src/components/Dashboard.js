@@ -24,6 +24,7 @@ import { DepositsStyled } from "./Deposits";
 import { WithdrawalsStyled } from "./Withdrawals";
 import { UserInfoStyled } from "./UserInfo";
 import { GasCostCardStyled } from "./GasCostCard";
+import { CollateralCardStyled } from "./Collateralization";
 const ChannelManagerAbi = require("../abi/ChannelManager.json");
 const TokenAbi = require("../abi/Token.json");
 
@@ -257,6 +258,19 @@ class Dashboard extends React.Component {
                 path="/gas"
                 render={props => (
                   <GasCostCardStyled
+                    hubWallet={hubWallet}
+                    channelManager={channelManager}
+                    web3={web3}
+                    hubUrl={hubUrl}
+                    apiUrl={apiUrl}
+                  />
+                )}
+              />
+              <Route
+                exact
+                path="/collateral"
+                render={props => (
+                  <CollateralCardStyled
                     hubWallet={hubWallet}
                     channelManager={channelManager}
                     web3={web3}

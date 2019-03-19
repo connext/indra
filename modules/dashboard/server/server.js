@@ -51,6 +51,18 @@ app.get('/channels/open', async function (req, res) {
     `));
 });
 
+app.get('/channels/inactive', async function (req, res) {
+    send(req, res, await query(`
+    select date_trunc('day',"last_updated_on") as last_update, 
+            count(*),
+            sum("balance_token_hub") as collateral_locked
+    from public._cm_channels 
+    group by 1 
+    order by 1 desc
+    LIMIT 7;
+    `));
+});
+
 
 // average balances
 app.get('/channels/averages', async function (req, res) {
@@ -225,15 +237,24 @@ app.get('/withdrawals/frequency', async function (req, res) {
 
 // hub collateralization frequency
 // need to make this more efficient (add subquery, right now it's counting (*) twice for every single row)
-app.get('/collateralization/summary', async function (req, res) {
+
+app.get('/collateralization/ratio', async function (req, res) {
     send(req, res, await query(`
-        SELECT date_part('day', created_on) as day,
-                count(*) as collateralizations,
-                sum(pending_deposit_token_hub)/count(*) as avg_value
-        FROM _cm_channel_updates
-        WHERE reason = 'ProposePendingDeposit'
-          AND pending_deposit_token_hub > 0
-        GROUP BY 1
+    WITH t1 AS(
+        SELECT sum("balance_token_user") as user_balances, 
+                sum("balance_token_hub") as collateral 
+        FROM public._cm_channels) 
+        SELECT collateral/user_balances as ratio FROM t1;
+    `));
+});
+
+app.get('/collateralization/overcollateralized', async function (req, res) {
+    send(req, res, await query(`
+        SELECT "user",
+                "balance_token_hub" as collateral 
+        FROM public._cm_channels
+        ORDER BY 2 DESC
+        LIMIT 15
     `));
 });
 
