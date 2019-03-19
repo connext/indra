@@ -56,7 +56,11 @@ class CollateralCard extends Component {
     if (res) {
       let arr = [];
       arr.push(res);
-      this.setState({ inactiveChannels: arr });
+      if(arr.length == 1){
+        this.setState({ inactiveChannels: arr });
+      }else{
+        this.setState({inactiveChannels:arr[0]});
+      }
     }else{
       this.setState({ inactiveChannels: "No channels found" });
     }
@@ -67,7 +71,7 @@ class CollateralCard extends Component {
     if (res) {
       let arr = [];
       arr.push(res);
-      this.setState({ overCollateralized: arr });
+      this.setState({ overCollateralized: arr[0] });
     }else{
       this.setState({ overCollateralized: "No channels found" });
     }
@@ -167,7 +171,7 @@ class CollateralCard extends Component {
                       <Typography variant="h6">User</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="h6">Hub Collateral</Typography>
+                      <Typography variant="h6">Collateral Locked</Typography>
                     </TableCell>
                   </TableRow>
                 </TableHead>

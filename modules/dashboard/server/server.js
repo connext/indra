@@ -107,6 +107,60 @@ app.get('/payments/trailing24', async function (req, res) {
     `));
 });
 
+app.get('/payments/trailing24/pctchange', async function (req, res) {
+
+    // SELECT count(*)
+    // FROM _payments a
+    // INNER JOIN _cm_channel_updates b
+    // ON a.channel_update_id = b.id
+    // WHERE b.created_on > now() - interval '1 day'
+    send(req, res, await query(`
+    WITH t1 as(SELECT count(*) as ct
+    FROM payments 
+    where created_on > now() - interval '1 day'),
+    t2 as (SELECT count(*) as ct
+    FROM payments 
+    where created_on BETWEEN (now() - interval '1 day') AND (now() - interval '2 day') )
+    SELECT ((a.ct - b.ct)/b.ct)*100 as pctChange
+    FROM t1 a, t2 b
+    `));
+});
+
+// trailing 1week
+app.get('/payments/trailingWeek', async function (req, res) {
+
+    // SELECT count(*)
+    // FROM _payments a
+    // INNER JOIN _cm_channel_updates b
+    // ON a.channel_update_id = b.id
+    // WHERE b.created_on > now() - interval '1 day'
+    send(req, res, await query(`
+    SELECT count(*)
+    FROM payments 
+    where created_on > now() - interval '1 week'
+    `));
+});
+
+app.get('/payments/trailingWeek/pctchange', async function (req, res) {
+
+    // SELECT count(*)
+    // FROM _payments a
+    // INNER JOIN _cm_channel_updates b
+    // ON a.channel_update_id = b.id
+    // WHERE b.created_on > now() - interval '1 day'
+    send(req, res, await query(`
+    WITH t1 as(SELECT count(*) as ct
+    FROM payments 
+    where created_on > now() - interval '1 week'),
+    t2 as (SELECT count(*) as ct
+    FROM payments 
+    where created_on BETWEEN (now() - interval '1 week') AND (now() - interval '2 week') )
+    SELECT ((a.ct - b.ct)/b.ct)*100 as pctChange
+    FROM t1 a, t2 b
+    `));
+});
+
+
 // average
 app.get('/payments/average/all', async function (req, res) {
     send(req, res, await query(`
@@ -130,6 +184,21 @@ app.get('/payments/average/trailing24', async function (req, res) {
                  count(*)
           FROM payments a
           WHERE created_on > now() - interval '1 day')
+        SELECT token_sum/count as avg_token_payment,
+                token_sum/count as avg_wei_payment
+        FROM payment_counts
+    `));
+});
+
+// average trailing 24
+app.get('/payments/average/trailingweek', async function (req, res) {
+    send(req, res, await query(`
+        WITH payment_counts as(
+          SELECT sum(amount_token) as token_sum,
+                sum(amount_wei) as wei_sum,
+                 count(*)
+          FROM payments a
+          WHERE created_on > now() - interval '1 week')
         SELECT token_sum/count as avg_token_payment,
                 token_sum/count as avg_wei_payment
         FROM payment_counts
