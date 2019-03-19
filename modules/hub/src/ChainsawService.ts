@@ -14,6 +14,8 @@ import { default as DBEngine } from './DBEngine'
 import { Validator } from './vendor/connext/validator';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { SignerService } from './SignerService';
+import { RedisClient } from './RedisClient';
+import { loadDefs } from 'nock';
 
 const LOG = log('ChainsawService')
 
@@ -31,7 +33,8 @@ export default class ChainsawService {
     private utils: Utils, 
     private config: Config, 
     private db: DBEngine, 
-    public validator: Validator
+    public validator: Validator,
+    public redis: RedisClient
   ) {}
 
   async poll() {
@@ -72,7 +75,7 @@ export default class ChainsawService {
       case DidHubContractWithdrawEvent.TYPE:
         break
       case DidUpdateChannelEvent.TYPE:
-      res = await this.processDidUpdateChannel(event.chainsawId, event as DidUpdateChannelEvent, force)
+        res = await this.processDidUpdateChannel(event.chainsawId, event as DidUpdateChannelEvent, force)
         break
       case DidStartExitChannelEvent.TYPE:
         await this.processDidStartExitChannel(event.chainsawId, event as DidStartExitChannelEvent)
@@ -161,8 +164,12 @@ export default class ChainsawService {
     }
 
     for (let event of ingestedEvents) {
-      // returns either 'PROCESS_EVENTS' or 'SKIP_EVENTS'
+      // returns either 'PROCESS_EVENTS' or 'SKIP_EVENTS' or 'RETRY
       const pollType = await this.processSingleTx(event.event.txHash)
+
+      // return on retry so we can retry on the next polling loop
+      if (pollType == 'RETRY') return
+
       await this.chainsawDao.recordPoll(
         event.event.blockNumber,
         event.event.txIndex,
@@ -206,39 +213,56 @@ export default class ChainsawService {
 
     const prev = await this.channelsDao.getChannelOrInitialState(event.user)
     if (prev.status == "CS_CHAINSAW_ERROR" && !force) {
-      LOG.debug(`force: ${force}`);
       // if there was a previous chainsaw error, return
       // and do not process event
       return 'SKIP_EVENTS'
     }
-    let state
     try {
-      state = await this.validator.generateConfirmPending(
+      const state = await this.validator.generateConfirmPending(
         convertChannelState('str', prev.state),
         { transactionHash: event.txHash }
       )
       if (prev.status == "CS_CHAINSAW_ERROR") {
         await this.channelsDao.removeChainsawErrorId(event.user)
       }
+
+      const hash = this.utils.createChannelStateHash(state)
+
+      const sigHub = await this.signerService.signMessage(hash);
+
+      await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.config.hotWalletAddress, {
+        ...state,
+        sigHub
+      } as ChannelState, { transactionHash: event.txHash } as ConfirmPendingArgs, chainsawId)
+
+      return 'PROCESS_EVENTS'
     } catch (e) {
+      const NUM_RETRY_ATTEMPTS = 10
+      
+      // add retry count
+      let attempt = await this.redisGetRetryAttempt(event.user)
+      LOG.error(
+        'Error updating user {user} channel, Error: {e} attempt {attempt} of {NUM_RETRY_ATTEMPTS}', 
+        { user: event.user, e, NUM_RETRY_ATTEMPTS, attempt }
+      )
+      // 10 retries until failing permenently
+      // return 'RETRY' so caller knows to not record a poll and retry this event
+      if (attempt < NUM_RETRY_ATTEMPTS) {
+        await this.redisSetRetryAttempt(event.user, ++attempt)
+        return 'RETRY'
+      }
+
+      LOG.error('Exceeded max error attempts for user {user}, putting channel into CS_CHAINSAW_ERROR status', { user: event.user })
+
       // switch channel status to cs chainsaw error and break out of
       // function
-      LOG.error(`Error updating user ${event.user} channel, changing status to CS_CHAINSAW_ERROR. Error: ${e}`)
+      
       // update the channel to insert chainsaw error event
       // id, which will trigger the status change check
       await this.channelsDao.addChainsawErrorId(event.user, event.chainsawId!)
       // insert poll event with error
       return 'SKIP_EVENTS'
     }
-    const hash = this.utils.createChannelStateHash(state)
-
-    const sigHub = await this.signerService.signMessage(hash);
-
-    await this.channelsDao.applyUpdateByUser(event.user, 'ConfirmPending', this.config.hotWalletAddress, {
-      ...state,
-      sigHub
-    } as ChannelState, { transactionHash: event.txHash } as ConfirmPendingArgs, chainsawId)
-    return 'PROCESS_EVENTS'
   }
 
   private async processDidStartExitChannel(chainsawId: number, event: DidStartExitChannelEvent) {
@@ -269,5 +293,20 @@ export default class ChainsawService {
     const newState = await this.validator.generateEmptyChannel(convertChannelState('str', channel.state), args)
     const signed = await this.signerService.signChannelState(newState)
     await this.channelsDao.applyUpdateByUser(event.user, 'EmptyChannel', event.user, signed, args, chainsawId)
+  }
+
+  private async redisSetRetryAttempt(user: string, attempt: number) {
+    LOG.info(`Saving chainsaw retry info for user: ${user}, attempt: ${attempt}`)
+    await this.redis.set(`ChainsawRetry:${user}`, `${attempt}`)
+  }
+
+  private async redisGetRetryAttempt(user: string): Promise<number> {
+    let attempt = await this.redis.get(`ChainsawRetry:${user}`)
+    let attemptNum: number
+    attemptNum = parseInt(attempt)
+    if (isNaN(attemptNum)) {
+      attemptNum = 0
+    }
+    return attemptNum
   }
 }

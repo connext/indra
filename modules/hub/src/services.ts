@@ -109,7 +109,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       config: Config,
       db: DBEngine,
       validator: Validator,
-    ) => new ChainsawService(signerService, chainsawDao, channelsDao, channelDisputesDao, contract, web3, utils, config, db, validator),
+      redis: RedisClient
+    ) => new ChainsawService(signerService, chainsawDao, channelsDao, channelDisputesDao, contract, web3, utils, config, db, validator, redis),
     dependencies: [
       'SignerService',
       'ChainsawDao',
@@ -121,6 +122,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'DBEngine',
       'Validator',
+      'RedisClient'
     ],
     isSingleton: true,
   },

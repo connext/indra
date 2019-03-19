@@ -49,8 +49,6 @@ describe('ChainsawService::mocked Web3', function() {
   beforeEach(async () => {
     // ensure that fetchEvents will not return any new events
     // by making the top block the same as the last block on event (1)
-    if (registry)
-      await registry.clearDatabase()
 
     registry = getTestRegistry({
       Web3: {
@@ -67,6 +65,7 @@ describe('ChainsawService::mocked Web3', function() {
         _address: CM_ADDRESS,
       }
     })
+    await registry.clearDatabase()
     chan1 = await channelUpdateFactory(registry)
     chainsawDao = registry.get('ChainsawDao')
     cs = registry.get('ChainsawService')
@@ -154,13 +153,22 @@ describe('ChainsawService::mocked Web3', function() {
   })
 
   describe('processSingleTx', () => {
-    it('should return poll type "SKIP_EVENTS" if state generation fails', async () => {
+    it('should return poll type "RETRY" if state generation fails', async () => {
      const pollType = await cs.processSingleTx(failedTxHash)
-     assert.equal(pollType, 'SKIP_EVENTS')
+     assert.equal(pollType, 'RETRY')
     })
 
+    it('should return poll type "SKIP_EVENTS" if state generation fails many times', async () => {
+      let pollType
+      for (let index = 0; index < 10; index++) {
+        pollType = await cs.processSingleTx(failedTxHash)
+        assert.equal(pollType, 'RETRY')
+      }
+      pollType = await cs.processSingleTx(failedTxHash)
+      assert.equal(pollType, 'SKIP_EVENTS')
+     })
+
     it('should return poll type "PROCESS_EVENTS" if state generation is successful', async () => {
-      // stub out validator
       cs.validator.generateConfirmPending = async (prev, args) => {
         return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
       }
@@ -172,8 +180,9 @@ describe('ChainsawService::mocked Web3', function() {
 
   describe('pollOnce', () => {
     it('should process events with passing transactions, and record failed event transactions', async () => {
-      // manually update the 
-      await cs.pollOnce()
+      for (let index = 0; index <= 10; index++) {
+        await cs.pollOnce()
+      }
       // because of how the events were inserted (ie block number)
       // the fetchEvents portion of this function should return without
       // inserting any new events
@@ -185,7 +194,7 @@ describe('ChainsawService::mocked Web3', function() {
         WHERE
           "poll_type" <> 'FETCH_EVENTS';
       `)
-      assert.lengthOf(rows, 2)
+      assert.lengthOf(rows, 1)
       // channel should fail
       let failChan = await chanDao.getChannelByUser(chan1.user)
       assert.equal(failChan.status, "CS_CHAINSAW_ERROR")
