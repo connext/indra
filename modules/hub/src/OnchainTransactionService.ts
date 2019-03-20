@@ -212,8 +212,9 @@ export class OnchainTransactionService {
 
   @synchronized('pollFinished')
   async poll() {
-    for (const txn of await this.onchainTransactionDao.getPending(this.db))
+    for (const txn of await this.onchainTransactionDao.getPending(this.db)) {
       await this.processPendingTxn(txn)
+    }
   }
 
   private async signAndSendTx(txn: OnchainTransactionRow): Promise<void> {
@@ -255,14 +256,12 @@ export class OnchainTransactionService {
 
     switch (errorReason) {
       case 'permanent':
-        // check nonce of latest onchain
-        // for each nonce we have thats <= to that
-
         // In the future we'll be able to be more intelligent about retrying (ex,
         // with a new nonce or more gas) here... but for now, just fail.
-        LOG.error(`Permanent error sending transaction: ${error}. Transaction: ${prettySafeJson(txn)}, marking as pending-failure`)
+        LOG.error(`Permanent error sending transaction: ${error}. Transaction: ${prettySafeJson(txn)}, marking as pending_failure`)
         await this.updateTxState(txn, {
-          state: 'pending-failure'
+          state: 'pending_failure',
+          reason: errorReason
         })
         break
 
@@ -312,6 +311,7 @@ export class OnchainTransactionService {
         // TODO: shorten this?
         if (txnAgeS > 60) {
           // sign and send, dont change status here
+          // should reset the submit time
           await this.signAndSendTx(txn)
         }
         // retry on next poll
@@ -339,6 +339,7 @@ export class OnchainTransactionService {
         return
       }
 
+      // has block
       const [txReceipt, errReceipt] = await maybe(this.web3.eth.getTransaction(txn.hash))
       LOG.info('State of {txn.hash}: {res}', {
         txn,
@@ -365,8 +366,51 @@ export class OnchainTransactionService {
       return
     }
 
-    if (txn.state == 'pending-failure') {
-      
+    if (txn.state == 'pending_failure') {
+      if (!txn.hash) {
+        await this.signAndSendTx(txn)
+        return
+      }
+
+      const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
+      LOG.info('State of {txn.hash}: {res}', {
+        txn,
+        res: JSON.stringify(tx || err),
+      })
+      if (err) {
+        // TODO: what errors can happen here?
+        LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
+        return
+      }
+
+      // if tx exists at this point, mark as submitted
+      await this.updateTxState(txn, {
+        state: 'submitted',
+      })
+
+      // get age to compare poll times
+      const txnAgeS = (Date.now() - (+new Date(txn.submittedOn))) / 1000
+      const txnAge = `${Math.floor(txnAgeS / 60)}m ${Math.floor(txnAgeS % 60)}s`
+
+      const latestConfirmed = await this.onchainTransactionDao.getLatestConfirmed(this.db, txn.from)
+      if (latestConfirmed && latestConfirmed.nonce > txn.nonce) {
+        LOG.warning(`Transaction '${txn.hash}' is invalidated by a higher confirmed nonce: ${latestConfirmed.nonce}; marking as failed.`)
+        await this.updateTxState(txn, {
+          state: 'failed',
+          reason: `higher confirmed nonce by txn id: ${txn.id}`,
+        })
+      }
+
+      // if polled for 54 seconds and still nothing, mark as failed
+      if (txnAgeS > 6 * 9) {
+        LOG.warning(`Transaction '${txn.hash}' has been pending_failure for ${txnAge}; marking failed.`)
+        await this.updateTxState(txn, {
+          state: 'failed',
+          reason: `timeout (${txnAge})`,
+        })
+        return
+      }
+      return
     }
 
     // This really shouldn't happened, but it's safe to ignore if it does.
