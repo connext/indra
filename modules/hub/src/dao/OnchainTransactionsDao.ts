@@ -7,7 +7,7 @@ export type TxnStateUpdate = (
   { state: 'submitted' } |
   { state: 'confirmed' | 'failed', blockNum: Number, blockHash: string, transactionIndex: number, reason?: any } |
   { state: 'failed', reason: string } |
-  { state: 'pending-failure' }
+  { state: 'pending_failure', reason: string }
 )
 
 
@@ -66,6 +66,21 @@ export class OnchainTransactionsDao {
     return row && this.inflateRow(row)
   }
 
+  async getLatestConfirmed(db: DBEngine, account: string): Promise<OnchainTransactionRow | null> {
+    const row = await db.queryOne(SQL`
+      SELECT *
+      FROM onchain_transactions_raw
+      WHERE
+        "from" = ${account} AND
+        state = 'confirmed'
+      ORDER BY nonce DESC
+      LIMIT 1
+      FOR UPDATE
+    `)
+
+    return row && this.inflateRow(row)
+  }
+
   async updateTransactionState(db: DBEngine, id: Number, s: TxnStateUpdate): Promise<OnchainTransactionRow> {
     let updates = SQL`state = ${s.state}, `.append(s.state + '_on').append(` = now() `)
     switch (s.state) {
@@ -86,7 +101,10 @@ export class OnchainTransactionsDao {
         `)
         break
       
-      case 'pending-failure':
+      case 'pending_failure':
+        updates = updates.append(SQL`,
+          failed_reason = ${s.reason}
+        `)
         break
 
       default:
@@ -129,6 +147,8 @@ export class OnchainTransactionsDao {
       'blockNum': row.block_num,
       'blockHash': row.block_hash,
       'transactionIndex': row.transaction_index,
+
+      'pendingFailureOn': row.pending_failure_on,
 
       'failedOn': row.failed_on,
       'failedReason': row.failed_reason,
