@@ -14,6 +14,9 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Switch from "@material-ui/core/Switch";
 import { VictoryChart, VictoryLine, VictoryLabel, VictoryAxis } from "victory";
+import DatePicker from "react-datepicker";
+
+import "react-datepicker/dist/react-datepicker.css";
 
 const styles = theme => ({
   card: {
@@ -64,8 +67,15 @@ class PaymentInfoCard extends Component {
         raw: null,
         formatted: null
       },
+      paymentCountRange:null,
+      averagePaymentTokenRange: {
+        raw: null,
+        formatted: null
+      },
       view: false,
-      checked: false
+      checked: false,
+      startDate: new Date(),
+      endDate: new Date(),
     };
   }
 
@@ -77,6 +87,18 @@ class PaymentInfoCard extends Component {
   handleChange = evt => {
     this.setState({ idInput: evt.target.value });
   };
+
+  handleStartChange = (date) => {
+    this.setState({
+      startDate: date
+    })
+  }
+
+  handleEndChange = (date) => {
+    this.setState({
+      endDate: date
+    })
+  }
 
   _handleRefresh = async () => {
     await this.setTrailing();
@@ -247,6 +269,41 @@ class PaymentInfoCard extends Component {
       this.setState({ paymentInfo: "ID not found" });
     }
   };
+
+   /********************
+   * Get values for date range
+   */
+  fetchDateRange = async() => {
+
+    let start = this.state.startDate.toISOString().slice(0, 19).replace('T', ' ');
+    let end = this.state.endDate.toISOString().slice(0, 19).replace('T', ' ');
+
+    console.log(`Fetching date range: ${start} - ${end}`)
+    const { web3 } = this.props;
+
+    const res = await get(`payments/daterange/${start}/${end}`);
+    if (res) {
+      let tokenPayment = String(Math.trunc(res.avg_token_payment));
+      let count = res.count
+      //let weiPayment = String(Math.trunc(res.avg_wei_payment));
+      this.setState(state => {
+        state.averagePaymentTokenRange.raw = res.avg_token_payment;
+        state.averagePaymentTokenRange.formatted = web3.utils.fromWei(
+          tokenPayment
+        );
+        state.paymentCountRange= count;
+        return state;
+      });
+      console.log(this.state.paymentCountRange);
+    } else {
+      this.setState(state => {
+        state.averagePaymentTokenRange.formatted = "N/A";
+        state.paymentCountRange = "N/A";
+        return state;
+      });
+    }
+  }
+
 
   /********************
    * Chart of past week (commented out)
@@ -421,7 +478,44 @@ class PaymentInfoCard extends Component {
             Refresh
           </Button>
         </Card>
+        <Card className={classes.card}>
+        <div>
+          Start Date: 
+            <DatePicker
+              selected={this.state.startDate}
+              onSelect={(evt) => this.handleStartChange(evt)} //when day is clicked
+              onChange={(evt) => this.handleStartChange(evt)} //only when value has changed
+            />
+          End Date: 
+            <DatePicker
+              selected={this.state.endDate}
+              onSelect={(evt) => this.handleEndChange(evt)} //when day is clicked
+              onChange={(evt) => this.handleEndChange(evt)} //only when value has changed
+            />
+          <Button variant="contained" onClick={() =>this.fetchDateRange()}>Submit</Button>
+        </div>
+          <Table>
+            <TableRow>
+              <TableCell component="th" scope="row">
+                <Typography variant="h6">Count</Typography>
+              </TableCell>
+              <TableCell component="th" scope="row">
+                {this.state.paymentCountRange}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell component="th" scope="row">
+                <Typography variant="h6">
+                  Average Token Payment
+                </Typography>
+              </TableCell>
+              <TableCell component="th" scope="row">
+                {this.state.averagePaymentTokenRange.formatted}
+              </TableCell>
+            </TableRow>
 
+          </Table>
+        </Card>
         <Card className={classes.card}>
           <CardContent>
             <Typography variant="h5" style={{ marginBotton: "5%" }}>

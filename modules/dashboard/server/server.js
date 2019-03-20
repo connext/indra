@@ -141,6 +141,21 @@ app.get('/payments/trailingWeek', async function (req, res) {
     `));
 });
 
+// date range
+app.get('/payments/daterange/:startDate/:endDate', async function (req, res) {
+    send(req, res, await query(SQL`
+    WITH payment_counts as(
+        SELECT sum(amount_token) as token_sum,
+              sum(amount_wei) as wei_sum,
+               count(*)
+        FROM payments a
+        WHERE created_on BETWEEN ${req.params.startDate} AND ${req.params.endDate})
+      SELECT token_sum/count as avg_token_payment,
+              count
+      FROM payment_counts
+    `));
+  });
+
 app.get('/payments/trailingWeek/pctchange', async function (req, res) {
 
     // SELECT count(*)
