@@ -155,7 +155,7 @@ class CollateralCard extends Component {
                     </TableRow>
                   ))}
                 </TableBody>
-          ) : <Typography>There's no data here :(</Typography>}
+          ) : (null)}
           </Table>
           </CardContent>
           <Button variant="contained" onClick={() => this._handleRefresh()}>
@@ -188,7 +188,7 @@ class CollateralCard extends Component {
                     </TableRow>
                   ))}
                 </TableBody>
-          ) : <Typography>There's no data here :(</Typography>}
+          ) : (null)}
           </Table>
           </CardContent>
           <Button variant="contained" onClick={() => this._handleRefresh()}>
