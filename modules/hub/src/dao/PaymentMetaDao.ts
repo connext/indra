@@ -191,7 +191,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
   }
 
   private rowToPaymentSummary(row: any): PurchasePaymentRow {
-    return {
+    return row && {
       id: Number(row.id),
       createdOn: row.created_on,
       purchaseId: row.purchase_id,
