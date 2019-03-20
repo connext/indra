@@ -64,7 +64,7 @@ describe('OnchainTransactionService', function() {
     errorResponse = 'nonce too low'
     await txService.poll()
     assert.containSubset(await dao.getTransactionByLogicalId(db, txn.logicalId), {
-      state: 'failed',
+      state: 'pending_failure',
     })
   })
 })
