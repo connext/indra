@@ -16,7 +16,7 @@ exports.setup = function(options, seedLink) {
 
 exports.up = function(db) {
   db.endMigration()
-  return db.runSql(`ALTER TYPE cm_channel_status ADD VALUE 'CS_CHAINSAW_ERROR';`)
+  return db.runSql(`ALTER TYPE onchain_transaction_state ADD VALUE 'pending_failure';`)
 };
 
 exports.down = function(db) {
