@@ -120,8 +120,8 @@ app.get('/payments/trailing24/pctchange', async function (req, res) {
     where created_on > now() - interval '1 day'),
     t2 as (SELECT count(*) as ct
     FROM payments 
-    where created_on BETWEEN (now() - interval '1 day') AND (now() - interval '2 day') )
-    SELECT ((a.ct - b.ct)/b.ct)*100 as pctChange
+    where  created_on <  now() - interval '1 day' AND created_on > now() - interval '2 day' )
+    SELECT CASE WHEN (b.ct = 0) THEN 0 ELSE ((a.ct- b.ct)*1.00/b.ct)*100 END as pctChange
     FROM t1 a, t2 b
     `));
 });
@@ -156,7 +156,7 @@ app.get('/payments/daterange/:startDate/:endDate', async function (req, res) {
     `));
   });
 
-app.get('/payments/trailingWeek/pctchange', async function (req, res) {
+app.get('/payments/trailingweek/pctchange', async function (req, res) {
 
     // SELECT count(*)
     // FROM _payments a
@@ -169,8 +169,8 @@ app.get('/payments/trailingWeek/pctchange', async function (req, res) {
     where created_on > now() - interval '1 week'),
     t2 as (SELECT count(*) as ct
     FROM payments 
-    where created_on BETWEEN (now() - interval '1 week') AND (now() - interval '2 week') )
-    SELECT ((a.ct - b.ct)/b.ct)*100 as pctChange
+    where  created_on <  now() - interval '1 week' AND created_on > now() - interval '2 week' )
+    SELECT CASE WHEN (b.ct = 0) THEN 0 ELSE ((a.ct- b.ct)*1.00/b.ct)*100 END as pctChange
     FROM t1 a, t2 b
     `));
 });
