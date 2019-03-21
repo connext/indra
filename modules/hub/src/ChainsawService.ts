@@ -282,11 +282,10 @@ export default class ChainsawService {
       return
     }
 
-    let txn
     let data
     const latestUpdate = await this.channelsDao.getLatestExitableState(event.user)
     if (event.txCountGlobal <= latestUpdate.state.txCountGlobal) {
-      LOG.info(`Channel has not exited with the latest state, hub will respond! event ${prettySafeJson(event)}`)
+      LOG.info(`Channel has not exited with the latest state, hub will respond with the latest state: ${prettySafeJson(latestUpdate.state)}! event: ${prettySafeJson(event)}`)
       data = this.contract.methods.emptyChannelWithChallenge(
         [latestUpdate.state.user, latestUpdate.state.recipient],
         [
@@ -317,9 +316,10 @@ export default class ChainsawService {
         latestUpdate.state.sigUser,
       ).encodeABI()
     } else {
+      LOG.info(`Channel has exited with the latest state, hub will empty with onchain state! event: ${prettySafeJson(event)}`)
       data = this.contract.methods.emptyChannel(event.user).encodeABI()
     }
-    txn = await this.onchainTransactionService.sendTransaction(this.db, {
+    const txn = await this.onchainTransactionService.sendTransaction(this.db, {
       from: this.config.hotWalletAddress,
       to: this.config.channelManagerAddress,
       data,
