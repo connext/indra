@@ -268,64 +268,70 @@ export default class ChainsawService {
   private async processDidStartExitChannel(chainsawId: number, event: DidStartExitChannelEvent) {
     const onchainChannel = await this.signerService.getChannelDetails(event.user)
 
-    const disputeRecord = await this.channelDisputesDao.getActive(event.user)
+    let disputeRecord = await this.channelDisputesDao.getActive(event.user)
     if (!disputeRecord) {
       // dispute might not have been initiated by us, so we need to add it here
-      await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', chainsawId, null, onchainChannel.channelClosingTime)
+      disputeRecord = await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', chainsawId, null, onchainChannel.channelClosingTime)
     } else {
       await this.channelDisputesDao.setExitEvent(disputeRecord.id, chainsawId, onchainChannel.channelClosingTime)
     }
 
     // check if sender was user
-    if (event.senderIdx == 1) {
-      const latestUpdate = await this.channelsDao.getLatestExitableState(event.user)
-      if (event.txCountGlobal <= latestUpdate.state.txCountGlobal) {
-        LOG.info(`Channel has not exited with the latest state, hub will respond! event ${prettySafeJson(event)}`)
-        const data = this.contract.methods.emptyChannelWithChallenge(
-          [latestUpdate.state.user, latestUpdate.state.recipient],
-          [
-            latestUpdate.state.balanceWeiHub.toFixed(),
-            latestUpdate.state.balanceWeiUser.toFixed()
-          ],
-          [
-            latestUpdate.state.balanceTokenHub.toFixed(),
-            latestUpdate.state.balanceTokenUser.toFixed()
-          ],
-          [
-            latestUpdate.state.pendingDepositWeiHub.toFixed(),
-            latestUpdate.state.pendingWithdrawalWeiHub.toFixed(),
-            latestUpdate.state.pendingDepositWeiUser.toFixed(),
-            latestUpdate.state.pendingWithdrawalWeiUser.toFixed()
-          ],
-          [
-            latestUpdate.state.pendingDepositTokenHub.toFixed(),
-            latestUpdate.state.pendingWithdrawalTokenHub.toFixed(),
-            latestUpdate.state.pendingDepositTokenUser.toFixed(),
-            latestUpdate.state.pendingWithdrawalTokenUser.toFixed()
-          ],
-          [latestUpdate.state.txCountGlobal, latestUpdate.state.txCountChain],
-          latestUpdate.state.threadRoot,
-          latestUpdate.state.threadCount,
-          latestUpdate.state.timeout,
-          latestUpdate.state.sigHub,
-          latestUpdate.state.sigUser,
-        ).encodeABI()
-
-        const txn = await this.onchainTransactionService.sendTransaction(this.db, {
-          from: this.config.hotWalletAddress,
-          to: this.config.channelManagerAddress,
-          data,
-          meta: {
-            completeCallback: 'CloseChannelService.startUnilateralExitCompleteCallback',
-            args: {
-              user: event.user
-            }
-          }
-        })
-
-        await this.channelDisputesDao.addStartExitOnchainTx(disputeRecord.id, txn)
-      }
+    if (event.senderIdx == 0) {
+      LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
+      return
     }
+
+    let txn
+    let data
+    const latestUpdate = await this.channelsDao.getLatestExitableState(event.user)
+    if (event.txCountGlobal <= latestUpdate.state.txCountGlobal) {
+      LOG.info(`Channel has not exited with the latest state, hub will respond! event ${prettySafeJson(event)}`)
+      data = this.contract.methods.emptyChannelWithChallenge(
+        [latestUpdate.state.user, latestUpdate.state.recipient],
+        [
+          latestUpdate.state.balanceWeiHub.toFixed(),
+          latestUpdate.state.balanceWeiUser.toFixed()
+        ],
+        [
+          latestUpdate.state.balanceTokenHub.toFixed(),
+          latestUpdate.state.balanceTokenUser.toFixed()
+        ],
+        [
+          latestUpdate.state.pendingDepositWeiHub.toFixed(),
+          latestUpdate.state.pendingWithdrawalWeiHub.toFixed(),
+          latestUpdate.state.pendingDepositWeiUser.toFixed(),
+          latestUpdate.state.pendingWithdrawalWeiUser.toFixed()
+        ],
+        [
+          latestUpdate.state.pendingDepositTokenHub.toFixed(),
+          latestUpdate.state.pendingWithdrawalTokenHub.toFixed(),
+          latestUpdate.state.pendingDepositTokenUser.toFixed(),
+          latestUpdate.state.pendingWithdrawalTokenUser.toFixed()
+        ],
+        [latestUpdate.state.txCountGlobal, latestUpdate.state.txCountChain],
+        latestUpdate.state.threadRoot,
+        latestUpdate.state.threadCount,
+        latestUpdate.state.timeout,
+        latestUpdate.state.sigHub,
+        latestUpdate.state.sigUser,
+      ).encodeABI()
+    } else {
+      data = this.contract.methods.emptyChannel(event.user).encodeABI()
+    }
+    txn = await this.onchainTransactionService.sendTransaction(this.db, {
+      from: this.config.hotWalletAddress,
+      to: this.config.channelManagerAddress,
+      data,
+      meta: {
+        completeCallback: 'CloseChannelService.startEmptyChannelCompleteCallback',
+        args: {
+          user: event.user
+        }
+      }
+    })
+
+    await this.channelDisputesDao.addStartExitOnchainTx(disputeRecord.id, txn)
   }
 
   private async processDidEmptyChannel(chainsawId: number, event: DidEmptyChannelEvent) {
