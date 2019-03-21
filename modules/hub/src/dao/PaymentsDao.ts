@@ -5,6 +5,8 @@ import log from '../util/log'
 export default interface PaymentsDao {
   createChannelInstantPayment(paymentId: number, disbursementId: number, updateId: number): Promise<void>
   createHubPayment(paymentId: number, updateId: number): Promise<void>
+  createThreadPayment(paymentId: number, updateId: number): Promise<void>
+  createLinkPayment(paymentId: number, updateId: number, secret: string): Promise<void>
 }
 
 const LOG = log('PostgresPaymentsDao')
@@ -38,6 +40,34 @@ export class PostgresPaymentsDao implements PaymentsDao {
       VALUES (
         ${paymentId},
         ${updateId}
+      )
+    `)
+  }
+
+  public async createThreadPayment(paymentId: number, updateId: number): Promise<void> {
+    await this.db.queryOne(SQL`
+      INSERT INTO payments_thread (
+        payment_id,
+        update_id
+      )
+      VALUES (
+        ${paymentId},
+        ${updateId}
+      )
+    `)
+  }
+
+  public async createLinkPayment(paymentId: number, updateId: number, secret: string): Promise<void> {
+    await this.db.queryOne(SQL`
+      INSERT INTO payments_thread (
+        payment_id,
+        update_id,
+        "secret"
+      )
+      VALUES (
+        ${paymentId},
+        ${updateId},
+        ${secret}
       )
     `)
   }

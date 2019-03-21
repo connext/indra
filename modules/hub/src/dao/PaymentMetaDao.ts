@@ -50,13 +50,11 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       INSERT INTO _payments (
         purchase_id, recipient,
         amount_wei, amount_token,
-        secret,
         meta
       )
       VALUES (
         ${purchaseId}, ${payment.recipient},
         ${payment.amount.amountWei}, ${payment.amount.amountToken},
-        ${payment.secret},
         ${JSON.stringify(payment.meta)}::jsonb
       ) RETURNING id
     `)
@@ -192,7 +190,6 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
       createdOn: row.created_on,
       purchaseId: row.purchase_id,
       sender: row.sender,
-      secret: row.secret,
       recipient: row.recipient,
       amount: {
         amountWei: row.amount_wei,

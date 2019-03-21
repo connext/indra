@@ -1,10 +1,7 @@
 import { assert, getTestRegistry } from '../testing'
 import { channelAndThreadFactory, tokenVal, channelUpdateFactory } from "../testing/factories";
-import { default as ThreadsDao } from "./ThreadsDao";
-import { default as ChannelsDao } from "./ChannelsDao";
-import { getThreadState, getChannelState, mkAddress } from "../testing/stateUtils";
-import { PaymentMetaDao } from "./PaymentMetaDao";
-import { default as DBEngine, SQL } from "../DBEngine";
+import { getThreadState, getChannelState } from "../testing/stateUtils";
+import { SQL } from "../DBEngine";
 import { emptyAddress } from '../vendor/connext/Utils';
 
 describe('PaymentMetaDao', () => {
@@ -22,7 +19,7 @@ describe('PaymentMetaDao', () => {
     const parties = await channelAndThreadFactory(registry);
     
     // create an update in the thread
-    let threadUpdate = await threadsDao.applyThreadUpdate(getThreadState('signed', {
+    await threadsDao.applyThreadUpdate(getThreadState('signed', {
       sender: parties.user.user,
       receiver: parties.performer.user,
       balanceTokenSender: tokenVal(9),

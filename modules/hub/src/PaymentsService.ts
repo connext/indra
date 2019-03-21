@@ -54,7 +54,7 @@ export default class PaymentsService {
     payments: PurchasePayment[],
   ): Promise<MaybeResult<{ purchaseId: string }>> {
     const purchaseId = this.generatePurchaseId()
-    const custodialPayments: Array<() => Promise<void>> = []
+    const afterPayments: Array<() => Promise<void>> = []
 
     for (let payment of payments) {
       let afterPayment = null
@@ -78,7 +78,7 @@ export default class PaymentsService {
         // If the payment's recipient is not the hub, create an instant
         // custodial payment (but only after the row in `payments` has been
         // created, since the `custodial_payments` table references that row)
-        afterPayment = paymentId => custodialPayments.push(async () => {
+        afterPayment = paymentId => afterPayments.push(async () => {
           if (payment.recipient !== this.config.hotWalletAddress && payment.recipient !== emptyAddress) {
             try {
               await this.doChannelInstantPayment(payment, paymentId, row.id)
@@ -103,7 +103,7 @@ export default class PaymentsService {
           txCount: payment.update.txCount
         })
 
-        afterPayment = paymentId => custodialPayments.push(async () => {
+        afterPayment = paymentId => afterPayments.push(async () => {
           await this.custodialPaymentsDao.createCustodialPayment(paymentId, row.id)
         })
 
@@ -114,12 +114,16 @@ export default class PaymentsService {
           convertThreadState('bignumber', payment.update.state),
         )
 
+        afterPayment = paymentId => afterPayments.push(async () => {
+          await this.paymentsDao.createThreadPayment(paymentId, row.id)
+        })
+
       } else if (payment.type == 'PT_LINK') {
         if (payment.recipient != emptyAddress) {
           throw new Error(`Linked payments must have no recipient`)
         }
 
-        if (!payment.secret) {
+        if (!meta.secret) {
           throw new Error(`No secret detected on linked payment.`)
         }
 
@@ -129,6 +133,10 @@ export default class PaymentsService {
           reason: 'Payment',
           sigUser: payment.update.sigUser,
           txCount: payment.update.txCount
+        })
+
+        afterPayment = paymentId => afterPayments.push(async () => {
+          await this.paymentsDao.createLinkPayment(paymentId, row.id, meta.secret)
         })
 
       } else {
@@ -152,7 +160,7 @@ export default class PaymentsService {
         afterPayment(paymentId)
     }
 
-    for (let p of custodialPayments) {
+    for (let p of afterPayments) {
       await p()
     }
 

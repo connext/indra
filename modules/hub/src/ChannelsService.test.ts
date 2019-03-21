@@ -57,6 +57,7 @@ import ThreadsService from './ThreadsService';
 import DBEngine from './DBEngine';
 import { sleep } from './util';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
+import { async } from 'q';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -833,6 +834,9 @@ describe('ChannelsService', () => {
             console.log(`Called mocked web3 function sendTransaction`)
             return this.sendSignedTransaction()
           },
+          getBlock: async () => {
+            return 1
+          }
         },
       },
       GasEstimateDao: new MockGasEstimateDao()
