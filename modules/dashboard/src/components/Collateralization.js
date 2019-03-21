@@ -54,16 +54,11 @@ class CollateralCard extends Component {
   getInactive = async () => {
     const res = await get(`channels/inactive`);
     if (res) {
-      let arr = [];
-      arr.push(res);
-      if(arr.length == 1){
-        this.setState({ inactiveChannels: arr });
-      }else{
-        this.setState({inactiveChannels:arr[0]});
-      }
+      this.setState({ inactiveChannels: res });
     }else{
       this.setState({ inactiveChannels: "No channels found" });
     }
+     console.log(`inactive channels: ${JSON.stringify(this.state.inactiveChannels)}`)
   };
 
   getOvercollateralized = async () => {

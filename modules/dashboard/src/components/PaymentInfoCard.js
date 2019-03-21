@@ -141,6 +141,8 @@ class PaymentInfoCard extends Component {
     }
   };
 
+  //Trailing Day
+
   setTrailing = async () => {
     const res = await get(`payments/trailing24`);
     if (res) {
@@ -153,12 +155,16 @@ class PaymentInfoCard extends Component {
   setTrailingPct = async () => {
     const res = await get(`payments/trailing24/pctchange`);
     if (res) {
-      this.setState({ paymentsLastDayPct: res.pctChange });
+      console.log(`trailing day pct res ${JSON.stringify(res)}`)
+
+      this.setState({ paymentsLastDayPct: res["pctchange"] });
     } else {
       this.setState({ paymentsLastDayPct: "N/A" });
     }
   };
 
+  //Trailing Week
+  
   setTrailingWeek = async () => {
     const res = await get(`payments/trailingweek`);
     if (res) {
@@ -171,7 +177,8 @@ class PaymentInfoCard extends Component {
   setTrailingWeekPct = async () => {
     const res = await get(`payments/trailingweek/pctchange`);
     if (res) {
-      this.setState({ paymentsLastWeekPct: res.pctChange });
+      console.log(`trailing week pct res ${JSON.stringify(res)}`)
+      this.setState({ paymentsLastWeekPct: res["pctchange"] });
     } else {
       this.setState({ paymentsLastWeekPct: "N/A" });
     }
@@ -426,7 +433,7 @@ class PaymentInfoCard extends Component {
         </Card>
         <Card className={classes.card}>
           <div>
-            Past Day
+            Past Week
             <Switch
               checked={this.state.checked}
               onChange={() =>
@@ -438,7 +445,7 @@ class PaymentInfoCard extends Component {
               value="checkedB"
               color="primary"
             />
-            Past Week
+            Past Day
           </div>
           <Table>
             <TableRow>
