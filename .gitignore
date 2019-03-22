@@ -25,3 +25,4 @@ modules/database/snapshots/*
 
 # remove next line once hub is decoupled from spankchain
 modules/hub/package-lock.json
+modules/client/package-lock.json
