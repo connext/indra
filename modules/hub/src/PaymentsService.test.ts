@@ -428,8 +428,9 @@ describe('PaymentsService', () => {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
-        meta: {},
-        secret: 'secret',
+        meta: {
+          secret: 'secret',
+        },
         type: 'PT_LINK',
         update: {
           reason: 'Payment',
