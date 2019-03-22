@@ -1,10 +1,10 @@
 import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
 import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
-import DBEngine from './DBEngine'
+import DBEngine, { SQL } from './DBEngine'
 import ChannelsDao, {PostgresChannelsDao} from './dao/ChannelsDao'
 import {ChannelManager} from './ChannelManager'
-import ABI, {BYTECODE} from './abi/ChannelManager'
+import abi, {BYTECODE} from './abi/ChannelManager'
 import {assert} from 'chai'
 import * as sinon from 'sinon'
 import {Utils, emptyRootHash} from './vendor/connext/Utils'
@@ -12,8 +12,225 @@ import {PgPoolServiceForTest} from './testing/mocks'
 import {BigNumber} from 'bignumber.js'
 import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
 import { StateGenerator } from './vendor/connext/StateGenerator'
+import Web3 = require('web3')
+import { Big } from './util/bigNumber';
+import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent';
+import { mkHash, mkAddress, mkSig } from './testing/stateUtils';
+import { EventLog } from 'web3/types';
+import { channelUpdateFactory } from './testing/factories';
+import { ChannelStateUpdateRowBigNum, ChannelStateUpdateRow } from './domain/Channel';
 
 const GAS_PRICE = '1000000000'
+
+describe('ChainsawService::mocked Web3', function() {
+  this.timeout(10000)
+
+  const successfulTxHash = "0xf58405c1867c0bc888ff4899c8020b6142ea3dd14416a42d3fc3ead744674ab2";
+  const failedTxHash = "0xb9a41108e0d0071e90e8f4da953f2ecbd043fc5f6e350aa721ccd06f43224375";
+
+  let registry: TestServiceRegistry
+  let clock: sinon.SinonFakeTimers
+
+  let chainsawDao: ChainsawDao
+  let chanDao: ChannelsDao
+  let utils: Utils
+  let contract: ChannelManager
+  let w3: any
+  let cs: ChainsawService
+
+  let HUB_ADDRESS: string
+  const USER_ADDRESS: string = mkAddress('0x5546')
+  const CM_ADDRESS: string = "0xCCC0000000000000000000000000000000000000"
+  let dbEngine: DBEngine
+  let chan1: { update: ChannelStateUpdateRowBigNum, state: ChannelState, user: string }
+
+  let chan2: { update: ChannelStateUpdateRowBigNum, state: ChannelState, user: string }
+
+  beforeEach(async () => {
+    // ensure that fetchEvents will not return any new events
+    // by making the top block the same as the last block on event (1)
+
+    registry = getTestRegistry({
+      Web3: {
+        ...Web3,
+        eth: {
+          getBlockNumber: async () => { return 1 },
+          sign: async () => { return mkSig() }
+        }
+      },
+      SignerService: {
+        signMessage: async () => { return mkSig() }
+      },
+      ChannelManager: {
+        _address: CM_ADDRESS,
+      }
+    })
+    await registry.clearDatabase()
+    chan1 = await channelUpdateFactory(registry)
+    chainsawDao = registry.get('ChainsawDao')
+    cs = registry.get('ChainsawService')
+    // @ts-ignore
+    cs.contract._address = CM_ADDRESS
+    chanDao = registry.get('ChannelsDao')
+    dbEngine = registry.get('DBEngine')
+    const config = registry.get('Config')
+    // insert fake raw event to db
+    const failedRaw = {
+      log: {
+        returnValues: {
+          user: chan1.user,
+          senderIdx: 1,
+          weiBalances: ["0", "0",],
+          tokenBalances: ["0", "0",],
+          pendingWeiUpdates: ["0", "0", "0", "0",],
+          pendingTokenUpdates: ["100", "0", "0", "0",],
+          txCount: [1, 1],
+          threadRoot: emptyRootHash,
+          threadCount: 0,
+        },
+        blockNumber: 1,
+        blockHash: emptyRootHash,
+        transactionHash: failedTxHash,
+      } as EventLog,
+      blockNumber: 1,
+      blockHash: emptyRootHash,
+      txHash: failedTxHash,
+      contract: chan1.state.contractAddress,
+      sender: chan1.user,
+      timestamp: Date.now(),
+      logIndex: 0,
+      txIndex: 0,
+    }
+
+    // insert channel updates for propose pending
+    const args: DepositArgs = {
+      depositTokenHub: "100",
+      depositTokenUser: "0",
+      depositWeiHub: "0",
+      depositWeiUser: "0",
+      timeout: Math.floor(Date.now() / 1000) + 600,
+      sigUser: mkSig()
+    }
+    chan2 = await channelUpdateFactory(registry, { user: USER_ADDRESS, pendingDepositTokenHub: "100" }, "ProposePendingDeposit", args)
+    // insert fake raw event to db
+    const successfulRaw = {
+      log: {
+        returnValues: {
+          user: chan2.user,
+          senderIdx: 1,
+          weiBalances: ["0", "0",],
+          tokenBalances: ["0", "0",],
+          pendingWeiUpdates: ["0", "0", "0", "0",],
+          pendingTokenUpdates: ["100", "0", "0", "0",],
+          txCount: [1, 1],
+          threadRoot: emptyRootHash,
+          threadCount: 0,
+        },
+        blockNumber: 1,
+        blockHash: emptyRootHash,
+        transactionHash: successfulTxHash,
+      } as EventLog,
+      blockNumber: 1,
+      blockHash: emptyRootHash,
+      txHash: successfulTxHash,
+      contract: chan2.state.contractAddress,
+      sender: config.hotWalletAddress,
+      timestamp: Date.now(),
+      logIndex: 0,
+      txIndex: 1,
+    }
+
+    await chainsawDao.recordEvents(
+      [DidUpdateChannelEvent.fromRawEvent(failedRaw), DidUpdateChannelEvent.fromRawEvent(successfulRaw)] as ContractEvent[],
+      1,
+      chan1.state.contractAddress
+    )
+    const events = await chainsawDao.eventsSince(chan1.state.contractAddress, 0, 0)
+    assert.ok(events)
+    assert.isTrue(events.length == 2)
+    const event = await chainsawDao.eventByHash(failedTxHash)
+    assert.ok(event)
+  })
+
+  describe('processSingleTx', () => {
+    it('should return poll type "RETRY" if state generation fails', async () => {
+     const pollType = await cs.processSingleTx(failedTxHash)
+     assert.equal(pollType, 'RETRY')
+    })
+
+    it('should return poll type "SKIP_EVENTS" if state generation fails many times', async () => {
+      let pollType
+      for (let index = 0; index < 10; index++) {
+        pollType = await cs.processSingleTx(failedTxHash)
+        assert.equal(pollType, 'RETRY')
+      }
+      pollType = await cs.processSingleTx(failedTxHash)
+      assert.equal(pollType, 'SKIP_EVENTS')
+     })
+
+    it('should return poll type "PROCESS_EVENTS" if state generation is successful', async () => {
+      cs.validator.generateConfirmPending = async (prev, args) => {
+        return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
+      }
+      console.log('chan2:', await chanDao.getChannelByUser(chan2.user))
+      const pollType = await cs.processSingleTx(successfulTxHash)
+      assert.equal(pollType, 'PROCESS_EVENTS')
+     })
+  })
+
+  describe('pollOnce', () => {
+    it('should process events with passing transactions, and record failed event transactions', async () => {
+      for (let index = 0; index <= 10; index++) {
+        await cs.pollOnce()
+      }
+      // because of how the events were inserted (ie block number)
+      // the fetchEvents portion of this function should return without
+      // inserting any new events
+
+      // check chainsaw poll event tables were updated
+      const { rows } = await dbEngine.query(SQL`
+        SELECT *
+        FROM chainsaw_poll_events
+        WHERE
+          "poll_type" <> 'FETCH_EVENTS';
+      `)
+      assert.lengthOf(rows, 1)
+      // channel should fail
+      let failChan = await chanDao.getChannelByUser(chan1.user)
+      assert.equal(failChan.status, "CS_CHAINSAW_ERROR")
+      assert.containSubset(failChan.state, chan1.state)
+      // TODO: figure out better way to mock validator here
+      // so possible to test mixed success and failure cases
+      // safe to not test since changes additive
+
+      registry = getTestRegistry({
+        Web3: {
+          ...Web3,
+          eth: {
+            getBlockNumber: async () => { return 1 },
+            sign: async () => { return mkSig() }
+          }
+        },
+        SignerService: {
+          signMessage: async () => { return mkSig() }
+        },
+        Validator: {
+          generateConfirmPending: async (prev, args) => {
+            return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
+          }
+        },
+        ChannelManager: {
+          _address: CM_ADDRESS,
+        }
+      })
+      cs = registry.get('ChainsawService')
+      const pollType = await cs.processSingleTx(failedTxHash, true)
+      assert.equal(pollType, 'PROCESS_EVENTS')
+      failChan = await chanDao.getChannelByUser(chan1.user)
+      assert.equal(failChan.status, "CS_OPEN")
+    })
+  })
+})
 
 describe.skip('ChainsawService', function() {
   this.timeout(10000)
@@ -36,21 +253,23 @@ describe.skip('ChainsawService', function() {
     w3 = getTestRegistry().get('Web3')
     clock = sinon.useFakeTimers()
     const accounts = await w3.eth.getAccounts()
-    HUB_ADDRESS = accounts[0]
+    HUB_ADDRESS = "0xfb482f8f779fd96a857f1486471524808b97452d"
     USER_ADDRESS = accounts[1]
 
-    contract = new w3.eth.Contract(ABI) as ChannelManager
-    //const res = await contract.deploy({
+    // contract = new w3.eth.Contract(abi.abi) as ChannelManager
+    // const res = await contract.deploy({
     //  data: BYTECODE,
     //  arguments: [HUB_ADDRESS, '0x100', '0xd01c08c7180eae392265d8c7df311cf5a93f1b73']
-    //}).send({
+    // }).send({
     //  from: HUB_ADDRESS,
     //  gas: 6721975,
     //  gasPrice: GAS_PRICE
-    //})
+    // })
 
-    CM_ADDRESS = '0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42'
-    contract = new w3.eth.Contract(ABI, CM_ADDRESS)
+    // console.log(res)
+
+    CM_ADDRESS = "0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42"
+    contract = new w3.eth.Contract(abi.abi, CM_ADDRESS)
 
     registry = getTestRegistry({
       hotWalletAddress: HUB_ADDRESS,
@@ -60,9 +279,6 @@ describe.skip('ChainsawService', function() {
     chanDao = registry.get('ChannelsDao')
     utils = registry.get('ConnextUtils')
     cs = registry.get('ChainsawService')
-  })
-
-  before(async () => {
     await registry.clearDatabase()
   })
 

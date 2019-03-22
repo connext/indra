@@ -7,27 +7,28 @@ set -e
 # Config
 INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
-INDRA_MODE="${INDRA_MODE:-development}" # set to "live" to use versioned docker images
 INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-rinkeby}"
+INDRA_MODE="${INDRA_MODE:-staging}" # set to "live" to use versioned docker images
 
 # Auth & API Keys
 INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
 INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
-INDRA_ETH_RPC_KEY="${INDRA_ETH_RPC_KEY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
+INDRA_DASHBOARD_URL="${INDRA_DASHBOARD_URL:-dashboarddd}"
+INDRA_ETH_RPC_KEY_MAINNET="${INDRA_ETH_RPC_KEY_MAINNET:-qHg6U3i7dKa4cJdMagOljenupIraBE1V}"
+INDRA_ETH_RPC_KEY_RINKEBY="${INDRA_ETH_RPC_KEY_RINKEBY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}" # For LogDna
 INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
-INDRA_DASHBOARD_URL="${INDRA_DASHBOARD_URL:-dashboarddd}"
 
 ####################
 # Internal Config
 
-# NOTE: Gotta update this manually when adding/removing services :/
-number_of_services=7
-
+# meta config & hard-coded stuff you might want to change
+number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
 should_collateralize_url="NO_CHECK"
+bei_min_collateralization="10000000000000000000"
 
-eth_rpc_url="https://eth-$INDRA_ETH_NETWORK.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY"
-
+# hard-coded config (you probably won't ever need to change these)
+log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
 private_key_file="/run/secrets/$private_key_name"
 
@@ -35,12 +36,12 @@ private_key_file="/run/secrets/$private_key_name"
 registry="connextproject"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
-# database settings
-redis_url="redis://redis:6379"
-postgres_url="database:5432"
-postgres_user="$project"
+# database connection settings
 postgres_db="$project"
 postgres_password_file="/run/secrets/${project}_database"
+postgres_url="database:5432"
+postgres_user="$project"
+redis_url="redis://redis:6379"
 
 # ethereum settings
 # Allow contract address overrides if an address book is present in project root
@@ -50,10 +51,14 @@ else addressBook="modules/contracts/ops/address-book.json"
 fi
 
 if [[ "$INDRA_ETH_NETWORK" == "mainnet" ]]
-then eth_network_id="1"
+then 
+  eth_network_id="1"
+  eth_rpc_url="https://eth-mainnet.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_MAINNET"
 elif [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
-then eth_network_id="4"
-else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit
+then 
+  eth_network_id="4"
+  eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_RINKEBY"
+else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit 1
 fi
 
 hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
@@ -65,14 +70,14 @@ if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
   if [[ "$INDRA_MODE" == "live" ]]
   then version="`cat package.json | jq .version | tr -d '"'`"
-  else version="latest"
+  else version="latest" # staging mode
   fi
   proxy_image="$registry/${project}_proxy:$version"
   dashboard_image="$registry/${project}_dashboard:$version"
   database_image="$registry/${project}_database:$version"
   hub_image="$registry/${project}_hub:$version"
   redis_image="redis:5-alpine"
-else
+else # local mode, don't use images from registry
   proxy_image=${project}_proxy:latest
   dashboard_image=${project}_dashboard:latest
   database_image=${project}_database:latest
@@ -88,23 +93,26 @@ echo "Deploying images: $database_image and $hub_image and $proxy_image"
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+# Get images that we aren't building locally
 function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
-  then docker pull $1
+  then
+    # But actually don't pull images if we're running locally
+    if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
+    then docker pull $1
+    fi
   fi
 }
+pull_if_unavailable $dashboard_image
+pull_if_unavailable $database_image
+pull_if_unavailable $hub_image
+pull_if_unavailable $redis_image
 
-if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
-then
-  pull_if_unavailable $database_image
-  pull_if_unavailable $hub_image
-  pull_if_unavailable $redis_image
-fi
-
+# Initialize random new secrets
 function new_secret {
   secret=$2
   if [[ -z "$secret" ]]
-  then secret=`head -c 64 /dev/urandom | xxd -plain -c 64 | tr -d '\n\r'`
+  then secret=`head -c 32 /dev/urandom | xxd -plain -c 32 | tr -d '\n\r'`
   fi
   if [[ -z "`docker secret ls -f name=$1 | grep -w $1`" ]]
   then
@@ -112,22 +120,8 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-
 new_secret ${project}_database
-
-# Ensure we have a private key available
-if [[ -z "`docker secret ls -f name=$private_key_name | grep -w $private_key_name`" ]]
-then
-  if [[ "$MODE" == "test" ]]
-  then
-    echo "Test mode, creating throwaway private key"
-    new_secret $private_key_name
-  else
-    echo "Error, a secret called $private_key_file must be loaded into the secret store"
-    echo "Copy the hub's key to your clipboard & run: bash ops/load-secret.sh $private_key_name"
-    exit
-  fi
-fi
+new_secret $private_key_name
 
 mkdir -p /tmp/$project modules/database/snapshots
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -152,6 +146,11 @@ services:
       EMAIL: $INDRAS_EMAIL
       ETH_RPC_URL: $eth_rpc_url
       DASHBOARD_URL: $INDRA_DASHBOARD_URL
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
     ports:
       - "80:80"
       - "443:443"
@@ -160,13 +159,13 @@ services:
 
   dashboard:
     image: $dashboard_image
-    secrets:
-      - ${project}_database
     environment:
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_URL: $postgres_url
       POSTGRES_USER: $postgres_user
+    secrets:
+      - ${project}_database
 
   hub:
     image: $hub_image
@@ -174,14 +173,12 @@ services:
     depends_on:
       - database
       - chainsaw
-    secrets:
-      - ${project}_database
-      - $private_key_name
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
+      LOG_LEVEL: 20
       NODE_ENV: production
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
@@ -192,20 +189,27 @@ services:
       SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
+      BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
+    secrets:
+      - ${project}_database
+      - $private_key_name
 
   chainsaw:
     image: $hub_image
     command: chainsaw
     depends_on:
       - postgres
-    secrets:
-      - ${project}_database
-      - $private_key_name
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
+      LOG_LEVEL: 20
       NODE_ENV: production
       POLLING_INTERVAL: 2000
       POSTGRES_DB: $postgres_db
@@ -217,6 +221,14 @@ services:
       SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
+    secrets:
+      - ${project}_database
+      - $private_key_name
 
   redis:
     image: $redis_image
@@ -249,6 +261,7 @@ EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 rm -rf /tmp/$project
+docker image prune -f
 
 echo -n "Waiting for the $project stack to wake up."
 while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]

@@ -119,9 +119,7 @@ export default class ChannelsService {
     // TODO REB-12: This is incorrect; the timeout needs to be compared to
     // the latest block timestamp, not Date.now()
     if (channel.state.timeout && nowSeconds <= channel.state.timeout) {
-      LOG.info('Pending update has not expired yet: {channel}, doing nothing', {
-        channel,
-      })
+      LOG.info(`Pending update has not expired yet: ${channel}, doing nothing`)
       return
     }
 
@@ -204,14 +202,14 @@ export default class ChannelsService {
       toWeiBigNum(10)
 
     return {
-      minAmount: BigNumber.max(baseMin, baseTarget).times(0.5),
+      minAmount: BigNumber.max(baseMin, baseTarget).times(this.config.minCollateralizationMultiple),
 
       maxAmount: BigNumber.min(
         this.config.beiMaxCollateralization,
 
         BigNumber.max(
           baseMin,
-          baseTarget.times(2.5),
+          baseTarget.times(this.config.maxCollateralizationMultiple),
         ),
       ),
 
@@ -318,10 +316,7 @@ export default class ChannelsService {
     // 3. Otherwise, deposit the appropriate amount
     const amountToCollateralize = targets.maxAmount.minus(channel.state.balanceTokenHub)
 
-    LOG.info('Recollateralizing {user} with {amountToCollateralize} BOOTY', {
-      user,
-      amountToCollateralize: amountToCollateralize.div('1e18').toFixed(),
-    })
+    LOG.info(`Recollateralizing ${user} with ${amountToCollateralize.div('1e18').toFixed()} BOOTY`)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
@@ -585,11 +580,11 @@ export default class ChannelsService {
       update.txCount,
     )
 
-    console.log('USER:', user)
-    console.log('CM:', this.config.channelManagerAddress)
-    console.log('CURRENT:', channel)
-    console.log('UPDATE:', update)
-    console.log('HUB VER:', hubsVersionOfUpdate)
+    LOG.debug(`USER: ${user}`)
+    LOG.debug(`CM: ${this.config.channelManagerAddress}`)
+    LOG.debug(`CURRENT: ${prettySafeJson(channel)}`)
+    LOG.debug(`UPDATE: ${prettySafeJson(update)}`)
+    LOG.debug(`HUB VER: ${hubsVersionOfUpdate}`)
 
     if (hubsVersionOfUpdate) {
       if (hubsVersionOfUpdate.invalid) {
@@ -628,7 +623,7 @@ export default class ChannelsService {
         hubsVersionOfUpdate.state,
       )
 
-      console.log('HUB SIGNED:', signedChannelStateHub)
+      LOG.debug(`HUB SIGNED: ${prettySafeJson(signedChannelStateHub)}`)
 
       // verify user sig on hub's data
       this.validator.assertChannelSigner({
@@ -794,10 +789,7 @@ export default class ChannelsService {
 
         // make sure there is no pending timeout
         if (signedChannelStatePrevious.timeout && latestBlock.timestamp <= signedChannelStatePrevious.timeout) {
-          LOG.info('Cannot invalidate update with timeout that hasnt expired, lastStateNoPendingOps: {lastStateNoPendingOps}, block: {latestBlock}', {
-            lastStateNoPendingOps,
-            latestBlock
-          })
+          LOG.info(`Cannot invalidate update with timeout that hasnt expired, lastStateNoPendingOps: ${lastStateNoPendingOps}, block: ${latestBlock}`)
           return
         }
 
@@ -878,20 +870,20 @@ export default class ChannelsService {
     lastThreadUpdateId: number = 0,
   ): Promise<Sync> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
-    console.log('channel: ', channel);
+    LOG.info(`channel: ${prettySafeJson(channel)}`);
     const channelUpdates = await this.channelsDao.getChannelUpdatesForSync(
       user,
       channelTxCount,
     )
 
-    console.log("CHANNEL UPDATE RESULT:", JSON.stringify(channelUpdates, null, 2))
+    LOG.info(`CHANNEL UPDATE RESULT: ${prettySafeJson(channelUpdates)}`)
 
     const threadUpdates = await this.threadsDao.getThreadUpdatesForSync(
       user,
       lastThreadUpdateId,
     )
 
-    console.log("THREAD UPDATE RESULT:", JSON.stringify(threadUpdates, null, 2))
+    LOG.info(`THREAD UPDATE RESULT: ${prettySafeJson(threadUpdates)}`)
 
     let curChan = 0
     let curThread = 0
@@ -997,7 +989,7 @@ export default class ChannelsService {
   }
 
   async redisSaveUnsignedState(reason: RedisReason, user: string, update: Omit<ChannelStateUpdate, 'state'>) {
-    console.log("SAVING:",update)
+    LOG.info(`SAVING: ${prettySafeJson(update)}`)
     const redis = await this.redis.set(
       `PendingStateUpdate:${user}`,
       JSON.stringify({

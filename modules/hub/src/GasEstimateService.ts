@@ -79,7 +79,7 @@ export default class GasEstimateService {
   }
 
   async pollOnce() {
-    LOG.info('Fetching latest gas estimate...')
+    LOG.debug('Fetching latest gas estimate...')
 
     let res: EthGasStationResponse = await (await fetch(GasEstimateService.ETHGASSTATION_URL)).json()
 

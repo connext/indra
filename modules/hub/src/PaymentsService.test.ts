@@ -9,6 +9,8 @@ import { default as ChannelsDao } from './dao/ChannelsDao'
 import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { toWeiString, Big } from "./util/bigNumber";
 import { emptyAddress } from "./vendor/connext/Utils";
+import GlobalSettingsDao from "./dao/GlobalSettingsDao";
+import Config from "./Config";
 
 describe('PaymentsService', () => {
   const registry = getTestRegistry()
@@ -17,6 +19,8 @@ describe('PaymentsService', () => {
   const channelsService: ChannelsService = registry.get('ChannelsService')
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  const globalSettingsDao: GlobalSettingsDao = registry.get('GlobalSettingsDao')
+  const config: Config = registry.get('Config')
 
   beforeEach(async () => {
     await registry.clearDatabase()
@@ -241,8 +245,9 @@ describe('PaymentsService', () => {
       convertChannelState('bn', receiverChannel.state),
       convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
+    // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(10)
+      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toString(),
     })
   })
 
@@ -287,7 +292,7 @@ describe('PaymentsService', () => {
     )
 
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(30)
+      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toString(),
     })
   })
 

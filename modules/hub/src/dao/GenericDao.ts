@@ -20,7 +20,7 @@ export class PostgresGenericDao implements GenericDao {
       await c.query('BEGIN')
       try {
         for (const query of queries) {
-          console.log('inside asTransaction');
+          LOG.debug('inside asTransaction');
           await query()
         }
         await c.query('COMMIT')

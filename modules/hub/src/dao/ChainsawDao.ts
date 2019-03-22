@@ -13,7 +13,7 @@ const STATUS_TO_STATES = {
   CS_SETTLED: 2,
 } as { [k: string]: number }
 
-export type PollType = 'FETCH_EVENTS' | 'PROCESS_EVENTS'
+export type PollType = 'FETCH_EVENTS' | 'PROCESS_EVENTS' | 'SKIP_EVENTS' | 'RETRY'
 
 export type ContractEventWithMeta = {
   event: ContractEvent,
@@ -24,6 +24,8 @@ const LOG = log('ChainsawDao')
 
 export default interface ChainsawDao {
   lastPollFor(address: string, type: PollType): Promise<ChainsawPollEvent>
+
+  lastProcessEventPoll(address: string): Promise<ChainsawPollEvent>
 
   recordPoll(toBlock: number, txIdx: number|null, contract: string, type: PollType): Promise<void>
 
@@ -48,6 +50,26 @@ export class PostgresChainsawDao implements ChainsawDao {
   constructor(engine: DBEngine<Client>, config: Config) {
     this.engine = engine
     this.hubAddress = config.hotWalletAddress
+  }
+
+  lastProcessEventPoll(contract: string): Promise<ChainsawPollEvent> {
+    return this.engine.exec(async (c: Client) => {
+      const res = await c.query(
+        'SELECT * FROM chainsaw_poll_events WHERE contract = $1 and poll_type = $2 or poll_type = $3 ORDER BY block_number DESC LIMIT 1',
+        [contract.toLowerCase(), 'PROCESS_EVENTS', 'SKIP_EVENTS'],
+      )
+
+      if (!res.rows.length) {
+        return {
+          blockNumber: 0,
+          txIndex: null,
+          polledAt: 0,
+          contract,
+        }
+      }
+
+      return this.inflateRow(res.rows[0])
+    })
   }
 
   lastPollFor(contract: string, type: PollType): Promise<ChainsawPollEvent> {

@@ -129,7 +129,7 @@ class Home extends React.Component {
           <ContractInfoCardStyled
             wei={hubWallet.wei}
             token={hubWallet.token}
-            handleRefresh={() => this.getWalletInfo(hubWallet.address)}
+            handleRefresh={() => this.props.getWalletInfo(hubWallet.address)}
             loading={loadingWallet}
             contractAddress={hubWallet.address}
           />
@@ -141,7 +141,7 @@ class Home extends React.Component {
           <ContractInfoCardStyled
             wei={channelManager.wei}
             token={channelManager.token}
-            handleRefresh={this.getContractInfo}
+            handleRefresh={this.props.getContractInfo}
             loading={loadingContract}
             contractAddress={channelManager.address}
           />

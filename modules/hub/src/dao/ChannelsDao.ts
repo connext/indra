@@ -7,6 +7,8 @@ import {
   ChannelStateBigNumber,
   convertArgs,
   InvalidationArgs,
+  ChannelStatus,
+  Address,
 } from '../vendor/connext/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
@@ -14,6 +16,7 @@ import {
   ChannelStateUpdateRowBigNum,
   ChannelRowBigNum,
 } from '../domain/Channel'
+import { prettySafeJson } from '../util'
 import { Big } from '../util/bigNumber'
 import { emptyRootHash } from '../vendor/connext/Utils'
 import { default as log } from '../util/log'
@@ -48,6 +51,8 @@ export default interface ChannelsDao {
   getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
   getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
+  addChainsawErrorId(user: Address, id: number): Promise<void>
+  removeChainsawErrorId(user: Address): Promise<void>
 }
 
 export function getChannelInitialState(
@@ -90,6 +95,28 @@ export class PostgresChannelsDao implements ChannelsDao {
   constructor(db: DBEngine<Client>, config: Config) {
     this.db = db
     this.config = config
+  }
+
+  async addChainsawErrorId(user: Address, id: number): Promise<void> {
+    await this.db.queryOne(SQL`
+      UPDATE _cm_channels
+      SET "chainsaw_error_event_id" = ${id}
+      WHERE
+        "user" = ${user.toLowerCase()} AND
+        "contract" = ${this.config.channelManagerAddress.toLowerCase()}
+      RETURNING id
+    `)
+  }
+
+  async removeChainsawErrorId(user: Address): Promise<void> {
+    await this.db.queryOne(SQL`
+      UPDATE _cm_channels
+      SET "chainsaw_error_event_id" = NULL
+      WHERE
+        "user" = ${user.toLowerCase()} AND
+        "contract" = ${this.config.channelManagerAddress.toLowerCase()}
+      RETURNING id
+    `)
   }
 
   // gets latest state of channel
@@ -177,12 +204,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     onchainLogicalId?: number,
   ): Promise<ChannelStateUpdateRowBigNum> {
 
-    LOG.info('Applying channel update to {user}: {reason}({args}) -> {state}', {
-      user,
-      reason,
-      args: JSON.stringify(args),
-      state: JSON.stringify(state),
-    })
+    LOG.info(`Applying channel update to ${user}: ${reason}(${prettySafeJson(args)}) -> ${prettySafeJson(state)}`)
 
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
@@ -249,7 +271,7 @@ export class PostgresChannelsDao implements ChannelsDao {
       FROM payments
         WHERE
           recipient = ${user} AND
-          created_on > NOW() - interval '10 minutes'
+          created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
     `)
 
     return parseInt(num_tippers)

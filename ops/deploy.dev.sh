@@ -4,70 +4,67 @@ set -e
 ####################
 # External Env Vars
 
-# None needed for dev-mode deployment
+# None used during dev-mode deployment
 
 ####################
 # Internal Config
 
-# NOTE: Gotta update this manually when adding/removing services :/
-number_of_services=8
+# meta config & hard-coded stuff you might want to change
+number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
+watch_hub="no" # set to "yes" to live-redeploy hub when source code changes
+watch_chainsaw="no" # set to "yes" to live-redeploy chainsaw when source code changes
 
-# set any watch vars to "yes" to turn on watchers
-watch_hub="no"
-watch_chainsaw="no"
-
+# hard-coded config (you probably won't ever need to change these)
+log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+eth_network="ganache"
+eth_network_id="4447"
+eth_rpc_url="http://ethprovider:8545"
+private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
+private_key_file="/run/secrets/hub_key_ganache"
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 service_user_key="foo"
 
-# ethereum settings
-# Allow contract address overrides if an address book is present in project root
-if [[ -f "address-book.json" ]]
+# database connection settings
+postgres_db="$project"
+postgres_password_file="/run/secrets/${project}_database_dev"
+postgres_url="database:5432"
+postgres_user="$project"
+redis_url="redis://redis:6379"
+
+# docker images
+chainsaw_image=${project}_builder
+dashboard_image=${project}_builder
+database_image=${project}_database:dev
+ethprovider_image=${project}_builder
+hub_image=${project}_builder
+proxy_image=${project}_proxy:dev
+redis_image=redis:5-alpine
+
+# Address management
+if [[ -f "address-book.json" ]] # prefer copy of address book in project root
 then addressBook="address-book.json"
 else addressBook="modules/contracts/ops/address-book.json"
 fi
-
-eth_rpc_url="http://ethprovider:8545"
-eth_network="ganache"
-eth_network_id="4447"
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
-
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-
 hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
 channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
 token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
-private_key_file="/run/secrets/hub_key_ganache"
-
-# database settings
-redis_url="redis://redis:6379"
-postgres_url="database:5432"
-postgres_user="$project"
-postgres_db="$project"
-postgres_password_file="/run/secrets/${project}_database_dev"
-
-# docker images
-proxy_image=${project}_proxy:dev
-hub_image=${project}_builder
-chainsaw_image=${project}_builder
-ethprovider_image=${project}_builder
-dashboard_image=${project}_builder
-database_image=${project}_database:dev
-redis_image=redis:5-alpine
 
 ####################
 # Deploy according to above configuration
 
-# turn on swarm mode if it's not already on
+# Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+# Get images that we aren't building locally
 function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
   then docker pull $1
   fi
 }
-
 pull_if_unavailable $redis_image
 
+# Initialize random new secrets
 function new_secret {
   secret=$2
   if [[ -z "$secret" ]]
@@ -79,14 +76,14 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-
 new_secret ${project}_database_dev
 new_secret hub_key_ganache "$private_key"
 
+# Deploy with an attachable network so tests & the daicard can connect to individual components
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
 then
-    id=`docker network create --attachable --driver overlay $project`
-    echo "Created ATTACHABLE network with id $id"
+  id="`docker network create --attachable --driver overlay $project`"
+  echo "Created ATTACHABLE network with id $id"
 fi
 
 mkdir -p /tmp/$project
@@ -151,20 +148,21 @@ services:
     image: $hub_image
     entrypoint: bash ops/dev.entry.sh hub $watch_hub
     environment:
-      NODE_ENV: development
-      PRIVATE_KEY_FILE: $private_key_file
+      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
-      TOKEN_ADDRESS: $token_address
-      SERVICE_USER_KEY: $service_user_key
+      LOG_LEVEL: 20
+      NODE_ENV: development
       POSTGRES_USER: $postgres_user
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_URL: $postgres_url
       POSTGRES_DB: $postgres_db
+      PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
+      SERVICE_USER_KEY: $service_user_key
+      TOKEN_ADDRESS: $token_address
     networks:
       - $project
     ports:
@@ -181,20 +179,21 @@ services:
     image: $chainsaw_image
     entrypoint: bash ops/dev.entry.sh chainsaw $watch_chainsaw
     environment:
-      NODE_ENV: development
-      PRIVATE_KEY_FILE: $private_key_file
+      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      CHANNEL_MANAGER_ADDRESS: $channel_manager_address
-      TOKEN_ADDRESS: $token_address
-      SERVICE_USER_KEY: $service_user_key
+      LOG_LEVEL: 20
+      NODE_ENV: development
       POSTGRES_USER: $postgres_user
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_URL: $postgres_url
       POSTGRES_DB: $postgres_db
+      PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
+      SERVICE_USER_KEY: $service_user_key
+      TOKEN_ADDRESS: $token_address
     networks:
       - $project
     secrets:
@@ -209,9 +208,9 @@ services:
     image: $ethprovider_image
     entrypoint: bash ops/entry.sh signal
     environment:
-      ETH_PROVIDER: $eth_rpc_url
-      ETH_NETWORK: $eth_network
       ETH_MNEMONIC: $eth_mnemonic
+      ETH_NETWORK: $eth_network
+      ETH_PROVIDER: $eth_rpc_url
     networks:
       - $project
     ports:
@@ -225,11 +224,11 @@ services:
     deploy:
       mode: global
     environment:
-      MODE: dev
       ETH_NETWORK: $eth_network
+      MODE: dev
       POSTGRES_USER: $project
       POSTGRES_DB: $project
-      postgres_password_file: $postgres_password_file
+      POSTGRES_PASSWORD_FILE: $postgres_password_file
     networks:
       - $project
     ports:

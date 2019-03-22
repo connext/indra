@@ -37,8 +37,8 @@
   "ChannelManager": {
     "networks": {
       "1": {
-        "address": "0xDE789db3Be8F7a482304723448df08fa7773B2b8",
-        "hub": "0x557f0e214c8e8607a2c1E910802ACA23c6C0E72e",
+        "address": "0xdfa6edAe2EC0cF1d4A60542422724A48195A5071",
+        "hub": "0x925488C7cD7E5eB3441885c6C1dfdBEa875E08F7",
         "challengePeriod": "600",
         "approvedToken": "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359"
       },

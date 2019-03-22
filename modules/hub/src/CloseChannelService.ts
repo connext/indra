@@ -48,7 +48,7 @@ export class CloseChannelService {
     }))
     LOG.info(
       `Checking for disputed channels which can be emptied ` +
-      `(dispute period: ${disputePeriod}; latest block: ${JSON.stringify(latestBlock)})`
+      `(dispute period: ${disputePeriod}; latest block: ${latestBlock.number})`
     )
     const channels = await this.channelsDao.getDisputedChannelsForClose(disputePeriod)
     for (const channel of channels) {

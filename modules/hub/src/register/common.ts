@@ -19,7 +19,6 @@ global.Promise = require('bluebird')
 if (process.env.NODE_ENV != 'production') {
   let debug = require('debug')
   debug.enable([
-    '*',
     '-nodemon',
     '-express:application',
     '-sequelize:hooks',
@@ -30,7 +29,6 @@ if (process.env.NODE_ENV != 'production') {
     '-sequelize:sql:pg',
     '-sequelize:connection:pg',
     '-follow-redirects',
-    '-body-parser',
     '-connect:redis',
     '-express-session',
   ].join(','))

@@ -72,6 +72,9 @@ export interface ConnextOptions {
 }
 
 export interface IHubAPIClient {
+  authChallenge(): Promise<string>
+  authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string>
+  getAuthStatus(): Promise<{ success: boolean, address?: Address }>
   getChannel(): Promise<ChannelRow>
   getChannelByUser(user: Address): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
@@ -91,7 +94,6 @@ export interface IHubAPIClient {
   requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
   requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
   requestCollateral(txCountGlobal: number): Promise<Sync>
-  recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string | null> 
   updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{
     error: string | null
     updates: Sync
@@ -114,6 +116,26 @@ class HubAPIClient implements IHubAPIClient {
 
   async config(): Promise<HubConfig> {
     const res = await this.networking.get(`config`)
+    return res.data
+  }
+
+  async authChallenge(): Promise<string> {
+    const res = await this.networking.post(`auth/challenge`, {})
+    return res.data.nonce
+  }
+
+  async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
+    const res = await this.networking.post(`auth/response`, {
+      nonce,
+      address,
+      origin,
+      signature
+    })
+    return res.data.token
+  }
+
+  async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
+    const res = await this.networking.get(`auth/status`)
     return res.data
   }
 
@@ -308,30 +330,6 @@ class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  // returns null if the hub can facilitate the payment
-  // of the specified amount in the recipients channel
-  async recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string | null> {
-    // get recipients channel
-    let channel
-    try {
-      channel = await this.getChannelByUser(recipient)
-    } catch (e) {
-      if (e.status == 404) {
-        return `Recipient channel does not exist. Recipient: ${recipient}.`
-      }
-      throw e
-    }
-
-    // check if hub can afford payment
-    const chanBN = convertChannelState("bn", channel.state)
-    const amtBN = convertPayment("bn", amount)
-    if (chanBN.balanceWeiHub.lt(amtBN.amountWei) || chanBN.balanceTokenHub.lt(amtBN.amountToken)) {
-      return `Recipient needs collateral to facilitate payment.`
-    }
-    // otherwise, no collateral is needed to make payment
-    return null
-  }
-
   async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
     try {
       const response = await this.networking.post(
@@ -465,6 +463,8 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
       console.log(`Sending ${this.name} to ${this.address}: confirmed:`, receipt)
       this.onFirstConfirmation.resolve()
     })
+
+    tx.on('error', (error: any) => { console.warn('Something may have gone wrong with your transaction') })
   }
 
   awaitEnterMempool(): Promise<void> {
@@ -796,6 +796,7 @@ export interface ConnextClientOptions {
   contractAddress: string
   hubAddress: Address
   tokenAddress: Address
+  origin?: string // origin of requests
   ethNetworkId?: string
   tokenName?: string
   gasMultiple?: number
@@ -986,8 +987,50 @@ export class ConnextInternal extends ConnextClient {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
+  async auth(origin: string,): Promise<string | null> {
+    // check the status, return if already authed
+    const status = await this.hub.getAuthStatus()
+    if (status.success && status.address && status.address == this.opts.user) {
+      // TODO: what if i want to get this cookie?
+      console.log('address already authed')
+      return null
+    }
+    // first get the nonce
+    const nonce = await this.hub.authChallenge()
+
+    // create hash and sign
+    const preamble = "SpankWallet authentication message:";
+    const web3 = this.opts.web3
+    const hash = web3.utils.sha3(`${preamble} ${web3.utils.sha3(nonce)} ${web3.utils.sha3(origin)}`);
+    const signature = await (web3.eth.personal.sign as any)(hash, this.opts.user);
+
+    // return to hub
+    const auth = await this.hub.authResponse(nonce, this.opts.user, origin, signature)
+    const cookie = `hub.sid=${auth}`
+    document.cookie = cookie;
+    return null
+  }
+
   async recipientNeedsCollateral(recipient: Address, amount: Payment) {
-    return await this.hub.recipientNeedsCollateral(recipient, amount)
+    // get recipients channel
+    let channel
+    try {
+      channel = await this.hub.getChannelByUser(recipient)
+    } catch (e) {
+      if (e.status == 404) {
+        return `Recipient channel does not exist. Recipient: ${recipient}.`
+      }
+      throw e
+    }
+
+    // check if hub can afford payment
+    const chanBN = convertChannelState("bn", channel.state)
+    const amtBN = convertPayment("bn", amount)
+    if (chanBN.balanceWeiHub.lt(amtBN.amountWei) || chanBN.balanceTokenHub.lt(amtBN.amountToken)) {
+      return `Recipient needs collateral to facilitate payment.`
+    }
+    // otherwise, no collateral is needed to make payment
+    return null
   }
 
   async syncConfig() {
@@ -1014,6 +1057,13 @@ export class ConnextInternal extends ConnextClient {
 
     // before starting controllers, sync values
     await this.syncConfig()
+
+    // also auth
+    const authRes = await this.auth(this.opts.origin!)
+    if (authRes) {
+      console.warn('Error authing, cannot start')
+      return
+    }
 
     // TODO: appropriately set the latest
     // valid state ??

@@ -178,6 +178,7 @@ export const ChannelStatus = {
   CS_OPEN: 'CS_OPEN',
   CS_CHANNEL_DISPUTE: 'CS_CHANNEL_DISPUTE',
   CS_THREAD_DISPUTE: 'CS_THREAD_DISPUTE',
+  CS_CHAINSAW_ERROR: 'CS_CHAINSAW_ERROR', // when chainsaw cant process events
 }
 export type ChannelStatus = keyof typeof ChannelStatus
 
