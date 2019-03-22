@@ -101,7 +101,8 @@ export default class BuyController extends AbstractController {
           //    where the user posts to a separate endpoint (not buy)
 
           // check that a secret exists
-          if (!payment.secret) {
+          const { secret } = payment.meta
+          if (!secret) {
             throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 

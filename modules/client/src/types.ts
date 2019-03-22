@@ -981,8 +981,6 @@ export type PurchasePayment<MetadataType=any> = ({
   // will be the thread recipient.
   recipient: string
 
-  secret?: string
-
   // A convenience field summarizing the change in balance of the underlying
   // channel or thread.
   // For example, if this is a non-custodial payment for 1 BOOTY, the `amount`
@@ -992,6 +990,7 @@ export type PurchasePayment<MetadataType=any> = ({
   amount: Payment
 
   // Metadata related to the Payment. For example `{ type: 'TIP' | 'FEE' }`
+  // for linked payments, the secret must be included in the metadata
   meta: MetadataType
 } & (
     {
