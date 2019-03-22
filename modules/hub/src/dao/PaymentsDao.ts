@@ -59,7 +59,7 @@ export class PostgresPaymentsDao implements PaymentsDao {
 
   public async createLinkPayment(paymentId: number, updateId: number, secret: string): Promise<void> {
     await this.db.queryOne(SQL`
-      INSERT INTO payments_thread (
+      INSERT INTO payments_link (
         payment_id,
         update_id,
         "secret"

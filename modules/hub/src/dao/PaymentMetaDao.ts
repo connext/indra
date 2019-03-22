@@ -6,30 +6,10 @@ import { emptyAddress } from '../vendor/connext/Utils';
 
 export interface PaymentMetaDao {
   save (purchaseId: string, payment: PurchasePaymentSummary): Promise<number>
-
   historyByUser (address: string): Promise<PurchasePaymentRow[]>
-
-  /*
-  bySender(address: string): Promise<PaymentMeta[]>
-
-  byToken(token: string): Promise<PaymentMeta>
-
-  */
-
   byPurchase (id: string): Promise<PurchasePaymentRow[]>
-
   getLinkedPayment(secret: string): Promise<PurchasePaymentRow> 
-
-  redeemLinkedPayment(user: string, secret: string): Promise<PurchasePaymentRow> 
-
-  /*
-
-  allAffectingAddress(address: string): Promise<PaymentMeta[]>
-
-  all(): Promise<PaymentMeta[]>
-
-  allByType(type: PurchaseMetaType): Promise<PaymentMeta[]>
-  */
+  redeemLinkedPayment(user: string, secret: string): Promise<void> 
 }
 
 export class PostgresPaymentMetaDao implements PaymentMetaDao {
@@ -77,32 +57,24 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
   public async getLinkedPayment(secret: string): Promise<PurchasePaymentRow> {
     const row = await this.db.queryOne(SQL`
       SELECT * from payments
-      WHERE
-        "secret" = ${secret}
-      ORDER BY created_on DESC
+      WHERE id = (
+        SELECT payment_id FROM payments_link
+        WHERE "secret" = ${secret}
+      )
+      LIMIT 1
     `)
     return this.rowToPaymentSummary(row)
   }
 
-  public async redeemLinkedPayment(user: string, secret: string) {
+  public async redeemLinkedPayment(user: string, secret: string): Promise<void> {
     await this.db.queryOne(SQL`
       UPDATE _payments
       SET "recipient" = ${user.toLowerCase()}
-      WHERE
-        "secret" = ${secret}
-        AND "recipient" = ${emptyAddress};
+      WHERE _payments.id = (
+        SELECT payment_id FROM payments_link
+        WHERE "secret" = ${secret}
+      )
     `)
-
-    
-    const updated = await this.db.queryOne(SQL`
-      SELECT * from payments
-      WHERE
-        "secret" = ${secret}
-        AND "recipient" = ${user.toLowerCase()}
-      ORDER BY created_on DESC;
-    `)
-
-    return this.rowToPaymentSummary(updated)
   }
 
   /*
@@ -184,8 +156,8 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     return rows.map(row => this.rowToPaymentSummary(row))
   }
 
-  private rowToPaymentSummary(row: any): PurchasePaymentRow {
-    return {
+  private rowToPaymentSummary(row: any): PurchasePaymentRow | null {
+    return row && {
       id: Number(row.id),
       createdOn: row.created_on,
       purchaseId: row.purchase_id,

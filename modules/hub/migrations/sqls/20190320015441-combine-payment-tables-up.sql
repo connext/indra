@@ -9,7 +9,8 @@ create table payments_thread (
 create table payments_link (
   id bigserial primary key,
   payment_id bigint unique not null references _payments(id),
-  update_id bigint unique not null references _cm_thread_updates(id),
+  update_id bigint unique not null references _cm_channel_updates(id),
+  redemption_id bigint unique null references _cm_channel_updates(id),
   "secret" text unique
 );
 
