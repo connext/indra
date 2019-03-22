@@ -106,6 +106,10 @@ export default class BuyController extends AbstractController {
             throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 
+          if (!this.connext.opts.web3.utils.isHex(secret)) {
+            throw new Error(`Secret is not hex string, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
+          }
+
           const linkArgs: PaymentArgs = {
             recipient: 'hub',
             ...payment.amount
