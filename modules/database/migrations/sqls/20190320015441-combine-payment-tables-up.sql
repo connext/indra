@@ -1,7 +1,18 @@
-/* Replace with your SQL commands */
-ALTER TABLE _payments
-  ADD COLUMN secret text NULL;
-ALTER TABLE _payments ADD CONSTRAINT _unique_secret UNIQUE (secret);
+alter table _payments drop column "secret";
+
+create table payments_thread (
+  id bigserial primary key,
+  payment_id bigint unique not null references _payments(id),
+  update_id bigint unique not null references _cm_thread_updates(id)
+);
+
+create table payments_link (
+  id bigserial primary key,
+  payment_id bigint unique not null references _payments(id),
+  update_id bigint unique not null references _cm_channel_updates(id),
+  redemption_id bigint unique null references _cm_channel_updates(id),
+  "secret" text unique
+);
 
 create or replace view payments as (
   select
@@ -63,27 +74,46 @@ create or replace view payments as (
   left join cm_channel_updates as up on up.id = cc.update_id
 
   -- TODO: create the payments_thread table, as documented in ./20190130223123-custodial-payments-up.sql
-  -- union all
+  union all
 
-  -- select
-  --   p.id,
-  --   up.created_on,
-  --   up.contract,
+  select
+    p.id,
+    up.created_on,
+    up.contract,
 
-  --   p.purchase_id,
-  --   up.sender,
-  --   p.recipient,
+    p.purchase_id,
+    up.sender,
+    p.recipient,
 
-  --   p.amount_wei,
-  --   p.amount_token,
-  --   p.meta,
+    p.amount_wei,
+    p.amount_token,
+    p.meta,
 
-  --   'thread' AS payment_type
-  -- from _payments p
-  -- left join cm_thread_updates up on up.id = p.thread_update_id
+    'thread' AS payment_type
+  from _payments p
+  inner join payments_thread as pt on pt.payment_id = p.id
+  left join cm_thread_updates up on up.id = pt.update_id
 
   -- TODO: #122: add link payments here
+  union all
 
+  select
+    p.id,
+    up.created_on,
+    up.contract,
+
+    p.purchase_id,
+    up."user" as sender,
+    p.recipient,
+
+    p.amount_wei,
+    p.amount_token,
+    p.meta,
+
+    'link' AS payment_type
+  from _payments p
+  inner join payments_link as pl on pl.payment_id = p.id
+  left join cm_channel_updates up on up.id = pl.update_id
 );
 
 
