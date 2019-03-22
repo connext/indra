@@ -247,7 +247,7 @@ describe('PaymentsService', () => {
     )
     // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toString(),
+      pendingDepositTokenHub: toWeiString(10),
     })
   })
 
@@ -292,7 +292,7 @@ describe('PaymentsService', () => {
     )
 
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toString(),
+      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toFixed(),
     })
   })
 

@@ -532,7 +532,7 @@ describe('ChannelsService', () => {
     )
 
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: config.beiMaxCollateralization.toString()
+      pendingDepositTokenHub: config.beiMaxCollateralization.toFixed()
     })
   }).timeout(5000)
 
