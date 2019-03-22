@@ -7,6 +7,7 @@ export default interface PaymentsDao {
   createHubPayment(paymentId: number, updateId: number): Promise<void>
   createThreadPayment(paymentId: number, updateId: number): Promise<void>
   createLinkPayment(paymentId: number, updateId: number, secret: string): Promise<void>
+  addLinkedPaymentRedemption(paymentId: number, redemptionId: number): Promise<void>
 }
 
 const LOG = log('PostgresPaymentsDao')
@@ -69,6 +70,12 @@ export class PostgresPaymentsDao implements PaymentsDao {
         ${updateId},
         ${secret}
       )
+    `)
+  }
+
+  public async addLinkedPaymentRedemption(paymentId: number, redemptionId: number): Promise<void> {
+    await this.db.queryOne(SQL`
+      UPDATE payments_link SET redemption_id = ${redemptionId} WHERE payment_id = ${paymentId}
     `)
   }
 }

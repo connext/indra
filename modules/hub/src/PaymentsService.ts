@@ -123,7 +123,7 @@ export default class PaymentsService {
           throw new Error(`Linked payments must have no recipient`)
         }
 
-        if (!meta.secret) {
+        if (!payment.meta.secret) {
           throw new Error(`No secret detected on linked payment.`)
         }
 
@@ -136,7 +136,7 @@ export default class PaymentsService {
         })
 
         afterPayment = paymentId => afterPayments.push(async () => {
-          await this.paymentsDao.createLinkPayment(paymentId, row.id, meta.secret)
+          await this.paymentsDao.createLinkPayment(paymentId, row.id, payment.meta.secret)
         })
 
       } else {
@@ -216,46 +216,40 @@ export default class PaymentsService {
       }
     }
 
-    // hub can afford from balance
-    const purchasePayment: PurchasePayment = {
-      secret,
-      recipient: user,
-      amount: payment.amount,
-      meta: payment.meta,
-      type: 'PT_LINK',
-      update: {
-        reason: 'Payment',
-        args: {
-          amountToken: payment.amount.amountToken,
-          amountWei: payment.amount.amountWei,
-          recipient: 'hub',
-          // NOTE: args to user are generated in 
-          // `doInstantCustodialPayment`, this is a small hack
-          // to allow the hub to forward the payment
-        },
-        txCount: null,
-      }
-    }
-
-    throw new Error('TODO: FINISH MERGING LINK PAYMENTS: #122')
-    /*
     let purchaseId = null
     let amount = null
-    try {
-      await this.doInstantCustodialPayment(purchasePayment, payment.id)
-      // mark the payment as redeemed by updating the recipient field
-      const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
-      purchaseId = redeemedPaymentRow.purchaseId
-      amount = redeemedPaymentRow.amount
-    } catch (e) {
-      LOG.error("Error with redeeming payment. Error: {e}", { e })
-    }
+
+    const paymentArgs = {
+      ...payment.amount,
+      recipient: 'user'
+    } as PaymentArgs
+
+    const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
+      convertChannelState('str', channel.state),
+      paymentArgs
+    )
+    const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
+    const disbursement = await this.channelsDao.applyUpdateByUser(
+      user,
+      'Payment',
+      this.config.hotWalletAddress,
+      signedStateHubToRecipient,
+      paymentArgs
+    )
+    
+    // mark the payment as redeemed by updating the recipient field
+    await this.paymentMetaDao.redeemLinkedPayment(user, secret)
+    // add the redemption update id
+    await this.paymentsDao.addLinkedPaymentRedemption(payment.id, disbursement.id)
+
+    const redeemedPaymentRow = await this.paymentMetaDao.getLinkedPayment(secret)
+    purchaseId = redeemedPaymentRow.purchaseId
+    amount = redeemedPaymentRow.amount
 
     return {
       error: false,
       res: { purchaseId, amount, } // will be null if fails
     }
-    */
   }
 
   public async doPurchaseById(id: string): Promise<PurchaseRowWithPayments> {
