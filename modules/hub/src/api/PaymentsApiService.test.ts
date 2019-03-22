@@ -191,9 +191,10 @@ describe('PaymentsApiService', () => {
               amountWei: '0',
               amountToken: tokenVal(1),
             },
-            meta: {},
+            meta: {
+              secret: 'sadlkj'
+            },
             type: 'PT_LINK',
-            secret: 'sadlkj',
             update: {
               reason: 'Payment',
               sigUser: chan.state.sigUser,
@@ -220,7 +221,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'PT_LINK',
+      type: 'link',
     })
   })
 
@@ -245,9 +246,10 @@ describe('PaymentsApiService', () => {
             amountWei: '0',
             amountToken: tokenVal(1),
           },
-          meta: {},
+          meta: {
+            secret: 'sadlkj'
+          },
           type: 'PT_LINK',
-          secret: 'sadlkj',
           update: {
             reason: 'Payment',
             sigUser: senderChan.state.sigUser,
@@ -286,8 +288,10 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'PT_LINK',
-      secret: "sadlkj"
+      type: 'link',
+      meta: {
+        secret: "sadlkj"
+      }
     })
 
     const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
@@ -298,8 +302,10 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'PT_LINK',
-      secret: "sadlkj"
+      type: 'link',
+      meta: {
+        secret: "sadlkj"
+      }
     })
   })
 
