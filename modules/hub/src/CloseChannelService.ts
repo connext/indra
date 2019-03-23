@@ -58,7 +58,15 @@ export class CloseChannelService {
   }
 
   async disputeStaleChannels() {
+    const staleChannelDays = this.config.staleChannelDays
+    if (!staleChannelDays) {
+      return
+    }
+
     const staleChannels = await this.channelsDao.getStaleChannels()
+    if (!staleChannels) {
+      return
+    }
 
     // dispute stale channels
     for (const channel of staleChannels) {

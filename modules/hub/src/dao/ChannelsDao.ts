@@ -366,13 +366,17 @@ export class PostgresChannelsDao implements ChannelsDao {
     // custodial withdrawals occur via direct eth transfer, so 
     // there is no reason to include any custodial payments
     // in the query logic. only need to check against latest channel update
+    const staleChannelDays = this.config.staleChannelDays
+    if (!staleChannelDays) {
+      return null
+    }
 
     const { rows } = await this.db.query(SQL`
       SELECT * 
       FROM cm_channels
       WHERE
         contract = ${this.config.channelManagerAddress} AND
-        last_updated_on < NOW() - (${this.config.staleChannelDays}::text || ' days')::INTERVAL
+        last_updated_on < NOW() - (${staleChannelDays}::text || ' days')::INTERVAL
     `)
     return rows.map(r => this.inflateChannelRow(r))
   }

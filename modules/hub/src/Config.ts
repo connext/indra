@@ -90,7 +90,7 @@ export default class Config {
   public hotWalletAddress: string = ''
   public hotWalletMinBalanceEth: string = '6.9'
   public sessionSecret: string = ''
-  public staleChannelDays: number = process.env.STALE_CHANNEL_DAYS ? parseInt(process.env.STALE_CHANNEL_DAYS) : 7
+  public staleChannelDays?: number = process.env.STALE_CHANNEL_DAYS ? parseInt(process.env.STALE_CHANNEL_DAYS) : null // if null, will not dispute
   public registry?: Registry
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
