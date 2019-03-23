@@ -200,22 +200,35 @@ app.get("/payments/trailingWeek", async function(req, res) {
 
 // date range
 app.get("/payments/daterange/:startDate/:endDate", async function(req, res) {
+  let { startDate, endDate } = req.params
+  if (!startDate || !endDate) {
+    console.log('Invalid request received. Params:', req.params)
+    res.send(400)
+  }
+
+  const today = new Date().toISOString().split('T')
+
+  if (startDate == endDate) {
+    // this is within a 24 hour window
+    startDate = startDate + ' ' + '00:00:00'
+    if (endDate == today[0]) {
+      endDate = endDate + ' ' + today[1].split('.')[0]
+    }
+  }
+
   await sendResFromQuery(
-    `
-  WITH payment_counts as(
+    `WITH payment_counts as(
       SELECT sum(amount_token) as token_sum,
             sum(amount_wei) as wei_sum,
              count(*)
       FROM payments a
-      WHERE created_on BETWEEN ${req.params.startDate} AND ${
-      req.params.endDate
-    })
+      WHERE created_on::date BETWEEN '${startDate}'::date AND '${endDate}'::date)
     SELECT token_sum/count as avg_token_payment,
             count
     FROM payment_counts
   `,
     req,
-    res
+    res,
   );
 });
 
