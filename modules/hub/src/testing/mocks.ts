@@ -130,6 +130,7 @@ export const getTestConfig = (overrides?: any) => ({
   sessionSecret: 'hummus',
   hotWalletAddress: testHotWalletAddress,
   channelManagerAddress: testChannelManagerAddress,
+  staleChannelDays: 1,
   ...(overrides || {}),
 })
 
