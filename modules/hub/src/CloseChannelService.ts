@@ -42,6 +42,25 @@ export class CloseChannelService {
   }
 
   async pollOnce() {
+    try {
+      // TODO: does this need to be within a transaction?
+      await this.db.withTransaction(() => this.emptyDisputedChannels())
+    } catch (e) {
+      LOG.error('Emptying disputed channel failed {e}', { e })
+    }
+
+    try {
+      // TODO: does this need to be within a transaction?
+      await this.db.withTransaction(() => this.disputeStaleChannels())
+    } catch (e) {
+      LOG.error('Disputing stale channels failed {e}', { e })
+    }
+  }
+
+  private async disputeStaleChannels() {
+  }
+
+  private async emptyDisputedChannels() {
     const latestBlock = await this.web3.eth.getBlock('latest')
     const disputePeriod = +(await this.contract.methods.challengePeriod().call({
       from: this.config.hotWalletAddress,
