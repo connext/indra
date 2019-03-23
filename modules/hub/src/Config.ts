@@ -95,7 +95,7 @@ export default class Config {
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
   public channelBeiLimit = toWeiBigNum(process.env.CHANNEL_BEI_LIMIT || 69)
-  public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 20)
+  public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 5)
   public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 10)
   public beiMaxCollateralization = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION || 169)
   public minCollateralizationMultiple = new BigNumber(process.env.MIN_COLLATERALIZATION_MULTIPLE || 0.5)
