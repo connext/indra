@@ -115,7 +115,7 @@ class PaymentInfoCard extends Component {
   componentDidMount = async () => {
     await this._handleRefresh()
   };
-  
+
   /**************************
    * Payment trends 
    */
@@ -270,8 +270,8 @@ class PaymentInfoCard extends Component {
    */
   fetchDateRange = async() => {
 
-    let start = this.state.startDate.toISOString().slice(0, 19).replace('T', ' ');
-    let end = this.state.endDate.toISOString().slice(0, 19).replace('T', ' ');
+    let start = this.state.startDate.toISOString().split('T')[0];
+    let end = this.state.endDate.toISOString().split('T')[0];
 
     console.log(`Fetching date range: ${start} - ${end}`)
     const { web3 } = this.props;
