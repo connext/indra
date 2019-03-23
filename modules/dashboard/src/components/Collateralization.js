@@ -44,8 +44,6 @@ class CollateralCard extends Component {
     const { ratio } = await get(`collateralization/ratio`);
     if (ratio) {
       this.setState({ collateralRatio: ratio });
-    } else {
-      this.setState({ collateralRatio: "N/A" });
     }
   };
 
@@ -54,18 +52,14 @@ class CollateralCard extends Component {
     if (inactiveChannels) {
       // handle case where hub returns a
       this.setState({ inactiveChannels, });
-    } else {
-      this.setState({ inactiveChannels: "No channels found" });
     }
-     console.log(`inactive channels: ${JSON.stringify(this.state.inactiveChannels)}`)
+    console.log(`inactive channels: ${JSON.stringify(this.state.inactiveChannels)}`)
   };
 
   getOvercollateralized = async () => {
     const overCollateralized = await get(`collateralization/overcollateralized`);
     if (overCollateralized) {
       this.setState({ overCollateralized });
-    }else{
-      this.setState({ overCollateralized: "No channels found" });
     }
   };
 
