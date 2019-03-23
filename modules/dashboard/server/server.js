@@ -311,15 +311,21 @@ app.get("/payments/average/trailingweek", async function(req, res) {
 });
 
 // by ID
-app.get("/payments/:id", async function(req, res) {
+app.get("/payments/:purchaseId", async function(req, res) {
+  const { purchaseId } = req.params
+  if (!purchaseId) {
+    console.log('Invalid request received. Params', req.params)
+    res.send(400)
+  }
+
   await sendResFromQuery(
     `SELECT *
         FROM _payments
-        WHERE "purchase_id" = ${req.params.id}
-        LIMIT 10
+        WHERE "purchase_id" = '${purchaseId}'::varchar
+        LIMIT 1
     `,
     req,
-    res
+    res,
   );
 });
 

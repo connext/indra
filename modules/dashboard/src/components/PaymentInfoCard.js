@@ -257,11 +257,11 @@ class PaymentInfoCard extends Component {
    */
 
   searchById = async id => {
-    const res = await get(`payments/${id}`);
-    if (res.length > 0) {
-      this.setState({ paymentInfo: res });
+    const purchase = await get(`payments/${id}`);
+    if (purchase) {
+      this.setState({ paymentInfo: purchase });
     } else {
-      this.setState({ paymentInfo: "ID not found" });
+      this.setState({ paymentInfo: "Purchase not found" });
     }
   };
 
@@ -534,8 +534,12 @@ class PaymentInfoCard extends Component {
             </div>
             <div>
               {this.state.paymentInfo ? (
-                <Typography variant="body1">
-                  {this.state.paymentInfo}
+                <Typography component="div" variant="body1">
+                  {Object.entries(this.state.paymentInfo).map(([k,v], i) => {
+                    return (<div key={k}>
+                      {k + ': ' + JSON.stringify(v, null, 2)}
+                    </div>)
+                  })}
                 </Typography>
               ) : null}
             </div>
