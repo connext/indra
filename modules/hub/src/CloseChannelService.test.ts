@@ -2,7 +2,7 @@ import { channelUpdateFactory } from './testing/factories'
 import { getTestRegistry, assert, getFakeClock } from './testing'
 import { CloseChannelService } from './CloseChannelService';
 import ChannelsService from './ChannelsService';
-import { mkHash, assertChannelStateEqual } from './testing/stateUtils';
+import { mkHash, assertChannelStateEqual, mkAddress } from './testing/stateUtils';
 import Web3 = require('web3')
 import ChannelsDao from './dao/ChannelsDao';
 import { setFakeClosingTime } from './testing/mocks';
@@ -10,6 +10,8 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { UpdateRequest } from './vendor/connext/types';
 import { channelRowBigNumToString } from './domain/Channel';
 import { sleep } from './vendor/connext/lib/utils';
+import DBEngine from './DBEngine';
+import { toWeiString } from './util/bigNumber';
 
 
 describe('CloseChannelService', () => {
@@ -75,7 +77,7 @@ describe('CloseChannelService', () => {
         console.log('Called mock function sendTransaction');
         return true
       }
-    }
+    },
   },
 
   )
@@ -113,6 +115,100 @@ describe('CloseChannelService', () => {
     })
 
     // lots of mocking
+  })
+
+  async function rewindUpdates(days: number, user: string) {
+    const db: DBEngine = registry.get("DBEngine")
+    await db.queryOne(`
+      UPDATE _cm_channel_updates
+      SET
+        "created_on" = NOW() - (${days}::text || ' days')::INTERVAL,
+        "hub_signed_on" = NOW() - '100 days'::INTERVAL,
+        "user_signed_on" = NOW() - '100 days'::INTERVAL
+      WHERE
+        "user" = '${user}'::text 
+    `)
+  }
+
+  it('should start a dispute with stale channels', async () => {
+    const staleChannel = await channelUpdateFactory(registry, {
+      balanceTokenHub: toWeiString(15),
+    })
+
+    let updated = await channelsDao.getChannelByUser(staleChannel.user)
+    assert.equal(updated.status, "CS_OPEN")
+    
+    // TODO: better way to mock out the waiting here
+    // how to force an update to have differnt timestamp in db?
+    await rewindUpdates(100, staleChannel.user)
+
+    await closeChannelService.pollOnce()
+
+    updated = await channelsDao.getChannelByUser(staleChannel.user)
+    // should start a dispute
+    assert.equal(updated.status, "CS_CHANNEL_DISPUTE")
+  })
+
+  it('should start channels with only stale channels with sufficient token hub', async () => {
+    const emptyChan = await channelUpdateFactory(registry, {
+      user: mkAddress('0xAAA'),
+    })
+    const recentChan = await channelUpdateFactory(registry, {
+      balanceTokenHub: toWeiString(15),
+      user: mkAddress('0xBBB'),
+    })
+    const staleChan = await channelUpdateFactory(registry, {
+      balanceTokenHub: toWeiString(15),
+      user: mkAddress('0xCCC'),
+    })
+
+    await rewindUpdates(100, staleChan.user)
+    await rewindUpdates(100, emptyChan.user)
+
+    await closeChannelService.pollOnce()
+
+    const empty = await channelsDao.getChannelByUser(emptyChan.user)
+    const recent = await channelsDao.getChannelByUser(recentChan.user)
+    const stale = await channelsDao.getChannelByUser(staleChan.user)
+    // should start a dispute with only stale chan
+    assert.equal(empty.status, "CS_OPEN")
+    assert.equal(recent.status, "CS_OPEN")
+    assert.equal(stale.status, "CS_CHANNEL_DISPUTE")
+  })
+
+  it('should not start a dispute if the channel is stale, but has no tokens', async () => {
+    const staleChannel = await channelUpdateFactory(registry)
+
+    await closeChannelService.pollOnce()
+    let updated = await channelsDao.getChannelByUser(staleChannel.user)
+    assert.equal(updated.status, "CS_OPEN")
+    
+    // TODO: better way to mock out the waiting here
+    // how to force an update to have differnt timestamp in db?
+    await rewindUpdates(100, staleChannel.user)
+
+    await closeChannelService.pollOnce()
+
+    updated = await channelsDao.getChannelByUser(staleChannel.user)
+    // should start a dispute
+    assert.equal(updated.status, "CS_OPEN")
+  })
+
+  it('should not start a dispute if the channel is not open', async () => {
+    const chainsawChannel = await channelUpdateFactory(registry)
+
+    await rewindUpdates(100, chainsawChannel.user)
+
+    await channelsDao.addChainsawErrorId(chainsawChannel.user, 1)
+    
+    let updated = await channelsDao.getChannelByUser(chainsawChannel.user)
+    assert.equal(updated.status, "CS_CHAINSAW_ERROR")
+
+    await closeChannelService.pollOnce()
+
+    updated = await channelsDao.getChannelByUser(chainsawChannel.user)
+    // should start a dispute
+    assert.equal(updated.status, "CS_CHAINSAW_ERROR")
   })
 
   it('should ignore channels that have been closed on chain', async () => {
