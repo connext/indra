@@ -57,7 +57,26 @@ export class CloseChannelService {
     }
   }
 
-  private async disputeStaleChannels() {
+  async disputeStaleChannels() {
+    const staleChannels = await this.channelsDao.getStaleChannels()
+
+    // dispute stale channels
+    for (const channel of staleChannels) {
+      // do not dispute if the value is below the min bei
+      if (channel.state.balanceTokenHub.lt(this.config.beiMinThreshold)) {
+        continue
+      }
+
+      // do not start dispute if channel status is not open
+      if (channel.status != "CS_OPEN") {
+        continue
+      }
+
+      // TODO: should take into account thread dispute costs here
+
+      // proceed with channel dispute
+      await this.db.withTransaction(() => this.startUnilateralExit(channel.user, "Automatically decollateralizing stale channel"))
+    }
   }
 
   private async emptyDisputedChannels() {
