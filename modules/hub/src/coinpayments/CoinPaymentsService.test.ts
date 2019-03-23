@@ -162,14 +162,14 @@ describe('CoinPaymentsService', () => {
   describe.skip('getUserDepositAddress', () => {
     it('get an address from the API if none exist', async () => {
       const actual = await service.getUserDepositAddress(userAddress, 'ETH')
-      assert.equal(actual, api.fakeAddress)
+      assert.containSubset(actual, { address: api.fakeAddress })
     })
 
     it('return address from the DB if it is less than a day old', async () => {
       const first = await service.getUserDepositAddress(userAddress, 'ETH')
       api.fakeAddress = mkAddress('0x0')
       const second = await service.getUserDepositAddress(userAddress, 'ETH')
-      assert.equal(first, second)
+      assert.equal(first.address, second.address)
     })
 
     it('get a new address from the API if the existing address is more than a day old', async () => {
@@ -181,8 +181,8 @@ describe('CoinPaymentsService', () => {
       `)
       api.fakeAddress = mkAddress('0x2')
       const second = await service.getUserDepositAddress(userAddress, 'ETH')
-      assert.notEqual(first, second)
-      assert.equal(second, api.fakeAddress)
+      assert.notEqual(first.address, second.address)
+      assert.containSubset(second, { address: api.fakeAddress })
     })
   })
 
@@ -239,10 +239,19 @@ describe('CoinPaymentsService', () => {
     })
 
     it('fails for status < 100', async () => {
-      await assert.isRejected(
-        service.handleCoinPaymentsIpn(user, mkIpnData({ status: '69' })),
-        /status < 100/,
-      )
+      await assert.isNotOk(await service.handleCoinPaymentsIpn(user, mkIpnData({
+        ipn_id: 'invalid-status',
+        status: '69',
+      })))
+      const log = await db.queryOne(SQL`
+        select *
+        from coinpayments_ipn_log
+        where ipn_id = 'invalid-status'
+     `)
+     assert.containSubset(log, {
+       ipn_id: 'invalid-status',
+       status: 69,
+     })
     })
 
     it('does nothing if channel already has pending fields', async () => {

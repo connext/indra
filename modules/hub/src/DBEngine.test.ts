@@ -4,7 +4,6 @@ import { PostgresDBEngine, SQL, default as DBEngine } from "./DBEngine"
 
 describe('DBEngine', () => {
   const registry = new TestServiceRegistry()
-  after(() => registry.reset())
 
   describe('SQL formatter', () => {
     const db: PostgresDBEngine = registry.get('DBEngine')

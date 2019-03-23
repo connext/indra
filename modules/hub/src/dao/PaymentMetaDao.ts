@@ -5,31 +5,11 @@ import Config from '../Config'
 import { emptyAddress } from '../vendor/connext/Utils';
 
 export interface PaymentMetaDao {
-  save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number>
-
+  save (purchaseId: string, payment: PurchasePaymentSummary): Promise<number>
   historyByUser (address: string): Promise<PurchasePaymentRow[]>
-
-  /*
-  bySender(address: string): Promise<PaymentMeta[]>
-
-  byToken(token: string): Promise<PaymentMeta>
-
-  */
-
   byPurchase (id: string): Promise<PurchasePaymentRow[]>
-
   getLinkedPayment(secret: string): Promise<PurchasePaymentRow> 
-
-  redeemLinkedPayment(user: string, secret: string): Promise<PurchasePaymentRow> 
-
-  /*
-
-  allAffectingAddress(address: string): Promise<PaymentMeta[]>
-
-  all(): Promise<PaymentMeta[]>
-
-  allByType(type: PurchaseMetaType): Promise<PaymentMeta[]>
-  */
+  redeemLinkedPayment(user: string, secret: string): Promise<void> 
 }
 
 export class PostgresPaymentMetaDao implements PaymentMetaDao {
@@ -41,7 +21,7 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     this.config = config
   }
 
-  public async save (purchaseId: string, updateId: number, payment: PurchasePaymentSummary): Promise<number> {
+  public async save (purchaseId: string, payment: PurchasePaymentSummary): Promise<number> {
     // Note: this only returns the ID because returning a full
     // `PurchasePaymentRow` would require a second query to hit the `payments`
     // view, and at the moment none of the callers of this function need the
@@ -49,18 +29,12 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     const { id } = await this.db.queryOne(SQL`
       INSERT INTO _payments (
         purchase_id, recipient,
-        channel_update_id,
-        thread_update_id,
         amount_wei, amount_token,
-        secret,
         meta
       )
       VALUES (
         ${purchaseId}, ${payment.recipient},
-        ${payment.type == 'PT_CHANNEL' || payment.type == 'PT_LINK' ? updateId : null},
-        ${payment.type == 'PT_THREAD' ? updateId : null},
         ${payment.amount.amountWei}, ${payment.amount.amountToken},
-        ${payment.secret},
         ${JSON.stringify(payment.meta)}::jsonb
       ) RETURNING id
     `)
@@ -83,32 +57,24 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
   public async getLinkedPayment(secret: string): Promise<PurchasePaymentRow> {
     const row = await this.db.queryOne(SQL`
       SELECT * from payments
-      WHERE
-        "secret" = ${secret}
-      ORDER BY created_on DESC
+      WHERE id = (
+        SELECT payment_id FROM payments_link
+        WHERE "secret" = ${secret}
+      )
+      LIMIT 1
     `)
     return this.rowToPaymentSummary(row)
   }
 
-  public async redeemLinkedPayment(user: string, secret: string) {
+  public async redeemLinkedPayment(user: string, secret: string): Promise<void> {
     await this.db.queryOne(SQL`
       UPDATE _payments
       SET "recipient" = ${user.toLowerCase()}
-      WHERE
-        "secret" = ${secret}
-        AND "recipient" = ${emptyAddress};
+      WHERE _payments.id = (
+        SELECT payment_id FROM payments_link
+        WHERE "secret" = ${secret}
+      )
     `)
-
-    
-    const updated = await this.db.queryOne(SQL`
-      SELECT * from payments
-      WHERE
-        "secret" = ${secret}
-        AND "recipient" = ${user.toLowerCase()}
-      ORDER BY created_on DESC;
-    `)
-
-    return this.rowToPaymentSummary(updated)
   }
 
   /*
@@ -190,13 +156,12 @@ export class PostgresPaymentMetaDao implements PaymentMetaDao {
     return rows.map(row => this.rowToPaymentSummary(row))
   }
 
-  private rowToPaymentSummary(row: any): PurchasePaymentRow {
-    return {
+  private rowToPaymentSummary(row: any): PurchasePaymentRow | null {
+    return row && {
       id: Number(row.id),
       createdOn: row.created_on,
       purchaseId: row.purchase_id,
       sender: row.sender,
-      secret: row.secret,
       recipient: row.recipient,
       amount: {
         amountWei: row.amount_wei,

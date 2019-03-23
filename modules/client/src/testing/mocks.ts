@@ -288,7 +288,7 @@ export class MockHub implements IHubAPIClient {
         console.log("TEST INCLUSION")
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
-      if (p.type == 'PT_CHANNEL' || 'PT_LINK') {
+      if (p.type == 'PT_CHANNEL' || p.type == 'PT_LINK' || p.type == 'PT_CUSTODIAL') {
         return {
           type: 'channel',
           update: {

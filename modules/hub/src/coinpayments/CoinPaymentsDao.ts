@@ -6,12 +6,18 @@ import { CPGetCallbackAddressResponse } from './CoinPaymentsApiClient'
 import { ChannelStateUpdateBigNumber, DepositArgs } from '../vendor/connext/types'
 import { ChannelStateUpdateRow } from '../domain/Channel'
 
+export interface CoinPaymentsDepositAddress {
+  address: string
+  destTag?: string
+}
+
 export interface CoinPaymentsDepositAddressRow {
   id: number
   createdOn: Date
   user: string
   currency: string
   address: string
+  destTag?: string
 }
 
 export interface CoinPaymentsIpnRow {
@@ -112,11 +118,40 @@ export class CoinPaymentsDao {
     `))
   }
 
-  async getIpn(ipnRowId: number): Promise<CoinPaymentsIpnRow | null> {
+  async saveIpnLog(user: string, ipn: CoinPaymentsIpnData): Promise<void> {
+    return await this.db.queryOne(SQL`
+      insert into coinpayments_ipn_log (
+        "user",
+        ipn_id,
+        status,
+        status_text,
+        address,
+        data
+      ) values (
+        ${user},
+        ${ipn.ipn_id},
+        ${ipn.status},
+        ${ipn.status_text},
+        ${ipn.address},
+        ${JSON.stringify(ipn)}::jsonb
+      )
+    `)
+  }
+
+  async getIpnByRowId(ipnRowId: number): Promise<CoinPaymentsIpnRow | null> {
     return this.inflateIpn(await this.db.queryOne(SQL`
       select *
       from coinpayments_ipns
       where id = ${ipnRowId}
+    `))
+  }
+
+  async getIpnByIpnId(ipnId: string): Promise<CoinPaymentsIpnRow | null> {
+    return this.inflateIpn(await this.db.queryOne(SQL`
+      select *
+      from coinpayments_ipns
+      where ipn_id = ${ipnId}
+      order by created_on desc
     `))
   }
 
@@ -173,6 +208,7 @@ export class CoinPaymentsDao {
     return row && {
       ...row,
       createdOn: new Date(row.created_on),
+      destTag: row.dest_tag,
     }
   }
 
