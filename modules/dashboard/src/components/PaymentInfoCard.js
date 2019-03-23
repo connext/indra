@@ -113,21 +113,9 @@ class PaymentInfoCard extends Component {
   };
 
   componentDidMount = async () => {
-    await this.setTrailing();
-    await this.setTotal();
-    await this.setAverage();
-    await this.setAverageTrailing();
-    await this.setTrailingWeek();
-    await this.setTrailingWeekPct();
-    await this.setTrailingPct();
-    await this.setAverageTrailingWeek();
-    //await this.setFrequency();
+    await this._handleRefresh()
   };
-
-
-
-
-
+  
   /**************************
    * Payment trends 
    */
