@@ -57,7 +57,7 @@ export class CloseChannelService {
     }
   }
 
-  async disputeStaleChannels() {
+  private async disputeStaleChannels() {
     const staleChannelDays = this.config.staleChannelDays
     if (!staleChannelDays) {
       return
