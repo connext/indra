@@ -116,8 +116,8 @@ class UserInfo extends Component {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {this.state.userInfo.map(n => (
-                      <TableRow key={n.user}>
+                    {this.state.userInfo.map((n, index) => (
+                      <TableRow key={index}>
                         <TableCell component="th" scope="row">
                           {n.reason}
                         </TableCell>
