@@ -94,7 +94,9 @@ class UserInfo extends Component {
                 Search
               </Button>
             </div>
-            <div>
+            <div style={{
+                overflowX: "scroll",
+              }}>
               {this.state.userInfo ? (
                 <Table>
                   <TableHead>
