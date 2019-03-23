@@ -2,76 +2,18 @@ import { channelUpdateFactory } from './testing/factories'
 import { getTestRegistry, assert, getFakeClock } from './testing'
 import { CloseChannelService } from './CloseChannelService';
 import ChannelsService from './ChannelsService';
-import { mkHash, assertChannelStateEqual, mkAddress } from './testing/stateUtils';
-import Web3 = require('web3')
+import { assertChannelStateEqual, mkAddress } from './testing/stateUtils';
 import ChannelsDao from './dao/ChannelsDao';
-import { setFakeClosingTime } from './testing/mocks';
+import { setFakeClosingTime, getTestConfig, getMockWeb3 } from './testing/mocks';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import { UpdateRequest } from './vendor/connext/types';
 import { channelRowBigNumToString } from './domain/Channel';
-import { sleep } from './vendor/connext/lib/utils';
 import DBEngine from './DBEngine';
 import { toWeiString } from './util/bigNumber';
 
 
 describe('CloseChannelService', () => {
-  const registry = getTestRegistry({
-    Web3: {
-      ...Web3,
-      eth: {
-        sign: async () => {
-          return
-        },
-        getTransactionCount: async () => {
-          return 1
-        },
-        estimateGas: async () => {
-          return 1000
-        },
-        signTransaction: async () => {
-          return {
-            tx: {
-              hash: mkHash('0xaaa'),
-              r: mkHash('0xabc'),
-              s: mkHash('0xdef'),
-              v: '0x27',
-            },
-          }
-        },
-        sendSignedTransaction: () => {
-          console.log(`Called mocked web3 function sendSignedTransaction`)
-          return {
-            on: (input, cb) => {
-              switch (input) {
-                case 'transactionHash':
-                  return cb(mkHash('0xbeef'))
-                case 'error':
-                  return cb(null)
-              }
-            },
-          }
-        },
-        sendTransaction: () => {
-          console.log(`Called mocked web3 function sendTransaction`)
-          return {
-            on: (input, cb) => {
-              switch (input) {
-                case 'transactionHash':
-                  return cb(mkHash('0xbeef'))
-                case 'error':
-                  return cb(null)
-              }
-            },
-          }
-        },
-        getBlock: async () => {
-          return {
-            // timestamp: Math.floor(Date.now() / 1000)
-            timestamp: 2
-          }
-        }
-      },
-    },
+  let registry = getTestRegistry({
+    Web3: getMockWeb3(),
     OnchainTransactionService: {
       sendTransaction: async () => {
         console.log('Called mock function sendTransaction');
@@ -129,6 +71,40 @@ describe('CloseChannelService', () => {
         "user" = '${user}'::text 
     `)
   }
+  
+  it('should not start disputes if no channel stale days provided in config', async () => {
+    registry = getTestRegistry({
+      Config: getTestConfig({
+        staleChannelDays: null,
+      }),
+      Web3: getMockWeb3(),
+      OnchainTransactionService: {
+        sendTransaction: async () => {
+          console.log('Called mock function sendTransaction');
+          return true
+        }
+      },
+    })
+
+    const closeChannelService: CloseChannelService = registry.get('CloseChannelService')
+    const channelsDao: ChannelsDao = registry.get('ChannelsDao')
+    const staleChannel = await channelUpdateFactory(registry, {
+      balanceTokenHub: toWeiString(15),
+    })
+
+    let updated = await channelsDao.getChannelByUser(staleChannel.user)
+    assert.equal(updated.status, "CS_OPEN")
+    
+    // TODO: better way to mock out the waiting here
+    // how to force an update to have differnt timestamp in db?
+    await rewindUpdates(100, staleChannel.user)
+
+    await closeChannelService.pollOnce()
+
+    updated = await channelsDao.getChannelByUser(staleChannel.user)
+    // should not start a dispute
+    assert.equal(updated.status, "CS_OPEN")
+  })
 
   it('should start a dispute with stale channels', async () => {
     const staleChannel = await channelUpdateFactory(registry, {
