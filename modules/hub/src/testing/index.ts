@@ -18,13 +18,26 @@ export type ServiceType<N extends ServiceName> = ReturnType<(typeof serviceDefin
 
 export class TestServiceRegistry {
   overrides: any
+  overrideDefinitions: any
   registry: Registry
   container: Container
   currentTest: any
 
   constructor(overrides?: any) {
-    this.overrides = overrides || {}
+    this.overrides = {}
+    this.overrideDefinitions = {}
+    Object.entries(overrides || {}).forEach(([k, v]: [any, any]) => {
+      if (v && v.factory) {
+        this.overrideDefinitions[k] = v
+      } else {
+        this.overrides[k] = v
+      }
+    })
     this.reset()
+
+    after(async () => {
+      await this.get('PgPoolService').close()
+    })
 
     const _this = this
     beforeEach(function() {
@@ -48,6 +61,7 @@ export class TestServiceRegistry {
     this.registry.bindDefinitions({
       ...defaultRegistry().registry,
       ...mockServices,
+      ...this.overrideDefinitions,
     })
 
     const overrides = {

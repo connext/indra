@@ -166,10 +166,13 @@ export class PgTransaction implements DBEngine {
  * A singleton service which lets all active threads share a single connection
  * pool.
  */
+let poolCount = 0
 export class PgPoolService {
   pool: Pool
+  log: SCLogger
 
   constructor(config: Config) {
+    this.log = log('PgPoolService:' + ++poolCount)
     this.pool = this._initPool(config)
   }
 
@@ -186,7 +189,7 @@ export class PgPoolService {
       // connections idle in the pool. This will probably happen if Postgres
       // reboots or similar, and is likely okay to ignore... but I want to
       // keep this at log.error for the moment just to be sure.
-      LOG.error('Error from idle Postgres connection (probably safe to ignore): ' + err)
+      this.log.error('Error from idle Postgres connection (probably safe to ignore): ' + err)
     })
 
     pool.on('acquire', _client => {
@@ -211,15 +214,19 @@ export class PgPoolService {
     var connectCount = 0
     pool.on('connect', () => {
       connectCount += 1
-      LOG.debug('Allocating new Postgres connection (active connections: {connectCount})', { connectCount })
+      this.log.info('Allocating new Postgres connection (active connections: {connectCount})', { connectCount })
     })
 
     pool.on('remove', () => {
       connectCount -= 1
-      LOG.debug('Removing Postgres connection from pool (active connections: {connectCount})', { connectCount })
+      this.log.info('Removing Postgres connection from pool (active connections: {connectCount})', { connectCount })
     })
 
     return pool
+  }
+
+  async close() {
+    await this.pool.end()
   }
 }
 

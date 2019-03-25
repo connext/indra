@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const { Pool } = require('pg');
 
@@ -12,6 +13,11 @@ if (process.env.POSTGRES_PASSWORD_FILE) {
 } else {
   password = 'supersecret'
 }
+
+console.log('starting server in env')
+console.log('   - host', host)
+console.log('   - user', user)
+console.log('   - database', database)
 
 const pool = new Pool({
   connectionString: `postgres://${user}:${password}@${host}/${database}`

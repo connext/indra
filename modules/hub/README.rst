@@ -26,6 +26,14 @@ Running Tests
 
    $ ./migrate-and-test.sh
 
+Creating Migrations
+===================
+
+To create a migration, run::
+
+   db-migrate create YOUR_MIGRATION_NAME --sql-file 
+
+Then edit the SQL files in ``migrations/sqls/``
 
 Adding Feature Flags
 ====================

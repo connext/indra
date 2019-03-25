@@ -41,34 +41,25 @@ class CollateralCard extends Component {
   }
 
   getRatio = async () => {
-    const res = await get(`collateralization/ratio`);
-    if (res.ratio) {
-      let ratio = res.ratio;
-
+    const { ratio } = await get(`collateralization/ratio`);
+    if (ratio) {
       this.setState({ collateralRatio: ratio });
-    } else {
-      this.setState({ collateralRatio: "N/A" });
     }
   };
 
   getInactive = async () => {
-    const res = await get(`channels/inactive`);
-    if (res) {
-      this.setState({ inactiveChannels: res });
-    }else{
-      this.setState({ inactiveChannels: "No channels found" });
+    const inactiveChannels = await get(`channels/inactive`);
+    if (inactiveChannels) {
+      // handle case where hub returns a
+      this.setState({ inactiveChannels, });
     }
-     console.log(`inactive channels: ${JSON.stringify(this.state.inactiveChannels)}`)
+    console.log(`inactive channels: ${JSON.stringify(this.state.inactiveChannels)}`)
   };
 
   getOvercollateralized = async () => {
-    const res = await get(`collateralization/overcollateralized`);
-    if (res) {
-      let arr = [];
-      arr.push(res);
-      this.setState({ overCollateralized: arr[0] });
-    }else{
-      this.setState({ overCollateralized: "No channels found" });
+    const overCollateralized = await get(`collateralization/overcollateralized`);
+    if (overCollateralized) {
+      this.setState({ overCollateralized });
     }
   };
 
@@ -79,14 +70,12 @@ class CollateralCard extends Component {
   };
 
   componentDidMount = async () => {
-    await this.getRatio();
-    await this.getInactive();
-    await this.getOvercollateralized();
+    await this._handleRefresh()
   };
 
   render() {
-    const { web3, classes } = this.props;
-    const { inactiveChannels, overCollateralized } = this.state;
+    const { classes } = this.props;
+    const { inactiveChannels, overCollateralized, collateralRatio } = this.state;
     return (
       <div className={classes.content}>
         <Card className={classes.card}>
@@ -108,7 +97,7 @@ class CollateralCard extends Component {
                     </Typography>
                   </TableCell>
                   <TableCell component="th" scope="row">
-                    {this.state.collateralRatio}
+                    {collateralRatio}
                   </TableCell>
                 </TableRow>
               </TableBody>

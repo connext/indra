@@ -113,20 +113,8 @@ class PaymentInfoCard extends Component {
   };
 
   componentDidMount = async () => {
-    await this.setTrailing();
-    await this.setTotal();
-    await this.setAverage();
-    await this.setAverageTrailing();
-    await this.setTrailingWeek();
-    await this.setTrailingWeekPct();
-    await this.setTrailingPct();
-    await this.setAverageTrailingWeek();
-    //await this.setFrequency();
+    await this._handleRefresh()
   };
-
-
-
-
 
   /**************************
    * Payment trends 
@@ -269,11 +257,11 @@ class PaymentInfoCard extends Component {
    */
 
   searchById = async id => {
-    const res = await get(`payments/${id}`);
-    if (res.length > 0) {
-      this.setState({ paymentInfo: res });
+    const purchase = await get(`payments/${id}`);
+    if (purchase) {
+      this.setState({ paymentInfo: purchase });
     } else {
-      this.setState({ paymentInfo: "ID not found" });
+      this.setState({ paymentInfo: "Purchase not found" });
     }
   };
 
@@ -282,8 +270,8 @@ class PaymentInfoCard extends Component {
    */
   fetchDateRange = async() => {
 
-    let start = this.state.startDate.toISOString().slice(0, 19).replace('T', ' ');
-    let end = this.state.endDate.toISOString().slice(0, 19).replace('T', ' ');
+    let start = this.state.startDate.toISOString().split('T')[0];
+    let end = this.state.endDate.toISOString().split('T')[0];
 
     console.log(`Fetching date range: ${start} - ${end}`)
     const { web3 } = this.props;
@@ -546,8 +534,12 @@ class PaymentInfoCard extends Component {
             </div>
             <div>
               {this.state.paymentInfo ? (
-                <Typography variant="body1">
-                  {this.state.paymentInfo}
+                <Typography component="div" variant="body1">
+                  {Object.entries(this.state.paymentInfo).map(([k,v], i) => {
+                    return (<div key={k}>
+                      {k + ': ' + JSON.stringify(v, null, 2)}
+                    </div>)
+                  })}
                 </Typography>
               ) : null}
             </div>

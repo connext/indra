@@ -8,7 +8,6 @@ import { withStyles } from "@material-ui/core/styles";
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import get from '../get';
 
@@ -29,6 +28,7 @@ class ChannelInfoCard extends Component{
     super(props)
     this.state={
       openChannels:null,
+      unopenedChannels:null,
       avgWeiBalance:{
         raw:null,
         formatted:null
@@ -40,12 +40,21 @@ class ChannelInfoCard extends Component{
     }
   }
 
-  setChannels = async() => {
+  setOpenChannels = async() => {
     const res = await get(`channels/open`)
     if (res) {
       this.setState({openChannels: res.count});
     } else {
       this.setState({openChannels: 0});
+    }
+  }
+
+  setUnopenedChannels = async() => {
+    const res = await get(`channels/notopen/count`)
+    if (res) {
+      this.setState({unopenedChannels: res.count});
+    } else {
+      this.setState({unopenedChannels: 0});
     }
   }
 
@@ -69,13 +78,13 @@ class ChannelInfoCard extends Component{
   }
 
   _handleRefresh = async() =>{
-    await this.setChannels()
+    await this.setOpenChannels()
+    await this.setUnopenedChannels()
     await this.setChannelBalances()
   }
 
   componentDidMount = async() =>{
-    await this.setChannels()
-    await this.setChannelBalances()
+    await this._handleRefresh()
   }
 
   render(){
@@ -99,6 +108,16 @@ class ChannelInfoCard extends Component{
                 </TableCell>
                 <TableCell component="th" scope="row">
                   {this.state.openChannels}
+                </TableCell>
+              </TableRow>
+              <TableRow >
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">
+                  Non-open Channels
+                  </Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {this.state.unopenedChannels}
                 </TableCell>
               </TableRow>
               <TableRow >

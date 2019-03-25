@@ -1017,7 +1017,7 @@ export class Validator {
 
   private parseChannelEventTxReceipt(name: ChannelEventReason, txReceipt: TransactionReceipt, contractAddress: string): VerboseChannelEventBN[] {
 
-    if (!txReceipt || !txReceipt.logs) {
+    if (!txReceipt.logs) {
       throw new Error('Uh-oh! No Tx logs found. Are you sure the receipt is correct?')
     }
 
@@ -1079,7 +1079,7 @@ export class Validator {
   }
 
   private parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
-    if (!txReceipt || !txReceipt.logs) {
+    if (!txReceipt.logs) {
       return null
     }
 

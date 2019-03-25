@@ -3,7 +3,7 @@ import PaymentsService from "./PaymentsService";
 import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
-import { MockSignerService, testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
+import { testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import { StateGenerator } from "./vendor/connext/StateGenerator";
@@ -13,9 +13,7 @@ import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 import Config from "./Config";
 
 describe('PaymentsService', () => {
-  const registry = getTestRegistry({
-    SignerService: new MockSignerService()
-  })
+  const registry = getTestRegistry()
 
   const service: PaymentsService = registry.get('PaymentsService')
   const channelsService: ChannelsService = registry.get('ChannelsService')
@@ -249,7 +247,7 @@ describe('PaymentsService', () => {
     )
     // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toString(),
+      pendingDepositTokenHub: toWeiString(10),
     })
   })
 
@@ -294,7 +292,7 @@ describe('PaymentsService', () => {
     )
 
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toString(),
+      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toFixed(),
     })
   })
 
@@ -318,8 +316,9 @@ describe('PaymentsService', () => {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
-        meta: {},
-        secret: 'secret',
+        meta: {
+          secret: 'secret'
+        },
         type: 'PT_LINK',
         update: {
           reason: 'Payment',
@@ -367,8 +366,9 @@ describe('PaymentsService', () => {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
-        meta: {},
-        secret: 'secret',
+        meta: {
+          secret: 'secret'
+        },
         type: 'PT_LINK',
         update: {
           reason: 'Payment',
@@ -428,8 +428,9 @@ describe('PaymentsService', () => {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
-        meta: {},
-        secret: 'secret',
+        meta: {
+          secret: 'secret',
+        },
         type: 'PT_LINK',
         update: {
           reason: 'Payment',

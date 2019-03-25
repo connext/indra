@@ -50,4 +50,14 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 - name: {{ $key }}
   value: {{ $value | quote }}
 {{- end}}
+{{- if .Values.env_secrets }}
+{{- range $key, $value := .Values.env_secrets }}
+{{- $bits := split "." $value }}
+- name: {{ $key }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $bits._0 | quote }}
+      key: {{ $bits._1 | quote }}
+{{- end}}
+{{- end}}
 {{- end}}

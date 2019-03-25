@@ -9,6 +9,7 @@ import { prettySafeJson } from '../util'
 export default interface ExchangeRateDao {
   record(retrievedAt: number, rateUsd: string): Promise<ExchangeRate>
   latest(): Promise<ExchangeRate>
+  getLatestUsdRate(): Promise<BigNumber>
   getUsdRateAtTime(date: Date): Promise<BigNumber>
 }
 
@@ -39,6 +40,10 @@ export class PostgresExchangeRateDao implements ExchangeRateDao {
         'SELECT * FROM exchange_rates ORDER BY retrievedat DESC LIMIT 1',
       ),
     )
+  }
+
+  public async getLatestUsdRate(): Promise<BigNumber> {
+    return await this.getUsdRateAtTime(new Date())
   }
 
   public async getUsdRateAtTime(date: Date): Promise<BigNumber> {

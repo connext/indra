@@ -2,6 +2,7 @@ import { assert } from 'chai';
 import {default as GasEstimateService, EthGasStationResponse} from './GasEstimateService'
 import GasEstimateDao from './dao/GasEstimateDao'
 import {getTestRegistry, getFakeClock, nock, sbox} from './testing'
+import { serviceDefinitions } from './services'
 
 function mockEthGasStationResponse(opts?:Partial<EthGasStationResponse>): EthGasStationResponse {
   return {
@@ -21,7 +22,10 @@ function mockEthGasStationResponse(opts?:Partial<EthGasStationResponse>): EthGas
 }
 
 describe('GasEstimateService', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({
+    GasEstimateService: serviceDefinitions['GasEstimateService'],
+    GasEstimateDao: serviceDefinitions['GasEstimateDao'],
+  })
   const clock = getFakeClock()
 
   beforeEach(async () => {

@@ -16,6 +16,7 @@ import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
 import { emptyAddress } from './vendor/connext/Utils';
 import GlobalSettingsDao from './dao/GlobalSettingsDao';
+import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -25,38 +26,19 @@ type MaybeResult<T> = (
 const LOG = log('PaymentsService')
 
 export default class PaymentsService {
-  private channelsService: ChannelsService
-  private threadsService: ThreadsService
-  private signerService: SignerService
-  private paymentsDao: PaymentsDao
-  private paymentMetaDao: PaymentMetaDao
-  private channelsDao: ChannelsDao
-  private validator: Validator
-  private config: Config
-  private db: DBEngine
-  private gsd: GlobalSettingsDao
-
   constructor(
-    channelsService: ChannelsService,
-    threadsService: ThreadsService,
-    signerService: SignerService,
-    paymentsDao: PaymentsDao,
-    paymentMetaDao: PaymentMetaDao,
-    channelsDao: ChannelsDao,
-    validator: Validator,
-    config: Config,
-    db: DBEngine
-  ) {
-    this.channelsService = channelsService
-    this.threadsService = threadsService
-    this.signerService = signerService
-    this.paymentsDao = paymentsDao
-    this.paymentMetaDao = paymentMetaDao
-    this.channelsDao = channelsDao
-    this.validator = validator
-    this.config = config
-    this.db = db
-  }
+    private channelsService: ChannelsService,
+    private threadsService: ThreadsService,
+    private signerService: SignerService,
+    private paymentsDao: PaymentsDao,
+    private paymentMetaDao: PaymentMetaDao,
+    private channelsDao: ChannelsDao,
+    private custodialPaymentsDao: CustodialPaymentsDao,
+    private validator: Validator,
+    private config: Config,
+    private db: DBEngine,
+    private gsd: GlobalSettingsDao,
+  ) {}
 
   public async doPurchase(
     user: string,
@@ -72,10 +54,9 @@ export default class PaymentsService {
     payments: PurchasePayment[],
   ): Promise<MaybeResult<{ purchaseId: string }>> {
     const purchaseId = this.generatePurchaseId()
-    const custodialPayments: Array<{ user: string, payment: PurchasePayment, paymentId: number }> = []
+    const afterPayments: Array<() => Promise<void>> = []
 
     for (let payment of payments) {
-      let row: { id?: number }
       let afterPayment = null
 
       if (payment.type == 'PT_CHANNEL') {
@@ -87,7 +68,7 @@ export default class PaymentsService {
             `payment: ${prettySafeJson(payment)}`
           )
         }
-        row = await this.channelsService.doUpdateFromWithinTransaction(user, {
+        const row = await this.channelsService.doUpdateFromWithinTransaction(user, {
           args: payment.update.args,
           reason: payment.update.reason,
           sigUser: payment.update.sigUser,
@@ -97,31 +78,65 @@ export default class PaymentsService {
         // If the payment's recipient is not the hub, create an instant
         // custodial payment (but only after the row in `payments` has been
         // created, since the `custodial_payments` table references that row)
-        if (payment.recipient !== this.config.hotWalletAddress) {
-          afterPayment = paymentId => custodialPayments.push({ user, payment, paymentId })
-        }
+        afterPayment = paymentId => afterPayments.push(async () => {
+          if (payment.recipient !== this.config.hotWalletAddress && payment.recipient !== emptyAddress) {
+            try {
+              await this.doChannelInstantPayment(payment, paymentId, row.id)
+            } finally {
+              // Check to see if collateral is needed, even if the tip failed
+              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
+              if (err) {
+                LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+              }
+            }
+          } else {
+            await this.paymentsDao.createHubPayment(paymentId, row.id)
+          }
+        })
+
+      } else if (payment.type == 'PT_CUSTODIAL') {
+        // normal payment
+        const row = await this.channelsService.doUpdateFromWithinTransaction(user, {
+          args: payment.update.args,
+          reason: 'Payment',
+          sigUser: payment.update.sigUser,
+          txCount: payment.update.txCount
+        })
+
+        afterPayment = paymentId => afterPayments.push(async () => {
+          await this.custodialPaymentsDao.createCustodialPayment(paymentId, row.id)
+        })
 
       } else if (payment.type == 'PT_THREAD') {
-        row = await this.threadsService.update(
+        const row = await this.threadsService.update(
           user,
           payment.recipient,
           convertThreadState('bignumber', payment.update.state),
         )
+
+        afterPayment = paymentId => afterPayments.push(async () => {
+          await this.paymentsDao.createThreadPayment(paymentId, row.id)
+        })
+
       } else if (payment.type == 'PT_LINK') {
         if (payment.recipient != emptyAddress) {
           throw new Error(`Linked payments must have no recipient`)
         }
 
-        if (!payment.secret) {
+        if (!payment.meta.secret) {
           throw new Error(`No secret detected on linked payment.`)
         }
 
         // update users channel
-        row = await this.channelsService.doUpdateFromWithinTransaction(user, {
+        const row = await this.channelsService.doUpdateFromWithinTransaction(user, {
           args: payment.update.args,
           reason: 'Payment',
           sigUser: payment.update.sigUser,
           txCount: payment.update.txCount
+        })
+
+        afterPayment = paymentId => afterPayments.push(async () => {
+          await this.paymentsDao.createLinkPayment(paymentId, row.id, payment.meta.secret)
         })
 
       } else {
@@ -131,10 +146,9 @@ export default class PaymentsService {
       // Note: this handling of meta isn't ideal. In the future, we should have
       // a Purchase table to store the purchase metadata instead of merging it
       // into payment metadata.
-      const paymentId = await this.paymentMetaDao.save(purchaseId, row.id, {
+      const paymentId = await this.paymentMetaDao.save(purchaseId, {
         recipient: payment.recipient,
         amount: payment.amount,
-        secret: payment.secret,
         type: payment.type,
         meta: {
           ...meta,
@@ -145,20 +159,8 @@ export default class PaymentsService {
         afterPayment(paymentId)
     }
 
-    for (let p of custodialPayments) {
-      try {
-        await this.doInstantCustodialPayment(p.payment, p.paymentId)
-      } finally {
-        // Check to see if collateral is needed, even if the tip failed
-        // if the payment isnt going to an empty addr (as is the) case
-        // for PT_LINK
-        if (p.payment.recipient !== emptyAddress) {
-          const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(p.payment.recipient))
-          if (err) {
-            LOG.error(`Error recollateralizing ${p.payment.recipient}: ${'' + err}\n${err.stack}`)
-          }
-        }
-      }
+    for (let p of afterPayments) {
+      await p()
     }
 
     return {
@@ -213,38 +215,35 @@ export default class PaymentsService {
       }
     }
 
-    // hub can afford from balance
-    const purchasePayment: PurchasePayment = {
-      secret,
-      recipient: user,
-      amount: payment.amount,
-      meta: payment.meta,
-      type: 'PT_LINK',
-      update: {
-        reason: 'Payment',
-        args: {
-          amountToken: payment.amount.amountToken,
-          amountWei: payment.amount.amountWei,
-          recipient: 'hub',
-          // NOTE: args to user are generated in 
-          // `doInstantCustodialPayment`, this is a small hack
-          // to allow the hub to forward the payment
-        },
-        txCount: null,
-      }
-    }
-
     let purchaseId = null
     let amount = null
-    try {
-      await this.doInstantCustodialPayment(purchasePayment, payment.id)
-      // mark the payment as redeemed by updating the recipient field
-      const redeemedPaymentRow = await this.paymentMetaDao.redeemLinkedPayment(user, secret)
-      purchaseId = redeemedPaymentRow.purchaseId
-      amount = redeemedPaymentRow.amount
-    } catch (e) {
-      LOG.error("Error with redeeming payment. Error: {e}", { e })
-    }
+
+    const paymentArgs = {
+      ...payment.amount,
+      recipient: 'user'
+    } as PaymentArgs
+
+    const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
+      convertChannelState('str', channel.state),
+      paymentArgs
+    )
+    const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
+    const disbursement = await this.channelsDao.applyUpdateByUser(
+      user,
+      'Payment',
+      this.config.hotWalletAddress,
+      signedStateHubToRecipient,
+      paymentArgs
+    )
+    
+    // mark the payment as redeemed by updating the recipient field
+    await this.paymentMetaDao.redeemLinkedPayment(user, secret)
+    // add the redemption update id
+    await this.paymentsDao.addLinkedPaymentRedemption(payment.id, disbursement.id)
+
+    const redeemedPaymentRow = await this.paymentMetaDao.getLinkedPayment(secret)
+    purchaseId = redeemedPaymentRow.purchaseId
+    amount = redeemedPaymentRow.amount
 
     return {
       error: false,
@@ -279,7 +278,7 @@ export default class PaymentsService {
     }
   }
 
-  public async doInstantCustodialPayment(payment: PurchasePayment, paymentId: number): Promise<void> {
+  private async doChannelInstantPayment(payment: PurchasePayment, paymentId: number, updateId: number): Promise<void> {
     const paymentUpdate = payment.update as UpdateRequest
 
     const recipientChannel = await this.channelsDao.getChannelByUser(payment.recipient)
@@ -313,7 +312,7 @@ export default class PaymentsService {
 
     // Link the payment (ie, the Payment row which references the
     // paying-user -> hub state update) to the disbursement.
-    return await this.paymentsDao.createCustodialPayment(paymentId, disbursement.id)
+    return await this.paymentsDao.createChannelInstantPayment(paymentId, disbursement.id, updateId)
   }
 
   private generatePurchaseId(

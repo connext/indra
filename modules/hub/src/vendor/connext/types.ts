@@ -946,7 +946,7 @@ Returns:
 
 */
 
-export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD' | 'PT_LINK'
+export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD' | 'PT_CUSTODIAL' | 'PT_LINK'
 
 
 export interface PurchaseRequest<MetadataType=any, PaymentMetadataType=any> {
@@ -981,8 +981,6 @@ export type PurchasePayment<MetadataType=any> = ({
   // will be the thread recipient.
   recipient: string
 
-  secret?: string
-
   // A convenience field summarizing the change in balance of the underlying
   // channel or thread.
   // For example, if this is a non-custodial payment for 1 BOOTY, the `amount`
@@ -992,6 +990,7 @@ export type PurchasePayment<MetadataType=any> = ({
   amount: Payment
 
   // Metadata related to the Payment. For example `{ type: 'TIP' | 'FEE' }`
+  // for linked payments, the secret must be included in the metadata
   meta: MetadataType
 } & (
     {
@@ -999,6 +998,10 @@ export type PurchasePayment<MetadataType=any> = ({
       // When a purchase is being sent from the Wallet -> Hub the update should
       // be signed by the wallet.
       // The hub's counter-signed updates will be included in the SyncResponse.
+      update: UpdateRequest
+    } |
+    {
+      type: 'PT_CUSTODIAL'
       update: UpdateRequest
     } |
     {

@@ -14,15 +14,11 @@ describe('PaymentsDao', () => {
   })
 
   it('should reject when there is no linked payments', async () => {
-    await assert.isRejected(paymentsDao.createCustodialPayment(0, 1))
+    await assert.isRejected(paymentsDao.createChannelInstantPayment(0, 1, 1))
   })
 
   it('should reject when recipient is different than disbursed user', async () => {
-    // create an update in the channel
-    let r = await channelUpdateFactory(registry, { user: mkAddress('0xa') })
-
-    // save a payment for this update
-    const paymentId = await paymentMetaDao.save('abc123', r.update.id, {
+    const paymentId = await paymentMetaDao.save('abc123', {
       type: 'PT_CHANNEL',
       amount: {
         amountToken: tokenVal(2),
@@ -33,17 +29,15 @@ describe('PaymentsDao', () => {
         foo: 42,
       },
     })
-    
-    r = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
-    await assert.isRejected(paymentsDao.createCustodialPayment(paymentId, r.update.id))
+
+    const r = await channelUpdateFactory(registry, { user: mkAddress('0xa') })
+    const d = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
+    await assert.isRejected(paymentsDao.createChannelInstantPayment(paymentId, d.update.id, r.update.id))
   })
 
   it('should create a custodial payment', async () => {
-    // create an update in the channel
-    let r = await channelUpdateFactory(registry, { user: mkAddress('0xa') })
-
     // save a payment for this update
-    const paymentId = await paymentMetaDao.save('abc123', r.update.id, {
+    const paymentId = await paymentMetaDao.save('abc123', {
       type: 'PT_CHANNEL',
       amount: {
         amountToken: tokenVal(2),
@@ -54,14 +48,28 @@ describe('PaymentsDao', () => {
         foo: 42,
       },
     })
-    
-    r = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
-    await paymentsDao.createCustodialPayment(paymentId, r.update.id)
+
+    const r = await channelUpdateFactory(registry, { user: mkAddress('0xa') })
+    const d = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
+    await paymentsDao.createChannelInstantPayment(paymentId, d.update.id, r.update.id)
 
     const db = registry.get('DBEngine')
-    assert.containSubset((await db.query('SELECT * FROM custodial_payments')).rows[0], {
+    assert.containSubset((await db.queryOne('SELECT * FROM payments_channel_instant')), {
       payment_id: '' + paymentId,
-      disbursement_id: '' + r.update.id,
+      disbursement_id: '' + d.update.id,
+      update_id: '' + r.update.id,
+    })
+
+    assert.containSubset((await db.queryOne(`select * from payments where id = ${paymentId}`)), { 'amount_token': '2000000000000000000',
+      'amount_wei': '0',
+      'contract': '0xCCC0000000000000000000000000000000000000',
+      'meta': {
+        'foo': 42
+      },
+      'payment_type': 'channel-instant',
+      'purchase_id': 'abc123',
+      'recipient': '0xb000000000000000000000000000000000000000',
+      'sender': '0xa000000000000000000000000000000000000000',
     })
   })
 })

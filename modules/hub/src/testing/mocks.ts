@@ -14,6 +14,7 @@ import { SignerService } from '../SignerService';
 import { Utils } from '../vendor/connext/Utils';
 import Config from '../Config';
 import { ChannelManagerChannelDetails } from '../vendor/connext/types';
+import { serviceDefinitions } from '../services'
 
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432';
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6';
@@ -22,25 +23,11 @@ const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545';
 console.log(`test urls: database=${databaseUrl} redis=${redisUrl} provider=${providerUrl}`)
 
 const Web3 = require('web3')
-let pgIsDirty = true
 
 export class PgPoolServiceForTest extends PgPoolService {
   testNeedsReset = true
 
-  constructor(config: any) {
-    super(config)
-
-    this.pool.on('connect', client => {
-      pgIsDirty = true
-    })
-
-    before(() => this.clearDatabase())
-  }
-
   async clearDatabase() {
-    if (!pgIsDirty)
-      return
-
     const cxn = await this.pool.connect()
     try {
       if (this.testNeedsReset) {
@@ -49,7 +36,6 @@ export class PgPoolServiceForTest extends PgPoolService {
     } finally {
       cxn.release()
     }
-    pgIsDirty = false
   }
 }
 
@@ -144,6 +130,7 @@ export const getTestConfig = (overrides?: any) => ({
   sessionSecret: 'hummus',
   hotWalletAddress: testHotWalletAddress,
   channelManagerAddress: testChannelManagerAddress,
+  staleChannelDays: 1,
   ...(overrides || {}),
 })
 
@@ -181,6 +168,10 @@ export class MockExchangeRateDao {
     }
   }
 
+  async getLatestUsdRate() {
+    return mockRate
+  }
+
   async getUsdRateAtTime(date: Date) {
     return mockRate
   }
@@ -188,65 +179,10 @@ export class MockExchangeRateDao {
 
 export const fakeSig = mkSig('0xabc123')
 export class MockSignerService extends SignerService {
-  constructor() {
-    super({
-      eth: {
-        getBlock: async (block: string | number) => {
-          if (block === 'latest') {
-            return { timestamp: Math.floor(Date.now() / 1000) }
-          }
-        },
-        sign: async () => {
-          return
-        },
-        getTransactionCount: async () => {
-          return 1
-        },
-        estimateGas: async () => {
-          return 1000
-        },
-        signTransaction: async () => {
-          return {
-            tx: {
-              hash: mkHash('0xaaa'),
-              r: mkHash('0xabc'),
-              s: mkHash('0xdef'),
-              v: '0x27',
-            },
-          }
-        },
-        sendSignedTransaction: () => {
-          console.log(`Called mocked web3 function sendSignedTransaction`)
-          return {
-            on: (input, cb) => {
-              switch (input) {
-                case 'transactionHash':
-                  return cb(mkHash('0xbeef'))
-                case 'error':
-                  return cb(null)
-              }
-            },
-          }
-        },
-        sendTransaction: () => {
-          console.log(`Called mocked web3 function sendTransaction`)
-          return {
-            on: (input, cb) => {
-              switch (input) {
-                case 'transactionHash':
-                  return cb(mkHash('0xbeef'))
-                case 'error':
-                  return cb(null)
-              }
-            },
-          }
-        },
-      },
-    }, {} as any, new Utils(), getTestConfig())
-  }
   async getSigForChannelState() {
     return fakeSig
   }
+
   async getChannelDetails() {
     return {
       channelClosingTime: fakeClosingTime,
@@ -257,6 +193,66 @@ export class MockSignerService extends SignerService {
       txCountChain: 1,
       txCountGlobal: 1
     } as ChannelManagerChannelDetails
+  }
+}
+
+export const getMockWeb3 = () => {
+  const web3 = new Web3()
+  return {
+    ...web3,
+    eth: {
+      ...web3.eth,
+      getBlock: async (block: string | number) => {
+        if (block === 'latest') {
+          return { timestamp: Math.floor(Date.now() / 1000) }
+        }
+      },
+      sign: async () => {
+        return
+      },
+      getTransactionCount: async () => {
+        return 1
+      },
+      estimateGas: async () => {
+        return 1000
+      },
+      signTransaction: async () => {
+        return {
+          tx: {
+            hash: mkHash('0xaaa'),
+            r: mkHash('0xabc'),
+            s: mkHash('0xdef'),
+            v: '0x27',
+          },
+        }
+      },
+      sendSignedTransaction: () => {
+        console.log(`Called mocked web3 function sendSignedTransaction`)
+        return {
+          on: (input, cb) => {
+            switch (input) {
+              case 'transactionHash':
+                return cb(mkHash('0xbeef'))
+              case 'error':
+                return cb(null)
+            }
+          },
+        }
+      },
+      sendTransaction: () => {
+        console.log(`Called mocked web3 function sendTransaction`)
+        return {
+          on: (input, cb) => {
+            switch (input) {
+              case 'transactionHash':
+                return cb(mkHash('0xbeef'))
+              case 'error':
+                return cb(null)
+            }
+          },
+        }
+      },
+    },
   }
 }
 
@@ -359,6 +355,7 @@ export const mockServices: any = {
   'PgPoolService': {
     factory: (config: any) => new PgPoolServiceForTest(config),
     dependencies: ['Config'],
+    isSingleton: true,
   },
 
   'TestApiServer': {
@@ -379,8 +376,14 @@ export const mockServices: any = {
     factory: () => new MockExchangeRateDao(),
   },
 
+  'GasEstimateDao': {
+    factory: () => new MockGasEstimateDao(),
+  },
+
   'SignerService': {
-    factory: () => new MockSignerService(),
+    ...serviceDefinitions['SignerService'],
+    // @ts-ignore
+    factory: (...args: any[]) => new MockSignerService(...args),
   },
 
   'ChannelManagerContract': {
