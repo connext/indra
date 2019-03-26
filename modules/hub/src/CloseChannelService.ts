@@ -42,6 +42,52 @@ export class CloseChannelService {
   }
 
   async pollOnce() {
+    try {
+      // TODO: does this need to be within a transaction?
+      await this.db.withTransaction(() => this.emptyDisputedChannels())
+    } catch (e) {
+      LOG.error('Emptying disputed channel failed {e}', { e })
+    }
+
+    try {
+      // TODO: does this need to be within a transaction?
+      await this.db.withTransaction(() => this.disputeStaleChannels())
+    } catch (e) {
+      LOG.error('Disputing stale channels failed {e}', { e })
+    }
+  }
+
+  private async disputeStaleChannels() {
+    const staleChannelDays = this.config.staleChannelDays
+    if (!staleChannelDays) {
+      return
+    }
+
+    const staleChannels = await this.channelsDao.getStaleChannels()
+    if (!staleChannels) {
+      return
+    }
+
+    // dispute stale channels
+    for (const channel of staleChannels) {
+      // do not dispute if the value is below the min bei
+      if (channel.state.balanceTokenHub.lt(this.config.beiMinThreshold)) {
+        continue
+      }
+
+      // do not start dispute if channel status is not open
+      if (channel.status != "CS_OPEN") {
+        continue
+      }
+
+      // TODO: should take into account thread dispute costs here
+
+      // proceed with channel dispute
+      await this.db.withTransaction(() => this.startUnilateralExit(channel.user, "Automatically decollateralizing stale channel"))
+    }
+  }
+
+  private async emptyDisputedChannels() {
     const latestBlock = await this.web3.eth.getBlock('latest')
     const disputePeriod = +(await this.contract.methods.challengePeriod().call({
       from: this.config.hotWalletAddress,

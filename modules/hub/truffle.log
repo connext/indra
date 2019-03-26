@@ -1,4 +1,0 @@
-Ganache CLI v6.1.6 (ganache-core: 2.1.5)
-Error: getaddrinfo ENOTFOUND truffle
-    at errnoException (dns.js:55:10)
-    at GetAddrInfoReqWrap.onlookup [as oncomplete] (dns.js:97:26)

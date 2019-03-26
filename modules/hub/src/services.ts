@@ -1,3 +1,5 @@
+import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
+import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { CoinPaymentsService } from './coinpayments/CoinPaymentsService'
 import {
@@ -67,6 +69,7 @@ import { CloseChannelService } from './CloseChannelService'
 import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDisputesDao';
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import ConfigApiService from './api/ConfigApiService';
+import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -173,6 +176,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       ThreadsApiService,
       PaymentsApiService,
       CoinPaymentsApiService,
+      CustodialPaymentsApiService,
     ],
     isSingleton: true,
   },
@@ -372,9 +376,11 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       paymentsDao: PaymentsDao,
       paymentMetaDao: PaymentMetaDao,
       channelsDao: ChannelsDao,
+      custodialPaymentsDao: CustodialPaymentsDao,
       validator: Validator,
       config: Config,
       db: DBEngine,
+      gds: GlobalSettingsDao,
     ) => new PaymentsService(
       channelsService,
       threadsService,
@@ -382,9 +388,11 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       paymentsDao,
       paymentMetaDao,
       channelsDao,
+      custodialPaymentsDao,
       validator,
       config,
       db,
+      gds,
     ),
     dependencies: [
       'ChannelsService',
@@ -393,10 +401,11 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'PaymentsDao',
       'PaymentMetaDao',
       'ChannelsDao',
+      'CustodialPaymentsDao',
       'Validator',
       'Config',
       'DBEngine',
-      'ChannelManagerContract',
+      'GlobalSettingsDao',
     ],
   },
 
@@ -504,5 +513,35 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       db: DBEngine,
     ) => new CoinPaymentsDao(db),
     dependencies: ['DBEngine'],
+  },
+
+  CustodialPaymentsDao: {
+    factory: (
+      db: DBEngine,
+    ) => new CustodialPaymentsDao(db),
+    dependencies: ['DBEngine'],
+  },
+
+  CustodialPaymentsService: {
+    factory: (
+      config: Config,
+      db: DBEngine,
+      exchangeRates: ExchangeRateDao,
+      dao: CustodialPaymentsDao,
+      onchainTxnService: OnchainTransactionService,
+    ) => new CustodialPaymentsService(
+      config,
+      db,
+      exchangeRates,
+      dao,
+      onchainTxnService,
+    ),
+    dependencies: [
+      'Config',
+      'DBEngine',
+      'ExchangeRateDao',
+      'CustodialPaymentsDao',
+      'OnchainTransactionService',
+    ],
   },
 }

@@ -28,7 +28,7 @@ describe('PaymentsApiService', () => {
     await registry.clearDatabase()
   })
 
-  it('should work', async () => {
+  it('should work for hub direct payments', async () => {
     const chan = await channelUpdateFactory(registry, {
       balanceTokenUser: tokenVal(10),
     })
@@ -75,7 +75,7 @@ describe('PaymentsApiService', () => {
     })
   })
 
-  it('should work for instant custodial payment', async () => {
+  it('should work for instant channel payment', async () => {
     const sender = await channelUpdateFactory(registry, {
       balanceTokenUser: tokenVal(10),
     })
@@ -114,6 +114,65 @@ describe('PaymentsApiService', () => {
     assert.equal(res.status, 200, JSON.stringify(res.body))
     const { purchaseId } = res.body
     assert.ok(purchaseId)
+
+    const payments = await paymentMetaDao.byPurchase(purchaseId)
+    assert.containSubset(payments[0], {
+      recipient: receiver.user,
+      sender: sender.user,
+      amount: {
+        amountWei: '0',
+        amountToken: tokenVal(1),
+      },
+    })
+  })
+
+  it('should work for custodial payments', async () => {
+    const sender = await channelUpdateFactory(registry, {
+      balanceTokenUser: tokenVal(10),
+    })
+
+    const receiver = mkAddress('0x8182')
+
+    const res = await app.withUser(sender.user).request
+      .post('/payments/purchase')
+      .send({
+        meta: {},
+        payments: [
+          {
+            recipient: receiver,
+            amount: {
+              amountWei: '0',
+              amountToken: tokenVal(1),
+            },
+            meta: {},
+            type: 'PT_CUSTODIAL',
+            update: {
+              reason: 'Payment',
+              sigUser: sender.state.sigUser,
+              txCount: sender.state.txCountGlobal + 1,
+              args: {
+                amountWei: '0',
+                amountToken: tokenVal(1),
+                recipient: 'hub'
+              }
+            },
+          }
+        ] as PurchasePayment[]
+      })
+
+    assert.equal(res.status, 200, JSON.stringify(res.body))
+    const { purchaseId } = res.body
+    assert.ok(purchaseId)
+
+    const payments = await paymentMetaDao.byPurchase(purchaseId)
+    assert.containSubset(payments[0], {
+      recipient: receiver,
+      sender: sender.user,
+      amount: {
+        amountWei: '0',
+        amountToken: tokenVal(1),
+      },
+    })
   })
 
   it('should work for sending linked payments', async () => {
@@ -132,9 +191,10 @@ describe('PaymentsApiService', () => {
               amountWei: '0',
               amountToken: tokenVal(1),
             },
-            meta: {},
+            meta: {
+              secret: 'sadlkj'
+            },
             type: 'PT_LINK',
-            secret: 'sadlkj',
             update: {
               reason: 'Payment',
               sigUser: chan.state.sigUser,
@@ -161,7 +221,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'PT_LINK',
+      type: 'link',
     })
   })
 
@@ -186,9 +246,10 @@ describe('PaymentsApiService', () => {
             amountWei: '0',
             amountToken: tokenVal(1),
           },
-          meta: {},
+          meta: {
+            secret: 'sadlkj'
+          },
           type: 'PT_LINK',
-          secret: 'sadlkj',
           update: {
             reason: 'Payment',
             sigUser: senderChan.state.sigUser,
@@ -227,8 +288,10 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'PT_LINK',
-      secret: "sadlkj"
+      type: 'link',
+      meta: {
+        secret: "sadlkj"
+      }
     })
 
     const linked = await paymentMetaDao.getLinkedPayment('sadlkj')
@@ -239,8 +302,10 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'PT_LINK',
-      secret: "sadlkj"
+      type: 'link',
+      meta: {
+        secret: "sadlkj"
+      }
     })
   })
 

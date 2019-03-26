@@ -1,5 +1,5 @@
-const HDWalletProvider = require("truffle-hdwallet-provider-privkey");
-const privateKeys = ['659cbb0e2411a44db63778987b1e22153c086a95eb6b18bdf89de078917abc63']
+// const HDWalletProvider = require("truffle-hdwallet-provider-privkey");
+// const privateKeys = ['659cbb0e2411a44db63778987b1e22153c086a95eb6b18bdf89de078917abc63']
 
 module.exports = {
   networks: {
@@ -17,7 +17,7 @@ module.exports = {
     },
     rinkeby: {
       provider: () => {
-        return new HDWalletProvider(privateKeys, "https://eth-rinkeby.alchemyapi.io/jsonrpc/RvyVeludt7uwmt2JEF2a1PvHhJd5c07b")
+        // return new HDWalletProvider(privateKeys, "https://eth-rinkeby.alchemyapi.io/jsonrpc/RvyVeludt7uwmt2JEF2a1PvHhJd5c07b")
       },
       network_id: "4",
     },

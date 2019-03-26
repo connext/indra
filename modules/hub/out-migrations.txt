@@ -1,4 +1,0 @@
-yarn run v1.3.2
-$ db-migrate up all --verbose --migrations-dir node_modules/machinomy/migrations && db-migrate up --verbose all
-[INFO] Detected and using the projects local version of db-migrate. '/Volumes/Projects/Kyokan/camsite/hub/node_modules/db-migrate/index.js'
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

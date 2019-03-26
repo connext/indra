@@ -2,7 +2,7 @@ import * as crypto from 'crypto'
 import { default as DBEngine } from '../DBEngine'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
 import { default as Config } from '../Config'
-import { CoinPaymentsDao, CoinPaymentsIpnRow } from './CoinPaymentsDao'
+import { CoinPaymentsDao, CoinPaymentsIpnRow, CoinPaymentsDepositAddress } from './CoinPaymentsDao'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
 import { prettySafeJson, parseQueryString, safeInt } from '../util'
 import { PaymentArgs, convertChannelState, DepositArgs } from '../vendor/connext/types'
@@ -142,29 +142,53 @@ export class CoinPaymentsService {
     }
   }
 
-  async handleCoinPaymentsIpn(user: string, ipn: CoinPaymentsIpnData) {
-    await this.db.withTransaction(async () => {
+  async handleCoinPaymentsIpn(user: string, ipn: CoinPaymentsIpnData): Promise<CoinPaymentsIpnRow | null> {
+    await this.dao.saveIpnLog(user, ipn)
+
+    if (+ipn.status < 0) {
+      LOG.error(`Received IPN with error status: ${JSON.stringify(ipn)}`)
+      return
+    }
+
+    if (+ipn.status < 100) {
+      LOG.info(`Received IPN with status < 100; ignoring: ${JSON.stringify(ipn)}`)
+      return
+    }
+
+    const cur = await this.dao.getIpnByIpnId(ipn.ipn_id)
+    if (cur) {
+      LOG.error(
+        `Received duplicate IPN. The previous IPN has already been handled ` +
+        `and this one will be ignored. This is not *necessarily* an error, but ` +
+        `should likely be investigated to figure out what's going on. ` +
+        `Old IPN: ${JSON.stringify(cur)}. New IPN: ${JSON.stringify(ipn)}.`
+      )
+      return
+    }
+
+    return await this.db.withTransaction(async () => {
       // TODO: assert that the address payments are being sent to was generated
       // for this user
       const ipnRow = await this.dao.saveIpn(user, ipn)
       const creditRowId = await this.dao.createUserCredit(ipnRow)
       await this.attemptInsertUserCreditForDepositFromTransaction(creditRowId)
+      return ipnRow
     })
   }
 
-  async getUserDepositAddress(user: string, currency: string): Promise<string> {
+  async getUserDepositAddress(user: string, currency: string): Promise<CoinPaymentsDepositAddress> {
     const curAddr = await this.dao.getUserDepositAddress(user, currency)
     // It's unclear how long CoinPayments will hold these addresses for, so for
     // now generate a new adddress if the old one is more than 24h out of date.
     if (curAddr && Date.now() - +curAddr.createdOn < 1000 * 60 * 60 * 24)
-      return curAddr.address
+      return curAddr
 
     const res = await this.api.getCallbackAddress(user, currency)
     if (!res.address)
       throw new Error('CoinPayments API did not return an address: ' + JSON.stringify(res))
 
     await this.dao.saveUserDepositAddress(user, currency, res)
-    return res.address
+    return res
   }
 
   async attemptInsertUserCreditForDepositFromTransaction(creditRowId: number) {
@@ -174,7 +198,7 @@ export class CoinPaymentsService {
     // 4. Nudge the CoinPaymentsDepositPollingService to attempt the deposit
 
     const credit = await this.dao.getUserCreditForUpdate(creditRowId)
-    const ipn = await this.dao.getIpn(credit.ipnId)
+    const ipn = await this.dao.getIpnByRowId(credit.ipnId)
     LOG.info(`Attempting to credit ${credit.user} for IPN ${ipn.ipnId}...`)
 
     if (credit.proposePendingId) {
