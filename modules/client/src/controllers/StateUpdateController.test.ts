@@ -93,6 +93,12 @@ describe('StateUpdateController: invalidation handling', () => {
   const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
 
+  const getDateFromMinutesAgo = (minutes: number): Date => {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() - minutes)
+    return now
+  }
+
   parameterizedTests([
     {
       name: 'reject invalidation that has not timed out',
@@ -102,9 +108,15 @@ describe('StateUpdateController: invalidation handling', () => {
     },
 
     {
+      name: 'handle an invalidation on a state where there is a timeout',
+      timeout: 0,
+      blockTimestamp: getDateFromMinutesAgo(0),
+    },
+
+    {
       name: 'accept a valid invalidation',
-      timeout: 1000,
-      blockTimestamp: 2000,
+      timeout: getDateFromMinutesAgo(15),
+      blockTimestamp: getDateFromMinutesAgo(0),
     },
 
   ], async tc => {
@@ -113,7 +125,7 @@ describe('StateUpdateController: invalidation handling', () => {
       pendingWithdrawalTokenUser: '100',
       txCountGlobal: 2,
       txCountChain: 2,
-      timeout: tc.timeout,
+      timeout: Math.floor(tc.timeout.valueOf() / 1000),
     })
 
     mockStore.setLatestValidState({
@@ -128,7 +140,7 @@ describe('StateUpdateController: invalidation handling', () => {
 
     connext.opts.web3.eth.getBlock = async () => {
       return {
-        timestamp: tc.blockTimestamp,
+        timestamp: Math.floor(tc.blockTimestamp.valueOf() / 1000),
       } as any
     }
 
@@ -145,6 +157,7 @@ describe('StateUpdateController: invalidation handling', () => {
           reason: "CU_INVALID_TIMEOUT",
         },
         sigHub: '0xsig-hub',
+        createdOn: getDateFromMinutesAgo(0),
       },
     })
 
