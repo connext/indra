@@ -23,10 +23,10 @@ export type RawTransaction = {
   from: string
   to: string
   value: string
-  gas: string
+  gas: number
   gasPrice: string
   data: string
-  nonce: string
+  nonce: number
 }
 
 export type UnconfirmedTransaction = {

@@ -1,6 +1,6 @@
 import { assertUnreachable } from "./util/assertUnreachable";
 import { OnchainTransactionsDao, TxnStateUpdate } from "./dao/OnchainTransactionsDao";
-import { TransactionRequest, OnchainTransactionRow } from "./domain/OnchainTransaction";
+import { TransactionRequest, OnchainTransactionRow, RawTransaction } from "./domain/OnchainTransaction";
 import * as crypto from 'crypto'
 import log from './util/log'
 import { default as DBEngine, SQL } from "./DBEngine";
@@ -142,7 +142,7 @@ export class OnchainTransactionService {
       await this.web3.eth.estimateGas({ ...web3TxRequest })
     )
 
-    const unsignedTx = {
+    const unsignedTx: RawTransaction = {
       from: txnRequest.from,
       to: txnRequest.to,
       value: txnRequest.value || '0',
@@ -154,6 +154,7 @@ export class OnchainTransactionService {
 
     LOG.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)
 
+    const signedTx = await this.signerService.signTransaction(unsignedTx)
     /* TODO: REB-61
     const sig = await this.signerService.signTransaction({ ...unsignedTx });
     const tx = {
@@ -167,14 +168,8 @@ export class OnchainTransactionService {
     }
     */
 
-    const tx = {
-      ...unsignedTx,
-      hash: null,
-      signature: null,
-    }
-
     // Note: this is called from within the transactional context of the caller
-    const txnRow = await this.onchainTransactionDao.insertTransaction(db, logicalId, meta, tx)
+    const txnRow = await this.onchainTransactionDao.insertTransaction(db, logicalId, meta, signedTx)
     await db.onTransactionCommit(() => this.poll())
 
     return txnRow
@@ -227,16 +222,7 @@ export class OnchainTransactionService {
       // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
       LOG.info(`Submitting transaction nonce=${txn.nonce} data-hash=${dataHash}: ${prettySafeJson(txn)}...`)
       const tx = this.web3.eth.sendSignedTransaction(signedTx)
-      tx.on('transactionHash', hash => {
-        // TODO: REB-61
-        this.db.query(SQL`
-          UPDATE onchain_transactions_raw
-          SET hash = ${hash}
-          WHERE id = ${txn.id}
-        `)
-        txn.hash = hash
-        res(null)
-      })
+      tx.on('transactionHash', () => res(null))
       tx.on('error', err => res('' + err))
     })
 
