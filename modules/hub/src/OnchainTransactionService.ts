@@ -215,21 +215,20 @@ export class OnchainTransactionService {
   private async signAndSendTx(txn: OnchainTransactionRow): Promise<void> {
     // Use the data hash to simplify tracking in logs until we're able to
     // calculate the actual hash
-    const dataHash = md5(txn.data)
     const signedTx = await this.signerService.signTransaction(txn)
     LOG.info(`signedTx: ${prettySafeJson(signedTx)}`)
     const error = await new Promise<string | null>(res => {
       // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
-      LOG.info(`Submitting transaction nonce=${txn.nonce} data-hash=${dataHash}: ${prettySafeJson(txn)}...`)
+      LOG.info(`Submitting transaction nonce=${txn.nonce} hash=${signedTx.hash}: ${prettySafeJson(txn)}...`)
       const tx = this.web3.eth.sendSignedTransaction(signedTx)
       tx.on('transactionHash', () => res(null))
       tx.on('error', err => res('' + err))
     })
 
     const errorReason = this.getErrorReason(error)
-    LOG.info('Transaction nonce={txn.nonce} data-hash={dataHash} sent: {txn.hash}: {res}', {
+    LOG.info('Transaction nonce={txn.nonce} hash=${hash} sent: {txn.hash}: {res}', {
       txn,
-      dataHash,
+      hash: signedTx.hash,
       res: error ? '' + error + ` (${errorReason})`: 'ok!',
     })
 
