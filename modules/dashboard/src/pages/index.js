@@ -123,6 +123,7 @@ class Index extends React.Component {
           hubWallet={hubWallet}
           channelManager={channelManager}
           web3={web3}
+          publicUrl={this.props.publicUrl}
           hubUrl={this.props.hubUrl}
           apiUrl={this.props.apiUrl}
           getContractInfo={this.getContractInfo}
