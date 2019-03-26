@@ -240,13 +240,12 @@ function expandSuccinct(
   let res = {} as any
   Object.entries(s).forEach(([name, value]) => {
     if (Array.isArray(value)) {
-      let cast = (x: any) => x.toString()
-      if (expandTxCount && name == 'txCount') {
-        strs = ['Global', 'Chain']
-        cast = (x: any) => x
-      }
-      res[isSuffix ? (name + strs[0]) : (strs[0] + capitalize(name))] = cast(value[0])
-      res[isSuffix ? (name + strs[1]) : (strs[1] + capitalize(name))] = cast(value[1])
+      const isTxCount = expandTxCount && name == 'txCount'
+      const suffs = isTxCount ? ['Global', 'Chain'] : strs
+      const cast = (x: any) => isTxCount ? x : x.toString()
+      
+      res[isSuffix ? (name + suffs[0]) : (suffs[0] + capitalize(name))] = cast(value[0])
+      res[isSuffix ? (name + suffs[1]) : (suffs[1] + capitalize(name))] = cast(value[1])
     } else {
       const condition = isSuffix ? name.endsWith(strs[0]) || name.endsWith(strs[1]) : name.startsWith(strs[0]) || name.startsWith(strs[1])
       if (condition)

@@ -59,6 +59,24 @@ describe('expandSuccinctChannel', () => {
       },
     )
   })
+
+  it('should definitely work on my mama', () => {
+    assert.deepEqual(
+      t.expandSuccinctChannel({ 
+        txCount: [ 3, 2 ],
+        pendingDepositToken: [ 10, 5 ],
+        pendingDepositWei: [ 1, 1 ],
+      }),
+      {
+        pendingDepositTokenHub: '10',
+        pendingDepositTokenUser: '5',
+        pendingDepositWeiHub: '1',
+        pendingDepositWeiUser: '1',
+        txCountGlobal: 3,
+        txCountChain: 2,
+      },
+    )
+  })
 })
 
 describe('expandSuccinctThread', () => {
