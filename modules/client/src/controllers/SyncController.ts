@@ -13,6 +13,7 @@ import Semaphore = require('semaphore')
 import { getChannel } from '../lib/getChannel';
 import { EventLog } from 'web3/types'
 import { hasPendingOps } from '../hasPendingOps'
+import { getUpdateRequestTimeout } from '../lib/getUpdateRequestTimeout';
 
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 
@@ -475,15 +476,16 @@ export default class SyncController extends AbstractController {
         )
       }
 
-      // If the state doesn't have a timeout, use the update's timestamp + 5 minutes
+      // If the state doesn't have a timeout, use the
+      // update's timestamp - challenge period from store
       // as an approximate timeout window.
-      timeout = +(new Date(updateTimestamp)) / 1000 + 60 * 5
+      // the update passed in here will be from the latest valid state
+      timeout = Math.floor(+(new Date(updateTimestamp)) / 1000) - getUpdateRequestTimeout(this.store)
     }
-
     let block = await this.findBlockNearestTimeout(timeout)
     if (block.timestamp < timeout)
       return { didEmit: 'unknown', latestBlock: block }
-
+    
     const evts = await this.connext.getContractEvents(
       'DidUpdateChannel',
       Math.max(block.number - 4000, 0), // 4000 blocks = ~16 hours
