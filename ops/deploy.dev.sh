@@ -139,6 +139,8 @@ services:
       POSTGRES_URL: $postgres_url
     networks:
       - $project
+    ports:
+      - "9999:9999"
     secrets:
       - ${project}_database_dev
     volumes:

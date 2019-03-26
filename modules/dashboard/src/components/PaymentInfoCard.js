@@ -117,7 +117,7 @@ class PaymentInfoCard extends Component {
   };
 
   /**************************
-   * Payment trends 
+   * Payment trends
    */
 
   setTotal = async () => {
@@ -152,7 +152,7 @@ class PaymentInfoCard extends Component {
   };
 
   //Trailing Week
-  
+
   setTrailingWeek = async () => {
     const res = await get(`payments/trailingweek`);
     if (res) {
@@ -361,8 +361,6 @@ class PaymentInfoCard extends Component {
       console.log(toRender);
       return toRender;
       //this.setState({ withdrawalBreakdown: JSON.stringify(res) });
-    } else {
-      console.warn(`Missing data for chart`);
     }
   };
 
@@ -436,38 +434,40 @@ class PaymentInfoCard extends Component {
             Past Day
           </div>
           <Table>
-            <TableRow>
-              <TableCell component="th" scope="row">
-                <Typography variant="h6">Count</Typography>
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {this.state.view
-                  ? this.state.paymentsLastDay
-                  : this.state.paymentsLastWeek}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell component="th" scope="row">
-                <Typography variant="h6">
-                  Average Token Payment
-                </Typography>
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {this.state.view
-                  ? this.state.averagePaymentTokenLastDay.formatted
-                  : this.state.averagePaymentTokenLastWeek.formatted}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell component="th" scope="row">
-                <Typography variant="h6">% Change from Previous</Typography>
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {this.state.view
-                  ? this.state.paymentsLastDayPct
-                  : this.state.paymentsLastWeekPct}
-              </TableCell>
-            </TableRow>
+            <TableBody>
+              <TableRow>
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">Count</Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {this.state.view
+                    ? this.state.paymentsLastDay
+                    : this.state.paymentsLastWeek}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">
+                    Average Token Payment
+                  </Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {this.state.view
+                    ? this.state.averagePaymentTokenLastDay.formatted
+                    : this.state.averagePaymentTokenLastWeek.formatted}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">% Change from Previous</Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {this.state.view
+                    ? this.state.paymentsLastDayPct
+                    : this.state.paymentsLastWeekPct}
+                </TableCell>
+              </TableRow>
+            </TableBody>
           </Table>
           <Button variant="contained" onClick={() => this._handleRefresh()}>
             Refresh
@@ -475,13 +475,13 @@ class PaymentInfoCard extends Component {
         </Card>
         <Card className={classes.card}>
         <div>
-          Start Date: 
+          Start Date:
             <DatePicker
               selected={this.state.startDate}
               onSelect={(evt) => this.handleStartChange(evt)} //when day is clicked
               onChange={(evt) => this.handleStartChange(evt)} //only when value has changed
             />
-          End Date: 
+          End Date:
             <DatePicker
               selected={this.state.endDate}
               onSelect={(evt) => this.handleEndChange(evt)} //when day is clicked
@@ -490,25 +490,26 @@ class PaymentInfoCard extends Component {
           <Button variant="contained" onClick={() =>this.fetchDateRange()}>Submit</Button>
         </div>
           <Table>
-            <TableRow>
-              <TableCell component="th" scope="row">
-                <Typography variant="h6">Count</Typography>
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {this.state.paymentCountRange}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell component="th" scope="row">
-                <Typography variant="h6">
-                  Average Token Payment
-                </Typography>
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {this.state.averagePaymentTokenRange.formatted}
-              </TableCell>
-            </TableRow>
-
+            <TableBody>
+              <TableRow>
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">Count</Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {this.state.paymentCountRange}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell component="th" scope="row">
+                  <Typography variant="h6">
+                    Average Token Payment
+                  </Typography>
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {this.state.averagePaymentTokenRange.formatted}
+                </TableCell>
+              </TableRow>
+            </TableBody>
           </Table>
         </Card>
         <Card className={classes.card}>

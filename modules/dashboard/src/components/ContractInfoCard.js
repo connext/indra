@@ -17,35 +17,35 @@ const styles = theme => ({
     });
 
 const ContractInfoCard = props => {
-    const { classes, wei, token, loading, handleRefresh, contractAddress } = props;
-    return (
-      <Card className={classes.card}>
-        <CardContent>
-          {loading ? (
-            <Typography variant="h5" component="h2">
-              Loading...
+  const { classes, wei, token, loading, handleRefresh, contractAddress } = props;
+  return (
+    <Card className={classes.card}>
+      <CardContent>
+        {loading ? (
+          <Typography variant="h5" component="h2">
+            Loading...
+          </Typography>
+        ) : (
+          <>
+            <Typography className={classes.pos} color="textSecondary">
+              <a href={`https://etherscan.io/address/${contractAddress}`} target="_blank" rel="noopener noreferrer">{contractAddress}</a>
             </Typography>
-          ) : (
-            <>
-              <Typography className={classes.pos} color="textSecondary">
-                <a href={`https://etherscan.io/address/${contractAddress}`} target="_blank" rel="noopener noreferrer">{contractAddress}</a>
-              </Typography>
-              <Typography variant="h5" component="h2">
-                {parseFloat(wei.formatted).toFixed(2)}... ETH ({wei.raw} Wei)
-              </Typography>
-              <Typography variant="h5" component="h2">
-                ${parseFloat(token.formatted).toFixed(2)}... DAI ({token.raw} Dei)
-              </Typography>
-            </>
-          )}
-        </CardContent>
-        <CardActions>
-          <Button size="small" onClick={handleRefresh}>
-            Refresh
-          </Button>
-        </CardActions>
-      </Card>
-    );
-  };
-  
-  export const ContractInfoCardStyled = withStyles(styles)(ContractInfoCard);
+            <Typography variant="h5" component="h2">
+              {parseFloat(wei.formatted).toFixed(2)}... ETH ({wei.raw} Wei)
+            </Typography>
+            <Typography variant="h5" component="h2">
+              ${parseFloat(token.formatted).toFixed(2)}... DAI ({token.raw} Dei)
+            </Typography>
+          </>
+        )}
+      </CardContent>
+      <CardActions>
+        <Button size="small" onClick={handleRefresh}>
+          Refresh
+        </Button>
+      </CardActions>
+    </Card>
+  );
+};
+
+export const ContractInfoCardStyled = withStyles(styles)(ContractInfoCard);
