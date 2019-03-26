@@ -43,8 +43,8 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 default: dev
 all: dev prod
-dev: pre-commit-hook database hub proxy client dashboard
-prod: pre-commit-hook database-prod hub-prod proxy-prod dashboard-server-prod
+dev: hooks database hub proxy client dashboard
+prod: hooks database-prod hub-prod proxy-prod dashboard-server-prod
 
 start: dev
 	bash ops/deploy.dev.sh
@@ -88,7 +88,7 @@ reset: reset-base
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	rm -rf $(db)/snapshots/ganache-*
 
-purge: reset-data clean
+purge: reset clean
 	rm -rf modules/**/node_modules
 
 push: prod
@@ -262,9 +262,9 @@ root-node-modules: package.json
 	$(install)
 	$(log_finish) && touch build/$@
 
-pre-commit-hook: ops/pre-commit.sh
+hooks: ops/pre-push.sh
 	$(log_start)
-	rm -f .git/hooks/pre-commit
-	cp ops/pre-commit.sh .git/hooks/pre-commit
-	chmod +x .git/hooks/pre-commit
+	rm -f .git/hooks/*
+	cp ops/pre-push.sh .git/hooks/pre-push
+	chmod +x .git/hooks/pre-push
 	$(log_finish) && touch build/$@

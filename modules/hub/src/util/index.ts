@@ -254,7 +254,7 @@ export function parseQueryString(query: string): any {
   const res = {}
   for (const bit of query.split('&')) {
     const pair = bit.split('=');
-    res[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1])
+    res[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1].replace('+', '%20'))
   }
   return res
 }

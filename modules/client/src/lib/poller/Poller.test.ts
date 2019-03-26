@@ -61,7 +61,7 @@ describe('Poller', () => {
       throw new Error('uhoh')
     }
     await poller.start()
-    await sleep(10)
+    await sleep(15)
     expect(runs).greaterThan(2)
   })
 })

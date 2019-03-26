@@ -1,6 +1,7 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
 import { toWeiBigNum } from './util/bigNumber';
+import BigNumber from 'bignumber.js';
 
 const ENV_VARS = [
   'ETH_RPC_URL',
@@ -84,19 +85,22 @@ export default class Config {
   //   { shouldCollateralize: true | false }
   //
   // If the value is 'NO_CHECK' then no check will be performed.
-  public shouldCollateralizeUrl: string | 'NO_CHECK' = ''
+  public shouldCollateralizeUrl: string | 'NO_CHECK' = 'NO_CHECK'
   public recipientAddress: string = ''
   public hotWalletAddress: string = ''
   public hotWalletMinBalanceEth: string = '6.9'
   public sessionSecret: string = ''
-  public staleChannelDays: number = 7
+  public staleChannelDays?: number = process.env.STALE_CHANNEL_DAYS ? parseInt(process.env.STALE_CHANNEL_DAYS) : null // if null, will not dispute
   public registry?: Registry
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
   public channelBeiLimit = toWeiBigNum(process.env.CHANNEL_BEI_LIMIT || 69)
-  public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 20)
-  public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 30)
+  public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 5)
+  public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 10)
   public beiMaxCollateralization = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION || 169)
+  public minCollateralizationMultiple = new BigNumber(process.env.MIN_COLLATERALIZATION_MULTIPLE || 0.5)
+  public maxCollateralizationMultiple = new BigNumber(process.env.MAX_COLLATERALIZATION_MULTIPLE || 1.5)
+  public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
   public threadBeiLimit = toWeiBigNum(process.env.THREAD_BEI_LIMIT || 10)
   public channelBeiDeposit = this.channelBeiLimit.plus(1069)
   public privateKeyFile: string = ''

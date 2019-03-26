@@ -463,6 +463,8 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
       console.log(`Sending ${this.name} to ${this.address}: confirmed:`, receipt)
       this.onFirstConfirmation.resolve()
     })
+
+    tx.on('error', (error: any) => { console.warn('Something may have gone wrong with your transaction') })
   }
 
   awaitEnterMempool(): Promise<void> {

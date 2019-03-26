@@ -8,7 +8,8 @@ import {
   mockRate,
   MockSignerService,
   fakeSig,
-  getTestConfig
+  getTestConfig,
+  getMockWeb3
 } from './testing/mocks'
 import {
   getChannelState,
@@ -87,47 +88,7 @@ function web3ContractMock() {
 describe('ChannelsService', () => {
   const clock = getFakeClock()
   const registry = getTestRegistry({
-    Web3: {
-      ...Web3,
-      eth: {
-        sign: async () => {
-          return
-        },
-        getTransactionCount: async () => {
-          return 1
-        },
-        estimateGas: async () => {
-          return 1000
-        },
-        signTransaction: async () => {
-          return {
-            tx: {
-              hash: mkHash('0xaaa'),
-              r: mkHash('0xabc'),
-              s: mkHash('0xdef'),
-              v: '0x27',
-            },
-          }
-        },
-        sendSignedTransaction: () => {
-          console.log(`Called mocked web3 function sendSignedTransaction`)
-          return {
-            on: (input, cb) => {
-              switch (input) {
-                case 'transactionHash':
-                  return cb(mkHash('0xbeef'))
-                case 'error':
-                  return cb(null)
-              }
-            },
-          }
-        },
-        sendTransaction: function () {
-          console.log(`Called mocked web3 function sendTransaction`)
-          return this.sendSignedTransaction()
-        },
-      },
-    },
+    Web3: getMockWeb3(),
     GasEstimateDao: new MockGasEstimateDao()
   })
 
@@ -522,17 +483,23 @@ describe('ChannelsService', () => {
       convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
-    const collateralizationTarget = 5 * 10 * 2.5 - 5
+    // target should be:
+    // num tippers * threadBeiLimit * max collat multiple - bal token hub
+    const collateralizationTarget = Big(5)
+      .times(config.beiMinCollateralization)
+      .times(config.maxCollateralizationMultiple)
+      .minus(toWeiString(5))
+      .toFixed()
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: toWeiString(collateralizationTarget)
+      pendingDepositTokenHub: collateralizationTarget
     })
   })
 
   it('should collateralize to the max amount', async () => {
-    const channel = await channelUpdateFactory(registry, { balanceTokenHub: toWeiString(10) })
+    const channel = await channelUpdateFactory(registry, { balanceTokenHub: toWeiString(20) })
 
-    for (let i = 0; i < 10; i++) {
-      const tipper = await channelUpdateFactory(registry, { user: mkAddress(`0x${i}`), balanceTokenUser: toWeiString(5) })
+    for (let i = 0; i < 20; i++) {
+      const tipper = await channelUpdateFactory(registry, { user: mkAddress(`0x${i.toString() + 'f'}`), balanceTokenUser: toWeiString(5) })
       await paymentsService.doPurchase(tipper.user, {}, [{
         recipient: channel.user,
         meta: {},
@@ -563,9 +530,8 @@ describe('ChannelsService', () => {
       convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
-    const collateralizationTarget = 169
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: toWeiString(collateralizationTarget)
+      pendingDepositTokenHub: config.beiMaxCollateralization.toFixed()
     })
   }).timeout(5000)
 
@@ -872,6 +838,9 @@ describe('ChannelsService', () => {
             console.log(`Called mocked web3 function sendTransaction`)
             return this.sendSignedTransaction()
           },
+          getBlock: async () => {
+            return 1
+          }
         },
       },
       GasEstimateDao: new MockGasEstimateDao()
@@ -1247,7 +1216,6 @@ describe('ChannelsService.shouldCollateralize', () => {
       },
       ExchangeRateDao: new MockExchangeRateDao(),
       GasEstimateDao: new MockGasEstimateDao(),
-      SignerService: new MockSignerService()
     })
   
     const service: ChannelsService = registry.get('ChannelsService')

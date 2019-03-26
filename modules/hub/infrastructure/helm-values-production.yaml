@@ -1,5 +1,5 @@
 image:
-  repository: 'gcr.io/spankchain-hub-prod/github-spankchain-camsite/hub'
+  repository: ''
 ingress:
   enabled: true
   host: hub.spankchain.com
@@ -17,17 +17,29 @@ local:
   postgresql: false
   skipDbMigrate: false
 
-pgHost: 'pg-sqlproxy-gcloud-sqlproxy'
-pgSecretName: 'hub-db-creds'
+pgHost: ''
+pgSecretName: ''
 
 env:
-  ETH_RPC_URL: 'http://10.150.0.5:8545'
-  NODE_ENV: 'production'
-  WALLET_ADDRESS: '0x526d0cd57a8b977d3628f12cdeceab12dd49297c'
-  HOT_WALLET_ADDRESS: '0x526d0cd57a8b977d3628f12cdeceab12dd49297c'
-  SERVICE_USER_KEY: 'nnWZrKw7WuE0K1JWb2PHup42xEVrLDnkMTcEbqecF3NeuLcleGl7crJwo2Hc0Uh'
-  CHANNEL_MANAGER_ADDRESS: '0xbf2aeab03b82c182599930217272ef0fc5cf662b'
-  TOKEN_CONTRACT_ADDRESS: '0x6b01c3170ae1efebee1a3159172cb3f7a5ecf9e5'
+  ETH_RPC_URL: ''
+  NODE_ENV: ''
+  WALLET_ADDRESS: ''
+  HOT_WALLET_ADDRESS: ''
+  SERVICE_USER_KEY: ''
+  CHANNEL_MANAGER_ADDRESS: ''
+  TOKEN_CONTRACT_ADDRESS: ''
+  SHOULD_COLLATERALIZE_URL: ''
+  COINPAYMENTS_MERCHANT_ID: ''
+  COINPAYMENTS_API_KEY: ''
+
+# Environment variabes retrieved from secrets.
+#
+#   FOO: 'bar.baz'
+#
+# Means "Set environment variable FOO to the 'baz' key in secret 'bar'."
+env_secrets:
+  COINPAYMENTS_API_SECRET: ''
+  COINPAYMENTS_IPN_SECRET: ''
 
 redis:
   usePassword: false

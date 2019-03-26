@@ -3,24 +3,24 @@ import PaymentsService from "./PaymentsService";
 import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
-import { MockSignerService, testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
+import { testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { toWeiString, Big } from "./util/bigNumber";
 import { emptyAddress } from "./vendor/connext/Utils";
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
+import Config from "./Config";
 
 describe('PaymentsService', () => {
-  const registry = getTestRegistry({
-    SignerService: new MockSignerService()
-  })
+  const registry = getTestRegistry()
 
   const service: PaymentsService = registry.get('PaymentsService')
   const channelsService: ChannelsService = registry.get('ChannelsService')
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const stateGenerator: StateGenerator = registry.get('StateGenerator')
   const globalSettingsDao: GlobalSettingsDao = registry.get('GlobalSettingsDao')
+  const config: Config = registry.get('Config')
 
   beforeEach(async () => {
     await registry.clearDatabase()
@@ -245,8 +245,9 @@ describe('PaymentsService', () => {
       convertChannelState('bn', receiverChannel.state),
       convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
+    // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(30)
+      pendingDepositTokenHub: toWeiString(10),
     })
   })
 
@@ -291,7 +292,7 @@ describe('PaymentsService', () => {
     )
 
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(30)
+      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toFixed(),
     })
   })
 
@@ -315,8 +316,9 @@ describe('PaymentsService', () => {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
-        meta: {},
-        secret: 'secret',
+        meta: {
+          secret: 'secret'
+        },
         type: 'PT_LINK',
         update: {
           reason: 'Payment',
@@ -364,8 +366,9 @@ describe('PaymentsService', () => {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
-        meta: {},
-        secret: 'secret',
+        meta: {
+          secret: 'secret'
+        },
         type: 'PT_LINK',
         update: {
           reason: 'Payment',
@@ -425,8 +428,9 @@ describe('PaymentsService', () => {
           amountWei: '0',
           amountToken: tokenVal(1),
         },
-        meta: {},
-        secret: 'secret',
+        meta: {
+          secret: 'secret',
+        },
         type: 'PT_LINK',
         update: {
           reason: 'Payment',

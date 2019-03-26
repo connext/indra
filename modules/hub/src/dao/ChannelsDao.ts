@@ -16,6 +16,7 @@ import {
   ChannelStateUpdateRowBigNum,
   ChannelRowBigNum,
 } from '../domain/Channel'
+import { prettySafeJson } from '../util'
 import { Big } from '../util/bigNumber'
 import { emptyRootHash } from '../vendor/connext/Utils'
 import { default as log } from '../util/log'
@@ -50,7 +51,9 @@ export default interface ChannelsDao {
   getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
   getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
+  getStaleChannels(): Promise<ChannelRowBigNum[]>
   addChainsawErrorId(user: Address, id: number): Promise<void>
+  removeChainsawErrorId(user: Address): Promise<void>
 }
 
 export function getChannelInitialState(
@@ -96,15 +99,20 @@ export class PostgresChannelsDao implements ChannelsDao {
   }
 
   async addChainsawErrorId(user: Address, id: number): Promise<void> {
-    // Note: the `FOR UPDATE` here will ensure that we acquire a lock on the
-    // channel for the duration of this transaction. This will make sure that
-    // only one request can update a channel at a time, to prevent race
-    // conditions where two threads try to get the channel to create a new
-    // state on top of it and both end up generating an update with the same
-    // txCount.
     await this.db.queryOne(SQL`
       UPDATE _cm_channels
       SET "chainsaw_error_event_id" = ${id}
+      WHERE
+        "user" = ${user.toLowerCase()} AND
+        "contract" = ${this.config.channelManagerAddress.toLowerCase()}
+      RETURNING id
+    `)
+  }
+
+  async removeChainsawErrorId(user: Address): Promise<void> {
+    await this.db.queryOne(SQL`
+      UPDATE _cm_channels
+      SET "chainsaw_error_event_id" = NULL
       WHERE
         "user" = ${user.toLowerCase()} AND
         "contract" = ${this.config.channelManagerAddress.toLowerCase()}
@@ -197,12 +205,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     onchainLogicalId?: number,
   ): Promise<ChannelStateUpdateRowBigNum> {
 
-    LOG.info('Applying channel update to {user}: {reason}({args}) -> {state}', {
-      user,
-      reason,
-      args: JSON.stringify(args),
-      state: JSON.stringify(state),
-    })
+    LOG.info(`Applying channel update to ${user}: ${reason}(${prettySafeJson(args)}) -> ${prettySafeJson(state)}`)
 
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
@@ -269,7 +272,7 @@ export class PostgresChannelsDao implements ChannelsDao {
       FROM payments
         WHERE
           recipient = ${user} AND
-          created_on > NOW() - interval '10 minutes'
+          created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
     `)
 
     return parseInt(num_tippers)
@@ -354,6 +357,28 @@ export class PostgresChannelsDao implements ChannelsDao {
         "user" = ${user.toLowerCase()}
       RETURNING id
     `)
+  }
+
+  async getStaleChannels() {
+    // stale channels are channels that havent been updated
+    // within the `staleChannelDays` days
+
+    // custodial withdrawals occur via direct eth transfer, so 
+    // there is no reason to include any custodial payments
+    // in the query logic. only need to check against latest channel update
+    const staleChannelDays = this.config.staleChannelDays
+    if (!staleChannelDays) {
+      return null
+    }
+
+    const { rows } = await this.db.query(SQL`
+      SELECT * 
+      FROM cm_channels
+      WHERE
+        contract = ${this.config.channelManagerAddress} AND
+        last_updated_on < NOW() - (${staleChannelDays}::text || ' days')::INTERVAL
+    `)
+    return rows.map(r => this.inflateChannelRow(r))
   }
 
   /**

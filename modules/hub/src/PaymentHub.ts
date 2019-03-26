@@ -73,7 +73,7 @@ export default class PaymentHub {
       try {
         await (this as any)[service].start()
       } catch (err) {
-        LOG.error('Failed to start {service}: {err}', { service, err })
+        LOG.error(`Failed to start ${service}: ${err}`)
         process.exit(1)
       }
     }
@@ -102,7 +102,7 @@ export default class PaymentHub {
 
   public async processTx(txHash: string) {
     const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
-    await chainsaw.processSingleTx(txHash)
+    await chainsaw.processSingleTx(txHash, true)
   }
 
   public async fixBrokenChannels() {
@@ -276,7 +276,7 @@ $pgsql$;
         throw new Error('ROLLBACK')
       })
     } catch (e) {
-      console.error(e)
+      LOG.error(e)
       process.exit(1)
     } finally {
       process.exit(0)
@@ -284,7 +284,7 @@ $pgsql$;
   }
 
   async fixChannel(container: Container, db: DBEngine, user: string) {
-    console.log('\n\nProcessing:', user)
+    LOG.info(`\n\nProcessing: ${user}`)
     const config = container.resolve<Config>('Config')
     const web3 = container.resolve<any>('Web3')
     const contract = new web3.eth.Contract(abi, config.channelManagerAddress) as ChannelManager
@@ -298,17 +298,17 @@ $pgsql$;
       order by id desc
     `)
     if (confirmPendings.rowCount > 1) {
-      console.log('SKIPPING (found', confirmPendings.rowCount, 'unsigned confirms)')
+      LOG.info(`SKIPPING (found ${confirmPendings.rowCount} unsigned confirms)`)
       return
     }
 
     // 1. Find the ConfirmPending event
     const confirmPending = confirmPendings.rows[0]
-    //console.log('Confirmation:', confirmPending)
+    LOG.info(`Confirmation: ${confirmPending}`)
 
     // 2. Grab the corresponding onchain tx
     const tx = await web3.eth.getTransaction(confirmPending.args.transactionHash)
-    //console.log('tx:', tx)
+    LOG.debug(`tx: ${tx}`)
     const rawEvents = await contract.getPastEvents('allEvents', {
       fromBlock: tx.blockNumber,
       toBlock: tx.blockNumber,
@@ -337,7 +337,7 @@ $pgsql$;
     }
     for (const field of channelNumericFields)
       event[field] = event[field].toFixed()
-    //console.log('event:', event)
+      LOG.debug(`event: ${event}`)
 
     // 4. Find the correponding fully-signed ProposePending
     const pps = await db.query(SQL`
@@ -351,7 +351,7 @@ $pgsql$;
     `)
 
     const pp = pps.rows[0]
-    //console.log("PP:", pp)
+    LOG.debug(`PP: ${pp}`)
 
     const doesMatch = (
       pp.pending_deposit_wei_hub == event.pendingDepositWeiHub &&
@@ -378,7 +378,7 @@ $pgsql$;
         reason = 'Payment' and
         args->>'recipient' = 'user'
     `)
-    console.log('Payments due:', amountDue)
+    LOG.info(`Payments due: ${amountDue}`)
 
     // 5. Mark the ProposePending as valid, then delete all subsequent states
     await db.query(SQL`
@@ -415,7 +415,7 @@ $pgsql$;
       where id in (select id from to_delete)
       returning *
     `))
-    console.log('Removed invalid upates:', deleted.rowCount)
+    LOG.info(`Removed invalid upates: ${deleted.rowCount}`)
 
     // 6. Re-proc the chainsaw transaction
     const definition = this.registry.get('ChainsawService')
@@ -443,31 +443,31 @@ $pgsql$;
     const tokenContract = new this.web3.eth.Contract(mintAndBurnToken.abi, this.config.tokenContractAddress)
     const hubBalanceStr = await tokenContract.methods.balanceOf(this.config.hotWalletAddress).call(callArgs)
     const hubBalance = Big(hubBalanceStr).dividedBy('1e18')
-    console.log(
+    LOG.info(
       `Current BOOTY (${this.config.tokenContractAddress}) balance of hub ` +
       `(${this.config.hotWalletAddress}): ${hubBalance.toFixed()}`
     )
 
     const toWd = Big(amount).minus(hubBalance)
     if (toWd.isGreaterThan(0)) {
-      console.log(`Need to hubContractWithdraw ${toWd.toFixed()} BOOTY.`)
+      LOG.info(`Need to hubContractWithdraw ${toWd.toFixed()} BOOTY.`)
       const amountConfirm = await input(`Please confirm the amount of BOOTY to hubContractWithdraw (${toWd.toFixed()}): `)
       if (!toWd.isEqualTo(amountConfirm as string))
         throw new Error(`Aborting: ${amountConfirm} <> ${toWd.toFixed()}`)
       const contract = this.container.resolve<ChannelManager>('ChannelManagerContract')
-      console.log(`Calling hubContractWithdraw('0', '${toWd.times('1e18').toFixed(0)}')...`)
+      LOG.info(`Calling hubContractWithdraw('0', '${toWd.times('1e18').toFixed(0)}')...`)
       const res = await contract.methods.hubContractWithdraw('0', toWd.times('1e18').toFixed(0)).send(callArgs)
-      console.log('Result of hubContractWithdraw:', res)
+      LOG.info(`Result of hubContractWithdraw: ${res}`)
     }
 
     const amountConfirm = +(await input(`Please confirm the amount of BOOTY to burn (in BOOTY, not BEI; amount: ${amount}): `))
     if (amountConfirm != amount)
       throw new Error(`Aborting: ${amount} <> ${amountConfirm}`)
     const burnAmount = Big(amount).times('1e18').toFixed()
-    console.log(`Calling burn(${burnAmount})...`)
+    LOG.info(`Calling burn(${burnAmount})...`)
     const burnCall = tokenContract.methods.burn(burnAmount)
     const gas = await burnCall.estimateGas(callArgs)
-    console.log(await burnCall.send({ ...callArgs, gas }))
+    LOG.info(await burnCall.send({ ...callArgs, gas }))
   }
 
 }

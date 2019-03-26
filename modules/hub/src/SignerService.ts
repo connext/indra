@@ -5,11 +5,10 @@ import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails, Omit 
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
-import { OnchainTransactionRow, UnconfirmedTransaction, RawTransaction } from './domain/OnchainTransaction';
-import { onchainTxnToRawTx, serializeTxn, txnToTx, rawTxnToTx } from './util/ethTransaction';
-import log from './util/log'
 import EthereumTx from "ethereumjs-tx"
-import { raw } from 'body-parser';
+import log from './util/log'
+import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
+import { rawTxnToTx } from './util/ethTransaction';
 
 const LOG = log('SignerService')
 
@@ -82,7 +81,9 @@ export class SignerService {
       ]))
       const sig = await ethUtils.ecsign(ethUtils.toBuffer(prefixedMsg), pk)
       const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
-      console.log(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}") & produced sig ${out}`)
+      LOG.info(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed a message:`)
+      LOG.info(`message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}")`)
+      LOG.info(`sig=${out}`)
       return out
     } else {
       return await this.web3.eth.sign(message, this.config.hotWalletAddress)

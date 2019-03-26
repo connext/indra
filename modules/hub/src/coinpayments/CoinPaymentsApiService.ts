@@ -5,6 +5,7 @@ import { default as Config } from '../Config'
 import { Request, Response } from 'express'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
 import { getUserFromRequest } from '../util/request'
+import { CoinPaymentsDepositAddress } from './CoinPaymentsDao'
 
 const LOG = log('CoinPaymentsApiService')
 
@@ -55,8 +56,12 @@ export class CoinPaymentsApiServiceHandler {
 
   async doGetAddress(req: Request, res: Response) {
     const user = getUserFromRequest(req)
-    const address = this.service.getUserDepositAddress(user, req.params.currency)
-    res.json({ address })
+    const addr = await this.service.getUserDepositAddress(user, req.params.currency)
+    const depositAddress: CoinPaymentsDepositAddress = {
+      address: addr.address,
+      destTag: addr.destTag,
+    }
+    res.json(depositAddress)
   }
 
 }

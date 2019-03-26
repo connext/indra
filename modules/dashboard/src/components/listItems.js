@@ -8,6 +8,7 @@ import Home from "@material-ui/icons/Home";
 //import ShoppingCartIcon from "@material-ui/icons/ShoppingCart";
 import PeopleIcon from "@material-ui/icons/People";
 import Archive from "@material-ui/icons/Archive";
+import CompareArrows from "@material-ui/icons/CompareArrows";
 import Unarchive from "@material-ui/icons/Unarchive";
 import AttachMoney from "@material-ui/icons/AttachMoney";
 import LocalGasStation from "@material-ui/icons/LocalGasStation";
@@ -49,6 +50,12 @@ export const mainListItems = (
         <LocalGasStation />
       </ListItemIcon>
       <ListItemText primary="Gas" />
+    </ListItem>
+    <ListItem button  component={Link} to="/collateral">
+      <ListItemIcon>
+        <CompareArrows />
+      </ListItemIcon>
+      <ListItemText primary="Collateral" />
     </ListItem>
     <ListItem button  component={Link} to="/users">
       <ListItemIcon>

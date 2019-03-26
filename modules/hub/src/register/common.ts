@@ -1,10 +1,10 @@
-import {BigNumber} from "bignumber.js";
-
 /*
  * A common entrypoint for all components.
  *
  * Does some minimal environment configuration.
  */
+
+require('./bignumber')
 
 // Bluebird has the ability to include the entire call stack in a Promise (ie,
 // including the original caller).
@@ -12,15 +12,13 @@ import {BigNumber} from "bignumber.js";
 // staging... but use Bluebird promises unconditionally to minimize the
 // differences between production, staging, and dev.
 global.Promise = require('bluebird')
-if (process.env.NODE_ENV !== 'production') {
-  (Promise as any).longStackTraces()
-}
+global.Promise = require('bluebird')
+;(Promise as any).longStackTraces()
 
 // Enable more verbose debug logging outside of production
 if (process.env.NODE_ENV != 'production') {
   let debug = require('debug')
   debug.enable([
-    '*',
     '-nodemon',
     '-express:application',
     '-sequelize:hooks',
@@ -31,18 +29,10 @@ if (process.env.NODE_ENV != 'production') {
     '-sequelize:sql:pg',
     '-sequelize:connection:pg',
     '-follow-redirects',
-    '-body-parser',
     '-connect:redis',
     '-express-session',
   ].join(','))
 }
 
-BigNumber.prototype.floor = function(): BigNumber {
-  return this.integerValue(BigNumber.ROUND_FLOOR)
-}
-
-BigNumber.prototype.ceil = function(): BigNumber {
-  return this.integerValue(BigNumber.ROUND_CEIL)
-}
-
 ;(global as any).fetch = require('fetch-ponyfill')().fetch
+

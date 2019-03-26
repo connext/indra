@@ -349,7 +349,7 @@ export default class ThreadsService {
 
   async ensureEnabled() {
     // const enabled = (await this.globalSettings.toggleThreadsEnabled(true))
-    // console.log('&&&&& enabled:', enabled)
+    // LOG.debug('&&&&& enabled:', enabled)
     // if (!enabled) {
     //   throw new Error('Threads are disabled.')
     // }
