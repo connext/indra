@@ -43,15 +43,13 @@ export class CloseChannelService {
 
   async pollOnce() {
     try {
-      // TODO: does this need to be within a transaction?
-      await this.db.withTransaction(() => this.emptyDisputedChannels())
+      this.emptyDisputedChannels()
     } catch (e) {
       LOG.error('Emptying disputed channel failed {e}', { e })
     }
 
     try {
-      // TODO: does this need to be within a transaction?
-      await this.db.withTransaction(() => this.disputeStaleChannels())
+      this.disputeStaleChannels()
     } catch (e) {
       LOG.error('Disputing stale channels failed {e}', { e })
     }
@@ -204,7 +202,7 @@ export class CloseChannelService {
       data = this.contract.methods.startExit(user).encodeABI()
     } else {
       // startExitWithUpdate
-      LOG.info(`Calling contract function startExitWithUpdate: ${prettySafeJson(
+      LOG.info(`Calling contract function startExitWithUpdate: ${
         [[latestUpdate.state.user, latestUpdate.state.recipient],
         [
           latestUpdate.state.balanceWeiHub.toFixed(),
@@ -231,7 +229,7 @@ export class CloseChannelService {
         latestUpdate.state.threadCount,
         latestUpdate.state.timeout,
         latestUpdate.state.sigHub,
-        latestUpdate.state.sigUser])}
+        latestUpdate.state.sigUser]}
       `);
 
       data = this.contract.methods.startExitWithUpdate(
