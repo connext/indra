@@ -151,5 +151,5 @@ class ChannelInfoCard extends Component{
     );
   };
 }
-  
-  export const ChannelInfoCardStyled = withStyles(styles)(ChannelInfoCard);
+
+export const ChannelInfoCardStyled = withStyles(styles)(ChannelInfoCard);
