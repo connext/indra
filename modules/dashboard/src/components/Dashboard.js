@@ -25,8 +25,6 @@ import { WithdrawalsStyled } from "./Withdrawals";
 import { UserInfoStyled } from "./UserInfo";
 import { GasCostCardStyled } from "./GasCostCard";
 import { CollateralCardStyled } from "./Collateralization";
-const ChannelManagerAbi = require("../abi/ChannelManager.json");
-const TokenAbi = require("../abi/Token.json");
 
 const drawerWidth = 240;
 
@@ -117,9 +115,7 @@ class Dashboard extends React.Component {
       hubUrl: this.props.hubUrl,
       open: false,
       channelManager: this.props.channelManager,
-      hubWallet: this.props.hubWallet,
-      loadingWallet: false,
-      loadingContract: false
+      hubWallet: this.props.hubWallet
     };
   }
 
@@ -138,8 +134,6 @@ class Dashboard extends React.Component {
   render() {
     const { web3, hubUrl, apiUrl, classes } = this.props;
     const {
-      loadingWallet,
-      loadingContract,
       open,
       channelManager,
       hubWallet

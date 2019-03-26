@@ -2,15 +2,8 @@ import React from "react";
 import PropTypes from "prop-types";
 import { withStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import ChannelDetails from "./ChannelDetails";
 import { ContractInfoCardStyled } from "./ContractInfoCard";
-import {ChannelInfoCardStyled} from "./ChannelInfoCard";
-import { PaymentInfoCardStyled } from "./PaymentInfoCard";
-import { GasCostCardStyled } from "./GasCostCard";
-import { WithdrawalsStyled } from "./Withdrawals";
-import { DepositsStyled } from "./Deposits";
-import { UserInfoStyled } from "./UserInfo";
-
+import { ChannelInfoCardStyled } from "./ChannelInfoCard";
 
 const drawerWidth = 240;
 
@@ -118,7 +111,7 @@ class Home extends React.Component {
 
   render() {
     const { web3, classes } = this.props;
-    const { loadingWallet, loadingContract, open, hubWallet, channelManager} = this.state;
+    const { loadingWallet, loadingContract, hubWallet, channelManager} = this.state;
 
     return (
         <main className={classes.content}>

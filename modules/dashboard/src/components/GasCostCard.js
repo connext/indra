@@ -86,7 +86,7 @@ class GasCostCard extends Component {
   };
 
   render() {
-    const { web3, classes } = this.props;
+    const { classes } = this.props;
     return (
       <div className={classes.content}>
         <Card className={classes.card}>
