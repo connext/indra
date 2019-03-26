@@ -8,17 +8,9 @@ import { default as GasEstimateDao } from "./dao/GasEstimateDao";
 import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson } from "./util";
 import { Container } from "./Container";
 import { SignerService } from "./SignerService";
+import { serializeTxn } from "./util/ethTransaction";
 
 const LOG = log('OnchainTransactionService')
-
-function md5(data: string) {
-  if (!data && data !== '')
-    return `<empty: ${data}>`
-  const hash = crypto.createHash('md5')
-  hash.update(data)
-  return hash.digest('hex')
-}
-
 
 /**
  * Service for submitting and monitoring the state of onchain transactions.
@@ -155,18 +147,6 @@ export class OnchainTransactionService {
     LOG.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)
 
     const signedTx = await this.signerService.signTransaction(unsignedTx)
-    /* TODO: REB-61
-    const sig = await this.signerService.signTransaction({ ...unsignedTx });
-    const tx = {
-      ...unsignedTx,
-      hash: sig.tx.hash,
-      signature: {
-        r: sig.tx.r,
-        s: sig.tx.s,
-        v: this.web3.utils.hexToNumber(sig.tx.v),
-      }
-    }
-    */
 
     // Note: this is called from within the transactional context of the caller
     const txnRow = await this.onchainTransactionDao.insertTransaction(db, logicalId, meta, signedTx)
@@ -212,15 +192,16 @@ export class OnchainTransactionService {
     }
   }
 
-  private async signAndSendTx(txn: OnchainTransactionRow): Promise<void> {
-    // Use the data hash to simplify tracking in logs until we're able to
-    // calculate the actual hash
-    const signedTx = await this.signerService.signTransaction(txn)
-    LOG.info(`signedTx: ${prettySafeJson(signedTx)}`)
+  /**
+   * 
+   * Internal function to send the signed transaction to chain and handle the possible
+   * error response.
+   */
+  private async submitToChain(txn: OnchainTransactionRow): Promise<void> {
     const error = await new Promise<string | null>(res => {
-      // const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn)) TODO: REB-61
-      LOG.info(`Submitting transaction nonce=${txn.nonce} hash=${signedTx.hash}: ${prettySafeJson(txn)}...`)
-      const tx = this.web3.eth.sendSignedTransaction(signedTx)
+      LOG.info(`Submitting transaction nonce=${txn.nonce} hash=${txn.hash}: ${prettySafeJson(txn)}...`)
+      
+      const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn))
       tx.on('transactionHash', () => res(null))
       tx.on('error', err => res('' + err))
     })
@@ -228,7 +209,7 @@ export class OnchainTransactionService {
     const errorReason = this.getErrorReason(error)
     LOG.info('Transaction nonce={txn.nonce} hash=${hash} sent: {txn.hash}: {res}', {
       txn,
-      hash: signedTx.hash,
+      hash: txn.hash,
       res: error ? '' + error + ` (${errorReason})`: 'ok!',
     })
 
@@ -271,7 +252,7 @@ export class OnchainTransactionService {
 
   private async processPendingTxn(txn: OnchainTransactionRow): Promise<void> {
     if (txn.state == 'new') {
-      await this.signAndSendTx(txn)
+      await this.submitToChain(txn)
       return
     }
 
@@ -294,10 +275,10 @@ export class OnchainTransactionService {
       if (!tx) {
         // resubmit after 60 seconds of waiting
         // TODO: shorten this?
-        if (txnAgeS > 60) {
+        if (txnAgeS > 10) {
           // sign and send, dont change status here
           // should reset the submit time
-          await this.signAndSendTx(txn)
+          await this.submitToChain(txn)
         }
         // retry on next poll
         return
@@ -352,11 +333,6 @@ export class OnchainTransactionService {
     }
 
     if (txn.state == 'pending_failure') {
-      if (!txn.hash) {
-        await this.signAndSendTx(txn)
-        return
-      }
-
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
       LOG.info('State of {txn.hash}: {res}', {
         txn,
@@ -368,13 +344,18 @@ export class OnchainTransactionService {
         return
       }
 
-      // if tx exists at this point, mark as submitted
-      await this.updateTxState(txn, {
-        state: 'submitted',
-      })
+      if (tx) {
+        // if tx exists at this point, mark as submitted
+        await this.updateTxState(txn, {
+          state: 'submitted',
+        })
+      } else {
+        // if it doesn't exist, it's not in the mempool, resubmit
+        await this.submitToChain(txn)
+      }
 
       // get age to compare poll times
-      const txnAgeS = (Date.now() - (+new Date(txn.submittedOn))) / 1000
+      const txnAgeS = (Date.now() - (+new Date(txn.pendingFailureOn))) / 1000
       const txnAge = `${Math.floor(txnAgeS / 60)}m ${Math.floor(txnAgeS % 60)}s`
 
       const latestConfirmed = await this.onchainTransactionDao.getLatestConfirmed(this.db, txn.from)
