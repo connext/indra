@@ -365,6 +365,7 @@ export class OnchainTransactionService {
           state: 'failed',
           reason: `higher confirmed nonce by txn id: ${txn.id}`,
         })
+        return
       }
 
       // if polled for 54 seconds and still nothing, mark as failed
