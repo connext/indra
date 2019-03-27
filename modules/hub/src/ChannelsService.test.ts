@@ -1228,6 +1228,55 @@ describe('ChannelsService.shouldCollateralize', () => {
     })
   
     it('should invalidate a failing hub authorized update', async () => {
+      const registry = getTestRegistry({
+        Web3: {
+          ...Web3,
+          eth: {
+            Contract: web3ContractMock,
+            sign: async () => {
+              return
+            },
+            getTransactionCount: async () => {
+              return 1
+            },
+            estimateGas: async () => {
+              return 1000
+            },
+            signTransaction: async () => {
+              return {
+                tx: {
+                  hash: mkHash('0xaaa'),
+                  r: mkHash('0xabc'),
+                  s: mkHash('0xdef'),
+                  v: '0x27',
+                },
+              }
+            },
+            sendSignedTransaction: () => {
+              console.log(`Called mocked web3 function sendSignedTransaction`)
+              return {
+                on: (input, cb) => {
+                  switch (input) {
+                    case 'error':
+                      return cb('nonce too low')
+                  }
+                },
+              }
+            },
+            getTransaction: async () => {
+              return null
+            }
+          },
+        },
+        ExchangeRateDao: new MockExchangeRateDao(),
+        GasEstimateDao: new MockGasEstimateDao(),
+      })
+    
+      const service: ChannelsService = registry.get('ChannelsService')
+      const stateGenerator: StateGenerator = registry.get('StateGenerator')
+      const txService: OnchainTransactionService = registry.get('OnchainTransactionService')
+      const db: DBEngine = registry.get('DBEngine')
+
       let channel = await channelUpdateFactory(registry)
       await service.doCollateralizeIfNecessary(channel.user)
       let { updates: sync } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
@@ -1244,7 +1293,9 @@ describe('ChannelsService.shouldCollateralize', () => {
       await db.query(SQL`
       UPDATE onchain_transactions_raw SET hash = ${mkHash()}
       `)
-      await clock.awaitTicks(1000 * 60 * 15)
+      await txService.poll()
+      // need to wait a long time bc the timer resets
+      await clock.awaitTicks(9553715125000)
       await txService.poll()
   
       let { updates: sync2 } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
