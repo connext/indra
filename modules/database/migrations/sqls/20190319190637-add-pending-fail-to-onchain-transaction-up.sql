@@ -1,1 +1,0 @@
-alter table onchain_transactions_raw add column pending_failure_on timestamp with time zone;
