@@ -23,10 +23,10 @@ export type RawTransaction = {
   from: string
   to: string
   value: string
-  gas: string
+  gas: number
   gasPrice: string
   data: string
-  nonce: string
+  nonce: number
 }
 
 export type UnconfirmedTransaction = {
@@ -51,7 +51,7 @@ export type ConfirmedTransaction = UnconfirmedTransaction & {
   transactionIndex: string | null
 }
 
-export type OnchainTransactionState = 'new' | 'submitted' | 'confirmed' | 'failed'
+export type OnchainTransactionState = 'new' | 'submitted' | 'confirmed' | 'pending_failure' | 'failed'
 
 export type OnchainTransactionRow = {
   id: number
@@ -64,4 +64,6 @@ export type OnchainTransactionRow = {
 } & ConfirmedTransaction & {
   failedOn: Date | null
   failedReason: string | null
+} & {
+  pendingFailureOn: Date | null
 }
