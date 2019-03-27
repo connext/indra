@@ -380,6 +380,7 @@ export class OnchainTransactionService {
     'known transaction:': 'already-imported',
     'same hash was already imported': 'already-imported',
     'nonce too low': 'permanent',
+    'nonce is too low': 'permanent',
     'replacement transaction underpriced': 'permanent',
     'does not have enough funds': 'permanent',
     'Invalid JSON RPC response:': 'temporary',
