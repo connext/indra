@@ -62,7 +62,7 @@ export class CloseChannelService {
     }
 
     const staleChannels = await this.channelsDao.getStaleChannels()
-    if (!staleChannels) {
+    if (staleChannels.length === 0) {
       return
     }
 
