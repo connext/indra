@@ -368,7 +368,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     // in the query logic. only need to check against latest channel update
     const staleChannelDays = this.config.staleChannelDays
     if (!staleChannelDays) {
-      return null
+      return []
     }
 
     const { rows } = await this.db.query(SQL`

@@ -107,6 +107,21 @@ describe('CloseChannelService', () => {
   })
 
   it('should start a dispute with stale channels', async () => {
+    registry = getTestRegistry({
+      Config: getTestConfig({
+        staleChannelDays: 1,
+      }),
+      Web3: getMockWeb3(),
+      OnchainTransactionService: {
+        sendTransaction: async () => {
+          console.log('Called mock function sendTransaction');
+          return true
+        }
+      },
+    })
+    const closeChannelService: CloseChannelService = registry.get('CloseChannelService')
+    const channelsDao: ChannelsDao = registry.get('ChannelsDao')
+
     const staleChannel = await channelUpdateFactory(registry, {
       balanceTokenHub: toWeiString(15),
     })
@@ -115,7 +130,6 @@ describe('CloseChannelService', () => {
     assert.equal(updated.status, "CS_OPEN")
     
     // TODO: better way to mock out the waiting here
-    // how to force an update to have differnt timestamp in db?
     await rewindUpdates(100, staleChannel.user)
 
     await closeChannelService.pollOnce()

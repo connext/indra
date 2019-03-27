@@ -96,45 +96,45 @@ class Deposits extends Component {
       //   {day:"3", count:8}
       // ]
 
-    const toRender = (
-      <VictoryChart width={140} height={140}
-      style={{
-        labels:{
-          fontSize:4
-        }
-      }}>
-        <VictoryLabel x={50} y={40}
-          text="Deposits this Week"
-          style={{fontSize:4}}
-        />
-        <VictoryLine
-          
-          x="day"
-          y="count"
-          standalone={false}
-          style={{ data: { strokeWidth: 0.1 } }}
-          data={this.state.freqArray}
-        />
-        <VictoryAxis
-          domain={{y: [0, 100] }}
-          dependentAxis={true}
-          label="Deposits"
-          style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-        />
-        <VictoryAxis
-          dependentAxis={false}
-          domain={{ x: [0, 7]}}
-          tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
-          label="Day"
-          style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-        />
-  </VictoryChart> 
-    ); 
+      const toRender = (
+        <VictoryChart width={140} height={140}
+        style={{
+          labels:{
+            fontSize:4
+          }
+        }}>
+          <VictoryLabel x={50} y={40}
+            text="Deposits this Week"
+            style={{fontSize:4}}
+          />
+          <VictoryLine
 
-    console.log(toRender);
-    return toRender
+            x="day"
+            y="count"
+            standalone={false}
+            style={{ data: { strokeWidth: 0.1 } }}
+            data={this.state.freqArray}
+          />
+          <VictoryAxis
+            domain={{y: [0, 100] }}
+            dependentAxis={true}
+            label="Deposits"
+            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+          />
+          <VictoryAxis
+            dependentAxis={false}
+            domain={{ x: [0, 7]}}
+            tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
+            label="Day"
+            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+          />
+        </VictoryChart>
+      );
+
+      console.log(toRender);
+      return toRender
     } else {
-      console.warn(`Missing data for chart`)
+      console.log(`Missing data for chart`)
     }
   };
 

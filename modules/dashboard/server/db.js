@@ -15,9 +15,9 @@ if (process.env.POSTGRES_PASSWORD_FILE) {
 }
 
 console.log('starting server in env')
-console.log('   - host', host)
-console.log('   - user', user)
-console.log('   - database', database)
+console.log(` - host: ${host}`)
+console.log(` - user: ${user}`)
+console.log(` - database: ${database}`)
 
 const pool = new Pool({
   connectionString: `postgres://${user}:${password}@${host}/${database}`
