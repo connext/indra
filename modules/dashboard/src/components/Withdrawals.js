@@ -102,7 +102,7 @@ class Withdrawals extends Component {
             style={{fontSize:4}}
           />
           <VictoryLine
-            
+
             x="day"
             y="count"
             standalone={false}
@@ -122,7 +122,7 @@ class Withdrawals extends Component {
             label="Day"
             style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
           />
-    </VictoryChart> 
+    </VictoryChart>
     );
     console.log(toRender);
     return toRender
@@ -145,7 +145,7 @@ class Withdrawals extends Component {
   render = () => {
     const { classes } = this.props;
     const {WithdrawalFrequency} = this.state;
-    
+
     return (
       <div className={classes.content}>
       <Card className={classes.card}>
