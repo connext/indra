@@ -75,7 +75,6 @@ export class OnchainTransactionsDao {
         state = 'confirmed'
       ORDER BY nonce DESC
       LIMIT 1
-      FOR UPDATE
     `)
 
     return row && this.inflateRow(row)
