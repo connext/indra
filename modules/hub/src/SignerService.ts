@@ -1,14 +1,13 @@
 import * as fs from 'fs'
 import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
-import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails, Omit } from './vendor/connext/types'
+import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails } from './vendor/connext/types'
 import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
-import EthereumTx from "ethereumjs-tx"
+import { OnchainTransactionRow } from './domain/OnchainTransaction';
+import { onchainTxnToRawTx } from './util/ethTransaction';
 import log from './util/log'
-import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
-import { rawTxnToTx } from './util/ethTransaction';
 
 const LOG = log('SignerService')
 
@@ -38,33 +37,27 @@ export class SignerService {
     return await this.web3.eth.getBlock('latest')
   }
 
-  public async signTransaction(txn: RawTransaction): Promise<UnconfirmedTransaction> {
+  // TODO: reconcile these two functions, is there a way to do this through web3 directly?
+  // https://web3js.readthedocs.io/en/1.0/web3-eth.html#id74
+  public async signTransaction(txn: OnchainTransactionRow): Promise<string> {
+    const rawTx = onchainTxnToRawTx(txn)
     if (this.config.privateKeyFile) {
       const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
       const pk = Buffer.from(pkString, 'hex')
 
-      const tx = rawTxnToTx(txn)
-      tx.sign(pk)
-      return {
-        ...txn,
-        hash: '0x' + tx.hash(true).toString('hex'),
-        signature: {
-          r: '0x' + tx.r.toString('hex'),
-          s: '0x' + tx.s.toString('hex'),
-          v: this.web3.utils.hexToNumber('0x' + tx.v.toString('hex')),
-        },
-      }
+      // @ts-ignore
+      rawTx.sign(pk)
+      // @ts-ignore
+      return '0x' + rawTx.serialize().toString('hex')
     } else {
-      const signed = await this.web3.eth.signTransaction(txn)
-      return {
-        ...txn,
-        hash: signed.tx.hash,
-        signature: {
-          r: signed.tx.r,
-          s: signed.tx.s,
-          v: this.web3.utils.hexToNumber(signed.tx.v),
-        }
-      }
+      return (await this.web3.eth.signTransaction({
+        nonce: rawTx.nonce,
+        gasPrice: rawTx.gasPrice,
+        gasLimit: rawTx.gasLimit,
+        to: rawTx.to,
+        value: rawTx.value,
+        data: rawTx.data
+      })).raw
     }
   }
 
