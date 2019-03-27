@@ -384,7 +384,8 @@ export class OnchainTransactionService {
     'replacement transaction underpriced': 'permanent',
     'does not have enough funds': 'permanent',
     'Invalid JSON RPC response:': 'temporary',
-    'insufficient funds for gas * price + value': 'permanent'
+    'insufficient funds for gas * price + value': 'permanent',
+    'another transaction with same nonce in the queue': 'permanent'
   }
 
   getErrorReason(errMsg: string): null | 'already-imported' | 'permanent' | 'temporary' | 'unknown' {
