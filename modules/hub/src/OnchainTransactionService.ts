@@ -258,7 +258,7 @@ export class OnchainTransactionService {
 
     if (txn.state == 'submitted') {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
-      LOG.info('State of {txn.hash}: {res}', {
+      LOG.info('State of {txn.hash}: {res}, currently submitted', {
         txn,
         res: JSON.stringify(tx || err),
       })
@@ -273,10 +273,8 @@ export class OnchainTransactionService {
 
       // not in mempool yet
       if (!tx) {
-        // resubmit after 60 seconds of waiting
-        // TODO: shorten this?
+        // resubmit after 10 seconds of waiting
         if (txnAgeS > 10) {
-          // sign and send, dont change status here
           // should reset the submit time
           await this.submitToChain(txn)
         }
@@ -334,7 +332,7 @@ export class OnchainTransactionService {
 
     if (txn.state == 'pending_failure') {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
-      LOG.info('State of {txn.hash}: {res}', {
+      LOG.info('State of {txn.hash}, currently pending_failure: {res}', {
         txn,
         res: JSON.stringify(tx || err),
       })
@@ -349,6 +347,7 @@ export class OnchainTransactionService {
         await this.updateTxState(txn, {
           state: 'submitted',
         })
+        return
       } else {
         // if it doesn't exist, it's not in the mempool, resubmit
         await this.submitToChain(txn)
