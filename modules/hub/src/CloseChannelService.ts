@@ -142,7 +142,8 @@ export class CloseChannelService {
       data,
       meta: {
         args: {
-          user
+          user,
+          disputeId: disputeRow.id
         },
         completeCallback: 'CloseChannelService.startEmptyChannelCompleteCallback'
       }
@@ -160,8 +161,11 @@ export class CloseChannelService {
       txn,
       state: txn.state
     })
-    // nothing to do here, chainsaw will pickup the tx and react to it
-    // if the tx fails, we want to leave it as pending.
+    
+    // if tx failed, remove id from the dispute so we can try again
+    if (txn.state == 'failed') {
+      await this.channelDisputesDao.removeEmptyOnchainTx(txn.meta.args.disputeId)
+    }
   }
 
   public async startUnilateralExit(user: string, reason: string): Promise<OnchainTransactionRow> {
@@ -272,7 +276,8 @@ export class CloseChannelService {
         meta: {
           completeCallback: 'CloseChannelService.startUnilateralExitCompleteCallback',
           args: {
-            user
+            user,
+            disputeId: dispute.id
           }
         }
       })
@@ -291,6 +296,7 @@ export class CloseChannelService {
       state: txn.state
     })
     if (txn.state === 'failed') {
+      await this.channelDisputesDao.removeStartExitOnchainTx(txn.meta.args.disputeId)
       await this.channelDisputesDao.changeStatus(disputeRow.id, 'CD_FAILED')
     }
   }

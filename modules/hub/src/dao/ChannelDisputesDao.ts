@@ -16,7 +16,9 @@ export default interface ChannelDisputesDao {
   changeStatus(id: number, status: DisputeStatus): Promise<ChannelDisputeRow>
   setExitEvent(disputeId: number, chainsawId: number, disputeEndTime: number): Promise<ChannelDisputeRow>
   addStartExitOnchainTx(disputeId: number, txn: OnchainTransactionRow): Promise<ChannelDisputeRow>
+  removeStartExitOnchainTx(disputeId: number): Promise<ChannelDisputeRow>
   addEmptyOnchainTx(disputeId: number, txn: OnchainTransactionRow): Promise<ChannelDisputeRow>
+  removeEmptyOnchainTx(disputeId: number): Promise<ChannelDisputeRow>
   setEmptyEvent(disputeId: number, chainsawId: number): Promise<ChannelDisputeRow>
   getActive(user: string): Promise<ChannelDisputeRow>
 }
@@ -105,11 +107,33 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
     )
   }
 
+  public async removeStartExitOnchainTx(disputeId: number): Promise<ChannelDisputeRow> {
+    return this.inflateRow(
+      await this.db.queryOne(SQL`
+        UPDATE _cm_channel_disputes
+        SET onchain_tx_id_start = NULL
+        WHERE id = ${disputeId}
+        RETURNING *
+      `)
+    )
+  }
+
   public async addEmptyOnchainTx(disputeId: number, txn: OnchainTransactionRow): Promise<ChannelDisputeRow> {
     return this.inflateRow(
       await this.db.queryOne(SQL`
         UPDATE _cm_channel_disputes
         SET onchain_tx_id_empty = ${txn.logicalId}
+        WHERE id = ${disputeId}
+        RETURNING *
+      `)
+    )
+  }
+
+  public async removeEmptyOnchainTx(disputeId: number): Promise<ChannelDisputeRow> {
+    return this.inflateRow(
+      await this.db.queryOne(SQL`
+        UPDATE _cm_channel_disputes
+        SET onchain_tx_id_empty = NULL
         WHERE id = ${disputeId}
         RETURNING *
       `)
@@ -157,8 +181,8 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
       channelId: +row.channel_id,
       startedOn: row.started_on,
       reason: row.reason,
-      onchainTxIdStart: +row.onchain_tx_id_start,
-      onchainTxIdEmpty: +row.onchain_tx_id_empty
+      onchainTxIdStart: row.onchain_tx_id_start && +row.onchain_tx_id_start,
+      onchainTxIdEmpty: row.onchain_tx_id_empty && +row.onchain_tx_id_empty
     }
   }
 }
