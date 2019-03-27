@@ -68,6 +68,10 @@ export class CloseChannelService {
 
     // dispute stale channels
     for (const channel of staleChannels) {
+      const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
+      if (latestUpdate.state.txCountGlobal !== channel.state.txCountGlobal) {
+        LOG.info(`Found channel with latest update != latest exitable update. Cannot dispute until user comes back online. user: ${channel.user}`)
+      }
       // do not dispute if the value is below the min bei
       if (channel.state.balanceTokenHub.lt(this.config.beiMinThreshold)) {
         continue
