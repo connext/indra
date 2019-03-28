@@ -5,7 +5,7 @@ import * as crypto from 'crypto'
 import log from './util/log'
 import { default as DBEngine, SQL } from "./DBEngine";
 import { default as GasEstimateDao } from "./dao/GasEstimateDao";
-import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson } from "./util";
+import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson, safeJson } from "./util";
 import { Container } from "./Container";
 import { SignerService } from "./SignerService";
 
@@ -290,6 +290,9 @@ export class OnchainTransactionService {
     }
 
     if (txn.state == 'submitted') {
+      if (!txn.hash) {
+        LOG.info(`Txn hash is not available, will keep trying to retrieve, txn: ${safeJson(txn)}`)
+      }
       const [tx, err] = await maybe(this.web3.eth.getTransactionReceipt(txn.hash))
       LOG.info('State of {txn.hash}: {res}', {
         txn,
