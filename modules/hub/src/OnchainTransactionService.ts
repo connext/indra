@@ -5,7 +5,7 @@ import * as crypto from 'crypto'
 import log from './util/log'
 import { default as DBEngine, SQL } from "./DBEngine";
 import { default as GasEstimateDao } from "./dao/GasEstimateDao";
-import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson } from "./util";
+import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson, safeJson } from "./util";
 import { Container } from "./Container";
 import { SignerService } from "./SignerService";
 import { serializeTxn } from "./util/ethTransaction";
@@ -426,10 +426,12 @@ export class OnchainTransactionService {
     'known transaction:': 'already-imported',
     'same hash was already imported': 'already-imported',
     'nonce too low': 'permanent',
+    'nonce is too low': 'permanent',
     'replacement transaction underpriced': 'permanent',
     'does not have enough funds': 'permanent',
     'Invalid JSON RPC response:': 'temporary',
-    'insufficient funds for gas * price + value': 'permanent'
+    'insufficient funds for gas * price + value': 'permanent',
+    'another transaction with same nonce in the queue': 'permanent'
   }
 
   getErrorReason(errMsg: string): null | 'already-imported' | 'permanent' | 'temporary' | 'unknown' {

@@ -8,7 +8,7 @@ import { EventLog } from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
 import { ChannelState, ConfirmPendingArgs } from './vendor/connext/types'
 import { Utils } from './vendor/connext/Utils'
-import { sleep, prettySafeJson } from './util'
+import { sleep, prettySafeJson, safeJson } from './util'
 import { default as DBEngine } from './DBEngine'
 import { Validator } from './vendor/connext/validator';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
@@ -53,13 +53,13 @@ export default class ChainsawService {
     try {
       await this.db.withTransaction(() => this.doFetchEvents())
     } catch (e) {
-      LOG.error(`Fetching events failed: ${e}`)
+      LOG.error(`Fetching events failed: ${safeJson(e)}`)
     }
 
     try {
       await this.db.withTransaction(() => this.doProcessEvents())
     } catch (e) {
-      LOG.error(`Processing events failed: ${e}`)
+      LOG.error(`Processing events failed: ${safeJson(e)}`)
     }
   }
 
@@ -68,7 +68,7 @@ export default class ChainsawService {
    */
   async processSingleTx(txHash: string, force: boolean = false): Promise<PollType> {
     const event = await this.chainsawDao.eventByHash(txHash)
-    LOG.info(`Processing event: ${event}`)
+    LOG.info(`Processing event: ${safeJson(event)}`)
 
     let res
     switch (event.TYPE) {
@@ -100,7 +100,11 @@ export default class ChainsawService {
     const topBlock = await this.web3.eth.getBlockNumber()
     const last = await this.chainsawDao.lastPollFor(this.contract._address, 'FETCH_EVENTS')
     const lastBlock = last.blockNumber
-    const toBlock = topBlock - CONFIRMATION_COUNT
+    let toBlock = topBlock - CONFIRMATION_COUNT
+    // enforce limit of polling 10k blocks at a time
+    if (toBlock - lastBlock > 10000) {
+      toBlock = lastBlock + 10000
+    }
 
     // need to check for >= here since we were previously not checking for a confirmation count
     if (lastBlock >= toBlock) {
