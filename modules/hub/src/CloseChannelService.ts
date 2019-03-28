@@ -68,8 +68,12 @@ export class CloseChannelService {
 
     // dispute stale channels
     for (const channel of staleChannels) {
-      LOG.info(`Found stale channel: ${safeJson(channel)}`)
       const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
+      LOG.info(`Found stale channel: ${safeJson(channel)}, latestUpdate: ${safeJson(latestUpdate)}`)
+      if (!latestUpdate) {
+        LOG.info(`No latest update, cannot exit for user: ${channel.user}`)
+        continue
+      }
       if (latestUpdate.state.txCountGlobal !== channel.state.txCountGlobal) {
         LOG.info(`Found channel with latest update != latest exitable update. Cannot dispute until user comes back online. user: ${channel.user}`)
         continue
