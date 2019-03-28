@@ -1,5 +1,5 @@
 import { default as Config } from './Config'
-import { sleep, prettySafeJson } from './util'
+import { sleep, prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import { ChannelManager } from './ChannelManager'
@@ -43,15 +43,15 @@ export class CloseChannelService {
 
   async pollOnce() {
     try {
-      this.emptyDisputedChannels()
-    } catch (e) {
-      LOG.error('Emptying disputed channel failed {e}', { e })
-    }
-
-    try {
       this.disputeStaleChannels()
     } catch (e) {
       LOG.error('Disputing stale channels failed {e}', { e })
+    }
+
+    try {
+      this.emptyDisputedChannels()
+    } catch (e) {
+      LOG.error('Emptying disputed channel failed {e}', { e })
     }
   }
 
@@ -68,6 +68,7 @@ export class CloseChannelService {
 
     // dispute stale channels
     for (const channel of staleChannels) {
+      LOG.info(`Found stale channel: ${safeJson(channel)}`)
       const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
       if (latestUpdate.state.txCountGlobal !== channel.state.txCountGlobal) {
         LOG.info(`Found channel with latest update != latest exitable update. Cannot dispute until user comes back online. user: ${channel.user}`)
