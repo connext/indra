@@ -7,13 +7,11 @@ import {
   DepositArgsBN,
   WithdrawalArgsBN,
   UnsignedThreadState,
-  UnsignedThreadStateBN,
   convertThreadState,
   ThreadState,
   ThreadStateBN,
   convertChannelState,
   PaymentBN,
-  Payment,
   UnsignedChannelStateBN,
   PendingArgsBN,
   PendingExchangeArgsBN,
@@ -21,9 +19,12 @@ import {
   UpdateRequestBN,
   InvalidationArgs,
   VerboseChannelEventBN,
+  ChannelState,
+  convertWithdrawal,
 } from "./types";
 import { toBN, mul, minBN, maxBN } from "./helpers/bn";
 import BN = require('bn.js')
+import { hasPendingOps } from "./hasPendingOps";
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -74,6 +75,18 @@ export function calculateExchange(args: ExchangeArgsBN) {
   }
 }
 
+export function depositIfNegative(r: any, src: string, dst: string) {
+  // If `balance${src}` is negative, make it zero, remove that balance from
+  // `balance${dst}` and add the balance to the `pendingDeposit${dst}`
+  const bal = r['balance' + src] as BN
+  if (bal.lt(toBN(0))) {
+    r['balance' + src] = toBN(0)
+    r['balance' + dst] = r['balance' + dst].sub(bal.abs())
+    r['pendingDeposit' + dst] = r['pendingDeposit' + dst].add(bal.abs())
+  }
+  return r
+}
+
 function divmod(num: BN, div: BN): [BN, BN] {
   return [
     safeDiv(num, div),
@@ -100,7 +113,7 @@ export function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field:
   return res
 }
 
-function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
+export function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
   for (let v of vals) {
     if (v !== null && v !== undefined)
       return v
@@ -198,7 +211,7 @@ export class StateGenerator {
   }
 
   /**
-   * Apply an exchange to the state, assuming that there is sufficient blance
+   * Apply an exchange to the state, assuming that there is sufficient balance
    * (otherwise the result may have negative balances; see also:
    * applyCollateralizedExchange).
    */
@@ -236,18 +249,6 @@ export class StateGenerator {
    */
   public applyCollateralizedExchange(state: UnsignedChannelStateBN, exchangeArgs: ExchangeArgsBN): UnsignedChannelStateBN {
     let res = this.applyInChannelExchange(state, exchangeArgs)
-
-    function depositIfNegative(r: any, src: string, dst: string) {
-      // If `balance${src}` is negative, make it zero, remove that balance from
-      // `balance${dst}` and add the balance to the `pendingDeposit${dst}`
-      const bal = r['balance' + src] as BN
-      if (bal.lt(toBN(0))) {
-        r['balance' + src] = toBN(0)
-        r['balance' + dst] = r['balance' + dst].sub(bal.abs())
-        r['pendingDeposit' + dst] = r['pendingDeposit' + dst].add(bal.abs())
-      }
-      return res
-    }
 
     res = depositIfNegative(res, 'WeiHub', 'WeiUser')
     res = depositIfNegative(res, 'TokenHub', 'TokenUser')
@@ -455,27 +456,26 @@ export class StateGenerator {
    * See comments on the CreateWithdrawal type for a description.
    */
   public proposePendingWithdrawal(prev: UnsignedChannelStateBN, args: WithdrawalArgsBN): UnsignedChannelState {
-    args = {
-      ...args,
-      targetWeiUser: coalesce(
-        args.targetWeiUser,
-        prev.balanceWeiUser.sub(args.weiToSell),
-      ),
-      targetTokenUser: coalesce(
-        args.targetTokenUser,
-        prev.balanceTokenUser.sub(args.tokensToSell),
-      ),
-      targetWeiHub: coalesce(args.targetWeiHub, prev.balanceWeiHub),
-      targetTokenHub: coalesce(args.targetTokenHub, prev.balanceTokenHub),
-    }
-
+    // args = {
+    //   ...args,
+    //   targetWeiUser: coalesce(
+    //     args.targetWeiUser,
+    //     prev.balanceWeiUser.sub(args.weiToSell),
+    //   ),
+    //   targetTokenUser: coalesce(
+    //     args.targetTokenUser,
+    //     prev.balanceTokenUser.sub(args.tokensToSell),
+    //   ),
+    //   targetWeiHub: coalesce(args.targetWeiHub, prev.balanceWeiHub),
+    //   targetTokenHub: coalesce(args.targetTokenHub, prev.balanceTokenHub),
+    // }
     const exchange = this.applyCollateralizedExchange(prev, args)
 
     const deltas = {
-      userWei: args.targetWeiUser!.sub(exchange.balanceWeiUser.add(exchange.pendingDepositWeiUser)),
-      userToken: args.targetTokenUser!.sub(exchange.balanceTokenUser.add(exchange.pendingDepositTokenUser)),
-      hubWei: args.targetWeiHub!.sub(exchange.balanceWeiHub.add(exchange.pendingDepositWeiHub)),
-      hubToken: args.targetTokenHub!.sub(exchange.balanceTokenHub.add(exchange.pendingDepositTokenHub)),
+      userWei: args.targetWeiUser.sub(exchange.balanceWeiUser.add(exchange.pendingDepositWeiUser)),
+      userToken: args.targetTokenUser.sub(exchange.balanceTokenUser.add(exchange.pendingDepositTokenUser)),
+      hubWei: args.targetWeiHub.sub(exchange.balanceWeiHub.add(exchange.pendingDepositWeiHub)),
+      hubToken: args.targetTokenHub.sub(exchange.balanceTokenHub.add(exchange.pendingDepositTokenHub)),
     }
 
     const pending = this.applyPending(exchange, {
@@ -622,11 +622,174 @@ export class StateGenerator {
     })
   }
 
-  public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs): UnsignedChannelState {
+  // problems: have to add to the previous balances the reverted
+  // amount
+  public invalidation(prev: ChannelStateBN, args: InvalidationArgs): UnsignedChannelState {
+    // unwind the current pending operations
+    // to restore the appropriate channel balances, keeping in mind that
+    // keeping in mind that the withdrawals are preemptively deducted
+
+    const balances = this._revertPendingUpdates(prev, args)
+
     return convertChannelState("str-unsigned", {
-      ...latestValidState,
+      ...prev,
+      ...balances,
+      pendingDepositWeiHub: toBN(0),
+      pendingDepositWeiUser: toBN(0),
+      pendingDepositTokenHub: toBN(0),
+      pendingDepositTokenUser: toBN(0),
+      pendingWithdrawalWeiHub: toBN(0),
+      pendingWithdrawalWeiUser: toBN(0),
+      pendingWithdrawalTokenHub: toBN(0),
+      pendingWithdrawalTokenUser: toBN(0),
+      
+      txCountChain: prev.txCountChain - 1,
+      txCountGlobal: prev.txCountGlobal + 1,
       timeout: 0,
-      txCountGlobal: args.lastInvalidTxCount + 1,
+      recipient: prev.user,
     })
+  }
+
+  private revertPending(state: UnsignedChannelStateBN, args: PendingArgsBN): UnsignedChannelStateBN {
+    const res = {
+      ...state,
+
+      pendingDepositWeiHub: state.pendingDepositWeiHub.sub(args.depositWeiHub),
+      pendingDepositWeiUser: state.pendingDepositWeiUser.sub(args.depositWeiUser),
+      pendingDepositTokenHub: state.pendingDepositTokenHub.sub(args.depositTokenHub),
+      pendingDepositTokenUser: state.pendingDepositTokenUser.sub(args.depositTokenUser),
+      pendingWithdrawalWeiHub: state.pendingWithdrawalWeiHub.sub(args.withdrawalWeiHub),
+      pendingWithdrawalWeiUser: state.pendingWithdrawalWeiUser.sub(args.withdrawalWeiUser),
+      pendingWithdrawalTokenHub: state.pendingWithdrawalTokenHub.sub(args.withdrawalTokenHub),
+      pendingWithdrawalTokenUser: state.pendingWithdrawalTokenUser.sub(args.withdrawalTokenUser),
+
+      recipient: args.recipient,
+      timeout: args.timeout,
+    }
+
+    return {
+      ...res,
+
+      balanceWeiHub: state.balanceWeiHub
+        .add(subOrZero(res.pendingWithdrawalWeiHub, res.pendingDepositWeiHub)),
+
+      balanceTokenHub: state.balanceTokenHub
+        .add(subOrZero(res.pendingWithdrawalTokenHub, res.pendingDepositTokenHub)),
+
+      balanceWeiUser: state.balanceWeiUser
+        .add(subOrZero(res.pendingWithdrawalWeiUser, res.pendingDepositWeiUser)),
+
+      balanceTokenUser: state.balanceTokenUser
+        .add(subOrZero(res.pendingWithdrawalTokenUser, res.pendingDepositTokenUser)),
+      pendingDepositWeiHub: toBN(0),
+      pendingDepositWeiUser: toBN(0),
+      pendingDepositTokenHub: toBN(0),
+      pendingDepositTokenUser: toBN(0),
+      pendingWithdrawalWeiHub: toBN(0),
+      pendingWithdrawalWeiUser: toBN(0),
+      pendingWithdrawalTokenHub: toBN(0),
+      pendingWithdrawalTokenUser: toBN(0),
+    }
+  }
+
+  public _revertPendingUpdates(chan: ChannelState<BN>, args: InvalidationArgs) {
+    const { withdrawal } = args
+    if (withdrawal) {
+      // the contract does not have to deal with the case
+      // of properly unwinding withdrawals + exchanges, since
+      // they have a timeout and therefore cannot be
+      // disputed with. The invalidation here does, and
+      // uses a different approach
+
+      return this._revertPendingWithdrawalAndExchange(chan, convertWithdrawal("bn", withdrawal))
+    }
+    // no withdrawal + exchange occurred to invalidate
+    // simply unwind any pending operations
+
+    // NOTE: it is safe to not provide any withdrawal information
+    // if you are solely depositing with your exchange (ie hub deposits
+    // into users chan if it cant afford requested exchange)
+
+    // in the case of withdrawals, because it affects the
+    // operating channel balance, the onchain exchange
+    // information should be supplied so ownership
+    // can be properly reverted (validators should ensure this)
+    const reverted =  this.revertPending(chan, {
+      depositTokenHub: toBN(0),
+      depositTokenUser: toBN(0),
+      depositWeiHub: toBN(0),
+      depositWeiUser: toBN(0),
+      withdrawalTokenHub: toBN(0),
+      withdrawalTokenUser: toBN(0),
+      withdrawalWeiHub: toBN(0),
+      withdrawalWeiUser: toBN(0),
+      recipient: chan.user,
+      timeout: 0
+    })
+
+    return {
+      ...reverted,
+      txCountChain: chan.txCountChain - (hasPendingOps(chan) ? 1 : 0),
+      txCountGlobal: chan.txCountGlobal + 1,
+    }
+  }
+
+  public _revertPendingWithdrawalAndExchange(chan: ChannelStateBN, args: WithdrawalArgsBN) {
+    // revert any pending operations
+    let pendingReverted = this.revertPending(chan, {
+      depositWeiUser: toBN(0),
+      depositWeiHub: toBN(0),
+      depositTokenUser: toBN(0),
+      depositTokenHub: toBN(0),
+      withdrawalWeiHub: toBN(0),
+      withdrawalWeiUser: toBN(0),
+      withdrawalTokenUser: toBN(0),
+      withdrawalTokenHub: toBN(0),
+      recipient: chan.user,
+      timeout: 0,
+    })
+
+    // revert the exchange by switching the seller
+    const seller = args.seller == "user" ? "hub" : "user"
+    
+    const { tokensToSell, weiToSell, exchangeRate } = args
+    let exchangeReverted = this.applyInChannelExchange(pendingReverted, {
+      tokensToSell,
+      weiToSell,
+      exchangeRate,
+      seller,
+    })
+
+    const strs = {
+      src: seller == "user" 
+        ? ["WeiHub", "TokenHub"] 
+        : ["WeiUser", "TokenUser"],
+      dst: seller == "user" 
+        ? ["WeiUser", "TokenUser"]
+        : ["WeiHub", "TokenHub"],
+    }
+
+    exchangeReverted = depositIfNegative(exchangeReverted, strs.src[0], strs.dst[0],)
+    exchangeReverted = depositIfNegative(exchangeReverted, strs.src[1], strs.dst[1],)
+
+    // the target wei should reflect any balance the user should
+    // have in the channel. at this point, the channel balance
+    // has been conserved, so it is safe to look only for the users
+    // target change
+    // also safe because you should NOT build on top of states
+    // with timeouts, so no thread of balance being lost
+    // to threads, exchanges, etc.
+    const targetDeltas = {
+      wei: args.targetWeiUser.sub(exchangeReverted.balanceWeiUser).add(args.weiToSell),
+      token: args.targetTokenUser.sub(exchangeReverted.balanceTokenUser).add(args.tokensToSell),
+    }
+    
+    return {
+      ...exchangeReverted,
+      balanceWeiHub: exchangeReverted.balanceWeiHub.sub(targetDeltas.wei),
+      balanceWeiUser: exchangeReverted.balanceWeiUser.add(targetDeltas.wei),
+      balanceTokenHub: exchangeReverted.balanceTokenHub.sub(targetDeltas.token),
+      balanceTokenUser: exchangeReverted.balanceTokenUser.add(targetDeltas.token),
+    }
   }
 }
