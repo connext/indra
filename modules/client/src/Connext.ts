@@ -1293,7 +1293,6 @@ export class ConnextInternal extends ConnextClient {
       user: this.opts.user,
       recipient: this.opts.user,
     }
-    state.persistent.latestValidState = state.persistent.channel
 
     if (this.opts.loadState) {
       const loadedState = await this.opts.loadState()

@@ -1,4 +1,4 @@
-import { ChannelStatus, ThreadHistoryItem, ThreadStateUpdate } from '../types'
+import { ChannelStatus, ThreadHistoryItem, ThreadStateUpdate, WithdrawalArgs } from '../types'
 import { UpdateRequest } from '../types'
 //import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
 import { EMPTY_ROOT_HASH, ZERO_ADDRESS } from '../lib/constants'
@@ -63,6 +63,21 @@ export interface PendingRequestedDeposit {
   txCount: number | null
 }
 
+export const EMPTY_WITHDRAWAL_ARGS = {
+  exchangeRate: '1', // wei to token
+  seller: "user",
+  tokensToSell: '0',
+  weiToSell: '0',
+  recipient: '0x0',
+  additionalWeiHubToUser: '0',
+  additionalTokenHubToUser: '0',
+  targetTokenHub: '0',
+  targetTokenUser: '0',
+  targetWeiHub: '0',
+  targetWeiUser: '0',
+  timeout: 0,
+}
+
 export class PersistentState {
   channel: ChannelState = CHANNEL_ZERO_STATE
 
@@ -79,13 +94,8 @@ export class PersistentState {
     sigHub: '0x0',
     sigUser: '0x0',
   }
-
-  // The 'latestValidState' is the latest state with no pending operations
-  // which will be used by the Invalidation update (since the current channel
-  // might have pending operations which need to be invalidated). Set by the
-  // reducer in reducers.
-  latestValidState: ChannelState = CHANNEL_ZERO_STATE
-
+  
+  latestWithdrawal =  EMPTY_WITHDRAWAL_ARGS as WithdrawalArgs
   activeThreads: ThreadState[] = [] // all open and active threads at latest state
   activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
   // threadHistory is how the client will generate and track the 

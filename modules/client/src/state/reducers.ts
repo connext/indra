@@ -2,7 +2,7 @@ import { isFunction } from '../lib/utils'
 import {ConnextState} from './store'
 import {reducerWithInitialState, ReducerBuilder} from 'typescript-fsa-reducers/dist'
 import * as actions from './actions'
-import { UpdateRequest, ChannelState } from '@src/types';
+import { UpdateRequest, ChannelState, WithdrawalArgs } from '@src/types';
 
 export let reducers = reducerWithInitialState(new ConnextState())
 
@@ -15,22 +15,18 @@ export let reducers = reducerWithInitialState(new ConnextState())
 //   })
 
 export function handleChannelChange(state: ConnextState, channel: ChannelState, update?: UpdateRequest) {
-  const hasPending = (
-    Object.keys(channel)
-      .some(field => field.startsWith('pending') && (channel as any)[field] != '0')
-  )
-  if (!hasPending) {
+  if (!update) {
+    update = state.persistent.channelUpdate
+  }
+
+  if (update.reason == "ProposePendingWithdrawal" && (update.args as WithdrawalArgs).timeout != 0) {
     state = {
       ...state,
       persistent: {
         ...state.persistent,
-        latestValidState: channel,
-      },
+        latestWithdrawal: update.args as WithdrawalArgs
+      }
     }
-  }
-
-  if (!update) {
-    update = state.persistent.channelUpdate
   }
 
   return {
