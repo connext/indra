@@ -584,6 +584,10 @@ const initialWithdrawalArgs: WDInitial = {
     recipient: mkAddress('0x222'),
     additionalWeiHubToUser: '0',
     additionalTokenHubToUser: '0',
+    targetTokenHub: '0',
+    targetTokenUser: '0',
+    targetWeiHub: '0',
+    targetWeiUser: '0',
     timeout: 6969,
   }),
 }
