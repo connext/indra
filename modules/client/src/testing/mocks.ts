@@ -1,4 +1,4 @@
-import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
+import { mkHash, getWithdrawalArgs, getExchangeArgs, PartialVerboseOrSuccinctWithdrawalArgs } from '.'
 import { IWeb3TxWrapper } from '../Connext'
 import { toBN } from '../helpers/bn'
 import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit, ThreadStateUpdate, HubConfig } from '../types'
@@ -531,21 +531,15 @@ export class MockStore {
     }
   }
 
-  public setLatestValidState = (overrides: PartialSignedOrSuccinctChannel = {}) => {
+  public setLatestWithdrawal = (overrides: PartialVerboseOrSuccinctWithdrawalArgs = {}) => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        latestValidState: getChannelState("empty", {
-          txCountChain: 0,
-          txCountGlobal: 0,
-          sigHub: '0xsig-hub',
-          sigUser: '0xsig-user',
-        }, overrides)
+        latestWithdrawal: getWithdrawalArgs("empty", overrides)
       }
     }
   }
-
   public setChannelUpdate = (update: UpdateRequest) => {
     this._initialState = {
       ...this._initialState,
