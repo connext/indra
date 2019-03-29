@@ -2,12 +2,9 @@ import { assert } from './testing/index'
 import * as t from './testing/index'
 import { StateGenerator, calculateExchange } from './StateGenerator';
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs } from './types';
-import { getChannelState, getWithdrawalArgs } from './testing'
+import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs, addSigToChannelState } from './types';
+import { getChannelState, getWithdrawalArgs, getDepositArgs } from './testing'
 import { toBN } from './helpers/bn';
-import { createSign } from 'crypto';
-
-
 const sg = new StateGenerator()
 const utils = new Utils()
 
@@ -328,19 +325,247 @@ describe('StateGenerator', () => {
   })
 
   describe('invalidation', () => {
-    it('should work', async () => {
-      const prev = createPreviousChannelState({
-        txCount: [3, 2],
-      })
-      const args: InvalidationArgs = {
-        previousValidTxCount: prev.txCountGlobal,
-        lastInvalidTxCount: 7,
-        reason: "CU_INVALID_ERROR",
+    // balances are in [hub, user] form as in testing helpers
+
+    // withdrawal invalidations should cover wei wds and token wds where:
+    // 1. Full withdrawals
+    //    - no exchange
+    //    - uncollateralized exchange
+    //    - fully collateralized exchange
+    //    - partially collateralized exchange
+    // 2. Partial Withdrawals
+    //    - no exchange
+    //    - uncollateralized exchange
+    //    - fully collateralized exchange
+    //    - partially collateralized exchange
+
+    const tests = [
+      {
+        name: "should invalidate all pending deposits",
+        isWithdrawal: false,
+        args: {
+          depositWei: [3, 4],
+          depositToken: [1, 2]
+        },
+      },
+      {
+        name: "should invalidate all pending withdrawals without exchange",
+        isWithdrawal: true,
+        chan: {
+          balanceWei: [0, 1],
+        },
+        args: {
+          weiToSell: "1"
+        },
+      },
+      {
+        name: "should invalidate all pending withdrawals with token for wei collateralized exchange",
+        isWithdrawal: true,
+        chan: { balanceWei: [1, 0], balanceToken: [0, 5]},
+        args: { tokensToSell: "5" }
+      },
+      {
+        name: "should invalidate all pending withdrawals with wei for token collateralized exchange",
+        isWithdrawal: true,
+        chan: { balanceWei: [0, 1], balanceToken: [5, 0]},
+        args: { weiToSell: "1" }
+      },
+      {
+        name: "should invalidate all pending withdrawals with token for wei uncollateralized exchange",
+        isWithdrawal: true,
+        chan: { balanceWei: [0, 0], balanceToken: [0, 5]},
+        args: { tokensToSell: "5", }
+      },
+      {
+        name: "should invalidate all pending withdrawals with wei for token uncollateralized exchange",
+        isWithdrawal: true,
+        chan: { balanceWei: [0, 1], balanceToken: [0, 0]},
+        args: { weiToSell: "1", }
+      },
+      {
+        name: "should invalidate all pending withdrawals with token for wei semi-collateralized exchange",
+        isWithdrawal: true,
+        chan: { balanceWei: [1, 0], balanceToken: [0, 10]},
+        args: { tokensToSell: "10", }
+      },
+      {
+        name: "should invalidate all pending withdrawals with wei for token semi-collateralized exchange",
+        isWithdrawal: true,
+        chan: { balanceWei: [0, 2], balanceToken: [5, 0]},
+        args: { weiToSell: "2", }
+      },
+    ]
+
+    const fullWdTests = tests.map(t => {
+      return { ...t, name: t.name + ', full withdrawal'}
+    })
+
+    const partialWdTests = tests.map(t => {
+      // dynamically add adjusted value to users side
+      // while ensuring that the values dont mess up
+      // the exchanges
+      const adjustment = {
+        weiUser: 1,
+        weiHub: 2,
+        tokenUser: 3,
+        tokenHub: 4,
+      }
+      const updatedWeiBal = [
+        (t.chan && t.chan.balanceWei ? t.chan.balanceWei[0] : 0) + adjustment.weiHub,
+        (t.chan && t.chan.balanceWei ? t.chan.balanceWei[1] : 0) + adjustment.weiUser,
+      ]
+
+      const updatedTokenBal = [
+        (t.chan && t.chan.balanceToken ? t.chan.balanceToken[0] : 0) + adjustment.tokenHub,
+        (t.chan && t.chan.balanceToken ? t.chan.balanceToken[1] : 0) + adjustment.tokenUser,
+      ]
+
+      const updatedArgs = {
+        ...t.args,
+        targetWeiUser: adjustment.weiUser,
+        targetWeiHub: adjustment.weiHub,
+        targetTokenUser: adjustment.tokenUser,
+        targetTokenHub: adjustment.tokenHub,
       }
 
-      const curr = sg.invalidation(prev, args)
-      assert.deepEqual(curr, { ...convertChannelState("str-unsigned", prev), txCountGlobal: 8, })
+      return { 
+        ...t,
+        chan: { 
+          balanceWei: updatedWeiBal, 
+          balanceToken: updatedTokenBal 
+        },
+        args: updatedArgs,
+        name: t.name + ', partial withdrawal',
+      }
     })
+
+    t.parameterizedTests(fullWdTests.concat(partialWdTests as any), tc => {
+      // generate the previous state from the expected balances
+      const { args, isWithdrawal, chan } = tc
+
+      const expected = getChannelState("empty", {
+        txCount: [3, 2],
+        ...chan,
+      } as any)
+
+      const ar = isWithdrawal 
+        ? getWithdrawalArgs("empty", { ...args, exchangeRate: "5" } as any)
+        : getDepositArgs("empty", args as any)
+      
+      const prev = isWithdrawal 
+        ? sg.proposePendingWithdrawal(
+          convertChannelState("bn", expected),
+          convertWithdrawal("bn", ar as any)
+        )
+      : sg.proposePendingDeposit(
+          convertChannelState("bn", expected),
+          convertDeposit("bn", ar as any)
+        )
+
+      const gen = sg.invalidation(convertChannelState("bn", { ...prev, sigUser: "", sigHub: ""}), isWithdrawal ? { withdrawal: ar } : {} as any)
+
+      assert.deepEqual(convertChannelState("str-unsigned", gen), convertChannelState("str-unsigned", { 
+        ...expected,
+        txCountGlobal: expected.txCountGlobal + 2,
+        recipient: expected.user,
+      }))
+    })
+
+    // invalidating with states on top
+    it('invalidating hub deposits should work on top of channel payments', () => {
+      const s0 = createPreviousChannelState({
+        balanceToken: [0, 5],
+        balanceWei: [0, 10]
+      })
+      // hub deposit
+      const depositArgs = getDepositArgs("empty", {
+        depositWei: [0, 0],
+        depositToken: [5, 0],
+        timeout: 0,
+      })
+      // generate and sign state
+      let s1 = sg.proposePendingDeposit(s0, convertDeposit("bn",depositArgs))
+      s1 = addSigToChannelState(s1, t.mkHash("0xsig-user"), true)
+      s1 = addSigToChannelState(s1, t.mkHash("0xsig-hub"), false)
+      t.assertChannelStateEqual(s1 as any, {
+        balanceToken: [0, 5],
+        balanceWei: [0, 10],
+        pendingDepositToken: [5, 0],
+      })
+
+      // make a payment
+      const paymentArgs = t.getPaymentArgs("empty", {
+        amountWei: 2,
+        recipient: "hub",
+      })
+      // generate and sign state
+      let s2 = sg.channelPayment(convertChannelState("bn-unsigned",s1) as any, convertPayment("bn",paymentArgs))
+      s2 = addSigToChannelState(s2, t.mkHash("0xsig-user"), true)
+      s2 = addSigToChannelState(s2, t.mkHash("0xsig-hub"), false)
+      t.assertChannelStateEqual(s2 as any, {
+        balanceToken: [0, 5],
+        balanceWei: [2, 8],
+        pendingDepositToken: [5, 0],
+      })
+
+      // invalidate state
+      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR" })
+      t.assertChannelStateEqual(invalid as any, {
+        balanceToken: [0, 5],
+        balanceWei: [2, 8],
+        pendingDepositToken: [0, 0],
+      })
+    })
+
+    it('invalidating withdrawals without a timeout should work on top of channel payments', () => {
+      const s0 = createPreviousChannelState({
+        balanceToken: [5, 0],
+        balanceWei: [0, 10]
+      })
+      // hub wd
+      const wdArgs = getWithdrawalArgs("empty", {
+        targetWeiUser: 10,
+        timeout: 0,
+      })
+
+      // generate and sign state
+      let s1 = sg.proposePendingWithdrawal(s0, convertWithdrawal("bn",wdArgs))
+      s1 = addSigToChannelState(s1, t.mkHash("0xsig-user"), true)
+      s1 = addSigToChannelState(s1, t.mkHash("0xsig-hub"), false)
+      t.assertChannelStateEqual(s1 as any, {
+        balanceToken: [0, 0],
+        balanceWei: [0, 10],
+        pendingWithdrawalToken: [5, 0],
+      })
+
+      // make a payment
+      const paymentArgs = t.getPaymentArgs("empty", {
+        amountWei: 2,
+        recipient: "hub",
+      })
+      // generate and sign state
+      let s2 = sg.channelPayment(convertChannelState("bn-unsigned",s1) as any, convertPayment("bn",paymentArgs))
+      s2 = addSigToChannelState(s2, t.mkHash("0xsig-user"), true)
+      s2 = addSigToChannelState(s2, t.mkHash("0xsig-hub"), false)
+      t.assertChannelStateEqual(s2 as any, {
+        balanceToken: [0, 0],
+        balanceWei: [2, 8],
+        pendingWithdrawalToken: [5, 0],
+      })
+
+      // invalidate state
+      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR" })
+      t.assertChannelStateEqual(invalid as any, {
+        balanceToken: [5, 0],
+        balanceWei: [2, 8],
+        pendingWithdrawalToken: [0, 0],
+      })
+    })
+
+    // ***** NOTE *****
+    // YOU SHOULD NEVER BUILD ON TOP OF STATES WITH TIMEOUTS
+    // With this in mind, no need to test pending operations
+    // with a withdrawal arg supplied (assumes a timeout state)
   })
 
   describe('calculateExchange', () => {
