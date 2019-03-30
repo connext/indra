@@ -197,7 +197,7 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
 
 describe('validator', () => {
   const web3 = new Web3() /* NOTE: all functional aspects of web3 are mocked */
-  const validator = new Validator(web3, hubAddress)
+  let validator = new Validator(web3, hubAddress)
 
   describe('channelPayment', () => {
     const prev = createPreviousChannelState({
@@ -653,13 +653,16 @@ describe('validator', () => {
   })
 
   describe('invalidation', () => {
+    beforeEach(() => {
+      validator = new Validator(web3, hubAddress)
+    })
+
     const prev = createPreviousChannelState({
       txCount: [1, 1]
     })
 
     const args: InvalidationArgs = {
       previousValidTxCount: prev.txCountGlobal,
-      lastInvalidTxCount: prev.txCountGlobal + 1,
       reason: "CU_INVALID_ERROR",
     }
 
@@ -671,21 +674,9 @@ describe('validator', () => {
         valid: true
       },
       {
-        name: 'should return string if previous nonce is higher than nonce to be invalidated',
-        prev,
-        args: { ...args, previousValidTxCount: 3 },
-        valid: false
-      },
-      {
         name: 'should return string if previous state nonce and nonce in args do not match',
         prev: { ...prev, txCountGlobal: 5 },
-        args: { ...args, previousValidTxCount: 3, lastInvalidTxCount: 3 },
-        valid: false
-      },
-      {
-        name: 'should return string if previous state has pending ops',
-        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
-        args,
+        args: { ...args, previousValidTxCount: 3, },
         valid: false
       },
       {
@@ -700,11 +691,18 @@ describe('validator', () => {
         args,
         valid: false
       },
+      {
+        name: 'should return string if previous state has timeout and there are not withdrawal args given',
+        prev: { ...prev, timeout: 6969, },
+        args,
+        valid: false
+      },
     ]
 
     invalidationCases.forEach(({ name, prev, args, valid }) => {
       it(name, () => {
         if (valid) {
+          validator.assertChannelSigner = (state: any, signer: any) => {}
           assert.isNull(validator.invalidation(prev, args))
         } else {
           assert.exists(validator.invalidation(prev, args))
