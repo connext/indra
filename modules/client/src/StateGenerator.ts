@@ -461,13 +461,13 @@ export class StateGenerator {
     //   targetWeiUser: coalesce(
     //     args.targetWeiUser,
     //     prev.balanceWeiUser.sub(args.weiToSell),
-    //   ),
+    //   )!,
     //   targetTokenUser: coalesce(
     //     args.targetTokenUser,
     //     prev.balanceTokenUser.sub(args.tokensToSell),
-    //   ),
-    //   targetWeiHub: coalesce(args.targetWeiHub, prev.balanceWeiHub),
-    //   targetTokenHub: coalesce(args.targetTokenHub, prev.balanceTokenHub),
+    //   )!,
+    //   targetWeiHub: coalesce(args.targetWeiHub, prev.balanceWeiHub)!,
+    //   targetTokenHub: coalesce(args.targetTokenHub, prev.balanceTokenHub)!,
     // }
     const exchange = this.applyCollateralizedExchange(prev, args)
 
@@ -701,7 +701,14 @@ export class StateGenerator {
       // disputed with. The invalidation here does, and
       // uses a different approach
 
-      return this._revertPendingWithdrawalAndExchange(chan, convertWithdrawal("bn", withdrawal))
+      return {
+        ...this._revertPendingWithdrawalAndExchange(chan, convertWithdrawal("bn", withdrawal)),
+
+        txCountChain: chan.txCountChain - 1,
+        txCountGlobal: chan.txCountGlobal + 1,
+        timeout: 0,
+        user: chan.user,
+      }
     }
     // no withdrawal + exchange occurred to invalidate
     // simply unwind any pending operations
