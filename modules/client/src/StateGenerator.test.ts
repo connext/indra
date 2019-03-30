@@ -157,6 +157,7 @@ describe('StateGenerator', () => {
       },
       args: {
         tokensToSell: 5,
+        targetTokenUser: 2,
       },
       expected: {
         balanceTokenUser: 2,
@@ -176,6 +177,7 @@ describe('StateGenerator', () => {
         tokensToSell: 5,
         targetWeiUser: 4,
         targetTokenHub: 20,
+        targetTokenUser: 2,
       },
       expected: {
         balanceTokenHub: 5,
@@ -286,6 +288,7 @@ describe('StateGenerator', () => {
         tokensToSell: 15,
         targetWeiUser: 1,
         targetTokenHub: 20,
+        targetTokenUser: 2,
       },
       expected: {
         balanceWeiUser: 0,
@@ -310,7 +313,7 @@ describe('StateGenerator', () => {
           exchangeRate: exchangeRate.toString(),
         }))
         const s = convertChannelState('str-unsigned', sg.proposePendingWithdrawal(prev, args))
-
+        
         const expected = {
           ...prev,
           ...tc.expected,
@@ -509,7 +512,7 @@ describe('StateGenerator', () => {
       })
 
       // invalidate state
-      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR" })
+      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR", previousValidTxCount: s2.txCountGlobal })
       t.assertChannelStateEqual(invalid as any, {
         balanceToken: [0, 5],
         balanceWei: [2, 8],
@@ -554,7 +557,7 @@ describe('StateGenerator', () => {
       })
 
       // invalidate state
-      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR" })
+      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR", previousValidTxCount: s2.txCountGlobal })
       t.assertChannelStateEqual(invalid as any, {
         balanceToken: [5, 0],
         balanceWei: [2, 8],
