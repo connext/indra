@@ -452,10 +452,11 @@ export class Validator {
   // previous state
   public invalidation(prev: ChannelStateBN, args: InvalidationArgs) {
     // TODO: invalidating offchain state updates?
-    // if the previous state has a timeout, there should be a withdrawal
+    // if the previous state has a timeout withdrawa;, there should be a withdrawal
     const { withdrawal } = args
-    const prevTimed = prev.timeout != 0
-    if (prevTimed && !withdrawal) {
+    const isWithdrawal = this.hasNonzero(prev, ["pendingWithdrawalWeiUser", "pendingWithdrawalTokenUser", "pendingWithdrawalWeiHub", "pendingWithdrawalTokenHub"]) != null
+    const prevTimedWithdrawal = prev.timeout != 0 && isWithdrawal
+    if (prevTimedWithdrawal && !withdrawal) {
       return `Cannot invalidate states with timeouts without providing a valid withdrawal arguments parameter. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
     }
 
@@ -470,7 +471,7 @@ export class Validator {
     
     // if the previous state has a timeout, you should only
     // be invalidating the next state
-    if (prevTimed && args.previousValidTxCount != prev.txCountGlobal - 1) {
+    if (prev.timeout != 0 && args.previousValidTxCount != prev.txCountGlobal) {
       return `Cannot invalidate states with timeouts that have been built on top of. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
     }
 
