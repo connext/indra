@@ -1,6 +1,6 @@
 import { ConnextState } from '../state/store'
 import { ConnextStore } from '../state/store'
-import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState, ThreadState } from '../types'
+import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState, ThreadState, WithdrawalArgs } from '../types'
 import { ChannelState, UpdateRequestTypes } from '../types'
 import { AbstractController } from './AbstractController'
 import * as actions from '../state/actions'
@@ -238,7 +238,7 @@ export default class StateUpdateController extends AbstractController {
 
     const connextState = this.getState()
     const prevState: ChannelState = connextState.persistent.channel
-    const latestValidState: ChannelState = connextState.persistent.latestValidState
+    const latestWithdrawal: WithdrawalArgs = connextState.persistent.latestWithdrawal
 
     console.log('prevState:', prevState)
 
@@ -258,6 +258,13 @@ export default class StateUpdateController extends AbstractController {
       )
     }
 
+    // change the update args to our latest withdrawal if there is
+    // any withdrawal update
+    const hasWithdrawal = prevState.pendingWithdrawalTokenUser != '0' || prevState.pendingWithdrawalTokenUser != '0'
+    if (hasWithdrawal) {
+      update.args = { ...update.args, withdrawal: latestWithdrawal}
+    }
+
     if (update.reason === 'EmptyChannel') {
       console.log('Channel has exited dispute phase, re-enabling client')
       this.store.dispatch(actions.setChannelStatus("CS_OPEN"))
@@ -272,8 +279,8 @@ export default class StateUpdateController extends AbstractController {
     }
 
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
-      update.reason === 'Invalidation' ? latestValidState : prevState,
-      update
+      prevState,
+      update,
     )
 
     // any sigs included on the updates should be valid
@@ -493,7 +500,7 @@ export default class StateUpdateController extends AbstractController {
       // 2. The `didContractEmitUpdateEvent` will throw an error because it
       //    has not been tested with `timeout = 0` states.
 
-      if (update.args.lastInvalidTxCount !== prev.txCountGlobal) {
+      if (update.args.previousValidTxCount != prev.txCountGlobal) {
         throw new Error(
           `Hub proposed invalidation for a state which isn't our latest. ` +
           `Invalidation: ${JSON.stringify(update)} ` +
