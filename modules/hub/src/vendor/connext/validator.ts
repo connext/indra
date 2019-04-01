@@ -269,7 +269,13 @@ export class Validator {
       throw new Error(error)
     }
 
-    return this.stateGenerator.proposePendingWithdrawal(prev, args)
+    return this.stateGenerator.proposePendingWithdrawal(prev, {
+      ...args,
+      targetWeiHub: prev.balanceWeiHub,
+      targetWeiUser: prev.balanceWeiUser.sub(args.weiToSell),
+      targetTokenHub: prev.balanceTokenHub,
+      targetTokenUser: prev.balanceTokenUser.sub(args.tokensToSell),
+    })
   }
 
   public withdrawalParams = (params: WithdrawalParametersBN): string | null => {
@@ -442,27 +448,35 @@ export class Validator {
     return this.stateGenerator.emptyChannel(matchingEvent)
   }
 
-  // NOTE: the prev here is NOT the previous state in the state-chain 
-  // of events. Instead it is the previously "valid" update, meaning the 
-  // previously double signed upate with no pending ops
-  public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs) {
-    // state should not 
-    if (args.lastInvalidTxCount < args.previousValidTxCount) {
-      return `Previous valid nonce is higher than the nonce of the state to be invalidated. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
+  // This invalidates any pending operations that exist on the
+  // previous state
+  public invalidation(prev: ChannelStateBN, args: InvalidationArgs) {
+    // TODO: invalidating offchain state updates?
+    // if the previous state has a timeout withdrawa;, there should be a withdrawal
+    const { withdrawal } = args
+    const isWithdrawal = this.hasNonzero(prev, ["pendingWithdrawalWeiUser", "pendingWithdrawalTokenUser", "pendingWithdrawalWeiHub", "pendingWithdrawalTokenHub"]) != null
+    const prevTimedWithdrawal = prev.timeout != 0 && isWithdrawal
+    if (prevTimedWithdrawal && !withdrawal) {
+      return `Cannot invalidate states with timeouts without providing a valid withdrawal arguments parameter. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
     }
 
-    // prev state must have same tx count as args
-    if (latestValidState.txCountGlobal !== args.previousValidTxCount) {
-      return `Previous state nonce does not match the provided previousValidTxCount. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
+    // TODO: assert here? not done so in other validators
+    // assert signer on state
+    try {
+      this.assertChannelSigner(convertChannelState("str", prev), "user")
+      this.assertChannelSigner(convertChannelState("str", prev), "hub")
+    } catch (e) {
+      return `Invalid signer detected on channel state. ${e.message}. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
+    }
+    
+    // if the previous state has a timeout, you should only
+    // be invalidating the next state
+    if (prev.timeout != 0 && args.previousValidTxCount != prev.txCountGlobal) {
+      return `Cannot invalidate states with timeouts that have been built on top of. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
     }
 
-    // ensure the state provided is double signed, w/o pending ops
-    if (this.hasPendingOps(latestValidState) || !latestValidState.sigHub || !latestValidState.sigUser) {
-      return `Previous state has pending operations, or is missing a signature. See the notes on the previous state supplied to invalidation in source. (prev: ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")})`
-    }
-
-    // NOTE: fully signed states can only be invalidated if timeout passed
-    // this is out of scope of the validator library
+    // safe not to validate the target balances if the
+    // signature on the previous state exists
 
     return null
   }
