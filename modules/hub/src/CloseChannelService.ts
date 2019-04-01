@@ -1,5 +1,5 @@
 import { default as Config } from './Config'
-import { sleep, prettySafeJson } from './util'
+import { sleep, prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import { ChannelManager } from './ChannelManager'
@@ -43,17 +43,15 @@ export class CloseChannelService {
 
   async pollOnce() {
     try {
-      // TODO: does this need to be within a transaction?
-      await this.db.withTransaction(() => this.emptyDisputedChannels())
+      this.disputeStaleChannels()
     } catch (e) {
-      LOG.error('Emptying disputed channel failed {e}', { e })
+      LOG.error('Disputing stale channels failed {e}', { e })
     }
 
     try {
-      // TODO: does this need to be within a transaction?
-      await this.db.withTransaction(() => this.disputeStaleChannels())
+      this.emptyDisputedChannels()
     } catch (e) {
-      LOG.error('Disputing stale channels failed {e}', { e })
+      LOG.error('Emptying disputed channel failed {e}', { e })
     }
   }
 
@@ -64,12 +62,22 @@ export class CloseChannelService {
     }
 
     const staleChannels = await this.channelsDao.getStaleChannels()
-    if (!staleChannels) {
+    if (staleChannels.length === 0) {
       return
     }
 
     // dispute stale channels
     for (const channel of staleChannels) {
+      const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
+      LOG.info(`Found stale channel: ${safeJson(channel)}, latestUpdate: ${safeJson(latestUpdate)}`)
+      if (!latestUpdate) {
+        LOG.info(`No latest update, cannot exit for user: ${channel.user}`)
+        continue
+      }
+      if (latestUpdate.state.txCountGlobal !== channel.state.txCountGlobal) {
+        LOG.info(`Found channel with latest update != latest exitable update. Cannot dispute until user comes back online. user: ${channel.user}`)
+        continue
+      }
       // do not dispute if the value is below the min bei
       if (channel.state.balanceTokenHub.lt(this.config.beiMinThreshold)) {
         continue
@@ -144,7 +152,8 @@ export class CloseChannelService {
       data,
       meta: {
         args: {
-          user
+          user,
+          disputeId: disputeRow.id
         },
         completeCallback: 'CloseChannelService.startEmptyChannelCompleteCallback'
       }
@@ -162,8 +171,11 @@ export class CloseChannelService {
       txn,
       state: txn.state
     })
-    // nothing to do here, chainsaw will pickup the tx and react to it
-    // if the tx fails, we want to leave it as pending.
+    
+    // if tx failed, remove id from the dispute so we can try again
+    if (txn.state == 'failed') {
+      await this.channelDisputesDao.removeEmptyOnchainTx(txn.meta.args.disputeId)
+    }
   }
 
   public async startUnilateralExit(user: string, reason: string): Promise<OnchainTransactionRow> {
@@ -204,7 +216,7 @@ export class CloseChannelService {
       data = this.contract.methods.startExit(user).encodeABI()
     } else {
       // startExitWithUpdate
-      LOG.info(`Calling contract function startExitWithUpdate: ${prettySafeJson(
+      LOG.info(`Calling contract function startExitWithUpdate: ${
         [[latestUpdate.state.user, latestUpdate.state.recipient],
         [
           latestUpdate.state.balanceWeiHub.toFixed(),
@@ -231,7 +243,7 @@ export class CloseChannelService {
         latestUpdate.state.threadCount,
         latestUpdate.state.timeout,
         latestUpdate.state.sigHub,
-        latestUpdate.state.sigUser])}
+        latestUpdate.state.sigUser]}
       `);
 
       data = this.contract.methods.startExitWithUpdate(
@@ -274,7 +286,8 @@ export class CloseChannelService {
         meta: {
           completeCallback: 'CloseChannelService.startUnilateralExitCompleteCallback',
           args: {
-            user
+            user,
+            disputeId: dispute.id
           }
         }
       })
@@ -293,6 +306,7 @@ export class CloseChannelService {
       state: txn.state
     })
     if (txn.state === 'failed') {
+      await this.channelDisputesDao.removeStartExitOnchainTx(txn.meta.args.disputeId)
       await this.channelDisputesDao.changeStatus(disputeRow.id, 'CD_FAILED')
     }
   }

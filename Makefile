@@ -165,9 +165,10 @@ dashboard-prod: dashboard-node-modules $(shell find $(dashboard)/src $(dashboard
 	$(log_start)
 	$(docker_run_in_dashboard) "cp -f ops/prod.env .env"
 	$(docker_run_in_dashboard) "npm run build"
+	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
 	$(log_finish) && touch build/$@
 
-dashboard: dashboard-node-modules $(dashboard)/ops/dev.env
+dashboard: dashboard-node-modules $(dashboard)/ops/dev.env $(dashboard)/.env
 	$(log_start)
 	$(docker_run_in_dashboard) "cp -f ops/dev.env .env"
 	$(log_finish) && touch build/$@

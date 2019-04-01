@@ -368,7 +368,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     // in the query logic. only need to check against latest channel update
     const staleChannelDays = this.config.staleChannelDays
     if (!staleChannelDays) {
-      return null
+      return []
     }
 
     const { rows } = await this.db.query(SQL`
@@ -376,7 +376,8 @@ export class PostgresChannelsDao implements ChannelsDao {
       FROM cm_channels
       WHERE
         contract = ${this.config.channelManagerAddress} AND
-        last_updated_on < NOW() - (${staleChannelDays}::text || ' days')::INTERVAL
+        last_updated_on < NOW() - (${staleChannelDays}::text || ' days')::INTERVAL AND
+        status = 'CS_OPEN'
     `)
     return rows.map(r => this.inflateChannelRow(r))
   }

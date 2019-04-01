@@ -10,7 +10,6 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import Drawer from "@material-ui/core/Drawer";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
-import List from "@material-ui/core/List";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
@@ -19,14 +18,12 @@ import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 //import NotificationsIcon from "@material-ui/icons/Notifications";
-import { mainListItems } from "./listItems";
+import { SidebarLinks } from "./SidebarLinks";
 import { DepositsStyled } from "./Deposits";
 import { WithdrawalsStyled } from "./Withdrawals";
 import { UserInfoStyled } from "./UserInfo";
 import { GasCostCardStyled } from "./GasCostCard";
 import { CollateralCardStyled } from "./Collateralization";
-const ChannelManagerAbi = require("../abi/ChannelManager.json");
-const TokenAbi = require("../abi/Token.json");
 
 const drawerWidth = 240;
 
@@ -114,12 +111,9 @@ class Dashboard extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      hubUrl: this.props.hubUrl,
       open: false,
       channelManager: this.props.channelManager,
-      hubWallet: this.props.hubWallet,
-      loadingWallet: false,
-      loadingContract: false
+      hubWallet: this.props.hubWallet
     };
   }
 
@@ -136,10 +130,8 @@ class Dashboard extends React.Component {
   };
 
   render() {
-    const { web3, hubUrl, apiUrl, classes } = this.props;
+    const { web3, publicUrl, hubUrl, apiUrl, classes } = this.props;
     const {
-      loadingWallet,
-      loadingContract,
       open,
       channelManager,
       hubWallet
@@ -199,12 +191,12 @@ class Dashboard extends React.Component {
                 </IconButton>
               </div>
               <Divider />
-              <List>{mainListItems}</List>
+              <SidebarLinks publicUrl={publicUrl} />
             </Drawer>
             <div className={classes.routeWrapper}>
               <Route
                 exact
-                path="/"
+                path={`${publicUrl}/`}
                 render={props => (
                   <Home
                     getContractInfo={this.props.getContractInfo}
@@ -219,7 +211,7 @@ class Dashboard extends React.Component {
               />
               <Route
                 exact
-                path="/payments"
+                path={`${publicUrl}/payments`}
                 render={props => (
                   <PaymentInfoCardStyled
                     web3={web3}
@@ -230,14 +222,14 @@ class Dashboard extends React.Component {
               />
               <Route
                 exact
-                path="/deposits"
+                path={`${publicUrl}/deposits`}
                 render={props => (
                   <DepositsStyled web3={web3} hubUrl={hubUrl} apiUrl={apiUrl} />
                 )}
               />
               <Route
                 exact
-                path="/withdrawals"
+                path={`${publicUrl}/withdrawals`}
                 render={props => (
                   <WithdrawalsStyled
                     web3={web3}
@@ -248,14 +240,14 @@ class Dashboard extends React.Component {
               />
               <Route
                 exact
-                path="/users"
+                path={`${publicUrl}/users`}
                 render={props => (
                   <UserInfoStyled web3={web3} hubUrl={hubUrl} apiUrl={apiUrl} />
                 )}
               />
               <Route
                 exact
-                path="/gas"
+                path={`${publicUrl}/gas`}
                 render={props => (
                   <GasCostCardStyled
                     hubWallet={hubWallet}
@@ -268,7 +260,7 @@ class Dashboard extends React.Component {
               />
               <Route
                 exact
-                path="/collateral"
+                path={`${publicUrl}/collateral`}
                 render={props => (
                   <CollateralCardStyled
                     hubWallet={hubWallet}

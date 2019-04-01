@@ -3,6 +3,6 @@ export interface ChannelDisputeRow {
   channelId: number,
   startedOn: string,
   reason: string,
-  onchainTxIdStart: number,
-  onchainTxIdEmpty: number
+  onchainTxIdStart: number | null,
+  onchainTxIdEmpty: number | null
 }
