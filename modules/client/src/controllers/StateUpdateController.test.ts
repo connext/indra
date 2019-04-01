@@ -123,14 +123,20 @@ describe('StateUpdateController: invalidation handling', () => {
     const mockStore = new MockStore()
     mockStore.setChannel({
       pendingWithdrawalTokenUser: '100',
+      pendingDepositTokenUser: '100',
+      pendingWithdrawalWeiHub: '20',
       txCountGlobal: 2,
       txCountChain: 2,
       timeout: Math.floor(tc.timeout.valueOf() / 1000),
     })
 
-    mockStore.setLatestValidState({
-      txCountGlobal: 1,
-      txCountChain: 1,
+    mockStore.setLatestWithdrawal({
+      exchangeRate: '5',
+      seller: "user",
+      tokensToSell: "0",
+      weiToSell: "20",
+      targetTokenUser: "0",
+      recipient: mkAddress("0x222")
     })
 
     connext = new MockConnextInternal({
@@ -152,9 +158,9 @@ describe('StateUpdateController: invalidation handling', () => {
         reason: 'Invalidation',
         txCount: 3,
         args: {
-          previousValidTxCount: 1,
-          lastInvalidTxCount: 2,
+          previousValidTxCount: 2,
           reason: "CU_INVALID_TIMEOUT",
+          withdrawal: {}
         },
         sigHub: '0xsig-hub',
         createdOn: getDateFromMinutesAgo(0),
@@ -169,9 +175,9 @@ describe('StateUpdateController: invalidation handling', () => {
       connext.mockHub.assertReceivedUpdate({
         reason: 'Invalidation',
         args: {
-          previousValidTxCount: 1,
-          lastInvalidTxCount: 2,
+          previousValidTxCount: 2,
           reason: 'CU_INVALID_TIMEOUT',
+          withdrawal: connext.store.getState().persistent.latestWithdrawal
         },
         sigUser: true,
         sigHub: true,
