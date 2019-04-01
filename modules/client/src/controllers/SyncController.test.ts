@@ -169,8 +169,7 @@ describe('filterPendingSyncResults', () => {
         update: {
           reason: 'Invalidation',
           args: {
-            previousValidTxCount: 4,
-            lastInvalidTxCount: 5,
+            previousValidTxCount: 5,
           },
           sigUser: true,
           txCount: 6,
@@ -393,7 +392,7 @@ describe("SyncController: invalidation handling", () => {
     const mockStore = new MockStore()
     mockStore.setSyncControllerState([])
     mockStore.setChannel(prev)
-    mockStore.setLatestValidState(lastValid)
+    // mockStore.setLatestValidState(lastValid)
     mockStore.setChannelUpdate({
       reason: 'ProposePendingDeposit',
       txCount: 4,
@@ -476,8 +475,7 @@ describe("SyncController: invalidation handling", () => {
       connext.mockHub.assertReceivedUpdate({
         reason: "Invalidation",
         args: {
-          previousValidTxCount: lastValid.txCountGlobal,
-          lastInvalidTxCount: prev.txCountGlobal,
+          previousValidTxCount: prev.txCountGlobal,
           reason: "CU_INVALID_TIMEOUT",
         } as InvalidationArgs,
         sigUser: true,
