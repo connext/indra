@@ -477,8 +477,10 @@ export default class SyncController extends AbstractController {
       // If the state doesn't have a timeout, use the
       // update's timestamp - challenge period from store
       // as an approximate timeout window.
-      // the update passed in here will be from the latest valid state
-      timeout = Math.floor(+(new Date(updateTimestamp)) / 1000) - getUpdateRequestTimeout(this.store)
+      
+      // TODO: hub uses a default timer of 15 minutes on its txs
+      // use that here
+      timeout = Math.floor(+(new Date(updateTimestamp)) / 1000) + 1 * 60
     }
     let block = await this.findBlockNearestTimeout(timeout)
     if (block.timestamp < timeout)
