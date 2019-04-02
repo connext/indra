@@ -62,21 +62,11 @@ export interface PendingRequestedDeposit {
   requestedOn: number
   txCount: number | null
 }
-
-export const EMPTY_WITHDRAWAL_ARGS = {
-  exchangeRate: '1', // wei to token
-  seller: "user",
-  tokensToSell: '0',
-  weiToSell: '0',
-  recipient: '0x0',
-  additionalWeiHubToUser: '0',
-  additionalTokenHubToUser: '0',
-  targetTokenHub: '0',
-  targetTokenUser: '0',
-  targetWeiHub: '0',
-  targetWeiUser: '0',
-  timeout: 0,
+export interface LatestPendingUpdate {
+  withdrawal: WithdrawalArgs | null
+  txCount: number
 }
+
 
 export class PersistentState {
   channel: ChannelState = CHANNEL_ZERO_STATE
@@ -95,7 +85,10 @@ export class PersistentState {
     sigUser: '0x0',
   }
   
-  latestWithdrawal =  EMPTY_WITHDRAWAL_ARGS as WithdrawalArgs
+  latestPending: LatestPendingUpdate =  { 
+    withdrawal: null, 
+    txCount: 0 
+  }
   activeThreads: ThreadState[] = [] // all open and active threads at latest state
   activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
   // threadHistory is how the client will generate and track the 
