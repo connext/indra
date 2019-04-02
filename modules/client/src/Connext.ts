@@ -1072,12 +1072,8 @@ export class ConnextInternal extends ConnextClient {
     if (channelAndUpdate) {
       this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
       
-      // update the latest valid state
-      const latestValid = await this.hub.getLatestStateNoPendingOps()
-      console.log('latestValid:', latestValid)
-      if (latestValid) {
-        this.store.dispatch(actions.setLatestValidState(latestValid))
-      }
+      // any updates from the withdrawal will be set via the 
+      // channel and update reducer handlers
       // unconditionally update last thread update id, thread history
       const lastThreadUpdateId = await this.hub.getLastThreadUpdateId()
       console.log('lastThreadUpdateId:', lastThreadUpdateId)
