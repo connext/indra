@@ -531,12 +531,15 @@ export class MockStore {
     }
   }
 
-  public setLatestWithdrawal = (overrides: PartialVerboseOrSuccinctWithdrawalArgs = {}) => {
+  public setLatestPending = (invalidTxCount: number, overrides: PartialVerboseOrSuccinctWithdrawalArgs) => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        latestWithdrawal: getWithdrawalArgs("empty", overrides)
+        latestPending: {
+          txCount: invalidTxCount,
+          withdrawal: getWithdrawalArgs("empty", overrides)
+        }
       }
     }
   }
