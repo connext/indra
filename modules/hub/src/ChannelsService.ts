@@ -749,7 +749,10 @@ export default class ChannelsService {
             completeCallback: 'ChannelsService.invalidateUpdate',
             args: {
               user,
-              lastInvalidTxCount: redisUpdate.state.txCountGlobal
+              invalidTxCount: redisUpdate.state.txCountGlobal,
+              withdrawal: update.reason == "ProposePendingWithdrawal"
+                ? update.args
+                : null
             }
           }
         })
