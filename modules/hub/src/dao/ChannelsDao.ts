@@ -49,7 +49,7 @@ export default interface ChannelsDao {
   getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBigNum>
   getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
   getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
-  invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
+  invalidateUpdate(user: string, invalidationArgs: InvalidationArgs): Promise<void>
   getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
   getStaleChannels(): Promise<ChannelRowBigNum[]>
   addChainsawErrorId(user: Address, id: number): Promise<void>
@@ -347,13 +347,12 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  async invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void> {
+  async invalidateUpdate(user: string, invalidationArgs: InvalidationArgs): Promise<void> {
     await this.db.queryOne(SQL`
       UPDATE _cm_channel_updates
       SET invalid = ${invalidationArgs.reason}
       WHERE
-        tx_count_global > ${invalidationArgs.previousValidTxCount} AND
-        tx_count_global <= ${invalidationArgs.lastInvalidTxCount} AND
+        tx_count_global = ${invalidationArgs.invalidTxCount} AND
         "user" = ${user.toLowerCase()}
       RETURNING id
     `)
