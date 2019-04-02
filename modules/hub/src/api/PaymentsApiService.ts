@@ -23,9 +23,9 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
     'POST /redeem/:user': 'doRedeem',
     //'GET /booty-load-limit': 'doBootyLimit',
     //'GET /:token?': 'doByToken',
-    'GET /purchase/:id': 'doPurchaseById',
+    'POST /purchase/:id': 'doPurchaseById',
     //'GET /type/:type/:id': 'doById',
-    'GET /history/:address': 'doPaymentHistory',
+    'POST /history/:address': 'doPaymentHistory',
     //'GET /types/:type': 'doPaymentHistoryByType',
   }
   handler = PaymentsApiServiceHandler

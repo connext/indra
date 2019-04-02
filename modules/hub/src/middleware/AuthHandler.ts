@@ -76,13 +76,8 @@ export class DefaultAuthHandler implements AuthHandler {
   private defaultAcl() {
     this.acl.addRoute('/branding', Role.NONE)
       .addRoute('/auth/(.*)', Role.NONE)
-      .addRoute('/admin/(.*)', Role.NONE)
-      .addRoute('/assets/(.*)', Role.NONE)
       .addRoute('/config', Role.NONE)
       .addRoute('/exchangeRate/(.*)', Role.NONE)
       .addRoute('/gasPrice/(.*)', Role.NONE)
-      .addRoute('/globalSettings/(.*)', Role.ADMIN)
-      .addRoute('/log', Role.NONE)
-      .addRoute('/withdrawals/(.*)', Role.NONE)
   }
 }

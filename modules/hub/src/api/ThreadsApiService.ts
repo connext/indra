@@ -16,12 +16,12 @@ export default class ThreadsApiService extends ApiService<
   namespace = 'thread'
   routes = {
     'POST /:sender/to/:receiver/update': 'doUpdateThread',
-    'GET /:sender/to/:receiver': 'doGetThread',
-    'GET /:user/initial-states': 'doGetInitialStates',
-    'GET /:user/incoming': 'doGetThreadsIncoming',
-    'GET /:user/active': 'doGetThreadsActive',
-    'GET /:user/last-update-id': 'doGetLastUpdateId',
-    'GET /:user/all': 'doGetThreads'
+    'POST /:sender/to/:receiver': 'doGetThread',
+    'POST /:user/initial-states': 'doGetInitialStates',
+    'POST /:user/incoming': 'doGetThreadsIncoming',
+    'POST /:user/active': 'doGetThreadsActive',
+    'POST /:user/last-update-id': 'doGetLastUpdateId',
+    'POST /:user/all': 'doGetThreads'
   }
   handler = ThreadsApiServiceHandler
   dependencies = {

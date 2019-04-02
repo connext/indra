@@ -18,22 +18,22 @@ export default class AuthHeaderMiddleware {
   public middleware(req: express.Request, res: express.Response, next: () => void) {
     let token = parseAuthHeader(req)
 
+    if (req.headers.cookie) {
+      LOG.info('Cookie found, skipping.')
+      return next()
+    }
+
     if (!token && req.body && req.body.authToken) {
       token = req.body.authToken
-      LOG.debug('Found token in body')
+      LOG.info('Found auth token in body')
     }
 
     if (!token) {
-      LOG.debug('No token found, skipping.')
+      LOG.info('No token found, skipping.')
       return next()
     }
 
-    if (req.headers.cookie) {
-      LOG.debug('Cookie found, skipping.')
-      return next()
-    }
-
-    LOG.debug('Stuffing authorization header into cookies.')
+    LOG.debug('Stuffing auth header/body into cookies.')
     req.headers.cookie = `${this.cookieName}=s:${sign(token, this.cookieSecret)}`
     next()
   }

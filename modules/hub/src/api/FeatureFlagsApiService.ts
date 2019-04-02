@@ -8,7 +8,7 @@ const LOG = log('FeatureFlagsApiService')
 export default class FeatureFlagsApiService extends ApiService<FeatureFlagsApiHandler> {
   namespace = 'featureflags'
   routes = {
-    'GET /': 'doFeatureFlags',
+    'POST /': 'doFeatureFlags',
   }
   handler = FeatureFlagsApiHandler
   dependencies = {

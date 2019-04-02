@@ -24,10 +24,10 @@ export default class ChannelsApiService extends ApiService<
     'POST /:user/request-exchange': 'doRequestExchange',
     'POST /:user/request-withdrawal': 'doRequestWithdrawal',
     'POST /:user/sync': 'doSync', // params: lastChanTx=1&lastThreadUpdateId=2
-    'GET /:user/debug': 'doGetChannelDebug',
-    'GET /:user': 'doGetChannelByUser',
-    'GET /:user/latest-update': 'doGetLatestDoubleSignedState',
-    'GET /:user/latest-no-pending': 'doGetLastStateNoPendingOps',
+    'POST /:user/debug': 'doGetChannelDebug',
+    'POST /:user': 'doGetChannelByUser',
+    'POST /:user/latest-update': 'doGetLatestDoubleSignedState',
+    'POST /:user/latest-no-pending': 'doGetLastStateNoPendingOps',
   }
   handler = ChannelsApiServiceHandler
   dependencies = {
