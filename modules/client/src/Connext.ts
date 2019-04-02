@@ -107,6 +107,7 @@ export interface IHubAPIClient {
   redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
 }
 
+// TODO: if we get a 403 and this.authToken is not set, re-run the auth process
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
@@ -134,7 +135,7 @@ class HubAPIClient implements IHubAPIClient {
       origin,
       signature
     })
-    this.authToken = res.data.token
+    this.authToken = res.data.token // Keep this token in memory
     return res.data.token
   }
 
@@ -145,7 +146,7 @@ class HubAPIClient implements IHubAPIClient {
 
   async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
     try {
-      const res = await this.networking.get(`channel/${this.user}/latest-no-pending`)
+      const res = await this.networking.post(`channel/${this.user}/latest-no-pending`, { authToken: this.authToken })
       if (!res.data) {
         return null
       }
@@ -162,7 +163,7 @@ class HubAPIClient implements IHubAPIClient {
 
   async getLastThreadUpdateId(): Promise<number> {
     try {
-      const res = await this.networking.get(`thread/${this.user}/last-update-id`)
+      const res = await this.networking.post(`thread/${this.user}/last-update-id`, { authToken: this.authToken })
       if (!res.data) {
         return 0
       }
@@ -179,7 +180,7 @@ class HubAPIClient implements IHubAPIClient {
 
   async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
     try {
-      const res = await this.networking.get(`channel/${this.user}/latest-update`)
+      const res = await this.networking.post(`channel/${this.user}/latest-update`, { authToken: this.authToken })
       if (!res.data) {
         return null
       }
@@ -212,7 +213,7 @@ class HubAPIClient implements IHubAPIClient {
   async getChannelByUser(user: Address): Promise<ChannelRow> {
     // get the current channel state and return it
     try {
-      const res = await this.networking.get(`channel/${user}`)
+      const res = await this.networking.post(`channel/${user}`, { authToken: this.authToken })
       return res.data
     } catch (e) {
       if (e.statusCode === 404) {
@@ -232,8 +233,8 @@ class HubAPIClient implements IHubAPIClient {
   ): Promise<ChannelStateUpdate> {
     // get the channel state at specified nonce
     try {
-      const response = await this.networking.get(
-        `channel/${this.user}/update/${txCountGlobal}`
+      const response = await this.networking.post(
+        `channel/${this.user}/update/${txCountGlobal}`, { authToken: this.authToken }
       )
       return response.data
     } catch (e) {
@@ -245,8 +246,8 @@ class HubAPIClient implements IHubAPIClient {
 
   async getThreadInitialStates(): Promise<ThreadState[]> {
     // get the current channel state and return it
-    const response = await this.networking.get(
-      `thread/${this.user}/initial-states`,
+    const response = await this.networking.post(
+      `thread/${this.user}/initial-states`, { authToken: this.authToken }
     )
     if (!response.data) {
       return []
@@ -256,8 +257,8 @@ class HubAPIClient implements IHubAPIClient {
 
   async getActiveThreads(): Promise<ThreadState[]> {
     // get the current channel state and return it
-    const response = await this.networking.get(
-      `thread/${this.user}/active`,
+    const response = await this.networking.post(
+      `thread/${this.user}/active`, { authToken: this.authToken }
     )
     if (!response.data) {
       return []
@@ -267,8 +268,8 @@ class HubAPIClient implements IHubAPIClient {
 
   async getAllThreads(): Promise<ThreadState[]> {
     // get the current channel state and return it
-    const response = await this.networking.get(
-      `thread/${this.user}/all`,
+    const response = await this.networking.post(
+      `thread/${this.user}/all`, { authToken: this.authToken }
     )
     if (!response.data) {
       return []
@@ -278,8 +279,8 @@ class HubAPIClient implements IHubAPIClient {
 
   async getIncomingThreads(): Promise<ThreadRow[]> {
     // get the current channel state and return it
-    const response = await this.networking.get(
-      `thread/${this.user}/incoming`,
+    const response = await this.networking.post(
+      `thread/${this.user}/incoming`, { authToken: this.authToken }
     )
     if (!response.data) {
       return []
@@ -293,8 +294,8 @@ class HubAPIClient implements IHubAPIClient {
     userIsSender: boolean,
   ): Promise<ThreadRow> {
     // get receiver threads
-    const response = await this.networking.get(
-      `thread/${userIsSender ? this.user : partyB}/to/${userIsSender ? partyB : this.user}`,
+    const response = await this.networking.post(
+      `thread/${userIsSender ? this.user : partyB}/to/${userIsSender ? partyB : this.user}`, { authToken: this.authToken }
     )
     return response.data
   }
