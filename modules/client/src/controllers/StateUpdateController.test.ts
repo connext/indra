@@ -108,7 +108,7 @@ describe('StateUpdateController: invalidation handling', () => {
     },
 
     {
-      name: 'handle an invalidation on a state where there is a timeout',
+      name: 'handle an invalidation on a state where there is a 0 timeout',
       timeout: 0,
       blockTimestamp: getDateFromMinutesAgo(0),
     },
@@ -163,7 +163,7 @@ describe('StateUpdateController: invalidation handling', () => {
           withdrawal: {}
         },
         sigHub: '0xsig-hub',
-        createdOn: getDateFromMinutesAgo(0),
+        createdOn: getDateFromMinutesAgo(20),
       },
     })
 
