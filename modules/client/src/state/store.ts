@@ -55,6 +55,7 @@ export class RuntimeState {
   syncResultsFromHub: SyncResult[] = []
   updateRequestTimeout: number = 60 * 10 // default 10 min
   channelStatus: ChannelStatus = "CS_OPEN"
+  authToken: string = ''
 }
 
 export interface PendingRequestedDeposit {

@@ -56,6 +56,7 @@ export const dequeueSyncResultsFromHub = setterAction<SyncResult>('runtime.syncR
   return prev.filter((x: any) => x !== toRemove)
 })
 export const setChannelStatus = setterAction<ChannelStatus>('runtime.channelStatus')
+export const setAuthToken = setterAction<string>('runtime.authToken')
 
 // Persistent
 export const setLastThreadUpdateId = setterAction<number>('persistent.lastThreadUpdateId')

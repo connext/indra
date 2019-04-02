@@ -46,6 +46,8 @@ import ThreadsController from './controllers/ThreadsController';
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { RedeemController } from './controllers/RedeemController';
 
+console.log('Client updates activated! 1')
+
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
 
@@ -108,6 +110,7 @@ export interface IHubAPIClient {
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
+  private authToken?: string
 
   constructor(user: Address, networking: Networking, tokenName?: string) {
     this.user = user
@@ -131,6 +134,7 @@ class HubAPIClient implements IHubAPIClient {
       origin,
       signature
     })
+    this.authToken = res.data.token
     return res.data.token
   }
 
@@ -301,8 +305,9 @@ class HubAPIClient implements IHubAPIClient {
     lastThreadUpdateId: number
   ): Promise<Sync | null> {
     try {
-      const res = await this.networking.get(
+      const res = await this.networking.post(
         `channel/${this.user}/sync?lastChanTx=${txCountGlobal}&lastThreadUpdateId=${lastThreadUpdateId}`,
+        { authToken: this.authToken }
       )
       return res.data
     } catch (e) {
@@ -352,11 +357,11 @@ class HubAPIClient implements IHubAPIClient {
   }
 
   // post to hub telling user wants to deposit
-  requestDeposit = async (
+  async requestDeposit(
     deposit: SignedDepositRequestProposal,
     txCount: number,
     lastThreadUpdateId: number,
-  ): Promise<Sync> => {
+  ): Promise<Sync> {
     if (!deposit.sigUser) {
       throw new Error(`No signature detected on the deposit request. Deposit: ${deposit}, txCount: ${txCount}, lastThreadUpdateId: ${lastThreadUpdateId}`)
     }
@@ -374,10 +379,10 @@ class HubAPIClient implements IHubAPIClient {
   }
 
   // post to hub telling user wants to withdraw
-  requestWithdrawal = async (
+  async requestWithdrawal(
     withdrawal: WithdrawalParameters,
     txCountGlobal: number
-  ): Promise<Sync> => {
+  ): Promise<Sync> {
     const response = await this.networking.post(
       `channel/${this.user}/request-withdrawal`,
       { ...withdrawal, lastChanTx: txCountGlobal },
@@ -395,7 +400,7 @@ class HubAPIClient implements IHubAPIClient {
 
   // performer calls this when they wish to start a show
   // return the proposed deposit fro the hub which should then be verified and cosigned
-  requestCollateral = async (txCountGlobal: number): Promise<Sync> => {
+  async requestCollateral(txCountGlobal: number): Promise<Sync> {
     // post to hub
     const response = await this.networking.post(
       `channel/${this.user}/request-collateralization`,
@@ -407,10 +412,10 @@ class HubAPIClient implements IHubAPIClient {
   }
 
   // post to hub to batch verify state updates
-  updateHub = async (
+  async updateHub(
     updates: UpdateRequest[],
     lastThreadUpdateId: number,
-  ): Promise<{ error: string | null, updates: Sync }> => {
+  ): Promise<{ error: string | null, updates: Sync }> {
     // post to hub
     const response = await this.networking.post(
       `channel/${this.user}/update`,
@@ -421,6 +426,7 @@ class HubAPIClient implements IHubAPIClient {
     )
     return response.data
   }
+
 }
 
 export abstract class IWeb3TxWrapper {
@@ -1006,8 +1012,8 @@ export class ConnextInternal extends ConnextClient {
 
     // return to hub
     const auth = await this.hub.authResponse(nonce, this.opts.user, origin, signature)
-    const cookie = `hub.sid=${auth}`
-    document.cookie = cookie;
+    // document.cookie = `hub.sid=${auth}`; // keep for backwards compatibility??
+    this.store.dispatch(actions.setAuthToken(auth))
     return null
   }
 

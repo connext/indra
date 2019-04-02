@@ -30,7 +30,7 @@ export class Networking {
       }
     }
     opts.mode = 'cors'
-    opts.credentials = 'include'
+    // opts.credentials = 'include' // Don't need this if we aren't using cookies for auth
     res = await fetch(`${this.baseUrl}/${url}`, opts)
 
     if (res.status < 200 || res.status > 299) {
