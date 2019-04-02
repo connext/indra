@@ -238,7 +238,7 @@ export default class StateUpdateController extends AbstractController {
 
     const connextState = this.getState()
     const prevState: ChannelState = connextState.persistent.channel
-    const latestWithdrawal: WithdrawalArgs = connextState.persistent.latestWithdrawal
+    const latestPending = connextState.persistent.latestPending
 
     console.log('prevState:', prevState)
 
@@ -258,11 +258,14 @@ export default class StateUpdateController extends AbstractController {
       )
     }
 
-    // change the update args to our latest withdrawal if there is
-    // any withdrawal update
-    const hasWithdrawal = prevState.pendingWithdrawalTokenUser != '0' || prevState.pendingWithdrawalTokenUser != '0'
-    if (hasWithdrawal) {
-      update.args = { ...update.args, withdrawal: latestWithdrawal}
+    // change the update args to our latest pending information 
+    // if there is any invalidation
+    if (update.reason == "Invalidation") {
+      update.args = { 
+        ...update.args, 
+        withdrawal: latestPending.withdrawal ? latestPending.withdrawal : null, 
+        invalidTxCount: latestPending.txCount 
+      }
     }
 
     if (update.reason === 'EmptyChannel') {
@@ -500,18 +503,19 @@ export default class StateUpdateController extends AbstractController {
       // 2. The `didContractEmitUpdateEvent` will throw an error because it
       //    has not been tested with `timeout = 0` states.
 
-      if (update.args.previousValidTxCount != prev.txCountGlobal) {
-        throw new Error(
-          `Hub proposed invalidation for a state which isn't our latest. ` +
-          `Invalidation: ${JSON.stringify(update)} ` +
-          `Latest state: ${JSON.stringify(prev)}`
-        )
-      }
+      // TODO: should we leave this in for safety...?
+      // if (update.args.invalidTxCount != prev.txCountGlobal) {
+      //   throw new Error(
+      //     `Hub proposed invalidation for a state which isn't our latest. ` +
+      //     `Invalidation: ${JSON.stringify(update)} ` +
+      //     `Latest state: ${JSON.stringify(prev)}`
+      //   )
+      // }
 
       if (!hasPendingOps(prev)) {
         throw new Error(
-          `Hub proposed invalidation for a double signed state with no ` +
-          `pending fields. Invalidation: ${JSON.stringify(update)} ` +
+          `Hub proposed invalidation for a state with no pending fields. ` +
+          `Invalidation: ${JSON.stringify(update)} ` +
           `state: ${JSON.stringify(prev)}`
         )
       }
