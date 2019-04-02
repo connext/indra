@@ -512,7 +512,7 @@ describe('StateGenerator', () => {
       })
 
       // invalidate state
-      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR", previousValidTxCount: s2.txCountGlobal })
+      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR", invalidTxCount: s1.txCountGlobal })
       t.assertChannelStateEqual(invalid as any, {
         balanceToken: [0, 5],
         balanceWei: [2, 8],
@@ -557,7 +557,7 @@ describe('StateGenerator', () => {
       })
 
       // invalidate state
-      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR", previousValidTxCount: s2.txCountGlobal })
+      const invalid = sg.invalidation(convertChannelState("bn-unsigned",s2) as any, { reason: "CU_INVALID_ERROR", invalidTxCount: s1.txCountGlobal })
       t.assertChannelStateEqual(invalid as any, {
         balanceToken: [5, 0],
         balanceWei: [2, 8],
