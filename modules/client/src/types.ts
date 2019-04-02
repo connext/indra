@@ -393,7 +393,7 @@ export type InvalidationArgs<T=string> = {
   // information should be supplied so ownership
   // can be properly reverted (validators should ensure this)
   withdrawal?: WithdrawalArgs<T>
-  previousValidTxCount: number,
+  invalidTxCount: number,
   reason: InvalidationReason
   message?: string
 }
