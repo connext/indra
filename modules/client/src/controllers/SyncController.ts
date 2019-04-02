@@ -480,7 +480,7 @@ export default class SyncController extends AbstractController {
       
       // TODO: hub uses a default timer of 15 minutes on its txs
       // use that here
-      timeout = Math.floor(+(new Date(updateTimestamp)) / 1000) + 1 * 60
+      timeout = Math.floor(+(new Date(updateTimestamp)) / 1000) + 15 * 60
     }
     let block = await this.findBlockNearestTimeout(timeout)
     if (block.timestamp < timeout)
