@@ -454,11 +454,25 @@ export class Validator {
     // TODO: invalidating offchain state updates?
     // if the previous state has a timeout withdrawa;, there should be a withdrawal
     const { withdrawal } = args
-    const isWithdrawal = this.hasNonzero(prev, ["pendingWithdrawalWeiUser", "pendingWithdrawalTokenUser", "pendingWithdrawalWeiHub", "pendingWithdrawalTokenHub"]) != null
-    const prevTimedWithdrawal = prev.timeout != 0 && isWithdrawal
-    if (prevTimedWithdrawal && !withdrawal) {
-      return `Cannot invalidate states with timeouts without providing a valid withdrawal arguments parameter. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
-    }
+    const isTimedWithdrawal = this.hasNonzero(prev, ["pendingWithdrawalWeiUser", "pendingWithdrawalTokenUser", "pendingWithdrawalWeiHub", "pendingWithdrawalTokenHub"]) != null && prev.timeout != 0
+
+    let errs = [
+      isTimedWithdrawal && !withdrawal
+        ? `Cannot invalidate states containing timed withdrawals timeouts without providing a valid withdrawal arguments parameter. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}` 
+        : null,
+
+      isTimedWithdrawal && prev.txCountGlobal != args.invalidTxCount
+        ? `Cannot invalidate a timed withdrawal that has been built on top of. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}` 
+        : null,
+
+      args.invalidTxCount > prev.txCountGlobal 
+        ? `Cannot invalidate an update with a nonce higher than the channels. Prev: ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
+        : null,
+
+      !this.hasPendingOps(prev)
+        ? `Cannot invalidate a state without pending operations. Prev: ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
+        : null,
+    ]
 
     // TODO: assert here? not done so in other validators
     // assert signer on state
@@ -466,17 +480,15 @@ export class Validator {
       this.assertChannelSigner(convertChannelState("str", prev), "user")
       this.assertChannelSigner(convertChannelState("str", prev), "hub")
     } catch (e) {
-      return `Invalid signer detected on channel state. ${e.message}. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
-    }
-    
-    // if the previous state has a timeout, you should only
-    // be invalidating the next state
-    if (prev.timeout != 0 && args.previousValidTxCount != prev.txCountGlobal) {
-      return `Cannot invalidate states with timeouts that have been built on top of. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
+      errs.push(`Invalid signer detected on channel state. ${e.message}. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`)
     }
 
     // safe not to validate the target balances if the
     // signature on the previous state exists
+    errs = errs.filter(x => !!x)
+    if (errs.length > 0) {
+      return errs[0]
+    }
 
     return null
   }

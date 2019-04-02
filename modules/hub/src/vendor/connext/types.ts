@@ -392,8 +392,8 @@ export type InvalidationArgs<T=string> = {
   // operating channel balance, the onchain exchange
   // information should be supplied so ownership
   // can be properly reverted (validators should ensure this)
-  withdrawal?: WithdrawalArgs<T>
-  previousValidTxCount: number,
+  withdrawal: WithdrawalArgs<T> | null
+  invalidTxCount: number,
   reason: InvalidationReason
   message?: string
 }
