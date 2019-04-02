@@ -169,7 +169,7 @@ describe('filterPendingSyncResults', () => {
         update: {
           reason: 'Invalidation',
           args: {
-            previousValidTxCount: 5,
+            invalidTxCount: 5,
           },
           sigUser: true,
           txCount: 6,
@@ -471,11 +471,14 @@ describe("SyncController: invalidation handling", () => {
     await connext.start()
     await new Promise(res => setTimeout(res, 20))
 
+    const latestPending = connext.store.getState().persistent.latestPending
+
     if (test.invalidates) {
       connext.mockHub.assertReceivedUpdate({
         reason: "Invalidation",
         args: {
-          previousValidTxCount: prev.txCountGlobal,
+          invalidTxCount: latestPending.txCount,
+          withdrawal: latestPending.withdrawal,
           reason: "CU_INVALID_TIMEOUT",
         } as InvalidationArgs,
         sigUser: true,
