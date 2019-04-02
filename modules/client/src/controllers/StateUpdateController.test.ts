@@ -130,7 +130,7 @@ describe('StateUpdateController: invalidation handling', () => {
       timeout: Math.floor(tc.timeout.valueOf() / 1000),
     })
 
-    mockStore.setLatestWithdrawal({
+    mockStore.setLatestPending(2, {
       exchangeRate: '5',
       seller: "user",
       tokensToSell: "0",
@@ -177,7 +177,7 @@ describe('StateUpdateController: invalidation handling', () => {
         args: {
           previousValidTxCount: 2,
           reason: 'CU_INVALID_TIMEOUT',
-          withdrawal: connext.store.getState().persistent.latestWithdrawal
+          withdrawal: connext.store.getState().persistent.latestPending.withdrawal
         },
         sigUser: true,
         sigHub: true,
