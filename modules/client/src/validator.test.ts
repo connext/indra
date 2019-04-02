@@ -661,6 +661,7 @@ describe('validator', () => {
     const args: InvalidationArgs = {
       invalidTxCount: prev.txCountGlobal,
       reason: "CU_INVALID_ERROR",
+      withdrawal: null,
     }
 
     validator = new Validator(web3, hubAddress)
