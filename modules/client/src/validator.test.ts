@@ -652,60 +652,70 @@ describe('validator', () => {
     })
   })
 
-  describe('invalidation', () => {
-    beforeEach(() => {
-      validator = new Validator(web3, hubAddress)
-    })
+  describe('validator.invalidation', () => {
 
     const prev = createPreviousChannelState({
-      txCount: [1, 1]
+      txCount: [1, 1],
     })
 
     const args: InvalidationArgs = {
-      previousValidTxCount: prev.txCountGlobal,
+      invalidTxCount: prev.txCountGlobal,
       reason: "CU_INVALID_ERROR",
     }
 
+    validator = new Validator(web3, hubAddress)
+
     const invalidationCases = [
       {
-        name: 'should work',
-        prev,
+        name: 'validator.invalidator should work',
+        prev: { ...prev, pendingDepositTokenUser: toBN(10) },
         args,
-        valid: true
-      },
-      {
-        name: 'should return string if previous state nonce and nonce in args do not match',
-        prev: { ...prev, txCountGlobal: 5 },
-        args: { ...args, previousValidTxCount: 3, },
-        valid: false
-      },
-      {
-        name: 'should return string if previous state is missing sigHub',
-        prev: { ...prev, sigHub: '' },
-        args,
-        valid: false
-      },
-      {
-        name: 'should return string if previous state is missing sigUser',
-        prev: { ...prev, sigUser: '' },
-        args,
-        valid: false
+        valid: null
       },
       {
         name: 'should return string if previous state has timeout and there are not withdrawal args given',
-        prev: { ...prev, timeout: 6969, },
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1) },
         args,
-        valid: false
+        valid: /Cannot invalidate states containing timed withdrawals timeouts without providing a valid withdrawal arguments parameter/
       },
+      {
+        name: 'should return string if previous state has timed wd and the last invalid count is not the count on the channel',
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1), txCountGlobal: 3 },
+        args: { ...args, invalidTxCount: 2, withdrawal: t.getWithdrawalArgs("empty") },
+        valid: /Cannot invalidate a timed withdrawal that has been built on top of/
+      },
+      {
+        name: 'should return string if previous state nonce is lower than nonce in args',
+        prev: { ...prev, txCountGlobal: 3 },
+        args: { ...args, invalidTxCount: 5, },
+        valid: /Cannot invalidate an update with a nonce higher than the channels/
+      },
+      {
+        name: 'should return string if previous state is missing sigHub',
+        prev: { ...prev, sigHub: '', pendingDepositTokenHub: toBN(1) },
+        args,
+        valid: /Invalid signer detected on channel state/
+      },
+      {
+        name: 'should return string if previous state is missing sigUser',
+        prev: { ...prev, sigUser: '', pendingDepositTokenHub: toBN(1) },
+        args,
+        valid: /Invalid signer detected on channel state/
+      },
+      
+      
     ]
 
     invalidationCases.forEach(({ name, prev, args, valid }) => {
       it(name, () => {
+        validator.assertChannelSigner = (state: any, signer: any) => {}
         if (valid) {
-          validator.assertChannelSigner = (state: any, signer: any) => {}
-          assert.isNull(validator.invalidation(prev, args))
+          if (valid.toString().includes("Invalid signer")) {
+            validator.assertChannelSigner = (state, signer) => { throw new Error("Invalid signer detected on channel state") }
+          }
+          assert.match(validator.invalidation(prev, args) as any, valid as any)
         } else {
-          assert.exists(validator.invalidation(prev, args))
+          assert.isNull(validator.invalidation(prev, args))
         }
       })
     })
