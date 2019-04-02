@@ -110,6 +110,7 @@ export class ApiServer {
     this.app.use(corsHandler)
 
     this.app.use(cookie())
+    this.app.use(express.json())
     this.app.use(
       new AuthHeaderMiddleware(COOKIE_NAME, this.config.sessionSecret)
         .middleware,
@@ -138,7 +139,6 @@ export class ApiServer {
     // reads and exhausts the body, so we can't go after that one.
     this.app.use(bodyTextMiddleware({ maxSize: 1024 * 1024 * 10 }))
 
-    this.app.use(express.json())
     this.app.use(express.urlencoded())
 
     this.app.use(this.authenticateRoutes.bind(this))
@@ -152,9 +152,7 @@ export class ApiServer {
   public async start() {
     return new Promise(resolve =>
       this.app.listen(this.config.port, () => {
-        LOG.info('Listening on port {port}.', {
-          port: this.config.port,
-        })
+        LOG.info(`Listening on port ${this.config.port}.`)
         resolve()
       }),
     )
@@ -162,9 +160,7 @@ export class ApiServer {
 
   private setupRoutes() {
     this.apiServices.forEach(s => {
-      LOG.info(`Setting up API service at /{namespace}.`, {
-        namespace: s.namespace,
-      })
+      LOG.info(`Setting up API service at /${s.namespace}`)
       this.app.use(`/${s.namespace}`, s.getRouter())
     })
   }
@@ -176,7 +172,7 @@ export class ApiServer {
   ) {
     const roles = await this.authHandler.rolesFor(req)
     req.session!.roles = new Set(roles)
-    const allowed = true // await this.authHandler.isAuthorized(req)
+    const allowed = await this.authHandler.isAuthorized(req)
 
     if (!allowed) {
       return res.sendStatus(403)

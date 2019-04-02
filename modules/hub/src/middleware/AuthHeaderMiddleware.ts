@@ -7,7 +7,6 @@ const LOG = log('AuthHeaderMiddleware')
 
 export default class AuthHeaderMiddleware {
   private cookieName: string
-
   private cookieSecret: string
 
   constructor(cookieName: string, cookieSecret: string) {
@@ -17,7 +16,12 @@ export default class AuthHeaderMiddleware {
   }
 
   public middleware(req: express.Request, res: express.Response, next: () => void) {
-    const token = parseAuthHeader(req)
+    let token = parseAuthHeader(req)
+
+    if (!token && req.body && req.body.authToken) {
+      token = req.body.authToken
+      LOG.debug('Found token in body')
+    }
 
     if (!token) {
       LOG.debug('No token found, skipping.')

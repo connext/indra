@@ -78,10 +78,11 @@ export class DefaultAuthHandler implements AuthHandler {
       .addRoute('/auth/(.*)', Role.NONE)
       .addRoute('/admin/(.*)', Role.NONE)
       .addRoute('/assets/(.*)', Role.NONE)
-      .addRoute('/withdrawals/(.*)', Role.NONE)
-      .addRoute('/log', Role.NONE)
-      .addRoute('/globalSettings/(.*)', Role.ADMIN)
+      .addRoute('/config', Role.NONE)
       .addRoute('/exchangeRate/(.*)', Role.NONE)
       .addRoute('/gasPrice/(.*)', Role.NONE)
+      .addRoute('/globalSettings/(.*)', Role.ADMIN)
+      .addRoute('/log', Role.NONE)
+      .addRoute('/withdrawals/(.*)', Role.NONE)
   }
 }
