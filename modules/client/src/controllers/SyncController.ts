@@ -311,7 +311,7 @@ export function filterPendingSyncResults(fromHub: SyncResult[], toHub: SyncResul
 
     if (u.type == 'channel' && u.update.reason == 'Invalidation') {
       const args: InvalidationArgs = u.update.args as InvalidationArgs
-      existing[`tx:${args.previousValidTxCount}`] = {
+      existing[`tx:${args.invalidTxCount}`] = {
         sigHub: true,
         sigUser: true,
       }
@@ -778,18 +778,12 @@ export default class SyncController extends AbstractController {
 
     // if you are invalidating a withdrawal, retrieve the last withdrawal
     // requested from the store
-    const { latestWithdrawal, channelUpdate } = this.getState().persistent
-    const isTimedWithdrawal = (
-      updateToInvalidate.reason == "ProposePendingWithdrawal" &&
-      channel.timeout != 0 &&
-      // make sure timeout didnt come from offchain exchange
-      channelUpdate.reason != "Exchange"
-    )
+    const { latestPending } = this.getState().persistent
 
     const chan = this.getState().persistent.channel
     const args: InvalidationArgs = {
-      previousValidTxCount: chan.txCountGlobal,
-      withdrawal: isTimedWithdrawal ? latestWithdrawal : undefined,
+      withdrawal: latestPending.withdrawal,
+      invalidTxCount: latestPending.txCount,
       reason,
       message,
     }
