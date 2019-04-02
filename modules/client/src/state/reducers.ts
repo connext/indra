@@ -1,6 +1,6 @@
 import { isFunction } from '../lib/utils'
 import {ConnextState} from './store'
-import {reducerWithInitialState, ReducerBuilder} from 'typescript-fsa-reducers/dist'
+import { reducerWithInitialState } from 'typescript-fsa-reducers/dist'
 import * as actions from './actions'
 import { UpdateRequest, ChannelState, WithdrawalArgs } from '@src/types';
 
@@ -19,14 +19,15 @@ export function handleChannelChange(state: ConnextState, channel: ChannelState, 
     update = state.persistent.channelUpdate
   }
 
+  // set the state to be invalidated nonce
+  let latestPending = state.persistent.latestPending
+  if (update.reason.startsWith("ProposePending") && update.txCount) {
+    latestPending.txCount = update.txCount
+  }
+
+  // set latest timed withdrawal
   if (update.reason == "ProposePendingWithdrawal" && (update.args as WithdrawalArgs).timeout != 0) {
-    state = {
-      ...state,
-      persistent: {
-        ...state.persistent,
-        latestWithdrawal: update.args as WithdrawalArgs
-      }
-    }
+    latestPending.withdrawal = update.args as WithdrawalArgs
   }
 
   return {
@@ -35,6 +36,7 @@ export function handleChannelChange(state: ConnextState, channel: ChannelState, 
       ...state.persistent,
       channel: channel,
       channelUpdate: update,
+      latestPending,
     },
   }
 }
