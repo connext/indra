@@ -7,12 +7,18 @@ console.log(`Starting dashboard in env: ${JSON.stringify(process.env,null,2)}`)
 
 const urlPrefix = process.env.REACT_APP_PUBLIC_URL || `/dashboard`
 const publicUrl = `${window.location.origin}${urlPrefix}`
-const apiUrl = process.env.REACT_APP_API_URL || `${publicUrl}/api/dashboard`
-const hubUrl = process.env.REACT_APP_HUB_URL || `${publicUrl}/api/hub`
-const ethUrl = process.env.REACT_APP_ETH_URL || `${publicUrl}/api/eth`
+const urls = {
+  prefix: urlPrefix,
+  public: publicUrl,
+  api: process.env.REACT_APP_API_URL || `${publicUrl}/api/dashboard`,
+  hub: process.env.REACT_APP_HUB_URL || `${publicUrl}/api/hub`,
+  eth: process.env.REACT_APP_ETH_URL || `${publicUrl}/api/eth`
+}
+
+console.log(`Using URLs: ${JSON.stringify(urls,null,2)}`)
 
 ReactDOM.render(
-  <Index publicUrl={urlPrefix} ethUrl={ethUrl} hubUrl={hubUrl} apiUrl={apiUrl}/>,
+  <Index urls={urls}/>,
   document.getElementById('root')
 );
 

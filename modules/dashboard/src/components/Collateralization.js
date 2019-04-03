@@ -6,12 +6,12 @@ import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
-import get from "../get";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
+import axios from "axios";
 
 const styles = theme => ({
   card: {
@@ -41,25 +41,28 @@ class CollateralCard extends Component {
   }
 
   getRatio = async () => {
-    const { ratio } = await get(`collateralization/ratio`);
-    if (ratio) {
-      this.setState({ collateralRatio: ratio });
+    const url = `${this.props.urls.api}/collateralization/ratio`
+    const res = (await axios.get(url)).data || null
+    if (res && res.ratio) {
+      this.setState({ collateralRatio: res.ratio });
     }
   };
 
   getInactive = async () => {
-    const inactiveChannels = await get(`channels/inactive`);
-    if (inactiveChannels) {
+    const url = `${this.props.urls.api}/channels/inactive`
+    const res = (await axios.get(url)).data || null
+    if (res) {
       // handle case where hub returns a
-      this.setState({ inactiveChannels, });
+      this.setState({ inactiveChannels: res, });
     }
     console.log(`inactive channels: ${JSON.stringify(this.state.inactiveChannels)}`)
   };
 
   getOvercollateralized = async () => {
-    const overCollateralized = await get(`collateralization/overcollateralized`);
-    if (overCollateralized) {
-      this.setState({ overCollateralized });
+    const url = `${this.props.urls.api}/collateralization/overcollateralized`
+    const res = (await axios.get(url)).data || null
+    if (res) {
+      this.setState({ overCollateralized: res });
     }
   };
 

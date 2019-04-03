@@ -5,7 +5,6 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import get from "../get";
 import { VictoryChart, VictoryLine, VictoryLabel, VictoryAxis } from "victory";
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -13,7 +12,7 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Button from "@material-ui/core/Button";
-
+import axios from "axios";
 
 const styles = theme => ({
   card: {
@@ -49,8 +48,8 @@ class Deposits extends Component {
 
   setAverage = async () => {
     const { web3 } = this.props;
-
-    const res = await get(`deposits/average`);
+    const url = `${this.props.urls.api}/deposits/average`
+    const res = (await axios.get(url)).data || null
     if (res && res.avg_deposit_wei && res.avg_deposit_token) {
       let tokenDeposit = String(Math.trunc(res.avg_deposit_token))
       let weiDeposit = String(Math.trunc(res.avg_deposit_wei))
@@ -71,7 +70,8 @@ class Deposits extends Component {
   };
 
   setTotal = async () => {
-    const res = await get(`deposits/total`);
+    const url = `${this.props.urls.api}/deposits/total`
+    const res = (await axios.get(url)).data || null
     if (res && res.count) {
       this.setState({ depositTotal: res.count });
     } else {
@@ -80,7 +80,8 @@ class Deposits extends Component {
   };
 
   setFrequency = async() =>{
-    const res = get(`deposits/frequency`);
+    const url = `${this.props.urls.api}/deposits/frequency`
+    const res = (await axios.get(url)).data || null
     if (res.data){
       this.setState({freqArray: res.data})
     }

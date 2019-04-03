@@ -18,7 +18,7 @@ class Index extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      web3: new Web3(this.props.ethUrl),
+      web3: new Web3(this.props.urls.eth),
       channelManager: {
         address: "0x0",
         wei: {
@@ -51,7 +51,7 @@ class Index extends React.Component {
   }
 
   async getHubConfig() {
-    const config = await (await fetch(`${this.props.hubUrl}/config`)).json();
+    const config = await (await fetch(`${this.props.urls.hub}/config`)).json();
     console.log(`Got hub config: ${JSON.stringify(config, null, 2)}`);
     this.setState(state => {
       state.tokenAddress = config.tokenAddress.toLowerCase();
@@ -123,9 +123,7 @@ class Index extends React.Component {
           hubWallet={hubWallet}
           channelManager={channelManager}
           web3={web3}
-          publicUrl={this.props.publicUrl}
-          hubUrl={this.props.hubUrl}
-          apiUrl={this.props.apiUrl}
+          urls={this.props.urls}
           getContractInfo={this.getContractInfo}
           getWalletInfo={this.getWalletInfo}
         />

@@ -130,7 +130,7 @@ class Dashboard extends React.Component {
   };
 
   render() {
-    const { web3, publicUrl, hubUrl, apiUrl, classes } = this.props;
+    const { web3, urls, classes } = this.props;
     const {
       open,
       channelManager,
@@ -191,12 +191,12 @@ class Dashboard extends React.Component {
                 </IconButton>
               </div>
               <Divider />
-              <SidebarLinks publicUrl={publicUrl} />
+              <SidebarLinks urls={urls} />
             </Drawer>
             <div className={classes.routeWrapper}>
               <Route
                 exact
-                path={`${publicUrl}/`}
+                path={`${urls.prefix}/`}
                 render={props => (
                   <Home
                     getContractInfo={this.props.getContractInfo}
@@ -204,70 +204,71 @@ class Dashboard extends React.Component {
                     hubWallet={hubWallet}
                     channelManager={channelManager}
                     web3={web3}
-                    hubUrl={hubUrl}
-                    apiUrl={apiUrl}
+                    urls={urls}
                   />
                 )}
               />
               <Route
                 exact
-                path={`${publicUrl}/payments`}
+                path={`${urls.prefix}/payments`}
                 render={props => (
                   <PaymentInfoCardStyled
                     web3={web3}
-                    hubUrl={hubUrl}
-                    apiUrl={apiUrl}
+                    urls={urls}
                   />
                 )}
               />
               <Route
                 exact
-                path={`${publicUrl}/deposits`}
+                path={`${urls.prefix}/deposits`}
                 render={props => (
-                  <DepositsStyled web3={web3} hubUrl={hubUrl} apiUrl={apiUrl} />
+                  <DepositsStyled
+                    web3={web3}
+                    urls={urls}
+                  />
                 )}
               />
               <Route
                 exact
-                path={`${publicUrl}/withdrawals`}
+                path={`${urls.prefix}/withdrawals`}
                 render={props => (
                   <WithdrawalsStyled
                     web3={web3}
-                    hubUrl={hubUrl}
-                    apiUrl={apiUrl}
+                    urls={urls}
                   />
                 )}
               />
               <Route
                 exact
-                path={`${publicUrl}/users`}
+                path={`${urls.prefix}/users`}
                 render={props => (
-                  <UserInfoStyled web3={web3} hubUrl={hubUrl} apiUrl={apiUrl} />
+                  <UserInfoStyled
+                    web3={web3}
+                    urls={urls}
+                  />
                 )}
               />
               <Route
                 exact
-                path={`${publicUrl}/gas`}
+                path={`${urls.prefix}/gas`}
                 render={props => (
                   <GasCostCardStyled
                     hubWallet={hubWallet}
                     channelManager={channelManager}
                     web3={web3}
-                    hubUrl={hubUrl}
-                    apiUrl={apiUrl}
+                    urls={urls}
                   />
                 )}
               />
               <Route
                 exact
-                path={`${publicUrl}/collateral`}
+                path={`${urls.prefix}/collateral`}
                 render={props => (
                   <CollateralCardStyled
                     hubWallet={hubWallet}
                     channelManager={channelManager}
                     web3={web3}
-                    hubUrl={hubUrl}
-                    apiUrl={apiUrl}
+                    urls={urls}
                   />
                 )}
               />

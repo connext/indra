@@ -24,8 +24,9 @@ const sendAndLog = (req, res, data) => {
 // if theres only one item, and you dont want to use a list
 async function sendResFromQuery(sqlStr, req, res, singleRowAsObj = true) {
   const { rows, rowCount } = await query(`${sqlStr}`);
-  console.log('returns:', rowCount == 1 && singleRowAsObj ? rows[0] : rows)
-  sendAndLog(req, res, rowCount == 1 && singleRowAsObj ? rows[0] : rows);
+  const toSend = rowCount == 1 && singleRowAsObj ? rows[0] : rows
+  console.log('returns:', toSend)
+  sendAndLog(req, res, toSend);
 }
 
 /***************************************
@@ -436,7 +437,8 @@ app.get("/withdrawals/frequency", async function(req, res) {
         LIMIT 7
     `,
     req,
-    res
+    res,
+    false
   );
 });
 
