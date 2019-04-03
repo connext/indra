@@ -42,11 +42,11 @@ export class CloseChannelService {
   }
 
   async pollOnce() {
-    try {
-      this.disputeStaleChannels()
-    } catch (e) {
-      LOG.error('Disputing stale channels failed {e}', { e })
-    }
+    // try {
+    //   this.disputeStaleChannels()
+    // } catch (e) {
+    //   LOG.error('Disputing stale channels failed {e}', { e })
+    // }
 
     try {
       this.emptyDisputedChannels()
