@@ -10,9 +10,9 @@ const publicUrl = `${window.location.origin}${urlPrefix}`
 const urls = {
   prefix: urlPrefix,
   public: publicUrl,
-  api: process.env.REACT_APP_API_URL || `${publicUrl}/api/dashboard`,
-  hub: process.env.REACT_APP_HUB_URL || `${publicUrl}/api/hub`,
-  eth: process.env.REACT_APP_ETH_URL || `${publicUrl}/api/eth`
+  api: process.env.REACT_APP_API_URL || `/api/dashboard`,
+  hub: process.env.REACT_APP_HUB_URL || `/api/hub`,
+  eth: process.env.REACT_APP_ETH_URL || `/api/eth`
 }
 
 console.log(`Using URLs: ${JSON.stringify(urls,null,2)}`)
