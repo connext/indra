@@ -95,7 +95,7 @@ class Withdrawals extends Component {
 
     const maxCount = this.state.freqArray.reduce(
       (acc, cur) => cur.count > acc ? cur.count : acc,
-      0
+      1
     )
     console.log(`Max count: ${maxCount}`)
     console.log(`Plotting data: ${JSON.stringify(this.state.freqArray)}`)
