@@ -9,7 +9,6 @@ import {
   createWalletFromMnemonic
 } from "./walletGen";
 import { createStore } from "redux";
-import axios from "axios";
 import DepositCard from "./components/depositCard";
 import SwapCard from "./components/swapCard";
 import PayCard from "./components/payCard";
@@ -33,20 +32,18 @@ const eth = require("ethers");
 const tokenAbi = require("./abi/humanToken.json");
 require("dotenv").config();
 
-console.log(`starting app in env: ${JSON.stringify(process.env, null, 1)}`);
-const hubUrl = process.env.REACT_APP_HUB_URL.toLowerCase();
-//const providerUrl = process.env.REACT_APP_ETHPROVIDER_URL.toLowerCase()
-
-const HASH_PREAMBLE = "SpankWallet authentication message:";
 const DEPOSIT_MINIMUM_WEI = eth.utils.parseEther("0.04"); // 40FIN
 
-const opts = {
-  headers: {
-    "Content-Type": "application/json; charset=utf-8",
-    Authorization: "Bearer foo"
-  },
-  withCredentials: true
+const overrides = {
+  localHub: process.env.REACT_APP_LOCAL_HUB_OVERRIDE,
+  localEth: process.env.REACT_APP_LOCAL_ETH_OVERRIDE,
+  rinkebyHub: process.env.REACT_APP_RINKEBY_HUB_OVERRIDE,
+  rinkebyEth: process.env.REACT_APP_RINKEBY_ETH_OVERRIDE,
+  mainnetHub: process.env.REACT_APP_MAINNET_HUB_OVERRIDE,
+  mainnetEth: process.env.REACT_APP_MAINNET_ETH_OVERRIDE
 };
+
+let publicUrl
 
 export const store = createStore(setWallet, null);
 
@@ -109,16 +106,12 @@ class App extends Component {
   }
 
   async componentDidMount() {
-    await this.setWindowWeb3();
+    await this.setWeb3();
     // If a browser address exists, instantiate connext
     if (this.state.delegateSigner) {
       await this.setConnext();
       await this.checkNetIds();
-      await this.authorizeHandler();
       await this.setTokenContract();
-      await this.setHubDetails();
-      await this.setChannelManagerDetails();
-      await this.setMetamaskDetails();
       await this.pollConnextState();
       await this.poller();
 
@@ -126,44 +119,63 @@ class App extends Component {
     } else {
       this.setState({ modalOpen: true });
     }
+
+    publicUrl = window.location.origin.toLowerCase();
   }
 
   // ************************************************* //
   //                State setters                      //
   // ************************************************* //    
 
-  async setWindowWeb3() {
+  // either LOCALHOST MAINNET or RINKEBY
+  async setWeb3(rpc) {    
+    const rpcUrl = overrides.localEth || `${publicUrl}/api/local/eth`;
+    const hubUrl = overrides.localHub || `${publicUrl}/api/local/hub`;
+
     // Ask permission to view accounts
+    let windowId;
     if (window.ethereum) {
       window.web3 = new Web3(window.ethereum);
-      try {
-        // Request account access if needed
-        await window.ethereum.enable();
-      } catch (error) {
-        console.error(error)
-      }
+      windowId = await window.web3.eth.net.getId();
     }
-    const windowProvider = window.web3;
-    if (!windowProvider) {
-      alert("Metamask is not detected.");
+
+    const providerOpts = new ProviderOptions(store, rpcUrl, hubUrl).approving();
+    const provider = clientProvider(providerOpts);
+    const customWeb3 = new Web3(provider);
+    const customId = await customWeb3.eth.net.getId();
+    // NOTE: token/contract/hubWallet ddresses are set to state while initializing connext
+    this.setState({ customWeb3, hubUrl, rpcUrl });
+    if (windowId && windowId !== customId) {
+      alert(
+        `Your card is set to ${JSON.stringify(
+          rpc
+        )}. To avoid losing funds, please make sure your metamask and card are using the same network.`
+      );
     }
-    const web3 = new Web3(windowProvider.currentProvider);
-    // make sure you are on localhost
-    this.setState({web3})
     return;
   }
 
+  async setTokenContract() {
+    try {
+      let { customWeb3, tokenAddress } = this.state;
+      const tokenContract = new customWeb3.eth.Contract(tokenAbi, tokenAddress);
+      this.setState({ tokenContract });
+    } catch (e) {
+      console.log("Error setting token contract");
+      console.log(e);
+    }
+  }
+
   async setConnext() {
-    // const { hubWallet, channelManager, tokenContract, address } = this.state;
-    const { address } = this.state;
-    const providerOpts = new ProviderOptions(store).approving();
-    const provider = clientProvider(providerOpts);
-    const customWeb3 = new Web3(provider);
+    const { address, customWeb3, hubUrl } = this.state;
+
     const opts = {
       web3: customWeb3,
-      hubUrl: hubUrl, //http://localhost/hub,
-      user: address
+      hubUrl, // in dev-mode: http://localhost:8080,
+      user: address,
+      origin: "localhost" // TODO: what should this be
     };
+
     // *** Instantiate the connext client ***
     const connext = await getConnextClient(opts);
     console.log(`Successfully set up connext! Connext config:`);
@@ -171,10 +183,8 @@ class App extends Component {
     console.log(`  - hubAddress: ${connext.opts.hubAddress}`);
     console.log(`  - contractAddress: ${connext.opts.contractAddress}`);
     console.log(`  - ethNetworkId: ${connext.opts.ethNetworkId}`);
-
     this.setState({
       connext,
-      customWeb3,
       tokenAddress: connext.opts.tokenAddress,
       channelManagerAddress: connext.opts.contractAddress,
       hubWalletAddress: connext.opts.hubAddress,
@@ -183,74 +193,17 @@ class App extends Component {
   }
 
   async checkNetIds() {
-    const { web3, connext, customWeb3 } = this.state
+    const { connext, customWeb3 } = this.state
     const walletNetId = String(await customWeb3.eth.net.getId())
-    const metamaskNetId = String(await web3.eth.net.getId())
-    if (walletNetId !== metamaskNetId || walletNetId !== connext.opts.ethNetworkId) {
+    console.log('connext.opts: ', connext.opts);
+    if (walletNetId !== connext.opts.ethNetworkId) {
       alert(`
         WARNING: network id mismatch.\n
-        Metamask network: ${metamaskNetId}\n
         Wallet network: ${walletNetId}\n
         Hub network: ${connext.opts.ethNetworkId}
       `);
     } else {
       console.log(`All providers are using network ${walletNetId}`)
-    }
-  }
-
-  async setTokenContract() {
-    try {
-      let { web3, connext, tokenContract } = this.state;
-      tokenContract = new web3.eth.Contract(tokenAbi, connext.opts.tokenAddress);
-      this.setState({ tokenContract });
-      console.log(`Done setting up token contract at ${tokenContract._address}`)
-    } catch (e) {
-      console.log("Error setting token contract")
-      console.log(e)
-    }
-  }
-
-  async setHubDetails() {
-    try {
-      let {connext, web3, hubWallet, tokenContract} = this.state;
-      hubWallet.address = connext.opts.hubAddress
-      hubWallet.balance = await web3.eth.getBalance(hubWallet.address);
-      console.log(`ping ${tokenContract._address}`)
-      hubWallet.tokenBalance = await tokenContract.methods.balanceOf(hubWallet.address).call();
-      console.log(`ping ${hubWallet.tokenBalance}`)
-      this.setState({ hubWallet })
-      console.log(`Done setting hub details for address ${hubWallet.address}`)
-    } catch (e) {
-      console.log("Error setting hub details")
-      console.log(e)
-    }
-  }
-
-  async setChannelManagerDetails() {
-    try {
-      let {connext, web3, channelManager, tokenContract} = this.state;
-      channelManager.address = connext.opts.contractAddress
-      channelManager.balance = await web3.eth.getBalance(channelManager.address);
-      channelManager.tokenBalance = await tokenContract.methods.balanceOf(channelManager.address.toString()).call();
-      this.setState({channelManager})
-      console.log(`Done setting channel manager details for address ${channelManager.address}`)
-    } catch (e) {
-      console.log("Error setting Channel Manager details")
-      console.log(e)
-    }
-  }
-
-  async setMetamaskDetails() {
-    try {
-      let { web3, metamask, tokenContract } = this.state;
-      metamask.address = (await web3.eth.getAccounts())[0].toLowerCase();
-      metamask.balance = await web3.eth.getBalance(metamask.address);
-      metamask.tokenBalance = await tokenContract.methods.balanceOf(metamask.address).call();
-      this.setState({metamask});
-      console.log(`Done setting metamask details for address ${metamask.address}`)
-    } catch (e) {
-      console.log("Error setting Metamask details")
-      console.log(e)
     }
   }
 
@@ -292,15 +245,15 @@ class App extends Component {
   }
 
   async browserWalletDeposit() {
-    if (!this.state.connextState || !this.state.connextState.runtime.canDeposit) {
+    const { connextState, address, tokenContract, customWeb3 } = this.state
+    if (!connextState || !connextState.runtime.canDeposit) {
       console.log('Cannot deposit.')
       return
     }
 
     // if a deposit has been requested, then you shou
-    let address = this.state.address;
-    const tokenContract = this.state.tokenContract;
-    const balance = await this.state.web3.eth.getBalance(address);
+    const balance = await customWeb3.eth.getBalance(address);
+    console.log('balance: ', balance);
     const tokenBalance = await tokenContract.methods
       .balanceOf(address)
       .call();
@@ -347,45 +300,6 @@ class App extends Component {
   // ************************************************* //
   //                    Handlers                       //
   // ************************************************* //   
-
-  async authorizeHandler() {
-    const web3 = this.state.customWeb3;
-    const challengeRes = await axios.post(`${hubUrl}/auth/challenge`, {}, opts);
-
-    const hash = web3.utils.sha3(
-      `${HASH_PREAMBLE} ${web3.utils.sha3(
-        challengeRes.data.nonce
-      )} ${web3.utils.sha3("localhost")}`
-    );
-
-    const signature = await web3.eth.personal.sign(hash, this.state.address);
-
-    try {
-      let authRes = await axios.post(
-        `${hubUrl}/auth/response`,
-        {
-          nonce: challengeRes.data.nonce,
-          address: this.state.address,
-          origin: "localhost",
-          signature
-        },
-        opts
-      );
-      const token = authRes.data.token;
-      document.cookie = `hub.sid=${token}`;
-      console.log(`cookie set: ${token}`);
-      const res = await axios.get(`${hubUrl}/auth/status`, opts);
-      if (res.data.success) {
-        this.setState({ authorized: true });
-        return res.data.success
-      } else {
-        this.setState({ authorized: false });
-      }
-      console.log(`Auth status: ${JSON.stringify(res.data)}`);
-    } catch (e) {
-      console.log(e);
-    }
-  }
 
   handleClick = event => {
     this.setState({
