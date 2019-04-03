@@ -9,8 +9,7 @@ import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
-import get from '../get';
-
+import axios from "axios";
 
 const styles = theme => ({
     card: {
@@ -41,7 +40,8 @@ class ChannelInfoCard extends Component{
   }
 
   setOpenChannels = async() => {
-    const res = await get(`channels/open`)
+    const url = `${this.props.urls.api}/channels/open`
+    const res = (await axios.get(url)).data || null
     if (res) {
       this.setState({openChannels: res.count});
     } else {
@@ -50,7 +50,8 @@ class ChannelInfoCard extends Component{
   }
 
   setUnopenedChannels = async() => {
-    const res = await get(`channels/notopen/count`)
+    const url = `${this.props.urls.api}/channels/notopen/count`
+    const res = (await axios.get(url)).data || null
     if (res) {
       this.setState({unopenedChannels: res.count});
     } else {
@@ -60,7 +61,8 @@ class ChannelInfoCard extends Component{
 
   setChannelBalances = async() => {
     const { web3 } = this.props;
-    const res = await get(`channels/averages`)
+    const url = `${this.props.urls.api}/channels/averages`
+    const res = (await axios.get(url)).data || null
     if (res) {
       let tokenDeposit = String(Math.trunc(res.avg_tokens));
       let weiDeposit = String(Math.trunc(res.avg_wei));

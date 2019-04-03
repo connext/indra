@@ -6,12 +6,12 @@ import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
-import get from "../get";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
+import axios from "axios";
 
 const styles = theme => ({
   card: {
@@ -40,7 +40,8 @@ class GasCostCard extends Component {
   }
 
   setGas = async (address) => {
-    const res = await get(`gascost/all/${address}`);
+    const url = `${this.props.urls.api}/gascost/all/${address}`
+    const res = (await axios.get(url)).data || null
     if (res && res.sum) {
       let gas = this.props.web3.utils.fromWei(res.sum);
 
@@ -51,7 +52,8 @@ class GasCostCard extends Component {
   };
 
   setGasLastWeek = async (address) => {
-    const res = await get(`gascost/trailingweek/${address}`);
+    const url = `${this.props.urls.api}/gascost/trailingweek/${address}`
+    const res = (await axios.get(url)).data || null
     if (res && res.sum) {
       let gas = this.props.web3.utils.fromWei(res.sum);
       this.setState({ gasLastWeek: gas });
@@ -61,7 +63,8 @@ class GasCostCard extends Component {
   };
 
   setGasLastDay = async (address) => {
-    const res = await get(`gascost/trailing24/${address}`);
+    const url = `${this.props.urls.api}/gascost/trailing24/${address}`
+    const res = (await axios.get(url)).data || null
     if (res && res.sum) {
       let gas = this.props.web3.utils.fromWei(res.sum);
 

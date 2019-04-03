@@ -6,7 +6,6 @@ import { TextField } from "@material-ui/core";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import get from "../get";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -15,7 +14,7 @@ import TableRow from "@material-ui/core/TableRow";
 import Switch from "@material-ui/core/Switch";
 import { VictoryChart, VictoryLine, VictoryLabel, VictoryAxis } from "victory";
 import DatePicker from "react-datepicker";
-
+import axios from "axios";
 import "react-datepicker/dist/react-datepicker.css";
 
 const styles = theme => ({
@@ -121,7 +120,8 @@ class PaymentInfoCard extends Component {
    */
 
   setTotal = async () => {
-    const res = await get(`payments/total`);
+    const url = `${this.props.urls.api}/payments/total`
+    const res = (await axios.get(url)).data || null
     if (res) {
       this.setState({ totalPayments: res.count });
     } else {
@@ -132,7 +132,8 @@ class PaymentInfoCard extends Component {
   //Trailing Day
 
   setTrailing = async () => {
-    const res = await get(`payments/trailing24`);
+    const url = `${this.props.urls.api}/payments/trailing24`
+    const res = (await axios.get(url)).data || null
     if (res) {
       this.setState({ paymentsLastDay: res.count });
     } else {
@@ -141,7 +142,8 @@ class PaymentInfoCard extends Component {
   };
 
   setTrailingPct = async () => {
-    const res = await get(`payments/trailing24/pctchange`);
+    const url = `${this.props.urls.api}/payments/trailing24/pctchange`
+    const res = (await axios.get(url)).data || null
     if (res) {
       console.log(`trailing day pct res ${JSON.stringify(res)}`)
 
@@ -154,7 +156,8 @@ class PaymentInfoCard extends Component {
   //Trailing Week
 
   setTrailingWeek = async () => {
-    const res = await get(`payments/trailingweek`);
+    const url = `${this.props.urls.api}/payments/trailingweek`
+    const res = (await axios.get(url)).data || null
     if (res) {
       this.setState({ paymentsLastWeek: res.count });
     } else {
@@ -163,7 +166,8 @@ class PaymentInfoCard extends Component {
   };
 
   setTrailingWeekPct = async () => {
-    const res = await get(`payments/trailingweek/pctchange`);
+    const url = `${this.props.urls.api}/payments/trailingweek/pctchange`
+    const res = (await axios.get(url)).data || null
     if (res) {
       console.log(`trailing week pct res ${JSON.stringify(res)}`)
       this.setState({ paymentsLastWeekPct: res["pctchange"] });
@@ -178,7 +182,8 @@ class PaymentInfoCard extends Component {
 
   setAverage = async () => {
     const { web3 } = this.props;
-    const res = await get(`payments/average/all`);
+    const url = `${this.props.urls.api}/payments/average/all`
+    const res = (await axios.get(url)).data || null
     if (res && res.avg_wei_payment && res.avg_token_payment) {
       let tokenDeposit = String(Math.trunc(res.avg_token_payment));
       let weiDeposit = String(Math.trunc(res.avg_wei_payment));
@@ -200,8 +205,8 @@ class PaymentInfoCard extends Component {
 
   setAverageTrailing = async () => {
     const { web3 } = this.props;
-
-    const res = await get(`payments/average/trailing24`);
+    const url = `${this.props.urls.api}/payments/average/trailing24`
+    const res = (await axios.get(url)).data || null
     if (res && res.avg_wei_payment && res.avg_token_payment) {
       let tokenPayment = String(Math.trunc(res.avg_token_payment));
       let weiPayment = String(Math.trunc(res.avg_wei_payment));
@@ -227,8 +232,8 @@ class PaymentInfoCard extends Component {
 
   setAverageTrailingWeek = async () => {
     const { web3 } = this.props;
-
-    const res = await get(`payments/average/trailingweek`);
+    const url = `${this.props.urls.api}/payments/average/trailingweek`
+    const res = (await axios.get(url)).data || null
     if (res && res.avg_wei_payment && res.avg_token_payment) {
       let tokenPayment = String(Math.trunc(res.avg_token_payment));
       let weiPayment = String(Math.trunc(res.avg_wei_payment));
@@ -257,9 +262,10 @@ class PaymentInfoCard extends Component {
    */
 
   searchById = async id => {
-    const purchase = await get(`payments/${id}`);
-    if (purchase) {
-      this.setState({ paymentInfo: purchase });
+    const url = `${this.props.urls.api}/payments/${id}`
+    const res = (await axios.get(url)).data || null
+    if (res) {
+      this.setState({ paymentInfo: res });
     } else {
       this.setState({ paymentInfo: "Purchase not found" });
     }
@@ -275,8 +281,8 @@ class PaymentInfoCard extends Component {
 
     console.log(`Fetching date range: ${start} - ${end}`)
     const { web3 } = this.props;
-
-    const res = await get(`payments/daterange/${start}/${end}`);
+    const url = `${this.props.urls.api}/payments/daterange/${start}/${end}`
+    const res = (await axios.get(url)).data || null
     if (res) {
       let tokenPayment = String(Math.trunc(res.avg_token_payment));
       let count = res.count
@@ -305,9 +311,10 @@ class PaymentInfoCard extends Component {
    */
 
   setFrequency = async () => {
-    const res = await get(`payments/frequency`);
-    if (res.data) {
-      this.setState({ freqArray: res.data });
+    const url = `${this.props.urls.api}/payments/frequency`
+    const res = (await axios.get(url)).data || null
+    if (res) {
+      this.setState({ freqArray: res });
     }
   };
 
