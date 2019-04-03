@@ -23,10 +23,12 @@ const sendAndLog = (req, res, data) => {
 
 // if theres only one item, and you dont want to use a list
 async function sendResFromQuery(sqlStr, req, res, singleRowAsObj = true) {
-  const { rows, rowCount } = await query(`${sqlStr}`);
-  const toSend = rowCount == 1 && singleRowAsObj ? rows[0] : rows
-  console.log('returns:', toSend)
-  sendAndLog(req, res, toSend);
+  const data = await query(`${sqlStr}`)
+  if (data) {
+    const toSend = data.rowCount == 1 && singleRowAsObj ? data.rows[0] : data.rows
+    console.log('Sending:', toSend)
+    sendAndLog(req, res, toSend);
+  }
 }
 
 /***************************************
@@ -356,7 +358,7 @@ app.get("/gascost/trailing24/:contractAddress", async function(req, res) {
         SELECT sum(("gas" * "gas_price"))
         FROM onchain_transactions_raw
         WHERE "state" = 'confirmed'
-            AND "from" = ${req.params.contractAddress}
+            AND "from" = '${req.params.contractAddress}'
             AND confirmed_on > now() - interval '1 day'
     `,
     req,
@@ -370,7 +372,7 @@ app.get("/gascost/trailingweek/:contractAddress", async function(req, res) {
     `SELECT sum(("gas" * "gas_price"))
         FROM onchain_transactions_raw
         WHERE "state" = 'confirmed'
-            AND "from" = ${req.params.contractAddress}
+            AND "from" = '${req.params.contractAddress}'
             AND confirmed_on > now() - interval '1 week'
     `,
     req,
@@ -385,7 +387,7 @@ app.get("/gascost/all/:contractAddress", async function(req, res) {
         SELECT sum(("gas" * "gas_price"))
         FROM onchain_transactions_raw
         WHERE "state" = 'confirmed'
-        AND "from" = ${req.params.contractAddress}
+        AND "from" = '${req.params.contractAddress}'
     `,
     req,
     res
