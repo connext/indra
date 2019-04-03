@@ -304,11 +304,7 @@ export class OnchainTransactionService {
       }
 
       // has block
-      const [txReceipt, errReceipt] = await maybe(this.web3.eth.getTransaction(txn.hash))
-      LOG.info('State of {txn.hash}: {res}', {
-        txn,
-        res: JSON.stringify(txReceipt || errReceipt),
-      })
+      const [txReceipt, errReceipt] = await maybe(this.web3.eth.getTransactionReceipt(txn.hash))
       if (errReceipt) {
         // TODO: what errors can happen here?
         LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + errReceipt} (will retry)`)
@@ -320,11 +316,11 @@ export class OnchainTransactionService {
 
       // otherwise we have both tx and blockNumber, so we can put a final state
       await this.updateTxState(txn, {
-        state: tx.status ? 'confirmed' : 'failed',
-        blockNum: tx.blockNumber,
-        blockHash: tx.blockHash,
-        transactionIndex: tx.transactionIndex,
-        reason: tx.status ? null : 'EVM revert',
+        state: txReceipt.status ? 'confirmed' : 'failed',
+        blockNum: txReceipt.blockNumber,
+        blockHash: txReceipt.blockHash,
+        transactionIndex: txReceipt.transactionIndex,
+        reason: txReceipt.status ? null : 'EVM revert',
       })
 
       return
