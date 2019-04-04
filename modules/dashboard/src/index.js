@@ -12,7 +12,7 @@ const publicUrl = `${origin}${prefix}`
 const urls = {
   prefix: prefix,
   public: publicUrl,
-  api: process.env.REACT_APP_API_URL || `${origin}/api/${prefix}`,
+  api: process.env.REACT_APP_API_URL || `${origin}/api${prefix}`,
   hub: process.env.REACT_APP_HUB_URL || `${origin}/api/hub`,
   eth: process.env.REACT_APP_ETH_URL || `${origin}/api/eth`
 }
