@@ -46,8 +46,6 @@ import ThreadsController from './controllers/ThreadsController';
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { RedeemController } from './controllers/RedeemController';
 
-console.log('Client updates activated! 1')
-
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
 
@@ -997,8 +995,7 @@ export class ConnextInternal extends ConnextClient {
 
     // return to hub
     const auth = await this.hub.authResponse(nonce, this.opts.user, origin, signature)
-    // document.cookie = `hub.sid=${auth}`; // keep for backwards compatibility??
-    this.store.dispatch(actions.setAuthToken(auth))
+    document.cookie = `hub.sid=${auth}`;
     return null
   }
 
