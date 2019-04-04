@@ -16,7 +16,7 @@ INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
 INDRA_DASHBOARD_URL="${INDRA_DASHBOARD_URL:-dashboarddd}"
 INDRA_ETH_RPC_KEY_MAINNET="${INDRA_ETH_RPC_KEY_MAINNET:-qHg6U3i7dKa4cJdMagOljenupIraBE1V}"
 INDRA_ETH_RPC_KEY_RINKEBY="${INDRA_ETH_RPC_KEY_RINKEBY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
-INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}" # For LogDna
+INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
 
 ####################
@@ -88,7 +88,7 @@ fi
 ####################
 # Deploy according to above configuration
 
-echo "Deploying images: $database_image and $hub_image and $proxy_image"
+echo "Deploying images: $database_image & $hub_image & $proxy_image to $INDRA_DOMAINNAME"
 
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
