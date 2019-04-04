@@ -6,15 +6,11 @@ import { getTestRegistry } from '../testing'
 import { assertChannelStateEqual, mkAddress, mkHash } from '../testing/stateUtils'
 import { convertChannelState } from '../vendor/connext/types';
 import { channelUpdateFactory } from '../testing/factories';
-import { OnchainTransactionsDao } from './OnchainTransactionsDao';
-import DBEngine, { SQL } from '../DBEngine';
 
 describe('ChannelsDao', () => {
   const registry = getTestRegistry()
 
   const dao: ChannelsDao = registry.get('ChannelsDao')
-  const onchainTxDao: OnchainTransactionsDao = registry.get('OnchainTransactionsDao')
-  const db: DBEngine = registry.get('DBEngine')
 
   beforeEach(async () => {
     await registry.clearDatabase()
