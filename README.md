@@ -119,7 +119,7 @@ Run `ssh-keygen -t rsa -b 4096 -C "circleci" -m pem -f .ssh/circleci` to generat
 Go to CircleCI -> Settings -> Build Settings -> Environment Variables
 
  - `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `repository` vars at the top of the Makefile & `ops/deploy.prod.sh`.
- - `STAGING_URL` & `PRODUCTION_URL`: The URL from which the Indra application will be served.
+ - `STAGING_URL` & `RINKEBY_URL` & `MAINNET_URL`: The URLs from which the Indra application will be served.
  - `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY`: (Optional) To enable database backup to remote AWS S3 storage
 
 If `STAGING_URL=staging.example.com` then
@@ -185,7 +185,7 @@ git push
 
 This will trigger the CI pipeline that will run all test suites and, if none fail, deploy this app to production.
 
-Pushing to any branch other than master will trigger a deployment to the server at `$STAGING_URL` specified by CircleCI. Pushing or merging into master will deploy to the server at `$PRODUCTION_URL`.
+Pushing to any branch other than master will trigger a deployment to the server at `$STAGING_URL` specified by CircleCI. Pushing or merging into master will deploy to the servers at `$RINKEBY_URL` and `$MAINNET_URL.
 
 If you haven't set up CircleCI yet or need to deploy a hotfix immediately, you can run the following:
 

@@ -95,8 +95,8 @@ app.get("/channels/averages", async function(req, res) {
       FROM _cm_channels
       WHERE status = 'CS_OPEN'
     )
-    SELECT wei_total/count as avg_wei,
-          token_total/count as avg_tokens
+    SELECT wei_total/NULLIF(count,0) as avg_wei,
+          token_total/NULLIF(count,0) as avg_tokens
     FROM channel_count`,
     req,
     res
@@ -226,10 +226,9 @@ app.get("/payments/daterange/:startDate/:endDate", async function(req, res) {
              count(*)
       FROM payments a
       WHERE created_on::date BETWEEN '${startDate}'::date AND '${endDate}'::date)
-    SELECT token_sum/count as avg_token_payment,
-            count
-    FROM payment_counts
-  `,
+      SELECT token_sum/NULLIF(count,0) as avg_token_payment, count
+      FROM payment_counts
+    `,
     req,
     res,
   );
@@ -266,8 +265,8 @@ app.get("/payments/average/all", async function(req, res) {
             sum(amount_wei) as wei_sum,
              count(*)
       FROM _payments)
-    SELECT token_sum/count as avg_token_payment,
-            token_sum/count as avg_wei_payment
+    SELECT token_sum/NULLIF(count,0) as avg_token_payment,
+            token_sum/NULLIF(count,0) as avg_wei_payment
     FROM payment_counts
 `,
     req,
@@ -285,8 +284,8 @@ app.get("/payments/average/trailing24", async function(req, res) {
              count(*)
       FROM payments a
       WHERE created_on > now() - interval '1 day')
-    SELECT token_sum/count as avg_token_payment,
-            token_sum/count as avg_wei_payment
+    SELECT token_sum/NULLIF(count,0) as avg_token_payment,
+            token_sum/NULLIF(count,0) as avg_wei_payment
     FROM payment_counts
 `,
     req,
@@ -304,8 +303,8 @@ app.get("/payments/average/trailingweek", async function(req, res) {
                  count(*)
           FROM payments a
           WHERE created_on > now() - interval '1 week')
-        SELECT token_sum/count as avg_token_payment,
-                token_sum/count as avg_wei_payment
+        SELECT token_sum/NULLIF(count,0) as avg_token_payment,
+                token_sum/NULLIF(count,0) as avg_wei_payment
         FROM payment_counts
     `,
     req,
@@ -402,8 +401,8 @@ app.get("/gascost/all/:contractAddress", async function(req, res) {
 app.get("/withdrawals/average", async function(req, res) {
   await sendResFromQuery(
     `
-        SELECT sum(pending_withdrawal_wei_user)/count(*) as avg_withdrawal_wei,
-              sum(pending_withdrawal_token_user)/count(*) as avg_withdrawal_token
+        SELECT sum(pending_withdrawal_wei_user)/NULLIF(count(*),0) as avg_withdrawal_wei,
+              sum(pending_withdrawal_token_user)/NULLIF(count(*),0) as avg_withdrawal_token
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingWithdrawal'
             AND balance_wei_user = 0
@@ -458,7 +457,7 @@ app.get("/collateralization/ratio", async function(req, res) {
         SELECT sum("balance_token_user") as user_balances, 
                 sum("balance_token_hub") as collateral 
         FROM public._cm_channels) 
-        SELECT collateral/user_balances as ratio FROM t1;
+        SELECT collateral/NULLIF(user_balances,0) as ratio FROM t1;
     `,
     req,
     res
@@ -488,8 +487,8 @@ app.get("/collateralization/overcollateralized", async function(req, res) {
 app.get("/deposits/average", async function(req, res) {
   await sendResFromQuery(
     `
-        SELECT sum(pending_deposit_wei_user)/count(*) as avg_deposit_wei,
-              sum(pending_deposit_token_user)/count(*) as avg_deposit_token
+        SELECT sum(pending_deposit_wei_user)/NULLIF(count(*),0) as avg_deposit_wei,
+              sum(pending_deposit_token_user)/NULLIF(count(*),0) as avg_deposit_token
         FROM _cm_channel_updates
         WHERE reason = 'ProposePendingDeposit'
             AND (pending_deposit_wei_user <> 0 OR pending_deposit_token_user <> 0)
