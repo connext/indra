@@ -74,11 +74,11 @@ export class DefaultAuthHandler implements AuthHandler {
   }
 
   private defaultAcl() {
-    this.acl.addRoute('/branding', Role.NONE)
+    this.acl
       .addRoute('/auth/(.*)', Role.NONE)
       .addRoute('/branding', Role.NONE)
       .addRoute('/config', Role.NONE)
-      .addRoute('/exchangeRate/(.*)', Role.NONE)
+      .addRoute('/exchangeRate', Role.NONE)
       .addRoute('/featureFlags', Role.NONE)
       .addRoute('/gasPrice/(.*)', Role.NONE)
   }
