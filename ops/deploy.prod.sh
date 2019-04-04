@@ -142,10 +142,10 @@ services:
   proxy:
     image: $proxy_image
     environment:
+      DASHBOARD_URL: $INDRA_DASHBOARD_URL
       DOMAINNAME: $INDRA_DOMAINNAME
       EMAIL: $INDRAS_EMAIL
       ETH_RPC_URL: $eth_rpc_url
-      DASHBOARD_URL: $INDRA_DASHBOARD_URL
     logging:
       driver: "json-file"
       options:

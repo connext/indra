@@ -15,11 +15,12 @@ watch_hub="no" # set to "yes" to live-redeploy hub when source code changes
 watch_chainsaw="no" # set to "yes" to live-redeploy chainsaw when source code changes
 
 # hard-coded config (you probably won't ever need to change these)
-log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
+dashboard_url="dashboardd"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 eth_network="ganache"
 eth_network_id="4447"
 eth_rpc_url="http://ethprovider:8545"
+log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
 private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 private_key_file="/run/secrets/hub_key_ganache"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
@@ -109,6 +110,7 @@ services:
   proxy:
     image: $proxy_image
     environment:
+      DASHBOARD_URL: $dashboard_url
       ETH_RPC_URL: $eth_rpc_url
       MODE: dev
     networks:
