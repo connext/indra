@@ -24,11 +24,5 @@ export WALLET_ADDRESS="$HUB_WALLET_ADDRESS"
 export HOT_WALLET_ADDRESS="$HUB_WALLET_ADDRESS"
 export TOKEN_CONTRACT_ADDRESS="$TOKEN_ADDRESS"
 
-if [[ "$2" == "yes" ]]
-then
-  echo "Starting tsc watcher!"
-  ./node_modules/.bin/tsc --watch --preserveWatchOutput --project tsconfig.json &
-fi
-
 echo "Starting nodemon $1!"
-exec ./node_modules/.bin/nodemon --watch dist --watch /state-hash dist/spankchain/main.js $1
+exec ./node_modules/.bin/nodemon --nolazy -r ts-node/register ./src/spankchain/main.ts $1

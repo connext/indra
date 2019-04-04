@@ -15,43 +15,43 @@ import List from "@material-ui/core/List";
 export const SidebarLinks = (props) => (
   <List>
     <div>
-      <ListItem button component={Link} to={`${props.publicUrl}/`}>
+      <ListItem button component={Link} to={`${props.urls.prefix}/`}>
         <ListItemIcon>
           <Home />
         </ListItemIcon>
         <ListItemText primary="Home" />
       </ListItem>
-      <ListItem button  component={Link} to={`${props.publicUrl}/deposits`}>
+      <ListItem button  component={Link} to={`${props.urls.prefix}/deposits`}>
         <ListItemIcon>
           <Archive />
         </ListItemIcon>
         <ListItemText primary="Deposits" />
       </ListItem>
-      <ListItem button  component={Link} to={`${props.publicUrl}/payments`}>
+      <ListItem button  component={Link} to={`${props.urls.prefix}/payments`}>
         <ListItemIcon>
           <AttachMoney />
         </ListItemIcon>
         <ListItemText primary="Payments" />
       </ListItem>
-      <ListItem button component={Link} to={`${props.publicUrl}/withdrawals`}>
+      <ListItem button component={Link} to={`${props.urls.prefix}/withdrawals`}>
         <ListItemIcon>
           <Unarchive />
         </ListItemIcon>
         <ListItemText primary="Withdrawals" />
       </ListItem>
-      <ListItem button  component={Link} to={`${props.publicUrl}/gas`}>
+      <ListItem button  component={Link} to={`${props.urls.prefix}/gas`}>
         <ListItemIcon>
           <LocalGasStation />
         </ListItemIcon>
         <ListItemText primary="Gas" />
       </ListItem>
-      <ListItem button  component={Link} to={`${props.publicUrl}/collateral`}>
+      <ListItem button  component={Link} to={`${props.urls.prefix}/collateral`}>
         <ListItemIcon>
           <CompareArrows />
         </ListItemIcon>
         <ListItemText primary="Collateral" />
       </ListItem>
-      <ListItem button  component={Link} to={`${props.publicUrl}/users`}>
+      <ListItem button  component={Link} to={`${props.urls.prefix}/users`}>
         <ListItemIcon>
           <PeopleIcon />
         </ListItemIcon>

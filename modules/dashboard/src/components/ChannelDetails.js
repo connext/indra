@@ -7,7 +7,7 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
-import get from '../get';
+import axios from "axios";
 
 const styles = {
   root: {
@@ -31,7 +31,8 @@ class ChannelDetails extends Component {
   async componentDidMount() {
     let id = 0;
     const createData = async () => {
-      let res = await get(`test`)
+      const url = `${this.props.urls.api}/test`
+      const res = (await axios.get(test)).data || null
       let data = res[id]
       id += 1;
       return { id, data };
