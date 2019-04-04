@@ -1,4 +1,4 @@
-import { UnconfirmedTransaction, OnchainTransactionRow } from "../domain/OnchainTransaction";
+import { UnconfirmedTransaction, OnchainTransactionRow, RawTransaction } from "../domain/OnchainTransaction";
 import { Omit } from "../vendor/connext/types";
 import EthereumTx from "ethereumjs-tx"
 
@@ -37,6 +37,21 @@ export function txnToTx(txn: Omit<UnconfirmedTransaction, 'hash'>): EthereumTx {
     r: txn.signature && txn.signature.r,
     s: txn.signature && txn.signature.s,
     v: txn.signature && Web3.utils.numberToHex(txn.signature.v),
+  })
+}
+
+/**
+ * Converts a RawTransaction to an instance of Tx from ethereumjs-tx
+ */
+export function rawTxnToTx(txn: RawTransaction): EthereumTx {
+  return new Tx({
+    from: txn.from,
+    to: txn.to,
+    value: Web3.utils.numberToHex(txn.value),
+    gasLimit: Web3.utils.numberToHex(txn.gas),
+    gasPrice: Web3.utils.numberToHex(txn.gasPrice),
+    data: txn.data,
+    nonce: Web3.utils.numberToHex(txn.nonce),
   })
 }
 

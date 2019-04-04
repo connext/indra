@@ -49,8 +49,9 @@ jobs:
               cd indra
               git fetch
               git reset --hard origin/$CIRCLE_BRANCH
-              export MODE="staging"
-              export DOMAINNAME="$STAGING_URL"
+              export INDRA_MODE="staging"
+              export INDRA_ETH_NETWORK="rinkeby"
+              export INDRA_DOMAINNAME="$STAGING_URL"
               bash ops/restart.sh prod
             EOF
 
@@ -59,13 +60,24 @@ jobs:
     steps:
       - run:
           command: |
-            ssh ubuntu@$PRODUCTION_URL "bash -s" <<EOF
+            ssh ubuntu@$RINKEBY_URL "bash -s" <<EOF
               git clone https://github.com/ConnextProject/indra.git || true
               cd indra
               git fetch
               git reset --hard origin/master
-              export MODE="live"
-              export DOMAINNAME="$PRODUCTION_URL"
+              export INDRA_DOMAINNAME="$RINKEBY_URL"
+              export INDRA_ETH_NETWORK="rinkeby"
+              export INDRA_MODE="live"
+              bash ops/restart.sh prod
+            EOF
+            ssh ubuntu@$MAINNET_URL "bash -s" <<EOF
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
+              git fetch
+              git reset --hard origin/master
+              export INDRA_DOMAINNAME="$MAINNET_URL"
+              export INDRA_ETH_NETWORK="mainnet"
+              export INDRA_MODE="live"
               bash ops/restart.sh prod
             EOF
 
@@ -95,7 +107,7 @@ workflows:
       - deploy-staging:
           filters:
             branches:
-              only: staging
+              ignore: master
           requires:
             - push-images
       - deploy-live:

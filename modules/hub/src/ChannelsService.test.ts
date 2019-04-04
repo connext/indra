@@ -54,10 +54,9 @@ import { BigNumber } from 'bignumber.js/bignumber'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { RedisClient } from './RedisClient'
 import ThreadsService from './ThreadsService';
-import DBEngine from './DBEngine';
-import { sleep } from './util';
+import DBEngine, { SQL } from './DBEngine';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
-import { async } from 'q';
+import { OnchainTransactionService } from './OnchainTransactionService';
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -1172,6 +1171,7 @@ describe('ChannelsService.shouldCollateralize', () => {
   })
 
   describe('ChannelsService-txFail', () => {
+    const clock = getFakeClock()
     const registry = getTestRegistry({
       Web3: {
         ...Web3,
@@ -1207,17 +1207,11 @@ describe('ChannelsService.shouldCollateralize', () => {
               },
             }
           },
-          sendTransaction: () => {
-            console.log(`Called mocked web3 function sendTransaction`)
+          getTransaction: async () => {
             return {
-              on: (input, cb) => {
-                switch (input) {
-                  case 'error':
-                    return cb('nonce too low')
-                }
-              },
+              hello: 'world'
             }
-          },
+          }
         },
       },
       ExchangeRateDao: new MockExchangeRateDao(),
@@ -1226,12 +1220,63 @@ describe('ChannelsService.shouldCollateralize', () => {
   
     const service: ChannelsService = registry.get('ChannelsService')
     const stateGenerator: StateGenerator = registry.get('StateGenerator')
+    const txService: OnchainTransactionService = registry.get('OnchainTransactionService')
+    const db: DBEngine = registry.get('DBEngine')
   
     beforeEach(async () => {
       await registry.clearDatabase()
     })
   
     it('should invalidate a failing hub authorized update', async () => {
+      const registry = getTestRegistry({
+        Web3: {
+          ...Web3,
+          eth: {
+            Contract: web3ContractMock,
+            sign: async () => {
+              return
+            },
+            getTransactionCount: async () => {
+              return 1
+            },
+            estimateGas: async () => {
+              return 1000
+            },
+            signTransaction: async () => {
+              return {
+                tx: {
+                  hash: mkHash('0xaaa'),
+                  r: mkHash('0xabc'),
+                  s: mkHash('0xdef'),
+                  v: '0x27',
+                },
+              }
+            },
+            sendSignedTransaction: () => {
+              console.log(`Called mocked web3 function sendSignedTransaction`)
+              return {
+                on: (input, cb) => {
+                  switch (input) {
+                    case 'error':
+                      return cb('nonce too low')
+                  }
+                },
+              }
+            },
+            getTransaction: async () => {
+              return null
+            }
+          },
+        },
+        ExchangeRateDao: new MockExchangeRateDao(),
+        GasEstimateDao: new MockGasEstimateDao(),
+      })
+    
+      const service: ChannelsService = registry.get('ChannelsService')
+      const stateGenerator: StateGenerator = registry.get('StateGenerator')
+      const txService: OnchainTransactionService = registry.get('OnchainTransactionService')
+      const db: DBEngine = registry.get('DBEngine')
+
       let channel = await channelUpdateFactory(registry)
       await service.doCollateralizeIfNecessary(channel.user)
       let { updates: sync } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
@@ -1244,9 +1289,14 @@ describe('ChannelsService.shouldCollateralize', () => {
         txCount: channel.state.txCountGlobal + 1,
         sigUser: mkSig('0xc')
       }])
-  
-      // need to sleep here to let the async process fail
-      sleep(50)
+
+      await db.query(SQL`
+      UPDATE onchain_transactions_raw SET hash = ${mkHash()}
+      `)
+      await txService.poll()
+      // need to wait a long time bc the timer resets
+      await clock.awaitTicks(9553715125000)
+      await txService.poll()
   
       let { updates: sync2 } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
       latest = sync2.pop()
