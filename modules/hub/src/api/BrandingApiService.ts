@@ -5,7 +5,7 @@ import Config from '../Config'
 export default class BrandingApiService extends ApiService<BrandingApiServiceHandler> {
   namespace = 'branding'
   routes = {
-    'POST /': 'doBranding',
+    'GET /': 'doBranding',
   }
   handler = BrandingApiServiceHandler
   dependencies = {
