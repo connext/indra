@@ -27,7 +27,7 @@ then
   then
     echo "Creating bucket $bucket_name"
     aws s3api create-bucket --bucket $bucket_name
-    if [[ ! -f "$lifecycle" ]]
+    if [[ -f "$lifecycle" ]]
     then
       echo "Setting bucke's lifecycle config..."
       aws s3api put-bucket-lifecycle-configuration \
