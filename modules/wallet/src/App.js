@@ -45,27 +45,18 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      web3: null,
       customWeb3: null,
       tokenContract: null,
+      tokenAddress: null,
       connext: null,
-      delegateSigner: null,
-      delegateAddress: null,
+      address: null,
       metamask: {
         address: null,
         balance: 0,
         tokenBalance: 0
       },
-      hubWallet: {
-        address: "0x00",
-        balance: 0,
-        tokenBalance: 0
-      },
-      channelManager: {
-        address: "0x00",
-        balance: 0,
-        tokenBalance: 0
-      },
+      hubWalletAddress: "",
+      channelManagerAddress: "",
       authorized: "false",
       approvalWeiUser: "10000",
       recipient: "0x00",
@@ -83,35 +74,30 @@ class App extends Component {
   async componentWillMount() {
     const mnemonic = localStorage.getItem("mnemonic");
 
+    let delegateSigner
+    let address
     // If a browser address exists, create wallet
     if (mnemonic) {
-      const delegateSigner = await createWalletFromMnemonic(mnemonic);
-      const address = await delegateSigner.getAddressString();
-      this.setState({ delegateSigner, address });
-      store.dispatch({
-        type: "SET_WALLET",
-        text: delegateSigner
-      });
+      delegateSigner = await createWalletFromMnemonic(mnemonic);
     } else {
-      // Else, we wait for user to finish selecting through modal which will refresh page when done
-      this.setState({ modalOpen: true });
+      delegateSigner = await createWallet()
     }
+
+    address = await delegateSigner.getAddressString();
+    this.setState({ delegateSigner, address });
+    store.dispatch({
+      type: "SET_WALLET",
+      text: delegateSigner
+    });
   }
 
   async componentDidMount() {
     await this.setWeb3();
-    // If a browser address exists, instantiate connext
-    if (this.state.delegateSigner) {
-      await this.setConnext();
-      await this.checkNetIds();
-      await this.setTokenContract();
-      await this.pollConnextState();
-      await this.poller();
-
-      // Else, we wait for user to finish selecting through modal which will refresh page when done
-    } else {
-      this.setState({ modalOpen: true });
-    }
+    await this.setConnext();
+    await this.checkNetIds();
+    await this.setTokenContract();
+    await this.pollConnextState();
+    await this.poller();
 
     publicUrl = window.location.origin.toLowerCase();
   }
@@ -175,8 +161,8 @@ class App extends Component {
     this.setState({
       connext,
       tokenAddress: connext.opts.tokenAddress,
-      channelManagerAddress: connext.opts.contractAddress,
       hubWalletAddress: connext.opts.hubAddress,
+      channelManagerAddress: connext.opts.contractAddress,
       ethNetworkId: connext.opts.ethNetworkId
     });
   }
@@ -316,12 +302,11 @@ class App extends Component {
   }
 
   async approvalHandler() {
-    const { channelManager, tokenContract, address } = this.state;
-    const web3 = this.state.customWeb3;
+    const { channelManager, tokenContract, address, customWeb3 } = this.state;
     const approveFor = channelManager.address;
     const toApprove = this.state.approvalWeiUser;
     const toApproveBn = eth.utils.bigNumberify(toApprove);
-    const nonce = await web3.eth.getTransactionCount(address);
+    const nonce = await customWeb3.eth.getTransactionCount(address);
     const depositResGas = await tokenContract.methods.approve(approveFor, toApproveBn).estimateGas();
     let tx = new Tx({
       to: tokenContract.address,
@@ -332,7 +317,7 @@ class App extends Component {
     });
     tx.sign(Buffer.from(this.state.delegateSigner.getPrivateKeyString().substring(2), "hex"));
     let signedTx = "0x" + tx.serialize().toString("hex");
-    let sentTx = web3.eth.sendSignedTransaction(signedTx, err => {
+    let sentTx = customWeb3.eth.sendSignedTransaction(signedTx, err => {
       if (err) console.error(err);
     });
     sentTx
@@ -346,9 +331,10 @@ class App extends Component {
   }
 
   async generateNewDelegateSigner() {
+    const { customWeb3 } = this.state;
     // NOTE: DelegateSigner is always recovered from browser storage.
     //       It is ONLY set to state from within app on load.
-    await createWallet(this.state.web3);
+    await createWallet(customWeb3);
     // Then refresh the page
     window.location.reload();
   }
@@ -363,14 +349,15 @@ class App extends Component {
       connextState,
       connext,
       customWeb3,
-      channelManager,
+      channelManagerAddress,
       channelState,
       balance,
       tokenBalance,
       metamask,
-      hubWallet,
+      hubWalletAddress,
       tokenContract,
-      exchangeRate
+      exchangeRate,
+      address
     } = this.state;
     const open = Boolean(anchorEl);
     return (
@@ -456,16 +443,16 @@ class App extends Component {
         <div className="app">
           <div className="row">
             <div className="column" style={{ justifyContent: "space-between", flexGrow: 1 }}>
-              <ChannelCard channelState={this.state.channelState} address={this.state.address} />
+              <ChannelCard channelState={channelState} address={address} />
             </div>
             <div className="column" style={{ flexGrow: 1 }}>
               <FullWidthTabs
-                connext={this.state.connext}
-                metamask={this.state.metamask}
-                channelManager={this.state.channelManager}
-                hubWallet={this.state.hubWallet}
-                web3={this.state.web3}
-                tokenContract={this.state.tokenContract}
+                connext={connext}
+                metamask={metamask}
+                channelManagerAddress={channelManagerAddress}
+                hubWalletAddress={hubWalletAddress}
+                web3={customWeb3}
+                tokenContract={tokenContract}
               />
               <div>
                 <Button
@@ -486,7 +473,7 @@ class App extends Component {
           <div className="row">
             <div className="column">
               <DepositCard
-                channelManagerAddress={channelManager.address}
+                channelManagerAddress={channelManagerAddress}
                 Web3={window.web3}
                 balance={balance}
                 tokenBalance={tokenBalance}
@@ -508,8 +495,8 @@ class App extends Component {
                 connext={connext}
                 exchangeRate={exchangeRate}
                 metamask={metamask}
-                channelManager={channelManager}
-                hubWallet={hubWallet}
+                channelManagerAddress={channelManagerAddress}
+                hubWalletAddress={hubWalletAddress}
                 channelState={channelState}
                 web3={customWeb3}
                 connextState={connextState}
