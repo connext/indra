@@ -1,5 +1,5 @@
 import {BigNumber} from 'bignumber.js'
-import {EventLog} from 'web3/types'
+import { EventLog } from 'web3-core';
 
 export interface RawContractEvent {
   log: EventLog

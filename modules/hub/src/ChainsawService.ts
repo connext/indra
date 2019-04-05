@@ -4,7 +4,6 @@ import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
 import Config from './Config'
 import { ChannelManager } from './ChannelManager'
-import { EventLog } from 'web3/types'
 import ChannelsDao from './dao/ChannelsDao'
 import { ChannelState, ConfirmPendingArgs } from './vendor/connext/types'
 import { Utils } from './vendor/connext/Utils'
@@ -15,6 +14,7 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { SignerService } from './SignerService';
 import { RedisClient } from './RedisClient';
 import { OnchainTransactionService } from './OnchainTransactionService';
+import { EventLog } from 'web3-core';
 
 const LOG = log('ChainsawService')
 

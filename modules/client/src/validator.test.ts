@@ -5,7 +5,7 @@ import * as sinon from 'sinon'
 import { Utils, emptyAddress } from './Utils';
 import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, ThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs, PendingArgs, proposePendingNumericArgs, convertProposePending, PendingArgsBN, PendingExchangeArgsBN, InvalidationArgs, UnsignedThreadState, ChannelState } from './types';
 import { toBN } from './helpers/bn';
-import Web3 = require('web3')
+import Web3 from 'web3'
 import { EMPTY_ROOT_HASH } from './lib/constants';
 
 const eventInputs = [
@@ -196,7 +196,7 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
 }
 
 describe('validator', () => {
-  const web3 = new Web3() /* NOTE: all functional aspects of web3 are mocked */
+  const web3 = new Web3('http://localhost:8545') /* NOTE: all functional aspects of web3 are mocked */
   const validator = new Validator(web3, hubAddress)
 
   describe('channelPayment', () => {

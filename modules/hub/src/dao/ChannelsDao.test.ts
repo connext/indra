@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 import { assert } from 'chai'
-chai.use(require('@spankchain/chai-subset'))
+chai.use(require('chai-subset'))
 import ChannelsDao from './ChannelsDao'
 import { getTestRegistry } from '../testing'
 import { assertChannelStateEqual, mkAddress, mkHash } from '../testing/stateUtils'

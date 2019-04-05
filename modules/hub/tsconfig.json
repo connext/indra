@@ -16,8 +16,8 @@
     "lib": ["es5", "es2015", "es6", "dom", "es2017"],
     "declarationDir": "dist/types",
     "typeRoots": [
-      "node_modules/@types",
-      "src/@types"
+      "src/@types",
+      "node_modules/@types"
     ]
   },
   "include": [

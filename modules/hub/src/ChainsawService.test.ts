@@ -1,24 +1,22 @@
 import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
-import ChainsawDao, {PostgresChainsawDao} from './dao/ChainsawDao'
+import ChainsawDao from './dao/ChainsawDao'
 import DBEngine, { SQL } from './DBEngine'
-import ChannelsDao, {PostgresChannelsDao} from './dao/ChannelsDao'
+import ChannelsDao from './dao/ChannelsDao'
 import {ChannelManager} from './ChannelManager'
 import abi, {BYTECODE} from './abi/ChannelManager'
 import {assert} from 'chai'
 import * as sinon from 'sinon'
 import {Utils, emptyRootHash} from './vendor/connext/Utils'
-import {PgPoolServiceForTest} from './testing/mocks'
 import {BigNumber} from 'bignumber.js'
 import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
 import { StateGenerator } from './vendor/connext/StateGenerator'
 import Web3 = require('web3')
-import { Big } from './util/bigNumber';
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent';
-import { mkHash, mkAddress, mkSig } from './testing/stateUtils';
-import { EventLog } from 'web3/types';
+import { mkAddress, mkSig } from './testing/stateUtils';
 import { channelUpdateFactory } from './testing/factories';
-import { ChannelStateUpdateRowBigNum, ChannelStateUpdateRow } from './domain/Channel';
+import { ChannelStateUpdateRowBigNum } from './domain/Channel';
+import { EventLog } from 'web3-core';
 
 const GAS_PRICE = '1000000000'
 

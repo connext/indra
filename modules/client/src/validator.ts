@@ -2,7 +2,7 @@ import { subOrZero, objMap } from './StateGenerator'
 import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN } from './types'
 import { PendingArgs } from './types'
 import { PendingArgsBN } from './types'
-import Web3 = require('web3')
+import Web3 from 'web3'
 import BN = require('bn.js')
 import {
   Address,
@@ -46,13 +46,13 @@ import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
 import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
-import { TransactionReceipt } from 'web3/types'
+import { TransactionReceipt } from 'web3-core';
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
 export const DEFAULT_EXCHANGE_MULTIPLIER = 1000000
 
-const w3utils = (Web3 as any).utils
+import w3utils from 'web3-utils'
 
 /*
 This class will validate whether or not the args are deemed sensible.
@@ -1067,6 +1067,7 @@ export class Validator {
 
       // NOTE: The second topic in the log with the events topic
       // is the indexed user. This is valid for all Channel events in contract
+      // @ts-ignore TODO test and fix
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
       parsed.push(convertVerboseEvent("bn", makeEventVerbose(
         raw,
@@ -1124,6 +1125,7 @@ export class Validator {
       }
       // NOTE: The second topic in the log with the events topic
       // is the indexed user.
+      // @ts-ignore TODO test and fix
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
     })
 

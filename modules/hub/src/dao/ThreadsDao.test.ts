@@ -1,5 +1,5 @@
 import * as chai from 'chai'
-chai.use(require('@spankchain/chai-subset'))
+chai.use(require('chai-subset'))
 import DBEngine from '../DBEngine'
 import { BigNumber } from 'bignumber.js'
 import { getTestRegistry } from '../testing'

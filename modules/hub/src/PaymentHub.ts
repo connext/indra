@@ -15,12 +15,12 @@ import { default as DBEngine, SQL } from './DBEngine'
 import { ChannelManager } from './ChannelManager'
 const Web3 = require('web3')
 import abi from './abi/ChannelManager'
-import { EventLog } from 'web3/types'
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
 import { channelNumericFields } from './vendor/connext/types'
 import * as readline from 'readline'
 import { Big } from './util/bigNumber'
 import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
+import { EventLog } from 'web3-core';
 
 const LOG = log('PaymentHub')
 

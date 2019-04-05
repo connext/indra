@@ -5,7 +5,7 @@ import { PurchaseRequest } from './types'
 import { UpdateRequest } from './types'
 import { createStore, Action, applyMiddleware } from 'redux'
 import { EventEmitter } from 'events'
-import Web3 = require('web3')
+import Web3 from 'web3'
 // local imports
 import { ChannelManager as TypechainChannelManager } from './contract/ChannelManager'
 import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
@@ -41,10 +41,11 @@ import { ExchangeController } from './controllers/ExchangeController'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import CollateralController from "./controllers/CollateralController";
 import { AbstractController } from './controllers/AbstractController'
-import { EventLog } from 'web3/types';
 import ThreadsController from './controllers/ThreadsController';
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { RedeemController } from './controllers/RedeemController';
+import { EventLog } from 'web3-core';
+import w3utils from 'web3-utils'
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -1129,8 +1130,8 @@ export class ConnextInternal extends ConnextClient {
   }
 
   generateSecret(): string {
-    return Web3.utils.soliditySha3({
-      type: 'bytes32', value: Web3.utils.randomHex(32)
+    return w3utils.soliditySha3({
+      type: 'bytes32', value: w3utils.randomHex(32)
     })
   }
 

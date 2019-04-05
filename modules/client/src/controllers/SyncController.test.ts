@@ -401,9 +401,6 @@ describe("SyncController: invalidation handling", () => {
       sigHub: '0xsig-hub',
     })
 
-    // update web3 functions to return mocked values
-    const mocked = new MockWeb3()
-
     connext = new MockConnextInternal({
       user,
       store: mockStore.createStore(),
