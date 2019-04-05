@@ -207,7 +207,7 @@ export class OnchainTransactionService {
     })
 
     const errorReason = this.getErrorReason(error)
-    LOG.info('Transaction nonce={txn.nonce} hash=${hash} sent: {txn.hash}: {res}', {
+    LOG.info('Transaction nonce={txn.nonce} hash={hash} sent: {txn.hash}: {res}', {
       txn,
       hash: txn.hash,
       res: error ? '' + error + ` (${errorReason})`: 'ok!',
