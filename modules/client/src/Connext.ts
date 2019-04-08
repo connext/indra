@@ -45,7 +45,7 @@ import ThreadsController from './controllers/ThreadsController';
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { RedeemController } from './controllers/RedeemController';
 import { EventLog } from 'web3-core';
-import w3utils from 'web3-utils'
+import w3utils = require('web3-utils')
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk

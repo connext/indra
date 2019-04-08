@@ -9,7 +9,7 @@ const Web3 = require('web3')
 
 describe('OnchainTransactionService', function() {
   const registry = getTestRegistry({
-    Web3: new Web3(),
+    Web3: new Web3('http://localhost:8545'),
     GasEstimateDao: new MockGasEstimateDao(),
   })
   const web3 = registry.get('Web3')

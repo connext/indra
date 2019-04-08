@@ -1,5 +1,4 @@
 import { AbstractController } from "./AbstractController";
-import Web3 = require('web3')
 import { Payment } from "../types";
 import w3utils from 'web3-utils'
 

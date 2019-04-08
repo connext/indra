@@ -8,12 +8,13 @@ import log from './util/log'
 import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
 import { rawTxnToTx } from './util/ethTransaction';
 import { Block } from 'web3-eth';
+import Web3 from 'web3';
 
 const LOG = log('SignerService')
 
 export class SignerService {
   constructor(
-    private web3: any, 
+    private web3: Web3, 
     private contract: ChannelManager,
     private utils: Utils, 
     private config: Config

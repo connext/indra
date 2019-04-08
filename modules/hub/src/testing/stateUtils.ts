@@ -5,7 +5,7 @@ import { Address, ChannelState, ThreadState, UnsignedChannelState } from '../ven
 //
 // chai
 //
-chai.use(require('chai-subset'))
+chai.use(require('@spankchain/chai-subset'))
 export const assert = chai.assert
 
 

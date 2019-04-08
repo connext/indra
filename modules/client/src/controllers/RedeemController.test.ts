@@ -1,15 +1,12 @@
 import { MockStore, MockConnextInternal } from '../testing/mocks';
-import { mkAddress, assert, mkHash, getDepositArgs } from '../testing';
+import { mkAddress, assert } from '../testing';
 import w3utils from 'web3-utils'
-import Web3 from 'web3'
 
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
 describe('Redeem Controller: unit tests', () => {
-  const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
-  const mockStore = new MockStore()
 
   beforeEach(async () => {
     connext = new MockConnextInternal()

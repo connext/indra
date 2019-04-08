@@ -5,7 +5,7 @@
     "sourceMap": true,
     "noImplicitAny": false,
     "strictPropertyInitialization": false,
-    "declaration": true,
+    // "declaration": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -14,11 +14,12 @@
     "module": "commonjs",
     "jsx": "react",
     "lib": ["es5", "es2015", "es6", "dom", "es2017"],
-    "declarationDir": "dist/types",
+    // "declarationDir": "dist/types",
     "typeRoots": [
       "src/@types",
       "node_modules/@types"
-    ]
+    ],
+    "allowJs": true
   },
   "include": [
     "connext-migration-disbursement-tool.ts",

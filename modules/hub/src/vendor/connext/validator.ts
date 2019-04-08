@@ -47,12 +47,11 @@ import { Utils } from './Utils'
 import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { TransactionReceipt } from 'web3-core';
+import w3utils = require('web3-utils')
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
 export const DEFAULT_EXCHANGE_MULTIPLIER = 1000000
-
-import w3utils from 'web3-utils'
 
 /*
 This class will validate whether or not the args are deemed sensible.
