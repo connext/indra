@@ -27,7 +27,7 @@ describe('MemoryCRAuthManager', () => {
     sandbox.stub(Date, 'now').returns(1)
     sandbox.stub(uuid, 'v4').returns(NONCE)
     // no provider needed since we're only using sha3
-    mcrm = new MemoryCRAuthManager(new Web3(null))
+    mcrm = new MemoryCRAuthManager(new Web3('http://localhost:8545'))
   })
 
   afterEach(() => {
