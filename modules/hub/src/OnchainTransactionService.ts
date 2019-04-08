@@ -120,8 +120,7 @@ export class OnchainTransactionService {
             state <> 'failed'
           order by nonce desc 
           limit 1
-          for update
-        ), 0) as nonce
+        ), 0) + 1 as nonce
       `)).nonce,
     )
 
