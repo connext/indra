@@ -1,5 +1,5 @@
-import { MockStore, MockConnextInternal } from '../testing/mocks';
-import { mkAddress, assert } from '../testing';
+import { MockConnextInternal } from '../testing/mocks';
+import { assert } from '../testing';
 import w3utils from 'web3-utils'
 
 // @ts-ignore
