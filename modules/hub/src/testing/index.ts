@@ -179,10 +179,9 @@ afterEach(() => {
 //
 // chai
 //
-chai.use(require('chai-subset'))
+chai.use(require('@spankchain/chai-subset'))
 chai.use(require('chai-as-promised'))
 export const assert = chai.assert
-console.log('assert: ', assert.containSubset);
 ;(assert.containSubset as any).options.check = (expected: any, actual: any) => {
   if (isBigNumber(actual))
     return actual.eq(expected)
