@@ -8,7 +8,6 @@ import { UnsignedThreadState } from '../types'
 import { ExchangeArgs } from '../types'
 import { ChannelStateUpdate } from '../types'
 import { IHubAPIClient } from '../Connext'
-import Web3 from 'web3'
 import { ConnextClientOptions } from '../Connext'
 import { ConnextInternal, IChannelManager, ChannelManagerChannelDetails } from '../Connext'
 import { mkAddress, getChannelState, getDepositArgs, assert } from '.'
@@ -18,9 +17,8 @@ import { ConnextState, PersistentState, RuntimeState } from '../state/store';
 import { StateGenerator } from '../StateGenerator';
 import { createStore } from 'redux'
 import { reducers } from "../state/reducers";
-import BN = require('bn.js')
 import { EventLog } from 'web3-core';
-
+const Web3 = require('web3') // TODO: why did i have to do this???
 
 export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager
@@ -92,17 +90,17 @@ export class MockConnextInternal extends ConnextInternal {
 
 }
 
-export class MockWeb3 extends Web3 {
-  async getBlockNumber(): Promise<number> {
-    return 500
-  }
+// export class MockWeb3 extends Web3 {
+//   async getBlockNumber(): Promise<number> {
+//     return 500
+//   }
 
-  async getBlock(blockNum: number): Promise<any> {
-    return {
-      timestamp: Math.floor(Date.now() / 1000)
-    }
-  }
-}
+//   async getBlock(blockNum: number): Promise<any> {
+//     return {
+//       timestamp: Math.floor(Date.now() / 1000)
+//     }
+//   }
+// }
 
 export class MockWeb3TxWrapper extends IWeb3TxWrapper {
   awaitEnterMempool() {

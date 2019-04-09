@@ -1,6 +1,6 @@
 import { MockConnextInternal } from '../testing/mocks';
 import { assert } from '../testing';
-import w3utils from 'web3-utils'
+const w3utils = require('web3-utils')
 
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');

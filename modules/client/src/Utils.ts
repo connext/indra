@@ -5,7 +5,7 @@ import { convertChannelState, ChannelState } from './types'
 import util = require('ethereumjs-util')
 import { MerkleUtils } from './helpers/merkleUtils'
 import MerkleTree from './helpers/merkleTree'
-import w3utils from 'web3-utils'
+const w3utils = require('web3-utils')
 
 import {
   UnsignedChannelState,

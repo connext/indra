@@ -1,6 +1,6 @@
 import { AbstractController } from "./AbstractController";
 import { Payment } from "../types";
-import w3utils from 'web3-utils'
+const w3utils = require('web3-utils')
 
 export class RedeemController extends AbstractController {
   public redeem = async (secret: string): Promise<{ purchaseId: string, amount: Payment }> => {
