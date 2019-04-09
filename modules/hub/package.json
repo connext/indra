@@ -69,6 +69,7 @@
     "@types/uuid": "^3.4.4",
     "bluebird": "3.5.4",
     "chai": "^4.1.2",
+    "chai-subset": "^1.6.0",
     "chai-as-promised": "^7.1.1",
     "@spankchain/chai-subset": "^1.7.0",
     "db-migrate": "^0.11.5",
