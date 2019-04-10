@@ -6,12 +6,12 @@ import { TextField } from "@material-ui/core";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import get from "../get";
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import axios from "axios";
 
 const styles = theme => ({
   card: {
@@ -39,9 +39,8 @@ class UserInfo extends Component {
   searchByAddress = async () => {
     console.log(`address: ${this.state.addressInput}`);
     console.log(`number: ${this.state.numberOfRecords}`);
-    const res = await get(
-      `users/${this.state.addressInput}/${this.state.numberOfRecords}`
-    );
+    const url = `${this.props.urls.api}/users/${this.state.addressInput}/${this.state.numberOfRecords}`
+    const res = (await axios.get(url)).data || null
     if (res.length > 0) {
       this.setState({ userInfo: res });
     } else {

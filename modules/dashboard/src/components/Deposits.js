@@ -5,15 +5,14 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
-import get from "../get";
-import { VictoryChart, VictoryLine, VictoryLabel, VictoryAxis } from "victory";
+import { VictoryChart, VictoryBar, VictoryLabel, VictoryAxis } from "victory";
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Button from "@material-ui/core/Button";
-
+import axios from "axios";
 
 const styles = theme => ({
   card: {
@@ -49,8 +48,8 @@ class Deposits extends Component {
 
   setAverage = async () => {
     const { web3 } = this.props;
-
-    const res = await get(`deposits/average`);
+    const url = `${this.props.urls.api}/deposits/average`
+    const res = (await axios.get(url)).data || null
     if (res && res.avg_deposit_wei && res.avg_deposit_token) {
       let tokenDeposit = String(Math.trunc(res.avg_deposit_token))
       let weiDeposit = String(Math.trunc(res.avg_deposit_wei))
@@ -71,7 +70,8 @@ class Deposits extends Component {
   };
 
   setTotal = async () => {
-    const res = await get(`deposits/total`);
+    const url = `${this.props.urls.api}/deposits/total`
+    const res = (await axios.get(url)).data || null
     if (res && res.count) {
       this.setState({ depositTotal: res.count });
     } else {
@@ -80,9 +80,10 @@ class Deposits extends Component {
   };
 
   setFrequency = async() =>{
-    const res = get(`deposits/frequency`);
-    if (res.data){
-      this.setState({freqArray: res.data})
+    const url = `${this.props.urls.api}/deposits/frequency`
+    const res = (await axios.get(url)).data || null
+    if (res){
+      this.setState({freqArray: res})
     }
   }
 
@@ -96,37 +97,37 @@ class Deposits extends Component {
       //   {day:"3", count:8}
       // ]
 
+      console.log(`Rendering data: ${JSON.stringify(this.state.freqArray,null,2)}`)
+
+      const maxCount = this.state.freqArray.reduce(
+        (acc, cur) => cur.count > acc ? cur.count : acc,
+        1
+      )
       const toRender = (
-        <VictoryChart width={140} height={140}
-        style={{
-          labels:{
-            fontSize:4
-          }
-        }}>
+        <VictoryChart width={140} height={140} style={{ labels:{ fontSize:4 } }}>
           <VictoryLabel x={50} y={40}
             text="Deposits this Week"
             style={{fontSize:4}}
           />
-          <VictoryLine
-
+          <VictoryBar
             x="day"
             y="count"
             standalone={false}
-            style={{ data: { strokeWidth: 0.1 } }}
+            style={{ data: { strokeWidth: 0.1, fill: "#9c27b0" } }}
             data={this.state.freqArray}
           />
           <VictoryAxis
-            domain={{y: [0, 100] }}
+            domain={{y: [0, maxCount] }}
             dependentAxis={true}
             label="Deposits"
-            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+            style={{ axisLabel: { fontSize: 3 }, tickLabels: { fontSize: 3 } }}
           />
           <VictoryAxis
             dependentAxis={false}
             domain={{ x: [0, 7]}}
             tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
             label="Day"
-            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
+            style={{ axisLabel: { fontSize: 3 }, tickLabels: { fontSize: 3 } }}
           />
         </VictoryChart>
       );

@@ -2911,7 +2911,7 @@ contract("ChannelManager", accounts => {
         await verifyEmptyChannel(viewer, state, tx, true);
       });
 
-      it("hub empty after viewer startExitWithUpdate", async () => {
+      it.skip("hub empty after viewer startExitWithUpdate", async () => {
         const payment = getPaymentArgs("empty", {
           ...state,
           amountWei: 5,

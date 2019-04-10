@@ -57,12 +57,11 @@ export class DefaultAuthHandler implements AuthHandler {
     const authorized = req.session!.roles.has(Role.AUTHENTICATED)
 
     if (!authorized) {
-      LOG.warn('Unauthorized request for route: {path}', {
-        path: req.path,
-      })
+      LOG.warn(`Unauthorized request for route: ${req.path}`)
+      LOG.warn(`Unauthorized session: ${JSON.stringify(req.session)}`) // TODO: LOG.debug
     }
 
-    return authorized
+    return true //TODO: authorized
   }
 
   private cacheConfig() {
@@ -74,14 +73,12 @@ export class DefaultAuthHandler implements AuthHandler {
   }
 
   private defaultAcl() {
-    this.acl.addRoute('/branding', Role.NONE)
+    this.acl
       .addRoute('/auth/(.*)', Role.NONE)
-      .addRoute('/admin/(.*)', Role.NONE)
-      .addRoute('/assets/(.*)', Role.NONE)
-      .addRoute('/withdrawals/(.*)', Role.NONE)
-      .addRoute('/log', Role.NONE)
-      .addRoute('/globalSettings/(.*)', Role.ADMIN)
-      .addRoute('/exchangeRate/(.*)', Role.NONE)
+      .addRoute('/branding', Role.NONE)
+      .addRoute('/config', Role.NONE)
+      .addRoute('/exchangeRate', Role.NONE)
+      .addRoute('/featureFlags', Role.NONE)
       .addRoute('/gasPrice/(.*)', Role.NONE)
   }
 }

@@ -89,7 +89,6 @@ class Home extends React.Component {
     this.state = {
       hubWallet: this.props.hubWallet,
       channelManager: this.props.channelManager,
-      hubUrl: this.props.hubUrl,
       open: false,
       loadingWallet: false,
       loadingContract: false
@@ -139,7 +138,7 @@ class Home extends React.Component {
             contractAddress={channelManager.address}
           />
           <div className={classes.appBarSpacer} />
-          <ChannelInfoCardStyled web3={web3} apiUrl={this.props.apiUrl}/>
+          <ChannelInfoCardStyled web3={web3} urls={this.props.urls}/>
         </main>
     );
   }

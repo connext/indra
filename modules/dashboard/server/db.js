@@ -27,7 +27,8 @@ const query = async (sql) =>{
     try {
         return await pool.query(sql);
     } catch(e) {
-        console.log(`Error: ${JSON.stringify(e.stack)}`)
+        console.error(`Error: ${e.message}`)
+        console.error(`Could not process query: ${sql}`)
         return null;
     }
 };

@@ -21,7 +21,13 @@ export default class ThreadsApiService extends ApiService<
     'GET /:user/incoming': 'doGetThreadsIncoming',
     'GET /:user/active': 'doGetThreadsActive',
     'GET /:user/last-update-id': 'doGetLastUpdateId',
-    'GET /:user/all': 'doGetThreads'
+    'GET /:user/all': 'doGetThreads',
+    'POST /:sender/to/:receiver': 'doGetThread',
+    'POST /:user/initial-states': 'doGetInitialStates',
+    'POST /:user/incoming': 'doGetThreadsIncoming',
+    'POST /:user/active': 'doGetThreadsActive',
+    'POST /:user/last-update-id': 'doGetLastUpdateId',
+    'POST /:user/all': 'doGetThreads',
   }
   handler = ThreadsApiServiceHandler
   dependencies = {
