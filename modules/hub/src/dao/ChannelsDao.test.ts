@@ -1,9 +1,7 @@
-import * as chai from 'chai'
 import { assert } from 'chai'
-chai.use(require('chai-subset'))
 import ChannelsDao from './ChannelsDao'
 import { getTestRegistry } from '../testing'
-import { assertChannelStateEqual, mkAddress, mkHash } from '../testing/stateUtils'
+import { assertChannelStateEqual } from '../testing/stateUtils'
 import { convertChannelState } from '../vendor/connext/types';
 import { channelUpdateFactory } from '../testing/factories';
 
