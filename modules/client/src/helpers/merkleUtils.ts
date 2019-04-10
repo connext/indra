@@ -1,4 +1,4 @@
-import w3utils from 'web3-utils'
+const w3utils = require('web3-utils')
 
 export class MerkleUtils {
   static getBytes = (input: any): string => {
