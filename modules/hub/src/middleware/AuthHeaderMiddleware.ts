@@ -24,12 +24,12 @@ export default class AuthHeaderMiddleware {
     // First: check the POST body, this is the most trustworthy token location
     if (bodyToken) {
       token = bodyToken
-      LOG.info(`Found token in body: ${token}`)
+      LOG.info(`Found token in body: ${token.substring(0,8)}..`)
 
     // Second: check the header for Auth fields
     } else if (headerToken) {
       token = headerToken
-      LOG.info(`Found token in header: ${token}`)
+      LOG.info(`Found token in header: ${token.substring(0,8)}..`)
 
     // Last: if we already have a cookie available, use it (blocked by many browsers tho)
     } else if (cookieToken) {
@@ -45,7 +45,7 @@ export default class AuthHeaderMiddleware {
     // If we DID find a token, copy it into a cookie
     const cookie = `${this.cookieName}=s:${sign(token, this.cookieSecret)}`
     req.headers.cookie = cookie
-    LOG.info(`Stuffing header/body token into a cookie: ${cookie}`)
+    LOG.debug(`Stuffing header/body token into a cookie`)
     next()
   }
 }
