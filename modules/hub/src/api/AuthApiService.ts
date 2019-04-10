@@ -13,6 +13,7 @@ export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
   routes = {
     'POST /challenge': 'doChallenge',
     'POST /response': 'doResponse',
+    'POST /status': 'doStatus',
     'GET /status': 'doStatus',
   }
   handler = AuthApiServiceHandler
