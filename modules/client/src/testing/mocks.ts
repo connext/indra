@@ -199,8 +199,8 @@ export class MockHub implements IHubAPIClient {
     return { success: true, address: mkAddress('0xUUU') }
   }
 
-  async reauthIfNeeded(): Promise<void> {
-    return
+  async getAuthToken(): Promise<string> {
+    return 'abc123'
   }
   
   async getChannelByUser(recipient: string): Promise<ChannelRow> {
