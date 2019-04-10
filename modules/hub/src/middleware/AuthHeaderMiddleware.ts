@@ -16,25 +16,36 @@ export default class AuthHeaderMiddleware {
   }
 
   public middleware(req: express.Request, res: express.Response, next: () => void) {
-    let token = parseAuthHeader(req)
+    const bodyToken = req.body && req.body.authToken ? req.body.authToken : null
+    const cookieToken = req.headers.cookie
+    const headerToken = parseAuthHeader(req)
+    let token
 
-    if (req.headers.cookie) {
-      LOG.info('Cookie found, skipping.')
+    // First: check the POST body, this is the most trustworthy token location
+    if (bodyToken) {
+      token = bodyToken
+      LOG.info(`Found token in body: ${token}`)
+
+    // Second: check the header for Auth fields
+    } else if (headerToken) {
+      token = headerToken
+      LOG.info(`Found token in header: ${token}`)
+
+    // Last: if we already have a cookie available, use it (blocked by many browsers tho)
+    } else if (cookieToken) {
+      LOG.info(`Found token in cookie: ${cookieToken}`)
+      return next() // skip last step
+
+    // If we didn't find a token, too bad so sad
+    } else {
+      LOG.info(`No token found`)
       return next()
     }
 
-    if (!token && req.body && req.body.authToken) {
-      token = req.body.authToken
-      LOG.info('Found auth token in body')
-    }
-
-    if (!token) {
-      LOG.info('No token found, skipping.')
-      return next()
-    }
-
-    LOG.debug('Stuffing auth header/body into cookies.')
-    req.headers.cookie = `${this.cookieName}=s:${sign(token, this.cookieSecret)}`
+    // If we DID find a token, copy it into a cookie
+    const cookie = `${this.cookieName}=s:${sign(token, this.cookieSecret)}`
+    req.headers.cookie = cookie
+    LOG.info(`Stuffing header/body token into a cookie: ${cookie}`)
     next()
   }
 }
