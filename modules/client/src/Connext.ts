@@ -120,9 +120,6 @@ class HubAPIClient implements IHubAPIClient {
     this.origin = origin
   }
 
-  ////////////////////////////////////////
-  // Routes that do NOT require Auth
-
   async config(): Promise<HubConfig> {
     const res = (await this.networking.get(`config`)).data
     return res ? res : null
@@ -156,6 +153,7 @@ class HubAPIClient implements IHubAPIClient {
     if (this.authToken && status.success && status.address && status.address.toLowerCase() == this.user) {
       return this.authToken
     }
+    console.log(`Getting a new auth token, current one is invalid: ${this.authToken}`)
 
     // reset authtoken
     const nonce = await this.authChallenge()
@@ -170,9 +168,6 @@ class HubAPIClient implements IHubAPIClient {
     // document.cookie = `hub.sid=${authToken}`; // Think the browser will set this for us
     return this.authToken
   }
-
-  ////////////////////////////////////////
-  // Routes that DO require Auth
 
   async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
     try {
