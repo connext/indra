@@ -106,20 +106,22 @@ export interface IHubAPIClient {
   redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
 }
 
-// TODO: if we get a 403 and this.authToken is not set, run the auth process
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
-  private authToken?: string
   private web3: Web3
   private origin: string
+  private authToken?: string
 
   constructor(user: Address, networking: Networking, web3: Web3, origin: string) {
-    this.user = user
+    this.user = user.toLowerCase()
     this.networking = networking
     this.web3 = web3
     this.origin = origin
   }
+
+  ////////////////////////////////////////
+  // Routes that do NOT require Auth
 
   async config(): Promise<HubConfig> {
     const res = (await this.networking.get(`config`)).data
@@ -138,12 +140,13 @@ class HubAPIClient implements IHubAPIClient {
       origin,
       signature,
     })).data
-    this.authToken = res.token // Keep this token in memory
     return res && res.token ? res.token : null
   }
 
   async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
-    const res = (await this.networking.get(`auth/status`)).data
+    const res = (await this.networking.post(`auth/status`, {
+      authToken: this.authToken
+    })).data
     return res ? res : { success: false }
   }
 
