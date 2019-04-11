@@ -6,7 +6,7 @@ import Tab from "@material-ui/core/Tab";
 import Typography from "@material-ui/core/Typography";
 import IconButton from "@material-ui/core/IconButton";
 import RefreshIcon from "@material-ui/icons/Refresh";
-const eth = require("ethers");
+import { ethers } from "ethers";
 
 function TabContainer({ children, dir }) {
   return (
@@ -38,40 +38,27 @@ class FullWidthTabs extends React.Component {
     showWalletOptions: true
   };
 
-  async refreshBalances() {
-    const tokenContract = this.props.tokenContract;
-    // const balance = Number(await this.props.web3.eth.getBalance(this.state.address)) / 1000000000000000000;
-    // const tokenBalance = Number(await tokenContract.methods.balanceOf(this.state.address).call()) / 1000000000000000000;
-    // this.setState({ balance: balance, tokenBalance: tokenBalance });
+  componentDidMount() {
+    console.log('this.props.hubWallet: ', this.props.hubWallet);
+  }
 
-    const hubBalance =
-      Number(
-        await this.props.web3.eth.getBalance(this.state.hubWallet.address)
-      ) / 1000000000000000000;
-    const hubTokenBalance =
-      Number(
-        await this.props.tokenContract.methods
-          .balanceOf(this.state.hubWallet.address)
-          .call()
-      ) / 1000000000000000000;
+  async refreshBalances() {
+    const { tokenContract, web3 } = this.props;
+    const { hubWallet, channelManager } = this.state;
+    console.log('hubWallet: ', hubWallet);
+
+    const hubBalance = Number(await web3.eth.getBalance(hubWallet.address)) / 1000000000000000000;
+    const hubTokenBalance = Number(await tokenContract.methods.balanceOf(hubWallet.address).call()) / 1000000000000000000;
     this.setState({
       hubWallet: {
-        address: this.state.hubWallet.address,
+        address: hubWallet.address,
         balance: hubBalance,
         tokenBalance: hubTokenBalance
       }
     });
 
-    const cmBalance =
-      Number(
-        await this.props.web3.eth.getBalance(this.state.channelManager.address)
-      ) / 1000000000000000000;
-    const cmTokenBalance =
-      Number(
-        await tokenContract.methods
-          .balanceOf(this.state.channelManager.address)
-          .call()
-      ) / 1000000000000000000;
+    const cmBalance = Number(await web3.eth.getBalance(channelManager.address)) / 1000000000000000000;
+    const cmTokenBalance = Number(await tokenContract.methods.balanceOf(this.state.channelManager.address).call()) / 1000000000000000000;
     this.setState({
       channelManager: {
         address: this.state.channelManager.address,
@@ -80,14 +67,11 @@ class FullWidthTabs extends React.Component {
       }
     });
 
-    let web3 = window.web3;
-    if (!web3) {
+    if (!window.web3) {
       alert("You need to install & unlock metamask to do that");
       return;
     }
-    const metamaskProvider = new eth.providers.Web3Provider(
-      web3.currentProvider
-    );
+    const metamaskProvider = new ethers.providers.Web3Provider(window.web3);
     const metamask = metamaskProvider.getSigner();
     const address = (await metamask.provider.listAccounts())[0];
     if (!address) {
@@ -96,12 +80,8 @@ class FullWidthTabs extends React.Component {
       });
       return;
     }
-    const mmBalance =
-      Number(await this.props.web3.eth.getBalance(address)) /
-      1000000000000000000;
-    const mmTokenBalance =
-      Number(await tokenContract.methods.balanceOf(address).call()) /
-      1000000000000000000;
+    const mmBalance = Number(await web3.eth.getBalance(address)) / 1000000000000000000;
+    const mmTokenBalance = Number(await tokenContract.methods.balanceOf(address).call()) / 1000000000000000000;
     this.setState({
       metamask: {
         address: address,
@@ -163,22 +143,14 @@ class FullWidthTabs extends React.Component {
           </Tabs>
         </AppBar>
         <br />
-        <SwipeableViews
-          style={tabStyles.content}
-          axis={"rtl" ? "x-reverse" : "x"}
-          index={this.state.value}
-          onChangeIndex={this.handleChangeIndex}
-        >
+        <SwipeableViews style={tabStyles.content} axis={"rtl" ? "x-reverse" : "x"} index={this.state.value} onChangeIndex={this.handleChangeIndex}>
           <TabContainer style={tabStyles.tabContainer}>
             <div>
               <p>Address: {this.state.metamask.address}</p>
               <p>ETH Balance: {this.state.metamask.balance} </p>
               <p>TST Balance: {this.state.metamask.tokenBalance}</p>
             </div>
-            <IconButton
-              onClick={() => this.refreshBalances()}
-              style={tabStyles.refresh}
-            >
+            <IconButton onClick={() => this.refreshBalances()} style={tabStyles.refresh}>
               <RefreshIcon />
             </IconButton>
           </TabContainer>
@@ -188,10 +160,7 @@ class FullWidthTabs extends React.Component {
               <p>ETH Balance: {this.state.hubWallet.balance} </p>
               <p>TST Balance: {this.state.hubWallet.tokenBalance}</p>
             </div>
-            <IconButton
-              onClick={() => this.refreshBalances()}
-              style={tabStyles.refresh}
-            >
+            <IconButton onClick={() => this.refreshBalances()} style={tabStyles.refresh}>
               <RefreshIcon />
             </IconButton>
           </TabContainer>
@@ -201,10 +170,7 @@ class FullWidthTabs extends React.Component {
               <p>ETH Balance: {this.state.channelManager.balance} </p>
               <p>TST Balance: {this.state.channelManager.tokenBalance}</p>
             </div>
-            <IconButton
-              onClick={() => this.refreshBalances()}
-              style={tabStyles.refresh}
-            >
+            <IconButton onClick={() => this.refreshBalances()} style={tabStyles.refresh}>
               <RefreshIcon />
             </IconButton>
           </TabContainer>

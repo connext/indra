@@ -55,8 +55,6 @@ export class MockConnextInternal extends ConnextInternal {
       ...opts,
     } as any)
 
-    this.auth = async () => { return null }
-
     this.mockContract = this.contract as MockChannelManager
     this.mockHub = this.hub as MockHub
 
@@ -196,6 +194,10 @@ export class MockHub implements IHubAPIClient {
   }
   async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
     return { success: true, address: mkAddress('0xUUU') }
+  }
+
+  async getAuthToken(): Promise<string> {
+    return 'abc123'
   }
   
   async getChannelByUser(recipient: string): Promise<ChannelRow> {

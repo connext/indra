@@ -122,8 +122,7 @@ export class OnchainTransactionService {
             state <> 'failed'
           order by nonce desc 
           limit 1
-          for update
-        ), 0) as nonce
+        ), 0) + 1 as nonce
       `)).nonce,
     )
 
@@ -253,6 +252,7 @@ export class OnchainTransactionService {
   }
 
   private async processPendingTxn(txn: OnchainTransactionRow): Promise<void> {
+    LOG.info(`processPendingTxn(${txn.hash}) state: ${txn.state}`)
     if (txn.state == 'new') {
       await this.submitToChain(txn)
       return
@@ -260,10 +260,6 @@ export class OnchainTransactionService {
 
     if (txn.state == 'submitted') {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
-      LOG.info('State of {txn.hash}: {res}, currently submitted', {
-        txn,
-        res: JSON.stringify(tx || err),
-      })
       if (err) {
         // TODO: what errors can happen here?
         LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
@@ -330,10 +326,6 @@ export class OnchainTransactionService {
 
     if (txn.state == 'pending_failure') {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
-      LOG.info('State of {txn.hash}, currently pending_failure: {res}', {
-        txn,
-        res: JSON.stringify(tx || err),
-      })
       if (err) {
         // TODO: what errors can happen here?
         LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
