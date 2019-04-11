@@ -44,7 +44,7 @@ export function handleChannelChange(state: ConnextState, channel: ChannelState, 
 }
 
 reducers = reducers.case(actions.setChannelAndUpdate, (state, action) => handleChannelChange(state, action.state, action.update))
-
+// @ts-ignore
 reducers = reducers.case(actions.setChannel, (state, action) => handleChannelChange(state, action))
 
 for (let action of Object.values(actions) as any[]) {

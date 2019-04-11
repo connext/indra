@@ -1,5 +1,5 @@
 import { default as Config } from './Config'
-import { sleep, prettySafeJson, safeJson } from './util'
+import { prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import { ChannelManager } from './ChannelManager'

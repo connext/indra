@@ -2,19 +2,19 @@ import * as fs from 'fs'
 import { Utils } from './vendor/connext/Utils'
 import Config from './Config'
 import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails, Omit } from './vendor/connext/types'
-import { Block } from 'web3/types';
 import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
-import EthereumTx from "ethereumjs-tx"
 import log from './util/log'
 import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
 import { rawTxnToTx } from './util/ethTransaction';
+import { Block } from 'web3-eth';
+import Web3 from 'web3';
 
 const LOG = log('SignerService')
 
 export class SignerService {
   constructor(
-    private web3: any, 
+    private web3: Web3, 
     private contract: ChannelManager,
     private utils: Utils, 
     private config: Config

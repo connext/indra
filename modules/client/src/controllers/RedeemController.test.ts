@@ -1,14 +1,12 @@
-import { MockStore, MockConnextInternal } from '../testing/mocks';
-import { mkAddress, assert, mkHash, getDepositArgs } from '../testing';
-import Web3 = require('web3')
+import { MockConnextInternal } from '../testing/mocks';
+import { assert } from '../testing';
+const w3utils = require('web3-utils')
 
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
 describe('Redeem Controller: unit tests', () => {
-  const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
-  const mockStore = new MockStore()
 
   beforeEach(async () => {
     connext = new MockConnextInternal()
@@ -17,7 +15,7 @@ describe('Redeem Controller: unit tests', () => {
 
   it('should work even if redeemer has no channel', async () => {
     const secret = connext.generateSecret()
-    assert.isTrue(Web3.utils.isHex(secret))
+    assert.isTrue(w3utils.isHex(secret))
     const res = await connext.redeemController.redeem(secret)
     assert.ok(res.purchaseId)
 

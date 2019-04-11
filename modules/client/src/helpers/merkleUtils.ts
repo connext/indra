@@ -1,10 +1,10 @@
-const Web3 = require('web3')
+const w3utils = require('web3-utils')
 
 export class MerkleUtils {
   static getBytes = (input: any): string => {
     if (Buffer.isBuffer(input)) input = '0x' + input.toString('hex')
-    if (66 - input.length <= 0) return Web3.utils.toHex(input)
-    return MerkleUtils.padBytes32(Web3.utils.toHex(input))
+    if (66 - input.length <= 0) return w3utils.toHex(input)
+    return MerkleUtils.padBytes32(w3utils.toHex(input))
   }
 
   static marshallState = (inputs: any[]): any => {
@@ -18,7 +18,7 @@ export class MerkleUtils {
   }
 
   static getCTFaddress = (_r: any): string => {
-    return Web3.utils.sha3(_r, { encoding: 'hex' })
+    return w3utils.sha3(_r)
   }
 
   static getCTFstate = (_contract: any, _signers: any, _args: any): any => {

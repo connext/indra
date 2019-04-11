@@ -5,7 +5,7 @@ import { convertChannelState, ChannelState } from './types'
 import util = require('ethereumjs-util')
 import { MerkleUtils } from './helpers/merkleUtils'
 import MerkleTree from './helpers/merkleTree'
-import Web3 = require('web3')
+const w3utils = require('web3-utils')
 
 import {
   UnsignedChannelState,
@@ -30,8 +30,7 @@ export class Utils {
     req: Payment,
   ): string {
     const { amountToken, amountWei } = req
-    // @ts-ignore
-    const hash = Web3.utils.soliditySha3(
+    const hash = w3utils.soliditySha3(
       { type: 'uint256', value: amountToken },
       { type: 'uint256', value: amountWei },
     )
@@ -72,22 +71,20 @@ export class Utils {
     } = channelState
 
     // hash data
-    // @ts-ignore
-    const hash = Web3.utils.soliditySha3(
-      { type: 'address', value: contractAddress },
-      // @ts-ignore TODO wtf??!
-      { type: 'address[2]', value: [user, recipient] },
+    const hash = w3utils.soliditySha3(
+      { t: 'address', v: contractAddress },
+      { t: 'address[2]', v: [user, recipient] },
       {
-        type: 'uint256[2]',
-        value: [balanceWeiHub, balanceWeiUser],
+        t: 'uint256[2]',
+        v: [balanceWeiHub, balanceWeiUser],
       },
       {
-        type: 'uint256[2]',
-        value: [balanceTokenHub, balanceTokenUser],
+        t: 'uint256[2]',
+        v: [balanceTokenHub, balanceTokenUser],
       },
       {
-        type: 'uint256[4]',
-        value: [
+        t: 'uint256[4]',
+        v: [
           pendingDepositWeiHub,
           pendingWithdrawalWeiHub,
           pendingDepositWeiUser,
@@ -95,8 +92,8 @@ export class Utils {
         ],
       },
       {
-        type: 'uint256[4]',
-        value: [
+        t: 'uint256[4]',
+        v: [
           pendingDepositTokenHub,
           pendingWithdrawalTokenHub,
           pendingDepositTokenUser,
@@ -136,22 +133,20 @@ export class Utils {
       txCount,
     } = threadState
     // convert ChannelState to UnsignedChannelState
-    // @ts-ignore
-    const hash = Web3.utils.soliditySha3(
-      { type: 'address', value: contractAddress },
-      { type: 'address', value: sender },
-      { type: 'address', value: receiver },
-      // @ts-ignore TODO wtf??!
-      { type: 'uint256', value: threadId },
+    const hash = w3utils.soliditySha3(
+      { t: 'address', v: contractAddress },
+      { t: 'address', v: sender },
+      { t: 'address', v: receiver },
+      { t: 'uint256', v: threadId },
       {
-        type: 'uint256',
-        value: [balanceWeiSender, balanceWeiReceiver],
+        t: 'uint256',
+        v: [balanceWeiSender, balanceWeiReceiver],
       },
       {
-        type: 'uint256',
-        value: [balanceTokenSender, balanceTokenReceiver],
+        t: 'uint256',
+        v: [balanceTokenSender, balanceTokenReceiver],
       },
-      { type: 'uint256', value: txCount },
+      { t: 'uint256', v: txCount },
     )
     return hash
   }

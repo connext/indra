@@ -8,20 +8,17 @@ import { UnsignedThreadState } from '../types'
 import { ExchangeArgs } from '../types'
 import { ChannelStateUpdate } from '../types'
 import { IHubAPIClient } from '../Connext'
-import Web3 = require('web3')
 import { ConnextClientOptions } from '../Connext'
 import { ConnextInternal, IChannelManager, ChannelManagerChannelDetails } from '../Connext'
-import { mkAddress, getChannelState, getChannelStateUpdate, getDepositArgs, assert } from '.'
-import { ChannelRow, ThreadRow, PurchasePaymentHubResponse, WithdrawalArgsBN, PaymentBN, Payment, UnsignedChannelState, ChannelUpdateReason, ArgsTypes, PurchasePayment } from '../types'
+import { mkAddress, getChannelState, getDepositArgs, assert } from '.'
+import { ChannelRow, ThreadRow, PurchasePaymentHubResponse, PaymentBN, Payment, UnsignedChannelState, ChannelUpdateReason, ArgsTypes, PurchasePayment } from '../types'
 import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
-import { ConnextState, PersistentState, RuntimeState, CHANNEL_ZERO_STATE, SyncControllerState } from '../state/store';
+import { ConnextState, PersistentState, RuntimeState } from '../state/store';
 import { StateGenerator } from '../StateGenerator';
 import { createStore } from 'redux'
 import { reducers } from "../state/reducers";
-import BN = require('bn.js')
-import { EventLog } from 'web3/types';
-import { Utils } from '../Utils';
-
+import { EventLog } from 'web3-core';
+const Web3 = require('web3') // TODO: why did i have to do this???
 
 export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager
@@ -51,7 +48,7 @@ export class MockConnextInternal extends ConnextInternal {
       user: mkAddress('0x123'),
       contractAddress: mkAddress('0xccc'),
       contract: new MockChannelManager(),
-      web3: new Web3(),
+      web3: new Web3('http://localhost:8545'),
       hub: new MockHub(),
       hubAddress: mkAddress('0xhhh'),
       store,
@@ -91,17 +88,17 @@ export class MockConnextInternal extends ConnextInternal {
 
 }
 
-export class MockWeb3 extends Web3 {
-  async getBlockNumber(): Promise<number> {
-    return 500
-  }
+// export class MockWeb3 extends Web3 {
+//   async getBlockNumber(): Promise<number> {
+//     return 500
+//   }
 
-  async getBlock(blockNum: number): Promise<any> {
-    return {
-      timestamp: Math.floor(Date.now() / 1000)
-    }
-  }
-}
+//   async getBlock(blockNum: number): Promise<any> {
+//     return {
+//       timestamp: Math.floor(Date.now() / 1000)
+//     }
+//   }
+// }
 
 export class MockWeb3TxWrapper extends IWeb3TxWrapper {
   awaitEnterMempool() {
