@@ -1,7 +1,7 @@
 
 # Installing and Running the Test Suite
 
-Running contract tests requires the latest version of the Connext client. To allow for fast iteration on the client rapidly while working on contract, we import and build the client directly from the `connext-client` repository.
+Running contract tests requires the latest version of the Connext client.
 
 Please use the scripts in the package.json to ensure that this is done correctly.
 
@@ -11,9 +11,8 @@ Dependencies
     # npm >= v6
     # ganache-cli >= 6.8.1
     
-    # update the connext client repo
-    $ cd client
-    $ npm i
+    # update the connext client
+    $ npm i connext@latest
 
     # install the dev dependencies
     # run ganache in the background (or separate shell) ensuring the proper mnemonic
@@ -102,10 +101,6 @@ The counterparty will validate this state update by checking that a `DidUpdateCh
     txCount[1] // the pending tx count
 
 (in practice, the Hub will include the transaction hash of the transaction which contains this event to make it easier for the client to find)
-
-**TODO:** define what happens if the client rejects. Proposal: return an error along with an invalidating state N + 1.
-
-(in practice, for the first version, only the hub will be watching the blockchain for transactions)
 
 Note: `pending` values cannot be added or updated if the current state already has `pending` values. For example, if the current state includes a pending withdrawal, subsequent states may not modify the pending withdrawal (except to remove it), and they also may not add a pending deposit. They may, however, modify the `balances` (this allows offchain transactions to continue as normal while a deposit or withdrawal is pending).
 
@@ -354,16 +349,6 @@ A thread is opened by reducing the channel balances in the parties' respective c
     5. Then, the viewer is able to tip the performer by generating new thread states in a similar format to the initial thread state above.
 
 Threads are closed offchain following the same procedure but in reverse. First, the viewer submits a channel update reintroducing the final thread balances and removing the thread initial state from thread root to the hub.
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-//TODO: Check the diagram for close thread consistency. What happens if Alice closes the thread offchain and then Bob disputes it before countersigning the hub's offchain update?
->>>>>>> c1e23937daf93294e5e7e6e74db9549186eb3c4a
-=======
-
-//TODO: Check the diagram for close thread consistency. What happens if Alice closes the thread offchain and then Bob disputes it before countersigning the hub's offchain update?
->>>>>>> c4f6ef72fa330342fc099d68340fb21baf8fd89e
 
 ## ThreadIDs
 
@@ -380,7 +365,7 @@ We strictly require that all threads are unidirectional. This removes the need f
 
 All thread state updates must only increase the recipient's balance and must strictly either increase the recipient's wei balance, token balance or both (in other words, a new state update that does not change balances is not allowed). This requirement is enforced on the contract in the thread disputes, so a thread state update which does not adhere to these guidelines should be considered invalid.
 
-[//TODO](//todo) : Additionally, we also require that all initial thread states set the recipient balances to 0. Since recipient balances can only increase, this constrains the number of cases where malformed states can be generated. (//What other problems exist here?)
+Additionally, we also require that all initial thread states set the recipient balances to 0. Since recipient balances can only increase, this constrains the number of cases where malformed states can be generated.
 
 # Unilateral Functions
 In the event that channel/thread participants cannot mutually agree on a final state to close the channel/thread with, participants can call the unilateral functions to use the contract as an arbitrator and settle the final state of the channel on chain.
@@ -1570,18 +1555,4 @@ function _isContained(bytes32 _hash, bytes _proof, bytes32 _root) internal pure 
     return cursor == _root;
 }
 ```
-## Questions
-
-## What if the hub is the user?
-
-If the hub == user, the `hub/userAuthorizedUpdate` functions would not allow the hub to drain funds or otherwise break proper operation.
-
-## hubAuthorizedUpdate
-
-1. The channel would be looked up by the user, which would fetch the hub's channel with itself.
-2. The call to `_verifyAuthorizedUpdate` would have `isHub = true` and would expect the hub and user balances to come from the hub's contract reserves, which would be fine.
-3. The call to `_verifySig` would check the `sigUser`, which would be expected to be the hub's sig, which would be fine.
-4.
-
-## What if the sender and receiver for a thread are the same?
 
