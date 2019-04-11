@@ -1,0 +1,37 @@
+specVersion: 0.0.1
+description: Connext Channel Manager Contract
+repository: https://github.com/ConnextProject/indra
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: ChannelManager
+    network: mainnet
+    source:
+      address: '0xdfa6edAe2EC0cF1d4A60542422724A48195A5071'
+      abi: ChannelManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.1
+      language: wasm/assemblyscript
+      entities:
+        - Gravatar
+      abis:
+        - name: ChannelManager
+          file: ./abis/ChannelManager.json
+      eventHandlers:
+        # - event: DidHubContractWithdraw(uint256,uint256)
+        #   handler: handleDidHubContractWithdraw
+        - event: DidUpdateChannel(address,uint256,uint256[2],uint256[2],uint256[4],uint256[4],uint256[2],bytes32,uint256)
+          handler: handleDidUpdateChannel
+        # - event: DidStartExitChannel(address,uint256,uint256[2],uint256[2],uint256[2],bytes32,uint256)
+        #   handler: handleDidStartExitChannel
+        # - event: DidStartExitThread(address,address,address,uint256,address,uint256[2],uint256[2])
+        #   handler: handleDidStartExitThread
+        # - event: DidChallengeThread(address,address,uint256,address,uint256[2],uint256[2],uint256)
+        #   handler: handleDidChallengeThread
+        # - event: DidEmptyThread(address,address,address,uint256,address,uint256[2],uint256[2],uint256[2],bytes32,uint256)
+        #   handler: handleDidEmptyThread
+        # - event: DidNukeThreads(address,address,uint256,uint256,uint256[2],uint256[2],uint256[2],bytes32,uint256)
+        #   handler: handleDidNukeThreads
+      file: ./src/mapping.ts
