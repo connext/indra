@@ -1,5 +1,3 @@
-import * as chai from 'chai'
-chai.use(require('@spankchain/chai-subset'))
 import DBEngine from '../DBEngine'
 import { BigNumber } from 'bignumber.js'
 import { getTestRegistry } from '../testing'
@@ -18,7 +16,6 @@ describe('ThreadsDao', () => {
   const registry = getTestRegistry()
 
   const threadsDao: PostgresThreadsDao = registry.get('ThreadsDao')
-  const db: DBEngine = registry.get('DBEngine')
 
   beforeEach(async () => {
     await registry.clearDatabase()

@@ -801,7 +801,7 @@ describe('ChannelsService', () => {
   it('allows invalidation and marks a new onchain tx as failed', async () => {
     const registry = getTestRegistry({
       Web3: {
-        ...Web3,
+        ...getMockWeb3(),
         eth: {
           sign: async () => {
             return
@@ -1233,7 +1233,7 @@ describe('ChannelsService.shouldCollateralize', () => {
     it('should invalidate a failing hub authorized update', async () => {
       const registry = getTestRegistry({
         Web3: {
-          ...Web3,
+          ...getMockWeb3(),
           eth: {
             Contract: web3ContractMock,
             sign: async () => {

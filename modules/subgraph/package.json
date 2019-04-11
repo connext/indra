@@ -1,0 +1,24 @@
+{
+  "name": "indra",
+  "version": "0.1.0",
+  "scripts": {
+    "build-contract": "solc contracts/Gravity.sol --abi -o abis --overwrite && solc contracts/Gravity.sol --bin -o bin --overwrite",
+    "create": "graph create connextproject/indra --node https://api.thegraph.com/deploy/",
+    "create-local": "graph create connextproject/indra --node http://127.0.0.1:8020",
+    "codegen": "graph codegen --debug --output-dir src/types/",
+    "build": "graph build --debug",
+    "deploy": "graph deploy connextproject/indra --debug --ipfs https://api.thegraph.com/ipfs/ --node https://api.thegraph.com/deploy/",
+    "deploy-local": "graph deploy connextproject/indra --debug --ipfs http://localhost:5001 --node http://127.0.0.1:8020"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.7.1",
+    "@graphprotocol/graph-ts": "^0.5.0"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.26.0",
+    "babel-register": "^6.26.0",
+    "truffle": "^5.0.4",
+    "truffle-contract": "^4.0.5",
+    "truffle-hdwallet-provider": "^1.0.4"
+  }
+}

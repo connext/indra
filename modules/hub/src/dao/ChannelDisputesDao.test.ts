@@ -1,6 +1,4 @@
-import * as chai from 'chai'
 import { assert } from 'chai'
-chai.use(require('@spankchain/chai-subset'))
 import { getTestRegistry } from '../testing'
 import { mkHash, mkAddress } from '../testing/stateUtils'
 import { channelUpdateFactory } from '../testing/factories';

@@ -1,5 +1,4 @@
 import { assertUnreachable } from '../lib/utils'
-import { Block } from 'web3/eth/types'
 import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes, channelUpdateToUpdateRequest } from '../types'
 import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
 import { Poller } from '../lib/poller/Poller'
@@ -11,9 +10,9 @@ import * as actions from '../state/actions'
 import { maybe } from '../lib/utils'
 import Semaphore = require('semaphore')
 import { getChannel } from '../lib/getChannel';
-import { EventLog } from 'web3/types'
 import { hasPendingOps } from '../hasPendingOps'
-import { getUpdateRequestTimeout } from '../lib/getUpdateRequestTimeout';
+import { Block } from 'web3-eth';
+import { EventLog } from 'web3-core';
 
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 

@@ -89,7 +89,7 @@ describe('StateUpdateController: thread payments', () => {
   })
 })
 
-describe('StateUpdateController: invalidation handling', () => {
+describe.skip('StateUpdateController: invalidation handling', () => {
   const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
 

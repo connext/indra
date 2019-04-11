@@ -4,7 +4,6 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "declaration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,6 +13,7 @@
     "noImplicitAny": true,
     "outDir": "./dist/",
     "sourceMap": true,
+    "esModuleInterop": true,
     "target": "es6",
     "lib": [
       "es5",
@@ -33,7 +33,8 @@
         "./src/*",
         "./dist/*"
       ]
-    }
+    },
+    "allowJs": true
   },
   "include": [
     "src/**/*.ts"

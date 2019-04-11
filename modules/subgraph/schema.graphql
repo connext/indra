@@ -1,0 +1,18 @@
+type Channel @entity {
+  id: ID!
+  user: String!
+  balanceWeiHub: BigInt!
+  balanceWeiUser: BigInt!
+  balanceTokenHub: BigInt!
+  balanceTokenUser: BigInt!
+  pendingDepositWeiHub: BigInt!
+  pendingDepositWeiUser: BigInt!
+  pendingDepositTokenHub: BigInt!
+  pendingDepositTokenUser: BigInt!
+  pendingWithdrawalWeiHub: BigInt!
+  pendingWithdrawalWeiUser: BigInt!
+  pendingWithdrawalTokenHub: BigInt!
+  pendingWithdrawalTokenUser: BigInt!
+  threadRoot: String!
+  threadCount: Int!
+}

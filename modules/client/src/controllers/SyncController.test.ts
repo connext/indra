@@ -1,7 +1,7 @@
-import { SyncResult, convertChannelState, InvalidationArgs, UpdateRequest, ChannelUpdateReason } from '../types'
+import { SyncResult, convertChannelState, InvalidationArgs, ChannelUpdateReason } from '../types'
 import { mergeSyncResults, filterPendingSyncResults } from './SyncController'
-import { assert, getChannelState, mkAddress, mkHash, parameterizedTests, updateObj, getChannelStateUpdate, getThreadState } from '../testing'
-import { MockConnextInternal, MockStore, MockHub, MockWeb3 } from '../testing/mocks';
+import { assert, getChannelState, mkAddress, mkHash, parameterizedTests, getThreadState } from '../testing'
+import { MockConnextInternal, MockStore } from '../testing/mocks';
 import { StateGenerator } from '../StateGenerator';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
@@ -319,7 +319,7 @@ describe('filterPendingSyncResults', () => {
   })
 })
 
-describe('SyncController.findBlockNearestTimeout', () => {
+describe.skip('SyncController.findBlockNearestTimeout', () => {
   const connext = new MockConnextInternal()
 
   let latestBlockNumber: number | null = null
@@ -362,7 +362,7 @@ describe('SyncController.findBlockNearestTimeout', () => {
 
 })
 
-describe("SyncController: invalidation handling", () => {
+describe.skip("SyncController: invalidation handling", () => {
   const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
   const prevStateTimeout = 1000
@@ -399,9 +399,6 @@ describe("SyncController: invalidation handling", () => {
       args: {} as any,
       sigHub: '0xsig-hub',
     })
-
-    // update web3 functions to return mocked values
-    const mocked = new MockWeb3()
 
     connext = new MockConnextInternal({
       user,
