@@ -75,6 +75,7 @@ export interface IHubAPIClient {
   authChallenge(): Promise<string>
   authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string>
   getAuthStatus(): Promise<{ success: boolean, address?: Address }>
+  getAuthToken(): Promise<string>
   getChannel(): Promise<ChannelRow>
   getChannelByUser(user: Address): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
@@ -105,15 +106,18 @@ export interface IHubAPIClient {
   redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
 }
 
-// TODO: if we get a 403 and this.authToken is not set, run the auth process
 class HubAPIClient implements IHubAPIClient {
   private user: Address
   private networking: Networking
+  private web3: Web3
+  private origin: string
   private authToken?: string
 
-  constructor(user: Address, networking: Networking, tokenName?: string) {
-    this.user = user
+  constructor(user: Address, networking: Networking, web3: Web3, origin: string) {
+    this.user = user.toLowerCase()
     this.networking = networking
+    this.web3 = web3
+    this.origin = origin
   }
 
   async config(): Promise<HubConfig> {
@@ -133,19 +137,42 @@ class HubAPIClient implements IHubAPIClient {
       origin,
       signature,
     })).data
-    this.authToken = res.token // Keep this token in memory
     return res && res.token ? res.token : null
   }
 
   async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
-    const res = (await this.networking.get(`auth/status`)).data
+    const res = (await this.networking.post(`auth/status`, {
+      authToken: this.authToken
+    })).data
     return res ? res : { success: false }
+  }
+
+  async getAuthToken(): Promise<string> {
+    // if we already have an auth token that works, return it
+    const status = await this.getAuthStatus()
+    if (this.authToken && status.success && status.address && status.address.toLowerCase() == this.user) {
+      return this.authToken
+    }
+    console.log(`Getting a new auth token, current one is invalid: ${this.authToken}`)
+
+    // reset authtoken
+    const nonce = await this.authChallenge()
+
+    // create hash and sign
+    const preamble = "SpankWallet authentication message:";
+    const hash = this.web3.utils.sha3(`${preamble} ${this.web3.utils.sha3(nonce)} ${this.web3.utils.sha3(this.origin)}`);
+    const signature = await (this.web3.eth.personal.sign as any)(hash, this.user);
+
+    // set auth token
+    this.authToken = await this.authResponse(nonce, this.user, this.origin, signature)
+    // document.cookie = `hub.sid=${authToken}`; // Think the browser will set this for us
+    return this.authToken
   }
 
   async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
     try {
       const res = (await this.networking.post(`channel/${this.user}/latest-no-pending`, {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
       })).data
       return res ? res : null
     } catch (e) {
@@ -161,7 +188,7 @@ class HubAPIClient implements IHubAPIClient {
   async getLastThreadUpdateId(): Promise<number> {
     try {
       const res = (await this.networking.post(`thread/${this.user}/last-update-id`, {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
       })).data
       return res && res.latestThreadUpdateId ? res.latestThreadUpdateId : 0
     } catch (e) {
@@ -177,7 +204,7 @@ class HubAPIClient implements IHubAPIClient {
   async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
     try {
       const res = (await this.networking.post(`channel/${this.user}/latest-update`, {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
       })).data
       return res && res.state ? { state: res.state, update: channelUpdateToUpdateRequest(res) } : null
     } catch (e) {
@@ -194,7 +221,7 @@ class HubAPIClient implements IHubAPIClient {
   async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
     try {
       const res = (await this.networking.post(`thread/${update.state.sender}/to/${update.state.receiver}/update`, {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
         update,
       })).data
       return res ? res : null
@@ -210,7 +237,7 @@ class HubAPIClient implements IHubAPIClient {
   async getChannelByUser(user: Address): Promise<ChannelRow> {
     try {
       const res = (await this.networking.post(`channel/${user}`, {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
       })).data
       return res ? res : null
     } catch (e) {
@@ -231,7 +258,7 @@ class HubAPIClient implements IHubAPIClient {
   ): Promise<ChannelStateUpdate> {
     try {
       const res = (await this.networking.post(`channel/${this.user}/update/${txCountGlobal}`, {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
       })).data
       return res ? res : null
     } catch (e) {
@@ -244,7 +271,7 @@ class HubAPIClient implements IHubAPIClient {
   // get the current channel state and return it
   async getThreadInitialStates(): Promise<ThreadState[]> {
     const res = (await this.networking.post(`thread/${this.user}/initial-states`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
     })).data
     return res ? res : []
   }
@@ -252,7 +279,7 @@ class HubAPIClient implements IHubAPIClient {
   // get the current channel state and return it
   async getActiveThreads(): Promise<ThreadState[]> {
     const res = (await this.networking.post(`thread/${this.user}/active`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
     })).data
     return res ? res : []
   }
@@ -260,7 +287,7 @@ class HubAPIClient implements IHubAPIClient {
   // get the current channel state and return it
   async getAllThreads(): Promise<ThreadState[]> {
     const res = (await this.networking.post(`thread/${this.user}/all`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
     })).data
     return res ? res : []
   }
@@ -268,7 +295,7 @@ class HubAPIClient implements IHubAPIClient {
   // get the current channel state and return it
   async getIncomingThreads(): Promise<ThreadRow[]> {
     const res = (await this.networking.post(`thread/${this.user}/incoming`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
     })).data
     return res ? res : []
   }
@@ -281,7 +308,7 @@ class HubAPIClient implements IHubAPIClient {
     // get receiver threads
     const res = (await this.networking.post(
       `thread/${userIsSender ? this.user : partyB}/to/${userIsSender ? partyB : this.user}`,
-      { authToken: this.authToken }
+      { authToken: await this.getAuthToken() }
     )).data
     return res ? res : null
   }
@@ -294,7 +321,7 @@ class HubAPIClient implements IHubAPIClient {
     try {
       const res = (await this.networking.post(
         `channel/${this.user}/sync?lastChanTx=${txCountGlobal}&lastThreadUpdateId=${lastThreadUpdateId}`,
-        { authToken: this.authToken }
+        { authToken: await this.getAuthToken() }
       )).data
       return res ? res : null
     } catch (e) {
@@ -316,7 +343,7 @@ class HubAPIClient implements IHubAPIClient {
   ): Promise<PurchasePaymentHubResponse> {
     try {
       const res = (await this.networking.post('payments/purchase', {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
         meta,
         payments,
       })).data
@@ -329,7 +356,7 @@ class HubAPIClient implements IHubAPIClient {
   async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
     try {
       const res = (await this.networking.post(`payments/redeem/${this.user}`, {
-        authToken: this.authToken,
+        authToken: await this.getAuthToken(),
         secret,
         lastChanTx: txCount,
         lastThreadUpdateId,
@@ -354,7 +381,7 @@ class HubAPIClient implements IHubAPIClient {
       throw new Error(`No signature detected on the deposit request. Deposit: ${deposit}, txCount: ${txCount}, lastThreadUpdateId: ${lastThreadUpdateId}`)
     }
     const res = (await this.networking.post(`channel/${this.user}/request-deposit`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
       depositWei: deposit.amountWei,
       depositToken: deposit.amountToken,
       sigUser: deposit.sigUser,
@@ -370,7 +397,7 @@ class HubAPIClient implements IHubAPIClient {
     txCountGlobal: number
   ): Promise<Sync> {
     const res = (await this.networking.post(`channel/${this.user}/request-withdrawal`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
       lastChanTx: txCountGlobal,
       ...withdrawal,
     })).data
@@ -379,7 +406,7 @@ class HubAPIClient implements IHubAPIClient {
 
   async requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync> {
     const res = (await this.networking.post(`channel/${this.user}/request-exchange`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
       weiToSell,
       tokensToSell,
       lastChanTx: txCountGlobal,
@@ -391,7 +418,7 @@ class HubAPIClient implements IHubAPIClient {
   // return the proposed deposit fro the hub which should then be verified and cosigned
   async requestCollateral(txCountGlobal: number): Promise<Sync> {
     const res = (await this.networking.post(`channel/${this.user}/request-collateralization`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
       lastChanTx: txCountGlobal,
     })).data
     return res ? res : null
@@ -403,7 +430,7 @@ class HubAPIClient implements IHubAPIClient {
     lastThreadUpdateId: number,
   ): Promise<{ error: string | null, updates: Sync }> {
     const res = (await this.networking.post(`channel/${this.user}/update`, {
-      authToken: this.authToken,
+      authToken: await this.getAuthToken(),
       lastThreadUpdateId,
       updates,
     })).data
@@ -823,6 +850,8 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
     hub = new HubAPIClient(
       opts.user,
       new Networking(opts.hubUrl),
+      opts.web3,
+      opts.origin!,
     )
   }
   const hubOpts = hubConfigToClientOpts(await hub.config())
@@ -934,7 +963,8 @@ export class ConnextInternal extends ConnextClient {
     this.hub = opts.hub || new HubAPIClient(
       this.opts.user,
       new Networking(this.opts.hubUrl),
-      this.opts.tokenName,
+      this.opts.web3,
+      this.opts.origin!,
     )
 
     opts.user = opts.user.toLowerCase()
@@ -974,29 +1004,6 @@ export class ConnextInternal extends ConnextClient {
 
   async withdrawal(params: WithdrawalParameters): Promise<void> {
     await this.withdrawalController.requestUserWithdrawal(params)
-  }
-
-  async auth(origin: string,): Promise<string | null> {
-    // check the status, return if already authed
-    const status = await this.hub.getAuthStatus()
-    if (status.success && status.address && status.address == this.opts.user) {
-      // TODO: what if i want to get this cookie?
-      console.log('address already authed')
-      return null
-    }
-    // first get the nonce
-    const nonce = await this.hub.authChallenge()
-
-    // create hash and sign
-    const preamble = "SpankWallet authentication message:";
-    const web3 = this.opts.web3
-    const hash = web3.utils.sha3(`${preamble} ${web3.utils.sha3(nonce)} ${web3.utils.sha3(origin)}`);
-    const signature = await (web3.eth.personal.sign as any)(hash, this.opts.user);
-
-    // return to hub
-    const auth = await this.hub.authResponse(nonce, this.opts.user, origin, signature)
-    document.cookie = `hub.sid=${auth}`;
-    return null
   }
 
   async recipientNeedsCollateral(recipient: Address, amount: Payment) {
@@ -1046,12 +1053,8 @@ export class ConnextInternal extends ConnextClient {
     // before starting controllers, sync values
     await this.syncConfig()
 
-    // also auth
-    const authRes = await this.auth(this.opts.origin!)
-    if (authRes) {
-      console.warn('Error authing, cannot start')
-      return
-    }
+    // auth is handled on each endpoint posting
+    // via the IHubAPIClient
 
     // TODO: appropriately set the latest
     // valid state ??

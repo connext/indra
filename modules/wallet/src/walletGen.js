@@ -3,7 +3,7 @@ import { store } from "./App";
 const bip39 = require('bip39')
 const hdkey = require('ethereumjs-wallet/hdkey')
 
-export async function createWallet(web3) {
+export async function createWallet() {
   console.log("Creating new random wallet");
   const mnemonic = bip39.generateMnemonic()
   const wallet = await hdkey.fromMasterSeed(mnemonic).getWallet()

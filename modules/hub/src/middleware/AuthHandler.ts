@@ -57,11 +57,10 @@ export class DefaultAuthHandler implements AuthHandler {
     const authorized = req.session!.roles.has(Role.AUTHENTICATED)
 
     if (!authorized) {
-      LOG.warn(`Unauthorized request for route: ${req.path}`)
-      LOG.warn(`Unauthorized session: ${JSON.stringify(req.session)}`) // TODO: LOG.debug
+      LOG.warn(`Unauthorized request by ${req.session!.address} for route: ${req.path}`)
     }
 
-    return true //TODO: authorized
+    return true //authorized
   }
 
   private cacheConfig() {

@@ -11,8 +11,6 @@ set -e
 
 # meta config & hard-coded stuff you might want to change
 number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
-watch_hub="no" # set to "yes" to live-redeploy hub when source code changes
-watch_chainsaw="no" # set to "yes" to live-redeploy chainsaw when source code changes
 
 # hard-coded config (you probably won't ever need to change these)
 dashboard_url="dashboardd"
@@ -150,7 +148,7 @@ services:
 
   hub:
     image: $hub_image
-    entrypoint: bash ops/dev.entry.sh hub $watch_hub
+    entrypoint: bash ops/dev.entry.sh hub
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_MNEMONIC: $eth_mnemonic
@@ -181,7 +179,7 @@ services:
 
   chainsaw:
     image: $chainsaw_image
-    entrypoint: bash ops/dev.entry.sh chainsaw $watch_chainsaw
+    entrypoint: bash ops/dev.entry.sh chainsaw
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_MNEMONIC: $eth_mnemonic
