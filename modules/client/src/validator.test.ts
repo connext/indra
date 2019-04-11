@@ -198,7 +198,7 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
 
 describe('validator', () => {
   const web3 = new Web3('http://localhost:8545') /* NOTE: all functional aspects of web3 are mocked */
-  const validator = new Validator(web3, hubAddress)
+  let validator = new Validator(web3, hubAddress)
 
   describe('channelPayment', () => {
     const prev = createPreviousChannelState({
