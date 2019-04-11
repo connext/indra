@@ -213,7 +213,7 @@ class DepositCard extends Component {
         // deposit + existing bal should be above threshold
         if (browserWei.add(amountWeiBN).lt(BALANCE_THRESHOLD_WEI)) {
           console.log(`Browser wallet balance + requested deposit below minimum, adding enough to bring total to 40fin.`)
-          weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei)
+          weiDeposit = BALANCE_THRESHOLD_WEI.sub(browserWei).add(1)
         }
 
         console.log(`Sending ${weiDeposit ? weiDeposit.toString() : amountWei} wei from ${mmAddr} to ${browserAddr}`)
