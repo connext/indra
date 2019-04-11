@@ -73,7 +73,6 @@ export class Utils {
     // hash data
     const hash = w3utils.soliditySha3(
       { t: 'address', v: contractAddress },
-      // @ts-ignore
       { t: 'address[2]', v: [user, recipient] },
       {
         t: 'uint256[2]',
@@ -139,7 +138,6 @@ export class Utils {
       { t: 'address', v: sender },
       { t: 'address', v: receiver },
       { t: 'uint256', v: threadId },
-      // @ts-ignore
       {
         t: 'uint256',
         v: [balanceWeiSender, balanceWeiReceiver],

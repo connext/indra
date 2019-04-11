@@ -47,7 +47,7 @@ import { Utils } from './Utils'
 import { toBN, maxBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { TransactionReceipt } from 'web3-core';
-import w3utils = require('web3-utils')
+const w3utils = require('web3-utils')
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -320,7 +320,7 @@ export class Validator {
 
     // validate on chain information
     const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransaction(txHash) as any
+    const tx = await this.web3.eth.getTransaction(txHash)
     const receipt = await this.web3.eth.getTransactionReceipt(txHash)
 
     // apply .toLowerCase to all strings on the prev object
