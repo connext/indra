@@ -2,7 +2,7 @@ import { getTestRegistry, assert, nock } from '../testing'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
 import { maybe, parseQueryString } from '../util'
 
-describe('CoinPaymentsApiClient', () => {
+describe.skip('CoinPaymentsApiClient', () => {
   const registry = getTestRegistry({
     NgrokService: {
       getDevPublicUrl: () => 'https://example.com'
