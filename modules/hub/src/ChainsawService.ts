@@ -98,9 +98,13 @@ export default class ChainsawService {
 
   private async doFetchEvents() {
     const topBlock = await this.web3.eth.getBlockNumber()
+    console.log('topBlock: ', topBlock);
     const last = await this.chainsawDao.lastPollFor(this.contract._address, 'FETCH_EVENTS')
+    console.log('last: ', last);
     const lastBlock = last.blockNumber
+    console.log('lastBlock: ', lastBlock);
     let toBlock = topBlock - CONFIRMATION_COUNT
+    console.log('toBlock: ', toBlock);
     // enforce limit of polling 10k blocks at a time
     if (toBlock - lastBlock > 10000) {
       toBlock = lastBlock + 10000
