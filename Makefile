@@ -120,7 +120,7 @@ backup:
 # set a default test command for developer convenience
 test: test-default
 test-default: test-client
-test-all: test-client test-contracts test-hub test-e2e
+test-all: test-client test-contracts test-hub
 
 test-client: client
 	bash ops/test-client.sh
@@ -130,12 +130,6 @@ test-contracts: contract-artifacts
 
 test-hub: hub database
 	bash ops/test-hub.sh
-
-test-e2e: root-node-modules prod
-	npm stop
-	MODE=test npm run start-prod
-	./node_modules/.bin/cypress run
-	npm stop
 
 ########################################
 # Begin Real Rules
