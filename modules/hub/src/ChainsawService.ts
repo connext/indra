@@ -15,6 +15,7 @@ import { SignerService } from './SignerService';
 import { RedisClient } from './RedisClient';
 import { OnchainTransactionService } from './OnchainTransactionService';
 import { EventLog } from 'web3-core';
+import Web3 from 'web3';
 
 const LOG = log('ChainsawService')
 
@@ -29,7 +30,7 @@ export default class ChainsawService {
     private channelsDao: ChannelsDao, 
     private channelDisputesDao: ChannelDisputesDao,
     private contract: ChannelManager,
-    private web3: any, 
+    private web3: Web3, 
     private utils: Utils, 
     private config: Config, 
     private db: DBEngine, 
@@ -98,7 +99,7 @@ export default class ChainsawService {
 
   private async doFetchEvents() {
     const topBlock = await this.web3.eth.getBlockNumber()
-    const last = await this.chainsawDao.lastPollFor(this.contract.options.address, 'FETCH_EVENTS')
+    const last = await this.chainsawDao.lastPollFor(this.contract.address, 'FETCH_EVENTS')
     const lastBlock = last.blockNumber
     let toBlock = topBlock - CONFIRMATION_COUNT
     // enforce limit of polling 10k blocks at a time
@@ -141,7 +142,7 @@ export default class ChainsawService {
         log: log,
         txIndex: log.transactionIndex,
         logIndex: log.logIndex,
-        contract: this.contract.options.address,
+        contract: this.contract.address,
         sender: txsIndex[log.transactionHash].from,
         timestamp: blockIndex[log.blockNumber].timestamp * 1000
       })
@@ -149,19 +150,19 @@ export default class ChainsawService {
 
     if (channelEvents.length) {
       LOG.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
-      await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.options.address)
+      await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
       LOG.info(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
       LOG.info('No new transactions found; nothing to do.')
-      await this.chainsawDao.recordPoll(toBlock, null, this.contract.options.address, 'FETCH_EVENTS')
+      await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
     }
   }
 
   private async doProcessEvents() {
     // should look for either successfully processed, or
     // last skipped events
-    const last = await this.chainsawDao.lastProcessEventPoll(this.contract.options.address)
-    const ingestedEvents = await this.chainsawDao.eventsSince(this.contract.options.address, last.blockNumber, last.txIndex)
+    const last = await this.chainsawDao.lastProcessEventPoll(this.contract.address)
+    const ingestedEvents = await this.chainsawDao.eventsSince(this.contract.address, last.blockNumber, last.txIndex)
 
     if (!ingestedEvents.length) {
       return
@@ -177,7 +178,7 @@ export default class ChainsawService {
       await this.chainsawDao.recordPoll(
         event.event.blockNumber,
         event.event.txIndex,
-        this.contract.options.address,
+        this.contract.address,
         pollType,
       )
     }
