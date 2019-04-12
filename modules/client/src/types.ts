@@ -946,7 +946,7 @@ Returns:
 
 */
 
-export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD' | 'PT_CUSTODIAL' | 'PT_LINK'
+export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD' | 'PT_CUSTODIAL' | 'PT_LINK' | 'PT_OPTIMISTIC'
 
 
 export interface PurchaseRequest<MetadataType=any, PaymentMetadataType=any> {
@@ -1012,6 +1012,14 @@ export type PurchasePayment<MetadataType=any> = ({
     {
       type: 'PT_LINK'
       update: UpdateRequest<string, PaymentArgs> // TODO: restrict to payment only?
+    } | 
+    {
+      type: 'PT_OPTIMISTIC'
+      update: ThreadStateUpdate | UpdateRequest
+    } | 
+    {
+      type?: PurchasePaymentType
+      update: ThreadStateUpdate | UpdateRequest
     }
   ))
 
