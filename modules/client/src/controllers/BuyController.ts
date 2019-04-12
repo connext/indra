@@ -1,8 +1,9 @@
-import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
+import { PurchaseRequest, PurchasePayment, PaymentArgs, UpdateRequest, PurchasePaymentType, } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
 import { assertUnreachable } from '../lib/utils';
 import { emptyAddress } from '../Utils';
+import { toBN } from '@src/helpers/bn';
 
 // **********************************************//
 //
@@ -22,6 +23,49 @@ import { emptyAddress } from '../Utils';
 // 7. NOTE: For this to work, we have to allow multiple threads per sender-receiver combo
 
 export default class BuyController extends AbstractController {
+  // assigns a payment type if it is not provided
+  private async assignPaymentType(payment: PurchasePayment): Promise<PurchasePayment> {
+    // if a type is provided, use it by default
+    if (payment.type) {
+      return payment
+    }
+    // otherwise, first check to see if it should be a link
+    if (payment.meta.secret) {
+      return {
+        ...payment,
+        type: `PT_LINK`,
+      }
+    }
+
+    // if the payment amount is above what the hub will collateralize
+    // it should be a custodial payment
+    const config = await this.connext.hub.config()
+    const max = toBN(config.beiMaxCollateralization)
+    if (toBN(payment.amount.amountToken).gt(max)) {
+      return {
+        ...payment,
+        type: "PT_CUSTODIAL",
+        // update: payment.update as UpdateRequest
+      }
+    }
+
+    // if the recipient is the hub, it should be a channel payment
+    if (payment.recipient == this.connext.opts.hubAddress) {
+      return {
+        ...payment,
+        type: "PT_CHANNEL",
+        // update: payment.update as UpdateRequest
+      }
+    }
+
+    // otherwise, it should be an optimistic payment
+    return {
+      ...payment,
+      type: "PT_OPTIMISTIC"
+    }
+
+  }
+
   public async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
     /*
     purchase = {
@@ -40,9 +84,15 @@ export default class BuyController extends AbstractController {
     // you must be able to process multiple thread or channel payments
     // with this as the initial state
     let curChannelState = getChannel(this.store)
-    for (const payment of purchase.payments) {
+    for (const p of purchase.payments) {
+      const payment = await this.assignPaymentType(p as PurchasePayment)
       let newChannelState = null
-      switch (payment.type) {
+      const type = payment.type
+      if (!type) {
+        throw new Error("This should never happen. Check `assignPaymentType` in the `BuyController` source code.")
+      }
+
+      switch (type) {
         case 'PT_THREAD':
           // Create a new thread for the payment value
           const { thread, channel } = await this.connext.threadsController.openThread(
@@ -69,6 +119,9 @@ export default class BuyController extends AbstractController {
           // PUNT on this -- AB
           break
         case 'PT_CHANNEL':
+        // TODO: this should work for threads as well
+        // and should perform checks for that
+        case 'PT_OPTIMISTIC':
         case 'PT_CUSTODIAL':
           const chanArgs: PaymentArgs = {
             recipient: 'hub',
@@ -135,7 +188,7 @@ export default class BuyController extends AbstractController {
           })
           break
         default:
-          assertUnreachable(payment.type)   
+          assertUnreachable(type)   
       }
 
       if (!newChannelState) {
