@@ -1037,14 +1037,14 @@ export class Validator {
       log: log,
       txIndex: log.transactionIndex,
       logIndex: log.logIndex,
-      contract: this.contract.options.address,
+      contract: this.contract._address,
       sender: txsIndex[log.transactionHash].from,
       timestamp: blockIndex[log.blockNumber].timestamp * 1000
     })
     */
 
     let parsed: VerboseChannelEventBN[] = []
-    txReceipt.logs.forEach((log) => {
+    txReceipt.logs.forEach((log: any) => {
       // logs have the format where multiple topics
       // can adhere to the piece of data you are looking for
       // only seach the logs if the topic is contained
@@ -1106,14 +1106,14 @@ export class Validator {
       log: log,
       txIndex: log.transactionIndex,
       logIndex: log.logIndex,
-      contract: this.contract.options.address,
+      contract: this.contract._address,
       sender: txsIndex[log.transactionHash].from,
       timestamp: blockIndex[log.blockNumber].timestamp * 1000
     })
     */
 
     let raw = {} as any
-    txReceipt.logs.forEach((log) => {
+    txReceipt.logs.forEach((log: any) => {
       if (log.topics.indexOf(eventTopic) > -1) {
         let tmp = this.web3.eth.abi.decodeLog(inputs, log.data, log.topics) as any
         Object.keys(tmp).forEach((field) => {
