@@ -119,8 +119,7 @@ export default class BuyController extends AbstractController {
           // PUNT on this -- AB
           break
         case 'PT_CHANNEL':
-        // TODO: this should work for threads as well
-        // and should perform checks for that
+        // TODO: make this work for threads as well
         case 'PT_OPTIMISTIC':
         case 'PT_CUSTODIAL':
           const chanArgs: PaymentArgs = {
