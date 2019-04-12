@@ -66,22 +66,22 @@ reset-base: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 
 reset-client: reset-base
-	rm -rf build/client*  $(client)/dist $(client)/node_modules
+	rm -rf build/client*  $(client)/dist $(client)/node_modules $(client)/package-lock.json
 
 reset-contracts: reset-base
-	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules
+	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules $(contracts)/package-lock.json
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-dashboard: reset-base
-	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules
+	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules $(dashboard)/package-lock.json
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-database: reset-base
-	rm -rf build/database* $(db)/build/* $(db)/node_modules
+	rm -rf build/database* $(db)/build/* $(db)/node_modules $(db)/package-lock.json
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 
 reset-hub: reset-base
-	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules
+	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules $(hub)/package-lock.json
 
 reset: reset-base
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
