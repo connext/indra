@@ -68,7 +68,7 @@ describe('ChainsawService::mocked Web3', function() {
     chainsawDao = registry.get('ChainsawDao')
     cs = registry.get('ChainsawService')
     // @ts-ignore
-    cs.contract.options.address = CM_ADDRESS
+    cs.contract.options = { address: CM_ADDRESS }
     chanDao = registry.get('ChannelsDao')
     dbEngine = registry.get('DBEngine')
     const config = registry.get('Config')
