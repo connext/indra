@@ -3,7 +3,7 @@ import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
 import { assertUnreachable } from '../lib/utils';
 import { emptyAddress } from '../Utils';
-import { toBN } from '@src/helpers/bn';
+import { toBN } from '../helpers/bn';
 
 // **********************************************//
 //
