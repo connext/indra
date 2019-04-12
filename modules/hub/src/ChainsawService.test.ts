@@ -60,7 +60,7 @@ describe('ChainsawService::mocked Web3', function() {
         signMessage: async () => { return mkSig() }
       },
       ChannelManager: {
-        options: { address: CM_ADDRESS },
+        address: CM_ADDRESS,
       }
     })
     await registry.clearDatabase()
@@ -68,7 +68,7 @@ describe('ChainsawService::mocked Web3', function() {
     chainsawDao = registry.get('ChainsawDao')
     cs = registry.get('ChainsawService')
     // @ts-ignore
-    cs.contract.options = { address: CM_ADDRESS }
+    cs.contract.address = CM_ADDRESS
     chanDao = registry.get('ChannelsDao')
     dbEngine = registry.get('DBEngine')
     const config = registry.get('Config')
@@ -218,7 +218,7 @@ describe('ChainsawService::mocked Web3', function() {
           }
         },
         ChannelManager: {
-          options: { address: CM_ADDRESS },
+          address: CM_ADDRESS
         }
       })
       cs = registry.get('ChainsawService')
