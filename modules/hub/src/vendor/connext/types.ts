@@ -1019,7 +1019,7 @@ export type PurchasePayment<MetadataType=any> = ({
     } | 
     {
       type?: PurchasePaymentType
-      update: ThreadStateUpdate | UpdateRequest
+      update: UpdateRequest
     }
   ))
 
