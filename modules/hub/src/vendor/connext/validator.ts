@@ -1037,7 +1037,7 @@ export class Validator {
       log: log,
       txIndex: log.transactionIndex,
       logIndex: log.logIndex,
-      contract: this.contract._address,
+      contract: this.contract.options.address,
       sender: txsIndex[log.transactionHash].from,
       timestamp: blockIndex[log.blockNumber].timestamp * 1000
     })
@@ -1106,7 +1106,7 @@ export class Validator {
       log: log,
       txIndex: log.transactionIndex,
       logIndex: log.logIndex,
-      contract: this.contract._address,
+      contract: this.contract.options.address,
       sender: txsIndex[log.transactionHash].from,
       timestamp: blockIndex[log.blockNumber].timestamp * 1000
     })
