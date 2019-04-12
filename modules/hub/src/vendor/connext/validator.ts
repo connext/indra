@@ -1142,18 +1142,19 @@ export class Validator {
     );
     */
 
+    // TODO: WARNING UNSAFE USE OF toString()!!! follow issue here: https://github.com/ethereum/web3.js/issues/2675
     return {
       user: raw.user,
       sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
-      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0]),
-      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2]),
-      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0]),
-      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2]),
-      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1]),
-      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3]),
-      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1]),
-      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3]),
-      txCountChain: parseInt(raw.txCount[1], 10),
+      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0].toString()),
+      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2].toString()),
+      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0].toString()),
+      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2].toString()),
+      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1].toString()),
+      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3].toString()),
+      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1].toString()),
+      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3].toString()),
+      txCountChain: parseInt(raw.txCount[1].toString(), 10),
     }
   }
 
