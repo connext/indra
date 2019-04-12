@@ -50,17 +50,17 @@ export default class ChainsawService {
   }
 
   async pollOnce() {
-    try {
+    // try {
       await this.db.withTransaction(() => this.doFetchEvents())
-    } catch (e) {
-      LOG.error(`Fetching events failed: ${safeJson(e)}`)
-    }
+    // } catch (e) {
+    //   LOG.error(`Fetching events failed: ${safeJson(e)}`)
+    // }
 
-    try {
+    // try {
       await this.db.withTransaction(() => this.doProcessEvents())
-    } catch (e) {
-      LOG.error(`Processing events failed: ${safeJson(e)}`)
-    }
+    // } catch (e) {
+    //   LOG.error(`Processing events failed: ${safeJson(e)}`)
+    // }
   }
 
   /**
