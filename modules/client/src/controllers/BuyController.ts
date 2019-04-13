@@ -1,4 +1,4 @@
-import { PurchaseRequest, PurchasePayment, PaymentArgs, UpdateRequest, PurchasePaymentType, } from '../types'
+import { PurchaseRequest, PurchasePayment, PaymentArgs, UpdateRequest, PurchasePaymentType, PurchasePaymentRequest, } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
 import { assertUnreachable } from '../lib/utils';
@@ -24,7 +24,7 @@ import { toBN } from '../helpers/bn';
 
 export default class BuyController extends AbstractController {
   // assigns a payment type if it is not provided
-  private async assignPaymentType(payment: PurchasePayment): Promise<PurchasePayment> {
+  private async assignPaymentType(payment: PurchasePaymentRequest): Promise<PurchasePaymentRequest> {
     // if a type is provided, use it by default
     if (payment.type) {
       return payment
@@ -85,7 +85,7 @@ export default class BuyController extends AbstractController {
     // with this as the initial state
     let curChannelState = getChannel(this.store)
     for (const p of purchase.payments) {
-      const payment = await this.assignPaymentType(p as PurchasePayment)
+      const payment = await this.assignPaymentType(p)
       let newChannelState = null
       const type = payment.type
       if (!type) {
