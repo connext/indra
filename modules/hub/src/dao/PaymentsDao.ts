@@ -7,6 +7,7 @@ export default interface PaymentsDao {
   createHubPayment(paymentId: number, updateId: number): Promise<void>
   createThreadPayment(paymentId: number, updateId: number): Promise<void>
   createLinkPayment(paymentId: number, updateId: number, secret: string): Promise<void>
+  createOptimisticPayment(paymentId: number, updateId: number): Promise<void>
   addLinkedPaymentRedemption(paymentId: number, redemptionId: number): Promise<void>
 }
 
@@ -16,6 +17,19 @@ export class PostgresPaymentsDao implements PaymentsDao {
   constructor(
     private db: DBEngine<Client>,
   ) {}
+
+  public async createOptimisticPayment(paymentId: number, updateId: number): Promise<void> {
+    await this.db.queryOne(SQL`
+      INSERT INTO payments_optimistic (
+        payment_id,
+        channel_update_id
+      )
+      VALUES (
+        ${paymentId},
+        ${updateId}
+      )
+    `)
+  }
 
   public async createChannelInstantPayment(paymentId: number, disbursementId: number, updateId: number): Promise<void> {
     await this.db.queryOne(SQL`
