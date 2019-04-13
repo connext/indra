@@ -139,6 +139,49 @@ export default class PaymentsService {
           await this.paymentsDao.createLinkPayment(paymentId, row.id, payment.meta.secret)
         })
 
+      } else if (payment.type == 'PT_OPTIMISTIC') {
+        // if there is collateral, send normal channel payment
+        if (payment.update.reason !== "Payment") {
+          throw new Error("The `PT_OPTIMISTIC` type has not been tested with anything but payment channel updates")
+        }
+        // make update in users channel
+        const row = await this.channelsService.doUpdateFromWithinTransaction(user, {
+          args: payment.update.args,
+          reason: payment.update.reason,
+          sigUser: payment.update.sigUser,
+          txCount: payment.update.txCount
+        })
+
+        afterPayment = paymentId => afterPayments.push(async () => {
+          const paymentToHub = payment.recipient == this.config.hotWalletAddress || payment.recipient == emptyAddress
+          if (paymentToHub) {
+            await this.paymentsDao.createHubPayment(paymentId, row.id)
+          } else {
+            // check if recipient has collateral
+            const recipient = await this.channelsDao.getChannelOrInitialState(payment.recipient)
+            const recipBig = convertChannelState("bignumber", recipient.state)
+            try {
+              if (
+                recipBig.balanceTokenHub.lt(Big(payment.amount.amountToken)) ||
+                recipBig.balanceWeiHub.lt(Big(payment.amount.amountWei))
+              ) {
+                // there is not sufficient collateral, create a new optimistic
+                // payment entry
+                await this.paymentsDao.createOptimisticPayment(paymentId, row.id)
+              } else {
+                // hub can collateralize payment, perform channel payment
+                await this.doChannelInstantPayment(payment, paymentId, row.id)
+              }
+            } finally {
+              // collateralize after optimistic or instant payment
+              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
+              if (err) {
+                LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+              }
+            }
+          }
+        })
+
       } else {
         assertUnreachable(payment, 'invalid payment type: ' + (payment as any).type)
       }
