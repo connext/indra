@@ -9,7 +9,7 @@ create type PAYMENTS_OPTIMISTIC_STATUS as enum (
 
 /* add optimistic payments table */
 create table payments_optimistic (
-  id bigint primary key,
+  id bigserial primary key,
   payment_id bigint not null references _payments,
   channel_update_id bigint null references _cm_channel_updates,
   thread_update_id bigint null references _cm_thread_updates,
