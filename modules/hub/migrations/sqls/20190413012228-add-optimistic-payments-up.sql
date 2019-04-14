@@ -32,8 +32,8 @@ begin
 
   -- sanity check the status
   if payment.custodial_id is not null then
-    if payment.status is not 'custodial' then
-      raise exception 'invalid payment status, should be custodial if custodial id provided'
+    if payment.status <> 'custodial' then
+      raise exception 'invalid payment status, should be custodial if custodial id provided';
     end if;
   end if;
 
@@ -41,22 +41,22 @@ begin
   -- i.e. in the case of threads, should we store the thread open update?
 
   if payment.redemption_id is not null then 
-    if payment.status is not 'completed' then
-      raise exception 'invalid payment status, should be completed if redemption id provided'
+    if payment.status <> 'completed' then
+      raise exception 'invalid payment status, should be completed if redemption id provided';
     end if;
   end if;
 
   if payment.thread_update_id is not null then
-    if payment.status is not 'completed' then
-      raise exception 'invalid payment status, should be completed if thread id provided'
+    if payment.status <> 'completed' then
+      raise exception 'invalid payment status, should be completed if thread id provided';
     end if;
   end if;
 
   if payment.redemption_id is null then
     if payment.thread_update_id is null then
       if payment.created_on - now() < interval '30 seconds' then
-        if payment.status is not 'new' then
-          raise exception 'invalid payment status, should be new if it is less than 30 seconds old and unredeemed'
+        if payment.status <> 'new' then
+          raise exception 'invalid payment status, should be new if it is less than 30 seconds old and unredeemed';
         end if;
       end if;
     end if;
@@ -68,7 +68,7 @@ begin
 end;
 $pgsql$;
 
-create trigger payments_optimistic_pre_insert_trigger
+create trigger payments_optimistic_pre_insert_update_trigger
 before insert or update on payments_optimistic
 for each row execute procedure payments_optimistic_pre_insert_update_trigger();
 
