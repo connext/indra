@@ -17,6 +17,7 @@ import { default as log } from './util/log'
 import { emptyAddress } from './vendor/connext/Utils';
 import GlobalSettingsDao from './dao/GlobalSettingsDao';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
+import OptimisticPaymentDao from './dao/OptimisticPaymentDao';
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -32,6 +33,7 @@ export default class PaymentsService {
     private signerService: SignerService,
     private paymentsDao: PaymentsDao,
     private paymentMetaDao: PaymentMetaDao,
+    private optimisticPaymentDao: OptimisticPaymentDao,
     private channelsDao: ChannelsDao,
     private custodialPaymentsDao: CustodialPaymentsDao,
     private validator: Validator,
@@ -153,32 +155,25 @@ export default class PaymentsService {
         })
 
         afterPayment = paymentId => afterPayments.push(async () => {
+          // add entry to optimistic payments table
+          await this.optimisticPaymentDao.createOptimisticPayment(paymentId, row.id)
+
           const paymentToHub = payment.recipient == this.config.hotWalletAddress || payment.recipient == emptyAddress
+
           if (paymentToHub) {
             await this.paymentsDao.createHubPayment(paymentId, row.id)
-          } else {
-            // check if recipient has collateral
-            const recipient = await this.channelsDao.getChannelOrInitialState(payment.recipient)
-            const recipBig = convertChannelState("bignumber", recipient.state)
-            try {
-              if (
-                recipBig.balanceTokenHub.lt(Big(payment.amount.amountToken)) ||
-                recipBig.balanceWeiHub.lt(Big(payment.amount.amountWei))
-              ) {
-                // there is not sufficient collateral, create a new optimistic
-                // payment entry
-                await this.paymentsDao.createOptimisticPayment(paymentId, row.id)
-              } else {
-                // hub can collateralize payment, perform channel payment
-                await this.doChannelInstantPayment(payment, paymentId, row.id)
-              }
-            } finally {
-              // collateralize after optimistic or instant payment
-              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
-              if (err) {
-                LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
-              }
-            }
+            // add the channel update id as the redemption id as well
+            await this.optimisticPaymentDao.addOptimisticPaymentRedemption(paymentId, row.id)
+            return
+          }
+
+          // the optimistic payments table will process the payments there
+          // on a poller, but do not collateralize
+          const [res, err] = await maybe(
+            this.channelsService.doCollateralizeIfNecessary(payment.recipient)
+          )
+          if (err) {
+            LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
           }
         })
 
