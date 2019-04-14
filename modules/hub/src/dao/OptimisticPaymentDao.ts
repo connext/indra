@@ -33,7 +33,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
   }
 
   public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRow[]> {
-    const rows = await this.db.queryOne(SQL`
+    const { rows } = await this.db.query(SQL`
       SELECT * FROM (
         SELECT * 
         FROM payments
@@ -46,7 +46,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
         SELECT 
           "channel_update_id",
           "payment_id",
-          ""
+          "status"
         FROM payments_optimistic where "status" = 'new'
       ) as up
       
@@ -59,7 +59,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     await this.db.queryOne(SQL`
       UPDATE payments_optimistic 
       SET 
-        status = "completed",
+        status = 'completed',
         redemption_id = ${redemptionId}
       WHERE payment_id = ${paymentId}
     `)
@@ -69,7 +69,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     await this.db.queryOne(SQL`
       UPDATE payments_optimistic 
       SET 
-        status = "completed",
+        status = 'completed',
         thread_update_id = ${threadUpdateId}
       WHERE payment_id = ${paymentId}
     `)
@@ -79,17 +79,17 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     await this.db.queryOne(SQL`
       UPDATE payments_optimistic 
       SET 
-        status = "custodial",
+        status = 'custodial',
         custodial_id = ${custodialId}
       WHERE payment_id = ${paymentId}
     `)
   }
 
   public async optimisticPaymentFailed(paymentId: number) {
-    await this.db.queryOne(SQL`
+    await this.db.query(SQL`
       UPDATE payments_optimistic 
       SET 
-        status = "failed",
+        status = 'failed'
       WHERE payment_id = ${paymentId}
     `)
   }
@@ -111,9 +111,10 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
         amountToken: row.amount_token,
       },
       meta: row.meta,
-      type: row.payment_type,
       custodianAddress: row.custodian_address,
-      channelUpdateId: row.channel_update_id,
+      channelUpdateId: row.channel_update_id ? Number(row.channel_update_id) : null,
+      custodialId: row.custodial_id ? Number(row.custodial_id) : null,
+      threadUpdateId: row.thread_update_id ?Number(row.thread_update_id) : null,
       status: row.status,
     }
   }
