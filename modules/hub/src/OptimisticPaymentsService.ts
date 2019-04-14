@@ -9,10 +9,11 @@ import { OptimisticPurchasePaymentRow } from "./domain/OptimisticPayment";
 import { SignerService } from "./SignerService";
 import { Validator } from "./vendor/connext/validator";
 import Config from "./Config";
+import { prettySafeJson } from "./util";
 
 const LOG = log('OptimisticPaymentsService')
 
-const POLL_INTERVAL = 1000 * 60 * 3
+const POLL_INTERVAL = 1000
 
 export class OptimisticPaymentsService {
   private poller: Poller
@@ -70,18 +71,23 @@ export class OptimisticPaymentsService {
         // if the hub has sufficient collateral, forward the
         // payment
         await this.sendChannelPayment(p)
+
+        // TODO: add thread payments as well
       }
     })
   }
 
   private async sendChannelPayment(payment: OptimisticPurchasePaymentRow): Promise<void> {
     try {
+      const update = await this.channelsDao.getChannelUpdateById(payment.channelUpdateId)
+
+      if ((update.args as PaymentArgs).recipient !== "hub") {
+        throw new Error(`Payment must be signed to hub in order to forward, payment: ${prettySafeJson(payment)}`)
+      }
+
       const payeeChan = await this.channelsDao.getChannelByUser(payment.recipient)
 
-      const payeeArgs = {
-        recipient: "user",
-        ...payment.amount,
-      } as PaymentArgs
+      const payeeArgs = { ...update.args, recipient: "user" } as PaymentArgs
 
       const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
         convertChannelState('str', payeeChan.state),
@@ -105,6 +111,7 @@ export class OptimisticPaymentsService {
         id: payment.paymentId,
       })
     }
+    // TODO: recollateralization here?
   }
 
   private async sendCustodialPayment(payment: OptimisticPurchasePaymentRow): Promise<void> {
