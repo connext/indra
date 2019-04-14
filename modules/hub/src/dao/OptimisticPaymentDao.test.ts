@@ -6,7 +6,7 @@ import { mkAddress } from "../testing/stateUtils";
 
 describe("OptimisticPaymentDao", () => {
   const registry = getTestRegistry()
-  const optimisticDao: OptimisticPaymentDao = registry.get('PaymentsDao')
+  const optimisticDao: OptimisticPaymentDao = registry.get('OptimisticPaymentDao')
   const paymentMetaDao: PaymentMetaDao = registry.get('PaymentMetaDao')
 
   beforeEach(async () => {
@@ -49,9 +49,48 @@ describe("OptimisticPaymentDao", () => {
     })
   })
 
-  it("getNewOptimisticPayments(): should return new optimistic payments to sync", async () => {
-    // first preload the database with optimistic payments
-    
+  it("getNewOptimisticPayments", async () => {
+    // first load up with a new payment
+    const newPaymentId = await paymentMetaDao.save('abc123', {
+      type: 'PT_OPTIMISTIC',
+      amount: {
+        amountToken: tokenVal(2),
+        amountWei: '0',
+      },
+      recipient: mkAddress('0xb'),
+      meta: {
+        foo: 42,
+      },
+    })
+
+    const d = await channelUpdateFactory(registry, { user: mkAddress('0xa') })
+    await optimisticDao.createOptimisticPayment(newPaymentId, d.update.id)
+    let payments = await optimisticDao.getNewOptimisticPayments()
+
+    assert.equal(payments.length, 1)
+    assert.containSubset(payments[0], {
+      channelUpdateId: Number(d.update.id),
+      status: "new",
+      paymentId: newPaymentId,
+      amount: {
+        amountWei: '0',
+        amountToken: tokenVal(2).toString(),
+      },
+      recipient: "0xb000000000000000000000000000000000000000",
+      sender: "0xa000000000000000000000000000000000000000"
+    })
+
+    // update status
+    await optimisticDao.optimisticPaymentFailed(newPaymentId)
+    const db = registry.get('DBEngine')
+    assert.containSubset((await db.queryOne('SELECT * FROM payments_optimistic')), {
+      payment_id: '' + newPaymentId,
+      channel_update_id: '' + d.update.id,
+    })
+
+    payments = await optimisticDao.getNewOptimisticPayments()
+    assert.equal(payments.length, 0)
+
   })
 
 })
