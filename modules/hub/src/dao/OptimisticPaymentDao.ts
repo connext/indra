@@ -10,6 +10,7 @@ export default interface OptimisticPaymentDao {
   addOptimisticPaymentThread(paymentId: number, threadUpdateId: number): Promise<void>
   addOptimisticPaymentCustodial(paymentId: number, custodialId: number): Promise<void>
   optimisticPaymentFailed(paymentId: number): Promise<void>
+  getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRow>
 }
 
 const LOG = log('PostgresOptimisticPaymentDao')
@@ -32,6 +33,30 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     `)
   }
 
+  public async getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRow> {
+    const row = await this.db.queryOne(SQL`
+      SELECT * FROM (
+        SELECT * 
+        FROM payments
+        WHERE id = ${paymentId}
+      ) as p
+      
+      INNER JOIN (
+        SELECT 
+          "channel_update_id",
+          "thread_update_id",
+          "redemption_id",
+          "custodial_id",
+          "payment_id",
+          "status"
+        FROM payments_optimistic where "status" = 'new'
+      ) as up
+      
+      ON p.id = up.payment_id
+    `)
+    return this.rowToPaymentSummary(row)
+  }
+
   public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRow[]> {
     const { rows } = await this.db.query(SQL`
       SELECT * FROM (
@@ -45,6 +70,9 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
       INNER JOIN (
         SELECT 
           "channel_update_id",
+          "thread_update_id",
+          "redemption_id",
+          "custodial_id",
           "payment_id",
           "status"
         FROM payments_optimistic where "status" = 'new'
@@ -114,6 +142,9 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
       custodianAddress: row.custodian_address,
       channelUpdateId: Number(row.channel_update_id),
       status: row.status,
+      threadUpdateId: row.thread_update_id ? Number(row.thread_update_id) : null,
+      redemptionId: row.redemption_id ? Number(row.redemption_id) : null,
+      custodialId: row.custodial_id ? Number(row.custodial_id) : null,
     }
   }
 }
