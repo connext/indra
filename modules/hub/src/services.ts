@@ -70,7 +70,7 @@ import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDis
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import ConfigApiService from './api/ConfigApiService';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
-import OptimisticPaymentDao from './dao/OptimisticPaymentDao';
+import OptimisticPaymentDao, { PostgresOptimisticPaymentDao } from './dao/OptimisticPaymentDao';
 import { OptimisticPaymentsService } from './OptimisticPaymentsService';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
@@ -282,6 +282,12 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   PaymentsDao: {
     factory: (db: DBEngine<Client>) =>
       new PostgresPaymentsDao(db),
+    dependencies: ['DBEngine'],
+  },
+
+  OptimisticPaymentDao: {
+    factory: (db: DBEngine<Client>) =>
+      new PostgresOptimisticPaymentDao(db),
     dependencies: ['DBEngine'],
   },
 
