@@ -105,6 +105,7 @@ export interface IHubAPIClient {
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
   config(): Promise<HubConfig>
   redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
+  getCustodialBalance(): Promise<Payment | null>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -179,6 +180,28 @@ class HubAPIClient implements IHubAPIClient {
     } catch (e) {
       if (e.status == 404) {
         console.log(`Channel not found for user ${this.user}`)
+        return null
+      }
+      console.log('Error getting latest state no pending ops:', e)
+      throw e
+    }
+  }
+
+  async getCustodialBalance(): Promise<Payment | null> {
+    try {
+      const res = (await this.networking.post(`custodial/${this.user}/balance`, {
+        authToken: await this.getAuthToken(),
+      })).data
+      if (!res) {
+        return null
+      }
+      return {
+        amountToken: res.balanceToken,
+        amountWei: res.balanceWei,
+      }
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Custodial balances not found for user ${this.user}`)
         return null
       }
       console.log('Error getting latest state no pending ops:', e)
@@ -1056,6 +1079,12 @@ export class ConnextInternal extends ConnextClient {
 
     // auth is handled on each endpoint posting
     // via the IHubAPIClient
+
+    // get any custodial balances
+    const custodialBalance = await this.hub.getCustodialBalance()
+    if (custodialBalance) {
+      this.store.dispatch(actions.setCustodialBalance(custodialBalance))
+    }
 
     // TODO: appropriately set the latest
     // valid state ??
