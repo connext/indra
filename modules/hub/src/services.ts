@@ -70,6 +70,8 @@ import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDis
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import ConfigApiService from './api/ConfigApiService';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
+import OptimisticPaymentDao from './dao/OptimisticPaymentDao';
+import { OptimisticPaymentsService } from './OptimisticPaymentsService';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -368,6 +370,35 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: ['Web3', 'ChannelManagerContract', 'ConnextUtils', 'Config']
   },
 
+  OptimisticPaymentService: {
+    factory: (
+      optimisticPaymentsDao: OptimisticPaymentDao,
+      custodialPaymentsDao: CustodialPaymentsDao,
+      channelsDao: ChannelsDao,
+      db: DBEngine,
+      signerService: SignerService,
+      validator: Validator,
+      config: Config,
+    ) => new OptimisticPaymentsService(
+      optimisticPaymentsDao,
+      custodialPaymentsDao,
+      channelsDao,
+      db,
+      signerService,
+      validator,
+      config
+    ),
+    dependencies: [
+      'SignerService',
+      'ChannelsDao',
+      'CustodialPaymentsDao',
+      'Validator',
+      'Config',
+      'DBEngine',
+      'OptimisticPaymentDao'
+    ]
+  },
+
   PaymentsService: {
     factory: (
       channelsService: ChannelsService,
@@ -375,6 +406,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       signerService: SignerService,
       paymentsDao: PaymentsDao,
       paymentMetaDao: PaymentMetaDao,
+      optimisticPaymentDao: OptimisticPaymentDao,
       channelsDao: ChannelsDao,
       custodialPaymentsDao: CustodialPaymentsDao,
       validator: Validator,
@@ -387,6 +419,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       signerService,
       paymentsDao,
       paymentMetaDao,
+      optimisticPaymentDao,
       channelsDao,
       custodialPaymentsDao,
       validator,
@@ -406,6 +439,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'DBEngine',
       'GlobalSettingsDao',
+      'OptimisticPaymentDao'
     ],
   },
 
