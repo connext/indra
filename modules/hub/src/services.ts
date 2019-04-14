@@ -376,35 +376,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: ['Web3', 'ChannelManagerContract', 'ConnextUtils', 'Config']
   },
 
-  OptimisticPaymentService: {
-    factory: (
-      optimisticPaymentsDao: OptimisticPaymentDao,
-      custodialPaymentsDao: CustodialPaymentsDao,
-      channelsDao: ChannelsDao,
-      db: DBEngine,
-      signerService: SignerService,
-      validator: Validator,
-      config: Config,
-    ) => new OptimisticPaymentsService(
-      optimisticPaymentsDao,
-      custodialPaymentsDao,
-      channelsDao,
-      db,
-      signerService,
-      validator,
-      config
-    ),
-    dependencies: [
-      'SignerService',
-      'ChannelsDao',
-      'CustodialPaymentsDao',
-      'Validator',
-      'Config',
-      'DBEngine',
-      'OptimisticPaymentDao'
-    ]
-  },
-
   PaymentsService: {
     factory: (
       channelsService: ChannelsService,
@@ -439,14 +410,43 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'SignerService',
       'PaymentsDao',
       'PaymentMetaDao',
+      'OptimisticPaymentDao',
       'ChannelsDao',
       'CustodialPaymentsDao',
       'Validator',
       'Config',
       'DBEngine',
-      'GlobalSettingsDao',
-      'OptimisticPaymentDao'
+      'GlobalSettingsDao'
     ],
+  },
+
+  OptimisticPaymentsService: {
+    factory: (
+      config: Config,
+      db: DBEngine,
+      opPaymentDao: OptimisticPaymentDao,
+      custodialPaymentsDao: CustodialPaymentsDao,
+      channelsDao: ChannelsDao,
+      signerService: SignerService,
+      validator: Validator,
+    ) => new OptimisticPaymentsService(
+      config, 
+      db, 
+      opPaymentDao, 
+      custodialPaymentsDao, 
+      channelsDao, 
+      signerService, 
+      validator
+    ),
+    dependencies: [
+      'Config',
+      'DBEngine',
+      'OptimisticPaymentDao',
+      'CustodialPaymentsDao',
+      'ChannelsDao',
+      'SignerService',
+      'Validator',
+    ]
   },
 
   ChannelsService: {
