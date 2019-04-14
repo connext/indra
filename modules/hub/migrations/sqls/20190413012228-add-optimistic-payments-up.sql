@@ -20,7 +20,7 @@ create table payments_optimistic (
 );
 
 /* add trigger on insert into table to check status validity */
-create or replace function payments_optimistic_post_insert_update_trigger()
+create or replace function payments_optimistic_pre_insert_update_trigger()
 returns trigger language plpgsql as
 $pgsql$
 declare
@@ -30,24 +30,36 @@ begin
   where id = NEW.id
   into payment;
 
-  -- set the status based on the update set
-  if payment.custodial_id is not null then 
-    NEW.status = 'custodial';
+  -- sanity check the status
+  if payment.custodial_id is not null then
+    if payment.status is not 'custodial' then
+      raise exception 'invalid payment status, should be custodial if custodial id provided'
+    end if;
   end if;
 
-  if payment.channel_update_id is not null then
-    -- TODO: am i actually avoiding race conditions here
-    if payment.redemption_id is not null then
-      NEW.status = 'completed';
+  -- TODO: what happens if the channel update id is null?
+  -- i.e. in the case of threads, should we store the thread open update?
+
+  if payment.redemption_id is not null then 
+    if payment.status is not 'completed' then
+      raise exception 'invalid payment status, should be completed if redemption id provided'
     end if;
   end if;
 
   if payment.thread_update_id is not null then
-    NEW.status = 'completed';
+    if payment.status is not 'completed' then
+      raise exception 'invalid payment status, should be completed if thread id provided'
+    end if;
   end if;
 
-  if payment.created_on < now() - interval '30 seconds' then
-    NEW.status = 'failed';
+  if payment.redemption_id is null then
+    if payment.thread_update_id is null then
+      if payment.created_on - now() < interval '30 seconds' then
+        if payment.status is not 'new' then
+          raise exception 'invalid payment status, should be new if it is less than 30 seconds old and unredeemed'
+        end if;
+      end if;
+    end if;
   end if;
 
   -- otherwise, should be default status, 'new'
@@ -56,9 +68,9 @@ begin
 end;
 $pgsql$;
 
-create trigger payments_optimistic_post_insert_trigger
-after insert or update on payments_optimistic
-for each row execute procedure payments_optimistic_post_insert_update_trigger();
+create trigger payments_optimistic_pre_insert_trigger
+before insert or update on payments_optimistic
+for each row execute procedure payments_optimistic_pre_insert_update_trigger();
 
 /* add optimistic payments to view */
 create or replace view payments as (
