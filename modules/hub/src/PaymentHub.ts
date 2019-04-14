@@ -21,6 +21,7 @@ import * as readline from 'readline'
 import { Big } from './util/bigNumber'
 import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
 import { EventLog } from 'web3-core';
+import { OptimisticPaymentsService } from './OptimisticPaymentsService';
 
 const LOG = log('PaymentHub')
 
@@ -36,6 +37,7 @@ export default class PaymentHub {
   private apiServer: ApiServer
   private onchainTransactionService: OnchainTransactionService
   private coinPaymentsDepositPollingService: CoinPaymentsDepositPollingService
+  private optimisticPaymentsService: OptimisticPaymentsService
 
   constructor(config: Config) {
     if (!config.ethRpcUrl) {
@@ -59,6 +61,7 @@ export default class PaymentHub {
     this.apiServer = this.container.resolve('ApiServer')
     this.onchainTransactionService = this.container.resolve('OnchainTransactionService')
     this.coinPaymentsDepositPollingService = this.container.resolve('CoinPaymentsDepositPollingService')
+    this.optimisticPaymentsService = this.container.resolve('OptimisticPaymentsService')
   }
 
   public async start() {
@@ -68,6 +71,7 @@ export default class PaymentHub {
       'apiServer',
       'onchainTransactionService',
       'coinPaymentsDepositPollingService',
+      'optimisticPaymentsService'
     ]
     for (let service of services) {
       try {
