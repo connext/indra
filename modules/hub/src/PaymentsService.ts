@@ -146,6 +146,13 @@ export default class PaymentsService {
         if (payment.update.reason !== "Payment") {
           throw new Error("The `PT_OPTIMISTIC` type has not been tested with anything but payment channel updates")
         }
+
+        // check is also performed on optimistic poller before sending
+        // any channel updates
+        if ((payment.update.args as PaymentArgs).recipient !== "hub") {
+          throw new Error(`Payment must be signed to hub in order to forward, payment: ${prettySafeJson(payment)}`)
+        }
+
         // make update in users channel
         const row = await this.channelsService.doUpdateFromWithinTransaction(user, {
           args: payment.update.args,
