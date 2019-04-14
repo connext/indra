@@ -4,6 +4,7 @@ import { Client } from 'pg'
 import { OptimisticPurchasePaymentRow } from "../domain/OptimisticPayment";
 
 export default interface OptimisticPaymentDao {
+  createOptimisticPayment(paymentId: number, channelUpdateId: number)
   getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRow[]>
   addOptimisticPaymentRedemption(paymentId: number, redemptionId: number): Promise<void>
   addOptimisticPaymentThread(paymentId: number, threadUpdateId: number): Promise<void>
@@ -17,6 +18,19 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
   constructor(
     private db: DBEngine<Client>,
   ) {}
+
+  public async createOptimisticPayment(paymentId: number, updateId: number): Promise<void> {
+    await this.db.queryOne(SQL`
+      INSERT INTO payments_optimistic (
+        payment_id,
+        channel_update_id
+      )
+      VALUES (
+        ${paymentId},
+        ${updateId}
+      )
+    `)
+  }
 
   public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRow[]> {
     const rows = await this.db.queryOne(SQL`
