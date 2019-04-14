@@ -1,6 +1,6 @@
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment, DepositArgs, convertDeposit } from "./vendor/connext/types";
+import { PurchasePayment, convertThreadState, UpdateRequest, PaymentArgs, convertPayment, convertChannelState, Payment,  } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -162,17 +162,18 @@ export default class PaymentsService {
         })
 
         afterPayment = paymentId => afterPayments.push(async () => {
-          // add entry to optimistic payments table
-          await this.optimisticPaymentDao.createOptimisticPayment(paymentId, row.id)
-
           const paymentToHub = payment.recipient == this.config.hotWalletAddress || payment.recipient == emptyAddress
 
           if (paymentToHub) {
             await this.paymentsDao.createHubPayment(paymentId, row.id)
             // add the channel update id as the redemption id as well
-            await this.optimisticPaymentDao.addOptimisticPaymentRedemption(paymentId, row.id)
+            // TODO: should hub payments labeled as optimistic be
+            // added to that table as well?
             return
           }
+
+          // add entry to optimistic payments table
+          await this.optimisticPaymentDao.createOptimisticPayment(paymentId, row.id)
 
           // the optimistic payments table will process the payments there
           // on a poller, but do not collateralize
