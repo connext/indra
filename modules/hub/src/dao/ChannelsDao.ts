@@ -54,6 +54,7 @@ export default interface ChannelsDao {
   getStaleChannels(): Promise<ChannelRowBigNum[]>
   addChainsawErrorId(user: Address, id: number): Promise<void>
   removeChainsawErrorId(user: Address): Promise<void>
+  getChannelUpdateById(id: number): Promise<ChannelStateUpdateRowBigNum>
 }
 
 export function getChannelInitialState(
@@ -96,6 +97,15 @@ export class PostgresChannelsDao implements ChannelsDao {
   constructor(db: DBEngine<Client>, config: Config) {
     this.db = db
     this.config = config
+  }
+
+  async getChannelUpdateById(id: number): Promise<ChannelStateUpdateRowBigNum> {
+    const row = await this.db.queryOne(SQL`
+      SELECT * FROM cm_channel_updates
+      WHERE "id" = ${id}
+      LIMIT 1
+    `)
+    return this.inflateChannelUpdateRow(row)
   }
 
   async addChainsawErrorId(user: Address, id: number): Promise<void> {
