@@ -7,5 +7,8 @@ export type OptimisticPaymentStatus = "new" | "custodial" | "completed" | "faile
 export type OptimisticPurchasePaymentRow = Omit<PurchasePaymentRow, "type" | "id"> & {
   status: OptimisticPaymentStatus
   channelUpdateId: number
-  paymentId: number
+  paymentId: number,
+  threadUpdateId?: number
+  redemptionId?: number
+  custodialId?: number
 }
