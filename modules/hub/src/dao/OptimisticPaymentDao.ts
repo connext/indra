@@ -112,9 +112,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
       },
       meta: row.meta,
       custodianAddress: row.custodian_address,
-      channelUpdateId: row.channel_update_id ? Number(row.channel_update_id) : null,
-      custodialId: row.custodial_id ? Number(row.custodial_id) : null,
-      threadUpdateId: row.thread_update_id ?Number(row.thread_update_id) : null,
+      channelUpdateId: Number(row.channel_update_id),
       status: row.status,
     }
   }
