@@ -48,12 +48,13 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  async createCustodialPayment(paymentId: number, updateId: number): Promise<CustodialWithdrawalRow> {
-    return this.inflateCustodialWithdrawalRow(await this.db.queryOne(SQL`
+  async createCustodialPayment(paymentId: number, updateId: number): Promise<number> {
+    const { id } = await this.db.queryOne(SQL`
       insert into payments_channel_custodial (payment_id, update_id)
       values (${paymentId}, ${updateId})
-      returning *
-    `))
+      returning id
+    `)
+    return id
   }
 
   async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptions): Promise<CustodialWithdrawalRow> {
