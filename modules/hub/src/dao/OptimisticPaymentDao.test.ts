@@ -42,7 +42,7 @@ describe("OptimisticPaymentDao", () => {
       'meta': {
         'foo': 42
       },
-      'payment_type': 'optimistic',
+      'payment_type': 'PT_OPTIMISTIC',
       'purchase_id': 'abc123',
       'recipient': '0xb000000000000000000000000000000000000000',
       'sender': '0xa000000000000000000000000000000000000000',
