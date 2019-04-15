@@ -23,7 +23,12 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: make test-e2e
+      - run:
+          command: |
+            make start
+            git clone https://github.com/ConnextProject/card.git
+            cd card
+            make test-prod
 
   push-images:
     machine: true

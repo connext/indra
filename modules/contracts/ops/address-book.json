@@ -6,8 +6,13 @@
         "name": "Dai"
       },
       "4": {
-        "address": "0x0fbE13fcF9C8B33a5c20FA93160DED33D4dF702E",
-        "name": "MockDai"
+        "address": "0xCf27Baf37DB993EB2169945b1e3Ab456688f56Ac",
+        "supply": {
+          "_hex": "0x084595161401484a000000"
+        },
+        "name": "MockDai",
+        "decimals": "18",
+        "symbol": "MDA"
       },
       "4447": {
         "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da",
@@ -46,10 +51,10 @@
         "address": "0x8BA9df707565Ef788D0C72D41db8efbBADf41240"
       },
       "4": {
-        "address": "0x3732BCF6912A0Cb5711f2A07F52FBa0643D1E5bF",
-        "hub": "0x2932b7a2355d6fecc4b5c0b6bd44cc31df247a2e",
+        "address": "0x0Fa90eC3AC3245112c6955d8F9DD74Ec9D599996",
+        "hub": "0x604C4830bF75A467ab112603FF7f21b8b82390D4",
         "challengePeriod": "600",
-        "approvedToken": "0x0fbE13fcF9C8B33a5c20FA93160DED33D4dF702E"
+        "approvedToken": "0xCf27Baf37DB993EB2169945b1e3Ab456688f56Ac"
       },
       "4447": {
         "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10",

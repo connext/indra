@@ -66,22 +66,22 @@ reset-base: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 
 reset-client: reset-base
-	rm -rf build/client*  $(client)/dist $(client)/node_modules
+	rm -rf build/client*  $(client)/dist $(client)/node_modules $(client)/package-lock.json
 
 reset-contracts: reset-base
-	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules
+	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules $(contracts)/package-lock.json
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-dashboard: reset-base
-	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules
+	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules $(dashboard)/package-lock.json
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-database: reset-base
-	rm -rf build/database* $(db)/build/* $(db)/node_modules
+	rm -rf build/database* $(db)/build/* $(db)/node_modules $(db)/package-lock.json
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 
 reset-hub: reset-base
-	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules
+	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules $(hub)/package-lock.json
 
 reset: reset-base
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
@@ -120,7 +120,7 @@ backup:
 # set a default test command for developer convenience
 test: test-default
 test-default: test-client
-test-all: test-client test-contracts test-hub test-e2e
+test-all: test-client test-contracts test-hub
 
 test-client: client
 	bash ops/test-client.sh
@@ -130,12 +130,6 @@ test-contracts: contract-artifacts
 
 test-hub: hub database
 	bash ops/test-hub.sh
-
-test-e2e: root-node-modules prod
-	npm stop
-	MODE=test npm run start-prod
-	./node_modules/.bin/cypress run
-	npm stop
 
 ########################################
 # Begin Real Rules
@@ -185,7 +179,7 @@ hub-prod: hub
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
 	$(log_finish) && touch build/$@
 
-hub: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
+hub: hub-node-modules contract-artifacts $(shell find $(hub)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/$@
