@@ -145,7 +145,7 @@ describe('PaymentsService', () => {
     assert.isFalse(res.error)
     const purchaseId = (res as any).res.purchaseId
 
-    // should have receiver payment
+    // should have sender payment
     const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const custodialUpdateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(custodialUpdateSender, {
@@ -201,7 +201,7 @@ describe('PaymentsService', () => {
 
     await service.doPurchase(sender, {}, payments)
 
-    // should have receiver payment
+    // should have sender payment
     const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const custodialUpdateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(custodialUpdateSender, {
