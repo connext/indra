@@ -324,7 +324,7 @@ export default class PaymentsService {
     }
   }
 
-  private async doChannelInstantPayment(payment: PurchasePayment, paymentId: number, updateId: number): Promise<void> {
+  public async doChannelInstantPayment(payment: PurchasePayment, paymentId: number, updateId: number): Promise<number> {
     const paymentUpdate = payment.update as UpdateRequest
 
     const recipientChannel = await this.channelsDao.getChannelByUser(payment.recipient)
@@ -358,7 +358,9 @@ export default class PaymentsService {
 
     // Link the payment (ie, the Payment row which references the
     // paying-user -> hub state update) to the disbursement.
-    return await this.paymentsDao.createChannelInstantPayment(paymentId, disbursement.id, updateId)
+    const channelInstantPaymentId = await this.paymentsDao.createChannelInstantPayment(paymentId, disbursement.id, updateId)
+    console.log('channelInstantPaymentId', channelInstantPaymentId)
+    return channelInstantPaymentId
   }
 
   private generatePurchaseId(
