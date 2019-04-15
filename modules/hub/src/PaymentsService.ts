@@ -359,7 +359,6 @@ export default class PaymentsService {
     // Link the payment (ie, the Payment row which references the
     // paying-user -> hub state update) to the disbursement.
     const channelInstantPaymentId = await this.paymentsDao.createChannelInstantPayment(paymentId, disbursement.id, updateId)
-    console.log('channelInstantPaymentId', channelInstantPaymentId)
     return channelInstantPaymentId
   }
 
