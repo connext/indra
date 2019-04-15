@@ -14,18 +14,19 @@ import { prettySafeJson } from "./util";
 const LOG = log('OptimisticPaymentsService')
 
 const POLL_INTERVAL = 1000
+const CUSTODIAL_PAYMENT_TIMER = 30 * 1000
 
 export class OptimisticPaymentsService {
   private poller: Poller
 
   constructor(
+    private config: Config,
+    private db: DBEngine,
     private opPaymentDao: OptimisticPaymentDao,
     private custodialPaymentsDao: CustodialPaymentsDao,
     private channelsDao: ChannelsDao,
-    private db: DBEngine,
     private signerService: SignerService,
     private validator: Validator,
-    private config: Config
   ) {
     this.poller = new Poller({
       name: 'OptimisticPaymentsService',
@@ -35,8 +36,12 @@ export class OptimisticPaymentsService {
     })
   }
 
-  async poll() {
+  public start() {
     return this.poller.start()
+  }
+
+  public stop() {
+    return this.poller.stop()
   }
 
   async pollOnce() {
@@ -47,15 +52,14 @@ export class OptimisticPaymentsService {
         const payeeChan = await this.channelsDao.getChannelOrInitialState(p.recipient)
         // do not proceed if channel is not open
         if (payeeChan.status != "CS_OPEN") {
-          return
+          continue
         }
 
         // if the payment was created more than 30 seconds ago, 
         // send custodially
-        if (Date.now() - +p.createdOn > 30 * 1000) {
-          // send the payment custodially
+        if (CUSTODIAL_PAYMENT_TIMER < Date.now() - +p.createdOn) {
           await this.sendCustodialPayment(p)
-          return
+          continue
         }
 
         // check if the payee channel has sufficient collateral
@@ -65,7 +69,7 @@ export class OptimisticPaymentsService {
           payeeState.balanceTokenHub.lt(paymentBig.amountToken) || payeeState.balanceWeiHub.lt(paymentBig.amountWei)
         ) {
           // if it does not, wait for next polling
-          return
+          continue
         }
 
         // if the hub has sufficient collateral, forward the
@@ -96,7 +100,7 @@ export class OptimisticPaymentsService {
 
       const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
 
-      const disbursement = await this.channelsDao.applyUpdateByUser(
+      const redemption = await this.channelsDao.applyUpdateByUser(
         payment.recipient,
         'Payment',
         this.config.hotWalletAddress,
@@ -104,7 +108,7 @@ export class OptimisticPaymentsService {
         payeeArgs
       )
 
-      await this.opPaymentDao.addOptimisticPaymentRedemption(payment.paymentId, disbursement.id)
+      await this.opPaymentDao.addOptimisticPaymentRedemption(payment.paymentId, redemption.id)
     } catch (e) {
       // if the custodial payment fails, the payment should fail
       LOG.info("Error redeeming optimistic channel payment. ID: {id}", {
@@ -128,9 +132,8 @@ export class OptimisticPaymentsService {
     // TODO: how to handle this in the case of this being one failed
     // payment in a purchase? should all the payments that make up
     // that purchase be reverted?
-    // revert the payors update
 
-    // finally, mark the payment as failed
+    // mark the payment as failed
     await this.opPaymentDao.optimisticPaymentFailed(payment.paymentId)
   }
 }
