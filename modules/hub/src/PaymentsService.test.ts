@@ -155,7 +155,7 @@ describe('PaymentsService', () => {
     assert.isOk(custodialUpdateSender.sigHub)
 
     const purchase = (await paymentDao.byPurchase(purchaseId))[0]
-    assert.equal(purchase.type, "hub-direct")
+    assert.equal(purchase.type, "PT_CHANNEL")
     // a new payment should NOT be added to the optimistic payments table
     // and be redeemed with the channel update
     const payment = await opPaymentsDao.getOptimisticPaymentById(purchase.id)

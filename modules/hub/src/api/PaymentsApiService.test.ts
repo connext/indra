@@ -221,7 +221,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'link',
+      type: 'PT_LINK',
     })
   })
 
@@ -288,7 +288,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'link',
+      type: 'PT_LINK',
       meta: {
         secret: "sadlkj"
       }
@@ -302,7 +302,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'link',
+      type: 'PT_LINK',
       meta: {
         secret: "sadlkj"
       }

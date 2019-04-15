@@ -55,7 +55,7 @@ describe('CustodialPaymentsDao', () => {
         'amount_token': '420',
         'amount_wei': '69',
         'contract': '0xCCC0000000000000000000000000000000000000',
-        'payment_type': 'channel-custodial',
+        'payment_type': 'PT_CUSTODIAL',
         'purchase_id': 'foo',
         'recipient': '0x5550000000000000000000000000000000000000',
         'sender': '0xAAA0000000000000000000000000000000000000',

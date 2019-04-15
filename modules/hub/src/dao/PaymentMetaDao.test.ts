@@ -52,7 +52,7 @@ describe('PaymentMetaDao', () => {
       recipient: parties.performer.user,
       amount: { amountWei: '0', amountToken: tokenVal(1) },
       meta: { foo: 42 },
-      type: 'thread',
+      type: 'PT_THREAD',
     })
   })
 
@@ -87,7 +87,7 @@ describe('PaymentMetaDao', () => {
       recipient: testHotWalletAddress,
       amount: { amountWei: '0', amountToken: tokenVal(2) },
       meta: { foo: 42 },
-      type: 'hub-direct',
+      type: 'PT_CHANNEL',
     })
   })
 
@@ -117,7 +117,7 @@ describe('PaymentMetaDao', () => {
       recipient: emptyAddress,
       amount: { amountWei: '0', amountToken: tokenVal(2) },
       meta: { foo: 42 },
-      type: 'link',
+      type: 'PT_LINK',
     })
   })
 
@@ -149,7 +149,7 @@ describe('PaymentMetaDao', () => {
       recipient: redeemer,
       amount: { amountWei: '0', amountToken: tokenVal(2) },
       meta: { foo: 42 },
-      type: 'link',
+      type: 'PT_LINK',
     })
   })
 })
