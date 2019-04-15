@@ -13,7 +13,7 @@ create table payments_optimistic (
   payment_id bigint not null references _payments,
   channel_update_id bigint null references _cm_channel_updates,
   thread_update_id bigint null references _cm_thread_updates,
-  redemption_id bigint null references _cm_channel_updates,
+  redemption_id bigint null references payments_channel_instant,
   custodial_id bigint null references payments_channel_custodial,
   status PAYMENTS_OPTIMISTIC_STATUS not null default 'new',
   created_on timestamp with time zone not null default now()
@@ -87,7 +87,7 @@ create or replace view payments as (
     amount_token,
     meta,
 
-    'channel-instant' as payment_type
+    'PT_CHANNEL' as payment_type
   from _payments as p
   inner join payments_channel_instant as ci on ci.payment_id = p.id
   left join cm_channel_updates as up on up.id = ci.update_id
@@ -107,7 +107,7 @@ create or replace view payments as (
     amount_token,
     meta,
 
-    'hub-direct' as payment_type
+    'PT_CHANNEL' as payment_type
   from _payments as p
   inner join payments_hub_direct as ph on ph.payment_id = p.id
   left join cm_channel_updates as up on up.id = ph.update_id
@@ -127,7 +127,7 @@ create or replace view payments as (
     amount_token,
     meta,
 
-    'channel-custodial' as payment_type
+    'PT_CUSTODIAL' as payment_type
   from _payments as p
   inner join payments_channel_custodial as cc on cc.payment_id = p.id
   left join cm_channel_updates as up on up.id = cc.update_id
@@ -147,7 +147,7 @@ create or replace view payments as (
     p.amount_token,
     p.meta,
 
-    'thread' AS payment_type
+    'PT_THREAD' AS payment_type
   from _payments p
   inner join payments_thread as pt on pt.payment_id = p.id
   left join cm_thread_updates up on up.id = pt.update_id
@@ -167,7 +167,7 @@ create or replace view payments as (
     p.amount_token,
     p.meta,
 
-    'link' AS payment_type
+    'PT_LINK' AS payment_type
   from _payments p
   inner join payments_link as pl on pl.payment_id = p.id
   left join cm_channel_updates up on up.id = pl.update_id
@@ -187,7 +187,7 @@ create or replace view payments as (
     p.amount_token,
     p.meta,
 
-    'optimistic' AS payment_type
+    'PT_OPTIMISTIC' AS payment_type
   from _payments p
   inner join payments_optimistic as po on po.payment_id = p.id
   left join cm_channel_updates up on up.id = po.channel_update_id
