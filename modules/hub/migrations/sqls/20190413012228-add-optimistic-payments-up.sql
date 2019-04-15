@@ -191,6 +191,7 @@ create or replace view payments as (
   from _payments p
   inner join payments_optimistic as po on po.payment_id = p.id
   left join cm_channel_updates up on up.id = po.channel_update_id
+  where po.status in ('new', 'failed')
 );
 
 /* trigger should sanity check the status */
