@@ -49,7 +49,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
           "custodial_id",
           "payment_id",
           "status"
-        FROM payments_optimistic where "status" = 'new'
+        FROM payments_optimistic where "payment_id" = ${paymentId}
       ) as up
       
       ON p.id = up.payment_id
