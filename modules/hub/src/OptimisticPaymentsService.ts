@@ -2,14 +2,12 @@ import log from "./util/log";
 import { Poller } from "./vendor/connext/lib/poller/Poller";
 import ChannelsDao from "./dao/ChannelsDao";
 import DBEngine from "./DBEngine";
-import { convertChannelState, convertPayment,  PaymentArgs } from "./vendor/connext/types";
+import { convertChannelState, convertPayment, PurchasePayment } from "./vendor/connext/types";
 import { CustodialPaymentsDao } from "./custodial-payments/CustodialPaymentsDao";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { OptimisticPurchasePaymentRow } from "./domain/OptimisticPayment";
-import { SignerService } from "./SignerService";
-import { Validator } from "./vendor/connext/validator";
-import Config from "./Config";
-import { prettySafeJson } from "./util";
+import PaymentsService from "./PaymentsService";
+import { Big } from "./util/bigNumber";
 
 const LOG = log('OptimisticPaymentsService')
 
@@ -20,13 +18,11 @@ export class OptimisticPaymentsService {
   private poller: Poller
 
   constructor(
-    private config: Config,
     private db: DBEngine,
     private opPaymentDao: OptimisticPaymentDao,
     private custodialPaymentsDao: CustodialPaymentsDao,
     private channelsDao: ChannelsDao,
-    private signerService: SignerService,
-    private validator: Validator,
+    private paymentsService: PaymentsService,
   ) {
     this.poller = new Poller({
       name: 'OptimisticPaymentsService',
@@ -65,8 +61,13 @@ export class OptimisticPaymentsService {
         // check if the payee channel has sufficient collateral
         const payeeState = convertChannelState("bignumber", payeeChan.state)
         const paymentBig = convertPayment("bignumber", p.amount)
+        const sufficientCollateral = (type: 'Token' | 'Wei') => {
+          const hubKey = 'balance' + type + 'Hub'
+          const paymentKey = 'amount' + type
+          return payeeState[hubKey].gte(paymentBig[paymentKey])
+        }
         if (
-          payeeState.balanceTokenHub.lt(paymentBig.amountToken) || payeeState.balanceWeiHub.lt(paymentBig.amountWei)
+          !sufficientCollateral('Token') || !sufficientCollateral('Wei')
         ) {
           // if it does not, wait for next polling
           continue
@@ -82,33 +83,25 @@ export class OptimisticPaymentsService {
   }
 
   private async sendChannelPayment(payment: OptimisticPurchasePaymentRow): Promise<void> {
+    // reconstruct purchase payment as if it came from user
+    const purchasePayment: PurchasePayment = {
+      recipient: payment.recipient,
+      type: "PT_CHANNEL",
+      amount: payment.amount,
+      meta: payment.meta,
+      update: {
+        reason: "Payment",
+        args: {
+          ...payment.amount,
+          recipient: "hub"
+        },
+        txCount: null,
+      },
+    }
     try {
-      const update = await this.channelsDao.getChannelUpdateById(payment.channelUpdateId)
+      const redemptionId = await this.paymentsService.doChannelInstantPayment(purchasePayment, payment.paymentId, payment.channelUpdateId)
 
-      if ((update.args as PaymentArgs).recipient !== "hub") {
-        throw new Error(`Payment must be signed to hub in order to forward, payment: ${prettySafeJson(payment)}`)
-      }
-
-      const payeeChan = await this.channelsDao.getChannelByUser(payment.recipient)
-
-      const payeeArgs = { ...update.args, recipient: "user" } as PaymentArgs
-
-      const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
-        convertChannelState('str', payeeChan.state),
-        payeeArgs
-      )
-
-      const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
-
-      const redemption = await this.channelsDao.applyUpdateByUser(
-        payment.recipient,
-        'Payment',
-        this.config.hotWalletAddress,
-        signedStateHubToRecipient,
-        payeeArgs
-      )
-
-      await this.opPaymentDao.addOptimisticPaymentRedemption(payment.paymentId, redemption.id)
+      await this.opPaymentDao.addOptimisticPaymentRedemption(payment.paymentId, redemptionId)
     } catch (e) {
       // if the custodial payment fails, the payment should fail
       LOG.info("Error redeeming optimistic channel payment. ID: {id}", {
