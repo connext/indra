@@ -45,7 +45,7 @@ export class OptimisticPaymentsService {
   }
 
   async pollOnce() {
-    this.db.withTransaction(async () => {
+    await this.db.withTransaction(async () => {
       // get all payments to be processed
       const newPayments = await this.opPaymentDao.getNewOptimisticPayments()
       for (const p of newPayments) {
@@ -120,8 +120,8 @@ export class OptimisticPaymentsService {
 
   private async sendCustodialPayment(payment: OptimisticPurchasePaymentRow): Promise<void> {
     try {
-      const custodial = await this.custodialPaymentsDao.createCustodialPayment(payment.paymentId, payment.channelUpdateId)
-      await this.opPaymentDao.addOptimisticPaymentCustodial(payment.paymentId, custodial.id)
+      const custodialId = await this.custodialPaymentsDao.createCustodialPayment(payment.paymentId, payment.channelUpdateId)
+      await this.opPaymentDao.addOptimisticPaymentCustodial(payment.paymentId, custodialId)
     } catch (e) {
       // if the custodial payment fails, the payment should fail
       await this.revertPayment(payment)
