@@ -19,7 +19,7 @@ describe('CustodialPaymentsService', () => {
   const service: CustodialPaymentsService = registry.get('CustodialPaymentsService')
   const onchainTxnService: OnchainTransactionService = registry.get('OnchainTransactionService')
 
-  beforeEach(() => registry.clearDatabase())
+  beforeEach(async () => await registry.clearDatabase())
 
   describe('createCustodialWithdrawal', () => {
     service.MIN_WITHDRAWAL_AMOUNT_TOKEN = '3'

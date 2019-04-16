@@ -46,7 +46,7 @@ describe('CustodialPaymentsDao', () => {
   const db: DBEngine = registry.get('DBEngine')
   const dao: CustodialPaymentsDao = registry.get('CustodialPaymentsDao')
 
-  beforeEach(() => registry.clearDatabase())
+  beforeEach(async () => await registry.clearDatabase())
 
   describe('createCustodialPayment', () => {
     it('works', async () => {
