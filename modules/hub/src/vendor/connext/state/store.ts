@@ -86,6 +86,11 @@ export class PersistentState {
   // reducer in reducers.
   latestValidState: ChannelState = CHANNEL_ZERO_STATE
 
+  custodialBalance: Payment = {
+    amountWei: '0',
+    amountToken: '0',
+  }
+
   activeThreads: ThreadState[] = [] // all open and active threads at latest state
   activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
   // threadHistory is how the client will generate and track the 
