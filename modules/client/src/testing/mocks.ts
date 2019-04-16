@@ -183,7 +183,7 @@ export class MockHub implements IHubAPIClient {
 
   async config(): Promise<HubConfig> {
     //TODO: implement correctly
-    return {} as any
+    return { beiMaxCollateralization: '100' } as any
   }
 
   async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
