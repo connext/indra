@@ -1,39 +1,7 @@
 import { BigNumber } from 'bignumber.js/bignumber'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { Big } from '../util/bigNumber'
-
-export interface CustodialBalanceRow {
-  user: string
-  totalReceivedWei: BigNumber
-  totalReceivedToken: BigNumber
-  totalWithdrawnWei: BigNumber
-  totalWithdrawnToken: BigNumber
-  balanceWei: BigNumber
-  balanceToken: BigNumber
-  sentWei: BigNumber
-}
-
-export interface CreateCustodialWithdrawalOptions {
-  user: string
-  recipient: string
-  requestedToken: BigNumber
-  exchangeRate: BigNumber
-  sentWei: BigNumber
-  onchainTransactionId: number
-}
-
-export interface CustodialWithdrawalRow {
-  id: number
-  createdOn: Date
-  user: string
-  recipient: string
-  requestedToken: BigNumber
-  exchangeRate: BigNumber
-  sentWei: BigNumber
-  state: string
-  txHash: string
-  onchainTransactionId: number
-}
+import { CustodialBalanceRow, CreateCustodialWithdrawalOptions, CustodialWithdrawalRow } from '../vendor/connext/types';
 
 export class CustodialPaymentsDao {
   constructor(

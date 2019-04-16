@@ -1033,3 +1033,37 @@ export type PurchasePaymentHubResponse<T= string> = ({
 
 export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>
 export type PurchasePaymentHubResponseBigNumber = PurchasePaymentHubResponse<BigNumber>
+
+// custodial payments
+export type CustodialBalanceRow = {
+  user: string
+  totalReceivedWei: BigNumber
+  totalReceivedToken: BigNumber
+  totalWithdrawnWei: BigNumber
+  totalWithdrawnToken: BigNumber
+  balanceWei: BigNumber
+  balanceToken: BigNumber
+  sentWei: BigNumber
+}
+
+export type CreateCustodialWithdrawalOptions = {
+  user: string
+  recipient: string
+  requestedToken: BigNumber
+  exchangeRate: BigNumber
+  sentWei: BigNumber
+  onchainTransactionId: number
+}
+
+export type CustodialWithdrawalRow = {
+  id: number
+  createdOn: Date
+  user: string
+  recipient: string
+  requestedToken: BigNumber
+  exchangeRate: BigNumber
+  sentWei: BigNumber
+  state: string
+  txHash: string
+  onchainTransactionId: number
+}
