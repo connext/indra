@@ -424,20 +424,17 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     factory: (
       db: DBEngine,
       opPaymentDao: OptimisticPaymentDao,
-      custodialPaymentsDao: CustodialPaymentsDao,
       channelsDao: ChannelsDao,
       paymentsService: PaymentsService,
     ) => new OptimisticPaymentsService(
       db, 
       opPaymentDao, 
-      custodialPaymentsDao, 
       channelsDao, 
       paymentsService,
     ),
     dependencies: [
       'DBEngine',
       'OptimisticPaymentDao',
-      'CustodialPaymentsDao',
       'ChannelsDao',
       'PaymentsService',
     ]
