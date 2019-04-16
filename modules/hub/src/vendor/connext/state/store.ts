@@ -1,4 +1,4 @@
-import { ChannelStatus, ThreadHistoryItem, ThreadStateUpdate } from '../types'
+import { ChannelStatus, ThreadHistoryItem, ThreadStateUpdate, CustodialBalanceRow } from '../types'
 import { UpdateRequest } from '../types'
 //import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
 import { EMPTY_ROOT_HASH, ZERO_ADDRESS } from '../lib/constants'
@@ -86,9 +86,15 @@ export class PersistentState {
   // reducer in reducers.
   latestValidState: ChannelState = CHANNEL_ZERO_STATE
 
-  custodialBalance: Payment = {
-    amountWei: '0',
-    amountToken: '0',
+  custodialBalance: CustodialBalanceRow = {
+    balanceWei: '0',
+    balanceToken: '0',
+    totalReceivedToken: '0',
+    totalReceivedWei: '0',
+    totalWithdrawnToken: '0',
+    totalWithdrawnWei: '0',
+    sentWei: '0',
+    user: '0x0'
   }
 
   activeThreads: ThreadState[] = [] // all open and active threads at latest state
