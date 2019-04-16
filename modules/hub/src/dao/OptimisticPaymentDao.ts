@@ -8,7 +8,6 @@ export default interface OptimisticPaymentDao {
   getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRow[]>
   addOptimisticPaymentRedemption(paymentId: number, redemptionId: number): Promise<void>
   addOptimisticPaymentThread(paymentId: number, threadUpdateId: number): Promise<void>
-  addOptimisticPaymentCustodial(paymentId: number, custodialId: number): Promise<void>
   optimisticPaymentFailed(paymentId: number): Promise<void>
   getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRow>
 }
@@ -46,7 +45,6 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
           "channel_update_id",
           "thread_update_id",
           "redemption_id",
-          "custodial_id",
           "payment_id",
           "status"
         FROM payments_optimistic where "payment_id" = ${paymentId}
@@ -63,7 +61,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
         SELECT * 
         FROM payments
         WHERE id = (
-          SELECT "payment_id" FROM payments_optimistic WHERE "status" = 'new'
+          SELECT "payment_id" FROM payments_optimistic WHERE "status" = 'NEW'
         )
       ) as p
       
@@ -72,10 +70,9 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
           "channel_update_id",
           "thread_update_id",
           "redemption_id",
-          "custodial_id",
           "payment_id",
           "status"
-        FROM payments_optimistic where "status" = 'new'
+        FROM payments_optimistic where "status" = 'NEW'
       ) as up
       
       ON p.id = up.payment_id
@@ -87,7 +84,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     await this.db.queryOne(SQL`
       UPDATE payments_optimistic 
       SET 
-        status = 'completed',
+        status = 'COMPLETED',
         redemption_id = ${redemptionId}
       WHERE payment_id = ${paymentId}
     `)
@@ -97,18 +94,8 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     await this.db.queryOne(SQL`
       UPDATE payments_optimistic 
       SET 
-        status = 'completed',
+        status = 'COMPLETED',
         thread_update_id = ${threadUpdateId}
-      WHERE payment_id = ${paymentId}
-    `)
-  }
-
-  public async addOptimisticPaymentCustodial(paymentId: number, custodialId: number) {
-    await this.db.queryOne(SQL`
-      UPDATE payments_optimistic 
-      SET 
-        status = 'custodial',
-        custodial_id = ${custodialId}
       WHERE payment_id = ${paymentId}
     `)
   }
@@ -117,7 +104,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     await this.db.query(SQL`
       UPDATE payments_optimistic 
       SET 
-        status = 'failed'
+        status = 'FAILED'
       WHERE payment_id = ${paymentId}
     `)
   }
@@ -139,12 +126,10 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
         amountToken: row.amount_token,
       },
       meta: row.meta,
-      custodianAddress: row.custodian_address,
       channelUpdateId: Number(row.channel_update_id),
       status: row.status,
       threadUpdateId: row.thread_update_id ? Number(row.thread_update_id) : null,
       redemptionId: row.redemption_id ? Number(row.redemption_id) : null,
-      custodialId: row.custodial_id ? Number(row.custodial_id) : null,
     }
   }
 }
