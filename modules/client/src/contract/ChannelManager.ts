@@ -1,3 +1,4 @@
+import * as eth from 'ethers';
 import { EventLog } from 'web3-core';
 import { default as ChannelManagerAbi } from './ChannelManagerAbi'
 import { ChannelManager as TypechainChannelManager } from './ChannelManagerTypechain'
@@ -9,6 +10,7 @@ import {
   ChannelState,
   ThreadState
 } from '../types'
+import Wallet from './Wallet';
 
 // To recreate typechain & abi:
 //  - npm run build # in contracts module
@@ -93,9 +95,9 @@ export class ChannelManager implements IChannelManager {
   cm: TypechainChannelManager
   gasMultiple: number
 
-  constructor(web3: any, address: string, gasMultiple: number) {
+  constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
-    this.cm = new web3.eth.Contract(ChannelManagerAbi.abi, address) as any
+    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet) as any
     this.gasMultiple = gasMultiple
   }
 

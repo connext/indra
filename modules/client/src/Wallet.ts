@@ -5,20 +5,29 @@ import {
   Address,
 } from './types';
 
+// Conforms to the ethers signer API so we can use a web3 signer to create writable contracts
+// More info: https://github.com/ethereum/web3.js/issues/2675
+
 export interface IWallet {
   address: Address
+  provider: any
+  getAddress: () => Address
   signTransaction: (tx: any) => Promise<string>
   signMessage: (message: string) => Promise<string>
 }
 
 export default class Wallet implements IWallet {
-  address: string
+  address: Address
+  provider: any
   private password?: string
   private wallet?: any
   private web3?: any
 
   constructor(opts: ConnextClientOptions) {
     this.password = opts.password
+
+    ////////////////////////////////////////
+    // Setup our a signer
 
     // First choice: Sign w private key
     if (opts.privateKey) {
@@ -43,6 +52,31 @@ export default class Wallet implements IWallet {
       this.wallet = eth.Wallet.createRandom()
       this.address = this.wallet.address.toLowerCase()
     }
+
+    ////////////////////////////////////////
+    // Connect to an eth provider
+
+    // First choice: use provided ethUrl
+    if (opts.ethUrl) {
+      this.provider = new eth.providers.JsonRpcProvider(opts.ethUrl)
+
+    // Second choice: use provided web3
+    } else if (opts.web3) {
+      this.provider = new eth.providers.Web3Provider(opts.ethUrl)
+
+    // Third choice: use hub's ethprovider (derived from hubUrl)
+    } else if (opts.hubUrl.substring(opts.hubUrls.length - 4) === '/hub') {
+      const ethUrl = `${opts.hubUrl.substring(opts.hubUrls.length - 3)}/eth`
+      this.provider = new eth.providers.JsonRpcProvider(ethUrl)
+
+    // Fallback: use ethers default provider (uses chainId=1 if ethNetworkId is null)
+    } else {
+      this.provider = eth.getDefaultProvider(ethers.providers.getNetwork(opts.ethNetworkId))
+    }
+  }
+
+  getAddress() {
+    return this.address
   }
 
   async signTransaction(tx: any) {
