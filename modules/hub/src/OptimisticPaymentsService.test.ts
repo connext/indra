@@ -24,11 +24,12 @@ describe('OptimisticPaymentsService', () => {
   const channelsService: ChannelsService = registry.get('ChannelsService')
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const custodialPaymentsDao: CustodialPaymentsDao = registry.get('CustodialPaymentsDao')
+  const db = registry.get("DBEngine")
   const clock = getFakeClock()
 
   // variables
-  const sender = mkAddress('0xa')
-  const receiver = mkAddress('0xb')
+  const sender = mkAddress('0xc251')
+  const receiver = mkAddress('0xe214')
 
   const paymentArgs: PaymentArgs = {
     amountWei: '0',
@@ -114,7 +115,7 @@ describe('OptimisticPaymentsService', () => {
     assert.containSubset(payment, {
       channelUpdateId: updateSender.id!,
       status: "completed",
-      redemptionId: purchasePayments[0].id
+      paymentId: purchasePayments[0].id,
     })
   })
 
@@ -168,15 +169,9 @@ describe('OptimisticPaymentsService', () => {
     // receiver is not paid until collateralized
     // poll once
     await optimisticService.pollOnce()
-    
-    // check receiver updates
-    const { updates: receiverUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
-    let updateReceiver = receiverUpdates[receiverUpdates.length - 1].update as UpdateRequest
-    // hub should try to collateralize channel
-    assert.equal(updateReceiver.reason, "ProposePendingDeposit")
 
     // add collateral to channel
-    await channelUpdateFactory(registry, { 
+    const receiverChan = await channelUpdateFactory(registry, { 
       user: receiver, 
       balanceTokenHub: tokenVal(7) 
     })
@@ -185,19 +180,24 @@ describe('OptimisticPaymentsService', () => {
     await optimisticService.pollOnce()
     
     // check receiver updates
-    const { updates: receiverUpdates2 } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
+    const { updates: receiverUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, receiverChan.state.txCountGlobal, 0)
     // since hub collateralized, last update will be "ProposePendingDeposit"
-    updateReceiver = receiverUpdates2[receiverUpdates2.length - 2].update as UpdateRequest
+    const updateReceiver = receiverUpdates[receiverUpdates.length - 2].update as UpdateRequest
     assert.isOk(updateReceiver.sigHub)
 
     // get the payment and make sure it was updated
     purchasePayments = await paymentMetaDao.byPurchase(purchaseId)
-    assert.equal(purchasePayments[0].type, "PT_CHANNEL")
     payment = await optimisticDao.getOptimisticPaymentById(optimisticId)
+    const row = await db.queryOne(`
+      SELECT "id" 
+      FROM payments_channel_instant
+      WHERE "payment_id" = ${purchasePayments[0].id}
+    `)
     assert.containSubset(payment, {
       channelUpdateId: updateSender.id!,
       status: "completed",
-      redemptionId: purchasePayments[0].id
+      paymentId: purchasePayments[0].id,
+      redemptionId: parseInt(row.id)
     })
   })
 
@@ -255,6 +255,7 @@ describe('OptimisticPaymentsService', () => {
     // wait out clock without collateralizing
     const ticks = ts + (40 * 1000)
     await clock.awaitTicks(ticks)
+    assert.isAtLeast(ts, Date.now())
     // poll once
     await optimisticService.pollOnce()
     
@@ -277,7 +278,6 @@ describe('OptimisticPaymentsService', () => {
     })
 
     // check optimistic payments table val properly updated
-    const db = await registry.get("DBEngine")
     const row = await db.queryOne(`
       SELECT "id" 
       FROM payments_channel_custodial
@@ -289,6 +289,7 @@ describe('OptimisticPaymentsService', () => {
       channelUpdateId: updateSender.id!,
       status: "custodial",
       custodialId: parseInt(row.id),
+      paymentId: purchasePayments[0].id
     })
 
   })
@@ -307,9 +308,6 @@ describe('OptimisticPaymentsService', () => {
     const pmd = failingRegistry.get('PaymentMetaDao')
     const opd = failingRegistry.get('OptimisticPaymentDao')
     const os = failingRegistry.get('OptimisticPaymentsService')
-
-    const sender = mkAddress('0xa')
-    const receiver = mkAddress('0xb')
 
     const senderChannel = await channelUpdateFactory(failingRegistry, {
       user: sender,
