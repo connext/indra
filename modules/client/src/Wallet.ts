@@ -7,7 +7,7 @@ import {
 
 export interface IWallet {
   address: Address
-  sign: (tx: any) => Promise<string>
+  signTransaction: (tx: any) => Promise<string>
   signMessage: (message: string) => Promise<string>
 }
 
@@ -31,7 +31,10 @@ export default class Wallet implements IWallet {
       this.address = this.wallet.address
 
     // Third choice: Sign w web3
-    } else if (opts.user && opts.web3 && opts.web3.eth.personal && opts.web3.eth.personal.sign) {
+    } else if (
+      (opts.user && opts.web3 && opts.web3.eth) &&
+      (opts.web3.eth.sign || (opts.web3.eth.personal && opts.web3.eth.personal.sign))
+    ) {
       this.web3 = opts.web3
       this.address = opts.user
 
@@ -42,11 +45,15 @@ export default class Wallet implements IWallet {
     }
   }
 
-  async sign(tx: any) {
+  async signTransaction(tx: any) {
     if (this.wallet) {
       return await this.wallet.sign(tx)
     } else if (this.web3) {
-      return await this.web3.eth.personal.signTransaction(tx, this.password)
+      return await (
+        this.web3.eth.personal
+          ? this.web3.eth.personal.signTransaction(tx, this.address, this.password)
+          : this.web3.eth.signTransaction(tx, this.address, this.password)
+      )
     }
   }
 
@@ -54,7 +61,11 @@ export default class Wallet implements IWallet {
     if (this.wallet) {
       return await this.wallet.signMessage(message)
     } else if (this.web3) {
-      return await this.web3.eth.personal.sign(message, this.address, this.password)
+      return await (
+        this.web3.eth.personal
+          ? this.web3.eth.personal.sign(message, this.address, this.password)
+          : this.web3.eth.sign(message, this.address, this.password)
+      )
     }
   }
 }

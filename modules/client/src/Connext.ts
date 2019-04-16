@@ -83,17 +83,17 @@ export interface ConnextClientOptions {
 
 // Used to get an instance of ConnextClient.
 export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
-  let wallet = new Wallet(opts)
+  const wallet = new Wallet(opts)
 
   // create a new hub and pass into the client
-  let hub = opts.hub || new HubAPIClient(
+  opts.hub = opts.hub || new HubAPIClient(
     opts.user!,
     new Networking(opts.hubUrl),
     opts.web3,
     opts.origin!,
   )
 
-  const hubConfig = await hub.config()
+  const hubConfig = await opts.hub.config()
   const config = {
     contractAddress: hubConfig.channelManagerAddress.toLowerCase(),
     hubAddress: hubConfig.hubWalletAddress.toLowerCase(),
@@ -108,7 +108,7 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
     }
     (merged as any)[k] = (config as any)[k]
   }
-  return new ConnextInternal({ ...merged })
+  return new ConnextInternal({ ...merged }, wallet)
 }
 
 /**
@@ -185,6 +185,7 @@ export class ConnextInternal extends ConnextClient {
   utils = new Utils()
   validator: Validator
   contract: IChannelManager
+  wallet: Wallet
 
   // Controllers
   syncController: SyncController
@@ -197,13 +198,14 @@ export class ConnextInternal extends ConnextClient {
   threadsController: ThreadsController
   redeemController: RedeemController
 
-  constructor(opts: ConnextClientOptions) {
+  constructor(opts: ConnextClientOptions, wallet: Wallet) {
     super(opts)
 
     // Internal things
     // The store shouldn't be used by anything before calling `start()`, so
     // leave it null until then.
     this.store = null as any
+    this.wallet = wallet
 
     console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
@@ -383,14 +385,6 @@ export class ConnextInternal extends ConnextClient {
     })
   }
 
-  async sign(hash: string, user: string) {
-    return await (
-      this.opts.web3.eth.personal
-        ? (this.opts.web3.eth.personal.sign as any)(hash, user)
-        : this.opts.web3.eth.sign(hash, user)
-    )
-  }
-
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
       state.user.toLowerCase() != this.opts.user!.toLowerCase() ||
@@ -406,7 +400,7 @@ export class ConnextInternal extends ConnextClient {
     const hash = this.utils.createChannelStateHash(state)
 
     const { user, hubAddress } = this.opts
-    const sig = await this.sign(hash, user!)
+    const sig = await this.wallet.signMessage(hash)
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, true)
@@ -427,7 +421,7 @@ export class ConnextInternal extends ConnextClient {
 
     const hash = this.utils.createThreadStateHash(state)
 
-    const sig = await this.sign(hash, this.opts.user!)
+    const sig = await this.wallet.signMessage(hash)
 
     console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
     return addSigToThreadState(state, sig)
@@ -435,7 +429,7 @@ export class ConnextInternal extends ConnextClient {
 
   public async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>, ): Promise<SignedDepositRequestProposal> {
     const hash = this.utils.createDepositRequestProposalHash(args)
-    const sig = await this.sign(hash, this.opts.user!)
+    const sig = await this.wallet.signMessage(hash)
 
     console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }

@@ -58,6 +58,7 @@ import {
   UpdateRequest,
   WithdrawalParameters,
 } from '../types'
+import Wallet from '../Wallet';
 
 export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager
@@ -83,7 +84,7 @@ export class MockConnextInternal extends ConnextInternal {
       }
     })
 
-    super({
+    const moreOpts = {
       user: mkAddress('0x123'),
       contractAddress: mkAddress('0xccc'),
       contract: new MockChannelManager(),
@@ -92,7 +93,10 @@ export class MockConnextInternal extends ConnextInternal {
       hubAddress: mkAddress('0xhhh'),
       store,
       ...opts,
-    } as any)
+    } as any
+
+    const wallet = new Wallet(moreOpts)
+    super(moreOpts , wallet)
 
     this.mockContract = this.contract as MockChannelManager
     this.mockHub = this.hub as MockHub
