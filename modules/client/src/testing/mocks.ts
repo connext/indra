@@ -1,25 +1,62 @@
-import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
-import { IWeb3TxWrapper } from '../Connext'
+import Web3 from 'web3'
+import { EventLog } from 'web3-core';
+import { createStore } from 'redux'
+import {
+  assert,
+  getChannelState,
+  getDepositArgs,
+  getExchangeArgs,
+  getPaymentArgs,
+  getThreadState,
+  getWithdrawalArgs,
+  mkAddress,
+  mkHash,
+  PartialSignedOrSuccinctChannel,
+  PartialSignedOrSuccinctThread,
+} from '.'
+import { IHubAPIClient, ConnextClientOptions, ConnextInternal } from '../Connext'
+import { IChannelManager, IWeb3TxWrapper } from '../contract/ChannelManager'
 import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit, ThreadStateUpdate, HubConfig } from '../types'
-import { SyncResult } from '../types'
-import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
-import { UnsignedThreadState } from '../types'
-import { ExchangeArgs } from '../types'
-import { ChannelStateUpdate } from '../types'
-import { IHubAPIClient } from '../Connext'
-import { ConnextClientOptions } from '../Connext'
-import { ConnextInternal } from '../Connext'
-import { IChannelManager, ChannelManagerChannelDetails } from '../contract/ChannelManager'
-import { mkAddress, getChannelState, getDepositArgs, assert } from '.'
-import { ChannelRow, ThreadRow, PurchasePaymentHubResponse, PaymentBN, Payment, UnsignedChannelState, ChannelUpdateReason, ArgsTypes, PurchasePayment } from '../types'
 import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
+import { reducers } from "../state/reducers";
 import { ConnextState, PersistentState, RuntimeState } from '../state/store';
 import { StateGenerator } from '../StateGenerator';
-import { createStore } from 'redux'
-import { reducers } from "../state/reducers";
-import { EventLog } from 'web3-core';
-const Web3 = require('web3') // TODO: why did i have to do this???
+import {
+  Address,
+  addSigToChannelState,
+  addSigToThreadState,
+  ArgsTypes,
+  ChannelManagerChannelDetails,
+  ChannelRow,
+  ChannelState,
+  ChannelStateUpdate,
+  ChannelUpdateReason,
+  convertChannelState,
+  convertThreadState,
+  convertWithdrawalParameters,
+  DepositArgs,
+  DepositArgsBN,
+  ExchangeArgs,
+  ExchangeArgsBN,
+  HubConfig,
+  Omit,
+  PaymentBN,
+  Payment,
+  PurchasePayment,
+  PurchasePaymentHubResponse,
+  SignedDepositRequestProposal,
+  Sync,
+  SyncResult,
+  ThreadHistoryItem,
+  ThreadRow,
+  ThreadState,
+  ThreadStateBN,
+  ThreadStateUpdate,
+  UnsignedChannelState,
+  UnsignedThreadState,
+  UpdateRequest,
+  WithdrawalParameters,
+} from '../types'
 
 export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager

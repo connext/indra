@@ -8,19 +8,31 @@ import { ChannelManagerChannelDetails, ChannelState, ThreadState } from '../type
 type Address = string
 
 ////////////////////////////////////////
-// CONSTRUCTOR TYPES
-
-// contract constructor options
-export interface ContractOptions {
-  hubAddress: string
-  tokenAddress: string
-}
+// Interfaces
 
 export abstract class IWeb3TxWrapper {
   abstract awaitEnterMempool(): Promise<void>
-
   abstract awaitFirstConfirmation(): Promise<void>
 }
+
+export interface IChannelManager {
+  gasMultiple: number
+  userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
+  getPastEvents(user: Address, eventName: string, fromBlock: number): Promise<EventLog[]>
+  getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
+  startExit(state: ChannelState): Promise<IWeb3TxWrapper>
+  startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
+  emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper>
+  emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper>
+  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
+  startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
+  challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper>
+  emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
+  nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper>
+}
+
+////////////////////////////////////////
+// Implementations
 
 /**
  * A wrapper around the Web3 PromiEvent
@@ -34,7 +46,6 @@ export abstract class IWeb3TxWrapper {
  */
 export class Web3TxWrapper extends IWeb3TxWrapper {
   private tx: any
-
   private address: string
   private name: string
   private onTxHash = new ResolveablePromise<void>()
@@ -42,7 +53,6 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
 
   constructor(address: string, name: string, tx: any) {
     super()
-
     this.address = address
     this.name = name
     this.tx = tx
@@ -67,32 +77,6 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
   awaitFirstConfirmation(): Promise<void> {
     return this.onFirstConfirmation as any
   }
-}
-
-export type ChannelManagerChannelDetails = {
-  txCountGlobal: number
-  txCountChain: number
-  threadRoot: string
-  threadCount: number
-  exitInitiator: string
-  channelClosingTime: number
-  status: string
-}
-
-export interface IChannelManager {
-  gasMultiple: number
-  userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
-  getPastEvents(user: Address, eventName: string, fromBlock: number): Promise<EventLog[]>
-  getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
-  startExit(state: ChannelState): Promise<IWeb3TxWrapper>
-  startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
-  emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper>
-  emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper>
-  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper>
-  emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper>
 }
 
 export class ChannelManager implements IChannelManager {

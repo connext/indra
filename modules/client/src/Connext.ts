@@ -25,6 +25,7 @@ import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
 import { ConnextStore, ConnextState, PersistentState } from "./state/store";
 import {
+  Address,
   addSigToChannelState,
   addSigToThreadState,
   ChannelManagerChannelDetails,
@@ -56,20 +57,11 @@ import {
 import { Utils } from './Utils'
 import { Validator, } from './validator'
 
-type Address = string
-// anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
-
 /*********************************
  ****** CONSTRUCTOR TYPES ********
  *********************************/
-// contract constructor options
-export interface ContractOptions {
-  hubAddress: string
-  tokenAddress: string
-}
 
 // connext constructor options
-// NOTE: could extend ContractOptions, doesnt for future readability
 export interface ConnextOptions {
   web3: Web3
   hubUrl: string
@@ -447,59 +439,6 @@ class HubAPIClient implements IHubAPIClient {
     return res ? res : null
   }
 
-}
-
-export abstract class IWeb3TxWrapper {
-  abstract awaitEnterMempool(): Promise<void>
-
-  abstract awaitFirstConfirmation(): Promise<void>
-}
-
-/**
- * A wrapper around the Web3 PromiEvent
- * (https://web3js.readthedocs.io/en/1.0/callbacks-promises-events.html#promievent)
- * that makes the different `await` behaviors explicit.
- *
- * For example:
- *
- *   > const tx = channelManager.userAuthorizedUpdate(...)
- *   > await tx.awaitEnterMempool()
- */
-export class Web3TxWrapper extends IWeb3TxWrapper {
-  private tx: any
-
-  private address: string
-  private name: string
-  private onTxHash = new ResolveablePromise<void>()
-  private onFirstConfirmation = new ResolveablePromise<void>()
-
-  constructor(address: string, name: string, tx: any) {
-    super()
-
-    this.address = address
-    this.name = name
-    this.tx = tx
-
-    tx.once('transactionHash', (hash: string) => {
-      console.log(`Sending ${this.name} to ${this.address}: in mempool: ${hash}`)
-      this.onTxHash.resolve()
-    })
-
-    tx.once('confirmation', (confirmation: number, receipt: any) => {
-      console.log(`Sending ${this.name} to ${this.address}: confirmed:`, receipt)
-      this.onFirstConfirmation.resolve()
-    })
-
-    tx.on('error', (error: any) => { console.warn('Something may have gone wrong with your transaction') })
-  }
-
-  awaitEnterMempool(): Promise<void> {
-    return this.onTxHash as any
-  }
-
-  awaitFirstConfirmation(): Promise<void> {
-    return this.onFirstConfirmation as any
-  }
 }
 
 export interface ConnextClientOptions {

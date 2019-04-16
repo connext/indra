@@ -1,6 +1,6 @@
-import BN = require('bn.js')
 import { BigNumber } from 'bignumber.js'
-import Web3 = require('web3')
+import BN = require('bn.js')
+import Web3 from 'web3'
 
 // define the common interfaces
 export type Address = string
