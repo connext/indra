@@ -1,10 +1,9 @@
 /* Replace with your SQL commands */
 /* TODO: replace enum? pain to migrate...*/
 create type PAYMENTS_OPTIMISTIC_STATUS as enum (
-  'new',
-  'completed',
-  'custodial',
-  'failed'
+  'NEW',
+  'COMPLETED',
+  'FAILED'
 );
 
 /* add optimistic payments table */
@@ -14,8 +13,7 @@ create table payments_optimistic (
   channel_update_id bigint null references _cm_channel_updates,
   thread_update_id bigint null references _cm_thread_updates,
   redemption_id bigint null references payments_channel_instant,
-  custodial_id bigint null references payments_channel_custodial,
-  status PAYMENTS_OPTIMISTIC_STATUS not null default 'new',
+  status PAYMENTS_OPTIMISTIC_STATUS not null default 'NEW',
   created_on timestamp with time zone not null default now()
 );
 
@@ -31,33 +29,26 @@ begin
   into payment;
 
   -- sanity check the status
-  if payment.custodial_id is not null then
-    if payment.status <> 'custodial' then
-      raise exception 'invalid payment status, should be custodial if custodial id provided';
-    end if;
-  end if;
 
   -- TODO: what happens if the channel update id is null?
   -- i.e. in the case of threads, should we store the thread open update?
 
   if payment.redemption_id is not null then 
-    if payment.status <> 'completed' then
+    if payment.status <> 'COMPLETED' then
       raise exception 'invalid payment status, should be completed if redemption id provided';
     end if;
   end if;
 
   if payment.thread_update_id is not null then
-    if payment.status <> 'completed' then
+    if payment.status <> 'COMPLETED' then
       raise exception 'invalid payment status, should be completed if thread id provided';
     end if;
   end if;
 
   if payment.redemption_id is null then
     if payment.thread_update_id is null then
-      if payment.created_on - now() < interval '30 seconds' then
-        if payment.status <> 'new' then
-          raise exception 'invalid payment status, should be new if it is less than 30 seconds old and unredeemed';
-        end if;
+      if payment.status <> 'NEW' then
+        raise exception 'invalid payment status, should be new if it is less than 30 seconds old and unredeemed';
       end if;
     end if;
   end if;
@@ -191,7 +182,7 @@ create or replace view payments as (
   from _payments p
   inner join payments_optimistic as po on po.payment_id = p.id
   left join cm_channel_updates up on up.id = po.channel_update_id
-  where po.status in ('new', 'failed')
+  where po.status in ('NEW', 'FAILED')
 );
 
 /* trigger should sanity check the status */
