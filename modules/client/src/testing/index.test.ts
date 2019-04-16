@@ -45,6 +45,20 @@ describe('makeSuccinctExchange', () => {
   })
 })
 
+describe('makeSuccinctCustodialBalanceRow', () => {
+  it('should work', () => {
+    assert.deepEqual(
+      t.makeSuccinctCustodialBalanceRow({
+        balanceToken: '1',
+        balanceWei: '2',
+      }),
+      {
+        balance: ['2', '1'],
+      },
+    )
+  })
+})
+
 describe('expandSuccinctChannel', () => {
   it('should work', () => {
     assert.deepEqual(
@@ -84,6 +98,23 @@ describe('expandSuccinctExchange', () => {
       {
         tokensToSell: '1',
         weiToSell: '0',
+      },
+    )
+  })
+})
+
+describe('expandSuccinctCustodialBalanceRow', () => {
+  it('should work', () => {
+    assert.deepEqual(
+      t.expandSuccinctCustodialBalanceRow({
+        balance: ['1', '0'],
+        totalReceived: [0, '1']
+      }),
+      {
+        balanceToken: '0',
+        balanceWei: '1',
+        totalReceivedToken: '1',
+        totalReceivedWei: '0'
       },
     )
   })
@@ -163,6 +194,32 @@ describe('assertThreadStateEqual', () => {
       balanceTokenReceiver: '9',
       balanceTokenSender: '6',
       txCount: 66,
+    })
+  })
+})
+
+describe('assertCustodialBalancesEqual', () => {
+  it('should work', () => {
+    let bal = t.getCustodialBalance('full', {
+      balance: [100, 200],
+    })
+
+    t.assertCustodialBalancesEqual(bal, {
+      balanceWei: '100',
+      balanceToken: '200',
+    })
+
+    bal = t.updateObj("custodialBalance", bal, {
+      balance: [10, 1],
+      sentWei: 6,
+      totalReceivedToken: 1,
+      totalReceivedWei: 2,
+    })
+
+    t.assertCustodialBalancesEqual(bal, {
+      balanceWei: '10',
+      balanceToken: '1',
+      totalReceived: [2, 1]
     })
   })
 })
