@@ -6,7 +6,7 @@ import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { BigNumber } from 'bignumber.js/bignumber'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { OnchainTransactionService } from '../OnchainTransactionService'
-import { CustodialWithdrawalRow } from '../vendor/connext/types';
+import { CustodialWithdrawalRowBigNumber } from '../vendor/connext/types';
 
 const LOG = log('CustodialPaymentsService')
 
@@ -27,11 +27,11 @@ export class CustodialPaymentsService {
     private onchainTxnService: OnchainTransactionService,
   ) {}
 
-  async createCustodialWithdrawal(args: CreateCustodialWithdrawalArgs): Promise<CustodialWithdrawalRow> {
+  async createCustodialWithdrawal(args: CreateCustodialWithdrawalArgs): Promise<CustodialWithdrawalRowBigNumber> {
     return this.db.withTransaction(() => this._createCustodialWithdrawal(args))
   }
 
-  async _createCustodialWithdrawal(args: CreateCustodialWithdrawalArgs): Promise<CustodialWithdrawalRow> {
+  async _createCustodialWithdrawal(args: CreateCustodialWithdrawalArgs): Promise<CustodialWithdrawalRowBigNumber> {
     const { user, amountToken, recipient } = args
     if (amountToken.isLessThan(this.MIN_WITHDRAWAL_AMOUNT_TOKEN)) {
       // Note: this will also be checked by a trigger on the withdrawals table
@@ -64,7 +64,7 @@ export class CustodialPaymentsService {
       user,
       recipient,
       requestedToken: amountToken,
-      exchangeRate,
+      exchangeRate: exchangeRate.toFixed(),
       sentWei: amountWei,
       onchainTransactionId: txn.id,
     })

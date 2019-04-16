@@ -130,7 +130,7 @@ describe('CustodialPaymentsService', () => {
         user: recipient,
         recipient,
         requestedToken: Big(t.requestedToken),
-        exchangeRate: Big(t.exchangeRate || '1'),
+        exchangeRate: Big(t.exchangeRate || '1').toFixed(),
         sentWei: Big(t.sentWei || t.requestedToken),
         onchainTransactionId: txn.id,
       }), t.expectedError)

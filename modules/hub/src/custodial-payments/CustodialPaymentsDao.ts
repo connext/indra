@@ -1,14 +1,13 @@
-import { BigNumber } from 'bignumber.js/bignumber'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { Big } from '../util/bigNumber'
-import { CustodialBalanceRow, CreateCustodialWithdrawalOptions, CustodialWithdrawalRow } from '../vendor/connext/types';
+import { CustodialBalanceRowBigNumber, CustodialWithdrawalRowBigNumber, CreateCustodialWithdrawalOptionsBigNumber } from '../vendor/connext/types';
 
 export class CustodialPaymentsDao {
   constructor(
     private db: DBEngine,
   ) {}
 
-  async getCustodialBalance(user: string): Promise<CustodialBalanceRow> {
+  async getCustodialBalance(user: string): Promise<CustodialBalanceRowBigNumber> {
     return this.inflateCustodialBalance(user, await this.db.queryOne(SQL`
       select *
       from custodial_balances
@@ -25,7 +24,7 @@ export class CustodialPaymentsDao {
     return id
   }
 
-  async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptions): Promise<CustodialWithdrawalRow> {
+  async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptionsBigNumber): Promise<CustodialWithdrawalRowBigNumber> {
     const { id } = await this.db.queryOne(SQL`
       insert into _custodial_withdrawals (
         "user",
@@ -38,7 +37,7 @@ export class CustodialPaymentsDao {
         ${opts.user},
         ${opts.recipient},
         ${opts.requestedToken.toFixed()},
-        ${opts.exchangeRate.toFixed()},
+        ${opts.exchangeRate},
         ${opts.sentWei.toFixed()},
         ${opts.onchainTransactionId}
       )
@@ -51,7 +50,7 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  async getCustodialWithdrawals(user: string): Promise<CustodialWithdrawalRow[]> {
+  async getCustodialWithdrawals(user: string): Promise<CustodialWithdrawalRowBigNumber[]> {
     return (await this.db.query(SQL`
       select *
       from custodial_withdrawals
@@ -60,7 +59,7 @@ export class CustodialPaymentsDao {
     `)).rows.map(row => this.inflateCustodialWithdrawalRow(row))
   }
 
-  async getCustodialWithdrawal(user: string, id: number): Promise<CustodialWithdrawalRow> {
+  async getCustodialWithdrawal(user: string, id: number): Promise<CustodialWithdrawalRowBigNumber> {
     return this.inflateCustodialWithdrawalRow(await this.db.queryOne(SQL`
       select *
       from custodial_withdrawals
@@ -70,7 +69,7 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  private inflateCustodialBalance(user: string, row: any): CustodialBalanceRow {
+  private inflateCustodialBalance(user: string, row: any): CustodialBalanceRowBigNumber {
     row = row || { user }
     return {
       user: row.user,
@@ -84,14 +83,14 @@ export class CustodialPaymentsDao {
     }
   }
 
-  private inflateCustodialWithdrawalRow(row: any): CustodialWithdrawalRow {
+  private inflateCustodialWithdrawalRow(row: any): CustodialWithdrawalRowBigNumber {
     return row && {
       id: row.id,
       createdOn: row.created_on,
       user: row.user,
       recipient: row.recipient,
       requestedToken: Big(row.requested_token),
-      exchangeRate: Big(row.exchange_rate),
+      exchangeRate: row.exchange_rate,
       sentWei: Big(row.sent_wei),
       state: row.state,
       txHash: row.tx_hash,
