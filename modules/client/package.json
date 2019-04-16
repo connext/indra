@@ -40,7 +40,7 @@
     "semaphore": "^1.1.0",
     "typescript-fsa": "^3.0.0-beta-2",
     "typescript-fsa-reducers": "^1.1.0",
-    "web3": "^1.0.0-beta.52",
+    "web3": "1.0.0-beta.52",
     "web3-core": "^1.0.0-beta.52",
     "web3-eth": "^1.0.0-beta.52"
   },
