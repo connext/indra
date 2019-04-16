@@ -42,28 +42,32 @@ import {
 import { Utils } from './Utils';
 import { Validator, } from './validator';
 
-/*********************************
- ****** CONSTRUCTOR TYPES ********
- *********************************/
+////////////////////////////////////////
+// Interface Definitions
+////////////////////////////////////////
 
 export interface ConnextClientOptions {
-  web3: Web3
   hubUrl: string
-  user: string
-  contractAddress: string
-  hubAddress: Address
-  tokenAddress: Address
-  origin?: string // origin of requests
-  ethNetworkId?: string
-  tokenName?: string
-  gasMultiple?: number
+  ethUrl?: string
+  mnemonic?: string
+  privateKey?: string
+  password?: string
+  web3: Web3 // TODO: make optional
+  user?: string
 
-  // Clients should pass in these functions which the ConnextClient will use
-  // to save and load the persistent portions of its internal state (channels,
-  // threads, etc).
+  // Functions used to save/load the persistent portions of its internal state
   loadState?: () => Promise<string | null>
   saveState?: (state: string) => Promise<any>
 
+  // Used to (in)validate the hubUrl if it's config has info that conflicts w below
+  ethNetworkId?: string
+  contractAddress?: Address
+  hubAddress?: Address
+  tokenAddress?: Address
+  tokenName?: string
+
+  origin?: string // origin of requests (TODO: rm?)
+  gasMultiple?: number
   getLogger?: (name: string) => Logger
 
   // Optional, useful for dependency injection
@@ -72,36 +76,34 @@ export interface ConnextClientOptions {
   contract?: IChannelManager
 }
 
-function hubConfigToClientOpts(config: HubConfig) {
-  return {
-    contractAddress: config.channelManagerAddress.toLowerCase(),
-    hubAddress: config.hubWalletAddress.toLowerCase(),
-    tokenAddress: config.tokenAddress.toLowerCase(),
-    ethNetworkId: config.ethNetworkId.toLowerCase(),
-  }
-}
+////////////////////////////////////////
+// Implementations
+////////////////////////////////////////
 
-/**
- * Used to get an instance of ConnextClient.
- */
+// Used to get an instance of ConnextClient.
 export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
   // create a new hub and pass into the client
-  let hub = opts.hub
-  if (!hub) {
-    hub = new HubAPIClient(
-      opts.user,
-      new Networking(opts.hubUrl),
-      opts.web3,
-      opts.origin!,
-    )
+  let hub = opts.hub || new HubAPIClient(
+    opts.user!,
+    new Networking(opts.hubUrl),
+    opts.web3,
+    opts.origin!,
+  )
+
+  const hubConfig = await hub.config()
+  const config = {
+    contractAddress: hubConfig.channelManagerAddress.toLowerCase(),
+    hubAddress: hubConfig.hubWalletAddress.toLowerCase(),
+    tokenAddress: hubConfig.tokenAddress.toLowerCase(),
+    ethNetworkId: hubConfig.ethNetworkId.toLowerCase(),
   }
-  const hubOpts = hubConfigToClientOpts(await hub.config())
+
   let merged = { ...opts }
-  for (let k in hubOpts) {
+  for (let k in config) {
     if ((opts as any)[k]) {
       continue
     }
-    (merged as any)[k] = (hubOpts as any)[k]
+    (merged as any)[k] = (config as any)[k]
   }
   return new ConnextInternal({ ...merged })
 }
@@ -202,15 +204,15 @@ export class ConnextInternal extends ConnextClient {
 
     console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
-      this.opts.user,
+      this.opts.user!,
       new Networking(this.opts.hubUrl),
       this.opts.web3,
       this.opts.origin!,
     )
 
-    opts.user = opts.user.toLowerCase()
-    opts.hubAddress = opts.hubAddress.toLowerCase()
-    opts.contractAddress = opts.contractAddress.toLowerCase()
+    opts.user = opts.user!.toLowerCase()
+    opts.hubAddress = opts.hubAddress!.toLowerCase()
+    opts.contractAddress = opts.contractAddress!.toLowerCase()
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
     this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
@@ -388,8 +390,8 @@ export class ConnextInternal extends ConnextClient {
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
-      state.user.toLowerCase() != this.opts.user.toLowerCase() ||
-      state.contractAddress.toLowerCase()!= (this.opts.contractAddress as any).toLowerCase()
+      state.user.toLowerCase() != this.opts.user!.toLowerCase() ||
+      state.contractAddress.toLowerCase()!= (this.opts.contractAddress! as any).toLowerCase()
     ) {
       throw new Error(
         `Refusing to sign channel state update which changes user or contract: ` +
@@ -401,7 +403,7 @@ export class ConnextInternal extends ConnextClient {
     const hash = this.utils.createChannelStateHash(state)
 
     const { user, hubAddress } = this.opts
-    const sig = await this.sign(hash, user)
+    const sig = await this.sign(hash, user!)
 
     console.log(`Signing channel state ${state.txCountGlobal}: ${sig}`, state)
     return addSigToChannelState(state, sig, true)
@@ -422,7 +424,7 @@ export class ConnextInternal extends ConnextClient {
 
     const hash = this.utils.createThreadStateHash(state)
 
-    const sig = await this.sign(hash, this.opts.user)
+    const sig = await this.sign(hash, this.opts.user!)
 
     console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
     return addSigToThreadState(state, sig)
@@ -430,14 +432,14 @@ export class ConnextInternal extends ConnextClient {
 
   public async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>, ): Promise<SignedDepositRequestProposal> {
     const hash = this.utils.createDepositRequestProposalHash(args)
-    const sig = await this.sign(hash, this.opts.user)
+    const sig = await this.sign(hash, this.opts.user!)
 
     console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 
   public async getContractEvents(eventName: string, fromBlock: number) {
-    return this.contract.getPastEvents(this.opts.user, eventName, fromBlock)
+    return this.contract.getPastEvents(this.opts.user!, eventName, fromBlock)
   }
 
   protected _latestState: PersistentState | null = null
@@ -522,8 +524,8 @@ export class ConnextInternal extends ConnextClient {
     state.persistent.channel = {
       ...state.persistent.channel,
       contractAddress: this.opts.contractAddress || '', // TODO: how to handle this while undefined?
-      user: this.opts.user,
-      recipient: this.opts.user,
+      user: this.opts.user!,
+      recipient: this.opts.user!,
     }
     state.persistent.latestValidState = state.persistent.channel
 
