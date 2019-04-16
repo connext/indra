@@ -14,9 +14,10 @@ import {
   PartialSignedOrSuccinctChannel,
   PartialSignedOrSuccinctThread,
 } from '.'
-import { IHubAPIClient, ConnextClientOptions, ConnextInternal } from '../Connext'
+import { ConnextClientOptions, ConnextInternal } from '../Connext'
 import { IChannelManager, IWeb3TxWrapper } from '../contract/ChannelManager'
 import { toBN } from '../helpers/bn'
+import { IHubAPIClient } from '../Hub'
 import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
 import { reducers } from "../state/reducers";
 import { ConnextState, PersistentState, RuntimeState } from '../state/store';
