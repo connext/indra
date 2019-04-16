@@ -1,7 +1,7 @@
+import * as eth from 'ethers';
 import { EventEmitter } from 'events';
 import { Action, applyMiddleware, createStore } from 'redux';
 import Web3 from 'web3';
-import * as w3utils from 'web3-utils';
 import { ChannelManager, IChannelManager } from './contract/ChannelManager';
 import { AbstractController } from './controllers/AbstractController';
 import BuyController from './controllers/BuyController';
@@ -83,16 +83,8 @@ export interface ConnextClientOptions {
 
 // Used to get an instance of ConnextClient.
 export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
-  const wallet = new Wallet(opts)
 
-  // create a new hub and pass into the client
-  opts.hub = opts.hub || new HubAPIClient(
-    new Networking(opts.hubUrl),
-    opts.origin!,
-    wallet,
-  )
-
-  const hubConfig = await opts.hub.config()
+  const hubConfig = (await (new Networking(opts.hubUrl)).get(`config`)).data
   const config = {
     contractAddress: hubConfig.channelManagerAddress.toLowerCase(),
     hubAddress: hubConfig.hubWalletAddress.toLowerCase(),
@@ -107,6 +99,9 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
     }
     (merged as any)[k] = (config as any)[k]
   }
+
+  const wallet = new Wallet(opts)
+
   return new ConnextInternal({ ...merged }, wallet)
 }
 
@@ -218,7 +213,7 @@ export class ConnextInternal extends ConnextClient {
     opts.contractAddress = opts.contractAddress!.toLowerCase()
 
     this.validator = new Validator(opts.web3, opts.hubAddress)
-    this.contract = opts.contract || new ChannelManager(opts.web3, opts.contractAddress, opts.gasMultiple || 1.5)
+    this.contract = opts.contract || new ChannelManager(wallet, opts.contractAddress, opts.gasMultiple || 1.5)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)
@@ -377,9 +372,7 @@ export class ConnextInternal extends ConnextClient {
   }
 
   generateSecret(): string {
-    return w3utils.soliditySha3({
-      type: 'bytes32', value: w3utils.randomHex(32)
-    })
+    return eth.utils.solidityKeccak256(['bytes32'], [eth.utils.randomBytes(32)])
   }
 
   async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
