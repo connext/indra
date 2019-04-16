@@ -1,51 +1,60 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult, convertChannelState, convertPayment } from './types'
-import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
-import * as actions from './state/actions'
-import { PurchaseRequest } from './types'
-import { UpdateRequest } from './types'
-import { createStore, Action, applyMiddleware } from 'redux'
 import { EventEmitter } from 'events'
+import { Action, applyMiddleware, createStore } from 'redux'
 import Web3 from 'web3'
-// local imports
-import { ChannelManager as TypechainChannelManager } from './contract/ChannelManager'
-import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
-import { Networking } from './helpers/networking'
+import { EventLog } from 'web3-core';
+import * as w3utils from 'web3-utils';
+import { ChannelManager, IChannelManager } from './contract/ChannelManager'
+import { AbstractController } from './controllers/AbstractController'
 import BuyController from './controllers/BuyController'
+import CollateralController from "./controllers/CollateralController";
 import DepositController from './controllers/DepositController'
-import SyncController from './controllers/SyncController'
+import { ExchangeController } from './controllers/ExchangeController'
+import { RedeemController } from './controllers/RedeemController';
 import StateUpdateController from './controllers/StateUpdateController'
+import SyncController from './controllers/SyncController'
+import ThreadsController from './controllers/ThreadsController';
 import WithdrawalController from './controllers/WithdrawalController'
-import { Utils } from './Utils'
-import {
-  Validator,
-} from './validator'
-import {
-  ChannelState,
-  ChannelStateUpdate,
-  Payment,
-  addSigToChannelState,
-  ChannelRow,
-  ThreadRow,
-  UnsignedThreadState,
-  UnsignedChannelState,
-  PurchasePayment,
-  PurchasePaymentHubResponse,
-} from './types'
+import { toBN } from './helpers/bn'
+import { Networking } from './helpers/networking'
+import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { default as Logger } from "./lib/Logger";
-import { ConnextStore, ConnextState, PersistentState } from "./state/store";
+import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
+import * as actions from './state/actions'
+import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import { handleStateFlags } from './state/middleware'
 import { reducers } from "./state/reducers";
-import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
-import { toBN } from './helpers/bn'
-import { ExchangeController } from './controllers/ExchangeController'
-import { ExchangeRates } from './state/ConnextState/ExchangeRates'
-import CollateralController from "./controllers/CollateralController";
-import { AbstractController } from './controllers/AbstractController'
-import ThreadsController from './controllers/ThreadsController';
-import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
-import { RedeemController } from './controllers/RedeemController';
-import { EventLog } from 'web3-core';
-const w3utils = require('web3-utils')
+import { ConnextStore, ConnextState, PersistentState } from "./state/store";
+import {
+  addSigToChannelState,
+  addSigToThreadState,
+  ChannelManagerChannelDetails,
+  ChannelRow,
+  ChannelState,
+  ChannelStateUpdate,
+  channelUpdateToUpdateRequest,
+  convertChannelState,
+  convertPayment,
+  DepositArgs,
+  HubConfig,
+  Omit,
+  Payment,
+  PurchasePayment,
+  PurchasePaymentHubResponse,
+  PurchaseRequest,
+  SignedDepositRequestProposal,
+  Sync,
+  SyncResult,
+  ThreadHistoryItem,
+  ThreadRow,
+  ThreadState,
+  ThreadStateUpdate,
+  UnsignedThreadState,
+  UnsignedChannelState,
+  UpdateRequest,
+  WithdrawalParameters,
+} from './types'
+import { Utils } from './Utils'
+import { Validator, } from './validator'
 
 type Address = string
 // anytime the hub is sending us something to sign we need a verify method that verifies that the hub isn't being a jerk
@@ -491,319 +500,6 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
   awaitFirstConfirmation(): Promise<void> {
     return this.onFirstConfirmation as any
   }
-}
-
-export type ChannelManagerChannelDetails = {
-  txCountGlobal: number
-  txCountChain: number
-  threadRoot: string
-  threadCount: number
-  exitInitiator: string
-  channelClosingTime: number
-  status: string
-}
-
-export interface IChannelManager {
-  gasMultiple: number
-  userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
-  getPastEvents(user: Address, eventName: string, fromBlock: number): Promise<EventLog[]>
-  getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
-  startExit(state: ChannelState): Promise<IWeb3TxWrapper>
-  startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
-  emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper>
-  emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper>
-  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper>
-  emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper>
-}
-
-export class ChannelManager implements IChannelManager {
-  address: string
-  cm: TypechainChannelManager
-  gasMultiple: number
-
-  constructor(web3: any, address: string, gasMultiple: number) {
-    this.address = address
-    this.cm = new web3.eth.Contract(ChannelManagerAbi.abi, address) as any
-    this.gasMultiple = gasMultiple
-  }
-
-  async getPastEvents(user: Address, eventName: string, fromBlock: number) {
-    const events = await this.cm.getPastEvents(
-      eventName,
-      {
-        filter: { user },
-        fromBlock,
-        toBlock: "latest",
-      }
-    )
-    return events
-  }
-
-  async userAuthorizedUpdate(state: ChannelState) {
-    // deposit on the contract
-    const call = this.cm.methods.userAuthorizedUpdate(
-      state.recipient, // recipient
-      [
-        state.balanceWeiHub,
-        state.balanceWeiUser,
-      ],
-      [
-        state.balanceTokenHub,
-        state.balanceTokenUser,
-      ],
-      [
-        state.pendingDepositWeiHub,
-        state.pendingWithdrawalWeiHub,
-        state.pendingDepositWeiUser,
-        state.pendingWithdrawalWeiUser,
-      ],
-      [
-        state.pendingDepositTokenHub,
-        state.pendingWithdrawalTokenHub,
-        state.pendingDepositTokenUser,
-        state.pendingWithdrawalTokenUser,
-      ],
-      [state.txCountGlobal, state.txCountChain],
-      state.threadRoot,
-      state.threadCount,
-      state.timeout,
-      state.sigHub!,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: state.pendingDepositWeiUser,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-
-    sendArgs.gas = toBN(Math.ceil(gasEstimate * this.gasMultiple))
-    return new Web3TxWrapper(this.address, 'userAuthorizedUpdate', call.send(sendArgs))
-  }
-
-  async startExit(state: ChannelState) {
-    const call = this.cm.methods.startExit(
-      state.user
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExit', call.send(sendArgs))
-  }
-
-  async startExitWithUpdate(state: ChannelState) {
-    const call = this.cm.methods.startExitWithUpdate(
-      [ state.user, state.recipient ],
-      [
-        state.balanceWeiHub,
-        state.balanceWeiUser,
-      ],
-      [
-        state.balanceTokenHub,
-        state.balanceTokenUser,
-      ],
-      [
-        state.pendingDepositWeiHub,
-        state.pendingWithdrawalWeiHub,
-        state.pendingDepositWeiUser,
-        state.pendingWithdrawalWeiUser,
-      ],
-      [
-        state.pendingDepositTokenHub,
-        state.pendingWithdrawalTokenHub,
-        state.pendingDepositTokenUser,
-        state.pendingWithdrawalTokenUser,
-      ],
-      [state.txCountGlobal, state.txCountChain],
-      state.threadRoot,
-      state.threadCount,
-      state.timeout,
-      state.sigHub as string,
-      state.sigUser as string,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExitWithUpdate', call.send(sendArgs))
-  }
-
-  async emptyChannelWithChallenge(state: ChannelState) {
-    const call = this.cm.methods.emptyChannelWithChallenge(
-      [ state.user, state.recipient ],
-      [
-        state.balanceWeiHub,
-        state.balanceWeiUser,
-      ],
-      [
-        state.balanceTokenHub,
-        state.balanceTokenUser,
-      ],
-      [
-        state.pendingDepositWeiHub,
-        state.pendingWithdrawalWeiHub,
-        state.pendingDepositWeiUser,
-        state.pendingWithdrawalWeiUser,
-      ],
-      [
-        state.pendingDepositTokenHub,
-        state.pendingWithdrawalTokenHub,
-        state.pendingDepositTokenUser,
-        state.pendingWithdrawalTokenUser,
-      ],
-      [state.txCountGlobal, state.txCountChain],
-      state.threadRoot,
-      state.threadCount,
-      state.timeout,
-      state.sigHub as string,
-      state.sigUser as string,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'emptyChannelWithChallenge', call.send(sendArgs))
-  }
-
-  async emptyChannel(state: ChannelState) {
-    const call = this.cm.methods.emptyChannel(
-      state.user,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'emptyChannel', call.send(sendArgs))
-  }
-
-  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any) {
-    const call = this.cm.methods.startExitThread(
-      state.user,
-      threadState.sender,
-      threadState.receiver,
-      threadState.threadId,
-      [threadState.balanceWeiSender, threadState.balanceWeiReceiver],
-      [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
-      proof,
-      threadState.sigA,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExitThread', call.send(sendArgs))
-  }
-
-  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any) {
-    const call = this.cm.methods.startExitThreadWithUpdate(
-      state.user,
-      [threadInitialState.sender, threadInitialState.receiver],
-      threadInitialState.threadId,
-      [threadInitialState.balanceWeiSender, threadInitialState.balanceWeiReceiver],
-      [threadInitialState.balanceTokenSender, threadInitialState.balanceTokenReceiver],
-      proof,
-      threadInitialState.sigA,
-      [threadUpdateState.balanceWeiSender, threadUpdateState.balanceWeiReceiver],
-      [threadUpdateState.balanceTokenSender, threadUpdateState.balanceTokenReceiver],
-      threadUpdateState.txCount,
-      threadUpdateState.sigA
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExitThreadWithUpdate', call.send(sendArgs))
-  }
-
-  async challengeThread(state: ChannelState, threadState: ThreadState) {
-    const call = this.cm.methods.challengeThread(
-      threadState.sender,
-      threadState.receiver,
-      threadState.threadId,
-      [threadState.balanceWeiSender, threadState.balanceWeiReceiver],
-      [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
-      threadState.txCount,
-      threadState.sigA
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'challengeThread', call.send(sendArgs))
-  }
-
-  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any) {
-    const call = this.cm.methods.emptyThread(
-      state.user,
-      threadState.sender,
-      threadState.receiver,
-      threadState.threadId,
-      [threadState.balanceWeiSender, threadState.balanceWeiReceiver],
-      [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
-      proof,
-      threadState.sigA,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'emptyThread', call.send(sendArgs))
-  }
-
-  async nukeThreads(state: ChannelState) {
-    const call = this.cm.methods.nukeThreads(
-      state.user
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'nukeThreads', call.send(sendArgs))
-  }
-
-  async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
-    const res = await this.cm.methods.getChannelDetails(user).call({ from: user })
-    return {
-      txCountGlobal: +res[0],
-      txCountChain: +res[1],
-      threadRoot: res[2],
-      threadCount: +res[3],
-      exitInitiator: res[4],
-      channelClosingTime: +res[5],
-      status: res[6],
-    }
-  }
-
 }
 
 export interface ConnextClientOptions {
