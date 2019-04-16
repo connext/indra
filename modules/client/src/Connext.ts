@@ -1,4 +1,4 @@
-import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult, convertChannelState, convertPayment } from './types'
+import { WithdrawalParameters, ChannelManagerChannelDetails, Sync, ThreadState, addSigToThreadState, ThreadStateUpdate, channelUpdateToUpdateRequest, ThreadHistoryItem, HubConfig, SyncResult, convertChannelState, convertPayment, CustodialBalanceRow } from './types'
 import { DepositArgs, SignedDepositRequestProposal, Omit } from './types'
 import * as actions from './state/actions'
 import { PurchaseRequest } from './types'
@@ -105,7 +105,7 @@ export interface IHubAPIClient {
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
   config(): Promise<HubConfig>
   redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
-  getCustodialBalance(): Promise<Payment | null>
+  getCustodialBalance(): Promise<CustodialBalanceRow | null>
 }
 
 class HubAPIClient implements IHubAPIClient {
@@ -187,18 +187,12 @@ class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getCustodialBalance(): Promise<Payment | null> {
+  async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
     try {
       const res = (await this.networking.post(`custodial/${this.user}/balance`, {
         authToken: await this.getAuthToken(),
       })).data
-      if (!res) {
-        return null
-      }
-      return {
-        amountToken: res.balanceToken,
-        amountWei: res.balanceWei,
-      }
+      return res ? res : null
     } catch (e) {
       if (e.status == 404) {
         console.log(`Custodial balances not found for user ${this.user}`)
