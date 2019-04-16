@@ -24,7 +24,7 @@ import { toBN } from '../helpers/bn';
 
 export default class BuyController extends AbstractController {
   // assigns a payment type if it is not provided
-  private async assignPaymentType(payment: PurchasePaymentRequest): Promise<PurchasePaymentRequest> {
+  public async assignPaymentType(payment: PurchasePaymentRequest): Promise<PurchasePaymentRequest> {
     // if a type is provided, use it by default
     if (payment.type) {
       return payment
@@ -45,16 +45,14 @@ export default class BuyController extends AbstractController {
       return {
         ...payment,
         type: "PT_CUSTODIAL",
-        // update: payment.update as UpdateRequest
       }
     }
 
     // if the recipient is the hub, it should be a channel payment
-    if (payment.recipient == this.connext.opts.hubAddress) {
+    if (payment.recipient.toLowerCase() == this.connext.opts.hubAddress.toLowerCase()) {
       return {
         ...payment,
         type: "PT_CHANNEL",
-        // update: payment.update as UpdateRequest
       }
     }
 
