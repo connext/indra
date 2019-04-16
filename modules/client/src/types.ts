@@ -954,7 +954,7 @@ export interface PurchaseRequest<MetadataType=any, PaymentMetadataType=any> {
   payments: PurchasePaymentRequest<PaymentMetadataType>[]
 }
 
-export type PurchasePaymentRequest<MetadataType=any> = Omit<PurchasePayment<MetadataType>, 'update'> & ({
+export type PurchasePaymentRequest<MetadataType=any> = Omit<PurchasePayment<MetadataType>, 'update' | 'type'> & ({
   type?: PurchasePaymentType
 })
 
