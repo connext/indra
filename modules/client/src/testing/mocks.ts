@@ -1,7 +1,7 @@
-import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
+import { mkHash, getWithdrawalArgs, getExchangeArgs, getCustodialBalance } from '.'
 import { IWeb3TxWrapper } from '../Connext'
 import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit, ThreadStateUpdate, HubConfig } from '../types'
+import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit, ThreadStateUpdate, HubConfig, CustodialBalanceRow } from '../types'
 import { SyncResult } from '../types'
 import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
 import { UnsignedThreadState } from '../types'
@@ -184,6 +184,10 @@ export class MockHub implements IHubAPIClient {
   async config(): Promise<HubConfig> {
     //TODO: implement correctly
     return {} as any
+  }
+
+  async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
+    return getCustodialBalance("empty")
   }
 
   async authChallenge(): Promise<string> {
