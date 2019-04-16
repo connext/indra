@@ -10,7 +10,7 @@ import {
   ChannelState,
   ThreadState
 } from '../types'
-import Wallet from './Wallet';
+import Wallet from '../Wallet';
 
 // To recreate typechain & abi:
 //  - npm run build # in contracts module
@@ -92,30 +92,29 @@ export class Web3TxWrapper extends IWeb3TxWrapper {
 
 export class ChannelManager implements IChannelManager {
   address: string
-  cm: TypechainChannelManager
+  cm: any//TypechainChannelManager
   gasMultiple: number
 
   constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
-    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet) as any
+    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet.signer) as any
     this.gasMultiple = gasMultiple
   }
 
   async getPastEvents(user: Address, eventName: string, fromBlock: number) {
-    const events = await this.cm.getPastEvents(
-      eventName,
-      {
-        filter: { user },
-        fromBlock,
-        toBlock: "latest",
-      }
-    )
+    // TODO: Does this even work?
+    const events = await this.cm.getlogs({
+      fromBlock,
+      toBlock: "latest",
+      address: this.address,
+      topics: [ eth.utils.id(eventName), user ]
+    })
     return events
   }
 
   async userAuthorizedUpdate(state: ChannelState) {
     // deposit on the contract
-    const call = this.cm.methods.userAuthorizedUpdate(
+    const call = this.cm.userAuthorizedUpdate(
       state.recipient, // recipient
       [
         state.balanceWeiHub,
@@ -155,7 +154,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async startExit(state: ChannelState) {
-    const call = this.cm.methods.startExit(
+    const call = this.cm.startExit(
       state.user
     )
 
@@ -169,7 +168,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async startExitWithUpdate(state: ChannelState) {
-    const call = this.cm.methods.startExitWithUpdate(
+    const call = this.cm.startExitWithUpdate(
       [ state.user, state.recipient ],
       [
         state.balanceWeiHub,
@@ -209,7 +208,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async emptyChannelWithChallenge(state: ChannelState) {
-    const call = this.cm.methods.emptyChannelWithChallenge(
+    const call = this.cm.emptyChannelWithChallenge(
       [ state.user, state.recipient ],
       [
         state.balanceWeiHub,
@@ -249,7 +248,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async emptyChannel(state: ChannelState) {
-    const call = this.cm.methods.emptyChannel(
+    const call = this.cm.emptyChannel(
       state.user,
     )
 
@@ -263,7 +262,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async startExitThread(state: ChannelState, threadState: ThreadState, proof: any) {
-    const call = this.cm.methods.startExitThread(
+    const call = this.cm.startExitThread(
       state.user,
       threadState.sender,
       threadState.receiver,
@@ -284,7 +283,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any) {
-    const call = this.cm.methods.startExitThreadWithUpdate(
+    const call = this.cm.startExitThreadWithUpdate(
       state.user,
       [threadInitialState.sender, threadInitialState.receiver],
       threadInitialState.threadId,
@@ -308,7 +307,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async challengeThread(state: ChannelState, threadState: ThreadState) {
-    const call = this.cm.methods.challengeThread(
+    const call = this.cm.challengeThread(
       threadState.sender,
       threadState.receiver,
       threadState.threadId,
@@ -328,7 +327,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async emptyThread(state: ChannelState, threadState: ThreadState, proof: any) {
-    const call = this.cm.methods.emptyThread(
+    const call = this.cm.emptyThread(
       state.user,
       threadState.sender,
       threadState.receiver,
@@ -349,7 +348,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async nukeThreads(state: ChannelState) {
-    const call = this.cm.methods.nukeThreads(
+    const call = this.cm.nukeThreads(
       state.user
     )
 
@@ -363,7 +362,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
-    const res = await this.cm.methods.getChannelDetails(user).call({ from: user })
+    const res = await this.cm.getChannelDetails(user).call({ from: user })
     return {
       txCountGlobal: +res[0],
       txCountChain: +res[1],

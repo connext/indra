@@ -1,4 +1,4 @@
-import * as eth from 'ethers';
+import { ethers as eth } from 'ethers';
 import { EventEmitter } from 'events';
 import { Action, applyMiddleware, createStore } from 'redux';
 import Web3 from 'web3';
