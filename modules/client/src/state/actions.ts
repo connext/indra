@@ -1,7 +1,7 @@
 import { SyncControllerState, RuntimeState, PendingRequestedDeposit } from './store'
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
 //import Wallet from 'ethereumjs-wallet'
-import { ChannelState, SyncResult, Address, UpdateRequest, ChannelStatus, ThreadHistoryItem, ThreadState, Payment } from '../types'
+import { ChannelState, SyncResult, UpdateRequest, ChannelStatus, ThreadHistoryItem, ThreadState, CustodialBalanceRow } from '../types'
 import { ConnextState } from '../state/store'
 import { ExchangeRateState } from './ConnextState/ExchangeRates'
 
@@ -72,4 +72,4 @@ export const setRequestedDeposit = setterAction<PendingRequestedDeposit | null>(
 export const setThreadHistory = setterAction<ThreadHistoryItem[]>('persistent.threadHistory')
 export const setActiveInitialThreadStates = setterAction<ThreadState[]>('persistent.activeInitialThreadStates')
 export const setActiveThreads = setterAction<ThreadState[]>('persistent.activeThreads')
-export const setCustodialBalance = setterAction<Payment>('persistent.custodialBalance')
+export const setCustodialBalance = setterAction<CustodialBalanceRow>('persistent.custodialBalance')

@@ -1035,35 +1035,69 @@ export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>
 export type PurchasePaymentHubResponseBigNumber = PurchasePaymentHubResponse<BigNumber>
 
 // custodial payments
-export type CustodialBalanceRow = {
+export type CustodialBalanceRow<T = string> = {
   user: string
-  totalReceivedWei: BigNumber
-  totalReceivedToken: BigNumber
-  totalWithdrawnWei: BigNumber
-  totalWithdrawnToken: BigNumber
-  balanceWei: BigNumber
-  balanceToken: BigNumber
-  sentWei: BigNumber
+  totalReceivedWei: T
+  totalReceivedToken: T
+  totalWithdrawnWei: T
+  totalWithdrawnToken: T
+  balanceWei: T
+  balanceToken: T
+  sentWei: T
 }
+export type CustodialBalanceRowBigNumber = CustodialBalanceRow<BigNumber>
+export type CustodialBalanceRowBN = CustodialBalanceRow<BN>
 
-export type CreateCustodialWithdrawalOptions = {
+export type CreateCustodialWithdrawalOptions<T=string> = {
   user: string
   recipient: string
-  requestedToken: BigNumber
-  exchangeRate: BigNumber
-  sentWei: BigNumber
+  requestedToken: T
+  exchangeRate: string
+  sentWei: T
   onchainTransactionId: number
 }
+export type CreateCustodialWithdrawalOptionsBigNumber = CreateCustodialWithdrawalOptions<BigNumber>
+export type CreateCustodialWithdrawalOptionsBN = CreateCustodialWithdrawalOptions<BN>
 
-export type CustodialWithdrawalRow = {
+export type CustodialWithdrawalRow<T=string> = {
   id: number
   createdOn: Date
   user: string
   recipient: string
-  requestedToken: BigNumber
-  exchangeRate: BigNumber
-  sentWei: BigNumber
+  requestedToken: T
+  exchangeRate: string
+  sentWei: T
   state: string
   txHash: string
   onchainTransactionId: number
+}
+export type CustodialWithdrawalRowBigNumber = CustodialWithdrawalRow<BigNumber>
+export type CustodialWithdrawalRowBN = CustodialWithdrawalRow<BN>
+
+// util to convert from string to bn for all types
+export const custodialBalanceNumericFields = [
+  'totalReceivedWei',
+  'totalReceivedToken',
+  'totalWithdrawnWei',
+  'totalWithdrawnToken',
+  'balanceWei',
+  'balanceToken',
+  'sentWei',
+]
+
+export function convertCustodialBalance<To extends NumericTypeName>(to: To, obj: CustodialBalanceRow<any>): CustodialBalanceRow<NumericTypes[To]> {
+  const fromType = getType(obj.balanceToken)
+  return convertFields(fromType, to, custodialBalanceNumericFields, obj)
+}
+
+// works for `CustodialWithdrawalRow` and `CreateCustodialWithdrawalOptions`
+export const createCustodialWithdrawalOptionsNumericFields = [
+  'requestedToken',
+  'sentWei',
+]
+export function convertCustodialWithdrawal<To extends NumericTypeName>(to: To, obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRow<NumericTypes[To]>
+export function convertCustodialWithdrawal<To extends NumericTypeName>(to: To, obj: CreateCustodialWithdrawalOptions<any>): CreateCustodialWithdrawalOptions<NumericTypes[To]> 
+export function convertCustodialWithdrawal<To extends NumericTypeName>(to: To, obj: CreateCustodialWithdrawalOptions<any> | CustodialWithdrawalRow<any>): CreateCustodialWithdrawalOptions<NumericTypes[To]> | CustodialWithdrawalRow<NumericTypes[To]>{
+  const fromType = getType(obj.requestedToken)
+  return convertFields(fromType, to, createCustodialWithdrawalOptionsNumericFields, obj)
 }
