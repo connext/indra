@@ -399,6 +399,10 @@ export default class ChannelsService {
       hubBootyTargetForCollat,
     )
 
+    // TODO: any custodial balance owed to the user from the
+    // optimistic payments made should be accounted for at
+    // the time of withdrawal
+
     const withdrawalArgs: WithdrawalArgs = {
       seller: 'user',
       exchangeRate: proposedExchangeRateBigNum.toFixed(),
