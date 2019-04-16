@@ -3,16 +3,13 @@ import { Poller } from "./vendor/connext/lib/poller/Poller";
 import ChannelsDao from "./dao/ChannelsDao";
 import DBEngine from "./DBEngine";
 import { convertChannelState, convertPayment, PurchasePayment } from "./vendor/connext/types";
-import { CustodialPaymentsDao } from "./custodial-payments/CustodialPaymentsDao";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { OptimisticPurchasePaymentRow } from "./domain/OptimisticPayment";
 import PaymentsService from "./PaymentsService";
-import { Big } from "./util/bigNumber";
 
 const LOG = log('OptimisticPaymentsService')
 
 const POLL_INTERVAL = 1000
-const CUSTODIAL_PAYMENT_TIMER = 30 * 1000
 
 export class OptimisticPaymentsService {
   private poller: Poller
@@ -20,7 +17,6 @@ export class OptimisticPaymentsService {
   constructor(
     private db: DBEngine,
     private opPaymentDao: OptimisticPaymentDao,
-    private custodialPaymentsDao: CustodialPaymentsDao,
     private channelsDao: ChannelsDao,
     private paymentsService: PaymentsService,
   ) {
@@ -51,12 +47,7 @@ export class OptimisticPaymentsService {
           continue
         }
 
-        // if the payment was created more than 30 seconds ago, 
-        // send custodially
-        if (CUSTODIAL_PAYMENT_TIMER < Date.now() - +p.createdOn) {
-          await this.sendCustodialPayment(p)
-          continue
-        }
+        // TODO: expiry time on optimistic payments
 
         // check if the payee channel has sufficient collateral
         const payeeState = convertChannelState("bignumber", payeeChan.state)
@@ -111,18 +102,9 @@ export class OptimisticPaymentsService {
     // TODO: recollateralization here?
   }
 
-  private async sendCustodialPayment(payment: OptimisticPurchasePaymentRow): Promise<void> {
-    try {
-      const custodialId = await this.custodialPaymentsDao.createCustodialPayment(payment.paymentId, payment.channelUpdateId)
-      await this.opPaymentDao.addOptimisticPaymentCustodial(payment.paymentId, custodialId)
-    } catch (e) {
-      // if the custodial payment fails, the payment should fail
-      await this.revertPayment(payment)
-    }
-  }
-
+  // TODO: handle hub reverting after a set expiry
   private async revertPayment(payment: OptimisticPurchasePaymentRow): Promise<void> {
-    // TODO: how to handle this in the case of this being one failed
+    // how to handle this in the case of this being one failed
     // payment in a purchase? should all the payments that make up
     // that purchase be reverted?
 
