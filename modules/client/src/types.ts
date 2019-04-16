@@ -1054,7 +1054,7 @@ export type CreateCustodialWithdrawalOptions<T=string> = {
   requestedToken: T
   exchangeRate: string
   sentWei: T
-  onchainTransactionId: number
+  onchainTransactionId?: number
 }
 export type CreateCustodialWithdrawalOptionsBigNumber = CreateCustodialWithdrawalOptions<BigNumber>
 export type CreateCustodialWithdrawalOptionsBN = CreateCustodialWithdrawalOptions<BN>
