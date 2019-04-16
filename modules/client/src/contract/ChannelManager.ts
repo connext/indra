@@ -1,11 +1,20 @@
 import { EventLog } from 'web3-core';
 import { default as ChannelManagerAbi } from './ChannelManagerAbi'
-import { ChannelManager as TypechainChannelManager } from './TypechainChannelManager'
+import { ChannelManager as TypechainChannelManager } from './ChannelManagerTypechain'
 import { toBN } from '../helpers/bn'
 import { ResolveablePromise } from "../lib/utils";
-import { ChannelManagerChannelDetails, ChannelState, ThreadState } from '../types'
+import {
+  Address,
+  ChannelManagerChannelDetails,
+  ChannelState,
+  ThreadState
+} from '../types'
 
-type Address = string
+// To recreate typechain & abi:
+//  - npm run build # in contracts module
+//  - cp contracts/build/tx/ChannelManager.d.ts client/src/contract/ChannelManagerTypechain.d.ts
+//  - cp contracts/build/contracts/ChannelManager.json client/src/contract/ChannelManagerAbi.ts
+//  - # extract abi & add "export default" on first line 
 
 ////////////////////////////////////////
 // Interfaces

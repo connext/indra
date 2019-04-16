@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events'
 import { Action, applyMiddleware, createStore } from 'redux'
 import Web3 from 'web3'
-import { EventLog } from 'web3-core';
 import * as w3utils from 'web3-utils';
 import { ChannelManager, IChannelManager } from './contract/ChannelManager'
 import { AbstractController } from './controllers/AbstractController'
@@ -14,11 +13,10 @@ import StateUpdateController from './controllers/StateUpdateController'
 import SyncController from './controllers/SyncController'
 import ThreadsController from './controllers/ThreadsController';
 import WithdrawalController from './controllers/WithdrawalController'
-import { toBN } from './helpers/bn'
 import { Networking } from './helpers/networking'
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { default as Logger } from "./lib/Logger";
-import { isFunction, ResolveablePromise, timeoutPromise } from "./lib/utils";
+import { isFunction, timeoutPromise } from "./lib/utils";
 import * as actions from './state/actions'
 import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import { handleStateFlags } from './state/middleware'
@@ -28,14 +26,12 @@ import {
   Address,
   addSigToChannelState,
   addSigToThreadState,
-  ChannelManagerChannelDetails,
   ChannelRow,
   ChannelState,
   ChannelStateUpdate,
   channelUpdateToUpdateRequest,
   convertChannelState,
   convertPayment,
-  DepositArgs,
   HubConfig,
   Omit,
   Payment,
@@ -44,8 +40,6 @@ import {
   PurchaseRequest,
   SignedDepositRequestProposal,
   Sync,
-  SyncResult,
-  ThreadHistoryItem,
   ThreadRow,
   ThreadState,
   ThreadStateUpdate,

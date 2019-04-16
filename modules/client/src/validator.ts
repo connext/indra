@@ -1,53 +1,62 @@
-import { subOrZero, objMap } from './StateGenerator'
-import { convertProposePending, InvalidationArgs, ArgsTypes, UnsignedThreadStateBN, EmptyChannelArgs, VerboseChannelEvent, VerboseChannelEventBN, EventInputs, ChannelEventReason, convertVerboseEvent, makeEventVerbose, SignedDepositRequestProposal, WithdrawalParametersBN } from './types'
-import { PendingArgs } from './types'
-import { PendingArgsBN } from './types'
 import Web3 from 'web3'
+import { TransactionReceipt } from 'web3-core';
+import * as w3utils from 'web3-utils';
 import BN = require('bn.js')
+import { maxBN, toBN } from './helpers/bn'
+import { capitalize } from './helpers/naming'
+import { StateGenerator, subOrZero, objMap } from './StateGenerator'
 import {
   Address,
-  proposePendingNumericArgs,
+  argNumericFields,
+  ArgsTypes,
   channelNumericFields,
+  ChannelEventReason,
   ChannelState,
   ChannelStateBN,
+  ChannelUpdateReason,
+  ConfirmPendingArgs,
+  convertArgs,
   convertChannelState,
+  convertDeposit,
+  convertExchange,
   convertPayment,
+  convertProposePending,
+  convertProposePendingExchange,
+  convertThreadPayment,
   convertThreadState,
+  convertVerboseEvent,
+  convertWithdrawal,
+  DepositArgs,
   DepositArgsBN,
+  EmptyChannelArgs,
+  EventInputs,
+  ExchangeArgs,
   ExchangeArgsBN,
-  PaymentArgsBN,
+  InvalidationArgs,
+  makeEventVerbose,
+  Payment,
   PaymentBN,
+  PaymentArgs,
+  PaymentArgsBN,
+  PendingArgs,
+  PendingArgsBN,
+  PendingExchangeArgs,
+  PendingExchangeArgsBN,
+  proposePendingNumericArgs,
+  SignedDepositRequestProposal,
   ThreadState,
   ThreadStateBN,
-  UnsignedChannelState,
-  UnsignedThreadState,
-  WithdrawalArgsBN,
   UpdateRequest,
-  argNumericFields,
-  PendingExchangeArgsBN,
+  UnsignedChannelState,
   UnsignedChannelStateBN,
-  PendingExchangeArgs,
-  convertProposePendingExchange,
-  ChannelUpdateReason,
-  PaymentArgs,
-  ExchangeArgs,
-  convertExchange,
-  DepositArgs,
-  convertDeposit,
+  UnsignedThreadState,
+  VerboseChannelEventBN,
   WithdrawalArgs,
-  convertWithdrawal,
-  ConfirmPendingArgs,
-  convertThreadPayment,
-  Payment,
-  convertArgs,
+  WithdrawalArgsBN,
+  WithdrawalParametersBN,
   withdrawalParamsNumericFields
 } from './types'
-import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
-import { toBN, maxBN } from './helpers/bn'
-import { capitalize } from './helpers/naming'
-import { TransactionReceipt } from 'web3-core';
-const w3utils = require('web3-utils')
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -95,7 +104,7 @@ export class Validator {
     } else {
       return await this.generateHandlers[request.reason](prev, request.initialThreadStates, request.args)
     }
-    
+
   }
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): string | null {
@@ -441,11 +450,11 @@ export class Validator {
     return this.stateGenerator.emptyChannel(matchingEvent)
   }
 
-  // NOTE: the prev here is NOT the previous state in the state-chain 
-  // of events. Instead it is the previously "valid" update, meaning the 
+  // NOTE: the prev here is NOT the previous state in the state-chain
+  // of events. Instead it is the previously "valid" update, meaning the
   // previously double signed upate with no pending ops
   public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs) {
-    // state should not 
+    // state should not
     if (args.lastInvalidTxCount < args.previousValidTxCount) {
       return `Previous valid nonce is higher than the nonce of the state to be invalidated. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
     }
@@ -568,7 +577,7 @@ export class Validator {
     // }
 
     if (errs) {
-      return errs 
+      return errs
     }
     return null
   }
@@ -751,7 +760,7 @@ export class Validator {
 
   private userIsNotSenderOrReceiver(prev: ChannelStateBN, args: ThreadStateBN): string | null {
     if(prev.user !== args.sender && prev.user !== args.receiver) {
-      return `Channel user is not a member of this thread state. Channel state; ${JSON.stringify(convertChannelState("str", prev))}. 
+      return `Channel user is not a member of this thread state. Channel state; ${JSON.stringify(convertChannelState("str", prev))}.
       Thread state; ${JSON.stringify(convertThreadState("str", args))}`
     }
     return null
@@ -788,11 +797,11 @@ export class Validator {
     if (args.sender == this.hubAddress) {
       errs.push(`Sender cannot be hub. Thread state: ${JSON.stringify(convertThreadState("str", args))}`)
     }
-    
+
     if (args.receiver == this.hubAddress) {
       errs.push(`Receiver cannot be hub. Thread state: ${JSON.stringify(convertThreadState("str", args))}`)
     }
-    
+
     try {
       this.assertThreadSigner(convertThreadState('str', args))
     } catch (e) {
@@ -843,11 +852,11 @@ export class Validator {
       this.hasNegative({tokenDiff: (args.balanceTokenReceiver.sub(prev.balanceTokenReceiver))}, ['tokenDiff']),
       this.hasInequivalent([prev, args], ['contractAddress', 'sender', 'receiver']),
       this.hasInequivalent([
-        { weiSum: prev.balanceWeiSender.add(prev.balanceWeiReceiver)}, 
+        { weiSum: prev.balanceWeiSender.add(prev.balanceWeiReceiver)},
         { weiSum: args.balanceWeiSender.add(args.balanceWeiReceiver)}],
         ['weiSum']),
       this.hasInequivalent([
-        { tokenSum: prev.balanceTokenSender.add(prev.balanceTokenReceiver)}, 
+        { tokenSum: prev.balanceTokenSender.add(prev.balanceTokenReceiver)},
         { tokenSum: args.balanceTokenSender.add(args.balanceTokenReceiver)}],
         ['tokenSum'])
     ]
@@ -879,15 +888,15 @@ export class Validator {
       errs.push(this.enforceDelta([prev, curr], 0, ['txCountChain']))
     }
 
-    // calculate the out of channel balance that could be used in 
+    // calculate the out of channel balance that could be used in
     // transition. could include previous pending updates and the
     // reserves.
     //
     // hub will use reserves if it cannot afford the current withdrawal
-    // requested by user from the available balance that exists in the 
+    // requested by user from the available balance that exists in the
     // channel state
-    // 
-    // out of channel balance amounts should be "subtracted" from 
+    //
+    // out of channel balance amounts should be "subtracted" from
     // channel balance calculations. This way, we can enforce that
     // out of channel balances are accounted for in the
     // previous balance calculations
@@ -936,17 +945,17 @@ export class Validator {
 
     }
 
-    // reserves are only accounted for in channel balances in propose 
+    // reserves are only accounted for in channel balances in propose
     // pending states, where they are deducted to illustrate their
     // brief lifespan in the channel where they are
     // immediately deposited and withdrawn
     const prevBal = this.calculateChannelTotals(prev, reserves)
     const currBal = this.calculateChannelTotals(curr, compiledPending)
 
-    // if the state transition is a thread open or close, then total 
-    // balances will be decreased or increased without a pending op 
+    // if the state transition is a thread open or close, then total
+    // balances will be decreased or increased without a pending op
     // occurring. In this case, we should ignore the enforceDelta check.
-    // We can determine if this is a thread open or close by checking 
+    // We can determine if this is a thread open or close by checking
     // to see if threadCount is incremented/decremented
 
     // Note: we do not need to check that delta == thread initial balances
@@ -966,7 +975,7 @@ export class Validator {
   }
 
   private isValidStateTransitionRequest(prev: ChannelStateBN, request: UpdateRequest): string | null {
-    // @ts-ignore TODO: wtf 
+    // @ts-ignore TODO: wtf
     const args = convertArgs("bn", request.reason, request.args)
     // will fail on generation in wd if negative args supplied
     let err = this.hasNegative(args, argNumericFields[request.reason])

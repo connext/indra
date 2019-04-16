@@ -1,22 +1,21 @@
-import { convertChannelState, ChannelState } from './types'
-/*********************************
- *********** UTIL FNS ************
- *********************************/
 import util = require('ethereumjs-util')
+const w3utils = require('web3-utils')
 import { MerkleUtils } from './helpers/merkleUtils'
 import MerkleTree from './helpers/merkleTree'
-const w3utils = require('web3-utils')
-
 import {
-  UnsignedChannelState,
-  UnsignedThreadState,
-  ThreadState,
+  ChannelState,
+  convertChannelState,
   convertThreadState,
   Payment,
   SignedDepositRequestProposal,
+  ThreadState,
+  UnsignedChannelState,
+  UnsignedThreadState,
 } from './types'
 
-// import types from connext
+/*********************************
+ *********** UTIL FNS ************
+ *********************************/
 
 export const emptyAddress = '0x0000000000000000000000000000000000000000'
 export const emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
