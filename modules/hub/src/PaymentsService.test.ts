@@ -220,7 +220,7 @@ describe('PaymentsService', () => {
       },
       recipient: receiver,
       sender,
-      status: "new",
+      status: "NEW",
       channelUpdateId: custodialUpdateSender.id!
     })
   })

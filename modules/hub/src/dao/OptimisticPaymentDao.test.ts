@@ -70,7 +70,7 @@ describe("OptimisticPaymentDao", () => {
     assert.equal(payments.length, 1)
     assert.containSubset(payments[0], {
       channelUpdateId: Number(d.update.id),
-      status: "new",
+      status: "NEW",
       paymentId: newPaymentId,
       amount: {
         amountWei: '0',
