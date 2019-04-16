@@ -1,31 +1,128 @@
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs } from '../types';
+import { PaymentArgs, PurchasePaymentRequest } from '../types';
 import { mkAddress, mkHash, assert } from '../testing';
 import { emptyAddress } from '../Utils';
+import { toBN } from 'web3-utils';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
-describe('BuyController: unit tests', () => {
-  const user = mkAddress('0x7fab')
-  const receiver = mkAddress('0x22c')
-  const receiver2 = mkAddress('0x22c44')
-  const hubAddress = mkAddress('0xfc5')
-  let connext: MockConnextInternal
-  let mockStore: MockStore
+const user = mkAddress('0x7fab')
+const receiver = mkAddress('0x22c')
+const receiver2 = mkAddress('0x22c44')
+const hubAddress = mkAddress('0xfc5')
 
+const mockHub = new MockHub()
+let mockStore: MockStore = new MockStore()
+let connext: MockConnextInternal
+
+describe("BuyController: assignPaymentTypes", () => {
   beforeEach(async () => {
-    mockStore = new MockStore()
+    connext = new MockConnextInternal({ 
+      user, 
+      store: mockStore.createStore(), 
+      hub: mockHub 
+    })
+  })
+
+  it("should retain a type if its provided", async () => {
+    const payment: any = {
+      recipient: receiver,
+      amount: {
+        amountToken: '15',
+        amountWei: '0',
+      },
+      type: "PT_LINK",
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_LINK"
+    })
+  })
+
+  it("should assign a PT_LINK payment if there is a secret provided in the meta", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: receiver,
+      amount: {
+        amountToken: '15',
+        amountWei: '0',
+      },
+      meta: {
+        secret: connext.generateSecret()
+      },
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_LINK"
+    })
+  })
+
+  it("should assign a PT_CUSTODIAL if the amount is greater than the amount the hub will collateralize", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: receiver,
+      amount: {
+        amountToken: '150',
+        amountWei: '0',
+      },
+      meta: {},
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_CUSTODIAL"
+    })
+  })
+
+  it("should assign a PT_CHANNEL if the payment is to the hub", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: connext.opts.hubAddress,
+      amount: {
+        amountToken: '10',
+        amountWei: '0',
+      },
+      meta: {},
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_CHANNEL"
+    })
+  })
+
+  it("should assign a PT_OPTIMISTIC if the type is not provided, and the hub can handle forwarding the payment (below max)", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: receiver2,
+      amount: {
+        amountToken: '14',
+        amountWei: '0',
+      },
+      meta: {},
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_OPTIMISTIC"
+    })
+  })
+})
+
+describe('BuyController: unit tests', () => {
+  beforeEach(async () => {
     mockStore.setChannel({
       user,
       balanceWei: [5, 5],
       balanceToken: [10, 10],
     })
-    const mockHub = new MockHub()
-    connext = new MockConnextInternal({ user, store: mockStore.createStore(), hub: mockHub })
+    connext = new MockConnextInternal({ 
+      user, 
+      store: mockStore.createStore(), 
+      hub: mockHub 
+    })
   })
 
   // channel and custodial payments
-  it('should work for `PT_CHANNEL` user to hub token payments', async () => {
+  it('should work for PT_CHANNEL user to hub token payments', async () => {
     await connext.start()
     await connext.buyController.buy({
       meta: {},
