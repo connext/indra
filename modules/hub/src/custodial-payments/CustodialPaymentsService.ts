@@ -1,5 +1,4 @@
 import { Big } from '../util/bigNumber'
-import { CustodialWithdrawalRow } from './CustodialPaymentsDao'
 import { default as DBEngine } from '../DBEngine'
 import { default as Config } from '../Config'
 import { default as log } from '../util/log'
@@ -7,6 +6,7 @@ import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { BigNumber } from 'bignumber.js/bignumber'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { OnchainTransactionService } from '../OnchainTransactionService'
+import { CustodialWithdrawalRow } from '../vendor/connext/types';
 
 const LOG = log('CustodialPaymentsService')
 
