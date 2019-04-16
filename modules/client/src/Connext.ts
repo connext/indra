@@ -41,6 +41,7 @@ import {
 } from './types';
 import { Utils } from './Utils';
 import { Validator, } from './validator';
+import Wallet from './Wallet';
 
 ////////////////////////////////////////
 // Interface Definitions
@@ -82,6 +83,8 @@ export interface ConnextClientOptions {
 
 // Used to get an instance of ConnextClient.
 export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
+  let wallet = new Wallet(opts)
+
   // create a new hub and pass into the client
   let hub = opts.hub || new HubAPIClient(
     opts.user!,
