@@ -255,7 +255,6 @@ describe('OptimisticPaymentsService', () => {
     // wait out clock without collateralizing
     const ticks = ts + (40 * 1000)
     await clock.awaitTicks(ticks)
-    assert.isAtLeast(ts, Date.now())
     // poll once
     await optimisticService.pollOnce()
     
