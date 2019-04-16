@@ -279,10 +279,19 @@ export class PostgresChannelsDao implements ChannelsDao {
   async getRecentTippers(user: string): Promise<number> {
     const { num_tippers } = await this.db.queryOne(SQL`
       SELECT COUNT(DISTINCT sender) AS num_tippers
-      FROM payments
+      FROM (
+        SELECT * FROM payments
         WHERE
           recipient = ${user} AND
           created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
+
+        UNION
+
+        SELECT * FROM payments
+        WHERE 
+          recipient = ${user} AND
+          payment_type = 'PT_OPTIMISTIC'
+      ) as t
     `)
 
     return parseInt(num_tippers)
