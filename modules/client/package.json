@@ -28,6 +28,7 @@
     "typescript": "3.4.1"
   },
   "dependencies": {
+    "@types/web3": "^1.0.18",
     "bignumber.js": "^7.2.1",
     "bluebird": "^3.5.3",
     "bn.js": "^4.11.8",
@@ -39,7 +40,9 @@
     "semaphore": "^1.1.0",
     "typescript-fsa": "^3.0.0-beta-2",
     "typescript-fsa-reducers": "^1.1.0",
-    "web3": "^1.0.0-beta.52"
+    "web3": "^1.0.0-beta.52",
+    "web3-core": "^1.0.0-beta.52",
+    "web3-eth": "^1.0.0-beta.52"
   },
   "engines": {
     "node": ">=9",
