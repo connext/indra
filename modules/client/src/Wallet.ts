@@ -23,12 +23,12 @@ export default class Wallet implements IWallet {
     // First choice: Sign w private key
     if (opts.privateKey) {
       this.wallet = eth.Wallet.fromMnemonic(opts.mnemonic || '')
-      this.address = this.wallet.address
+      this.address = this.wallet.address.toLowerCase()
 
     // Second choice: Sign w mnemonic
     } else if (opts.mnemonic) {
       this.wallet = eth.Wallet.fromMnemonic(opts.mnemonic || '')
-      this.address = this.wallet.address
+      this.address = this.wallet.address.toLowerCase()
 
     // Third choice: Sign w web3
     } else if (
@@ -36,12 +36,12 @@ export default class Wallet implements IWallet {
       (opts.web3.eth.sign || (opts.web3.eth.personal && opts.web3.eth.personal.sign))
     ) {
       this.web3 = opts.web3
-      this.address = opts.user
+      this.address = opts.user.toLowerCase()
 
     // Fallback: create new random wallet
     } else {
       this.wallet = eth.Wallet.createRandom()
-      this.address = this.wallet.address
+      this.address = this.wallet.address.toLowerCase()
     }
   }
 

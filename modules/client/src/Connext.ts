@@ -87,10 +87,9 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
 
   // create a new hub and pass into the client
   opts.hub = opts.hub || new HubAPIClient(
-    opts.user!,
     new Networking(opts.hubUrl),
-    opts.web3,
     opts.origin!,
+    wallet,
   )
 
   const hubConfig = await opts.hub.config()
@@ -209,10 +208,9 @@ export class ConnextInternal extends ConnextClient {
 
     console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
-      this.opts.user!,
       new Networking(this.opts.hubUrl),
-      this.opts.web3,
       this.opts.origin!,
+      this.wallet,
     )
 
     opts.user = opts.user!.toLowerCase()
@@ -301,8 +299,7 @@ export class ConnextInternal extends ConnextClient {
     // before starting controllers, sync values
     await this.syncConfig()
 
-    // auth is handled on each endpoint posting
-    // via the IHubAPIClient
+    // auth is handled on each endpoint posting via the Hub API Client
 
     // TODO: appropriately set the latest
     // valid state ??
