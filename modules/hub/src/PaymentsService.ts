@@ -86,7 +86,7 @@ export default class PaymentsService {
               await this.doChannelInstantPayment(payment, paymentId, row.id)
             } finally {
               // Check to see if collateral is needed, even if the tip failed
-              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
+              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient, Big(payment.amount.amountToken)))
               if (err) {
                 LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
               }
