@@ -126,7 +126,7 @@ test-client: client
 	bash ops/test-client.sh
 
 watch-client:
-	bash ops/test-client.sh watch
+	bash ops/watch-client.sh
 
 test-contracts: contract-artifacts
 	bash ops/test-contracts.sh

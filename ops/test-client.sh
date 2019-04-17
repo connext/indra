@@ -13,11 +13,6 @@ function cleanup {
 }
 trap cleanup EXIT
 
-if [[ "$1" == "watch" ]]
-then watch="--watch --watch-extensions ts" && echo "Watching..."
-else watch="--exit"
-fi
-
 docker run \
   --interactive \
   --tty \
@@ -28,10 +23,10 @@ docker run \
   ${project}_builder -c '
     set -e
     echo "Container launched.."
-    export PATH=./node_modules/.bin:$PATH
-    mocha '"$watch"' --color \
+    PATH=./node_modules/.bin:$PATH
+    mocha '"$watch"' \
       -r ts-node/register/type-check \
       -r ./src/register/common.ts \
       -r ./src/register/testing.ts \
-      "src/**/*.test.ts" | egrep -v "^    at"
+      "src/**/*.test.ts" --exit
   '
