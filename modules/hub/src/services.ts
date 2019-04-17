@@ -158,6 +158,61 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     isSingleton: true,
   },
 
+  // singleton version of ChannelsService just for running scripts
+  ChannelsServiceSingleton: {
+    factory: (
+      onchainTx: OnchainTransactionService,
+      threadsService: ThreadsService,
+      signerService: SignerService,
+      channelsDao: ChannelsDao,
+      threadsDao: ThreadsDao,
+      exchangeRateDao: ExchangeRateDao,
+      channelDisputesDao: ChannelDisputesDao,
+      onchainTransactionDao: OnchainTransactionsDao,
+      generator: StateGenerator,
+      validation: Validator,
+      redis: RedisClient,
+      db: DBEngine,
+      config: Config,
+      contract: ChannelManager,
+      coinPaymentsDao: CoinPaymentsDao,
+    ) =>
+      new ChannelsService(
+        onchainTx,
+        threadsService,
+        signerService,
+        channelsDao,
+        threadsDao,
+        exchangeRateDao,
+        channelDisputesDao,
+        onchainTransactionDao,
+        generator,
+        validation,
+        redis,
+        db,
+        config,
+        contract,
+        coinPaymentsDao,
+      ),
+    dependencies: [
+      'OnchainTransactionService',
+      'ThreadsService',
+      'SignerService',
+      'ChannelsDao',
+      'ThreadsDao',
+      'ExchangeRateDao',
+      'ChannelDisputesDao',
+      'OnchainTransactionsDao',
+      'StateGenerator',
+      'Validator',
+      'RedisClient',
+      'DBEngine',
+      'Config',
+      'ChannelManagerContract',
+      'CoinPaymentsDao',
+    ],
+  },
+
   ApiServer: {
     factory: (container: Container) => new ApiServer(container),
     dependencies: ['Container'],
@@ -267,8 +322,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   GlobalSettingsDao: {
     factory: (db: DBEngine<Client>) => 
       new PostgresGlobalSettingsDao(db),
-    dependencies: ['DBEngine'],
-    isSingleton: true
+    dependencies: ['DBEngine']
   },
 
   ChainsawDao: {
