@@ -243,9 +243,10 @@ export default class ChannelsService {
   }
 
   public async doCollateralizeIfNecessary(
-    user: string
+    user: string,
+    minimum?: BigNumber
   ): Promise<DepositArgs | null> {
-    const depositArgs = await this.getCollateralDepositArgs(user)
+    const depositArgs = await this.getCollateralDepositArgs(user, minimum)
 
     if (!depositArgs) {
       return null
@@ -258,11 +259,11 @@ export default class ChannelsService {
     return depositArgs
   }
 
-  public async getCollateralDepositArgs(user): Promise<DepositArgs | null> {
+  public async getCollateralDepositArgs(user, minimum?: BigNumber): Promise<DepositArgs | null> {
     const shouldCollateralized = await this.shouldCollateralize(user)
-    if (!shouldCollateralized)
+    if (!shouldCollateralized) 
       return null
-
+    
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
     // channel checks
@@ -298,7 +299,14 @@ export default class ChannelsService {
       }
     }
 
-    const targets = await this.calculateCollateralizationTargets(channel.state)
+    let targets = await this.calculateCollateralizationTargets(channel.state)
+    // if calculated targets below min, replace provided minimum
+    if (minimum && targets.minAmount.lt(minimum)) {
+      targets = {
+        ...targets,
+        minAmount: minimum
+      }
+    }
 
     // 1. If there is more booty in the channel than the maxAmount, then
     // withdraw down to that.
@@ -313,15 +321,17 @@ export default class ChannelsService {
       return null
     }
 
-    // 3. Otherwise, deposit the appropriate amount
-    const amountToCollateralize = targets.maxAmount.minus(channel.state.balanceTokenHub)
+    // 3. Otherwise, calculate the appropriate amount
+    let amountToCollateralize = targets.maxAmount.minus(channel.state.balanceTokenHub)
 
     LOG.info(`Recollateralizing ${user} with ${amountToCollateralize.div('1e18').toFixed()} BOOTY`)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
       depositWeiUser: '0',
-      depositTokenHub: amountToCollateralize.toFixed(),
+      depositTokenHub: minimum && amountToCollateralize.lt(minimum)
+        ? minimum.toFixed()
+        : amountToCollateralize.toFixed(),
       depositTokenUser: '0',
       timeout: 0,
       sigUser: null,
