@@ -94,11 +94,14 @@ export class ChannelManager implements IChannelManager {
   address: string
   cm: any//TypechainChannelManager
   gasMultiple: number
+  defaultSendArgs: any
 
   constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
-    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet.signer) as any
+    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet) as any
+    console.log(`contract address: ${this.cm.address}`)
     this.gasMultiple = gasMultiple
+    this.defaultSendArgs = { value: 0 } as any
   }
 
   async getPastEvents(user: Address, eventName: string, fromBlock: number) {
@@ -112,9 +115,15 @@ export class ChannelManager implements IChannelManager {
     return events
   }
 
+  async _send(method: string, args: any, overrides: any) {
+    const gasEstimate = await this.cm.estimate[method](...args, overrides)
+    overrides.gasLimit = toBN(Math.ceil(gasEstimate * this.gasMultiple))
+    return this.cm[method](...args, overrides)
+  }
+
   async userAuthorizedUpdate(state: ChannelState) {
     // deposit on the contract
-    const call = this.cm.userAuthorizedUpdate(
+    const args = [
       state.recipient, // recipient
       [
         state.balanceWeiHub,
@@ -141,34 +150,19 @@ export class ChannelManager implements IChannelManager {
       state.threadCount,
       state.timeout,
       state.sigHub!,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: state.pendingDepositWeiUser,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-
-    sendArgs.gas = toBN(Math.ceil(gasEstimate * this.gasMultiple))
-    return new Web3TxWrapper(this.address, 'userAuthorizedUpdate', call.send(sendArgs))
+    ]
+    return await this._send('userAuthorizedUpdate', args, Object.assign({}, this.defaultSendArgs, {
+      value: state.pendingDepositWeiUser
+    }))
   }
 
   async startExit(state: ChannelState) {
-    const call = this.cm.startExit(
-      state.user
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExit', call.send(sendArgs))
+    const args = [ state.user ]
+    return this._send('startExit', args, this.defaultSendArgs)
   }
 
   async startExitWithUpdate(state: ChannelState) {
-    const call = this.cm.startExitWithUpdate(
+    const args = [
       [ state.user, state.recipient ],
       [
         state.balanceWeiHub,
@@ -196,19 +190,12 @@ export class ChannelManager implements IChannelManager {
       state.timeout,
       state.sigHub as string,
       state.sigUser as string,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExitWithUpdate', call.send(sendArgs))
+    ]
+    return this._send('startExitWithUpdate', args, this.defaultSendArgs)
   }
 
   async emptyChannelWithChallenge(state: ChannelState) {
-    const call = this.cm.emptyChannelWithChallenge(
+    const args = [
       [ state.user, state.recipient ],
       [
         state.balanceWeiHub,
@@ -236,33 +223,17 @@ export class ChannelManager implements IChannelManager {
       state.timeout,
       state.sigHub as string,
       state.sigUser as string,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'emptyChannelWithChallenge', call.send(sendArgs))
+    ]
+    return this._send('emptyChannelWithChallenge', args, this.defaultSendArgs)
   }
 
   async emptyChannel(state: ChannelState) {
-    const call = this.cm.emptyChannel(
-      state.user,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'emptyChannel', call.send(sendArgs))
+    const args = [ state.user ]
+    return this._send('emptyChannel', args, this.defaultSendArgs)
   }
 
   async startExitThread(state: ChannelState, threadState: ThreadState, proof: any) {
-    const call = this.cm.startExitThread(
+    const args = [
       state.user,
       threadState.sender,
       threadState.receiver,
@@ -271,19 +242,12 @@ export class ChannelManager implements IChannelManager {
       [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
       proof,
       threadState.sigA,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExitThread', call.send(sendArgs))
+    ]
+    return this._send('startExitThread', args, this.defaultSendArgs)
   }
 
   async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any) {
-    const call = this.cm.startExitThreadWithUpdate(
+    const args = [
       state.user,
       [threadInitialState.sender, threadInitialState.receiver],
       threadInitialState.threadId,
@@ -295,19 +259,12 @@ export class ChannelManager implements IChannelManager {
       [threadUpdateState.balanceTokenSender, threadUpdateState.balanceTokenReceiver],
       threadUpdateState.txCount,
       threadUpdateState.sigA
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'startExitThreadWithUpdate', call.send(sendArgs))
+    ]
+    return this._send('startExitThreadWithUpdate', args, this.defaultSendArgs)
   }
 
   async challengeThread(state: ChannelState, threadState: ThreadState) {
-    const call = this.cm.challengeThread(
+    const args = [
       threadState.sender,
       threadState.receiver,
       threadState.threadId,
@@ -315,19 +272,12 @@ export class ChannelManager implements IChannelManager {
       [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
       threadState.txCount,
       threadState.sigA
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'challengeThread', call.send(sendArgs))
+    ]
+    return this._send('challengeThread', args, this.defaultSendArgs)
   }
 
   async emptyThread(state: ChannelState, threadState: ThreadState, proof: any) {
-    const call = this.cm.emptyThread(
+    const args = [
       state.user,
       threadState.sender,
       threadState.receiver,
@@ -336,33 +286,19 @@ export class ChannelManager implements IChannelManager {
       [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
       proof,
       threadState.sigA,
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'emptyThread', call.send(sendArgs))
+    ]
+    return this._send('emptyThread', args, this.defaultSendArgs)
   }
 
   async nukeThreads(state: ChannelState) {
-    const call = this.cm.nukeThreads(
+    const args = [
       state.user
-    )
-
-    const sendArgs = {
-      from: state.user,
-      value: 0,
-    } as any
-    const gasEstimate = await call.estimateGas(sendArgs)
-    sendArgs.gas = toBN(gasEstimate * this.gasMultiple)
-    return new Web3TxWrapper(this.address, 'nukeThreads', call.send(sendArgs))
+    ]
+    return this._send('nukeThreads', args, this.defaultSendArgs)
   }
 
   async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
-    const res = await this.cm.getChannelDetails(user).call({ from: user })
+    const res = await this.cm.getChannelDetails(user, { from: user })
     return {
       txCountGlobal: +res[0],
       txCountChain: +res[1],
