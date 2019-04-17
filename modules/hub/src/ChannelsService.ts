@@ -336,7 +336,7 @@ export default class ChannelsService {
       }
 
       // 3. Deposit either up to the collateralization amount or the channel max
-      amountToCollateralize = BigNumber.max(
+      amountToCollateralize = BigNumber.min(
         this.config.beiMaxCollateralization, 
         collateralizationTarget
       ).minus(channel.state.balanceTokenHub)
