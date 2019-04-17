@@ -243,9 +243,10 @@ export default class ChannelsService {
   }
 
   public async doCollateralizeIfNecessary(
-    user: string
+    user: string,
+    collateralizationTarget?: BigNumber
   ): Promise<DepositArgs | null> {
-    const depositArgs = await this.getCollateralDepositArgs(user)
+    const depositArgs = await this.getCollateralDepositArgs(user, collateralizationTarget)
 
     if (!depositArgs) {
       return null
@@ -258,7 +259,10 @@ export default class ChannelsService {
     return depositArgs
   }
 
-  public async getCollateralDepositArgs(user): Promise<DepositArgs | null> {
+  public async getCollateralDepositArgs(
+    user: string, 
+    collateralizationTarget: BigNumber = Big(0)
+  ): Promise<DepositArgs | null> {
     const shouldCollateralized = await this.shouldCollateralize(user)
     if (!shouldCollateralized)
       return null
@@ -298,23 +302,45 @@ export default class ChannelsService {
       }
     }
 
-    const targets = await this.calculateCollateralizationTargets(channel.state)
+    let amountToCollateralize: BigNumber
+    if (collateralizationTarget.isZero()) {
+      const targets = await this.calculateCollateralizationTargets(channel.state)
 
-    // 1. If there is more booty in the channel than the maxAmount, then
-    // withdraw down to that.
-    if (channel.state.balanceTokenHub.isGreaterThan(targets.maxAmount)) {
-      // NOTE: Since we don't have a way to do non-blocking withdrawals, do
-      // nothing now... but in the future this should withdraw.
-      return null
+      // 1. If there is more booty in the channel than the maxAmount, then
+      // withdraw down to that.
+      if (channel.state.balanceTokenHub.isGreaterThan(targets.maxAmount)) {
+        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
+        // nothing now... but in the future this should withdraw.
+        return null
+      }
+
+      // 2. If the amount is between the minAmount and the maxAmount, do nothing.
+      if (channel.state.balanceTokenHub.isGreaterThan(targets.minAmount)) {
+        return null
+      }
+
+      // 3. Otherwise, deposit the appropriate amount
+      amountToCollateralize = targets.maxAmount.minus(channel.state.balanceTokenHub)
+    } else {
+      // collateralize to target, but not more than channel max
+      if (channel.state.balanceTokenHub.isGreaterThan(this.config.beiMaxCollateralization)) {
+        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
+        // nothing now... but in the future this should withdraw.
+        return null
+      }
+
+      if (channel.state.balanceTokenHub.isGreaterThan(collateralizationTarget)) {
+        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
+        // nothing now... but in the future this should withdraw.
+        return null
+      }
+
+      // 3. Deposit either up to the collateralization amount or the channel max
+      amountToCollateralize = BigNumber.min(
+        this.config.beiMaxCollateralization, 
+        collateralizationTarget
+      ).minus(channel.state.balanceTokenHub)
     }
-
-    // 2. If the amount is between the minAmount and the maxAmount, do nothing.
-    if (channel.state.balanceTokenHub.isGreaterThan(targets.minAmount)) {
-      return null
-    }
-
-    // 3. Otherwise, deposit the appropriate amount
-    const amountToCollateralize = targets.maxAmount.minus(channel.state.balanceTokenHub)
 
     LOG.info(`Recollateralizing ${user} with ${amountToCollateralize.div('1e18').toFixed()} BOOTY`)
 
