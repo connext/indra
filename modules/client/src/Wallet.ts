@@ -1,26 +1,16 @@
 import { ethers as eth } from 'ethers';
 import Web3 from 'web3';
 import { ConnextClientOptions } from './Connext';
-import { Address, } from './types';
 
-export interface IWallet {
-  address: Address
-  provider: any
-  signer: any
-  signTransaction: (tx: any) => Promise<string>
-  sendTransaction: (tx: any) => Promise<any>
-  signMessage: (message: string) => Promise<string>
-  getAddress: () => Address // Needed to conform to ethers signer API
-}
-
-export default class Wallet implements IWallet {
-  address: Address
+export default class Wallet extends eth.Signer {
+  address: string
   provider: any
   signer: any
   web3?: Web3
   private password: string
 
   constructor(opts: ConnextClientOptions) {
+    super()
     this.password = opts.password || ''
 
     ////////////////////////////////////////
@@ -78,7 +68,8 @@ export default class Wallet implements IWallet {
       // this.signer = (new eth.providers.Web3Provider((opts.web3.currentProvider as any))).getSigner();
       this.web3 = opts.web3
       this.address = opts.user.toLowerCase()
-      console.log(`Signing w web3 ${typeof this.signer}... ${this.address}`)
+      this.web3.eth.defaultAccount = this.address
+      console.log(`Signing w web3 for user: ${this.address}`)
 
     // Fallback: create new random mnemonic
     } else {
@@ -90,40 +81,46 @@ export default class Wallet implements IWallet {
 
   }
 
-  // Methods
-
-  getAddress = () => this.address
+  async getAddress() {
+    return this.address
+  }
 
   async signTransaction(tx: any) {
+    tx.to = await tx.to // Why is this sometimes a promise?!
     if (this.signer) {
       return await this.signer.sign(tx)
-    } else if (this.web3) {
+    }
+    if (this.web3) {
       return await (
-        this.web3.eth.personal
-          ? this.web3.eth.personal.signTransaction(tx, this.address)
-          : this.web3.eth.signTransaction(tx, this.address)
+        this.web3.eth.signTransaction
+          ? (this.web3.eth.signTransaction as any)(tx)
+          : this.web3.eth.personal.signTransaction(tx, this.password)
       )
     }
   }
 
   async signMessage(message: string) {
-    console.log(`signMessage activated`)
     if (this.signer) {
       return await this.signer.signMessage(message)
-    } else if (this.web3) {
+    }
+    if (this.web3) {
       return await (
-        this.web3.eth.personal
-          ? this.web3.eth.personal.sign(message, this.address, this.password)
-          : this.web3.eth.sign(message, this.address, console.log)
+        this.web3.eth.sign
+          ? this.web3.eth.sign(message, this.address)
+          : this.web3.eth.personal.sign(message, this.address, this.password)
       )
     }
   }
 
-
   async sendTransaction(tx: any) {
-    if (this.signer) { return await this.signer.signTransaction(tx) }
-    else
-    if (this.web3) { return await this.web3.eth.sendTransaction(tx) }
+    const signedTx = await this.signTransaction(tx)
+    const toSend = signedTx.raw ? signedTx.raw : signedTx
+    if (this.provider) {
+      return await this.provider.sendTransaction(toSend)
+    }
+    if (this.web3) {
+      return await this.web3.eth.sendSignedTransaction(toSend)
+    }
   }
 
 }

@@ -131,9 +131,8 @@ export default class DepositController extends AbstractController {
         sendArgs.gas = toBN(Math.ceil(this.connext.contract.gasMultiple * gasEstimate))
         await call.send(sendArgs)
       }
-      console.log('Sending user authorized deposit to chain.')
       const tx = await this.connext.contract.userAuthorizedUpdate(state)
-      await tx.awaitEnterMempool()
+      console.log(`Sent user authorized deposit to chain: ${(tx as any).hash}`)
     } catch (e) {
       const currentChannel = await this.connext.contract.getChannelDetails(prev.user)
       if (update.txCount && currentChannel.txCountGlobal >= update.txCount) {
