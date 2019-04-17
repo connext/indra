@@ -76,6 +76,19 @@ export default class Wallet extends eth.Signer {
     return this.address
   }
 
+  async signMessage(message: string) {
+    if (this.signer) {
+      return await this.signer.signMessage(eth.utils.arrayify(message))
+    }
+    if (this.web3) {
+      return await (
+        this.web3.eth.sign
+          ? this.web3.eth.sign(message, this.address)
+          : this.web3.eth.personal.sign(message, this.address, this.password)
+      )
+    }
+  }
+
   async signTransaction(tx: any) {
     tx.to = await tx.to // Why is this sometimes a promise?!
     if (this.signer) {
@@ -86,19 +99,6 @@ export default class Wallet extends eth.Signer {
         this.web3.eth.signTransaction
           ? (this.web3.eth.signTransaction as any)(tx)
           : this.web3.eth.personal.signTransaction(tx, this.password)
-      )
-    }
-  }
-
-  async signMessage(message: string) {
-    if (this.signer) {
-      return await this.signer.signMessage(eth.utils.arrayify(message))
-    }
-    if (this.web3) {
-      return await (
-        this.web3.eth.sign
-          ? this.web3.eth.sign(message, this.address)
-          : this.web3.eth.personal.sign(message, this.address, this.password)
       )
     }
   }

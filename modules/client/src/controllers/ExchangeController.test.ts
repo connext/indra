@@ -21,7 +21,6 @@ describe('ExchangeController: unit tests', () => {
       balanceToken: [50, 0],
     })
     mockStore.setExchangeRate({ 'USD': '5' })
-    console.log(`user: ${user}`)
     connext = new MockConnextInternal({ user, store: mockStore.createStore() })
     await connext.start()
     await connext.exchangeController.exchange('10', 'wei')

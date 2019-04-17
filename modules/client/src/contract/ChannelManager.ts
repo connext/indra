@@ -44,7 +44,6 @@ export class ChannelManager implements IChannelManager {
   constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
     this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet) as any
-    console.log(`contract address: ${this.cm.address}`)
     this.gasMultiple = gasMultiple
     this.defaultSendArgs = { value: 0 } as any
   }
@@ -62,7 +61,7 @@ export class ChannelManager implements IChannelManager {
 
   async _send(method: string, args: any, overrides: any) {
     const gasEstimate = await this.cm.estimate[method](...args, overrides)
-    overrides.gasLimit = toBN(Math.ceil(gasEstimate * this.gasMultiple))
+    overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.gasMultiple))
     return await this.cm[method](...args, overrides)
   }
 
@@ -89,14 +88,17 @@ export class ChannelManager implements IChannelManager {
         state.pendingDepositTokenUser,
         state.pendingWithdrawalTokenUser,
       ],
-      [state.txCountGlobal, state.txCountChain],
+      [
+        state.txCountGlobal,
+        state.txCountChain,
+      ],
       state.threadRoot,
       state.threadCount,
       state.timeout,
       state.sigHub!,
     ]
     return await this._send('userAuthorizedUpdate', args, Object.assign({}, this.defaultSendArgs, {
-      value: state.pendingDepositWeiUser
+      value: eth.utils.bigNumberify(state.pendingDepositWeiUser)
     }))
   }
 
