@@ -6,21 +6,17 @@ import { toBN } from 'web3-utils';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
-const user = mkAddress('0x7fab')
-const receiver = mkAddress('0x22c')
-const receiver2 = mkAddress('0x22c44')
-const hubAddress = mkAddress('0xfc5')
-
-const mockHub = new MockHub()
-let mockStore: MockStore = new MockStore()
-let connext: MockConnextInternal
-
 describe("BuyController: assignPaymentTypes", () => {
+  let connext: MockConnextInternal
+
+  const user = mkAddress('0x7fab')
+  const receiver = mkAddress('0x22c')
+  const mockStore: MockStore = new MockStore()
+
   beforeEach(async () => {
     connext = new MockConnextInternal({ 
       user, 
       store: mockStore.createStore(), 
-      hub: mockHub 
     })
   })
 
@@ -92,7 +88,7 @@ describe("BuyController: assignPaymentTypes", () => {
 
   it("should assign a PT_OPTIMISTIC if the type is not provided, and the hub can handle forwarding the payment (below max)", async () => {
     const payment: PurchasePaymentRequest = {
-      recipient: receiver2,
+      recipient: receiver,
       amount: {
         amountToken: '14',
         amountWei: '0',
@@ -108,21 +104,26 @@ describe("BuyController: assignPaymentTypes", () => {
 })
 
 describe('BuyController: unit tests', () => {
+  const user = mkAddress('0x7fab')
+  const receiver = mkAddress('0x22c')
+  const receiver2 = mkAddress('0x22c44')
+  const hubAddress = mkAddress('0xfc5')
+  let connext: MockConnextInternal
+  let mockStore: MockStore
+
   beforeEach(async () => {
+    mockStore = new MockStore()
     mockStore.setChannel({
       user,
       balanceWei: [5, 5],
       balanceToken: [10, 10],
     })
-    connext = new MockConnextInternal({ 
-      user, 
-      store: mockStore.createStore(), 
-      hub: mockHub 
-    })
+    const mockHub = new MockHub()
+    connext = new MockConnextInternal({ user, store: mockStore.createStore(), hub: mockHub })
   })
 
   // channel and custodial payments
-  it('should work for PT_CHANNEL user to hub token payments', async () => {
+  it('should work for `PT_CHANNEL` user to hub token payments', async () => {
     await connext.start()
     await connext.buyController.buy({
       meta: {},
