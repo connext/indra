@@ -5,7 +5,7 @@ import { WithdrawalParameters } from '../types';
 global.fetch = require('node-fetch-polyfill');
 
 describe('WithdrawalController: unit tests', () => {
-  const user = mkAddress('0xUUU')
+  const user = mkAddress('0xAAA')
   let connext: MockConnextInternal
   const mockStore = new MockStore()
 
@@ -27,7 +27,7 @@ describe('WithdrawalController: unit tests', () => {
 
     const params: WithdrawalParameters = {
       exchangeRate: '5',
-      recipient: mkAddress('0xAAA'),
+      recipient: mkAddress('0xBBB'),
       tokensToSell: '50',
       withdrawalWeiUser: '5',
       weiToSell: '0',
@@ -43,7 +43,7 @@ describe('WithdrawalController: unit tests', () => {
       reason: 'ProposePendingWithdrawal',
       args: {
         exchangeRate: '5',
-        recipient: mkAddress('0xAAA'),
+        recipient: mkAddress('0xBBB'),
         tokensToSell: '50',
         weiToSell: '0',
         targetWeiUser: '0',

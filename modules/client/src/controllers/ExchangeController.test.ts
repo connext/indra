@@ -4,7 +4,7 @@ import { mkAddress } from '../testing';
 global.fetch = require('node-fetch-polyfill');
 
 describe('ExchangeController: unit tests', () => {
-  const user = mkAddress('0xUUU')
+  const user = mkAddress('0xAAA')
   let connext: MockConnextInternal
   const mockStore = new MockStore()
 
@@ -21,6 +21,7 @@ describe('ExchangeController: unit tests', () => {
       balanceToken: [50, 0],
     })
     mockStore.setExchangeRate({ 'USD': '5' })
+    console.log(`user: ${user}`)
     connext = new MockConnextInternal({ user, store: mockStore.createStore() })
     await connext.start()
     await connext.exchangeController.exchange('10', 'wei')

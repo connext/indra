@@ -1,3 +1,4 @@
+import * as eth from 'ethers';
 import Web3 from 'web3'
 import { EventLog } from 'web3-core';
 import { createStore } from 'redux'
@@ -15,7 +16,7 @@ import {
   PartialSignedOrSuccinctThread,
 } from '.'
 import { ConnextClientOptions, ConnextInternal } from '../Connext'
-import { IChannelManager, IWeb3TxWrapper } from '../contract/ChannelManager'
+import { IChannelManager } from '../contract/ChannelManager'
 import { toBN } from '../helpers/bn'
 import { IHubAPIClient } from '../Hub'
 import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
@@ -59,6 +60,25 @@ import {
   WithdrawalParameters,
 } from '../types'
 import Wallet from '../Wallet';
+import { Transaction } from 'ethers/utils/transaction';
+
+const createTx = (opts?: any): Transaction => {
+  const defaultTx = {
+    hash: '0xabc123',
+    to: '0xabc123',
+    from: '0xabc123',
+    nonce: 1,
+    gasLimit: eth.utils.bigNumberify('0x1'),
+    gasPrice: eth.utils.bigNumberify('0x2'),
+    data: '0x',
+    value: eth.utils.bigNumberify('0x100'),
+    chainId: '0x1',
+    r: '0xabc123',
+    s: '0xabc123',
+    v: 0,
+  }
+  return Object.assign(defaultTx, opts)
+}
 
 export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager
@@ -131,28 +151,6 @@ export class MockConnextInternal extends ConnextInternal {
 
 }
 
-// export class MockWeb3 extends Web3 {
-//   async getBlockNumber(): Promise<number> {
-//     return 500
-//   }
-
-//   async getBlock(blockNum: number): Promise<any> {
-//     return {
-//       timestamp: Math.floor(Date.now() / 1000)
-//     }
-//   }
-// }
-
-export class MockWeb3TxWrapper extends IWeb3TxWrapper {
-  awaitEnterMempool() {
-    return new Promise(res => setTimeout(res)) as Promise<void>
-  }
-
-  awaitFirstConfirmation() {
-    return new Promise(res => setTimeout(res)) as Promise<void>
-  }
-}
-
 export class MockChannelManager implements IChannelManager {
   contractMethodCalls = [] as any[]
 
@@ -181,7 +179,7 @@ export class MockChannelManager implements IChannelManager {
       name: 'userAuthorizedUpdate',
       args: [state],
     })
-    return new MockWeb3TxWrapper()
+    return createTx()
   }
 
   async getPastEvents(user: Address, eventName: string, fromBlock: number) {
@@ -192,31 +190,31 @@ export class MockChannelManager implements IChannelManager {
     throw new Error('TODO: mock getChannelDetails')
   }
 
-  async startExit(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async startExit(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock startExit')
   }
-  async startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async startExitWithUpdate(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock startExitWithUpdate')
   }
-  async emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async emptyChannelWithChallenge(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock emptyChannelWithChallenge')
   }
-  async emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async emptyChannel(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock emptyChannel')
   }
-  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction> {
     throw new Error('TODO: mock startExitThread')
   }
-  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<Transaction> {
     throw new Error('TODO: mock startExitThreadWithUpdate')
   }
-  async challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper> {
+  async challengeThread(state: ChannelState, threadState: ThreadState): Promise<Transaction> {
     throw new Error('TODO: mock challengeThread')
   }
-  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction> {
     throw new Error('TODO: mock emptyThread')
   }
-  async nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async nukeThreads(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock nukeThreads')
   }
 }

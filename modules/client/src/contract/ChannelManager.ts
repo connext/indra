@@ -11,6 +11,7 @@ import {
   ThreadState
 } from '../types'
 import Wallet from '../Wallet';
+import { Transaction } from 'ethers/utils/transaction';
 
 // To recreate typechain & abi:
 //  - npm run build # in contracts module
@@ -18,81 +19,25 @@ import Wallet from '../Wallet';
 //  - cp contracts/build/contracts/ChannelManager.json client/src/contract/ChannelManagerAbi.ts
 //  - # extract abi & add "export default" on first line 
 
-////////////////////////////////////////
-// Interfaces
-
-export abstract class IWeb3TxWrapper {
-  abstract awaitEnterMempool(): Promise<void>
-  abstract awaitFirstConfirmation(): Promise<void>
-}
-
 export interface IChannelManager {
   gasMultiple: number
-  userAuthorizedUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
+  userAuthorizedUpdate(state: ChannelState): Promise<Transaction>
   getPastEvents(user: Address, eventName: string, fromBlock: number): Promise<EventLog[]>
   getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
-  startExit(state: ChannelState): Promise<IWeb3TxWrapper>
-  startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper>
-  emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper>
-  emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper>
-  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper>
-  emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper>
-  nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper>
-}
-
-////////////////////////////////////////
-// Implementations
-
-/**
- * A wrapper around the Web3 PromiEvent
- * (https://web3js.readthedocs.io/en/1.0/callbacks-promises-events.html#promievent)
- * that makes the different `await` behaviors explicit.
- *
- * For example:
- *
- *   > const tx = channelManager.userAuthorizedUpdate(...)
- *   > await tx.awaitEnterMempool()
- */
-export class Web3TxWrapper extends IWeb3TxWrapper {
-  private tx: any
-  private address: string
-  private name: string
-  private onTxHash = new ResolveablePromise<void>()
-  private onFirstConfirmation = new ResolveablePromise<void>()
-
-  constructor(address: string, name: string, tx: any) {
-    super()
-    this.address = address
-    this.name = name
-    this.tx = tx
-
-    tx.once('transactionHash', (hash: string) => {
-      console.log(`Sending ${this.name} to ${this.address}: in mempool: ${hash}`)
-      this.onTxHash.resolve()
-    })
-
-    tx.once('confirmation', (confirmation: number, receipt: any) => {
-      console.log(`Sending ${this.name} to ${this.address}: confirmed:`, receipt)
-      this.onFirstConfirmation.resolve()
-    })
-
-    tx.on('error', (error: any) => { console.warn('Something may have gone wrong with your transaction') })
-  }
-
-  awaitEnterMempool(): Promise<void> {
-    return this.onTxHash as any
-  }
-
-  awaitFirstConfirmation(): Promise<void> {
-    return this.onFirstConfirmation as any
-  }
+  startExit(state: ChannelState): Promise<Transaction>
+  startExitWithUpdate(state: ChannelState): Promise<Transaction>
+  emptyChannelWithChallenge(state: ChannelState): Promise<Transaction>
+  emptyChannel(state: ChannelState): Promise<Transaction>
+  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction>
+  startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<Transaction>
+  challengeThread(state: ChannelState, threadState: ThreadState): Promise<Transaction>
+  emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction>
+  nukeThreads(state: ChannelState): Promise<Transaction>
 }
 
 export class ChannelManager implements IChannelManager {
   address: string
-  cm: any//TypechainChannelManager
+  cm: any//TypechainChannelManager // TODO: put back?
   gasMultiple: number
   defaultSendArgs: any
 
@@ -118,13 +63,12 @@ export class ChannelManager implements IChannelManager {
   async _send(method: string, args: any, overrides: any) {
     const gasEstimate = await this.cm.estimate[method](...args, overrides)
     overrides.gasLimit = toBN(Math.ceil(gasEstimate * this.gasMultiple))
-    return this.cm[method](...args, overrides)
+    return await this.cm[method](...args, overrides)
   }
 
   async userAuthorizedUpdate(state: ChannelState) {
-    // deposit on the contract
     const args = [
-      state.recipient, // recipient
+      state.recipient,
       [
         state.balanceWeiHub,
         state.balanceWeiUser,
@@ -158,7 +102,7 @@ export class ChannelManager implements IChannelManager {
 
   async startExit(state: ChannelState) {
     const args = [ state.user ]
-    return this._send('startExit', args, this.defaultSendArgs)
+    return await this._send('startExit', args, this.defaultSendArgs)
   }
 
   async startExitWithUpdate(state: ChannelState) {
@@ -191,7 +135,7 @@ export class ChannelManager implements IChannelManager {
       state.sigHub as string,
       state.sigUser as string,
     ]
-    return this._send('startExitWithUpdate', args, this.defaultSendArgs)
+    return await this._send('startExitWithUpdate', args, this.defaultSendArgs)
   }
 
   async emptyChannelWithChallenge(state: ChannelState) {
@@ -224,12 +168,12 @@ export class ChannelManager implements IChannelManager {
       state.sigHub as string,
       state.sigUser as string,
     ]
-    return this._send('emptyChannelWithChallenge', args, this.defaultSendArgs)
+    return await this._send('emptyChannelWithChallenge', args, this.defaultSendArgs)
   }
 
   async emptyChannel(state: ChannelState) {
     const args = [ state.user ]
-    return this._send('emptyChannel', args, this.defaultSendArgs)
+    return await this._send('emptyChannel', args, this.defaultSendArgs)
   }
 
   async startExitThread(state: ChannelState, threadState: ThreadState, proof: any) {
@@ -243,7 +187,7 @@ export class ChannelManager implements IChannelManager {
       proof,
       threadState.sigA,
     ]
-    return this._send('startExitThread', args, this.defaultSendArgs)
+    return await this._send('startExitThread', args, this.defaultSendArgs)
   }
 
   async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any) {
@@ -260,7 +204,7 @@ export class ChannelManager implements IChannelManager {
       threadUpdateState.txCount,
       threadUpdateState.sigA
     ]
-    return this._send('startExitThreadWithUpdate', args, this.defaultSendArgs)
+    return await this._send('startExitThreadWithUpdate', args, this.defaultSendArgs)
   }
 
   async challengeThread(state: ChannelState, threadState: ThreadState) {
@@ -273,7 +217,7 @@ export class ChannelManager implements IChannelManager {
       threadState.txCount,
       threadState.sigA
     ]
-    return this._send('challengeThread', args, this.defaultSendArgs)
+    return await this._send('challengeThread', args, this.defaultSendArgs)
   }
 
   async emptyThread(state: ChannelState, threadState: ThreadState, proof: any) {
@@ -287,14 +231,14 @@ export class ChannelManager implements IChannelManager {
       proof,
       threadState.sigA,
     ]
-    return this._send('emptyThread', args, this.defaultSendArgs)
+    return await this._send('emptyThread', args, this.defaultSendArgs)
   }
 
   async nukeThreads(state: ChannelState) {
     const args = [
       state.user
     ]
-    return this._send('nukeThreads', args, this.defaultSendArgs)
+    return await this._send('nukeThreads', args, this.defaultSendArgs)
   }
 
   async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
