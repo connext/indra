@@ -437,7 +437,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'OptimisticPaymentDao',
       'ChannelsDao',
       'PaymentsService',
-    ]
+    ],
+    isSingleton: true
   },
 
   ChannelsService: {
