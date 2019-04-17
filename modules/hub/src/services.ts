@@ -426,17 +426,20 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       opPaymentDao: OptimisticPaymentDao,
       channelsDao: ChannelsDao,
       paymentsService: PaymentsService,
+      channelsService: ChannelsService
     ) => new OptimisticPaymentsService(
       db, 
       opPaymentDao, 
       channelsDao, 
       paymentsService,
+      channelsService
     ),
     dependencies: [
       'DBEngine',
       'OptimisticPaymentDao',
       'ChannelsDao',
       'PaymentsService',
+      'ChannelsService'
     ],
     isSingleton: true
   },
