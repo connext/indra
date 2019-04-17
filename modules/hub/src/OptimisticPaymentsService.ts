@@ -6,6 +6,9 @@ import { convertChannelState, convertPayment, PurchasePayment } from "./vendor/c
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { OptimisticPurchasePaymentRow } from "./domain/OptimisticPayment";
 import PaymentsService from "./PaymentsService";
+import { maybe } from "./util";
+import ChannelsService from "./ChannelsService";
+import { Big } from "./util/bigNumber";
 
 const LOG = log('OptimisticPaymentsService')
 
@@ -19,6 +22,7 @@ export class OptimisticPaymentsService {
     private opPaymentDao: OptimisticPaymentDao,
     private channelsDao: ChannelsDao,
     private paymentsService: PaymentsService,
+    private channelsService: ChannelsService
   ) {
     this.poller = new Poller({
       name: 'OptimisticPaymentsService',
@@ -60,7 +64,14 @@ export class OptimisticPaymentsService {
         if (
           !sufficientCollateral('Token') || !sufficientCollateral('Wei')
         ) {
-          // if it does not, wait for next polling
+          // if it does not, collateralize + wait for next polling
+          const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(
+            p.recipient, 
+            Big(p.amount.amountToken)
+          ))
+          if (err) {
+            LOG.error(`Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`)
+          }
           continue
         }
 
