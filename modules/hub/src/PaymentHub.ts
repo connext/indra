@@ -107,7 +107,8 @@ export default class PaymentHub {
   }
 
   public async collateralizeChannel(user: string, amount: BigNumber) {
-    const channelsService = this.container.resolve<ChannelsService>('ChannelsServiceSingleton')
+    const context = new Context()
+    const channelsService = this.container.resolve<ChannelsService>('ChannelsService', { 'Context': context })
     await channelsService.doCollateralizeIfNecessary(user, amount)
   }
 
