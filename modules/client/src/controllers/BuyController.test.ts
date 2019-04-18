@@ -1,6 +1,6 @@
+import { assert, mkAddress, mkHash } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
 import { PaymentArgs } from '../types';
-import { mkAddress, mkHash, assert } from '../testing';
 import { emptyAddress } from '../Utils';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');

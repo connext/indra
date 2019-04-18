@@ -1,6 +1,5 @@
+import { assert, getThreadState, mkAddress, parameterizedTests } from '../testing';
 import { MockStore, MockConnextInternal, MockHub } from '../testing/mocks';
-import { mkAddress, getThreadState } from '../testing';
-import { assert, parameterizedTests } from '../testing'
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
@@ -126,7 +125,7 @@ describe.skip('StateUpdateController: invalidation handling', () => {
       store: mockStore.createStore(),
     })
 
-    connext.opts.web3.eth.getBlock = async () => {
+    connext.provider.getBlock = async () => {
       return {
         timestamp: tc.blockTimestamp,
       } as any

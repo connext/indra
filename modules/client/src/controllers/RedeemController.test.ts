@@ -1,7 +1,6 @@
-import { MockConnextInternal } from '../testing/mocks';
+import { ethers as eth } from 'ethers';
 import { assert } from '../testing';
-const w3utils = require('web3-utils')
-
+import { MockConnextInternal } from '../testing/mocks';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
@@ -15,7 +14,7 @@ describe('Redeem Controller: unit tests', () => {
 
   it('should work even if redeemer has no channel', async () => {
     const secret = connext.generateSecret()
-    assert.isTrue(w3utils.isHex(secret))
+    assert.isTrue(eth.utils.isHexString(secret))
     const res = await connext.redeemController.redeem(secret)
     assert.ok(res.purchaseId)
 

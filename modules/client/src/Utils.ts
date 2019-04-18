@@ -17,13 +17,13 @@ import {
  *********** UTIL FNS ************
  *********************************/
 
-export const emptyAddress = '0x0000000000000000000000000000000000000000'
-export const emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
+export const emptyAddress = eth.constants.AddressZero
+export const emptyRootHash = eth.constants.HashZero
 
 // define the utils functions
 export class Utils {
-  emptyAddress = '0x0000000000000000000000000000000000000000'
-  emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
+  emptyAddress = eth.constants.AddressZero
+  emptyRootHash = eth.constants.HashZero
 
   public createDepositRequestProposalHash(
     req: Payment,

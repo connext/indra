@@ -1,8 +1,8 @@
 import { ethers as eth } from 'ethers';
-import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
 import { assertUnreachable } from '../lib/utils';
+import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
 import { emptyAddress } from '../Utils';
 
 // **********************************************//

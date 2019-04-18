@@ -27,7 +27,7 @@ import {
   UnsignedThreadState,
   WithdrawalArgsBN,
 } from './types';
-import { Utils, emptyAddress } from './Utils';
+import { Utils } from './Utils';
 import { Validator } from './validator';
 
 const sampleAddress = "0x0bfa016abfa8f627654b4989da4620271dc77b1c"
@@ -1049,7 +1049,7 @@ describe('validator', () => {
         name: 'should return a string if the contract address has changed from initial state',
         prev,
         initialThreadStates,
-        args: {...args, contractAddress: emptyAddress},
+        args: {...args, contractAddress: eth.constants.AddressZero },
         sigErr: false,
         message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"contractAddress"',
       },

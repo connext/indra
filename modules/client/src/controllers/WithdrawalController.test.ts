@@ -1,5 +1,5 @@
-import { MockStore, MockConnextInternal } from '../testing/mocks';
 import { mkAddress } from '../testing';
+import { MockConnextInternal, MockStore } from '../testing/mocks';
 import { WithdrawalParameters } from '../types';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');

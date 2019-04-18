@@ -1,10 +1,21 @@
-import getTxCount from '../lib/getTxCount'
-import { Payment, convertDeposit, convertChannelState, ChannelState, UpdateRequestTypes, SyncResult, UpdateRequest, ChannelStateUpdate, convertPayment } from '../types'
-import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
-import { AbstractController } from "./AbstractController";
-import { validateTimestamp } from "../lib/timestamp";
+import { ethers as eth } from 'ethers';
+import { AbstractController } from './AbstractController';
 import { toBN } from '../helpers/bn';
-const tokenAbi = require("human-standard-token-abi")
+import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
+import getTxCount from '../lib/getTxCount';
+import { validateTimestamp } from '../lib/timestamp';
+import {
+  ChannelState,
+  ChannelStateUpdate,
+  convertDeposit,
+  convertChannelState,
+  convertPayment,
+  Payment,
+  SyncResult,
+  UpdateRequest,
+  UpdateRequestTypes,
+} from '../types'
+const tokenAbi = require('human-standard-token-abi')
 
 /*
  * Rule:
@@ -119,17 +130,16 @@ export default class DepositController extends AbstractController {
     try {
       if (args.depositTokenUser !== '0') {
         console.log(`Approving transfer of ${args.depositTokenUser} tokens`)
-        const token = new this.connext.opts.web3.eth.Contract(
+        const token = new eth.Contract(
+          this.connext.opts.tokenAddress!,
           tokenAbi,
-          this.connext.opts.tokenAddress
+          this.connext.wallet,
         )
-        let sendArgs: any = {
-          from: prev.user,
-        }
-        const call = token.methods.approve(prev.contractAddress, args.depositTokenUser)
-        const gasEstimate = await call.estimateGas(sendArgs)
-        sendArgs.gas = toBN(Math.ceil(this.connext.contract.gasMultiple * gasEstimate))
-        await call.send(sendArgs)
+        const gasMultiple = eth.utils.bigNumberify(this.connext.contract.gasMultiple)
+        const overrides: any = { }
+        const gasEstimate = await token.estimate.approve(prev.contractAddress, args.depositTokenUser)
+        overrides.gasLimit = gasEstimate.mul(gasMultiple)
+        await token.approve(prev.contractAddress, args.depositTokenUser, overrides)
       }
       const tx = await this.connext.contract.userAuthorizedUpdate(state)
       console.log(`Sent user authorized deposit to chain: ${(tx as any).hash}`)

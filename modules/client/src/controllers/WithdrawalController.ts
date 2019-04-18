@@ -1,11 +1,16 @@
-import { WithdrawalParameters, convertChannelState, convertWithdrawalParameters, convertWithdrawal } from '../types'
-import { AbstractController } from './AbstractController'
-import { getChannel } from '../lib/getChannel'
-import { validateExchangeRate, } from './ExchangeController';
-import { validateTimestamp } from '../lib/timestamp';
-import getTxCount from '../lib/getTxCount';
-import { toBN } from '../helpers/bn';
 import { isValidAddress } from 'ethereumjs-util';
+import { AbstractController } from './AbstractController'
+import { validateExchangeRate, } from './ExchangeController';
+import { toBN } from '../helpers/bn';
+import { getChannel } from '../lib/getChannel'
+import getTxCount from '../lib/getTxCount';
+import { validateTimestamp } from '../lib/timestamp';
+import {
+  convertChannelState,
+  convertWithdrawal,
+  convertWithdrawalParameters,
+  WithdrawalParameters
+} from '../types'
 
 /* NOTE: the withdrawal parameters have optional withdrawal tokens and wei to
  * sell values for completeness. In the BOOTY case, there is no need for the

@@ -1,8 +1,5 @@
 import * as eth from 'ethers';
 import { default as ChannelManagerAbi } from './ChannelManagerAbi'
-import { ChannelManager as TypechainChannelManager } from './ChannelManagerTypechain'
-import { toBN } from '../helpers/bn'
-import { ResolveablePromise } from "../lib/utils";
 import {
   ChannelManagerChannelDetails,
   ChannelState,
@@ -13,9 +10,8 @@ import {
 } from '../types'
 import Wallet from '../Wallet';
 
-// To recreate typechain & abi:
+// To recreate abi:
 //  - npm run build # in contracts module
-//  - cp contracts/build/tx/ChannelManager.d.ts client/src/contract/ChannelManagerTypechain.d.ts
 //  - cp contracts/build/contracts/ChannelManager.json client/src/contract/ChannelManagerAbi.ts
 //  - # extract abi & add "export default" on first line 
 
@@ -72,7 +68,7 @@ export class ChannelManager implements IChannelManager {
 
   async _send(method: string, args: any, overrides: any) {
     const gasEstimate = await this.cm.estimate[method](...args, overrides)
-    overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.gasMultiple))
+    overrides.gasLimit = gasEstimate.mul(eth.utils.bigNumberify(this.gasMultiple))
     return await this.cm[method](...args, overrides)
   }
 

@@ -1,8 +1,8 @@
-import { MockConnextInternal, MockStore } from '../testing/mocks'
-import { mkAddress, assert } from '../testing';
 import { PaymentArgs, ThreadState } from '@src/types';
-import { getChannel } from '../lib/getChannel';
 import { toBN } from '../helpers/bn';
+import { getChannel } from '../lib/getChannel';
+import { assert, mkAddress } from '../testing';
+import { MockConnextInternal, MockStore } from '../testing/mocks'
 
 describe('ThreadController: unit tests', () => {
     let connext: MockConnextInternal

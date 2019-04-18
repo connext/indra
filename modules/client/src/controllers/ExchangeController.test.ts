@@ -1,5 +1,5 @@
-import { MockStore, MockConnextInternal } from '../testing/mocks';
 import { mkAddress } from '../testing';
+import { MockStore, MockConnextInternal } from '../testing/mocks';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 

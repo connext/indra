@@ -1,4 +1,3 @@
-// import { WorkerStore } from '../WorkerState/WorkerState'
 import { AbstractController } from './AbstractController'
 import getTxCount from '../lib/getTxCount';
 

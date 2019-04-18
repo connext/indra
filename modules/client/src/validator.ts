@@ -1145,7 +1145,6 @@ export class Validator {
     );
     */
 
-    // TODO: WARNING UNSAFE USE OF toString()!!! follow issue here: https://github.com/ethereum/web3.js/issues/2675
     return {
       user: raw.user,
       sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,

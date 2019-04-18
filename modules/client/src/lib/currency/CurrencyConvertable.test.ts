@@ -1,3 +1,4 @@
+import { BigNumber } from 'bignumber.js'
 import { expect } from 'chai'
 import * as redux from 'redux'
 import CurrencyConvertable from './CurrencyConvertable'
@@ -8,9 +9,8 @@ import { default as getExchangeRates } from '../getExchangeRates'
 import { ConnextState } from '../../state/store'
 import { reducers } from '../../state/reducers'
 import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
-import { BigNumber } from 'bignumber.js'
 import { MockConnextInternal, MockStore } from '../../testing/mocks';
-import toFinney from '../web3/toFinney';
+import { toFinney } from '../constants';
 
 describe('CurrencyConvertable', () => {
 

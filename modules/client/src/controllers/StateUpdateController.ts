@@ -1,15 +1,22 @@
-import { ConnextState } from '../state/store'
-import { ConnextStore } from '../state/store'
-import { SyncResult, convertExchange, UpdateRequest, UnsignedChannelState, convertChannelState, ThreadState } from '../types'
-import { ChannelState, UpdateRequestTypes } from '../types'
-import { AbstractController } from './AbstractController'
-import * as actions from '../state/actions'
 import { Unsubscribe } from 'redux'
 import { Action } from 'typescript-fsa/lib'
-import { validateTimestamp } from '../lib/timestamp';
+import { AbstractController } from './AbstractController'
 import { validateExchangeRate } from './ExchangeController';
-import { assertUnreachable } from '../lib/utils'
 import { hasPendingOps } from '../hasPendingOps'
+import { validateTimestamp } from '../lib/timestamp';
+import { assertUnreachable } from '../lib/utils'
+import * as actions from '../state/actions'
+import { ConnextState, ConnextStore } from '../state/store'
+import {
+  ChannelState,
+  convertChannelState,
+  convertExchange,
+  SyncResult,
+  UnsignedChannelState,
+  UpdateRequest,
+  UpdateRequestTypes,
+  ThreadState,
+} from '../types'
 
 type StateUpdateHandlers = {
   [Type in keyof UpdateRequestTypes]: (

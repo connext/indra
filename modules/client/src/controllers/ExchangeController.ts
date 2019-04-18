@@ -1,13 +1,13 @@
-import getExchangeRates from '../lib/getExchangeRates'
-import * as actions from '../state/actions'
-import { AbstractController } from './AbstractController'
-import { ConnextStore } from '../state/store'
-import { Poller } from '../lib/poller/Poller';
-import { ConnextInternal } from '../Connext';
-import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
-import getTxCount from '../lib/getTxCount';
 import BigNumber from 'bignumber.js';
+import { AbstractController } from './AbstractController'
+import { ConnextInternal } from '../Connext';
 import { toBN } from '../helpers/bn';
+import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
+import getExchangeRates from '../lib/getExchangeRates'
+import getTxCount from '../lib/getTxCount';
+import { Poller } from '../lib/poller/Poller';
+import * as actions from '../state/actions'
+import { ConnextStore } from '../state/store'
 
 const ONE_MINUTE = 1000 * 60
 

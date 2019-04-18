@@ -53,8 +53,8 @@ export interface ConnextClientOptions {
   mnemonic?: string
   privateKey?: string
   password?: string
-  web3: Web3 // TODO: make optional
   user?: string
+  web3?: Web3
 
   // Functions used to save/load the persistent portions of its internal state
   loadState?: () => Promise<string | null>
@@ -181,6 +181,7 @@ export class ConnextInternal extends ConnextClient {
   validator: Validator
   contract: IChannelManager
   wallet: Wallet
+  provider: any
 
   // Controllers
   syncController: SyncController
@@ -202,6 +203,7 @@ export class ConnextInternal extends ConnextClient {
     // leave it null until then.
     this.store = null as any
     this.wallet = wallet
+    this.provider = wallet.provider
 
     console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
@@ -215,7 +217,7 @@ export class ConnextInternal extends ConnextClient {
     opts.contractAddress = opts.contractAddress!.toLowerCase()
 
     this.contract = opts.contract || new ChannelManager(wallet, opts.contractAddress, opts.gasMultiple || 1.5)
-    this.validator = new Validator(opts.hubAddress, wallet.provider, this.contract.abi)
+    this.validator = new Validator(opts.hubAddress, this.provider, this.contract.abi)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)

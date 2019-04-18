@@ -1,5 +1,5 @@
-import { MockConnextInternal, patch } from '../testing/mocks';
 import { assert, } from '../testing/index';
+import { MockConnextInternal, patch } from '../testing/mocks';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 

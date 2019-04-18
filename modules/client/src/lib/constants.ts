@@ -8,7 +8,7 @@ import { CurrencyType } from '../state/ConnextState/CurrencyTypes'
 // This needs to be cleaned up! Please clean this up!
 // !!! WARNING !!!
 
-const toFinney = (n: number|string) => eth.utils.parseUnits(String(n), 'finney')
+export const toFinney = (n: number|string) => eth.utils.parseUnits(String(n), 'finney')
 
 // TODO string these
 export const GWEI = new BN('1000000000')

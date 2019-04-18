@@ -1,5 +1,4 @@
 import * as eth from 'ethers';
-import Web3 from 'web3'
 import { createStore } from 'redux'
 import {
   assert,
@@ -108,7 +107,7 @@ export class MockConnextInternal extends ConnextInternal {
       user: mkAddress('0x123'),
       contractAddress: mkAddress('0xccc'),
       contract: new MockChannelManager(),
-      web3: new Web3('http://localhost:8545'),
+      ethUrl: 'http://localhost:8545',
       hub: new MockHub(),
       hubAddress: mkAddress('0xhhh'),
       store,
@@ -116,13 +115,14 @@ export class MockConnextInternal extends ConnextInternal {
     } as any
 
     const wallet = new Wallet(moreOpts)
+    const provider = new eth.providers.JsonRpcProvider(moreOpts.ethUrl)
+
     super(moreOpts , wallet)
 
     this.mockContract = this.contract as MockChannelManager
     this.mockHub = this.hub as MockHub
 
     // stub out actual sig recovery methods, only test presence
-    // sig recover fns with web3 testing in `utils.test`
     this.validator.assertChannelSigner = (channelState: ChannelState, signer: "user" | "hub" = "user"): void => { return }
 
     this.validator.assertThreadSigner = (thread: ThreadState): void => { return }
