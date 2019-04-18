@@ -1,17 +1,17 @@
 import * as eth from 'ethers';
-import { EventLog } from 'web3-core';
 import { default as ChannelManagerAbi } from './ChannelManagerAbi'
 import { ChannelManager as TypechainChannelManager } from './ChannelManagerTypechain'
 import { toBN } from '../helpers/bn'
 import { ResolveablePromise } from "../lib/utils";
 import {
-  Address,
   ChannelManagerChannelDetails,
   ChannelState,
-  ThreadState
+  Event,
+  Provider,
+  ThreadState,
+  Transaction,
 } from '../types'
 import Wallet from '../Wallet';
-import { Transaction } from 'ethers/utils/transaction';
 
 // To recreate typechain & abi:
 //  - npm run build # in contracts module
@@ -21,8 +21,8 @@ import { Transaction } from 'ethers/utils/transaction';
 
 export interface IChannelManager {
   gasMultiple: number
+  getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<Event[]>
   userAuthorizedUpdate(state: ChannelState): Promise<Transaction>
-  getPastEvents(user: Address, eventName: string, fromBlock: number): Promise<EventLog[]>
   getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
   startExit(state: ChannelState): Promise<Transaction>
   startExitWithUpdate(state: ChannelState): Promise<Transaction>
@@ -37,8 +37,10 @@ export interface IChannelManager {
 
 export class ChannelManager implements IChannelManager {
   address: string
-  cm: any//TypechainChannelManager // TODO: put back?
+  cm: any
   gasMultiple: number
+  provider: Provider
+  abi: any
   defaultSendArgs: any
 
   constructor(wallet: Wallet, address: string, gasMultiple: number) {
@@ -46,16 +48,24 @@ export class ChannelManager implements IChannelManager {
     this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet) as any
     this.gasMultiple = gasMultiple
     this.defaultSendArgs = { value: 0 } as any
+    this.provider = wallet.provider
+    this.abi = new eth.utils.Interface(ChannelManagerAbi.abi)
   }
 
-  async getPastEvents(user: Address, eventName: string, fromBlock: number) {
-    // TODO: Does this even work?
-    const events = await this.cm.getlogs({
-      fromBlock,
-      toBlock: "latest",
-      address: this.address,
-      topics: [ eth.utils.id(eventName), user ]
-    })
+  async getPastEvents(eventName: string, args: string[], fromBlock: number) {
+    const filter = this.cm.filters[eventName](...args)
+    filter.fromBlock = fromBlock
+    filter.toBlock = "latest"
+
+    const logs = await this.provider.getLogs(filter)
+
+    const events = []
+    for (let i in logs) {
+      events.push(this.abi.parseLog(logs[i]))
+    }
+
+    console.log(`Got events: ${JSON.stringify(events,null,2)}`)
+
     return events
   }
 

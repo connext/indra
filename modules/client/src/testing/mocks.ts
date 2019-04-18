@@ -1,6 +1,5 @@
 import * as eth from 'ethers';
 import Web3 from 'web3'
-import { EventLog } from 'web3-core';
 import { createStore } from 'redux'
 import {
   assert,
@@ -61,6 +60,9 @@ import {
 } from '../types'
 import Wallet from '../Wallet';
 import { Transaction } from 'ethers/utils/transaction';
+import { EventLog } from 'web3-core';
+import { Event } from 'ethers/contract';
+import { LogDescription } from 'ethers/utils/interface';
 
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
@@ -145,7 +147,7 @@ export class MockConnextInternal extends ConnextInternal {
     return { ...args, sigUser: mkHash('0xalsd23')}
   }
 
-  async getContractEvents(eventName: string, fromBlock: number): Promise<EventLog[]> {
+  async getContractEvents(eventName: string, fromBlock: number): Promise<LogDescription[]> {
     return []
   }
 
@@ -182,7 +184,7 @@ export class MockChannelManager implements IChannelManager {
     return createTx()
   }
 
-  async getPastEvents(user: Address, eventName: string, fromBlock: number) {
+  async getPastEvents(eventName: string, user: string[], fromBlock: number) {
     return []
   }
 

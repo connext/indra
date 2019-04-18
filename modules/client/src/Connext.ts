@@ -101,6 +101,7 @@ export async function getConnextClient(opts: ConnextClientOptions): Promise<Conn
   }
 
   const wallet = new Wallet(opts)
+  merged.user = merged.user || wallet.address
 
   return new ConnextInternal({ ...merged }, wallet)
 }
@@ -194,6 +195,7 @@ export class ConnextInternal extends ConnextClient {
 
   constructor(opts: ConnextClientOptions, wallet: Wallet) {
     super(opts)
+    this.opts = opts
 
     // Internal things
     // The store shouldn't be used by anything before calling `start()`, so
@@ -426,7 +428,7 @@ export class ConnextInternal extends ConnextClient {
   }
 
   public async getContractEvents(eventName: string, fromBlock: number) {
-    return this.contract.getPastEvents(this.opts.user!, eventName, fromBlock)
+    return this.contract.getPastEvents(eventName, [this.opts.user!], fromBlock)
   }
 
   protected _latestState: PersistentState | null = null

@@ -1,6 +1,13 @@
 import { BigNumber } from 'bignumber.js'
 import BN = require('bn.js')
-import Web3 from 'web3'
+import { Provider as EthersProvider, Block as EthersBlock } from 'ethers/providers/abstract-provider';
+import { LogDescription as EthersEvent } from 'ethers/utils/interface';
+import { Transaction as EthersTransaction } from 'ethers/utils/transaction';
+
+export type Block = EthersBlock
+export type Event = EthersEvent
+export type Provider = EthersProvider
+export type Transaction = EthersTransaction
 
 // define the common interfaces
 export type Address = string

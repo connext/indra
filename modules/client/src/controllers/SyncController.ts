@@ -1,18 +1,29 @@
-import { assertUnreachable } from '../lib/utils'
-import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes, channelUpdateToUpdateRequest } from '../types'
-import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
-import { Poller } from '../lib/poller/Poller'
-import { ConnextInternal } from '../Connext'
-import { SyncControllerState } from '../state/store'
-import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
-import { AbstractController } from './AbstractController'
-import * as actions from '../state/actions'
-import { maybe } from '../lib/utils'
+import { ethers as eth } from 'ethers';
 import Semaphore = require('semaphore')
-import { getChannel } from '../lib/getChannel';
+import { AbstractController } from './AbstractController'
+import { ConnextInternal } from '../Connext'
 import { hasPendingOps } from '../hasPendingOps'
-import { Block } from 'web3-eth';
-import { EventLog } from 'web3-core';
+import { getChannel } from '../lib/getChannel';
+import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
+import { Poller } from '../lib/poller/Poller'
+import { assertUnreachable, maybe } from '../lib/utils'
+import * as actions from '../state/actions'
+import { SyncControllerState } from '../state/store'
+import {
+  ArgsTypes,
+  Block,
+  ChannelState,
+  ChannelStateUpdate,
+  channelUpdateToUpdateRequest,
+  Event,
+  InvalidationArgs,
+  InvalidationReason,
+  Sync,
+  SyncResult,
+  ThreadStateUpdate,
+  Transaction,
+  UpdateRequest,
+} from '../types'
 
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 
@@ -461,7 +472,7 @@ export default class SyncController extends AbstractController {
   public async didContractEmitUpdateEvent(channel: ChannelState, updateTimestamp?: Date): Promise<{
     didEmit: 'yes' | 'no' | 'unknown'
     latestBlock: Block
-    event?: EventLog
+    event?: Event
   }> {
     let timeout = channel.timeout
     if (!channel.timeout) {
@@ -488,7 +499,7 @@ export default class SyncController extends AbstractController {
       'DidUpdateChannel',
       Math.max(block.number - 4000, 0), // 4000 blocks = ~16 hours
     )
-    const event = evts.find(e => e.returnValues.txCount[0] == channel.txCountGlobal)
+    const event = evts.find(e => e.values.txCount[0] == channel.txCountGlobal)
     if (event)
       return { didEmit: 'yes', latestBlock: block, event }
 
@@ -518,7 +529,7 @@ export default class SyncController extends AbstractController {
    * greater).
    */
   async findBlockNearestTimeout(timeout: number, delta = 60 * 60): Promise<Block> {
-    let block = await this.connext.opts.web3.eth.getBlock('latest')
+    let block = await this.connext.wallet.provider.getBlock('latest')
     if (block.timestamp < timeout + delta)
       return block
 
@@ -541,7 +552,7 @@ export default class SyncController extends AbstractController {
         )
       }
 
-      block = await this.connext.opts.web3.eth.getBlock(block.number + step)
+      block = await this.connext.wallet.provider.getBlock(block.number + step)
       if (block.timestamp > timeout && block.timestamp < timeout + delta) {
         break
       }
