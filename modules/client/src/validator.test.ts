@@ -1,13 +1,39 @@
-import { assert } from './testing/index'
-import * as t from './testing/index'
-import { Validator } from './validator';
+import { ethers as eth } from 'ethers';
 import * as sinon from 'sinon'
-import { Utils, emptyAddress } from './Utils';
-import { convertChannelState, convertPayment, PaymentArgs, PaymentArgsBN, convertThreadState, ThreadState, ChannelStateBN, WithdrawalArgsBN, convertWithdrawal, ExchangeArgs, ExchangeArgsBN, convertArgs, PendingArgs, proposePendingNumericArgs, convertProposePending, PendingArgsBN, PendingExchangeArgsBN, InvalidationArgs, UnsignedThreadState, ChannelState } from './types';
+import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
 import { toBN } from './helpers/bn';
 import { EMPTY_ROOT_HASH } from './lib/constants';
-import Web3T from 'web3'
-const Web3 = require('web3')
+import { assert } from './testing/index'
+import * as t from './testing/index'
+import {
+  ChannelState,
+  ChannelStateBN,
+  convertArgs,
+  convertChannelState,
+  convertPayment,
+  convertProposePending,
+  convertThreadState,
+  convertWithdrawal,
+  ExchangeArgs,
+  ExchangeArgsBN,
+  InvalidationArgs,
+  PendingArgs,
+  PendingArgsBN,
+  PendingExchangeArgsBN,
+  PaymentArgs,
+  PaymentArgsBN,
+  proposePendingNumericArgs,
+  ThreadState,
+  UnsignedThreadState,
+  WithdrawalArgsBN,
+} from './types';
+import { Utils, emptyAddress } from './Utils';
+import { Validator } from './validator';
+
+const sampleAddress = "0x0bfa016abfa8f627654b4989da4620271dc77b1c"
+const sampleAddress2 = "0x17b105bcb3f06b3098de6eed0497a3e36aa72471"
+const sampleAddress3 = "0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F"
+const hubAddress = "0xFB482f8f779fd96A857f1486471524808B97452D"
 
 const eventInputs = [
   { type: 'address', name: 'user', indexed: true },
@@ -21,33 +47,29 @@ const eventInputs = [
   { type: 'uint256', name: 'threadCount' },
 ]
 const eventName = `DidUpdateChannel`
-const sampleAddress = "0x0bfa016abfa8f627654b4989da4620271dc77b1c"
-const sampleAddress2 = "0x17b105bcb3f06b3098de6eed0497a3e36aa72471"
-const sampleAddress3 = "0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F"
-const hubAddress = "0xFB482f8f779fd96A857f1486471524808B97452D"
 
 /* Overrides for these fns function must be in the contract format
 as they are used in solidity decoding. Returns tx with default deposit
 values of all 5s
 */
-function createMockedWithdrawalTxReceipt(sender: "user" | "hub", web3: Web3T, ...overrides: any[]) {
+function createMockedWithdrawalTxReceipt(sender: "user" | "hub", abi: any, ...overrides: any[]) {
   const vals = generateTransactionReceiptValues({
     senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5
     pendingWeiUpdates: ['0', '5', '0', '5'],
     pendingTokenUpdates: ['0', '5', '0', '5'],
   }, overrides)
 
-  return createMockedTransactionReceipt(web3, vals)
+  return createMockedTransactionReceipt(abi, vals)
 }
 
-function createMockedDepositTxReceipt(sender: "user" | "hub", web3: Web3T, ...overrides: any[]) {
+function createMockedDepositTxReceipt(sender: "user" | "hub", abi: any, ...overrides: any[]) {
   const vals = generateTransactionReceiptValues({
     senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5
     pendingWeiUpdates: ['5', '0', '5', '0'],
     pendingTokenUpdates: ['5', '0', '5', '0'],
   }, overrides)
 
-  return createMockedTransactionReceipt(web3, vals)
+  return createMockedTransactionReceipt(abi, vals)
 }
 
 function generateTransactionReceiptValues(...overrides: any[]) {
@@ -64,20 +86,16 @@ function generateTransactionReceiptValues(...overrides: any[]) {
   }, ...overrides)
 }
 
-function createMockedTransactionReceipt(web3: Web3T, vals: any) {
-  const eventTopic = web3.eth.abi.encodeEventSignature({
-    name: eventName,
-    type: 'event',
-    inputs: eventInputs,
-  })
+function createMockedTransactionReceipt(abi: any, vals: any) {
+  const eventTopic = abi.events[eventName]
 
-  const addrTopic = web3.eth.abi.encodeParameter('address', vals.user)
+  const addrTopic = eth.utils.defaultAbiCoder.encode(['address'], [vals.user])
 
   const { user, ...nonIndexed } = vals
 
   const nonIndexedTypes = eventInputs.filter(val => Object.keys(val).indexOf('indexed') === -1).map(e => e.type)
 
-  const data = web3.eth.abi.encodeParameters(nonIndexedTypes, Object.values(nonIndexed))
+  const data = eth.utils.defaultAbiCoder.encode(nonIndexedTypes, Object.values(nonIndexed))
 
   // TODO: replace indexed fields
   // so you can also overwrite the indexed fields
@@ -87,11 +105,20 @@ function createMockedTransactionReceipt(web3: Web3T, vals: any) {
     contractAddress: t.mkAddress('0xCCC'),
     transactionHash: t.mkHash('0xHHH'),
     logs: [{
-      data: web3.utils.toHex(data),
+      data: eth.utils.hexlify(data),
       topics: [eventTopic, addrTopic]
     }]
   }
 }
+
+
+
+
+
+
+
+
+
 
 function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]) {
   const state = t.getChannelState('empty', Object.assign({
@@ -197,8 +224,12 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
 }
 
 describe('validator', () => {
-  const web3 = new Web3('http://localhost:8545') /* NOTE: all functional aspects of web3 are mocked */
-  const validator = new Validator(web3, hubAddress)
+
+  const provider = new eth.providers.JsonRpcProvider('http://localhost:8545')
+
+  const abi = new eth.utils.Interface(ChannelManagerAbi.abi)
+
+  const validator = new Validator(hubAddress, provider, abi)
 
   describe('channelPayment', () => {
     const prev = createPreviousChannelState({
@@ -479,8 +510,8 @@ describe('validator', () => {
   })
 
   describe('confirmPending', () => {
-    const depositReceipt = createMockedDepositTxReceipt("user", web3)
-    const wdReceipt = createMockedWithdrawalTxReceipt("user", web3)
+    const depositReceipt = createMockedDepositTxReceipt("user", abi)
+    const wdReceipt = createMockedWithdrawalTxReceipt("user", abi)
 
     const prevDeposit = createPreviousChannelState({
       pendingDepositToken: [5, 5],
@@ -536,7 +567,7 @@ describe('validator', () => {
       {
         name: 'should return a string if user is not same in receipt and previous',
         prev: { ...prevDeposit, user: t.mkAddress('0xUUU'), },
-        stubs: [tx, createMockedDepositTxReceipt("hub", web3)],
+        stubs: [tx, createMockedDepositTxReceipt("hub", abi)],
         valid: false,
       },
       // {
@@ -641,8 +672,8 @@ describe('validator', () => {
       // TODO: reenable these! watch issue here for correspondence with maintainer: https://github.com/ethereum/web3.js/issues/2344
       it.skip(name, async () => {
         // set tx receipt stub
-        validator.web3.eth.getTransaction = sinon.stub().returns(stubs[0])
-        validator.web3.eth.getTransactionReceipt = sinon.stub().returns(stubs[1])
+        validator.provider.getTransaction = sinon.stub().returns(stubs[0])
+        validator.provider.getTransactionReceipt = sinon.stub().returns(stubs[1])
         // set args
         const transactionHash = stubs[1] && (stubs[1] as any).transactionHash === depositReceipt.transactionHash ? depositReceipt.transactionHash : wdReceipt.transactionHash
         if (valid) {
@@ -873,7 +904,7 @@ describe('validator', () => {
         prev,
         initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiSender: toBN(20), balanceTokenSender: toBN(20), receiver: sampleAddress, sender: t.mkAddress("0X111")},
+        args: { ...args, balanceWeiSender: toBN(20), balanceTokenSender: toBN(20), receiver: sampleAddress, sender: t.mkAddress("0x111")},
         message: "Hub does not have sufficient Token, Wei balance",
       },
       {

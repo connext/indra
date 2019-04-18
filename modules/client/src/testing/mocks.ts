@@ -37,6 +37,7 @@ import {
   convertWithdrawalParameters,
   DepositArgs,
   DepositArgsBN,
+  Event,
   ExchangeArgs,
   ExchangeArgsBN,
   HubConfig,
@@ -53,16 +54,13 @@ import {
   ThreadState,
   ThreadStateBN,
   ThreadStateUpdate,
+  Transaction,
   UnsignedChannelState,
   UnsignedThreadState,
   UpdateRequest,
   WithdrawalParameters,
 } from '../types'
 import Wallet from '../Wallet';
-import { Transaction } from 'ethers/utils/transaction';
-import { EventLog } from 'web3-core';
-import { Event } from 'ethers/contract';
-import { LogDescription } from 'ethers/utils/interface';
 
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
@@ -147,7 +145,7 @@ export class MockConnextInternal extends ConnextInternal {
     return { ...args, sigUser: mkHash('0xalsd23')}
   }
 
-  async getContractEvents(eventName: string, fromBlock: number): Promise<LogDescription[]> {
+  async getContractEvents(eventName: string, fromBlock: number): Promise<Event[]> {
     return []
   }
 
@@ -157,6 +155,7 @@ export class MockChannelManager implements IChannelManager {
   contractMethodCalls = [] as any[]
 
   gasMultiple = 1.5
+  abi: any
 
   assertCalled(method: keyof MockChannelManager, ...args: any[]) {
     for (let call of this.contractMethodCalls) {

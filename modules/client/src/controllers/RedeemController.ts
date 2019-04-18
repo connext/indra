@@ -1,11 +1,11 @@
+import { ethers as eth } from 'ethers';
 import { AbstractController } from "./AbstractController";
 import { Payment } from "../types";
-const w3utils = require('web3-utils')
 
 export class RedeemController extends AbstractController {
   public redeem = async (secret: string): Promise<{ purchaseId: string, amount: Payment }> => {
     // check that the secret was generated as a hex
-    if (!w3utils.isHex(secret)) {
+    if (!eth.utils.isHexString(secret)) {
       throw new Error(`The secret provided is not a hex string. Was it generated using the 'generateSecret' method of connext? Secret: ${secret}`)
     }
 

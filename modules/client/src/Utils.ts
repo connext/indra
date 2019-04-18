@@ -1,5 +1,5 @@
+import { ethers as eth } from 'ethers';
 import util = require('ethereumjs-util')
-const w3utils = require('web3-utils')
 import { MerkleUtils } from './helpers/merkleUtils'
 import MerkleTree from './helpers/merkleTree'
 import {
@@ -29,9 +29,9 @@ export class Utils {
     req: Payment,
   ): string {
     const { amountToken, amountWei } = req
-    const hash = w3utils.soliditySha3(
-      { type: 'uint256', value: amountToken },
-      { type: 'uint256', value: amountWei },
+    const hash = eth.utils.solidityKeccak256(
+      [ 'uint256', 'uint256' ],
+      [ amountToken, amountWei ]
     )
     return hash
   }
@@ -70,42 +70,41 @@ export class Utils {
     } = channelState
 
     // hash data
-    const hash = w3utils.soliditySha3(
-      { t: 'address', v: contractAddress },
-      { t: 'address[2]', v: [user, recipient] },
-      {
-        t: 'uint256[2]',
-        v: [balanceWeiHub, balanceWeiUser],
-      },
-      {
-        t: 'uint256[2]',
-        v: [balanceTokenHub, balanceTokenUser],
-      },
-      {
-        t: 'uint256[4]',
-        v: [
+    const hash = eth.utils.solidityKeccak256(
+      [
+        'address',
+        'address[2]',
+        'uint256[2]',
+        'uint256[2]',
+        'uint256[4]',
+        'uint256[4]',
+        'uint256[2]',
+        'bytes32',
+        'uint256',
+        'uint256'
+      ],
+      [
+        contractAddress,
+        [ user, recipient ],
+        [ balanceWeiHub, balanceWeiUser ],
+        [ balanceTokenHub, balanceTokenUser ],
+        [
           pendingDepositWeiHub,
           pendingWithdrawalWeiHub,
           pendingDepositWeiUser,
           pendingWithdrawalWeiUser,
         ],
-      },
-      {
-        t: 'uint256[4]',
-        v: [
+        [
           pendingDepositTokenHub,
           pendingWithdrawalTokenHub,
           pendingDepositTokenUser,
           pendingWithdrawalTokenUser,
-        ],
-      },
-      {
-        type: 'uint256[2]',
-        value: [txCountGlobal, txCountChain],
-      },
-      { type: 'bytes32', value: threadRoot },
-      { type: 'uint256', value: threadCount },
-      { type: 'uint256', value: timeout },
+          ],
+        [ txCountGlobal, txCountChain ],
+        threadRoot,
+        threadCount,
+        timeout
+      ]
     )
     return hash
   }
@@ -132,20 +131,9 @@ export class Utils {
       txCount,
     } = threadState
     // convert ChannelState to UnsignedChannelState
-    const hash = w3utils.soliditySha3(
-      { t: 'address', v: contractAddress },
-      { t: 'address', v: sender },
-      { t: 'address', v: receiver },
-      { t: 'uint256', v: threadId },
-      {
-        t: 'uint256',
-        v: [balanceWeiSender, balanceWeiReceiver],
-      },
-      {
-        t: 'uint256',
-        v: [balanceTokenSender, balanceTokenReceiver],
-      },
-      { t: 'uint256', v: txCount },
+    const hash = eth.utils.solidityKeccak256(
+      [ 'address', 'address', 'address', 'uint256', 'uint256[2]', 'uint256[2]', 'uint256' ],
+      [ contractAddress, sender, receiver, threadId, [balanceWeiSender, balanceWeiReceiver], [balanceTokenSender, balanceTokenReceiver], txCount ]
     )
     return hash
   }

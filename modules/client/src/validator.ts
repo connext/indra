@@ -1,7 +1,5 @@
-import Web3 from 'web3'
-import { TransactionReceipt } from 'web3-core';
-import * as w3utils from 'web3-utils';
 import BN = require('bn.js')
+import { ethers as eth } from 'ethers';
 import { maxBN, toBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { StateGenerator, subOrZero, objMap } from './StateGenerator'
@@ -46,6 +44,7 @@ import {
   SignedDepositRequestProposal,
   ThreadState,
   ThreadStateBN,
+  TransactionReceipt,
   UpdateRequest,
   UnsignedChannelState,
   UnsignedChannelStateBN,
@@ -76,14 +75,15 @@ export class Validator {
 
   private generateHandlers: { [name in ChannelUpdateReason]: any }
 
-  web3: any
-
+  provider: any
+  abi: any
   hubAddress: Address
 
-  constructor(web3: Web3, hubAddress: Address) {
+  constructor(hubAddress: Address, provider: any, abi: any) {
     this.utils = new Utils()
     this.stateGenerator = new StateGenerator()
-    this.web3 = web3
+    this.provider = provider
+    this.abi = abi
     this.hubAddress = hubAddress.toLowerCase()
     this.generateHandlers = {
       'Payment': this.generateChannelPayment.bind(this),
@@ -329,8 +329,8 @@ export class Validator {
 
     // validate on chain information
     const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransaction(txHash)
-    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
+    const tx = await this.provider.getTransaction(txHash)
+    const receipt = await this.provider.getTransactionReceipt(txHash)
 
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
@@ -381,8 +381,8 @@ export class Validator {
     // compare event values to expected by transactionHash
     // validate on chain information
     const txHash = args.transactionHash
-    const tx = await this.web3.eth.getTransaction(txHash) as any
-    const receipt = await this.web3.eth.getTransactionReceipt(txHash)
+    const tx = await this.provider.getTransaction(txHash) as any
+    const receipt = await this.provider.getTransactionReceipt(txHash)
 
     if (!tx || !tx.blockHash) {
       return `Transaction to contract not found. Event not able to be parsed or does not exist.(txHash: ${txHash}, prev: ${JSON.stringify(prev)})`
@@ -438,7 +438,7 @@ export class Validator {
     // Anaologous to confirmPending. To remain consistent with what
     // exists onchain, must use path that contains validation
 
-    const receipt = await this.web3.eth.getTransactionReceipt(args.transactionHash)
+    const receipt = await this.provider.getTransactionReceipt(args.transactionHash)
     const events = this.parseChannelEventTxReceipt("DidEmptyChannel", receipt, prev.contractAddress)
     const matchingEvent = this.findMatchingEvent(prev, events, "txCountChain")
     if (!matchingEvent) {
@@ -487,7 +487,6 @@ export class Validator {
   }
 
   public openThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): string | null {
-    // NOTE: tests mock web3. signing is tested in Utils
 
     // If user is sender then that means that prev is sender-hub channel
     // If user is receiver then that means that prev is hub-receiver channel
@@ -618,11 +617,12 @@ export class Validator {
   }
 
   public validateAddress(adr: Address): null | string {
-    if (!w3utils.isAddress(adr)) {
-      return `${adr} is not a valid ETH address.`
+    try {
+      eth.utils.getAddress(adr)
+      return null
+    } catch (e) {
+      return ''+e
     }
-
-    return null
   }
 
   public assertChannelSigner(channelState: ChannelState, signer: "user" | "hub" = "user"): void {
@@ -1035,11 +1035,8 @@ export class Validator {
       throw new Error(`Uh-oh! No inputs found. Are you sure you did typescript good? Check 'ChannelEventReason' in 'types.ts' in the source. Event name provided: ${name}`)
     }
 
-    const eventTopic = this.web3.eth.abi.encodeEventSignature({
-      name,
-      type: 'event',
-      inputs,
-    })
+    
+    const eventTopic = this.abi.events[name]
 
     /*
     ContractEvent.fromRawEvent({
@@ -1065,7 +1062,8 @@ export class Validator {
       // their field names, and one under an `_{index}` value, where
       // there index is a numeric value in the list corr to the order
       // in which they are emitted/defined in the contract
-      let tmp = this.web3.eth.abi.decodeLog(inputs, log.data, log.topics) as any
+      let tmp = this.abi.parseLog(log) as any
+      console.log(`DEBUG!!! decoded logs: ${JSON.stringify(tmp)}`)
       // store only the descriptive field names
       Object.keys(tmp).forEach((field) => {
         if (!field.match(/\d/g) && !field.startsWith('__')) {
@@ -1104,11 +1102,7 @@ export class Validator {
       { type: 'uint256', name: 'threadCount' },
     ]
 
-    const eventTopic = this.web3.eth.abi.encodeEventSignature({
-      name: 'DidUpdateChannel',
-      type: 'event',
-      inputs,
-    })
+    const eventTopic = this.abi.events['DidUpdateChannel']
 
     /*
     ContractEvent.fromRawEvent({
@@ -1124,7 +1118,7 @@ export class Validator {
     let raw = {} as any
     txReceipt.logs.forEach((log: any) => {
       if (log.topics.indexOf(eventTopic) > -1) {
-        let tmp = this.web3.eth.abi.decodeLog(inputs, log.data, log.topics) as any
+        let tmp = this.abi.parseLog(log) as any
         Object.keys(tmp).forEach((field) => {
           if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
             raw[field] = tmp[field]

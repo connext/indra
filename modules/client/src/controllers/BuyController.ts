@@ -1,3 +1,4 @@
+import { ethers as eth } from 'ethers';
 import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../lib/getChannel'
@@ -106,7 +107,7 @@ export default class BuyController extends AbstractController {
             throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 
-          if (!this.connext.opts.web3.utils.isHex(secret)) {
+          if (!eth.utils.isHexString(secret)) {
             throw new Error(`Secret is not hex string, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 

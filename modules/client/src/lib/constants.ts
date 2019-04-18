@@ -1,5 +1,5 @@
+import { ethers as eth } from 'ethers';
 import BN = require('bn.js')
-import toFinney from './web3/toFinney'
 import { CurrencyType } from '../state/ConnextState/CurrencyTypes'
 
 // !!! WARNING !!!
@@ -7,6 +7,8 @@ import { CurrencyType } from '../state/ConnextState/CurrencyTypes'
 // Some fields are used in one, some of the fields are used in the other
 // This needs to be cleaned up! Please clean this up!
 // !!! WARNING !!!
+
+const toFinney = (n: number|string) => eth.utils.parseUnits(String(n), 'finney')
 
 // TODO string these
 export const GWEI = new BN('1000000000')

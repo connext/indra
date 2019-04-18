@@ -20,6 +20,7 @@ import Wallet from '../Wallet';
 //  - # extract abi & add "export default" on first line 
 
 export interface IChannelManager {
+  abi: any
   gasMultiple: number
   getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<Event[]>
   userAuthorizedUpdate(state: ChannelState): Promise<Transaction>

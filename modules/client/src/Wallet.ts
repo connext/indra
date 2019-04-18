@@ -1,10 +1,11 @@
 import { ethers as eth } from 'ethers';
 import Web3 from 'web3';
 import { ConnextClientOptions } from './Connext';
+import { Provider } from './types'
 
 export default class Wallet extends eth.Signer {
   address: string
-  provider: any
+  provider: any // Provider
   signer: any
   web3?: Web3
   private password: string
