@@ -135,10 +135,9 @@ export default class DepositController extends AbstractController {
           tokenAbi,
           this.connext.wallet,
         )
-        const gasMultiple = eth.utils.bigNumberify(this.connext.contract.gasMultiple)
         const overrides: any = { }
-        const gasEstimate = await token.estimate.approve(prev.contractAddress, args.depositTokenUser)
-        overrides.gasLimit = gasEstimate.mul(gasMultiple)
+        const gasEstimate = (await token.estimate.approve(prev.contractAddress, args.depositTokenUser)).toNumber()
+        overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.connext.contract.gasMultiple))
         await token.approve(prev.contractAddress, args.depositTokenUser, overrides)
       }
       const tx = await this.connext.contract.userAuthorizedUpdate(state)
