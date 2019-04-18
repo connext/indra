@@ -1036,7 +1036,7 @@ export class Validator {
     }
 
     
-    const eventTopic = this.abi.events[name]
+    const eventTopic = this.abi.events[name].topic
 
     /*
     ContractEvent.fromRawEvent({
@@ -1062,8 +1062,7 @@ export class Validator {
       // their field names, and one under an `_{index}` value, where
       // there index is a numeric value in the list corr to the order
       // in which they are emitted/defined in the contract
-      let tmp = this.abi.parseLog(log) as any
-      console.log(`DEBUG!!! decoded logs: ${JSON.stringify(tmp)}`)
+      let tmp = (this.abi.parseLog(log) as any).values
       // store only the descriptive field names
       Object.keys(tmp).forEach((field) => {
         if (!field.match(/\d/g) && !field.startsWith('__')) {
@@ -1102,7 +1101,7 @@ export class Validator {
       { type: 'uint256', name: 'threadCount' },
     ]
 
-    const eventTopic = this.abi.events['DidUpdateChannel']
+    const eventTopic = this.abi.events['DidUpdateChannel'].topic
 
     /*
     ContractEvent.fromRawEvent({
@@ -1118,7 +1117,7 @@ export class Validator {
     let raw = {} as any
     txReceipt.logs.forEach((log: any) => {
       if (log.topics.indexOf(eventTopic) > -1) {
-        let tmp = this.abi.parseLog(log) as any
+        let tmp = (this.abi.parseLog(log) as any).values
         Object.keys(tmp).forEach((field) => {
           if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
             raw[field] = tmp[field]
