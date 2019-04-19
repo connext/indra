@@ -2,9 +2,8 @@ import log from "./util/log";
 import { Poller } from "./vendor/connext/lib/poller/Poller";
 import ChannelsDao from "./dao/ChannelsDao";
 import DBEngine from "./DBEngine";
-import { convertChannelState, convertPayment, PurchasePayment } from "./vendor/connext/types";
+import { convertPayment, PurchasePayment, OptimisticPurchasePaymentRow } from "./vendor/connext/types";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
-import { OptimisticPurchasePaymentRow } from "./domain/OptimisticPayment";
 import PaymentsService from "./PaymentsService";
 import { maybe } from "./util";
 import ChannelsService from "./ChannelsService";
@@ -54,12 +53,12 @@ export class OptimisticPaymentsService {
         // TODO: expiry time on optimistic payments
 
         // check if the payee channel has sufficient collateral
-        const payeeState = convertChannelState("bignumber", payeeChan.state)
+
         const paymentBig = convertPayment("bignumber", p.amount)
         const sufficientCollateral = (type: 'Token' | 'Wei') => {
           const hubKey = 'balance' + type + 'Hub'
           const paymentKey = 'amount' + type
-          return payeeState[hubKey].gte(paymentBig[paymentKey])
+          return payeeChan.state[hubKey].gte(paymentBig[paymentKey])
         }
         if (
           !sufficientCollateral('Token') || !sufficientCollateral('Wei')
