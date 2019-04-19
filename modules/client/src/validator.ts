@@ -83,7 +83,7 @@ export class Validator {
     this.utils = new Utils()
     this.stateGenerator = new StateGenerator()
     this.provider = provider
-    this.abi = abi
+    this.abi = new eth.utils.Interface(abi)
     this.hubAddress = hubAddress.toLowerCase()
     this.generateHandlers = {
       'Payment': this.generateChannelPayment.bind(this),

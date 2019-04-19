@@ -229,7 +229,7 @@ describe('validator', () => {
 
   const abi = new eth.utils.Interface(ChannelManagerAbi.abi)
 
-  const validator = new Validator(hubAddress, provider, abi)
+  const validator = new Validator(hubAddress, provider, ChannelManagerAbi.abi)
 
   describe('channelPayment', () => {
     const prev = createPreviousChannelState({

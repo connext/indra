@@ -14,6 +14,7 @@ import {
   PartialSignedOrSuccinctThread,
 } from '.'
 import { ConnextClientOptions, ConnextInternal } from '../Connext'
+import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
 import { IChannelManager } from '../contract/ChannelManager'
 import { toBN } from '../helpers/bn'
 import { IHubAPIClient } from '../Hub'
@@ -156,6 +157,7 @@ export class MockChannelManager implements IChannelManager {
 
   gasMultiple = 1.5
   abi: any
+  rawAbi: any = ChannelManagerAbi.abi
 
   assertCalled(method: keyof MockChannelManager, ...args: any[]) {
     for (let call of this.contractMethodCalls) {

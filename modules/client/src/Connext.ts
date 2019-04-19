@@ -217,7 +217,7 @@ export class ConnextInternal extends ConnextClient {
     opts.contractAddress = opts.contractAddress!.toLowerCase()
 
     this.contract = opts.contract || new ChannelManager(wallet, opts.contractAddress, opts.gasMultiple || 1.5)
-    this.validator = new Validator(opts.hubAddress, this.provider, this.contract.abi)
+    this.validator = new Validator(opts.hubAddress, this.provider, this.contract.rawAbi)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)

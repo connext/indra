@@ -635,7 +635,7 @@ contract("ChannelManager", accounts => {
       pk: privKeys[2]
     };
 
-    validator = new Validator(web3, hub.address);
+    validator = new Validator(hub.address, web3.eth, cm.abi);
 
     challengePeriod = +(await cm.challengePeriod.call()).toString();
   });

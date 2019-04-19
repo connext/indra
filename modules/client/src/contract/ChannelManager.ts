@@ -17,6 +17,7 @@ import Wallet from '../Wallet';
 
 export interface IChannelManager {
   abi: any
+  rawAbi: any
   gasMultiple: number
   getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<Event[]>
   userAuthorizedUpdate(state: ChannelState): Promise<Transaction>
@@ -38,6 +39,7 @@ export class ChannelManager implements IChannelManager {
   gasMultiple: number
   provider: Provider
   abi: any
+  rawAbi: any
   defaultSendArgs: any
 
   constructor(wallet: Wallet, address: string, gasMultiple: number) {
@@ -46,7 +48,8 @@ export class ChannelManager implements IChannelManager {
     this.gasMultiple = gasMultiple
     this.defaultSendArgs = { value: 0 } as any
     this.provider = wallet.provider
-    this.abi = new eth.utils.Interface(ChannelManagerAbi.abi)
+    this.rawAbi = ChannelManagerAbi.abi
+    this.abi = new eth.utils.Interface(this.rawAbi)
   }
 
   async getPastEvents(eventName: string, args: string[], fromBlock: number) {
