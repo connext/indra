@@ -225,7 +225,7 @@ describe('PaymentsService', () => {
     })
   })
 
-  it('should create a custodial payment', async () => {
+  it('should create a PT_CHANNEL payment', async () => {
     const sender = mkAddress('0xa')
     const receiver = mkAddress('0xb')
 
@@ -283,7 +283,7 @@ describe('PaymentsService', () => {
     assert.isOk(custodialUpdateSender.sigHub)
   })
 
-  it('should create a custodial payment with a hub tip', async () => {
+  it('should create a PT_CHANNEL payment with a hub tip', async () => {
     const sender = mkAddress('0xa')
     const receiver = mkAddress('0xb')
 
@@ -364,7 +364,7 @@ describe('PaymentsService', () => {
     assert.isOk(custodialUpdateSender.sigHub)
   })
 
-  it('database should be untouched if custodial payment fails', async () => {
+  it('database should be untouched if PT_CHANNEL payment fails', async () => {
     const sender = mkAddress('0xa')
     const senderChannel = await channelUpdateFactory(registry, {
       user: sender,
@@ -403,7 +403,7 @@ describe('PaymentsService', () => {
     assert.deepEqual(newSenderChannel, oldSenderChannel)
   })
 
-  it('custodial payment should collateralize recipient channel with failing tip', async () => {
+  it('PT_CHANNEL payment should collateralize recipient channel with failing tip', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
       balanceTokenUser: toWeiString(5),
@@ -431,7 +431,7 @@ describe('PaymentsService', () => {
       } as UpdateRequest,
     }]
 
-    // The purcahse request should fail because there's no channel with the
+    // The purchase request should fail because there's no channel with the
     // recipient
     await assert.isRejected(
       service.doPurchase(senderChannel.user, {}, payments),
@@ -446,11 +446,11 @@ describe('PaymentsService', () => {
     )
     // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(10),
+      pendingDepositTokenHub: config.beiMinCollateralization.toFixed(),
     })
   })
 
-  it('custodial payment should collateralize recipient channel and still send tip', async () => {
+  it('PT_CHANNEL payment should collateralize recipient channel and still send tip', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
       balanceTokenUser: toWeiString(5),
