@@ -5,12 +5,12 @@ const BN = require("bn.js");
 const privKeys = require("./privKeys.json");
 const CM = artifacts.require("./ChannelManager.sol");
 const HST = artifacts.require("./HumanStandardToken.sol");
+const data = require("../ops/data.json");
+const Connext = require("../../client/dist");
 
-/* Connext Client */
-const { Utils } = require("../../client/dist/Utils");
-const { StateGenerator } = require("../../client/dist/StateGenerator");
-const { Validator } = require("../../client/dist/validator");
-const { convertChannelState, convertWithdrawal, convertProposePending, isBN } = require("../../client/dist/types");
+/* Setup Connext Client Stuff */
+const clientUtils = Connext.utils;
+const sg = new Connext.StateGenerator();
 const {
   getChannelState,
   getThreadState,
@@ -19,12 +19,13 @@ const {
   getExchangeArgs,
   getPaymentArgs,
   getPendingArgs
-} = require("../../client/dist/testing");
-const { toBN } = require("../../client/dist/helpers/bn");
-const clientUtils = new Utils();
-const sg = new StateGenerator();
-
-const data = require("../ops/data.json");
+} = Connext.testing
+const {
+  convertChannelState,
+  convertWithdrawal,
+  convertProposePending,
+  isBN
+} = Connext.types
 
 should
   .use(require("chai-as-promised"))
@@ -543,7 +544,7 @@ contract("ChannelManager", accounts => {
 
     // token is transfered to user
     const userTokenBalance = await token.balanceOf(account.address);
-    userTokenBalance.should.be.eq.BN(account.initTokenBalance.add(toBN(state.userTokenTransfer)));
+    userTokenBalance.should.be.eq.BN(account.initTokenBalance.add(new BN(state.userTokenTransfer)));
 
     const totalChannelWei = await cm.totalChannelWei.call();
     assert.equal(+totalChannelWei, 0);
@@ -635,7 +636,7 @@ contract("ChannelManager", accounts => {
       pk: privKeys[2]
     };
 
-    validator = new Validator(hub.address, web3.eth, cm.abi);
+    validator = new Connext.Validator(hub.address, web3.eth, cm.abi);
 
     challengePeriod = +(await cm.challengePeriod.call()).toString();
   });
