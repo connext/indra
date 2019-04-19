@@ -977,7 +977,7 @@ export interface Purchase<MetadataType=any, PaymentMetadataType=any> {
   payments: PurchasePayment<PaymentMetadataType>[]
 }
 
-export type PurchasePayment<MetadataType=any> = ({
+export type PurchasePayment<MetadataType=any, T=string> = ({
   // The address of the recipient. For custodial payments, this will be the
   // final recipient. For non-custodial payments (ie, thread updates), this
   // will be the thread recipient.
@@ -989,7 +989,7 @@ export type PurchasePayment<MetadataType=any> = ({
   // will be `{ wei: 0, token: 1e18 }`. If this is a custodial ETH <> BOOTY
   // exchange, the `amount` will be `{ wei: -1e18, token 2e20 }` (ie, the
   // sender is paying 1 ETH for 200 BOOTY).
-  amount: Payment
+  amount: Payment<T>
 
   // Metadata related to the Payment. For example `{ type: 'TIP' | 'FEE' }`
   // for linked payments, the secret must be included in the metadata
@@ -1000,29 +1000,34 @@ export type PurchasePayment<MetadataType=any> = ({
       // When a purchase is being sent from the Wallet -> Hub the update should
       // be signed by the wallet.
       // The hub's counter-signed updates will be included in the SyncResponse.
-      update: UpdateRequest
+      update: UpdateRequest<T>
     } |
     {
       type: 'PT_CUSTODIAL'
-      update: UpdateRequest
+      update: UpdateRequest<T>
     } |
     {
       type: 'PT_THREAD'
       // See note above
-      update: ThreadStateUpdate
+      update: ThreadStateUpdate<T>
     } |
     {
       type: 'PT_LINK'
-      update: UpdateRequest<string, PaymentArgs> // TODO: restrict to payment only?
+      update: UpdateRequest<T, PaymentArgs<T>> // TODO: restrict to payment only?
     } | 
     {
       type: 'PT_OPTIMISTIC'
-      update: UpdateRequest
+      update: UpdateRequest<T>
     }
   ))
-  
+export type PurchasePaymentBigNumber = PurchasePayment<any, BigNumber>
+export type PurchasePaymentBN = PurchasePayment<any, BigNumber>
+
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
-export type PurchasePaymentSummary<MetaType=any> = Omit<PurchasePayment<MetaType>, 'update'>
+
+export type PurchasePaymentSummary<MetaType=any, T=string> = Omit<PurchasePayment<MetaType, T>, 'update'>
+export type PurchasePaymentSummaryBigNumber = PurchasePaymentSummary<any, BigNumber>
+export type PurchasePaymentSummaryBN = PurchasePaymentSummary<any, BN>
 
 // this is the structure of the expected
 // response from the hub when submitting a purchase
@@ -1030,9 +1035,42 @@ export type PurchasePaymentHubResponse<T= string> = ({
   purchaseId: string,
   sync: Sync<T>
 })
-
 export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>
 export type PurchasePaymentHubResponseBigNumber = PurchasePaymentHubResponse<BigNumber>
+
+export type PurchasePaymentRow<MetaType=any, T=string> = PurchasePaymentSummary<MetaType, T> & {
+  id: number
+  createdOn: Date
+  purchaseId: string
+  sender: string
+  custodianAddress: string
+}
+export type PurchasePaymentRowBigNumber = PurchasePaymentRow<any, BigNumber>
+export type PurchasePaymentRowBN = PurchasePaymentRow<any, BN>
+
+export type PurchaseRowWithPayments<MetaType=any, PaymentMetaType=any, T=string> = {
+  purchaseId: string
+  createdOn: Date
+  sender: string
+  meta: MetaType
+  amount: Payment<T>
+  payments: PurchasePaymentRow<PaymentMetaType, T>[]
+}
+export type PurchaseRowWithPaymentsBigNumber = PurchaseRowWithPayments<any, any, BigNumber>
+export type PurchaseRowWithPaymentsBN = PurchaseRowWithPayments<any, any, BN>
+
+// optimistic payments
+export type OptimisticPaymentStatus = "NEW" | "COMPLETED" | "FAILED"
+
+export type OptimisticPurchasePaymentRow<T = string> = Omit<PurchasePaymentRow<T>, "type" | "id" | "custodianAddress"> & {
+  status: OptimisticPaymentStatus
+  channelUpdateId: number
+  paymentId: number,
+  threadUpdateId?: number
+  redemptionId?: number
+}
+export type OptimisticPurchasePaymentRowBigNumber = OptimisticPurchasePaymentRow<BigNumber>
+export type OptimisticPurchasePaymentRowBN = OptimisticPurchasePaymentRow<BN>
 
 // custodial payments
 export type CustodialBalanceRow<T = string> = {
