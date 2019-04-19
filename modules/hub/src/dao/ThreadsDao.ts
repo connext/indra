@@ -8,8 +8,7 @@ import {
 } from '../domain/Thread'
 import { BigNumber } from 'bignumber.js'
 import { ThreadState, ThreadStatus } from '../vendor/connext/types'
-import { getLastThreadUpdateId } from '../vendor/connext/lib/getLastThreadUpdateId';
-import { getActiveThreads } from '../vendor/connext/lib/getActiveThreads';
+import { getLastThreadUpdateId, getActiveThreads } from '../vendor/connext/state/getters';
 
 export default interface ThreadsDao {
   applyThreadUpdate(

@@ -1,5 +1,5 @@
 import { ConnextStore } from '../state/store'
-import { getUpdateRequestTimeout } from './getUpdateRequestTimeout';
+import { getUpdateRequestTimeout } from '../state/getters';
 
 export function validateTimestamp(store: ConnextStore, timeout: number) {
   // timeout will be 0 for request collateral
@@ -7,7 +7,7 @@ export function validateTimestamp(store: ConnextStore, timeout: number) {
     return
   }
 
-  const maxTimeout = getUpdateRequestTimeout(store)
+  const maxTimeout = getUpdateRequestTimeout(store.getState())
   const now = Math.floor(Date.now() / 1000)
   const delta = timeout - now
   const allowableClockDrift = maxTimeout * 1.5

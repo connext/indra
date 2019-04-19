@@ -11,7 +11,7 @@ while true; do
         # Note: add any new directories here to the 'check-client-copies' script
         hub*)
             dst="modules/hub/src/vendor/connext/"
-            exclude="--exclude controllers/** --exclude testing/** --exclude Connext.ts --exclude lib/currency/** --exclude state/actions.ts --exclude state/reducers.ts --exclude lib/currency/** --exclude state/middleware.ts"
+            exclude="--exclude controllers/** --exclude testing/** --exclude Connext.ts --exclude Hub.ts --exclude contract/** --exclude Wallet.ts --exclude state/actions.ts --exclude state/reducers.ts --exclude state/middleware.ts"
             ;;
         *)
             echo "USAGE: $0 [hub|vynos]"

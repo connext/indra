@@ -1,5 +1,5 @@
 import { redisCache } from './RedisClient'
-import { hasPendingOps } from './vendor/connext/hasPendingOps'
+import { Utils } from './vendor/connext/Utils'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
@@ -51,6 +51,7 @@ import { StateGenerator } from './vendor/connext/StateGenerator';
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 
+const utils = new Utils()
 const LOG = log('ChannelsService')
 
 type RedisReason = 'user-authorized' | 'hub-authorized' | 'offchain'
@@ -105,7 +106,7 @@ export default class ChannelsService {
       sigUser,
     }, user)
 
-    if (hasPendingOps(channelStateStr)) {
+    if (utils.hasPendingOps(channelStateStr)) {
       LOG.info(`User ${user} requested a deposit while state already has pending operations `)
       LOG.debug(`[Request Deposit] Current state: ${JSON.stringify(channelStateStr)}`)
       return 'current state has pending fields'

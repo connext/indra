@@ -1,29 +1,29 @@
-import { Utils } from "./Utils";
-import {
-  ChannelStateBN,
-  PaymentArgsBN,
-  UnsignedChannelState,
-  ExchangeArgsBN,
-  DepositArgsBN,
-  WithdrawalArgsBN,
-  UnsignedThreadState,
-  UnsignedThreadStateBN,
-  convertThreadState,
-  ThreadState,
-  ThreadStateBN,
-  convertChannelState,
-  PaymentBN,
-  Payment,
-  UnsignedChannelStateBN,
-  PendingArgsBN,
-  PendingExchangeArgsBN,
-  ChannelUpdateReason,
-  UpdateRequestBN,
-  InvalidationArgs,
-  VerboseChannelEventBN,
-} from "./types";
 import { toBN, mul, minBN, maxBN } from "./helpers/bn";
 import BN = require('bn.js')
+import {
+  ChannelStateBN,
+  ChannelUpdateReason,
+  convertChannelState,
+  convertThreadState,
+  DepositArgsBN,
+  ExchangeArgsBN,
+  InvalidationArgs,
+  Payment,
+  PaymentArgsBN,
+  PaymentBN,
+  PendingArgsBN,
+  PendingExchangeArgsBN,
+  ThreadState,
+  ThreadStateBN,
+  UpdateRequestBN,
+  UnsignedChannelState,
+  UnsignedChannelStateBN,
+  UnsignedThreadState,
+  UnsignedThreadStateBN,
+  VerboseChannelEventBN,
+  WithdrawalArgsBN,
+} from "./types";
+import { Utils } from "./Utils";
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately

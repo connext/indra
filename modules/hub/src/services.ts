@@ -304,7 +304,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   Validator: {
-    factory: (web3: any, config: Config) => new Validator(web3, config.hotWalletAddress),
+    factory: (web3: any, config: Config) => new Validator(config.hotWalletAddress, web3.eth, ChannelManagerABI.abi),
     dependencies: ['Web3', 'Config'],
   },
 

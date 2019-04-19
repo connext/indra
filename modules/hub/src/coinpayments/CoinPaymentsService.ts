@@ -9,11 +9,12 @@ import { PaymentArgs, convertChannelState, DepositArgs } from '../vendor/connext
 import { Validator } from '../vendor/connext/validator'
 import { SignerService } from '../SignerService'
 import { BigNumber } from 'bignumber.js/bignumber'
-import { hasPendingOps } from '../vendor/connext/hasPendingOps'
+import { Utils } from '../vendor/connext/Utils'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as ChannelsService } from '../ChannelsService'
 import { default as log } from '../util/log'
 
+const utils = new Utils()
 const LOG = log('CoinPaymentsService')
 
 // See also: https://www.coinpayments.net/merchant-tools-ipn
@@ -214,7 +215,7 @@ export class CoinPaymentsService {
       LOG.info(`Channel ${user} is not open (${channel.status}); can't apply IPN credit yet (will retry)`)
       return null
     }
-    if (hasPendingOps(channel.state)) {
+    if (utils.hasPendingOps(channel.state)) {
       LOG.info(`Channel ${user} has pending operations; can't apply IPN credit yet (will retry)`)
       return null
     }

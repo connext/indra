@@ -1,4 +1,5 @@
 import * as request from 'supertest'
+import { default as ChannelManagerABI } from '../abi/ChannelManager'
 
 import { getRedisClient } from '../RedisClient'
 import { PgPoolService } from '../DBEngine'
@@ -102,7 +103,7 @@ class MockWeb3Provider {
 
 class MockValidator extends Validator {
   constructor() {
-    super({} as any, '0xfoobar')
+    super('0xfoobar', {} as any, ChannelManagerABI.abi)
   }
 
   assertChannelSigner() {

@@ -1,15 +1,50 @@
-import BN = require('bn.js')
 import { BigNumber } from 'bignumber.js'
-import Web3 = require('web3')
+import BN = require('bn.js')
+import {
+  Block as EthersBlock,
+  Provider as EthersProvider,
+  TransactionReceipt as EthersTransactionReceipt,
+} from 'ethers/providers/abstract-provider';
+import { LogDescription as EthersEvent } from 'ethers/utils/interface';
+import { Transaction as EthersTransaction } from 'ethers/utils/transaction';
+import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable';
+import { default as CurrencyLib } from './lib/currency/Currency';
+
+export type Block = EthersBlock
+export type Event = EthersEvent
+export type Provider = EthersProvider
+export type Transaction = EthersTransaction
+export type TransactionReceipt = EthersTransactionReceipt
+
+/*********************************
+ ****** Currencies & Exchange Rates
+ *********************************/
+
+export const Currency = CurrencyLib
+export const CurrencyConvertable = CurrencyConvertableLib
+
+// TODO replace enums with not enums to be consistent throughout platform
+// see DW for how to do this
+export enum CurrencyType {
+  USD = 'USD',
+  ETH = 'ETH',
+  WEI = 'WEI',
+  FINNEY = 'FINNEY',
+  BOOTY = 'BOOTY',
+  BEI = 'BEI',
+}
+
+export type ExchangeRates = {
+  [key in CurrencyType]?: string | BigNumber
+}
+
+export interface ExchangeRateState {
+  lastUpdated: Date
+  rates: ExchangeRates
+}
 
 // define the common interfaces
 export type Address = string
-
-// alias functions
-// @ts-ignore
-export const isBN = BN.isBN
-// @ts-ignore
-export const isBigNum = BigNumber.isBigNumber
 
 /*********************************
  ****** CONSTRUCTOR TYPES ********
@@ -35,6 +70,12 @@ export type HubConfigBigNumber = HubConfig<BigNumber>
 /*********************************
  ****** HELPER FUNCTIONS *********
  *********************************/
+
+// alias functions
+// @ts-ignore
+export const isBN = BN.isBN
+// @ts-ignore
+export const isBigNum = BigNumber.isBigNumber
 
 export type NumericTypes = {
   'str': string
