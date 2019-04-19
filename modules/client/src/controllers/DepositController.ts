@@ -1,8 +1,7 @@
 import { ethers as eth } from 'ethers';
 import { AbstractController } from './AbstractController';
 import { toBN } from '../helpers/bn';
-import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
-import getTxCount from '../lib/getTxCount';
+import { getTxCount, getLastThreadUpdateId } from '../state/getters'
 import { validateTimestamp } from '../lib/timestamp';
 import {
   ChannelState,
@@ -37,8 +36,8 @@ export default class DepositController extends AbstractController {
     try {
       const sync = await this.hub.requestDeposit(
         signedRequest,
-        getTxCount(this.store),
-        getLastThreadUpdateId(this.store)
+        getTxCount(this.store.getState()),
+        getLastThreadUpdateId(this.store.getState())
       )
       this.connext.syncController.handleHubSync(sync)
     } catch (e) {

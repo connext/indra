@@ -2,8 +2,7 @@ import { isValidAddress } from 'ethereumjs-util';
 import { AbstractController } from './AbstractController'
 import { validateExchangeRate, } from './ExchangeController';
 import { toBN } from '../helpers/bn';
-import { getChannel } from '../lib/getChannel'
-import getTxCount from '../lib/getTxCount';
+import { getTxCount } from '../state/getters'
 import { validateTimestamp } from '../lib/timestamp';
 import {
   convertChannelState,
@@ -56,7 +55,7 @@ export default class WithdrawalController extends AbstractController {
       WithdrawalError(`User token withdrawals are not permitted at this time.`)
     }
 
-    const sync = await this.hub.requestWithdrawal(withdrawalStr, getTxCount(this.store))
+    const sync = await this.hub.requestWithdrawal(withdrawalStr, getTxCount(this.store.getState()))
     this.connext.syncController.handleHubSync(sync)
 
   }

@@ -1,5 +1,5 @@
-import { ethers as eth } from 'ethers';
 import BN = require('bn.js')
+import { ethers as eth } from 'ethers';
 import { CurrencyType } from '../types'
 
 // !!! WARNING !!!
@@ -7,6 +7,9 @@ import { CurrencyType } from '../types'
 // Some fields are used in one, some of the fields are used in the other
 // This needs to be cleaned up! Please clean this up!
 // !!! WARNING !!!
+
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+export const EMPTY_ROOT_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
 export const toFinney = (n: number|string) => eth.utils.parseUnits(String(n), 'finney')
 
@@ -38,11 +41,3 @@ export const BOOTY = {
   type: CurrencyType.BEI,
 }
 
-export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-
-//export const SIXTY_NINE_BOOTY = {
-//  amount: '69000000000000000000',
-//  type: CurrencyType.BEI,
-//}
-
-export const EMPTY_ROOT_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000'

@@ -3,8 +3,7 @@ import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext';
 import { toBN } from '../helpers/bn';
 import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
-import getExchangeRates from '../lib/getExchangeRates'
-import getTxCount from '../lib/getTxCount';
+import { getExchangeRates, getTxCount } from '../state/getters'
 import { Poller } from '../lib/poller/Poller';
 import * as actions from '../state/actions'
 import { ConnextStore } from '../state/store'
@@ -85,7 +84,7 @@ export class ExchangeController extends AbstractController {
       console.error(`User does not have sufficient wei or token for exchange. Wei: ${weiToSell}, tokens: ${tokensToSell}, channel: ${JSON.stringify(channel, null, 2)}`)
       return
     }
-    const sync = await this.hub.requestExchange(weiToSell, tokensToSell, getTxCount(this.store))
+    const sync = await this.hub.requestExchange(weiToSell, tokensToSell, getTxCount(this.store.getState()))
     this.connext.syncController.handleHubSync(sync)
 
   }

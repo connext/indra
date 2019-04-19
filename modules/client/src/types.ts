@@ -7,6 +7,8 @@ import {
 } from 'ethers/providers/abstract-provider';
 import { LogDescription as EthersEvent } from 'ethers/utils/interface';
 import { Transaction as EthersTransaction } from 'ethers/utils/transaction';
+import CurrencyConvertable from './lib/currency/CurrencyConvertable';
+import Currency from './lib/currency/Currency';
 
 export type Block = EthersBlock
 export type Event = EthersEvent
@@ -17,6 +19,9 @@ export type TransactionReceipt = EthersTransactionReceipt
 /*********************************
  ****** Currencies & Exchange Rates
  *********************************/
+
+export type Currency = Currency
+export type CurrencyConvertable = CurrencyConvertable
 
 // TODO replace enums with not enums to be consistent throughout platform
 // see DW for how to do this

@@ -5,7 +5,7 @@ import CurrencyConvertable from './CurrencyConvertable'
 import BN = require('bn.js')
 import Currency from './Currency';
 import { default as generateExchangeRates } from '../../testing/generateExchangeRates'
-import { default as getExchangeRates } from '../getExchangeRates'
+import { getExchangeRates } from '../../state/getters'
 import { ConnextState } from '../../state/store'
 import { reducers } from '../../state/reducers'
 import { CurrencyType } from '../../types'

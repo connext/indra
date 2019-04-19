@@ -1,6 +1,6 @@
 import { ethers as eth } from 'ethers';
 import { AbstractController } from './AbstractController'
-import { getChannel } from '../lib/getChannel'
+import { getChannel } from '../state/getters'
 import { assertUnreachable } from '../lib/utils';
 import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
 import { emptyAddress } from '../Utils';
@@ -40,7 +40,7 @@ export default class BuyController extends AbstractController {
     // get starting state of the channel within the store
     // you must be able to process multiple thread or channel payments
     // with this as the initial state
-    let curChannelState = getChannel(this.store)
+    let curChannelState = getChannel(this.store.getState())
     for (const payment of purchase.payments) {
       let newChannelState = null
       switch (payment.type) {

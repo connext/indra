@@ -15,7 +15,6 @@ import ThreadsController from './controllers/ThreadsController';
 import WithdrawalController from './controllers/WithdrawalController';
 import { Networking } from './helpers/networking';
 import { IHubAPIClient, HubAPIClient } from './Hub';
-import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import { default as Logger } from "./lib/Logger";
 import { isFunction, timeoutPromise } from "./lib/utils";
 import * as actions from './state/actions';

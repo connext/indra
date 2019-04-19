@@ -1,6 +1,5 @@
 import * as eth from 'ethers';
 import { Networking } from './helpers/networking'
-import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
 import {
   Address,
   ChannelRow,

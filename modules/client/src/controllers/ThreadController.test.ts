@@ -1,6 +1,5 @@
 import { PaymentArgs, ThreadState } from '@src/types';
 import { toBN } from '../helpers/bn';
-import { getChannel } from '../lib/getChannel';
 import { assert, mkAddress } from '../testing';
 import { MockConnextInternal, MockStore } from '../testing/mocks'
 

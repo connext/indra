@@ -2,6 +2,7 @@ import { ethers as eth } from 'ethers';
 import util = require('ethereumjs-util')
 import { MerkleUtils } from './helpers/merkleUtils'
 import MerkleTree from './helpers/merkleTree'
+import * as getters from './state/getters';
 import {
   ChannelState,
   convertChannelState,
@@ -24,6 +25,7 @@ export const emptyRootHash = eth.constants.HashZero
 export class Utils {
   emptyAddress = eth.constants.AddressZero
   emptyRootHash = eth.constants.HashZero
+  getters = getters
 
   public createDepositRequestProposalHash(
     req: Payment,

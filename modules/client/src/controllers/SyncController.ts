@@ -3,8 +3,7 @@ import Semaphore = require('semaphore')
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext'
 import { hasPendingOps } from '../hasPendingOps'
-import { getChannel } from '../lib/getChannel';
-import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
+import { getChannel, getLastThreadUpdateId } from '../state/getters';
 import { Poller } from '../lib/poller/Poller'
 import { assertUnreachable, maybe } from '../lib/utils'
 import * as actions from '../state/actions'
@@ -385,7 +384,7 @@ export default class SyncController extends AbstractController {
 
       const hubSync = await this.hub.sync(
         txCount,
-        getLastThreadUpdateId(this.store),
+        getLastThreadUpdateId(this.store.getState()),
       )
       if (!hubSync) {
         console.log('No updates found from the hub to sync')
@@ -633,7 +632,7 @@ export default class SyncController extends AbstractController {
     // console.log(`Sending updates to hub: ${state.updatesToSync.map(u => u && u.reason)}`, state.updatesToSync)
     // const [res, err] = await maybe(this.hub.updateHub(
     //   state.updatesToSync,
-    //   getLastThreadUpdateId(this.store),
+    //   getLastThreadUpdateId(this.store.getState()),
     // ))
 
     const chanSync = state.updatesToSync.filter(u => u.type == "channel")
@@ -641,7 +640,7 @@ export default class SyncController extends AbstractController {
     console.log(`Sending channel updates to hub: ${channelUp.map(u => u && u.reason)}`, chanSync)
     const [res, err] = await maybe(this.hub.updateHub(
       channelUp,
-      getLastThreadUpdateId(this.store),
+      getLastThreadUpdateId(this.store.getState()),
     ))
 
     const threadSync = state.updatesToSync.filter(u => u.type == "thread")
@@ -760,7 +759,7 @@ export default class SyncController extends AbstractController {
 
     // at the moment, you cannot invalidate states that have pending
     // operations and have been built on top of
-    const channel = getChannel(this.store)
+    const channel = getChannel(this.store.getState())
     if (
       // If the very first propose pending is invalidated, then the
       // channel.txCountGlobal will be 0
