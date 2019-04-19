@@ -83,9 +83,9 @@ export default class Wallet extends eth.Signer {
     }
     if (this.web3) {
       return await (
-        this.web3.eth.sign
-          ? this.web3.eth.sign(message, this.address)
-          : this.web3.eth.personal.sign(message, this.address, this.password)
+        this.password
+          ? this.web3.eth.personal.sign(message, this.address, this.password)
+          : this.web3.eth.sign(message, this.address)
       )
     }
   }
@@ -97,9 +97,9 @@ export default class Wallet extends eth.Signer {
     }
     if (this.web3) {
       return await (
-        this.web3.eth.signTransaction
-          ? (this.web3.eth.signTransaction as any)(tx)
-          : this.web3.eth.personal.signTransaction(tx, this.password)
+        this.password
+          ? this.web3.eth.personal.signTransaction(tx, this.password)
+          : (this.web3.eth.signTransaction as any)(tx)
       )
     }
   }
