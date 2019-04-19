@@ -277,24 +277,41 @@ export class PostgresChannelsDao implements ChannelsDao {
   }
 
   async getRecentTippers(user: string): Promise<number> {
+    // by default only count tippers as the number of
+    // senders in a payment. exclude optimistic types,
+    // since they are inserted into the view if they have
+    // failed or if they are new, and when they are completed
+    // they appear as PT_CHANNEL, or their underlying
+    // resolved types
+
+    // instead, include only the new payments from the 
+    // optimistic payments table directly
     const { num_tippers } = await this.db.queryOne(SQL`
       SELECT COUNT(DISTINCT sender) AS num_tippers
       FROM (
         SELECT * FROM payments
         WHERE
           recipient = ${user} AND
-          created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
+          created_on > NOW() - ${this.config.recentPaymentsInterval}::interval AND
+          payment_type <> 'PT_OPTIMISTIC'
 
         UNION
 
-        SELECT * FROM payments
+        SELECT *
+        FROM payments
         WHERE 
-          recipient = ${user} AND
-          payment_type = 'PT_OPTIMISTIC' AND
-          status <> 'FAILED'
+        	id = (
+	        	SELECT id 
+	        	FROM payments_optimistic
+	        	WHERE 
+		          recipient = ${user} AND
+		          status = 'NEW'
+		    ) AND
+	    	created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
       ) as t
     `)
 
+    // get all unique tippers from payments table
     return parseInt(num_tippers)
   }
 
