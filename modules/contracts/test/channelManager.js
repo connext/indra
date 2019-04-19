@@ -6,11 +6,19 @@ const privKeys = require("./privKeys.json");
 const CM = artifacts.require("./ChannelManager.sol");
 const HST = artifacts.require("./HumanStandardToken.sol");
 const data = require("../ops/data.json");
-const Connext = require("../../client/dist");
+const Connext = require("connext");
+const ConnextTester = require("connext/dist/testing");
 
 /* Setup Connext Client Stuff */
 const clientUtils = Connext.utils;
 const sg = new Connext.StateGenerator();
+const {
+  convertChannelState,
+  convertWithdrawal,
+  convertProposePending,
+  isBN
+} = Connext.types
+
 const {
   getChannelState,
   getThreadState,
@@ -19,13 +27,7 @@ const {
   getExchangeArgs,
   getPaymentArgs,
   getPendingArgs
-} = Connext.testing
-const {
-  convertChannelState,
-  convertWithdrawal,
-  convertProposePending,
-  isBN
-} = Connext.types
+} = ConnextTester
 
 should
   .use(require("chai-as-promised"))

@@ -1,6 +1,5 @@
 import { ConnextClient as Client, getConnextClient as createClient } from './Connext'
 import { StateGenerator } from './StateGenerator'
-import * as testing from './testing';
 import * as types from './types';
 import { Utils } from './Utils'
 import { Validator, } from './validator';
@@ -15,7 +14,6 @@ export {
   Client,
   createClient,
   StateGenerator,
-  testing,
   types,
   utils,
   Validator,
