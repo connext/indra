@@ -1,3 +1,4 @@
+import BN = require('bn.js')
 import * as eth from 'ethers';
 import { createStore } from 'redux'
 import {

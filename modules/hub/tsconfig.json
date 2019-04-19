@@ -5,7 +5,6 @@
     "sourceMap": true,
     "noImplicitAny": false,
     "strictPropertyInitialization": false,
-    // "declaration": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -14,7 +13,6 @@
     "module": "commonjs",
     "jsx": "react",
     "lib": ["es5", "es2015", "es6", "dom", "es2017"],
-    // "declarationDir": "dist/types",
     "typeRoots": [
       "src/@types",
       "node_modules/@types"
@@ -26,7 +24,8 @@
     "src/**/*.ts",
     "example/**/*.ts",
     "types/**/*.ts",
-    "node_modules/**/index.d.ts"
+    "node_modules/**/index.d.ts",
+    "node_modules/connext/dist/**/*.d.ts"
   ],
   "exclude": [
     "node_modules/**",

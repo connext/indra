@@ -2,7 +2,8 @@
   "name": "connext",
   "description": "Shared code between wallet and hub",
   "version": "3.0.19",
-  "main": "dist",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "devDependencies": {
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",

@@ -4,6 +4,7 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "baseUrl": ".",
+    "declaration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
@@ -33,8 +34,7 @@
         "./src/*",
         "./dist/*"
       ]
-    },
-    "allowJs": true
+    }
   },
   "include": [
     "src/**/*.ts"
