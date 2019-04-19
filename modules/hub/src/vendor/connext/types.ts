@@ -1062,7 +1062,7 @@ export type PurchaseRowWithPaymentsBN = PurchaseRowWithPayments<any, any, BN>
 // optimistic payments
 export type OptimisticPaymentStatus = "NEW" | "COMPLETED" | "FAILED"
 
-export type OptimisticPurchasePaymentRow<T = string> = Omit<PurchasePaymentRow<T>, "type" | "id" | "custodianAddress"> & {
+export type OptimisticPurchasePaymentRow<T = string> = Omit<PurchasePaymentRow<any, T>, "type" | "id" | "custodianAddress"> & {
   status: OptimisticPaymentStatus
   channelUpdateId: number
   paymentId: number,
