@@ -3,7 +3,10 @@ import { default as ChannelManagerAbi } from './ChannelManagerAbi'
 import {
   ChannelManagerChannelDetails,
   ChannelState,
+  Contract,
   Event,
+  Filter,
+  Interface,
   Provider,
   ThreadState,
   Transaction,
@@ -16,7 +19,7 @@ import Wallet from '../Wallet';
 //  - # extract abi & add "export default" on first line 
 
 export interface IChannelManager {
-  abi: any
+  abi: Interface
   rawAbi: any
   gasMultiple: number
   getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<Event[]>
@@ -35,10 +38,10 @@ export interface IChannelManager {
 
 export class ChannelManager implements IChannelManager {
   address: string
-  cm: any
+  cm: Contract
   gasMultiple: number
   provider: Provider
-  abi: any
+  abi: Interface
   rawAbi: any
   defaultSendArgs: any
 
@@ -53,7 +56,7 @@ export class ChannelManager implements IChannelManager {
   }
 
   async getPastEvents(eventName: string, args: string[], fromBlock: number) {
-    const filter = this.cm.filters[eventName](...args)
+    const filter = this.cm.filters[eventName](...args) as Filter
     filter.fromBlock = fromBlock
     filter.toBlock = "latest"
 
@@ -61,7 +64,7 @@ export class ChannelManager implements IChannelManager {
 
     const events = []
     for (let i in logs) {
-      events.push(this.abi.parseLog(logs[i]))
+      events.push(this.abi.parseLog(logs[i]) as Event)
     }
 
     console.log(`Got events: ${JSON.stringify(events,null,2)}`)

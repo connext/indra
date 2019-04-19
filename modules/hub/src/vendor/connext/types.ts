@@ -2,16 +2,24 @@ import { BigNumber } from 'bignumber.js'
 import BN = require('bn.js')
 import {
   Block as EthersBlock,
+  Filter as EthersFilter,
   Provider as EthersProvider,
   TransactionReceipt as EthersTransactionReceipt,
 } from 'ethers/providers/abstract-provider';
-import { LogDescription as EthersEvent } from 'ethers/utils/interface';
+import {
+  Interface as EthersInterface,
+  LogDescription as EthersEvent
+} from 'ethers/utils/interface';
+import { Contract as EthersContract } from 'ethers/contract';
 import { Transaction as EthersTransaction } from 'ethers/utils/transaction';
 import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable';
 import { default as CurrencyLib } from './lib/currency/Currency';
 
 export type Block = EthersBlock
+export type Contract = EthersContract
 export type Event = EthersEvent
+export type Filter = EthersFilter
+export type Interface = EthersInterface
 export type Provider = EthersProvider
 export type Transaction = EthersTransaction
 export type TransactionReceipt = EthersTransactionReceipt
