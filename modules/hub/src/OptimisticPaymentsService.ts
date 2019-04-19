@@ -2,7 +2,7 @@ import log from "./util/log";
 import { Poller } from "./vendor/connext/lib/poller/Poller";
 import ChannelsDao from "./dao/ChannelsDao";
 import DBEngine from "./DBEngine";
-import { convertPayment, PurchasePayment, OptimisticPurchasePaymentRow } from "./vendor/connext/types";
+import { convertPayment, PurchasePayment, OptimisticPurchasePaymentRow, OptimisticPurchasePaymentRowBigNumber } from "./vendor/connext/types";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import PaymentsService from "./PaymentsService";
 import { maybe } from "./util";
@@ -66,7 +66,7 @@ export class OptimisticPaymentsService {
           // if it does not, collateralize + wait for next polling
           const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(
             p.recipient, 
-            Big(p.amount.amountToken)
+            p.amount.amountToken
           ))
           if (err) {
             LOG.error(`Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`)
@@ -83,17 +83,17 @@ export class OptimisticPaymentsService {
     })
   }
 
-  private async sendChannelPayment(payment: OptimisticPurchasePaymentRow): Promise<void> {
+  private async sendChannelPayment(payment: OptimisticPurchasePaymentRowBigNumber): Promise<void> {
     // reconstruct purchase payment as if it came from user
     const purchasePayment: PurchasePayment = {
       recipient: payment.recipient,
       type: "PT_CHANNEL",
-      amount: payment.amount,
+      amount: convertPayment("str", payment.amount),
       meta: payment.meta,
       update: {
         reason: "Payment",
         args: {
-          ...payment.amount,
+          ...convertPayment("str", payment.amount),
           recipient: "hub"
         },
         txCount: null,
