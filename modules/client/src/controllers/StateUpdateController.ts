@@ -2,7 +2,6 @@ import { Unsubscribe } from 'redux'
 import { Action } from 'typescript-fsa/lib'
 import { AbstractController } from './AbstractController'
 import { validateExchangeRate } from './ExchangeController';
-import { hasPendingOps } from '../hasPendingOps'
 import { validateTimestamp } from '../lib/timestamp';
 import { assertUnreachable } from '../lib/utils'
 import * as actions from '../state/actions'
@@ -17,6 +16,9 @@ import {
   UpdateRequestTypes,
   ThreadState,
 } from '../types'
+import { Utils } from '../Utils';
+
+const utils = new Utils()
 
 type StateUpdateHandlers = {
   [Type in keyof UpdateRequestTypes]: (
@@ -508,7 +510,7 @@ export default class StateUpdateController extends AbstractController {
         )
       }
 
-      if (!hasPendingOps(prev)) {
+      if (!utils.hasPendingOps(prev)) {
         throw new Error(
           `Hub proposed invalidation for a double signed state with no ` +
           `pending fields. Invalidation: ${JSON.stringify(update)} ` +

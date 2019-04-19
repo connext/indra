@@ -1,7 +1,8 @@
-import { ethers as eth } from 'ethers';
 import util = require('ethereumjs-util')
-import { MerkleUtils } from './helpers/merkleUtils'
-import MerkleTree from './helpers/merkleTree'
+import { ethers as eth } from 'ethers';
+import MerkleTree from './helpers/merkleTree';
+import { MerkleUtils } from './helpers/merkleUtils';
+import { Poller } from './lib/poller/Poller';
 import * as getters from './state/getters';
 import {
   ChannelState,
@@ -26,6 +27,7 @@ export class Utils {
   emptyAddress = eth.constants.AddressZero
   emptyRootHash = eth.constants.HashZero
   getters = getters
+  Poller = Poller
 
   public createDepositRequestProposalHash(
     req: Payment,

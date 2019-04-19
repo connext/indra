@@ -2,7 +2,6 @@ import { ethers as eth } from 'ethers';
 import Semaphore = require('semaphore')
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext'
-import { hasPendingOps } from '../hasPendingOps'
 import { getChannel, getLastThreadUpdateId } from '../state/getters';
 import { Poller } from '../lib/poller/Poller'
 import { assertUnreachable, maybe } from '../lib/utils'
@@ -23,6 +22,8 @@ import {
   Transaction,
   UpdateRequest,
 } from '../types'
+import { Utils } from '../Utils';
+const utils = new Utils()
 
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 
@@ -422,7 +423,7 @@ export default class SyncController extends AbstractController {
     const state = this.getState()
 
     const { channel, channelUpdate } = this.getState().persistent
-    if (!hasPendingOps(channel))
+    if (!utils.hasPendingOps(channel))
       return
     
     // do not invalidate any states without a timeout
@@ -778,7 +779,7 @@ export default class SyncController extends AbstractController {
     // the corresponding state being invalidated (which is, for the moment,
     // always going to be our current state, as guaranteed by the check above)
     // has pending operations.
-    if (updateToInvalidate.sigUser && !hasPendingOps(channel)) {
+    if (updateToInvalidate.sigUser && !utils.hasPendingOps(channel)) {
       throw new Error(
         `Refusing to invalidate an update with no pending operations we have already signed: ` +
         `${JSON.stringify(updateToInvalidate)}`
