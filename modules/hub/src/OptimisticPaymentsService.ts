@@ -50,6 +50,15 @@ export class OptimisticPaymentsService {
           continue
         }
 
+        // collateralize before sending payment
+        const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(
+          p.recipient, 
+          p.amount.amountToken
+        ))
+        if (err) {
+          LOG.error(`Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`)
+        }
+
         // TODO: expiry time on optimistic payments
 
         // check if the payee channel has sufficient collateral
@@ -63,14 +72,7 @@ export class OptimisticPaymentsService {
         if (
           !sufficientCollateral('Token') || !sufficientCollateral('Wei')
         ) {
-          // if it does not, collateralize + wait for next polling
-          const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(
-            p.recipient, 
-            p.amount.amountToken
-          ))
-          if (err) {
-            LOG.error(`Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`)
-          }
+          // if there is no collateral, wait for next polling
           continue
         }
 
