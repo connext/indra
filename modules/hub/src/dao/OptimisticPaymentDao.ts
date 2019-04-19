@@ -1,15 +1,16 @@
 import log from "../util/log";
 import DBEngine, { SQL } from "../DBEngine";
 import { Client } from 'pg'
-import { OptimisticPurchasePaymentRow } from "../vendor/connext/types";
+import { OptimisticPurchasePaymentRowBigNumber } from "../vendor/connext/types";
+import { Big } from "../util/bigNumber";
 
 export default interface OptimisticPaymentDao {
   createOptimisticPayment(paymentId: number, channelUpdateId: number)
-  getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRow[]>
+  getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRowBigNumber[]>
   addOptimisticPaymentRedemption(paymentId: number, redemptionId: number): Promise<void>
   addOptimisticPaymentThread(paymentId: number, threadUpdateId: number): Promise<void>
   optimisticPaymentFailed(paymentId: number): Promise<void>
-  getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRow>
+  getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRowBigNumber>
 }
 
 const LOG = log('PostgresOptimisticPaymentDao')
@@ -32,7 +33,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     `)
   }
 
-  public async getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRow> {
+  public async getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRowBigNumber> {
     const row = await this.db.queryOne(SQL`
       SELECT * FROM (
         SELECT * 
@@ -55,7 +56,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     return this.rowToPaymentSummary(row)
   }
 
-  public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRow[]> {
+  public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRowBigNumber[]> {
     const { rows } = await this.db.query(SQL`
       SELECT * FROM (
         SELECT * 
@@ -109,12 +110,12 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     `)
   }
 
-  private mapRows(rows: any): OptimisticPurchasePaymentRow[] {
+  private mapRows(rows: any): OptimisticPurchasePaymentRowBigNumber[] {
     return rows.map(row => this.rowToPaymentSummary(row))
   }
 
   // expects there to be a channel_update_id field
-  private rowToPaymentSummary(row): OptimisticPurchasePaymentRow | null {
+  private rowToPaymentSummary(row): OptimisticPurchasePaymentRowBigNumber | null {
     return row && {
       paymentId: Number(row.id),
       createdOn: row.created_on,
@@ -122,8 +123,8 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
       sender: row.sender,
       recipient: row.recipient,
       amount: {
-        amountWei: row.amount_wei,
-        amountToken: row.amount_token,
+        amountWei: Big(row.amount_wei),
+        amountToken: Big(row.amount_token),
       },
       meta: row.meta,
       channelUpdateId: Number(row.channel_update_id),
