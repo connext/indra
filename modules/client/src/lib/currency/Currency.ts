@@ -1,6 +1,14 @@
 import { BigNumber } from 'bignumber.js'
 import BN = require('bn.js')
-import { CurrencyType } from '../../types'
+
+export enum CurrencyType {
+  USD = 'USD',
+  ETH = 'ETH',
+  WEI = 'WEI',
+  FINNEY = 'FINNEY',
+  BOOTY = 'BOOTY',
+  BEI = 'BEI',
+}
 
 export interface CurrencyFormatOptions {
   decimals?: number

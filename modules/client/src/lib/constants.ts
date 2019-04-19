@@ -1,6 +1,5 @@
 import BN = require('bn.js')
 import { ethers as eth } from 'ethers';
-import { CurrencyType } from '../types'
 
 // !!! WARNING !!!
 // There is a duplicate of this file in vynos/vynos/lib/constants.ts
@@ -38,6 +37,6 @@ export const FINNEY_AMOUNT = '1000'
 // TODO string these
 export const BOOTY = {
   amount: '1000000000000000000',
-  type: CurrencyType.BEI,
+  type: 'BEI',
 }
 

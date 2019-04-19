@@ -27,7 +27,7 @@ export default class Wallet extends eth.Signer {
 
     // Third choice: use hub's ethprovider (derived from hubUrl)
     } else if (opts.hubUrl.substring(opts.hubUrl.length - 4) === '/hub') {
-      const ethUrl = `${opts.hubUrl.substring(opts.hubUrl.length - 3)}/eth`
+      const ethUrl = `${opts.hubUrl.substring(0, opts.hubUrl.length - 4)}/eth`
       this.provider = new eth.providers.JsonRpcProvider(ethUrl)
 
     // Fallback: use default provider for this chain id
