@@ -290,7 +290,8 @@ export class PostgresChannelsDao implements ChannelsDao {
         SELECT * FROM payments
         WHERE 
           recipient = ${user} AND
-          payment_type = 'PT_OPTIMISTIC'
+          payment_type = 'PT_OPTIMISTIC' AND
+          status <> 'FAILED'
       ) as t
     `)
 
