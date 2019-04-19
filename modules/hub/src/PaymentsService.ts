@@ -1,6 +1,6 @@
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, PaymentArgs, convertPayment, convertChannelState, Payment,  } from "./vendor/connext/types";
+import { PurchasePayment, convertThreadState, UpdateRequest, PaymentArgs, convertPayment, convertChannelState, Payment, PurchaseRowWithPayments  } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -12,7 +12,6 @@ import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
-import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
 import { emptyAddress } from './vendor/connext/Utils';
 import GlobalSettingsDao from './dao/GlobalSettingsDao';

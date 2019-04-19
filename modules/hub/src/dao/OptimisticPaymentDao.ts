@@ -1,7 +1,7 @@
 import log from "../util/log";
 import DBEngine, { SQL } from "../DBEngine";
 import { Client } from 'pg'
-import { OptimisticPurchasePaymentRow } from "../domain/OptimisticPayment";
+import { OptimisticPurchasePaymentRow } from "../vendor/connext/types";
 
 export default interface OptimisticPaymentDao {
   createOptimisticPayment(paymentId: number, channelUpdateId: number)

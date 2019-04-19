@@ -1,6 +1,5 @@
-import {PurchasePaymentRow} from '../domain/Purchase'
 import DBEngine, {SQL} from '../DBEngine'
-import {PurchasePaymentSummary} from '../vendor/connext/types'
+import {PurchasePaymentSummary, PurchasePaymentRow} from '../vendor/connext/types'
 import Config from '../Config'
 import { emptyAddress } from '../vendor/connext/Utils';
 
