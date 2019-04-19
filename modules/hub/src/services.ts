@@ -269,8 +269,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   GlobalSettingsDao: {
     factory: (db: DBEngine<Client>) => 
       new PostgresGlobalSettingsDao(db),
-    dependencies: ['DBEngine'],
-    isSingleton: true
+    dependencies: ['DBEngine']
   },
 
   ChainsawDao: {

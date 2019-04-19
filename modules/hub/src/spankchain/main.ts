@@ -37,12 +37,13 @@ const hub = new PaymentHub(config)
 
 async function run() {
   const subcommands = {
+    'hub': args => hub.start(),
     'chainsaw': args => hub.startChainsaw(),
     'exit-channels': args => hub.startUnilateralExitChannels(args),
     'process-tx': args => hub.processTx(args[0]),
     'fix-channels': args => hub.fixBrokenChannels(),
     'burn-booty': args => hub.hubBurnBooty(+args[0]),
-    'hub': args => hub.start(),
+    'collateralize': args => hub.collateralizeChannel(args[0], Big(args[1]))
   }
 
   const cmd = process.argv[2] || 'hub'

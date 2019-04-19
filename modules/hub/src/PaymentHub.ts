@@ -22,6 +22,7 @@ import { Big } from './util/bigNumber'
 import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
 import { EventLog } from 'web3-core';
 import { OptimisticPaymentsService } from './OptimisticPaymentsService';
+import BigNumber from 'bignumber.js';
 
 const LOG = log('PaymentHub')
 
@@ -107,6 +108,12 @@ export default class PaymentHub {
   public async processTx(txHash: string) {
     const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
     await chainsaw.processSingleTx(txHash, true)
+  }
+
+  public async collateralizeChannel(user: string, amount: BigNumber) {
+    const context = new Context()
+    const channelsService = this.container.resolve<ChannelsService>('ChannelsService', { 'Context': context })
+    await channelsService.doCollateralizeIfNecessary(user, amount)
   }
 
   public async fixBrokenChannels() {

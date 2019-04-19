@@ -535,6 +535,40 @@ describe('ChannelsService', () => {
     })
   }).timeout(5000)
 
+  it('should manually collateralize to a target', async () => {
+    const channel = await channelUpdateFactory(registry, { balanceTokenHub: toWeiString(20) })
+
+    await service.doCollateralizeIfNecessary(channel.user, toWeiBigNum(100))
+    const {updates} = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    const latestUpdate = updates.pop()
+
+    const state = stateGenerator.proposePendingDeposit(
+      convertChannelState('bn', channel.state),
+      convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+    )
+
+    assertChannelStateEqual(state, {
+      pendingDepositTokenHub: toWeiString(80)
+    })
+  })
+
+  it('should manually collateralize not exceeding channel max', async () => {
+    const channel = await channelUpdateFactory(registry, { balanceTokenHub: toWeiString(20) })
+
+    await service.doCollateralizeIfNecessary(channel.user, toWeiBigNum(200))
+    const {updates} = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+    const latestUpdate = updates.pop()
+
+    const state = stateGenerator.proposePendingDeposit(
+      convertChannelState('bn', channel.state),
+      convertDeposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+    )
+
+    assertChannelStateEqual(state, {
+      pendingDepositTokenHub: toWeiString(149)
+    })
+  })
+
   it('should onboard a performer with an onchain hubAuthorizedUpdate', async () => {
     const user = mkAddress('0xabc')
     const sigUser = mkSig('0xddd')
