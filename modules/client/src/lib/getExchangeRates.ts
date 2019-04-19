@@ -1,4 +1,4 @@
-import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
+import { ExchangeRates } from '../types'
 import { ConnextState } from '../state/store'
 
 export const GET_EXCHANGE_RATES_ERROR = 'No exchange rates are set'

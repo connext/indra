@@ -1,6 +1,6 @@
 import { ethers as eth } from 'ethers';
 import BN = require('bn.js')
-import { CurrencyType } from '../state/ConnextState/CurrencyTypes'
+import { CurrencyType } from '../types'
 
 // !!! WARNING !!!
 // There is a duplicate of this file in vynos/vynos/lib/constants.ts

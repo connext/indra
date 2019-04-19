@@ -8,7 +8,7 @@ import { default as generateExchangeRates } from '../../testing/generateExchange
 import { default as getExchangeRates } from '../getExchangeRates'
 import { ConnextState } from '../../state/store'
 import { reducers } from '../../state/reducers'
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
+import { CurrencyType } from '../../types'
 import { MockConnextInternal, MockStore } from '../../testing/mocks';
 import { toFinney } from '../constants';
 

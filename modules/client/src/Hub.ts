@@ -1,13 +1,13 @@
 import * as eth from 'ethers';
 import { Networking } from './helpers/networking'
 import { getLastThreadUpdateId } from './lib/getLastThreadUpdateId';
-import { ExchangeRates } from './state/ConnextState/ExchangeRates'
 import {
   Address,
   ChannelRow,
   ChannelState,
   ChannelStateUpdate,
   channelUpdateToUpdateRequest,
+  ExchangeRates,
   HubConfig,
   Payment,
   PurchasePayment,

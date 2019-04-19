@@ -1,6 +1,6 @@
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
 import { BigNumber } from 'bignumber.js'
 import BN = require('bn.js')
+import { CurrencyType } from '../../types'
 
 export interface CurrencyFormatOptions {
   decimals?: number

@@ -1,7 +1,7 @@
 import {assert, expect} from 'chai'
 import Currency from './Currency'
 import CurrencyConvertable from './CurrencyConvertable';
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
+import { CurrencyType } from '../../types'
 import { parameterizedTests } from '../../testing'
 
 describe('Currency', () => {

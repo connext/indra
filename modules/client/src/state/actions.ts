@@ -1,9 +1,17 @@
 import { SyncControllerState, RuntimeState, PendingRequestedDeposit } from './store'
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
 //import Wallet from 'ethereumjs-wallet'
-import { ChannelState, SyncResult, Address, UpdateRequest, ChannelStatus, ThreadHistoryItem, ThreadState } from '../types'
 import { ConnextState } from '../state/store'
-import { ExchangeRateState } from './ConnextState/ExchangeRates'
+import {
+  Address,
+  ChannelState,
+  ChannelStatus,
+  ExchangeRateState,
+  SyncResult,
+  ThreadHistoryItem,
+  ThreadState,
+  UpdateRequest,
+} from '../types'
 
 const actionCreator = actionCreatorFactory('connext')
 

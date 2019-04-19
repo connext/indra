@@ -1,4 +1,4 @@
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
+import { CurrencyType } from '../../types'
 import Currency, { ICurrency } from "./Currency";
 import BN = require('bn.js')
 import { BOOTY } from "../constants";

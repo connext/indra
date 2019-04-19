@@ -4,8 +4,8 @@ import {Store} from 'redux'
 import BN = require('bn.js')
 import { BEI_AMOUNT, WEI_AMOUNT } from '../constants'
 import { BigNumber } from 'bignumber.js'
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
-import { ExchangeRates } from '../../state/ConnextState/ExchangeRates'
+import { CurrencyType } from '../../types'
+import { ExchangeRates } from '../../types'
 
 export default class CurrencyConvertable extends Currency {
   protected exchangeRates: () => ExchangeRates

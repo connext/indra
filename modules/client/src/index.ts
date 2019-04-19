@@ -1,4 +1,4 @@
-import { ConnextClient } from './Connext'
+import { ConnextClient as Client, getConnextClient as createClient } from './Connext'
 import { StateGenerator } from './StateGenerator'
 import * as testing from './testing';
 import * as types from './types';
@@ -7,8 +7,13 @@ import { Validator, } from './validator';
 
 const utils = new Utils()
 
+// Recommended import patterns:
+// - const Connext = require('connext');
+// - import * as Connext from 'connext';
+
 export {
-  ConnextClient,
+  Client,
+  createClient,
   StateGenerator,
   testing,
   types,

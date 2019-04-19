@@ -18,7 +18,6 @@ import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
 import { IChannelManager } from '../contract/ChannelManager'
 import { toBN } from '../helpers/bn'
 import { IHubAPIClient } from '../Hub'
-import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
 import { reducers } from "../state/reducers";
 import { ConnextState, PersistentState, RuntimeState } from '../state/store';
 import { StateGenerator } from '../StateGenerator';
@@ -40,6 +39,7 @@ import {
   Event,
   ExchangeArgs,
   ExchangeArgsBN,
+  ExchangeRates,
   HubConfig,
   Omit,
   PaymentBN,
