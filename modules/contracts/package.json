@@ -41,7 +41,7 @@
     "ethjs-rpc": "^0.2.0",
     "ganache-cli": "6.1.8",
     "solc": "^0.4.25",
-    "truffle": "^5.0.0-beta.2",
+    "truffle": "^5.0.13",
     "truffle-hdwallet-provider": "^1.0.0-web3one.1",
     "typechain": "0.3.14"
   },
