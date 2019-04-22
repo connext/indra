@@ -1,3 +1,4 @@
+import { StateGenerator, Utils, Validator } from './Connext';
 import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
 import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
@@ -52,13 +53,10 @@ import { PostgresFeatureFlagsDao } from './dao/FeatureFlagsDao'
 import FeatureFlagsApiService from './api/FeatureFlagsApiService'
 import { ApiServer } from './ApiServer'
 import { DefaultAuthHandler } from './middleware/AuthHandler'
-import { Utils } from './vendor/connext/Utils'
-import { Validator } from './vendor/connext/validator'
 import ThreadsService from './ThreadsService'
 import ThreadsApiService from './api/ThreadsApiService';
 import { OnchainTransactionService } from "./OnchainTransactionService";
 import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
-import { StateGenerator } from './vendor/connext/StateGenerator';
 import { SignerService } from './SignerService';
 import PaymentsService from './PaymentsService';
 import { NgrokService } from './NgrokService'

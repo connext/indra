@@ -1,3 +1,4 @@
+import { Poller } from './Connext'
 import { default as Config } from './Config'
 import { prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
@@ -9,7 +10,6 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import { SignerService } from './SignerService';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
-import { Poller } from './vendor/connext/lib/poller/Poller'
 
 const LOG = log('CloseChannelService')
 

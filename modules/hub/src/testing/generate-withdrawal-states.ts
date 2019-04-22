@@ -1,10 +1,12 @@
+import * as Connext from '../Connext';
 const fs = require("fs")
 const vm = require('vm')
 import * as t from './index'
-
-import { convertChannelState, WithdrawalArgs, convertWithdrawal } from '../vendor/connext/types'
 import { PartialSignedOrSuccinctChannel, getChannelState, mkHash, mkAddress, mkSig } from './stateUtils'
 import BN = require('bn.js') // no import means ts errs?
+
+type WithdrawalArgs = Connext.types.WithdrawalArgs
+const { convertChannelState, convertWithdrawal } = Connext.types
 
 /**
  * Generates a list of all the possible types of withdrawal that can be

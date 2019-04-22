@@ -1,7 +1,6 @@
 import * as fs from 'fs'
-import { Utils } from './vendor/connext/Utils'
+import { types, Utils } from './Connext';
 import Config from './Config'
-import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails, Omit } from './vendor/connext/types'
 import { ChannelManager } from './ChannelManager';
 import * as ethUtils from 'ethereumjs-util'
 import log from './util/log'
@@ -9,6 +8,11 @@ import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransact
 import { rawTxnToTx } from './util/ethTransaction';
 import { Block } from 'web3-eth';
 import Web3 from 'web3';
+
+type ChannelState<T=string> = types.ChannelState<T>
+type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
+type Omit<T, K extends keyof T> = types.Omit<T, K>
+type UnsignedChannelState = types.UnsignedChannelState
 
 const LOG = log('SignerService')
 

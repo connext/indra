@@ -1,12 +1,14 @@
+import * as eth from 'ethers';
 import { assert, getTestRegistry } from '../testing'
 import { channelAndThreadFactory, tokenVal, channelUpdateFactory } from "../testing/factories";
 import { getThreadState, getChannelState, mkAddress } from "../testing/stateUtils";
-import { emptyAddress } from '../vendor/connext/Utils';
 import ChannelsDao from './ChannelsDao';
 import ThreadsDao from './ThreadsDao';
 import { PaymentMetaDao } from './PaymentMetaDao';
 import PaymentsDao from './PaymentsDao';
 import { testHotWalletAddress } from '../testing/mocks';
+
+const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentMetaDao', () => {
   const registry = getTestRegistry()

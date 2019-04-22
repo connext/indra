@@ -1,3 +1,4 @@
+import * as Connext from '../Connext';
 import DBEngine from '../DBEngine'
 import { BigNumber } from 'bignumber.js'
 import { getTestRegistry } from '../testing'
@@ -8,9 +9,10 @@ import {
   mkAddress,
   assert,
 } from '../testing/stateUtils'
-import { convertThreadState } from '../vendor/connext/types'
 import { channelAndThreadFactory } from '../testing/factories';
 import { testChannelManagerAddress } from '../testing/mocks';
+
+const { convertThreadState } = Connext.types
 
 describe('ThreadsDao', () => {
   const registry = getTestRegistry()

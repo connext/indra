@@ -1,3 +1,4 @@
+import { types } from './Connext';
 import {assert, getTestRegistry, TestServiceRegistry} from './testing'
 import {
   assertChannelStateEqual,
@@ -10,10 +11,10 @@ import {
 import {Big} from './util/bigNumber'
 import ThreadsService from './ThreadsService'
 import {ThreadStateBigNum} from './domain/Thread'
-import {convertChannelState, convertThreadState} from './vendor/connext/types'
 import {ChannelStateUpdateRowBigNum} from './domain/Channel'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 
+const { convertChannelState, convertThreadState } = types
 const fakeSig = mkSig('0xfff')
 
 describe.skip('ThreadsService', () => { // TODO REB-35: enable threads

@@ -1,16 +1,31 @@
+import * as eth from 'ethers';
+import { StateGenerator, types } from './Connext';
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
-import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
-import { StateGenerator } from "./vendor/connext/StateGenerator";
 import { toWeiString, Big } from "./util/bigNumber";
-import { emptyAddress } from "./vendor/connext/Utils";
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 import Config from "./Config";
+
+type DepositArgs<T=string> = types.DepositArgs<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type PurchasePayment = types.PurchasePayment
+type ThreadState = types.ThreadState
+type ThreadStateUpdate = types.ThreadStateUpdate
+type UpdateRequest = types.UpdateRequest
+
+const {
+  convertChannelState,
+  convertDeposit,
+  convertPayment,
+  convertThreadState,
+} = types
+
+const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsService', () => {
   const registry = getTestRegistry()

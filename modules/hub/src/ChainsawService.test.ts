@@ -1,3 +1,5 @@
+import * as eth from 'ethers';
+import { StateGenerator, types, Utils } from './Connext';
 import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
 import ChainsawDao from './dao/ChainsawDao'
@@ -7,10 +9,7 @@ import {ChannelManager} from './ChannelManager'
 import abi, {BYTECODE} from './abi/ChannelManager'
 import {assert} from 'chai'
 import * as sinon from 'sinon'
-import {Utils, emptyRootHash} from './vendor/connext/Utils'
 import {BigNumber} from 'bignumber.js'
-import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
-import { StateGenerator } from './vendor/connext/StateGenerator'
 import Web3 = require('web3')
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent';
 import { mkAddress, mkSig } from './testing/stateUtils';
@@ -18,6 +17,13 @@ import { channelUpdateFactory } from './testing/factories';
 import { ChannelStateUpdateRowBigNum } from './domain/Channel';
 import { EventLog } from 'web3-core';
 
+type ChannelState<T=string> = types.ChannelState<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type DepositArgs<T=string> = types.DepositArgs<T>
+type ChannelStateBigNumber = types.ChannelStateBigNumber
+
+const { convertChannelState } = types
+const emptyRootHash = eth.constants.HashZero
 const GAS_PRICE = '1000000000'
 
 describe('ChainsawService::mocked Web3', function() {

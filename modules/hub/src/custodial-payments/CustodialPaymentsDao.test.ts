@@ -1,6 +1,5 @@
-import { Payment } from '../vendor/connext/types'
+import * as Connext from '../Connext'
 import { TestServiceRegistry } from '../testing'
-import { PaymentArgs } from '../vendor/connext/types'
 import { default as DBEngine } from '../DBEngine'
 import { SQL } from '../DBEngine'
 import { mkAddress } from '../testing/stateUtils'
@@ -8,6 +7,9 @@ import { assert, getTestRegistry } from '../testing'
 import { channelUpdateFactory } from '../testing/factories'
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { PaymentMetaDao } from '../dao/PaymentMetaDao'
+
+type Payment = Connext.types.Payment
+type PaymentArgs = Connext.types.PaymentArgs
 
 export async function createTestPayment(
   registry: TestServiceRegistry,

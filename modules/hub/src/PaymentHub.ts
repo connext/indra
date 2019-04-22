@@ -1,3 +1,4 @@
+import { types } from './Connext';
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import { CloseChannelService } from './CloseChannelService'
 import Config from './Config'
@@ -16,12 +17,13 @@ import { ChannelManager } from './ChannelManager'
 const Web3 = require('web3')
 import abi from './abi/ChannelManager'
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
-import { channelNumericFields } from './vendor/connext/types'
 import * as readline from 'readline'
 import { Big } from './util/bigNumber'
 import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
 import { EventLog } from 'web3-core';
 import BigNumber from 'bignumber.js';
+
+const { channelNumericFields } = types
 
 const LOG = log('PaymentHub')
 

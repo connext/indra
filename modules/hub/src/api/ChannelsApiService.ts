@@ -1,7 +1,6 @@
+import * as Connext from '../Connext';
 import { getUserFromRequest } from '../util/request'
 import { default as Config } from '../Config'
-import { convertWithdrawalParameters } from '../vendor/connext/types'
-import { UpdateRequest } from '../vendor/connext/types'
 import * as express from 'express'
 import { ApiService } from './ApiService'
 import log from '../util/log'
@@ -11,6 +10,8 @@ import { Big } from '../util/bigNumber'
 import { prettySafeJson } from '../util'
 import { Role } from '../Role'
 
+type UpdateRequest = Connext.types.UpdateRequest
+const convertWithdrawalParameters = Connext.types.convertWithdrawalParameters
 const LOG = log('ChannelsApiService')
 
 export default class ChannelsApiService extends ApiService<

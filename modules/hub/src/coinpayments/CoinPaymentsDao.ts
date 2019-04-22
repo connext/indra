@@ -1,10 +1,13 @@
+import * as Connext from '../Connext';
 import { Big } from '../util/bigNumber'
 import { BigNumber } from 'bignumber.js/bignumber'
 import { CoinPaymentsIpnData } from './CoinPaymentsService'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { CPGetCallbackAddressResponse } from './CoinPaymentsApiClient'
-import { ChannelStateUpdateBigNumber, DepositArgs } from '../vendor/connext/types'
 import { ChannelStateUpdateRow } from '../domain/Channel'
+
+type ChannelStateUpdateBigNumber = Connext.types.ChannelStateUpdateBigNumber
+type DepositArgs = Connext.types.DepositArgs
 
 export interface CoinPaymentsDepositAddress {
   address: string

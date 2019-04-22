@@ -1,3 +1,4 @@
+import { types, Utils, Validator } from '../Connext'
 import * as crypto from 'crypto'
 import { default as DBEngine } from '../DBEngine'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
@@ -5,15 +6,15 @@ import { default as Config } from '../Config'
 import { CoinPaymentsDao, CoinPaymentsIpnRow, CoinPaymentsDepositAddress } from './CoinPaymentsDao'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
 import { prettySafeJson, parseQueryString, safeInt } from '../util'
-import { PaymentArgs, convertChannelState, DepositArgs } from '../vendor/connext/types'
-import { Validator } from '../vendor/connext/validator'
 import { SignerService } from '../SignerService'
 import { BigNumber } from 'bignumber.js/bignumber'
-import { Utils } from '../vendor/connext/Utils'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as ChannelsService } from '../ChannelsService'
 import { default as log } from '../util/log'
 
+type DepositArgs = types.DepositArgs
+type PaymentArgs = types.PaymentArgs
+const { convertChannelState } = types
 const utils = new Utils()
 const LOG = log('CoinPaymentsService')
 

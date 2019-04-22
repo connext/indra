@@ -1,6 +1,7 @@
+import * as eth from 'ethers';
+import { types, Validator } from './Connext';
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment, DepositArgs, convertDeposit } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
@@ -8,21 +9,37 @@ import ChannelsDao from "./dao/ChannelsDao";
 import Config from "./Config";
 import { prettySafeJson } from "./util";
 import { Big } from "./util/bigNumber";
-import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
 import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
-import { emptyAddress } from './vendor/connext/Utils';
 import GlobalSettingsDao from './dao/GlobalSettingsDao';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
+
+type ChannelStateUpdate = types.ChannelStateUpdate
+type DepositArgs<T=string> = types.DepositArgs<T>
+type Payment<T=string> = types.Payment<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type PaymentArgsBN = types.PaymentArgsBN
+type PaymentArgsBigNumber = types.PaymentArgsBigNumber
+type PurchasePayment = types.PurchasePayment
+type PurchasePaymentSummary = types.PurchasePaymentSummary
+type UpdateRequest<T=string> = types.UpdateRequest<T>
+type UpdateRequestBigNumber = types.UpdateRequestBigNumber
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
   { error: false; res: T }
 )
 
+const {
+  convertChannelState,
+  convertDeposit,
+  convertPayment,
+  convertThreadState,
+} = types
+const emptyAddress = eth.constants.AddressZero
 const LOG = log('PaymentsService')
 
 export default class PaymentsService {

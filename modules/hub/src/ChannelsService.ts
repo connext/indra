@@ -1,5 +1,5 @@
+import { StateGenerator, types, Utils, Validator } from './Connext';
 import { redisCache } from './RedisClient'
-import { Utils } from './vendor/connext/Utils'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
@@ -11,35 +11,11 @@ import {
   ChannelRow,
   ChannelStateUpdateRowBigNum,
 } from './domain/Channel'
-import { Validator } from './vendor/connext/validator'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { Big, toWeiBigNum } from './util/bigNumber'
 import { ThreadStateUpdateRow } from './domain/Thread'
 import { RedisClient } from './RedisClient'
 import { ChannelManager } from './ChannelManager'
-import {
-  ChannelStateUpdate,
-  UnsignedChannelState,
-  DepositArgs,
-  WithdrawalArgs,
-  ExchangeArgs,
-  convertChannelState,
-  convertThreadState,
-  ThreadState,
-  convertPayment,
-  PaymentArgs,
-  UpdateRequestBigNumber,
-  UpdateRequest,
-  ChannelStateBigNumber,
-  SyncResult,
-  WithdrawalParametersBigNumber,
-  ChannelStateBN,
-  InvalidationArgs,
-  Sync,
-  convertWithdrawalParameters,
-  convertWithdrawal,
-  convertArgs,
-} from './vendor/connext/types'
 import { prettySafeJson, Omit, maybe } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
@@ -47,10 +23,34 @@ import ThreadsService from './ThreadsService';
 import { SignerService } from './SignerService';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import { StateGenerator } from './vendor/connext/StateGenerator';
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 
+type ChannelStateBN = types.ChannelStateBN
+type ChannelStateBigNumber = types.ChannelStateBigNumber
+type ChannelStateUpdate = types.ChannelStateUpdate
+type DepositArgs<T=string> = types.DepositArgs<T>
+type ExchangeArgs = types.ExchangeArgs
+type InvalidationArgs = types.InvalidationArgs
+type Payment<T=string> = types.Payment<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type Sync = types.Sync
+type SyncResult = types.SyncResult
+type ThreadState = types.ThreadState
+type UnsignedChannelState = types.UnsignedChannelState
+type UpdateRequest<T=string> = types.UpdateRequest<T>
+type UpdateRequestBigNumber = types.UpdateRequestBigNumber
+type WithdrawalArgs<T=string> = types.WithdrawalArgs<T>
+type WithdrawalParametersBigNumber = types.WithdrawalParametersBigNumber
+
+const {
+  convertArgs,
+  convertChannelState,
+  convertPayment,
+  convertThreadState,
+  convertWithdrawal,
+  convertWithdrawalParameters,
+} = types
 const utils = new Utils()
 const LOG = log('ChannelsService')
 

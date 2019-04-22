@@ -1,5 +1,8 @@
-import { ThreadState, ThreadStatus } from '../vendor/connext/types'
+import * as Connext from '../Connext';
 import { BigNumber } from 'bignumber.js'
+
+type ThreadState<T = string> = Connext.types.ThreadState<T>
+type ThreadStatus = Connext.types.ThreadStatus
 
 // A single thread state, encompasing exactly the fields which are signed, and
 // the two signatures.

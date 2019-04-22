@@ -1,4 +1,7 @@
-import { PurchasePaymentSummary, Payment } from "../vendor/connext/types";
+import * as Connext from '../Connext';
+
+type PurchasePaymentSummary<T=any> = Connext.types.PurchasePaymentSummary<T>
+type Payment = Connext.types.Payment
 
 export type PurchaseRowWithPayments<MetaType=any, PaymentMetaType=any> = {
   purchaseId: string

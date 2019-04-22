@@ -1,8 +1,11 @@
+import * as eth from 'ethers';
+import * as Connext from '../Connext';
 import {PurchasePaymentRow} from '../domain/Purchase'
 import DBEngine, {SQL} from '../DBEngine'
-import {PurchasePaymentSummary} from '../vendor/connext/types'
 import Config from '../Config'
-import { emptyAddress } from '../vendor/connext/Utils';
+
+type PurchasePaymentSummary = Connext.types.PurchasePaymentSummary
+const emptyAddress = eth.constants.AddressZero
 
 export interface PaymentMetaDao {
   save (purchaseId: string, payment: PurchasePaymentSummary): Promise<number>

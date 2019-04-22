@@ -1,20 +1,20 @@
 import { BigNumber } from 'bignumber.js'
-import {
-  ChannelState,
-  ChannelStatus,
-  ChannelStateUpdate,
-  convertChannelState,
-  PaymentArgsBigNumber,
-  ExchangeArgsBigNumber,
-  DepositArgsBigNumber,
-  WithdrawalArgsBigNumber,
-  InvalidationReason
-} from '../vendor/connext/types'
+import { Utils, types } from '../Connext'
 import {
   objValuesBigNumToString,
   objValuesStringToBigNum,
 } from '../util'
-import { Utils } from '../vendor/connext/Utils'
+
+type ChannelState<T = string> = types.ChannelState<T>
+type ChannelStatus = types.ChannelStatus
+type ChannelStateUpdate<T = string> = types.ChannelStateUpdate<T>
+type PaymentArgsBigNumber = types.PaymentArgsBigNumber
+type ExchangeArgsBigNumber = types.ExchangeArgsBigNumber
+type DepositArgsBigNumber = types.DepositArgsBigNumber
+type WithdrawalArgsBigNumber = types.WithdrawalArgsBigNumber
+type InvalidationReason = types.InvalidationReason
+
+const { convertChannelState } = types
 
 // TODO move all to connext?
 

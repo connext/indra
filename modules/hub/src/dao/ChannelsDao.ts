@@ -1,27 +1,25 @@
+import * as eth from 'ethers';
+import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
-import {
-  ChannelUpdateReason,
-  ChannelState,
-  ArgsTypes,
-  ChannelStateBigNumber,
-  convertArgs,
-  InvalidationArgs,
-  ChannelStatus,
-  Address,
-} from '../vendor/connext/types'
 import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
-import {
-  ChannelStateUpdateRowBigNum,
-  ChannelRowBigNum,
-} from '../domain/Channel'
+import { ChannelStateUpdateRowBigNum, ChannelRowBigNum } from '../domain/Channel'
 import { prettySafeJson } from '../util'
 import { Big } from '../util/bigNumber'
-import { emptyRootHash } from '../vendor/connext/Utils'
 import { default as log } from '../util/log'
 import { mkSig } from '../testing/stateUtils';
 import { OnchainTransactionRow } from '../domain/OnchainTransaction';
+
+type ChannelUpdateReason = Connext.types.ChannelUpdateReason
+type ChannelState = Connext.types.ChannelState
+type ArgsTypes = Connext.types.ArgsTypes
+type ChannelStateBigNumber = Connext.types.ChannelStateBigNumber
+type InvalidationArgs = Connext.types.InvalidationArgs
+type ChannelStatus = Connext.types.ChannelStatus
+type Address = Connext.types.Address
+const convertArgs = Connext.types.convertArgs
+const emptyRootHash = eth.constants.HashZero
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBigNum | null>

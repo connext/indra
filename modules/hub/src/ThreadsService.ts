@@ -1,22 +1,24 @@
+import { types, Validator } from './Connext';
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
-import { Validator } from './vendor/connext/validator'
-import {
-  convertChannelState,
-  convertPayment,
-  convertThreadState,
-  ThreadState,
-  ThreadStateBigNumber,
-  UnsignedThreadState,
-  PaymentArgs
-} from './vendor/connext/types'
 import { ThreadRow, ThreadStateBigNum, ThreadStateUpdateRow } from './domain/Thread'
 import { ChannelStateUpdateRowBigNum } from './domain/Channel'
 import { SignerService } from './SignerService'
 import { prettySafeJson } from './util'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
+
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type ThreadState<T=string> = types.ThreadState<T>
+type ThreadStateBigNumber = types.ThreadStateBigNumber
+type UnsignedThreadState<T=string> = types.UnsignedThreadState<T>
+
+const {
+  convertChannelState,
+  convertPayment,
+  convertThreadState,
+} = types
 
 const LOG = log('ThreadsService')
 

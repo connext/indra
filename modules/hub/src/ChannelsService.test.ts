@@ -1,3 +1,4 @@
+import { StateGenerator, types } from './Connext';
 import { parameterizedTests } from './testing'
 import ChannelsDao, { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
@@ -21,24 +22,6 @@ import {
   PartialSignedOrSuccinctChannel,
 } from './testing/stateUtils'
 import { Big, toWeiBigNum, toWeiString } from './util/bigNumber'
-import {
-  ChannelState,
-  ChannelUpdateReason,
-  convertChannelState,
-  UpdateRequest,
-  DepositArgs,
-  convertDeposit,
-  convertExchange,
-  PaymentArgs,
-  isBigNum,
-  convertWithdrawal,
-  Payment,
-  InvalidationArgs,
-  WithdrawalArgs,
-  WithdrawalParametersBigNumber,
-  UpdateRequestBigNumber,
-  DepositArgsBigNumber,
-} from './vendor/connext/types'
 import Web3 = require('web3')
 import ThreadsDao from './dao/ThreadsDao'
 import {
@@ -46,7 +29,6 @@ import {
   tokenVal,
   channelAndThreadFactory,
 } from './testing/factories'
-import { StateGenerator } from './vendor/connext/StateGenerator'
 import PaymentsService from './PaymentsService';
 import { extractWithdrawalOverrides, createWithdrawalParams } from './testing/generate-withdrawal-states';
 import Config from './Config';
@@ -57,6 +39,20 @@ import ThreadsService from './ThreadsService';
 import DBEngine, { SQL } from './DBEngine';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { OnchainTransactionService } from './OnchainTransactionService';
+
+type ChannelState<T=string> = types.ChannelState<T>
+type ChannelUpdateReason = types.ChannelUpdateReason
+type DepositArgs<T=string> = types.DepositArgs<T>
+type DepositArgsBigNumber = types.DepositArgsBigNumber
+type InvalidationArgs = types.InvalidationArgs
+type Payment<T=string> = types.Payment<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type UpdateRequest<T=string> = types.UpdateRequest<T>
+type UpdateRequestBigNumber = types.UpdateRequestBigNumber
+type WithdrawalArgs<T=string> = types.WithdrawalArgs<T>
+type WithdrawalParametersBigNumber = types.WithdrawalParametersBigNumber
+
+const { convertChannelState, convertDeposit, convertExchange, convertWithdrawal, isBigNum } = types
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any

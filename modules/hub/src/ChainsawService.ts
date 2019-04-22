@@ -1,15 +1,13 @@
-import { convertChannelState, EmptyChannelArgs } from './vendor/connext/types'
+import { types, Utils, Validator } from './Connext';
+
 import ChainsawDao, { PollType } from './dao/ChainsawDao'
 import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
 import Config from './Config'
 import { ChannelManager } from './ChannelManager'
 import ChannelsDao from './dao/ChannelsDao'
-import { ChannelState, ConfirmPendingArgs } from './vendor/connext/types'
-import { Utils } from './vendor/connext/Utils'
 import { sleep, prettySafeJson, safeJson } from './util'
 import { default as DBEngine } from './DBEngine'
-import { Validator } from './vendor/connext/validator';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { SignerService } from './SignerService';
 import { RedisClient } from './RedisClient';
@@ -17,8 +15,12 @@ import { OnchainTransactionService } from './OnchainTransactionService';
 import { EventLog } from 'web3-core';
 import Web3 from 'web3';
 
-const LOG = log('ChainsawService')
+type ChannelState<T=string> = types.ChannelState<T>
+type ConfirmPendingArgs = types.ConfirmPendingArgs
+type EmptyChannelArgs = types.EmptyChannelArgs
 
+const { convertChannelState } = types
+const LOG = log('ChainsawService')
 const CONFIRMATION_COUNT = 3
 const POLL_INTERVAL = 1000
 
