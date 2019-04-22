@@ -44,7 +44,7 @@ export default class Wallet extends eth.Signer {
 
     // First choice: Sign w private key
     if (opts.privateKey) {
-      this.signer = eth.Wallet.fromMnemonic(opts.mnemonic || '')
+      this.signer = new eth.Wallet(opts.privateKey || '')
       this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
 
