@@ -7,11 +7,10 @@ import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import PaymentsService from "./PaymentsService";
 import { maybe } from "./util";
 import ChannelsService from "./ChannelsService";
-import { Big } from "./util/bigNumber";
 
 const LOG = log('OptimisticPaymentsService')
 
-const POLL_INTERVAL = 1000
+const POLL_INTERVAL = 2 * 1000
 
 export class OptimisticPaymentsService {
   private poller: Poller
@@ -50,35 +49,31 @@ export class OptimisticPaymentsService {
           continue
         }
 
-        // collateralize before sending payment
-        const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(
-          p.recipient, 
-          p.amount.amountToken
-        ))
-        if (err) {
-          LOG.error(`Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`)
-        }
-
         // TODO: expiry time on optimistic payments
-
-        // check if the payee channel has sufficient collateral
-
-        const paymentBig = convertPayment("bignumber", p.amount)
-        const sufficientCollateral = (type: 'Token' | 'Wei') => {
-          const hubKey = 'balance' + type + 'Hub'
-          const paymentKey = 'amount' + type
-          return payeeChan.state[hubKey].gte(paymentBig[paymentKey])
-        }
-        if (
-          !sufficientCollateral('Token') || !sufficientCollateral('Wei')
-        ) {
-          // if there is no collateral, wait for next polling
-          continue
-        }
 
         // if the hub has sufficient collateral, forward the
         // payment
-        await this.sendChannelPayment(p)
+        try {
+          const paymentBig = convertPayment("bignumber", p.amount)
+          const sufficientCollateral = (type: 'Token' | 'Wei') => {
+            const hubKey = 'balance' + type + 'Hub'
+            const paymentKey = 'amount' + type
+            return payeeChan.state[hubKey].gte(paymentBig[paymentKey])
+          }
+          if (
+            sufficientCollateral('Token') && sufficientCollateral('Wei')
+          ) {
+            await this.sendChannelPayment(p)
+          }
+        } finally {
+          const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(
+            p.recipient, 
+            p.amount.amountToken
+          ))
+          if (err) {
+            LOG.error(`Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`)
+          }
+        }
 
         // TODO: add thread payments as well
       }
