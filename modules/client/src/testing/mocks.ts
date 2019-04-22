@@ -531,7 +531,7 @@ export class MockStore {
     persistent: new PersistentState(),
   }
 
-  public createStore = () => {
+  public createStore: any = () => {
     return createStore(reducers, this._initialState)
   }
 

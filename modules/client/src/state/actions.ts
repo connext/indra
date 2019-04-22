@@ -1,6 +1,5 @@
 import { SyncControllerState, RuntimeState, PendingRequestedDeposit } from './store'
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
-//import Wallet from 'ethereumjs-wallet'
 import { ConnextState } from '../state/store'
 import {
   Address,
@@ -72,7 +71,7 @@ export type SetChannelActionArgs = {
   update: UpdateRequest
   state: ChannelState
 }
-export const setChannelAndUpdate = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
+export const setChannelAndUpdate: any = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
 export const setChannel = setterAction<ChannelState>('persistent.channel')
 export const setLatestValidState = setterAction<ChannelState>('persistent.latestValidState')
 export const setSyncControllerState = setterAction<SyncControllerState>('persistent.syncControllerState')
