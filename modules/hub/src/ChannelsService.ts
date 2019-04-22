@@ -196,10 +196,7 @@ export default class ChannelsService {
   public async calculateCollateralizationTargets(state: ChannelStateBigNumber) {
     const numTippers = await this.channelsDao.getRecentTippers(state.user)
     const baseTarget = Big(numTippers).times(this.config.threadBeiLimit)
-    const baseMin = numTippers > 0 ?
-      this.config.beiMinCollateralization :
-      toWeiBigNum(10)
-
+    const baseMin = this.config.beiMinCollateralization
     return {
       minAmount: BigNumber.max(baseMin, baseTarget).times(this.config.minCollateralizationMultiple),
 
