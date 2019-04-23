@@ -473,7 +473,7 @@ export default class ChannelsService {
     if (sufficientPendingArgs.length == 0) {
       LOG.info(
         `All pending values in withdrawal are below minimum withdrawal ` +
-        `threshold (${minWithdrawalAmount.toFixed()}): params: ${params};` +
+        `threshold (${minWithdrawalAmount.toFixed()}): params: ${prettySafeJson(params)}; ` +
         `(withdrawal will be ignored)`
       )
       LOG.debug(`New state after withdrawal request: ${JSON.stringify(state)} `)
