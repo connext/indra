@@ -4,10 +4,11 @@ import ChannelsService from "./ChannelsService";
 import ChannelsDao from "./dao/ChannelsDao";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { mkAddress, mkSig } from "./testing/stateUtils";
-import { PurchasePayment, UpdateRequest, PaymentArgs } from "./vendor/connext/types";
+import { PurchasePayment, UpdateRequest, PaymentArgs, convertDeposit } from "./vendor/connext/types";
 import PaymentsService from "./PaymentsService";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
+import { Big } from "./util/bigNumber";
 
 describe('OptimisticPaymentsService', () => {
 
@@ -33,6 +34,130 @@ describe('OptimisticPaymentsService', () => {
 
   beforeEach(async () => {
     await registry.clearDatabase()
+  })
+
+
+  it('should work for multiple optimistic payments', async () => {
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: sender,
+      balanceTokenUser: tokenVal(5),
+    })
+
+    const bigSender = await channelUpdateFactory(registry, {
+      user: mkAddress('0xd'),
+      balanceTokenUser: tokenVal(15),
+    })
+
+    const payments: PurchasePayment[] = [
+      {
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: tokenVal(1),
+        },
+        meta: {},
+        type: 'PT_OPTIMISTIC',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 1,
+          args: paymentArgs,
+        } as UpdateRequest,
+      },
+    ]
+
+    // payment should not fail, even if there is no collateral
+    const res = await paymentsService.doPurchase(sender, {}, payments) as any
+    assert.isFalse(res.error)
+    const purchaseId = res.res.purchaseId
+    
+    // sender's channel should reflect update
+    const { updates: senderUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
+    const updateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
+    assert.containSubset(updateSender, {
+      reason: 'Payment',
+      args: paymentArgs,
+    })
+    assert.isOk(updateSender.sigHub)
+
+    // receiver should get collateral from sync updates
+    // ONLY after polling
+    let receiverChan = await channelsDao.getChannelByUser(receiver)
+    assert.isUndefined(receiverChan)
+
+    // add a second optimistic payment with a high value
+    const paymentLarge: PurchasePayment[] = [
+      {
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: tokenVal(15),
+        },
+        meta: {},
+        type: 'PT_OPTIMISTIC',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: bigSender.state.txCountGlobal + 1,
+          args: paymentArgs,
+        } as UpdateRequest,
+      }
+    ]
+
+    // payment should not fail, even if there is no collateral
+    const largeRes = await paymentsService.doPurchase(bigSender.user, {}, paymentLarge) as any
+    assert.isFalse(largeRes.error)
+    const purchaseIdLarge = res.res.purchaseId
+
+    // only updated after polling
+    receiverChan = await channelsDao.getChannelByUser(receiver)
+    assert.isUndefined(receiverChan)
+
+    // poll once
+    await optimisticService.pollOnce()
+
+    // should collateralize the receivers channel
+    const { updates: receiverUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
+    const collateralReceiver = receiverUpdates[receiverUpdates.length - 1].update as UpdateRequest
+    assert.containSubset(collateralReceiver, {
+      reason: 'ProposePendingDeposit'
+    })
+    assert.isTrue(
+      Big((collateralReceiver.args as any).depositTokenHub).isGreaterThanOrEqualTo(Big(0))
+    )
+
+    // add sufficient collateral, and redeem payments
+    receiverChan = channelUpdateFactory(registry, {
+      user: receiver,
+      balanceTokenHub: tokenVal(20) 
+    }) as any
+
+    // poll once
+    await optimisticService.pollOnce()
+
+    const { updates: receiverUpdates2 } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
+    // confirm, payment1, payment2, collateral
+    assert.isTrue(receiverUpdates2.length == 4)
+    const paymentSm = receiverUpdates2[receiverUpdates2.length - 3].update as UpdateRequest
+    assert.containSubset(paymentSm, {
+      args: { ...payments[0].amount },
+      reason: "Payment"
+    })
+
+    const paymentLg = receiverUpdates2[receiverUpdates2.length - 2].update as UpdateRequest
+    assert.containSubset(paymentLg, { 
+      args: { ...paymentLarge[0].amount },
+      reason: "Payment"
+    })
+
+    const collateral = receiverUpdates2[receiverUpdates2.length - 1].update as UpdateRequest
+    assert.containSubset(collateralReceiver, {
+      reason: 'ProposePendingDeposit'
+    })
+    assert.isTrue(
+      Big((collateral.args as any).depositTokenHub).isGreaterThanOrEqualTo(Big(0))
+    )
+    
   })
 
   it("should redeem channel payments if there is collateral", async () => {
@@ -69,7 +194,7 @@ describe('OptimisticPaymentsService', () => {
     const purchaseId = res.res.purchaseId
     
     // sender's channel should reflect update
-    const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
+    const { updates: senderUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const updateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
     assert.containSubset(updateSender, {
       reason: 'Payment',
@@ -94,13 +219,22 @@ describe('OptimisticPaymentsService', () => {
     await optimisticService.pollOnce()
     
     // check receiver updates
-    const {updates: receiverUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
-    const updateReceiver = receiverUpdates[receiverUpdates.length - 1].update as UpdateRequest
-    assert.containSubset(updateReceiver, {
+    const { updates: receiverUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
+    const paymentReceiver = receiverUpdates[receiverUpdates.length - 2].update as UpdateRequest
+    assert.containSubset(paymentReceiver, {
       reason: 'Payment',
       args: { ...paymentArgs, recipient: "user"}
     })
-    assert.isOk(updateReceiver.sigHub)
+    assert.isOk(paymentReceiver.sigHub)
+
+    // should also collateralize
+    const collateralReceiver = receiverUpdates[receiverUpdates.length - 1].update as UpdateRequest
+    assert.containSubset(collateralReceiver, {
+      reason: 'ProposePendingDeposit'
+    })
+    assert.isTrue(
+      Big((collateralReceiver.args as any).depositTokenHub).isGreaterThanOrEqualTo(Big(0))
+    )
 
     // get the payment and make sure it was updated
     purchasePayments = await paymentMetaDao.byPurchase(purchaseId)
