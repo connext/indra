@@ -188,9 +188,18 @@ export class ChannelsApiServiceHandler {
 
   async doRequestWithdrawal(req: express.Request, res: express.Response) {
     const { user } = req.params
-    const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx } = req.body
+    const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx, exchangeRate } = req.body
 
-    if (!user || !withdrawalWeiUser || !recipient || !tokensToSell) {
+    if (
+      !user || 
+      !recipient ||
+      !Number.isInteger(parseInt(withdrawalWeiUser)) || 
+      !Number.isInteger(parseInt(tokensToSell)) ||
+      // TODO: token withdrawals
+      // !Number.isInteger(parseInt(weiToSell)) || 
+      // !Number.isInteger(parseInt(withdrawalTokenUser)) ||
+      !exchangeRate
+    ) {
       LOG.warn(
         'Received invalid withdrawal request. Aborting. Body received: {body}, Params received: {params}',
         {
