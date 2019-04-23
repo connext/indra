@@ -3,12 +3,11 @@ import { AbstractController } from './AbstractController'
 import { validateExchangeRate, } from './ExchangeController';
 import { toBN } from '../helpers/bn';
 import { getTxCount } from '../state/getters'
-import { validateTimestamp } from '../lib/timestamp';
 import {
   convertChannelState,
-  convertWithdrawal,
-  convertWithdrawalParameters,
-  WithdrawalParameters
+  WithdrawalParameters,
+  withdrawalParamsNumericFields,
+  insertDefault
 } from '../types'
 
 /* NOTE: the withdrawal parameters have optional withdrawal tokens and wei to
@@ -21,12 +20,16 @@ import {
  * */
 
 export default class WithdrawalController extends AbstractController {
-  public requestUserWithdrawal = async (withdrawalStr: WithdrawalParameters): Promise<void> => {
+  public requestUserWithdrawal = async (args: Partial<WithdrawalParameters>) => {
+    // insert '0' strs to the withdrawal obj
+    const withdrawalStr = insertDefault('0', args, withdrawalParamsNumericFields)
+
     const channelStr = this.getState().persistent.channel
     const channelBN = convertChannelState('bn', channelStr)
     const WithdrawalError = (msg: string) => {
       throw new Error(`${msg}. Parameters: ${JSON.stringify(withdrawalStr, null, 2)}. Channel: ${JSON.stringify(channelStr, null, 2)}.`)
     }
+    
     // validate recipient
     if (!isValidAddress(withdrawalStr.recipient)) {
       WithdrawalError(`Recipient is not a valid address.`)
