@@ -2,7 +2,7 @@ require('dotenv').config()
 const Web3 = require('web3')
 const HttpProvider = require(`ethjs-provider-http`)
 
-import { expect } from 'chai'
+import { expect, assert } from 'chai'
 import { Utils } from './Utils'
 import { MerkleUtils } from './helpers/merkleUtils'
 // import { MerkleTree } from './helpers/merkleTree'
@@ -95,7 +95,7 @@ describe('Utils', () => {
     const input = t[0]
     const expected = t[1]
     it(`hasPendingOps(${JSON.stringify(input)}) => ${expected}`, () => {
-      t.assert.equal(utils.hasPendingOps(input), expected)
+      assert.equal(utils.hasPendingOps(input), expected)
     })
   })
 
