@@ -30,7 +30,6 @@ describe('WithdrawalController: unit tests', () => {
       recipient: mkAddress('0xBBB'),
       tokensToSell: '50',
       withdrawalWeiUser: '5',
-      weiToSell: '0',
     }
 
     // wait to allow controller to set exchange rates
