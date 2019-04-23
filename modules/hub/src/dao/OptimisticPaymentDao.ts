@@ -58,25 +58,21 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
 
   public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRowBigNumber[]> {
     const { rows } = await this.db.query(SQL`
-      SELECT * FROM (
-        SELECT * 
-        FROM payments
-        WHERE id = (
-          SELECT "payment_id" FROM payments_optimistic WHERE "status" = 'NEW'
-        )
-      ) as p
-      
-      INNER JOIN (
+      WITH po AS (
         SELECT 
           "channel_update_id",
           "thread_update_id",
           "redemption_id",
           "payment_id",
           "status"
-        FROM payments_optimistic where "status" = 'NEW'
-      ) as up
-      
-      ON p.id = up.payment_id
+        FROM payments_optimistic 
+        WHERE "status" = 'NEW' 
+      )
+      SELECT * FROM po AS p
+      INNER JOIN (
+        SELECT * FROM payments WHERE "payment_type" = 'PT_OPTIMISTIC' 
+      ) as d
+      ON d.id = p.payment_id;
     `)
     return this.mapRows(rows)
   }
