@@ -2,7 +2,7 @@ import { ethers as eth } from 'ethers';
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../state/getters'
 import { assertUnreachable } from '../lib/utils';
-import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType } from '../types'
+import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType, PartialPurchaseRequest } from '../types'
 import { emptyAddress } from '../Utils';
 
 // **********************************************//
@@ -21,20 +21,6 @@ import { emptyAddress } from '../Utils';
 // 5. Sender's client should then assume that the payment was completed (in the future, we could allow for refund if no response)
 // 6. ^i.e. all future channel updates should be based off the LOWERED balance (hub balance shouldn't increase until closeThread confirmation occurs)
 // 7. NOTE: For this to work, we have to allow multiple threads per sender-receiver combo
-
-
-// Define partial payment types
-type PartialPurchasePaymentRequest<MetadataType=any> = {
-  type: PurchasePaymentType
-  recipient: string
-  amount: Partial<Payment>
-  meta: MetadataType
-}
-
-type PartialPurchaseRequest<MetadataType=any> = {
-  meta: MetadataType
-  payments: PartialPurchasePaymentRequest[]
-}
 
 export default class BuyController extends AbstractController {
   public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
