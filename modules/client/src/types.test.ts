@@ -1,8 +1,28 @@
 import * as t from './testing/index'
 import BN = require('bn.js')
 import { assert } from './testing/index'
-import { convertChannelState, convertThreadState, convertFields } from './types'
+import { convertChannelState, convertThreadState, convertFields, insertDefault } from './types'
 import { BigNumber } from 'bignumber.js/bignumber'
+
+describe('insertDefault', () => {
+  it("should work", () => {
+    const tst = {
+      tokensToSell: '10',
+    }
+    const keys = [
+      'testing',
+      'all',
+      'zeroes',
+    ]
+    const ans = insertDefault('0', tst, keys)
+    assert.containSubset(ans, {
+      tokensToSell: '10',
+      testing: '0',
+      all: '0',
+      zeroes: '0'
+    })
+  })
+})
 
 describe('convertChannelState', () => {
   it('should work for strings', () => {

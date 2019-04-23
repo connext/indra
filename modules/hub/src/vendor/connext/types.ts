@@ -775,6 +775,20 @@ export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
  ******* TYPE CONVERSIONS ********
  *********************************/
 
+export function insertDefault(val: string, obj: any, keys: string[]) {
+  let adjusted = {} as any
+  keys.concat(Object.keys(obj)).map(k => {
+    if (Object.keys(obj).indexOf(k) == -1) {
+      // not supplied set as default val
+      adjusted[k] = val
+    } else {
+      adjusted[k] = obj[k]
+    }
+  })
+
+  return adjusted
+}
+
 export const withdrawalParamsNumericFields = [
   'withdrawalWeiUser',
   'tokensToSell',

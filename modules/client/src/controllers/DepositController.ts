@@ -1,18 +1,13 @@
 import { ethers as eth } from 'ethers';
 import { AbstractController } from './AbstractController';
-import { toBN } from '../helpers/bn';
 import { getTxCount, getLastThreadUpdateId } from '../state/getters'
 import { validateTimestamp } from '../lib/timestamp';
 import {
   ChannelState,
-  ChannelStateUpdate,
-  convertDeposit,
-  convertChannelState,
-  convertPayment,
   Payment,
-  SyncResult,
-  UpdateRequest,
   UpdateRequestTypes,
+  insertDefault,
+  argNumericFields,
 } from '../types'
 const tokenAbi = require('human-standard-token-abi')
 
@@ -30,7 +25,9 @@ const tokenAbi = require('human-standard-token-abi')
 export default class DepositController extends AbstractController {
   private resolvePendingDepositPromise: any = null
 
-  public async requestUserDeposit(deposit: Payment) {
+  public async requestUserDeposit(args: Partial<Payment>) {
+    // insert '0' strs to the obj
+    const deposit = insertDefault('0', args, argNumericFields.Payment)
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
     
     try {
