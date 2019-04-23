@@ -52,4 +52,23 @@ describe('ChannelsApiService', () => {
       error: 'current state has pending fields',
     })
   })
+
+  it('should allow 0 string inputs on doRequestWithdrawal', async () => {
+    const chan = await channelUpdateFactory(registry, {
+      balanceTokenUser: tokenVal(10),
+    })
+
+    const res = await app.withUser(chan.user).request
+      .post(`/channel/${chan.user}/request-withdrawal`)
+      .send({
+        tokensToSell: '0',
+        weiToSell: '0',
+        recipient: chan.user,
+        withdrawalWeiUser: '0',
+        withdrawalTokenUser: '0',
+        lastChanTx: 0,
+        exchangeRate: '123.45'
+      })
+    assert.equal(res.status, 200, JSON.stringify(res.body))
+  })
 })
