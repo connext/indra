@@ -5,11 +5,10 @@ import { Utils } from './Utils';
 import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs } from './types';
 import { getChannelState, getWithdrawalArgs } from './testing'
 import { toBN } from './helpers/bn';
-import { createSign } from 'crypto';
 
-
-const sg = new StateGenerator()
-const utils = new Utils()
+const hub = t.mkAddress("0xaa")
+const sg = new StateGenerator(hub)
+const utils = new Utils(hub)
 
 function createHigherNoncedChannelState(
   prev: ChannelStateBN,

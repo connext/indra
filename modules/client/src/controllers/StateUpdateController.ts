@@ -18,8 +18,6 @@ import {
 } from '../types'
 import { Utils } from '../Utils';
 
-const utils = new Utils()
-
 type StateUpdateHandlers = {
   [Type in keyof UpdateRequestTypes]: (
     this: StateUpdateController,
@@ -510,7 +508,7 @@ export default class StateUpdateController extends AbstractController {
         )
       }
 
-      if (!utils.hasPendingOps(prev)) {
+      if (!this.connext.utils.hasPendingOps(prev)) {
         throw new Error(
           `Hub proposed invalidation for a double signed state with no ` +
           `pending fields. Invalidation: ${JSON.stringify(update)} ` +
