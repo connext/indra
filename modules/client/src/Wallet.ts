@@ -91,13 +91,13 @@ export default class Wallet extends eth.Signer {
       if (this.address === address) return sig
       console.warn(`web3.eth.sign(hashMessage("${message}")) -> sig=${sig} -> address=${address}`)
 
-      // For web3 1.0.0-beta.52 in some cases (eg message is a non-hex string)
+      // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
       sig = await this.web3.eth.personal.sign(message, this.address, this.password)
       address = eth.utils.verifyMessage(message, sig).toLowerCase()
       if (this.address === address) return sig
       console.warn(`web3.eth.personal.sign("${message}") -> sig=${sig} -> address=${address}`)
 
-      // For web3 1.0.0-beta.52 when sig is verified by solidity contract?
+      // For web3 1.0.0-beta.52 when sig is verified by contract, note arrayify(msg) in verify
       sig = await this.web3.eth.sign(message, this.address)
       address = eth.utils.verifyMessage(eth.utils.arrayify(message), sig).toLowerCase()
       if (this.address === address) return sig

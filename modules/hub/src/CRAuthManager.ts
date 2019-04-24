@@ -44,7 +44,6 @@ export class MemoryCRAuthManager implements CRAuthManager {
       return null
     }
 
-    // arrayify is needed to be compatible w web3 signing functions
     let sigAddr = eth.utils.verifyMessage(nonce, signature).toLowerCase()
 
     if (!sigAddr || sigAddr !== address) {
