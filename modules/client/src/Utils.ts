@@ -1,5 +1,5 @@
 import util = require('ethereumjs-util')
-import { ethers as eth, ethers } from 'ethers';
+import { ethers as eth } from 'ethers';
 import MerkleTree from './helpers/merkleTree';
 import { MerkleUtils } from './helpers/merkleUtils';
 import { Poller } from './lib/poller/Poller';
@@ -122,10 +122,10 @@ export class Utils {
   public recoverSignerFromChannelState(
     channelState: UnsignedChannelState,
     sig: string,
-    isUser: boolean,
+    signer: "user" | "hub", // = "user"
   ): string | null {
     const hash: any = this.createChannelStateHash(channelState)
-    return this.recoverSigner(hash, sig, isUser 
+    return this.recoverSigner(hash, sig, signer == "user" 
       ? channelState.user 
       : this.hubAddress
     )
@@ -275,19 +275,29 @@ export class Utils {
     return recovered
   }
 
-  private recoverSignerNewSchema(hash: string, sig: string) {
-    const recovered = ethers.utils.verifyMessage(hash, sig)
-    return recovered
-  }
-
-  private recoverSigner(hash: string, sig: string, signer: string) {
-    let recovered = this.recoverSignerNewSchema(hash, sig)
+  private recoverSignerNewSchema(hash: string, sig: string, signer: string) {
+    // For web3 1.0.0-beta.33
+    // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
+    let recovered = eth.utils.verifyMessage(hash, sig).toLowerCase()
     if (recovered && recovered == signer) {
       return recovered
     }
 
+    // For web3 1.0.0-beta.52 when sig is verified by contract, note arrayify(msg) in verify
+    recovered = eth.utils.verifyMessage(eth.utils.arrayify(hash), sig).toLowerCase()
+    
+    return recovered
+  }
+
+  private recoverSigner(hash: string, sig: string, signer: string) {
+    let recovered = this.recoverSignerNewSchema(hash, sig, signer)
+    if (recovered && recovered == signer.toLowerCase()) {
+      return recovered
+    }
+
+    // final fallback
     recovered = this.recoverSignerOldSchema(hash, sig)
-    if (recovered && recovered == signer) {
+    if (recovered && recovered == signer.toLowerCase()) {
       return recovered
     }
 
