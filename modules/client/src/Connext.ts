@@ -203,9 +203,7 @@ export class ConnextInternal extends ConnextClient {
     this.store = null as any
     this.wallet = wallet
     this.provider = wallet.provider
-    this.opts.origin = opts.origin || (
-      window ? window.location.host : 'unknown'
-    )
+    this.opts.origin = opts.origin || 'unknown'
 
     console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
