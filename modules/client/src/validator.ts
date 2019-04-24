@@ -631,8 +631,8 @@ export class Validator {
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig, signer == "user") != adr.toLowerCase()) {
-      throw new Error(`Channel state is not correctly signed by ${signer}. Detected: ${this.utils.recoverSignerFromChannelState(channelState, sig, signer == "user")}. Channel state: ${JSON.stringify(channelState)}, sig: ${sig}`)
+    if (this.utils.recoverSignerFromChannelState(channelState, sig, signer) != adr.toLowerCase()) {
+      throw new Error(`Channel state is not correctly signed by ${signer}. Detected: ${this.utils.recoverSignerFromChannelState(channelState, sig, signer)}. Channel state: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
 
