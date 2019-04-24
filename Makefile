@@ -190,6 +190,7 @@ hub: hub-node-modules contract-artifacts $(shell find $(hub)/src $(find_options)
 hub-node-modules: builder $(hub)/package.json $(client)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
+	$(docker_run_in_hub) "mkdir -p node_modules/connext"
 	$(docker_run_in_hub) "cp -r ../client node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
 	#$(docker_run_in_hub) "rm -rf node_modules/connext"
