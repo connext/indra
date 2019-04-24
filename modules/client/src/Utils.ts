@@ -279,7 +279,7 @@ export class Utils {
     // For web3 1.0.0-beta.33
     // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
     let recovered = eth.utils.verifyMessage(hash, sig).toLowerCase()
-    if (recovered && recovered == signer) {
+    if (recovered && recovered == signer.toLowerCase()) {
       return recovered
     }
 
@@ -289,7 +289,7 @@ export class Utils {
     return recovered
   }
 
-  private recoverSigner(hash: string, sig: string, signer: string) {
+  public recoverSigner(hash: string, sig: string, signer: string) {
     let recovered = this.recoverSignerNewSchema(hash, sig, signer)
     if (recovered && recovered == signer.toLowerCase()) {
       return recovered
