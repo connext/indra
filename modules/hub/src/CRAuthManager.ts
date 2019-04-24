@@ -45,16 +45,15 @@ export class MemoryCRAuthManager implements CRAuthManager {
     }
 
     // arrayify is needed to be compatible w web3 signing functions
-    let hash = eth.utils.arrayify(eth.utils.id(nonce))
-    let sigAddr = eth.utils.verifyMessage(hash, signature).toLowerCase()
+    let sigAddr = eth.utils.verifyMessage(nonce, signature).toLowerCase()
 
     if (!sigAddr || sigAddr !== address) {
       LOG.warn(`Signature doesn't match new scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
 
       // For backwards compatibility, TODO: remove until below
       const keccak256 = (data: string): string => eth.utils.keccak256(eth.utils.toUtf8Bytes(data))
-      let legacyHash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
-      let fingerprint = util.toBuffer(String(legacyHash))
+      let hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
+      let fingerprint = util.toBuffer(String(hash))
       const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
       const prefixedMsg = util.keccak256(
         Buffer.concat([

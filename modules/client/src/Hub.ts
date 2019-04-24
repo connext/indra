@@ -111,7 +111,7 @@ export class HubAPIClient implements IHubAPIClient {
     const nonce = await this.authChallenge()
 
     // create hash and sign
-    const signature = await this.wallet.signMessage(eth.utils.id(nonce));
+    const signature = await this.wallet.signMessage(nonce);
 
     // set auth token
     this.authToken = await this.authResponse(nonce, this.wallet.address, this.origin, signature)
