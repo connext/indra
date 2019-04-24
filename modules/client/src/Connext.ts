@@ -176,7 +176,7 @@ export abstract class ConnextClient extends EventEmitter {
 export class ConnextInternal extends ConnextClient {
   store: ConnextStore
   hub: IHubAPIClient
-  utils = new Utils()
+  utils: Utils
   validator: Validator
   contract: IChannelManager
   wallet: Wallet
@@ -218,6 +218,7 @@ export class ConnextInternal extends ConnextClient {
 
     this.contract = opts.contract || new ChannelManager(wallet, opts.contractAddress, opts.gasMultiple || 1.5)
     this.validator = new Validator(opts.hubAddress, this.provider, this.contract.rawAbi)
+    this.utils = new Utils(opts.hubAddress)
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)
@@ -284,7 +285,7 @@ export class ConnextInternal extends ConnextClient {
 
       return (config as any)[k]
     })
-    return adjusted
+    return adjusted[0]
   }
 
   async start() {
@@ -296,7 +297,9 @@ export class ConnextInternal extends ConnextClient {
     })
 
     // before starting controllers, sync values
-    await this.syncConfig()
+    const syncedOpts = await this.syncConfig()
+    this.store.dispatch(actions.setHubAddress(syncedOpts.hubAddress))
+
 
     // auth is handled on each endpoint posting via the Hub API Client
 
