@@ -1,7 +1,6 @@
 import * as eth from 'ethers';
 import uuid = require('uuid')
 import log from './util/log'
-import Web3 from 'web3'
 
 const util = require('ethereumjs-util')
 
@@ -21,12 +20,9 @@ export class MemoryCRAuthManager implements CRAuthManager {
   // TODO: remove
   private static HASH_PREAMBLE = 'SpankWallet authentication message:'
 
-  private web3: Web3
-
   private nonces: { [s: string]: number } = {}
 
-  constructor (web3: any) {
-    this.web3 = web3
+  constructor () {
   }
 
   generateNonce (): Promise<string> {

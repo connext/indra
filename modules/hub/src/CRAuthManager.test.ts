@@ -6,8 +6,6 @@ import { SinonStub } from 'sinon'
 
 const sandbox = sinon.createSandbox()
 
-const Web3 = require('web3')
-
 describe('MemoryCRAuthManager', () => {
   const ADDRESS = '0x0108d76118d97b88aa40167064cb242fa391effa'
 
@@ -27,7 +25,7 @@ describe('MemoryCRAuthManager', () => {
     sandbox.stub(Date, 'now').returns(1)
     sandbox.stub(uuid, 'v4').returns(NONCE)
     // no provider needed since we're only using sha3
-    mcrm = new MemoryCRAuthManager(new Web3('http://localhost:8545'))
+    mcrm = new MemoryCRAuthManager()
   })
 
   afterEach(() => {
