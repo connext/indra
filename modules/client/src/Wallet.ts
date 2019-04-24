@@ -85,21 +85,15 @@ export default class Wallet extends eth.Signer {
     if (this.web3) {
       let sig
 
+      // For web3 1.0.0-beta.33
       sig = await this.web3.eth.sign(eth.utils.hashMessage(message), this.address)
       if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
       console.warn(`web3.eth.sign(hashMessage()) doesn't work. Sig: ${sig}`)
 
+      // For web3 1.0.0-beta.52
       sig = await this.web3.eth.personal.sign(message, this.address, this.password)
       if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
       console.warn(`web3.eth.personal.sign() doesn't work. Sig: ${sig}`)
-
-      sig = (await this.web3.eth.accounts.sign(message, this.address)).signature
-      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
-      console.warn(`web3.eth.accounts.sign() doesn't work. Sig: ${sig}`)
-
-      sig = await this.web3.eth.sign(message, this.address)
-      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
-      console.warn(`web3.eth.sign() doesn't work. Sig: ${sig}`)
 
       throw Error(`Couldn't find a web3 signing method that works...`)
     }
