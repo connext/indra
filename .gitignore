@@ -9,6 +9,7 @@ node_modules
 .npm
 .npmrc
 .node_repl_history
+.vscode
 *.sw[opq]
 **/*.DS_Store
 modules/hub/development/data
