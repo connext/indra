@@ -1,7 +1,6 @@
 require('dotenv').config()
 const HttpProvider = require(`ethjs-provider-http`)
 import { ethers as eth } from 'ethers';
-
 import { expect, assert } from 'chai'
 import { Utils } from './Utils'
 import { MerkleUtils } from './helpers/merkleUtils'
