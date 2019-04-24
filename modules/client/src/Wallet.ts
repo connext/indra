@@ -80,13 +80,28 @@ export default class Wallet extends eth.Signer {
 
   async signMessage(message: string) {
     if (this.signer) {
-      return await this.signer.signMessage(eth.utils.arrayify(message))
+      return await this.signer.signMessage(message)
     }
     if (this.web3) {
-      return await (this.password
-        ? this.web3.eth.personal.sign(message, this.address, this.password)
-        : this.web3.eth.sign(message, this.address)
-      )
+      let sig
+
+      sig = await this.web3.eth.sign(eth.utils.hashMessage(message), this.address)
+      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
+      console.warn(`web3.eth.sign(hashMessage()) doesn't work. Sig: ${sig}`)
+
+      sig = await this.web3.eth.personal.sign(message, this.address, this.password)
+      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
+      console.warn(`web3.eth.personal.sign() doesn't work. Sig: ${sig}`)
+
+      sig = (await this.web3.eth.accounts.sign(message, this.address)).signature
+      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
+      console.warn(`web3.eth.accounts.sign() doesn't work. Sig: ${sig}`)
+
+      sig = await this.web3.eth.sign(message, this.address)
+      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
+      console.warn(`web3.eth.sign() doesn't work. Sig: ${sig}`)
+
+      throw Error(`Couldn't find a web3 signing method that works...`)
     }
   }
 
@@ -96,10 +111,7 @@ export default class Wallet extends eth.Signer {
       return await this.signer.sign(tx)
     }
     if (this.web3) {
-      return await (this.password
-        ? this.web3.eth.personal.signTransaction(tx, this.password)
-        : (this.web3.eth.signTransaction as any)(tx)
-      )
+      return await (this.web3.eth.signTransaction as any)(tx)
     }
   }
 
