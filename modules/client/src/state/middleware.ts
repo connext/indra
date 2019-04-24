@@ -3,8 +3,6 @@ import { ConnextState } from './store'
 import * as actions from './actions'
 import { Utils } from '../Utils';
 
-const utils = new Utils()
-
 export function handleStateFlags(args: any): any {
   let didInitialUpdate = false
 
@@ -39,12 +37,13 @@ export function handleStateFlags(args: any): any {
           syncControllerState: {
             updatesToSync,
           },
+          hubAddress,
         }
       } = connextState
 
       let isUnsigned = false
       let hasTimeout = !!channel.timeout
-      let hasPending = utils.hasPendingOps(channel)
+      let hasPending = new Utils(hubAddress).hasPendingOps(channel)
 
       updatesToSync.forEach(update => {
         if(update.type == 'channel') {
