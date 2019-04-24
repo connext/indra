@@ -114,7 +114,7 @@ services:
     networks:
       - $project
     ports:
-      - "3000:80"
+      - "3001:80"
     volumes:
       - certs:/etc/letsencrypt
 
