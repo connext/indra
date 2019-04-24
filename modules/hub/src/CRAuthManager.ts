@@ -53,9 +53,8 @@ export class MemoryCRAuthManager implements CRAuthManager {
 
       // For backwards compatibility, TODO: remove until below
       const keccak256 = (data: string): string => eth.utils.keccak256(eth.utils.toUtf8Bytes(data))
-      hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
-      sigAddr = eth.utils.recoverAddress(hash, signature).toLowerCase()
-      let fingerprint = util.toBuffer(String(hash))
+      let legacyHash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
+      let fingerprint = util.toBuffer(String(legacyHash))
       const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
       const prefixedMsg = util.keccak256(
         Buffer.concat([

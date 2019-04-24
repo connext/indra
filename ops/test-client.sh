@@ -13,6 +13,8 @@ function cleanup {
 }
 trap cleanup EXIT
 
+docker container prune -f
+
 docker run \
   --interactive \
   --tty \
