@@ -33,27 +33,25 @@ export class MemoryCRAuthManager implements CRAuthManager {
 
   public async checkSignature (address: string, nonce: string, origin: string, signature: string): Promise<string | null> {
     const creation = this.nonces[nonce]
-    const keccak256 = (data: string): string => eth.utils.keccak256(eth.utils.toUtf8Bytes(data))
 
     if (!eth.utils.isHexString(signature)) {
-      LOG.error(`Error: Signature must be a valid hex string: ${signature}`)
+      LOG.error(`Signature must be a valid hex string: ${signature}`)
       return null
     }
 
     if (!creation) {
-      LOG.warn(`Nonce ${nonce} not found.`)
+      LOG.warn(`Nonce "${nonce}" not found.`)
       return null
     }
 
-    let hash, sigAddr
-    hash = keccak256(nonce)
-    sigAddr = eth.utils.recoverAddress(hash, signature).toLowerCase()
+    let sigAddr = eth.utils.verifyMessage(eth.utils.id(nonce), signature).toLowerCase()
 
     if (!sigAddr || sigAddr !== address) {
       LOG.warn(`Signature doesn't match new scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
 
       // For backwards compatibility, TODO: remove until below
-      hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
+      const keccak256 = (data: string): string => eth.utils.keccak256(eth.utils.toUtf8Bytes(data))
+      const hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
       sigAddr = eth.utils.recoverAddress(hash, signature).toLowerCase()
       let fingerprint = util.toBuffer(String(hash))
       const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
@@ -77,7 +75,8 @@ export class MemoryCRAuthManager implements CRAuthManager {
         LOG.warn(`Sig doesn't match old scheme either. Expected address: ${address}. Got address: ${sigAddr}.`)
         return null
       }
-      // TODO: remove until here
+      // TODO: remove until here and uncomment next line
+      // return null
 
     }
 
