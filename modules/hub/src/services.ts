@@ -200,8 +200,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   CRAuthManager: {
-    factory: (web3: any) => new MemoryCRAuthManager(web3),
-    dependencies: ['Web3'],
+    factory: () => new MemoryCRAuthManager(),
+    dependencies: [],
     isSingleton: true,
   },
 

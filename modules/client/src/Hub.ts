@@ -111,13 +111,11 @@ export class HubAPIClient implements IHubAPIClient {
     const nonce = await this.authChallenge()
 
     // create hash and sign
-    const preamble = "SpankWallet authentication message:";
-    const hash = eth.utils.id(`${preamble} ${eth.utils.id(nonce)} ${eth.utils.id(this.origin)}`);
-    const signature = await this.wallet.signMessage(hash);
+    const signature = await this.wallet.signMessage(nonce);
 
     // set auth token
     this.authToken = await this.authResponse(nonce, this.wallet.address, this.origin, signature)
-    // document.cookie = `hub.sid=${authToken}`; // Think the browser will set this for us
+
     return this.authToken
   }
 
