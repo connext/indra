@@ -44,14 +44,16 @@ export class MemoryCRAuthManager implements CRAuthManager {
       return null
     }
 
-    let sigAddr = eth.utils.verifyMessage(eth.utils.id(nonce), signature).toLowerCase()
+    // arrayify is needed to be compatible w web3 signing functions
+    let hash = eth.utils.arrayify(eth.utils.id(nonce))
+    let sigAddr = eth.utils.verifyMessage(hash, signature).toLowerCase()
 
     if (!sigAddr || sigAddr !== address) {
       LOG.warn(`Signature doesn't match new scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
 
       // For backwards compatibility, TODO: remove until below
       const keccak256 = (data: string): string => eth.utils.keccak256(eth.utils.toUtf8Bytes(data))
-      const hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
+      hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
       sigAddr = eth.utils.recoverAddress(hash, signature).toLowerCase()
       let fingerprint = util.toBuffer(String(hash))
       const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
@@ -72,7 +74,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
       const addrBuf = util.pubToAddress(pubKey)
       sigAddr = util.bufferToHex(addrBuf)
       if (!sigAddr || sigAddr !== address) {
-        LOG.warn(`Sig doesn't match old scheme either. Expected address: ${address}. Got address: ${sigAddr}.`)
+        LOG.warn(`Signature doesn't match old scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
         return null
       }
       // TODO: remove until here and uncomment next line

@@ -69,6 +69,7 @@ export default class Wallet extends eth.Signer {
       this.signer = eth.Wallet.createRandom()
       this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
+      console.warn(`Generated a new signing key, make sure you back it up before sending funds`)
     }
 
   }
@@ -82,10 +83,9 @@ export default class Wallet extends eth.Signer {
       return await this.signer.signMessage(eth.utils.arrayify(message))
     }
     if (this.web3) {
-      return await (
-        this.password
-          ? this.web3.eth.personal.sign(message, this.address, this.password)
-          : this.web3.eth.sign(message, this.address)
+      return await (this.password
+        ? this.web3.eth.personal.sign(message, this.address, this.password)
+        : this.web3.eth.sign(message, this.address)
       )
     }
   }
@@ -96,10 +96,9 @@ export default class Wallet extends eth.Signer {
       return await this.signer.sign(tx)
     }
     if (this.web3) {
-      return await (
-        this.password
-          ? this.web3.eth.personal.signTransaction(tx, this.password)
-          : (this.web3.eth.signTransaction as any)(tx)
+      return await (this.password
+        ? this.web3.eth.personal.signTransaction(tx, this.password)
+        : (this.web3.eth.signTransaction as any)(tx)
       )
     }
   }

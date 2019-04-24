@@ -113,6 +113,12 @@ export class HubAPIClient implements IHubAPIClient {
     // create hash and sign
     const signature = await this.wallet.signMessage(eth.utils.id(nonce));
 
+    // Sanity check..
+    const sigAddr = eth.utils.verifyMessage(eth.utils.arrayify(hash), signature).toLowerCase()
+    if (sigAddr !== this.wallet.address) {
+      throw Error(`Recovered address ${sigAddr} doesn't match wallet ${this.wallet.address}`)
+    }
+
     // set auth token
     this.authToken = await this.authResponse(nonce, this.wallet.address, this.origin, signature)
     // document.cookie = `hub.sid=${authToken}`; // Think the browser will set this for us
