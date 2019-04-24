@@ -1,5 +1,5 @@
 import util = require('ethereumjs-util')
-import { ethers as eth } from 'ethers';
+import { ethers as eth, ethers } from 'ethers';
 import MerkleTree from './helpers/merkleTree';
 import { MerkleUtils } from './helpers/merkleUtils';
 import { Poller } from './lib/poller/Poller';
@@ -29,6 +29,11 @@ export class Utils {
   getters = getters
   Poller = Poller
 
+  hubAddress: string
+  constructor(hubAddress: string) {
+    this.hubAddress = hubAddress
+  }
+
   public createDepositRequestProposalHash(
     req: Payment,
   ): string {
@@ -42,9 +47,10 @@ export class Utils {
 
   public recoverSignerFromDepositRequest(
     args: SignedDepositRequestProposal,
-  ): string {
+    signer: string,
+  ): string | null {
     const hash = this.createDepositRequestProposalHash(args)
-    return this.recoverSigner(hash, args.sigUser)
+    return this.recoverSigner(hash, args.sigUser, signer)
   }
 
   public createChannelStateHash(
@@ -115,11 +121,14 @@ export class Utils {
 
   public recoverSignerFromChannelState(
     channelState: UnsignedChannelState,
-    // could be hub or user
     sig: string,
-  ): string {
+    isUser: boolean,
+  ): string | null {
     const hash: any = this.createChannelStateHash(channelState)
-    return this.recoverSigner(hash, sig)
+    return this.recoverSigner(hash, sig, isUser 
+      ? channelState.user 
+      : this.hubAddress
+    )
   }
 
   public createThreadStateHash(threadState: UnsignedThreadState): string {
@@ -145,10 +154,10 @@ export class Utils {
   public recoverSignerFromThreadState(
     threadState: UnsignedThreadState,
     sig: string,
-  ): string {
+  ): string | null {
     // console.log('recovering signer from state:', threadState)
     const hash: any = this.createThreadStateHash(threadState)
-    return this.recoverSigner(hash, sig)
+    return this.recoverSigner(hash, sig, threadState.sender)
   }
 
   public generateThreadMerkleTree(
@@ -244,19 +253,13 @@ export class Utils {
     return mtree.verify(proof, threadHash)
   }
 
-  private recoverSigner(hash: string, sig: string) {
-    // let fingerprint: any = this.createChannelStateHash(channelState)
-    let fingerprint = util.toBuffer(String(hash))
+  private recoverSignerOldSchema(hash: string, sig: string) {
+    const fingerprint = util.toBuffer(String(hash))
     const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-    // @ts-ignore
     const prefixedMsg = util.keccak256(
-      // @ts-ignore
       Buffer.concat([
-        // @ts-ignore
         prefix,
-        // @ts-ignore
         util.toBuffer(String(fingerprint.length)),
-        // @ts-ignore
         fingerprint,
       ]),
     )
@@ -268,10 +271,27 @@ export class Utils {
       res.s,
     )
     const addrBuf = util.pubToAddress(pubKey)
-    const addr = util.bufferToHex(addrBuf)
-    // console.log('recovered:', addr)
+    const recovered = util.bufferToHex(addrBuf)
+    return recovered
+  }
 
-    return addr
+  private recoverSignerNewSchema(hash: string, sig: string) {
+    const recovered = ethers.utils.verifyMessage(hash, sig)
+    return recovered
+  }
+
+  private recoverSigner(hash: string, sig: string, signer: string) {
+    let recovered = this.recoverSignerNewSchema(hash, sig)
+    if (recovered && recovered == signer) {
+      return recovered
+    }
+
+    recovered = this.recoverSignerOldSchema(hash, sig)
+    if (recovered && recovered == signer) {
+      return recovered
+    }
+
+    return null
   }
 
   hasPendingOps(stateAny: ChannelState<any>) {
