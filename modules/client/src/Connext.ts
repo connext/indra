@@ -66,7 +66,7 @@ export interface ConnextClientOptions {
   tokenAddress?: Address
   tokenName?: string
 
-  origin?: string // origin of requests (TODO: rm?)
+  origin?: string
   gasMultiple?: number
   getLogger?: (name: string) => Logger
 
@@ -203,11 +203,14 @@ export class ConnextInternal extends ConnextClient {
     this.store = null as any
     this.wallet = wallet
     this.provider = wallet.provider
+    this.opts.origin = opts.origin || (
+      window ? window.location.host : 'unknown'
+    )
 
     console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
       new Networking(this.opts.hubUrl),
-      this.opts.origin!,
+      this.opts.origin,
       this.wallet,
     )
 
