@@ -82,6 +82,5 @@ docker run --tty --name ${project}_tester --network=$project \
     echo "Waiting for $ETH_RPC_URL_TEST" && bash ops/wait-for.sh -t 60 $ETH_RPC_URL_TEST 2> /dev/null
     ./node_modules/.bin/mocha \
       -r ./dist/register/common.js \
-      -r ./dist/register/testing.js \
       "dist/**/*.test.js" --exit
   '
