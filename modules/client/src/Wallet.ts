@@ -83,17 +83,25 @@ export default class Wallet extends eth.Signer {
       return await this.signer.signMessage(message)
     }
     if (this.web3) {
-      let sig
+      let sig, address
 
       // For web3 1.0.0-beta.33
       sig = await this.web3.eth.sign(eth.utils.hashMessage(message), this.address)
-      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
-      console.warn(`web3.eth.sign(hashMessage()) doesn't work. Sig: ${sig}`)
+      address = eth.utils.verifyMessage(message, sig).toLowerCase()
+      if (this.address === address) return sig
+      console.warn(`web3.eth.sign(hashMessage("${message}")) -> sig=${sig} -> address=${address}`)
 
-      // For web3 1.0.0-beta.52
+      // For web3 1.0.0-beta.52 in some cases (eg message is a non-hex string)
       sig = await this.web3.eth.personal.sign(message, this.address, this.password)
-      if (this.address === eth.utils.verifyMessage(message, sig).toLowerCase()) return sig
-      console.warn(`web3.eth.personal.sign() doesn't work. Sig: ${sig}`)
+      address = eth.utils.verifyMessage(message, sig).toLowerCase()
+      if (this.address === address) return sig
+      console.warn(`web3.eth.personal.sign("${message}") -> sig=${sig} -> address=${address}`)
+
+      // For web3 1.0.0-beta.52 when sig is verified by solidity contract?
+      sig = await this.web3.eth.sign(message, this.address)
+      address = eth.utils.verifyMessage(eth.utils.arrayify(message), sig).toLowerCase()
+      if (this.address === address) return sig
+      console.warn(`web3.eth.sign("${message}") -> sig=${sig} -> address=${address}`)
 
       throw Error(`Couldn't find a web3 signing method that works...`)
     }
