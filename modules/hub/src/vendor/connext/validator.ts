@@ -80,8 +80,8 @@ export class Validator {
   hubAddress: Address
 
   constructor(hubAddress: Address, provider: any, abi: any) {
-    this.utils = new Utils()
-    this.stateGenerator = new StateGenerator()
+    this.utils = new Utils(hubAddress)
+    this.stateGenerator = new StateGenerator(hubAddress)
     this.provider = provider
     this.abi = new eth.utils.Interface(abi)
     this.hubAddress = hubAddress.toLowerCase()
@@ -631,8 +631,8 @@ export class Validator {
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig) !== adr.toLowerCase()) {
-      throw new Error(`Channel state is not correctly signed by ${signer}. Detected: ${this.utils.recoverSignerFromChannelState(channelState, sig)}. Channel state: ${JSON.stringify(channelState)}, sig: ${sig}`)
+    if (this.utils.recoverSignerFromChannelState(channelState, sig, signer) != adr.toLowerCase()) {
+      throw new Error(`Channel state is not correctly signed by ${signer}. Detected: ${this.utils.recoverSignerFromChannelState(channelState, sig, signer)}. Channel state: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
 
@@ -646,8 +646,8 @@ export class Validator {
     if (!req.sigUser) {
       throw new Error(`No signature detected on deposit request. (request: ${JSON.stringify(req)}, signer: ${signer})`)
     }
-    if (this.utils.recoverSignerFromDepositRequest(req) !== signer.toLowerCase()) {
-      throw new Error(`Deposit request proposal is not correctly signed by intended signer. Detected: ${this.utils.recoverSignerFromDepositRequest(req)}. (request: ${JSON.stringify(req)}, signer: ${signer})`)
+    if (this.utils.recoverSignerFromDepositRequest(req, signer) != signer.toLowerCase()) {
+      throw new Error(`Deposit request proposal is not correctly signed by intended signer. Detected: ${this.utils.recoverSignerFromDepositRequest(req, signer)}. (request: ${JSON.stringify(req)}, signer: ${signer})`)
     }
   }
 

@@ -29,6 +29,11 @@ export class Utils {
   getters = getters
   Poller = Poller
 
+  hubAddress: string
+  constructor(hubAddress: string) {
+    this.hubAddress = hubAddress
+  }
+
   public createDepositRequestProposalHash(
     req: Payment,
   ): string {
@@ -42,9 +47,10 @@ export class Utils {
 
   public recoverSignerFromDepositRequest(
     args: SignedDepositRequestProposal,
-  ): string {
+    signer: string,
+  ): string | null {
     const hash = this.createDepositRequestProposalHash(args)
-    return this.recoverSigner(hash, args.sigUser)
+    return this.recoverSigner(hash, args.sigUser, signer)
   }
 
   public createChannelStateHash(
@@ -115,11 +121,14 @@ export class Utils {
 
   public recoverSignerFromChannelState(
     channelState: UnsignedChannelState,
-    // could be hub or user
     sig: string,
-  ): string {
+    signer: "user" | "hub", // = "user"
+  ): string | null {
     const hash: any = this.createChannelStateHash(channelState)
-    return this.recoverSigner(hash, sig)
+    return this.recoverSigner(hash, sig, signer == "user" 
+      ? channelState.user 
+      : this.hubAddress
+    )
   }
 
   public createThreadStateHash(threadState: UnsignedThreadState): string {
@@ -145,10 +154,10 @@ export class Utils {
   public recoverSignerFromThreadState(
     threadState: UnsignedThreadState,
     sig: string,
-  ): string {
+  ): string | null {
     // console.log('recovering signer from state:', threadState)
     const hash: any = this.createThreadStateHash(threadState)
-    return this.recoverSigner(hash, sig)
+    return this.recoverSigner(hash, sig, threadState.sender)
   }
 
   public generateThreadMerkleTree(
@@ -244,19 +253,13 @@ export class Utils {
     return mtree.verify(proof, threadHash)
   }
 
-  private recoverSigner(hash: string, sig: string) {
-    // let fingerprint: any = this.createChannelStateHash(channelState)
-    let fingerprint = util.toBuffer(String(hash))
+  private recoverSignerOldSchema(hash: string, sig: string) {
+    const fingerprint = util.toBuffer(String(hash))
     const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-    // @ts-ignore
     const prefixedMsg = util.keccak256(
-      // @ts-ignore
       Buffer.concat([
-        // @ts-ignore
         prefix,
-        // @ts-ignore
         util.toBuffer(String(fingerprint.length)),
-        // @ts-ignore
         fingerprint,
       ]),
     )
@@ -268,10 +271,37 @@ export class Utils {
       res.s,
     )
     const addrBuf = util.pubToAddress(pubKey)
-    const addr = util.bufferToHex(addrBuf)
-    // console.log('recovered:', addr)
+    const recovered = util.bufferToHex(addrBuf)
+    return recovered
+  }
 
-    return addr
+  private recoverSignerNewSchema(hash: string, sig: string, signer: string) {
+    // For web3 1.0.0-beta.33
+    // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
+    let recovered = eth.utils.verifyMessage(hash, sig).toLowerCase()
+    if (recovered && recovered == signer.toLowerCase()) {
+      return recovered
+    }
+
+    // For web3 1.0.0-beta.52 when sig is verified by contract, note arrayify(msg) in verify
+    recovered = eth.utils.verifyMessage(eth.utils.arrayify(hash), sig).toLowerCase()
+    
+    return recovered
+  }
+
+  public recoverSigner(hash: string, sig: string, signer: string) {
+    let recovered = this.recoverSignerNewSchema(hash, sig, signer)
+    if (recovered && recovered == signer.toLowerCase()) {
+      return recovered
+    }
+
+    // final fallback
+    recovered = this.recoverSignerOldSchema(hash, sig)
+    if (recovered && recovered == signer.toLowerCase()) {
+      return recovered
+    }
+
+    return null
   }
 
   hasPendingOps(stateAny: ChannelState<any>) {

@@ -8,7 +8,6 @@ import {
   SyncResult,
   ThreadHistoryItem,
   ThreadState,
-  ThreadStateUpdate,
   UpdateRequest,
 } from '../types'
 
@@ -100,6 +99,7 @@ export class PersistentState {
   threadHistory: ThreadHistoryItem[] = []
   lastThreadUpdateId: number = 0 // global hub db level
   syncControllerState = new SyncControllerState()
+  hubAddress: string = "0x0"
 }
 
 export class ConnextState {
