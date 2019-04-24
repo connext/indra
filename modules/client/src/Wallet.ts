@@ -69,6 +69,7 @@ export default class Wallet extends eth.Signer {
       this.signer = eth.Wallet.createRandom()
       this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
+      console.warn(`Generated a new signing key, make sure you back it up before sending funds`)
     }
 
   }
@@ -79,14 +80,30 @@ export default class Wallet extends eth.Signer {
 
   async signMessage(message: string) {
     if (this.signer) {
-      return await this.signer.signMessage(eth.utils.arrayify(message))
+      return await this.signer.signMessage(message)
     }
     if (this.web3) {
-      return await (
-        this.password
-          ? this.web3.eth.personal.sign(message, this.address, this.password)
-          : this.web3.eth.sign(message, this.address)
-      )
+      let sig, address
+
+      // For web3 1.0.0-beta.33
+      sig = await this.web3.eth.sign(eth.utils.hashMessage(message), this.address)
+      address = eth.utils.verifyMessage(message, sig).toLowerCase()
+      if (this.address === address) return sig
+      console.warn(`web3.eth.sign(hashMessage("${message}")) -> sig=${sig} -> address=${address}`)
+
+      // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
+      sig = await this.web3.eth.personal.sign(message, this.address, this.password)
+      address = eth.utils.verifyMessage(message, sig).toLowerCase()
+      if (this.address === address) return sig
+      console.warn(`web3.eth.personal.sign("${message}") -> sig=${sig} -> address=${address}`)
+
+      // For web3 1.0.0-beta.52 when sig is verified by contract, note arrayify(msg) in verify
+      sig = await this.web3.eth.sign(message, this.address)
+      address = eth.utils.verifyMessage(eth.utils.arrayify(message), sig).toLowerCase()
+      if (this.address === address) return sig
+      console.warn(`web3.eth.sign("${message}") -> sig=${sig} -> address=${address}`)
+
+      throw Error(`Couldn't find a web3 signing method that works...`)
     }
   }
 
@@ -96,11 +113,7 @@ export default class Wallet extends eth.Signer {
       return await this.signer.sign(tx)
     }
     if (this.web3) {
-      return await (
-        this.password
-          ? this.web3.eth.personal.signTransaction(tx, this.password)
-          : (this.web3.eth.signTransaction as any)(tx)
-      )
+      return await (this.web3.eth.signTransaction as any)(tx)
     }
   }
 

@@ -52,13 +52,6 @@ class AuthApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    if (this.config.authDomainWhitelist.indexOf(origin) === -1) {
-      LOG.warn('Received auth challenge from invalid origin: {origin}', {
-        origin,
-      })
-      return res.sendStatus(400)
-    }
-
     let result: string|null
 
     try {
