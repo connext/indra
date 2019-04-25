@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import * as chai from 'chai'
 import BN = require('bn.js')
 

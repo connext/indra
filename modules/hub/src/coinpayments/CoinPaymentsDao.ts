@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import { Big } from '../util/bigNumber'
 import { BigNumber } from 'bignumber.js/bignumber'
 import { CoinPaymentsIpnData } from './CoinPaymentsService'

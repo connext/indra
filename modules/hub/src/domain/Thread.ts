@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import { BigNumber } from 'bignumber.js'
 
 type ThreadState<T = string> = Connext.types.ThreadState<T>

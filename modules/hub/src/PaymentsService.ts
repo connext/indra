@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { types, Validator } from './Connext';
+import { types, Validator } from 'connext';
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
 import { assertUnreachable } from "./util/assertUnreachable";

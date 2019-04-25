@@ -1,5 +1,5 @@
 import { BigNumber } from 'bignumber.js'
-import { Utils, types } from '../Connext'
+import { Utils, types } from 'connext'
 import {
   objValuesBigNumToString,
   objValuesStringToBigNum,

@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { StateGenerator, types, Utils } from './Connext';
+import { StateGenerator, types, Utils } from 'connext';
 import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
 import ChainsawDao from './dao/ChainsawDao'

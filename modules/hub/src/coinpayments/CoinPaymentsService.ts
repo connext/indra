@@ -1,4 +1,4 @@
-import { types, Utils, Validator } from '../Connext'
+import { types, Utils, Validator } from 'connext'
 import * as crypto from 'crypto'
 import { default as DBEngine } from '../DBEngine'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'

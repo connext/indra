@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { StateGenerator, types } from './Connext';
+import { StateGenerator, types } from 'connext';
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";

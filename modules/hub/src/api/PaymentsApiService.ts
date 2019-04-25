@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import DBEngine from '../DBEngine'
 import * as express from 'express'
 import { ApiService } from './ApiService'

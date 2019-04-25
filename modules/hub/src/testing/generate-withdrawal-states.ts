@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 const fs = require("fs")
 const vm = require('vm')
 import * as t from './index'
