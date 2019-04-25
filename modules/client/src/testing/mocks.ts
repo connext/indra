@@ -614,7 +614,7 @@ export class MockStore {
 
     const initialThreadBN = convertThreadState('bn', initialThread)
     // Create new openThread state
-    let newState = new StateGenerator().openThread(
+    let newState = new StateGenerator("").openThread(
       convertChannelState('bn', channel),
       activeInitialThreadStates,
       initialThreadBN,
@@ -652,7 +652,7 @@ export class MockStore {
     const threadBN = convertThreadState('bn', thread[0])
 
     // Create thread update
-    let threadUpdate = new StateGenerator().threadPayment(threadBN, payment)
+    let threadUpdate = new StateGenerator("").threadPayment(threadBN, payment)
     threadUpdate = addSigToThreadState(threadUpdate, mkHash('0xMockUserSig'))
 
     // Update active thread with thread update

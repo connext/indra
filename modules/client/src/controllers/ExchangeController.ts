@@ -75,6 +75,13 @@ export class ExchangeController extends AbstractController {
   }
 
   public exchange = async (toSell: string, currency: "wei" | "token") => {
+    if (currency != "wei" && currency != "token") {
+      throw new Error(`Currency type not detected. Must provide either "wei" or "token" to indicate which type of currency you are sellling with exchange.`)
+    }
+    if (!toSell || toSell == '0' || toBN(toSell).isNeg()) {
+      throw new Error(`Invalid toSell amount provided. Must be greater than 0.`)
+    }
+
     const weiToSell = currency === "wei" ? toSell : '0'
     const tokensToSell = currency === "token" ? toSell : '0'
     // before requesting exchange, verify the user has enough wei 

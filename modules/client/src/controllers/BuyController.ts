@@ -2,7 +2,7 @@ import { ethers as eth } from 'ethers';
 import { AbstractController } from './AbstractController'
 import { getChannel } from '../state/getters'
 import { assertUnreachable } from '../lib/utils';
-import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
+import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType, PartialPurchaseRequest } from '../types'
 import { emptyAddress } from '../Utils';
 
 // **********************************************//
@@ -23,7 +23,7 @@ import { emptyAddress } from '../Utils';
 // 7. NOTE: For this to work, we have to allow multiple threads per sender-receiver combo
 
 export default class BuyController extends AbstractController {
-  public async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
+  public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
     /*
     purchase = {
       ...purchase,
@@ -41,15 +41,20 @@ export default class BuyController extends AbstractController {
     // you must be able to process multiple thread or channel payments
     // with this as the initial state
     let curChannelState = getChannel(this.store.getState())
-    for (const payment of purchase.payments) {
+    for (const p of purchase.payments) {
       let newChannelState = null
+      // insert 0 defaults on purchase payment amount
+      const payment: PurchasePaymentRequest<any> = {
+        ...p,
+        amount: insertDefault('0', p.amount, argNumericFields.Payment) as Payment
+      }
       switch (payment.type) {
         case 'PT_THREAD':
           // Create a new thread for the payment value
           const { thread, channel } = await this.connext.threadsController.openThread(
             payment.recipient, 
             payment.amount
-          )      
+          )
 
           // add thread payment to signed payments
           const state = await this.connext.signThreadState(

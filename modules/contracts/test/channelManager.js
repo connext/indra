@@ -6,12 +6,10 @@ const privKeys = require("./privKeys.json");
 const CM = artifacts.require("./ChannelManager.sol");
 const HST = artifacts.require("./HumanStandardToken.sol");
 const data = require("../ops/data.json");
-const Connext = require("connext");
+const Connext = require("../../client");
 const ConnextTester = require("connext/dist/testing");
 
 /* Setup Connext Client Stuff */
-const clientUtils = Connext.utils;
-const sg = new Connext.StateGenerator();
 const {
   convertChannelState,
   convertWithdrawal,
@@ -416,7 +414,7 @@ async function submitHubAuthorized(userAccount, hubAccount, wei = 0, ...override
 // Internal Helper Functions
 ////////////////////////////////////////
 
-let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod, channelStateReceiver;
+let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod, channelStateReceiver, clientUtils, sg;
 
 contract("ChannelManager", accounts => {
   let snapshotId;
@@ -639,6 +637,10 @@ contract("ChannelManager", accounts => {
     };
 
     validator = new Connext.Validator(hub.address, web3.eth, cm.abi);
+
+    clientUtils = new Connext.Utils(hub.address)
+
+    sg = new Connext.StateGenerator(hub.address);
 
     challengePeriod = +(await cm.challengePeriod.call()).toString();
   });

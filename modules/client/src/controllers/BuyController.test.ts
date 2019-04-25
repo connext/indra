@@ -1,6 +1,6 @@
 import { assert, mkAddress, mkHash } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs } from '../types';
+import { PaymentArgs, PurchasePaymentType } from '../types';
 import { emptyAddress } from '../Utils';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
@@ -31,7 +31,7 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
+          amount: { amountToken: '1' },
           type: 'PT_CHANNEL',
           meta: {},
           recipient: hubAddress,
@@ -60,8 +60,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_CUSTODIAL',
+          amount: { amountToken: '1', },
+          type: 'PT_CUSTODIAL' as PurchasePaymentType,
           meta: {},
           recipient: receiver,
         },
@@ -120,8 +120,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_LINK',
+          amount: { amountToken: '1', },
+          type: 'PT_LINK' as PurchasePaymentType,
           meta: { secret: connext.generateSecret() },
           recipient: emptyAddress,
         },
@@ -149,8 +149,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_LINK',
+          amount: { amountToken: '1', },
+          type: 'PT_LINK' as PurchasePaymentType,
           meta: {},
           recipient: emptyAddress,
         },
@@ -164,8 +164,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_LINK',
+          amount: { amountToken: '1', },
+          type: 'PT_LINK' as PurchasePaymentType,
           meta: { secret: 'secret' },
           recipient: emptyAddress,
         },
@@ -272,8 +272,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_THREAD',
+          amount: { amountToken: '1', },
+          type: 'PT_THREAD' as PurchasePaymentType,
           meta: {},
           recipient: receiver,
         },

@@ -8,6 +8,7 @@ import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransact
 import { rawTxnToTx } from './util/ethTransaction';
 import { Block } from 'web3-eth';
 import Web3 from 'web3';
+import * as eth from 'ethers';
 
 type ChannelState<T=string> = types.ChannelState<T>
 type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
@@ -75,20 +76,13 @@ export class SignerService {
   public async signMessage(message: string): Promise<string> {
     if (this.config.privateKeyFile) {
       const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
-      const pk = ethUtils.toBuffer(ethUtils.addHexPrefix(pkString))
-      const fingerprint = ethUtils.toBuffer(String(message))
-      const prefix = ethUtils.toBuffer('\x19Ethereum Signed Message:\n');
-      const prefixedMsg = ethUtils.keccak256(Buffer.concat([
-        prefix,
-        ethUtils.toBuffer(String(fingerprint.length)),
-        fingerprint
-      ]))
-      const sig = await ethUtils.ecsign(ethUtils.toBuffer(prefixedMsg), pk)
-      const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
-      LOG.info(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed a message:`)
-      LOG.info(`message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}")`)
-      LOG.info(`sig=${out}`)
-      return out
+      const wallet = new eth.Wallet(pkString)
+      const sig = await wallet.signMessage(message)
+
+      LOG.info(`Hub (${wallet.address}) signed a message:`)
+      LOG.info(`message="${message}"`)
+      LOG.info(`sig=${sig}`)
+      return sig
     } else {
       return await this.web3.eth.sign(message, this.config.hotWalletAddress)
     }

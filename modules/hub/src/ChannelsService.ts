@@ -51,7 +51,6 @@ const {
   convertWithdrawal,
   convertWithdrawalParameters,
 } = types
-const utils = new Utils()
 const LOG = log('ChannelsService')
 
 type RedisReason = 'user-authorized' | 'hub-authorized' | 'offchain'
@@ -63,6 +62,7 @@ export type RedisUnsignedUpdate = {
 
 
 export default class ChannelsService {
+  private utils: Utils
   constructor(
     private onchainTxService: OnchainTransactionService,
     private threadsService: ThreadsService,
@@ -79,7 +79,9 @@ export default class ChannelsService {
     private config: Config,
     private contract: ChannelManager,
     private coinPaymentsDao: CoinPaymentsDao,
-  ) {}
+  ) {
+    this.utils = new Utils(this.config.hotWalletAddress)
+  }
 
   public async doRequestDeposit(
     user: string,
@@ -106,7 +108,7 @@ export default class ChannelsService {
       sigUser,
     }, user)
 
-    if (utils.hasPendingOps(channelStateStr)) {
+    if (this.utils.hasPendingOps(channelStateStr)) {
       LOG.info(`User ${user} requested a deposit while state already has pending operations `)
       LOG.debug(`[Request Deposit] Current state: ${JSON.stringify(channelStateStr)}`)
       return 'current state has pending fields'

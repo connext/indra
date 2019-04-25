@@ -79,3 +79,4 @@ export const setRequestedDeposit = setterAction<PendingRequestedDeposit | null>(
 export const setThreadHistory = setterAction<ThreadHistoryItem[]>('persistent.threadHistory')
 export const setActiveInitialThreadStates = setterAction<ThreadState[]>('persistent.activeInitialThreadStates')
 export const setActiveThreads = setterAction<ThreadState[]>('persistent.activeThreads')
+export const setHubAddress = setterAction<Address>('persistent.hubAddress')

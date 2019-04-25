@@ -174,7 +174,7 @@ describe('ChainsawService::mocked Web3', function() {
 
     it('should return poll type "PROCESS_EVENTS" if state generation is successful', async () => {
       cs.validator.generateConfirmPending = async (prev, args) => {
-        return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
+        return await new StateGenerator(registry.get('Config').hotWalletAddress).confirmPending(convertChannelState("bn", prev))
       }
       console.log('chan2:', await chanDao.getChannelByUser(chan2.user))
       const pollType = await cs.processSingleTx(successfulTxHash)
@@ -220,7 +220,7 @@ describe('ChainsawService::mocked Web3', function() {
         },
         Validator: {
           generateConfirmPending: async (prev, args) => {
-            return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
+            return await new StateGenerator(registry.get('Config').hotWalletAddress).confirmPending(convertChannelState("bn", prev))
           }
         },
         ChannelManager: {

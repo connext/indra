@@ -12,7 +12,6 @@ type ChannelState = types.ChannelState
 type PaymentArgs = types.PaymentArgs
 type ArgsTypes = types.ArgsTypes
 
-const sg = new StateGenerator()
 const { convertChannelState, convertThreadState } = types
 
 export function tokenVal(x: number | string): string {
@@ -71,6 +70,7 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
     balanceTokenSender: tokenVal(10),
   })
 
+  const sg = new StateGenerator(registry.get('Config').hotWalletAddress)
   const userUpdate = await sg.openThread(
     convertChannelState('bn', user.state),
     [],

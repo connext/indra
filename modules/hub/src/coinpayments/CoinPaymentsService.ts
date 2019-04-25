@@ -15,7 +15,6 @@ import { default as log } from '../util/log'
 type DepositArgs = types.DepositArgs
 type PaymentArgs = types.PaymentArgs
 const { convertChannelState } = types
-const utils = new Utils()
 const LOG = log('CoinPaymentsService')
 
 // See also: https://www.coinpayments.net/merchant-tools-ipn
@@ -103,6 +102,7 @@ export type CoinPaymentsIpnData = {
 export const COINPAYMENTS_MAX_DEPOSIT_FIAT = 300
 
 export class CoinPaymentsService {
+  private utils: Utils
   constructor(
     private config: Config,
     private api: CoinPaymentsApiClient,
@@ -111,7 +111,9 @@ export class CoinPaymentsService {
     private channelsService: ChannelsService,
     private channelDao: ChannelsDao,
     private exchangeRateDao: ExchangeRateDao,
-  ) {}
+  ) {
+    this.utils = new Utils(this.config.hotWalletAddress)
+  }
 
   generateHmac(key: string, rawData: string): string {
     return crypto
@@ -216,7 +218,7 @@ export class CoinPaymentsService {
       LOG.info(`Channel ${user} is not open (${channel.status}); can't apply IPN credit yet (will retry)`)
       return null
     }
-    if (utils.hasPendingOps(channel.state)) {
+    if (this.utils.hasPendingOps(channel.state)) {
       LOG.info(`Channel ${user} has pending operations; can't apply IPN credit yet (will retry)`)
       return null
     }

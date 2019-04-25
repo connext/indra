@@ -6,7 +6,7 @@ import { SinonStub } from 'sinon'
 
 const sandbox = sinon.createSandbox()
 
-describe.only('MemoryCRAuthManager', () => {
+describe('MemoryCRAuthManager', () => {
   const ADDRESS = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
   const NONCE = '7c965885-407a-4637-95cb-797dd9a8d8a2'
   const ORIGIN = 'google.com'

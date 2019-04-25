@@ -297,8 +297,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   ConnextUtils: {
-    factory: () => new Utils(),
-    dependencies: [],
+    factory: (config: Config) => new Utils(config.hotWalletAddress),
+    dependencies: ['Config'],
   },
 
   Validator: {
@@ -307,8 +307,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   StateGenerator: {
-    factory: () => new StateGenerator(),
-    dependencies: [],
+    factory: (config: Config) => new StateGenerator(config.hotWalletAddress),
+    dependencies: ['Config'],
   },
 
   GasEstimateDao: {
