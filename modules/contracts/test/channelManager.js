@@ -10,7 +10,7 @@ const Connext = require("connext");
 const ConnextTester = require("connext/dist/testing");
 
 /* Setup Connext Client Stuff */
-const clientUtils = Connext.utils;
+const clientUtils = Connext.Utils();
 const sg = new Connext.StateGenerator();
 const {
   convertChannelState,
