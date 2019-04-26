@@ -975,8 +975,8 @@ export class Validator {
   }
 
   private isValidStateTransitionRequest(prev: ChannelStateBN, request: UpdateRequest): string | null {
-    // @ts-ignore TODO: wtf
-    const args = convertArgs("bn", request.reason, request.args)
+    // as any casting here because of {} def in ArgsTypes
+    const args = convertArgs("bn", request.reason, request.args as any)
     // will fail on generation in wd if negative args supplied
     let err = this.hasNegative(args, argNumericFields[request.reason])
     if (err) {
@@ -1072,7 +1072,6 @@ export class Validator {
 
       // NOTE: The second topic in the log with the events topic
       // is the indexed user. This is valid for all Channel events in contract
-      // @ts-ignore TODO test and fix
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
       parsed.push(convertVerboseEvent("bn", makeEventVerbose(
         raw,
@@ -1126,7 +1125,6 @@ export class Validator {
       }
       // NOTE: The second topic in the log with the events topic
       // is the indexed user.
-      // @ts-ignore TODO test and fix
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
     })
 

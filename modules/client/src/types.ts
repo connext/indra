@@ -74,9 +74,7 @@ export type HubConfigBigNumber = HubConfig<BigNumber>
  *********************************/
 
 // alias functions
-// @ts-ignore
 export const isBN = BN.isBN
-// @ts-ignore
 export const isBigNum = BigNumber.isBigNumber
 export const isBigNumber = BigNumber.isBigNumber
 

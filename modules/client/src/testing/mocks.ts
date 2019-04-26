@@ -96,7 +96,6 @@ export class MockConnextInternal extends ConnextInternal {
     }
     afterEach(function () {
       // ignore this as any ts err
-      // @ts-ignore
       if ((this as any).currentTest.state == 'failed') {
         console.error('Actions emitted during test: ' + (actions.length ? '' : '(no actions)'))
         actions.forEach(action => {
@@ -506,7 +505,6 @@ export class MockHub implements IHubAPIClient {
   async getLatestChannelStateAndUpdate() {
     return null
     // let store = new MockStore()
-    // //@ts-ignore
     // return {state: store._initialState.persistent.channel, update: store._initialState.persistent.channelUpdate}
   }
 
