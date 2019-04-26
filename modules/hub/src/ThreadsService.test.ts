@@ -11,9 +11,10 @@ import {
 } from './testing/stateUtils'
 import {Big} from './util/bigNumber'
 import ThreadsService from './ThreadsService'
-import {ThreadStateBigNum} from './domain/Thread'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 
+type ThreadState<T=string> = types.ThreadState<T>
+type ThreadStateBigNum = ThreadState<BigNumber>
 type ChannelStateUpdateRowBigNum = types.ChannelStateUpdateRow<BigNumber>
 const { convertChannelState, convertThreadState } = types
 const fakeSig = mkSig('0xfff')

@@ -2,15 +2,16 @@ import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import Config from '../Config'
-import {
-  ThreadStateBigNum,
-  ThreadStateUpdateRowBigNum,
-  ThreadRowBigNum,
-} from '../domain/Thread'
 import { BigNumber } from 'bignumber.js'
 
-type ThreadState = Connext.types.ThreadState
+type ThreadState<T=string> = Connext.types.ThreadState<T>
+type ThreadStateUpdateRow<T=string> = Connext.types.ThreadStateUpdateRow<T>
+type ThreadRow<T=string> = Connext.types.ThreadRow<T>
 type ThreadStatus = Connext.types.ThreadStatus
+type ThreadStateBigNum = ThreadState<BigNumber>
+type ThreadRowBigNum = ThreadRow<BigNumber>
+type ThreadStateUpdateRowBigNum = ThreadStateUpdateRow<BigNumber>
+
 const { getLastThreadUpdateId, getActiveThreads } = Connext.getters
 
 export default interface ThreadsDao {

@@ -7,7 +7,6 @@ import ThreadsDao from './dao/ThreadsDao'
 import { BigNumber } from 'bignumber.js'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { Big, toWeiBigNum } from './util/bigNumber'
-import { ThreadStateUpdateRow } from './domain/Thread'
 import { RedisClient } from './RedisClient'
 import { ChannelManager } from './ChannelManager'
 import { prettySafeJson, Omit, maybe } from './util'
@@ -33,7 +32,8 @@ type Payment<T=string> = types.Payment<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type Sync = types.Sync
 type SyncResult = types.SyncResult
-type ThreadState = types.ThreadState
+type ThreadState<T=string> = types.ThreadState<T>
+type ThreadStateUpdateRow<T=string> = types.ThreadStateUpdateRow<T>
 type UnsignedChannelState = types.UnsignedChannelState
 type UpdateRequest<T=string> = types.UpdateRequest<T>
 type UpdateRequestBigNumber = types.UpdateRequest<BigNumber>

@@ -322,11 +322,19 @@ export class MockHub implements IHubAPIClient {
   }
 
   async getIncomingThreads(): Promise<ThreadRow[]> {
-    return [{ id: 1, state: getThreadState('full') }]
+    return [{
+      id: 1,
+      status: 'CT_OPEN',
+      state: getThreadState('full')
+    }]
   }
 
   async getThreadByParties(): Promise<ThreadRow> {
-    return { id: 1, state: getThreadState('full') }
+    return {
+      id: 1,
+      status: 'CT_OPEN',
+      state: getThreadState('full')
+    }
   }
 
   async sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync> {
