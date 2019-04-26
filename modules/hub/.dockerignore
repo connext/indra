@@ -1,5 +1,6 @@
-node_modules
-dist
 *.log
-.editorconfig
 .DS_Store
+.editorconfig
+.npm
+dist
+node_modules

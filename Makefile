@@ -209,9 +209,10 @@ contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
-	$(docker_run_in_contracts) "rm -rf node_modules/connext"
-	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_contracts) "cd node_modules/connext && $(install)"
+	$(docker_run_in_contracts) "rm -rf node_modules/connext/dist"
+	$(docker_run_in_contracts) "ln -s ../../../client/dist node_modules/connext/dist"
+	$(docker_run_in_contracts) "rm -rf node_modules/connext/src"
+	$(docker_run_in_contracts) "ln -s ../../../client/src node_modules/connext/src"
 	@touch build/client && touch build/client-node-modules
 	$(log_finish) && touch build/$@
 
