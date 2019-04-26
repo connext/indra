@@ -74,10 +74,14 @@ export class SignerService {
   }
 
   public async signMessage(message: string): Promise<string> {
+    const bytes = eth.utils.isHexString(message)
+      ? eth.utils.arrayify(message)
+      : eth.utils.toUtf8Bytes(message)
+
     if (this.config.privateKeyFile) {
       const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
       const wallet = new eth.Wallet(pkString)
-      const sig = await wallet.signMessage(message)
+      const sig = await wallet.signMessage(bytes)
 
       LOG.info(`Hub (${wallet.address}) signed a message:`)
       LOG.info(`message="${message}"`)

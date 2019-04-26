@@ -78,27 +78,32 @@ export default class Wallet extends eth.Signer {
   }
 
   async signMessage(message: string) {
+    const bytes = eth.utils.isHexString(message)
+      ? eth.utils.arrayify(message)
+      : eth.utils.toUtf8Bytes(message)
+
     if (this.signer) {
-      return await this.signer.signMessage(message)
+      return await this.signer.signMessage(bytes)
     }
+
     if (this.web3) {
       let sig, address
 
       // For web3 1.0.0-beta.33
-      sig = await this.web3.eth.sign(eth.utils.hashMessage(message), this.address)
-      address = eth.utils.verifyMessage(message, sig).toLowerCase()
+      sig = await this.web3.eth.sign(eth.utils.hashMessage(bytes), this.address)
+      address = eth.utils.verifyMessage(bytes, sig).toLowerCase()
       if (this.address === address) return sig
       console.warn(`web3.eth.sign(hashMessage("${message}")) -> sig=${sig} -> address=${address}`)
 
-      // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
-      sig = await this.web3.eth.personal.sign(message, this.address, this.password)
-      address = eth.utils.verifyMessage(message, sig).toLowerCase()
+      // For web3 1.0.0-beta.52 in some cases
+      sig = await this.web3.eth.personal.sign(eth.utils.hexlify(bytes), this.address, this.password)
+      address = eth.utils.verifyMessage(bytes, sig).toLowerCase()
       if (this.address === address) return sig
       console.warn(`web3.eth.personal.sign("${message}") -> sig=${sig} -> address=${address}`)
 
-      // For web3 1.0.0-beta.52 when sig is verified by contract, note arrayify(msg) in verify
-      sig = await this.web3.eth.sign(message, this.address)
-      address = eth.utils.verifyMessage(eth.utils.arrayify(message), sig).toLowerCase()
+      // For web3 1.0.0-beta.52 in other cases..?
+      sig = await this.web3.eth.sign(eth.utils.hexlify(bytes), this.address)
+      address = eth.utils.verifyMessage(bytes, sig).toLowerCase()
       if (this.address === address) return sig
       console.warn(`web3.eth.sign("${message}") -> sig=${sig} -> address=${address}`)
 

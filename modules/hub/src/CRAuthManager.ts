@@ -44,7 +44,11 @@ export class MemoryCRAuthManager implements CRAuthManager {
       return null
     }
 
-    let sigAddr = eth.utils.verifyMessage(nonce, signature).toLowerCase()
+    const bytes = eth.utils.isHexString(nonce)
+      ? eth.utils.arrayify(nonce)
+      : eth.utils.toUtf8Bytes(nonce)
+
+    let sigAddr = eth.utils.verifyMessage(bytes, signature).toLowerCase()
 
     if (!sigAddr || sigAddr !== address) {
       LOG.warn(`Signature doesn't match new scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
