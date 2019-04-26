@@ -100,6 +100,13 @@ export function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field:
   return res
 }
 
+export async function objMapPromise<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => Promise<R>): Promise<{ [key in keyof T]: R }> {
+  const res: any = {}
+  for (let key in obj)
+    res[key] = await func(key as any, obj[key] as any)
+  return res
+}
+
 function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
   for (let v of vals) {
     if (v !== null && v !== undefined)
