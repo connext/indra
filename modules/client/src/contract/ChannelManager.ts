@@ -47,7 +47,10 @@ export class ChannelManager implements IChannelManager {
 
   constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
-    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet) as any
+    // NOTE: doing wallet.provider, we can still create this 
+    // and have sendTransaction in the wallet return
+    // a transactionReceipt
+    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet)
     this.gasMultiple = gasMultiple
     this.defaultSendArgs = { value: 0 } as any
     this.provider = wallet.provider
