@@ -79,16 +79,22 @@ export class SignerService {
       : eth.utils.toUtf8Bytes(message)
 
     if (this.config.privateKeyFile) {
-      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
-      const wallet = new eth.Wallet(pkString)
-      const sig = await wallet.signMessage(bytes)
-
-      LOG.info(`Hub (${wallet.address}) signed a message:`)
-      LOG.info(`message="${message}"`)
-      LOG.info(`sig=${sig}`)
-      return sig
+      const wallet = new eth.Wallet(fs.readFileSync(this.config.privateKeyFile, 'utf8'))
+      return await wallet.signMessage(bytes)
     } else {
-      return await this.web3.eth.sign(message, this.config.hotWalletAddress)
+      let sig
+
+      // Modern versions of web3 will add the standard ethereum message prefix for us
+      sig = await this.web3.eth.sign(eth.utils.hexlify(bytes), this.config.hotWalletAddress)
+      if (this.config.hotWalletAddress === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+        return sig
+      }
+
+      // Old versions of web3 did not, we'll add it ourself
+      sig = await this.web3.eth.sign(eth.utils.hashMessage(bytes), this.config.hotWalletAddress)
+      if (this.config.hotWalletAddress === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+        return sig
+      }
     }
   }
 
