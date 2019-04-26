@@ -11,7 +11,7 @@ proxy=$(cwd)/modules/proxy
 dashboard=$(cwd)/modules/dashboard
 
 # Specify make-specific variables (VPATH = prerequisite search path)
-VPATH=build:$(contracts)/build:$(hub)/dist
+VPATH=build
 SHELL=/bin/bash
 
 # Fetch Prerequisites

@@ -1,4 +1,4 @@
-import { PaymentArgs, ThreadState } from '@src/types';
+import { PaymentArgs, ThreadState } from '../types';
 import { toBN } from '../helpers/bn';
 import { assert, mkAddress } from '../testing';
 import { MockConnextInternal, MockStore } from '../testing/mocks'

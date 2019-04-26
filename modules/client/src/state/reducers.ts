@@ -2,7 +2,7 @@ import { isFunction } from '../lib/utils'
 import {ConnextState} from './store'
 import {reducerWithInitialState, ReducerBuilder} from 'typescript-fsa-reducers/dist'
 import * as actions from './actions'
-import { UpdateRequest, ChannelState } from '@src/types';
+import { UpdateRequest, ChannelState } from '../types';
 
 export let reducers = reducerWithInitialState(new ConnextState())
 
