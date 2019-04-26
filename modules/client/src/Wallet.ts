@@ -1,7 +1,7 @@
 import { ethers as eth } from 'ethers';
 import Web3 from 'web3';
 import { ConnextClientOptions } from './Connext';
-import { TransactionResponse } from 'ethers/providers';
+import { TransactionResponse } from './types';
 
 export default class Wallet extends eth.Signer {
   address: string

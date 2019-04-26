@@ -13,7 +13,7 @@ import {
   ChannelState,
   ChannelStateUpdate,
   channelUpdateToUpdateRequest,
-  Event,
+  LogDescription,
   InvalidationArgs,
   InvalidationReason,
   Sync,
@@ -470,7 +470,7 @@ export default class SyncController extends AbstractController {
   public async didContractEmitUpdateEvent(channel: ChannelState, updateTimestamp?: Date): Promise<{
     didEmit: 'yes' | 'no' | 'unknown'
     latestBlock: Block
-    event?: Event
+    event?: LogDescription
   }> {
     let timeout = channel.timeout
     if (!channel.timeout) {
