@@ -1,5 +1,3 @@
-import { TipDto } from './Tip'
-
 export interface WithdrawalDto {
   recipient: string
 }

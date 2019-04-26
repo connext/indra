@@ -1,6 +1,9 @@
 import { EventLog } from 'web3-core';
-import { BN } from 'ethereumjs-util';
-import { Big } from '../util/bigNumber';
+import { BigNumber as BN } from 'ethers/utils'
+import { big } from '../Connext';
+const {
+  Big
+} = big
 
 export interface RawContractEvent {
   log: EventLog

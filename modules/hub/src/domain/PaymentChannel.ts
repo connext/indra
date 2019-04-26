@@ -1,4 +1,4 @@
-import { BN } from 'ethereumjs-util';
+import { BigNumber as BN } from 'ethers/utils'
 
 export interface PaymentChannel {
   state: number
