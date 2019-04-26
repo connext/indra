@@ -1,4 +1,4 @@
-import * as Connext from 'connext';
+import * as Connext from '../Connext';
 import { UnconfirmedTransaction, OnchainTransactionRow, RawTransaction } from "../domain/OnchainTransaction";
 import EthereumTx from "ethereumjs-tx"
 import w3utils = require('web3-utils')

@@ -1,4 +1,4 @@
-import { types, Validator } from 'connext';
+import { types, Validator } from './Connext';
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'

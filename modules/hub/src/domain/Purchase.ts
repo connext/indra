@@ -1,4 +1,4 @@
-import * as Connext from 'connext';
+import * as Connext from '../Connext';
 
 type PurchasePaymentSummary<T=any> = Connext.types.PurchasePaymentSummary<T>
 type Payment = Connext.types.Payment

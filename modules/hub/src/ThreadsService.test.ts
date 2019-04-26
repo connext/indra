@@ -1,4 +1,4 @@
-import { types } from 'connext';
+import { types } from './Connext';
 import {assert, getTestRegistry, TestServiceRegistry} from './testing'
 import {
   assertChannelStateEqual,

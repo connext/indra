@@ -1,4 +1,4 @@
-import * as Connext from 'connext';
+import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import Config from '../Config'

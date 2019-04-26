@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import * as Connext from 'connext';
+import * as Connext from '../Connext';
 import {PurchasePaymentRow} from '../domain/Purchase'
 import DBEngine, {SQL} from '../DBEngine'
 import Config from '../Config'

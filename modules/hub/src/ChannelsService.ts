@@ -1,4 +1,4 @@
-import { StateGenerator, types, Utils, Validator } from 'connext';
+import { StateGenerator, types, Utils, Validator } from './Connext';
 import { redisCache } from './RedisClient'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'

@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import * as Connext from 'connext';
+import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import { BigNumber } from 'bignumber.js'

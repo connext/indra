@@ -1,7 +1,8 @@
 import * as fs from 'fs'
-import { types, Utils } from 'connext';
+import { types, Utils } from './Connext';
 import Config from './Config'
 import { ChannelManager } from './ChannelManager';
+import * as ethUtils from 'ethereumjs-util'
 import log from './util/log'
 import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
 import { rawTxnToTx } from './util/ethTransaction';

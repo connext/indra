@@ -1,4 +1,5 @@
-import * as Connext from 'connext';
+import * as Connext from '../Connext';
+import DBEngine from '../DBEngine'
 import { BigNumber } from 'bignumber.js'
 import { getTestRegistry } from '../testing'
 import { PostgresThreadsDao } from './ThreadsDao'

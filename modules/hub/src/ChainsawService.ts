@@ -1,4 +1,4 @@
-import { types, Utils, Validator } from 'connext';
+import { types, Utils, Validator } from './Connext';
 
 import ChainsawDao, { PollType } from './dao/ChainsawDao'
 import log from './util/log'

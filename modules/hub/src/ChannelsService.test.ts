@@ -1,4 +1,4 @@
-import { StateGenerator, types } from 'connext';
+import { StateGenerator, types } from './Connext';
 import { parameterizedTests } from './testing'
 import ChannelsDao, { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'

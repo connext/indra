@@ -1,4 +1,4 @@
-import { Poller } from 'connext'
+import { Poller } from './Connext'
 import { default as Config } from './Config'
 import { prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'

@@ -1,4 +1,4 @@
-import * as Connext from 'connext'
+import * as Connext from '../Connext'
 import { TestServiceRegistry } from '../testing'
 import { default as DBEngine } from '../DBEngine'
 import { SQL } from '../DBEngine'

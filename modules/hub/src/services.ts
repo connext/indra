@@ -1,4 +1,4 @@
-import { StateGenerator, Utils, Validator } from 'connext';
+import { StateGenerator, Utils, Validator } from './Connext';
 import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
 import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'

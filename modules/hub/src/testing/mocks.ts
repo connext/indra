@@ -1,4 +1,4 @@
-import { types, Utils, Validator } from 'connext'
+import { types, Utils, Validator } from '../Connext'
 import * as request from 'supertest'
 import { default as ChannelManagerABI } from '../abi/ChannelManager'
 import { getRedisClient } from '../RedisClient'
