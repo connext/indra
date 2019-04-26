@@ -1,10 +1,4 @@
-import { StateGenerator, types, Utils, Validator } from 'connext'
-
-const utils = new Utils()
-
-const { getters } = utils
-
-class Poller extends utils.Poller {}
+import { StateGenerator, types, Utils, Validator, Poller, getters } from 'connext'
 
 export {
   Poller,
