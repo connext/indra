@@ -37,7 +37,7 @@ import {
   convertWithdrawalParameters,
   DepositArgs,
   DepositArgsBN,
-  Event,
+  LogDescription,
   ExchangeArgs,
   ExchangeArgsBN,
   ExchangeRates,
@@ -147,7 +147,7 @@ export class MockConnextInternal extends ConnextInternal {
     return { ...args, sigUser: mkHash('0xalsd23')}
   }
 
-  async getContractEvents(eventName: string, fromBlock: number): Promise<Event[]> {
+  async getContractEvents(eventName: string, fromBlock: number): Promise<LogDescription[]> {
     return []
   }
 
@@ -531,7 +531,7 @@ export class MockStore {
     persistent: new PersistentState(),
   }
 
-  public createStore = () => {
+  public createStore: any = () => {
     return createStore(reducers, this._initialState)
   }
 

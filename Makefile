@@ -187,14 +187,14 @@ hub: hub-node-modules contract-artifacts $(shell find $(hub)/src $(find_options)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/$@
 
-hub-node-modules: builder $(hub)/package.json
+hub-node-modules: builder $(hub)/package.json $(client)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
-	$(docker_run_in_hub) "rm -rf node_modules/connext"
-	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_hub) "cd ../client && $(install)"
-	@touch build/client && touch build/client-node-modules
+	#$(docker_run_in_hub) "rm -rf node_modules/connext"
+	#$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
+	#$(docker_run_in_hub) "cd node_modules/connext && $(install)"
+	@touch build/hub-node-modules
 	$(log_finish) && touch build/$@
 
 # Contracts
@@ -210,7 +210,7 @@ contract-node-modules: builder $(contracts)/package.json
 	$(docker_run_in_contracts) "$(install)"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_contracts) "cd ../client && $(install)"
+	$(docker_run_in_contracts) "cd node_modules/connext && $(install)"
 	@touch build/client && touch build/client-node-modules
 	$(log_finish) && touch build/$@
 

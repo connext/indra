@@ -4,7 +4,7 @@ import {
   ChannelManagerChannelDetails,
   ChannelState,
   Contract,
-  Event,
+  LogDescription,
   Filter,
   Interface,
   Provider,
@@ -22,7 +22,7 @@ export interface IChannelManager {
   abi: Interface
   rawAbi: any
   gasMultiple: number
-  getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<Event[]>
+  getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<LogDescription[]>
   userAuthorizedUpdate(state: ChannelState): Promise<Transaction>
   getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
   startExit(state: ChannelState): Promise<Transaction>
@@ -47,7 +47,10 @@ export class ChannelManager implements IChannelManager {
 
   constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
-    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet) as any
+    // NOTE: doing wallet.provider, we can still create this 
+    // and have sendTransaction in the wallet return
+    // a transactionReceipt
+    this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet)
     this.gasMultiple = gasMultiple
     this.defaultSendArgs = { value: 0 } as any
     this.provider = wallet.provider
@@ -64,7 +67,7 @@ export class ChannelManager implements IChannelManager {
 
     const events = []
     for (let i in logs) {
-      events.push(this.abi.parseLog(logs[i]) as Event)
+      events.push(this.abi.parseLog(logs[i]) as LogDescription)
     }
 
     console.log(`Got events: ${JSON.stringify(events,null,2)}`)

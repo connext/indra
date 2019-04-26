@@ -43,7 +43,7 @@ export function handleChannelChange(state: ConnextState, channel: ChannelState, 
   }
 }
 
-reducers = reducers.case(actions.setChannelAndUpdate, (state, action) => handleChannelChange(state, action.state, action.update))
+reducers = reducers.case(actions.setChannelAndUpdate, (state, action: any) => handleChannelChange(state, action.state, action.update))
 // @ts-ignore
 reducers = reducers.case(actions.setChannel, (state, action) => handleChannelChange(state, action))
 

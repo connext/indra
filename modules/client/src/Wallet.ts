@@ -1,11 +1,12 @@
 import { ethers as eth } from 'ethers';
 import Web3 from 'web3';
 import { ConnextClientOptions } from './Connext';
+import { TransactionResponse } from './types';
 
 export default class Wallet extends eth.Signer {
   address: string
-  provider: any // Provider
-  signer: any
+  provider: eth.providers.BaseProvider
+  signer?: eth.Wallet
   web3?: Web3
   private password: string
 
@@ -70,7 +71,6 @@ export default class Wallet extends eth.Signer {
       this.address = this.signer.address.toLowerCase()
       console.warn(`Generated a new signing key, make sure you back it up before sending funds`)
     }
-
   }
 
   async getAddress() {
@@ -102,8 +102,9 @@ export default class Wallet extends eth.Signer {
       if (this.address === address) return sig
       console.warn(`web3.eth.sign("${message}") -> sig=${sig} -> address=${address}`)
 
-      throw Error(`Couldn't find a web3 signing method that works...`)
+      throw new Error(`Couldn't find a web3 signing method that works...`)
     }
+    throw new Error(`Could not sign message`)
   }
 
   async signTransaction(tx: any) {
@@ -116,15 +117,40 @@ export default class Wallet extends eth.Signer {
     }
   }
 
-  async sendTransaction(tx: any) {
+  // TODO: This is *supposed* to return a TransactionObject
+  // but usually we end up parsing the event logs.
+  // i *think* this is actually done by fetching the receipt
+  // from the hash, so this should be okay
+  async sendTransaction(tx: any): Promise<TransactionResponse> {
     const signedTx = await this.signTransaction(tx)
     const toSend = signedTx.raw ? signedTx.raw : signedTx
     if (this.provider) {
       return await this.provider.sendTransaction(toSend)
+    } else if (this.web3) {
+      // TODO: properly convert to transaction response type
+      // const receipt = await this.web3.eth.sendSignedTransaction(toSend)
+      // return {
+      //   blockHash: receipt.blockHash,
+      //   blockNumber: receipt.blockNumber,//3346463,
+      //   timestamp: 0, // best way to get?
+      //   creates: null,
+      //   to: receipt.to,
+      //   data: , // ??
+      //   from: receipt.from,
+      //   hash: receipt.transactionHash,
+      //   gasLimit:  , // ?? BigNumberify
+      //   gasPrice: , // ?? BigNumberify
+      //   nonce: , // ?? number
+      //   value: , // ?? string
+      //   r: , // ?? string
+      //   s: , // ?? string
+      //   v: , // ?? string
+      //   raw: , // ?? string
+      // }
+      // @ts-ignore
+      return await this.web3.eth.sendSignedTransaction(toSend) as TransactionResponse
     }
-    if (this.web3) {
-      return await this.web3.eth.sendSignedTransaction(toSend)
-    }
+    throw new Error("Could not send transaction")
   }
 
 }
