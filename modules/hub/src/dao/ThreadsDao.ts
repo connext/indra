@@ -2,7 +2,10 @@ import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import Config from '../Config'
-import { Big } from '../util/bigNumber';
+import { big } from '../Connext';
+const {
+  Big
+} = big
 
 type ThreadState = Connext.types.ThreadState
 type ThreadStatus = Connext.types.ThreadStatus

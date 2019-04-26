@@ -6,8 +6,7 @@ import Config from '../Config'
 import { prettySafeJson } from '../util'
 import { default as log } from '../util/log'
 import { mkSig } from '../testing/stateUtils';
-import { Big } from '../util/bigNumber';
-import { BN } from 'ethereumjs-util';
+import { BigNumber as BN } from 'ethers/utils'
 
 type Address = Connext.types.Address
 type ArgsTypes = Connext.types.ArgsTypes
@@ -20,6 +19,7 @@ type InvalidationArgs = Connext.types.InvalidationArgs
 
 const convertArgs = Connext.types.convertArgs
 const emptyRootHash = eth.constants.HashZero
+const Big = Connext.big.Big
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBN | null>

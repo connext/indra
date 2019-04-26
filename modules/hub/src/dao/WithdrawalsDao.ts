@@ -2,8 +2,11 @@ import Withdrawal, {WithdrawalStatus} from '../domain/Withdrawal'
 import DBEngine from '../DBEngine'
 import {Client, QueryResult} from 'pg'
 import {TotalsTuple} from '../domain/TotalsTuple'
-import { BN } from 'ethereumjs-util';
-import { Big } from '../util/bigNumber';
+import { BigNumber as BN } from 'ethers/utils'
+import { big } from '../Connext';
+const {
+  Big
+} = big
 
 enum WithdrawalType {
   WEI,

@@ -2,8 +2,11 @@ import DBEngine from '../DBEngine'
 import { Client } from 'pg'
 import { PostgresGenericDao } from './GenericDao'
 import Disbursement, { DisbursementStatus } from '../domain/Disbursement'
-import { BN } from 'ethereumjs-util';
-import { Big } from '../util/bigNumber';
+import { BigNumber as BN } from 'ethers/utils'
+import { big } from '../Connext';
+const {
+  Big
+} = big
 
 export default interface DisbursementDao {
   create(recipient: string, amountWei: BN): Promise<Disbursement>
