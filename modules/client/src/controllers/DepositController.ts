@@ -63,7 +63,7 @@ export default class DepositController extends AbstractController {
         `Error handling userAuthorizedUpdate (this update will be ` +
         `countersigned and held until it expires - at which point it ` +
         `will be invalidated - or the hub sends us a subsequent ` +
-        `ConfirmPending.`, e
+        `ConfirmPending. (update: ${JSON.stringify(update)}; prev: ${JSON.stringify(prev)})`, e
       )
       this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.rej(e)
     } finally {
