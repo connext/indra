@@ -2,7 +2,7 @@ import BN = require('bn.js')
 import { ethers as eth } from 'ethers';
 import { maxBN, toBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
-import { StateGenerator, subOrZero, objMap } from './StateGenerator'
+import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
   argNumericFields,
@@ -53,7 +53,8 @@ import {
   WithdrawalArgs,
   WithdrawalArgsBN,
   WithdrawalParametersBN,
-  withdrawalParamsNumericFields
+  withdrawalParamsNumericFields,
+  objMap
 } from './types'
 import { Utils } from './Utils'
 

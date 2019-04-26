@@ -1,8 +1,8 @@
 import { assert } from './testing/index'
 import * as t from './testing/index'
-import { StateGenerator, calculateExchange, objMap, objMapPromise } from './StateGenerator';
+import { StateGenerator, calculateExchange, } from './StateGenerator';
 import { Utils } from './Utils';
-import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs } from './types';
+import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs, } from './types';
 import { getChannelState, getWithdrawalArgs } from './testing'
 import { toBN } from './helpers/bn';
 import { BN } from 'ethereumjs-util';
@@ -54,42 +54,6 @@ function createPreviousThreadState(...overrides: t.PartialSignedOrSuccinctThread
   })
   return convertThreadState("bn", state)
 }
-
-describe('objMap', () => {
-  // should apply the same function to every value in the given
-  // object
-  it("should work with promises", async () => {
-    const obj = {
-      test: "str",
-      me: new BN(7),
-      out: new Promise((res, rej) => res('10'))
-    }
-
-    const res = await objMapPromise(obj, async (val, field) => {
-      return await field
-    }) as any
-
-    assert.deepEqual(res, {
-      test: "str",
-      me: new BN(7),
-      out: "10"
-    })
-  })
-
-  it("should work with constant members", async () => {
-    let args = {
-      str: "This IS A CASIng TesT",
-      num: 19,
-      bn: new BN(8)
-    }
-    args = objMap(args, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
-    assert.deepEqual(args, {
-      str: "this is a casing test",
-      num: 19,
-      bn: new BN(8)
-    })
-  })
-})
 
 describe('StateGenerator', () => {
   describe('channel payment', () => {

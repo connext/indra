@@ -4,8 +4,8 @@ import { ConnextClientOptions } from './Connext';
 import {
   TransactionRequest,
   TransactionResponse,
+  objMapPromise
 } from './types';
-import { objMapPromise } from './StateGenerator';
 import { TransactionConfig } from 'web3-core';
 
 export default class Wallet extends eth.Signer {
