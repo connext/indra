@@ -273,12 +273,12 @@ export class CoinPaymentsService {
     )
 
     // Since 1 BOOTY = 1 USD, credit the user for the fiat amount in bei
-    // (the .floor() is _probably_ unnecessary, but just in case CoinPayments
+    // (the .integerValue(BigNumber.ROUND_FLOOR) is _probably_ unnecessary, but just in case CoinPayments
     // sends us a fiat value with more than 18 decimal places).
-    const ipnAmountToken = ipn.amountFiat.times('1e18').floor()
+    const ipnAmountToken = ipn.amountFiat.times('1e18').integerValue(BigNumber.ROUND_FLOOR)
     const amountToken = BigNumber.min(beiLimit, ipnAmountToken)
     const remainingBeiToCredit = ipnAmountToken.minus(amountToken)
-    const amountWei = remainingBeiToCredit.div(currentExchangeRate).floor()
+    const amountWei = remainingBeiToCredit.div(currentExchangeRate).integerValue(BigNumber.ROUND_FLOOR)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',

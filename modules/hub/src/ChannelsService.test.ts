@@ -340,7 +340,7 @@ describe('ChannelsService', () => {
       },
 
       expected: {
-        balanceWeiUser: Big(10).div(123.45).times('1e18').floor().div('1e18').toFixed(),
+        balanceWeiUser: Big(10).div(123.45).times('1e18').integerValue(BigNumber.ROUND_FLOOR).div('1e18').toFixed(),
         balanceTokenUser: tweakBalance(10, 28),
       },
     },
@@ -640,7 +640,7 @@ describe('ChannelsService', () => {
 
     const expectedExchangeAmountWei = toWeiBigNum(10)
       .div(mockRate)
-      .floor()
+      .integerValue(BigNumber.ROUND_FLOOR)
 
     let {updates: syncUpdates} = await service.getChannelAndThreadUpdatesForSync(
       channel.user,

@@ -138,7 +138,7 @@ export default class ChannelsService {
     // equivalent token amount to deposit based on booty amount
     const bootyRequestToDeposit = currentExchangeRateBigNum
       .times(depositWei)
-      .floor()
+      .integerValue(BigNumber.ROUND_FLOOR)
 
     const userBootyCurrentlyInChannel = await this.channelsDao.getTotalChannelTokensPlusThreadBonds(
       user,
@@ -409,7 +409,7 @@ export default class ChannelsService {
     // if user is leaving some wei in the channel, leave an equivalent amount of booty
     const newBalanceWeiUser = channel.state.balanceWeiUser.minus(params.withdrawalWeiUser)
     const hubBootyTargetForExchange = BigNumber.min(
-      newBalanceWeiUser.times(proposedExchangeRateBigNum).floor(),
+      newBalanceWeiUser.times(proposedExchangeRateBigNum).integerValue(BigNumber.ROUND_FLOOR),
       this.config.channelBeiLimit,
     )
 
@@ -494,7 +494,7 @@ export default class ChannelsService {
     if (otherLimit)
       limit = BigNumber.min(limit, otherLimit)
 
-    const exchangeLimit = limit.div(exchangeRate).floor()
+    const exchangeLimit = limit.div(exchangeRate).integerValue(BigNumber.ROUND_FLOOR)
     return BigNumber.min(reqAmount, exchangeLimit).toFixed()
   }
 
@@ -531,12 +531,12 @@ export default class ChannelsService {
     const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
 
     const bootyLimit = BigNumber.min(
-      BigNumber.max(0, channel.state.balanceTokenHub.minus(currentExchangeRateBigNum.floor())),
+      BigNumber.max(0, channel.state.balanceTokenHub.minus(currentExchangeRateBigNum.integerValue(BigNumber.ROUND_FLOOR))),
     )
     const weiToBootyLimit = (
       bootyLimit
         .div(currentExchangeRateBigNum)
-        .ceil()
+        .integerValue(BigNumber.ROUND_CEIL)
     )
     const adjustedWeiToSell = BigNumber.min(weiToSell, weiToBootyLimit)
 
