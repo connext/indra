@@ -54,7 +54,7 @@ describe('convertThreadState', () => {
   // })
 })
 
-describe('convertFields', () => {
+describe.skip('convertFields', () => {
   const types = ['str', 'bignumber', 'bn']
   const examples: any = {
     'str': '69',
