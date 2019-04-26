@@ -74,6 +74,7 @@ docker run --tty --name ${project}_tester --network=$project \
   --env REDIS_URL_TEST=$REDIS_URL \
   --env ETH_RPC_URL_TEST=$ETH_RPC_URL \
   --volume $root/modules/hub:/root \
+  --volume $root/modules/client:/client \
   --entrypoint=bash ${project}_builder -c '
     set -e
     echo "Waiting for $REDIS..." && bash ops/wait-for.sh -t 60 $REDIS 2> /dev/null
