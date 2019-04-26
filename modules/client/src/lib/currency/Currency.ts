@@ -1,15 +1,6 @@
+import { BigNumber } from 'bignumber.js'
 import { BigNumber as BN } from 'ethers/utils'
-import { Big } from '../../helpers/bn';
-import { isBN } from '../../types';
-
-export enum CurrencyType {
-  USD = 'USD',
-  ETH = 'ETH',
-  WEI = 'WEI',
-  FINNEY = 'FINNEY',
-  BOOTY = 'BOOTY',
-  BEI = 'BEI',
-}
+import { CurrencyType, isBN } from '../../types';
 
 export interface CurrencyFormatOptions {
   decimals?: number
@@ -35,13 +26,13 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
     [CurrencyType.BEI]: 'BEI'
   }
 
-  static ETH = (amount: BN | string | number) => new Currency(CurrencyType.ETH, amount)
-  static USD = (amount: BN | string | number) => new Currency(CurrencyType.USD, amount)
-  static WEI = (amount: BN | string | number) => new Currency(CurrencyType.WEI, amount)
-  static FIN = (amount: BN | string | number) => new Currency(CurrencyType.FINNEY, amount)
+  static ETH = (amount: BN | BigNumber | string | number) => new Currency("ETH", amount)
+  static USD = (amount: BN | BigNumber | string | number) => new Currency("USD", amount)
+  static WEI = (amount: BN | BigNumber | string | number) => new Currency("WEI", amount)
+  static FIN = (amount: BN | BigNumber | string | number) => new Currency("FINNEY", amount)
   // static SPANK = (amount: BN|BigNumber|string|number): Currency => new Currency(CurrencyType.SPANK, amount)
-  static BOOTY = (amount: BN | string | number) => new Currency(CurrencyType.BOOTY, amount)
-  static BEI = (amount: BN | string | number) => new Currency(CurrencyType.BEI, amount)
+  static BOOTY = (amount: BN | BigNumber | string | number) => new Currency("BOOTY", amount)
+  static BEI = (amount: BN | BigNumber | string | number) => new Currency("BEI", amount)
 
   static equals = (c1: ICurrency, c2: ICurrency) => {
     return c1.amount === c2.amount && c1.type == c2.type
@@ -49,7 +40,7 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
 
 
   private _type: ThisType
-  private _amount: BN
+  private _amount: BigNumber
 
   static _defaultOptions = {
     [CurrencyType.USD]: {
@@ -85,7 +76,7 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
   }
 
   constructor (currency: ICurrency<ThisType>);
-  constructor (type: ThisType, amount: BN | string | number);
+  constructor (type: ThisType, amount: BN | BigNumber | string | number);
 
   constructor (...args: any[]) {
     let [_type, _amount] = (
@@ -97,18 +88,18 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
     const _amountAny = _amount as any
 
     try {
-      if (_amountAny instanceof BN) {
+      if (_amountAny instanceof BigNumber) {
         this._amount = _amountAny
       } else if (_amountAny.c && _amountAny.e && _amountAny.s) {
-        const b = Big('0') as any
+        const b = new BigNumber('0') as any
         b.c = _amountAny.c
         b.e = _amountAny.e
         b.s = _amountAny.s
         this._amount = b
       } else if (isBN(_amountAny)) {
-        this._amount = Big(_amount.toString(10))
+        this._amount = new BigNumber(_amount.toString(10))
       } else if (typeof _amount === 'string' || typeof _amount === 'number') {
-        this._amount = Big(_amount)
+        this._amount = new BigNumber(_amount)
       } else {
         throw new Error('incorrect type')
       }
@@ -133,15 +124,15 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
   }
 
   get amount (): string {
-    return this._amount.toString()
+    return this._amount.toString(10)
   }
 
-  get amountBigNumber (): BN {
+  get amountBigNumber (): BigNumber {
     return this._amount
   }
 
   get amountBN (): BN {
-    return new BN(this._amount.toString())
+    return new BN(this._amount.decimalPlaces(0).toString(10))
   }
 
   public toFixed(): string {
@@ -164,12 +155,12 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
 
     let amountBigNum = this._amount
     if (options.takeFloor) {
-      amountBigNum = Big(amountBigNum)
+      amountBigNum = new BigNumber(amountBigNum.dividedToIntegerBy(1) )
     }
 
     let amount = options.decimals === undefined
-      ? amountBigNum.toString()
-      : amountBigNum.toString()
+      ? amountBigNum.toFormat()
+      : amountBigNum.toFormat(options.decimals)
 
     if (!options.showTrailingZeros) {
       amount = amount.replace(/\.?0*$/, '')
@@ -181,7 +172,7 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
   public floor = (): Currency => {
     return new Currency(
       this.type,
-      this.amountBigNumber
+      this.amountBigNumber.dividedToIntegerBy(1)
     )
   }
 

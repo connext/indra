@@ -4,8 +4,9 @@ import { BigNumber as BN } from 'ethers/utils'
 import Currency from './Currency';
 import { default as generateExchangeRates } from '../../testing/generateExchangeRates'
 import { getExchangeRates } from '../../state/getters'
-import { CurrencyType } from '../../types'
+import { isBN } from '../../types'
 import { MockStore } from '../../testing/mocks';
+import BigNumber from 'bignumber.js';
 import { Big } from '../../helpers/bn';
 
 describe('CurrencyConvertable', () => {
@@ -16,15 +17,15 @@ describe('CurrencyConvertable', () => {
   const store = mockStore.createStore()
 
   it('should convert to a new currency with the CurrencyConvertable.to method', () => {
-    const eth = new CurrencyConvertable(CurrencyType.ETH, '100', () => getExchangeRates(store.getState()))
-    const usd = eth.to(CurrencyType.USD)
+    const eth = new CurrencyConvertable("ETH", '100', () => getExchangeRates(store.getState()))
+    const usd = eth.to("USD")
 
     expect(usd.amount).to.equal('42000')
-    expect(usd.type).to.equal(CurrencyType.USD)
+    expect(usd.type).to.equal("USD")
   })
 
   it('should not change amount if converting to the same currency', () => {
-    const eth = new CurrencyConvertable(CurrencyType.ETH, '100', () => getExchangeRates(store.getState()))
+    const eth = new CurrencyConvertable("ETH", '100', () => getExchangeRates(store.getState()))
     const eth2 = eth.toETH()
 
     expect(eth.amount).equals(eth2.amount)
@@ -53,14 +54,14 @@ describe('CurrencyConvertable', () => {
       '69696969696969696969696942069694295423952969696969696996962520700000000000000000000000000000000000000000000000000000',
       '0.00000000000000000000000000000000000000000000000000000696969696969696969696969420696942954239529696969696969969625207',
     ]
-    const bigNums = bigStrings.map(bigString => Big(bigString))
+    const bigNums = bigStrings.map(bigString => new BigNumber(bigString))
     const bnTomfoolery = bigStrings.map(bigString => Big(bigString))
 
-    type TestCase = BN | string
+    type TestCase = BigNumber | string | BN
 
 
     function testIt(tc: TestCase) {
-      const eth = new CurrencyConvertable(CurrencyType.ETH, tc, () => getExchangeRates(store.getState()))
+      const eth = new CurrencyConvertable("ETH", tc, () => getExchangeRates(store.getState()))
       const eth2 = eth//.toBEI().toETH().toETH().toBEI().toWEI().toFIN().toBOOTY().toFIN().toUSD().toETH().toBEI().toWEI().toBOOTY().toETH().toFIN().toUSD().toWEI().toETH().toBOOTY().toETH().toFIN().toBEI().toBOOTY().toBEI().toETH()
 
       expect(Currency.equals(eth2, eth)).equals(true)
@@ -70,13 +71,22 @@ describe('CurrencyConvertable', () => {
       expect(eth.amount).equals(eth2.amount)
       expect(eth.amountBN.eq(eth2.amountBN)).equals(true)
 
-      expect(eth.amountBigNumber.sub(eth2.amountBigNumber).eq(0))
+      expect(eth.amountBigNumber.minus(eth2.amountBigNumber).eq(0))
       expect(eth.amountBigNumber.eq(eth2.amountBigNumber)).equals(true)
 
-      if (tc instanceof BN) {
+      if (isBN(tc)) {
         expect(tc.eq(eth2.amountBN)).equals(true)
+      }
+
+      if (tc instanceof BigNumber) {
         expect(tc.eq(eth2.amountBigNumber)).equals(true)
         expect(tc.eq(eth2.amount)).equals(true)
+      }
+
+      BigNumber.config({ DECIMAL_PLACES: 200 })
+
+      if (typeof tc === 'string') {
+        expect(eth2.amount).equals(tc)
       }
     }
 
