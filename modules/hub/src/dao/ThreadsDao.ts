@@ -2,17 +2,13 @@ import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import Config from '../Config'
-import { BigNumber } from 'bignumber.js'
+import { Big } from '../util/bigNumber';
 
-type ThreadState<T=string> = Connext.types.ThreadState<T>
-type ThreadStateUpdateRow<T=string> = Connext.types.ThreadStateUpdateRow<T>
-type ThreadRow<T=string> = Connext.types.ThreadRow<T>
+type ThreadState = Connext.types.ThreadState
 type ThreadStatus = Connext.types.ThreadStatus
-type ThreadStateBigNum = ThreadState<BigNumber>
-type ThreadRowBigNum = ThreadRow<BigNumber>
-type ThreadStateUpdateRowBigNum = ThreadStateUpdateRow<BigNumber>
-
-const { getLastThreadUpdateId, getActiveThreads } = Connext.getters
+type ThreadStateBN = Connext.types.ThreadStateBN
+type ThreadRowBN = Connext.types.ThreadRowBN
+type ThreadStateUpdateRowBN = Connext.types.ThreadStateUpdateRowBN
 
 export default interface ThreadsDao {
   applyThreadUpdate(
@@ -21,30 +17,30 @@ export default interface ThreadsDao {
     receiverOpenUpdateId?: number,
     senderCloseUpdateId?: number,
     receiverCloseUpdateId?: number,
-  ): Promise<ThreadStateUpdateRowBigNum>
+  ): Promise<ThreadStateUpdateRowBN>
   changeThreadStatus(
     sender: string,
     receiver: string,
     status: ThreadStatus,
   ): Promise<void>
-  getThread(sender: string, receiver: string, threadId: number): Promise<ThreadRowBigNum | null>
+  getThread(sender: string, receiver: string, threadId: number): Promise<ThreadRowBN | null>
   getActiveThread(
     sender: string,
     receiver: string,
-  ): Promise<ThreadRowBigNum | null>
-  getThreads(user: string): Promise<ThreadRowBigNum[]>
-  getThreadsActive(user: string): Promise<ThreadRowBigNum[]>
+  ): Promise<ThreadRowBN | null>
+  getThreads(user: string): Promise<ThreadRowBN[]>
+  getThreadsActive(user: string): Promise<ThreadRowBN[]>
   getLastThreadUpdateId(user: string): Promise<number>
   getThreadUpdateLatest(
     sender: string,
     receiver: string,
-  ): Promise<ThreadStateUpdateRowBigNum | null>
-  getThreadInitialStatesByUser(user: string): Promise<ThreadStateUpdateRowBigNum[]>
+  ): Promise<ThreadStateUpdateRowBN | null>
+  getThreadInitialStatesByUser(user: string): Promise<ThreadStateUpdateRowBN[]>
   getThreadUpdatesForSync(
     user: string,
     lastId: number,
-  ): Promise<ThreadStateUpdateRowBigNum[]>
-  getThreadsIncoming(user: string): Promise<ThreadRowBigNum[]>
+  ): Promise<ThreadStateUpdateRowBN[]>
+  getThreadsIncoming(user: string): Promise<ThreadRowBN[]>
   getCurrentTxCount(sender: string, receiver: string): Promise<number>
   getCurrentThreadId(sender: string, receiver: string): Promise<number>
 }
@@ -65,7 +61,7 @@ export class PostgresThreadsDao implements ThreadsDao {
     receiverOpenUpdateId?: number,
     senderCloseUpdateId?: number,
     receiverCloseUpdateId?: number,
-  ): Promise<ThreadStateUpdateRowBigNum> {
+  ): Promise<ThreadStateUpdateRowBN> {
     return this.inflateThreadUpdate(
       await this.db.queryOne(SQL`
         SELECT *
@@ -135,7 +131,7 @@ export class PostgresThreadsDao implements ThreadsDao {
     sender: string,
     receiver: string,
     threadId: number
-  ): Promise<ThreadRowBigNum | null> {
+  ): Promise<ThreadRowBN | null> {
     return this.inflateThreadRow(
       await this.db.queryOne(SQL`
       SELECT *
@@ -152,7 +148,7 @@ export class PostgresThreadsDao implements ThreadsDao {
   public async getActiveThread(
     sender: string,
     receiver: string,
-  ): Promise<ThreadRowBigNum | null> {
+  ): Promise<ThreadRowBN | null> {
     return this.inflateThreadRow(
       await this.db.queryOne(SQL`
       SELECT *
@@ -168,7 +164,7 @@ export class PostgresThreadsDao implements ThreadsDao {
 
   public async getThreads(
     user: string,
-  ): Promise<ThreadRowBigNum[]> {
+  ): Promise<ThreadRowBN[]> {
     const { rows } = await this.db.query(SQL`
       SELECT *
       FROM cm_threads
@@ -181,7 +177,7 @@ export class PostgresThreadsDao implements ThreadsDao {
 
   public async getThreadsActive(
     user: string,
-  ): Promise<ThreadRowBigNum[]> {
+  ): Promise<ThreadRowBN[]> {
     const { rows } = await this.db.query(SQL`
       SELECT *
       FROM cm_threads
@@ -193,7 +189,7 @@ export class PostgresThreadsDao implements ThreadsDao {
     return rows.map(row => this.inflateThreadRow(row))
   }
 
-  public async getThreadById(id: number): Promise<ThreadRowBigNum> {
+  public async getThreadById(id: number): Promise<ThreadRowBN> {
     return this.inflateThreadRow(
       await this.db.queryOne(SQL`
       SELECT * FROM cm_threads
@@ -205,7 +201,7 @@ export class PostgresThreadsDao implements ThreadsDao {
   public async getThreadUpdateLatest(
     sender: string,
     receiver: string,
-  ): Promise<ThreadStateUpdateRowBigNum | null> {
+  ): Promise<ThreadStateUpdateRowBN | null> {
     return this.inflateThreadUpdate(
       await this.db.queryOne(SQL`
         SELECT *
@@ -240,7 +236,7 @@ export class PostgresThreadsDao implements ThreadsDao {
 
   public async getThreadInitialStatesByUser(
     user: string,
-  ): Promise<ThreadStateUpdateRowBigNum[]> {
+  ): Promise<ThreadStateUpdateRowBN[]> {
     const { rows } = await this.db.query(SQL`
       SELECT *
       FROM cm_thread_updates
@@ -258,7 +254,7 @@ export class PostgresThreadsDao implements ThreadsDao {
   public async getThreadUpdatesForSync(
     user: string,
     lastId: number,
-  ): Promise<ThreadStateUpdateRowBigNum[]> {
+  ): Promise<ThreadStateUpdateRowBN[]> {
     const { rows } = await this.db.query(SQL`
       SELECT *
       FROM cm_thread_updates
@@ -272,7 +268,7 @@ export class PostgresThreadsDao implements ThreadsDao {
     return rows.map(row => this.inflateThreadUpdate(row))
   }
 
-  public async getThreadsIncoming(user: string): Promise<ThreadRowBigNum[]> {
+  public async getThreadsIncoming(user: string): Promise<ThreadRowBN[]> {
     const { rows } = await this.db.query(SQL`
       SELECT *
       FROM cm_threads
@@ -284,7 +280,7 @@ export class PostgresThreadsDao implements ThreadsDao {
     return rows.map(row => this.inflateThreadRow(row))
   }
 
-  private inflateThreadRow(row: any): ThreadRowBigNum | null {
+  private inflateThreadRow(row: any): ThreadRowBN | null {
     return (
       row && {
         id: row.id,
@@ -294,7 +290,7 @@ export class PostgresThreadsDao implements ThreadsDao {
     )
   }
 
-  private inflateThreadUpdate(row: any): ThreadStateUpdateRowBigNum | null {
+  private inflateThreadUpdate(row: any): ThreadStateUpdateRowBN | null {
     return (
       row && {
         id: row.id,
@@ -304,7 +300,7 @@ export class PostgresThreadsDao implements ThreadsDao {
     )
   }
 
-  private inflateThreadState(row: any): ThreadStateBigNum | null {
+  private inflateThreadState(row: any): ThreadStateBN | null {
     if (row && !row.sig_a)
       throw new Error(JSON.stringify(row))
     return (
@@ -313,10 +309,10 @@ export class PostgresThreadsDao implements ThreadsDao {
         contractAddress: row.contract,
         sender: row.sender,
         receiver: row.receiver,
-        balanceWeiSender: new BigNumber(row.balance_wei_sender),
-        balanceWeiReceiver: new BigNumber(row.balance_wei_receiver),
-        balanceTokenSender: new BigNumber(row.balance_token_sender),
-        balanceTokenReceiver: new BigNumber(row.balance_token_receiver),
+        balanceWeiSender: Big(row.balance_wei_sender),
+        balanceWeiReceiver: Big(row.balance_wei_receiver),
+        balanceTokenSender: Big(row.balance_token_sender),
+        balanceTokenReceiver: Big(row.balance_token_receiver),
         txCount: row.tx_count,
         sigA: row.sig_a,
       }
