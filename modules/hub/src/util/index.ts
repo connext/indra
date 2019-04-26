@@ -9,43 +9,6 @@ export function isBigNumber(x: any) {
   )
 }
 
-export function objValuesBigNumToString(x: any): any {
-  const res = {}
-  Object.entries(x).forEach(([key, val]) => {
-    if (!val) {
-      res[key] = val
-    } else {
-      res[key] = isBigNumber(val) ? (val as BigNumber).toFixed() : val
-    }
-  })
-  return res
-}
-
-export function objValuesBigNumToBN(x: any): any {
-  const res = {}
-  Object.entries(x).forEach(([key, val]) => {
-    if (!val) {
-      res[key] = val
-    } else {
-      // @ts-ignore
-      res[key] = isBigNumber(val) ? Web3.utils.toBN(val) : val
-    }
-  })
-  return res
-}
-
-export function objValuesStringToBigNum(x: any, fields: string[]): any {
-  const res = {}
-  Object.entries(x).forEach(([key, val]) => {
-    if (!val) {
-      res[key] = val
-    } else {
-      res[key] = fields.includes(key) ? Big(val as any): val
-    }
-  })
-  return res
-}
-
 /**
  * Shorten a string.
  *

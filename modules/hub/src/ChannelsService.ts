@@ -5,12 +5,6 @@ import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
 import { BigNumber } from 'bignumber.js'
-import {
-  channelStateUpdateRowBigNumToString,
-  channelRowBigNumToString,
-  ChannelRow,
-  ChannelStateUpdateRowBigNum,
-} from './domain/Channel'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { Big, toWeiBigNum } from './util/bigNumber'
 import { ThreadStateUpdateRow } from './domain/Thread'
@@ -25,10 +19,13 @@ import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
+import BN = require('bn.js')
 
-type ChannelStateBN = types.ChannelStateBN
-type ChannelStateBigNumber = types.ChannelStateBigNumber
+type ChannelRow = types.ChannelRow
+type ChannelStateBN = types.ChannelState<BN>
+type ChannelStateBigNumber = types.ChannelState<BigNumber>
 type ChannelStateUpdate = types.ChannelStateUpdate
+type ChannelStateUpdateRowBigNum = types.ChannelStateUpdateRow<BigNumber>
 type DepositArgs<T=string> = types.DepositArgs<T>
 type ExchangeArgs = types.ExchangeArgs
 type InvalidationArgs = types.InvalidationArgs
@@ -39,11 +36,13 @@ type SyncResult = types.SyncResult
 type ThreadState = types.ThreadState
 type UnsignedChannelState = types.UnsignedChannelState
 type UpdateRequest<T=string> = types.UpdateRequest<T>
-type UpdateRequestBigNumber = types.UpdateRequestBigNumber
+type UpdateRequestBigNumber = types.UpdateRequest<BigNumber>
 type WithdrawalArgs<T=string> = types.WithdrawalArgs<T>
-type WithdrawalParametersBigNumber = types.WithdrawalParametersBigNumber
+type WithdrawalParametersBigNumber = types.WithdrawalParameters<BigNumber>
 
 const {
+  channelStateUpdateRowBigNumToString,
+  channelRowBigNumToString,
   convertArgs,
   convertChannelState,
   convertPayment,

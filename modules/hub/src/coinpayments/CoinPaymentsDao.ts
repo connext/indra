@@ -4,9 +4,9 @@ import { BigNumber } from 'bignumber.js/bignumber'
 import { CoinPaymentsIpnData } from './CoinPaymentsService'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { CPGetCallbackAddressResponse } from './CoinPaymentsApiClient'
-import { ChannelStateUpdateRow } from '../domain/Channel'
 
-type ChannelStateUpdateBigNumber = Connext.types.ChannelStateUpdateBigNumber
+type ChannelStateUpdateRow<T=string> = Connext.types.ChannelStateUpdateRow<T>
+type ChannelStateUpdateBigNumber = Connext.types.ChannelStateUpdate<BigNumber>
 type DepositArgs = Connext.types.DepositArgs
 
 export interface CoinPaymentsDepositAddress {

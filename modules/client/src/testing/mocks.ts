@@ -246,7 +246,13 @@ export class MockHub implements IHubAPIClient {
   }
   
   async getChannelByUser(recipient: string): Promise<ChannelRow> {
-    return { id: 0, state: getChannelState('full', { user: recipient }), status: 'CS_OPEN' }
+    return {
+      id: 0,
+      status: 'CS_OPEN',
+      lastUpdateOn: new Date(),
+      user: mkAddress('0xUUU'),
+      state: getChannelState('full', { user: recipient }),
+    }
   }
 
   async recipientNeedsCollateral(): Promise<string | null> {
@@ -282,7 +288,13 @@ export class MockHub implements IHubAPIClient {
   }
 
   async getChannel(): Promise<ChannelRow> {
-    return { id: 0, state: getChannelState('full'), status: 'CS_OPEN' }
+    return {
+      id: 0,
+      status: 'CS_OPEN',
+      lastUpdateOn: new Date(),
+      user: mkAddress('0xUUU'),
+      state: getChannelState('full'),
+    }
   }
 
   async getActiveThreads(): Promise<ThreadState[]> {

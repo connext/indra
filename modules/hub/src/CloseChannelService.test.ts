@@ -1,3 +1,4 @@
+import { types } from 'connext'
 import { channelUpdateFactory } from './testing/factories'
 import { getTestRegistry, assert, getFakeClock } from './testing'
 import { CloseChannelService } from './CloseChannelService';
@@ -6,9 +7,10 @@ import { assertChannelStateEqual, mkAddress } from './testing/stateUtils';
 import ChannelsDao from './dao/ChannelsDao';
 import { setFakeClosingTime, getTestConfig, getMockWeb3 } from './testing/mocks';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import { channelRowBigNumToString } from './domain/Channel';
 import DBEngine from './DBEngine';
 import { toWeiString } from './util/bigNumber';
+
+export const channelRowBigNumToString = types.channelRowBigNumToString
 
 async function rewindUpdates(db: DBEngine, days: number, user: string) {
   await db.queryOne(`

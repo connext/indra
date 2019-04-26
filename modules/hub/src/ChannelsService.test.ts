@@ -43,14 +43,14 @@ import { OnchainTransactionService } from './OnchainTransactionService';
 type ChannelState<T=string> = types.ChannelState<T>
 type ChannelUpdateReason = types.ChannelUpdateReason
 type DepositArgs<T=string> = types.DepositArgs<T>
-type DepositArgsBigNumber = types.DepositArgsBigNumber
+type DepositArgsBigNumber = types.DepositArgs<BigNumber>
 type InvalidationArgs = types.InvalidationArgs
 type Payment<T=string> = types.Payment<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type UpdateRequest<T=string> = types.UpdateRequest<T>
-type UpdateRequestBigNumber = types.UpdateRequestBigNumber
+type UpdateRequestBigNumber = types.UpdateRequest<BigNumber>
 type WithdrawalArgs<T=string> = types.WithdrawalArgs<T>
-type WithdrawalParametersBigNumber = types.WithdrawalParametersBigNumber
+type WithdrawalParametersBigNumber = types.WithdrawalParameters<BigNumber>
 
 const { convertChannelState, convertDeposit, convertExchange, convertWithdrawal, isBigNum } = types
 

@@ -1,3 +1,4 @@
+import { BigNumber } from 'bignumber.js';
 import * as eth from 'ethers';
 import { types, Validator } from './Connext';
 import { maybe } from './util'
@@ -22,11 +23,11 @@ type DepositArgs<T=string> = types.DepositArgs<T>
 type Payment<T=string> = types.Payment<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type PaymentArgsBN = types.PaymentArgsBN
-type PaymentArgsBigNumber = types.PaymentArgsBigNumber
+type PaymentArgsBigNumber = types.PaymentArgs<BigNumber>
 type PurchasePayment = types.PurchasePayment
 type PurchasePaymentSummary = types.PurchasePaymentSummary
 type UpdateRequest<T=string> = types.UpdateRequest<T>
-type UpdateRequestBigNumber = types.UpdateRequestBigNumber
+type UpdateRequestBigNumber = types.UpdateRequest<BigNumber>
 
 type MaybeResult<T> = (
   { error: true; msg: string } |

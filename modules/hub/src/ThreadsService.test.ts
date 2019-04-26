@@ -1,3 +1,4 @@
+import { BigNumber } from 'bignumber.js';
 import { types } from './Connext';
 import {assert, getTestRegistry, TestServiceRegistry} from './testing'
 import {
@@ -11,9 +12,9 @@ import {
 import {Big} from './util/bigNumber'
 import ThreadsService from './ThreadsService'
 import {ThreadStateBigNum} from './domain/Thread'
-import {ChannelStateUpdateRowBigNum} from './domain/Channel'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 
+type ChannelStateUpdateRowBigNum = types.ChannelStateUpdateRow<BigNumber>
 const { convertChannelState, convertThreadState } = types
 const fakeSig = mkSig('0xfff')
 

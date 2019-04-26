@@ -1,23 +1,24 @@
+import { BigNumber } from 'bignumber.js'
 import * as eth from 'ethers';
 import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
-import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
-import { ChannelStateUpdateRowBigNum, ChannelRowBigNum } from '../domain/Channel'
 import { prettySafeJson } from '../util'
-import { Big } from '../util/bigNumber'
 import { default as log } from '../util/log'
 import { mkSig } from '../testing/stateUtils';
 import { OnchainTransactionRow } from '../domain/OnchainTransaction';
 
-type ChannelUpdateReason = Connext.types.ChannelUpdateReason
-type ChannelState = Connext.types.ChannelState
-type ArgsTypes = Connext.types.ArgsTypes
-type ChannelStateBigNumber = Connext.types.ChannelStateBigNumber
-type InvalidationArgs = Connext.types.InvalidationArgs
-type ChannelStatus = Connext.types.ChannelStatus
 type Address = Connext.types.Address
+type ArgsTypes = Connext.types.ArgsTypes
+type ChannelRowBigNum = Connext.types.ChannelRow<BigNumber>
+type ChannelState = Connext.types.ChannelState
+type ChannelStateBigNumber = Connext.types.ChannelState<BigNumber>
+type ChannelStateUpdateRowBigNum = Connext.types.ChannelStateUpdateRow<BigNumber>
+type ChannelStatus = Connext.types.ChannelStatus
+type ChannelUpdateReason = Connext.types.ChannelUpdateReason
+type InvalidationArgs = Connext.types.InvalidationArgs
+
 const convertArgs = Connext.types.convertArgs
 const emptyRootHash = eth.constants.HashZero
 
@@ -62,18 +63,18 @@ export function getChannelInitialState(
     contractAddress,
     user,
     recipient: user,
-    balanceWeiHub: Big(0),
-    balanceWeiUser: Big(0),
-    balanceTokenHub: Big(0),
-    balanceTokenUser: Big(0),
-    pendingDepositWeiHub: Big(0),
-    pendingDepositWeiUser: Big(0),
-    pendingDepositTokenHub: Big(0),
-    pendingDepositTokenUser: Big(0),
-    pendingWithdrawalWeiHub: Big(0),
-    pendingWithdrawalWeiUser: Big(0),
-    pendingWithdrawalTokenHub: Big(0),
-    pendingWithdrawalTokenUser: Big(0),
+    balanceWeiHub: new BigNumber(0),
+    balanceWeiUser: new BigNumber(0),
+    balanceTokenHub: new BigNumber(0),
+    balanceTokenUser: new BigNumber(0),
+    pendingDepositWeiHub: new BigNumber(0),
+    pendingDepositWeiUser: new BigNumber(0),
+    pendingDepositTokenHub: new BigNumber(0),
+    pendingDepositTokenUser: new BigNumber(0),
+    pendingWithdrawalWeiHub: new BigNumber(0),
+    pendingWithdrawalWeiUser: new BigNumber(0),
+    pendingWithdrawalTokenHub: new BigNumber(0),
+    pendingWithdrawalTokenUser: new BigNumber(0),
     threadCount: 0,
     threadRoot: emptyRootHash,
     timeout: 0,
@@ -244,7 +245,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         ), 0)
       ) AS result
     `)
-    return Big(result)
+    return new BigNumber(result)
   }
 
   // gets the amount of tokens in all open threads where user is receiver
@@ -261,7 +262,7 @@ export class PostgresChannelsDao implements ChannelsDao {
             status = 'CT_OPEN'
     `)
 
-    return Big(co_amount)
+    return new BigNumber(co_amount)
   }
 
   async getRecentTippers(user: string): Promise<number> {

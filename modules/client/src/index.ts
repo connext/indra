@@ -1,22 +1,9 @@
-import { ConnextClient as Client, getConnextClient as createClient } from './Connext'
-import { StateGenerator } from './StateGenerator'
+export { ConnextClient as Client, getConnextClient as createClient } from './Connext'
+export { StateGenerator } from './StateGenerator'
+export { Utils } from './Utils'
+export { Validator, } from './validator';
+export { Poller } from './lib/poller/Poller';
 import * as types from './types';
-import { Utils } from './Utils'
-import { Validator, } from './validator';
-import { Poller } from './lib/poller/Poller';
+export { types }
 import * as getters from './state/getters';
-
-// Recommended import patterns:
-// - const Connext = require('connext');
-// - import * as Connext from 'connext';
-
-export {
-  Client,
-  createClient,
-  StateGenerator,
-  types,
-  Utils,
-  Validator,
-  Poller,
-  getters
-}
+export { getters }

@@ -1,3 +1,4 @@
+import { BigNumber } from 'bignumber.js';
 import * as Connext from '../Connext';
 import { getUserFromRequest } from '../util/request'
 import { default as Config } from '../Config'
@@ -11,6 +12,7 @@ import { prettySafeJson } from '../util'
 import { Role } from '../Role'
 
 type UpdateRequest = Connext.types.UpdateRequest
+type WithdrawalParametersBigNumber = Connext.types.WithdrawalParameters<BigNumber>
 const convertWithdrawalParameters = Connext.types.convertWithdrawalParameters
 const LOG = log('ChannelsApiService')
 

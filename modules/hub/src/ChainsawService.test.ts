@@ -14,13 +14,13 @@ import Web3 = require('web3')
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent';
 import { mkAddress, mkSig } from './testing/stateUtils';
 import { channelUpdateFactory } from './testing/factories';
-import { ChannelStateUpdateRowBigNum } from './domain/Channel';
 import { EventLog } from 'web3-core';
 
+type ChannelStateUpdateRowBigNum = types.ChannelStateUpdateRow<BigNumber>
 type ChannelState<T=string> = types.ChannelState<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type DepositArgs<T=string> = types.DepositArgs<T>
-type ChannelStateBigNumber = types.ChannelStateBigNumber
+type ChannelStateBigNumber = types.ChannelState<BigNumber>
 
 const { convertChannelState } = types
 const emptyRootHash = eth.constants.HashZero
