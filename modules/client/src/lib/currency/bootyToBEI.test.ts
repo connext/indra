@@ -1,7 +1,7 @@
 import {expect} from 'chai'
 import Currency from '../currency/Currency';
 import bootyToBEI from './bootyToBEI';
-import { Big } from '../../helpers/bn';
+import { Big } from '../bn';
 
 describe('bootyToBEI', () => {
   it('should convert ICurrency, string, number, BN, BigNumber to a Bei Currency', () => {

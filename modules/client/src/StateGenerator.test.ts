@@ -4,7 +4,7 @@ import { StateGenerator, calculateExchange, } from './StateGenerator';
 import { Utils } from './Utils';
 import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs, } from './types';
 import { getChannelState, getWithdrawalArgs } from './testing'
-import { Big } from './helpers/bn';
+import { Big } from './lib/bn';
 
 const hub = t.mkAddress("0xaa")
 const sg = new StateGenerator(hub)

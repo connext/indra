@@ -1,7 +1,7 @@
 import { isValidAddress } from 'ethereumjs-util';
 import { AbstractController } from './AbstractController'
 import { validateExchangeRate, } from './ExchangeController';
-import { Big } from '../helpers/bn';
+import { Big } from '../lib/bn';
 import { getTxCount } from '../state/getters'
 import {
   convertChannelState,

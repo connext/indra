@@ -57,7 +57,7 @@ import {
   isBN
 } from './types'
 import { Utils } from './Utils'
-import { Big, maxBN } from './helpers/bn';
+import { Big, maxBN } from './lib/bn';
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately

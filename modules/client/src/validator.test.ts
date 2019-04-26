@@ -1,7 +1,7 @@
 import { ethers as eth } from 'ethers';
 import * as sinon from 'sinon'
 import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
-import { Big } from './helpers/bn';
+import { Big } from './lib/bn';
 import { EMPTY_ROOT_HASH } from './lib/constants';
 import { assert } from './testing/index'
 import * as t from './testing/index'

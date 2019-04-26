@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext';
-import { Big } from '../helpers/bn';
+import { Big } from '../lib/bn';
 import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
 import { getExchangeRates, getTxCount } from '../state/getters'
 import { Poller } from '../lib/poller/Poller';

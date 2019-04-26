@@ -6,4 +6,5 @@ export { Poller } from './lib/poller/Poller';
 import * as types from './types';
 export { types }
 import * as getters from './state/getters';
-export { getters }
+import * as big from './lib/bn';
+export { getters, big }

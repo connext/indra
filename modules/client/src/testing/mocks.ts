@@ -16,7 +16,7 @@ import {
 import { ConnextClientOptions, ConnextInternal } from '../Connext'
 import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
 import { IChannelManager } from '../contract/ChannelManager'
-import { Big } from '../helpers/bn'
+import { Big } from '../lib/bn'
 import { IHubAPIClient } from '../Hub'
 import { reducers } from "../state/reducers";
 import { ConnextState, PersistentState, RuntimeState } from '../state/store';

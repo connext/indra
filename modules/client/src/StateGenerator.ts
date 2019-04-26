@@ -1,4 +1,4 @@
-import { Big, minBN, maxBN } from "./helpers/bn";
+import { Big, minBN, maxBN } from "./lib/bn";
 import { BigNumber as BN } from 'ethers/utils'
 import {
   ChannelStateBN,
@@ -22,7 +22,7 @@ import {
   WithdrawalArgsBN,
 } from "./types";
 import { Utils } from "./Utils";
-import { mul } from "./helpers/bn";
+import { mul } from "./lib/bn";
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately

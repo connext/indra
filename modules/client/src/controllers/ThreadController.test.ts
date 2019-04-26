@@ -1,5 +1,5 @@
 import { PaymentArgs, ThreadState } from '../types';
-import { Big } from '../helpers/bn';
+import { Big } from '../lib/bn';
 import { assert, mkAddress } from '../testing';
 import { MockConnextInternal, MockStore } from '../testing/mocks'
 
