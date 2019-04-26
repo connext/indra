@@ -1,13 +1,12 @@
 import { expect } from 'chai'
 import CurrencyConvertable from './CurrencyConvertable'
-import { BigNumber as BN } from 'ethers/utils'
 import Currency from './Currency';
 import { default as generateExchangeRates } from '../../testing/generateExchangeRates'
 import { getExchangeRates } from '../../state/getters'
 import { isBN } from '../../types'
 import { MockStore } from '../../testing/mocks';
 import BigNumber from 'bignumber.js';
-import { Big } from '../../helpers/bn';
+import BN = require('bn.js')
 
 describe('CurrencyConvertable', () => {
 
@@ -55,9 +54,9 @@ describe('CurrencyConvertable', () => {
       '0.00000000000000000000000000000000000000000000000000000696969696969696969696969420696942954239529696969696969969625207',
     ]
     const bigNums = bigStrings.map(bigString => new BigNumber(bigString))
-    const bnTomfoolery = bigStrings.map(bigString => Big(bigString))
+    const bnTomfoolery = bigStrings.map(bigString => new BN(bigString))
 
-    type TestCase = BigNumber | string | BN
+    type TestCase = BigNumber | string | any
 
 
     function testIt(tc: TestCase) {

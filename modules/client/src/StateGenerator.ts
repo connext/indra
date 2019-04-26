@@ -22,6 +22,7 @@ import {
   WithdrawalArgsBN,
 } from "./types";
 import { Utils } from "./Utils";
+import { mul } from "./helpers/bn";
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -60,15 +61,15 @@ export function calculateExchange(args: ExchangeArgsBN) {
     }
   }
 
-  const exchangeRate = Big(args.exchangeRate)
-  const [weiReceived, tokenRemainder] = divmod(args.tokensToSell, exchangeRate)
-  const tokensReceived = args.weiToSell.mul(exchangeRate)
+  const exchangeRate = Big(mul(args.exchangeRate, EXCHANGE_MULTIPLIER))
+  const [weiReceived, tokenRemainder] = divmod(args.tokensToSell.mul(EXCHANGE_MULTIPLIER_BN), exchangeRate)
+  const tokensReceived = args.weiToSell.mul(exchangeRate).div(EXCHANGE_MULTIPLIER_BN)
 
   return {
     weiSold: args.weiToSell,
     weiReceived: weiReceived,
-    tokensSold: args.tokensToSell.sub(tokenRemainder),
-    tokensReceived: tokensReceived.add(tokenRemainder),
+    tokensSold: args.tokensToSell.sub(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
+    tokensReceived: tokensReceived.add(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
   }
 }
 

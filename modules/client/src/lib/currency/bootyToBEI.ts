@@ -1,13 +1,13 @@
 import Currency, { ICurrency } from "./Currency";
 import { BigNumber as BN } from 'ethers/utils'
 import { BOOTY } from "../constants";
-import { Big } from '../../helpers/bn';
+import BigNumber from "bignumber.js";
 
 export default function bootyToBEI(
-  bootyAmount: ICurrency<"BOOTY">|number|string|BN
+  bootyAmount: ICurrency<"BOOTY">|number|string|BN|BigNumber
 ): Currency<"BEI"> {
   if (
-    bootyAmount instanceof BN ||
+    bootyAmount instanceof BigNumber ||
     typeof bootyAmount === 'number' ||
     typeof bootyAmount === 'string'
   ) {
@@ -19,6 +19,6 @@ export default function bootyToBEI(
   return _bootyToBEI(bootyAmount.amount)
 }
 
-function _bootyToBEI(booty: string|number|BN): Currency<"BEI"> {
-  return Currency.BEI(Big(booty).mul(BOOTY.amount))
+function _bootyToBEI(booty: string|number|BigNumber): Currency<"BEI"> {
+  return Currency.BEI(new BigNumber(booty.toString()).times(BOOTY.amount))
 }
