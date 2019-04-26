@@ -1,16 +1,12 @@
-import { BigNumber } from 'bignumber.js'
 import { expect } from 'chai'
-import * as redux from 'redux'
 import CurrencyConvertable from './CurrencyConvertable'
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import Currency from './Currency';
 import { default as generateExchangeRates } from '../../testing/generateExchangeRates'
 import { getExchangeRates } from '../../state/getters'
-import { ConnextState } from '../../state/store'
-import { reducers } from '../../state/reducers'
 import { CurrencyType } from '../../types'
-import { MockConnextInternal, MockStore } from '../../testing/mocks';
-import { toFinney } from '../constants';
+import { MockStore } from '../../testing/mocks';
+import { Big } from '../../helpers/bn';
 
 describe('CurrencyConvertable', () => {
 
@@ -57,10 +53,10 @@ describe('CurrencyConvertable', () => {
       '69696969696969696969696942069694295423952969696969696996962520700000000000000000000000000000000000000000000000000000',
       '0.00000000000000000000000000000000000000000000000000000696969696969696969696969420696942954239529696969696969969625207',
     ]
-    const bigNums = bigStrings.map(bigString => new BigNumber(bigString))
-    const bnTomfoolery = bigStrings.map(bigString => new BN(bigString))
+    const bigNums = bigStrings.map(bigString => Big(bigString))
+    const bnTomfoolery = bigStrings.map(bigString => Big(bigString))
 
-    type TestCase = BigNumber | string | BN
+    type TestCase = BN | string
 
 
     function testIt(tc: TestCase) {
@@ -74,22 +70,13 @@ describe('CurrencyConvertable', () => {
       expect(eth.amount).equals(eth2.amount)
       expect(eth.amountBN.eq(eth2.amountBN)).equals(true)
 
-      expect(eth.amountBigNumber.minus(eth2.amountBigNumber).eq(0))
+      expect(eth.amountBigNumber.sub(eth2.amountBigNumber).eq(0))
       expect(eth.amountBigNumber.eq(eth2.amountBigNumber)).equals(true)
 
       if (tc instanceof BN) {
         expect(tc.eq(eth2.amountBN)).equals(true)
-      }
-
-      if (tc instanceof BigNumber) {
         expect(tc.eq(eth2.amountBigNumber)).equals(true)
         expect(tc.eq(eth2.amount)).equals(true)
-      }
-
-      BigNumber.config({ DECIMAL_PLACES: 200 })
-
-      if (typeof tc === 'string') {
-        expect(eth2.amount).equals(tc)
       }
     }
 

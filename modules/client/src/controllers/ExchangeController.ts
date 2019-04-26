@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext';
-import { toBN } from '../helpers/bn';
+import { Big } from '../helpers/bn';
 import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
 import { getExchangeRates, getTxCount } from '../state/getters'
 import { Poller } from '../lib/poller/Poller';
@@ -78,7 +78,7 @@ export class ExchangeController extends AbstractController {
     if (currency != "wei" && currency != "token") {
       throw new Error(`Currency type not detected. Must provide either "wei" or "token" to indicate which type of currency you are sellling with exchange.`)
     }
-    if (!toSell || toSell == '0' || toBN(toSell).isNeg()) {
+    if (!toSell || toSell == '0' || Big(toSell).lt(0)) {
       throw new Error(`Invalid toSell amount provided. Must be greater than 0.`)
     }
 
@@ -87,7 +87,7 @@ export class ExchangeController extends AbstractController {
     // before requesting exchange, verify the user has enough wei 
     // and tokens
     const channel = this.getState().persistent.channel
-    if (toBN(channel.balanceWeiUser).lt(toBN(weiToSell)) || toBN(channel.balanceTokenUser).lt(toBN(tokensToSell))) {
+    if (Big(channel.balanceWeiUser).lt(weiToSell) || Big(channel.balanceTokenUser).lt(tokensToSell)) {
       console.error(`User does not have sufficient wei or token for exchange. Wei: ${weiToSell}, tokens: ${tokensToSell}, channel: ${JSON.stringify(channel, null, 2)}`)
       return
     }

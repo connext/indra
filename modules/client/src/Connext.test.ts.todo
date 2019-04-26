@@ -3,7 +3,7 @@ const Web3 = require('web3')
 const HttpProvider = require(`ethjs-provider-http`)
 const sinon = require('sinon')
 import mocha = require('mocha')
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import { expect } from 'chai'
 import { UnsignedChannelState, Address, ChannelStateUpdate, channelNumericFields, ChannelUpdateReason, SyncResult, ChannelState, ChannelRow } from './types'
 import { getConnextClient, ConnextInternal, ConnextClient } from './Connext'

@@ -1,6 +1,5 @@
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import { ethers as eth } from 'ethers';
-import { maxBN, toBN } from './helpers/bn'
 import { capitalize } from './helpers/naming'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
@@ -54,9 +53,11 @@ import {
   WithdrawalArgsBN,
   WithdrawalParametersBN,
   withdrawalParamsNumericFields,
-  objMap
+  objMap,
+  isBN
 } from './types'
 import { Utils } from './Utils'
+import { Big, maxBN } from './helpers/bn';
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -161,7 +162,7 @@ export class Validator {
     }
 
     // either wei or tokens to sell must be 0, both cant be 0
-    if (args.tokensToSell.gt(toBN(0)) && args.weiToSell.gt(toBN(0)) ||
+    if (args.tokensToSell.gt(0) && args.weiToSell.gt(0) ||
       args.tokensToSell.isZero() && args.weiToSell.isZero()
     ) {
       return `Exchanges cannot sell both wei and tokens simultaneously (args: ${JSON.stringify(args)}, prev: ${JSON.stringify(prev)})`
@@ -681,12 +682,12 @@ export class Validator {
   }
 
   private conditions: any = {
-    'non-zero': (x: any) => BN.isBN(x) ? !x.isZero() : parseInt(x, 10) !== 0,
-    'zero': (x: any) => BN.isBN(x) ? x.isZero() : parseInt(x, 10) === 0,
-    'non-negative': (x: any) => BN.isBN(x) ? !x.isNeg() : parseInt(x, 10) >= 0,
-    'negative': (x: any) => BN.isBN(x) ? x.isNeg() : parseInt(x, 10) < 0,
-    'equivalent': (x: any, val: BN | string | number) => BN.isBN(x) ? x.eq(val as any) : x === val,
-    'non-equivalent': (x: any, val: BN | string | number) => BN.isBN(x) ? !x.eq(val as any) : x !== val,
+    'non-zero': (x: any) => isBN(x) ? !x.isZero() : parseInt(x, 10) !== 0,
+    'zero': (x: any) => isBN(x) ? x.isZero() : parseInt(x, 10) === 0,
+    'non-negative': (x: any) => isBN(x) ? !x.lt(0) : parseInt(x, 10) >= 0,
+    'negative': (x: any) => isBN(x) ? x.lt(0) : parseInt(x, 10) < 0,
+    'equivalent': (x: any, val: BN | string | number) => isBN(x) ? x.eq(val as any) : x === val,
+    'non-equivalent': (x: any, val: BN | string | number) => isBN(x) ? !x.eq(val as any) : x !== val,
   }
 
   // NOTE: objs are converted to lists if they are singular for iterative
@@ -902,12 +903,12 @@ export class Validator {
     // out of channel balances are accounted for in the
     // previous balance calculations
     let reserves = {
-      amountWei: toBN(0),
-      amountToken: toBN(0),
+      amountWei: Big(0),
+      amountToken: Big(0),
     }
     let compiledPending = {
-      amountWei: toBN(0),
-      amountToken: toBN(0),
+      amountWei: Big(0),
+      amountToken: Big(0),
     }
 
     // if the previous operation has pending operations, and current
@@ -918,11 +919,11 @@ export class Validator {
       reserves = {
         amountWei: maxBN(
           curr.pendingWithdrawalWeiUser.sub(prev.balanceWeiHub),
-          toBN(0)
+          Big(0)
         ),
         amountToken: maxBN(
           curr.pendingWithdrawalTokenUser.sub(prev.balanceTokenHub),
-          toBN(0),
+          Big(0),
         )
       }
 
@@ -963,7 +964,7 @@ export class Validator {
     // since we assume that thread state has already been checked and the
     // current channel state is generated directly from it.
     if(Math.abs(curr.threadCount - prev.threadCount) != 1) {
-      errs.push(this.enforceDelta([prevBal, currBal], toBN(0), Object.keys(prevBal)))
+      errs.push(this.enforceDelta([prevBal, currBal], Big(0), Object.keys(prevBal)))
     } else {
       // TODO enforce delta = 1 for threadcount
       // TODO check threadroot != threadroot
@@ -1146,14 +1147,14 @@ export class Validator {
     return {
       user: raw.user,
       sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
-      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0].toString()),
-      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2].toString()),
-      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0].toString()),
-      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2].toString()),
-      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1].toString()),
-      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3].toString()),
-      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1].toString()),
-      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3].toString()),
+      pendingDepositWeiHub: Big(raw.pendingWeiUpdates[0].toString()),
+      pendingDepositWeiUser: Big(raw.pendingWeiUpdates[2].toString()),
+      pendingDepositTokenHub: Big(raw.pendingTokenUpdates[0].toString()),
+      pendingDepositTokenUser: Big(raw.pendingTokenUpdates[2].toString()),
+      pendingWithdrawalWeiHub: Big(raw.pendingWeiUpdates[1].toString()),
+      pendingWithdrawalWeiUser: Big(raw.pendingWeiUpdates[3].toString()),
+      pendingWithdrawalTokenHub: Big(raw.pendingTokenUpdates[1].toString()),
+      pendingWithdrawalTokenUser: Big(raw.pendingTokenUpdates[3].toString()),
       txCountChain: parseInt(raw.txCount[1].toString(), 10),
     }
   }

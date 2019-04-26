@@ -4,8 +4,7 @@ import { StateGenerator, calculateExchange, } from './StateGenerator';
 import { Utils } from './Utils';
 import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs, } from './types';
 import { getChannelState, getWithdrawalArgs } from './testing'
-import { toBN } from './helpers/bn';
-import { BN } from 'ethereumjs-util';
+import { Big } from './helpers/bn';
 
 const hub = t.mkAddress("0xaa")
 const sg = new StateGenerator(hub)
@@ -386,8 +385,8 @@ describe('StateGenerator', () => {
           const actual = calculateExchange({
             exchangeRate: '' + t.exchangeRate,
             seller: seller as any,
-            tokensToSell: toBN(t.tokensToSell),
-            weiToSell: toBN(t.weiToSell),
+            tokensToSell: Big(t.tokensToSell),
+            weiToSell: Big(t.weiToSell),
           })
 
           assert.deepEqual({

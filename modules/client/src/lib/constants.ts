@@ -1,4 +1,4 @@
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import { ethers as eth } from 'ethers';
 
 // !!! WARNING !!!

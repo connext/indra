@@ -6,7 +6,6 @@ import {
   Payment,
   ThreadHistoryItem,
   ThreadState,
-  UnsignedThreadState,
   UpdateRequest,
 } from '../types'
 

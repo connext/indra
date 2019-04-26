@@ -1,4 +1,3 @@
-import BN = require('bn.js')
 import * as eth from 'ethers';
 import { createStore } from 'redux'
 import {
@@ -17,7 +16,7 @@ import {
 import { ConnextClientOptions, ConnextInternal } from '../Connext'
 import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
 import { IChannelManager } from '../contract/ChannelManager'
-import { toBN } from '../helpers/bn'
+import { Big } from '../helpers/bn'
 import { IHubAPIClient } from '../Hub'
 import { reducers } from "../state/reducers";
 import { ConnextState, PersistentState, RuntimeState } from '../state/store';
@@ -439,8 +438,8 @@ export class MockHub implements IHubAPIClient {
           createdOn: new Date(),
           args: getExchangeArgs('full', {
             exchangeRate: '5',
-            tokensToSell: toBN(tokensToSell),
-            weiToSell: toBN(weiToSell),
+            tokensToSell: Big(tokensToSell),
+            weiToSell: Big(weiToSell),
             seller: "user"
           }),
           txCount: txCountGlobal + 1,
@@ -463,10 +462,10 @@ export class MockHub implements IHubAPIClient {
           reason: 'ProposePendingDeposit',
           createdOn: new Date(),
           args: getDepositArgs('full', {
-            depositTokenHub: toBN(69),
-            depositTokenUser: toBN(0),
-            depositWeiHub: toBN(420),
-            depositWeiUser: toBN(0),
+            depositTokenHub: Big(69),
+            depositTokenUser: Big(0),
+            depositWeiHub: Big(420),
+            depositWeiUser: Big(0),
             timeout: Math.floor(Date.now() / 1000) + 69
           }),
           txCount: txCountGlobal + 1,

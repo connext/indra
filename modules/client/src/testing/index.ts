@@ -1,5 +1,5 @@
 import * as chai from 'chai'
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import {
   Address,
   ChannelState,

@@ -1,6 +1,5 @@
-import { BigNumber } from 'bignumber.js'
-import BN = require('bn.js')
 import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable';
+import { BigNumber as BN } from 'ethers/utils'
 import { default as CurrencyLib } from './lib/currency/Currency';
 export { Contract } from 'ethers/contract';
 export {
@@ -37,7 +36,8 @@ export enum CurrencyType {
 }
 
 export type ExchangeRates = {
-  [key in CurrencyType]?: string | BigNumber
+  // [key in CurrencyType]?: string | BigNumber
+  [key in CurrencyType]?: string
 }
 
 export interface ExchangeRateState {
@@ -67,21 +67,21 @@ export type HubConfig<T=string> = ContractOptions & {
   beiMaxCollateralization: T
 }
 export type HubConfigBN = HubConfig<BN>
-export type HubConfigBigNumber = HubConfig<BigNumber>
+// export type HubConfigBigNumber = HubConfig<BigNumber>
 
 /*********************************
  ****** HELPER FUNCTIONS *********
  *********************************/
 
 // alias functions
-export const isBN = BN.isBN
-export const isBigNum = BigNumber.isBigNumber
-export const isBigNumber = BigNumber.isBigNumber
+export const isBN = BN.isBigNumber
+// export const isBigNum = BigNumber.isBigNumber
+// export const isBigNumber = BigNumber.isBigNumber
 
 export type NumericTypes = {
   'str': string
   'bn': BN
-  'bignumber': BigNumber
+  // 'bignumber': BigNumber
   'number': number
 }
 
@@ -90,8 +90,8 @@ export type NumericTypeName = keyof NumericTypes
 function getType(input: any): NumericTypeName {
   if (typeof input == 'string')
     return 'str'
-  if (isBigNum(input))
-    return 'bignumber'
+  // if (isBigNum(input))
+  //   return 'bignumber'
   if (isBN(input))
     return 'bn'
   if (typeof input == 'number')
@@ -101,16 +101,16 @@ function getType(input: any): NumericTypeName {
 
 const castFunctions: any = {
   'str-bn': (x: string) => new BN(x),
-  'str-bignumber': (x: string) => new BigNumber(x),
+  // 'str-bignumber': (x: string) => new BigNumber(x),
   'bn-str': (x: BN) => x.toString(),
-  'bn-bignumber': (x: BN) => new BigNumber(x.toString()),
-  'bignumber-str': (x: BigNumber) => x.toFixed(),
-  'bignumber-bn': (x: BigNumber) => new BN(x.toFixed()),
+  // 'bn-bignumber': (x: BN) => new BigNumber(x.toString()),
+  // 'bignumber-str': (x: BigNumber) => x.toFixed(),
+  // 'bignumber-bn': (x: BigNumber) => new BN(x.toFixed()),
 
   // Used for testing
   'number-str': (x: number) => '' + x,
   'number-bn': (x: number) => new BN(x),
-  'number-bignumber': (x: number) => new BigNumber(x),
+  // 'number-bignumber': (x: number) => new BigNumber(x),
 }
 
 export function convertFields(fromType: NumericTypeName, toType: NumericTypeName, fields: string[], input: any) {
@@ -174,7 +174,7 @@ export type UnsignedChannelState<T = string> = {
 }
 
 export type UnsignedChannelStateBN = UnsignedChannelState<BN>
-export type UnsignedChannelStateBigNumber = UnsignedChannelState<BigNumber>
+// export type UnsignedChannelStateBigNumber = UnsignedChannelState<BigNumber>
 
 // signed channel state
 // this is what must be submitted to any recover functions
@@ -187,7 +187,7 @@ export type ChannelState<T = string> = UnsignedChannelState<T> &
   )
 
 export type ChannelStateBN = ChannelState<BN>
-export type ChannelStateBigNumber = ChannelState<BigNumber>
+// export type ChannelStateBigNumber = ChannelState<BigNumber>
 
 export const addSigToChannelState = (
   channel: ChannelState | UnsignedChannelState,
@@ -243,7 +243,7 @@ export type ExchangeArgs<T=string> = {
   weiToSell: T
 }
 export type ExchangeArgsBN = ExchangeArgs<BN>
-export type ExchangeArgsBigNumber = ExchangeArgs<BigNumber>
+// export type ExchangeArgsBigNumber = ExchangeArgs<BigNumber>
 
 export type PaymentArgs<T=string> = {
   // TODO: this is currently being used for both channel and thread payments,
@@ -253,7 +253,7 @@ export type PaymentArgs<T=string> = {
   amountWei: T
 }
 export type PaymentArgsBN = PaymentArgs<BN>
-export type PaymentArgsBigNumber = PaymentArgs<BigNumber>
+// export type PaymentArgsBigNumber = PaymentArgs<BigNumber>
 
 export type DepositArgs<T=string> = {
   depositWeiHub: T,
@@ -268,13 +268,13 @@ export type DepositArgs<T=string> = {
 
 }
 export type DepositArgsBN = DepositArgs<BN>
-export type DepositArgsBigNumber = DepositArgs<BigNumber>
+// export type DepositArgsBigNumber = DepositArgs<BigNumber>
 
 export type SignedDepositRequestProposal<T=string> = Payment<T> & {
   sigUser: string
 }
 export type SignedDepositRequestProposalBN = SignedDepositRequestProposal<BN>
-export type SignedDepositRequestProposalBigNumber = SignedDepositRequestProposal<BigNumber>
+// export type SignedDepositRequestProposalBigNumber = SignedDepositRequestProposal<BigNumber>
 
 export type PendingArgs<T=string> = {
   depositWeiUser: T
@@ -291,11 +291,11 @@ export type PendingArgs<T=string> = {
   timeout: number
 }
 export type PendingArgsBN = PendingArgs<BN>
-export type PendingArgsBigNumber = PendingArgs<BigNumber>
+// export type PendingArgsBigNumber = PendingArgs<BigNumber>
 
 export type PendingExchangeArgs<T=string> = ExchangeArgs<T> & PendingArgs<T>
 export type PendingExchangeArgsBN = PendingExchangeArgs<BN>
-export type PendingExchangeArgsBigNumber = PendingExchangeArgs<BigNumber>
+// export type PendingExchangeArgsBigNumber = PendingExchangeArgs<BigNumber>
 
 export type WithdrawalArgs<T=string> = {
   seller: 'user' | 'hub' // who is initiating exchange
@@ -357,7 +357,7 @@ export type WithdrawalArgs<T=string> = {
   timeout: number
 }
 export type WithdrawalArgsBN = WithdrawalArgs<BN>
-export type WithdrawalArgsBigNumber = WithdrawalArgs<BigNumber>
+// export type WithdrawalArgsBigNumber = WithdrawalArgs<BigNumber>
 
 export type ConfirmPendingArgs = {
   transactionHash: Address
@@ -427,7 +427,7 @@ export type ArgsTypes<T=string> =
   | {}
 
 export type ArgTypesBN = ArgsTypes<BN>
-export type ArgTypesBigNumber = ArgsTypes<BigNumber>
+// export type ArgTypesBigNumber = ArgsTypes<BigNumber>
 
 export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   // For unsigned updates, the id will be a negative timestamp of when the
@@ -470,7 +470,7 @@ export type UpdateArgTypes<T=string> = {
 }
 
 export type UpdateRequestBN = UpdateRequest<BN>
-export type UpdateRequestBigNumber = UpdateRequest<BigNumber>
+// export type UpdateRequestBigNumber = UpdateRequest<BigNumber>
 
 // types used when getting or sending states to hub
 export type ChannelStateUpdate<T = string> = {
@@ -482,7 +482,7 @@ export type ChannelStateUpdate<T = string> = {
   metadata?: Object
 }
 export type ChannelStateUpdateBN = ChannelStateUpdate<BN>
-export type ChannelStateUpdateBigNumber = ChannelStateUpdate<BigNumber>
+// export type ChannelStateUpdateBigNumber = ChannelStateUpdate<BigNumber>
 
 // includes metadata
 export type ChannelStateUpdateRow<T = string> = ChannelStateUpdate<T> & {
@@ -494,7 +494,7 @@ export type ChannelStateUpdateRow<T = string> = ChannelStateUpdate<T> & {
   onchainTxLogicalId?: number
 }
 export type ChannelStateUpdateRowBN = ChannelStateUpdateRow<BN>
-export type ChannelStateUpdateRowBigNumber = ChannelStateUpdateRow<BigNumber>
+// export type ChannelStateUpdateRowBigNumber = ChannelStateUpdateRow<BigNumber>
 
 // this is the typical form of responses from POST
 // hub endpoints and the sync endpoint
@@ -502,7 +502,7 @@ export type SyncResult<T = string> =
   | { type: "thread", update: ThreadStateUpdate<T> }
   | { type: "channel", update: UpdateRequest<T> }
 export type SyncResultBN = SyncResult<BN>
-export type SyncResultBigNumber = SyncResult<BigNumber>
+// export type SyncResultBigNumber = SyncResult<BigNumber>
 
 // this is the typical form of responses from POST
 // hub endpoints and the sync endpoint
@@ -520,7 +520,7 @@ export type ChannelRow<T = string> = {
   state: ChannelState<T>
 }
 export type ChannelRowBN = ChannelRow<BN>
-export type ChannelRowBigNumber = ChannelRow<BigNumber>
+// export type ChannelRowBigNumber = ChannelRow<BigNumber>
 
 /*********************************
  ********* THREAD TYPES **********
@@ -535,15 +535,16 @@ export type ThreadRow<T = string> = {
   // ... dispute things, open events, etc ...
 }
 export type ThreadRowBN = ThreadRow<BN>
-export type ThreadRowBigNumber = ThreadRow<BigNumber>
+// export type ThreadRowBigNumber = ThreadRow<BigNumber>
 
 // A row from the cm_thread_updates table, including the row's state, and
 // metadata such as the date it was created.
-export interface ThreadStateUpdateRow<T = string> {
+export type ThreadStateUpdateRow<T = string> = {
   id: number
   createdOn: Date
   state: ThreadState<T>
 }
+export type ThreadStateUpdateRowBN = ThreadStateUpdateRow<BN>
 
 // this is everything included in a thread update sig
 export type UnsignedThreadState<T = string> = {
@@ -558,7 +559,7 @@ export type UnsignedThreadState<T = string> = {
   txCount: number
 }
 export type UnsignedThreadStateBN = UnsignedThreadState<BN>
-export type UnsignedThreadStateBigNumber = UnsignedThreadState<BigNumber>
+// export type UnsignedThreadStateBigNumber = UnsignedThreadState<BigNumber>
 
 // A single thread state, encompasing exactly the fields which are signed, and
 // the two signatures. This is submitted to thread recover fns
@@ -567,7 +568,7 @@ export type ThreadState<T = string> = UnsignedThreadState<T> &
     sigA: string
   })
 export type ThreadStateBN = ThreadState<BN>
-export type ThreadStateBigNumber = ThreadState<BigNumber>
+// export type ThreadStateBigNumber = ThreadState<BigNumber>
 
 // thread status
 export const ThreadStatus = {
@@ -588,7 +589,7 @@ export type ThreadStateUpdate<T = string> = {
 }
 
 export type ThreadStateUpdateBN = ThreadStateUpdate<BN>
-export type ThreadStateUpdateBigNumber = ThreadStateUpdate<BigNumber>
+// export type ThreadStateUpdateBigNumber = ThreadStateUpdate<BigNumber>
 
 export const addSigToThreadState = (
   thread: UnsignedThreadState,
@@ -643,11 +644,11 @@ type BaseChannelEvent<T = string> = {
 
 export type DidStartExitChannelEvent = BaseChannelEvent<string>
 export type DidStartExitChannelEventBN = BaseChannelEvent<BN>
-export type DidStartExitChannelBigNumber = BaseChannelEvent<BigNumber>
+// export type DidStartExitChannelBigNumber = BaseChannelEvent<BigNumber>
 
 export type DidEmptyChannelEvent = BaseChannelEvent<string>
 export type DidEmptyChannelEventBN = BaseChannelEvent<BN>
-export type DidEmptyChannelEventBigNumber = BaseChannelEvent<BigNumber>
+// export type DidEmptyChannelEventBigNumber = BaseChannelEvent<BigNumber>
 
 // DidUpdateChannel
 export type DidUpdateChannelEvent<T = string> = BaseChannelEvent & {
@@ -655,7 +656,7 @@ export type DidUpdateChannelEvent<T = string> = BaseChannelEvent & {
   pendingTokenUpdates: [T, T, T, T], // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
 }
 export type DidUpdateChannelEventBN = DidUpdateChannelEvent<BN>
-export type DidUpdateChannelEventBigNumber = DidUpdateChannelEvent<BigNumber>
+// export type DidUpdateChannelEventBigNumber = DidUpdateChannelEvent<BigNumber>
 
 const BaseChannelEventInputs = [
   { type: 'address', name: 'user', indexed: true },
@@ -692,7 +693,7 @@ export type VerboseChannelEvent<T = string> = UnsignedChannelState<T> & {
   sender: Address,
 }
 export type VerboseChannelEventBN = VerboseChannelEvent<BN>
-export type VerboseChannelEventBigNumber = VerboseChannelEvent<BigNumber>
+// export type VerboseChannelEventBigNumber = VerboseChannelEvent<BigNumber>
 
 export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contractAddress: Address): VerboseChannelEvent {
   let ans = {} as any
@@ -768,7 +769,7 @@ export type Payment<T = string> = {
   amountToken: T
 }
 export type PaymentBN = Payment<BN>
-export type PaymentBigNumber = Payment<BigNumber>
+// export type PaymentBigNumber = Payment<BigNumber>
 
 export type WithdrawalParameters<T = string> = {
   recipient: Address
@@ -789,7 +790,7 @@ export type WithdrawalParameters<T = string> = {
   withdrawalTokenUser?: T
 }
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
-export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
+// export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
 /*********************************
  ****** PAYMENT & PURCHASE *******
@@ -891,105 +892,36 @@ export type PurchasePaymentHubResponse<T= string> = ({
 })
 
 export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>
-export type PurchasePaymentHubResponseBigNumber = PurchasePaymentHubResponse<BigNumber>
+// export type PurchasePaymentHubResponseBigNumber = PurchasePaymentHubResponse<BigNumber>
 
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
 
-export function objValuesBigNumToString(x: any): any {
-  const res = {}
-  Object.entries(x).forEach(([key, val]) => {
-    if (!val) {
-      (res as any)[key] = val
-    } else {
-      (res as any)[key] = isBigNumber(val) ? (val as BigNumber).toFixed() : val
-    }
-  })
+// export function objValuesBigNumToString(x: any): any {
+//   const res = {}
+//   Object.entries(x).forEach(([key, val]) => {
+//     if (!val) {
+//       (res as any)[key] = val
+//     } else {
+//       (res as any)[key] = isBigNumber(val) ? (val as BigNumber).toFixed() : val
+//     }
+//   })
+//   return res
+// }
+
+export function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): { [key in keyof T]: R } {
+  const res: any = {}
+  for (let key in obj)
+    res[key] = func(key as any, obj[key] as any)
   return res
 }
 
-export function objValuesStringToBigNum(x: any, fields: string[]): any {
-  const res = {}
-  Object.entries(x).forEach(([key, val]) => {
-    if (!val) {
-      (res as any)[key] = val
-    } else {
-      (res as any)[key] = fields.includes(key) ? new BigNumber(val as any): val
-    }
-  })
+export async function objMapPromise<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => Promise<R>): Promise<{ [key in keyof T]: R }> {
+  const res: any = {}
+  for (let key in obj)
+    res[key] = await func(key as any, obj[key] as any)
   return res
-}
-
-export function channelRowStringToBigNum(r: ChannelRow): ChannelRowBigNumber {
-  return {
-    ...r,
-    state: convertChannelState('bignumber', r.state),
-  }
-}
-
-export function channelRowBigNumToString(r: ChannelRowBigNumber): ChannelRow {
-  return {
-    ...r,
-    state: convertChannelState('str', r.state),
-  }
-}
-
-export function channelStateUpdateRowBigNumToString(
-  update: ChannelStateUpdateRowBigNumber,
-): ChannelStateUpdateRow {
-  return {
-    ...update,
-    state: convertChannelState('str', update.state),
-    args: objValuesBigNumToString(update.args),
-  }
-}
-
-export function channelStateUpdateRowStringToBigNum(
-  update: ChannelStateUpdateRow,
-): ChannelStateUpdateRowBigNumber {
-  let { args } = update
-  let argsBigNum
-  switch (update.reason) {
-    case 'Payment':
-      argsBigNum = objValuesStringToBigNum(args, [
-        'amountToken',
-        'amountWei',
-      ]) as PaymentArgsBigNumber
-      break
-    case 'Exchange':
-      argsBigNum = objValuesStringToBigNum(args, [
-        'tokensToSell',
-        'weiToSell',
-      ]) as ExchangeArgsBigNumber
-      break
-    case 'ProposePendingDeposit':
-      argsBigNum = objValuesStringToBigNum(args, [
-        'depositWeiHub',
-        'depositWeiUser',
-        'depositTokenHub',
-        'depositTokenUser',
-      ]) as DepositArgsBigNumber
-      break
-    case 'ProposePendingWithdrawal':
-      argsBigNum = objValuesStringToBigNum(args, [
-        'tokensToSell',
-        'weiToSell',
-        'depositWeiUser',
-        'depositTokenHub',
-        'withdrawalWeiHub',
-        'withdrawalWeiUser',
-        'withdrawalTokenHub',
-      ]) as WithdrawalArgsBigNumber
-      break
-    default: // TODO: implement other 5 cases too
-      argsBigNum = objValuesStringToBigNum(args, [])
-  }
-  return {
-    ...update,
-    state: convertChannelState('bignumber', update.state),
-    args: argsBigNum,
-  }
 }
 
 export function insertDefault(val: string, obj: any, keys: string[]) {
@@ -1004,6 +936,59 @@ export function insertDefault(val: string, obj: any, keys: string[]) {
   })
 
   return adjusted
+}
+
+// export function channelRowStringToBN(r: ChannelRow): ChannelRowBN {
+//   return {
+//     ...r,
+//     state: convertChannelState('bn', r.state),
+//   }
+// }
+
+// export function channelRowBNToString(r: ChannelRowBN): ChannelRow {
+//   return {
+//     ...r,
+//     state: convertChannelState('str', r.state),
+//   }
+// }
+
+// export function channelStateUpdateRowBNToString(
+//   update: ChannelStateUpdateRowBN,
+// ): ChannelStateUpdateRow {
+//   return {
+//     ...update,
+//     state: convertChannelState('str', update.state),
+//     args: convertArgs("str", update.reason, update.args as any),
+//   }
+// }
+
+// export function channelStateUpdateRowStringToBN(
+//   update: ChannelStateUpdateRow,
+// ): ChannelStateUpdateRowBN {
+//   return {
+//     ...update,
+//     state: convertChannelState('bn', update.state),
+//     args: convertArgs("bn", update.reason, update.args as any),
+//   }
+// }
+
+export function convertChannelRow(
+  to: "bn" | "str", // state objs always have sigs in rows
+  obj: ChannelRow<any>) {
+  return {
+    ...obj,
+    state: convertChannelState(to as any, obj.state),
+  }
+}
+
+export function convertChannelStateUpdateRow(
+  to: "bn" | "str", // state objs always have sigs in rows
+  obj: ChannelStateUpdateRow<any>) {
+  return {
+    ...obj,
+    state: convertChannelState(to as any, obj.state),
+    args: convertArgs(to, obj.reason, obj.args as any),
+  }
 }
 
 export const withdrawalParamsNumericFields = [
@@ -1040,13 +1025,14 @@ export const channelNumericFields = [
 ]
 
 export function convertChannelState(to: "bn", obj: ChannelState<any>): ChannelStateBN
-export function convertChannelState(to: "bignumber", obj: ChannelState<any>): ChannelStateBigNumber
+// export function convertChannelState(to: "bignumber", obj: ChannelState<any>): ChannelStateBigNumber
 export function convertChannelState(to: "str", obj: ChannelState<any>): ChannelState
 export function convertChannelState(to: "bn-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBN
-export function convertChannelState(to: "bignumber-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBigNumber
+// export function convertChannelState(to: "bignumber-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBigNumber
 export function convertChannelState(to: "str-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelState
 export function convertChannelState(
-  to: "bn" | "bignumber" | "str" | "bn-unsigned" | "bignumber-unsigned" | "str-unsigned",
+  // to: "bn" | "bignumber" | "str" | "bn-unsigned" | "bignumber-unsigned" | "str-unsigned",
+  to: "bn" | "str" | "bn-unsigned" | "str-unsigned",
   obj: ChannelState<any> | UnsignedChannelState<any>,
 ) {
   const [toType, unsigned] = to.split('-') as any
@@ -1066,13 +1052,14 @@ export function unsignedChannel<T>(obj: ChannelState<T> | UnsignedChannelState<T
 }
 
 export function convertThreadState(to: "bn", obj: ThreadState<any>): ThreadStateBN
-export function convertThreadState(to: "bignumber", obj: ThreadState<any>): ThreadStateBigNumber
+// export function convertThreadState(to: "bignumber", obj: ThreadState<any>): ThreadStateBigNumber
 export function convertThreadState(to: "str", obj: ThreadState<any>): ThreadState
 export function convertThreadState(to: "bn-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBN
-export function convertThreadState(to: "bignumber-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBigNumber
+// export function convertThreadState(to: "bignumber-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBigNumber
 export function convertThreadState(to: "str-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadState
 export function convertThreadState(
-  to: "bn" | "bignumber" | "str" | "bn-unsigned" | "bignumber-unsigned" | "str-unsigned",
+  // to: "bn" | "str" | "bn-unsigned" | "str-unsigned" | "bignumber" | "bignumber-unsigned",
+  to: "bn" | "str" | "bn-unsigned" | "str-unsigned",
   obj: ThreadState<any> | UnsignedThreadState<any>,
 ) {
   const fromType = getType(obj.balanceWeiReceiver)

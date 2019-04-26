@@ -1,7 +1,7 @@
 import { isValidAddress } from 'ethereumjs-util';
 import { AbstractController } from './AbstractController'
 import { validateExchangeRate, } from './ExchangeController';
-import { toBN } from '../helpers/bn';
+import { Big } from '../helpers/bn';
 import { getTxCount } from '../state/getters'
 import {
   convertChannelState,
@@ -41,7 +41,7 @@ export default class WithdrawalController extends AbstractController {
     }
 
     // validate withdrawal wei user
-    if (toBN(withdrawalStr.withdrawalWeiUser).gt(channelBN.balanceWeiUser)) {
+    if (Big(withdrawalStr.withdrawalWeiUser).gt(channelBN.balanceWeiUser)) {
       WithdrawalError(`Cannot withdraw more wei than what is in your channel.`)
     }
 
@@ -49,7 +49,7 @@ export default class WithdrawalController extends AbstractController {
     if (withdrawalStr.weiToSell && withdrawalStr.weiToSell != '0') {
       WithdrawalError(`User exchanging wei at withdrawal is not permitted at this time.`)
     }
-    if (toBN(withdrawalStr.tokensToSell).gt(channelBN.balanceTokenUser)) {
+    if (Big(withdrawalStr.tokensToSell).gt(channelBN.balanceTokenUser)) {
       WithdrawalError(`Cannot sell more tokens than exist in your channel.`)
     }
 
