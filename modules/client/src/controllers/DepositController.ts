@@ -135,7 +135,7 @@ export default class DepositController extends AbstractController {
         const gasEstimate = (await token.estimate.approve(prev.contractAddress, args.depositTokenUser)).toNumber()
         overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.connext.contract.gasMultiple))
         const tx = await token.approve(prev.contractAddress, args.depositTokenUser, overrides)
-        await tx.wait()
+        await this.connext.wallet.provider.waitForTransaction(tx.hash)
       }
       const tx = await this.connext.contract.userAuthorizedUpdate(state)
       console.log(`Sent user authorized deposit to chain: ${(tx as any).hash}`)

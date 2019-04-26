@@ -8,9 +8,15 @@ export {
   Filter,
   Provider,
   TransactionReceipt,
+  TransactionRequest,
   TransactionResponse,
 } from 'ethers/providers';
-export { Interface, LogDescription, Transaction, } from 'ethers/utils';
+export {
+  Interface,
+  LogDescription,
+  Transaction,
+  UnsignedTransaction,
+} from 'ethers/utils';
 
 /*********************************
  ****** Currencies & Exchange Rates
