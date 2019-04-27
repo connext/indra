@@ -1,8 +1,11 @@
 require('../register/common')
 
 import PaymentHub from '../PaymentHub'
-import { Big } from '../util/bigNumber';
+import { big } from '../Connext';
 import { default as Config } from '../Config'
+const {
+  Big
+} = big
 
 const config = Config.fromEnv({
   authRealm: 'SpankChain',
