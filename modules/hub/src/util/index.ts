@@ -1,12 +1,3 @@
-import { BigNumber } from 'ethers/utils'
-
-export function isBigNumber(x: any) {
-  return !!x && typeof x == 'object' && (
-    x instanceof BigNumber ||
-    ('s' in x && 'e' in x && 'c' in x)
-  )
-}
-
 /**
  * Shorten a string.
  *
