@@ -1,6 +1,4 @@
-import { BigNumber } from 'bignumber.js'
-import { Big } from './bigNumber';
-import Web3 = require('web3')
+import { BigNumber } from 'ethers/utils'
 
 export function isBigNumber(x: any) {
   return !!x && typeof x == 'object' && (
