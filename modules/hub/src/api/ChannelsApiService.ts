@@ -1,4 +1,3 @@
-import { BigNumber } from 'bignumber.js';
 import * as Connext from '../Connext';
 import { getUserFromRequest } from '../util/request'
 import { default as Config } from '../Config'
@@ -12,7 +11,7 @@ import { prettySafeJson } from '../util'
 import { Role } from '../Role'
 
 type UpdateRequest = Connext.types.UpdateRequest
-type WithdrawalParametersBigNumber = Connext.types.WithdrawalParameters<BigNumber>
+type WithdrawalParametersBN = Connext.types.WithdrawalParametersBN
 const convertWithdrawalParameters = Connext.types.convertWithdrawalParameters
 const LOG = log('ChannelsApiService')
 
@@ -206,7 +205,7 @@ export class ChannelsApiServiceHandler {
 
     await this.channelsService.doRequestWithdrawal(
       user,
-      convertWithdrawalParameters("bignumber", req.body)
+      convertWithdrawalParameters("bn", req.body)
     )
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,

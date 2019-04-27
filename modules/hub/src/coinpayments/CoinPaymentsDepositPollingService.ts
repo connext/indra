@@ -1,13 +1,8 @@
 import { Poller, types } from '../Connext'
 import { CoinPaymentsService } from './CoinPaymentsService'
-import { default as ChannelsDao } from '../dao/ChannelsDao'
 import { default as log } from '../util/log'
 import { CoinPaymentsDao } from './CoinPaymentsDao'
-import { default as ChannelsService } from '../ChannelsService'
 import { default as DBEngine } from '../DBEngine'
-import { prettySafeJson } from '../util'
-import { BigNumber } from 'bignumber.js/bignumber'
-import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as Config } from '../Config'
 
 type DepositArgs = types.DepositArgs
