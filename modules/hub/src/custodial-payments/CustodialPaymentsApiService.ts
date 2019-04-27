@@ -1,5 +1,3 @@
-import { BigNumber } from 'bignumber.js/bignumber'
-import { Big } from '../util/bigNumber'
 import { safeJson } from '../util'
 import { CustodialPaymentsService } from './CustodialPaymentsService'
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
@@ -8,6 +6,8 @@ import log from '../util/log'
 import Config from '../Config'
 import { ApiService } from '../api/ApiService'
 import { getUserFromRequest } from '../util/request'
+import { BigNumber } from 'ethers/utils'
+import { big } from '../Connext'
 
 const LOG = log('CustodialPaymentsApiService')
 
@@ -21,7 +21,7 @@ getAttr.address = getAttr // TODO: some basic address validation here
 getAttr.big = <T, K extends keyof T>(obj: T, attr: K): BigNumber => {
   const val = getAttr(obj, attr)
   try {
-    return Big(val as any)
+    return big.Big(val as any)
   } catch (e) {
     throw new Error(`Invalid value for BigNumber: ${val} (attribute: ${attr})`)
   }

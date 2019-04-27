@@ -1,5 +1,5 @@
 import { getMockWeb3 } from '../testing/mocks'
-import { Big } from '../util/bigNumber'
+import { big } from '../Connext'
 import { mkAddress } from '../testing/stateUtils'
 import { createTestPayment } from './CustodialPaymentsDao.test'
 import { assert, getTestRegistry } from '../testing'
@@ -14,11 +14,11 @@ describe('CustodialPaymentsApiService', () => {
 
   beforeEach(async () => {
     await registry.clearDatabase()
-    const tokenAmount = Big('420').times('1e18')
+    const tokenAmount = big.toWeiString('420')
     await createTestPayment(
       registry,
-      { amountToken: tokenAmount.toFixed() },
-      { amountToken: tokenAmount.toFixed() },
+      { amountToken: tokenAmount },
+      { amountToken: tokenAmount },
       recipient,
     )
   })
@@ -44,7 +44,7 @@ describe('CustodialPaymentsApiService', () => {
   it('withdrawals', async () => {
     const wdRes = await app.withUser(recipient).request
       .post(`/custodial/withdrawals`)
-      .send({ recipient: recipient, amountToken: Big('10').times('1e18') })
+      .send({ recipient: recipient, amountToken: big.toWeiString('10') })
     assert.equal(wdRes.status, 200)
     const expectedWithdrawal = {
       'exchangeRate': '123.45',
