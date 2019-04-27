@@ -1,10 +1,8 @@
-import { StateGenerator, types } from '../Connext';
+import { StateGenerator, types, big } from '../Connext';
 import { TestServiceRegistry } from ".";
-import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread } from "./stateUtils";
+import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel } from "./stateUtils";
 import { default as ChannelsDao } from "../dao/ChannelsDao";
-import { Big } from "../util/bigNumber";
 import { default as ThreadsDao } from "../dao/ThreadsDao";
-import BN = require('bn.js')
 import ExchangeRateDao from "../dao/ExchangeRateDao";
 
 type ChannelUpdateReason = types.ChannelUpdateReason
@@ -15,7 +13,7 @@ type ArgsTypes = types.ArgsTypes
 const { convertChannelState, convertThreadState } = types
 
 export function tokenVal(x: number | string): string {
-  return Big(x).times(1e18).toFixed()
+  return big.toWeiString(x)
 }
 
 /**

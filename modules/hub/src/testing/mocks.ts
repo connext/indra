@@ -1,4 +1,4 @@
-import { types, Utils, Validator } from '../Connext'
+import { types, Validator, big } from '../Connext'
 import * as request from 'supertest'
 import { default as ChannelManagerABI } from '../abi/ChannelManager'
 import { getRedisClient } from '../RedisClient'
@@ -8,10 +8,13 @@ import { truncateAllTables } from './eraseDb'
 import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
 import { mkAddress, mkSig, mkHash } from "./stateUtils";
-import { Big } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
 import Config from '../Config';
 import { serviceDefinitions } from '../services'
+
+const {
+  Big
+} = big
 
 type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
 

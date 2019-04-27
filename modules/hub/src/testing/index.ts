@@ -2,7 +2,6 @@ import { Context } from "../Container";
 import * as chai from 'chai'
 import * as sinon from 'sinon'
 import * as _nock from 'nock'
-import { BigNumber } from 'bignumber.js'
 
 import defaultRegistry, { serviceDefinitions } from '../services'
 import { isBigNumber } from '../util'

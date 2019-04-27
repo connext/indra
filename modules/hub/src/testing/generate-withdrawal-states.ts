@@ -1,9 +1,6 @@
 import * as Connext from '../Connext';
-const fs = require("fs")
 const vm = require('vm')
-import * as t from './index'
-import { PartialSignedOrSuccinctChannel, getChannelState, mkHash, mkAddress, mkSig } from './stateUtils'
-import BN = require('bn.js') // no import means ts errs?
+import { PartialSignedOrSuccinctChannel, getChannelState, mkAddress, mkSig } from './stateUtils'
 
 type WithdrawalArgs = Connext.types.WithdrawalArgs
 const { convertChannelState, convertWithdrawal } = Connext.types
