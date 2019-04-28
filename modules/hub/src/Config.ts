@@ -97,12 +97,13 @@ export default class Config {
   public registry?: Registry
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
+  // amount users can have in any one channel for their balance
   public channelBeiLimit = toWeiBig(process.env.CHANNEL_BEI_LIMIT || 69)
-  public beiMinThreshold = toWeiBig(process.env.BEI_MIN_THRESHOLD || 5)
+  // minimum amount of bei the hub will put into any one channel
+  // for collateral
   public beiMinCollateralization = toWeiBig(process.env.BEI_MIN_COLLATERALIZATION || 10)
+  // max bei the hub will collateralize at any point
   public beiMaxCollateralization = toWeiBig(process.env.BEI_MAX_COLLATERALIZATION || 169)
-  // public minCollateralizationMultiple = new BigNumber(process.env.MIN_COLLATERALIZATION_MULTIPLE || 0.5)
-  // public maxCollateralizationMultiple = process.env.MAX_COLLATERALIZATION_MULTIPLE || 1.5
   public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
 
   public threadBeiLimit = toWeiBig(process.env.THREAD_BEI_LIMIT || 10)
