@@ -1,4 +1,4 @@
-import { Big, minBN, maxBN } from "./lib/bn";
+import { Big, minBN, maxBN, assetToWei, weiToAsset } from "./lib/bn";
 import { BigNumber as BN } from 'ethers/utils'
 import {
   ChannelStateBN,
@@ -22,12 +22,7 @@ import {
   WithdrawalArgsBN,
 } from "./types";
 import { Utils } from "./Utils";
-import { mul, divmod } from "./lib/bn";
-
-// this constant is used to not lose precision on exchanges
-// the BN library does not handle non-integers appropriately
-const EXCHANGE_MULTIPLIER = 1000000000
-const EXCHANGE_MULTIPLIER_BN = Big(EXCHANGE_MULTIPLIER)
+import { mul, divmod, EXCHANGE_MULTIPLIER, EXCHANGE_MULTIPLIER_BN } from "./lib/bn";
 
 /**
  * Calculate the amount of wei/tokens to sell/recieve from the perspective of
@@ -61,9 +56,8 @@ export function calculateExchange(args: ExchangeArgsBN) {
     }
   }
 
-  const exchangeRate = Big(mul(args.exchangeRate, EXCHANGE_MULTIPLIER))
-  const [weiReceived, tokenRemainder] = divmod(args.tokensToSell.mul(EXCHANGE_MULTIPLIER_BN), exchangeRate)
-  const tokensReceived = args.weiToSell.mul(exchangeRate).div(EXCHANGE_MULTIPLIER_BN)
+  const [weiReceived, tokenRemainder] = assetToWei(args.tokensToSell, args.exchangeRate)
+  const tokensReceived = weiToAsset(args.weiToSell, args.exchangeRate)
 
   return {
     weiSold: args.weiToSell,
