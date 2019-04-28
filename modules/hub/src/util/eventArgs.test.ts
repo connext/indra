@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js';
+import { BigNumber } from 'ethers/utils';
 import {eventArgToAddress, eventArgToBigNum} from './eventArgs'
 import { assert } from 'chai';
 

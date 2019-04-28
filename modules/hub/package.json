@@ -21,8 +21,6 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
-    "bignumber.js": "=8.0.2",
-    "bn.js": "^4.11.8",
     "classnames": "^2.2.5",
     "concurrently": "^4.1.0",
     "connect-redis": "^3.4.1",

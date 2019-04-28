@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js'
+import { BigNumber } from 'ethers/utils'
 
 const re = /^0+/gi
 
@@ -9,7 +9,8 @@ export function eventArgToAddress(arg: string): string {
 }
 
 export function eventArgToBigNum(arg: string): BigNumber {
-  return new BigNumber(arg.replace('0x', ''), 16)
+  // can handle hexstrings
+  return new BigNumber(arg)
 }
 
 // data arg is a series of 32 byte strings that represent non-indexed arguments

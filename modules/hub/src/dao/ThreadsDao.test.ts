@@ -1,5 +1,4 @@
 import * as Connext from '../Connext';
-import { BigNumber } from 'bignumber.js'
 import { getTestRegistry } from '../testing'
 import { PostgresThreadsDao } from './ThreadsDao'
 import {
@@ -12,6 +11,7 @@ import { channelAndThreadFactory } from '../testing/factories';
 import { testChannelManagerAddress } from '../testing/mocks';
 
 const { convertThreadState } = Connext.types
+const { Big } = Connext.big
 
 describe('ThreadsDao', () => {
   const registry = getTestRegistry()
@@ -40,12 +40,12 @@ describe('ThreadsDao', () => {
       receiver: chans.performer.user,
       txCount: chans.thread.txCount + 1,
       balanceToken: [
-        new BigNumber(chans.thread.balanceTokenSender)
-          .minus(new BigNumber(8))
-          .toFixed(),
-        new BigNumber(chans.thread.balanceTokenReceiver)
-          .plus(new BigNumber(8))
-          .toFixed(),
+        Big(chans.thread.balanceTokenSender)
+          .sub(Big(8))
+          .toString(),
+          Big(chans.thread.balanceTokenReceiver)
+          .add(Big(8))
+          .toString(),
       ],
     })
 
