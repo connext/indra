@@ -1,4 +1,4 @@
-import { StateGenerator, types, Utils, Validator, Poller, getters } from 'connext'
+import { StateGenerator, types, Utils, Validator, Poller, getters, big } from 'connext'
 
 export {
   Poller,
@@ -7,4 +7,5 @@ export {
   types,
   Utils,
   Validator,
+  big,
 }

@@ -6,12 +6,10 @@ import { ApiService } from './ApiService'
 import log from '../util/log'
 import ChannelsService from '../ChannelsService'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
-import { Big } from '../util/bigNumber'
 import { prettySafeJson } from '../util'
-import { Role } from '../Role'
 
+const Big = Connext.big.Big
 type UpdateRequest = Connext.types.UpdateRequest
-type WithdrawalParametersBN = Connext.types.WithdrawalParametersBN
 const convertWithdrawalParameters = Connext.types.convertWithdrawalParameters
 const LOG = log('ChannelsApiService')
 

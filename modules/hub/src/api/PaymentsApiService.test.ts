@@ -1,13 +1,13 @@
 import * as eth from 'ethers';
-import { StateGenerator, types } from '../Connext';
+import { StateGenerator, types, big } from '../Connext';
 import { mkSig, mkAddress } from "../testing/stateUtils";
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal, channelNextState } from "../testing/factories";
 import { PaymentMetaDao } from "../dao/PaymentMetaDao";
 import Config from "../Config";
-import { toWeiString } from "../util/bigNumber";
 import { testChannelManagerAddress, testHotWalletAddress } from "../testing/mocks";
 
+const { toWeiString } = big;
 type PurchasePayment = types.PurchasePayment
 type ThreadState = types.ThreadState
 type UpdateRequest = types.UpdateRequest

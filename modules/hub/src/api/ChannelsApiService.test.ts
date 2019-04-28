@@ -5,8 +5,6 @@ import ChannelsService from '../ChannelsService';
 import { mkHash } from '../testing/stateUtils';
 
 type UpdateRequest = Connext.types.UpdateRequest
-type SyncResult = Connext.types.SyncResult
-type Sync = Connext.types.Sync
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()

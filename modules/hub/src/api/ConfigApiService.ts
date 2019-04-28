@@ -34,7 +34,7 @@ class ConfigApiServiceHandler {
       tokenAddress: tokenContractAddress,
       ethRpcUrl,
       ethNetworkId,
-      beiMaxCollateralization: beiMaxCollateralization.toFixed(),
+      beiMaxCollateralization: beiMaxCollateralization.toString(),
     })
   }
 

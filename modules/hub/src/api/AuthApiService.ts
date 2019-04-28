@@ -1,10 +1,8 @@
-import {Store} from 'express-session'
-import { ApiService , Router} from './ApiService'
+import { ApiService } from './ApiService'
 import * as express from 'express'
 import CRAuthManager from '../CRAuthManager'
 import log from '../util/log'
 import Config from '../Config'
-import parseAuthHeader from '../util/parseAuthHeader'
 
 const LOG = log('AuthApiService')
 

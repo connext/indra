@@ -1,5 +1,5 @@
-import { BigNumber } from 'bignumber.js';
-import { types } from './Connext';
+import { BigNumber } from 'ethers/utils';
+import { types, big } from './Connext';
 import {assert, getTestRegistry, TestServiceRegistry} from './testing'
 import {
   assertChannelStateEqual,
@@ -9,9 +9,7 @@ import {
   mkAddress,
   mkSig
 } from './testing/stateUtils'
-import {Big} from './util/bigNumber'
-import ThreadsService from './ThreadsService'
-import GlobalSettingsDao from './dao/GlobalSettingsDao'
+const { Big } = big
 
 type ThreadState<T=string> = types.ThreadState<T>
 type ThreadStateBigNum = ThreadState<BigNumber>
@@ -89,7 +87,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
 
     const channelSenderUpdateAfterThreadOpen = await threadsService.open(
       convertThreadState(
-        'bignumber',
+        'bn',
         getThreadState('empty', {
           sender,
           receiver,
@@ -112,8 +110,8 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
         user: sender,
         sigHub: fakeSig,
         balanceTokenUser: Big(channelSender.balanceTokenUser)
-          .minus(Big(10))
-          .toFixed()
+          .sub(Big(10))
+          .toString()
       }
     )
 
@@ -126,8 +124,8 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
       {
         sigHub: fakeSig,
         balanceTokenHub: Big(channelReceiver.balanceTokenHub)
-          .minus(Big(10))
-          .toFixed()
+          .sub(Big(10))
+          .toString()
       }
     )
 
@@ -162,7 +160,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     await threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
     await threadsService.open(
       convertThreadState(
-        'bignumber',
+        'bn',
         getThreadState('empty', {
           threadId: thread.state.threadId + 1,
           sender,
@@ -240,10 +238,10 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
       {
         balanceTokenUser: channelSenderBeforeClose.state.balanceTokenUser
           .plus(2)
-          .toFixed(),
+          .toString(),
         balanceTokenHub: channelSenderBeforeClose.state.balanceTokenHub
           .plus(8)
-          .toFixed()
+          .toString()
       }
     )
 
@@ -252,10 +250,10 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
       {
         balanceTokenHub: channelReceiverBeforeClose.state.balanceTokenHub
           .plus(2)
-          .toFixed(),
+          .toString(),
         balanceTokenUser: channelReceiverBeforeClose.state.balanceTokenUser
           .plus(8)
-          .toFixed()
+          .toString()
       }
     )
   })

@@ -1,4 +1,4 @@
-import { types } from 'connext'
+import { types, big } from 'connext'
 import { channelUpdateFactory } from './testing/factories'
 import { getTestRegistry, assert, getFakeClock } from './testing'
 import { CloseChannelService } from './CloseChannelService';
@@ -8,9 +8,8 @@ import ChannelsDao from './dao/ChannelsDao';
 import { setFakeClosingTime, getTestConfig, getMockWeb3 } from './testing/mocks';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import DBEngine from './DBEngine';
-import { toWeiString } from './util/bigNumber';
 
-export const channelRowBigNumToString = types.channelRowBigNumToString
+const { toWeiString } = big;
 
 async function rewindUpdates(db: DBEngine, days: number, user: string) {
   await db.queryOne(`
@@ -62,7 +61,7 @@ describe('CloseChannelService', () => {
     await closeChannelService.pollOnce()
 
     dbChannel = await channelsDao.getChannelByUser(channel.user)
-    const chanString = channelRowBigNumToString(dbChannel)
+    const chanString = types.convertChannelRow("str", dbChannel)
     assertChannelStateEqual(chanString.state, {
       balanceWei: [0,0],
       balanceToken: [0,0]

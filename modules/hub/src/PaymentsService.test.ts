@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { StateGenerator, types } from './Connext';
+import { StateGenerator, types, big } from './Connext';
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
@@ -7,9 +7,10 @@ import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
-import { toWeiString, Big } from "./util/bigNumber";
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 import Config from "./Config";
+
+const { toWeiString, Big } = big;
 
 type DepositArgs<T=string> = types.DepositArgs<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
@@ -307,7 +308,7 @@ describe('PaymentsService', () => {
     )
 
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toFixed(),
+      pendingDepositTokenHub: config.beiMinCollateralization.toString(),
     })
   })
 
@@ -594,8 +595,8 @@ describe('PaymentsService', () => {
     assertChannelStateEqual(update[0].state, {
       ...receiverChannel.state,
       txCountGlobal: receiverChannel.state.txCountGlobal + 2,
-      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).plus(threadUpdate.balanceTokenReceiver).toFixed(),
-      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).minus(threadUpdate.balanceTokenReceiver).toFixed(),
+      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).add(threadUpdate.balanceTokenReceiver).toString(),
+      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).sub(threadUpdate.balanceTokenReceiver).toString(),
       sigUser: mkSig('0xa'),
       sigHub: fakeSig
     })

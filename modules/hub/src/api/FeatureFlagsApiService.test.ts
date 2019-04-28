@@ -1,15 +1,6 @@
 import {assert} from 'chai'
-import * as sinon from 'sinon'
-import * as session from 'express-session'
-import {MemoryStore} from 'express-session'
-import {Role} from '../Role'
-import FeatureFlagsDao from '../dao/FeatureFlagsDao'
-import * as request from 'supertest'
 import {Response} from 'supertest'
-import * as express from 'express'
-import {Application} from 'express'
-import FeatureFlagsApiService from './FeatureFlagsApiService'
-import { getTestRegistry, TestApiServer, sbox } from '../testing'
+import { getTestRegistry, TestApiServer } from '../testing'
 import { DEFAULT_FLAGS } from '../dao/FeatureFlagsDao'
 
 describe('FeatureFlagsApiService', () => {

@@ -1,4 +1,4 @@
-import { types, Utils, Validator } from '../Connext'
+import { types, Utils, big } from '../Connext'
 import * as crypto from 'crypto'
 import { default as DBEngine } from '../DBEngine'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
@@ -6,15 +6,14 @@ import { default as Config } from '../Config'
 import { CoinPaymentsDao, CoinPaymentsIpnRow, CoinPaymentsDepositAddress } from './CoinPaymentsDao'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
 import { prettySafeJson, parseQueryString, safeInt } from '../util'
-import { SignerService } from '../SignerService'
-import { BigNumber } from 'bignumber.js/bignumber'
+import { BigNumber } from 'ethers/utils'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as ChannelsService } from '../ChannelsService'
 import { default as log } from '../util/log'
+import { minBN } from 'connext/dist/lib/bn';
 
 type DepositArgs = types.DepositArgs
-type PaymentArgs = types.PaymentArgs
-const { convertChannelState } = types
+const { maxBN, Big } = big
 const LOG = log('CoinPaymentsService')
 
 // See also: https://www.coinpayments.net/merchant-tools-ipn
@@ -245,12 +244,12 @@ export class CoinPaymentsService {
       )
     }
 
-    if (ipn.amountFiat.isGreaterThan(COINPAYMENTS_MAX_DEPOSIT_FIAT)) {
+    if (ipn.amountFiat.gt(COINPAYMENTS_MAX_DEPOSIT_FIAT)) {
       throw new Error(
         `Refusing to credit user for IPN where amount > ` +
         `COINPAYMENTS_MAX_DEPOSIT_FIAT (this should have been enforced by ` +
         `the CoinPayments API, but apparently was not). Deposit amount: ` +
-        `${ipn.amountFiat.toFixed()}, COINPAYMENTS_MAX_DEPOSIT_FIAT: ` +
+        `${ipn.amountFiat.toString()}, COINPAYMENTS_MAX_DEPOSIT_FIAT: ` +
         `${COINPAYMENTS_MAX_DEPOSIT_FIAT}.`
       )
     }
@@ -267,30 +266,32 @@ export class CoinPaymentsService {
 
     // Calculate the amount to deposit: deposit up to channelBeiLimit, then
     // credit the rest as wei
-    const beiLimit = BigNumber.max(
-      0,
-      this.config.channelBeiLimit.minus(channel.state.balanceTokenUser),
+    const beiLimit = maxBN(
+      Big(0),
+      this.config.channelBeiLimit.sub(channel.state.balanceTokenUser),
     )
 
     // Since 1 BOOTY = 1 USD, credit the user for the fiat amount in bei
     // (the .integerValue(BigNumber.ROUND_FLOOR) is _probably_ unnecessary, but just in case CoinPayments
     // sends us a fiat value with more than 18 decimal places).
-    const ipnAmountToken = ipn.amountFiat.times('1e18').integerValue(BigNumber.ROUND_FLOOR)
-    const amountToken = BigNumber.min(beiLimit, ipnAmountToken)
-    const remainingBeiToCredit = ipnAmountToken.minus(amountToken)
-    const amountWei = remainingBeiToCredit.div(currentExchangeRate).integerValue(BigNumber.ROUND_FLOOR)
+
+    // TODO: FIX ALL EXCHANGE STUFFS!!!
+    const ipnAmountToken = ipn.amountFiat.mul('1e18')
+    const amountToken = minBN(beiLimit, ipnAmountToken)
+    const remainingBeiToCredit = ipnAmountToken.sub(amountToken)
+    const amountWei = remainingBeiToCredit.div(currentExchangeRate)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
       depositTokenHub: '0',
-      depositWeiUser: amountWei.toFixed(),
-      depositTokenUser: amountToken.toFixed(),
+      depositWeiUser: amountWei.toString(),
+      depositTokenUser: amountToken.toString(),
       timeout: 0,
       sigUser: null,
       reason: {
         ipn: ipn.ipnId,
         // For debugging, not actually used anywhere
-        exchangeRate: currentExchangeRate.toFixed(),
+        exchangeRate: currentExchangeRate.toString(),
       },
     }
 

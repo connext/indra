@@ -1,7 +1,10 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
-import { toWeiBigNum } from './util/bigNumber';
-import BigNumber from 'bignumber.js';
+import { big } from './Connext';
+const {
+  toWeiBig,
+  Big
+} = big
 
 const ENV_VARS = [
   'ETH_RPC_URL',
@@ -94,15 +97,17 @@ export default class Config {
   public registry?: Registry
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
-  public channelBeiLimit = toWeiBigNum(process.env.CHANNEL_BEI_LIMIT || 69)
-  public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 5)
-  public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 10)
-  public beiMaxCollateralization = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION || 169)
-  public minCollateralizationMultiple = new BigNumber(process.env.MIN_COLLATERALIZATION_MULTIPLE || 0.5)
-  public maxCollateralizationMultiple = new BigNumber(process.env.MAX_COLLATERALIZATION_MULTIPLE || 1.5)
+  public channelBeiLimit = toWeiBig(process.env.CHANNEL_BEI_LIMIT || 69)
+  public beiMinThreshold = toWeiBig(process.env.BEI_MIN_THRESHOLD || 5)
+  public beiMinCollateralization = toWeiBig(process.env.BEI_MIN_COLLATERALIZATION || 10)
+  public beiMaxCollateralization = toWeiBig(process.env.BEI_MAX_COLLATERALIZATION || 169)
+  // public minCollateralizationMultiple = new BigNumber(process.env.MIN_COLLATERALIZATION_MULTIPLE || 0.5)
+  // public maxCollateralizationMultiple = process.env.MAX_COLLATERALIZATION_MULTIPLE || 1.5
   public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
-  public threadBeiLimit = toWeiBigNum(process.env.THREAD_BEI_LIMIT || 10)
-  public channelBeiDeposit = this.channelBeiLimit.plus(1069)
+
+  public threadBeiLimit = toWeiBig(process.env.THREAD_BEI_LIMIT || 10)
+  public channelBeiDeposit = this.channelBeiLimit.add(Big(1069))
+  
   public privateKeyFile: string = ''
 
   public hubPublicUrl = envswitch({
