@@ -1,4 +1,3 @@
-import BigNumber from 'bignumber.js';
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext';
 import { Big } from '../lib/bn';
@@ -53,15 +52,15 @@ export class ExchangeController extends AbstractController {
 
   private pollExchangeRates = async () => {
     try {
-      const rates = await this.hub.getExchangerRates()
+      const rates = await this.hub.getExchangeRates()
       if (rates.USD) {
         // These are the values wallet expects
-        rates.USD = new BigNumber(rates.USD).toFixed(2)
-        rates.BEI = (new BigNumber(rates.USD)).times(new BigNumber(BEI_AMOUNT)).toFixed(0)
-        rates.WEI = new BigNumber(WEI_AMOUNT).toFixed(0)
-        rates.ETH = new BigNumber(1).toFixed(0)
-        rates.BOOTY = new BigNumber(rates.USD).toFixed(0)
-        rates.FINNEY = new BigNumber(FINNEY_AMOUNT).toFixed(0)
+        rates.USD = rates.USD,
+        rates.BEI = (Big(rates.USD)).mul(Big(BEI_AMOUNT)).toString()
+        rates.WEI = Big(WEI_AMOUNT).toString()
+        rates.ETH = Big(1).toString()
+        rates.BOOTY = rates.USD
+        rates.FINNEY = Big(FINNEY_AMOUNT).toString()
 
         this.store.dispatch(actions.setExchangeRate({
           lastUpdated: new Date(),
