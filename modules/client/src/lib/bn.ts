@@ -46,3 +46,22 @@ export function mul(num: string, multiplier: number) {
   istr += suffix
   return istr
 }
+
+export function divmod(num: BN, div: BN): [BN, BN] {
+  return [
+    safeDiv(num, div),
+    safeMod(num, div),
+  ]
+}
+
+export function safeMod(num: BN, div: BN) {
+  if (div.isZero())
+    return div
+  return num.mod(div)
+}
+
+export function safeDiv(num: BN, div: BN) {
+  if (div.isZero())
+    return div
+  return num.div(div)
+}
