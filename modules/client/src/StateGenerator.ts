@@ -22,7 +22,7 @@ import {
   WithdrawalArgsBN,
 } from "./types";
 import { Utils } from "./Utils";
-import { mul } from "./lib/bn";
+import { mul, divmod } from "./lib/bn";
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -71,25 +71,6 @@ export function calculateExchange(args: ExchangeArgsBN) {
     tokensSold: args.tokensToSell.sub(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
     tokensReceived: tokensReceived.add(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
   }
-}
-
-function divmod(num: BN, div: BN): [BN, BN] {
-  return [
-    safeDiv(num, div),
-    safeMod(num, div),
-  ]
-}
-
-function safeMod(num: BN, div: BN) {
-  if (div.isZero())
-    return div
-  return num.mod(div)
-}
-
-function safeDiv(num: BN, div: BN) {
-  if (div.isZero())
-    return div
-  return num.div(div)
 }
 
 function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
