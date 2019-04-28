@@ -448,7 +448,7 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
-  async getExchangerRates(): Promise<ExchangeRates> {
+  async getExchangeRates(): Promise<ExchangeRates> {
     return { 'USD': '5' }
   }
 

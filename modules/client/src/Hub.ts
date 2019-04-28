@@ -40,7 +40,7 @@ export interface IHubAPIClient {
   getAllThreads(): Promise<ThreadState[]>
   getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
-  getExchangerRates(): Promise<ExchangeRates> // TODO: name is typo
+  getExchangeRates(): Promise<ExchangeRates> // TODO: name is typo
   buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
@@ -282,7 +282,7 @@ export class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getExchangerRates(): Promise<ExchangeRates> {
+  async getExchangeRates(): Promise<ExchangeRates> {
     const res = (await this.networking.get('exchangeRate')).data
     return res && res.rates ? res.rates : null
   }
