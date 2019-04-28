@@ -973,18 +973,22 @@ export function insertDefault(val: string, obj: any, keys: string[]) {
 //   }
 // }
 
+export function convertChannelRow(to: "bn", obj: ChannelRow<any>): ChannelRowBN
+export function convertChannelRow(to: "str", obj: ChannelRow<any>): ChannelRow
 export function convertChannelRow(
   to: "bn" | "str", // state objs always have sigs in rows
-  obj: ChannelRow<any>) {
+  obj: ChannelRow<any>): ChannelRow | ChannelRowBN {
   return {
     ...obj,
     state: convertChannelState(to as any, obj.state),
   }
 }
 
+export function convertChannelStateUpdateRow(to: "bn", obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRowBN
+export function convertChannelStateUpdateRow(to: "str", obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRow
 export function convertChannelStateUpdateRow(
   to: "bn" | "str", // state objs always have sigs in rows
-  obj: ChannelStateUpdateRow<any>) {
+  obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRow | ChannelStateUpdateRowBN {
   return {
     ...obj,
     state: convertChannelState(to as any, obj.state),
