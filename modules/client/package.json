@@ -32,7 +32,6 @@
     "@types/web3": "^1.0.18",
     "bignumber.js": "=8.0.2",
     "bluebird": "^3.5.3",
-    "bn.js": "^4.11.8",
     "connext": "^3.1.4",
     "dotenv": "^6.2.0",
     "ethereumjs-util": "^6.0.0",
