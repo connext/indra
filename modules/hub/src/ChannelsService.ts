@@ -18,6 +18,7 @@ import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { BigNumber as BN } from 'ethers/utils'
 import { calculateExchange } from 'connext/dist/StateGenerator';
+import { assetToWei } from 'connext/dist/lib/bn';
 
 type ChannelRow = types.ChannelRow
 type ChannelStateBN = types.ChannelStateBN
@@ -199,19 +200,20 @@ export default class ChannelsService {
    */
   public async calculateCollateralizationTargets(state: ChannelStateBN) {
     const numTippers = await this.channelsDao.getRecentTippers(state.user)
-    const baseTarget = Big(numTippers).mul(this.config.beiMinCollateralization)
-    const baseMin = numTippers > 0 ?
-      this.config.beiMinCollateralization :
-      toWeiBig(10)
+    const baseTarget = Big(numTippers)
+      .mul(this.config.beiMinCollateralization)
 
     return {
-      minAmount: maxBN(baseMin, baseTarget),
+      minAmount: maxBN(
+        this.config.beiMinCollateralization, 
+        baseTarget
+      ),
 
       maxAmount: maxBN(
         this.config.beiMaxCollateralization,
 
         maxBN(
-          baseMin,
+          this.config.beiMinCollateralization,
           baseTarget,
         ),
       ),
@@ -415,14 +417,9 @@ export default class ChannelsService {
 
     // if user is leaving some wei in the channel, leave an equivalent amount of booty
     const newBalanceWeiUser = channel.state.balanceWeiUser.sub(params.withdrawalWeiUser)
-    const bootyFromExchange = calculateExchange({
-      weiToSell: newBalanceWeiUser,
-      seller: "user",
-      exchangeRate: params.exchangeRate,
-      tokensToSell: Big(0)
-    }).tokensReceived
+    const [bootyFromExchange, remainder] = assetToWei(newBalanceWeiUser, currentExchangeRateStr)
 
-    const hubBootyTargetForExchange = minBN(
+    const hubTokenTargetForExchange = minBN(
       bootyFromExchange,
       this.config.channelBeiLimit,
     )
@@ -430,15 +427,14 @@ export default class ChannelsService {
     // If the user has recent payments in the channel, make sure they are
     // collateralized up to their maximum amount.
     const collatTargets = await this.calculateCollateralizationTargets(channel.state)
-    const hubBootyTargetForCollat = (
-      collatTargets.hasRecentPayments ?
-        collatTargets.maxAmount :
-        Big(0)
-    )
+    const hubTokenTargetForCollat = collatTargets.hasRecentPayments 
+      ? collatTargets.maxAmount 
+      : Big(0)
 
-    const hubBootyTarget = maxBN(
-      hubBootyTargetForExchange,
-      hubBootyTargetForCollat,
+    // calculate final collateralization targer
+    const hubTokenTarget = maxBN(
+      hubTokenTargetForExchange,
+      hubTokenTargetForCollat,
     )
 
     const withdrawalArgs: WithdrawalArgs = {
@@ -460,7 +456,7 @@ export default class ChannelsService {
         .toString(),
 
       targetWeiHub: '0',
-      targetTokenHub: hubBootyTarget.toString(),
+      targetTokenHub: hubTokenTarget.toString(),
 
       additionalWeiHubToUser: '0',
       additionalTokenHubToUser: '0',
