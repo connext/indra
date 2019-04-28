@@ -18,7 +18,6 @@ import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { BigNumber as BN } from 'ethers/utils'
 import { calculateExchange } from 'connext/dist/StateGenerator';
-import { WEI_CONVERSION } from 'connext/dist/lib/bn';
 
 type ChannelRow = types.ChannelRow
 type ChannelStateBN = types.ChannelStateBN
@@ -49,7 +48,7 @@ const {
   convertWithdrawal,
   convertWithdrawalParameters,
 } = types
-const { Big, toWeiBig, maxBN, mul, minBN } = big
+const { Big, toWeiBig, maxBN, weiToAsset, minBN } = big
 const LOG = log('ChannelsService')
 
 type RedisReason = 'user-authorized' | 'hub-authorized' | 'offchain'
@@ -509,14 +508,9 @@ export default class ChannelsService {
     if (otherLimit)
       limit = minBN(limit, otherLimit)
 
-    const exchangeLimit = calculateExchange({
-      weiToSell: reqAmount,
-      seller: "user",
-      tokensToSell: Big(0),
-      exchangeRate,
-    }).tokensReceived
+    const exchangeLimit = weiToAsset(limit, exchangeRate)
 
-    return minBN(reqAmount.mul(WEI_CONVERSION), exchangeLimit).toString()
+    return minBN(reqAmount, exchangeLimit).toString()
   }
 
   public async doRequestExchange(
@@ -551,32 +545,31 @@ export default class ChannelsService {
     }
     // TODO: fix all exchange things!!!!!!
     // check git diff to see the funkyness
-    const currentExchangeRateStr = currentExchangeRate.rates['USD']
+    const exchangeRate = currentExchangeRate.rates['USD']
 
-    const bootyLimit = minBN(
-      maxBN(Big(0), channel.state.balanceTokenHub.sub(currentExchangeRateStr)),
-    )
-    const weiToBootyLimit = (
-      bootyLimit
-        .div(currentExchangeRateStr)
-    )
-    const adjustedWeiToSell = minBN(weiToSell, weiToBootyLimit)
-
+    // exchanges where user sells wei for tokens are capped by:
+    // - the balance of the hub
+    // - channel limit (config)
+    // exchanges where user sells tokens for wei are capped by:
+    // - hubs balance
+    // - ??? (no channel limit on hub wei) 
     const exchangeArgs: ExchangeArgs = {
       seller: 'user',
-      exchangeRate: currentExchangeRateStr.toString(),
+      exchangeRate,
       weiToSell: this.adjustExchangeAmount(
         weiToSell,
-        currentExchangeRateStr,
+        exchangeRate,
         channel.state.balanceTokenHub,
-        maxBN(Big(0), this.config.channelBeiDeposit.sub(channel.state.balanceTokenUser)),
+        maxBN(
+          Big(0),
+          this.config.channelBeiLimit.sub(channel.state.balanceTokenUser)
+        )
       ),
-      // tokensToSell: this.adjustExchangeAmount(
-      //   tokensToSell,
-      //   Big(1).div(currentExchangeRateStr),
-      //   channel.state.balanceWeiHub,
-      // ),
-      tokensToSell: "0"
+      tokensToSell: this.adjustExchangeAmount(
+        tokensToSell,
+        (1 / +exchangeRate).toString(),
+        channel.state.balanceWeiHub,
+      ),
     }
 
     if (exchangeArgs.weiToSell == '0' && exchangeArgs.tokensToSell == '0')
