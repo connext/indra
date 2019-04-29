@@ -9,7 +9,7 @@ import { prettySafeJson, parseQueryString, safeInt } from '../util'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as ChannelsService } from '../ChannelsService'
 import { default as log } from '../util/log'
-import { minBN } from 'connext/dist/lib/bn';
+import { minBN, toWeiBig, assetToWei } from 'connext/dist/lib/bn';
 
 type DepositArgs = types.DepositArgs
 const { maxBN, Big } = big
@@ -274,11 +274,10 @@ export class CoinPaymentsService {
     // (the .integerValue(BigNumber.ROUND_FLOOR) is _probably_ unnecessary, but just in case CoinPayments
     // sends us a fiat value with more than 18 decimal places).
 
-    // TODO: FIX ALL EXCHANGE STUFFS!!!
-    const ipnAmountToken = ipn.amountFiat.mul('1e18')
+    const ipnAmountToken = toWeiBig(ipn.amountFiat)
     const amountToken = minBN(beiLimit, ipnAmountToken)
     const remainingBeiToCredit = ipnAmountToken.sub(amountToken)
-    const amountWei = remainingBeiToCredit.div(currentExchangeRate)
+    const amountWei = assetToWei(remainingBeiToCredit, currentExchangeRate)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',

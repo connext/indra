@@ -7,6 +7,7 @@ import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { OnchainTransactionService } from '../OnchainTransactionService'
 import { BigNumber } from 'ethers/utils'
 import { big } from '../Connext'
+import { assetToWei } from 'connext/dist/lib/bn';
 
 const LOG = log('CustodialPaymentsService')
 
@@ -52,7 +53,7 @@ export class CustodialPaymentsService {
     }
 
     const exchangeRate = await this.exchangeRates.getLatestUsdRate()
-    const amountWei = amountToken.div(exchangeRate)
+    const [amountWei, remainder] = assetToWei(amountToken, exchangeRate)
     const txn = await this.onchainTxnService.sendTransaction(this.db, {
       from: this.config.hotWalletAddress,
       to: recipient,
