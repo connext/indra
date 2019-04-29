@@ -639,7 +639,6 @@ describe('ChannelsService', () => {
     ])
 
     const expectedExchangeAmountWei = assetToWei(toWeiBig(10), mockRate)[0]
-    console.log('expectedExchangeAmountWei:', expectedExchangeAmountWei.toString())
 
     let {updates: syncUpdates} = await service.getChannelAndThreadUpdatesForSync(
       channel.user,
@@ -1006,7 +1005,6 @@ describe('ChannelsService', () => {
     const channel = await channelUpdateFactory(registry, {
       pendingDepositTokenHub: '1'
     })
-    console.log(convertChannelState('str', channel.state))
 
     const args = await service.doCollateralizeIfNecessary(channel.user)
     assert.isNull(args)
