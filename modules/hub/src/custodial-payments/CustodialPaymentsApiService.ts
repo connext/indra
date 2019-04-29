@@ -7,7 +7,9 @@ import Config from '../Config'
 import { ApiService } from '../api/ApiService'
 import { getUserFromRequest } from '../util/request'
 import { BigNumber } from 'ethers/utils'
-import { big } from '../Connext'
+import { big, types } from '../Connext'
+
+const { convertCustodialBalanceRow, convertCustodialWithdrawalRow } = types
 
 const LOG = log('CustodialPaymentsApiService')
 
@@ -50,25 +52,32 @@ class CustodialPaymentsApiServiceHandler {
   service: CustodialPaymentsService
 
   async doGetBalance(req: Request, res: Response) {
-    res.json(await this.dao.getCustodialBalance(getUserFromRequest(req)))
+    res.json(convertCustodialBalanceRow("str", 
+      await this.dao.getCustodialBalance(getUserFromRequest(req))
+    ))
   }
 
   async doCreateWithdraw(req: Request, res: Response) {
-    res.json(await this.service.createCustodialWithdrawal({
-      user: getAttr.address(req.session!, 'address'),
-      recipient: getAttr.address(req.body, 'recipient'),
-      amountToken: getAttr.big(req.body, 'amountToken'),
-    }))
+    res.json(convertCustodialWithdrawalRow("str",
+      await this.service.createCustodialWithdrawal({
+        user: getAttr.address(req.session!, 'address'),
+        recipient: getAttr.address(req.body, 'recipient'),
+        amountToken: getAttr.big(req.body, 'amountToken'),
+      })
+    ))
   }
 
   async doGetWithdrawals(req: Request, res: Response) {
-    res.json(await this.dao.getCustodialWithdrawals(getUserFromRequest(req)))
+    const rows = await this.dao.getCustodialWithdrawals(getUserFromRequest(req))
+    res.json(rows.map(r => convertCustodialWithdrawalRow("str", r)))
   }
 
   async doGetWithdrawal(req: Request, res: Response) {
-    res.json(await this.dao.getCustodialWithdrawal(
-      getAttr.address(req.session!, 'address'),
-      getAttr(req.params, 'withdrawalId'),
-    ))
+    res.json(convertCustodialWithdrawalRow("str", 
+      await this.dao.getCustodialWithdrawal(
+        getAttr.address(req.session!, 'address'),
+        getAttr(req.params, 'withdrawalId'),
+      ))
+    )
   }
 }
