@@ -1,6 +1,7 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
 import { big } from './Connext';
+import { toWeiString } from 'connext/dist/lib/bn';
 const {
   toWeiBig,
   Big
@@ -91,7 +92,7 @@ export default class Config {
   public shouldCollateralizeUrl: string | 'NO_CHECK' = 'NO_CHECK'
   public recipientAddress: string = ''
   public hotWalletAddress: string = ''
-  public hotWalletMinBalanceEth: string = '6.9'
+  public hotWalletMinBalance: string = toWeiString('6.9')
   public sessionSecret: string = ''
   public staleChannelDays?: number = process.env.STALE_CHANNEL_DAYS ? parseInt(process.env.STALE_CHANNEL_DAYS) : null // if null, will not dispute
   public registry?: Registry
