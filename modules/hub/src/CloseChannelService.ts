@@ -79,7 +79,7 @@ export class CloseChannelService {
         continue
       }
       // do not dispute if the value is below the min bei
-      if (channel.state.balanceTokenHub.lt(this.config.beiMinThreshold)) {
+      if (channel.state.balanceTokenHub.lt(this.config.beiMinCollateralization)) {
         continue
       }
 
