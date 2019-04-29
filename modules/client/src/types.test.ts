@@ -2,7 +2,6 @@ import * as t from './testing/index'
 import { BigNumber as BN } from 'ethers/utils'
 import { assert } from './testing/index'
 import { convertChannelState, convertThreadState, convertFields, insertDefault, objMapPromise, objMap } from './types'
-import { BigNumber } from 'bignumber.js/bignumber'
 
 describe('insertDefault', () => {
   it("should work", () => {
@@ -58,7 +57,6 @@ describe.skip('convertFields', () => {
   const types = ['str', 'bignumber', 'bn']
   const examples: any = {
     'str': '69',
-    'bignumber': new BigNumber('69'),
     'bn': new BN('69'),
   }
 
