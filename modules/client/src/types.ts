@@ -801,6 +801,47 @@ export type WithdrawalParametersBN = WithdrawalParameters<BN>
 // Accepts: { metadata: MetadataType, payments: PurchasePayment[], }
 // Returns: { purchaseId: string, updates: SyncResponse, }
 
+export type CustodialBalanceRow<T=string> = {
+  user: string
+  totalReceivedWei: T
+  totalReceivedToken: T
+  totalWithdrawnWei: T
+  totalWithdrawnToken: T
+  balanceWei: T
+  balanceToken: T
+  sentWei: T
+}
+export type CustodialBalanceRowBN = CustodialBalanceRow<BN>
+
+export type CreateCustodialWithdrawalOptions<T=string> = {
+  user: string
+  recipient: string
+  requestedToken: T
+  exchangeRate: string
+  sentWei: T
+  onchainTransactionId: number
+}
+export type CreateCustodialWithdrawalOptionsBN = CreateCustodialWithdrawalOptions<BN>
+
+export type CustodialWithdrawalRow<T=string> = {
+  id: number
+  createdOn: Date
+  user: string
+  recipient: string
+  requestedToken: T
+  exchangeRate: string
+  sentWei: T
+  state: string
+  txHash: string
+  onchainTransactionId: number
+}
+export type CustodialWithdrawalRowBN = CustodialWithdrawalRow<BN>
+
+export type CustodialPaymentsRow = {
+  paymentId: number,
+  updateId: number,
+}
+
 export type PurchasePaymentType = 'PT_CHANNEL' | 'PT_THREAD' | 'PT_CUSTODIAL' | 'PT_LINK'
 
 export interface PurchaseRequest<MetadataType=any, PaymentMetadataType=any> {
@@ -939,39 +980,35 @@ export function insertDefault(val: string, obj: any, keys: string[]) {
   return adjusted
 }
 
-// export function channelRowStringToBN(r: ChannelRow): ChannelRowBN {
-//   return {
-//     ...r,
-//     state: convertChannelState('bn', r.state),
-//   }
-// }
+export const custodialBalanceRowNumericFields = [
+  "totalReceivedWei",
+  "totalReceivedWei",
+  "totalReceivedToken",
+  "totalWithdrawnWei",
+  "totalWithdrawnToken",
+  "balanceWei",
+  "balanceToken",
+  "sentWei",
+]
 
-// export function channelRowBNToString(r: ChannelRowBN): ChannelRow {
-//   return {
-//     ...r,
-//     state: convertChannelState('str', r.state),
-//   }
-// }
+export function convertCustodialBalanceRow(to: "bn", obj: CustodialBalanceRow<any>): CustodialBalanceRowBN
+export function convertCustodialBalanceRow(to: "str", obj: CustodialBalanceRow<any>): CustodialBalanceRow
+export function convertCustodialBalanceRow(
+  to: "bn" | "str", // state objs always have sigs in rows
+  obj: CustodialBalanceRow<any>): CustodialBalanceRow | CustodialBalanceRowBN {
+  const fromType = getType(obj.balanceToken)
+  return convertFields(fromType, to, custodialBalanceRowNumericFields, obj)
+}
 
-// export function channelStateUpdateRowBNToString(
-//   update: ChannelStateUpdateRowBN,
-// ): ChannelStateUpdateRow {
-//   return {
-//     ...update,
-//     state: convertChannelState('str', update.state),
-//     args: convertArgs("str", update.reason, update.args as any),
-//   }
-// }
-
-// export function channelStateUpdateRowStringToBN(
-//   update: ChannelStateUpdateRow,
-// ): ChannelStateUpdateRowBN {
-//   return {
-//     ...update,
-//     state: convertChannelState('bn', update.state),
-//     args: convertArgs("bn", update.reason, update.args as any),
-//   }
-// }
+export const custodialWithdrawalRowNumericFields = [ "requestedToken", "sentWei"]
+export function convertCustodialWithdrawalRow(to: "bn", obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRowBN
+export function convertCustodialWithdrawalRow(to: "str", obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRow
+export function convertCustodialWithdrawalRow(
+  to: "bn" | "str", // state objs always have sigs in rows
+  obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRow | CustodialWithdrawalRowBN {
+  const fromType = getType(obj.sentWei)
+  return convertFields(fromType, to, custodialWithdrawalRowNumericFields, obj)
+}
 
 export function convertChannelRow(to: "bn", obj: ChannelRow<any>): ChannelRowBN
 export function convertChannelRow(to: "str", obj: ChannelRow<any>): ChannelRow

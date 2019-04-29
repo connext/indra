@@ -1,51 +1,17 @@
-import { BigNumber } from 'ethers/utils'
-import { big } from '../Connext'
+import { big, types } from '../Connext'
 import { default as DBEngine, SQL } from '../DBEngine'
 
-export interface CustodialBalanceRow {
-  user: string
-  totalReceivedWei: BigNumber
-  totalReceivedToken: BigNumber
-  totalWithdrawnWei: BigNumber
-  totalWithdrawnToken: BigNumber
-  balanceWei: BigNumber
-  balanceToken: BigNumber
-  sentWei: BigNumber
-}
-
-export interface CreateCustodialWithdrawalOptions {
-  user: string
-  recipient: string
-  requestedToken: BigNumber
-  exchangeRate: string
-  sentWei: BigNumber
-  onchainTransactionId: number
-}
-
-export interface CustodialWithdrawalRow {
-  id: number
-  createdOn: Date
-  user: string
-  recipient: string
-  requestedToken: BigNumber
-  exchangeRate: string
-  sentWei: BigNumber
-  state: string
-  txHash: string
-  onchainTransactionId: number
-}
-
-export interface CustodialPaymentsRow {
-  paymentId: number,
-  updateId: number,
-}
+type CustodialBalanceRowBN = types.CustodialBalanceRowBN
+type CustodialPaymentsRow = types.CustodialPaymentsRow
+type CreateCustodialWithdrawalOptionsBN = types.CreateCustodialWithdrawalOptionsBN
+type CustodialWithdrawalRowBN = types.CustodialWithdrawalRowBN
 
 export class CustodialPaymentsDao {
   constructor(
     private db: DBEngine,
   ) {}
 
-  async getCustodialBalance(user: string): Promise<CustodialBalanceRow> {
+  async getCustodialBalance(user: string): Promise<CustodialBalanceRowBN> {
     return this.inflateCustodialBalance(user, await this.db.queryOne(SQL`
       select *
       from custodial_balances
@@ -65,7 +31,7 @@ export class CustodialPaymentsDao {
     }
   }
 
-  async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptions): Promise<CustodialWithdrawalRow> {
+  async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptionsBN): Promise<CustodialWithdrawalRowBN> {
     const { id } = await this.db.queryOne(SQL`
       insert into _custodial_withdrawals (
         "user",
@@ -78,7 +44,7 @@ export class CustodialPaymentsDao {
         ${opts.user},
         ${opts.recipient},
         ${opts.requestedToken.toString()},
-        ${opts.exchangeRate.toString()},
+        ${opts.exchangeRate},
         ${opts.sentWei.toString()},
         ${opts.onchainTransactionId}
       )
@@ -91,7 +57,7 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  async getCustodialWithdrawals(user: string): Promise<CustodialWithdrawalRow[]> {
+  async getCustodialWithdrawals(user: string): Promise<CustodialWithdrawalRowBN[]> {
     return (await this.db.query(SQL`
       select *
       from custodial_withdrawals
@@ -100,7 +66,7 @@ export class CustodialPaymentsDao {
     `)).rows.map(row => this.inflateCustodialWithdrawalRow(row))
   }
 
-  async getCustodialWithdrawal(user: string, id: number): Promise<CustodialWithdrawalRow> {
+  async getCustodialWithdrawal(user: string, id: number): Promise<CustodialWithdrawalRowBN> {
     return this.inflateCustodialWithdrawalRow(await this.db.queryOne(SQL`
       select *
       from custodial_withdrawals
@@ -110,7 +76,7 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  private inflateCustodialBalance(user: string, row: any): CustodialBalanceRow {
+  private inflateCustodialBalance(user: string, row: any): CustodialBalanceRowBN {
     row = row || { user }
     return {
       user: row.user,
@@ -124,8 +90,7 @@ export class CustodialPaymentsDao {
     }
   }
 
-  private inflateCustodialWithdrawalRow(row: any): CustodialWithdrawalRow {
-    console.log('************** row', row)
+  private inflateCustodialWithdrawalRow(row: any): CustodialWithdrawalRowBN {
     return row && {
       id: row.id,
       createdOn: row.created_on,
