@@ -159,7 +159,7 @@ export class MockGasEstimateDao {
   }
 }
 
-export const mockRate = Big(123.45)
+export const mockRate = '123.45'
 export class MockExchangeRateDao {
   async latest() {
     return {
