@@ -18,7 +18,7 @@ import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { BigNumber as BN } from 'ethers/utils'
 import { assetToWei } from 'connext/dist/lib/bn';
-import { ethers } from 'connext/node_modules/ethers';
+import * as ethers from 'ethers';
 
 type ChannelRow = types.ChannelRow
 type ChannelStateBN = types.ChannelStateBN

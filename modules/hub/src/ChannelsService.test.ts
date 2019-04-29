@@ -37,7 +37,7 @@ import DBEngine, { SQL } from './DBEngine';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { OnchainTransactionService } from './OnchainTransactionService';
 import { assetToWei, weiToAsset } from 'connext/dist/lib/bn';
-import { ethers } from 'connext/node_modules/ethers';
+import * as ethers from 'ethers';
 
 type ChannelState = types.ChannelState
 type ChannelUpdateReason = types.ChannelUpdateReason
