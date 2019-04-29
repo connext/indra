@@ -414,14 +414,12 @@ export default class ChannelsService {
 
     // if user is leaving some wei in the channel, leave an equivalent amount of booty
     const newBalanceWeiUser = channel.state.balanceWeiUser.sub(params.withdrawalWeiUser)
-    const [bootyFromExchange, remainder] = assetToWei(newBalanceWeiUser, currentExchangeRateStr)
+    const bootyFromExchange = weiToAsset(newBalanceWeiUser, currentExchangeRateStr)
 
     const hubTokenTargetForExchange = minBN(
       bootyFromExchange,
       this.config.channelBeiLimit,
     )
-
-    console.log('******** hubTokenTargetForExchange:', hubTokenTargetForExchange.toString())
 
     // If the user has recent payments in the channel, make sure they are
     // collateralized up to their maximum amount.
@@ -429,8 +427,6 @@ export default class ChannelsService {
     const hubTokenTargetForCollat = collatTargets.hasRecentPayments 
       ? collatTargets.maxAmount 
       : Big(0)
-
-    console.log('******** hubTokenTargetForCollat:', hubTokenTargetForCollat.toString())
 
     // calculate final collateralization targer
     const hubTokenTarget = maxBN(
@@ -464,8 +460,6 @@ export default class ChannelsService {
 
       timeout: Math.floor(Date.now() / 1000) + (5 * 60),
     }
-
-    console.log('******** withdrawalArgs:', prettySafeJson(withdrawalArgs))
 
     const state = await this.generator.proposePendingWithdrawal(
       convertChannelState('bn', channel.state),
@@ -522,9 +516,6 @@ export default class ChannelsService {
   ): Promise<ExchangeArgs | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
-    console.log('********* weiToSell', weiToSell.toString())
-    console.log('********* tokensToSell', tokensToSell.toString())
-
     // channel checks
     if (!channel || channel.status !== 'CS_OPEN') {
       LOG.error(`channel: ${channel}`)
@@ -558,23 +549,6 @@ export default class ChannelsService {
     // exchanges where user sells tokens for wei are capped by:
     // - hubs balance
     // - ??? (no channel limit on hub wei)
-
-    console.log('*********** adjusted wei', this.adjustExchangeAmount(
-      weiToSell,
-      exchangeRate,
-      channel.state.balanceTokenHub,
-      false,
-      maxBN(
-        Big(0),
-        this.config.channelBeiLimit.sub(channel.state.balanceTokenUser)
-      )
-    ),)
-    console.log('*********** adjusted tokens', this.adjustExchangeAmount(
-      tokensToSell,
-      exchangeRate,
-      channel.state.balanceWeiHub,
-      true,
-    ),)
 
     const exchangeArgs: ExchangeArgs = {
       seller: 'user',
