@@ -9,6 +9,7 @@ import WithdrawalsDao from './dao/WithdrawalsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import Config from './Config'
 import { big } from './Connext'
+import { toWeiBig, toWeiString } from 'connext/dist/lib/bn';
 
 const { Big } = big
 
@@ -34,7 +35,7 @@ describe.skip('WithdrawalsService', () => {
 
     config = {
       hotWalletAddress: '0xeee',
-      hotWalletMinBalanceEth: '0.69',
+      hotWalletMinBalance: toWeiString('0.69'),
     } as Config
 
     web3 = {
@@ -50,7 +51,7 @@ describe.skip('WithdrawalsService', () => {
           if (!bal)
             throw new Error(`No mock balance defined for address: ${addr}`)
 
-          cb(null, (Big(bal)).mul('1e18'))
+          cb(null, toWeiBig(Big(bal)))
         },
       },
     }
