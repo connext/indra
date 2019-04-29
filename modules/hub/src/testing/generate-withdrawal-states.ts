@@ -3,7 +3,7 @@ const vm = require('vm')
 import { PartialSignedOrSuccinctChannel, getChannelState, mkAddress, mkSig } from './stateUtils'
 
 type WithdrawalArgs = Connext.types.WithdrawalArgs
-const { convertChannelState, convertWithdrawal } = Connext.types
+const { convertChannelState, convertWithdrawal, convertFields } = Connext.types
 
 /**
  * Generates a list of all the possible types of withdrawal that can be
@@ -383,7 +383,7 @@ If no custom overrides are provided, the default withdrawal states, args, and re
 
 export function createWithdrawalParams(
     wdOverrides: any,
-    type: "bn" | "bignumber" | "str",
+    type: "bn" | "str",
     customOverrides?: Overrides[]
 ) {
     if (!customOverrides) {
@@ -404,7 +404,13 @@ export function createWithdrawalParams(
         txCount: [prev.txCountGlobal + 1, prev.txCountChain + 1],
     })
 
-    const request = { ...wdOverrides.request, ...reqOverrides }
+    const request = convertFields(
+      // should be string or number
+      (typeof wdOverrides.request.token).toString() as any, 
+      type, 
+      ["token", "wei"], 
+      { ...wdOverrides.request, ...reqOverrides }
+    )
 
     const args = createWithdrawalArgs(type, { ...wdOverrides.args, ...argsOverrides })
     return { prev, curr, request, args }
