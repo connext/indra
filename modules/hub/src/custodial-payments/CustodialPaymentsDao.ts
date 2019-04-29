@@ -35,6 +35,11 @@ export interface CustodialWithdrawalRow {
   onchainTransactionId: number
 }
 
+export interface CustodialPaymentsRow {
+  paymentId: number,
+  updateId: number,
+}
+
 export class CustodialPaymentsDao {
   constructor(
     private db: DBEngine,
@@ -48,12 +53,16 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  async createCustodialPayment(paymentId: number, updateId: number): Promise<CustodialWithdrawalRow> {
-    return this.inflateCustodialWithdrawalRow(await this.db.queryOne(SQL`
+  async createCustodialPayment(paymentId: number, updateId: number): Promise<CustodialPaymentsRow> {
+    const row = await this.db.queryOne(SQL`
       insert into payments_channel_custodial (payment_id, update_id)
       values (${paymentId}, ${updateId})
       returning *
-    `))
+    `)
+    return {
+      paymentId: row.payment_id,
+      updateId: row.update_id,
+    }
   }
 
   async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptions): Promise<CustodialWithdrawalRow> {
@@ -116,6 +125,7 @@ export class CustodialPaymentsDao {
   }
 
   private inflateCustodialWithdrawalRow(row: any): CustodialWithdrawalRow {
+    console.log('************** row', row)
     return row && {
       id: row.id,
       createdOn: row.created_on,
