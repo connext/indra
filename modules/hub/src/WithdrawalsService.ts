@@ -74,19 +74,19 @@ export default class WithdrawalsService {
       LOG.error('Attempt by "{address}" to withdraw "{amountEth}", but hot wallet only has "{walletAmountEth}"!', {
         address,
         amountEth: ethers.utils.formatEther(wd.amountWei),
-        walletAmountEth: currentBalanceWei.div('1e18').toString(),
+        walletAmountEth: ethers.utils.formatEther(currentBalanceWei),
       })
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
     }
 
-    const newBalanceEth = currentBalanceWei.sub(wd.amountWei)
-    if (newBalanceEth.lt(toWeiBig(this.config.hotWalletMinBalanceEth))) {
+    const newBalanceWei = currentBalanceWei.sub(wd.amountWei)
+    if (newBalanceWei.lt(this.config.hotWalletMinBalance)) {
       LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
         address,
-        wdAmountEth: ethers.utils.formatEther(wd.amountWei),
-        newBalanceEth: newBalanceEth.toString(),
-        hotWalletMinBalanceEth: this.config.hotWalletMinBalanceEth,
+        wdAmountEth: ethers.utils.formatEther(wd.amountWei),  
+        newBalanceEth: ethers.utils.formatEther(newBalanceWei),
+        hotWalletMinBalanceEth: ethers.utils.formatEther(this.config.hotWalletMinBalance),
       })
     }
 
@@ -158,20 +158,20 @@ export default class WithdrawalsService {
     if (currentBalanceWei.lt(amount)) {
       LOG.error('Attempt by "{address}" to withdraw "{amountEth}", but hot wallet only has "{walletAmountEth}"!', {
         address: initiator,
-        amountEth: (new BN(amount)).div('1e18').toString(),
-        walletAmountEth: currentBalanceWei.div('1e18').toString(),
+        amountEth: ethers.utils.formatEther(Big(amount)),
+        walletAmountEth: ethers.utils.formatEther(currentBalanceWei),
       })
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
     }
 
-    const newBalanceEth = currentBalanceWei.sub(amount).div('1e18')
-    if (newBalanceEth.lt(this.config.hotWalletMinBalanceEth)) {
+    const newBalanceWei = currentBalanceWei.sub(amount)
+    if (newBalanceWei.lt(Big(this.config.hotWalletMinBalance))) {
       LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
         address: initiator,
-        wdAmountEth: (new BN(amount)).div('1e18').toString(),
-        newBalanceEth: newBalanceEth.toString(),
-        hotWalletMinBalanceEth: this.config.hotWalletMinBalanceEth,
+        wdAmountEth: ethers.utils.formatEther(Big(amount)),
+        newBalanceEth: ethers.utils.formatEther(newBalanceWei),
+        hotWalletMinBalanceEth: ethers.utils.formatEther(this.config.hotWalletMinBalance),
       })
     }
 
