@@ -9,7 +9,9 @@ export function eventArgToAddress(arg: string): string {
 }
 
 export function eventArgToBigNum(arg: string): BigNumber {
-  // can handle hexstrings
+  // add 0x prefix if it does not have it
+  if (!arg.startsWith('0x'))
+    arg = `0x${arg}`
   return new BigNumber(arg)
 }
 
