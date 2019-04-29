@@ -37,7 +37,6 @@ export const CurrencyType = {
 export type CurrencyType = keyof typeof CurrencyType
 
 export type ExchangeRates = {
-  // [key in CurrencyType]?: string | BigNumber
   [key in CurrencyType]?: string
 }
 
@@ -68,7 +67,6 @@ export type HubConfig<T=string> = ContractOptions & {
   beiMaxCollateralization: T
 }
 export type HubConfigBN = HubConfig<BN>
-// export type HubConfigBigNumber = HubConfig<BigNumber>
 
 /*********************************
  ****** HELPER FUNCTIONS *********
@@ -76,13 +74,10 @@ export type HubConfigBN = HubConfig<BN>
 
 // alias functions
 export const isBN = BN.isBigNumber
-// export const isBigNum = BigNumber.isBigNumber
-// export const isBigNumber = BigNumber.isBigNumber
 
 export type NumericTypes = {
   'str': string
   'bn': BN
-  // 'bignumber': BigNumber
   'number': number
 }
 
@@ -91,8 +86,6 @@ export type NumericTypeName = keyof NumericTypes
 function getType(input: any): NumericTypeName {
   if (typeof input == 'string')
     return 'str'
-  // if (isBigNum(input))
-  //   return 'bignumber'
   if (isBN(input))
     return 'bn'
   if (typeof input == 'number')
@@ -102,16 +95,11 @@ function getType(input: any): NumericTypeName {
 
 const castFunctions: any = {
   'str-bn': (x: string) => new BN(x),
-  // 'str-bignumber': (x: string) => new BigNumber(x),
   'bn-str': (x: BN) => x.toString(),
-  // 'bn-bignumber': (x: BN) => new BigNumber(x.toString()),
-  // 'bignumber-str': (x: BigNumber) => x.toFixed(),
-  // 'bignumber-bn': (x: BigNumber) => new BN(x.toFixed()),
 
   // Used for testing
   'number-str': (x: number) => '' + x,
   'number-bn': (x: number) => new BN(x),
-  // 'number-bignumber': (x: number) => new BigNumber(x),
 }
 
 export function convertFields(fromType: NumericTypeName, toType: NumericTypeName, fields: string[], input: any) {
@@ -175,7 +163,6 @@ export type UnsignedChannelState<T = string> = {
 }
 
 export type UnsignedChannelStateBN = UnsignedChannelState<BN>
-// export type UnsignedChannelStateBigNumber = UnsignedChannelState<BigNumber>
 
 // signed channel state
 // this is what must be submitted to any recover functions
@@ -188,7 +175,6 @@ export type ChannelState<T = string> = UnsignedChannelState<T> &
   )
 
 export type ChannelStateBN = ChannelState<BN>
-// export type ChannelStateBigNumber = ChannelState<BigNumber>
 
 export const addSigToChannelState = (
   channel: ChannelState | UnsignedChannelState,
@@ -244,7 +230,6 @@ export type ExchangeArgs<T=string> = {
   weiToSell: T
 }
 export type ExchangeArgsBN = ExchangeArgs<BN>
-// export type ExchangeArgsBigNumber = ExchangeArgs<BigNumber>
 
 export type PaymentArgs<T=string> = {
   // TODO: this is currently being used for both channel and thread payments,
@@ -254,7 +239,6 @@ export type PaymentArgs<T=string> = {
   amountWei: T
 }
 export type PaymentArgsBN = PaymentArgs<BN>
-// export type PaymentArgsBigNumber = PaymentArgs<BigNumber>
 
 export type DepositArgs<T=string> = {
   depositWeiHub: T,
@@ -269,13 +253,11 @@ export type DepositArgs<T=string> = {
 
 }
 export type DepositArgsBN = DepositArgs<BN>
-// export type DepositArgsBigNumber = DepositArgs<BigNumber>
 
 export type SignedDepositRequestProposal<T=string> = Payment<T> & {
   sigUser: string
 }
 export type SignedDepositRequestProposalBN = SignedDepositRequestProposal<BN>
-// export type SignedDepositRequestProposalBigNumber = SignedDepositRequestProposal<BigNumber>
 
 export type PendingArgs<T=string> = {
   depositWeiUser: T
@@ -292,11 +274,9 @@ export type PendingArgs<T=string> = {
   timeout: number
 }
 export type PendingArgsBN = PendingArgs<BN>
-// export type PendingArgsBigNumber = PendingArgs<BigNumber>
 
 export type PendingExchangeArgs<T=string> = ExchangeArgs<T> & PendingArgs<T>
 export type PendingExchangeArgsBN = PendingExchangeArgs<BN>
-// export type PendingExchangeArgsBigNumber = PendingExchangeArgs<BigNumber>
 
 export type WithdrawalArgs<T=string> = {
   seller: 'user' | 'hub' // who is initiating exchange
@@ -358,7 +338,6 @@ export type WithdrawalArgs<T=string> = {
   timeout: number
 }
 export type WithdrawalArgsBN = WithdrawalArgs<BN>
-// export type WithdrawalArgsBigNumber = WithdrawalArgs<BigNumber>
 
 export type ConfirmPendingArgs = {
   transactionHash: Address
@@ -428,7 +407,6 @@ export type ArgsTypes<T=string> =
   | {}
 
 export type ArgTypesBN = ArgsTypes<BN>
-// export type ArgTypesBigNumber = ArgsTypes<BigNumber>
 
 export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   // For unsigned updates, the id will be a negative timestamp of when the
@@ -471,7 +449,6 @@ export type UpdateArgTypes<T=string> = {
 }
 
 export type UpdateRequestBN = UpdateRequest<BN>
-// export type UpdateRequestBigNumber = UpdateRequest<BigNumber>
 
 // types used when getting or sending states to hub
 export type ChannelStateUpdate<T = string> = {
@@ -483,7 +460,6 @@ export type ChannelStateUpdate<T = string> = {
   metadata?: Object
 }
 export type ChannelStateUpdateBN = ChannelStateUpdate<BN>
-// export type ChannelStateUpdateBigNumber = ChannelStateUpdate<BigNumber>
 
 // includes metadata
 export type ChannelStateUpdateRow<T = string> = ChannelStateUpdate<T> & {
@@ -495,7 +471,6 @@ export type ChannelStateUpdateRow<T = string> = ChannelStateUpdate<T> & {
   onchainTxLogicalId?: number
 }
 export type ChannelStateUpdateRowBN = ChannelStateUpdateRow<BN>
-// export type ChannelStateUpdateRowBigNumber = ChannelStateUpdateRow<BigNumber>
 
 // this is the typical form of responses from POST
 // hub endpoints and the sync endpoint
@@ -503,7 +478,6 @@ export type SyncResult<T = string> =
   | { type: "thread", update: ThreadStateUpdate<T> }
   | { type: "channel", update: UpdateRequest<T> }
 export type SyncResultBN = SyncResult<BN>
-// export type SyncResultBigNumber = SyncResult<BigNumber>
 
 // this is the typical form of responses from POST
 // hub endpoints and the sync endpoint
@@ -521,7 +495,6 @@ export type ChannelRow<T = string> = {
   state: ChannelState<T>
 }
 export type ChannelRowBN = ChannelRow<BN>
-// export type ChannelRowBigNumber = ChannelRow<BigNumber>
 
 /*********************************
  ********* THREAD TYPES **********
@@ -536,7 +509,6 @@ export type ThreadRow<T = string> = {
   // ... dispute things, open events, etc ...
 }
 export type ThreadRowBN = ThreadRow<BN>
-// export type ThreadRowBigNumber = ThreadRow<BigNumber>
 
 // A row from the cm_thread_updates table, including the row's state, and
 // metadata such as the date it was created.
@@ -560,7 +532,6 @@ export type UnsignedThreadState<T = string> = {
   txCount: number
 }
 export type UnsignedThreadStateBN = UnsignedThreadState<BN>
-// export type UnsignedThreadStateBigNumber = UnsignedThreadState<BigNumber>
 
 // A single thread state, encompasing exactly the fields which are signed, and
 // the two signatures. This is submitted to thread recover fns
@@ -569,7 +540,6 @@ export type ThreadState<T = string> = UnsignedThreadState<T> &
     sigA: string
   })
 export type ThreadStateBN = ThreadState<BN>
-// export type ThreadStateBigNumber = ThreadState<BigNumber>
 
 // thread status
 export const ThreadStatus = {
@@ -590,7 +560,6 @@ export type ThreadStateUpdate<T = string> = {
 }
 
 export type ThreadStateUpdateBN = ThreadStateUpdate<BN>
-// export type ThreadStateUpdateBigNumber = ThreadStateUpdate<BigNumber>
 
 export const addSigToThreadState = (
   thread: UnsignedThreadState,
@@ -645,11 +614,9 @@ type BaseChannelEvent<T = string> = {
 
 export type DidStartExitChannelEvent = BaseChannelEvent<string>
 export type DidStartExitChannelEventBN = BaseChannelEvent<BN>
-// export type DidStartExitChannelBigNumber = BaseChannelEvent<BigNumber>
 
 export type DidEmptyChannelEvent = BaseChannelEvent<string>
 export type DidEmptyChannelEventBN = BaseChannelEvent<BN>
-// export type DidEmptyChannelEventBigNumber = BaseChannelEvent<BigNumber>
 
 // DidUpdateChannel
 export type DidUpdateChannelEvent<T = string> = BaseChannelEvent & {
@@ -657,7 +624,6 @@ export type DidUpdateChannelEvent<T = string> = BaseChannelEvent & {
   pendingTokenUpdates: [T, T, T, T], // [hubDeposit, hubWithdrawal, userDeposit, userWithdrawal]
 }
 export type DidUpdateChannelEventBN = DidUpdateChannelEvent<BN>
-// export type DidUpdateChannelEventBigNumber = DidUpdateChannelEvent<BigNumber>
 
 const BaseChannelEventInputs = [
   { type: 'address', name: 'user', indexed: true },
@@ -694,7 +660,6 @@ export type VerboseChannelEvent<T = string> = UnsignedChannelState<T> & {
   sender: Address,
 }
 export type VerboseChannelEventBN = VerboseChannelEvent<BN>
-// export type VerboseChannelEventBigNumber = VerboseChannelEvent<BigNumber>
 
 export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contractAddress: Address): VerboseChannelEvent {
   let ans = {} as any
@@ -770,7 +735,6 @@ export type Payment<T = string> = {
   amountToken: T
 }
 export type PaymentBN = Payment<BN>
-// export type PaymentBigNumber = Payment<BigNumber>
 
 export type WithdrawalParameters<T = string> = {
   recipient: Address
@@ -791,7 +755,6 @@ export type WithdrawalParameters<T = string> = {
   withdrawalTokenUser?: T
 }
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
-// export type WithdrawalParametersBigNumber = WithdrawalParameters<BigNumber>
 
 /*********************************
  ****** PAYMENT & PURCHASE *******
@@ -934,23 +897,10 @@ export type PurchasePaymentHubResponse<T= string> = ({
 })
 
 export type PurchasePaymentHubResponseBN = PurchasePaymentHubResponse<BN>
-// export type PurchasePaymentHubResponseBigNumber = PurchasePaymentHubResponse<BigNumber>
 
 /*********************************
  ******* TYPE CONVERSIONS ********
  *********************************/
-
-// export function objValuesBigNumToString(x: any): any {
-//   const res = {}
-//   Object.entries(x).forEach(([key, val]) => {
-//     if (!val) {
-//       (res as any)[key] = val
-//     } else {
-//       (res as any)[key] = isBigNumber(val) ? (val as BigNumber).toFixed() : val
-//     }
-//   })
-//   return res
-// }
 
 export function objMap<T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): { [key in keyof T]: R } {
   const res: any = {}
@@ -1067,13 +1017,10 @@ export const channelNumericFields = [
 ]
 
 export function convertChannelState(to: "bn", obj: ChannelState<any>): ChannelStateBN
-// export function convertChannelState(to: "bignumber", obj: ChannelState<any>): ChannelStateBigNumber
 export function convertChannelState(to: "str", obj: ChannelState<any>): ChannelState
 export function convertChannelState(to: "bn-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBN
-// export function convertChannelState(to: "bignumber-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBigNumber
 export function convertChannelState(to: "str-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelState
 export function convertChannelState(
-  // to: "bn" | "bignumber" | "str" | "bn-unsigned" | "bignumber-unsigned" | "str-unsigned",
   to: "bn" | "str" | "bn-unsigned" | "str-unsigned",
   obj: ChannelState<any> | UnsignedChannelState<any>,
 ) {
@@ -1094,13 +1041,10 @@ export function unsignedChannel<T>(obj: ChannelState<T> | UnsignedChannelState<T
 }
 
 export function convertThreadState(to: "bn", obj: ThreadState<any>): ThreadStateBN
-// export function convertThreadState(to: "bignumber", obj: ThreadState<any>): ThreadStateBigNumber
 export function convertThreadState(to: "str", obj: ThreadState<any>): ThreadState
 export function convertThreadState(to: "bn-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBN
-// export function convertThreadState(to: "bignumber-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBigNumber
 export function convertThreadState(to: "str-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadState
 export function convertThreadState(
-  // to: "bn" | "str" | "bn-unsigned" | "str-unsigned" | "bignumber" | "bignumber-unsigned",
   to: "bn" | "str" | "bn-unsigned" | "str-unsigned",
   obj: ThreadState<any> | UnsignedThreadState<any>,
 ) {
