@@ -36,6 +36,8 @@ import ThreadsService from './ThreadsService';
 import DBEngine, { SQL } from './DBEngine';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { OnchainTransactionService } from './OnchainTransactionService';
+import { assetToWei, weiToAsset } from 'connext/dist/lib/bn';
+import { ethers } from 'connext/node_modules/ethers';
 
 type ChannelState = types.ChannelState
 type ChannelUpdateReason = types.ChannelUpdateReason
@@ -113,7 +115,7 @@ describe('ChannelsService', () => {
       0,
     )
     const [updateRequest] = updates
-    const pendingDepositTokenHub = weiDeposit.mul(mockRate)
+    const pendingDepositTokenHub = weiToAsset(weiDeposit, mockRate)
 
     assert.equal(
       (updateRequest.update as UpdateRequest).reason,
@@ -238,8 +240,7 @@ describe('ChannelsService', () => {
       (latestState.update as UpdateRequest).reason,
       'ProposePendingDeposit' as ChannelUpdateReason,
     )
-    const pendingDepositTokenHub = weiDeposit
-      .mul(mockRate)
+    const pendingDepositTokenHub = weiToAsset(weiDeposit, mockRate)
       .sub(toWeiBig(1))
 
     const generatedState = stateGenerator.proposePendingDeposit(
@@ -288,7 +289,9 @@ describe('ChannelsService', () => {
    *  '0.999...999'
    */
   function tweakBalance(ethAmt: number, weiAmt: number, mul = false): string {
-    const res = Big(ethAmt).add(Big(weiAmt).div(WEI_CONVERSION))
+    const res = ethers.utils.formatEther(
+      toWeiBig(ethAmt).add(Big(weiAmt))
+    )
     return (mul ? toWeiBig(res) : res).toString()
   }
 
@@ -337,7 +340,7 @@ describe('ChannelsService', () => {
       },
 
       expected: {
-        balanceWeiUser: toWeiBig(Big(10).div(Big(123.45))).toString(),
+        balanceWeiUser: assetToWei(toWeiBig(10), '123.45')[0].toString(),
         balanceTokenUser: tweakBalance(10, 28),
       },
     },
@@ -635,8 +638,8 @@ describe('ChannelsService', () => {
       } as UpdateRequest,
     ])
 
-    const expectedExchangeAmountWei = toWeiBig(10)
-      .div(mockRate)
+    const expectedExchangeAmountWei = assetToWei(toWeiBig(10), mockRate)[0]
+    console.log('expectedExchangeAmountWei:', expectedExchangeAmountWei.toString())
 
     let {updates: syncUpdates} = await service.getChannelAndThreadUpdatesForSync(
       channel.user,
@@ -677,6 +680,7 @@ describe('ChannelsService', () => {
       balanceWeiUser: toWeiString(0),
       ...initial,
     })
+    
     const resPromise = service.doRequestWithdrawal(
       channel.user,
       {
@@ -911,17 +915,14 @@ describe('ChannelsService', () => {
 
   describe('Withdrawal generated cases', () => {
     function makeBigNumsBigger(x: any) {
-      for (let key in x) if (isBN(x[key])) x[key] = x[key].mul('1e18')
+      for (let key in x) if (isBN(x[key])) x[key] = toWeiBig(x[key])
       return x
     }
     extractWithdrawalOverrides().forEach(wd => {
       it(`${wd.name}: ${wd.desc.replace(/^\s*/, '').replace(/\s*$/, '').replace(/\n/g, ', ')}`, async () => {
-        let { prev, args, request } = createWithdrawalParams(wd, 'bignumber')
+        let { prev, args, request } = createWithdrawalParams(wd, 'bn')
         prev = makeBigNumsBigger(prev)
-        request = {
-          wei: toWeiBig(request.wei),
-          token: toWeiBig(request.token),
-        }
+        request = makeBigNumsBigger(request)
 
         const channel = await channelUpdateFactory(
           registry,

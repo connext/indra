@@ -19,6 +19,7 @@ import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { BigNumber as BN } from 'ethers/utils'
 import { calculateExchange } from 'connext/dist/StateGenerator';
 import { assetToWei } from 'connext/dist/lib/bn';
+import { ethers } from 'connext/node_modules/ethers';
 
 type ChannelRow = types.ChannelRow
 type ChannelStateBN = types.ChannelStateBN
@@ -27,7 +28,6 @@ type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN
 type DepositArgs<T=string> = types.DepositArgs<T>
 type ExchangeArgs = types.ExchangeArgs
 type InvalidationArgs = types.InvalidationArgs
-type Payment<T=string> = types.Payment<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type Sync = types.Sync
 type SyncResult = types.SyncResult
@@ -136,12 +136,9 @@ export default class ChannelsService {
     const currentExchangeRateStr = currentExchangeRate.rates['USD']
 
     // equivalent token amount to deposit based on booty amount
-    const bootyRequestToDeposit = calculateExchange({
-      weiToSell: depositWei,
-      exchangeRate: currentExchangeRateStr,
-      seller: "user",
-      tokensToSell: Big(0)
-    }).tokensReceived
+    const bootyRequestToDeposit = weiToAsset(depositWei,
+     currentExchangeRateStr
+    )
 
     const userBootyCurrentlyInChannel = await this.channelsDao.getTotalChannelTokensPlusThreadBonds(
       user,
@@ -209,7 +206,7 @@ export default class ChannelsService {
         baseTarget
       ),
 
-      maxAmount: maxBN(
+      maxAmount: minBN(
         this.config.beiMaxCollateralization,
 
         maxBN(
@@ -348,7 +345,7 @@ export default class ChannelsService {
       ).sub(channel.state.balanceTokenHub)
     }
 
-    LOG.info(`Recollateralizing ${user} with ${amountToCollateralize.div('1e18').toString()} BOOTY`)
+    LOG.info(`Recollateralizing ${user} with ${ethers.utils.formatEther(amountToCollateralize)} BOOTY`)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
@@ -424,12 +421,16 @@ export default class ChannelsService {
       this.config.channelBeiLimit,
     )
 
+    console.log('******** hubTokenTargetForExchange:', hubTokenTargetForExchange.toString())
+
     // If the user has recent payments in the channel, make sure they are
     // collateralized up to their maximum amount.
     const collatTargets = await this.calculateCollateralizationTargets(channel.state)
     const hubTokenTargetForCollat = collatTargets.hasRecentPayments 
       ? collatTargets.maxAmount 
       : Big(0)
+
+    console.log('******** hubTokenTargetForCollat:', hubTokenTargetForCollat.toString())
 
     // calculate final collateralization targer
     const hubTokenTarget = maxBN(
@@ -464,11 +465,13 @@ export default class ChannelsService {
       timeout: Math.floor(Date.now() / 1000) + (5 * 60),
     }
 
+    console.log('******** withdrawalArgs:', prettySafeJson(withdrawalArgs))
+
     const state = await this.generator.proposePendingWithdrawal(
       convertChannelState('bn', channel.state),
       convertWithdrawal('bn', withdrawalArgs),
     )
-    const minWithdrawalAmount = Big('1e13')
+    const minWithdrawalAmount = Big(1e13)
     const sufficientPendingArgs = (
       Object.entries(state).filter(([key, val]: [string, string]) => {
         if (!key.startsWith('pending'))
@@ -498,15 +501,18 @@ export default class ChannelsService {
     reqAmount: BN,
     exchangeRate: string,
     hubBalance: BN,
+    isToken: boolean = false,
     otherLimit?: BN,
   ) {
     let limit = hubBalance
     if (otherLimit)
       limit = minBN(limit, otherLimit)
 
-    const exchangeLimit = weiToAsset(limit, exchangeRate)
+    const exchangeLimit = isToken 
+      ? assetToWei(limit, exchangeRate)[0]
+      : weiToAsset(limit, exchangeRate)
 
-    return minBN(reqAmount, exchangeLimit).toString()
+    return maxBN(reqAmount, exchangeLimit).toString()
   }
 
   public async doRequestExchange(
@@ -515,6 +521,9 @@ export default class ChannelsService {
     tokensToSell: BN,
   ): Promise<ExchangeArgs | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
+
+    console.log('********* weiToSell', weiToSell.toString())
+    console.log('********* tokensToSell', tokensToSell.toString())
 
     // channel checks
     if (!channel || channel.status !== 'CS_OPEN') {
@@ -548,7 +557,25 @@ export default class ChannelsService {
     // - channel limit (config)
     // exchanges where user sells tokens for wei are capped by:
     // - hubs balance
-    // - ??? (no channel limit on hub wei) 
+    // - ??? (no channel limit on hub wei)
+
+    console.log('*********** adjusted wei', this.adjustExchangeAmount(
+      weiToSell,
+      exchangeRate,
+      channel.state.balanceTokenHub,
+      false,
+      maxBN(
+        Big(0),
+        this.config.channelBeiLimit.sub(channel.state.balanceTokenUser)
+      )
+    ),)
+    console.log('*********** adjusted tokens', this.adjustExchangeAmount(
+      tokensToSell,
+      exchangeRate,
+      channel.state.balanceWeiHub,
+      true,
+    ),)
+
     const exchangeArgs: ExchangeArgs = {
       seller: 'user',
       exchangeRate,
@@ -556,6 +583,7 @@ export default class ChannelsService {
         weiToSell,
         exchangeRate,
         channel.state.balanceTokenHub,
+        false,
         maxBN(
           Big(0),
           this.config.channelBeiLimit.sub(channel.state.balanceTokenUser)
@@ -563,8 +591,9 @@ export default class ChannelsService {
       ),
       tokensToSell: this.adjustExchangeAmount(
         tokensToSell,
-        (1 / +exchangeRate).toString(),
+        exchangeRate,
         channel.state.balanceWeiHub,
+        true,
       ),
     }
 
