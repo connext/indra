@@ -1,15 +1,13 @@
-import { convertChannelState, EmptyChannelArgs } from './vendor/connext/types'
+import { types, Utils, Validator } from './Connext';
+
 import ChainsawDao, { PollType } from './dao/ChainsawDao'
 import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
 import Config from './Config'
 import { ChannelManager } from './ChannelManager'
 import ChannelsDao from './dao/ChannelsDao'
-import { ChannelState, ConfirmPendingArgs } from './vendor/connext/types'
-import { Utils } from './vendor/connext/Utils'
 import { sleep, prettySafeJson, safeJson } from './util'
 import { default as DBEngine } from './DBEngine'
-import { Validator } from './vendor/connext/validator';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { SignerService } from './SignerService';
 import { RedisClient } from './RedisClient';
@@ -17,8 +15,12 @@ import { OnchainTransactionService } from './OnchainTransactionService';
 import { EventLog } from 'web3-core';
 import Web3 from 'web3';
 
-const LOG = log('ChainsawService')
+type ChannelState<T=string> = types.ChannelState<T>
+type ConfirmPendingArgs = types.ConfirmPendingArgs
+type EmptyChannelArgs = types.EmptyChannelArgs
 
+const { convertChannelState } = types
+const LOG = log('ChainsawService')
 const CONFIRMATION_COUNT = 3
 const POLL_INTERVAL = 1000
 
@@ -294,24 +296,24 @@ export default class ChainsawService {
       data = this.contract.methods.emptyChannelWithChallenge(
         [latestUpdate.state.user, latestUpdate.state.recipient],
         [
-          latestUpdate.state.balanceWeiHub.toFixed(),
-          latestUpdate.state.balanceWeiUser.toFixed()
+          latestUpdate.state.balanceWeiHub.toString(),
+          latestUpdate.state.balanceWeiUser.toString()
         ],
         [
-          latestUpdate.state.balanceTokenHub.toFixed(),
-          latestUpdate.state.balanceTokenUser.toFixed()
+          latestUpdate.state.balanceTokenHub.toString(),
+          latestUpdate.state.balanceTokenUser.toString()
         ],
         [
-          latestUpdate.state.pendingDepositWeiHub.toFixed(),
-          latestUpdate.state.pendingWithdrawalWeiHub.toFixed(),
-          latestUpdate.state.pendingDepositWeiUser.toFixed(),
-          latestUpdate.state.pendingWithdrawalWeiUser.toFixed()
+          latestUpdate.state.pendingDepositWeiHub.toString(),
+          latestUpdate.state.pendingWithdrawalWeiHub.toString(),
+          latestUpdate.state.pendingDepositWeiUser.toString(),
+          latestUpdate.state.pendingWithdrawalWeiUser.toString()
         ],
         [
-          latestUpdate.state.pendingDepositTokenHub.toFixed(),
-          latestUpdate.state.pendingWithdrawalTokenHub.toFixed(),
-          latestUpdate.state.pendingDepositTokenUser.toFixed(),
-          latestUpdate.state.pendingWithdrawalTokenUser.toFixed()
+          latestUpdate.state.pendingDepositTokenHub.toString(),
+          latestUpdate.state.pendingWithdrawalTokenHub.toString(),
+          latestUpdate.state.pendingDepositTokenUser.toString(),
+          latestUpdate.state.pendingWithdrawalTokenUser.toString()
         ],
         [latestUpdate.state.txCountGlobal, latestUpdate.state.txCountChain],
         latestUpdate.state.threadRoot,

@@ -1,10 +1,10 @@
-const w3utils = require('web3-utils')
+import { ethers as eth } from 'ethers';
 
 export class MerkleUtils {
   static getBytes = (input: any): string => {
     if (Buffer.isBuffer(input)) input = '0x' + input.toString('hex')
-    if (66 - input.length <= 0) return w3utils.toHex(input)
-    return MerkleUtils.padBytes32(w3utils.toHex(input))
+    if (66 - input.length <= 0) return eth.utils.hexlify(eth.utils.bigNumberify(input))
+    return MerkleUtils.padBytes32(eth.utils.hexlify(eth.utils.bigNumberify(input)))
   }
 
   static marshallState = (inputs: any[]): any => {
@@ -17,8 +17,10 @@ export class MerkleUtils {
     return m
   }
 
-  static getCTFaddress = (_r: any): string => {
-    return w3utils.sha3(_r)
+  static getCTFaddress = (_r: string): string => {
+    return eth.utils.isHexString(_r)
+      ? eth.utils.keccak256(eth.utils.arrayify(_r))
+      : eth.utils.keccak256(eth.utils.toUtf8Bytes(_r))
   }
 
   static getCTFstate = (_contract: any, _signers: any, _args: any): any => {

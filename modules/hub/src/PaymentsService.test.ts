@@ -1,19 +1,35 @@
+import * as eth from 'ethers';
+import { StateGenerator, types, big } from './Connext';
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
-import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
-import { StateGenerator } from "./vendor/connext/StateGenerator";
-import { toWeiString, Big } from "./util/bigNumber";
-import { emptyAddress } from "./vendor/connext/Utils";
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 import Config from "./Config";
 import { sleep } from "./vendor/connext/lib/utils";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
+
+const { toWeiString, Big } = big;
+
+type DepositArgs<T=string> = types.DepositArgs<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type PurchasePayment = types.PurchasePayment
+type ThreadState = types.ThreadState
+type ThreadStateUpdate = types.ThreadStateUpdate
+type UpdateRequest = types.UpdateRequest
+
+const {
+  convertChannelState,
+  convertDeposit,
+  convertPayment,
+  convertThreadState,
+} = types
+
+const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsService', () => {
   const registry = getTestRegistry()
@@ -491,7 +507,7 @@ describe('PaymentsService', () => {
     )
 
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toFixed(),
+      pendingDepositTokenHub: config.beiMinCollateralization.toString(),
     })
   })
 
@@ -778,8 +794,8 @@ describe('PaymentsService', () => {
     assertChannelStateEqual(update[0].state, {
       ...receiverChannel.state,
       txCountGlobal: receiverChannel.state.txCountGlobal + 2,
-      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).plus(threadUpdate.balanceTokenReceiver).toFixed(),
-      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).minus(threadUpdate.balanceTokenReceiver).toFixed(),
+      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).add(threadUpdate.balanceTokenReceiver).toString(),
+      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).sub(threadUpdate.balanceTokenReceiver).toString(),
       sigUser: mkSig('0xa'),
       sigHub: fakeSig
     })

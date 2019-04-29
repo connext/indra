@@ -1,6 +1,5 @@
+import { assert, getThreadState, mkAddress, parameterizedTests } from '../testing';
 import { MockStore, MockConnextInternal, MockHub } from '../testing/mocks';
-import { mkAddress, getThreadState } from '../testing';
-import { assert, parameterizedTests } from '../testing'
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
@@ -12,7 +11,7 @@ const receiver = "0x22597df3d913c197b4d8f01a3530114847c20832"
 const user = "0xc55eddadeeb47fcde0b3b6f25bd47d745ba7e7fa"
 
 describe('StateUpdateController: thread payments', () => {
-  const user = mkAddress('0xUUU')
+  const user = mkAddress('0xAAA')
   let connext: MockConnextInternal
 
   parameterizedTests([
@@ -126,7 +125,7 @@ describe.skip('StateUpdateController: invalidation handling', () => {
       store: mockStore.createStore(),
     })
 
-    connext.opts.web3.eth.getBlock = async () => {
+    connext.provider.getBlock = async () => {
       return {
         timestamp: tc.blockTimestamp,
       } as any

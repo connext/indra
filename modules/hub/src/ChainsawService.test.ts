@@ -1,23 +1,30 @@
+import * as eth from 'ethers';
+import { StateGenerator, types, Utils, big } from './Connext';
 import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
 import ChainsawDao from './dao/ChainsawDao'
 import DBEngine, { SQL } from './DBEngine'
 import ChannelsDao from './dao/ChannelsDao'
 import {ChannelManager} from './ChannelManager'
-import abi, {BYTECODE} from './abi/ChannelManager'
+import abi from './abi/ChannelManager'
 import {assert} from 'chai'
 import * as sinon from 'sinon'
-import {Utils, emptyRootHash} from './vendor/connext/Utils'
-import {BigNumber} from 'bignumber.js'
-import { ChannelState, PaymentArgs, DepositArgs, convertChannelState, ChannelStateBigNumber } from './vendor/connext/types';
-import { StateGenerator } from './vendor/connext/StateGenerator'
 import Web3 = require('web3')
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent';
 import { mkAddress, mkSig } from './testing/stateUtils';
 import { channelUpdateFactory } from './testing/factories';
-import { ChannelStateUpdateRowBigNum } from './domain/Channel';
 import { EventLog } from 'web3-core';
+import { BigNumber as BN } from 'ethers/utils'
 
+type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN
+type ChannelState<T=string> = types.ChannelState<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type DepositArgs<T=string> = types.DepositArgs<T>
+type ChannelStateBN = types.ChannelStateBN
+
+const { convertChannelState } = types
+const { Big } = big
+const emptyRootHash = eth.constants.HashZero
 const GAS_PRICE = '1000000000'
 
 describe('ChainsawService::mocked Web3', function() {
@@ -40,9 +47,9 @@ describe('ChainsawService::mocked Web3', function() {
   const USER_ADDRESS: string = mkAddress('0x5546')
   const CM_ADDRESS: string = "0xCCC0000000000000000000000000000000000000"
   let dbEngine: DBEngine
-  let chan1: { update: ChannelStateUpdateRowBigNum, state: ChannelState, user: string }
+  let chan1: { update: ChannelStateUpdateRowBN, state: ChannelState, user: string }
 
-  let chan2: { update: ChannelStateUpdateRowBigNum, state: ChannelState, user: string }
+  let chan2: { update: ChannelStateUpdateRowBN, state: ChannelState, user: string }
 
   beforeEach(async () => {
     // ensure that fetchEvents will not return any new events
@@ -168,7 +175,7 @@ describe('ChainsawService::mocked Web3', function() {
 
     it('should return poll type "PROCESS_EVENTS" if state generation is successful', async () => {
       cs.validator.generateConfirmPending = async (prev, args) => {
-        return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
+        return await new StateGenerator(registry.get('Config').hotWalletAddress).confirmPending(convertChannelState("bn", prev))
       }
       console.log('chan2:', await chanDao.getChannelByUser(chan2.user))
       const pollType = await cs.processSingleTx(successfulTxHash)
@@ -214,7 +221,7 @@ describe('ChainsawService::mocked Web3', function() {
         },
         Validator: {
           generateConfirmPending: async (prev, args) => {
-            return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
+            return await new StateGenerator(registry.get('Config').hotWalletAddress).confirmPending(convertChannelState("bn", prev))
           }
         },
         ChannelManager: {
@@ -333,8 +340,8 @@ describe.skip('ChainsawService', function() {
 
     it('should persist that channel', async () => {
       const chan = await chanDao.getChannelByUser(USER_ADDRESS)
-      assert.isTrue(chan.state.balanceWeiUser.eq(100))
-      assert.isTrue(chan.state.balanceWeiHub.eq(0))
+      assert.isTrue(chan.state.balanceWeiUser.eq(Big(100)))
+      assert.isTrue(chan.state.balanceWeiHub.isZero())
       assert.equal(chan.state.txCountChain, 1)
       assert.equal(chan.state.txCountGlobal, 2)
     })
@@ -415,12 +422,12 @@ describe.skip('ChainsawService', function() {
       assert.equal(lastState.state.txCountChain, 2);
       assert.equal(lastState.state.txCountGlobal, 8);
       // matches the initial deposit, the payments, and the additional deposit above
-      assert.isTrue(lastState.state.balanceWeiUser.eq(100 - 3 + 100 - 7))
-      assert.isTrue(lastState.state.balanceWeiHub.eq(10))
-      assert.isTrue(lastState.state.pendingDepositWeiHub.eq(0))
-      assert.isTrue(lastState.state.pendingDepositWeiUser.eq(0))
-      assert.isTrue(lastState.state.pendingWithdrawalWeiHub.eq(0))
-      assert.isTrue(lastState.state.pendingWithdrawalWeiUser.eq(0))
+      assert.isTrue(lastState.state.balanceWeiUser.eq(Big(100 - 3 + 100 - 7)))
+      assert.isTrue(lastState.state.balanceWeiHub.eq(Big(10)))
+      assert.isTrue(lastState.state.pendingDepositWeiHub.isZero())
+      assert.isTrue(lastState.state.pendingDepositWeiUser.isZero())
+      assert.isTrue(lastState.state.pendingWithdrawalWeiHub.isZero())
+      assert.isTrue(lastState.state.pendingWithdrawalWeiUser.isZero())
     })
 
     it('should record the high water mark', async () => {
@@ -452,10 +459,10 @@ describe.skip('ChainsawService', function() {
 class StateUpdateBuilder {
   private w3: any
   private hubAddress: string
-  private state: ChannelStateBigNumber
+  private state: ChannelStateBN
   private utils: Utils
 
-  constructor (w3: any, utils: Utils, contractAddress: string, hubAddress: string, update?: ChannelStateBigNumber) {
+  constructor (w3: any, utils: Utils, contractAddress: string, hubAddress: string, update?: ChannelStateBN) {
     this.w3 = w3
     this.hubAddress = hubAddress.toLowerCase()
     this.utils = utils
@@ -463,18 +470,18 @@ class StateUpdateBuilder {
       contractAddress: contractAddress.toLowerCase(),
       user: update ? update.user.toLowerCase() : '',
       recipient: update ? update.recipient.toLowerCase() : '',
-      balanceWeiHub: new BigNumber(update ? update.balanceWeiHub : 0),
-      balanceWeiUser: new BigNumber(update ? update.balanceWeiUser : 0),
-      balanceTokenHub: new BigNumber(update ? update.balanceTokenHub : 0),
-      balanceTokenUser: new BigNumber(update ? update.balanceTokenUser : 0),
-      pendingDepositWeiHub: new BigNumber(update ? update.pendingDepositWeiHub : 0),
-      pendingDepositWeiUser: new BigNumber(update ? update.pendingDepositWeiUser : 0),
-      pendingDepositTokenHub: new BigNumber(update ? update.pendingDepositTokenHub : 0),
-      pendingDepositTokenUser: new BigNumber(update ? update.pendingDepositTokenUser : 0),
-      pendingWithdrawalWeiHub: new BigNumber(update ? update.pendingWithdrawalWeiHub : 0),
-      pendingWithdrawalWeiUser: new BigNumber(update ? update.pendingWithdrawalWeiUser : 0),
-      pendingWithdrawalTokenHub: new BigNumber(update ? update.pendingWithdrawalTokenHub : 0),
-      pendingWithdrawalTokenUser: new BigNumber(update ? update.pendingWithdrawalTokenUser : 0),
+      balanceWeiHub: Big(update ? update.balanceWeiHub : 0),
+      balanceWeiUser: Big(update ? update.balanceWeiUser : 0),
+      balanceTokenHub: Big(update ? update.balanceTokenHub : 0),
+      balanceTokenUser: Big(update ? update.balanceTokenUser : 0),
+      pendingDepositWeiHub: Big(update ? update.pendingDepositWeiHub : 0),
+      pendingDepositWeiUser: Big(update ? update.pendingDepositWeiUser : 0),
+      pendingDepositTokenHub: Big(update ? update.pendingDepositTokenHub : 0),
+      pendingDepositTokenUser: Big(update ? update.pendingDepositTokenUser : 0),
+      pendingWithdrawalWeiHub: Big(update ? update.pendingWithdrawalWeiHub : 0),
+      pendingWithdrawalWeiUser: Big(update ? update.pendingWithdrawalWeiUser : 0),
+      pendingWithdrawalTokenHub: Big(update ? update.pendingWithdrawalTokenHub : 0),
+      pendingWithdrawalTokenUser: Big(update ? update.pendingWithdrawalTokenUser : 0),
       txCountGlobal: update? update.txCountGlobal : 1,
       txCountChain: update ? update.txCountChain : 1,
       threadRoot: update ? update.threadRoot : emptyRootHash,
@@ -485,16 +492,16 @@ class StateUpdateBuilder {
     }
   }
 
-  payWei (to: 'hub'|'user', amount: BigNumber|string|number): StateUpdateBuilder {
+  payWei (to: 'hub'|'user', amount: BN|string|number): StateUpdateBuilder {
     let balUser
     let balHub
 
     if (to === 'hub') {
-      balUser = this.state.balanceWeiUser.minus(amount)
-      balHub = this.state.balanceWeiHub.plus(amount)
+      balUser = this.state.balanceWeiUser.sub(Big(amount))
+      balHub = this.state.balanceWeiHub.add(Big(amount))
     } else {
-      balUser = this.state.balanceWeiUser.plus(amount)
-      balHub = this.state.balanceWeiHub.minus(amount)
+      balUser = this.state.balanceWeiUser.sub(Big(amount))
+      balHub = this.state.balanceWeiHub.add(Big(amount))
     }
 
     if (balUser.isNeg() || balHub.isNeg()) {
@@ -507,23 +514,23 @@ class StateUpdateBuilder {
     return this
   }
 
-  deposit(to: 'hub'|'user', amount: BigNumber|string|number): StateUpdateBuilder {
+  deposit(to: 'hub'|'user', amount: BN|string|number): StateUpdateBuilder {
     if (to === 'hub') {
-      this.state.pendingDepositWeiHub = this.state.pendingDepositWeiHub.plus(amount)
+      this.state.pendingDepositWeiHub = this.state.pendingDepositWeiHub.add(Big(amount))
     } else {
-      this.state.pendingDepositWeiUser = this.state.pendingDepositWeiUser.plus(amount)
+      this.state.pendingDepositWeiUser = this.state.pendingDepositWeiUser.add(Big(amount))
     }
 
     return this
   }
 
-  withdraw (from: 'hub'|'user', amount: BigNumber|string|number): StateUpdateBuilder {
+  withdraw (from: 'hub'|'user', amount: BN|string|number): StateUpdateBuilder {
     let bal
 
     if (from === 'hub') {
-      bal = this.state.balanceWeiHub.minus(amount)
+      bal = this.state.balanceWeiHub.sub(Big(amount))
     } else {
-      bal = this.state.balanceWeiUser.plus(amount)
+      bal = this.state.balanceWeiUser.add(Big(amount))
     }
 
     if (bal.isNeg()) {
@@ -532,16 +539,16 @@ class StateUpdateBuilder {
 
     if (from === 'hub') {
       this.state.balanceWeiHub = bal
-      this.state.pendingWithdrawalWeiHub = this.state.pendingWithdrawalWeiHub.plus(bal)
+      this.state.pendingWithdrawalWeiHub = this.state.pendingWithdrawalWeiHub.add(bal)
     } else {
       this.state.balanceWeiUser = bal
-      this.state.pendingWithdrawalWeiUser = this.state.pendingWithdrawalWeiUser.plus(bal)
+      this.state.pendingWithdrawalWeiUser = this.state.pendingWithdrawalWeiUser.add(bal)
     }
 
     return this
   }
 
-  async countersign(chain: boolean): Promise<{ bn: ChannelStateBigNumber, str: ChannelState }> {
+  async countersign(chain: boolean): Promise<{ bn: ChannelStateBN, str: ChannelState }> {
     this.state.txCountGlobal++
     if (chain) {
       this.state.txCountChain++

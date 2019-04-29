@@ -1,5 +1,5 @@
-import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
-import { CurrencyType } from '../state/ConnextState/CurrencyTypes'
+import { ExchangeRates } from '../types'
+import { CurrencyType } from '../types'
 
 type BigString = string
 

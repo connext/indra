@@ -5,12 +5,18 @@ const BN = require("bn.js");
 const privKeys = require("./privKeys.json");
 const CM = artifacts.require("./ChannelManager.sol");
 const HST = artifacts.require("./HumanStandardToken.sol");
+const data = require("../ops/data.json");
+const Connext = require("../../client");
+const ConnextTester = require("connext/dist/testing");
 
-/* Connext Client */
-const { Utils } = require("../../client/dist/Utils");
-const { StateGenerator } = require("../../client/dist/StateGenerator");
-const { Validator } = require("../../client/dist/validator");
-const { convertChannelState, convertWithdrawal, convertProposePending, isBN } = require("../../client/dist/types");
+/* Setup Connext Client Stuff */
+const {
+  convertChannelState,
+  convertWithdrawal,
+  convertProposePending,
+  isBN
+} = Connext.types
+
 const {
   getChannelState,
   getThreadState,
@@ -19,12 +25,7 @@ const {
   getExchangeArgs,
   getPaymentArgs,
   getPendingArgs
-} = require("../../client/dist/testing");
-const { toBN } = require("../../client/dist/helpers/bn");
-const clientUtils = new Utils();
-const sg = new StateGenerator();
-
-const data = require("../ops/data.json");
+} = ConnextTester
 
 should
   .use(require("chai-as-promised"))
@@ -413,7 +414,7 @@ async function submitHubAuthorized(userAccount, hubAccount, wei = 0, ...override
 // Internal Helper Functions
 ////////////////////////////////////////
 
-let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod, channelStateReceiver;
+let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod, channelStateReceiver, clientUtils, sg;
 
 contract("ChannelManager", accounts => {
   let snapshotId;
@@ -543,7 +544,7 @@ contract("ChannelManager", accounts => {
 
     // token is transfered to user
     const userTokenBalance = await token.balanceOf(account.address);
-    userTokenBalance.should.be.eq.BN(account.initTokenBalance.add(toBN(state.userTokenTransfer)));
+    userTokenBalance.should.be.eq.BN(account.initTokenBalance.add(new BN(state.userTokenTransfer)));
 
     const totalChannelWei = await cm.totalChannelWei.call();
     assert.equal(+totalChannelWei, 0);
@@ -635,7 +636,11 @@ contract("ChannelManager", accounts => {
       pk: privKeys[2]
     };
 
-    validator = new Validator(web3, hub.address);
+    validator = new Connext.Validator(hub.address, web3.eth, cm.abi);
+
+    clientUtils = new Connext.Utils(hub.address)
+
+    sg = new Connext.StateGenerator(hub.address);
 
     challengePeriod = +(await cm.challengePeriod.call()).toString();
   });

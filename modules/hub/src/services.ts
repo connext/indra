@@ -1,3 +1,4 @@
+import { StateGenerator, Utils, Validator } from './Connext';
 import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
 import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
@@ -52,13 +53,10 @@ import { PostgresFeatureFlagsDao } from './dao/FeatureFlagsDao'
 import FeatureFlagsApiService from './api/FeatureFlagsApiService'
 import { ApiServer } from './ApiServer'
 import { DefaultAuthHandler } from './middleware/AuthHandler'
-import { Utils } from './vendor/connext/Utils'
-import { Validator } from './vendor/connext/validator'
 import ThreadsService from './ThreadsService'
 import ThreadsApiService from './api/ThreadsApiService';
 import { OnchainTransactionService } from "./OnchainTransactionService";
 import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
-import { StateGenerator } from './vendor/connext/StateGenerator';
 import { SignerService } from './SignerService';
 import PaymentsService from './PaymentsService';
 import { NgrokService } from './NgrokService'
@@ -204,8 +202,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   CRAuthManager: {
-    factory: (web3: any) => new MemoryCRAuthManager(web3),
-    dependencies: ['Web3'],
+    factory: () => new MemoryCRAuthManager(),
+    dependencies: [],
     isSingleton: true,
   },
 
@@ -307,18 +305,18 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   ConnextUtils: {
-    factory: () => new Utils(),
-    dependencies: [],
+    factory: (config: Config) => new Utils(config.hotWalletAddress),
+    dependencies: ['Config'],
   },
 
   Validator: {
-    factory: (web3: any, config: Config) => new Validator(web3, config.hotWalletAddress),
+    factory: (web3: any, config: Config) => new Validator(config.hotWalletAddress, web3.eth, ChannelManagerABI.abi),
     dependencies: ['Web3', 'Config'],
   },
 
   StateGenerator: {
-    factory: () => new StateGenerator(),
-    dependencies: [],
+    factory: (config: Config) => new StateGenerator(config.hotWalletAddress),
+    dependencies: ['Config'],
   },
 
   GasEstimateDao: {

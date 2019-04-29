@@ -1,12 +1,11 @@
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
 import Currency, { ICurrency } from "./Currency";
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import { BOOTY } from "../constants";
-import { BigNumber } from 'bignumber.js'
+import BigNumber from "bignumber.js";
 
 export default function bootyToBEI(
-  bootyAmount: ICurrency<CurrencyType.BOOTY>|number|string|BN|BigNumber
-): Currency<CurrencyType.BEI> {
+  bootyAmount: ICurrency<"BOOTY">|number|string|BN|BigNumber
+): Currency<"BEI"> {
   if (
     bootyAmount instanceof BigNumber ||
     typeof bootyAmount === 'number' ||
@@ -15,11 +14,11 @@ export default function bootyToBEI(
     return _bootyToBEI(bootyAmount)
   }
   if (bootyAmount instanceof BN) {
-    return _bootyToBEI(bootyAmount.toString(10))
+    return _bootyToBEI(bootyAmount.toString())
   }
   return _bootyToBEI(bootyAmount.amount)
 }
 
-function _bootyToBEI(booty: string|number|BigNumber): Currency<CurrencyType.BEI> {
-  return Currency.BEI(new BigNumber(booty).times(BOOTY.amount))
+function _bootyToBEI(booty: string|number|BigNumber): Currency<"BEI"> {
+  return Currency.BEI(new BigNumber(booty.toString()).times(BOOTY.amount))
 }

@@ -2,15 +2,13 @@ import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import ExchangeRate from '../domain/ExchangeRate'
 import CurrencyCode from '../domain/CurrencyCode'
-import { Big } from '../util/bigNumber'
-import { BigNumber } from 'bignumber.js/bignumber'
 import { prettySafeJson } from '../util'
 
 export default interface ExchangeRateDao {
   record(retrievedAt: number, rateUsd: string): Promise<ExchangeRate>
   latest(): Promise<ExchangeRate>
-  getLatestUsdRate(): Promise<BigNumber>
-  getUsdRateAtTime(date: Date): Promise<BigNumber>
+  getLatestUsdRate(): Promise<string>
+  getUsdRateAtTime(date: Date): Promise<string>
 }
 
 export class PostgresExchangeRateDao implements ExchangeRateDao {
@@ -42,11 +40,11 @@ export class PostgresExchangeRateDao implements ExchangeRateDao {
     )
   }
 
-  public async getLatestUsdRate(): Promise<BigNumber> {
+  public async getLatestUsdRate(): Promise<string> {
     return await this.getUsdRateAtTime(new Date())
   }
 
-  public async getUsdRateAtTime(date: Date): Promise<BigNumber> {
+  public async getUsdRateAtTime(date: Date): Promise<string> {
     const res = this.inflateRow(await this.engine.queryOne(SQL`
       SELECT *
       FROM exchange_rates
@@ -71,7 +69,7 @@ export class PostgresExchangeRateDao implements ExchangeRateDao {
         retrievedAt: row.retrievedat,
         base: row.base,
         rates: {
-          [CurrencyCode.USD.toString()]: Big(row.rate_usd),
+          [CurrencyCode.USD.toString()]: row.rate_usd,
         },
       }
     )

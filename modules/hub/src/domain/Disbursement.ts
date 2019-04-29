@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js'
+import { BigNumber as BN } from 'ethers/utils'
 
 export enum DisbursementStatus {
   New = 'NEW',
@@ -10,8 +10,8 @@ export enum DisbursementStatus {
 export default interface Disbursement {
   id: number
   recipient: string
-  amountWei: BigNumber
-  amountErc20: BigNumber
+  amountWei: BN
+  amountErc20: BN
   txHash: string
   status: DisbursementStatus
   createdAt: number

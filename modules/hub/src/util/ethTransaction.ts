@@ -1,10 +1,10 @@
+import * as Connext from '../Connext';
 import { UnconfirmedTransaction, OnchainTransactionRow, RawTransaction } from "../domain/OnchainTransaction";
-import { Omit } from "../vendor/connext/types";
 import EthereumTx from "ethereumjs-tx"
-
+import w3utils = require('web3-utils')
 const Tx = require('ethereumjs-tx')
 
-import w3utils = require('web3-utils')
+type Omit<T, K extends keyof T> = Connext.types.Omit<T, K>
 
 /**
  * Serializes a transaction to a raw string.

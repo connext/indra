@@ -1,9 +1,10 @@
-import { PurchaseRequest, PurchasePayment, PaymentArgs, UpdateRequest, PurchasePaymentType, PurchasePaymentRequest, } from '../types'
+import { ethers as eth } from 'ethers';
 import { AbstractController } from './AbstractController'
-import { getChannel } from '../lib/getChannel'
+import { getChannel } from '../state/getters'
 import { assertUnreachable } from '../lib/utils';
+import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType, PartialPurchaseRequest } from '../types'
 import { emptyAddress } from '../Utils';
-import { toBN } from '../helpers/bn';
+import { Big } from '../lib/bn';
 
 // **********************************************//
 //
@@ -40,8 +41,8 @@ export default class BuyController extends AbstractController {
     // if the payment amount is above what the hub will collateralize
     // it should be a custodial payment
     const config = await this.connext.hub.config()
-    const max = toBN(config.beiMaxCollateralization)
-    if (toBN(payment.amount.amountToken).gt(max)) {
+    const max = Big(config.beiMaxCollateralization)
+    if (Big(payment.amount.amountToken).gt(max)) {
       return {
         ...payment,
         type: "PT_CUSTODIAL",
@@ -64,7 +65,7 @@ export default class BuyController extends AbstractController {
 
   }
 
-  public async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
+  public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
     /*
     purchase = {
       ...purchase,
@@ -81,22 +82,24 @@ export default class BuyController extends AbstractController {
     // get starting state of the channel within the store
     // you must be able to process multiple thread or channel payments
     // with this as the initial state
-    let curChannelState = getChannel(this.store)
+    let curChannelState = getChannel(this.store.getState())
     for (const p of purchase.payments) {
-      const payment = await this.assignPaymentType(p)
       let newChannelState = null
-      const type = payment.type
-      if (!type) {
-        throw new Error("This should never happen. Check `assignPaymentType` in the `BuyController` source code.")
+      // insert 0 defaults on purchase payment amount
+      const payment: PurchasePaymentRequest<any> = await this.assignPaymentType({
+        ...p,
+        amount: insertDefault('0', p.amount, argNumericFields.Payment) as Payment
+      })
+      if (!payment.type) {
+        throw new Error(`This should never happen. check "assignPaymentType" in the source code.`)
       }
-
-      switch (type) {
+      switch (payment.type) {
         case 'PT_THREAD':
           // Create a new thread for the payment value
           const { thread, channel } = await this.connext.threadsController.openThread(
             payment.recipient, 
             payment.amount
-          )      
+          )
 
           // add thread payment to signed payments
           const state = await this.connext.signThreadState(
@@ -156,7 +159,7 @@ export default class BuyController extends AbstractController {
             throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 
-          if (!this.connext.opts.web3.utils.isHex(secret)) {
+          if (!eth.utils.isHexString(secret)) {
             throw new Error(`Secret is not hex string, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 
@@ -185,7 +188,7 @@ export default class BuyController extends AbstractController {
           })
           break
         default:
-          assertUnreachable(type)   
+          assertUnreachable(payment.type)   
       }
 
       if (!newChannelState) {

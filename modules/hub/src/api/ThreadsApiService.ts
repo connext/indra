@@ -2,11 +2,11 @@ import * as express from 'express'
 import { ApiService } from './ApiService'
 import log from '../util/log'
 import ThreadsService from '../ThreadsService'
-import { BigNumber } from 'bignumber.js'
 import ChannelsService from '../ChannelsService'
-import { Big } from '../util/bigNumber'
-import { isBoolean } from 'util'
+import { big } from '../Connext'
 import GlobalSettingsDao from '../dao/GlobalSettingsDao'
+
+const { Big } = big
 
 const LOG = log('ThreadsApiService')
 

@@ -1,28 +1,42 @@
+import * as eth from 'ethers';
+import { types, Validator, big } from './Connext';
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, PaymentArgs, convertPayment, convertChannelState, Payment, PurchaseRowWithPayments  } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
 import ChannelsDao from "./dao/ChannelsDao";
 import Config from "./Config";
 import { prettySafeJson } from "./util";
-import { Big } from "./util/bigNumber";
-import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
 import { default as log } from './util/log'
-import { emptyAddress } from './vendor/connext/Utils';
 import GlobalSettingsDao from './dao/GlobalSettingsDao';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
 import OptimisticPaymentDao from './dao/OptimisticPaymentDao';
+
+const {
+  Big
+} = big
+
+type Payment<T=string> = types.Payment<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type PurchasePayment = types.PurchasePayment
+type UpdateRequest<T=string> = types.UpdateRequest<T>
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
   { error: false; res: T }
 )
 
+const {
+  convertChannelState,
+  convertDeposit,
+  convertPayment,
+  convertThreadState,
+} = types
+const emptyAddress = eth.constants.AddressZero
 const LOG = log('PaymentsService')
 
 export default class PaymentsService {
@@ -112,7 +126,7 @@ export default class PaymentsService {
         const row = await this.threadsService.update(
           user,
           payment.recipient,
-          convertThreadState('bignumber', payment.update.state),
+          convertThreadState('bn', payment.update.state),
         )
 
         afterPayment = paymentId => afterPayments.push(async () => {
@@ -306,8 +320,12 @@ export default class PaymentsService {
       amountToken: '0',
     }
     for (let payment of payments) {
-      totalAmount.amountWei = Big(totalAmount.amountWei).plus(payment.amount.amountWei).toFixed()
-      totalAmount.amountToken = Big(totalAmount.amountToken).plus(payment.amount.amountToken).toFixed()
+      totalAmount.amountWei = Big(totalAmount.amountWei).add(
+        Big(payment.amount.amountWei)
+      ).toString()
+      totalAmount.amountToken = Big(totalAmount.amountToken).add(
+        Big(payment.amount.amountToken)
+      ).toString()
     }
 
     // TODO: this is a bit of a hack because we aren't totally tracking

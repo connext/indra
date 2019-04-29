@@ -1,8 +1,7 @@
 import {expect} from 'chai'
 import Currency from '../currency/Currency';
 import bootyToBEI from './bootyToBEI';
-import { BigNumber } from 'bignumber.js'
-import BN = require('bn.js')
+import { Big } from '../bn';
 
 describe('bootyToBEI', () => {
   it('should convert ICurrency, string, number, BN, BigNumber to a Bei Currency', () => {
@@ -11,8 +10,8 @@ describe('bootyToBEI', () => {
       Currency.BOOTY(69),
       69,
       '69',
-      new BigNumber(69),
-      new BN(69)
+      Big(69),
+      Big(69)
     ]
 
     cases.forEach(bootyAmount =>

@@ -1,18 +1,27 @@
-import { assertUnreachable } from '../lib/utils'
-import { UpdateRequest, ChannelState, InvalidationArgs, Sync, ThreadStateUpdate, ArgsTypes, channelUpdateToUpdateRequest } from '../types'
-import { ChannelStateUpdate, SyncResult, InvalidationReason } from '../types'
-import { Poller } from '../lib/poller/Poller'
-import { ConnextInternal } from '../Connext'
-import { SyncControllerState } from '../state/store'
-import { getLastThreadUpdateId } from '../lib/getLastThreadUpdateId'
-import { AbstractController } from './AbstractController'
-import * as actions from '../state/actions'
-import { maybe } from '../lib/utils'
+import { ethers as eth } from 'ethers';
 import Semaphore = require('semaphore')
-import { getChannel } from '../lib/getChannel';
-import { hasPendingOps } from '../hasPendingOps'
-import { Block } from 'web3-eth';
-import { EventLog } from 'web3-core';
+import { AbstractController } from './AbstractController'
+import { ConnextInternal } from '../Connext'
+import { getChannel, getLastThreadUpdateId } from '../state/getters';
+import { Poller } from '../lib/poller/Poller'
+import { assertUnreachable, maybe } from '../lib/utils'
+import * as actions from '../state/actions'
+import { SyncControllerState } from '../state/store'
+import {
+  ArgsTypes,
+  Block,
+  ChannelState,
+  ChannelStateUpdate,
+  channelUpdateToUpdateRequest,
+  LogDescription,
+  InvalidationArgs,
+  InvalidationReason,
+  Sync,
+  SyncResult,
+  ThreadStateUpdate,
+  Transaction,
+  UpdateRequest,
+} from '../types'
 
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 
@@ -374,7 +383,7 @@ export default class SyncController extends AbstractController {
 
       const hubSync = await this.hub.sync(
         txCount,
-        getLastThreadUpdateId(this.store),
+        getLastThreadUpdateId(this.store.getState()),
       )
       if (!hubSync) {
         console.log('No updates found from the hub to sync')
@@ -412,7 +421,7 @@ export default class SyncController extends AbstractController {
     const state = this.getState()
 
     const { channel, channelUpdate } = this.getState().persistent
-    if (!hasPendingOps(channel))
+    if (!this.connext.utils.hasPendingOps(channel))
       return
     
     // do not invalidate any states without a timeout
@@ -461,7 +470,7 @@ export default class SyncController extends AbstractController {
   public async didContractEmitUpdateEvent(channel: ChannelState, updateTimestamp?: Date): Promise<{
     didEmit: 'yes' | 'no' | 'unknown'
     latestBlock: Block
-    event?: EventLog
+    event?: LogDescription
   }> {
     let timeout = channel.timeout
     if (!channel.timeout) {
@@ -488,7 +497,7 @@ export default class SyncController extends AbstractController {
       'DidUpdateChannel',
       Math.max(block.number - 4000, 0), // 4000 blocks = ~16 hours
     )
-    const event = evts.find(e => e.returnValues.txCount[0] == channel.txCountGlobal)
+    const event = evts.find(e => e.values.txCount[0] == channel.txCountGlobal)
     if (event)
       return { didEmit: 'yes', latestBlock: block, event }
 
@@ -518,7 +527,7 @@ export default class SyncController extends AbstractController {
    * greater).
    */
   async findBlockNearestTimeout(timeout: number, delta = 60 * 60): Promise<Block> {
-    let block = await this.connext.opts.web3.eth.getBlock('latest')
+    let block = await this.connext.wallet.provider.getBlock('latest')
     if (block.timestamp < timeout + delta)
       return block
 
@@ -541,7 +550,7 @@ export default class SyncController extends AbstractController {
         )
       }
 
-      block = await this.connext.opts.web3.eth.getBlock(block.number + step)
+      block = await this.connext.wallet.provider.getBlock(block.number + step)
       if (block.timestamp > timeout && block.timestamp < timeout + delta) {
         break
       }
@@ -622,7 +631,7 @@ export default class SyncController extends AbstractController {
     // console.log(`Sending updates to hub: ${state.updatesToSync.map(u => u && u.reason)}`, state.updatesToSync)
     // const [res, err] = await maybe(this.hub.updateHub(
     //   state.updatesToSync,
-    //   getLastThreadUpdateId(this.store),
+    //   getLastThreadUpdateId(this.store.getState()),
     // ))
 
     const chanSync = state.updatesToSync.filter(u => u.type == "channel")
@@ -630,7 +639,7 @@ export default class SyncController extends AbstractController {
     console.log(`Sending channel updates to hub: ${channelUp.map(u => u && u.reason)}`, chanSync)
     const [res, err] = await maybe(this.hub.updateHub(
       channelUp,
-      getLastThreadUpdateId(this.store),
+      getLastThreadUpdateId(this.store.getState()),
     ))
 
     const threadSync = state.updatesToSync.filter(u => u.type == "thread")
@@ -749,7 +758,7 @@ export default class SyncController extends AbstractController {
 
     // at the moment, you cannot invalidate states that have pending
     // operations and have been built on top of
-    const channel = getChannel(this.store)
+    const channel = getChannel(this.store.getState())
     if (
       // If the very first propose pending is invalidated, then the
       // channel.txCountGlobal will be 0
@@ -768,7 +777,7 @@ export default class SyncController extends AbstractController {
     // the corresponding state being invalidated (which is, for the moment,
     // always going to be our current state, as guaranteed by the check above)
     // has pending operations.
-    if (updateToInvalidate.sigUser && !hasPendingOps(channel)) {
+    if (updateToInvalidate.sigUser && !this.connext.utils.hasPendingOps(channel)) {
       throw new Error(
         `Refusing to invalidate an update with no pending operations we have already signed: ` +
         `${JSON.stringify(updateToInvalidate)}`

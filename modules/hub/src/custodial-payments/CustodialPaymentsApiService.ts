@@ -1,5 +1,3 @@
-import { BigNumber } from 'bignumber.js/bignumber'
-import { Big } from '../util/bigNumber'
 import { safeJson } from '../util'
 import { CustodialPaymentsService } from './CustodialPaymentsService'
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
@@ -8,6 +6,10 @@ import log from '../util/log'
 import Config from '../Config'
 import { ApiService } from '../api/ApiService'
 import { getUserFromRequest } from '../util/request'
+import { BigNumber } from 'ethers/utils'
+import { big, types } from '../Connext'
+
+const { convertCustodialBalanceRow, convertCustodialWithdrawalRow } = types
 
 const LOG = log('CustodialPaymentsApiService')
 
@@ -21,7 +23,7 @@ getAttr.address = getAttr // TODO: some basic address validation here
 getAttr.big = <T, K extends keyof T>(obj: T, attr: K): BigNumber => {
   const val = getAttr(obj, attr)
   try {
-    return Big(val as any)
+    return big.Big(val as any)
   } catch (e) {
     throw new Error(`Invalid value for BigNumber: ${val} (attribute: ${attr})`)
   }
@@ -50,25 +52,32 @@ class CustodialPaymentsApiServiceHandler {
   service: CustodialPaymentsService
 
   async doGetBalance(req: Request, res: Response) {
-    res.json(await this.dao.getCustodialBalance(getUserFromRequest(req)))
+    res.json(convertCustodialBalanceRow("str", 
+      await this.dao.getCustodialBalance(getUserFromRequest(req))
+    ))
   }
 
   async doCreateWithdraw(req: Request, res: Response) {
-    res.json(await this.service.createCustodialWithdrawal({
-      user: getAttr.address(req.session!, 'address'),
-      recipient: getAttr.address(req.body, 'recipient'),
-      amountToken: getAttr.big(req.body, 'amountToken'),
-    }))
+    res.json(convertCustodialWithdrawalRow("str",
+      await this.service.createCustodialWithdrawal({
+        user: getAttr.address(req.session!, 'address'),
+        recipient: getAttr.address(req.body, 'recipient'),
+        amountToken: getAttr.big(req.body, 'amountToken'),
+      })
+    ))
   }
 
   async doGetWithdrawals(req: Request, res: Response) {
-    res.json(await this.dao.getCustodialWithdrawals(getUserFromRequest(req)))
+    const rows = await this.dao.getCustodialWithdrawals(getUserFromRequest(req))
+    res.json(rows.map(r => convertCustodialWithdrawalRow("str", r)))
   }
 
   async doGetWithdrawal(req: Request, res: Response) {
-    res.json(await this.dao.getCustodialWithdrawal(
-      getAttr.address(req.session!, 'address'),
-      getAttr(req.params, 'withdrawalId'),
-    ))
+    res.json(convertCustodialWithdrawalRow("str", 
+      await this.dao.getCustodialWithdrawal(
+        getAttr.address(req.session!, 'address'),
+        getAttr(req.params, 'withdrawalId'),
+      ))
+    )
   }
 }

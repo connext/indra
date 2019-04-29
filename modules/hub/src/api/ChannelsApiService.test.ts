@@ -1,8 +1,10 @@
+import * as Connext from '../Connext';
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal } from "../testing/factories";
 import ChannelsService from '../ChannelsService';
-import { UpdateRequest, SyncResult, Sync } from '../vendor/connext/types';
 import { mkHash } from '../testing/stateUtils';
+
+type UpdateRequest = Connext.types.UpdateRequest
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()

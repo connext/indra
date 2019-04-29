@@ -1,7 +1,5 @@
 import { PostgresExchangeRateDao } from './ExchangeRateDao'
 import { getTestRegistry, assert } from '../testing'
-import { default as ExchangeRateDao } from './ExchangeRateDao'
-import { Big } from '../util/bigNumber'
 
 describe('ExchangeRateDao', () => {
   const registry = getTestRegistry()
@@ -20,7 +18,7 @@ describe('ExchangeRateDao', () => {
 
     it('works', async () => {
       const actual = await dao.getUsdRateAtTime(new Date(days(1.9)))
-      assert.equal(actual.toFixed(), '90')
+      assert.equal(+actual, 90)
     })
 
     it('errros if rate is too old', async () => {

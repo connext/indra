@@ -1,17 +1,9 @@
 import ChainsawPollEvent from '../domain/ChainsawPollEvent'
 import { Client } from 'pg'
 import DBEngine from '../DBEngine'
-import { PaymentChannel } from '../domain/PaymentChannel'
-import { BigNumber } from 'bignumber.js'
 import {ContractEvent} from '../domain/ContractEvent'
 import Config from '../Config'
 import { default as log } from '../util/log'
-
-const STATUS_TO_STATES = {
-  CS_OPEN: 0,
-  CS_SETTLING: 1,
-  CS_SETTLED: 2,
-} as { [k: string]: number }
 
 export type PollType = 'FETCH_EVENTS' | 'PROCESS_EVENTS' | 'SKIP_EVENTS' | 'RETRY'
 

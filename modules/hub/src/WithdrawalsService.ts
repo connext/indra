@@ -1,10 +1,13 @@
-import {BigNumber} from 'bignumber.js'
 import WithdrawalsDao from './dao/WithdrawalsDao'
 import {default as Withdrawal, WithdrawalStatus} from './domain/Withdrawal'
 import {TotalsTuple} from './domain/TotalsTuple'
 import Config from './Config'
 import log from './util/log'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
+import { BigNumber as BN } from 'ethers/utils'
+import { ethers } from 'ethers';
+import { big } from './Connext'
+const { Big, WEI_CONVERSION, toWeiBig } = big;
 
 const LOG = log('WithdrawalsService')
 
@@ -59,8 +62,8 @@ export default class WithdrawalsService {
       throw new Error('Failed to create withdrawal.')
     }
 
-    const currentBalanceWei: BigNumber = await new Promise<BigNumber>((resolve: any, reject: any) => {
-      this.web3.eth.getBalance(this.config.hotWalletAddress, (err: any, balance: BigNumber) => {
+    const currentBalanceWei: BN = await new Promise<BN>((resolve: any, reject: any) => {
+      this.web3.eth.getBalance(this.config.hotWalletAddress, (err: any, balance: BN) => {
         if (err)
           return reject(err)
         resolve(balance)
@@ -70,20 +73,20 @@ export default class WithdrawalsService {
     if (currentBalanceWei.lt(wd.amountWei)) {
       LOG.error('Attempt by "{address}" to withdraw "{amountEth}", but hot wallet only has "{walletAmountEth}"!', {
         address,
-        amountEth: (new BigNumber(wd.amountWei)).div('1e18').toFixed(),
-        walletAmountEth: currentBalanceWei.div('1e18').toFixed(),
+        amountEth: ethers.utils.formatEther(wd.amountWei),
+        walletAmountEth: ethers.utils.formatEther(currentBalanceWei),
       })
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
     }
 
-    const newBalanceEth = currentBalanceWei.minus(wd.amountWei).div('1e18')
-    if (newBalanceEth.lt(this.config.hotWalletMinBalanceEth)) {
+    const newBalanceWei = currentBalanceWei.sub(wd.amountWei)
+    if (newBalanceWei.lt(this.config.hotWalletMinBalance)) {
       LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
         address,
-        wdAmountEth: (new BigNumber(wd.amountWei)).div('1e18').toFixed(),
-        newBalanceEth: newBalanceEth.toFixed(),
-        hotWalletMinBalanceEth: this.config.hotWalletMinBalanceEth,
+        wdAmountEth: ethers.utils.formatEther(wd.amountWei),  
+        newBalanceEth: ethers.utils.formatEther(newBalanceWei),
+        hotWalletMinBalanceEth: ethers.utils.formatEther(this.config.hotWalletMinBalance),
       })
     }
 
@@ -121,7 +124,7 @@ export default class WithdrawalsService {
     return wd
   }
 
-  public async withdraw (initiator: string, recipient: string, amount: BigNumber, method: string = 'createChannelDisbursement'): Promise<Withdrawal> {
+  public async withdraw (initiator: string, recipient: string, amount: BN, method: string = 'createChannelDisbursement'): Promise<Withdrawal> {
     const enabled = (await this.globalSettingsDao.fetch()).withdrawalsEnabled
 
     if (!enabled) {
@@ -146,8 +149,8 @@ export default class WithdrawalsService {
       throw new Error('Failed to create withdrawal for ' + initiator)
     }
 
-    const currentBalanceWei: BigNumber = await new Promise<BigNumber>((resolve: any, reject: any) => {
-      this.web3.eth.getBalance(this.config.hotWalletAddress, (err: any, balance: BigNumber) => {
+    const currentBalanceWei: BN = await new Promise<BN>((resolve: any, reject: any) => {
+      this.web3.eth.getBalance(this.config.hotWalletAddress, (err: any, balance: BN) => {
         return err ? reject(err) : resolve(balance)
       })
     })
@@ -155,20 +158,20 @@ export default class WithdrawalsService {
     if (currentBalanceWei.lt(amount)) {
       LOG.error('Attempt by "{address}" to withdraw "{amountEth}", but hot wallet only has "{walletAmountEth}"!', {
         address: initiator,
-        amountEth: (new BigNumber(amount)).div('1e18').toFixed(),
-        walletAmountEth: currentBalanceWei.div('1e18').toFixed(),
+        amountEth: ethers.utils.formatEther(Big(amount)),
+        walletAmountEth: ethers.utils.formatEther(currentBalanceWei),
       })
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
     }
 
-    const newBalanceEth = currentBalanceWei.minus(amount).div('1e18')
-    if (newBalanceEth.lt(this.config.hotWalletMinBalanceEth)) {
+    const newBalanceWei = currentBalanceWei.sub(amount)
+    if (newBalanceWei.lt(Big(this.config.hotWalletMinBalance))) {
       LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
         address: initiator,
-        wdAmountEth: (new BigNumber(amount)).div('1e18').toFixed(),
-        newBalanceEth: newBalanceEth.toFixed(),
-        hotWalletMinBalanceEth: this.config.hotWalletMinBalanceEth,
+        wdAmountEth: ethers.utils.formatEther(Big(amount)),
+        newBalanceEth: ethers.utils.formatEther(newBalanceWei),
+        hotWalletMinBalanceEth: ethers.utils.formatEther(this.config.hotWalletMinBalance),
       })
     }
 

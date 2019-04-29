@@ -1,5 +1,5 @@
 import * as express from 'express';
-import {ApiService, Router} from './ApiService'
+import { ApiService } from './ApiService'
 import ExchangeRateDao from '../dao/ExchangeRateDao'
 import log from '../util/log'
 

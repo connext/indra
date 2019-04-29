@@ -1,11 +1,8 @@
-import { ConnextStore } from '../../state/store'
 import Currency from './Currency'
-import {Store} from 'redux'
-import BN = require('bn.js')
-import { BEI_AMOUNT, WEI_AMOUNT } from '../constants'
+import { BigNumber as BN } from 'ethers/utils'
+import { BEI_AMOUNT } from '../constants'
 import { BigNumber } from 'bignumber.js'
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
-import { ExchangeRates } from '../../state/ConnextState/ExchangeRates'
+import { CurrencyType, ExchangeRates } from '../../types';
 
 export default class CurrencyConvertable extends Currency {
   protected exchangeRates: () => ExchangeRates
@@ -22,13 +19,13 @@ export default class CurrencyConvertable extends Currency {
   }
 
   public to = (toType: CurrencyType): CurrencyConvertable => this._convert(toType)
-  public toUSD = (): CurrencyConvertable => this._convert(CurrencyType.USD)
-  public toETH = (): CurrencyConvertable => this._convert(CurrencyType.ETH)
-  public toWEI = (): CurrencyConvertable => this._convert(CurrencyType.WEI)
-  public toFIN = (): CurrencyConvertable => this._convert(CurrencyType.FINNEY)
+  public toUSD = (): CurrencyConvertable => this._convert("USD")
+  public toETH = (): CurrencyConvertable => this._convert("ETH")
+  public toWEI = (): CurrencyConvertable => this._convert("WEI")
+  public toFIN = (): CurrencyConvertable => this._convert("FINNEY")
   // public toSPANK = (): CurrencyConvertable => this._convert(CurrencyType.SPANK)
-  public toBOOTY = (): CurrencyConvertable => this._convert(CurrencyType.BOOTY)
-  public toBEI = (): CurrencyConvertable => this._convert(CurrencyType.BEI)
+  public toBOOTY = (): CurrencyConvertable => this._convert("BOOTY")
+  public toBEI = (): CurrencyConvertable => this._convert("BEI")
 
   public getExchangeRate = (currency: 'USD'): string => {
     const rate = this.exchangeRates().USD
@@ -50,7 +47,7 @@ export default class CurrencyConvertable extends Currency {
       )
     }
 
-    if (this.type === CurrencyType.BEI && toType === CurrencyType.BOOTY) {
+    if (this.type === "BEI" && toType === "BOOTY") {
       const amountInBootyBigNumber = this.amountBigNumber.div(new BigNumber(BEI_AMOUNT))
       return new CurrencyConvertable(
         toType,
@@ -59,7 +56,7 @@ export default class CurrencyConvertable extends Currency {
       )
     }
 
-    if (this.type === CurrencyType.BOOTY && toType === CurrencyType.BEI) {
+    if (this.type === "BOOTY" && toType === "BEI") {
       const amountInBeiBigNumber = this.amountBigNumber.times(new BigNumber(BEI_AMOUNT))
       return new CurrencyConvertable(
         toType,
@@ -86,4 +83,3 @@ export default class CurrencyConvertable extends Currency {
     )
   }
 }
-

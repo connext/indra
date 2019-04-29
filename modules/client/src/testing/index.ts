@@ -1,5 +1,5 @@
 import * as chai from 'chai'
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import {
   Address,
   ChannelState,
@@ -888,7 +888,7 @@ export function updateStateUpdate(
 
 // TODO: generate previous and resulting state update with
 // ability to override
-const sg = new StateGenerator()
+const sg = new StateGenerator("")
 const stateGeneratorFns: any = {
   "Payment": sg.channelPayment,
   "Exchange": sg.exchange,

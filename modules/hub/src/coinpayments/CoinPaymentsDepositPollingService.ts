@@ -1,17 +1,11 @@
+import { Poller, types } from '../Connext'
 import { CoinPaymentsService } from './CoinPaymentsService'
-import { default as ChannelsDao } from '../dao/ChannelsDao'
-import { Poller } from '../vendor/connext/lib/poller/Poller'
 import { default as log } from '../util/log'
 import { CoinPaymentsDao } from './CoinPaymentsDao'
-import { default as ChannelsService } from '../ChannelsService'
-import { hasPendingOps } from '../vendor/connext/hasPendingOps'
 import { default as DBEngine } from '../DBEngine'
-import { prettySafeJson } from '../util'
-import { BigNumber } from 'bignumber.js/bignumber'
-import { DepositArgs } from '../vendor/connext/types'
-import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as Config } from '../Config'
 
+type DepositArgs = types.DepositArgs
 const LOG = log('CoinPaymentsDepositPollingService')
 
 export class CoinPaymentsDepositPollingService {

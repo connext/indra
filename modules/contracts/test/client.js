@@ -6,7 +6,8 @@
 const { Utils } = require("../client/dist/Utils.js");
 const { StateGenerator } = require("../client/dist/StateGenerator.js")
 
-const clientUtils = new Utils()
+const hubAddress = mkAddress('0xHHH')
+const clientUtils = new Utils(hubAddress)
 
 const stateGenerator = new StateGenerator()
 
@@ -33,7 +34,6 @@ const { mkAddress, getChannelState, getThreadState, getDepositArgs, getWithdrawa
 
 describe('using the client', () => {
   it('should show a decent example of how to access fns', async () => {
-    const hubAddress = mkAddress('0xHHH')
     const validator = new Validator(web3, hubAddress)
     const chan = getChannelState("empty", {
       balanceToken: [10, 0]
