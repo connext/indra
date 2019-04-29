@@ -18,7 +18,7 @@ describe('ExchangeRateDao', () => {
 
     it('works', async () => {
       const actual = await dao.getUsdRateAtTime(new Date(days(1.9)))
-      assert.equal(actual.toString(), '90')
+      assert.equal(+actual, 90)
     })
 
     it('errros if rate is too old', async () => {
