@@ -506,15 +506,16 @@ export default class ChannelsService {
     isToken: boolean = false,
     otherLimit?: BN,
   ) {
-    let limit = hubBalance
+    let limit = hubBalance // opposite currency as what the user is exchanging
     if (otherLimit)
       limit = minBN(limit, otherLimit)
 
+    // if isToken, then limit is in wei, else it's token units
     const exchangeLimit = isToken 
-      ? assetToWei(limit, exchangeRate)[0]
-      : weiToAsset(limit, exchangeRate)
+      ? weiToAsset(limit, exchangeRate)
+      : assetToWei(limit, exchangeRate)[0]
 
-    return maxBN(reqAmount, exchangeLimit).toString()
+    return minBN(reqAmount, exchangeLimit).toString()
   }
 
   public async doRequestExchange(
