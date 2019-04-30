@@ -20,6 +20,7 @@ const {
   Big
 } = big
 
+type PurchaseRowWithPayments = types.PurchaseRowWithPayments
 type Payment<T=string> = types.Payment<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type PurchasePayment = types.PurchasePayment

@@ -9,7 +9,6 @@ import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 import Config from "./Config";
-import { sleep } from "./vendor/connext/lib/utils";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
 
@@ -462,7 +461,7 @@ describe('PaymentsService', () => {
     )
     // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.toFixed(),
+      pendingDepositTokenHub: config.beiMinCollateralization.toString(),
     })
   })
 

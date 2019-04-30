@@ -17,7 +17,6 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { BigNumber as BN } from 'ethers/utils'
-import { calculateExchange } from 'connext/dist/StateGenerator';
 import { assetToWei } from 'connext/dist/lib/bn';
 import { ethers } from 'connext/node_modules/ethers';
 
@@ -305,45 +304,50 @@ export default class ChannelsService {
       }
     }
 
-    let amountToCollateralize: BN
-    if (collateralizationTarget.isZero()) {
-      const targets = await this.calculateCollateralizationTargets(channel.state)
-
-      // 1. If there is more booty in the channel than the maxAmount, then
-      // withdraw down to that.
-      if (channel.state.balanceTokenHub.gt(targets.maxAmount)) {
-        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
-        // nothing now... but in the future this should withdraw.
-        return null
+    const calculatedTargets = await this.calculateCollateralizationTargets(channel.state)
+    let targets = { ...calculatedTargets }
+    // if the provided target is greater than the min target,
+    // but less than the max, replace the min
+    if (collateralizationTarget.gt(calculatedTargets.minAmount)) {
+      targets = {
+        ...targets,
+        minAmount: collateralizationTarget,
       }
-
-      // 2. If the amount is between the minAmount and the maxAmount, do nothing.
-      if (channel.state.balanceTokenHub.gt(targets.minAmount)) {
-        return null
+    } 
+    
+    // if the provided target is greater the max
+    // replace max
+    if (collateralizationTarget.gt(calculatedTargets.maxAmount)) {
+      targets = {
+        ...targets,
+        maxAmount: collateralizationTarget,
       }
-
-      // 3. Otherwise, deposit the appropriate amount
-      amountToCollateralize = targets.maxAmount.sub(channel.state.balanceTokenHub)
-    } else {
-      // collateralize to target, but not more than channel max
-      if (channel.state.balanceTokenHub.gt(this.config.beiMaxCollateralization)) {
-        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
-        // nothing now... but in the future this should withdraw.
-        return null
-      }
-
-      if (channel.state.balanceTokenHub.gt(collateralizationTarget)) {
-        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
-        // nothing now... but in the future this should withdraw.
-        return null
-      }
-
-      // 3. Deposit either up to the collateralization amount or the channel max
-      amountToCollateralize = minBN(
-        this.config.beiMaxCollateralization, 
-        collateralizationTarget
-      ).sub(channel.state.balanceTokenHub)
     }
+
+    // when the collateral target provided is greater than the
+    // max, the vales of minAmount and maxAmount will converge,
+    // signifying a definite target above the expected max is
+    // requested for collateral
+
+    // 1. If there is more booty in the channel than the maxAmount, then
+    // withdraw down to that.
+    if (channel.state.balanceTokenHub.gt(targets.maxAmount)) {
+      // NOTE: Since we don't have a way to do non-blocking withdrawals, do
+      // nothing now... but in the future this should withdraw.
+      return null
+    }
+
+    // 2. If the amount is between the minAmount and the maxAmount, do nothing.
+    if (channel.state.balanceTokenHub.gt(targets.minAmount)) {
+      return null
+    }
+
+    // 3. Otherwise, deposit the appropriate amount up to the 
+    // collteralization limit
+    const amountToCollateralize = minBN(
+      this.config.beiMaxCollateralization.sub(channel.state.balanceTokenHub), 
+      targets.maxAmount.sub(channel.state.balanceTokenHub)
+    )
 
     LOG.info(`Recollateralizing ${user} with ${ethers.utils.formatEther(amountToCollateralize)} BOOTY`)
 

@@ -4,11 +4,17 @@ import ChannelsService from "./ChannelsService";
 import ChannelsDao from "./dao/ChannelsDao";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { mkAddress, mkSig } from "./testing/stateUtils";
-import { PurchasePayment, UpdateRequest, PaymentArgs, convertDeposit } from "./vendor/connext/types";
 import PaymentsService from "./PaymentsService";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { Big } from "./util/bigNumber";
+import { big, types } from "./Connext"
+
+const { Big } = big;
+const { convertDeposit } = types;
+type PurchasePayment = types.PurchasePayment
+type UpdateRequest<T=string> = types.UpdateRequest<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+
 
 describe('OptimisticPaymentsService', () => {
 
@@ -123,7 +129,7 @@ describe('OptimisticPaymentsService', () => {
       reason: 'ProposePendingDeposit'
     })
     assert.isTrue(
-      Big((collateralReceiver.args as any).depositTokenHub).isGreaterThanOrEqualTo(Big(0))
+      Big((collateralReceiver.args as any).depositTokenHub).gte(Big(0))
     )
 
     // add sufficient collateral, and redeem payments
@@ -155,7 +161,7 @@ describe('OptimisticPaymentsService', () => {
       reason: 'ProposePendingDeposit'
     })
     assert.isTrue(
-      Big((collateral.args as any).depositTokenHub).isGreaterThanOrEqualTo(Big(0))
+      Big((collateral.args as any).depositTokenHub).gte(Big(0))
     )
     
   })
@@ -233,7 +239,7 @@ describe('OptimisticPaymentsService', () => {
       reason: 'ProposePendingDeposit'
     })
     assert.isTrue(
-      Big((collateralReceiver.args as any).depositTokenHub).isGreaterThanOrEqualTo(Big(0))
+      Big((collateralReceiver.args as any).depositTokenHub).gte(Big(0))
     )
 
     // get the payment and make sure it was updated

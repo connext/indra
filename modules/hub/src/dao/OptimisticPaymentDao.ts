@@ -1,16 +1,17 @@
 import log from "../util/log";
 import DBEngine, { SQL } from "../DBEngine";
 import { Client } from 'pg'
-import { OptimisticPurchasePaymentRowBigNumber } from "../vendor/connext/types";
-import { Big } from "../util/bigNumber";
+import { big, types } from "../Connext";
+const { Big } = big
+type OptimisticPurchasePaymentRowBN = types.OptimisticPurchasePaymentRowBN
 
 export default interface OptimisticPaymentDao {
   createOptimisticPayment(paymentId: number, channelUpdateId: number)
-  getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRowBigNumber[]>
+  getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRowBN[]>
   addOptimisticPaymentRedemption(paymentId: number, redemptionId: number): Promise<void>
   addOptimisticPaymentThread(paymentId: number, threadUpdateId: number): Promise<void>
   optimisticPaymentFailed(paymentId: number): Promise<void>
-  getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRowBigNumber>
+  getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRowBN>
 }
 
 const LOG = log('PostgresOptimisticPaymentDao')
@@ -33,7 +34,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     `)
   }
 
-  public async getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRowBigNumber> {
+  public async getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRowBN> {
     const row = await this.db.queryOne(SQL`
       SELECT * FROM (
         SELECT * 
@@ -56,7 +57,7 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     return this.rowToPaymentSummary(row)
   }
 
-  public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRowBigNumber[]> {
+  public async getNewOptimisticPayments(): Promise<OptimisticPurchasePaymentRowBN[]> {
     const { rows } = await this.db.query(SQL`
       WITH po AS (
         SELECT 
@@ -106,12 +107,12 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
     `)
   }
 
-  private mapRows(rows: any): OptimisticPurchasePaymentRowBigNumber[] {
+  private mapRows(rows: any): OptimisticPurchasePaymentRowBN[] {
     return rows.map(row => this.rowToPaymentSummary(row))
   }
 
   // expects there to be a channel_update_id field
-  private rowToPaymentSummary(row): OptimisticPurchasePaymentRowBigNumber | null {
+  private rowToPaymentSummary(row): OptimisticPurchasePaymentRowBN | null {
     return row && {
       paymentId: Number(row.id),
       createdOn: row.created_on,

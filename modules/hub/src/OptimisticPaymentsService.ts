@@ -1,12 +1,16 @@
 import log from "./util/log";
-import { Poller } from "./vendor/connext/lib/poller/Poller";
 import ChannelsDao from "./dao/ChannelsDao";
 import DBEngine from "./DBEngine";
-import { convertPayment, PurchasePayment, OptimisticPurchasePaymentRow, OptimisticPurchasePaymentRowBigNumber } from "./vendor/connext/types";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import PaymentsService from "./PaymentsService";
 import { maybe } from "./util";
 import ChannelsService from "./ChannelsService";
+import { types, Poller } from "./Connext"
+
+const { convertPayment } = types
+type PurchasePayment<T=string> = types.PurchasePayment<T>
+type OptimisticPurchasePaymentRow<T=string> = types.OptimisticPurchasePaymentRow<T>
+type OptimisticPurchasePaymentRowBN = types.OptimisticPurchasePaymentRowBN
 
 const LOG = log('OptimisticPaymentsService')
 
@@ -54,7 +58,7 @@ export class OptimisticPaymentsService {
         // if the hub has sufficient collateral, forward the
         // payment
         try {
-          const paymentBig = convertPayment("bignumber", p.amount)
+          const paymentBig = convertPayment("bn", p.amount)
           const sufficientCollateral = (type: 'Token' | 'Wei') => {
             const hubKey = 'balance' + type + 'Hub'
             const paymentKey = 'amount' + type
@@ -80,7 +84,7 @@ export class OptimisticPaymentsService {
     })
   }
 
-  private async sendChannelPayment(payment: OptimisticPurchasePaymentRowBigNumber): Promise<void> {
+  private async sendChannelPayment(payment: OptimisticPurchasePaymentRowBN): Promise<void> {
     // reconstruct purchase payment as if it came from user
     const purchasePayment: PurchasePayment = {
       recipient: payment.recipient,
