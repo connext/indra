@@ -666,6 +666,7 @@ export class Validator {
     for (const field of fields) {
       // get amount
       for (const key of Object.keys(value) as (keyof Payment)[]) {
+        if (key.indexOf('amount') === -1) continue
         const valCurrency = key.substring('amount'.length)
         // currency of values provided in currency types
         if (field.indexOf(valCurrency) !== -1 && (state as any)[field].lt(value[key])) {
