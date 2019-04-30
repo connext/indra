@@ -128,7 +128,7 @@ test-client: client
 watch-client:
 	bash ops/watch-client.sh
 
-test-contracts: contract-artifacts
+test-contracts: client contract-artifacts
 	bash ops/test-contracts.sh
 
 test-hub: hub database
@@ -213,7 +213,7 @@ contract-node-modules: builder $(contracts)/package.json
 	$(docker_run_in_contracts) "ln -s ../../../client/dist node_modules/connext/dist"
 	$(docker_run_in_contracts) "rm -rf node_modules/connext/src"
 	$(docker_run_in_contracts) "ln -s ../../../client/src node_modules/connext/src"
-	@touch build/client && touch build/client-node-modules
+	@touch build/client-node-modules
 	$(log_finish) && touch build/$@
 
 # Client
