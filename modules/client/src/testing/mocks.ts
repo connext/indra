@@ -12,6 +12,7 @@ import {
   mkHash,
   PartialSignedOrSuccinctChannel,
   PartialSignedOrSuccinctThread,
+  getCustodialBalance,
 } from '.'
 import { ConnextClientOptions, ConnextInternal } from '../Connext'
 import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
@@ -59,6 +60,7 @@ import {
   UnsignedThreadState,
   UpdateRequest,
   WithdrawalParameters,
+  CustodialBalanceRow,
 } from '../types'
 import Wallet from '../Wallet';
 
@@ -226,7 +228,10 @@ export class MockHub implements IHubAPIClient {
 
   async config(): Promise<HubConfig> {
     //TODO: implement correctly
-    return { beiMaxCollateralization: '100' } as any
+    return { 
+      beiMaxCollateralization: '100',
+      hubAddress: mkAddress("0xhhh")
+    } as any
   }
 
   async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
@@ -592,6 +597,16 @@ export class MockStore {
           sigHub: '0xsig-hub',
           sigUser: '0xsig-user',
         }, overrides)
+      }
+    }
+  }
+
+  public setHubAddress = (hubAddress: string = mkAddress("0xhhh")) => {
+    this._initialState = {
+      ...this._initialState,
+      persistent: {
+        ...this._initialState.persistent,
+        hubAddress,
       }
     }
   }

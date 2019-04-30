@@ -18,6 +18,7 @@ import {
   ThreadStateUpdate,
   UpdateRequest,
   WithdrawalParameters,
+  CustodialBalanceRow,
 } from './types'
 import Wallet from './Wallet';
 
@@ -58,6 +59,7 @@ export interface IHubAPIClient {
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
   config(): Promise<HubConfig>
   redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
+  getCustodialBalance(): Promise<CustodialBalanceRow | null>
 }
 
 export class HubAPIClient implements IHubAPIClient {
@@ -70,6 +72,22 @@ export class HubAPIClient implements IHubAPIClient {
     this.networking = networking
     this.origin = origin
     this.wallet = wallet
+  }
+
+  async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
+    try {
+      const res = (await this.networking.post(`custodial/${this.wallet.address}/balance`, {
+        authToken: await this.getAuthToken(),
+      })).data
+      return res ? res : null
+    } catch (e) {
+      if (e.status == 404) {
+        console.log(`Custodial balances not found for user ${this.wallet.address}`)
+        return null
+      }
+      console.log('Error getting latest state no pending ops:', e)
+      throw e
+    }
   }
 
   async config(): Promise<HubConfig> {

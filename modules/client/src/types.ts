@@ -926,6 +926,19 @@ export type PurchasePaymentRow<MetaType=any, T=string> = PurchasePaymentSummary<
 }
 export type PurchasePaymentRowBN = PurchasePaymentRow<any, BN>
 
+// Define partial payment types
+export type PartialPurchasePaymentRequest<MetadataType=any> = {
+  type: PurchasePaymentType
+  recipient: string
+  amount: Partial<Payment>
+  meta: MetadataType
+}
+
+export type PartialPurchaseRequest<MetadataType=any> = {
+  meta: MetadataType
+  payments: PartialPurchasePaymentRequest[]
+}
+
 
 /*********************************
  ******* TYPE CONVERSIONS ********

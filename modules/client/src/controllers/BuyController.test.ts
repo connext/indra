@@ -1,8 +1,7 @@
 import { assert, mkAddress, mkHash } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs, PurchasePaymentType } from '../types';
+import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest } from '../types';
 import { emptyAddress } from '../Utils';
-import { toBN } from 'web3-utils';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
@@ -14,10 +13,13 @@ describe("BuyController: assignPaymentTypes", () => {
   const mockStore: MockStore = new MockStore()
 
   beforeEach(async () => {
+    mockStore.setHubAddress()
+    const store = mockStore.createStore()
     connext = new MockConnextInternal({ 
       user, 
-      store: mockStore.createStore(), 
+      store,
     })
+    await connext.start()
   })
 
   it("should retain a type if its provided", async () => {
@@ -72,7 +74,7 @@ describe("BuyController: assignPaymentTypes", () => {
 
   it("should assign a PT_CHANNEL if the payment is to the hub", async () => {
     const payment: PurchasePaymentRequest = {
-      recipient: connext.opts.hubAddress,
+      recipient: mkAddress("0xhhh"),
       amount: {
         amountToken: '10',
         amountWei: '0',

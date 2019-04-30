@@ -28,15 +28,14 @@ import {
   ChannelState,
   convertChannelState,
   convertPayment,
-  HubConfig,
   Omit,
   Payment,
-  PurchaseRequest,
   SignedDepositRequestProposal,
   ThreadState,
   UnsignedThreadState,
   UnsignedChannelState,
   WithdrawalParameters,
+  PartialPurchaseRequest,
 } from './types';
 import { Utils } from './Utils';
 import { Validator, } from './validator';
@@ -152,7 +151,7 @@ export abstract class ConnextClient extends EventEmitter {
     await this.internal.exchangeController.exchange(toSell, currency)
   }
 
-  async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
+  async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
     return await this.internal.buyController.buy(purchase)
   }
 
@@ -277,15 +276,17 @@ export class ConnextInternal extends ConnextClient {
   async syncConfig() {
     const config = await this.hub.config()
     const opts = this.opts
-    const adjusted = Object.keys(opts).map(k => {
-      if (k || Object.keys(opts).indexOf(k) == -1) {
+    let adjusted = {} as any
+    Object.keys(opts).map(k => {
+      if (k || Object.keys(opts).indexOf(k) != -1) {
         // user supplied, igonore
-        return (opts as any)[k]
+        adjusted[k] = (opts as any)[k]
+        return
       }
 
-      return (config as any)[k]
+      adjusted[k] = (config as any)[k]
     })
-    return adjusted[0]
+    return adjusted
   }
 
   async start() {
@@ -312,19 +313,16 @@ export class ConnextInternal extends ConnextClient {
     // TODO: appropriately set the latest
     // valid state ??
     const channelAndUpdate = await this.hub.getLatestChannelStateAndUpdate()
-    console.log('Found latest double signed state:', JSON.stringify(channelAndUpdate, null, 2))
     if (channelAndUpdate) {
       this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
 
       // update the latest valid state
       const latestValid = await this.hub.getLatestStateNoPendingOps()
-      console.log('latestValid:', latestValid)
       if (latestValid) {
         this.store.dispatch(actions.setLatestValidState(latestValid))
       }
       // unconditionally update last thread update id, thread history
       const lastThreadUpdateId = await this.hub.getLastThreadUpdateId()
-      console.log('lastThreadUpdateId:', lastThreadUpdateId)
       this.store.dispatch(actions.setLastThreadUpdateId(lastThreadUpdateId))
       // extract thread history, sort by descending threadId
       const threadHistoryDuplicates = (await this.hub.getAllThreads()).map(t => {
@@ -334,7 +332,6 @@ export class ConnextInternal extends ConnextClient {
           threadId: t.threadId,
         }
       }).sort((a, b) => b.threadId - a.threadId)
-      console.log('threadHistoryDuplicates', threadHistoryDuplicates)
       // filter duplicates
       const threadHistory = threadHistoryDuplicates.filter((thread, i) => {
         const search = JSON.stringify({
@@ -346,18 +343,15 @@ export class ConnextInternal extends ConnextClient {
         })
         return elts.indexOf(search) == i
       })
-      console.log('threadHistory:', threadHistory)
       this.store.dispatch(actions.setThreadHistory(threadHistory))
 
       // if thread count is greater than 0, update
       // activeThreads, initial states
       if (channelAndUpdate.state.threadCount > 0) {
         const initialStates = await this.hub.getThreadInitialStates()
-        console.log('initialStates:', initialStates)
         this.store.dispatch(actions.setActiveInitialThreadStates(initialStates))
 
         const threadRows = await this.hub.getActiveThreads()
-        console.log('threadRows:', threadRows)
         this.store.dispatch(actions.setActiveThreads(threadRows))
       }
     }

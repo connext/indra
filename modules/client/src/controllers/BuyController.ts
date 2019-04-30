@@ -50,7 +50,7 @@ export default class BuyController extends AbstractController {
     }
 
     // if the recipient is the hub, it should be a channel payment
-    if (payment.recipient.toLowerCase() == this.connext.opts.hubAddress.toLowerCase()) {
+    if (payment.recipient.toLowerCase() == this.getState().persistent.hubAddress) {
       return {
         ...payment,
         type: "PT_CHANNEL",
