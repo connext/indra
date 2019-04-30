@@ -28,5 +28,6 @@ docker run \
     echo "Starting Ganache.."
     ganache-cli --networkId=4447 --db="/chaindata" > ops/ganache-test.log &
     echo "Running tests.."
+    truffle test test/client.js --network=ganache
     truffle test test/channelManager.js --network=ganache
   '

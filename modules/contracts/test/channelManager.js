@@ -6,7 +6,7 @@ const privKeys = require("./privKeys.json");
 const CM = artifacts.require("./ChannelManager.sol");
 const HST = artifacts.require("./HumanStandardToken.sol");
 const data = require("../ops/data.json");
-const Connext = require("../../client");
+const Connext = require("connext");
 const ConnextTester = require("connext/dist/testing");
 
 /* Setup Connext Client Stuff */
