@@ -1,16 +1,18 @@
 require('dotenv').config()
 const HttpProvider = require(`ethjs-provider-http`)
-import { ethers as eth } from 'ethers';
 import { expect, assert } from 'chai'
+import { ethers as eth } from 'ethers';
 import { Utils } from './Utils'
 import { MerkleUtils } from './helpers/merkleUtils'
-// import { MerkleTree } from './helpers/merkleTree'
 import MerkleTree from './helpers/merkleTree'
 import * as t from './testing/index'
 import Web3 from 'web3';
 
+const ethProvider = new eth.providers.JsonRpcProvider('http://localhost:8545')
+const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
+const ethWallet = eth.Wallet.fromMnemonic(mnemonic).connect(ethProvider)
 const hub = t.mkAddress("0xaa")
-const utils = new Utils(hub)
+const utils = new Utils()
 
 describe('Utils', () => {
   let web3: Web3

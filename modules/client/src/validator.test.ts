@@ -198,7 +198,7 @@ function createThreadState(...overrides: t.PartialSignedOrSuccinctThread[]) {
   threadRoot: '0xbb97e9652a4754f4e543a7ed79b654dc5e5914060451f5d87e0b9ab1bde73bef' }
  */
 function createChannelThreadOverrides(targetThreadCount: number, ...overrides: any[]) {
-  const utils = new Utils("")
+  const utils = new Utils()
   if (!targetThreadCount) {
     return {
       threadCount: 0,

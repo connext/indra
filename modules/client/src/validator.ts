@@ -82,7 +82,7 @@ export class Validator {
   hubAddress: Address
 
   constructor(hubAddress: Address, provider: any, abi: any) {
-    this.utils = new Utils(hubAddress)
+    this.utils = new Utils()
     this.stateGenerator = new StateGenerator(hubAddress)
     this.provider = provider
     this.abi = new eth.utils.Interface(abi)

@@ -58,22 +58,12 @@ export class MemoryCRAuthManager implements CRAuthManager {
       let hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
       let fingerprint = util.toBuffer(String(hash))
       const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-      const prefixedMsg = util.keccak256(
-        Buffer.concat([
-          prefix,
-          util.toBuffer(String(fingerprint.length)),
-          fingerprint,
-        ]),
-      )
+      const prefixedMsg = util.keccak256(Buffer.concat(
+        [ prefix, util.toBuffer(String(fingerprint.length)), fingerprint ]
+      ))
       const res = util.fromRpcSig(signature)
-      const pubKey = util.ecrecover(
-        util.toBuffer(prefixedMsg),
-        res.v,
-        res.r,
-        res.s,
-      )
-      const addrBuf = util.pubToAddress(pubKey)
-      sigAddr = util.bufferToHex(addrBuf)
+      const pubKey = util.ecrecover( util.toBuffer(prefixedMsg), res.v, res.r, res.s,)
+      sigAddr = util.bufferToHex(util.pubToAddress(pubKey))
       if (!sigAddr || sigAddr !== address) {
         LOG.warn(`Signature doesn't match old scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
         return null

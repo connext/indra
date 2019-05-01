@@ -43,7 +43,7 @@ export function handleStateFlags(args: any): any {
 
       let isUnsigned = false
       let hasTimeout = !!channel.timeout
-      let hasPending = new Utils(hubAddress).hasPendingOps(channel)
+      let hasPending = new Utils().hasPendingOps(channel)
 
       updatesToSync.forEach(update => {
         if(update.type == 'channel') {
