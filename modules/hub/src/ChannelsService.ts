@@ -368,7 +368,7 @@ export default class ChannelsService {
     const channel = await this.channelsDao.getChannelByUser(user)
     if (!channel || channel.status !== 'CS_OPEN') {
       LOG.error(
-        `withdraw: Channel is not in the correct state: ` +
+        `withdraw: Channel for ${user} is not in the correct state: ` +
         `${prettySafeJson(channel)}`,
       )
       return
