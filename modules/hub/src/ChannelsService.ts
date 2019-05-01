@@ -348,6 +348,10 @@ export default class ChannelsService {
       targets.maxAmount.sub(channel.state.balanceTokenHub)
     )
 
+    if (amountToCollateralize.isZero()) {
+      return null
+    }
+
     LOG.info(`Recollateralizing ${user} with ${ethers.utils.formatEther(amountToCollateralize)} BOOTY`)
 
     const depositArgs: DepositArgs = {
