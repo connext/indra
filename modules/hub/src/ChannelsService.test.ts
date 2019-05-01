@@ -36,7 +36,6 @@ import ThreadsService from './ThreadsService';
 import DBEngine, { SQL } from './DBEngine';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { OnchainTransactionService } from './OnchainTransactionService';
-import { assetToWei, weiToAsset } from 'connext/dist/lib/bn';
 import * as ethers from 'ethers';
 
 type ChannelState = types.ChannelState
@@ -51,7 +50,7 @@ type WithdrawalParametersBigNumber = types.WithdrawalParametersBN
 
 const { convertChannelState, convertDeposit, convertExchange, convertWithdrawal, isBN } = types
 
-const { Big, toWeiBig, toWeiString, WEI_CONVERSION } = big
+const { Big, toWeiBig, toWeiString, assetToWei, weiToAsset } = big
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any

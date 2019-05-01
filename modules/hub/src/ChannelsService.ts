@@ -17,7 +17,6 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { BigNumber as BN } from 'ethers/utils'
-import { assetToWei } from 'connext/dist/lib/bn';
 import * as ethers from 'ethers';
 
 type ChannelRow = types.ChannelRow
@@ -48,7 +47,7 @@ const {
   convertWithdrawal,
   convertWithdrawalParameters,
 } = types
-const { Big, toWeiBig, maxBN, weiToAsset, minBN } = big
+const { Big, toWeiBig, maxBN, weiToAsset, minBN, assetToWei } = big
 const LOG = log('ChannelsService')
 
 type RedisReason = 'user-authorized' | 'hub-authorized' | 'offchain'
