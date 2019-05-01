@@ -8,7 +8,7 @@ import WithdrawalsService from './WithdrawalsService'
 import WithdrawalsDao from './dao/WithdrawalsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import Config from './Config'
-import { big } from './Connext'
+import { big } from 'connext'
 
 const { Big, toWeiBig, toWeiString } = big
 

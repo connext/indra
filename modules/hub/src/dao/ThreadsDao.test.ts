@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import { getTestRegistry } from '../testing'
 import { PostgresThreadsDao } from './ThreadsDao'
 import {

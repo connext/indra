@@ -1,5 +1,5 @@
 import { getMockWeb3 } from '../testing/mocks'
-import { big } from '../Connext'
+import { big } from 'connext'
 import { mkAddress } from '../testing/stateUtils'
 import { createTestPayment } from './CustodialPaymentsDao.test'
 import { assert, getTestRegistry } from '../testing'

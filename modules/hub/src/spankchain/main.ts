@@ -1,7 +1,7 @@
 require('../register/common')
 
 import PaymentHub from '../PaymentHub'
-import { big } from '../Connext';
+import { big } from 'connext';
 import { default as Config } from '../Config'
 const {
   Big

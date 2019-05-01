@@ -1,4 +1,4 @@
-import { StateGenerator, types, big } from '../Connext';
+import { StateGenerator, types, big } from 'connext';
 import { TestServiceRegistry } from ".";
 import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel } from "./stateUtils";
 import { default as ChannelsDao } from "../dao/ChannelsDao";

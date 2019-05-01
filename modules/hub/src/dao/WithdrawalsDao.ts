@@ -3,7 +3,7 @@ import DBEngine from '../DBEngine'
 import {Client, QueryResult} from 'pg'
 import {TotalsTuple} from '../domain/TotalsTuple'
 import { BigNumber as BN } from 'ethers/utils'
-import { big } from '../Connext';
+import { big } from 'connext';
 const {
   Big
 } = big
