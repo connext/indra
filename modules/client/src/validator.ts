@@ -758,7 +758,11 @@ export class Validator {
       k[f] = delta
     })
 
-    return this.hasInequivalent([deltas, k], fields)
+    if (this.hasInequivalent([deltas, k], fields)) {
+      return `Expected delta of ${delta.toString()} for the fields ${fields.join(", ")}`
+    }
+
+    return null
   }
 
   private userIsNotSenderOrReceiver(prev: ChannelStateBN, args: ThreadStateBN): string | null {
@@ -878,7 +882,7 @@ export class Validator {
     ] as (string | null)[]
     // assume the previous should always have at least one sig
     if (prev.txCountChain > 0 && !prev.sigHub && !prev.sigUser) {
-      errs.push(`No signature detected on the previous state. (prev: ${JSON.stringify(prev)}, curr: ${JSON.stringify(curr)})`)
+      errs.push(`No signature detected on the previous state.`)
     }
 
     const prevPending = this.hasPendingOps(prev)
@@ -971,8 +975,8 @@ export class Validator {
       // TODO check threadroot != threadroot
     }
 
-    if (errs) {
-      return errs.filter(x => !!x)[0]
+    if (errs && errs.filter(x => !!x)[0]) {
+      return errs.filter(x => !!x)[0] + `(prev: ${this.logChannel(prev)}, curr: ${this.logChannel(curr)})`
     }
     return null
   }
@@ -1162,13 +1166,13 @@ export class Validator {
 
   private logChannel(prev: ChannelStateBN | UnsignedChannelStateBN) {
     if (!(prev as ChannelStateBN).sigUser) {
-      return JSON.stringify(convertChannelState("str-unsigned", prev))
+      return JSON.stringify(convertChannelState("str-unsigned", prev), null, 2)
     } else {
-      return JSON.stringify(convertChannelState("str", prev as ChannelStateBN))
+      return JSON.stringify(convertChannelState("str", prev as ChannelStateBN), null, 2)
     }
   }
 
   private logArgs(args: ArgsTypes, reason: ChannelUpdateReason) {
-    return JSON.stringify(convertArgs("str", reason, args as any))
+    return JSON.stringify(convertArgs("str", reason, args as any), null, 2)
   }
 }
