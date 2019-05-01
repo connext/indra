@@ -1,10 +1,10 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
 import { big } from './Connext';
-import { toWeiString } from 'connext/dist/lib/bn';
 const {
   toWeiBig,
-  Big
+  Big,
+  toWeiString
 } = big
 
 const ENV_VARS = [

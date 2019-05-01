@@ -9,10 +9,9 @@ import { prettySafeJson, parseQueryString, safeInt } from '../util'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as ChannelsService } from '../ChannelsService'
 import { default as log } from '../util/log'
-import { minBN, toWeiBig, assetToWei } from 'connext/dist/lib/bn';
 
 type DepositArgs = types.DepositArgs
-const { maxBN, Big } = big
+const { maxBN, Big, minBN, toWeiBig, assetToWei } = big
 const LOG = log('CoinPaymentsService')
 
 // See also: https://www.coinpayments.net/merchant-tools-ipn

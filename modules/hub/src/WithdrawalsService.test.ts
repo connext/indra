@@ -9,9 +9,8 @@ import WithdrawalsDao from './dao/WithdrawalsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import Config from './Config'
 import { big } from './Connext'
-import { toWeiBig, toWeiString } from 'connext/dist/lib/bn';
 
-const { Big } = big
+const { Big, toWeiBig, toWeiString } = big
 
 describe.skip('WithdrawalsService', () => {
   let clock: SinonFakeTimers
