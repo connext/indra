@@ -1,6 +1,6 @@
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext';
-import { Big } from '../lib/bn';
+import { Big, mul, toWeiBig, toWeiString } from '../lib/bn';
 import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
 import { getExchangeRates, getTxCount } from '../state/getters'
 import { Poller } from '../lib/poller/Poller';
@@ -56,7 +56,7 @@ export class ExchangeController extends AbstractController {
       if (rates.USD) {
         // These are the values wallet expects
         rates.USD = rates.USD,
-        rates.BEI = (Big(rates.USD)).mul(Big(BEI_AMOUNT)).toString()
+        rates.BEI = toWeiString(rates.USD) // multiply by bei amt = 10e18
         rates.WEI = Big(WEI_AMOUNT).toString()
         rates.ETH = Big(1).toString()
         rates.BOOTY = rates.USD
