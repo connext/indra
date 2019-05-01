@@ -1,7 +1,7 @@
+import { ethers as eth } from 'ethers';
 import { assert, mkAddress, mkHash } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
 import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest } from '../types';
-import { emptyAddress } from '../Utils';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
@@ -223,7 +223,7 @@ describe('BuyController: unit tests', () => {
           amount: { amountToken: '1', },
           type: 'PT_LINK' as PurchasePaymentType,
           meta: { secret: connext.generateSecret() },
-          recipient: emptyAddress,
+          recipient: eth.constants.AddressZero,
         },
       ],
     })
@@ -252,7 +252,7 @@ describe('BuyController: unit tests', () => {
           amount: { amountToken: '1', },
           type: 'PT_LINK' as PurchasePaymentType,
           meta: {},
-          recipient: emptyAddress,
+          recipient: eth.constants.AddressZero,
         },
       ],
     }), /Secret is not present/)
@@ -267,7 +267,7 @@ describe('BuyController: unit tests', () => {
           amount: { amountToken: '1', },
           type: 'PT_LINK' as PurchasePaymentType,
           meta: { secret: 'secret' },
-          recipient: emptyAddress,
+          recipient: eth.constants.AddressZero,
         },
       ],
     }), /Secret is not hex string/)
@@ -507,7 +507,7 @@ describe('BuyController: unit tests', () => {
           amount: { amountToken: '1', amountWei: '0' },
           type: 'PT_LINK',
           meta: { secret: connext.generateSecret() },
-          recipient: emptyAddress,
+          recipient: eth.constants.AddressZero,
         },
       ],
     })

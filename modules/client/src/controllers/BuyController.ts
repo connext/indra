@@ -3,7 +3,6 @@ import { AbstractController } from './AbstractController'
 import { getChannel } from '../state/getters'
 import { assertUnreachable } from '../lib/utils';
 import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType, PartialPurchaseRequest } from '../types'
-import { emptyAddress } from '../Utils';
 import { Big } from '../lib/bn';
 
 // **********************************************//
@@ -178,7 +177,7 @@ export default class BuyController extends AbstractController {
           signedPayments.push({
             ...payment,
             type: 'PT_LINK',
-            recipient: emptyAddress,
+            recipient: eth.constants.AddressZero,
             update: {
               reason: 'Payment',
               args: linkArgs,

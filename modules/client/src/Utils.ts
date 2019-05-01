@@ -19,9 +19,6 @@ import {
  *********** UTIL FNS ************
  *********************************/
 
-export const emptyAddress = eth.constants.AddressZero
-export const emptyRootHash = eth.constants.HashZero
-
 // define the utils functions
 export class Utils {
   emptyAddress = eth.constants.AddressZero
