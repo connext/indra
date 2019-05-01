@@ -1,15 +1,35 @@
 
+## Static properties
+
+ - contractAddress
+ - ethNetworkId
+ - hubAddress
+ - tokenAddress
+
 ## Core Methods/Classes
 
  - StateGenerator
  - Validator
+ - buy
+ - deposit
+ - exchange
+ - getConnextClient
+ - on: ('onStateChange', (newState) => void) => void
+ - recipientNeedsCollateral
+ - redeem
+ - requestCollateral
+ - start
+ - stop
+ - withdraw
 
 ## Utilities
 
- - Big: (string) => Big
+ - Big: (string|number) => Big
  - Poller
  - assetToWei
  - createChannelStateHash
+ - generateSecret()
+ - getExchangeRates
  - hasPendingOps
  - isBN
  - maxBN
@@ -49,6 +69,9 @@
  - ChannelUpdateReason
  - ConfirmPendingArgs
  - CreateCustodialWithdrawalOptionsBN
+ - Currency
+ - CurrencyConvertable
+ - CurrencyType
  - CustodialBalanceRowBN
  - CustodialPaymentsRow
  - CustodialWithdrawalRowBN
