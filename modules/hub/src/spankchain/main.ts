@@ -18,6 +18,7 @@ const config = Config.fromEnv({
     'hub-staging.spankdev.com',
     'hub.spankchain.com',
     'hub-connext.spankdev.com',
+    'next-portal.dev.ujomusic.com'
   ],
   recipientAddress: process.env.WALLET_ADDRESS!,
   adminAddresses: [
