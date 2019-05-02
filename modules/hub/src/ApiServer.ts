@@ -9,10 +9,8 @@ import { Container } from './Container'
 import { ApiService } from './api/ApiService'
 import {
   default as AuthHandler,
-  DefaultAuthHandler,
 } from './middleware/AuthHandler'
 import AuthHeaderMiddleware from './middleware/AuthHeaderMiddleware'
-import * as path from 'path'
 import * as cors from 'cors'
 
 const LOG = log('ApiServer')

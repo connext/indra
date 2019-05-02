@@ -1,6 +1,5 @@
 import * as chai from 'chai'
 import {assert} from 'chai'
-import * as BigNumber from 'bignumber.js'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as sinon from 'sinon'
 import {SinonFakeTimers, SinonStub} from 'sinon'
@@ -9,6 +8,9 @@ import WithdrawalsService from './WithdrawalsService'
 import WithdrawalsDao from './dao/WithdrawalsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import Config from './Config'
+import { big } from './Connext'
+
+const { Big, toWeiBig, toWeiString } = big
 
 describe.skip('WithdrawalsService', () => {
   let clock: SinonFakeTimers
@@ -32,7 +34,7 @@ describe.skip('WithdrawalsService', () => {
 
     config = {
       hotWalletAddress: '0xeee',
-      hotWalletMinBalanceEth: '0.69',
+      hotWalletMinBalance: toWeiString('0.69'),
     } as Config
 
     web3 = {
@@ -48,7 +50,7 @@ describe.skip('WithdrawalsService', () => {
           if (!bal)
             throw new Error(`No mock balance defined for address: ${addr}`)
 
-          cb(null, (new BigNumber.BigNumber(bal)).times('1e18'))
+          cb(null, toWeiBig(Big(bal)))
         },
       },
     }
@@ -66,7 +68,7 @@ describe.skip('WithdrawalsService', () => {
         withdrawalsEnabled: false
       })
 
-      return await assert.isRejected(ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10)))
+      return await assert.isRejected(ws.withdraw('0xbeef', '0xcafe', Big(10)))
     })
 
     it('throws an error if the withdrawal cannot be created', async () => {
@@ -75,7 +77,7 @@ describe.skip('WithdrawalsService', () => {
       })
 
       wDao.createChannelDisbursement = sinon.stub().withArgs('0xbeef', '0xcafe', sinon.match.any).rejects()
-      return await assert.isRejected(ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10)))
+      return await assert.isRejected(ws.withdraw('0xbeef', '0xcafe', Big(10)))
     })
 
     describe('transaction states', () => {
@@ -90,12 +92,12 @@ describe.skip('WithdrawalsService', () => {
       })
 
       it('sends the wei amount in the withdrawal to the recipient', async () => {
-        await ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10))
+        await ws.withdraw('0xbeef', '0xcafe', Big(10))
 
         assert.isTrue(web3.eth.sendTransaction.calledWith({
           from: '0xeee',
           to: '0xcafe',
-          value: new BigNumber.BigNumber(10)
+          value: Big(10)
         }, sinon.match.func))
       })
 
@@ -113,11 +115,11 @@ describe.skip('WithdrawalsService', () => {
           }
 
           // Withdraw should succeed
-          await ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10))
+          await ws.withdraw('0xbeef', '0xcafe', Big(10))
           assert.isTrue(web3.eth.sendTransaction.calledWith({
             from: '0xeee',
             to: '0xcafe',
-            value: new BigNumber.BigNumber(10)
+            value: Big(10)
           }, sinon.match.func))
 
           assert.isTrue(didGetErrorLog, 'No error was logged!')
@@ -138,7 +140,7 @@ describe.skip('WithdrawalsService', () => {
           },
         })
 
-        return ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10))
+        return ws.withdraw('0xbeef', '0xcafe', Big(10))
           .then(() => assert.isTrue((wDao.markFailed as SinonStub).calledWith(1)))
       })
 
@@ -151,7 +153,7 @@ describe.skip('WithdrawalsService', () => {
           })
         })
 
-        return ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10))
+        return ws.withdraw('0xbeef', '0xcafe', Big(10))
           .then(() => assert.isTrue((wDao.markFailed as SinonStub).calledWith(1)))
       })
 
@@ -166,7 +168,7 @@ describe.skip('WithdrawalsService', () => {
           })
         })
 
-        return ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10))
+        return ws.withdraw('0xbeef', '0xcafe', Big(10))
           .then(() => assert.isTrue((wDao.markPending as SinonStub).calledWith(1, 'txhash')))
       })
 
@@ -194,7 +196,7 @@ describe.skip('WithdrawalsService', () => {
             })
           })
 
-          ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10))
+          ws.withdraw('0xbeef', '0xcafe', Big(10))
         })
 
         assert.isTrue((wDao.markConfirmed as SinonStub).calledWith(1))
@@ -230,7 +232,7 @@ describe.skip('WithdrawalsService', () => {
             })
           })
 
-          ws.withdraw('0xbeef', '0xcafe', new BigNumber.BigNumber(10))
+          ws.withdraw('0xbeef', '0xcafe', Big(10))
         })
 
         console.info = originalInfo

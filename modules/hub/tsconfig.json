@@ -1,40 +1,21 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
-    "outDir": "./dist/",
-    "sourceMap": true,
-    "noImplicitAny": false,
-    "strictPropertyInitialization": false,
-    // "declaration": true,
     "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
+    "declaration": false,
     "emitDecoratorMetadata": true,
-    "skipLibCheck": true,
-    "target": "es5",
+    "esModuleInterop": false,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
     "module": "commonjs",
-    "jsx": "react",
-    "lib": ["es5", "es2015", "es6", "dom", "es2017"],
-    // "declarationDir": "dist/types",
-    "typeRoots": [
-      "src/@types",
-      "node_modules/@types"
-    ],
-    "allowJs": true
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "outDir": "./dist/",
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": false,
+    "target": "es6",
+    "typeRoots": [ "src/@types", "node_modules/@types" ]
   },
-  "include": [
-    "connext-migration-disbursement-tool.ts",
-    "src/**/*.ts",
-    "example/**/*.ts",
-    "types/**/*.ts",
-    "node_modules/**/index.d.ts"
-  ],
-  "exclude": [
-    "node_modules/**",
-    "../common/**",
-    "src/frontend/**"
-  ],
-  "typeRoots": [
-    "node_modules/@types",
-    "src/@types"
-  ]
+  "exclude": [ "node_modules/**" ],
+  "include": [ "src/**/*.ts" ]
 }

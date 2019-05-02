@@ -1,5 +1,6 @@
+import { ConnextInternal } from "../Connext";
+import { IHubAPIClient } from "../Hub";
 import Logger from '../lib/Logger'
-import { ConnextInternal, IHubAPIClient } from "../Connext";
 import { ConnextState, ConnextStore } from "../state/store";
 import { Validator } from '../validator';
 

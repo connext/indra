@@ -1,9 +1,11 @@
+import * as Connext from '../Connext'
 import DBEngine, { SQL } from "../DBEngine";
 import { Client } from "pg";
 import { OnchainTransactionRow } from "../domain/OnchainTransaction";
 import Config from "../Config";
 import { ChannelDisputeRow } from "../domain/ChannelDispute";
-import { DisputeStatus } from "../vendor/connext/types";
+
+type DisputeStatus = Connext.types.DisputeStatus
 
 export default interface ChannelDisputesDao {
   create(

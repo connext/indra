@@ -8,7 +8,7 @@ import { default as DBEngine, SQL } from '../DBEngine'
 import { CoinPaymentsDao } from './CoinPaymentsDao'
 import { MockExchangeRateDao, MockGasEstimateDao } from '../testing/mocks'
 import { default as ChannelsService } from '../ChannelsService'
-import { Big } from '../util/bigNumber'
+import { big } from '../Connext'
 import { channelUpdateFactory } from '../testing/factories'
 import Web3 = require('web3')
 
@@ -195,7 +195,7 @@ describe('CoinPaymentsService', () => {
         ipnData: {},
         expected: {
           depositWeiUser: '0',
-          depositTokenUser: Big(50).times('1e18').toFixed(),
+          depositTokenUser: big.toWeiString(50)
         },
       },
 
@@ -206,7 +206,7 @@ describe('CoinPaymentsService', () => {
         },
         expected: {
           depositWeiUser: '251113811259619279',
-          depositTokenUser: Big('69').times('1e18').toFixed(),
+          depositTokenUser: big.toWeiString('69'),
         },
       },
     ], async t => {

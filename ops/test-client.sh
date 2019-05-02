@@ -13,6 +13,8 @@ function cleanup {
 }
 trap cleanup EXIT
 
+docker container prune -f
+
 docker run \
   --interactive \
   --tty \
@@ -22,9 +24,9 @@ docker run \
   --entrypoint=bash \
   ${project}_builder -c '
     set -e
+    echo "Container launched.."
     PATH=./node_modules/.bin:$PATH
-    echo "Running tests.."
-    mocha \
+    mocha '"$watch"' \
       -r ts-node/register/type-check \
       -r ./src/register/common.ts \
       -r ./src/register/testing.ts \

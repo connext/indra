@@ -1,3 +1,4 @@
+import { types, Utils, big } from '../Connext'
 import * as crypto from 'crypto'
 import { default as DBEngine } from '../DBEngine'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
@@ -5,15 +6,12 @@ import { default as Config } from '../Config'
 import { CoinPaymentsDao, CoinPaymentsIpnRow, CoinPaymentsDepositAddress } from './CoinPaymentsDao'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
 import { prettySafeJson, parseQueryString, safeInt } from '../util'
-import { PaymentArgs, convertChannelState, DepositArgs } from '../vendor/connext/types'
-import { Validator } from '../vendor/connext/validator'
-import { SignerService } from '../SignerService'
-import { BigNumber } from 'bignumber.js/bignumber'
-import { hasPendingOps } from '../vendor/connext/hasPendingOps'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as ChannelsService } from '../ChannelsService'
 import { default as log } from '../util/log'
 
+type DepositArgs = types.DepositArgs
+const { maxBN, Big, minBN, toWeiBig, assetToWei } = big
 const LOG = log('CoinPaymentsService')
 
 // See also: https://www.coinpayments.net/merchant-tools-ipn
@@ -101,6 +99,7 @@ export type CoinPaymentsIpnData = {
 export const COINPAYMENTS_MAX_DEPOSIT_FIAT = 300
 
 export class CoinPaymentsService {
+  private utils: Utils
   constructor(
     private config: Config,
     private api: CoinPaymentsApiClient,
@@ -109,7 +108,9 @@ export class CoinPaymentsService {
     private channelsService: ChannelsService,
     private channelDao: ChannelsDao,
     private exchangeRateDao: ExchangeRateDao,
-  ) {}
+  ) {
+    this.utils = new Utils(this.config.hotWalletAddress)
+  }
 
   generateHmac(key: string, rawData: string): string {
     return crypto
@@ -214,7 +215,7 @@ export class CoinPaymentsService {
       LOG.info(`Channel ${user} is not open (${channel.status}); can't apply IPN credit yet (will retry)`)
       return null
     }
-    if (hasPendingOps(channel.state)) {
+    if (this.utils.hasPendingOps(channel.state)) {
       LOG.info(`Channel ${user} has pending operations; can't apply IPN credit yet (will retry)`)
       return null
     }
@@ -241,12 +242,12 @@ export class CoinPaymentsService {
       )
     }
 
-    if (ipn.amountFiat.isGreaterThan(COINPAYMENTS_MAX_DEPOSIT_FIAT)) {
+    if (ipn.amountFiat.gt(COINPAYMENTS_MAX_DEPOSIT_FIAT)) {
       throw new Error(
         `Refusing to credit user for IPN where amount > ` +
         `COINPAYMENTS_MAX_DEPOSIT_FIAT (this should have been enforced by ` +
         `the CoinPayments API, but apparently was not). Deposit amount: ` +
-        `${ipn.amountFiat.toFixed()}, COINPAYMENTS_MAX_DEPOSIT_FIAT: ` +
+        `${ipn.amountFiat.toString()}, COINPAYMENTS_MAX_DEPOSIT_FIAT: ` +
         `${COINPAYMENTS_MAX_DEPOSIT_FIAT}.`
       )
     }
@@ -263,30 +264,31 @@ export class CoinPaymentsService {
 
     // Calculate the amount to deposit: deposit up to channelBeiLimit, then
     // credit the rest as wei
-    const beiLimit = BigNumber.max(
-      0,
-      this.config.channelBeiLimit.minus(channel.state.balanceTokenUser),
+    const beiLimit = maxBN(
+      Big(0),
+      this.config.channelBeiLimit.sub(channel.state.balanceTokenUser),
     )
 
     // Since 1 BOOTY = 1 USD, credit the user for the fiat amount in bei
-    // (the .floor() is _probably_ unnecessary, but just in case CoinPayments
+    // (the .integerValue(BigNumber.ROUND_FLOOR) is _probably_ unnecessary, but just in case CoinPayments
     // sends us a fiat value with more than 18 decimal places).
-    const ipnAmountToken = ipn.amountFiat.times('1e18').floor()
-    const amountToken = BigNumber.min(beiLimit, ipnAmountToken)
-    const remainingBeiToCredit = ipnAmountToken.minus(amountToken)
-    const amountWei = remainingBeiToCredit.div(currentExchangeRate).floor()
+
+    const ipnAmountToken = toWeiBig(ipn.amountFiat)
+    const amountToken = minBN(beiLimit, ipnAmountToken)
+    const remainingBeiToCredit = ipnAmountToken.sub(amountToken)
+    const amountWei = assetToWei(remainingBeiToCredit, currentExchangeRate)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
       depositTokenHub: '0',
-      depositWeiUser: amountWei.toFixed(),
-      depositTokenUser: amountToken.toFixed(),
+      depositWeiUser: amountWei.toString(),
+      depositTokenUser: amountToken.toString(),
       timeout: 0,
       sigUser: null,
       reason: {
         ipn: ipn.ipnId,
         // For debugging, not actually used anywhere
-        exchangeRate: currentExchangeRate.toFixed(),
+        exchangeRate: currentExchangeRate.toString(),
       },
     }
 

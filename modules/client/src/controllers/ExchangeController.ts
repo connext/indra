@@ -1,13 +1,11 @@
-import getExchangeRates from '../lib/getExchangeRates'
-import * as actions from '../state/actions'
 import { AbstractController } from './AbstractController'
-import { ConnextStore } from '../state/store'
-import { Poller } from '../lib/poller/Poller';
 import { ConnextInternal } from '../Connext';
+import { Big, mul, toWeiBig, toWeiString } from '../lib/bn';
 import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
-import getTxCount from '../lib/getTxCount';
-import BigNumber from 'bignumber.js';
-import { toBN } from '../helpers/bn';
+import { getExchangeRates, getTxCount } from '../state/getters'
+import { Poller } from '../lib/poller/Poller';
+import * as actions from '../state/actions'
+import { ConnextStore } from '../state/store'
 
 const ONE_MINUTE = 1000 * 60
 
@@ -54,15 +52,15 @@ export class ExchangeController extends AbstractController {
 
   private pollExchangeRates = async () => {
     try {
-      const rates = await this.hub.getExchangerRates()
+      const rates = await this.hub.getExchangeRates()
       if (rates.USD) {
         // These are the values wallet expects
-        rates.USD = new BigNumber(rates.USD).toFixed(2)
-        rates.BEI = (new BigNumber(rates.USD)).times(new BigNumber(BEI_AMOUNT)).toFixed(0)
-        rates.WEI = new BigNumber(WEI_AMOUNT).toFixed(0)
-        rates.ETH = new BigNumber(1).toFixed(0)
-        rates.BOOTY = new BigNumber(rates.USD).toFixed(0)
-        rates.FINNEY = new BigNumber(FINNEY_AMOUNT).toFixed(0)
+        rates.USD = rates.USD,
+        rates.BEI = toWeiString(rates.USD) // multiply by bei amt = 10e18
+        rates.WEI = Big(WEI_AMOUNT).toString()
+        rates.ETH = Big(1).toString()
+        rates.BOOTY = rates.USD
+        rates.FINNEY = Big(FINNEY_AMOUNT).toString()
 
         this.store.dispatch(actions.setExchangeRate({
           lastUpdated: new Date(),
@@ -76,16 +74,23 @@ export class ExchangeController extends AbstractController {
   }
 
   public exchange = async (toSell: string, currency: "wei" | "token") => {
+    if (currency != "wei" && currency != "token") {
+      throw new Error(`Currency type not detected. Must provide either "wei" or "token" to indicate which type of currency you are sellling with exchange.`)
+    }
+    if (!toSell || toSell == '0' || Big(toSell).lt(0)) {
+      throw new Error(`Invalid toSell amount provided. Must be greater than 0.`)
+    }
+
     const weiToSell = currency === "wei" ? toSell : '0'
     const tokensToSell = currency === "token" ? toSell : '0'
     // before requesting exchange, verify the user has enough wei 
     // and tokens
     const channel = this.getState().persistent.channel
-    if (toBN(channel.balanceWeiUser).lt(toBN(weiToSell)) || toBN(channel.balanceTokenUser).lt(toBN(tokensToSell))) {
+    if (Big(channel.balanceWeiUser).lt(weiToSell) || Big(channel.balanceTokenUser).lt(tokensToSell)) {
       console.error(`User does not have sufficient wei or token for exchange. Wei: ${weiToSell}, tokens: ${tokensToSell}, channel: ${JSON.stringify(channel, null, 2)}`)
       return
     }
-    const sync = await this.hub.requestExchange(weiToSell, tokensToSell, getTxCount(this.store))
+    const sync = await this.hub.requestExchange(weiToSell, tokensToSell, getTxCount(this.store.getState()))
     this.connext.syncController.handleHubSync(sync)
 
   }

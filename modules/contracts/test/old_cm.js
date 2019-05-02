@@ -530,7 +530,7 @@ contract("ChannelManager", accounts => {
     })
   })
 
-  describe.only('userAuthorizedUpdate', () => {
+  describe('userAuthorizedUpdate', () => {
     it("happy case", async () => {
       initChannel.sigHub = await signChannelState(initChannel, hub.privateKey)
       console.log(await recover(initChannel, initChannel.sigHub))

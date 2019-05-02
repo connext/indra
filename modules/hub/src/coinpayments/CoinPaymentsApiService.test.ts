@@ -13,7 +13,7 @@ describe.skip('CoinPaymentsApiService', () => {
   const user = mkAddress('0x42')
   const db: DBEngine = registry.get('DBEngine')
 
-  beforeEach(() => registry.clearDatabase())
+  beforeEach(async () => await registry.clearDatabase())
 
   it('should work', async () => {
     const input = ipnTestCases[0]

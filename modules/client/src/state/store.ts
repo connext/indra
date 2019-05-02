@@ -1,11 +1,16 @@
-import { ChannelStatus, ThreadHistoryItem, ThreadStateUpdate, WithdrawalArgs } from '../types'
-import { UpdateRequest } from '../types'
-//import Wallet from 'ethereumjs-wallet' //typescript doesn't like this module, needs declaration
-import { EMPTY_ROOT_HASH, ZERO_ADDRESS } from '../lib/constants'
 import { Store } from 'redux';
-import { ThreadState, ChannelState, Payment } from '../types'
-import { SyncResult } from '../types'
-import { ExchangeRateState } from './ConnextState/ExchangeRates'
+import { EMPTY_ROOT_HASH, ZERO_ADDRESS } from '../lib/constants'
+import {
+  ChannelState,
+  ChannelStatus,
+  ExchangeRateState,
+  Payment,
+  SyncResult,
+  ThreadHistoryItem,
+  ThreadState,
+  UpdateRequest,
+  CustodialBalanceRow,
+} from '../types'
 
 export const CHANNEL_ZERO_STATE = {
   user: '0x0',
@@ -84,11 +89,12 @@ export class PersistentState {
     sigHub: '0x0',
     sigUser: '0x0',
   }
-  
+
   latestPending: LatestPendingUpdate =  { 
     withdrawal: null, 
     txCount: 0 
   }
+
   activeThreads: ThreadState[] = [] // all open and active threads at latest state
   activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
   // threadHistory is how the client will generate and track the 
@@ -98,6 +104,7 @@ export class PersistentState {
   threadHistory: ThreadHistoryItem[] = []
   lastThreadUpdateId: number = 0 // global hub db level
   syncControllerState = new SyncControllerState()
+  hubAddress: string = "0x0"
 }
 
 export class ConnextState {

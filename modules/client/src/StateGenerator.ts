@@ -1,35 +1,32 @@
-import { Utils } from "./Utils";
+import { Big, minBN, maxBN, assetToWei, weiToAsset } from "./lib/bn";
+import { BigNumber as BN } from 'ethers/utils'
 import {
+  ChannelState,
   ChannelStateBN,
-  PaymentArgsBN,
-  UnsignedChannelState,
-  ExchangeArgsBN,
+  ChannelUpdateReason,
   DepositArgsBN,
-  WithdrawalArgsBN,
-  UnsignedThreadState,
-  convertThreadState,
-  ThreadState,
-  ThreadStateBN,
-  convertChannelState,
+  ExchangeArgsBN,
+  InvalidationArgs,
+  PaymentArgsBN,
   PaymentBN,
-  UnsignedChannelStateBN,
   PendingArgsBN,
   PendingExchangeArgsBN,
-  ChannelUpdateReason,
+  ThreadState,
+  ThreadStateBN,
+  UnsignedChannelState,
+  UnsignedChannelStateBN,
+  UnsignedThreadState,
   UpdateRequestBN,
-  InvalidationArgs,
   VerboseChannelEventBN,
-  ChannelState,
+  WithdrawalArgsBN,
+  convertChannelState,
+  convertThreadState,
   convertWithdrawal,
 } from "./types";
-import { toBN, mul, minBN, maxBN } from "./helpers/bn";
+import { toBN, minBN, maxBN, mul, divmod, EXCHANGE_MULTIPLIER, EXCHANGE_MULTIPLIER_BN } from "./lib/bn";
 import BN = require('bn.js')
 import { hasPendingOps } from "./hasPendingOps";
-
-// this constant is used to not lose precision on exchanges
-// the BN library does not handle non-integers appropriately
-const EXCHANGE_MULTIPLIER = 1000000000
-const EXCHANGE_MULTIPLIER_BN = toBN(EXCHANGE_MULTIPLIER)
+import { Utils } from "./Utils";
 
 /**
  * Calculate the amount of wei/tokens to sell/recieve from the perspective of
@@ -55,7 +52,7 @@ export function calculateExchange(args: ExchangeArgsBN) {
   // Assume the exchange is done from the perspective of the user. If it's
   // the hub, multiply all the values by -1 so the math will still work.
   if (args.seller == 'hub') {
-    const neg1 = toBN(-1)
+    const neg1 = Big(-1)
     args = {
       ...args,
       weiToSell: args.weiToSell.mul(neg1),
@@ -63,9 +60,8 @@ export function calculateExchange(args: ExchangeArgsBN) {
     }
   }
 
-  const exchangeRate = toBN(mul(args.exchangeRate, EXCHANGE_MULTIPLIER))
-  const [weiReceived, tokenRemainder] = divmod(args.tokensToSell.mul(EXCHANGE_MULTIPLIER_BN), exchangeRate)
-  const tokensReceived = args.weiToSell.mul(exchangeRate).div(EXCHANGE_MULTIPLIER_BN)
+  const [weiReceived, tokenRemainder] = assetToWei(args.tokensToSell, args.exchangeRate)
+  const tokensReceived = weiToAsset(args.weiToSell, args.exchangeRate)
 
   return {
     weiSold: args.weiToSell,
@@ -129,14 +125,14 @@ export function subOrZero(a: (BN | undefined), ...args: (BN | undefined)[]): BN 
   let res = a!
   for (let arg of args)
     res = res.sub(arg!)
-  return maxBN(toBN(0), res)
+  return maxBN(Big(0), res)
 }
 
 /**
  * Returns 'a' if a > 0 else 0.
  */
 function ifPositive(a: BN) {
-  const zero = toBN(0)
+  const zero = Big(0)
   return a.gt(zero) ? a : zero
 }
 
@@ -144,7 +140,7 @@ function ifPositive(a: BN) {
  * Returns 'a.abs()' if a < 0 else 0.
  */
 function ifNegative(a: BN) {
-  const zero = toBN(0)
+  const zero = Big(0)
   return a.lt(zero) ? a.abs() : zero
 }
 
@@ -153,8 +149,8 @@ export class StateGenerator {
 
   stateTransitionHandlers: { [name in ChannelUpdateReason]: any }
 
-  constructor() {
-    this.utils = new Utils()
+  constructor(hubAddress: string) {
+    this.utils = new Utils(hubAddress)
     this.stateTransitionHandlers = {
       'Payment': this.channelPayment.bind(this),
       'Exchange': this.exchange.bind(this),
@@ -479,27 +475,27 @@ export class StateGenerator {
     }
 
     const pending = this.applyPending(exchange, {
-      depositWeiUser: toBN(0)
+      depositWeiUser: Big(0)
         .add(ifPositive(deltas.userWei))
-        .add(args.additionalWeiHubToUser || toBN(0)),
+        .add(args.additionalWeiHubToUser || Big(0)),
 
       depositWeiHub: ifPositive(deltas.hubWei),
 
-      depositTokenUser: toBN(0)
+      depositTokenUser: Big(0)
         .add(ifPositive(deltas.userToken))
-        .add(args.additionalTokenHubToUser || toBN(0)),
+        .add(args.additionalTokenHubToUser || Big(0)),
 
       depositTokenHub: ifPositive(deltas.hubToken),
 
-      withdrawalWeiUser: toBN(0)
+      withdrawalWeiUser: Big(0)
         .add(ifNegative(deltas.userWei))
-        .add(args.additionalWeiHubToUser || toBN(0)),
+        .add(args.additionalWeiHubToUser || Big(0)),
 
       withdrawalWeiHub: ifNegative(deltas.hubWei),
 
-      withdrawalTokenUser: toBN(0)
+      withdrawalTokenUser: Big(0)
         .add(ifNegative(deltas.userToken))
-        .add(args.additionalTokenHubToUser || toBN(0)),
+        .add(args.additionalTokenHubToUser || Big(0)),
 
       withdrawalTokenHub: ifNegative(deltas.hubToken),
 
@@ -538,14 +534,14 @@ export class StateGenerator {
       balanceTokenUser: prev.pendingDepositTokenUser.gt(prev.pendingWithdrawalTokenUser)
         ? prev.balanceTokenUser.add(prev.pendingDepositTokenUser).sub(prev.pendingWithdrawalTokenUser)
         : prev.balanceTokenUser,
-      pendingDepositWeiHub: toBN(0),
-      pendingDepositWeiUser: toBN(0),
-      pendingDepositTokenHub: toBN(0),
-      pendingDepositTokenUser: toBN(0),
-      pendingWithdrawalWeiHub: toBN(0),
-      pendingWithdrawalWeiUser: toBN(0),
-      pendingWithdrawalTokenHub: toBN(0),
-      pendingWithdrawalTokenUser: toBN(0),
+      pendingDepositWeiHub: Big(0),
+      pendingDepositWeiUser: Big(0),
+      pendingDepositTokenHub: Big(0),
+      pendingDepositTokenUser: Big(0),
+      pendingWithdrawalWeiHub: Big(0),
+      pendingWithdrawalWeiUser: Big(0),
+      pendingWithdrawalTokenHub: Big(0),
+      pendingWithdrawalTokenUser: Big(0),
       txCountGlobal: prev.txCountGlobal + 1,
       recipient: prev.user,
       timeout: 0,

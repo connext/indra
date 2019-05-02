@@ -1,8 +1,7 @@
 import { SyncResult, } from '../types'
 import { ConnextState } from './store'
 import * as actions from './actions'
-import { hasPendingOps } from '../hasPendingOps'
-
+import { Utils } from '../Utils';
 
 export function handleStateFlags(args: any): any {
   let didInitialUpdate = false
@@ -38,12 +37,13 @@ export function handleStateFlags(args: any): any {
           syncControllerState: {
             updatesToSync,
           },
+          hubAddress,
         }
       } = connextState
 
       let isUnsigned = false
       let hasTimeout = !!channel.timeout
-      let hasPending = hasPendingOps(channel)
+      let hasPending = new Utils(hubAddress).hasPendingOps(channel)
 
       updatesToSync.forEach(update => {
         if(update.type == 'channel') {

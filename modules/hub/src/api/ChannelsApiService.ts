@@ -1,16 +1,16 @@
+import * as Connext from '../Connext';
 import { getUserFromRequest } from '../util/request'
 import { default as Config } from '../Config'
-import { convertWithdrawalParameters } from '../vendor/connext/types'
-import { UpdateRequest } from '../vendor/connext/types'
 import * as express from 'express'
 import { ApiService } from './ApiService'
 import log from '../util/log'
 import ChannelsService from '../ChannelsService'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
-import { Big } from '../util/bigNumber'
 import { prettySafeJson } from '../util'
-import { Role } from '../Role'
 
+const Big = Connext.big.Big
+type UpdateRequest = Connext.types.UpdateRequest
+const convertWithdrawalParameters = Connext.types.convertWithdrawalParameters
 const LOG = log('ChannelsApiService')
 
 export default class ChannelsApiService extends ApiService<
@@ -188,9 +188,18 @@ export class ChannelsApiServiceHandler {
 
   async doRequestWithdrawal(req: express.Request, res: express.Response) {
     const { user } = req.params
-    const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx } = req.body
+    const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx, exchangeRate } = req.body
 
-    if (!user || !withdrawalWeiUser || !recipient || !tokensToSell) {
+    if (
+      !user || 
+      !recipient ||
+      !Number.isInteger(parseInt(withdrawalWeiUser)) || 
+      !Number.isInteger(parseInt(tokensToSell)) ||
+      // TODO: token withdrawals
+      // !Number.isInteger(parseInt(weiToSell)) || 
+      // !Number.isInteger(parseInt(withdrawalTokenUser)) ||
+      !exchangeRate
+    ) {
       LOG.warn(
         'Received invalid withdrawal request. Aborting. Body received: {body}, Params received: {params}',
         {
@@ -203,7 +212,7 @@ export class ChannelsApiServiceHandler {
 
     await this.channelsService.doRequestWithdrawal(
       user,
-      convertWithdrawalParameters("bignumber", req.body)
+      convertWithdrawalParameters("bn", req.body)
     )
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,

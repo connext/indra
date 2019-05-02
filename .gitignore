@@ -9,6 +9,7 @@ node_modules
 .npm
 .npmrc
 .node_repl_history
+.vscode
 *.sw[opq]
 **/*.DS_Store
 modules/hub/development/data
@@ -26,3 +27,4 @@ modules/database/snapshots/*
 # remove next line once hub is decoupled from spankchain
 modules/hub/package-lock.json
 modules/client/package-lock.json
+modules/hub/yarn.lock

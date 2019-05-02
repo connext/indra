@@ -1,13 +1,23 @@
+import * as eth from 'ethers';
+import { StateGenerator, types, big } from '../Connext';
 import { mkSig, mkAddress } from "../testing/stateUtils";
-import { PurchasePayment, ThreadState, convertThreadState, convertPayment, convertChannelState, UpdateRequest, ThreadStateUpdate } from "../vendor/connext/types";
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal, channelNextState } from "../testing/factories";
 import { PaymentMetaDao } from "../dao/PaymentMetaDao";
 import Config from "../Config";
-import { emptyAddress } from "../vendor/connext/Utils";
-import { toWeiString } from "../util/bigNumber";
 import { testChannelManagerAddress, testHotWalletAddress } from "../testing/mocks";
-import { StateGenerator } from "../vendor/connext/StateGenerator";
+
+const { toWeiString } = big;
+type PurchasePayment = types.PurchasePayment
+type ThreadState = types.ThreadState
+type UpdateRequest = types.UpdateRequest
+type ThreadStateUpdate = types.ThreadStateUpdate
+const {
+  convertThreadState,
+  convertPayment,
+  convertChannelState
+} = types
+const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsApiService', () => {
   const registry = getTestRegistry({
@@ -221,7 +231,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'link',
+      type: 'PT_LINK',
     })
   })
 
@@ -288,7 +298,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'link',
+      type: 'PT_LINK',
       meta: {
         secret: "sadlkj"
       }
@@ -302,7 +312,7 @@ describe('PaymentsApiService', () => {
         amountWei: '0',
         amountToken: tokenVal(1),
       },
-      type: 'link',
+      type: 'PT_LINK',
       meta: {
         secret: "sadlkj"
       }

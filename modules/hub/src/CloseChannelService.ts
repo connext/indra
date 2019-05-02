@@ -1,3 +1,4 @@
+import { Poller } from './Connext'
 import { default as Config } from './Config'
 import { prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
@@ -9,7 +10,6 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import { SignerService } from './SignerService';
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
-import { Poller } from './vendor/connext/lib/poller/Poller'
 
 const LOG = log('CloseChannelService')
 
@@ -79,7 +79,7 @@ export class CloseChannelService {
         continue
       }
       // do not dispute if the value is below the min bei
-      if (channel.state.balanceTokenHub.lt(this.config.beiMinThreshold)) {
+      if (channel.state.balanceTokenHub.lt(this.config.beiMinCollateralization)) {
         continue
       }
 
@@ -219,24 +219,24 @@ export class CloseChannelService {
       LOG.info(`Calling contract function startExitWithUpdate: ${
         [[latestUpdate.state.user, latestUpdate.state.recipient],
         [
-          latestUpdate.state.balanceWeiHub.toFixed(),
-          latestUpdate.state.balanceWeiUser.toFixed()
+          latestUpdate.state.balanceWeiHub.toString(),
+          latestUpdate.state.balanceWeiUser.toString()
         ],
         [
-          latestUpdate.state.balanceTokenHub.toFixed(),
-          latestUpdate.state.balanceTokenUser.toFixed()
+          latestUpdate.state.balanceTokenHub.toString(),
+          latestUpdate.state.balanceTokenUser.toString()
         ],
         [
-          latestUpdate.state.pendingDepositWeiHub.toFixed(),
-          latestUpdate.state.pendingWithdrawalWeiHub.toFixed(),
-          latestUpdate.state.pendingDepositWeiUser.toFixed(),
-          latestUpdate.state.pendingWithdrawalWeiUser.toFixed()
+          latestUpdate.state.pendingDepositWeiHub.toString(),
+          latestUpdate.state.pendingWithdrawalWeiHub.toString(),
+          latestUpdate.state.pendingDepositWeiUser.toString(),
+          latestUpdate.state.pendingWithdrawalWeiUser.toString()
         ],
         [
-          latestUpdate.state.pendingDepositTokenHub.toFixed(),
-          latestUpdate.state.pendingWithdrawalTokenHub.toFixed(),
-          latestUpdate.state.pendingDepositTokenUser.toFixed(),
-          latestUpdate.state.pendingWithdrawalTokenUser.toFixed()
+          latestUpdate.state.pendingDepositTokenHub.toString(),
+          latestUpdate.state.pendingWithdrawalTokenHub.toString(),
+          latestUpdate.state.pendingDepositTokenUser.toString(),
+          latestUpdate.state.pendingWithdrawalTokenUser.toString()
         ],
         [latestUpdate.state.txCountChain, latestUpdate.state.txCountGlobal],
         latestUpdate.state.threadRoot,
@@ -249,24 +249,24 @@ export class CloseChannelService {
       data = this.contract.methods.startExitWithUpdate(
         [latestUpdate.state.user, latestUpdate.state.recipient],
         [
-          latestUpdate.state.balanceWeiHub.toFixed(),
-          latestUpdate.state.balanceWeiUser.toFixed()
+          latestUpdate.state.balanceWeiHub.toString(),
+          latestUpdate.state.balanceWeiUser.toString()
         ],
         [
-          latestUpdate.state.balanceTokenHub.toFixed(),
-          latestUpdate.state.balanceTokenUser.toFixed()
+          latestUpdate.state.balanceTokenHub.toString(),
+          latestUpdate.state.balanceTokenUser.toString()
         ],
         [
-          latestUpdate.state.pendingDepositWeiHub.toFixed(),
-          latestUpdate.state.pendingWithdrawalWeiHub.toFixed(),
-          latestUpdate.state.pendingDepositWeiUser.toFixed(),
-          latestUpdate.state.pendingWithdrawalWeiUser.toFixed()
+          latestUpdate.state.pendingDepositWeiHub.toString(),
+          latestUpdate.state.pendingWithdrawalWeiHub.toString(),
+          latestUpdate.state.pendingDepositWeiUser.toString(),
+          latestUpdate.state.pendingWithdrawalWeiUser.toString()
         ],
         [
-          latestUpdate.state.pendingDepositTokenHub.toFixed(),
-          latestUpdate.state.pendingWithdrawalTokenHub.toFixed(),
-          latestUpdate.state.pendingDepositTokenUser.toFixed(),
-          latestUpdate.state.pendingWithdrawalTokenUser.toFixed()
+          latestUpdate.state.pendingDepositTokenHub.toString(),
+          latestUpdate.state.pendingWithdrawalTokenHub.toString(),
+          latestUpdate.state.pendingDepositTokenUser.toString(),
+          latestUpdate.state.pendingWithdrawalTokenUser.toString()
         ],
         [latestUpdate.state.txCountGlobal, latestUpdate.state.txCountChain],
         latestUpdate.state.threadRoot,

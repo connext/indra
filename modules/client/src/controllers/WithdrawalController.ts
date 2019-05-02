@@ -1,11 +1,14 @@
-import { WithdrawalParameters, convertChannelState, convertWithdrawalParameters, convertWithdrawal } from '../types'
-import { AbstractController } from './AbstractController'
-import { getChannel } from '../lib/getChannel'
-import { validateExchangeRate, } from './ExchangeController';
-import { validateTimestamp } from '../lib/timestamp';
-import getTxCount from '../lib/getTxCount';
-import { toBN } from '../helpers/bn';
 import { isValidAddress } from 'ethereumjs-util';
+import { AbstractController } from './AbstractController'
+import { validateExchangeRate, } from './ExchangeController';
+import { Big } from '../lib/bn';
+import { getTxCount } from '../state/getters'
+import {
+  convertChannelState,
+  WithdrawalParameters,
+  withdrawalParamsNumericFields,
+  insertDefault
+} from '../types'
 
 /* NOTE: the withdrawal parameters have optional withdrawal tokens and wei to
  * sell values for completeness. In the BOOTY case, there is no need for the
@@ -17,12 +20,16 @@ import { isValidAddress } from 'ethereumjs-util';
  * */
 
 export default class WithdrawalController extends AbstractController {
-  public requestUserWithdrawal = async (withdrawalStr: WithdrawalParameters): Promise<void> => {
+  public requestUserWithdrawal = async (args: Partial<WithdrawalParameters>) => {
+    // insert '0' strs to the withdrawal obj
+    const withdrawalStr = insertDefault('0', args, withdrawalParamsNumericFields)
+
     const channelStr = this.getState().persistent.channel
     const channelBN = convertChannelState('bn', channelStr)
     const WithdrawalError = (msg: string) => {
       throw new Error(`${msg}. Parameters: ${JSON.stringify(withdrawalStr, null, 2)}. Channel: ${JSON.stringify(channelStr, null, 2)}.`)
     }
+    
     // validate recipient
     if (!isValidAddress(withdrawalStr.recipient)) {
       WithdrawalError(`Recipient is not a valid address.`)
@@ -34,7 +41,7 @@ export default class WithdrawalController extends AbstractController {
     }
 
     // validate withdrawal wei user
-    if (toBN(withdrawalStr.withdrawalWeiUser).gt(channelBN.balanceWeiUser)) {
+    if (Big(withdrawalStr.withdrawalWeiUser).gt(channelBN.balanceWeiUser)) {
       WithdrawalError(`Cannot withdraw more wei than what is in your channel.`)
     }
 
@@ -42,7 +49,7 @@ export default class WithdrawalController extends AbstractController {
     if (withdrawalStr.weiToSell && withdrawalStr.weiToSell != '0') {
       WithdrawalError(`User exchanging wei at withdrawal is not permitted at this time.`)
     }
-    if (toBN(withdrawalStr.tokensToSell).gt(channelBN.balanceTokenUser)) {
+    if (Big(withdrawalStr.tokensToSell).gt(channelBN.balanceTokenUser)) {
       WithdrawalError(`Cannot sell more tokens than exist in your channel.`)
     }
 
@@ -51,7 +58,7 @@ export default class WithdrawalController extends AbstractController {
       WithdrawalError(`User token withdrawals are not permitted at this time.`)
     }
 
-    const sync = await this.hub.requestWithdrawal(withdrawalStr, getTxCount(this.store))
+    const sync = await this.hub.requestWithdrawal(withdrawalStr, getTxCount(this.store.getState()))
     this.connext.syncController.handleHubSync(sync)
 
   }

@@ -5,12 +5,18 @@ const BN = require("bn.js");
 const privKeys = require("./privKeys.json");
 const CM = artifacts.require("./ChannelManager.sol");
 const HST = artifacts.require("./HumanStandardToken.sol");
+const data = require("../ops/data.json");
+const Connext = require("connext");
+const ConnextTester = require("connext/dist/testing");
 
-/* Connext Client */
-const { Utils } = require("../../client/dist/Utils");
-const { StateGenerator } = require("../../client/dist/StateGenerator");
-const { Validator } = require("../../client/dist/validator");
-const { convertChannelState, convertWithdrawal, convertProposePending, isBN } = require("../../client/dist/types");
+/* Setup Connext Client Stuff */
+const {
+  convertChannelState,
+  convertWithdrawal,
+  convertProposePending,
+  isBN
+} = Connext.types
+
 const {
   getChannelState,
   getThreadState,
@@ -19,12 +25,9 @@ const {
   getExchangeArgs,
   getPaymentArgs,
   getPendingArgs
-} = require("../../client/dist/testing");
-const { toBN } = require("../../client/dist/helpers/bn");
-const clientUtils = new Utils();
-const sg = new StateGenerator();
+} = ConnextTester
 
-const data = require("../ops/data.json");
+const toBN = (num) => new BN(num.toString())
 
 should
   .use(require("chai-as-promised"))
@@ -413,7 +416,7 @@ async function submitHubAuthorized(userAccount, hubAccount, wei = 0, ...override
 // Internal Helper Functions
 ////////////////////////////////////////
 
-let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod, channelStateReceiver;
+let cm, token, hub, performer, viewer, state, validator, initHubReserveWei, initHubReserveToken, challengePeriod, channelStateReceiver, clientUtils, sg;
 
 contract("ChannelManager", accounts => {
   let snapshotId;
@@ -421,18 +424,18 @@ contract("ChannelManager", accounts => {
   // asserts that the onchain-channel state matches provided offchain state
 
   const verifyChannelBalances = async (account, state) => {
-    const stateBN = convertChannelState("bn", state);
-    const channelBalances = await cm.getChannelBalances(account.address);
+    const stateBN = convertChannelState("bn", state); // This is an ethers BN
+    const channelBalances = await cm.getChannelBalances(account.address); // This is a BigNumber
 
     // Wei balances are equal
-    channelBalances.weiHub.should.be.eq.BN(stateBN.balanceWeiHub);
-    channelBalances.weiUser.should.be.eq.BN(stateBN.balanceWeiUser);
-    channelBalances.weiTotal.should.be.eq.BN(stateBN.balanceWeiHub.add(stateBN.balanceWeiUser));
+    assert(channelBalances.weiHub.eq(toBN(stateBN.balanceWeiHub)));
+    assert(channelBalances.weiUser.eq(toBN(stateBN.balanceWeiUser)));
+    assert(channelBalances.weiTotal.eq(toBN(stateBN.balanceWeiHub.add(stateBN.balanceWeiUser))));
 
     // Token balances are equal
-    channelBalances.tokenHub.should.be.eq.BN(stateBN.balanceTokenHub);
-    channelBalances.tokenUser.should.be.eq.BN(stateBN.balanceTokenUser);
-    channelBalances.tokenTotal.should.be.eq.BN(stateBN.balanceTokenHub.add(stateBN.balanceTokenUser));
+    assert(channelBalances.tokenHub.eq(toBN(stateBN.balanceTokenHub)));
+    assert(channelBalances.tokenUser.eq(toBN(stateBN.balanceTokenUser)));
+    assert(channelBalances.tokenTotal.eq(toBN(stateBN.balanceTokenHub.add(stateBN.balanceTokenUser))));
   };
 
   // status, exitInitiator, and channelClosingTime must be explicitely
@@ -441,15 +444,15 @@ contract("ChannelManager", accounts => {
     const stateBN = convertChannelState("bn", state);
     const channelDetails = await cm.getChannelDetails(account.address);
     // Tx counts are equal to the original update (state increments)
-    channelDetails.txCountGlobal.should.be.eq.BN(stateBN.txCountGlobal);
-    channelDetails.txCountChain.should.be.eq.BN(stateBN.txCountChain);
+    assert(channelDetails.txCountGlobal.eq(toBN(stateBN.txCountGlobal)));
+    assert(channelDetails.txCountChain.eq(toBN(stateBN.txCountChain)));
 
     // Thread states are equal
     assert.equal(channelDetails.threadRoot, state.threadRoot);
     assert.equal(channelDetails.threadCount, state.threadCount);
 
     // check exit params
-    channelDetails.channelClosingTime.should.be.eq.BN(state.channelClosingTime ? state.channelClosingTime : 0);
+    assert(channelDetails.channelClosingTime.eq(toBN(state.channelClosingTime ? state.channelClosingTime : 0)));
     assert.equal(channelDetails.exitInitiator.toLowerCase(), (state.exitInitiator || emptyAddress).toLowerCase());
     assert.equal(channelDetails.status, state.status ? state.status : 0);
   };
@@ -471,18 +474,18 @@ contract("ChannelManager", accounts => {
     assert.equal(event.user.toLowerCase(), account.address.toLowerCase());
     assert.equal(event.senderIdx, isHub ? 0 : 1);
 
-    event.weiBalances[0].should.be.eq.BN(updateBN.balanceWeiHub);
-    event.weiBalances[1].should.be.eq.BN(updateBN.balanceWeiUser);
-    event.tokenBalances[0].should.be.eq.BN(updateBN.balanceTokenHub);
-    event.tokenBalances[1].should.be.eq.BN(updateBN.balanceTokenUser);
-    event.pendingWeiUpdates[0].should.be.eq.BN(updateBN.pendingDepositWeiHub);
-    event.pendingWeiUpdates[1].should.be.eq.BN(updateBN.pendingWithdrawalWeiHub);
-    event.pendingWeiUpdates[2].should.be.eq.BN(updateBN.pendingDepositWeiUser);
-    event.pendingWeiUpdates[3].should.be.eq.BN(updateBN.pendingWithdrawalWeiUser);
-    event.pendingTokenUpdates[0].should.be.eq.BN(updateBN.pendingDepositTokenHub);
-    event.pendingTokenUpdates[1].should.be.eq.BN(updateBN.pendingWithdrawalTokenHub);
-    event.pendingTokenUpdates[2].should.be.eq.BN(updateBN.pendingDepositTokenUser);
-    event.pendingTokenUpdates[3].should.be.eq.BN(updateBN.pendingWithdrawalTokenUser);
+    assert(event.weiBalances[0].eq(toBN(updateBN.balanceWeiHub)));
+    assert(event.weiBalances[1].eq(toBN(updateBN.balanceWeiUser)));
+    assert(event.tokenBalances[0].eq(toBN(updateBN.balanceTokenHub)));
+    assert(event.tokenBalances[1].eq(toBN(updateBN.balanceTokenUser)));
+    assert(event.pendingWeiUpdates[0].eq(toBN(updateBN.pendingDepositWeiHub)));
+    assert(event.pendingWeiUpdates[1].eq(toBN(updateBN.pendingWithdrawalWeiHub)));
+    assert(event.pendingWeiUpdates[2].eq(toBN(updateBN.pendingDepositWeiUser)));
+    assert(event.pendingWeiUpdates[3].eq(toBN(updateBN.pendingWithdrawalWeiUser)));
+    assert(event.pendingTokenUpdates[0].eq(toBN(updateBN.pendingDepositTokenHub)));
+    assert(event.pendingTokenUpdates[1].eq(toBN(updateBN.pendingWithdrawalTokenHub)));
+    assert(event.pendingTokenUpdates[2].eq(toBN(updateBN.pendingDepositTokenUser)));
+    assert(event.pendingTokenUpdates[3].eq(toBN(updateBN.pendingWithdrawalTokenUser)));
     assert.equal(+event.txCount[0], update.txCountGlobal);
     assert.equal(+event.txCount[1], update.txCountChain);
     assert.equal(event.threadRoot, emptyRootHash);
@@ -515,10 +518,10 @@ contract("ChannelManager", accounts => {
     assert.equal(event.user.toLowerCase(), account.address.toLowerCase());
     assert.equal(event.senderIdx, isHub ? 0 : 1);
 
-    event.weiBalances[0].should.be.eq.BN(updateBN.balanceWeiHub);
-    event.weiBalances[1].should.be.eq.BN(updateBN.balanceWeiUser);
-    event.tokenBalances[0].should.be.eq.BN(updateBN.balanceTokenHub);
-    event.tokenBalances[1].should.be.eq.BN(updateBN.balanceTokenUser);
+    assert(event.weiBalances[0].eq(toBN(updateBN.balanceWeiHub)));
+    assert(event.weiBalances[1].eq(toBN(updateBN.balanceWeiUser)));
+    assert(event.tokenBalances[0].eq(toBN(updateBN.balanceTokenHub)));
+    assert(event.tokenBalances[1].eq(toBN(updateBN.balanceTokenUser)));
     assert.equal(+event.txCount[0], update.txCountGlobal);
     assert.equal(+event.txCount[1], update.txCountChain);
     assert.equal(event.threadRoot, emptyRootHash);
@@ -543,28 +546,28 @@ contract("ChannelManager", accounts => {
 
     // token is transfered to user
     const userTokenBalance = await token.balanceOf(account.address);
-    userTokenBalance.should.be.eq.BN(account.initTokenBalance.add(toBN(state.userTokenTransfer)));
+    assert(userTokenBalance.eq(toBN(account.initTokenBalance.add(new BN(state.userTokenTransfer)))));
 
     const totalChannelWei = await cm.totalChannelWei.call();
     assert.equal(+totalChannelWei, 0);
 
     const hubReserveWei = await cm.getHubReserveWei();
-    hubReserveWei.should.be.eq.BN(state.initHubReserveWei - state.userWeiTransfer);
+    assert(hubReserveWei.eq(toBN(state.initHubReserveWei - state.userWeiTransfer)));
 
     const totalChannelToken = await cm.totalChannelToken.call();
     assert.equal(+totalChannelToken, 0);
 
     const hubReserveToken = await cm.getHubReserveTokens();
-    hubReserveToken.should.be.eq.BN(state.initHubReserveToken - state.userTokenTransfer);
+    assert(hubReserveToken.eq(toBN(state.initHubReserveToken - state.userTokenTransfer)));
 
     const event = getEventParams(tx, "DidEmptyChannel");
     assert.equal(event.user.toLowerCase(), account.address.toLowerCase());
     assert.equal(event.senderIdx, isHub ? 0 : 1);
 
-    event.weiBalances[0].should.be.eq.BN(0);
-    event.weiBalances[1].should.be.eq.BN(0);
-    event.tokenBalances[0].should.be.eq.BN(0);
-    event.tokenBalances[1].should.be.eq.BN(0);
+    assert(event.weiBalances[0].eq(toBN(0)));
+    assert(event.weiBalances[1].eq(toBN(0)));
+    assert(event.tokenBalances[0].eq(toBN(0)));
+    assert(event.tokenBalances[1].eq(toBN(0)));
     assert.equal(+event.txCount[0], state.txCountGlobal);
     assert.equal(+event.txCount[1], state.txCountChain);
     assert.equal(event.threadRoot, emptyRootHash);
@@ -635,7 +638,11 @@ contract("ChannelManager", accounts => {
       pk: privKeys[2]
     };
 
-    validator = new Validator(web3, hub.address);
+    validator = new Connext.Validator(hub.address, web3.eth, cm.abi);
+
+    clientUtils = new Connext.Utils(hub.address)
+
+    sg = new Connext.StateGenerator(hub.address);
 
     challengePeriod = +(await cm.challengePeriod.call()).toString();
   });
@@ -708,7 +715,7 @@ contract("ChannelManager", accounts => {
         assert.equal(reserveToken, 0);
 
         const hubFinalToken = await token.balanceOf(hub.address);
-        hubFinalToken.should.be.eq.BN(hubInitialToken);
+        assert(hubFinalToken.eq(toBN(hubInitialToken)));
       });
 
       it("fails with insufficient ETH", async () => {
@@ -765,10 +772,11 @@ contract("ChannelManager", accounts => {
         await verifyUserAuthorizedUpdate(viewer, update, tx);
 
         const totalChannelWei = await cm.totalChannelWei.call();
+
         assert.equal(+totalChannelWei, 10);
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei)));
       });
 
       it("user deposit token", async () => {
@@ -791,7 +799,7 @@ contract("ChannelManager", accounts => {
         assert.equal(+totalChannelWei, 0);
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei)));
       });
 
       // userAuthorizedDeposit - real world sim
@@ -1213,13 +1221,13 @@ contract("ChannelManager", accounts => {
         assert.equal(+totalChannelToken, 0);
 
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken)));
 
         const totalChannelWei = await cm.totalChannelWei.call();
         assert.equal(+totalChannelWei, 0);
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei - 5);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei - 5)));
       });
 
       it("user withdrawal token direct from hub deposit", async () => {
@@ -1237,13 +1245,13 @@ contract("ChannelManager", accounts => {
         assert.equal(+totalChannelToken, 0);
 
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken - 5);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken - 5)));
 
         const totalChannelWei = await cm.totalChannelWei.call();
         assert.equal(+totalChannelWei, 0);
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei)));
       });
 
       it("hub deposit wei for user, user pays hub, hub checkpoints", async () => {
@@ -1276,10 +1284,10 @@ contract("ChannelManager", accounts => {
         await verifyHubAuthorizedUpdate(viewer, update2, tx2, true);
 
         const totalChannelWei = await cm.totalChannelWei.call();
-        totalChannelWei.should.be.eq.BN(10);
+        assert(totalChannelWei.eq(toBN(10)));
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei - 10);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei - 10)));
       });
 
       it("hub deposit wei for user, user pays hub, they both withdraw", async () => {
@@ -1322,10 +1330,10 @@ contract("ChannelManager", accounts => {
         await verifyHubAuthorizedUpdate(viewer, update3, tx2, true);
 
         const totalChannelWei = await cm.totalChannelWei.call();
-        totalChannelWei.should.be.eq.BN(0);
+        assert(totalChannelWei.eq(toBN(0)));
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei - 7);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei - 7)));
       });
 
       it("hub deposit token for user, user pays hub, they both withdraw", async () => {
@@ -1368,10 +1376,10 @@ contract("ChannelManager", accounts => {
         await verifyHubAuthorizedUpdate(viewer, update3, tx2, true);
 
         const totalChannelToken = await cm.totalChannelToken.call();
-        totalChannelToken.should.be.eq.BN(0);
+        assert(totalChannelToken.eq(toBN(0)));
 
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken - 7);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken - 7)));
       });
 
       it("commit an update on an unresolved pending state", async () => {
@@ -1414,10 +1422,10 @@ contract("ChannelManager", accounts => {
         await verifyHubAuthorizedUpdate(viewer, update3, tx2, true);
 
         const totalChannelToken = await cm.totalChannelToken.call();
-        totalChannelToken.should.be.eq.BN(25);
+        assert(totalChannelToken.eq(toBN(25)));
 
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken - 25);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken - 25)));
       });
     });
 
@@ -1672,7 +1680,7 @@ contract("ChannelManager", accounts => {
         // initial - deposits + hub withdrawals
         // initial - (2 + 5) + 1
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei - 6);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei - 6)));
 
         // deposits - withdrawals
         // 6 + 13 - 4 - 7 = 8
@@ -1682,7 +1690,7 @@ contract("ChannelManager", accounts => {
         // initial - deposits + hub withdrawals
         // initial - (6 + 13) + 4
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken - 15);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken - 15)));
       });
 
       it("wei/token user/hub withdrawal > deposit > 0", async () => {
@@ -1731,7 +1739,7 @@ contract("ChannelManager", accounts => {
         // initial reserve - deposit1 - deposit2 + hub withdrawals
         // initial - (10 + 11) - (1 + 3) + 2 = initial - 23
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei - 23);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei - 23)));
 
         // initial balance + deposits - withdrawals
         // 12 + 13 + 4 + 7 - 6 - 13 = 17
@@ -1741,7 +1749,7 @@ contract("ChannelManager", accounts => {
         // initial reserve - deposit1 - deposit2 + hub withdrawals
         // initial - (12 + 13) - (4 + 7) + 6 = initial - 30
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken - 30);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken - 30)));
       });
 
       describe("performer collateral/tip/withdraw", () => {
@@ -1798,13 +1806,13 @@ contract("ChannelManager", accounts => {
           // 1 wei should have been sent to the performer
           // tip 2 booty -> exchange 2/1 for 1 wei
           const hubReserveWei = await cm.getHubReserveWei();
-          hubReserveWei.should.be.eq.BN(initHubReserveWei - 1);
+          assert(hubReserveWei.eq(toBN(initHubReserveWei - 1)));
 
           const totalChannelToken = await cm.totalChannelToken.call();
           assert.equal(+totalChannelToken, 0);
 
           const hubReserveToken = await cm.getHubReserveTokens();
-          hubReserveToken.should.be.eq.BN(initHubReserveToken);
+          assert(hubReserveToken.eq(toBN(initHubReserveToken)));
         });
 
         it("withdraw to recipient account", async () => {
@@ -1832,13 +1840,13 @@ contract("ChannelManager", accounts => {
           // 1 wei should have been sent to the performer
           // tip 2 booty -> exchange 2/1 for 1 wei
           const hubReserveWei = await cm.getHubReserveWei();
-          hubReserveWei.should.be.eq.BN(initHubReserveWei - 1);
+          assert(hubReserveWei.eq(toBN(initHubReserveWei - 1)));
 
           const totalChannelToken = await cm.totalChannelToken.call();
           assert.equal(+totalChannelToken, 0);
 
           const hubReserveToken = await cm.getHubReserveTokens();
-          hubReserveToken.should.be.eq.BN(initHubReserveToken);
+          assert(hubReserveToken.eq(toBN(initHubReserveToken)));
 
           recipientBalance = await web3.eth.getBalance(someAddress);
           assert.equal(recipientBalance, 1);
@@ -1988,13 +1996,13 @@ contract("ChannelManager", accounts => {
         assert.equal(+totalChannelWei, 22);
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei - 22);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei - 22)));
 
         const totalChannelToken = await cm.totalChannelToken.call();
         assert.equal(+totalChannelToken, 24);
 
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken - 24);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken - 24)));
       });
 
       it("startExitWithUpdate as hub", async () => {
@@ -2017,13 +2025,13 @@ contract("ChannelManager", accounts => {
         assert.equal(+totalChannelWei, 22);
 
         const hubReserveWei = await cm.getHubReserveWei();
-        hubReserveWei.should.be.eq.BN(initHubReserveWei - 22);
+        assert(hubReserveWei.eq(toBN(initHubReserveWei - 22)));
 
         const totalChannelToken = await cm.totalChannelToken.call();
         assert.equal(+totalChannelToken, 24);
 
         const hubReserveToken = await cm.getHubReserveTokens();
-        hubReserveToken.should.be.eq.BN(initHubReserveToken - 24);
+        assert(hubReserveToken.eq(toBN(initHubReserveToken - 24)));
       });
     });
 
@@ -3007,12 +3015,12 @@ contract("ChannelManager", accounts => {
     // assert that balances and threadClosingTime is set appropriately in success case
     const happyAssertions = async threadState => {
       const thread = await cm.getThread(threadState.sender, threadState.receiver, threadState.threadId);
-      thread.weiSender.should.be.eq.BN(threadState.balanceWeiSender);
-      thread.weiReceiver.should.be.eq.BN(threadState.balanceWeiReceiver);
-      thread.tokenSender.should.be.eq.BN(threadState.balanceTokenSender);
-      thread.tokenReceiver.should.be.eq.BN(threadState.balanceTokenReceiver);
-      thread.txCount.should.be.eq.BN(0);
-      thread.threadClosingTime.should.be.gte.BN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 5); // subtract 5 in case test takes too long and second rolls over
+      assert(thread.weiSender.eq(toBN(threadState.balanceWeiSender)));
+      assert(thread.weiReceiver.eq(toBN(threadState.balanceWeiReceiver)));
+      assert(thread.tokenSender.eq(toBN(threadState.balanceTokenSender)));
+      assert(thread.tokenReceiver.eq(toBN(threadState.balanceTokenReceiver)));
+      assert(thread.txCount.eq(toBN(0)));
+      assert(thread.threadClosingTime.gte(toBN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 5))); // subtract 5 in case test takes too long and second rolls over
       thread.emptiedSender.should.be.false;
       thread.emptiedReceiver.should.be.false;
     };
@@ -3038,12 +3046,12 @@ contract("ChannelManager", accounts => {
       // sender
       channelStateWithThreadsSender = await fastForwardToEmptiedChannel(state, threadState, viewer);
       let channelDetails = await cm.getChannelDetails(viewer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
 
       // receiver
       channelStateWithThreadsReceiver = await fastForwardToEmptiedChannel(channelStateReceiver, threadState, performer);
       channelDetails = await cm.getChannelDetails(performer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
     });
 
     describe("happy paths", () => {
@@ -3121,12 +3129,12 @@ contract("ChannelManager", accounts => {
     // assert that balances, txCount and threadClosingTime are set appropriately in success case
     const happyAssertions = async threadState => {
       const thread = await cm.getThread(threadState.sender, threadState.receiver, threadState.threadId);
-      thread.weiSender.should.be.eq.BN(threadState.balanceWeiSender);
-      thread.weiReceiver.should.be.eq.BN(threadState.balanceWeiReceiver);
-      thread.tokenSender.should.be.eq.BN(threadState.balanceTokenSender);
-      thread.tokenReceiver.should.be.eq.BN(threadState.balanceTokenReceiver);
-      thread.txCount.should.be.eq.BN(threadState.txCount);
-      thread.threadClosingTime.should.be.gte.BN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 5); // subtract 5 in case test takes too long and second rolls over
+      assert(thread.weiSender.eq(toBN(threadState.balanceWeiSender)));
+      assert(thread.weiReceiver.eq(toBN(threadState.balanceWeiReceiver)));
+      assert(thread.tokenSender.eq(toBN(threadState.balanceTokenSender)));
+      assert(thread.tokenReceiver.eq(toBN(threadState.balanceTokenReceiver)));
+      assert(thread.txCount.eq(toBN(threadState.txCount)));
+      assert(thread.threadClosingTime.gte(toBN(Math.floor(Date.now() / 1000) + data.channelManager.challengePeriod - 5))); // subtract 5 in case test takes too long and second rolls over
       thread.emptiedSender.should.be.false;
       thread.emptiedReceiver.should.be.false;
     };
@@ -3152,12 +3160,12 @@ contract("ChannelManager", accounts => {
       // sender
       channelStateWithThreadsSender = await fastForwardToEmptiedChannel(state, threadStateInitial, viewer);
       let channelDetails = await cm.getChannelDetails(viewer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
 
       // receiver
       channelStateWithThreadsReceiver = await fastForwardToEmptiedChannel(channelStateReceiver, threadStateInitial, performer);
       channelDetails = await cm.getChannelDetails(performer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
 
       threadStateUpdated = {
         contractAddress: cm.address,
@@ -3294,11 +3302,11 @@ contract("ChannelManager", accounts => {
     // assert that balances and txCount are correctly set in success case
     const happyAssertions = async threadState => {
       const thread = await cm.getThread(threadState.sender, threadState.receiver, threadState.threadId);
-      thread.weiSender.should.be.eq.BN(threadState.balanceWeiSender);
-      thread.weiReceiver.should.be.eq.BN(threadState.balanceWeiReceiver);
-      thread.tokenSender.should.be.eq.BN(threadState.balanceTokenSender);
-      thread.tokenReceiver.should.be.eq.BN(threadState.balanceTokenReceiver);
-      thread.txCount.should.be.eq.BN(threadState.txCount);
+      assert(thread.weiSender.eq(toBN(threadState.balanceWeiSender)));
+      assert(thread.weiReceiver.eq(toBN(threadState.balanceWeiReceiver)));
+      assert(thread.tokenSender.eq(toBN(threadState.balanceTokenSender)));
+      assert(thread.tokenReceiver.eq(toBN(threadState.balanceTokenReceiver)));
+      assert(thread.txCount.eq(toBN(threadState.txCount)));
       thread.emptiedSender.should.be.false;
       thread.emptiedReceiver.should.be.false;
     };
@@ -3324,12 +3332,12 @@ contract("ChannelManager", accounts => {
       // sender
       channelStateWithThreadsSender = await fastForwardToEmptiedChannel(state, threadStateInitial, viewer);
       let channelDetails = await cm.getChannelDetails(viewer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
 
       // receiver
       await fastForwardToEmptiedChannel(channelStateReceiver, threadStateInitial, performer);
       channelDetails = await cm.getChannelDetails(performer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
 
       const proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
       const initialSig = await getThreadSig(threadStateInitial, viewer);
@@ -3396,11 +3404,11 @@ contract("ChannelManager", accounts => {
     // assert channel state correctly reinitialized if threadCount == 0
     const happyAssertions = async (threadState, emptier) => {
       const thread = await cm.getThread(threadState.sender, threadState.receiver, threadState.threadId);
-      thread.weiSender.should.be.eq.BN(threadState.balanceWeiSender);
-      thread.weiReceiver.should.be.eq.BN(threadState.balanceWeiReceiver);
-      thread.tokenSender.should.be.eq.BN(threadState.balanceTokenSender);
-      thread.tokenReceiver.should.be.eq.BN(threadState.balanceTokenReceiver);
-      thread.txCount.should.be.eq.BN(threadState.txCount);
+      assert(thread.weiSender.eq(toBN(threadState.balanceWeiSender)));
+      assert(thread.weiReceiver.eq(toBN(threadState.balanceWeiReceiver)));
+      assert(thread.tokenSender.eq(toBN(threadState.balanceTokenSender)));
+      assert(thread.tokenReceiver.eq(toBN(threadState.balanceTokenReceiver)));
+      assert(thread.txCount.eq(toBN(threadState.txCount)));
       emptier === "sender" ? thread.emptiedSender.should.be.true : thread.emptiedSender.should.be.false;
       emptier === "receiver" ? thread.emptiedReceiver.should.be.true : thread.emptiedReceiver.should.be.false;
     };
@@ -3426,12 +3434,12 @@ contract("ChannelManager", accounts => {
       // sender
       channelStateWithThreadsSender = await fastForwardToEmptiedChannel(state, threadStateInitial, viewer);
       let channelDetails = await cm.getChannelDetails(viewer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
 
       // receiver
       await fastForwardToEmptiedChannel(channelStateReceiver, threadStateInitial, performer);
       channelDetails = await cm.getChannelDetails(performer.address);
-      channelDetails.status.should.be.eq.BN(channelStatus.ThreadDispute);
+      assert(channelDetails.status.eq(toBN(channelStatus.ThreadDispute)));
 
       proof = clientUtils.generateThreadProof(threadStateInitial, [threadStateInitial]);
       viewerSig = await getThreadSig(threadStateInitial, viewer);

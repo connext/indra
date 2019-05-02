@@ -2,7 +2,6 @@ import { ApiService, } from './ApiService'
 import * as express from 'express'
 import log from '../util/log'
 import Config from '../Config'
-import { Address } from '../vendor/connext/types';
 
 const LOG = log('ConfigApiService')
 
@@ -35,7 +34,7 @@ class ConfigApiServiceHandler {
       tokenAddress: tokenContractAddress,
       ethRpcUrl,
       ethNetworkId,
-      beiMaxCollateralization: beiMaxCollateralization.toFixed(),
+      beiMaxCollateralization: beiMaxCollateralization.toString(),
     })
   }
 

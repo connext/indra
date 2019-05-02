@@ -1,15 +1,15 @@
-import { BigNumber } from 'bignumber.js'
+import { big } from '../Connext'
 import { assert } from './index'
 
 describe('chai-subset', () => {
   it('should compare bignums', () => {
     assert.containSubset(
-      { foo: new BigNumber(69), },
+      { foo: big.Big(69), },
       { foo: 69 }
     )
 
     assert.throws(() => assert.containSubset(
-      { foo: new BigNumber(69), },
+      { foo: big.Big(69), },
       { foo: 420 }
     ), /expected .* to contain subset/)
   })

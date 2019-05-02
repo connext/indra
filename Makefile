@@ -11,7 +11,7 @@ proxy=$(cwd)/modules/proxy
 dashboard=$(cwd)/modules/dashboard
 
 # Specify make-specific variables (VPATH = prerequisite search path)
-VPATH=build:$(contracts)/build:$(hub)/dist
+VPATH=build
 SHELL=/bin/bash
 
 # Fetch Prerequisites
@@ -66,22 +66,22 @@ reset-base: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 
 reset-client: reset-base
-	rm -rf build/client*  $(client)/dist $(client)/node_modules
+	rm -rf build/client*  $(client)/dist $(client)/node_modules $(client)/package-lock.json
 
 reset-contracts: reset-base
-	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules
+	rm -rf build/contract* $(contracts)/build/* $(contracts)/node_modules $(contracts)/package-lock.json
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-dashboard: reset-base
-	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules
+	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules $(dashboard)/package-lock.json
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-database: reset-base
-	rm -rf build/database* $(db)/build/* $(db)/node_modules
+	rm -rf build/database* $(db)/build/* $(db)/node_modules $(db)/package-lock.json
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 
 reset-hub: reset-base
-	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules
+	rm -rf build/hub* $(hub)/dist/* $(hub)/node_modules $(hub)/package-lock.json
 
 reset: reset-base
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
@@ -120,22 +120,19 @@ backup:
 # set a default test command for developer convenience
 test: test-default
 test-default: test-client
-test-all: test-client test-contracts test-hub test-e2e
+test-all: test-client test-contracts test-hub
 
 test-client: client
 	bash ops/test-client.sh
 
-test-contracts: contract-artifacts
+watch-client:
+	bash ops/watch-client.sh
+
+test-contracts: client contract-artifacts
 	bash ops/test-contracts.sh
 
 test-hub: hub database
 	bash ops/test-hub.sh
-
-test-e2e: root-node-modules prod
-	npm stop
-	MODE=test npm run start-prod
-	./node_modules/.bin/cypress run
-	npm stop
 
 ########################################
 # Begin Real Rules
@@ -185,19 +182,20 @@ hub-prod: hub
 	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
 	$(log_finish) && touch build/$@
 
-hub: hub-node-modules contract-artifacts $(shell find $(hub) $(find_options))
+hub: hub-node-modules client contract-artifacts $(shell find $(hub)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/$@
 
-hub-node-modules: builder $(hub)/package.json
+hub-node-modules: builder $(hub)/package.json $(client)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
-	$(docker_run_in_hub) "rm -rf node_modules/connext"
-	$(docker_run_in_hub) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_hub) "cd ../client && $(install)"
-	@touch build/client && touch build/client-node-modules
+	$(docker_run_in_hub) "rm -rf node_modules/connext/dist"
+	$(docker_run_in_hub) "ln -s ../../../client/dist node_modules/connext/dist"
+	$(docker_run_in_hub) "rm -rf node_modules/connext/src"
+	$(docker_run_in_hub) "ln -s ../../../client/src node_modules/connext/src"
+	@touch build/hub-node-modules
 	$(log_finish) && touch build/$@
 
 # Contracts
@@ -211,15 +209,16 @@ contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
-	$(docker_run_in_contracts) "rm -rf node_modules/connext"
-	$(docker_run_in_contracts) "ln -s ../../client node_modules/connext"
-	$(docker_run_in_contracts) "cd ../client && $(install)"
-	@touch build/client && touch build/client-node-modules
+	$(docker_run_in_contracts) "rm -rf node_modules/connext/dist"
+	$(docker_run_in_contracts) "ln -s ../../../client/dist node_modules/connext/dist"
+	$(docker_run_in_contracts) "rm -rf node_modules/connext/src"
+	$(docker_run_in_contracts) "ln -s ../../../client/src node_modules/connext/src"
+	@touch build/client-node-modules
 	$(log_finish) && touch build/$@
 
 # Client
 
-client: client-node-modules $(shell find $(client)/src)
+client: client-node-modules $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_client) "npm run build"
 	$(log_finish) && touch build/$@

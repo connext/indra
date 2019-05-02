@@ -1,22 +1,24 @@
+import { types, Validator } from './Connext';
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
-import { Validator } from './vendor/connext/validator'
-import {
-  convertChannelState,
-  convertPayment,
-  convertThreadState,
-  ThreadState,
-  ThreadStateBigNumber,
-  UnsignedThreadState,
-  PaymentArgs
-} from './vendor/connext/types'
-import { ThreadRow, ThreadStateBigNum, ThreadStateUpdateRow } from './domain/Thread'
-import { ChannelStateUpdateRowBigNum } from './domain/Channel'
 import { SignerService } from './SignerService'
 import { prettySafeJson } from './util'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
+
+type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type ThreadRow<T=string> = types.ThreadRow<T>
+type ThreadState<T=string> = types.ThreadState<T>
+type ThreadStateUpdateRow<T=string> = types.ThreadStateUpdateRow<T>
+type ThreadStateBN = types.ThreadStateBN
+
+const {
+  convertChannelState,
+  convertPayment,
+  convertThreadState,
+} = types
 
 const LOG = log('ThreadsService')
 
@@ -54,9 +56,9 @@ export default class ThreadsService {
 
   // TODO: might be able to remove some of this validation
   public async open(
-    thread: ThreadStateBigNumber,
+    thread: ThreadStateBN,
     sigUserChannel: string
-  ): Promise<ChannelStateUpdateRowBigNum> {
+  ): Promise<ChannelStateUpdateRowBN> {
     await this.ensureEnabled()
 
     if (thread.sender.toLowerCase() === thread.receiver.toLowerCase()) {
@@ -98,8 +100,8 @@ export default class ThreadsService {
     const channelReceiverState = channelReceiver.state
 
     if (
-      channelSenderState.balanceWeiUser.isLessThan(thread.balanceWeiSender) ||
-      channelSenderState.balanceTokenUser.isLessThan(thread.balanceTokenSender)
+      channelSenderState.balanceWeiUser.lt(thread.balanceWeiSender) ||
+      channelSenderState.balanceTokenUser.lt(thread.balanceTokenSender)
     ) {
       LOG.error(
         `channelSenderState: ${JSON.stringify(channelSenderState, null, 2)}`
@@ -110,8 +112,8 @@ export default class ThreadsService {
     }
 
     if (
-      channelReceiverState.balanceWeiHub.isLessThan(thread.balanceWeiSender) ||
-      channelReceiverState.balanceTokenHub.isLessThan(thread.balanceTokenSender)
+      channelReceiverState.balanceWeiHub.lt(thread.balanceWeiSender) ||
+      channelReceiverState.balanceTokenHub.lt(thread.balanceTokenSender)
     ) {
       LOG.info(
         `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)}, thread: ${prettySafeJson(thread)},
@@ -186,7 +188,7 @@ export default class ThreadsService {
   public async update(
     sender: string,
     receiver: string,
-    update: ThreadStateBigNum
+    update: ThreadStateBN
   ): Promise<ThreadStateUpdateRow> {
     await this.ensureEnabled()
     const thread = await this.threadsDao.getActiveThread(sender, receiver)
@@ -198,8 +200,8 @@ export default class ThreadsService {
       convertThreadState('str', thread.state),
       // @ts-ignore TODO: Enable threads --> reciever isnt in payment args
       convertPayment('str', {
-        amountToken: update.balanceTokenReceiver.minus(thread.state.balanceTokenReceiver),
-        amountWei: update.balanceWeiReceiver.minus(thread.state.balanceWeiReceiver),
+        amountToken: update.balanceTokenReceiver.sub(thread.state.balanceTokenReceiver),
+        amountWei: update.balanceWeiReceiver.sub(thread.state.balanceWeiReceiver),
         recipient: 'receiver'
       } as PaymentArgs)
     )
@@ -217,7 +219,7 @@ export default class ThreadsService {
     receiver: string,
     sig: string,
     senderSigned: boolean
-  ): Promise<ChannelStateUpdateRowBigNum> {
+  ): Promise<ChannelStateUpdateRowBN> {
     await this.ensureEnabled()
     const channelSender = await this.channelsDao.getChannelByUser(sender)
     if (!channelSender || channelSender.status !== ('CS_OPEN' as any)) {

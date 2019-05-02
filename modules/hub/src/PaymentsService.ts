@@ -1,28 +1,43 @@
+import * as eth from 'ethers';
+import { types, Validator, big } from './Connext';
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { PurchasePayment, convertThreadState, UpdateRequest, UpdateRequestBigNumber, PaymentArgs, convertPayment, PaymentArgsBigNumber, convertChannelState, PaymentArgsBN, ChannelStateUpdate, PurchasePaymentSummary, Payment, DepositArgs, convertDeposit } from "./vendor/connext/types";
 import { assertUnreachable } from "./util/assertUnreachable";
 import ChannelsService from "./ChannelsService";
 import ThreadsService from "./ThreadsService";
 import ChannelsDao from "./dao/ChannelsDao";
 import Config from "./Config";
 import { prettySafeJson } from "./util";
-import { Big } from "./util/bigNumber";
-import { Validator } from "./vendor/connext/validator";
 import { SignerService } from "./SignerService";
 import PaymentsDao from "./dao/PaymentsDao";
 import { default as DBEngine } from './DBEngine'
-import { PurchaseRowWithPayments } from "./domain/Purchase";
 import { default as log } from './util/log'
-import { emptyAddress } from './vendor/connext/Utils';
 import GlobalSettingsDao from './dao/GlobalSettingsDao';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
+import OptimisticPaymentDao from './dao/OptimisticPaymentDao';
+
+const {
+  Big
+} = big
+
+type PurchaseRowWithPayments = types.PurchaseRowWithPayments
+type Payment<T=string> = types.Payment<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type PurchasePayment = types.PurchasePayment
+type UpdateRequest<T=string> = types.UpdateRequest<T>
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
   { error: false; res: T }
 )
 
+const {
+  convertChannelState,
+  convertDeposit,
+  convertPayment,
+  convertThreadState,
+} = types
+const emptyAddress = eth.constants.AddressZero
 const LOG = log('PaymentsService')
 
 export default class PaymentsService {
@@ -32,6 +47,7 @@ export default class PaymentsService {
     private signerService: SignerService,
     private paymentsDao: PaymentsDao,
     private paymentMetaDao: PaymentMetaDao,
+    private optimisticPaymentDao: OptimisticPaymentDao,
     private channelsDao: ChannelsDao,
     private custodialPaymentsDao: CustodialPaymentsDao,
     private validator: Validator,
@@ -84,7 +100,7 @@ export default class PaymentsService {
               await this.doChannelInstantPayment(payment, paymentId, row.id)
             } finally {
               // Check to see if collateral is needed, even if the tip failed
-              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient))
+              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient, Big(payment.amount.amountToken)))
               if (err) {
                 LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
               }
@@ -111,7 +127,7 @@ export default class PaymentsService {
         const row = await this.threadsService.update(
           user,
           payment.recipient,
-          convertThreadState('bignumber', payment.update.state),
+          convertThreadState('bn', payment.update.state),
         )
 
         afterPayment = paymentId => afterPayments.push(async () => {
@@ -137,6 +153,50 @@ export default class PaymentsService {
 
         afterPayment = paymentId => afterPayments.push(async () => {
           await this.paymentsDao.createLinkPayment(paymentId, row.id, payment.meta.secret)
+        })
+
+      } else if (payment.type == 'PT_OPTIMISTIC') {
+        // if there is collateral, send normal channel payment
+        if (payment.update.reason !== "Payment") {
+          throw new Error("The `PT_OPTIMISTIC` type has not been tested with anything but payment channel updates")
+        }
+
+        // check is also performed on optimistic poller before sending
+        // any channel updates
+        if ((payment.update.args as PaymentArgs).recipient !== "hub") {
+          throw new Error(`Payment must be signed to hub in order to forward, payment: ${prettySafeJson(payment)}`)
+        }
+
+        // make update in users channel
+        const row = await this.channelsService.doUpdateFromWithinTransaction(user, {
+          args: payment.update.args,
+          reason: payment.update.reason,
+          sigUser: payment.update.sigUser,
+          txCount: payment.update.txCount
+        })
+
+        afterPayment = paymentId => afterPayments.push(async () => {
+          const paymentToHub = payment.recipient == this.config.hotWalletAddress || payment.recipient == emptyAddress
+
+          if (paymentToHub) {
+            await this.paymentsDao.createHubPayment(paymentId, row.id)
+            // add the channel update id as the redemption id as well
+            // TODO: should hub payments labeled as optimistic be
+            // added to that table as well?
+            return
+          }
+
+          // add entry to optimistic payments table
+          await this.optimisticPaymentDao.createOptimisticPayment(paymentId, row.id)
+
+          // the optimistic payments table will process the payments there
+          // on a poller, but do not collateralize
+          const [res, err] = await maybe(
+            this.channelsService.doCollateralizeIfNecessary(payment.recipient)
+          )
+          if (err) {
+            LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+          }
         })
 
       } else {
@@ -261,8 +321,12 @@ export default class PaymentsService {
       amountToken: '0',
     }
     for (let payment of payments) {
-      totalAmount.amountWei = Big(totalAmount.amountWei).plus(payment.amount.amountWei).toFixed()
-      totalAmount.amountToken = Big(totalAmount.amountToken).plus(payment.amount.amountToken).toFixed()
+      totalAmount.amountWei = Big(totalAmount.amountWei).add(
+        Big(payment.amount.amountWei)
+      ).toString()
+      totalAmount.amountToken = Big(totalAmount.amountToken).add(
+        Big(payment.amount.amountToken)
+      ).toString()
     }
 
     // TODO: this is a bit of a hack because we aren't totally tracking
@@ -278,7 +342,7 @@ export default class PaymentsService {
     }
   }
 
-  private async doChannelInstantPayment(payment: PurchasePayment, paymentId: number, updateId: number): Promise<void> {
+  public async doChannelInstantPayment(payment: PurchasePayment, paymentId: number, updateId: number): Promise<number> {
     const paymentUpdate = payment.update as UpdateRequest
 
     const recipientChannel = await this.channelsDao.getChannelByUser(payment.recipient)
@@ -312,7 +376,8 @@ export default class PaymentsService {
 
     // Link the payment (ie, the Payment row which references the
     // paying-user -> hub state update) to the disbursement.
-    return await this.paymentsDao.createChannelInstantPayment(paymentId, disbursement.id, updateId)
+    const channelInstantPaymentId = await this.paymentsDao.createChannelInstantPayment(paymentId, disbursement.id, updateId)
+    return channelInstantPaymentId
   }
 
   private generatePurchaseId(

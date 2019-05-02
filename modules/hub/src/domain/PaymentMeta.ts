@@ -1,6 +1,3 @@
-import { TipDto } from './Tip'
-import { BigNumber } from 'bignumber.js'
-
 export interface WithdrawalDto {
   recipient: string
 }

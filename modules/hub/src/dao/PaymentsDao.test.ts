@@ -66,7 +66,7 @@ describe('PaymentsDao', () => {
       'meta': {
         'foo': 42
       },
-      'payment_type': 'channel-instant',
+      'payment_type': 'PT_CHANNEL',
       'purchase_id': 'abc123',
       'recipient': '0xb000000000000000000000000000000000000000',
       'sender': '0xa000000000000000000000000000000000000000',

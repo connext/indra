@@ -1,6 +1,7 @@
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
 import { BigNumber } from 'bignumber.js'
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
+import { CurrencyType, isBN } from '../../types';
+import BNOld = require('bn.js')
 
 export interface CurrencyFormatOptions {
   decimals?: number
@@ -18,21 +19,21 @@ export type CmpType = 'lt' | 'lte' | 'gt' | 'gte' | 'eq'
 
 export default class Currency<ThisType extends CurrencyType = any> implements ICurrency<ThisType> {
   static typeToSymbol: { [key: string]: string } = {
-    [CurrencyType.USD]: '$',
-    [CurrencyType.ETH]: 'ETH',
-    [CurrencyType.WEI]: 'WEI',
-    [CurrencyType.FINNEY]: 'FIN',
-    [CurrencyType.BOOTY]: 'BOO',
-    [CurrencyType.BEI]: 'BEI'
+    "USD": '$',
+    "ETH": 'ETH',
+    "WEI": 'WEI',
+    "FINNEY": 'FIN',
+    "BOOTY": 'BOO',
+    "BEI": 'BEI'
   }
 
-  static ETH = (amount: BN | BigNumber | string | number) => new Currency(CurrencyType.ETH, amount)
-  static USD = (amount: BN | BigNumber | string | number) => new Currency(CurrencyType.USD, amount)
-  static WEI = (amount: BN | BigNumber | string | number) => new Currency(CurrencyType.WEI, amount)
-  static FIN = (amount: BN | BigNumber | string | number) => new Currency(CurrencyType.FINNEY, amount)
+  static ETH = (amount: BN | BigNumber | string | number) => new Currency("ETH", amount)
+  static USD = (amount: BN | BigNumber | string | number) => new Currency("USD", amount)
+  static WEI = (amount: BN | BigNumber | string | number) => new Currency("WEI", amount)
+  static FIN = (amount: BN | BigNumber | string | number) => new Currency("FINNEY", amount)
   // static SPANK = (amount: BN|BigNumber|string|number): Currency => new Currency(CurrencyType.SPANK, amount)
-  static BOOTY = (amount: BN | BigNumber | string | number) => new Currency(CurrencyType.BOOTY, amount)
-  static BEI = (amount: BN | BigNumber | string | number) => new Currency(CurrencyType.BEI, amount)
+  static BOOTY = (amount: BN | BigNumber | string | number) => new Currency("BOOTY", amount)
+  static BEI = (amount: BN | BigNumber | string | number) => new Currency("BEI", amount)
 
   static equals = (c1: ICurrency, c2: ICurrency) => {
     return c1.amount === c2.amount && c1.type == c2.type
@@ -43,32 +44,32 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
   private _amount: BigNumber
 
   static _defaultOptions = {
-    [CurrencyType.USD]: {
+    "USD": {
       decimals: 2,
       withSymbol: true,
       showTrailingZeros: true
     } as CurrencyFormatOptions,
-    [CurrencyType.ETH]: {
+    "ETH": {
       decimals: 3,
       withSymbol: true,
       showTrailingZeros: true
     } as CurrencyFormatOptions,
-    [CurrencyType.WEI]: {
+    "WEI": {
       decimals: 0,
       withSymbol: true,
       showTrailingZeros: false
     } as CurrencyFormatOptions,
-    [CurrencyType.FINNEY]: {
+    "FINNEY": {
       decimals: 0,
       withSymbol: true,
       showTrailingZeros: false
     } as CurrencyFormatOptions,
-    [CurrencyType.BOOTY]: {
+    "BOOTY": {
       decimals: 2,
       withSymbol: false,
       showTrailingZeros: false
     } as CurrencyFormatOptions,
-    [CurrencyType.BEI]: {
+    "BEI": {
       decimals: 0,
       withSymbol: true,
       showTrailingZeros: false
@@ -96,8 +97,10 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
         b.e = _amountAny.e
         b.s = _amountAny.s
         this._amount = b
-      } else if (BN.isBN(_amountAny)) {
+      } else if (BNOld.isBN(_amountAny)) {
         this._amount = new BigNumber(_amount.toString(10))
+      } else if (isBN(_amountAny)) {
+        this._amount = new BigNumber(_amount.toString())
       } else if (typeof _amount === 'string' || typeof _amount === 'number') {
         this._amount = new BigNumber(_amount)
       } else {

@@ -2,7 +2,7 @@ import { isFunction } from '../lib/utils'
 import {ConnextState} from './store'
 import { reducerWithInitialState } from 'typescript-fsa-reducers/dist'
 import * as actions from './actions'
-import { UpdateRequest, ChannelState, WithdrawalArgs } from '@src/types';
+import { UpdateRequest, ChannelState, WithdrawalArgs } from '../types';
 
 export let reducers = reducerWithInitialState(new ConnextState())
 
@@ -41,7 +41,7 @@ export function handleChannelChange(state: ConnextState, channel: ChannelState, 
   }
 }
 
-reducers = reducers.case(actions.setChannelAndUpdate, (state, action) => handleChannelChange(state, action.state, action.update))
+reducers = reducers.case(actions.setChannelAndUpdate, (state, action: any) => handleChannelChange(state, action.state, action.update))
 // @ts-ignore
 reducers = reducers.case(actions.setChannel, (state, action) => handleChannelChange(state, action))
 

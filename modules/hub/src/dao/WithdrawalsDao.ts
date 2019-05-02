@@ -1,8 +1,12 @@
-import * as BigNumber from 'bignumber.js';
 import Withdrawal, {WithdrawalStatus} from '../domain/Withdrawal'
 import DBEngine from '../DBEngine'
 import {Client, QueryResult} from 'pg'
 import {TotalsTuple} from '../domain/TotalsTuple'
+import { BigNumber as BN } from 'ethers/utils'
+import { big } from '../Connext';
+const {
+  Big
+} = big
 
 enum WithdrawalType {
   WEI,
@@ -14,7 +18,7 @@ export default interface WithdrawalsDao {
 
   createWeiWithdrawal(recipient: string): Promise<Withdrawal|null>
 
-  createChannelDisbursement(initiator: string, recipient: string, amount: BigNumber.BigNumber): Promise<Withdrawal|null>
+  createChannelDisbursement(initiator: string, recipient: string, amount: BN): Promise<Withdrawal|null>
 
   markPending(id: number, txhash: string): Promise<Withdrawal>
 
@@ -44,7 +48,7 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
     return this.createWithdrawal(recipient, WithdrawalType.WEI)
   }
 
-  createChannelDisbursement(initiator: string, recipient: string, amount: BigNumber.BigNumber): Promise<Withdrawal|null> {
+  createChannelDisbursement(initiator: string, recipient: string, amount: BN): Promise<Withdrawal|null> {
     return this.engine.exec(async (c: Client) => {
       const res = await c.query(
         `SELECT create_withdrawal_channel_disbursement($1, $2, $3) as id`,
@@ -96,14 +100,14 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
 
       if (!row.totalwei || !row.totalusd) {
         return {
-          totalWei: new BigNumber.BigNumber(0),
-          totalUsd: new BigNumber.BigNumber(0)
+          totalWei: new BN(0),
+          totalUsd: new BN(0)
         }
       }
 
       return {
-        totalWei: new BigNumber.BigNumber(row.totalwei),
-        totalUsd: new BigNumber.BigNumber(row.totalusd)
+        totalWei: new BN(row.totalwei),
+        totalUsd: new BN(row.totalusd)
       }
     })
   }
@@ -202,8 +206,8 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
       id: Number(row.id),
       recipient: row.recipient,
       initiator: row.initiator,
-      amountWei: new BigNumber.BigNumber(row.amountwei),
-      amountUsd: new BigNumber.BigNumber(row.amountusd),
+      amountWei: Big(row.amountwei),
+      amountUsd: Big(row.amountusd),
       txhash: row.txhash,
       status: row.status,
       createdAt: Number(row.createdat),

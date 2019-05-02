@@ -1,21 +1,41 @@
+import * as eth from 'ethers';
+import { StateGenerator, types, big } from './Connext';
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
-import { PurchasePayment, UpdateRequest, PaymentArgs, convertChannelState, convertDeposit, DepositArgs, ThreadState, ThreadStateUpdate, convertThreadState, convertPayment } from "./vendor/connext/types";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
 import { channelUpdateFactory, tokenVal } from "./testing/factories";
 import { testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
 import ChannelsService from "./ChannelsService";
 import { default as ChannelsDao } from './dao/ChannelsDao'
-import { StateGenerator } from "./vendor/connext/StateGenerator";
-import { toWeiString, Big } from "./util/bigNumber";
-import { emptyAddress } from "./vendor/connext/Utils";
 import GlobalSettingsDao from "./dao/GlobalSettingsDao";
 import Config from "./Config";
+import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
+import { PaymentMetaDao } from "./dao/PaymentMetaDao";
+
+const { toWeiString, Big } = big;
+
+type DepositArgs<T=string> = types.DepositArgs<T>
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type PurchasePayment = types.PurchasePayment
+type ThreadState = types.ThreadState
+type ThreadStateUpdate = types.ThreadStateUpdate
+type UpdateRequest = types.UpdateRequest
+
+const {
+  convertChannelState,
+  convertDeposit,
+  convertPayment,
+  convertThreadState,
+} = types
+
+const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsService', () => {
   const registry = getTestRegistry()
 
   const service: PaymentsService = registry.get('PaymentsService')
+  const opPaymentsDao: OptimisticPaymentDao = registry.get('OptimisticPaymentDao')
+  const paymentDao: PaymentMetaDao = registry.get('PaymentMetaDao')
   const channelsService: ChannelsService = registry.get('ChannelsService')
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const stateGenerator: StateGenerator = registry.get('StateGenerator')
@@ -26,7 +46,201 @@ describe('PaymentsService', () => {
     await registry.clearDatabase()
   })
 
-  it('should create a custodial payment', async () => {
+  it('should throw an error if the reason is not PAYMENT for a PT_OPTIMISTIC payment type', async () => {
+    const sender = mkAddress('0xa')
+    const receiver = mkAddress('0xb')
+
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: sender,
+      balanceTokenUser: tokenVal(5),
+    })
+    const receiverChannel = await channelUpdateFactory(registry, {
+      user: receiver,
+      balanceTokenHub: tokenVal(6),
+    })
+
+    const paymentArgs: PaymentArgs = {
+      amountWei: '0',
+      amountToken: tokenVal(1),
+      recipient: 'user'
+    }
+    const payments: PurchasePayment[] = [
+      {
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: tokenVal(1),
+        },
+        meta: {},
+        type: 'PT_OPTIMISTIC',
+        update: {
+          reason: 'OpenThread',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 1,
+          args: paymentArgs,
+        } as UpdateRequest,
+      }
+    ]
+
+    await assert.isRejected(service.doPurchase(sender, {}, payments), /The `PT_OPTIMISTIC` type has not been tested with anything but payment channel updates/)
+  })
+
+  it('should throw an error if payment not signed to the hub for a PT_OPTIMISTIC payment type', async () => {
+    const sender = mkAddress('0xa')
+    const receiver = mkAddress('0xb')
+
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: sender,
+      balanceTokenUser: tokenVal(5),
+    })
+    const receiverChannel = await channelUpdateFactory(registry, {
+      user: receiver,
+      balanceTokenHub: tokenVal(6),
+    })
+
+    const paymentArgs: PaymentArgs = {
+      amountWei: '0',
+      amountToken: tokenVal(1),
+      recipient: 'user'
+    }
+    const payments: PurchasePayment[] = [
+      {
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: tokenVal(1),
+        },
+        meta: {},
+        type: 'PT_OPTIMISTIC',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 1,
+          args: paymentArgs,
+        } as UpdateRequest,
+      }
+    ]
+
+    await assert.isRejected(service.doPurchase(sender, {}, payments), /Payment must be signed to hub in order to forward/)
+  })
+
+  it('should not create if the payment is to the hub, and create a hub direct payment instead', async () => {
+    const sender = mkAddress('0xa')
+    const receiver = config.hotWalletAddress.toLowerCase()
+
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: sender,
+      balanceTokenUser: tokenVal(5),
+    })
+
+    const paymentArgs: PaymentArgs = {
+      amountWei: '0',
+      amountToken: tokenVal(1),
+      recipient: 'hub'
+    }
+    const payments: PurchasePayment[] = [
+      {
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: tokenVal(1),
+        },
+        meta: {},
+        type: 'PT_OPTIMISTIC',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 1,
+          args: paymentArgs,
+        } as UpdateRequest,
+      }
+    ]
+
+    const res = await service.doPurchase(sender, {}, payments)
+    assert.isFalse(res.error)
+    const purchaseId = (res as any).res.purchaseId
+
+    // should have sender payment
+    const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
+    const custodialUpdateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
+    assert.containSubset(custodialUpdateSender, {
+      reason: 'Payment',
+      args: paymentArgs,
+    })
+    assert.isOk(custodialUpdateSender.sigHub)
+
+    const purchase = (await paymentDao.byPurchase(purchaseId))[0]
+    assert.equal(purchase.type, "PT_CHANNEL")
+    // a new payment should NOT be added to the optimistic payments table
+    // and be redeemed with the channel update
+    const payment = await opPaymentsDao.getOptimisticPaymentById(purchase.id)
+    assert.isUndefined(payment)
+    
+  })
+
+  it('should create a new optimistic payment', async () => {
+    const sender = mkAddress('0xa')
+    const receiver = mkAddress('0xb')
+
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: sender,
+      balanceTokenUser: tokenVal(5),
+    })
+    const receiverChannel = await channelUpdateFactory(registry, {
+      user: receiver,
+      balanceTokenHub: tokenVal(6),
+    })
+
+    const paymentArgs: PaymentArgs = {
+      amountWei: '0',
+      amountToken: tokenVal(1),
+      recipient: 'hub'
+    }
+    const payments: PurchasePayment[] = [
+      {
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: tokenVal(1),
+        },
+        meta: {},
+        type: 'PT_OPTIMISTIC',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 1,
+          args: paymentArgs,
+        } as UpdateRequest,
+      }
+    ]
+
+    await service.doPurchase(sender, {}, payments)
+
+    // should have sender payment
+    const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
+    const custodialUpdateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
+    assert.containSubset(custodialUpdateSender, {
+      reason: 'Payment',
+      args: paymentArgs,
+    })
+    assert.isOk(custodialUpdateSender.sigHub)
+
+    // a new payment should be added to the optimistic payments table
+    const forProcessing = await opPaymentsDao.getNewOptimisticPayments()
+    assert.equal(forProcessing.length, 1)
+    assert.containSubset(forProcessing[0], {
+      amount: {
+        amountWei: '0',
+        amountToken: tokenVal(1),
+      },
+      recipient: receiver,
+      sender,
+      status: "NEW",
+      channelUpdateId: custodialUpdateSender.id!
+    })
+  })
+
+  it('should create a PT_CHANNEL payment', async () => {
     const sender = mkAddress('0xa')
     const receiver = mkAddress('0xb')
 
@@ -84,7 +298,7 @@ describe('PaymentsService', () => {
     assert.isOk(custodialUpdateSender.sigHub)
   })
 
-  it('should create a custodial payment with a hub tip', async () => {
+  it('should create a PT_CHANNEL payment with a hub tip', async () => {
     const sender = mkAddress('0xa')
     const receiver = mkAddress('0xb')
 
@@ -165,7 +379,7 @@ describe('PaymentsService', () => {
     assert.isOk(custodialUpdateSender.sigHub)
   })
 
-  it('database should be untouched if custodial payment fails', async () => {
+  it('database should be untouched if PT_CHANNEL payment fails', async () => {
     const sender = mkAddress('0xa')
     const senderChannel = await channelUpdateFactory(registry, {
       user: sender,
@@ -204,7 +418,7 @@ describe('PaymentsService', () => {
     assert.deepEqual(newSenderChannel, oldSenderChannel)
   })
 
-  it('custodial payment should collateralize recipient channel with failing tip', async () => {
+  it('PT_CHANNEL payment should collateralize recipient channel with failing tip', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
       balanceTokenUser: toWeiString(5),
@@ -232,7 +446,7 @@ describe('PaymentsService', () => {
       } as UpdateRequest,
     }]
 
-    // The purcahse request should fail because there's no channel with the
+    // The purchase request should fail because there's no channel with the
     // recipient
     await assert.isRejected(
       service.doPurchase(senderChannel.user, {}, payments),
@@ -247,11 +461,11 @@ describe('PaymentsService', () => {
     )
     // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: toWeiString(10),
+      pendingDepositTokenHub: config.beiMinCollateralization.toString(),
     })
   })
 
-  it('custodial payment should collateralize recipient channel and still send tip', async () => {
+  it('PT_CHANNEL payment should collateralize recipient channel and still send tip', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
       balanceTokenUser: toWeiString(5),
@@ -292,7 +506,7 @@ describe('PaymentsService', () => {
     )
 
     assertChannelStateEqual(collateralState, {
-      pendingDepositTokenHub: config.beiMinCollateralization.times(config.maxCollateralizationMultiple).toFixed(),
+      pendingDepositTokenHub: config.beiMinCollateralization.toString(),
     })
   })
 
@@ -579,8 +793,8 @@ describe('PaymentsService', () => {
     assertChannelStateEqual(update[0].state, {
       ...receiverChannel.state,
       txCountGlobal: receiverChannel.state.txCountGlobal + 2,
-      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).plus(threadUpdate.balanceTokenReceiver).toFixed(),
-      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).minus(threadUpdate.balanceTokenReceiver).toFixed(),
+      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).add(threadUpdate.balanceTokenReceiver).toString(),
+      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).sub(threadUpdate.balanceTokenReceiver).toString(),
       sigUser: mkSig('0xa'),
       sigHub: fakeSig
     })

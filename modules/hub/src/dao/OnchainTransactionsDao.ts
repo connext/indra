@@ -1,4 +1,4 @@
-import { OnchainTransactionRow, TransactionMeta, UnconfirmedTransaction, OnchainTransactionState } from '../domain/OnchainTransaction'
+import { OnchainTransactionRow, TransactionMeta, UnconfirmedTransaction } from '../domain/OnchainTransaction'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { assertUnreachable } from "../util/assertUnreachable";
 import Config from '../Config';

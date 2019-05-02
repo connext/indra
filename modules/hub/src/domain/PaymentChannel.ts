@@ -1,9 +1,9 @@
-import { BigNumber } from 'bignumber.js';
+import { BigNumber as BN } from 'ethers/utils'
 
 export interface PaymentChannel {
   state: number
-  spent: BigNumber
-  value: BigNumber
+  spent: BN
+  value: BN
   channelId: string
   receiver: string
   sender: string

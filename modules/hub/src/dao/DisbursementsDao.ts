@@ -2,11 +2,15 @@ import DBEngine from '../DBEngine'
 import { Client } from 'pg'
 import { PostgresGenericDao } from './GenericDao'
 import Disbursement, { DisbursementStatus } from '../domain/Disbursement'
-import { BigNumber } from 'bignumber.js'
+import { BigNumber as BN } from 'ethers/utils'
+import { big } from '../Connext';
+const {
+  Big
+} = big
 
 export default interface DisbursementDao {
-  create(recipient: string, amountWei: BigNumber): Promise<Disbursement>
-  createErc20(recipient: string, amountErc20: BigNumber): Promise<Disbursement>
+  create(recipient: string, amountWei: BN): Promise<Disbursement>
+  createErc20(recipient: string, amountErc20: BN): Promise<Disbursement>
   markFailed(id: Number): Promise<Disbursement>
   markPending(id: Number, txHash: string): Promise<Disbursement>
   markConfirmed(id: Number): Promise<Disbursement>
@@ -23,7 +27,7 @@ export class PostgresDisbursementDao extends PostgresGenericDao
 
   public create(
     recipient: string,
-    amountWei: BigNumber,
+    amountWei: BN,
   ): Promise<Disbursement> {
     return this.engine.exec(async (c: Client) => {
       const res = await c.query(
@@ -38,7 +42,7 @@ export class PostgresDisbursementDao extends PostgresGenericDao
 
   public createErc20(
     recipient: string,
-    amountErc20: BigNumber,
+    amountErc20: BN,
   ): Promise<Disbursement> {
     return this.engine.exec(async (c: Client) => {
       const res = await c.query(
@@ -148,8 +152,8 @@ export class PostgresDisbursementDao extends PostgresGenericDao
 
   private inflateRow(row: any): Disbursement {
     return {
-      amountWei: row.amountwei && new BigNumber(row.amountwei),
-      amountErc20: row.amounterc20 && new BigNumber(row.amounterc20),
+      amountWei: row.amountwei && Big(row.amountwei),
+      amountErc20: row.amounterc20 && Big(row.amounterc20),
       confirmedAt: Number(row.confirmedat),
       createdAt: Number(row.createdat),
       failedAt: Number(row.failedat),
