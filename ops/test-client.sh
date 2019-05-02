@@ -29,6 +29,5 @@ docker run \
     mocha '"$watch"' \
       -r ts-node/register/type-check \
       -r ./src/register/common.ts \
-      -r ./src/register/testing.ts \
       "src/**/*.test.ts" --exit
   '
