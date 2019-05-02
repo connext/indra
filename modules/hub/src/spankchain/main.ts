@@ -12,7 +12,7 @@ const config = Config.fromEnv({
   sessionSecret:
     'c2TVc9SZfPjOLp6pTw60J4Pp4I1UWU23PqO3nWYh2tBamQPLYuKdFsTsBdJZ5kn',
   port: 8080,
-  authDomainWhitelist: [],
+  authDomainWhitelist: [], // whitelist check is being skipped. All domains are allowed now
   recipientAddress: process.env.WALLET_ADDRESS!,
   adminAddresses: [
     process.env.WALLET_ADDRESS!,
