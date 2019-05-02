@@ -305,7 +305,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   ConnextUtils: {
-    factory: (config: Config) => new Utils(config.hotWalletAddress),
+    factory: (config: Config) => new Utils(),
     dependencies: ['Config'],
   },
 

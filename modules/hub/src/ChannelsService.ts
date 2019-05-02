@@ -76,7 +76,7 @@ export default class ChannelsService {
     private contract: ChannelManager,
     private coinPaymentsDao: CoinPaymentsDao,
   ) {
-    this.utils = new Utils(this.config.hotWalletAddress)
+    this.utils = new Utils()
   }
 
   public async doRequestDeposit(
