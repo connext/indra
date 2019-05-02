@@ -113,13 +113,6 @@ function createMockedTransactionReceipt(abi: any, vals: any) {
 
 
 
-
-
-
-
-
-
-
 function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]) {
   const state = t.getChannelState('empty', Object.assign({
     user: sampleAddress,
@@ -694,24 +687,28 @@ describe('validator', () => {
       withdrawal: null,
     }
 
-    validator = new Validator(web3, hubAddress)
+/*
+    const provider = new eth.providers.JsonRpcProvider('http://localhost:8545')
+    const abi = new eth.utils.Interface(ChannelManagerAbi.abi)
+    const validator = new Validator(hubAddress, provider, ChannelManagerAbi.abi)
+*/
 
     const invalidationCases = [
       {
         name: 'validator.invalidator should work',
-        prev: { ...prev, pendingDepositTokenUser: toBN(10) },
+        prev: { ...prev, pendingDepositTokenUser: Big(10) },
         args,
         valid: null
       },
       {
         name: 'should return string if previous state has timeout and there are not withdrawal args given',
-        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1) },
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: Big(1) },
         args,
         valid: /Cannot invalidate states containing timed withdrawals timeouts without providing a valid withdrawal arguments parameter/
       },
       {
         name: 'should return string if previous state has timed wd and the last invalid count is not the count on the channel',
-        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1), txCountGlobal: 3 },
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: Big(1), txCountGlobal: 3 },
         args: { ...args, invalidTxCount: 2, withdrawal: t.getWithdrawalArgs("empty") },
         valid: /Cannot invalidate a timed withdrawal that has been built on top of/
       },
@@ -723,13 +720,13 @@ describe('validator', () => {
       },
       {
         name: 'should return string if previous state is missing sigHub',
-        prev: { ...prev, sigHub: '', pendingDepositTokenHub: toBN(1) },
+        prev: { ...prev, sigHub: '', pendingDepositTokenHub: Big(1) },
         args,
         valid: /Invalid signer detected on channel state/
       },
       {
         name: 'should return string if previous state is missing sigUser',
-        prev: { ...prev, sigUser: '', pendingDepositTokenHub: toBN(1) },
+        prev: { ...prev, sigUser: '', pendingDepositTokenHub: Big(1) },
         args,
         valid: /Invalid signer detected on channel state/
       },

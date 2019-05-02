@@ -7,7 +7,6 @@ import { getChannelState, getWithdrawalArgs, getDepositArgs } from './testing'
 import {
   ChannelState,
   ChannelStateBN,
-  InvalidationArgs
   InvalidationArgs,
   ThreadStateBN,
   WithdrawalArgs,
@@ -22,8 +21,8 @@ import {
 } from './types';
 
 const hub = t.mkAddress("0xaa")
-const sg = new StateGenerator()
-const utils = new Utils()
+const sg = new StateGenerator(hub)
+const utils = new Utils(hub)
 
 function createHigherNoncedChannelState(
   prev: ChannelStateBN,

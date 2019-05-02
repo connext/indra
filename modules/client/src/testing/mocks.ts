@@ -611,7 +611,7 @@ export class MockStore {
     }
   }
 
-  public setLatestPending = (invalidTxCount: number, overrides: PartialVerboseOrSuccinctWithdrawalArgs) => {
+  public setLatestPending = (invalidTxCount: number, overrides: any) => {
     this._initialState = {
       ...this._initialState,
       persistent: {

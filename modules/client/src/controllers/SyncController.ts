@@ -760,7 +760,7 @@ export default class SyncController extends AbstractController {
     // at the moment, you cannot invalidate states that have pending
     // operations and have been built on top of, where the previous
     // state had a timeout
-    const channel = getChannel(this.store)
+    const channel = getChannel(this.store.getState())
     if (
       // If the very first propose pending is invalidated, then the
       // channel.txCountGlobal will be 0

@@ -10,6 +10,7 @@ import {
   ThreadState,
   UpdateRequest,
   CustodialBalanceRow,
+  WithdrawalArgs,
 } from '../types'
 
 export const CHANNEL_ZERO_STATE = {

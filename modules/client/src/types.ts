@@ -393,7 +393,7 @@ export type InvalidationArgs<T=string> = {
   // have to handle, since it ignores states with timeouts. It
   // is supplied optionally if the user is invalidating an onchain
   // exchange. 
-  
+
   // NOTE: it is safe to not provide any onchainExchange information
   // if you are solely depositing with your exchange (ie hub deposits
   // into users chan if it cant afford requested exchange)
@@ -408,7 +408,6 @@ export type InvalidationArgs<T=string> = {
   message?: string
 }
 export type InvalidationArgsBN = InvalidationArgs<BN>
-export type InvalidationArgsBigNumber = InvalidationArgs<BigNumber>
 
 export type EmptyChannelArgs = ConfirmPendingArgs
 

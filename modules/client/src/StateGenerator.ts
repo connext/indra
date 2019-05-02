@@ -1,5 +1,14 @@
-import { Big, minBN, maxBN, assetToWei, weiToAsset } from "./lib/bn";
 import { BigNumber as BN } from 'ethers/utils'
+import {
+  Big,
+  EXCHANGE_MULTIPLIER,
+  EXCHANGE_MULTIPLIER_BN,
+  assetToWei,
+  maxBN,
+  minBN,
+  mul,
+  weiToAsset,
+} from "./lib/bn";
 import {
   ChannelState,
   ChannelStateBN,
@@ -23,9 +32,6 @@ import {
   convertThreadState,
   convertWithdrawal,
 } from "./types";
-import { toBN, minBN, maxBN, mul, divmod, EXCHANGE_MULTIPLIER, EXCHANGE_MULTIPLIER_BN } from "./lib/bn";
-import BN = require('bn.js')
-import { hasPendingOps } from "./hasPendingOps";
 import { Utils } from "./Utils";
 
 /**
@@ -75,8 +81,8 @@ export function depositIfNegative(r: any, src: string, dst: string) {
   // If `balance${src}` is negative, make it zero, remove that balance from
   // `balance${dst}` and add the balance to the `pendingDeposit${dst}`
   const bal = r['balance' + src] as BN
-  if (bal.lt(toBN(0))) {
-    r['balance' + src] = toBN(0)
+  if (bal.lt(Big(0))) {
+    r['balance' + src] = Big(0)
     r['balance' + dst] = r['balance' + dst].sub(bal.abs())
     r['pendingDeposit' + dst] = r['pendingDeposit' + dst].add(bal.abs())
   }
@@ -630,14 +636,14 @@ export class StateGenerator {
     return convertChannelState("str-unsigned", {
       ...prev,
       ...balances,
-      pendingDepositWeiHub: toBN(0),
-      pendingDepositWeiUser: toBN(0),
-      pendingDepositTokenHub: toBN(0),
-      pendingDepositTokenUser: toBN(0),
-      pendingWithdrawalWeiHub: toBN(0),
-      pendingWithdrawalWeiUser: toBN(0),
-      pendingWithdrawalTokenHub: toBN(0),
-      pendingWithdrawalTokenUser: toBN(0),
+      pendingDepositWeiHub: Big(0),
+      pendingDepositWeiUser: Big(0),
+      pendingDepositTokenHub: Big(0),
+      pendingDepositTokenUser: Big(0),
+      pendingWithdrawalWeiHub: Big(0),
+      pendingWithdrawalWeiUser: Big(0),
+      pendingWithdrawalTokenHub: Big(0),
+      pendingWithdrawalTokenUser: Big(0),
       
       txCountChain: prev.txCountChain - 1,
       txCountGlobal: prev.txCountGlobal + 1,
@@ -677,14 +683,14 @@ export class StateGenerator {
 
       balanceTokenUser: state.balanceTokenUser
         .add(subOrZero(res.pendingWithdrawalTokenUser, res.pendingDepositTokenUser)),
-      pendingDepositWeiHub: toBN(0),
-      pendingDepositWeiUser: toBN(0),
-      pendingDepositTokenHub: toBN(0),
-      pendingDepositTokenUser: toBN(0),
-      pendingWithdrawalWeiHub: toBN(0),
-      pendingWithdrawalWeiUser: toBN(0),
-      pendingWithdrawalTokenHub: toBN(0),
-      pendingWithdrawalTokenUser: toBN(0),
+      pendingDepositWeiHub: Big(0),
+      pendingDepositWeiUser: Big(0),
+      pendingDepositTokenHub: Big(0),
+      pendingDepositTokenUser: Big(0),
+      pendingWithdrawalWeiHub: Big(0),
+      pendingWithdrawalWeiUser: Big(0),
+      pendingWithdrawalTokenHub: Big(0),
+      pendingWithdrawalTokenUser: Big(0),
     }
   }
 
@@ -718,21 +724,21 @@ export class StateGenerator {
     // information should be supplied so ownership
     // can be properly reverted (validators should ensure this)
     const reverted =  this.revertPending(chan, {
-      depositTokenHub: toBN(0),
-      depositTokenUser: toBN(0),
-      depositWeiHub: toBN(0),
-      depositWeiUser: toBN(0),
-      withdrawalTokenHub: toBN(0),
-      withdrawalTokenUser: toBN(0),
-      withdrawalWeiHub: toBN(0),
-      withdrawalWeiUser: toBN(0),
+      depositTokenHub: Big(0),
+      depositTokenUser: Big(0),
+      depositWeiHub: Big(0),
+      depositWeiUser: Big(0),
+      withdrawalTokenHub: Big(0),
+      withdrawalTokenUser: Big(0),
+      withdrawalWeiHub: Big(0),
+      withdrawalWeiUser: Big(0),
       recipient: chan.user,
       timeout: 0
     })
 
     return {
       ...reverted,
-      txCountChain: chan.txCountChain - (hasPendingOps(chan) ? 1 : 0),
+      txCountChain: chan.txCountChain - (this.utils.hasPendingOps(chan) ? 1 : 0),
       txCountGlobal: chan.txCountGlobal + 1,
     }
   }
@@ -740,14 +746,14 @@ export class StateGenerator {
   public _revertPendingWithdrawalAndExchange(chan: ChannelStateBN, args: WithdrawalArgsBN) {
     // revert any pending operations
     let pendingReverted = this.revertPending(chan, {
-      depositWeiUser: toBN(0),
-      depositWeiHub: toBN(0),
-      depositTokenUser: toBN(0),
-      depositTokenHub: toBN(0),
-      withdrawalWeiHub: toBN(0),
-      withdrawalWeiUser: toBN(0),
-      withdrawalTokenUser: toBN(0),
-      withdrawalTokenHub: toBN(0),
+      depositWeiUser: Big(0),
+      depositWeiHub: Big(0),
+      depositTokenUser: Big(0),
+      depositTokenHub: Big(0),
+      withdrawalWeiHub: Big(0),
+      withdrawalWeiUser: Big(0),
+      withdrawalTokenUser: Big(0),
+      withdrawalTokenHub: Big(0),
       recipient: chan.user,
       timeout: 0,
     })

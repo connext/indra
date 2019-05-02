@@ -461,9 +461,8 @@ export class Validator {
   // This invalidates any pending operations that exist on the
   // previous state
   public invalidation(prev: ChannelStateBN, args: InvalidationArgs) {
-    // state should not
-    if (args.lastInvalidTxCount < args.previousValidTxCount) {
-      return `Previous valid nonce is higher than the nonce of the state to be invalidated. ${this.logChannel(latestValidState)}, args: ${this.logArgs(args, "Invalidation")}`
+    if (args.invalidTxCount < prev.txCountChain) {
+      return `Previous valid nonce is higher than the nonce of the state to be invalidated. ${this.logChannel(prev)}, args: ${this.logArgs(args, "Invalidation")}`
     }
     // TODO: invalidating offchain state updates?
     // if the previous state has a timeout withdrawa;, there should be a withdrawal
