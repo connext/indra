@@ -35,6 +35,7 @@ type UnsignedChannelState = types.UnsignedChannelState
 type UpdateRequest<T=string> = types.UpdateRequest<T>
 type UpdateRequestBN = types.UpdateRequestBN
 type WithdrawalArgs<T=string> = types.WithdrawalArgs<T>
+type WithdrawalArgsBN<T=string> = types.WithdrawalArgsBN
 type WithdrawalParametersBN = types.WithdrawalParametersBN
 
 const {
@@ -854,7 +855,7 @@ export default class ChannelsService {
         const toBeInvalidated = await this.channelsDao.getChannelUpdateByTxCount(user, args.invalidTxCount)
         if (toBeInvalidated.reason == "ProposePendingWithdrawal") {
           // always use own copy of args for withdrawal
-          args = { ...args, withdrawal: convertWithdrawal("str", toBeInvalidated.args as WithdrawalArgsBigNumber) }
+          args = { ...args, withdrawal: convertWithdrawal("str", toBeInvalidated.args as WithdrawalArgsBN) }
         }
 
         unsignedChannelStateCurrent = this.validator.generateInvalidation(
@@ -893,7 +894,7 @@ export default class ChannelsService {
           { ...unsignedChannelStateCurrent, sigUser: update.sigUser, sigHub },
           args
         )
-        await this.channelsDao.invalidateUpdate(user, args)
+        await this.channelsDao.invalidateUpdates(user, args)
         return u
 
       case 'OpenThread':

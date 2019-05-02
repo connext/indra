@@ -382,7 +382,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  async invalidateUpdate(user: string, invalidationArgs: InvalidationArgs): Promise<void> {
+  async invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void> {
     await this.db.queryOne(SQL`
       UPDATE _cm_channel_updates
       SET invalid = ${invalidationArgs.reason}
