@@ -74,7 +74,6 @@ export default class PaymentHub {
       'gasEstimateService',
       'apiServer',
       'onchainTransactionService',
-      'coinPaymentsDepositPollingService',
       'optimisticPaymentsService'
     ]
     for (let service of services) {
