@@ -11,6 +11,8 @@
     "no-any": false,
     "no-console": false,
     "no-default-import": false,
+    "no-implicit-dependencies": [true, "dev"],
+    "no-inferrable-types": false,
     "no-magic-numbers": [true, -1, 0, 1, 2],
     "no-submodule-imports": false,
     "prefer-function-over-method": [true, "allow-public"],
