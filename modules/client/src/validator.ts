@@ -1,6 +1,6 @@
 import { BigNumber as BN } from 'ethers/utils'
 import { ethers as eth } from 'ethers';
-import { capitalize } from './helpers/naming'
+import { capitalize } from './lib/naming'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,

@@ -16,7 +16,7 @@ import {
   CreateCustodialWithdrawalOptions,
   CustodialWithdrawalRow,
 } from '../types'
-import { capitalize } from '../helpers/naming';
+import { capitalize } from '../lib/naming';
 import { StateGenerator } from '../StateGenerator';
 
 //

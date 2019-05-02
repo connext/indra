@@ -1,10 +1,13 @@
-import util = require('ethereumjs-util')
-import { ethers as eth } from 'ethers';
-import MerkleTree from './helpers/merkleTree';
-import { MerkleUtils } from './helpers/merkleUtils';
+import util from 'ethereumjs-util'
+import { ethers as eth } from 'ethers'
+import { BigNumber as BN } from 'ethers/utils'
+
 import * as bigUtils from './lib/bn'
-import { Poller } from './lib/poller/Poller';
-import * as getters from './state/getters';
+import MerkleTree from './lib/merkleTree'
+import { MerkleUtils } from './lib/merkleUtils'
+import { Poller } from './lib/poller/Poller'
+import * as getters from './state/getters'
+import { ConnextState } from './state/store'
 import {
   ChannelState,
   convertChannelState,

@@ -13,7 +13,7 @@ import StateUpdateController from './controllers/StateUpdateController';
 import SyncController from './controllers/SyncController';
 import ThreadsController from './controllers/ThreadsController';
 import WithdrawalController from './controllers/WithdrawalController';
-import { Networking } from './helpers/networking';
+import { Networking } from './lib/networking';
 import { IHubAPIClient, HubAPIClient } from './Hub';
 import { default as Logger } from "./lib/Logger";
 import { isFunction, timeoutPromise } from "./lib/utils";

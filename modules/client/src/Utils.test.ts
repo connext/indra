@@ -3,8 +3,8 @@ const HttpProvider = require(`ethjs-provider-http`)
 import { expect, assert } from 'chai'
 import { ethers as eth } from 'ethers';
 import { Utils } from './Utils'
-import { MerkleUtils } from './helpers/merkleUtils'
-import MerkleTree from './helpers/merkleTree'
+import { MerkleUtils } from './lib/merkleUtils'
+import MerkleTree from './lib/merkleTree'
 import * as t from './testing/index'
 import Web3 from 'web3';
 

@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { Networking } from './helpers/networking'
+import { Networking } from './lib/networking'
 import {
   Address,
   ChannelRow,
