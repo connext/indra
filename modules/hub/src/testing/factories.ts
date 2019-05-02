@@ -1,16 +1,19 @@
+import { StateGenerator, types, big } from '../Connext';
 import { TestServiceRegistry } from ".";
-import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread } from "./stateUtils";
+import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel } from "./stateUtils";
 import { default as ChannelsDao } from "../dao/ChannelsDao";
-import { Big } from "../util/bigNumber";
 import { default as ThreadsDao } from "../dao/ThreadsDao";
-import { ChannelUpdateReason, ChannelState, PaymentArgs, ArgsTypes, convertChannelState, convertThreadState } from "../vendor/connext/types";
-import BN = require('bn.js')
 import ExchangeRateDao from "../dao/ExchangeRateDao";
-import { StateGenerator } from "../vendor/connext/StateGenerator"
-const sg = new StateGenerator()
+
+type ChannelUpdateReason = types.ChannelUpdateReason
+type ChannelState = types.ChannelState
+type PaymentArgs = types.PaymentArgs
+type ArgsTypes = types.ArgsTypes
+
+const { convertChannelState, convertThreadState } = types
 
 export function tokenVal(x: number | string): string {
-  return Big(x).times(1e18).toFixed()
+  return big.toWeiString(x)
 }
 
 /**
@@ -65,6 +68,7 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
     balanceTokenSender: tokenVal(10),
   })
 
+  const sg = new StateGenerator(registry.get('Config').hotWalletAddress)
   const userUpdate = await sg.openThread(
     convertChannelState('bn', user.state),
     [],

@@ -1,5 +1,5 @@
 import * as chai from 'chai'
-import BN = require('bn.js')
+import { BigNumber as BN } from 'ethers/utils'
 import {
   Address,
   ChannelState,
@@ -10,11 +10,11 @@ import {
   ExchangeArgs,
   ChannelUpdateReason,
   DepositArgs,
-  ThreadStateUpdate,
-  ArgsTypes,
-  ChannelUpdateReasons,
   addSigToChannelState,
   PendingArgs,
+  CustodialBalanceRow,
+  CreateCustodialWithdrawalOptions,
+  CustodialWithdrawalRow,
 } from '../types'
 import { capitalize } from '../helpers/naming';
 import { StateGenerator } from '../StateGenerator';
@@ -142,6 +142,37 @@ export type PartialArgsType = PartialVerboseOrSuccinctDepositArgs |
   PartialVerboseOrSuccinctExchangeArgs |
   PartialVerboseOrSuccinctPendingArgs
 
+/* Custodial types */
+export type SuccinctCustodialBalanceRow<T = string | number | BN> = {
+  totalReceived: [T, T], // [wei, token]
+  totalWithdrawn: [T, T], // [wei, token]
+  balance: [T, T], // [wei, token]
+  user: string,
+  sentWei: T
+}
+
+export type VerboseOrSuccinctCustodialBalanceRow = SuccinctCustodialBalanceRow | CustodialBalanceRow
+
+export type PartialVerboseOrSuccinctCustodialBalanceRow = Partial<
+SuccinctCustodialBalanceRow & CustodialBalanceRow<string | number | BN>
+>
+
+export type SuccinctCreateCustodialWithdrawalOptions<T = string | number | BN> = CreateCustodialWithdrawalOptions<T>
+
+export type VerboseOrSuccinctCreateCustodialWithdrawalOptions = SuccinctCreateCustodialWithdrawalOptions | CreateCustodialWithdrawalOptions
+
+export type PartialVerboseOrSuccinctCreateCustodialWithdrawalOptions = Partial<
+SuccinctCreateCustodialWithdrawalOptions & CreateCustodialWithdrawalOptions<string | number | BN>
+>
+
+export type SuccinctCustodialWithdrawalRow<T = string | number | BN> = CustodialWithdrawalRow<T>
+
+export type VerboseOrSuccinctCustodialWithdrawalRow = SuccinctCustodialWithdrawalRow | CustodialWithdrawalRow
+
+export type PartialVerboseOrSuccinctCustodialWithdrawalRow = Partial<
+SuccinctCustodialWithdrawalRow & CustodialWithdrawalRow<string | number | BN>
+>
+
 /* Channel and Thread Functions */
 export function expandSuccinctChannel(
   s: SignedOrSuccinctChannel,
@@ -228,6 +259,18 @@ export function expandSuccinctPendingArgs(
   s: SuccinctPendingArgs | Partial<VerboseOrSuccinctPendingArgs>,
 ) {
   return expandSuccinct(['Hub', 'User'], s)
+}
+
+export function expandSuccinctCustodialBalanceRow(
+  s: VerboseOrSuccinctCustodialBalanceRow,
+): CustodialBalanceRow<string>
+export function expandSuccinctCustodialBalanceRow(
+  s: PartialVerboseOrSuccinctCustodialBalanceRow,
+): Partial<CustodialBalanceRow<string>>
+export function expandSuccinctCustodialBalanceRow(
+  s: SuccinctCustodialBalanceRow | Partial<VerboseOrSuccinctCustodialBalanceRow>,
+) {
+  return expandSuccinct(['Wei', 'Token'], s)
 }
 
 /* Common */
@@ -341,6 +384,18 @@ export function makeSuccinctExchange(
   return makeSuccinct(['tokens', 'wei'], s, 'toSell')
 }
 
+export function makeSuccinctCustodialBalanceRow(
+  s: VerboseOrSuccinctCustodialBalanceRow,
+): SuccinctCustodialBalanceRow<string>
+export function makeSuccinctCustodialBalanceRow(
+  s: PartialVerboseOrSuccinctCustodialBalanceRow,
+): Partial<SuccinctCustodialBalanceRow<string>>
+export function makeSuccinctCustodialBalanceRow(
+  s: VerboseOrSuccinctCustodialBalanceRow | Partial<VerboseOrSuccinctCustodialBalanceRow>,
+) {
+  return makeSuccinct(['Wei', 'Token'], s)
+}
+
 function makeSuccinct(
   strs: string[],
   s: any,
@@ -409,6 +464,11 @@ export function updateObj(type: "Pending",
   ...rest: PartialVerboseOrSuccinctPendingArgs[]
 ): PendingArgs<string>
 
+export function updateObj(type: "custodialBalance",
+  s: VerboseOrSuccinctCustodialBalanceRow,
+  ...rest: PartialVerboseOrSuccinctCustodialBalanceRow[]
+): CustodialBalanceRow<string>
+
 export function updateObj(
   type: objUpdateType,
   s: any,
@@ -428,7 +488,8 @@ export function updateObj(
 const objUpdateTypes = {
   channel: 'channel',
   thread: 'thread',
-  Pending: "Pending"
+  Pending: "Pending",
+  custodialBalance: 'custodialBalance'
 }
 type objUpdateType = keyof typeof objUpdateTypes | ChannelUpdateReason
 
@@ -440,6 +501,7 @@ const updateFns: any = {
   'Pending': expandSuccinctPendingArgs,
   'channel': expandSuccinctChannel,
   'thread': expandSuccinctThread,
+  'custodialBalance': expandSuccinctCustodialBalanceRow
 }
 
 const initialChannelStates = {
@@ -673,6 +735,32 @@ const initialPendingArgs: PendingInitial = {
   })
 }
 
+type CustodialBalanceInitial = { [key: string]: () => CustodialBalanceRow }
+
+const initialCustodialBalance: CustodialBalanceInitial = {
+  full: () => ({
+    user: mkAddress('0xAAA'),
+    totalReceivedToken: '1',
+    totalReceivedWei: '2',
+    totalWithdrawnToken: '3',
+    totalWithdrawnWei: '4',
+    balanceToken: '5',
+    balanceWei: '6',
+    sentWei: '7'
+  }),
+
+  empty: () => ({
+    user: mkAddress('0xAAA'),
+    totalReceivedToken: '0',
+    totalReceivedWei: '0',
+    totalWithdrawnToken: '0',
+    totalWithdrawnWei: '0',
+    balanceToken: '0',
+    balanceWei: '0',
+    sentWei: '0'
+  })
+}
+
 export function getChannelState(
   type: keyof typeof initialChannelStates,
   ...overrides: PartialSignedOrSuccinctChannel[]
@@ -747,6 +835,13 @@ export function getExchangeArgs(
   return updateObj("Exchange", initialExchangeArgs[type](), ...overrides)
 }
 
+export function getCustodialBalance(
+  type: keyof typeof initialCustodialBalance,
+  ...overrides: PartialVerboseOrSuccinctCustodialBalanceRow[]
+): CustodialBalanceRow<string> {
+  return updateObj("custodialBalance", initialCustodialBalance[type](), ...overrides)
+}
+
 export function assertChannelStateEqual(
   actual: ChannelState,
   expected: Partial<SignedOrSuccinctChannel>,
@@ -767,6 +862,16 @@ export function assertThreadStateEqual(
   )
 }
 
+export function assertCustodialBalancesEqual(
+  actual: CustodialBalanceRow,
+  expected: Partial<VerboseOrSuccinctCustodialBalanceRow>,
+): void {
+  assert.containSubset(
+    expandSuccinctCustodialBalanceRow(actual),
+    expandSuccinctCustodialBalanceRow(expected),
+  )
+}
+
 export function updateStateUpdate(
   stateUpdate: ChannelStateUpdate,
   ...rest: PartialSignedOrSuccinctChannel[]
@@ -783,7 +888,7 @@ export function updateStateUpdate(
 
 // TODO: generate previous and resulting state update with
 // ability to override
-const sg = new StateGenerator()
+const sg = new StateGenerator("")
 const stateGeneratorFns: any = {
   "Payment": sg.channelPayment,
   "Exchange": sg.exchange,

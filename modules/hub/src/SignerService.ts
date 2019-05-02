@@ -1,14 +1,18 @@
 import * as fs from 'fs'
-import { Utils } from './vendor/connext/Utils'
+import { types, Utils } from './Connext';
 import Config from './Config'
-import { UnsignedChannelState, ChannelState, ChannelManagerChannelDetails, Omit } from './vendor/connext/types'
 import { ChannelManager } from './ChannelManager';
-import * as ethUtils from 'ethereumjs-util'
 import log from './util/log'
 import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
 import { rawTxnToTx } from './util/ethTransaction';
 import { Block } from 'web3-eth';
 import Web3 from 'web3';
+import * as eth from 'ethers';
+
+type ChannelState<T=string> = types.ChannelState<T>
+type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
+type Omit<T, K extends keyof T> = types.Omit<T, K>
+type UnsignedChannelState = types.UnsignedChannelState
 
 const LOG = log('SignerService')
 
@@ -69,24 +73,27 @@ export class SignerService {
   }
 
   public async signMessage(message: string): Promise<string> {
+    const bytes = eth.utils.isHexString(message)
+      ? eth.utils.arrayify(message)
+      : eth.utils.toUtf8Bytes(message)
+
     if (this.config.privateKeyFile) {
-      const pkString = fs.readFileSync(this.config.privateKeyFile, 'utf8')
-      const pk = ethUtils.toBuffer(ethUtils.addHexPrefix(pkString))
-      const fingerprint = ethUtils.toBuffer(String(message))
-      const prefix = ethUtils.toBuffer('\x19Ethereum Signed Message:\n');
-      const prefixedMsg = ethUtils.keccak256(Buffer.concat([
-        prefix,
-        ethUtils.toBuffer(String(fingerprint.length)),
-        fingerprint
-      ]))
-      const sig = await ethUtils.ecsign(ethUtils.toBuffer(prefixedMsg), pk)
-      const out = '0x' + sig.r.toString('hex') + sig.s.toString('hex') + sig.v.toString(16)
-      LOG.info(`Hub (${ethUtils.privateToAddress(pk).toString('hex')}) signed a message:`)
-      LOG.info(`message="${message}" (prefixed="${ethUtils.bufferToHex(prefixedMsg)}")`)
-      LOG.info(`sig=${out}`)
-      return out
+      const wallet = new eth.Wallet(fs.readFileSync(this.config.privateKeyFile, 'utf8'))
+      return await wallet.signMessage(bytes)
     } else {
-      return await this.web3.eth.sign(message, this.config.hotWalletAddress)
+      let sig
+
+      // Modern versions of web3 will add the standard ethereum message prefix for us
+      sig = await this.web3.eth.sign(eth.utils.hexlify(bytes), this.config.hotWalletAddress)
+      if (this.config.hotWalletAddress === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+        return sig
+      }
+
+      // Old versions of web3 did not, we'll add it ourself
+      sig = await this.web3.eth.sign(eth.utils.hashMessage(bytes), this.config.hotWalletAddress)
+      if (this.config.hotWalletAddress === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+        return sig
+      }
     }
   }
 

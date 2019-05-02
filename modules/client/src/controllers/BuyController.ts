@@ -1,8 +1,10 @@
-import { PurchaseRequest, PurchasePayment, PaymentArgs, } from '../types'
+import { ethers as eth } from 'ethers';
 import { AbstractController } from './AbstractController'
-import { getChannel } from '../lib/getChannel'
+import { getChannel } from '../state/getters'
 import { assertUnreachable } from '../lib/utils';
+import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType, PartialPurchaseRequest } from '../types'
 import { emptyAddress } from '../Utils';
+import { Big } from '../lib/bn';
 
 // **********************************************//
 //
@@ -22,7 +24,48 @@ import { emptyAddress } from '../Utils';
 // 7. NOTE: For this to work, we have to allow multiple threads per sender-receiver combo
 
 export default class BuyController extends AbstractController {
-  public async buy(purchase: PurchaseRequest): Promise<{ purchaseId: string }> {
+  // assigns a payment type if it is not provided
+  public async assignPaymentType(payment: PurchasePaymentRequest): Promise<PurchasePaymentRequest> {
+    // if a type is provided, use it by default
+    if (payment.type) {
+      return payment
+    }
+    // otherwise, first check to see if it should be a link
+    if (payment.meta.secret) {
+      return {
+        ...payment,
+        type: `PT_LINK`,
+      }
+    }
+
+    // if the payment amount is above what the hub will collateralize
+    // it should be a custodial payment
+    const config = await this.connext.hub.config()
+    const max = Big(config.beiMaxCollateralization)
+    if (Big(payment.amount.amountToken).gt(max)) {
+      return {
+        ...payment,
+        type: "PT_CUSTODIAL",
+      }
+    }
+
+    // if the recipient is the hub, it should be a channel payment
+    if (payment.recipient.toLowerCase() == this.getState().persistent.hubAddress) {
+      return {
+        ...payment,
+        type: "PT_CHANNEL",
+      }
+    }
+
+    // otherwise, it should be an optimistic payment
+    return {
+      ...payment,
+      type: "PT_OPTIMISTIC"
+    }
+
+  }
+
+  public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
     /*
     purchase = {
       ...purchase,
@@ -39,16 +82,24 @@ export default class BuyController extends AbstractController {
     // get starting state of the channel within the store
     // you must be able to process multiple thread or channel payments
     // with this as the initial state
-    let curChannelState = getChannel(this.store)
-    for (const payment of purchase.payments) {
+    let curChannelState = getChannel(this.store.getState())
+    for (const p of purchase.payments) {
       let newChannelState = null
+      // insert 0 defaults on purchase payment amount
+      const payment: PurchasePaymentRequest<any> = await this.assignPaymentType({
+        ...p,
+        amount: insertDefault('0', p.amount, argNumericFields.Payment) as Payment
+      })
+      if (!payment.type) {
+        throw new Error(`This should never happen. check "assignPaymentType" in the source code.`)
+      }
       switch (payment.type) {
         case 'PT_THREAD':
           // Create a new thread for the payment value
           const { thread, channel } = await this.connext.threadsController.openThread(
             payment.recipient, 
             payment.amount
-          )      
+          )
 
           // add thread payment to signed payments
           const state = await this.connext.signThreadState(
@@ -69,6 +120,8 @@ export default class BuyController extends AbstractController {
           // PUNT on this -- AB
           break
         case 'PT_CHANNEL':
+        // TODO: make this work for threads as well
+        case 'PT_OPTIMISTIC':
         case 'PT_CUSTODIAL':
           const chanArgs: PaymentArgs = {
             recipient: 'hub',
@@ -106,7 +159,7 @@ export default class BuyController extends AbstractController {
             throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 
-          if (!this.connext.opts.web3.utils.isHex(secret)) {
+          if (!eth.utils.isHexString(secret)) {
             throw new Error(`Secret is not hex string, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
           }
 

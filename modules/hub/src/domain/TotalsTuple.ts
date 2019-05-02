@@ -1,6 +1,6 @@
-import * as BigNumber from 'bignumber.js'
+import { BigNumber as BN } from 'ethers/utils'
 
 export interface TotalsTuple {
-  totalWei: BigNumber.BigNumber
-  totalUsd: BigNumber.BigNumber
+  totalWei: BN
+  totalUsd: BN
 }

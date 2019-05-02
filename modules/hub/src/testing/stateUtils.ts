@@ -1,6 +1,11 @@
+import * as Connext from '../Connext';
 import * as chai from 'chai'
-import BN = require('bn.js')
-import { Address, ChannelState, ThreadState, UnsignedChannelState } from '../vendor/connext/types'
+import { BigNumber as BN } from 'ethers/utils'
+
+type Address = Connext.types.Address
+type ChannelState<T = string> = Connext.types.ChannelState<T>
+type ThreadState<T = string> = Connext.types.ThreadState<T>
+type UnsignedChannelState<T = string> = Connext.types.UnsignedChannelState<T>
 
 //
 // chai

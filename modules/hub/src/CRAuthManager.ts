@@ -1,6 +1,6 @@
+import * as eth from 'ethers';
 import uuid = require('uuid')
 import log from './util/log'
-import Web3 from 'web3'
 
 const util = require('ethereumjs-util')
 
@@ -17,14 +17,12 @@ const CHALLENGE_EXPIRY_MS = 1000 * 60 * 2 // 2 hours
 export class MemoryCRAuthManager implements CRAuthManager {
   private static ETH_PREAMBLE = '\x19Ethereum Signed Message:\n'
 
+  // TODO: remove
   private static HASH_PREAMBLE = 'SpankWallet authentication message:'
-
-  private web3: Web3
 
   private nonces: { [s: string]: number } = {}
 
-  constructor (web3: any) {
-    this.web3 = web3
+  constructor () {
   }
 
   generateNonce (): Promise<string> {
@@ -36,34 +34,28 @@ export class MemoryCRAuthManager implements CRAuthManager {
   public async checkSignature (address: string, nonce: string, origin: string, signature: string): Promise<string | null> {
     const creation = this.nonces[nonce]
 
-    if (!creation) {
-      LOG.warn(`Nonce ${nonce} not found.`)
+    if (!eth.utils.isHexString(signature)) {
+      LOG.error(`Signature must be a valid hex string: ${signature}`)
       return null
     }
 
-    const hash = this.sha3(`${MemoryCRAuthManager.HASH_PREAMBLE} ${this.sha3(nonce)} ${this.sha3(origin)}`)
-    const sigAddr = this.extractAddress(hash, signature)
+    if (!creation) {
+      LOG.warn(`Nonce "${nonce}" not found.`)
+      return null
+    }
+
+    const bytes = eth.utils.isHexString(nonce)
+      ? eth.utils.arrayify(nonce)
+      : eth.utils.toUtf8Bytes(nonce)
+
+    let sigAddr = eth.utils.verifyMessage(bytes, signature).toLowerCase()
 
     if (!sigAddr || sigAddr !== address) {
-      LOG.warn(`Received invalid signature. Expected address: ${address}. Got address: ${sigAddr}.`)
-      return null
-    }
+      LOG.warn(`Signature doesn't match new scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
 
-    if (Date.now() - creation > CHALLENGE_EXPIRY_MS) {
-      LOG.warn(`Nonce for address ${sigAddr} is expired.`)
-      return null
-    }
-
-    delete this.nonces[nonce]
-
-    return sigAddr
-  }
-
-  private extractAddress (hash: string, signature: string): string | null {
-    LOG.debug(`Hash sent to extract: ${hash}`)
-    let addr
-
-    try {
+      // For backwards compatibility, TODO: remove until below
+      const keccak256 = (data: string): string => eth.utils.keccak256(eth.utils.toUtf8Bytes(data))
+      let hash = keccak256(`${MemoryCRAuthManager.HASH_PREAMBLE} ${keccak256(nonce)} ${keccak256(origin)}`)
       let fingerprint = util.toBuffer(String(hash))
       const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
       const prefixedMsg = util.keccak256(
@@ -81,16 +73,24 @@ export class MemoryCRAuthManager implements CRAuthManager {
         res.s,
       )
       const addrBuf = util.pubToAddress(pubKey)
-      addr = util.bufferToHex(addrBuf)
-    } catch (e) {
-      LOG.warn('Caught error trying to recover public key:', e)
+      sigAddr = util.bufferToHex(addrBuf)
+      if (!sigAddr || sigAddr !== address) {
+        LOG.warn(`Signature doesn't match old scheme. Expected address: ${address}. Got address: ${sigAddr}.`)
+        return null
+      }
+      // TODO: remove until here and uncomment next line
+      // return null
+
+    }
+
+    if (Date.now() - creation > CHALLENGE_EXPIRY_MS) {
+      LOG.warn(`Nonce for address ${sigAddr} is expired.`)
       return null
     }
 
-    return addr
+    delete this.nonces[nonce]
+
+    return sigAddr
   }
 
-  private sha3 (data: string): string {
-    return this.web3.utils.sha3(data)
-  }
 }

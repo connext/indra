@@ -1,45 +1,12 @@
+import { StateGenerator, types, Utils, Validator, big } from './Connext';
 import { redisCache } from './RedisClient'
-import { hasPendingOps } from './vendor/connext/hasPendingOps'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
-import { BigNumber } from 'bignumber.js'
-import {
-  channelStateUpdateRowBigNumToString,
-  channelRowBigNumToString,
-  ChannelRow,
-  ChannelStateUpdateRowBigNum,
-} from './domain/Channel'
-import { Validator } from './vendor/connext/validator'
 import ExchangeRateDao from './dao/ExchangeRateDao'
-import { Big, toWeiBigNum } from './util/bigNumber'
-import { ThreadStateUpdateRow } from './domain/Thread'
 import { RedisClient } from './RedisClient'
 import { ChannelManager } from './ChannelManager'
-import {
-  ChannelStateUpdate,
-  UnsignedChannelState,
-  DepositArgs,
-  WithdrawalArgs,
-  ExchangeArgs,
-  convertChannelState,
-  convertThreadState,
-  ThreadState,
-  convertPayment,
-  PaymentArgs,
-  UpdateRequestBigNumber,
-  UpdateRequest,
-  ChannelStateBigNumber,
-  SyncResult,
-  WithdrawalParametersBigNumber,
-  ChannelStateBN,
-  InvalidationArgs,
-  Sync,
-  convertWithdrawalParameters,
-  convertWithdrawal,
-  convertArgs,
-} from './vendor/connext/types'
 import { prettySafeJson, Omit, maybe } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';
@@ -47,10 +14,40 @@ import ThreadsService from './ThreadsService';
 import { SignerService } from './SignerService';
 import { OnchainTransactionRow } from './domain/OnchainTransaction';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import { StateGenerator } from './vendor/connext/StateGenerator';
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
+import { BigNumber as BN } from 'ethers/utils'
+import * as ethers from 'ethers';
 
+type ChannelRow = types.ChannelRow
+type ChannelStateBN = types.ChannelStateBN
+type ChannelStateUpdate = types.ChannelStateUpdate
+type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN
+type DepositArgs<T=string> = types.DepositArgs<T>
+type ExchangeArgs = types.ExchangeArgs
+type InvalidationArgs = types.InvalidationArgs
+type PaymentArgs<T=string> = types.PaymentArgs<T>
+type Sync = types.Sync
+type SyncResult = types.SyncResult
+type ThreadState<T=string> = types.ThreadState<T>
+type ThreadStateUpdateRow<T=string> = types.ThreadStateUpdateRow<T>
+type UnsignedChannelState = types.UnsignedChannelState
+type UpdateRequest<T=string> = types.UpdateRequest<T>
+type UpdateRequestBN = types.UpdateRequestBN
+type WithdrawalArgs<T=string> = types.WithdrawalArgs<T>
+type WithdrawalParametersBN = types.WithdrawalParametersBN
+
+const {
+  convertChannelStateUpdateRow,
+  convertChannelRow,
+  convertArgs,
+  convertChannelState,
+  convertPayment,
+  convertThreadState,
+  convertWithdrawal,
+  convertWithdrawalParameters,
+} = types
+const { Big, toWeiBig, maxBN, weiToAsset, minBN, assetToWei } = big
 const LOG = log('ChannelsService')
 
 type RedisReason = 'user-authorized' | 'hub-authorized' | 'offchain'
@@ -62,6 +59,7 @@ export type RedisUnsignedUpdate = {
 
 
 export default class ChannelsService {
+  private utils: Utils
   constructor(
     private onchainTxService: OnchainTransactionService,
     private threadsService: ThreadsService,
@@ -78,12 +76,14 @@ export default class ChannelsService {
     private config: Config,
     private contract: ChannelManager,
     private coinPaymentsDao: CoinPaymentsDao,
-  ) {}
+  ) {
+    this.utils = new Utils(this.config.hotWalletAddress)
+  }
 
   public async doRequestDeposit(
     user: string,
-    depositWei: BigNumber,
-    depositToken: BigNumber,
+    depositWei: BN,
+    depositToken: BN,
     sigUser: string,
   ): Promise<string | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
@@ -100,12 +100,12 @@ export default class ChannelsService {
 
     // assert user signed parameters
     this.validator.assertDepositRequestSigner({
-      amountToken: depositToken.toFixed(),
-      amountWei: depositWei.toFixed(),
+      amountToken: depositToken.toString(),
+      amountWei: depositWei.toString(),
       sigUser,
     }, user)
 
-    if (hasPendingOps(channelStateStr)) {
+    if (this.utils.hasPendingOps(channelStateStr)) {
       LOG.info(`User ${user} requested a deposit while state already has pending operations `)
       LOG.debug(`[Request Deposit] Current state: ${JSON.stringify(channelStateStr)}`)
       return 'current state has pending fields'
@@ -131,40 +131,40 @@ export default class ChannelsService {
         `is more than 24 hours old; refusing to use it.`,
       )
     }
-    const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
+    const currentExchangeRateStr = currentExchangeRate.rates['USD']
 
     // equivalent token amount to deposit based on booty amount
-    const bootyRequestToDeposit = currentExchangeRateBigNum
-      .times(depositWei)
-      .floor()
+    const bootyRequestToDeposit = weiToAsset(depositWei,
+     currentExchangeRateStr
+    )
 
     const userBootyCurrentlyInChannel = await this.channelsDao.getTotalChannelTokensPlusThreadBonds(
       user,
     )
 
     const totalChannelRequestedBooty = bootyRequestToDeposit
-      .plus(userBootyCurrentlyInChannel)
-      .plus(channel.state.balanceTokenHub)
+      .add(userBootyCurrentlyInChannel)
+      .add(channel.state.balanceTokenHub)
 
-    const hubBootyDeposit = BigNumber.max(0, (
-      bootyRequestToDeposit.isLessThanOrEqualTo(channel.state.balanceTokenHub) ?
+    const hubBootyDeposit = maxBN(Big(0), (
+      bootyRequestToDeposit.lte(channel.state.balanceTokenHub) ?
         // if we already have enough booty to collateralize the user channel, dont deposit
         Big(0) :
 
-      totalChannelRequestedBooty.isGreaterThan(this.config.channelBeiDeposit) ?
+      totalChannelRequestedBooty.gte(this.config.channelBeiDeposit) ?
         // if total channel booty plus new additions exceeds limit, only fund up to the limit
         this.config.channelBeiDeposit
-          .minus(userBootyCurrentlyInChannel)
-          .minus(channel.state.balanceTokenHub) :
+          .sub(userBootyCurrentlyInChannel)
+          .sub(channel.state.balanceTokenHub) :
           // fund the up to the amount the user put in
-          bootyRequestToDeposit.minus(channel.state.balanceTokenHub)
+          bootyRequestToDeposit.sub(channel.state.balanceTokenHub)
     ))
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
-      depositWeiUser: depositWei.toFixed(),
-      depositTokenHub: hubBootyDeposit.toFixed(),
-      depositTokenUser: depositToken.toFixed(),
+      depositWeiUser: depositWei.toString(),
+      depositTokenHub: hubBootyDeposit.toString(),
+      depositTokenUser: depositToken.toString(),
       timeout: Math.floor(Date.now() / 1000) + 5 * 60,
       sigUser,
     }
@@ -193,22 +193,23 @@ export default class ChannelsService {
    * balance falls under the `minAmount`, then it should be brought up to
    * `maxAmount` to ensure there is sufficient collateral.
    */
-  public async calculateCollateralizationTargets(state: ChannelStateBigNumber) {
+  public async calculateCollateralizationTargets(state: ChannelStateBN) {
     const numTippers = await this.channelsDao.getRecentTippers(state.user)
-    const baseTarget = Big(numTippers).times(this.config.threadBeiLimit)
-    const baseMin = numTippers > 0 ?
-      this.config.beiMinCollateralization :
-      toWeiBigNum(10)
+    const baseTarget = Big(numTippers)
+      .mul(this.config.beiMinCollateralization)
 
     return {
-      minAmount: BigNumber.max(baseMin, baseTarget).times(this.config.minCollateralizationMultiple),
+      minAmount: maxBN(
+        this.config.beiMinCollateralization, 
+        baseTarget
+      ),
 
-      maxAmount: BigNumber.min(
+      maxAmount: minBN(
         this.config.beiMaxCollateralization,
 
-        BigNumber.max(
-          baseMin,
-          baseTarget.times(this.config.maxCollateralizationMultiple),
+        maxBN(
+          this.config.beiMinCollateralization,
+          baseTarget,
         ),
       ),
 
@@ -244,7 +245,7 @@ export default class ChannelsService {
 
   public async doCollateralizeIfNecessary(
     user: string,
-    collateralizationTarget?: BigNumber
+    collateralizationTarget?: BN
   ): Promise<DepositArgs | null> {
     const depositArgs = await this.getCollateralDepositArgs(user, collateralizationTarget)
 
@@ -261,7 +262,7 @@ export default class ChannelsService {
 
   public async getCollateralDepositArgs(
     user: string, 
-    collateralizationTarget: BigNumber = Big(0)
+    collateralizationTarget: BN = Big(0)
   ): Promise<DepositArgs | null> {
     const shouldCollateralized = await this.shouldCollateralize(user)
     if (!shouldCollateralized)
@@ -295,59 +296,68 @@ export default class ChannelsService {
       if (age < 60) {
         LOG.info(
           `Current pending recollateralization or withdrawal is only ` +
-          `${age.toFixed()}s old; will not recollateralize until that's ` +
+          `${age.toString()}s old; will not recollateralize until that's ` +
           `more than 60s old.`
         )
         return
       }
     }
 
-    let amountToCollateralize: BigNumber
-    if (collateralizationTarget.isZero()) {
-      const targets = await this.calculateCollateralizationTargets(channel.state)
-
-      // 1. If there is more booty in the channel than the maxAmount, then
-      // withdraw down to that.
-      if (channel.state.balanceTokenHub.isGreaterThan(targets.maxAmount)) {
-        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
-        // nothing now... but in the future this should withdraw.
-        return null
+    const calculatedTargets = await this.calculateCollateralizationTargets(channel.state)
+    let targets = { ...calculatedTargets }
+    // if the provided target is greater than the min target,
+    // but less than the max, replace the min
+    if (collateralizationTarget.gt(calculatedTargets.minAmount)) {
+      targets = {
+        ...targets,
+        minAmount: collateralizationTarget,
       }
-
-      // 2. If the amount is between the minAmount and the maxAmount, do nothing.
-      if (channel.state.balanceTokenHub.isGreaterThan(targets.minAmount)) {
-        return null
+    } 
+    
+    // if the provided target is greater the max
+    // replace max
+    if (collateralizationTarget.gt(calculatedTargets.maxAmount)) {
+      targets = {
+        ...targets,
+        maxAmount: collateralizationTarget,
       }
-
-      // 3. Otherwise, deposit the appropriate amount
-      amountToCollateralize = targets.maxAmount.minus(channel.state.balanceTokenHub)
-    } else {
-      // collateralize to target, but not more than channel max
-      if (channel.state.balanceTokenHub.isGreaterThan(this.config.beiMaxCollateralization)) {
-        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
-        // nothing now... but in the future this should withdraw.
-        return null
-      }
-
-      if (channel.state.balanceTokenHub.isGreaterThan(collateralizationTarget)) {
-        // NOTE: Since we don't have a way to do non-blocking withdrawals, do
-        // nothing now... but in the future this should withdraw.
-        return null
-      }
-
-      // 3. Deposit either up to the collateralization amount or the channel max
-      amountToCollateralize = BigNumber.min(
-        this.config.beiMaxCollateralization, 
-        collateralizationTarget
-      ).minus(channel.state.balanceTokenHub)
     }
 
-    LOG.info(`Recollateralizing ${user} with ${amountToCollateralize.div('1e18').toFixed()} BOOTY`)
+    // when the collateral target provided is greater than the
+    // max, the vales of minAmount and maxAmount will converge,
+    // signifying a definite target above the expected max is
+    // requested for collateral
+
+    // 1. If there is more booty in the channel than the maxAmount, then
+    // withdraw down to that.
+    if (channel.state.balanceTokenHub.gt(targets.maxAmount)) {
+      // NOTE: Since we don't have a way to do non-blocking withdrawals, do
+      // nothing now... but in the future this should withdraw.
+      return null
+    }
+
+    // 2. If the amount is between the minAmount and the maxAmount, do nothing.
+    if (channel.state.balanceTokenHub.gt(targets.minAmount)) {
+      return null
+    }
+
+    // 3. Otherwise, deposit the appropriate amount up to the 
+    // collteralization limit
+    const amountToCollateralize = minBN(
+      this.config.beiMaxCollateralization.sub(channel.state.balanceTokenHub), 
+      targets.maxAmount.sub(channel.state.balanceTokenHub)
+    )
+
+    if (amountToCollateralize.isZero()) {
+      return null
+    }
+
+    LOG.info(`Recollateralizing ${user} with ${ethers.utils.formatEther(amountToCollateralize)} BOOTY`)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',
       depositWeiUser: '0',
-      depositTokenHub: amountToCollateralize.toFixed(),
+      depositTokenHub: amountToCollateralize.toString(),
       depositTokenUser: '0',
       timeout: 0,
       sigUser: null,
@@ -357,12 +367,12 @@ export default class ChannelsService {
 
   public async doRequestWithdrawal(
     user: string,
-    params: WithdrawalParametersBigNumber,
+    params: WithdrawalParametersBN,
   ): Promise<WithdrawalArgs | null> {
     const channel = await this.channelsDao.getChannelByUser(user)
     if (!channel || channel.status !== 'CS_OPEN') {
       LOG.error(
-        `withdraw: Channel is not in the correct state: ` +
+        `withdraw: Channel for ${user} is not in the correct state: ` +
         `${prettySafeJson(channel)}`,
       )
       return
@@ -370,8 +380,8 @@ export default class ChannelsService {
 
     params = {
       ...params,
-      weiToSell: params.weiToSell || new BigNumber(0),
-      withdrawalTokenUser: params.withdrawalTokenUser || new BigNumber(0),
+      weiToSell: params.weiToSell || Big(0),
+      withdrawalTokenUser: params.withdrawalTokenUser || Big(0),
     }
 
     const hasNegative = this.validator.withdrawalParams(convertWithdrawalParameters('bn', params))
@@ -392,59 +402,69 @@ export default class ChannelsService {
         `is more than 24 hours old; refusing to use it.`,
       )
     }
-    const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
-    const proposedExchangeRateBigNum = new BigNumber(params.exchangeRate)
-    const exchangeRateDelta = currentExchangeRateBigNum.minus(proposedExchangeRateBigNum).abs()
-    const allowableDelta = currentExchangeRateBigNum.times(0.02)
-    if (exchangeRateDelta.gt(allowableDelta)) {
+    const currentExchangeRateStr = currentExchangeRate.rates['USD']
+    
+    // NOTE: should be safe to use the Math instead of
+    // BigNumber libraries here
+    const exchangeRateDelta = Math.abs(
+      +currentExchangeRateStr - (+params.exchangeRate)
+    )
+
+    const allowableDelta = +currentExchangeRateStr * 0.02
+    if (exchangeRateDelta > allowableDelta) {
       throw new Error(
         `Proposed exchange rate (${params.exchangeRate}) differs from current ` +
-        `rate (${currentExchangeRateBigNum.toFixed()}) by ${exchangeRateDelta.toFixed()} ` +
-        `which is more than the allowable delta of ${allowableDelta.toFixed()}`
+        `rate (${currentExchangeRateStr.toString()}) by ${exchangeRateDelta.toString()} ` +
+        `which is more than the allowable delta of ${allowableDelta.toString()}`
       )
     }
 
     // if user is leaving some wei in the channel, leave an equivalent amount of booty
-    const newBalanceWeiUser = channel.state.balanceWeiUser.minus(params.withdrawalWeiUser)
-    const hubBootyTargetForExchange = BigNumber.min(
-      newBalanceWeiUser.times(proposedExchangeRateBigNum).floor(),
+    const newBalanceWeiUser = channel.state.balanceWeiUser.sub(params.withdrawalWeiUser)
+    const bootyFromExchange = weiToAsset(newBalanceWeiUser, currentExchangeRateStr)
+
+    const hubTokenTargetForExchange = minBN(
+      bootyFromExchange,
       this.config.channelBeiLimit,
     )
 
     // If the user has recent payments in the channel, make sure they are
     // collateralized up to their maximum amount.
     const collatTargets = await this.calculateCollateralizationTargets(channel.state)
-    const hubBootyTargetForCollat = (
-      collatTargets.hasRecentPayments ?
-        collatTargets.maxAmount :
-        Big(0)
+    const hubTokenTargetForCollat = collatTargets.hasRecentPayments 
+      ? collatTargets.maxAmount 
+      : Big(0)
+
+    // calculate final collateralization targer
+    const hubTokenTarget = maxBN(
+      hubTokenTargetForExchange,
+      hubTokenTargetForCollat,
     )
 
-    const hubBootyTarget = BigNumber.max(
-      hubBootyTargetForExchange,
-      hubBootyTargetForCollat,
-    )
+    // TODO: any custodial balance owed to the user from the
+    // optimistic payments made should be accounted for at
+    // the time of withdrawal
 
     const withdrawalArgs: WithdrawalArgs = {
       seller: 'user',
-      exchangeRate: proposedExchangeRateBigNum.toFixed(),
-      tokensToSell: params.tokensToSell.toFixed(),
+      exchangeRate: params.exchangeRate,
+      tokensToSell: params.tokensToSell.toString(),
       weiToSell: '0',
 
       recipient: params.recipient,
 
       targetWeiUser: channel.state.balanceWeiUser
-        .minus(params.withdrawalWeiUser)
-        .minus(params.weiToSell)
-        .toFixed(),
+        .sub(params.withdrawalWeiUser)
+        .sub(params.weiToSell)
+        .toString(),
 
       targetTokenUser: channel.state.balanceTokenUser
-        .minus(params.withdrawalTokenUser)
-        .minus(params.tokensToSell)
-        .toFixed(),
+        .sub(params.withdrawalTokenUser)
+        .sub(params.tokensToSell)
+        .toString(),
 
       targetWeiHub: '0',
-      targetTokenHub: hubBootyTarget.toFixed(),
+      targetTokenHub: hubTokenTarget.toString(),
 
       additionalWeiHubToUser: '0',
       additionalTokenHubToUser: '0',
@@ -456,18 +476,18 @@ export default class ChannelsService {
       convertChannelState('bn', channel.state),
       convertWithdrawal('bn', withdrawalArgs),
     )
-    const minWithdrawalAmount = Big('1e13')
+    const minWithdrawalAmount = Big(1e13)
     const sufficientPendingArgs = (
       Object.entries(state).filter(([key, val]: [string, string]) => {
         if (!key.startsWith('pending'))
           return false
-        return minWithdrawalAmount.isLessThan(val)
+        return minWithdrawalAmount.lt(val)
       })
     )
     if (sufficientPendingArgs.length == 0) {
       LOG.info(
         `All pending values in withdrawal are below minimum withdrawal ` +
-        `threshold (${minWithdrawalAmount.toFixed()}): params: ${params};` +
+        `threshold (${minWithdrawalAmount.toString()}): params: ${params};` +
         `(withdrawal will be ignored)`
       )
       LOG.debug(`New state after withdrawal request: ${JSON.stringify(state)} `)
@@ -483,23 +503,28 @@ export default class ChannelsService {
   }
 
   protected adjustExchangeAmount(
-    reqAmount: BigNumber,
-    exchangeRate: BigNumber,
-    hubBalance: BigNumber,
-    otherLimit?: BigNumber,
+    reqAmount: BN,
+    exchangeRate: string,
+    hubBalance: BN,
+    isToken: boolean = false,
+    otherLimit?: BN,
   ) {
-    let limit = hubBalance
+    let limit = hubBalance // opposite currency as what the user is exchanging
     if (otherLimit)
-      limit = BigNumber.min(limit, otherLimit)
+      limit = minBN(limit, otherLimit)
 
-    const exchangeLimit = limit.div(exchangeRate).floor()
-    return BigNumber.min(reqAmount, exchangeLimit).toFixed()
+    // if isToken, then limit is in wei, else it's token units
+    const exchangeLimit = isToken 
+      ? weiToAsset(limit, exchangeRate)
+      : assetToWei(limit, exchangeRate)[0]
+
+    return minBN(reqAmount, exchangeLimit).toString()
   }
 
   public async doRequestExchange(
     user: string,
-    weiToSell: BigNumber,
-    tokensToSell: BigNumber,
+    weiToSell: BN,
+    tokensToSell: BN,
   ): Promise<ExchangeArgs | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
@@ -526,31 +551,35 @@ export default class ChannelsService {
         `is more than 24 hours old; refusing to use it.`,
       )
     }
-    const currentExchangeRateBigNum = currentExchangeRate.rates['USD']
+    // TODO: fix all exchange things!!!!!!
+    // check git diff to see the funkyness
+    const exchangeRate = currentExchangeRate.rates['USD']
 
-    const bootyLimit = BigNumber.min(
-      BigNumber.max(0, channel.state.balanceTokenHub.minus(currentExchangeRateBigNum.floor())),
-    )
-    const weiToBootyLimit = (
-      bootyLimit
-        .div(currentExchangeRateBigNum)
-        .ceil()
-    )
-    const adjustedWeiToSell = BigNumber.min(weiToSell, weiToBootyLimit)
+    // exchanges where user sells wei for tokens are capped by:
+    // - the balance of the hub
+    // - channel limit (config)
+    // exchanges where user sells tokens for wei are capped by:
+    // - hubs balance
+    // - ??? (no channel limit on hub wei)
 
     const exchangeArgs: ExchangeArgs = {
       seller: 'user',
-      exchangeRate: currentExchangeRateBigNum.toFixed(),
+      exchangeRate,
       weiToSell: this.adjustExchangeAmount(
         weiToSell,
-        currentExchangeRateBigNum,
+        exchangeRate,
         channel.state.balanceTokenHub,
-        BigNumber.max(0, this.config.channelBeiDeposit.minus(channel.state.balanceTokenUser)),
+        false,
+        maxBN(
+          Big(0),
+          this.config.channelBeiLimit.sub(channel.state.balanceTokenUser)
+        )
       ),
       tokensToSell: this.adjustExchangeAmount(
         tokensToSell,
-        Big(1).div(currentExchangeRateBigNum),
+        exchangeRate,
         channel.state.balanceWeiHub,
+        true,
       ),
     }
 
@@ -567,8 +596,8 @@ export default class ChannelsService {
 
   public async doUpdates(
     user: string,
-    updates: (UpdateRequestBigNumber | null)[],
-  ): Promise<ChannelStateUpdateRowBigNum[]> {
+    updates: (UpdateRequestBN | null)[],
+  ): Promise<ChannelStateUpdateRowBN[]> {
     const rows = []
     for (const update of updates) {
       rows.push(await this.db.withTransaction(() => this.doUpdateFromWithinTransaction(user, update)))
@@ -579,8 +608,8 @@ export default class ChannelsService {
 
   public async doUpdateFromWithinTransaction(
     user: string,
-    update: UpdateRequestBigNumber
-  ): Promise<ChannelStateUpdateRowBigNum | null> {
+    update: UpdateRequestBN
+  ): Promise<ChannelStateUpdateRowBN | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
 
     // channel status checks
@@ -867,7 +896,7 @@ export default class ChannelsService {
         // will store unsigned state in redis for the next sync response
         await this.doCollateralizeIfNecessary((update.args as ThreadState).receiver)
         return await this.threadsService.open(
-          convertThreadState('bignumber', update.args as ThreadState),
+          convertThreadState('bn', update.args as ThreadState),
           update.sigUser
         )
 
@@ -974,26 +1003,26 @@ export default class ChannelsService {
       return null
     }
 
-    return channelRowBigNumToString(res)
+    return convertChannelRow("str", res)
   }
 
   public async getChannelUpdateByTxCount(
     user: string,
     txCount: number,
   ): Promise<ChannelStateUpdate> {
-    return channelStateUpdateRowBigNumToString(
+    return convertChannelStateUpdateRow("str", 
       await this.channelsDao.getChannelUpdateByTxCount(user, txCount),
     )
   }
 
   public async getLatestDoubleSignedState(user: string) {
     const row = await this.channelsDao.getLatestDoubleSignedState(user)
-    return row ? channelStateUpdateRowBigNumToString(row) : null
+    return row ? convertChannelStateUpdateRow("str", row) : null
   }
 
   public async getLastStateNoPendingOps(user: string) {
     const row = await this.channelsDao.getLastStateNoPendingOps(user)
-    return row ? channelStateUpdateRowBigNumToString(row) : null
+    return row ? convertChannelStateUpdateRow("str", row) : null
   }
 
   public async redisGetUnsignedState(
@@ -1036,7 +1065,7 @@ export default class ChannelsService {
     reason: RedisReason,
     user: string,
     currentState: ChannelStateBN,
-    unsafeUpdate: UpdateRequestBigNumber,
+    unsafeUpdate: UpdateRequestBN,
   ): Promise<ChannelStateUpdate | null> {
     const fromRedis = await this.redisGetUnsignedState(reason, user)
     if (!fromRedis) {
@@ -1082,7 +1111,7 @@ export default class ChannelsService {
   private async saveRedisStateUpdate(
     user: string,
     redisUpdate: ChannelStateUpdate,
-    unsafeUpdate: UpdateRequestBigNumber,
+    unsafeUpdate: UpdateRequestBN,
     txnId?: number,
   ) {
     await this.db.onTransactionCommit(async () => await this.redisDeleteUnsignedState(user))
@@ -1100,7 +1129,7 @@ export default class ChannelsService {
   }
 
   // callback function for OnchainTransactionService
-  private async invalidateUpdate(txn: OnchainTransactionRow): Promise<ChannelStateUpdateRowBigNum> {
+  private async invalidateUpdate(txn: OnchainTransactionRow): Promise<ChannelStateUpdateRowBN> {
     if (txn.state !== 'failed') {
       LOG.info(`Transaction completed, no need to invalidate`)
       return

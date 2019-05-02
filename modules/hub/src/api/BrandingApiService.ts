@@ -1,5 +1,5 @@
 import * as express from 'express'
-import {ApiService, Router} from './ApiService'
+import { ApiService } from './ApiService'
 import Config from '../Config'
 
 export default class BrandingApiService extends ApiService<BrandingApiServiceHandler> {

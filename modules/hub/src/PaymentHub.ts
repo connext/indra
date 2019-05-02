@@ -1,3 +1,4 @@
+import { types, big } from './Connext';
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import { CloseChannelService } from './CloseChannelService'
 import Config from './Config'
@@ -16,12 +17,15 @@ import { ChannelManager } from './ChannelManager'
 const Web3 = require('web3')
 import abi from './abi/ChannelManager'
 import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
-import { channelNumericFields } from './vendor/connext/types'
 import * as readline from 'readline'
-import { Big } from './util/bigNumber'
 import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
 import { EventLog } from 'web3-core';
-import BigNumber from 'bignumber.js';
+import { OptimisticPaymentsService } from './OptimisticPaymentsService';
+import { ethers } from 'ethers';
+import { BigNumber as BN } from 'ethers/utils'
+
+const { channelNumericFields } = types
+const { Big, toWeiString } = big
 
 const LOG = log('PaymentHub')
 
@@ -37,6 +41,7 @@ export default class PaymentHub {
   private apiServer: ApiServer
   private onchainTransactionService: OnchainTransactionService
   private coinPaymentsDepositPollingService: CoinPaymentsDepositPollingService
+  private optimisticPaymentsService: OptimisticPaymentsService
 
   constructor(config: Config) {
     if (!config.ethRpcUrl) {
@@ -60,6 +65,7 @@ export default class PaymentHub {
     this.apiServer = this.container.resolve('ApiServer')
     this.onchainTransactionService = this.container.resolve('OnchainTransactionService')
     this.coinPaymentsDepositPollingService = this.container.resolve('CoinPaymentsDepositPollingService')
+    this.optimisticPaymentsService = this.container.resolve('OptimisticPaymentsService')
   }
 
   public async start() {
@@ -69,6 +75,7 @@ export default class PaymentHub {
       'apiServer',
       'onchainTransactionService',
       'coinPaymentsDepositPollingService',
+      'optimisticPaymentsService'
     ]
     for (let service of services) {
       try {
@@ -106,7 +113,7 @@ export default class PaymentHub {
     await chainsaw.processSingleTx(txHash, true)
   }
 
-  public async collateralizeChannel(user: string, amount: BigNumber) {
+  public async collateralizeChannel(user: string, amount: BN) {
     const context = new Context()
     const channelsService = this.container.resolve<ChannelsService>('ChannelsService', { 'Context': context })
     await channelsService.doCollateralizeIfNecessary(user, amount)
@@ -343,7 +350,7 @@ $pgsql$;
       throw new Error('Uh oh, bad event: ' + JSON.stringify(event))
     }
     for (const field of channelNumericFields)
-      event[field] = event[field].toFixed()
+      event[field] = event[field].toString()
       LOG.debug(`event: ${event}`)
 
     // 4. Find the correponding fully-signed ProposePending
@@ -449,28 +456,28 @@ $pgsql$;
     const callArgs = { from: this.config.hotWalletAddress }
     const tokenContract = new this.web3.eth.Contract(mintAndBurnToken.abi, this.config.tokenContractAddress)
     const hubBalanceStr = await tokenContract.methods.balanceOf(this.config.hotWalletAddress).call(callArgs)
-    const hubBalance = Big(hubBalanceStr).dividedBy('1e18')
+    const hubBalance = ethers.utils.formatEther(hubBalanceStr)
     LOG.info(
       `Current BOOTY (${this.config.tokenContractAddress}) balance of hub ` +
-      `(${this.config.hotWalletAddress}): ${hubBalance.toFixed()}`
+      `(${this.config.hotWalletAddress}): ${hubBalance.toString()}`
     )
 
-    const toWd = Big(amount).minus(hubBalance)
-    if (toWd.isGreaterThan(0)) {
-      LOG.info(`Need to hubContractWithdraw ${toWd.toFixed()} BOOTY.`)
-      const amountConfirm = await input(`Please confirm the amount of BOOTY to hubContractWithdraw (${toWd.toFixed()}): `)
-      if (!toWd.isEqualTo(amountConfirm as string))
-        throw new Error(`Aborting: ${amountConfirm} <> ${toWd.toFixed()}`)
+    const toWd = Big(amount).sub(Big(hubBalance))
+    if (toWd.gt(Big(0))) {
+      LOG.info(`Need to hubContractWithdraw ${toWd.toString()} BOOTY.`)
+      const amountConfirm = await input(`Please confirm the amount of BOOTY to hubContractWithdraw (${toWd.toString()}): `)
+      if (!toWd.eq(Big(amountConfirm as string)))
+        throw new Error(`Aborting: ${amountConfirm} <> ${toWd.toString()}`)
       const contract = this.container.resolve<ChannelManager>('ChannelManagerContract')
-      LOG.info(`Calling hubContractWithdraw('0', '${toWd.times('1e18').toFixed(0)}')...`)
-      const res = await contract.methods.hubContractWithdraw('0', toWd.times('1e18').toFixed(0)).send(callArgs)
+      LOG.info(`Calling hubContractWithdraw('0', '${toWeiString(toWd)}')...`)
+      const res = await contract.methods.hubContractWithdraw('0', toWeiString(toWd)).send(callArgs)
       LOG.info(`Result of hubContractWithdraw: ${res}`)
     }
 
     const amountConfirm = +(await input(`Please confirm the amount of BOOTY to burn (in BOOTY, not BEI; amount: ${amount}): `))
     if (amountConfirm != amount)
       throw new Error(`Aborting: ${amount} <> ${amountConfirm}`)
-    const burnAmount = Big(amount).times('1e18').toFixed()
+    const burnAmount = toWeiString(amount)
     LOG.info(`Calling burn(${burnAmount})...`)
     const burnCall = tokenContract.methods.burn(burnAmount)
     const gas = await burnCall.estimateGas(callArgs)

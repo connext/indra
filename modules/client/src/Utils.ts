@@ -1,47 +1,56 @@
-import { convertChannelState, ChannelState } from './types'
-/*********************************
- *********** UTIL FNS ************
- *********************************/
 import util = require('ethereumjs-util')
-import { MerkleUtils } from './helpers/merkleUtils'
-import MerkleTree from './helpers/merkleTree'
-const w3utils = require('web3-utils')
-
+import { ethers as eth } from 'ethers';
+import MerkleTree from './helpers/merkleTree';
+import { MerkleUtils } from './helpers/merkleUtils';
+import { Poller } from './lib/poller/Poller';
+import * as getters from './state/getters';
 import {
-  UnsignedChannelState,
-  UnsignedThreadState,
-  ThreadState,
+  ChannelState,
+  convertChannelState,
   convertThreadState,
   Payment,
   SignedDepositRequestProposal,
+  ThreadState,
+  UnsignedChannelState,
+  UnsignedThreadState,
 } from './types'
 
-// import types from connext
+/*********************************
+ *********** UTIL FNS ************
+ *********************************/
 
-export const emptyAddress = '0x0000000000000000000000000000000000000000'
-export const emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
+export const emptyAddress = eth.constants.AddressZero
+export const emptyRootHash = eth.constants.HashZero
 
 // define the utils functions
 export class Utils {
-  emptyAddress = '0x0000000000000000000000000000000000000000'
-  emptyRootHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
+  emptyAddress = eth.constants.AddressZero
+  emptyRootHash = eth.constants.HashZero
+  getters = getters
+  Poller = Poller
+
+  hubAddress: string
+  constructor(hubAddress: string) {
+    this.hubAddress = hubAddress
+  }
 
   public createDepositRequestProposalHash(
     req: Payment,
   ): string {
     const { amountToken, amountWei } = req
-    const hash = w3utils.soliditySha3(
-      { type: 'uint256', value: amountToken },
-      { type: 'uint256', value: amountWei },
+    const hash = eth.utils.solidityKeccak256(
+      [ 'uint256', 'uint256' ],
+      [ amountToken, amountWei ]
     )
     return hash
   }
 
   public recoverSignerFromDepositRequest(
     args: SignedDepositRequestProposal,
-  ): string {
+    signer: string,
+  ): string | null {
     const hash = this.createDepositRequestProposalHash(args)
-    return this.recoverSigner(hash, args.sigUser)
+    return this.recoverSigner(hash, args.sigUser, signer)
   }
 
   public createChannelStateHash(
@@ -71,53 +80,55 @@ export class Utils {
     } = channelState
 
     // hash data
-    const hash = w3utils.soliditySha3(
-      { t: 'address', v: contractAddress },
-      { t: 'address[2]', v: [user, recipient] },
-      {
-        t: 'uint256[2]',
-        v: [balanceWeiHub, balanceWeiUser],
-      },
-      {
-        t: 'uint256[2]',
-        v: [balanceTokenHub, balanceTokenUser],
-      },
-      {
-        t: 'uint256[4]',
-        v: [
+    const hash = eth.utils.solidityKeccak256(
+      [
+        'address',
+        'address[2]',
+        'uint256[2]',
+        'uint256[2]',
+        'uint256[4]',
+        'uint256[4]',
+        'uint256[2]',
+        'bytes32',
+        'uint256',
+        'uint256'
+      ],
+      [
+        contractAddress,
+        [ user, recipient ],
+        [ balanceWeiHub, balanceWeiUser ],
+        [ balanceTokenHub, balanceTokenUser ],
+        [
           pendingDepositWeiHub,
           pendingWithdrawalWeiHub,
           pendingDepositWeiUser,
           pendingWithdrawalWeiUser,
         ],
-      },
-      {
-        t: 'uint256[4]',
-        v: [
+        [
           pendingDepositTokenHub,
           pendingWithdrawalTokenHub,
           pendingDepositTokenUser,
           pendingWithdrawalTokenUser,
-        ],
-      },
-      {
-        type: 'uint256[2]',
-        value: [txCountGlobal, txCountChain],
-      },
-      { type: 'bytes32', value: threadRoot },
-      { type: 'uint256', value: threadCount },
-      { type: 'uint256', value: timeout },
+          ],
+        [ txCountGlobal, txCountChain ],
+        threadRoot,
+        threadCount,
+        timeout
+      ]
     )
     return hash
   }
 
   public recoverSignerFromChannelState(
     channelState: UnsignedChannelState,
-    // could be hub or user
     sig: string,
-  ): string {
+    signer: "user" | "hub", // = "user"
+  ): string | null {
     const hash: any = this.createChannelStateHash(channelState)
-    return this.recoverSigner(hash, sig)
+    return this.recoverSigner(hash, sig, signer == "user" 
+      ? channelState.user 
+      : this.hubAddress
+    )
   }
 
   public createThreadStateHash(threadState: UnsignedThreadState): string {
@@ -133,20 +144,9 @@ export class Utils {
       txCount,
     } = threadState
     // convert ChannelState to UnsignedChannelState
-    const hash = w3utils.soliditySha3(
-      { t: 'address', v: contractAddress },
-      { t: 'address', v: sender },
-      { t: 'address', v: receiver },
-      { t: 'uint256', v: threadId },
-      {
-        t: 'uint256',
-        v: [balanceWeiSender, balanceWeiReceiver],
-      },
-      {
-        t: 'uint256',
-        v: [balanceTokenSender, balanceTokenReceiver],
-      },
-      { t: 'uint256', v: txCount },
+    const hash = eth.utils.solidityKeccak256(
+      [ 'address', 'address', 'address', 'uint256', 'uint256[2]', 'uint256[2]', 'uint256' ],
+      [ contractAddress, sender, receiver, threadId, [balanceWeiSender, balanceWeiReceiver], [balanceTokenSender, balanceTokenReceiver], txCount ]
     )
     return hash
   }
@@ -154,10 +154,10 @@ export class Utils {
   public recoverSignerFromThreadState(
     threadState: UnsignedThreadState,
     sig: string,
-  ): string {
+  ): string | null {
     // console.log('recovering signer from state:', threadState)
     const hash: any = this.createThreadStateHash(threadState)
-    return this.recoverSigner(hash, sig)
+    return this.recoverSigner(hash, sig, threadState.sender)
   }
 
   public generateThreadMerkleTree(
@@ -253,19 +253,13 @@ export class Utils {
     return mtree.verify(proof, threadHash)
   }
 
-  private recoverSigner(hash: string, sig: string) {
-    // let fingerprint: any = this.createChannelStateHash(channelState)
-    let fingerprint = util.toBuffer(String(hash))
+  private recoverSignerOldSchema(hash: string, sig: string) {
+    const fingerprint = util.toBuffer(String(hash))
     const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-    // @ts-ignore
     const prefixedMsg = util.keccak256(
-      // @ts-ignore
       Buffer.concat([
-        // @ts-ignore
         prefix,
-        // @ts-ignore
         util.toBuffer(String(fingerprint.length)),
-        // @ts-ignore
         fingerprint,
       ]),
     )
@@ -277,10 +271,37 @@ export class Utils {
       res.s,
     )
     const addrBuf = util.pubToAddress(pubKey)
-    const addr = util.bufferToHex(addrBuf)
-    // console.log('recovered:', addr)
+    const recovered = util.bufferToHex(addrBuf)
+    return recovered
+  }
 
-    return addr
+  private recoverSignerNewSchema(hash: string, sig: string, signer: string) {
+    // For web3 1.0.0-beta.33
+    // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
+    let recovered = eth.utils.verifyMessage(hash, sig).toLowerCase()
+    if (recovered && recovered == signer.toLowerCase()) {
+      return recovered
+    }
+
+    // For web3 1.0.0-beta.52 when sig is verified by contract, note arrayify(msg) in verify
+    recovered = eth.utils.verifyMessage(eth.utils.arrayify(hash), sig).toLowerCase()
+    
+    return recovered
+  }
+
+  public recoverSigner(hash: string, sig: string, signer: string) {
+    let recovered = this.recoverSignerNewSchema(hash, sig, signer)
+    if (recovered && recovered == signer.toLowerCase()) {
+      return recovered
+    }
+
+    // final fallback
+    recovered = this.recoverSignerOldSchema(hash, sig)
+    if (recovered && recovered == signer.toLowerCase()) {
+      return recovered
+    }
+
+    return null
   }
 
   hasPendingOps(stateAny: ChannelState<any>) {

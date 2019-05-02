@@ -1,46 +1,17 @@
-import { BigNumber } from 'bignumber.js/bignumber'
+import { big, types } from '../Connext'
 import { default as DBEngine, SQL } from '../DBEngine'
-import { Big } from '../util/bigNumber'
 
-export interface CustodialBalanceRow {
-  user: string
-  totalReceivedWei: BigNumber
-  totalReceivedToken: BigNumber
-  totalWithdrawnWei: BigNumber
-  totalWithdrawnToken: BigNumber
-  balanceWei: BigNumber
-  balanceToken: BigNumber
-  sentWei: BigNumber
-}
-
-export interface CreateCustodialWithdrawalOptions {
-  user: string
-  recipient: string
-  requestedToken: BigNumber
-  exchangeRate: BigNumber
-  sentWei: BigNumber
-  onchainTransactionId: number
-}
-
-export interface CustodialWithdrawalRow {
-  id: number
-  createdOn: Date
-  user: string
-  recipient: string
-  requestedToken: BigNumber
-  exchangeRate: BigNumber
-  sentWei: BigNumber
-  state: string
-  txHash: string
-  onchainTransactionId: number
-}
+type CustodialBalanceRowBN = types.CustodialBalanceRowBN
+type CustodialPaymentsRow = types.CustodialPaymentsRow
+type CreateCustodialWithdrawalOptionsBN = types.CreateCustodialWithdrawalOptionsBN
+type CustodialWithdrawalRowBN = types.CustodialWithdrawalRowBN
 
 export class CustodialPaymentsDao {
   constructor(
     private db: DBEngine,
   ) {}
 
-  async getCustodialBalance(user: string): Promise<CustodialBalanceRow> {
+  async getCustodialBalance(user: string): Promise<CustodialBalanceRowBN> {
     return this.inflateCustodialBalance(user, await this.db.queryOne(SQL`
       select *
       from custodial_balances
@@ -48,15 +19,19 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  async createCustodialPayment(paymentId: number, updateId: number): Promise<CustodialWithdrawalRow> {
-    return this.inflateCustodialWithdrawalRow(await this.db.queryOne(SQL`
+  async createCustodialPayment(paymentId: number, updateId: number): Promise<CustodialPaymentsRow> {
+    const row = await this.db.queryOne(SQL`
       insert into payments_channel_custodial (payment_id, update_id)
       values (${paymentId}, ${updateId})
       returning *
-    `))
+    `)
+    return {
+      paymentId: row.payment_id,
+      updateId: row.update_id,
+    }
   }
 
-  async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptions): Promise<CustodialWithdrawalRow> {
+  async createCustodialWithdrawal(opts: CreateCustodialWithdrawalOptionsBN): Promise<CustodialWithdrawalRowBN> {
     const { id } = await this.db.queryOne(SQL`
       insert into _custodial_withdrawals (
         "user",
@@ -68,9 +43,9 @@ export class CustodialPaymentsDao {
       ) values (
         ${opts.user},
         ${opts.recipient},
-        ${opts.requestedToken.toFixed()},
-        ${opts.exchangeRate.toFixed()},
-        ${opts.sentWei.toFixed()},
+        ${opts.requestedToken.toString()},
+        ${opts.exchangeRate},
+        ${opts.sentWei.toString()},
         ${opts.onchainTransactionId}
       )
       returning id
@@ -82,7 +57,7 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  async getCustodialWithdrawals(user: string): Promise<CustodialWithdrawalRow[]> {
+  async getCustodialWithdrawals(user: string): Promise<CustodialWithdrawalRowBN[]> {
     return (await this.db.query(SQL`
       select *
       from custodial_withdrawals
@@ -91,7 +66,7 @@ export class CustodialPaymentsDao {
     `)).rows.map(row => this.inflateCustodialWithdrawalRow(row))
   }
 
-  async getCustodialWithdrawal(user: string, id: number): Promise<CustodialWithdrawalRow> {
+  async getCustodialWithdrawal(user: string, id: number): Promise<CustodialWithdrawalRowBN> {
     return this.inflateCustodialWithdrawalRow(await this.db.queryOne(SQL`
       select *
       from custodial_withdrawals
@@ -101,29 +76,29 @@ export class CustodialPaymentsDao {
     `))
   }
 
-  private inflateCustodialBalance(user: string, row: any): CustodialBalanceRow {
+  private inflateCustodialBalance(user: string, row: any): CustodialBalanceRowBN {
     row = row || { user }
     return {
       user: row.user,
-      totalReceivedWei: Big(row.total_received_wei || '0'),
-      totalReceivedToken: Big(row.total_received_token || '0'),
-      totalWithdrawnWei: Big(row.total_withdrawn_wei || '0'),
-      totalWithdrawnToken: Big(row.total_withdrawn_token || '0'),
-      balanceWei: Big(row.balance_wei || '0'),
-      balanceToken: Big(row.balance_token || '0'),
-      sentWei: Big(row.sent_wei || '0'),
+      totalReceivedWei: big.Big(row.total_received_wei || '0'),
+      totalReceivedToken: big.Big(row.total_received_token || '0'),
+      totalWithdrawnWei: big.Big(row.total_withdrawn_wei || '0'),
+      totalWithdrawnToken: big.Big(row.total_withdrawn_token || '0'),
+      balanceWei: big.Big(row.balance_wei || '0'),
+      balanceToken: big.Big(row.balance_token || '0'),
+      sentWei: big.Big(row.sent_wei || '0'),
     }
   }
 
-  private inflateCustodialWithdrawalRow(row: any): CustodialWithdrawalRow {
+  private inflateCustodialWithdrawalRow(row: any): CustodialWithdrawalRowBN {
     return row && {
       id: row.id,
       createdOn: row.created_on,
       user: row.user,
       recipient: row.recipient,
-      requestedToken: Big(row.requested_token),
-      exchangeRate: Big(row.exchange_rate),
-      sentWei: Big(row.sent_wei),
+      requestedToken: big.Big(row.requested_token),
+      exchangeRate: row.exchange_rate,
+      sentWei: big.Big(row.sent_wei),
       state: row.state,
       txHash: row.tx_hash,
       onchainTransactionId: row.onchain_tx_id,

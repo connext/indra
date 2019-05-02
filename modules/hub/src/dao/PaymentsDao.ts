@@ -3,7 +3,7 @@ import {Client} from 'pg'
 import log from '../util/log'
 
 export default interface PaymentsDao {
-  createChannelInstantPayment(paymentId: number, disbursementId: number, updateId: number): Promise<void>
+  createChannelInstantPayment(paymentId: number, disbursementId: number, updateId: number): Promise<number>
   createHubPayment(paymentId: number, updateId: number): Promise<void>
   createThreadPayment(paymentId: number, updateId: number): Promise<void>
   createLinkPayment(paymentId: number, updateId: number, secret: string): Promise<void>
@@ -17,8 +17,8 @@ export class PostgresPaymentsDao implements PaymentsDao {
     private db: DBEngine<Client>,
   ) {}
 
-  public async createChannelInstantPayment(paymentId: number, disbursementId: number, updateId: number): Promise<void> {
-    await this.db.queryOne(SQL`
+  public async createChannelInstantPayment(paymentId: number, disbursementId: number, updateId: number): Promise<number> {
+    const { id } = await this.db.queryOne(SQL`
       INSERT INTO payments_channel_instant (
         payment_id,
         disbursement_id,
@@ -29,7 +29,9 @@ export class PostgresPaymentsDao implements PaymentsDao {
         ${disbursementId},
         ${updateId}
       )
+      returning id
     `)
+    return id
   }
 
   public async createHubPayment(paymentId: number, updateId: number): Promise<void> {

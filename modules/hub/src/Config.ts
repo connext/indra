@@ -1,7 +1,11 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
-import { toWeiBigNum } from './util/bigNumber';
-import BigNumber from 'bignumber.js';
+import { big } from './Connext';
+const {
+  toWeiBig,
+  Big,
+  toWeiString
+} = big
 
 const ENV_VARS = [
   'ETH_RPC_URL',
@@ -88,21 +92,24 @@ export default class Config {
   public shouldCollateralizeUrl: string | 'NO_CHECK' = 'NO_CHECK'
   public recipientAddress: string = ''
   public hotWalletAddress: string = ''
-  public hotWalletMinBalanceEth: string = '6.9'
+  public hotWalletMinBalance: string = toWeiString('6.9')
   public sessionSecret: string = ''
   public staleChannelDays?: number = process.env.STALE_CHANNEL_DAYS ? parseInt(process.env.STALE_CHANNEL_DAYS) : null // if null, will not dispute
   public registry?: Registry
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
-  public channelBeiLimit = toWeiBigNum(process.env.CHANNEL_BEI_LIMIT || 69)
-  public beiMinThreshold = toWeiBigNum(process.env.BEI_MIN_THRESHOLD || 5)
-  public beiMinCollateralization = toWeiBigNum(process.env.BEI_MIN_COLLATERALIZATION || 10)
-  public beiMaxCollateralization = toWeiBigNum(process.env.BEI_MAX_COLLATERALIZATION || 169)
-  public minCollateralizationMultiple = new BigNumber(process.env.MIN_COLLATERALIZATION_MULTIPLE || 0.5)
-  public maxCollateralizationMultiple = new BigNumber(process.env.MAX_COLLATERALIZATION_MULTIPLE || 1.5)
+  // amount users can have in any one channel for their balance
+  public channelBeiLimit = toWeiBig(process.env.CHANNEL_BEI_LIMIT || 69)
+  // minimum amount of bei the hub will put into any one channel
+  // for collateral
+  public beiMinCollateralization = toWeiBig(process.env.BEI_MIN_COLLATERALIZATION || 10)
+  // max bei the hub will collateralize at any point
+  public beiMaxCollateralization = toWeiBig(process.env.BEI_MAX_COLLATERALIZATION || 169)
   public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
-  public threadBeiLimit = toWeiBigNum(process.env.THREAD_BEI_LIMIT || 10)
-  public channelBeiDeposit = this.channelBeiLimit.plus(1069)
+
+  public threadBeiLimit = toWeiBig(process.env.THREAD_BEI_LIMIT || 10)
+  public channelBeiDeposit = this.channelBeiLimit.add(Big(1069))
+  
   public privateKeyFile: string = ''
 
   public hubPublicUrl = envswitch({

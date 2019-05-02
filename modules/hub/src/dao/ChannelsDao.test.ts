@@ -1,9 +1,11 @@
+import * as Connext from '../Connext';
 import { assert } from 'chai'
 import ChannelsDao from './ChannelsDao'
 import { getTestRegistry } from '../testing'
 import { assertChannelStateEqual } from '../testing/stateUtils'
-import { convertChannelState } from '../vendor/connext/types';
 import { channelUpdateFactory } from '../testing/factories';
+
+const { convertChannelState } = Connext.types
 
 describe('ChannelsDao', () => {
   const registry = getTestRegistry()

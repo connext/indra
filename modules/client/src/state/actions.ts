@@ -1,9 +1,17 @@
 import { SyncControllerState, RuntimeState, PendingRequestedDeposit } from './store'
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
-//import Wallet from 'ethereumjs-wallet'
-import { ChannelState, SyncResult, Address, UpdateRequest, ChannelStatus, ThreadHistoryItem, ThreadState } from '../types'
 import { ConnextState } from '../state/store'
-import { ExchangeRateState } from './ConnextState/ExchangeRates'
+import {
+  Address,
+  ChannelState,
+  ChannelStatus,
+  ExchangeRateState,
+  SyncResult,
+  ThreadHistoryItem,
+  ThreadState,
+  UpdateRequest,
+  CustodialBalanceRow,
+} from '../types'
 
 const actionCreator = actionCreatorFactory('connext')
 
@@ -64,7 +72,7 @@ export type SetChannelActionArgs = {
   update: UpdateRequest
   state: ChannelState
 }
-export const setChannelAndUpdate = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
+export const setChannelAndUpdate: any = actionCreator<SetChannelActionArgs>('setChannelAndUpdate')
 export const setChannel = setterAction<ChannelState>('persistent.channel')
 export const setLatestValidState = setterAction<ChannelState>('persistent.latestValidState')
 export const setSyncControllerState = setterAction<SyncControllerState>('persistent.syncControllerState')
@@ -72,3 +80,5 @@ export const setRequestedDeposit = setterAction<PendingRequestedDeposit | null>(
 export const setThreadHistory = setterAction<ThreadHistoryItem[]>('persistent.threadHistory')
 export const setActiveInitialThreadStates = setterAction<ThreadState[]>('persistent.activeInitialThreadStates')
 export const setActiveThreads = setterAction<ThreadState[]>('persistent.activeThreads')
+export const setCustodialBalance = setterAction<CustodialBalanceRow>('persistent.custodialBalance')
+export const setHubAddress = setterAction<Address>('persistent.hubAddress')

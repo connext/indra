@@ -1,5 +1,9 @@
-import {BigNumber} from 'bignumber.js'
 import { EventLog } from 'web3-core';
+import { BigNumber as BN } from 'ethers/utils'
+import { big } from '../Connext';
+const {
+  Big
+} = big
 
 export interface RawContractEvent {
   log: EventLog
@@ -85,22 +89,22 @@ export class DidHubContractWithdrawEvent extends ContractEvent {
   static TYPE = 'DidHubContractWithdraw'
   TYPE = DidHubContractWithdrawEvent.TYPE
 
-  weiAmount: BigNumber
-  tokenAmount: BigNumber
+  weiAmount: BN
+  tokenAmount: BN
 
   constructor (
     event: RawContractEvent
   ) {
     super(event)
     const vals = event.log.returnValues
-    this.weiAmount = new BigNumber(vals.weiAmount)
-    this.tokenAmount = new BigNumber(vals.tokenAmount)
+    this.weiAmount = Big(vals.weiAmount)
+    this.tokenAmount = Big(vals.tokenAmount)
   }
 
   toFields (): Object | null {
     return {
-      weiAmount: this.weiAmount.toFixed(),
-      tokenAmount: this.tokenAmount.toFixed()
+      weiAmount: this.weiAmount.toString(),
+      tokenAmount: this.tokenAmount.toString()
     }
   }
 
@@ -140,18 +144,18 @@ export class DidUpdateChannelEvent extends ContractEvent {
 
   user: string
   senderIdx: number
-  balanceWeiUser: BigNumber
-  balanceWeiHub: BigNumber
-  balanceTokenUser: BigNumber
-  balanceTokenHub: BigNumber
-  pendingDepositWeiUser: BigNumber
-  pendingDepositWeiHub: BigNumber
-  pendingWithdrawalWeiUser: BigNumber
-  pendingWithdrawalWeiHub: BigNumber
-  pendingDepositTokenUser: BigNumber
-  pendingDepositTokenHub: BigNumber
-  pendingWithdrawalTokenUser: BigNumber
-  pendingWithdrawalTokenHub: BigNumber
+  balanceWeiUser: BN
+  balanceWeiHub: BN
+  balanceTokenUser: BN
+  balanceTokenHub: BN
+  pendingDepositWeiUser: BN
+  pendingDepositWeiHub: BN
+  pendingWithdrawalWeiUser: BN
+  pendingWithdrawalWeiHub: BN
+  pendingDepositTokenUser: BN
+  pendingDepositTokenHub: BN
+  pendingWithdrawalTokenUser: BN
+  pendingWithdrawalTokenHub: BN
   txCountGlobal: number
   txCountChain: number
   threadRoot: string
@@ -164,18 +168,18 @@ export class DidUpdateChannelEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderIdx = vals.senderIdx
-    this.balanceWeiUser = new BigNumber(vals.weiBalances[0])
-    this.balanceWeiHub = new BigNumber(vals.weiBalances[1])
-    this.balanceTokenUser = new BigNumber(vals.tokenBalances[0])
-    this.balanceTokenHub = new BigNumber(vals.tokenBalances[1])
-    this.pendingDepositWeiHub = new BigNumber(vals.pendingWeiUpdates[0])
-    this.pendingDepositWeiUser = new BigNumber(vals.pendingWeiUpdates[2])
-    this.pendingWithdrawalWeiHub = new BigNumber(vals.pendingWeiUpdates[1])
-    this.pendingWithdrawalWeiUser = new BigNumber(vals.pendingWeiUpdates[3])
-    this.pendingDepositTokenHub = new BigNumber(vals.pendingTokenUpdates[0])
-    this.pendingDepositTokenUser = new BigNumber(vals.pendingTokenUpdates[2])
-    this.pendingWithdrawalTokenHub = new BigNumber(vals.pendingTokenUpdates[1])
-    this.pendingWithdrawalTokenUser = new BigNumber(vals.pendingTokenUpdates[3])
+    this.balanceWeiUser = Big(vals.weiBalances[0])
+    this.balanceWeiHub = Big(vals.weiBalances[1])
+    this.balanceTokenUser = Big(vals.tokenBalances[0])
+    this.balanceTokenHub = Big(vals.tokenBalances[1])
+    this.pendingDepositWeiHub = Big(vals.pendingWeiUpdates[0])
+    this.pendingDepositWeiUser = Big(vals.pendingWeiUpdates[2])
+    this.pendingWithdrawalWeiHub = Big(vals.pendingWeiUpdates[1])
+    this.pendingWithdrawalWeiUser = Big(vals.pendingWeiUpdates[3])
+    this.pendingDepositTokenHub = Big(vals.pendingTokenUpdates[0])
+    this.pendingDepositTokenUser = Big(vals.pendingTokenUpdates[2])
+    this.pendingWithdrawalTokenHub = Big(vals.pendingTokenUpdates[1])
+    this.pendingWithdrawalTokenUser = Big(vals.pendingTokenUpdates[3])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
     this.threadRoot = vals.threadRoot
@@ -186,18 +190,18 @@ export class DidUpdateChannelEvent extends ContractEvent {
     return {
       user: this.user.toLowerCase(),
       senderIdx: this.senderIdx,
-      balanceWeiUser: this.balanceWeiUser.toFixed(),
-      balanceWeiHub: this.balanceWeiHub.toFixed(),
-      balanceTokenUser: this.balanceTokenUser.toFixed(),
-      balanceTokenHub: this.balanceTokenHub.toFixed(),
-      pendingDepositWeiHub: this.pendingDepositWeiHub.toFixed(),
-      pendingDepositWeiUser: this.pendingDepositWeiUser.toFixed(),
-      pendingWithdrawalWeiHub: this.pendingWithdrawalWeiHub.toFixed(),
-      pendingWithdrawalWeiUser: this.pendingWithdrawalWeiUser.toFixed(),
-      pendingDepositTokenHub: this.pendingDepositTokenHub.toFixed(),
-      pendingDepositTokenUser: this.pendingDepositTokenUser.toFixed(),
-      pendingWithdrawalTokenHub: this.pendingWithdrawalTokenHub.toFixed(),
-      pendingWithdrawalTokenUser: this.pendingWithdrawalTokenUser.toFixed(),
+      balanceWeiUser: this.balanceWeiUser.toString(),
+      balanceWeiHub: this.balanceWeiHub.toString(),
+      balanceTokenUser: this.balanceTokenUser.toString(),
+      balanceTokenHub: this.balanceTokenHub.toString(),
+      pendingDepositWeiHub: this.pendingDepositWeiHub.toString(),
+      pendingDepositWeiUser: this.pendingDepositWeiUser.toString(),
+      pendingWithdrawalWeiHub: this.pendingWithdrawalWeiHub.toString(),
+      pendingWithdrawalWeiUser: this.pendingWithdrawalWeiUser.toString(),
+      pendingDepositTokenHub: this.pendingDepositTokenHub.toString(),
+      pendingDepositTokenUser: this.pendingDepositTokenUser.toString(),
+      pendingWithdrawalTokenHub: this.pendingWithdrawalTokenHub.toString(),
+      pendingWithdrawalTokenUser: this.pendingWithdrawalTokenUser.toString(),
       txCountGlobal: this.txCountGlobal,
       txCountChain: this.txCountChain,
       threadRoot: this.threadRoot,
@@ -248,10 +252,10 @@ export class DidStartExitChannelEvent extends ContractEvent {
 
   user: string
   senderIdx: number
-  balanceWeiUser: BigNumber
-  balanceWeiHub: BigNumber
-  balanceTokenUser: BigNumber
-  balanceTokenHub: BigNumber
+  balanceWeiUser: BN
+  balanceWeiHub: BN
+  balanceTokenUser: BN
+  balanceTokenHub: BN
   txCountGlobal: number
   txCountChain: number
   threadCount: number
@@ -264,10 +268,10 @@ export class DidStartExitChannelEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderIdx = vals.senderIdx
-    this.balanceWeiUser = new BigNumber(vals.weiBalances[0])
-    this.balanceWeiHub = new BigNumber(vals.weiBalances[1])
-    this.balanceTokenUser = new BigNumber(vals.tokenBalances[0])
-    this.balanceTokenHub = new BigNumber(vals.tokenBalances[1])
+    this.balanceWeiUser = Big(vals.weiBalances[0])
+    this.balanceWeiHub = Big(vals.weiBalances[1])
+    this.balanceTokenUser = Big(vals.tokenBalances[0])
+    this.balanceTokenHub = Big(vals.tokenBalances[1])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
     this.threadCount = vals.threadCount
@@ -278,10 +282,10 @@ export class DidStartExitChannelEvent extends ContractEvent {
     return {
       user: this.user.toLowerCase(),
       senderIdx: this.senderIdx,
-      balanceWeiUser: this.balanceWeiUser.toFixed(),
-      balanceWeiHub: this.balanceWeiHub.toFixed(),
-      balanceTokenUser: this.balanceTokenUser.toFixed(),
-      balanceTokenHub: this.balanceTokenHub.toFixed(),
+      balanceWeiUser: this.balanceWeiUser.toString(),
+      balanceWeiHub: this.balanceWeiHub.toString(),
+      balanceTokenUser: this.balanceTokenUser.toString(),
+      balanceTokenHub: this.balanceTokenHub.toString(),
       txCountGlobal: this.txCountGlobal,
       txCountChain: this.txCountChain,
       threadCount: this.threadCount,
@@ -330,10 +334,10 @@ export class DidEmptyChannelEvent extends ContractEvent {
 
   user: string
   senderIdx: number
-  balanceWeiUser: BigNumber
-  balanceWeiHub: BigNumber
-  balanceTokenUser: BigNumber
-  balanceTokenHub: BigNumber
+  balanceWeiUser: BN
+  balanceWeiHub: BN
+  balanceTokenUser: BN
+  balanceTokenHub: BN
   txCountGlobal: number
   txCountChain: number
   threadCount: number
@@ -346,10 +350,10 @@ export class DidEmptyChannelEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderIdx = vals.senderIdx
-    this.balanceWeiUser = new BigNumber(vals.weiBalances[0])
-    this.balanceWeiHub = new BigNumber(vals.weiBalances[1])
-    this.balanceTokenUser = new BigNumber(vals.tokenBalances[0])
-    this.balanceTokenHub = new BigNumber(vals.tokenBalances[1])
+    this.balanceWeiUser = Big(vals.weiBalances[0])
+    this.balanceWeiHub = Big(vals.weiBalances[1])
+    this.balanceTokenUser = Big(vals.tokenBalances[0])
+    this.balanceTokenHub = Big(vals.tokenBalances[1])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
     this.threadCount = vals.threadCount
@@ -360,10 +364,10 @@ export class DidEmptyChannelEvent extends ContractEvent {
     return {
       user: this.user.toLowerCase(),
       senderIdx: this.senderIdx,
-      balanceWeiUser: this.balanceWeiUser.toFixed(),
-      balanceWeiHub: this.balanceWeiHub.toFixed(),
-      balanceTokenUser: this.balanceTokenUser.toFixed(),
-      balanceTokenHub: this.balanceTokenHub.toFixed(),
+      balanceWeiUser: this.balanceWeiUser.toString(),
+      balanceWeiHub: this.balanceWeiHub.toString(),
+      balanceTokenUser: this.balanceTokenUser.toString(),
+      balanceTokenHub: this.balanceTokenHub.toString(),
       txCountGlobal: this.txCountGlobal,
       txCountChain: this.txCountChain,
       threadCount: this.threadCount,
@@ -414,10 +418,10 @@ export class DidStartExitThreadEvent extends ContractEvent {
   threadSender: string
   threadReceiver: string
   senderIdx: number
-  channelWeiBalanceSender: BigNumber
-  channelWeiBalanceReceiver: BigNumber
-  channelTokenBalanceSender: BigNumber
-  channelTokenBalanceReceiver: BigNumber
+  channelWeiBalanceSender: BN
+  channelWeiBalanceReceiver: BN
+  channelTokenBalanceSender: BN
+  channelTokenBalanceReceiver: BN
   txCountGlobal: number
   txCountChain: number
 
@@ -430,10 +434,10 @@ export class DidStartExitThreadEvent extends ContractEvent {
     this.threadSender = vals.sender
     this.threadReceiver = vals.receiver
     this.senderIdx = vals.senderIdx
-    this.channelWeiBalanceSender = new BigNumber(vals.channelWeiBalances[0])
-    this.channelWeiBalanceReceiver = new BigNumber(vals.channelWeiBalances[1])
-    this.channelTokenBalanceSender = new BigNumber(vals.channelTokenBalances[0])
-    this.channelTokenBalanceReceiver = new BigNumber(vals.channelTokenBalances[1])
+    this.channelWeiBalanceSender = Big(vals.channelWeiBalances[0])
+    this.channelWeiBalanceReceiver = Big(vals.channelWeiBalances[1])
+    this.channelTokenBalanceSender = Big(vals.channelTokenBalances[0])
+    this.channelTokenBalanceReceiver = Big(vals.channelTokenBalances[1])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
   }
@@ -444,10 +448,10 @@ export class DidStartExitThreadEvent extends ContractEvent {
       threadSender: this.threadSender,
       threadReceiver: this.threadReceiver,
       senderIdx: this.senderIdx,
-      channelWeiBalanceSender: this.channelWeiBalanceSender.toFixed(),
-      channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toFixed(),
-      channelTokenBalanceSender: this.channelTokenBalanceSender.toFixed(),
-      channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toFixed(),
+      channelWeiBalanceSender: this.channelWeiBalanceSender.toString(),
+      channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toString(),
+      channelTokenBalanceSender: this.channelTokenBalanceSender.toString(),
+      channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toString(),
       txCountGlobal: this.txCountGlobal,
       txCountChain: this.txCountChain
     }
@@ -466,10 +470,10 @@ export class DidEmptyThreadEvent extends ContractEvent {
   threadSender: string
   threadReceiver: string
   senderIdx: number
-  channelWeiBalanceSender: BigNumber
-  channelWeiBalanceReceiver: BigNumber
-  channelTokenBalanceSender: BigNumber
-  channelTokenBalanceReceiver: BigNumber
+  channelWeiBalanceSender: BN
+  channelWeiBalanceReceiver: BN
+  channelTokenBalanceSender: BN
+  channelTokenBalanceReceiver: BN
   channelTxCountGlobal: number
   channelTxCountChain: number
   channelThreadRoot: string
@@ -484,10 +488,10 @@ export class DidEmptyThreadEvent extends ContractEvent {
     this.threadSender = vals.sender
     this.threadReceiver = vals.receiver
     this.senderIdx = vals.senderIdx
-    this.channelWeiBalanceSender = new BigNumber(vals.channelWeiBalances[0])
-    this.channelWeiBalanceReceiver = new BigNumber(vals.channelWeiBalances[1])
-    this.channelTokenBalanceSender = new BigNumber(vals.channelTokenBalances[0])
-    this.channelTokenBalanceReceiver = new BigNumber(vals.channelTokenBalances[1])
+    this.channelWeiBalanceSender = Big(vals.channelWeiBalances[0])
+    this.channelWeiBalanceReceiver = Big(vals.channelWeiBalances[1])
+    this.channelTokenBalanceSender = Big(vals.channelTokenBalances[0])
+    this.channelTokenBalanceReceiver = Big(vals.channelTokenBalances[1])
     this.channelTxCountGlobal = vals.txCount[0]
     this.channelTxCountChain = vals.txCount[1]
     this.channelThreadRoot = vals.channelThreadRoot
@@ -500,10 +504,10 @@ export class DidEmptyThreadEvent extends ContractEvent {
       threadSender: this.threadSender,
       threadReceiver: this.threadReceiver,
       senderIdx: this.senderIdx,
-      channelWeiBalanceSender: this.channelWeiBalanceSender.toFixed(),
-      channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toFixed(),
-      channelTokenBalanceSender: this.channelTokenBalanceSender.toFixed(),
-      channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toFixed(),
+      channelWeiBalanceSender: this.channelWeiBalanceSender.toString(),
+      channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toString(),
+      channelTokenBalanceSender: this.channelTokenBalanceSender.toString(),
+      channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toString(),
       channelTxCountGlobal: this.channelTxCountGlobal,
       channelTxCountChain: this.channelTxCountChain,
       channelThreadRoot: this.channelThreadRoot,
@@ -522,12 +526,12 @@ export class DidNukeThreadsEvent extends ContractEvent {
 
   user: string
   senderAddress: string
-  weiAmount: BigNumber
-  tokenAmount: BigNumber
-  channelWeiBalanceSender: BigNumber
-  channelWeiBalanceReceiver: BigNumber
-  channelTokenBalanceSender: BigNumber
-  channelTokenBalanceReceiver: BigNumber
+  weiAmount: BN
+  tokenAmount: BN
+  channelWeiBalanceSender: BN
+  channelWeiBalanceReceiver: BN
+  channelTokenBalanceSender: BN
+  channelTokenBalanceReceiver: BN
   channelTxCountGlobal: number
   channelTxCountChain: number
   channelThreadRoot: string
@@ -540,12 +544,12 @@ export class DidNukeThreadsEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderAddress = vals.senderAddress
-    this.weiAmount = new BigNumber(vals.weiAmount)
-    this.tokenAmount = new BigNumber(vals.tokenAmount)
-    this.channelWeiBalanceSender = new BigNumber(vals.channelWeiBalances[0])
-    this.channelWeiBalanceReceiver = new BigNumber(vals.channelWeiBalances[1])
-    this.channelTokenBalanceSender = new BigNumber(vals.channelTokenBalances[0])
-    this.channelTokenBalanceReceiver = new BigNumber(vals.channelTokenBalances[1])
+    this.weiAmount = Big(vals.weiAmount)
+    this.tokenAmount = Big(vals.tokenAmount)
+    this.channelWeiBalanceSender = Big(vals.channelWeiBalances[0])
+    this.channelWeiBalanceReceiver = Big(vals.channelWeiBalances[1])
+    this.channelTokenBalanceSender = Big(vals.channelTokenBalances[0])
+    this.channelTokenBalanceReceiver = Big(vals.channelTokenBalances[1])
     this.channelTxCountGlobal = vals.txCount[0]
     this.channelTxCountChain = vals.txCount[1]
     this.channelThreadRoot = vals.channelThreadRoot
@@ -556,12 +560,12 @@ export class DidNukeThreadsEvent extends ContractEvent {
     return {
       user: this.user.toLowerCase(),
       senderAddress: this.senderAddress,
-      weiAmount: this.weiAmount.toFixed(),
-      tokenAmount: this.tokenAmount.toFixed(),
-      channelWeiBalanceSender: this.channelWeiBalanceSender.toFixed(),
-      channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toFixed(),
-      channelTokenBalanceSender: this.channelTokenBalanceSender.toFixed(),
-      channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toFixed(),
+      weiAmount: this.weiAmount.toString(),
+      tokenAmount: this.tokenAmount.toString(),
+      channelWeiBalanceSender: this.channelWeiBalanceSender.toString(),
+      channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toString(),
+      channelTokenBalanceSender: this.channelTokenBalanceSender.toString(),
+      channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toString(),
       channelTxCountGlobal: this.channelTxCountGlobal,
       channelTxCountChain: this.channelTxCountChain,
       channelThreadRoot: this.channelThreadRoot,

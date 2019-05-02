@@ -1,10 +1,8 @@
-import {Store} from 'express-session'
-import { ApiService , Router} from './ApiService'
+import { ApiService } from './ApiService'
 import * as express from 'express'
 import CRAuthManager from '../CRAuthManager'
 import log from '../util/log'
 import Config from '../Config'
-import parseAuthHeader from '../util/parseAuthHeader'
 
 const LOG = log('AuthApiService')
 
@@ -48,13 +46,6 @@ class AuthApiServiceHandler {
     if (!address || !nonce || !origin || !signature) {
       LOG.warn('Received invalid challenge request. Aborting. Body received: {body}', {
         body: req.body,
-      })
-      return res.sendStatus(400)
-    }
-
-    if (this.config.authDomainWhitelist.indexOf(origin) === -1) {
-      LOG.warn('Received auth challenge from invalid origin: {origin}', {
-        origin,
       })
       return res.sendStatus(400)
     }

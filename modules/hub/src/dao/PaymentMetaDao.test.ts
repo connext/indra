@@ -1,12 +1,14 @@
+import * as eth from 'ethers';
 import { assert, getTestRegistry } from '../testing'
 import { channelAndThreadFactory, tokenVal, channelUpdateFactory } from "../testing/factories";
 import { getThreadState, getChannelState, mkAddress } from "../testing/stateUtils";
-import { emptyAddress } from '../vendor/connext/Utils';
 import ChannelsDao from './ChannelsDao';
 import ThreadsDao from './ThreadsDao';
 import { PaymentMetaDao } from './PaymentMetaDao';
 import PaymentsDao from './PaymentsDao';
 import { testHotWalletAddress } from '../testing/mocks';
+
+const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentMetaDao', () => {
   const registry = getTestRegistry()
@@ -52,7 +54,7 @@ describe('PaymentMetaDao', () => {
       recipient: parties.performer.user,
       amount: { amountWei: '0', amountToken: tokenVal(1) },
       meta: { foo: 42 },
-      type: 'thread',
+      type: 'PT_THREAD',
     })
   })
 
@@ -87,7 +89,7 @@ describe('PaymentMetaDao', () => {
       recipient: testHotWalletAddress,
       amount: { amountWei: '0', amountToken: tokenVal(2) },
       meta: { foo: 42 },
-      type: 'hub-direct',
+      type: 'PT_CHANNEL',
     })
   })
 
@@ -117,7 +119,7 @@ describe('PaymentMetaDao', () => {
       recipient: emptyAddress,
       amount: { amountWei: '0', amountToken: tokenVal(2) },
       meta: { foo: 42 },
-      type: 'link',
+      type: 'PT_LINK',
     })
   })
 
@@ -149,7 +151,7 @@ describe('PaymentMetaDao', () => {
       recipient: redeemer,
       amount: { amountWei: '0', amountToken: tokenVal(2) },
       meta: { foo: 42 },
-      type: 'link',
+      type: 'PT_LINK',
     })
   })
 })

@@ -1,4 +1,4 @@
-import * as BigNumber from 'bignumber.js';
+import { BigNumber as BN } from 'ethers/utils'
 
 export enum WithdrawalStatus {
   NEW = 'NEW',
@@ -11,8 +11,8 @@ export default interface Withdrawal {
   id: number
   initiator: string
   recipient: string
-  amountWei: BigNumber.BigNumber
-  amountUsd: BigNumber.BigNumber
+  amountWei: BN
+  amountUsd: BN
   txhash: string|null
   status: WithdrawalStatus
   createdAt: number

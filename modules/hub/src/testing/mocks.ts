@@ -1,20 +1,22 @@
+import { types, Validator, big } from '../Connext'
 import * as request from 'supertest'
-
+import { default as ChannelManagerABI } from '../abi/ChannelManager'
 import { getRedisClient } from '../RedisClient'
 import { PgPoolService } from '../DBEngine'
 import { Container } from '../Container'
-
 import { truncateAllTables } from './eraseDb'
 import { ApiServer } from '../ApiServer'
 import { Role } from "../Role";
 import { mkAddress, mkSig, mkHash } from "./stateUtils";
-import { Validator } from '../vendor/connext/validator'
-import { Big } from '../util/bigNumber';
 import { SignerService } from '../SignerService';
-import { Utils } from '../vendor/connext/Utils';
 import Config from '../Config';
-import { ChannelManagerChannelDetails } from '../vendor/connext/types';
 import { serviceDefinitions } from '../services'
+
+const {
+  Big
+} = big
+
+type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
 
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432';
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6';
@@ -102,7 +104,7 @@ class MockWeb3Provider {
 
 class MockValidator extends Validator {
   constructor() {
-    super({} as any, '0xfoobar')
+    super('0xfoobar', {} as any, ChannelManagerABI.abi)
   }
 
   assertChannelSigner() {
@@ -157,7 +159,7 @@ export class MockGasEstimateDao {
   }
 }
 
-export const mockRate = Big(123.45)
+export const mockRate = '123.45'
 export class MockExchangeRateDao {
   async latest() {
     return {

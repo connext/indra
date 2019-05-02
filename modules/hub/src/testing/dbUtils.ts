@@ -1,6 +1,8 @@
+import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
-import { UnsignedChannelState } from '../vendor/connext/types'
+
+type UnsignedChannelState = Connext.types.UnsignedChannelState
 
 export async function insertChannel(
   db: DBEngine<Client>,

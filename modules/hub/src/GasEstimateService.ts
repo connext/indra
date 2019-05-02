@@ -1,6 +1,6 @@
+import { Poller } from './Connext';
 import GasEstimateDao from './dao/GasEstimateDao'
 import log from './util/log'
-import { Poller } from './vendor/connext/lib/poller/Poller'
 
 const LOG = log('GasEstimateService')
 

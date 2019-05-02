@@ -1,9 +1,8 @@
-import * as sinon from 'sinon'
 import {RedisClient} from '../RedisClient'
 import {default as DBEngine} from '../DBEngine'
 import {PostgresGasEstimateDao} from './GasEstimateDao'
 import GasEstimate from '../domain/GasEstimate'
-import {getTestRegistry, assert, sbox} from '../testing'
+import { getTestRegistry, assert } from '../testing'
 
 describe('GasEstimateDao', () => {
   const registry = getTestRegistry()

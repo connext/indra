@@ -1,6 +1,5 @@
-import { Payment } from '../vendor/connext/types'
+import * as Connext from '../Connext'
 import { TestServiceRegistry } from '../testing'
-import { PaymentArgs } from '../vendor/connext/types'
 import { default as DBEngine } from '../DBEngine'
 import { SQL } from '../DBEngine'
 import { mkAddress } from '../testing/stateUtils'
@@ -8,6 +7,9 @@ import { assert, getTestRegistry } from '../testing'
 import { channelUpdateFactory } from '../testing/factories'
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { PaymentMetaDao } from '../dao/PaymentMetaDao'
+
+type Payment = Connext.types.Payment
+type PaymentArgs = Connext.types.PaymentArgs
 
 export async function createTestPayment(
   registry: TestServiceRegistry,
@@ -46,7 +48,7 @@ describe('CustodialPaymentsDao', () => {
   const db: DBEngine = registry.get('DBEngine')
   const dao: CustodialPaymentsDao = registry.get('CustodialPaymentsDao')
 
-  beforeEach(() => registry.clearDatabase())
+  beforeEach(async () => await registry.clearDatabase())
 
   describe('createCustodialPayment', () => {
     it('works', async () => {
@@ -55,7 +57,7 @@ describe('CustodialPaymentsDao', () => {
         'amount_token': '420',
         'amount_wei': '69',
         'contract': '0xCCC0000000000000000000000000000000000000',
-        'payment_type': 'channel-custodial',
+        'payment_type': 'PT_CUSTODIAL',
         'purchase_id': 'foo',
         'recipient': '0x5550000000000000000000000000000000000000',
         'sender': '0xAAA0000000000000000000000000000000000000',

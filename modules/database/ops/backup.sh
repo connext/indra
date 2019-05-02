@@ -12,7 +12,8 @@ fi
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 timestamp="`date +"%y%m%d-%H%M%S"`"
 backup_file=$network-$timestamp.sql
-backup_path=$dir/snapshots/$backup_file
+backup_dir=$dir/snapshots
+backup_path=$backup_dir/$backup_file
 mkdir -p "`dirname $backup_path`"
 
 echo "Creating database snapshot..."
@@ -46,3 +47,22 @@ then
 else
   echo "No access keys found, couldn't backup to remote storage"
 fi
+
+# Remove old backups
+for snapshot in `find $backup_dir -type f`
+do
+  yymmdd="`echo $snapshot | cut -d "-" -f 2`"
+  hhmmss="`echo $snapshot | sed 's/.*-\([0-9]\+\)\..*/\1/'`"
+  if [[ "$yymmdd" -lt "`date --date "2 days ago" "+%y%m%d"`" ]]
+  then
+    echo "Snapshot more than two days old, deleting: $snapshot"
+    rm $snapshot
+  elif [[ "$yymmdd" -eq "`date --date "1 day ago" "+%y%m%d"`" ]]
+  then
+    if [[ "$hhmmss" -lt "`date "+%H%M%S"`" ]]
+    then
+      echo "Snapshot more than 24 hours old, deleting: $snapshot"
+      rm $snapshot
+    fi
+  fi
+done

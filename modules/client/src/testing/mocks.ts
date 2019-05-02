@@ -1,24 +1,86 @@
-import { mkHash, getWithdrawalArgs, getExchangeArgs } from '.'
-import { IWeb3TxWrapper } from '../Connext'
-import { toBN } from '../helpers/bn'
-import { ExchangeArgsBN, DepositArgs, DepositArgsBN, ChannelState, Address, ThreadState, convertThreadState, convertChannelState, addSigToChannelState, UpdateRequest, WithdrawalParameters, convertWithdrawalParameters, Sync, addSigToThreadState, ThreadHistoryItem, ThreadStateBN, SignedDepositRequestProposal, Omit, ThreadStateUpdate, HubConfig } from '../types'
-import { SyncResult } from '../types'
-import { getThreadState, PartialSignedOrSuccinctChannel, PartialSignedOrSuccinctThread, getPaymentArgs } from '.'
-import { UnsignedThreadState } from '../types'
-import { ExchangeArgs } from '../types'
-import { ChannelStateUpdate } from '../types'
-import { IHubAPIClient } from '../Connext'
-import { ConnextClientOptions } from '../Connext'
-import { ConnextInternal, IChannelManager, ChannelManagerChannelDetails } from '../Connext'
-import { mkAddress, getChannelState, getDepositArgs, assert } from '.'
-import { ChannelRow, ThreadRow, PurchasePaymentHubResponse, PaymentBN, Payment, UnsignedChannelState, ChannelUpdateReason, ArgsTypes, PurchasePayment } from '../types'
-import { ExchangeRates } from '../state/ConnextState/ExchangeRates'
+import * as eth from 'ethers';
+import { createStore } from 'redux'
+import {
+  assert,
+  getChannelState,
+  getDepositArgs,
+  getExchangeArgs,
+  getPaymentArgs,
+  getThreadState,
+  getWithdrawalArgs,
+  mkAddress,
+  mkHash,
+  PartialSignedOrSuccinctChannel,
+  PartialSignedOrSuccinctThread,
+  getCustodialBalance,
+} from '.'
+import { ConnextClientOptions, ConnextInternal } from '../Connext'
+import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
+import { IChannelManager } from '../contract/ChannelManager'
+import { Big } from '../lib/bn'
+import { IHubAPIClient } from '../Hub'
+import { reducers } from "../state/reducers";
 import { ConnextState, PersistentState, RuntimeState } from '../state/store';
 import { StateGenerator } from '../StateGenerator';
-import { createStore } from 'redux'
-import { reducers } from "../state/reducers";
-import { EventLog } from 'web3-core';
-const Web3 = require('web3') // TODO: why did i have to do this???
+import {
+  Address,
+  addSigToChannelState,
+  addSigToThreadState,
+  ArgsTypes,
+  ChannelManagerChannelDetails,
+  ChannelRow,
+  ChannelState,
+  ChannelStateUpdate,
+  ChannelUpdateReason,
+  convertChannelState,
+  convertThreadState,
+  convertWithdrawalParameters,
+  DepositArgs,
+  DepositArgsBN,
+  LogDescription,
+  ExchangeArgs,
+  ExchangeArgsBN,
+  ExchangeRates,
+  HubConfig,
+  Omit,
+  PaymentBN,
+  Payment,
+  PurchasePayment,
+  PurchasePaymentHubResponse,
+  SignedDepositRequestProposal,
+  Sync,
+  SyncResult,
+  ThreadHistoryItem,
+  ThreadRow,
+  ThreadState,
+  ThreadStateBN,
+  ThreadStateUpdate,
+  Transaction,
+  UnsignedChannelState,
+  UnsignedThreadState,
+  UpdateRequest,
+  WithdrawalParameters,
+  CustodialBalanceRow,
+} from '../types'
+import Wallet from '../Wallet';
+
+const createTx = (opts?: any): Transaction => {
+  const defaultTx = {
+    hash: '0xabc123',
+    to: '0xabc123',
+    from: '0xabc123',
+    nonce: 1,
+    gasLimit: eth.utils.bigNumberify('0x1'),
+    gasPrice: eth.utils.bigNumberify('0x2'),
+    data: '0x',
+    value: eth.utils.bigNumberify('0x100'),
+    chainId: '0x1',
+    r: '0xabc123',
+    s: '0xabc123',
+    v: 0,
+  }
+  return Object.assign(defaultTx, opts)
+}
 
 export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager
@@ -35,7 +97,6 @@ export class MockConnextInternal extends ConnextInternal {
     }
     afterEach(function () {
       // ignore this as any ts err
-      // @ts-ignore
       if ((this as any).currentTest.state == 'failed') {
         console.error('Actions emitted during test: ' + (actions.length ? '' : '(no actions)'))
         actions.forEach(action => {
@@ -44,22 +105,26 @@ export class MockConnextInternal extends ConnextInternal {
       }
     })
 
-    super({
+    const moreOpts = {
       user: mkAddress('0x123'),
       contractAddress: mkAddress('0xccc'),
       contract: new MockChannelManager(),
-      web3: new Web3('http://localhost:8545'),
+      ethUrl: 'http://localhost:8545',
       hub: new MockHub(),
       hubAddress: mkAddress('0xhhh'),
       store,
       ...opts,
-    } as any)
+    } as any
+
+    const wallet = new Wallet(moreOpts)
+    const provider = new eth.providers.JsonRpcProvider(moreOpts.ethUrl)
+
+    super(moreOpts , wallet)
 
     this.mockContract = this.contract as MockChannelManager
     this.mockHub = this.hub as MockHub
 
     // stub out actual sig recovery methods, only test presence
-    // sig recover fns with web3 testing in `utils.test`
     this.validator.assertChannelSigner = (channelState: ChannelState, signer: "user" | "hub" = "user"): void => { return }
 
     this.validator.assertThreadSigner = (thread: ThreadState): void => { return }
@@ -82,38 +147,18 @@ export class MockConnextInternal extends ConnextInternal {
     return { ...args, sigUser: mkHash('0xalsd23')}
   }
 
-  async getContractEvents(eventName: string, fromBlock: number): Promise<EventLog[]> {
+  async getContractEvents(eventName: string, fromBlock: number): Promise<LogDescription[]> {
     return []
   }
 
-}
-
-// export class MockWeb3 extends Web3 {
-//   async getBlockNumber(): Promise<number> {
-//     return 500
-//   }
-
-//   async getBlock(blockNum: number): Promise<any> {
-//     return {
-//       timestamp: Math.floor(Date.now() / 1000)
-//     }
-//   }
-// }
-
-export class MockWeb3TxWrapper extends IWeb3TxWrapper {
-  awaitEnterMempool() {
-    return new Promise(res => setTimeout(res)) as Promise<void>
-  }
-
-  awaitFirstConfirmation() {
-    return new Promise(res => setTimeout(res)) as Promise<void>
-  }
 }
 
 export class MockChannelManager implements IChannelManager {
   contractMethodCalls = [] as any[]
 
   gasMultiple = 1.5
+  abi: any
+  rawAbi: any = ChannelManagerAbi.abi
 
   assertCalled(method: keyof MockChannelManager, ...args: any[]) {
     for (let call of this.contractMethodCalls) {
@@ -138,10 +183,10 @@ export class MockChannelManager implements IChannelManager {
       name: 'userAuthorizedUpdate',
       args: [state],
     })
-    return new MockWeb3TxWrapper()
+    return createTx()
   }
 
-  async getPastEvents(user: Address, eventName: string, fromBlock: number) {
+  async getPastEvents(eventName: string, user: string[], fromBlock: number) {
     return []
   }
 
@@ -149,31 +194,31 @@ export class MockChannelManager implements IChannelManager {
     throw new Error('TODO: mock getChannelDetails')
   }
 
-  async startExit(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async startExit(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock startExit')
   }
-  async startExitWithUpdate(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async startExitWithUpdate(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock startExitWithUpdate')
   }
-  async emptyChannelWithChallenge(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async emptyChannelWithChallenge(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock emptyChannelWithChallenge')
   }
-  async emptyChannel(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async emptyChannel(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock emptyChannel')
   }
-  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction> {
     throw new Error('TODO: mock startExitThread')
   }
-  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<Transaction> {
     throw new Error('TODO: mock startExitThreadWithUpdate')
   }
-  async challengeThread(state: ChannelState, threadState: ThreadState): Promise<IWeb3TxWrapper> {
+  async challengeThread(state: ChannelState, threadState: ThreadState): Promise<Transaction> {
     throw new Error('TODO: mock challengeThread')
   }
-  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<IWeb3TxWrapper> {
+  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction> {
     throw new Error('TODO: mock emptyThread')
   }
-  async nukeThreads(state: ChannelState): Promise<IWeb3TxWrapper> {
+  async nukeThreads(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock nukeThreads')
   }
 }
@@ -183,7 +228,14 @@ export class MockHub implements IHubAPIClient {
 
   async config(): Promise<HubConfig> {
     //TODO: implement correctly
-    return {} as any
+    return { 
+      beiMaxCollateralization: '100',
+      hubAddress: mkAddress("0xhhh")
+    } as any
+  }
+
+  async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
+    return getCustodialBalance("empty")
   }
 
   async authChallenge(): Promise<string> {
@@ -201,7 +253,13 @@ export class MockHub implements IHubAPIClient {
   }
   
   async getChannelByUser(recipient: string): Promise<ChannelRow> {
-    return { id: 0, state: getChannelState('full', { user: recipient }), status: 'CS_OPEN' }
+    return {
+      id: 0,
+      status: 'CS_OPEN',
+      lastUpdateOn: new Date(),
+      user: mkAddress('0xUUU'),
+      state: getChannelState('full', { user: recipient }),
+    }
   }
 
   async recipientNeedsCollateral(): Promise<string | null> {
@@ -237,7 +295,13 @@ export class MockHub implements IHubAPIClient {
   }
 
   async getChannel(): Promise<ChannelRow> {
-    return { id: 0, state: getChannelState('full'), status: 'CS_OPEN' }
+    return {
+      id: 0,
+      status: 'CS_OPEN',
+      lastUpdateOn: new Date(),
+      user: mkAddress('0xUUU'),
+      state: getChannelState('full'),
+    }
   }
 
   async getActiveThreads(): Promise<ThreadState[]> {
@@ -265,11 +329,19 @@ export class MockHub implements IHubAPIClient {
   }
 
   async getIncomingThreads(): Promise<ThreadRow[]> {
-    return [{ id: 1, state: getThreadState('full') }]
+    return [{
+      id: 1,
+      status: 'CT_OPEN',
+      state: getThreadState('full')
+    }]
   }
 
   async getThreadByParties(): Promise<ThreadRow> {
-    return { id: 1, state: getThreadState('full') }
+    return {
+      id: 1,
+      status: 'CT_OPEN',
+      state: getThreadState('full')
+    }
   }
 
   async sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync> {
@@ -375,8 +447,8 @@ export class MockHub implements IHubAPIClient {
           createdOn: new Date(),
           args: getExchangeArgs('full', {
             exchangeRate: '5',
-            tokensToSell: toBN(tokensToSell),
-            weiToSell: toBN(weiToSell),
+            tokensToSell: Big(tokensToSell),
+            weiToSell: Big(weiToSell),
             seller: "user"
           }),
           txCount: txCountGlobal + 1,
@@ -385,7 +457,7 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
-  async getExchangerRates(): Promise<ExchangeRates> {
+  async getExchangeRates(): Promise<ExchangeRates> {
     return { 'USD': '5' }
   }
 
@@ -399,10 +471,10 @@ export class MockHub implements IHubAPIClient {
           reason: 'ProposePendingDeposit',
           createdOn: new Date(),
           args: getDepositArgs('full', {
-            depositTokenHub: toBN(69),
-            depositTokenUser: toBN(0),
-            depositWeiHub: toBN(420),
-            depositWeiUser: toBN(0),
+            depositTokenHub: Big(69),
+            depositTokenUser: Big(0),
+            depositWeiHub: Big(420),
+            depositWeiUser: Big(0),
             timeout: Math.floor(Date.now() / 1000) + 69
           }),
           txCount: txCountGlobal + 1,
@@ -441,7 +513,6 @@ export class MockHub implements IHubAPIClient {
   async getLatestChannelStateAndUpdate() {
     return null
     // let store = new MockStore()
-    // //@ts-ignore
     // return {state: store._initialState.persistent.channel, update: store._initialState.persistent.channelUpdate}
   }
 
@@ -486,7 +557,7 @@ export class MockStore {
     persistent: new PersistentState(),
   }
 
-  public createStore = () => {
+  public createStore: any = () => {
     return createStore(reducers, this._initialState)
   }
 
@@ -530,6 +601,16 @@ export class MockStore {
     }
   }
 
+  public setHubAddress = (hubAddress: string = mkAddress("0xhhh")) => {
+    this._initialState = {
+      ...this._initialState,
+      persistent: {
+        ...this._initialState.persistent,
+        hubAddress,
+      }
+    }
+  }
+
   public setLatestValidState = (overrides: PartialSignedOrSuccinctChannel = {}) => {
     this._initialState = {
       ...this._initialState,
@@ -569,7 +650,7 @@ export class MockStore {
 
     const initialThreadBN = convertThreadState('bn', initialThread)
     // Create new openThread state
-    let newState = new StateGenerator().openThread(
+    let newState = new StateGenerator("").openThread(
       convertChannelState('bn', channel),
       activeInitialThreadStates,
       initialThreadBN,
@@ -607,7 +688,7 @@ export class MockStore {
     const threadBN = convertThreadState('bn', thread[0])
 
     // Create thread update
-    let threadUpdate = new StateGenerator().threadPayment(threadBN, payment)
+    let threadUpdate = new StateGenerator("").threadPayment(threadBN, payment)
     threadUpdate = addSigToThreadState(threadUpdate, mkHash('0xMockUserSig'))
 
     // Update active thread with thread update

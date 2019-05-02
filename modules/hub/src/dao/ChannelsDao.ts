@@ -1,39 +1,37 @@
+import * as eth from 'ethers';
+import * as Connext from '../Connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
-import {
-  ChannelUpdateReason,
-  ChannelState,
-  ArgsTypes,
-  ChannelStateBigNumber,
-  convertArgs,
-  InvalidationArgs,
-  ChannelStatus,
-  Address,
-} from '../vendor/connext/types'
-import { BigNumber } from 'bignumber.js'
 import Config from '../Config'
-import {
-  ChannelStateUpdateRowBigNum,
-  ChannelRowBigNum,
-} from '../domain/Channel'
 import { prettySafeJson } from '../util'
-import { Big } from '../util/bigNumber'
-import { emptyRootHash } from '../vendor/connext/Utils'
 import { default as log } from '../util/log'
 import { mkSig } from '../testing/stateUtils';
-import { OnchainTransactionRow } from '../domain/OnchainTransaction';
+import { BigNumber as BN } from 'ethers/utils'
+
+type Address = Connext.types.Address
+type ArgsTypes = Connext.types.ArgsTypes
+type ChannelRowBN = Connext.types.ChannelRowBN
+type ChannelState = Connext.types.ChannelState
+type ChannelStateBN = Connext.types.ChannelStateBN
+type ChannelStateUpdateRowBN = Connext.types.ChannelStateUpdateRowBN
+type ChannelUpdateReason = Connext.types.ChannelUpdateReason
+type InvalidationArgs = Connext.types.InvalidationArgs
+
+const convertArgs = Connext.types.convertArgs
+const emptyRootHash = eth.constants.HashZero
+const Big = Connext.big.Big
 
 export default interface ChannelsDao {
-  getChannelByUser(user: string): Promise<ChannelRowBigNum | null>
-  getChannelOrInitialState(user: string): Promise<ChannelRowBigNum>
+  getChannelByUser(user: string): Promise<ChannelRowBN | null>
+  getChannelOrInitialState(user: string): Promise<ChannelRowBN>
   getChannelUpdatesForSync(
     user: string,
     txCount: number,
-  ): Promise<ChannelStateUpdateRowBigNum[]>
+  ): Promise<ChannelStateUpdateRowBN[]>
   getChannelUpdateByTxCount(
     user: string,
     txCount: number,
-  ): Promise<ChannelStateUpdateRowBigNum | null>
+  ): Promise<ChannelStateUpdateRowBN | null>
   applyUpdateByUser(
     user: string,
     reason: ChannelUpdateReason,
@@ -42,24 +40,25 @@ export default interface ChannelsDao {
     args: ArgsTypes,
     chainsawEventId?: number,
     onchainLogicalId?: number,
-  ): Promise<ChannelStateUpdateRowBigNum>
-  getTotalTokensInReceiverThreads(user: string): Promise<BigNumber>
-  getTotalChannelTokensPlusThreadBonds(user: string): Promise<BigNumber>
+  ): Promise<ChannelStateUpdateRowBN>
+  getTotalTokensInReceiverThreads(user: string): Promise<BN>
+  getTotalChannelTokensPlusThreadBonds(user: string): Promise<BN>
   getRecentTippers(user: string): Promise<number>
-  getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBigNum>
-  getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
-  getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null>
+  getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBN>
+  getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBN|null>
+  getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBN|null>
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
-  getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBigNum[]>
-  getStaleChannels(): Promise<ChannelRowBigNum[]>
+  getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBN[]>
+  getStaleChannels(): Promise<ChannelRowBN[]>
   addChainsawErrorId(user: Address, id: number): Promise<void>
   removeChainsawErrorId(user: Address): Promise<void>
+  getChannelUpdateById(id: number): Promise<ChannelStateUpdateRowBN>
 }
 
 export function getChannelInitialState(
   user: string,
   contractAddress: string,
-): ChannelStateBigNumber {
+): ChannelStateBN {
   return {
     contractAddress,
     user,
@@ -98,6 +97,15 @@ export class PostgresChannelsDao implements ChannelsDao {
     this.config = config
   }
 
+  async getChannelUpdateById(id: number): Promise<ChannelStateUpdateRowBN> {
+    const row = await this.db.queryOne(SQL`
+      SELECT * FROM cm_channel_updates
+      WHERE "id" = ${id}
+      LIMIT 1
+    `)
+    return this.inflateChannelUpdateRow(row)
+  }
+
   async addChainsawErrorId(user: Address, id: number): Promise<void> {
     await this.db.queryOne(SQL`
       UPDATE _cm_channels
@@ -121,7 +129,7 @@ export class PostgresChannelsDao implements ChannelsDao {
   }
 
   // gets latest state of channel
-  async getChannelByUser(user: string): Promise<ChannelRowBigNum | null> {
+  async getChannelByUser(user: string): Promise<ChannelRowBN | null> {
     return this.inflateChannelRow(
       // Note: the `FOR UPDATE` here will ensure that we acquire a lock on the
       // channel for the duration of this transaction. This will make sure that
@@ -139,7 +147,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  async getChannelOrInitialState(user: string): Promise<ChannelRowBigNum> {
+  async getChannelOrInitialState(user: string): Promise<ChannelRowBN> {
     let row = await this.getChannelByUser(user)
     if (!row) {
       row = {
@@ -156,7 +164,7 @@ export class PostgresChannelsDao implements ChannelsDao {
   async getChannelUpdatesForSync(
     user: string,
     txCount: number,
-  ): Promise<ChannelStateUpdateRowBigNum[]> {
+  ): Promise<ChannelStateUpdateRowBN[]> {
     const { rows } = await this.db.query(SQL`
         SELECT * FROM cm_channel_updates 
         WHERE 
@@ -180,7 +188,7 @@ export class PostgresChannelsDao implements ChannelsDao {
   async getChannelUpdateByTxCount(
     user: string,
     txCountGlobal: number,
-  ): Promise<ChannelStateUpdateRowBigNum | null> {
+  ): Promise<ChannelStateUpdateRowBN | null> {
     // Note: the ordering here is to take invalidated updates into consideration.`
     return await this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
@@ -203,7 +211,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     args: ArgsTypes,
     chainsawEventId?: number,
     onchainLogicalId?: number,
-  ): Promise<ChannelStateUpdateRowBigNum> {
+  ): Promise<ChannelStateUpdateRowBN> {
 
     LOG.info(`Applying channel update to ${user}: ${reason}(${prettySafeJson(args)}) -> ${prettySafeJson(state)}`)
 
@@ -225,7 +233,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  async getTotalChannelTokensPlusThreadBonds(user: string): Promise<BigNumber> {
+  async getTotalChannelTokensPlusThreadBonds(user: string): Promise<BN> {
     const { result } = await this.db.queryOne(SQL`
       SELECT (
         COALESCE((
@@ -250,7 +258,7 @@ export class PostgresChannelsDao implements ChannelsDao {
   }
 
   // gets the amount of tokens in all open threads where user is receiver
-  async getTotalTokensInReceiverThreads(user: string): Promise<BigNumber> {
+  async getTotalTokensInReceiverThreads(user: string): Promise<BN> {
     const { co_amount } = await this.db.queryOne(SQL`
       SELECT
         COALESCE(
@@ -267,18 +275,45 @@ export class PostgresChannelsDao implements ChannelsDao {
   }
 
   async getRecentTippers(user: string): Promise<number> {
+    // by default only count tippers as the number of
+    // senders in a payment. exclude optimistic types,
+    // since they are inserted into the view if they have
+    // failed or if they are new, and when they are completed
+    // they appear as PT_CHANNEL, or their underlying
+    // resolved types
+
+    // instead, include only the new payments from the 
+    // optimistic payments table directly
     const { num_tippers } = await this.db.queryOne(SQL`
       SELECT COUNT(DISTINCT sender) AS num_tippers
-      FROM payments
+      FROM (
+        SELECT * FROM payments
         WHERE
           recipient = ${user} AND
-          created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
+          created_on > NOW() - ${this.config.recentPaymentsInterval}::interval AND
+          payment_type <> 'PT_OPTIMISTIC'
+
+        UNION
+
+        SELECT *
+        FROM payments
+        WHERE 
+        	id = (
+	        	SELECT id 
+	        	FROM payments_optimistic
+	        	WHERE 
+		          recipient = ${user} AND
+		          status = 'NEW'
+		    ) AND
+	    	created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
+      ) as t
     `)
 
+    // get all unique tippers from payments table
     return parseInt(num_tippers)
   }
 
-  async getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBigNum> {
+  async getLastStateNoPendingOps(user: string): Promise<ChannelStateUpdateRowBN> {
     const last = this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
         SELECT * FROM cm_channel_updates 
@@ -314,7 +349,7 @@ export class PostgresChannelsDao implements ChannelsDao {
 
   // get state that allows exit from contract
   // must be double signed and have 0 timeout
-  async getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBigNum|null> {
+  async getLatestExitableState(user: string): Promise<ChannelStateUpdateRowBN|null> {
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
         SELECT * FROM cm_channel_updates 
@@ -331,7 +366,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  async getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBigNum|null> {
+  async getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBN|null> {
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
         SELECT * FROM cm_channel_updates 
@@ -410,35 +445,35 @@ export class PostgresChannelsDao implements ChannelsDao {
     return rows.map(r => this.inflateChannelRow(r))
   }
 
-  private inflateChannelStateRow(row: any): ChannelStateBigNumber {
+  private inflateChannelStateRow(row: any): ChannelStateBN {
     return (
       row && {
         user: row.user,
         recipient: row.recipient,
         txCountChain: row.tx_count_chain,
         txCountGlobal: row.tx_count_global,
-        balanceWeiHub: new BigNumber(row.balance_wei_hub),
-        balanceWeiUser: new BigNumber(row.balance_wei_user),
-        balanceTokenHub: new BigNumber(row.balance_token_hub),
-        balanceTokenUser: new BigNumber(row.balance_token_user),
-        pendingDepositWeiHub: new BigNumber(row.pending_deposit_wei_hub || 0),
-        pendingDepositWeiUser: new BigNumber(row.pending_deposit_wei_user || 0),
-        pendingDepositTokenHub: new BigNumber(
+        balanceWeiHub: Big(row.balance_wei_hub),
+        balanceWeiUser: Big(row.balance_wei_user),
+        balanceTokenHub: Big(row.balance_token_hub),
+        balanceTokenUser: Big(row.balance_token_user),
+        pendingDepositWeiHub: Big(row.pending_deposit_wei_hub || 0),
+        pendingDepositWeiUser: Big(row.pending_deposit_wei_user || 0),
+        pendingDepositTokenHub: Big(
           row.pending_deposit_token_hub || 0,
         ),
-        pendingDepositTokenUser: new BigNumber(
+        pendingDepositTokenUser: Big(
           row.pending_deposit_token_user || 0,
         ),
-        pendingWithdrawalWeiHub: new BigNumber(
+        pendingWithdrawalWeiHub: Big(
           row.pending_withdrawal_wei_hub || 0,
         ),
-        pendingWithdrawalWeiUser: new BigNumber(
+        pendingWithdrawalWeiUser: Big(
           row.pending_withdrawal_wei_user || 0,
         ),
-        pendingWithdrawalTokenHub: new BigNumber(
+        pendingWithdrawalTokenHub: Big(
           row.pending_withdrawal_token_hub || 0,
         ),
-        pendingWithdrawalTokenUser: new BigNumber(
+        pendingWithdrawalTokenUser: Big(
           row.pending_withdrawal_token_user || 0,
         ),
         threadCount: row.thread_count,
@@ -451,7 +486,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  private inflateChannelRow(row: any): ChannelRowBigNum {
+  private inflateChannelRow(row: any): ChannelRowBN {
     return (
       row && {
         id: +row.id,
@@ -463,7 +498,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  private inflateChannelUpdateRow(row: any): ChannelStateUpdateRowBigNum {
+  private inflateChannelUpdateRow(row: any): ChannelStateUpdateRowBN {
     return (
       row && {
         id: +row.id,
@@ -472,7 +507,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         channelId: Number(row.channel_id),
         chainsawId: Number(row.chainsaw_event_id),
         createdOn: row.created_on,
-        args: convertArgs('bignumber', row.reason, row.args),
+        args: convertArgs('bn', row.reason, row.args),
         invalid: row.invalid,
         onchainTxLogicalId: row.onchain_tx_logical_id
       }

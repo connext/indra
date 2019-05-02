@@ -1,9 +1,109 @@
+import { assert, mkAddress, mkHash } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs } from '../types';
-import { mkAddress, mkHash, assert } from '../testing';
+import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest } from '../types';
 import { emptyAddress } from '../Utils';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
+
+describe("BuyController: assignPaymentTypes", () => {
+  let connext: MockConnextInternal
+
+  const user = mkAddress('0x7fab')
+  const receiver = mkAddress('0x22c')
+  const mockStore: MockStore = new MockStore()
+
+  beforeEach(async () => {
+    mockStore.setHubAddress()
+    const store = mockStore.createStore()
+    connext = new MockConnextInternal({ 
+      user, 
+      store,
+    })
+    await connext.start()
+  })
+
+  it("should retain a type if its provided", async () => {
+    const payment: any = {
+      recipient: receiver,
+      amount: {
+        amountToken: '15',
+        amountWei: '0',
+      },
+      type: "PT_LINK",
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_LINK"
+    })
+  })
+
+  it("should assign a PT_LINK payment if there is a secret provided in the meta", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: receiver,
+      amount: {
+        amountToken: '15',
+        amountWei: '0',
+      },
+      meta: {
+        secret: connext.generateSecret()
+      },
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_LINK"
+    })
+  })
+
+  it("should assign a PT_CUSTODIAL if the amount is greater than the amount the hub will collateralize", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: receiver,
+      amount: {
+        amountToken: '150',
+        amountWei: '0',
+      },
+      meta: {},
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_CUSTODIAL"
+    })
+  })
+
+  it("should assign a PT_CHANNEL if the payment is to the hub", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: mkAddress("0xhhh"),
+      amount: {
+        amountToken: '10',
+        amountWei: '0',
+      },
+      meta: {},
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_CHANNEL"
+    })
+  })
+
+  it("should assign a PT_OPTIMISTIC if the type is not provided, and the hub can handle forwarding the payment (below max)", async () => {
+    const payment: PurchasePaymentRequest = {
+      recipient: receiver,
+      amount: {
+        amountToken: '14',
+        amountWei: '0',
+      },
+      meta: {},
+    }
+    const ans = await connext.buyController.assignPaymentType(payment)
+    assert.containSubset(ans, {
+      ...payment,
+      type: "PT_OPTIMISTIC"
+    })
+  })
+})
 
 describe('BuyController: unit tests', () => {
   const user = mkAddress('0x7fab')
@@ -31,7 +131,7 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
+          amount: { amountToken: '1' },
           type: 'PT_CHANNEL',
           meta: {},
           recipient: hubAddress,
@@ -60,8 +160,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_CUSTODIAL',
+          amount: { amountToken: '1', },
+          type: 'PT_CUSTODIAL' as PurchasePaymentType,
           meta: {},
           recipient: receiver,
         },
@@ -120,8 +220,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_LINK',
+          amount: { amountToken: '1', },
+          type: 'PT_LINK' as PurchasePaymentType,
           meta: { secret: connext.generateSecret() },
           recipient: emptyAddress,
         },
@@ -149,8 +249,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_LINK',
+          amount: { amountToken: '1', },
+          type: 'PT_LINK' as PurchasePaymentType,
           meta: {},
           recipient: emptyAddress,
         },
@@ -164,8 +264,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_LINK',
+          amount: { amountToken: '1', },
+          type: 'PT_LINK' as PurchasePaymentType,
           meta: { secret: 'secret' },
           recipient: emptyAddress,
         },
@@ -272,8 +372,8 @@ describe('BuyController: unit tests', () => {
       meta: {},
       payments: [
         {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_THREAD',
+          amount: { amountToken: '1', },
+          type: 'PT_THREAD' as PurchasePaymentType,
           meta: {},
           recipient: receiver,
         },

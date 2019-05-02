@@ -1,16 +1,12 @@
 import { expect } from 'chai'
-import * as redux from 'redux'
 import CurrencyConvertable from './CurrencyConvertable'
-import BN = require('bn.js')
 import Currency from './Currency';
 import { default as generateExchangeRates } from '../../testing/generateExchangeRates'
-import { default as getExchangeRates } from '../getExchangeRates'
-import { ConnextState } from '../../state/store'
-import { reducers } from '../../state/reducers'
-import { CurrencyType } from '../../state/ConnextState/CurrencyTypes'
-import { BigNumber } from 'bignumber.js'
-import { MockConnextInternal, MockStore } from '../../testing/mocks';
-import toFinney from '../web3/toFinney';
+import { getExchangeRates } from '../../state/getters'
+import { isBN } from '../../types'
+import { MockStore } from '../../testing/mocks';
+import BigNumber from 'bignumber.js';
+import BN = require('bn.js')
 
 describe('CurrencyConvertable', () => {
 
@@ -20,15 +16,15 @@ describe('CurrencyConvertable', () => {
   const store = mockStore.createStore()
 
   it('should convert to a new currency with the CurrencyConvertable.to method', () => {
-    const eth = new CurrencyConvertable(CurrencyType.ETH, '100', () => getExchangeRates(store.getState()))
-    const usd = eth.to(CurrencyType.USD)
+    const eth = new CurrencyConvertable("ETH", '100', () => getExchangeRates(store.getState()))
+    const usd = eth.to("USD")
 
     expect(usd.amount).to.equal('42000')
-    expect(usd.type).to.equal(CurrencyType.USD)
+    expect(usd.type).to.equal("USD")
   })
 
   it('should not change amount if converting to the same currency', () => {
-    const eth = new CurrencyConvertable(CurrencyType.ETH, '100', () => getExchangeRates(store.getState()))
+    const eth = new CurrencyConvertable("ETH", '100', () => getExchangeRates(store.getState()))
     const eth2 = eth.toETH()
 
     expect(eth.amount).equals(eth2.amount)
@@ -60,11 +56,11 @@ describe('CurrencyConvertable', () => {
     const bigNums = bigStrings.map(bigString => new BigNumber(bigString))
     const bnTomfoolery = bigStrings.map(bigString => new BN(bigString))
 
-    type TestCase = BigNumber | string | BN
+    type TestCase = BigNumber | string | any
 
 
     function testIt(tc: TestCase) {
-      const eth = new CurrencyConvertable(CurrencyType.ETH, tc, () => getExchangeRates(store.getState()))
+      const eth = new CurrencyConvertable("ETH", tc, () => getExchangeRates(store.getState()))
       const eth2 = eth//.toBEI().toETH().toETH().toBEI().toWEI().toFIN().toBOOTY().toFIN().toUSD().toETH().toBEI().toWEI().toBOOTY().toETH().toFIN().toUSD().toWEI().toETH().toBOOTY().toETH().toFIN().toBEI().toBOOTY().toBEI().toETH()
 
       expect(Currency.equals(eth2, eth)).equals(true)
@@ -77,7 +73,7 @@ describe('CurrencyConvertable', () => {
       expect(eth.amountBigNumber.minus(eth2.amountBigNumber).eq(0))
       expect(eth.amountBigNumber.eq(eth2.amountBigNumber)).equals(true)
 
-      if (tc instanceof BN) {
+      if (isBN(tc)) {
         expect(tc.eq(eth2.amountBN)).equals(true)
       }
 

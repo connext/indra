@@ -1,8 +1,10 @@
+import * as Connext from '../Connext';
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal } from "../testing/factories";
 import ChannelsService from '../ChannelsService';
-import { UpdateRequest, SyncResult, Sync } from '../vendor/connext/types';
 import { mkHash } from '../testing/stateUtils';
+
+type UpdateRequest = Connext.types.UpdateRequest
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()
@@ -51,5 +53,24 @@ describe('ChannelsApiService', () => {
     assert.deepEqual(res.body, {
       error: 'current state has pending fields',
     })
+  })
+
+  it('should allow 0 string inputs on doRequestWithdrawal', async () => {
+    const chan = await channelUpdateFactory(registry, {
+      balanceTokenUser: tokenVal(10),
+    })
+
+    const res = await app.withUser(chan.user).request
+      .post(`/channel/${chan.user}/request-withdrawal`)
+      .send({
+        tokensToSell: '0',
+        weiToSell: '0',
+        recipient: chan.user,
+        withdrawalWeiUser: '0',
+        withdrawalTokenUser: '0',
+        lastChanTx: 0,
+        exchangeRate: '123.45'
+      })
+    assert.equal(res.status, 200, JSON.stringify(res.body))
   })
 })
