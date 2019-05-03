@@ -42,13 +42,13 @@ export default class Wallet extends eth.Signer {
     // First choice: Sign w private key
     if (opts.privateKey) {
       this.signer = new eth.Wallet(opts.privateKey || '')
-      this.signer.connect(this.provider)
+      this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
 
     // Second choice: Sign w mnemonic
     } else if (opts.mnemonic) {
       this.signer = eth.Wallet.fromMnemonic(opts.mnemonic || '')
-      this.signer.connect(this.provider)
+      this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
 
     // Third choice: Sign w web3
@@ -59,10 +59,7 @@ export default class Wallet extends eth.Signer {
 
     // Default: create new random mnemonic
     } else {
-      this.signer = eth.Wallet.createRandom()
-      this.signer.connect(this.provider)
-      this.address = this.signer.address.toLowerCase()
-      console.warn(`Generated a new signing key, make sure you back it up before sending funds`)
+      throw new Error("please provide either `privateKey`, `mnemonic`, or `web3` in the ConnextOptions")
     }
   }
 
@@ -121,6 +118,9 @@ export default class Wallet extends eth.Signer {
   }
 
   async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
+    if (txReq.nonce == null) {
+      txReq.nonce = this.signer!.getTransactionCount("pending"); 
+    } 
     // TransactionRequest properties can be promises, make sure they've all resolved
     const tx = await objMapPromise(txReq, async (k, v) => await v) as any
 
