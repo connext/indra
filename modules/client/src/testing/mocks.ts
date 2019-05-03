@@ -61,6 +61,7 @@ import {
   UpdateRequest,
   WithdrawalParameters,
   CustodialBalanceRow,
+  PurchasePaymentRow,
 } from '../types'
 import Wallet from '../Wallet';
 
@@ -342,6 +343,22 @@ export class MockHub implements IHubAPIClient {
       status: 'CT_OPEN',
       state: getThreadState('full')
     }
+  }
+
+  async getPaymentHistory(): Promise<PurchasePaymentRow<string, string>[]> {
+    return [{
+      amount: {
+        amountWei: '1000',
+        amountToken: '2000'
+    }, createdOn: new Date(),
+    custodianAddress: mkAddress('0xabc'),
+    id: 42,
+    meta: 'mocked payment',
+    purchaseId: '0xbeef',
+    recipient: mkAddress('0xaaa'),
+    sender: mkAddress('0xbbb'),
+    type: 'PT_CHANNEL'
+    }]
   }
 
   async sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync> {
