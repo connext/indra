@@ -1,6 +1,6 @@
-import { assert, mkAddress, mkHash, parameterizedTests } from '../testing';
+import { assert, mkAddress, mkHash, parameterizedTests, assertThreadStateEqual } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest, Payment, SyncResult } from '../types';
+import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest, Payment, SyncResult, PurchasePayment } from '../types';
 import { emptyAddress } from '../Utils';
 import Web3 from 'web3';
 // @ts-ignore
@@ -207,6 +207,45 @@ describe('BuyController: unit tests', () => {
         recipient: emptyAddress,
       }],
       fails: /Secret is not hex string/,
+    },
+    {
+      name: "should work for a single thread payment to a receiver",
+      payments: [{
+        amount: { amountToken: '1', },
+        type: 'PT_THREAD' as PurchasePaymentType,
+        recipient: receiver,
+      }]
+    },
+    {
+      name: "should work for a thread payment to a different receiver",
+      payments: [
+        {
+          amount: { amountToken: '1', amountWei: '0' },
+          type: 'PT_THREAD',
+          recipient: receiver,
+        },
+        {
+          amount: { amountToken: '0', amountWei: '1' },
+          type: 'PT_THREAD',
+          recipient: receiver2,
+        },
+      ]
+    },
+    {
+      name: "should work for mixed payments",
+      payments: [
+        {
+          amount: { amountToken: '1', amountWei: '0' },
+          type: 'PT_THREAD',
+          recipient: receiver,
+        },
+        {
+          amount: { amountToken: '1', amountWei: '0' },
+          type: 'PT_LINK',
+          meta: { secret: mkHash("0xff"), },
+          recipient: emptyAddress,
+        },
+      ],
     }
   ], ({ name, payments, fails, meta }) => {
     it(name, async () => {
@@ -234,6 +273,43 @@ describe('BuyController: unit tests', () => {
       for (const p of payments) {
         // is hub to user payment?
         const isUser = p.recipient == connext.opts.user!
+        // is thread payment?
+        if ((p as PurchasePayment).type) {
+          // check that user has sent thread update
+          const syncRes = connext.store.getState().runtime.syncResultsFromHub
+          for (const res of syncRes) {
+            assert.containSubset(res, {
+              type: "thread",
+              update: {
+                state: {
+                  balanceWeiSender: '0',
+                  balanceWeiReceiver: (p.amount as Payment).amountWei || '0',
+                  balanceTokenSender: '0',
+                  balanceTokenReceiver: (p.amount as Payment).amountToken || '0',
+                  txCount: 1,
+                  receiver: p.recipient
+                }
+              }
+            })
+          }
+          // check that there is an open thread
+          await new Promise(r => setTimeout(r, 20))
+
+          connext.mockHub.assertReceivedUpdate({
+            reason: 'OpenThread',
+            args: {
+              balanceWeiReceiver: '0',
+              balanceWeiSender: (p.amount as Payment).amountWei || '0',
+              balanceTokenReceiver: '0',
+              balanceTokenSender: (p.amount as Payment).amountToken || '0',
+            },
+            sigUser: true,
+            sigHub: false,
+          })
+
+          continue
+        }
+
         connext.mockHub.assertReceivedUpdate({
           reason: 'Payment',
           args: {
@@ -245,195 +321,6 @@ describe('BuyController: unit tests', () => {
           sigHub: isUser,
         })
       }
-    })
-  })
-
-  it('should work for a single thread payment to a receiver', async () => {
-    await connext.start()
-    await connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', },
-          type: 'PT_THREAD' as PurchasePaymentType,
-          meta: {},
-          recipient: receiver,
-        },
-      ],
-    })
-
-    // has thread update
-    const syncResultsFromHub = connext.store.getState().runtime.syncResultsFromHub
-
-    assert.containSubset(syncResultsFromHub[0], {
-      type: "thread",
-      update: {
-        state: {
-          threadId: 1,
-          balanceWeiSender: '0',
-          balanceWeiReceiver: '0',
-          balanceTokenSender: '0',
-          balanceTokenReceiver: '1',
-          txCount: 1,
-        }
-      }
-    })
-
-    await new Promise(res => setTimeout(res, 20))
-    // should open thread
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'OpenThread',
-      args: {
-        balanceTokenSender: '1',
-        balanceWeiSender: '0',
-        balanceTokenReceiver: '0',
-        balanceWeiReceiver: '0',
-      },
-      sigUser: true,
-      sigHub: false,
-    })
-  })
-
-  it('should work for a thread payment to a different receiver', async () => {
-    await connext.start()
-    await connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_THREAD',
-          meta: {},
-          recipient: receiver,
-        },
-        {
-          amount: { amountToken: '0', amountWei: '1' },
-          type: 'PT_THREAD',
-          meta: {},
-          recipient: receiver2,
-        },
-      ],
-    })
-
-    // has thread update
-    const syncResultsFromHub = connext.store.getState().runtime.syncResultsFromHub
-
-    assert.containSubset(syncResultsFromHub, [{
-      type: "thread",
-      update: {
-        state: {
-          threadId: 1,
-          balanceWeiSender: '0',
-          balanceWeiReceiver: '0',
-          balanceTokenSender: '0',
-          balanceTokenReceiver: '1',
-          receiver,
-          txCount: 1,
-        }
-      }
-    },
-    {
-      type: "thread",
-      update: {
-        state: {
-          threadId: 1,
-          balanceWeiSender: '0',
-          balanceWeiReceiver: '1',
-          balanceTokenSender: '0',
-          balanceTokenReceiver: '0',
-          receiver: receiver2,
-          txCount: 1,
-        }
-      }
-    },
-  ])
-
-    await new Promise(res => setTimeout(res, 20))
-    // should open threads
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'OpenThread',
-      args: {
-        balanceTokenSender: '1',
-        balanceWeiSender: '0',
-        balanceTokenReceiver: '0',
-        balanceWeiReceiver: '0',
-      },
-      sigUser: true,
-      sigHub: false,
-    })
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'OpenThread',
-      args: {
-        balanceTokenSender: '0',
-        balanceWeiSender: '1',
-        balanceTokenReceiver: '0',
-        balanceWeiReceiver: '0',
-      },
-      sigUser: true,
-      sigHub: false,
-    })
-  })
-
-
-  it('should work for mixed payments', async () => {
-    await connext.start()
-    await connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_THREAD',
-          meta: {},
-          recipient: receiver,
-        },
-        {
-          amount: { amountToken: '1', amountWei: '0' },
-          type: 'PT_LINK',
-          meta: { secret: connext.generateSecret() },
-          recipient: emptyAddress,
-        },
-      ],
-    })
-
-    // has thread update
-    const syncResultsFromHub = connext.store.getState().runtime.syncResultsFromHub
-
-    assert.containSubset(syncResultsFromHub[0], {
-      type: "thread",
-      update: {
-        state: {
-          threadId: 1,
-          balanceWeiSender: '0',
-          balanceWeiReceiver: '0',
-          balanceTokenSender: '0',
-          balanceTokenReceiver: '1',
-          txCount: 1,
-        }
-      }
-    })
-
-    await new Promise(res => setTimeout(res, 20))
-    // should open thread
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'OpenThread',
-      args: {
-        balanceTokenSender: '1',
-        balanceWeiSender: '0',
-        balanceTokenReceiver: '0',
-        balanceWeiReceiver: '0',
-      },
-      sigUser: true,
-      sigHub: false,
-    })
-    // should make linked payment
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'Payment',
-      args: {
-        amountToken: '1',
-        amountWei: '0',
-        recipient: 'hub',
-      } as PaymentArgs,
-      sigUser: true,
-      sigHub: false,
     })
   })
 
