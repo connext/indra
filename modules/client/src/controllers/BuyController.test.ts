@@ -1,6 +1,6 @@
 import { assert, mkAddress, mkHash, parameterizedTests } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest, Payment } from '../types';
+import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest, Payment, SyncResult } from '../types';
 import { emptyAddress } from '../Utils';
 import Web3 from 'web3';
 // @ts-ignore
@@ -127,11 +127,6 @@ describe('BuyController: unit tests', () => {
     secret = connext.generateSecret()
   })
 
-  // interface TC {
-  //   name: string,
-  //   amount: Partial<Payment>,
-  //   type?: PurchasePaymentType
-  // }
   parameterizedTests([
     {
       name: 'should work for PT_CHANNEL user to hub token payments',
@@ -252,99 +247,6 @@ describe('BuyController: unit tests', () => {
       }
     })
   })
-
-  // testing sync response from hub
-  it('should work for hub to user token payments', async () => {
-    mockStore.setSyncResultsFromHub([{
-      type: "channel",
-      update: {
-        reason: "Payment",
-        args: {
-          recipient: "user",
-          amountToken: '1',
-          amountWei: '0',
-        } as PaymentArgs,
-        txCount: 1,
-        sigHub: mkHash('0x51512'),
-        createdOn: new Date()
-      },
-    }])
-    connext = new MockConnextInternal({ user, store: mockStore.createStore() })
-
-    await connext.start()
-
-    await new Promise(res => setTimeout(res, 20))
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'Payment',
-      args: {
-        amountToken: '1',
-        amountWei: '0',
-        recipient: 'user',
-      } as PaymentArgs,
-      sigUser: true,
-      sigHub: true,
-    })
-  })
-
-  it('should fail for invalid payments from hub to user', async () => {
-    mockStore.setSyncResultsFromHub([{
-      type: "channel",
-      update: {
-        reason: "Payment",
-        args: {
-          recipient: "user",
-          amountToken: '-1',
-          amountWei: '0',
-        } as PaymentArgs,
-        txCount: 1,
-        sigHub: mkHash('0x51512'),
-        createdOn: new Date()
-      },
-    }])
-    connext = new MockConnextInternal({ user, store: mockStore.createStore() })
-
-    await assert.isRejected(connext.start(), /There were 1 negative fields detected/)
-  })
-
-  it('should fail if the update returned by hub to sync queue is unsigned by hub', async () => {
-    mockStore.setSyncResultsFromHub([{
-      type: "channel",
-      update: {
-        reason: "Payment",
-        args: {
-          recipient: "hub",
-          amountToken: '1',
-          amountWei: '1',
-        } as PaymentArgs,
-        txCount: 1,
-        sigHub: '',
-      },
-    }])
-    connext = new MockConnextInternal({ user, store: mockStore.createStore() })
-
-    await assert.isRejected(connext.start(), /sigHub not detected in update/)
-  })
-
-  it('should fail if the update returned by hub to sync queue is unsigned by user and directed to hub', async () => {
-    mockStore.setSyncResultsFromHub([{
-      type: "channel",
-      update: {
-        reason: "Payment",
-        args: {
-          recipient: "hub",
-          amountToken: '1',
-          amountWei: '1',
-        } as PaymentArgs,
-        txCount: 1,
-        sigHub: mkHash('0x90283'),
-        sigUser: '',
-      },
-    }])
-    connext = new MockConnextInternal({ user, store: mockStore.createStore() })
-
-    await assert.isRejected(connext.start(), /sigUser not detected in update/)
-  })
-
 
   it('should work for a single thread payment to a receiver', async () => {
     await connext.start()
