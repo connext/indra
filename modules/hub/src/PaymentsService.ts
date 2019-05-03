@@ -200,7 +200,7 @@ export default class PaymentsService {
         })
 
       } else {
-        assertUnreachable(payment as never, 'invalid payment type: ' + payment.type)
+        assertUnreachable(payment as never, 'invalid payment type: ' + (payment as any).type)
       }
 
       // Note: this handling of meta isn't ideal. In the future, we should have
