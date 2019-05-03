@@ -59,7 +59,10 @@ export default class Wallet extends eth.Signer {
 
     // Default: create new random mnemonic
     } else {
-      throw new Error("please provide either `privateKey`, `mnemonic`, or `web3` in the ConnextOptions")
+      this.signer = eth.Wallet.createRandom()
+      this.signer.connect(this.provider)	
+      this.address = this.signer.address.toLowerCase()	
+      console.warn(`Generated a new signing key, make sure you back it up before sending funds`)
     }
   }
 
