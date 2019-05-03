@@ -7,7 +7,8 @@ import {
   convertChannelState,
   WithdrawalParameters,
   withdrawalParamsNumericFields,
-  insertDefault
+  insertDefault,
+  SuccinctWithdrawalParameters
 } from '../types'
 
 /* NOTE: the withdrawal parameters have optional withdrawal tokens and wei to
@@ -20,7 +21,12 @@ import {
  * */
 
 export default class WithdrawalController extends AbstractController {
-  public requestUserWithdrawal = async (args: Partial<WithdrawalParameters>) => {
+
+  private makeWithdrawalVerbose = (args: SuccinctWithdrawalParameters): WithdrawalParameters => {
+    return {} as any
+  }
+
+  public requestUserWithdrawal = async (args: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters) => {
     // insert '0' strs to the withdrawal obj
     const withdrawalStr = insertDefault('0', args, withdrawalParamsNumericFields)
 
