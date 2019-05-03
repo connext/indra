@@ -78,6 +78,7 @@ export class ChannelManager implements IChannelManager {
   async _send(method: string, args: any, overrides: any) {
     const gasEstimate = (await this.cm.estimate[method](...args, overrides)).toNumber()
     overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.gasMultiple))
+    overrides.gasPrice = await this.provider.getGasPrice()
     return await this.cm[method](...args, overrides)
   }
 
