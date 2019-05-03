@@ -1,7 +1,8 @@
-import { assert, mkAddress, mkHash } from '../testing';
+import { assert, mkAddress, mkHash, parameterizedTests } from '../testing';
 import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest } from '../types';
+import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest, Payment } from '../types';
 import { emptyAddress } from '../Utils';
+import Web3 from 'web3';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
@@ -39,7 +40,7 @@ describe("BuyController: assignPaymentTypes", () => {
   })
 
   it("should assign a PT_LINK payment if there is a secret provided in the meta", async () => {
-    const payment: PurchasePaymentRequest = {
+    const payment = {
       recipient: receiver,
       amount: {
         amountToken: '15',
@@ -57,7 +58,7 @@ describe("BuyController: assignPaymentTypes", () => {
   })
 
   it("should assign a PT_CUSTODIAL if the amount is greater than the amount the hub will collateralize", async () => {
-    const payment: PurchasePaymentRequest = {
+    const payment = {
       recipient: receiver,
       amount: {
         amountToken: '150',
@@ -73,7 +74,7 @@ describe("BuyController: assignPaymentTypes", () => {
   })
 
   it("should assign a PT_CHANNEL if the payment is to the hub", async () => {
-    const payment: PurchasePaymentRequest = {
+    const payment = {
       recipient: mkAddress("0xhhh"),
       amount: {
         amountToken: '10',
@@ -89,7 +90,7 @@ describe("BuyController: assignPaymentTypes", () => {
   })
 
   it("should assign a PT_OPTIMISTIC if the type is not provided, and the hub can handle forwarding the payment (below max)", async () => {
-    const payment: PurchasePaymentRequest = {
+    const payment = {
       recipient: receiver,
       amount: {
         amountToken: '14',
@@ -112,6 +113,7 @@ describe('BuyController: unit tests', () => {
   const hubAddress = mkAddress('0xfc5')
   let connext: MockConnextInternal
   let mockStore: MockStore
+  let secret: string
 
   beforeEach(async () => {
     mockStore = new MockStore()
@@ -122,155 +124,133 @@ describe('BuyController: unit tests', () => {
     })
     const mockHub = new MockHub()
     connext = new MockConnextInternal({ user, store: mockStore.createStore(), hub: mockHub })
+    secret = connext.generateSecret()
   })
 
-  // channel and custodial payments
-  it('should work for `PT_CHANNEL` user to hub token payments', async () => {
-    await connext.start()
-    await connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1' },
-          type: 'PT_CHANNEL',
-          meta: {},
-          recipient: hubAddress,
-        },
-      ],
+  // interface TC {
+  //   name: string,
+  //   amount: Partial<Payment>,
+  //   type?: PurchasePaymentType
+  // }
+  parameterizedTests([
+    {
+      name: 'should work for PT_CHANNEL user to hub token payments',
+      payments: [{
+        amount: { amountToken: '1', },
+        type: 'PT_CHANNEL',
+        recipient: hubAddress,
+      }],
+      meta: null
+    },
+    {
+      name: 'should work for PT_CHANNEL user to hub token payments without type',
+      payments: [{
+        amount: { amountToken: '1', },
+        recipient: hubAddress,
+      }],
+      meta: null
+    },
+    {
+      name: 'should work for PT_CUSTODIAL user to hub token payments',
+      payments: [{
+        amount: { amountToken: '1', },
+        type: 'PT_CUSTODIAL',
+        recipient: receiver,
+      }]
+    },
+    {
+      name: 'should fail for invalid PT_CHANNEL user to hub payments',
+      payments: [{
+        amount: { amountToken: '1', amountWei: '10' },
+        type: 'PT_CHANNEL',
+        recipient: receiver,
+      }],
+      fails: /User does not have sufficient Wei balance for a transfer of value/
+    },
+    {
+      name: 'should fail for invalid PT_CUSTODIAL user to hub payments',
+      payments: [{
+        amount: { amountToken: '1', amountWei: '10' },
+        type: 'PT_CUSTODIAL',
+        meta: {},
+        recipient: receiver,
+      }],
+      fails: /User does not have sufficient Wei balance for a transfer of value/
+    },
+    {
+      name: "should work for PT_LINK user token payments",
+      payments: [{
+        amount: { amountToken: '1', },
+        type: 'PT_LINK',
+        meta: { secret: mkHash("0xff"), },
+        recipient: emptyAddress,
+      }],
+    },
+    {
+      name: "should work for PT_LINK user token payments without type",
+      payments: [{
+        amount: { amountToken: '1', },
+        meta: { secret: mkHash("0xff"), },
+        recipient: emptyAddress,
+      }],
+    },
+    {
+      name: "should fail for PT_LINK user token payments if secret is not provided",
+      payments: [{
+        amount: { amountToken: '1', },
+        type: 'PT_LINK' as PurchasePaymentType,
+        recipient: emptyAddress,
+      }],
+      fails: /Secret is not present/,
+    },
+    {
+      name: 'should fail for PT_LINK user token payments if secret is not provided',
+      payments: [{
+        amount: { amountToken: '1', },
+        type: 'PT_LINK' as PurchasePaymentType,
+        meta: { secret: 'secret' },
+        recipient: emptyAddress,
+      }],
+      fails: /Secret is not hex string/,
+    }
+  ], ({ name, payments, fails, meta }) => {
+    it(name, async () => {
+      await connext.start()
+
+      if (fails) {
+        await assert.isRejected(
+          connext.buyController.buy({
+            meta: meta || {},
+            payments: payments as any,
+          }),
+          fails
+        )
+        return
+      }
+
+      await connext.buyController.buy({
+        meta: meta || {},
+        payments: payments as any,
+      })
+
+      await new Promise(res => setTimeout(res, 20))
+
+      // hub should receive the user-signed update
+      for (const p of payments) {
+        // is hub to user payment?
+        const isUser = p.recipient == connext.opts.user!
+        connext.mockHub.assertReceivedUpdate({
+          reason: 'Payment',
+          args: {
+            amountToken: (p.amount as Payment).amountToken || '0',
+            amountWei: (p.amount as Payment).amountWei || '0',
+            recipient: isUser ? 'user' : 'hub',
+          } as PaymentArgs,
+          sigUser: true,
+          sigHub: isUser,
+        })
+      }
     })
-
-    await new Promise(res => setTimeout(res, 20))
-
-    // hub should receive the user-signed update
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'Payment',
-      args: {
-        amountToken: '1',
-        amountWei: '0',
-        recipient: 'hub',
-      } as PaymentArgs,
-      sigUser: true,
-      sigHub: false,
-    })
-  })
-
-  it('should work for PT_CUSTODIAL user to hub token payments', async () => {
-    await connext.start()
-    await connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', },
-          type: 'PT_CUSTODIAL' as PurchasePaymentType,
-          meta: {},
-          recipient: receiver,
-        },
-      ],
-    })
-
-    await new Promise(res => setTimeout(res, 20))
-
-    // hub should receive the user-signed update
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'Payment',
-      args: {
-        amountToken: '1',
-        amountWei: '0',
-        recipient: 'hub',
-      } as PaymentArgs,
-      sigUser: true,
-      sigHub: false,
-    })
-  })
-
-  it('should fail for invalid `PT_CHANNEL` user to hub payments', async () => {
-    await connext.start()
-    await assert.isRejected(connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', amountWei: '10' },
-          type: 'PT_CHANNEL',
-          meta: {},
-          recipient: receiver,
-        },
-      ],
-    }), /User does not have sufficient Wei balance for a transfer of value/)
-  })
-
-  it('should fail for invalid `PT_CUSTODIAL` user to hub payments', async () => {
-    await connext.start()
-    await assert.isRejected(connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', amountWei: '10' },
-          type: 'PT_CUSTODIAL',
-          meta: {},
-          recipient: receiver,
-        },
-      ],
-    }), /User does not have sufficient Wei balance for a transfer of value/)
-  })
-
-  // testing linked payments
-  it('should work for `PT_LINK` user token payments', async () => {
-    await connext.start()
-    await connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', },
-          type: 'PT_LINK' as PurchasePaymentType,
-          meta: { secret: connext.generateSecret() },
-          recipient: emptyAddress,
-        },
-      ],
-    })
-
-    await new Promise(res => setTimeout(res, 20))
-
-    // hub should receive the user-signed update
-    connext.mockHub.assertReceivedUpdate({
-      reason: 'Payment',
-      args: {
-        amountToken: '1',
-        amountWei: '0',
-        recipient: 'hub',
-      } as PaymentArgs,
-      sigUser: true,
-      sigHub: false,
-    })
-  })
-
-  it('should fail for `PT_LINK` user token payments if secret is not provided', async () => {
-    await connext.start()
-    await assert.isRejected(connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', },
-          type: 'PT_LINK' as PurchasePaymentType,
-          meta: {},
-          recipient: emptyAddress,
-        },
-      ],
-    }), /Secret is not present/)
-  })
-
-  it('should fail for `PT_LINK` user token payments if secret is not provided', async () => {
-    await connext.start()
-    await assert.isRejected(connext.buyController.buy({
-      meta: {},
-      payments: [
-        {
-          amount: { amountToken: '1', },
-          type: 'PT_LINK' as PurchasePaymentType,
-          meta: { secret: 'secret' },
-          recipient: emptyAddress,
-        },
-      ],
-    }), /Secret is not hex string/)
   })
 
   // testing sync response from hub
