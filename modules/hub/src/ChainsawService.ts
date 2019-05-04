@@ -288,10 +288,19 @@ export default class ChainsawService {
     }
 
     // check if sender was user
-    // TODO: FIX TYPES OF EVENTS
-    if (Big(event.senderIdx).eq(Big('0'))) {
+    if (event.senderIdx == 0) {
       LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
       return
+    }
+
+    try {
+      if ((event.senderIdx as any).eq(Big('0'))) {
+        LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
+        return
+      }
+    } catch (error) {
+      LOG.info('Caught error trying to compare BN to 0.')
+      LOG.info(error)
     }
 
     let data
