@@ -1,4 +1,4 @@
-import { mkAddress, parameterizedTests } from '../testing';
+import { mkAddress, parameterizedTests, assert } from '../testing';
 import { MockConnextInternal, MockStore } from '../testing/mocks';
 import { WithdrawalParameters, convertChannelState } from '../types';
 import { Big } from '../lib/bn';
@@ -27,7 +27,7 @@ describe('WithdrawalController: unit tests', () => {
 
   parameterizedTests([
     {
-      name: "should withdraw all of users tokens",
+      name: "should withdraw all of users tokens as wei",
       args: {
         exchangeRate: '5',
         recipient: mkAddress('0xBBB'),
@@ -36,8 +36,43 @@ describe('WithdrawalController: unit tests', () => {
         weiToSell: null,
         withdrawalTokenUser: null,
       },
-    }
-  ], ({ name, args, }) => {
+    }, 
+    {
+      name: "should fail if recipient is not a valid address",
+      args: {
+        recipient: 'fail'
+      },
+      failsWith: /Recipient is not a valid address./
+    },
+    {
+      name: "should fail if user wds more wei than is in their channel",
+      args: {
+        withdrawalWeiUser: '100'
+      },
+      failsWith: /Cannot withdraw more wei than what is in your channel./
+    },
+    {
+      name: "should fail if user tries to sell more tokens than they have",
+      args: {
+        tokensToSell: '100'
+      },
+      failsWith: /Cannot sell more tokens than exist in your channel./
+    },
+    {
+      name: "should fail if user tries to withdraw tokens",
+      args: {
+        withdrawalTokenUser: '5'
+      },
+      failsWith: /User token withdrawals are not permitted at this time./
+    },
+    {
+      name: "should fail if user tries to exchange wei",
+      args: {
+        weiToSell: '5'
+      },
+      failsWith: /User exchanging wei at withdrawal is not permitted at this time./
+    },
+  ], ({ name, args, failsWith }) => {
 
     it(name, async () => {
       await connext.start()
@@ -49,6 +84,15 @@ describe('WithdrawalController: unit tests', () => {
       // wait to allow controller to set exchange rates
       await new Promise(res => setTimeout(res, 20))
 
+      if (failsWith) {
+        // ignore args, should be Partial<Withdrawal> | SuccinctWithdrawal
+        await assert.isRejected(
+          // @ts-ignore
+          connext.withdrawalController.requestUserWithdrawal(args),
+          failsWith
+        )
+        return
+      }
       // ignore args, should be Partial<Withdrawal> | SuccinctWithdrawal
       // @ts-ignore
       await connext.withdrawalController.requestUserWithdrawal(args)
