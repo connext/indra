@@ -293,8 +293,10 @@ export default class ChainsawService {
       return
     }
 
+    // TODO FIX AND REMOVE
+    LOG.info('event.senderIdx: ' + JSON.stringify(event.senderIdx));
     try {
-      if ((event.senderIdx as any).eq(Big('0'))) {
+      if ((event.senderIdx as any)._hex == "0x00") {
         LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
         return
       }
