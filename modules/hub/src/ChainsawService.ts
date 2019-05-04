@@ -14,6 +14,10 @@ import { RedisClient } from './RedisClient';
 import { OnchainTransactionService } from './OnchainTransactionService';
 import { EventLog } from 'web3-core';
 import Web3 from 'web3';
+import { big } from './Connext';
+const {
+  Big
+} = big
 
 type ChannelState<T=string> = types.ChannelState<T>
 type ConfirmPendingArgs = types.ConfirmPendingArgs
@@ -284,7 +288,8 @@ export default class ChainsawService {
     }
 
     // check if sender was user
-    if (event.senderIdx == 0) {
+    // TODO: FIX TYPES OF EVENTS
+    if (Big(event.senderIdx).eq(Big('0'))) {
       LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
       return
     }
