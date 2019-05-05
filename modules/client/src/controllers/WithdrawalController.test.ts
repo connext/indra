@@ -1,16 +1,84 @@
 import { mkAddress, parameterizedTests, assert } from '../testing';
 import { MockConnextInternal, MockStore } from '../testing/mocks';
-import { WithdrawalParameters, convertChannelState } from '../types';
+import { convertChannelState } from '../types';
 import { Big } from '../lib/bn';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
-describe('WithdrawalController: unit tests', () => {
-  const user = mkAddress('0xAAA')
-  let connext: MockConnextInternal
-  const mockStore = new MockStore()
-  const exchangeRate = '5'
+const user = mkAddress('0xAAA')
+let connext: MockConnextInternal
+const mockStore = new MockStore()
+const exchangeRate = '5'
 
+describe("createWithdrawalParameters", () => {
+  beforeEach(async () => {
+    // add channel with initial booty balance to exchange and withdraw
+    mockStore.setChannel({
+      user,
+      balanceWei: [10, 5],
+      balanceToken: [0, 50],
+    })
+    mockStore.setExchangeRate({ 'USD': exchangeRate })
+    connext = new MockConnextInternal({ 
+      user, 
+      store: mockStore.createStore() 
+    })
+  })
+
+  parameterizedTests([
+    {
+      name: "should work when supplied with only an amountWei",
+      args: { 
+        amount: { amountWei: '1'}
+      },
+      expected: { withdrawalWeiUser: '1' }
+    },
+    {
+      name: "should work when supplied with only an amountToken",
+      args: { 
+        amount: { amountToken: '1'}
+      },
+      expected: { withdrawalTokenUser: '1' }
+    },
+    {
+      name: "should insert default values for partial withdrawal parameters",
+      args: { 
+        withdrawalWeiUser: '1',
+      },
+      expected: { withdrawalTokenUser: '1' }
+    },
+    {
+      name: "should correctly exchange on withdrawals when provided with an amount (native balance first)",
+      args: { 
+        amount: { amountWei: '10' },
+      },
+      expected: { withdrawalWeiUser: '5', tokensToSell: '25' }
+    },
+    {
+      name: "should correctly calculate parameters if both wd amounts are supplied",
+      args: { 
+        amount: { amountWei: '10', amountToken: '15' },
+      },
+      expected: { withdrawalWeiUser: '5', tokensToSell: '25', withdrawalTokenUser: '15' }
+    },
+  ], async ({ name, args, expected }) => {
+
+    it(name, async () => {
+      const ans = connext.withdrawalController.createWithdrawalParameters(args)
+      assert.containSubset(ans, {
+        withdrawalWeiUser: '0',
+        tokensToSell: '0',
+        withdrawalTokenUser: '0',
+        weiToSell: '0',
+        exchangeRate: '5',
+        recipient: user,
+        ...expected
+      })
+    })
+  })
+})
+
+describe('WithdrawalController: unit tests', () => {
   beforeEach(async () => {
      // add channel with initial booty balance to exchange and withdraw
      mockStore.setChannel({
