@@ -24,68 +24,9 @@ import {
 
 export default class WithdrawalController extends AbstractController {
 
-  // NOTE: validation on parameters is done *after*
-  // they are generated from this fn
-  private succinctWithdrawalToWithdrawalParameters(args: SuccinctWithdrawalParameters): Partial<WithdrawalParameters> {
-    // get values
-    const state = this.store.getState()
-    const { channel } = state.persistent
-    // TODO: should be dependent on the token in the channel
-    // NOTE: if a wd is requested without an exchange rate in store
-    // this will fail
-    const exchangeRate = state.runtime.exchangeRate!.rates.USD!
-    const chan = convertChannelState("bn", channel)
-    const wdAmount: PaymentBN = convertPayment("bn", 
-      insertDefault('0', args.amount, argNumericFields.Payment)
-    )
-
-    let withdrawalWeiUser, withdrawalTokenUser, tokensToSell, weiToSell
-    // withdrawal amounts should come from native balances first
-    if (wdAmount.amountWei.lte(chan.balanceWeiUser)) {
-      // total requested wei withdrawal can come from
-      // native channel balance without exchanging
-      withdrawalWeiUser = wdAmount.amountWei.toString()
-      tokensToSell = '0'
-    } else { // user must sell tokens to generate wei withdrawal
-      // withdraw all of wei balance in channel
-      withdrawalWeiUser = chan.balanceWeiUser.toString()
-      // sell the equivalent remaining amount in tokens
-      // NOTE: if a wd is requested without an exchange rate in store
-      // this will fail
-      tokensToSell = weiToAsset(
-        wdAmount.amountWei.sub(chan.balanceWeiUser), exchangeRate
-      ).toString()
-    }
-
-    if (wdAmount.amountToken.lte(chan.balanceTokenUser)) {
-      // total requested token withdrawal can come from
-      // native channel balance without exchanging
-      withdrawalTokenUser = wdAmount.amountToken.toString()
-      weiToSell = '0'
-    } else { // user must sell wei to generate wei withdrawal
-      // withdraw all of wei balance in channel
-      withdrawalTokenUser = chan.balanceTokenUser.toString()
-      // sell the equivalent remaining amount in tokens
-      const [ wei, remainderTokens ] = assetToWei(
-        wdAmount.amountToken.sub(chan.balanceTokenUser), exchangeRate
-      )
-      weiToSell = wei.toString()
-      withdrawalTokenUser = chan.balanceTokenUser.add(remainderTokens).toString()
-    }
-
-    // recipient + exchangeRate is set when inserting defaults into the 
-    // withdrawal parameters in "createWithdrawalParameters"
-    return {
-      withdrawalWeiUser,
-      tokensToSell,
-      withdrawalTokenUser,
-      weiToSell,
-    }
-  }
-
-  private createWithdrawalParameters(args: Partial<WithdrawalParameters>): WithdrawalParameters
-  private createWithdrawalParameters(args: SuccinctWithdrawalParameters): WithdrawalParameters
-  private createWithdrawalParameters(args: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters) {
+  public createWithdrawalParameters(args: Partial<WithdrawalParameters>): WithdrawalParameters
+  public createWithdrawalParameters(args: SuccinctWithdrawalParameters): WithdrawalParameters
+  public createWithdrawalParameters(args: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters) {
     if ((args as any).amount) {
       // this is a succinct withdrawal type, create the
       // corresponding partial parameters
@@ -137,6 +78,62 @@ export default class WithdrawalController extends AbstractController {
 
     const sync = await this.hub.requestWithdrawal(withdrawalStr, getTxCount(this.store.getState()))
     this.connext.syncController.handleHubSync(sync)
+  }
 
+  // NOTE: validation on parameters is done *after*
+  // they are generated from this fn
+  private succinctWithdrawalToWithdrawalParameters(args: SuccinctWithdrawalParameters): Partial<WithdrawalParameters> {
+    // get values
+    const state = this.store.getState()
+    const { channel } = state.persistent
+    // TODO: should be dependent on the token in the channel
+    // NOTE: if a wd is requested without an exchange rate in store
+    // this will fail
+    const exchangeRate = state.runtime.exchangeRate!.rates.USD!
+    const chan = convertChannelState("bn", channel)
+    const wdAmount: PaymentBN = convertPayment("bn", 
+      insertDefault('0', args.amount, argNumericFields.Payment)
+    )
+
+    let withdrawalWeiUser, withdrawalTokenUser, tokensToSell, weiToSell
+    // withdrawal amounts should come from native balances first
+    if (wdAmount.amountWei.lte(chan.balanceWeiUser)) {
+      // total requested wei withdrawal can come from
+      // native channel balance without exchanging
+      withdrawalWeiUser = wdAmount.amountWei.toString()
+      tokensToSell = '0'
+    } else { // user must sell tokens to generate wei withdrawal
+      // withdraw all of wei balance in channel
+      withdrawalWeiUser = chan.balanceWeiUser.toString()
+      // sell the equivalent remaining amount in tokens
+      tokensToSell = weiToAsset(
+        wdAmount.amountWei.sub(chan.balanceWeiUser), exchangeRate
+      ).toString()
+    }
+
+    if (wdAmount.amountToken.lte(chan.balanceTokenUser)) {
+      // total requested token withdrawal can come from
+      // native channel balance without exchanging
+      withdrawalTokenUser = wdAmount.amountToken.toString()
+      weiToSell = '0'
+    } else { // user must sell wei to generate wei withdrawal
+      // withdraw all of wei balance in channel
+      withdrawalTokenUser = chan.balanceTokenUser.toString()
+      // sell the equivalent remaining amount in tokens
+      const [ wei, remainderTokens ] = assetToWei(
+        wdAmount.amountToken.sub(chan.balanceTokenUser), exchangeRate
+      )
+      weiToSell = wei.toString()
+      withdrawalTokenUser = chan.balanceTokenUser.add(remainderTokens).toString()
+    }
+
+    // recipient + exchangeRate is set when inserting defaults into the 
+    // withdrawal parameters in "createWithdrawalParameters"
+    return {
+      withdrawalWeiUser,
+      tokensToSell,
+      withdrawalTokenUser,
+      weiToSell,
+    }
   }
 }
