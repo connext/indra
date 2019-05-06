@@ -82,6 +82,8 @@ docker run --tty --name ${project}_tester --network=$project \
     echo "Waiting for $DATABASE..." && bash ops/wait-for.sh -t 60 $DATABASE 2> /dev/null
     echo "Waiting for $ETH_RPC_URL_TEST" && bash ops/wait-for.sh -t 60 $ETH_RPC_URL_TEST 2> /dev/null
     ./node_modules/.bin/mocha \
-      -r ./dist/register/common.js \
-      "dist/**/*.test.js" --exit
+      -r ts-node/register/type-check \
+      -r ./src/register/common.ts \
+      -r ./src/register/testing.ts \
+      "src/**/*.test.ts" --exit
   '
