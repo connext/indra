@@ -232,11 +232,10 @@ export class Utils {
   public recoverSignerFromChannelState(
     channelState: UnsignedChannelState,
     sig: string,
-    signer: 'user' | 'hub',
+    signer: string, // who you expect to be the signer
   ): string | undefined {
     const hash: string = this.createChannelStateHash(channelState)
-    const signerAddress: string = signer === 'user' ? channelState.user : channelState.recipient
-    return this.recoverSigner(hash, sig, signerAddress)
+    return this.recoverSigner(hash, sig, signer)
   }
 
   public recoverSignerFromDepositRequest(
