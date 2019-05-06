@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { createStore } from 'redux'
+import { createStore, applyMiddleware, Store } from 'redux'
 import {
   assert,
   getChannelState,
@@ -63,6 +63,8 @@ import {
   CustodialBalanceRow,
 } from '../types'
 import Wallet from '../Wallet';
+import { handleStateFlags } from '../state/middleware';
+import { AnyAction } from 'typescript-fsa';
 
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
@@ -558,7 +560,11 @@ export class MockStore {
   }
 
   public createStore: any = () => {
-    return createStore(reducers, this._initialState)
+    return createStore(
+      reducers, 
+      this._initialState, 
+      applyMiddleware(handleStateFlags)
+    )
   }
 
   public setInitialConnextState = (state: ConnextState) => {
