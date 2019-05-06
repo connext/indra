@@ -1,52 +1,167 @@
-import { mkAddress, assert, mkHash, parameterizedTests } from "../testing";
+import { mkAddress, assert, mkHash, parameterizedTests, PartialSignedOrSuccinctChannel } from "../testing";
 import { MockStore } from "../testing/mocks";
 import * as actions from './actions'
+import { SyncResult } from "../types";
 
 describe("handleStateFlags", () => {
-  parameterizedTests([
+  it("should work when user processes deposit", async () => {
+    const mock = new MockStore()
+    const store = mock.createStore()
+
+    store.dispatch(actions.setSortedSyncResultsFromHub([{
+      type: "channel",
+      update: {
+        reason: "ProposePendingDeposit",
+        sigHub: mkHash('0xas'),
+        args: {
+          depositTokenUser: '1',
+          depositWeiUser: '1',
+        },
+        txCount: null
+      }
+    }]))
+
+    const state = store.getState()
+
+    assert.containSubset(state.runtime, {
+      deposit: {
+        transactionHash: null,
+        submitted: true,
+        detected: false,
+      }
+    })
+  })
+
+  it("should work when user processes a confirm user withdrawal", async () => {
+    const mock = new MockStore()
+    mock.setChannel({
+      pendingWithdrawalToken: [1, 1]
+    })
+    const store = mock.createStore()
+
+    store.dispatch(actions.setSortedSyncResultsFromHub([{
+      type: "channel",
+      update: {
+        reason: "ConfirmPending",
+        sigHub: mkHash('0xas'),
+        args: {
+          transactionHash: mkHash("0xAA"),
+        },
+        txCount: null,
+      }
+    }]))
+
+    const state = store.getState()
+
+    assert.containSubset(state.runtime, {
+      withdrawal: {
+        transactionHash: mkHash("0xAA"),
+        submitted: true,
+        detected: true,
+      }
+    })
+  })
+
+  const collateralTcs = [
     {
-      name: "should work when user processes deposit",
-      channel: { 
-        balanceToken: [15, 15],
-        balanceWei: [15, 15],
-      } as any,
-      action: 'setSortedSyncResultsFromHub',
-      payload: [{
+      name: "hub decollateralizes token, confirmation",
+      channel: { pendingWithdrawalToken: [1, 0], },
+      expected: {
+        transactionHash: mkHash("0xAA"),
+        submitted: true,
+        detected: true,
+      },
+      sync: [{
+        type: "channel",
+        update: {
+          reason: "ConfirmPending",
+          sigHub: mkHash('0xas'),
+          args: {
+            transactionHash: mkHash("0xAA"),
+          },
+          txCount: null,
+        }
+      }]
+    },
+    {
+      name: "hub decollateralizes wei, confirmation",
+      channel: { pendingWithdrawalWei: [1, 0], },
+      expected: {
+        transactionHash: mkHash("0xAA"),
+        submitted: true,
+        detected: true,
+      },
+      sync: [{
+        type: "channel",
+        update: {
+          reason: "ConfirmPending",
+          sigHub: mkHash('0xas'),
+          args: {
+            transactionHash: mkHash("0xAA"),
+          },
+          txCount: null,
+        }
+      }]
+    },
+    {
+      name: "hub collateralizes, proposed",
+      channel: {  },
+      expected: {
+        transactionHash: null,
+        submitted: true,
+        detected: false,
+      },
+      sync: [{
         type: "channel",
         update: {
           reason: "ProposePendingDeposit",
           sigHub: mkHash('0xas'),
           args: {
-            depositTokenUser: '1',
-            depositWeiUser: '1',
+            depositTokenHub: '1',
+            depositWeiHub: '1',
+            depositTokenUser: '0',
+            depositWeiUser: '0',
           },
+          txCount: null,
         }
-      }],
+      }]
+    },
+    {
+      name: "hub decollateralizes, proposed",
+      channel: { balanceToken: [10, 5], balanceWei: [10, 5] },
       expected: {
-        deposit: {
-          transactionHash: null,
-          submitted: true,
-          detected: false,
+        transactionHash: null,
+        submitted: true,
+        detected: false,
+      },
+      sync: [{
+        type: "channel",
+        update: {
+          reason: "ProposePendingWithdrawal",
+          sigHub: mkHash('0xas'),
+          args: {
+            targetTokenUser: 5,
+            targetWeiUser: 5,
+          },
+          txCount: null,
         }
-      }
-    }
-  ], ({ name, channel, action, payload, expected }) => {
+      }]
+    },
+  ]
+
+  collateralTcs.forEach(({ name, channel, expected, sync }) => {
     it(name, () => {
-      const user = mkAddress('0xAAA')
       const mock = new MockStore()
+      mock.setChannel(channel as PartialSignedOrSuccinctChannel)
       const store = mock.createStore()
 
-      mock.setChannel({
-        user,
-        ...channel,
-      })
-
-      store.dispatch((actions as any)[action](payload))
+      store.dispatch(actions.setSortedSyncResultsFromHub(sync as SyncResult[]))
 
       const state = store.getState()
 
-      assert.containSubset(state.runtime, expected)
-
+      assert.containSubset(state.runtime, {
+        collateral: expected
+      })
     })
   })
 })
