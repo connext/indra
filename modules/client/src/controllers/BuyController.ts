@@ -12,7 +12,7 @@ import {
   PaymentArgs,
   PurchasePayment,
   PurchasePaymentRequest,
-  PurchasePaymentType,
+  Omit
 } from '../types'
 
 import { AbstractController } from './AbstractController'
@@ -38,10 +38,16 @@ export default class BuyController extends AbstractController {
   // assigns a payment type if it is not provided
   public async assignPaymentType(p: PartialPurchasePaymentRequest): Promise<PurchasePaymentRequest> {
     // insert default values of 0 into payment amounts
-    let payment = { 
-      ...p,
-      amount: insertDefault('0', p.amount, argNumericFields.Payment) as Payment,
-      meta: p.meta || {},
+    const { amountWei, amountToken, ...res } = p
+    const amount = insertDefault(
+      '0',
+      { amountWei, amountToken }, 
+      argNumericFields.Payment
+    )
+    let payment = {
+      ...res,
+      amount,
+      meta: res.meta || {},
     }
 
     // if a type is provided, use it by default
@@ -84,16 +90,17 @@ export default class BuyController extends AbstractController {
     }
   }
 
+
+  /**
+   * This function takes in a PartialPurchaseReqest, which is an object 
+   * defined as:
+   * 
+   * ```javascript
+   * 
+   * ```
+   * 
+   */
   public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
-    /*
-    purchase = {
-      ...purchase,
-      payments: purchase.payments.map(payment => ({
-        ...payment,
-        recipient: payment.recipient
-      })),
-    }
-    */
 
     // Sign the payments
     const signedPayments: PurchasePayment[] = []
