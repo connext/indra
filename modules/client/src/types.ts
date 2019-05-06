@@ -758,9 +758,8 @@ export type WithdrawalParametersBN = WithdrawalParameters<BN>
 
 // what users can input when trying to withdrawal, or the 
 // more illustrative withdrawal parameters
-export type SuccinctWithdrawalParameters<T = string> = {
+export type SuccinctWithdrawalParameters<T = string> = Partial<Payment> & {
   recipient?: Address
-  amount: Partial<Payment<T>>
 }
 export type SuccinctWithdrawalParametersBN = SuccinctWithdrawalParameters<BN>
 
@@ -964,7 +963,8 @@ export async function objMapPromise<T, F extends keyof T, R>(obj: T, func: (val:
 export function insertDefault(val: string, obj: any, keys: string[]) {
   let adjusted = {} as any
   keys.concat(Object.keys(obj)).map(k => {
-    if (Object.keys(obj).indexOf(k) == -1) {
+    // check by index and null
+    if (!obj[k]) {
       // not supplied set as default val
       adjusted[k] = val
     } else {
