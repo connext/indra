@@ -74,14 +74,6 @@ export class RuntimeState {
     detected: false
   }
 
-
-  // awaitingOnchainTransaction: boolean = false
-  // canDeposit: boolean = false
-  // canExchange: boolean = false
-  // canWithdraw: boolean = false
-  // canBuy: boolean = false
-  // canCollateralize: boolean = false
-
   exchangeRate: null | ExchangeRateState = null
   syncResultsFromHub: SyncResult[] = []
   updateRequestTimeout: number = 60 * 10 // default 10 min

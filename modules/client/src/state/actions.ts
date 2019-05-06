@@ -53,12 +53,6 @@ export function setterAction<Payload>(attr: string, ...args: any[]): ActionCreat
 
 // Runtime
 export const setExchangeRate = setterAction<ExchangeRateState>('runtime.exchangeRate')
-// export const updateCanFields = setterAction<Partial<RuntimeState>>('runtime', 'updateCanFields', (state, fields, prev) => {
-//   return {
-//     ...prev,
-//     ...fields,
-//   }
-// })
 export const updateTransactionFields = setterAction<Partial<RuntimeState>>('runtime', 'updateTransactionFields', (state, fields, prev) => {
   return {
     ...prev,

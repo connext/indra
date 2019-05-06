@@ -25,10 +25,6 @@ export function handleStateFlags(args: any): any {
       const connextState: ConnextState = getState()
       const {
         runtime: {
-          // canDeposit,
-          // canExchange,
-          // canBuy,
-          // canWithdraw,
           syncResultsFromHub // updates from hub to client
         },
         persistent: {
