@@ -20,6 +20,7 @@ import {
   WithdrawalParameters,
   CustodialBalanceRow,
   PurchasePaymentRow,
+  PurchaseRowWithPayments,
 } from './types'
 import Wallet from './Wallet';
 
@@ -44,6 +45,7 @@ export interface IHubAPIClient {
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
   getExchangeRates(): Promise<ExchangeRates> // TODO: name is typo
   getPaymentHistory(): Promise<PurchasePaymentRow[]>
+  getPaymentById(id: string): Promise<PurchaseRowWithPayments<object, string>>
   buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
@@ -309,6 +311,13 @@ export class HubAPIClient implements IHubAPIClient {
 
   async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
     const { data } = await this.networking.post(`payments/history/${this.wallet.address}`, {
+      authToken: await this.getAuthToken()
+    })
+    return data ? data : null
+  }
+
+  async getPaymentById(id: string): Promise<PurchaseRowWithPayments<object, string>> {
+    const { data } = await this.networking.post(`payments/purchase/${id}`, {
       authToken: await this.getAuthToken()
     })
     return data ? data : null
