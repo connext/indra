@@ -15,6 +15,7 @@ import {
   PurchasePaymentRequest,
   PurchasePaymentType,
   SyncResult,
+  PartialPurchasePaymentRequest,
 } from '../types'
 
 // @ts-ignore
@@ -34,88 +35,97 @@ describe("BuyController: assignPaymentTypes", () => {
       user, 
       store,
     })
-    await connext.start()
   })
 
-  it("should retain a type if its provided", async () => {
-    const payment: any = {
-      recipient: receiver,
-      amount: {
+  parameterizedTests([
+    {
+      name: "should retain a type if its provided",
+      payment: {
+        recipient: receiver,
         amountToken: '15',
-        amountWei: '0',
+        type: "PT_LINK",
+      } as PartialPurchasePaymentRequest,
+      expected: {
+        amount: {
+          amountWei: '0',
+        },
       },
-      type: "PT_LINK",
-    }
-    const ans = await connext.buyController.assignPaymentType(payment)
-    assert.containSubset(ans, {
-      ...payment,
-      type: "PT_LINK"
-    })
-  })
+    },
 
-  it("should assign a PT_LINK payment if there is a secret provided in the meta", async () => {
-    const payment = {
-      recipient: receiver,
-      amount: {
+    {
+      name: "should assign a PT_LINK payment if there is a secret provided in the meta",
+      payment: {
+        recipient: receiver,
         amountToken: '15',
-        amountWei: '0',
+        meta: {
+          secret: mkHash("0xss")
+        },
+      } as PartialPurchasePaymentRequest,
+      expected: {
+        amount: {
+          amountWei: '0',
+        },
+        type: "PT_LINK",
       },
-      meta: {
-        secret: connext.generateSecret()
-      },
-    }
-    const ans = await connext.buyController.assignPaymentType(payment)
-    assert.containSubset(ans, {
-      ...payment,
-      type: "PT_LINK"
-    })
-  })
+    },
 
-  it("should assign a PT_CUSTODIAL if the amount is greater than the amount the hub will collateralize", async () => {
-    const payment = {
-      recipient: receiver,
-      amount: {
+    {
+      name: "should assign a PT_CUSTODIAL if the amount is greater than the amount the hub will collateralize",
+      payment: {
+        recipient: receiver,
         amountToken: '150',
-        amountWei: '0',
+      } as PartialPurchasePaymentRequest,
+      expected: {
+        amount: {
+          amountWei: '0',
+        },
+        type: "PT_CUSTODIAL",
+        meta: {}
       },
-      meta: {},
-    }
-    const ans = await connext.buyController.assignPaymentType(payment)
-    assert.containSubset(ans, {
-      ...payment,
-      type: "PT_CUSTODIAL"
-    })
-  })
+    },
 
-  it("should assign a PT_CHANNEL if the payment is to the hub", async () => {
-    const payment = {
-      recipient: mkAddress("0xhhh"),
-      amount: {
+    {
+      name: "should assign a PT_CHANNEL if the payment is to the hub",
+      payment: {
+        recipient: mkAddress("0xhhh"),
         amountToken: '10',
-        amountWei: '0',
+      } as PartialPurchasePaymentRequest,
+      expected: {
+        amount: {
+          amountWei: '0',
+        },
+        type: "PT_CHANNEL",
+        meta: {}
       },
-      meta: {},
-    }
-    const ans = await connext.buyController.assignPaymentType(payment)
-    assert.containSubset(ans, {
-      ...payment,
-      type: "PT_CHANNEL"
-    })
-  })
+    },
 
-  it("should assign a PT_OPTIMISTIC if the type is not provided, and the hub can handle forwarding the payment (below max)", async () => {
-    const payment = {
-      recipient: receiver,
-      amount: {
-        amountToken: '14',
-        amountWei: '0',
+    {
+      name: "should assign a PT_OPTIMISTIC if the type is not provided, and the hub can handle forwarding the payment (below max)",
+      payment: {
+        recipient: receiver,
+        amountToken: '10',
+      } as PartialPurchasePaymentRequest,
+      expected: {
+        amount: {
+          amountWei: '0',
+        },
+        type: "PT_OPTIMISTIC",
+        meta: {}
       },
-      meta: {},
-    }
-    const ans = await connext.buyController.assignPaymentType(payment)
-    assert.containSubset(ans, {
-      ...payment,
-      type: "PT_OPTIMISTIC"
+    },
+
+  ], (tc) => {
+    it(tc.name, async () => {
+      const ans = await connext.buyController.assignPaymentType(tc.payment)
+      const { amountToken, amountWei, ...res } = tc.payment
+      assert.containSubset(ans, {
+        ...res,
+        amount: {
+          amountToken,
+          amountWei,
+        },
+        ...tc.expected,
+      })
     })
   })
 })
