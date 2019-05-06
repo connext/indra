@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import { getTestRegistry, TestApiServer, assert } from '../testing'
 import { channelUpdateFactory, tokenVal } from "../testing/factories";
 import ChannelsService from '../ChannelsService';

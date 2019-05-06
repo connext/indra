@@ -13,7 +13,7 @@ import StateUpdateController from './controllers/StateUpdateController';
 import SyncController from './controllers/SyncController';
 import ThreadsController from './controllers/ThreadsController';
 import WithdrawalController from './controllers/WithdrawalController';
-import { Networking } from './helpers/networking';
+import { Networking } from './lib/networking';
 import { IHubAPIClient, HubAPIClient } from './Hub';
 import { default as Logger } from "./lib/Logger";
 import { isFunction, timeoutPromise } from "./lib/utils";
@@ -217,7 +217,7 @@ export class ConnextInternal extends ConnextClient {
 
     this.contract = opts.contract || new ChannelManager(wallet, opts.contractAddress, opts.gasMultiple || 1.5)
     this.validator = new Validator(opts.hubAddress, this.provider, this.contract.rawAbi)
-    this.utils = new Utils(opts.hubAddress)
+    this.utils = new Utils()
 
     // Controllers
     this.exchangeController = new ExchangeController('ExchangeController', this)

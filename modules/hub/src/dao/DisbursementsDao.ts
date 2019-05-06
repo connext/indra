@@ -3,7 +3,7 @@ import { Client } from 'pg'
 import { PostgresGenericDao } from './GenericDao'
 import Disbursement, { DisbursementStatus } from '../domain/Disbursement'
 import { BigNumber as BN } from 'ethers/utils'
-import { big } from '../Connext';
+import { big } from 'connext';
 const {
   Big
 } = big

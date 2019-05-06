@@ -1,4 +1,4 @@
-import { Poller } from './Connext';
+import { Poller } from 'connext';
 import GasEstimateDao from './dao/GasEstimateDao'
 import log from './util/log'
 

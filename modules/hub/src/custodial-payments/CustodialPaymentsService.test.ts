@@ -7,7 +7,7 @@ import { CustodialPaymentsService } from './CustodialPaymentsService'
 import { mkAddress } from '../testing/stateUtils'
 import { default as DBEngine } from '../DBEngine'
 import { assert, getTestRegistry } from '../testing'
-import { big } from '../Connext'
+import { big } from 'connext'
 import { getMockWeb3 } from '../testing/mocks'
 
 describe('CustodialPaymentsService', () => {

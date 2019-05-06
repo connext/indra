@@ -1,4 +1,4 @@
-import { big } from '../Connext'
+import { big } from 'connext'
 import { assert } from './index'
 
 describe('chai-subset', () => {

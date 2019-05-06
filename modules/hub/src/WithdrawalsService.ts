@@ -6,9 +6,9 @@ import log from './util/log'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import { BigNumber as BN } from 'ethers/utils'
 import { ethers } from 'ethers';
-import { big } from './Connext'
-const { Big, WEI_CONVERSION, toWeiBig } = big;
+import { big } from 'connext'
 
+const { Big, toWeiBig } = big;
 const LOG = log('WithdrawalsService')
 
 function p(host: any, attr: any, ...args: any[]): any {

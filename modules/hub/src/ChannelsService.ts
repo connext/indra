@@ -1,4 +1,4 @@
-import { StateGenerator, types, Utils, Validator, big } from './Connext';
+import { StateGenerator, types, Utils, Validator, big } from 'connext';
 import { redisCache } from './RedisClient'
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
@@ -38,10 +38,10 @@ type WithdrawalArgs<T=string> = types.WithdrawalArgs<T>
 type WithdrawalParametersBN = types.WithdrawalParametersBN
 
 const {
-  convertChannelStateUpdateRow,
-  convertChannelRow,
   convertArgs,
+  convertChannelRow,
   convertChannelState,
+  convertChannelStateUpdateRow,
   convertPayment,
   convertThreadState,
   convertWithdrawal,
@@ -56,7 +56,6 @@ export type RedisUnsignedUpdate = {
   update: Omit<ChannelStateUpdate, 'state'>
   timestamp: number
 }
-
 
 export default class ChannelsService {
   private utils: Utils
@@ -77,7 +76,7 @@ export default class ChannelsService {
     private contract: ChannelManager,
     private coinPaymentsDao: CoinPaymentsDao,
   ) {
-    this.utils = new Utils(this.config.hotWalletAddress)
+    this.utils = new Utils()
   }
 
   public async doRequestDeposit(

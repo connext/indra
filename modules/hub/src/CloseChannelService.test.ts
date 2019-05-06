@@ -9,6 +9,7 @@ import { setFakeClosingTime, getTestConfig, getMockWeb3 } from './testing/mocks'
 import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import DBEngine from './DBEngine';
 
+const { convertChannelRow } = types;
 const { toWeiString } = big;
 
 async function rewindUpdates(db: DBEngine, days: number, user: string) {
@@ -61,7 +62,7 @@ describe('CloseChannelService', () => {
     await closeChannelService.pollOnce()
 
     dbChannel = await channelsDao.getChannelByUser(channel.user)
-    const chanString = types.convertChannelRow("str", dbChannel)
+    const chanString = convertChannelRow("str", dbChannel)
     assertChannelStateEqual(chanString.state, {
       balanceWei: [0,0],
       balanceToken: [0,0]

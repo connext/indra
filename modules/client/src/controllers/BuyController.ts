@@ -1,20 +1,31 @@
-import { ethers as eth } from 'ethers';
-import { AbstractController } from './AbstractController'
+import { ethers as eth } from 'ethers'
+
+import { Big } from '../lib/bn'
+import { assertUnreachable } from '../lib/utils'
 import { getChannel } from '../state/getters'
-import { assertUnreachable } from '../lib/utils';
-import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType, PartialPurchaseRequest, PartialPurchasePaymentRequest } from '../types'
-import { emptyAddress } from '../Utils';
-import { Big } from '../lib/bn';
+import {
+  argNumericFields,
+  insertDefault,
+  PartialPurchasePaymentRequest,
+  PartialPurchaseRequest,
+  Payment,
+  PaymentArgs,
+  PurchasePayment,
+  PurchasePaymentRequest,
+  PurchasePaymentType,
+} from '../types'
+
+import { AbstractController } from './AbstractController'
 
 // **********************************************//
 //
-//        How thread payments SHOULD work  
+//        How thread payments SHOULD work
 //
 //          [Single payment threads]
 //
 // *********************************************//
 
-// If sender: 
+// If sender:
 // 1. Buy Fn takes in {receiver, amountWei, amountToken}
 // 2. Generates open thread state and sends to hub
 // 3. Hub responds immediately with countersigned update
@@ -184,7 +195,7 @@ export default class BuyController extends AbstractController {
           signedPayments.push({
             ...payment,
             type: 'PT_LINK',
-            recipient: emptyAddress,
+            recipient: eth.constants.AddressZero,
             update: {
               reason: 'Payment',
               args: linkArgs,

@@ -46,7 +46,6 @@ docker run \
 
       mocha \
         -r ./dist/register/common.js \
-        -r ./dist/register/testing.js \
         "dist/**/*.test.js" --exit
 
       echo "Waiting for changes..."

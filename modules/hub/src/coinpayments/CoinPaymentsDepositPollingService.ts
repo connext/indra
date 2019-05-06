@@ -1,4 +1,4 @@
-import { Poller, types } from '../Connext'
+import { Poller, types } from 'connext'
 import { CoinPaymentsService } from './CoinPaymentsService'
 import { default as log } from '../util/log'
 import { CoinPaymentsDao } from './CoinPaymentsDao'

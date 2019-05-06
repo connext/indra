@@ -1,10 +1,24 @@
-import { assert, mkAddress, mkHash, parameterizedTests, assertThreadStateEqual } from '../testing';
-import { MockConnextInternal, MockStore, MockHub } from '../testing/mocks'
-import { PaymentArgs, PurchasePaymentType, PurchasePaymentRequest, Payment, SyncResult, PurchasePayment } from '../types';
-import { emptyAddress } from '../Utils';
-import Web3 from 'web3';
+import { ethers as eth } from 'ethers'
+
+import {
+  assert,
+  assertThreadStateEqual,
+  mkAddress,
+  mkHash,
+  parameterizedTests,
+} from '../testing'
+import { MockConnextInternal, MockHub, MockStore } from '../testing/mocks'
+import {
+  Payment,
+  PaymentArgs,
+  PurchasePayment,
+  PurchasePaymentRequest,
+  PurchasePaymentType,
+  SyncResult,
+} from '../types'
+
 // @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+global.fetch = require('node-fetch-polyfill')
 
 describe("BuyController: assignPaymentTypes", () => {
   let connext: MockConnextInternal
@@ -178,7 +192,7 @@ describe('BuyController: unit tests', () => {
         amount: { amountToken: '1', },
         type: 'PT_LINK',
         meta: { secret: mkHash("0xff"), },
-        recipient: emptyAddress,
+        recipient: eth.constants.AddressZero,
       }],
     },
     {
@@ -186,7 +200,7 @@ describe('BuyController: unit tests', () => {
       payments: [{
         amount: { amountToken: '1', },
         meta: { secret: mkHash("0xff"), },
-        recipient: emptyAddress,
+        recipient: eth.constants.AddressZero,
       }],
     },
     {
@@ -194,7 +208,7 @@ describe('BuyController: unit tests', () => {
       payments: [{
         amount: { amountToken: '1', },
         type: 'PT_LINK' as PurchasePaymentType,
-        recipient: emptyAddress,
+        recipient: eth.constants.AddressZero,
       }],
       fails: /Secret is not present/,
     },
@@ -204,7 +218,7 @@ describe('BuyController: unit tests', () => {
         amount: { amountToken: '1', },
         type: 'PT_LINK' as PurchasePaymentType,
         meta: { secret: 'secret' },
-        recipient: emptyAddress,
+        recipient: eth.constants.AddressZero,
       }],
       fails: /Secret is not hex string/,
     },
@@ -242,8 +256,8 @@ describe('BuyController: unit tests', () => {
         {
           amount: { amountToken: '1', amountWei: '0' },
           type: 'PT_LINK',
-          meta: { secret: mkHash("0xff"), },
-          recipient: emptyAddress,
+          meta: { secret: mkHash("0xff") },
+          recipient: eth.constants.AddressZero,
         },
       ],
     }

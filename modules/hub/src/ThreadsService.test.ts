@@ -1,5 +1,5 @@
 import { BigNumber } from 'ethers/utils';
-import { types, big } from './Connext';
+import { types, big } from 'connext';
 import {assert, getTestRegistry, TestServiceRegistry} from './testing'
 import {
   assertChannelStateEqual,
@@ -11,9 +11,9 @@ import {
 } from './testing/stateUtils'
 const { Big } = big
 
+type ChannelStateUpdateRowBigNum = types.ChannelStateUpdateRow<BigNumber>
 type ThreadState<T=string> = types.ThreadState<T>
 type ThreadStateBigNum = ThreadState<BigNumber>
-type ChannelStateUpdateRowBigNum = types.ChannelStateUpdateRow<BigNumber>
 const { convertChannelState, convertThreadState } = types
 const fakeSig = mkSig('0xfff')
 

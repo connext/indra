@@ -1,6 +1,6 @@
 import { BigNumber as BN } from 'ethers/utils'
 import { ethers as eth } from 'ethers';
-import { capitalize } from './helpers/naming'
+import { capitalize } from './lib/naming'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
@@ -82,7 +82,7 @@ export class Validator {
   hubAddress: Address
 
   constructor(hubAddress: Address, provider: any, abi: any) {
-    this.utils = new Utils(hubAddress)
+    this.utils = new Utils()
     this.stateGenerator = new StateGenerator(hubAddress)
     this.provider = provider
     this.abi = new eth.utils.Interface(abi)

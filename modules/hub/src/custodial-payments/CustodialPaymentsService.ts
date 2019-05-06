@@ -5,7 +5,7 @@ import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { OnchainTransactionService } from '../OnchainTransactionService'
 import { BigNumber } from 'ethers/utils'
-import { big, types } from '../Connext'
+import { big, types } from 'connext'
 const { assetToWei }  = big
 
 type CustodialWithdrawalRowBN = types.CustodialWithdrawalRowBN

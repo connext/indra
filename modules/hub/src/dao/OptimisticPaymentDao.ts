@@ -1,7 +1,7 @@
+import { big, types } from 'connext';
 import log from "../util/log";
 import DBEngine, { SQL } from "../DBEngine";
 import { Client } from 'pg'
-import { big, types } from "../Connext";
 const { Big } = big
 type OptimisticPurchasePaymentRowBN = types.OptimisticPurchasePaymentRowBN
 

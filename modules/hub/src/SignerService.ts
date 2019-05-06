@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { types, Utils } from './Connext';
+import { types, Utils } from 'connext';
 import Config from './Config'
 import { ChannelManager } from './ChannelManager';
 import log from './util/log'
