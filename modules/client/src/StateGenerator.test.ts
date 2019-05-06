@@ -6,8 +6,7 @@ import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState
 import { getChannelState, getWithdrawalArgs } from './testing'
 import { Big } from './lib/bn';
 
-const hub = t.mkAddress("0xaa")
-const sg = new StateGenerator(hub)
+const sg = new StateGenerator()
 const utils = new Utils()
 
 function createHigherNoncedChannelState(

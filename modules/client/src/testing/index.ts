@@ -888,7 +888,7 @@ export function updateStateUpdate(
 
 // TODO: generate previous and resulting state update with
 // ability to override
-const sg = new StateGenerator("")
+const sg = new StateGenerator()
 const stateGeneratorFns: any = {
   "Payment": sg.channelPayment,
   "Exchange": sg.exchange,

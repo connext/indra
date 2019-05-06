@@ -83,7 +83,7 @@ export class Validator {
 
   constructor(hubAddress: Address, provider: any, abi: any) {
     this.utils = new Utils()
-    this.stateGenerator = new StateGenerator(hubAddress)
+    this.stateGenerator = new StateGenerator()
     this.provider = provider
     this.abi = new eth.utils.Interface(abi)
     this.hubAddress = hubAddress.toLowerCase()
@@ -620,11 +620,11 @@ export class Validator {
 
   public assertChannelSigner(channelState: ChannelState, signer: "user" | "hub" = "user"): void {
     const sig = signer === "hub" ? channelState.sigHub : channelState.sigUser
-    const adr = signer === "hub" ? this.hubAddress : channelState.user
+    const adr = signer === "hub" ? this.hubAddress.toLowerCase() : channelState.user.toLowerCase()
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig, signer) != adr.toLowerCase()) {
+    if (this.utils.recoverSignerFromChannelState(channelState, sig, adr) != adr) {
       throw new Error(`Channel state is not correctly signed by ${signer}. Detected: ${this.utils.recoverSignerFromChannelState(channelState, sig, signer)}. Channel state: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }

@@ -107,7 +107,7 @@ export class StateGenerator {
 
   stateTransitionHandlers: { [name in ChannelUpdateReason]: any }
 
-  constructor(hubAddress: string) {
+  constructor() {
     this.utils = new Utils()
     this.stateTransitionHandlers = {
       'Payment': this.channelPayment.bind(this),
