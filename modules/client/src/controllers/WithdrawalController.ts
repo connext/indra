@@ -27,7 +27,7 @@ export default class WithdrawalController extends AbstractController {
   public createWithdrawalParameters(args: Partial<WithdrawalParameters>): WithdrawalParameters
   public createWithdrawalParameters(args: SuccinctWithdrawalParameters): WithdrawalParameters
   public createWithdrawalParameters(args: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters) {
-    if ((args as any).amount) {
+    if ((args as any).amountToken || (args as any).amountWei) {
       // this is a succinct withdrawal type, create the
       // corresponding partial parameters
       args = this.succinctWithdrawalToWithdrawalParameters(args as SuccinctWithdrawalParameters)
@@ -91,8 +91,12 @@ export default class WithdrawalController extends AbstractController {
     // this will fail
     const exchangeRate = state.runtime.exchangeRate!.rates.USD!
     const chan = convertChannelState("bn", channel)
-    const wdAmount: PaymentBN = convertPayment("bn", 
-      insertDefault('0', args.amount, argNumericFields.Payment)
+    // insert the default values
+    const fullArgs = insertDefault('0', args, argNumericFields.Payment)
+    const wdAmount: PaymentBN = convertPayment("bn", {
+        amountToken: fullArgs.amountToken,
+        amountWei: fullArgs.amountWei,
+      }
     )
 
     let withdrawalWeiUser, withdrawalTokenUser, tokensToSell, weiToSell
