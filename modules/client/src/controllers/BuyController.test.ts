@@ -2,7 +2,6 @@ import { ethers as eth } from 'ethers'
 
 import {
   assert,
-  assertThreadStateEqual,
   mkAddress,
   mkHash,
   parameterizedTests,
@@ -12,9 +11,7 @@ import {
   Payment,
   PaymentArgs,
   PurchasePayment,
-  PurchasePaymentRequest,
   PurchasePaymentType,
-  SyncResult,
   PartialPurchasePaymentRequest,
 } from '../types'
 
