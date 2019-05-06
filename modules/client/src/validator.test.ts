@@ -1,10 +1,10 @@
-import { ethers as eth } from 'ethers';
+import { ethers as eth } from 'ethers'
 import * as sinon from 'sinon'
+
 import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
-import { Big } from './lib/bn';
-import { EMPTY_ROOT_HASH } from './lib/constants';
-import { assert } from './testing/index'
-import * as t from './testing/index'
+import { Big } from './lib/bn'
+import { EMPTY_ROOT_HASH } from './lib/constants'
+import * as t from './testing'
 import {
   ChannelState,
   ChannelStateBN,
@@ -17,19 +17,20 @@ import {
   ExchangeArgs,
   ExchangeArgsBN,
   InvalidationArgs,
+  PaymentArgs,
+  PaymentArgsBN,
   PendingArgs,
   PendingArgsBN,
   PendingExchangeArgsBN,
-  PaymentArgs,
-  PaymentArgsBN,
   proposePendingNumericArgs,
   ThreadState,
   UnsignedThreadState,
   WithdrawalArgsBN,
-} from './types';
-import { Utils } from './Utils';
-import { Validator } from './validator';
+} from './types'
+import { Utils } from './Utils'
+import { Validator } from './validator'
 
+const assert = t.assert
 const sampleAddress = "0x0bfa016abfa8f627654b4989da4620271dc77b1c"
 const sampleAddress2 = "0x17b105bcb3f06b3098de6eed0497a3e36aa72471"
 const sampleAddress3 = "0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F"
@@ -1307,7 +1308,7 @@ describe('validator', () => {
     })
   })
 
-  describe.skip('threadPayment', () => {
+  describe('threadPayment', () => {
     // Should test the following success cases:
     // 1. A thread payment from sender to receiver works
     // 2. Multiple more payments work

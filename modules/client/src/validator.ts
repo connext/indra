@@ -1,13 +1,15 @@
+import { ethers as eth } from 'ethers'
 import { BigNumber as BN } from 'ethers/utils'
-import { ethers as eth } from 'ethers';
+
+import { Big, maxBN } from './lib/bn'
 import { capitalize } from './lib/naming'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
   argNumericFields,
   ArgsTypes,
-  channelNumericFields,
   ChannelEventReason,
+  channelNumericFields,
   ChannelState,
   ChannelStateBN,
   ChannelUpdateReason,
@@ -30,11 +32,13 @@ import {
   ExchangeArgs,
   ExchangeArgsBN,
   InvalidationArgs,
+  isBN,
   makeEventVerbose,
+  objMap,
   Payment,
-  PaymentBN,
   PaymentArgs,
   PaymentArgsBN,
+  PaymentBN,
   PendingArgs,
   PendingArgsBN,
   PendingExchangeArgs,
@@ -44,20 +48,17 @@ import {
   ThreadState,
   ThreadStateBN,
   TransactionReceipt,
-  UpdateRequest,
   UnsignedChannelState,
   UnsignedChannelStateBN,
   UnsignedThreadState,
+  UpdateRequest,
   VerboseChannelEventBN,
   WithdrawalArgs,
   WithdrawalArgsBN,
   WithdrawalParametersBN,
   withdrawalParamsNumericFields,
-  objMap,
-  isBN
 } from './types'
 import { Utils } from './Utils'
-import { Big, maxBN } from './lib/bn';
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -72,11 +73,8 @@ arguments in other places.
 */
 export class Validator {
   private utils: Utils
-
   private stateGenerator: StateGenerator
-
   private generateHandlers: { [name in ChannelUpdateReason]: any }
-
   provider: any
   abi: any
   hubAddress: Address

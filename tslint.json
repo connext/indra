@@ -22,7 +22,6 @@
     "trailing-comma": [true, {"multiline": "always", "singleline": "never"}]
   },
   "jsRules": {
-    "max-line-length": [true, 100],
-    "no-empty": true
+    "max-line-length": [true, 100]
   }
 }
