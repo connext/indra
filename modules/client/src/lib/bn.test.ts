@@ -3,7 +3,6 @@ import * as bn from './bn'
 import { ethers } from 'ethers';
 import { BigNumber as BN } from 'ethers/utils';
 import { isBN } from '../types';
-import { big } from '..';
 
 interface TestCase {
   method: 'fiatToWei' | 'weiToFiat'

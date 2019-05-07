@@ -1,10 +1,18 @@
-export { ConnextClient as Client, getConnextClient as createClient } from './Connext'
-export { StateGenerator } from './StateGenerator'
-export { Utils } from './Utils'
-export { Validator, } from './validator';
-export { Poller } from './lib/poller/Poller';
-import * as types from './types';
-export { types }
-import * as getters from './state/getters';
-import * as big from './lib/bn';
-export { getters, big }
+import { ConnextClient as Client, create } from './Connext'
+import { StateGenerator } from './StateGenerator'
+import * as types from './types'
+import { Utils } from './Utils'
+import { Validator } from './validator'
+
+const Connext: any = {
+  create,
+  StateGenerator,
+  types,
+  Utils,
+  Validator,
+}
+
+export { StateGenerator }// extends StateGenerator {}
+export { Utils }// extends Utils {}
+export { Validator }// extends Validator {}
+export default Connext

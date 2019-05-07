@@ -13,9 +13,10 @@
     "no-default-import": false,
     "no-implicit-dependencies": [true, "dev"],
     "no-inferrable-types": false,
-    "no-magic-numbers": [true, -1, 0, 1, 2, 3],
+    "no-magic-numbers": false,
     "no-submodule-imports": false,
     "no-this-assignment": [true, {"allow-destructuring": true}],
+    "object-literal-sort-keys": [true, "ignore-case"],
     "prefer-function-over-method": [true, "allow-public"],
     "quotemark": [true, "single", "backtick"],
     "semicolon": [true, "never"],
@@ -29,9 +30,7 @@
       "arrow-parameter",
       "property-declaration",
       "variable-declaration",
-      "member-variable-declaration",
-      "object-destructuring",
-      "array-destructuring"
+      "member-variable-declaration"
     ]
 
   },
