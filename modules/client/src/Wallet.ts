@@ -27,9 +27,8 @@ export default class Wallet extends eth.Signer {
       this.provider = new eth.providers.JsonRpcProvider(opts.ethUrl)
 
     // Second choice: use provided web3
-    } else if (opts.web3 && opts.web3.currentProvider) {
-      this.provider = new eth.providers.Web3Provider((opts.web3.currentProvider as any))
-
+    } else if (opts.web3Provider) {
+      this.provider = new eth.providers.Web3Provider(opts.web3Provider)
     // Default: use hub's ethprovider (derived from hubUrl)
     } else {
       const ethUrl = `${opts.hubUrl.substring(0, opts.hubUrl.length - 4)}/eth`
@@ -52,8 +51,9 @@ export default class Wallet extends eth.Signer {
       this.address = this.signer.address.toLowerCase()
 
     // Third choice: Sign w web3
-    } else if (opts.user && opts.web3 && opts.web3.eth && opts.web3.eth.sign) {
-      this.web3 = opts.web3
+    } else if (opts.user && opts.web3Provider) {
+      // TODO: Web3Provider != Web3EthereumProvider
+      this.web3 = new Web3(opts.web3Provider as any)
       this.address = opts.user.toLowerCase()
       this.web3.eth.defaultAccount = this.address
 
@@ -121,31 +121,14 @@ export default class Wallet extends eth.Signer {
   }
 
   async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
-    if (txReq.nonce == null) {
+    if (txReq.nonce == null && this.signer) {
       txReq.nonce = this.signer!.getTransactionCount("pending"); 
     }
     // TransactionRequest properties can be promises, make sure they've all resolved
     const tx = await objMapPromise(txReq, async (k, v) => await v) as any
 
     const signedTx = await this.signTransaction(tx)
-    if (this.provider) {
-      return await this.provider.sendTransaction(signedTx)
-    } else if (this.web3) {
-      const receipt = await this.web3.eth.sendSignedTransaction(signedTx)
-      // cast receipt to object
-      // NOTE: THIS IS AN INCOMPLETE CASTING
-      // Not a huge deal right now, we only ever use the `.hash` property of the return value
-      // TODO: should be consistent
-      const response = {
-        blockHash: receipt.blockHash,
-        blockNumber: receipt.blockNumber,
-        to: receipt.to,
-        hash: receipt.transactionHash,
-        from: receipt.from,
-      } as TransactionResponse
-      return response
-    }
-    throw new Error("Could not send transaction")
+    return await this.provider.sendTransaction(signedTx)
   }
 
 }
