@@ -124,10 +124,7 @@ export default class Wallet extends eth.Signer {
     if (txReq.nonce == null && this.signer) {
       txReq.nonce = this.signer!.getTransactionCount("pending"); 
     }
-    // TransactionRequest properties can be promises, make sure they've all resolved
-    const tx = await objMapPromise(txReq, async (k, v) => await v) as any
-
-    const signedTx = await this.signTransaction(tx)
+    const signedTx = await this.signTransaction(txReq)
     return await this.provider.sendTransaction(signedTx)
   }
 
