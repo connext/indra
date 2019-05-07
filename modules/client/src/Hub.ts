@@ -19,6 +19,7 @@ import {
   UpdateRequest,
   WithdrawalParameters,
   CustodialBalanceRow,
+  PaymentProfileConfig,
 } from './types'
 import Wallet from './Wallet';
 
@@ -60,6 +61,8 @@ export interface IHubAPIClient {
   config(): Promise<HubConfig>
   redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
   getCustodialBalance(): Promise<CustodialBalanceRow | null>
+  getProfileConfig(): Promise<PaymentProfileConfig>
+  startProfileSession(): Promise<void>
 }
 
 export class HubAPIClient implements IHubAPIClient {
@@ -72,6 +75,14 @@ export class HubAPIClient implements IHubAPIClient {
     this.networking = networking
     this.origin = origin
     this.wallet = wallet
+  }
+
+  async getProfileConfig(): Promise<PaymentProfileConfig> {
+    throw new Error("Implement getProfileConfig on the hub and client properly.")
+  }
+
+  async startProfileSession(): Promise<void> {
+    throw new Error("Implement startProfileSession on the hub and client properly.")
   }
 
   async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
