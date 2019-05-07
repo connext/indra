@@ -36,10 +36,14 @@ import {
   UnsignedChannelState,
   WithdrawalParameters,
   PartialPurchaseRequest,
+  SuccinctWithdrawalParameters,
+  PaymentProfileConfig,
+  ConnextProvider,
 } from './types';
 import { Utils } from './Utils';
 import { Validator, } from './validator';
 import Wallet from './Wallet';
+import { Web3Provider } from 'ethers/providers';
 
 ////////////////////////////////////////
 // Interface Definitions
@@ -52,7 +56,14 @@ export interface ConnextClientOptions {
   privateKey?: string
   password?: string
   user?: string
-  web3?: Web3
+
+  // NOTE: these are not used, do not pass them in.
+  // These are currently placeholders so that other
+  // instances may be passed in.
+  // TODO: implement injected provider functionality
+  web3Provider?: Web3Provider
+  connextProvider?: ConnextProvider
+  safeSignHook?: (state: ChannelState | ThreadState) => Promise<string>
 
   // Functions used to save/load the persistent portions of its internal state
   loadState?: () => Promise<string | null>
@@ -127,6 +138,10 @@ export abstract class ConnextClient extends EventEmitter {
     this.internal = this as any
   }
 
+  // ******************************
+  // ******* POLLING METHODS ******
+  // ******************************
+
   /**
    * Starts the stateful portions of the Connext client.
    *
@@ -143,7 +158,25 @@ export abstract class ConnextClient extends EventEmitter {
   async stop() {
   }
 
-  async deposit(payment: Payment): Promise<void> {
+  async setPollInterval(ms: number): Promise<void> {
+    // TODO: implement functionality
+  }
+
+  // ******************************
+  // ******* PROFILE METHODS ******
+  // ******************************
+  async getProfileConfig(): Promise<PaymentProfileConfig> {
+    return await this.internal.hub.getProfileConfig()
+  }
+
+  async startProfileSession(): Promise<void> {
+    await this.internal.hub.startProfileSession()
+  }
+
+  // ******************************
+  // **** CORE CHANNEL METHODS ****
+  // ******************************
+  async deposit(payment: Partial<Payment>): Promise<void> {
     await this.internal.depositController.requestUserDeposit(payment)
   }
 
@@ -155,7 +188,7 @@ export abstract class ConnextClient extends EventEmitter {
     return await this.internal.buyController.buy(purchase)
   }
 
-  async withdraw(withdrawal: WithdrawalParameters): Promise<void> {
+  async withdraw(withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters): Promise<void> {
     await this.internal.withdrawalController.requestUserWithdrawal(withdrawal)
   }
 
@@ -166,6 +199,11 @@ export abstract class ConnextClient extends EventEmitter {
   async redeem(secret: string): Promise<{ purchaseId: string }> {
     return await this.internal.redeemController.redeem(secret)
   }
+
+  // ******************************
+  // ***** TX HISTORY METHODS *****
+  // ******************************
+  // TODO: merge in PR 200
 }
 
 /**
