@@ -59,12 +59,10 @@ export default class Wallet extends eth.Signer {
       this.address = opts.user.toLowerCase()
       this.web3.eth.defaultAccount = this.address
 
-    // Default: create new random mnemonic
+    // Default: abort, we need to be given a signer
     } else {
-      this.signer = eth.Wallet.createRandom()
-      this.signer = this.signer.connect(this.provider)
-      this.address = this.signer.address.toLowerCase()
-      console.warn(`Generated a new signing key, make sure you back it up before sending funds`)
+      // Weird version of web3 that does something else? idk then
+      throw new Error(`Fatal: Wallet needs to be given a signing method`)
     }
   }
 

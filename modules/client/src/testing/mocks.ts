@@ -67,6 +67,9 @@ import Wallet from '../Wallet';
 import { handleStateFlags } from '../state/middleware';
 import { AnyAction } from 'typescript-fsa';
 
+const mnemonic: string =
+  'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
+
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
     hash: '0xabc123',
@@ -116,6 +119,7 @@ export class MockConnextInternal extends ConnextInternal {
       hub: new MockHub(),
       hubAddress: mkAddress('0xhhh'),
       store,
+      mnemonic,
       ...opts,
     } as any
 
