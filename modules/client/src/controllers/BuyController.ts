@@ -1,20 +1,31 @@
-import { ethers as eth } from 'ethers';
-import { AbstractController } from './AbstractController'
+import { ethers as eth } from 'ethers'
+
+import { Big } from '../lib/bn'
+import { assertUnreachable } from '../lib/utils'
 import { getChannel } from '../state/getters'
-import { assertUnreachable } from '../lib/utils';
-import { PurchasePayment, PaymentArgs, insertDefault, argNumericFields, PurchasePaymentRequest, Payment, PurchasePaymentType, PartialPurchaseRequest } from '../types'
-import { emptyAddress } from '../Utils';
-import { Big } from '../lib/bn';
+import {
+  argNumericFields,
+  insertDefault,
+  PartialPurchasePaymentRequest,
+  PartialPurchaseRequest,
+  Payment,
+  PaymentArgs,
+  PurchasePayment,
+  PurchasePaymentRequest,
+  Omit
+} from '../types'
+
+import { AbstractController } from './AbstractController'
 
 // **********************************************//
 //
-//        How thread payments SHOULD work  
+//        How thread payments SHOULD work
 //
 //          [Single payment threads]
 //
 // *********************************************//
 
-// If sender: 
+// If sender:
 // 1. Buy Fn takes in {receiver, amountWei, amountToken}
 // 2. Generates open thread state and sends to hub
 // 3. Hub responds immediately with countersigned update
@@ -25,11 +36,26 @@ import { Big } from '../lib/bn';
 
 export default class BuyController extends AbstractController {
   // assigns a payment type if it is not provided
-  public async assignPaymentType(payment: PurchasePaymentRequest): Promise<PurchasePaymentRequest> {
+  public async assignPaymentType(p: PartialPurchasePaymentRequest): Promise<PurchasePaymentRequest> {
+    // insert default values of 0 into payment amounts
+    const { amountWei, amountToken, ...res } = p
+    const amount = insertDefault(
+      '0',
+      { amountWei, amountToken }, 
+      argNumericFields.Payment
+    )
+    let payment = {
+      ...res,
+      amount,
+      meta: res.meta || {},
+    }
+
     // if a type is provided, use it by default
     if (payment.type) {
-      return payment
+      // TODO: why is it undefined here??
+      return payment as PurchasePaymentRequest
     }
+
     // otherwise, first check to see if it should be a link
     if (payment.meta.secret) {
       return {
@@ -62,19 +88,19 @@ export default class BuyController extends AbstractController {
       ...payment,
       type: "PT_OPTIMISTIC"
     }
-
   }
 
+
+  /**
+   * This function takes in a PartialPurchaseReqest, which is an object 
+   * defined as:
+   * 
+   * ```javascript
+   * 
+   * ```
+   * 
+   */
   public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
-    /*
-    purchase = {
-      ...purchase,
-      payments: purchase.payments.map(payment => ({
-        ...payment,
-        recipient: payment.recipient
-      })),
-    }
-    */
 
     // Sign the payments
     const signedPayments: PurchasePayment[] = []
@@ -86,10 +112,8 @@ export default class BuyController extends AbstractController {
     for (const p of purchase.payments) {
       let newChannelState = null
       // insert 0 defaults on purchase payment amount
-      const payment: PurchasePaymentRequest<any> = await this.assignPaymentType({
-        ...p,
-        amount: insertDefault('0', p.amount, argNumericFields.Payment) as Payment
-      })
+      const payment = await this.assignPaymentType(p)
+
       if (!payment.type) {
         throw new Error(`This should never happen. check "assignPaymentType" in the source code.`)
       }
@@ -178,7 +202,7 @@ export default class BuyController extends AbstractController {
           signedPayments.push({
             ...payment,
             type: 'PT_LINK',
-            recipient: emptyAddress,
+            recipient: eth.constants.AddressZero,
             update: {
               reason: 'Payment',
               args: linkArgs,
@@ -198,7 +222,7 @@ export default class BuyController extends AbstractController {
       curChannelState = newChannelState
     }
 
-    const res = await this.connext.hub.buy(purchase.meta, signedPayments)
+    const res = await this.connext.hub.buy(purchase.meta || {}, signedPayments)
     this.connext.syncController.handleHubSync(res.sync)
     return res
   }

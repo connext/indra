@@ -3,7 +3,7 @@ import { ApiService } from './ApiService'
 import log from '../util/log'
 import ThreadsService from '../ThreadsService'
 import ChannelsService from '../ChannelsService'
-import { big } from '../Connext'
+import { big } from 'connext'
 import GlobalSettingsDao from '../dao/GlobalSettingsDao'
 
 const { Big } = big

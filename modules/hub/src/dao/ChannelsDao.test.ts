@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import { assert } from 'chai'
 import ChannelsDao from './ChannelsDao'
 import { getTestRegistry } from '../testing'

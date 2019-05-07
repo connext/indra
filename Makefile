@@ -134,6 +134,9 @@ test-contracts: client contract-artifacts
 test-hub: hub database
 	bash ops/test-hub.sh
 
+watch-hub:
+	bash ops/watch-hub.sh
+
 ########################################
 # Begin Real Rules
 
@@ -193,6 +196,8 @@ hub-node-modules: builder $(hub)/package.json $(client)/package.json
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext/dist"
 	$(docker_run_in_hub) "ln -s ../../../client/dist node_modules/connext/dist"
+	$(docker_run_in_hub) "rm -rf node_modules/connext/types"
+	$(docker_run_in_hub) "ln -s ../../../client/types node_modules/connext/types"
 	$(docker_run_in_hub) "rm -rf node_modules/connext/src"
 	$(docker_run_in_hub) "ln -s ../../../client/src node_modules/connext/src"
 	@touch build/hub-node-modules

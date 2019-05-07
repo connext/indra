@@ -1,6 +1,6 @@
 import { EventLog } from 'web3-core';
 import { BigNumber as BN } from 'ethers/utils'
-import { big } from '../Connext';
+import { big } from 'connext';
 const {
   Big
 } = big

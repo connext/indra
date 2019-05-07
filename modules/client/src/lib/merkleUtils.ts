@@ -54,7 +54,7 @@ export class MerkleUtils {
   }
 
   static hexToBuffer = (hexString: string): Buffer => {
-    return new Buffer(hexString.substr(2, hexString.length), 'hex')
+    return Buffer.from(hexString.substr(2, hexString.length), 'hex')
   }
 
   static bufferToHex = (buffer: Buffer): string => {

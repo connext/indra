@@ -8,7 +8,7 @@ import { default as DBEngine, SQL } from '../DBEngine'
 import { CoinPaymentsDao } from './CoinPaymentsDao'
 import { MockExchangeRateDao, MockGasEstimateDao } from '../testing/mocks'
 import { default as ChannelsService } from '../ChannelsService'
-import { big } from '../Connext'
+import { big } from 'connext'
 import { channelUpdateFactory } from '../testing/factories'
 import Web3 = require('web3')
 

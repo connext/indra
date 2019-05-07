@@ -1,10 +1,10 @@
-import { ethers as eth } from 'ethers';
+import { ethers as eth } from 'ethers'
 import * as sinon from 'sinon'
+
 import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
-import { Big } from './lib/bn';
-import { EMPTY_ROOT_HASH } from './lib/constants';
-import { assert } from './testing/index'
-import * as t from './testing/index'
+import { Big } from './lib/bn'
+import { EMPTY_ROOT_HASH } from './lib/constants'
+import * as t from './testing'
 import {
   ChannelState,
   ChannelStateBN,
@@ -16,138 +16,135 @@ import {
   convertWithdrawal,
   ExchangeArgs,
   ExchangeArgsBN,
+  Interface,
   InvalidationArgs,
+  PaymentArgs,
+  PaymentArgsBN,
   PendingArgs,
   PendingArgsBN,
   PendingExchangeArgsBN,
-  PaymentArgs,
-  PaymentArgsBN,
+  Provider,
   proposePendingNumericArgs,
   ThreadState,
   UnsignedThreadState,
   WithdrawalArgsBN,
-} from './types';
-import { Utils } from './Utils';
-import { Validator } from './validator';
+} from './types'
+import { Utils } from './Utils'
+import { Validator } from './validator'
 
-const sampleAddress = "0x0bfa016abfa8f627654b4989da4620271dc77b1c"
-const sampleAddress2 = "0x17b105bcb3f06b3098de6eed0497a3e36aa72471"
-const sampleAddress3 = "0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F"
-const hubAddress = "0xFB482f8f779fd96A857f1486471524808B97452D"
-
-const eventInputs = [
-  { type: 'address', name: 'user', indexed: true },
-  { type: 'uint256', name: 'senderIdx' },
-  { type: 'uint256[2]', name: 'weiBalances' },
-  { type: 'uint256[2]', name: 'tokenBalances' },
-  { type: 'uint256[4]', name: 'pendingWeiUpdates' },
-  { type: 'uint256[4]', name: 'pendingTokenUpdates' },
-  { type: 'uint256[2]', name: 'txCount' },
-  { type: 'bytes32', name: 'threadRoot' },
-  { type: 'uint256', name: 'threadCount' },
-]
-const eventName = `DidUpdateChannel`
+const assert: any = t.assert
+const sampleAddress: string = '0x0bfa016abfa8f627654b4989da4620271dc77b1c'
+const sampleAddress2: string = '0x17b105bcb3f06b3098de6eed0497a3e36aa72471'
+const sampleAddress3: string = '0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F'
+const hubAddress: string = '0xFB482f8f779fd96A857f1486471524808B97452D'
 
 /* Overrides for these fns function must be in the contract format
 as they are used in solidity decoding. Returns tx with default deposit
 values of all 5s
 */
-function createMockedWithdrawalTxReceipt(sender: "user" | "hub", abi: any, ...overrides: any[]) {
-  const vals = generateTransactionReceiptValues({
-    senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5
-    pendingWeiUpdates: ['0', '5', '0', '5'],
+function createMockedWithdrawalTxReceipt(
+  sender: 'user' | 'hub',
+  abi: Interface,
+  ...overrides: any[]
+): any {
+  const vals: any = generateTransactionReceiptValues({
     pendingTokenUpdates: ['0', '5', '0', '5'],
+    pendingWeiUpdates: ['0', '5', '0', '5'],
+    senderIdx: sender === 'user' ? '1' : '0', // default to user wei deposit 5
   }, overrides)
-
   return createMockedTransactionReceipt(abi, vals)
 }
 
-function createMockedDepositTxReceipt(sender: "user" | "hub", abi: any, ...overrides: any[]) {
-  const vals = generateTransactionReceiptValues({
-    senderIdx: sender === "user" ? '1' : '0', // default to user wei deposit 5
-    pendingWeiUpdates: ['5', '0', '5', '0'],
+function createMockedDepositTxReceipt(
+  sender: 'user' | 'hub',
+  abi: Interface,
+  ...overrides: any[]
+): any {
+  const vals: any = generateTransactionReceiptValues({
     pendingTokenUpdates: ['5', '0', '5', '0'],
+    pendingWeiUpdates: ['5', '0', '5', '0'],
+    senderIdx: sender === 'user' ? '1' : '0', // default to user wei deposit 5
   }, overrides)
-
   return createMockedTransactionReceipt(abi, vals)
 }
 
-function generateTransactionReceiptValues(...overrides: any[]) {
+function generateTransactionReceiptValues(...overrides: any[]): any {
   return Object.assign({
-    user: sampleAddress,
-    senderIdx: '1', // default to user wei deposit 5
-    weiBalances: ['0', '0'],
-    tokenBalances: ['0', '0'],
-    pendingWeiUpdates: ['0', '0', '0', '0'],
     pendingTokenUpdates: ['0', '0', '0', '0'],
-    txCount: ['1', '1'],
-    threadRoot: EMPTY_ROOT_HASH,
+    pendingWeiUpdates: ['0', '0', '0', '0'],
+    senderIdx: '1', // default to user wei deposit 5
     threadCount: '0',
+    threadRoot: EMPTY_ROOT_HASH,
+    tokenBalances: ['0', '0'],
+    txCount: ['1', '1'],
+    user: sampleAddress,
+    weiBalances: ['0', '0'],
   }, ...overrides)
 }
 
-function createMockedTransactionReceipt(abi: any, vals: any) {
-  const eventTopic = abi.events[eventName]
+function createMockedTransactionReceipt(abi: Interface, vals: any): any {
+  //console.log(`creating tx receipt from vals: ${JSON.stringify(vals,null,2)}`)
+  const eventTopic: string = abi.events.DidUpdateChannel.topic
+  const addrTopic: any = eth.utils.defaultAbiCoder.encode(['address'], [vals.user])
+  const data: any = eth.utils.defaultAbiCoder.encode(
+    abi.events.DidUpdateChannel.inputs,
+    [
+      vals.user,
+      vals.senderIdx,
+      vals.weiBalances,
+      vals.tokenBalances,
+      vals.pendingWeiUpdates,
+      vals.pendingTokenUpdates,
+      vals.txCount,
+      vals.threadRoot,
+      vals.threadCount,
+    ],
+  )
+  const logs = [{
+    data: eth.utils.hexlify(data),
+    topics: [eventTopic, addrTopic],
+  }]
 
-  const addrTopic = eth.utils.defaultAbiCoder.encode(['address'], [vals.user])
-
-  const { user, ...nonIndexed } = vals
-
-  const nonIndexedTypes = eventInputs.filter(val => Object.keys(val).indexOf('indexed') === -1).map(e => e.type)
-
-  const data = eth.utils.defaultAbiCoder.encode(nonIndexedTypes, Object.values(nonIndexed))
-
-  // TODO: replace indexed fields
-  // so you can also overwrite the indexed fields
+  // console.log(`Created logs w pending wei update: ${JSON.stringify(abi.parseLog(logs[0]).pendingWeiUpdates)}`)
 
   return {
-    status: true,
     contractAddress: t.mkAddress('0xCCC'),
-    transactionHash: t.mkHash('0xHHH'),
     logs: [{
       data: eth.utils.hexlify(data),
-      topics: [eventTopic, addrTopic]
-    }]
+      topics: [eventTopic, addrTopic],
+    }],
+    status: true,
+    transactionHash: t.mkHash('0xHHH'),
   }
 }
 
-
-
-
-
-
-
-
-
-
-function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]) {
-  const state = t.getChannelState('empty', Object.assign({
-    user: sampleAddress,
-    sigUser: t.mkHash('booty'),
+function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]): any {
+  const state: any = t.getChannelState('empty', Object.assign({
     sigHub: t.mkHash('errywhere'),
+    sigUser: t.mkHash('booty'),
+    user: sampleAddress,
   }, ...overrides))
-  return convertChannelState("bn", state)
+  return convertChannelState('bn', state)
 }
 
-function createThreadPaymentArgs(...overrides: Partial<PaymentArgs<any>>[]) {
-  const { recipient, ...amts } = createPaymentArgs(...overrides)
+function createThreadPaymentArgs(...overrides: Array<Partial<PaymentArgs<any>>>): any {
+  const { recipient, ...amts }: any = createPaymentArgs(...overrides)
   return amts
 }
 
 function createPaymentArgs(
-  ...overrides: Partial<PaymentArgs<any>>[]
+  ...overrides: Array<Partial<PaymentArgs<any>>>
 ): PaymentArgsBN {
-  const args = Object.assign({
-    amountWei: '0',
+  const args: any = Object.assign({
     amountToken: '0',
-    recipient: "user",
+    amountWei: '0',
+    recipient: 'user',
   }, ...overrides) as any
-
-  return convertPayment("bn", { ...convertPayment("str", args) })
+  return convertPayment('bn', { ...convertPayment('str', args) })
 }
 
 function createProposePendingArgs(overrides?: Partial<PendingArgs<number>>): PendingArgsBN {
-  const res = {
+  const res: any = {
     recipient: '0x1234',
     timeout: 0,
   } as PendingArgs
@@ -158,22 +155,23 @@ function createProposePendingArgs(overrides?: Partial<PendingArgs<number>>): Pen
   })
 }
 
-function createThreadState(...overrides: t.PartialSignedOrSuccinctThread[]) {
-  let opts = Object.assign({}, ...overrides)
-  const thread = t.getThreadState("empty", {
-    sigA: t.mkHash('0xtipz'),
-    balanceWei: [5, 0],
+function createThreadState(...overrides: t.PartialSignedOrSuccinctThread[]): any {
+  const opts: any = Object.assign({}, ...overrides)
+  const thread: any = t.getThreadState('empty', {
     balanceToken: [5, 0],
+    balanceWei: [5, 0],
     receiver: t.mkAddress('0xAAA'),
     sender: sampleAddress,
-    ...opts
+    sigA: t.mkHash('0xtipz'),
+    ...opts,
   })
-  return convertThreadState("bn", thread)
+  return convertThreadState('bn', thread)
 }
 
 /*
- Use this function to create an arbitrary number of thread states as indicated by the targetThreadCount parameter. Override each thread state that gets returned with provided override arguments. Example usage and output:
-
+ Use this function to create an arbitrary number of thread states as indicated by the
+ targetThreadCount parameter. Override each thread state that gets returned with provided
+ override arguments. Example usage and output:
  > createChannelThreadOverrides(2, { threadId: 87, receiver: t.mkAddress('0xAAA') })
  > { threadCount: 2,
   initialThreadStates:
@@ -197,39 +195,37 @@ function createThreadState(...overrides: t.PartialSignedOrSuccinctThread[]) {
        txCount: 0 } ],
   threadRoot: '0xbb97e9652a4754f4e543a7ed79b654dc5e5914060451f5d87e0b9ab1bde73bef' }
  */
-function createChannelThreadOverrides(targetThreadCount: number, ...overrides: any[]) {
-  const utils = new Utils("")
+
+function createChannelThreadOverrides(targetThreadCount: number, ...overrides: any[]): any {
+  const utils: Utils = new Utils()
   if (!targetThreadCount) {
     return {
-      threadCount: 0,
       initialThreadStates: [],
-      threadRoot: EMPTY_ROOT_HASH
+      threadCount: 0,
+      threadRoot: EMPTY_ROOT_HASH,
     }
   }
-
-  let initialThreadStates = [] as ThreadState[]
-  for (let i = 0; i < targetThreadCount; i++) {
-    initialThreadStates.push(convertThreadState("str", createThreadState(Object.assign({
+  const initialThreadStates: ThreadState[] = [] as ThreadState[]
+  for (let i: number = 0; i < targetThreadCount; i++) {
+    initialThreadStates.push(convertThreadState('str', createThreadState(Object.assign({
       receiver: t.mkAddress(`0x${i + 1}`),
       threadId: 69 + i,
       txCount: 0,
-    }, ...overrides)
+    }, ...overrides),
     )))
   }
   return {
-    threadCount: targetThreadCount,
     initialThreadStates,
-    threadRoot: utils.generateThreadRootHash(initialThreadStates)
+    threadCount: targetThreadCount,
+    threadRoot: utils.generateThreadRootHash(initialThreadStates),
   }
 }
 
 describe('validator', () => {
 
-  const provider = new eth.providers.JsonRpcProvider('http://localhost:8545')
-
-  const abi = new eth.utils.Interface(ChannelManagerAbi.abi)
-
-  const validator = new Validator(hubAddress, provider, ChannelManagerAbi.abi)
+  const provider: Provider = new eth.providers.JsonRpcProvider('http://localhost:8545')
+  const abi: Interface = new eth.utils.Interface(ChannelManagerAbi.abi)
+  const validator: Validator = new Validator(hubAddress, provider, ChannelManagerAbi.abi)
 
   describe('channelPayment', () => {
     const prev = createPreviousChannelState({
@@ -510,30 +506,32 @@ describe('validator', () => {
   })
 
   describe('confirmPending', () => {
-    const depositReceipt = createMockedDepositTxReceipt("user", abi)
-    const wdReceipt = createMockedWithdrawalTxReceipt("user", abi)
+    const depositReceipt: any = createMockedDepositTxReceipt('user', abi)
+    const wdReceipt: any = createMockedWithdrawalTxReceipt('user', abi)
 
-    const prevDeposit = createPreviousChannelState({
+    const prevDeposit: any = createPreviousChannelState({
       pendingDepositToken: [5, 5],
       pendingDepositWei: [5, 5],
     })
-    const prevWd = createPreviousChannelState({
+
+    const prevWd: any = createPreviousChannelState({
       pendingWithdrawalToken: [5, 5],
       pendingWithdrawalWei: [5, 5],
     })
 
-    const tx = {
+    const tx: any = {
       blockHash: t.mkHash('0xBBB'),
       to: prevDeposit.contractAddress,
     }
 
-    const confirmCases = [
+    const confirmCases: any[] = [
       {
         name: 'should work for deposits',
         prev: prevDeposit,
         stubs: [tx, depositReceipt],
         valid: true,
       },
+      /*
       {
         name: 'should work for withdrawals',
         prev: prevWd,
@@ -666,22 +664,33 @@ describe('validator', () => {
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
+      */
     ]
 
-    confirmCases.forEach(async ({ name, prev, stubs, valid }) => {
-      // TODO: reenable these! watch issue here for correspondence with maintainer: https://github.com/ethereum/web3.js/issues/2344
+    confirmCases.forEach(async ({ name, prev, stubs, valid }: any): Promise<any> => {
+
       it.skip(name, async () => {
         // set tx receipt stub
         validator.provider.getTransaction = sinon.stub().returns(stubs[0])
         validator.provider.getTransactionReceipt = sinon.stub().returns(stubs[1])
+
+        // console.log(`comparing event to prev`)
+        // console.log(`event logs: ${JSON.stringify(abi.parseLog(stubs[1][0]),null,2)}`)
+        // console.log(`prev: ${JSON.stringify(prev,null,2)}`)
+
         // set args
-        const transactionHash = stubs[1] && (stubs[1] as any).transactionHash === depositReceipt.transactionHash ? depositReceipt.transactionHash : wdReceipt.transactionHash
+        const transactionHash: string = depositReceipt.transactionHash
+          //(stubs[1] && (stubs[1] as any).transactionHash === depositReceipt.transactionHash)
+          //  ? depositReceipt.transactionHash
+          //  : wdReceipt.transactionHash
+
         if (valid) {
           assert.isNull(await validator.confirmPending(prev, { transactionHash }))
         } else {
           assert.exists(await validator.confirmPending(prev, { transactionHash }))
         }
       })
+
     })
   })
 
@@ -1307,7 +1316,7 @@ describe('validator', () => {
     })
   })
 
-  describe.skip('threadPayment', () => {
+  describe('threadPayment', () => {
     // Should test the following success cases:
     // 1. A thread payment from sender to receiver works
     // 2. Multiple more payments work

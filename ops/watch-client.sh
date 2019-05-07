@@ -5,15 +5,18 @@ set -e
 dir=`pwd | sed 's/indra.*/indra/'`/modules/client
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
+bash ops/start-ganache.sh
+
 echo "Activating client watcher.."
 
 docker run \
-  --interactive \
-  --tty \
-  --rm \
-  --name=${project}_watcher \
-  --volume=$dir:/root \
   --entrypoint=bash \
+  --interactive \
+  --name=${project}_client_watcher \
+  --network="ganache" \
+  --rm \
+  --tty \
+  --volume=$dir:/root \
   ${project}_builder -c '
     echo "Container launched.."
     PATH=./node_modules/.bin:$PATH
@@ -46,7 +49,6 @@ docker run \
 
       mocha \
         -r ./dist/register/common.js \
-        -r ./dist/register/testing.js \
         "dist/**/*.test.js" --exit
 
       echo "Waiting for changes..."

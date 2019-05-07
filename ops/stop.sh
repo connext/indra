@@ -2,6 +2,7 @@
 set -e
 
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+docker container stop ganache 2> /dev/null || true
 docker container stop ${project}_builder 2> /dev/null || true
 docker stack rm $project 2> /dev/null || true
 

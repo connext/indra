@@ -5,6 +5,8 @@ set -e
 dir=`pwd | sed 's/indra.*/indra/'`/modules/client
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
+bash ops/start-ganache.sh
+
 echo "Activating client tester.."
 date "+%s" > /tmp/timestamp
 
@@ -16,12 +18,13 @@ trap cleanup EXIT
 docker container prune -f
 
 docker run \
-  --interactive \
-  --tty \
-  --rm \
-  --name=${project}_tester \
-  --volume=$dir:/root \
   --entrypoint=bash \
+  --interactive \
+  --name=${project}_tester \
+  --network="ganache" \
+  --rm \
+  --tty \
+  --volume=$dir:/root \
   ${project}_builder -c '
     set -e
     echo "Container launched.."
@@ -29,6 +32,5 @@ docker run \
     mocha '"$watch"' \
       -r ts-node/register/type-check \
       -r ./src/register/common.ts \
-      -r ./src/register/testing.ts \
       "src/**/*.test.ts" --exit
   '

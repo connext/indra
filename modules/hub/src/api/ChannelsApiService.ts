@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import { getUserFromRequest } from '../util/request'
 import { default as Config } from '../Config'
 import * as express from 'express'

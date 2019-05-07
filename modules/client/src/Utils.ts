@@ -1,13 +1,27 @@
-import util = require('ethereumjs-util')
-import { ethers as eth } from 'ethers';
-import MerkleTree from './helpers/merkleTree';
-import { MerkleUtils } from './helpers/merkleUtils';
-import { Poller } from './lib/poller/Poller';
-import * as getters from './state/getters';
+import util from 'ethereumjs-util'
+import { ethers as eth } from 'ethers'
+import { BigNumber as BN } from 'ethers/utils'
+
+import * as bigUtils from './lib/bn'
+import MerkleTree from './lib/merkleTree'
+import { MerkleUtils } from './lib/merkleUtils'
+import { Poller } from './lib/poller/Poller'
+import * as getters from './state/getters'
+import { ConnextState } from './state/store'
 import {
   ChannelState,
+  convertArgs,
+  convertChannelRow,
   convertChannelState,
+  convertChannelStateUpdateRow,
+  convertDeposit,
+  convertExchange,
+  convertFields,
+  convertPayment,
   convertThreadState,
+  convertWithdrawal,
+  convertWithdrawalParameters,
+  ExchangeRates,
   Payment,
   SignedDepositRequestProposal,
   ThreadState,
@@ -19,68 +33,38 @@ import {
  *********** UTIL FNS ************
  *********************************/
 
-export const emptyAddress = eth.constants.AddressZero
-export const emptyRootHash = eth.constants.HashZero
+const { arrayify, isHexString, solidityKeccak256, toUtf8Bytes, verifyMessage } = eth.utils
 
-// define the utils functions
+// Define the utils functions
 export class Utils {
-  emptyAddress = eth.constants.AddressZero
-  emptyRootHash = eth.constants.HashZero
-  getters = getters
-  Poller = Poller
-
-  hubAddress: string
-  constructor(hubAddress: string) {
-    this.hubAddress = hubAddress
-  }
-
-  public createDepositRequestProposalHash(
-    req: Payment,
-  ): string {
-    const { amountToken, amountWei } = req
-    const hash = eth.utils.solidityKeccak256(
-      [ 'uint256', 'uint256' ],
-      [ amountToken, amountWei ]
-    )
-    return hash
-  }
-
-  public recoverSignerFromDepositRequest(
-    args: SignedDepositRequestProposal,
-    signer: string,
-  ): string | null {
-    const hash = this.createDepositRequestProposalHash(args)
-    return this.recoverSigner(hash, args.sigUser, signer)
+  public assetToWei: (fiat: BN, rate: string) => BN[] = bigUtils.assetToWei
+  public emptyAddress: string = eth.constants.AddressZero
+  public emptyRootHash: string = eth.constants.HashZero
+  public getExchangeRates: (state: ConnextState) => ExchangeRates = getters.getExchangeRates
+  public maxBN: (a: BN, b: BN) => BN = bigUtils.maxBN
+  public minBN: (a: BN, ...b: BN[]) => BN = bigUtils.minBN
+  public Poller: any = Poller
+  public toWeiBig: (amount: number | string | BN) => BN = bigUtils.toWeiBig
+  public toWeiString: (amount: number | string | BN) => string = bigUtils.toWeiString
+  public weiToAsset: (wei: BN, rate: string) => BN = bigUtils.weiToAsset
+  public convert: any = {
+    Args: convertArgs,
+    ChannelRow: convertChannelRow,
+    ChannelState: convertChannelState,
+    ChannelStateUpdateRow: convertChannelStateUpdateRow,
+    Deposit: convertDeposit,
+    Exchange: convertExchange,
+    Fields: convertFields,
+    Payment:  convertPayment,
+    ThreadState: convertThreadState,
+    Withdrawal: convertWithdrawal,
+    WithdrawalParameters: convertWithdrawalParameters,
   }
 
   public createChannelStateHash(
     channelState: UnsignedChannelState,
   ): string {
-    const {
-      contractAddress,
-      user,
-      recipient,
-      balanceWeiHub,
-      balanceWeiUser,
-      balanceTokenHub,
-      balanceTokenUser,
-      pendingDepositWeiHub,
-      pendingDepositWeiUser,
-      pendingDepositTokenHub,
-      pendingDepositTokenUser,
-      pendingWithdrawalWeiHub,
-      pendingWithdrawalWeiUser,
-      pendingWithdrawalTokenHub,
-      pendingWithdrawalTokenUser,
-      txCountGlobal,
-      txCountChain,
-      threadRoot,
-      threadCount,
-      timeout,
-    } = channelState
-
-    // hash data
-    const hash = eth.utils.solidityKeccak256(
+    return solidityKeccak256(
       [
         'address',
         'address[2]',
@@ -91,228 +75,205 @@ export class Utils {
         'uint256[2]',
         'bytes32',
         'uint256',
-        'uint256'
+        'uint256',
       ],
       [
-        contractAddress,
-        [ user, recipient ],
-        [ balanceWeiHub, balanceWeiUser ],
-        [ balanceTokenHub, balanceTokenUser ],
+        channelState.contractAddress,
         [
-          pendingDepositWeiHub,
-          pendingWithdrawalWeiHub,
-          pendingDepositWeiUser,
-          pendingWithdrawalWeiUser,
+          channelState.user,
+          channelState.recipient,
         ],
         [
-          pendingDepositTokenHub,
-          pendingWithdrawalTokenHub,
-          pendingDepositTokenUser,
-          pendingWithdrawalTokenUser,
-          ],
-        [ txCountGlobal, txCountChain ],
-        threadRoot,
-        threadCount,
-        timeout
-      ]
+          channelState.balanceWeiHub,
+          channelState.balanceWeiUser,
+        ],
+        [
+          channelState.balanceTokenHub,
+          channelState.balanceTokenUser,
+        ],
+        [
+          channelState.pendingDepositWeiHub,
+          channelState.pendingWithdrawalWeiHub,
+          channelState.pendingDepositWeiUser,
+          channelState.pendingWithdrawalWeiUser,
+        ],
+        [
+          channelState.pendingDepositTokenHub,
+          channelState.pendingWithdrawalTokenHub,
+          channelState.pendingDepositTokenUser,
+          channelState.pendingWithdrawalTokenUser,
+        ],
+        [
+          channelState.txCountGlobal,
+          channelState.txCountChain,
+        ],
+        channelState.threadRoot,
+        channelState.threadCount,
+        channelState.timeout,
+      ],
     )
-    return hash
   }
 
-  public recoverSignerFromChannelState(
-    channelState: UnsignedChannelState,
-    sig: string,
-    signer: "user" | "hub", // = "user"
-  ): string | null {
-    const hash: any = this.createChannelStateHash(channelState)
-    return this.recoverSigner(hash, sig, signer == "user" 
-      ? channelState.user 
-      : this.hubAddress
+  public createDepositRequestProposalHash(
+    req: Payment,
+  ): string {
+    return solidityKeccak256(
+      [
+        'uint256',
+        'uint256',
+      ],
+      [
+        req.amountToken,
+        req.amountWei,
+      ],
     )
   }
 
   public createThreadStateHash(threadState: UnsignedThreadState): string {
-    const {
-      contractAddress,
-      sender,
-      receiver,
-      threadId,
-      balanceWeiSender,
-      balanceWeiReceiver,
-      balanceTokenSender,
-      balanceTokenReceiver,
-      txCount,
-    } = threadState
-    // convert ChannelState to UnsignedChannelState
-    const hash = eth.utils.solidityKeccak256(
-      [ 'address', 'address', 'address', 'uint256', 'uint256[2]', 'uint256[2]', 'uint256' ],
-      [ contractAddress, sender, receiver, threadId, [balanceWeiSender, balanceWeiReceiver], [balanceTokenSender, balanceTokenReceiver], txCount ]
+    return solidityKeccak256(
+      [
+        'address',
+        'address',
+        'address',
+        'uint256',
+        'uint256[2]',
+        'uint256[2]',
+        'uint256',
+      ],
+      [
+        threadState.contractAddress,
+        threadState.sender,
+        threadState.receiver,
+        threadState.threadId,
+        [
+          threadState.balanceWeiSender,
+          threadState.balanceWeiReceiver,
+        ],
+        [
+          threadState.balanceTokenSender,
+          threadState.balanceTokenReceiver,
+        ],
+        threadState.txCount,
+      ],
     )
-    return hash
-  }
-
-  public recoverSignerFromThreadState(
-    threadState: UnsignedThreadState,
-    sig: string,
-  ): string | null {
-    // console.log('recovering signer from state:', threadState)
-    const hash: any = this.createThreadStateHash(threadState)
-    return this.recoverSigner(hash, sig, threadState.sender)
   }
 
   public generateThreadMerkleTree(
     threadInitialStates: UnsignedThreadState[],
-  ): any {
-    // TO DO: should this just return emptyRootHash?
+  ): MerkleTree {
     if (threadInitialStates.length === 0) {
+      // should this just return emptyRootHash?
       throw new Error('Cannot create a Merkle tree with 0 leaves.')
     }
-    let merkle
-    let elems = threadInitialStates.map(threadInitialState => {
-      // hash each initial state and convert hash to buffer
-      const hash = this.createThreadStateHash(threadInitialState)
-      const buf = MerkleUtils.hexToBuffer(hash)
-      return buf
-    })
+    let merkle: MerkleTree
+    const elems: Buffer[] = threadInitialStates.map((
+        threadInitialState: UnsignedThreadState,
+      ): Buffer => {
+        const hash: string = this.createThreadStateHash(threadInitialState)
+        return MerkleUtils.hexToBuffer(hash)
+      })
     if (elems.length % 2 !== 0) {
       // cant have odd number of leaves
       elems.push(MerkleUtils.hexToBuffer(this.emptyRootHash))
     }
     merkle = new MerkleTree(elems)
-
     return merkle
-  }
-
-  public generateThreadRootHash(
-    threadInitialStates: ThreadState[],
-  ): string {
-    let temp = []
-    let threadRootHash
-    if (threadInitialStates.length === 0) {
-      // reset to initial value -- no open VCs
-      threadRootHash = this.emptyRootHash
-    } else {
-      for(let i = 0; i < threadInitialStates.length; i++) {
-        temp[i] = convertThreadState("str-unsigned", threadInitialStates[i])
-      }
-      const merkle = this.generateThreadMerkleTree(temp)
-      threadRootHash = MerkleUtils.bufferToHex(merkle.getRoot())
-    }
-    return threadRootHash
   }
 
   public generateThreadProof(
     thread: UnsignedThreadState,
     threads: UnsignedThreadState[],
   ): any {
-    // generate hash
-    const hash = this.createThreadStateHash(thread)
-    // generate merkle tree
-    let merkle = this.generateThreadMerkleTree(threads)
-    let mproof = merkle.proof(MerkleUtils.hexToBuffer(hash))
-
-    let proof = []
-    for (var i = 0; i < mproof.length; i++) {
-      proof.push(MerkleUtils.bufferToHex(mproof[i]))
+    const hash: string = this.createThreadStateHash(thread)
+    const merkle: MerkleTree = this.generateThreadMerkleTree(threads)
+    const mproof: any = merkle.proof(MerkleUtils.hexToBuffer(hash))
+    let proof: string[] = []
+    for (const i of mproof) {
+      proof.push(MerkleUtils.bufferToHex(i))
     }
-
     proof.unshift(hash)
-
     proof = MerkleUtils.marshallState(proof)
     return proof
   }
 
-  public threadIsContained(
-    threadHash: string,
-    // TO DO: can we not pass in the thread array?
-    threads: UnsignedThreadState[],
-    threadMerkleRoot: string,
-    proof: any,
-  ) {
-    // TO DO: implement without rebuilding the thread tree?
-    // otherwise you will have to pass in threads to each one
-    // solidity code to satisfy:
-    //   function _isContained(bytes32 _hash, bytes _proof, bytes32 _root) internal pure returns (bool) {
-    //     bytes32 cursor = _hash;
-    //     bytes32 proofElem;
-    //     for (uint256 i = 64; i <= _proof.length; i += 32) {
-    //         assembly { proofElem := mload(add(_proof, i)) }
-    //         if (cursor < proofElem) {
-    //             cursor = keccak256(abi.encodePacked(cursor, proofElem));
-    //         } else {
-    //             cursor = keccak256(abi.encodePacked(proofElem, cursor));
-    //         }
-    //     }
-    //     return cursor == _root;
-    // }
-    // generate merkle tree
-    const mtree = this.generateThreadMerkleTree(threads)
-    if (mtree.getRoot() !== threadMerkleRoot) {
-      throw new Error(`Incorrect root provided`)
+  public generateThreadRootHash(
+    threadInitialStates: ThreadState[],
+  ): string {
+    const temp: any[] = []
+    let threadRootHash: string
+    if (threadInitialStates.length === 0) {
+      // reset to initial value -- no open VCs
+      threadRootHash = this.emptyRootHash
+    } else {
+      for (const state of threadInitialStates) {
+        temp.push(convertThreadState('str-unsigned', state))
+      }
+      const merkle: any = this.generateThreadMerkleTree(temp)
+      threadRootHash = MerkleUtils.bufferToHex(merkle.getRoot())
     }
-    return mtree.verify(proof, threadHash)
+    return threadRootHash
   }
 
-  private recoverSignerOldSchema(hash: string, sig: string) {
-    const fingerprint = util.toBuffer(String(hash))
-    const prefix = util.toBuffer('\x19Ethereum Signed Message:\n')
-    const prefixedMsg = util.keccak256(
-      Buffer.concat([
-        prefix,
-        util.toBuffer(String(fingerprint.length)),
-        fingerprint,
-      ]),
-    )
-    const res = util.fromRpcSig(sig)
-    const pubKey = util.ecrecover(
-      util.toBuffer(prefixedMsg),
-      res.v,
-      res.r,
-      res.s,
-    )
-    const addrBuf = util.pubToAddress(pubKey)
-    const recovered = util.bufferToHex(addrBuf)
-    return recovered
-  }
-
-  private recoverSignerNewSchema(hash: string, sig: string, signer: string) {
-    // For web3 1.0.0-beta.33
-    // For web3 1.0.0-beta.52 in some cases (eg auth when message is a non-hex string)
-    let recovered = eth.utils.verifyMessage(hash, sig).toLowerCase()
-    if (recovered && recovered == signer.toLowerCase()) {
-      return recovered
-    }
-
-    // For web3 1.0.0-beta.52 when sig is verified by contract, note arrayify(msg) in verify
-    recovered = eth.utils.verifyMessage(eth.utils.arrayify(hash), sig).toLowerCase()
-    
-    return recovered
-  }
-
-  public recoverSigner(hash: string, sig: string, signer: string) {
-    let recovered = this.recoverSignerNewSchema(hash, sig, signer)
-    if (recovered && recovered == signer.toLowerCase()) {
-      return recovered
-    }
-
-    // final fallback
-    recovered = this.recoverSignerOldSchema(hash, sig)
-    if (recovered && recovered == signer.toLowerCase()) {
-      return recovered
-    }
-
-    return null
-  }
-
-  hasPendingOps(stateAny: ChannelState<any>) {
-    const state = convertChannelState('str', stateAny)
-    for (let field in state) {
-      if (!field.startsWith('pending'))
+  public hasPendingOps(stateAny: ChannelState<any>): boolean {
+    const state: any = convertChannelState('str', stateAny)
+    for (const field in state) {
+      if (!field.startsWith('pending')) {
         continue
-      if ((state as any)[field] !== '0')
+      }
+      if ((state as any)[field] !== '0') {
         return true
+      }
     }
     return false
+  }
+
+  public recoverSigner(hash: string, sig: string, signer: string): string | undefined {
+    const bytes: Uint8Array = isHexString(hash) ? arrayify(hash) : toUtf8Bytes(hash)
+    let recovered: string = verifyMessage(bytes, sig).toLowerCase()
+    if (recovered && recovered === signer.toLowerCase()) {
+      return recovered
+    }
+    console.warn(`Signature doesn't match new scheme. Expected ${signer}, Recovered ${recovered}`)
+    // For backwards compatibility, TODO: remove until below
+    const fingerprint: any = util.toBuffer(String(hash))
+    const prefix: any = util.toBuffer('\x19Ethereum Signed Message:\n')
+    const prefixedMsg: any = util.keccak256(Buffer.concat(
+      [ prefix, util.toBuffer(String(fingerprint.length)), fingerprint ],
+    ))
+    const res: any = util.fromRpcSig(sig)
+    const pubKey: any = util.ecrecover(util.toBuffer(prefixedMsg), res.v, res.r, res.s)
+    recovered = util.bufferToHex(util.pubToAddress(pubKey))
+    if (recovered && recovered === signer.toLowerCase()) {
+      return recovered
+    }
+    console.warn(`Signature doesn't match old scheme. Expected ${signer}, Recovered ${recovered}`)
+    // TODO: remove until here
+    return undefined
+  }
+
+  public recoverSignerFromChannelState(
+    channelState: UnsignedChannelState,
+    sig: string,
+    signer: string, // who you expect to be the signer
+  ): string | undefined {
+    const hash: string = this.createChannelStateHash(channelState)
+    return this.recoverSigner(hash, sig, signer)
+  }
+
+  public recoverSignerFromDepositRequest(
+    args: SignedDepositRequestProposal,
+    signer: string,
+  ): string | undefined {
+    const hash: string = this.createDepositRequestProposalHash(args)
+    return this.recoverSigner(hash, args.sigUser, signer)
+  }
+
+  public recoverSignerFromThreadState(
+    threadState: UnsignedThreadState,
+    sig: string,
+  ): string | undefined {
+    const hash: string = this.createThreadStateHash(threadState)
+    return this.recoverSigner(hash, sig, threadState.sender)
   }
 
 }
