@@ -112,7 +112,15 @@ export async function getConnextClient(opts: IConnextClientOptions): Promise<Con
     (merged as any)[k] = (config as any)[k]
   }
 
-  const wallet: Wallet = new Wallet(opts)
+  // if web3, create a new web3 
+  if (merged.web3Provider && !merged.user) {
+    // set default address
+    // TODO: improve this
+    const tmp = new Web3(opts.web3Provider as any)
+    merged.user = (await tmp.eth.getAccounts())[0]
+  }
+
+  const wallet: Wallet = new Wallet(merged)
   merged.user = merged.user || wallet.address
 
   return new ConnextInternal({ ...merged }, wallet)
