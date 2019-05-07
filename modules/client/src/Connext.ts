@@ -158,8 +158,12 @@ export abstract class ConnextClient extends EventEmitter {
   async stop() {
   }
 
+  /**
+   * Stops all pollers, and restarts them with provided time
+   * period.
+   * Note: the full implementation lives in ConnextInternal.
+   */
   async setPollInterval(ms: number): Promise<void> {
-    // TODO: implement functionality
   }
 
   // ******************************
@@ -283,6 +287,18 @@ export class ConnextInternal extends ConnextClient {
         res.push(val)
     }
     return res
+  }
+
+  // TODO:
+  //  - must stop all pollers, and restart them with the given
+  //    polling interval
+  //      - pollers must accept this as an outside parameter
+  //  - this will also impact payment times, there is a potential
+  //    need to dynamically reset polling when a certain update
+  //    time is detected for UX. However, it may be best to leave
+  //    this up to the implementers to toggle.
+  async setPollInterval(ms: number): Promise<void> {
+    console.warn("This function has not been implemented yet")
   }
 
   async withdrawal(params: WithdrawalParameters): Promise<void> {
