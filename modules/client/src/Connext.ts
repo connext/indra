@@ -91,7 +91,7 @@ export interface ConnextClientOptions {
 ////////////////////////////////////////
 
 // Used to get an instance of ConnextClient.
-export async function getConnextClient(opts: ConnextClientOptions): Promise<ConnextClient> {
+export async function create(opts: ConnextClientOptions): Promise<ConnextClient> {
 
   const hubConfig = (await (new Networking(opts.hubUrl)).get(`config`)).data
   const config = {
