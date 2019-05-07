@@ -189,7 +189,7 @@ export class Utils {
     const mproof: any = merkle.proof(MerkleUtils.hexToBuffer(hash))
     let proof: string[] = []
     for (const i of mproof) {
-      proof.push(MerkleUtils.bufferToHex(mproof[i]))
+      proof.push(MerkleUtils.bufferToHex(i))
     }
     proof.unshift(hash)
     proof = MerkleUtils.marshallState(proof)
