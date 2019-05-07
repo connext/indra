@@ -13,6 +13,10 @@ import { RedisClient } from './RedisClient';
 import { OnchainTransactionService } from './OnchainTransactionService';
 import { EventLog } from 'web3-core';
 import Web3 from 'web3';
+import { big } from './Connext';
+const {
+  Big
+} = big
 
 type ChannelState<T=string> = types.ChannelState<T>
 type ConfirmPendingArgs = types.ConfirmPendingArgs
@@ -286,6 +290,18 @@ export default class ChainsawService {
     if (event.senderIdx == 0) {
       LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
       return
+    }
+
+    // TODO FIX AND REMOVE
+    LOG.info('event.senderIdx: ' + JSON.stringify(event.senderIdx));
+    try {
+      if ((event.senderIdx as any)._hex == "0x00") {
+        LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
+        return
+      }
+    } catch (error) {
+      LOG.info('Caught error trying to compare BN to 0.')
+      LOG.info(error)
     }
 
     let data
