@@ -1,7 +1,6 @@
-import { SyncResult, } from '../types'
+import { SyncResult, DepositArgs, WithdrawalArgs, ConfirmPendingArgs, } from '../types'
 import { ConnextState } from './store'
 import * as actions from './actions'
-import { Utils } from '../Utils';
 
 export function handleStateFlags(args: any): any {
   let didInitialUpdate = false
@@ -26,62 +25,95 @@ export function handleStateFlags(args: any): any {
       const connextState: ConnextState = getState()
       const {
         runtime: {
-          canDeposit,
-          canExchange,
-          canBuy,
-          canWithdraw,
-          syncResultsFromHub
+          syncResultsFromHub // updates from hub to client
         },
         persistent: {
           channel,
           syncControllerState: {
-            updatesToSync,
+            updatesToSync, // updates that have been processed by client to send to hub
           },
-          hubAddress,
         }
       } = connextState
 
+      // find out what type of update it is, and which type
+      // of transaction it pertains to
+      let txType: any
       let isUnsigned = false
-      let hasTimeout = !!channel.timeout
-      let hasPending = new Utils(hubAddress).hasPendingOps(channel)
-
-      updatesToSync.forEach(update => {
-        if(update.type == 'channel') {
-          isUnsigned = isUnsigned || !(update.update.sigHub && update.update.sigUser)
-          hasTimeout = hasTimeout || 'timeout' in update.update.args ? !!(update.update.args as any).timeout : false
-          hasPending = hasPending || (
-            update.update.reason == 'ProposePendingDeposit' ||
-            update.update.reason == 'ProposePendingWithdrawal'
-          )
-        } else if (update.type == 'thread') {
-          //TODO Does anything happen here?
-        } else {
-          throw new Error("Middleware: Update type is not either channel or thread!")
-        }
-      })
-
-      syncResultsFromHub.forEach((result: SyncResult) => {
-        if (result.type != 'channel')
+      let txHash: string | null = null
+      const detectTxType = (sync: SyncResult) => {
+        if (sync.type != 'channel') {
+          // TODO: any special flags for threads needed
           return
-        const update = result.update
+        }
+        // determine if anything is unsigned
+        isUnsigned = isUnsigned || !(sync.update.sigHub && sync.update.sigUser)
 
-        isUnsigned = isUnsigned || !(update.sigHub && update.sigUser)
-        hasTimeout = hasTimeout || 'timeout' in update.args ? !!(update.args as any).timeout : false
-        hasPending = hasPending || (
-          update.reason == 'ProposePendingDeposit' ||
-          update.reason == 'ProposePendingWithdrawal'
-        )
-      })
+        if (sync.update.reason == 'ProposePendingWithdrawal') {
+          // if it is a user-submitted withdrawal, the user will have
+          // a changing withdrawal, otherwise it is the hub
+          // decollateralizing a channel
+          const args = sync.update.args as WithdrawalArgs
+          const userTokenBalChange = args.targetTokenUser 
+            && args.targetTokenUser != channel.balanceTokenUser
+          const userWeiBalChange = args.targetWeiUser && args.targetWeiUser != channel.balanceWeiUser
+          if (userTokenBalChange || userWeiBalChange) {
+            txType = 'withdrawal'
+            return
+          }
+          txType = 'collateral'
+          return
+        }
+        
+        if (sync.update.reason == "ProposePendingDeposit") {
+          // if the users balance increases, it is a user deposit
+          const args = sync.update.args as DepositArgs
+          if (args.depositTokenUser != '0' || args.depositWeiUser != '0') {
+            txType = 'deposit'
+            return
+          }
+          // otherwise, it is a collateralization tx
+          txType = 'collateral'
+          return
+        }
 
-      const allBlocked = hasTimeout || isUnsigned
-      dispatch(actions.updateCanFields({
-        canDeposit: !(allBlocked || hasPending),
-        canExchange: !allBlocked,
-        awaitingOnchainTransaction: hasPending,
-        canWithdraw: !(allBlocked || hasPending),
-        canBuy: !allBlocked,
-        canCollateralize: !(allBlocked || hasPending),
-      }))
+        // must also check the confirm pending update to determine
+        // which type of tx it is confirming
+        if (sync.update.reason == "ConfirmPending") {
+          // can use the pending operations on the channel state
+          txHash = (sync.update.args as ConfirmPendingArgs).transactionHash
+          // if there are withdrawal user values it is a wd
+          if (channel.pendingWithdrawalTokenUser != '0' || channel.pendingWithdrawalWeiUser != '0') {
+            txType = 'withdrawal'
+            return
+          }
+
+          // if there is a user deposit without wds, its a deposit
+          if (channel.pendingDepositTokenUser != '0' || channel.pendingDepositWeiUser != '0') {
+            txType = 'deposit'
+            return
+          }
+
+          // otherwise, its a collateral
+          txType = 'collateral'
+          return
+        }
+      }
+
+      updatesToSync.concat(syncResultsFromHub).forEach(
+        sync => detectTxType(sync)
+      )
+
+      // assign the fields
+      if (txType) {
+        let r = { ...connextState.runtime } as any
+        const updated = {
+          transactionHash: txHash,
+          submitted: true, // if a type is detected, the tx has been submitted 
+          detected: !!txHash,
+        }
+        r[txType]= updated
+        dispatch(actions.updateTransactionFields(r))
+      }
     }
 
     return res

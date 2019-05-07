@@ -5,7 +5,7 @@ import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import PaymentsService from "./PaymentsService";
 import { maybe } from "./util";
 import ChannelsService from "./ChannelsService";
-import { types, Poller } from "./Connext"
+import { types, Poller } from 'connext';
 
 const { convertPayment } = types
 type PurchasePayment<T=string> = types.PurchasePayment<T>

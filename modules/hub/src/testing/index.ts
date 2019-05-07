@@ -1,3 +1,4 @@
+import { types } from 'connext';
 import { Context } from "../Container";
 import * as chai from 'chai'
 import * as sinon from 'sinon'
@@ -6,7 +7,6 @@ import * as _nock from 'nock'
 import defaultRegistry, { serviceDefinitions } from '../services'
 import { Registry, Container } from '../Container'
 import { mockServices, clearFakeClosingTime } from './mocks'
-import { types } from "../Connext";
 export { TestApiServer, getTestConfig } from './mocks'
 
 export type ServiceName = keyof typeof serviceDefinitions

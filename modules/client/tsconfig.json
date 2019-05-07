@@ -2,6 +2,7 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "declaration": true,
+    "declarationDir": "./types/",
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
@@ -14,7 +15,7 @@
     "sourceMap": true,
     "strict": true,
     "target": "es6",
-    "typeRoots": [ "node_modules/@types", "types" ]
+    "typeRoots": [ "node_modules/@types" ]
   },
   "exclude": [ "node_modules/**" ],
   "include": [ "src/**/*.ts" ]

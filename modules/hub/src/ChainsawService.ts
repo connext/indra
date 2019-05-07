@@ -1,5 +1,4 @@
-import { types, Utils, Validator } from './Connext';
-
+import { types, Utils, Validator } from 'connext';
 import ChainsawDao, { PollType } from './dao/ChainsawDao'
 import log from './util/log'
 import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
@@ -14,10 +13,6 @@ import { RedisClient } from './RedisClient';
 import { OnchainTransactionService } from './OnchainTransactionService';
 import { EventLog } from 'web3-core';
 import Web3 from 'web3';
-import { big } from './Connext';
-const {
-  Big
-} = big
 
 type ChannelState<T=string> = types.ChannelState<T>
 type ConfirmPendingArgs = types.ConfirmPendingArgs

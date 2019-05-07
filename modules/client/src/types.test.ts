@@ -7,6 +7,7 @@ describe('insertDefault', () => {
   it("should work", () => {
     const tst = {
       tokensToSell: '10',
+      testing: null,
     }
     const keys = [
       'testing',
@@ -31,12 +32,12 @@ describe('convertChannelState', () => {
     assert.equal(Object.keys(unsigned).indexOf('sigUser'), -1)
   })
 
-  // it('should work for bignums', () => {
-  //   const obj = t.getChannelState('empty')
-  //   const unsigned = convertChannelState("bignumber-unsigned", obj)
-  //   assert.equal(Object.keys(unsigned).indexOf('sigHub'), -1)
-  //   assert.equal(Object.keys(unsigned).indexOf('sigUser'), -1)
-  // })
+  it('should work for bn', () => {
+    const obj = t.getChannelState('empty')
+    const unsigned = convertChannelState("bn-unsigned", obj)
+    assert.equal(Object.keys(unsigned).indexOf('sigHub'), -1)
+    assert.equal(Object.keys(unsigned).indexOf('sigUser'), -1)
+  })
 })
 
 describe('convertThreadState', () => {
@@ -46,15 +47,15 @@ describe('convertThreadState', () => {
     assert.equal(Object.keys(unsigned).indexOf('sigA'), -1)
   })
 
-  // it('should work for bignums', () => {
-  //   const obj = t.getChannelState('empty')
-  //   const unsigned = convertChannelState("bignumber-unsigned", obj)
-  //   assert.equal(Object.keys(unsigned).indexOf('sigA'), -1)
-  // })
+  it('should work for bn', () => {
+    const obj = t.getChannelState('empty')
+    const unsigned = convertChannelState("bn-unsigned", obj)
+    assert.equal(Object.keys(unsigned).indexOf('sigA'), -1)
+  })
 })
 
-describe.skip('convertFields', () => {
-  const types = ['str', 'bignumber', 'bn']
+describe('convertFields', () => {
+  const types = ['str', 'bn']
   const examples: any = {
     'str': '69',
     'bn': new BN('69'),

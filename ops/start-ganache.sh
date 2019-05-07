@@ -5,6 +5,11 @@ name=ganache
 ganache_net_id=4447
 ganache_rpc_port=8545
 dir=`pwd | sed 's/indra.*/indra/'`/modules/contracts
+mnemonic='candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
+ETH_MNEMONIC="${ETH_MNEMONIC:-$mnemonic}"
+
+# turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
 
 if [[ -n "`docker container ls | grep $name`" ]]
 then
@@ -13,26 +18,33 @@ then
   exit
 fi
 
+if [[ -z "`docker network ls -f name=$name | grep -w $name`" ]]
+then
+    id=`docker network create --attachable --driver overlay $name`
+    echo "Created ATTACHABLE $name network with id $id"
+fi
+
 echo "Starting Ganache.."
 
 docker run \
-  --rm \
   --detach \
-  --name="$name" \
-  --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
-  --volume="${project}_chain_dev:/data" \
-  --volume="$dir:/root" \
-  --publish="$ganache_rpc_port:$ganache_rpc_port" \
   --entrypoint=bash \
+  --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
+  --name="$name" \
+  --network="$name" \
+  --publish="$ganache_rpc_port:$ganache_rpc_port" \
+  --rm \
+  --volume="$dir:/root" \
+  --volume="${project}_chain_dev:/data" \
   ${project}_builder -c "
-    echo lets go ganache diggy
+    echo Ganache container activated
     exec ./node_modules/.bin/ganache-cli \
       --host=0.0.0.0 \
       --port=$ganache_rpc_port \
       --db=/data \
       --mnemonic=\"$ETH_MNEMONIC\" \
       --networkId=$ganache_net_id \
-      --blockTime=3 > ops/ganache.log
+      --blockTime=3
   "
 
 sleep 1

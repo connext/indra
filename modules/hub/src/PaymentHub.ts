@@ -1,4 +1,4 @@
-import { types, big } from './Connext';
+import { types, big } from 'connext';
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import { CloseChannelService } from './CloseChannelService'
 import Config from './Config'

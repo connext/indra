@@ -7,7 +7,7 @@ import Config from '../Config'
 import { ApiService } from '../api/ApiService'
 import { getUserFromRequest } from '../util/request'
 import { BigNumber } from 'ethers/utils'
-import { big, types } from '../Connext'
+import { big, types } from 'connext'
 
 const { convertCustodialBalanceRow, convertCustodialWithdrawalRow } = types
 

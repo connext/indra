@@ -1,17 +1,15 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import Config from '../Config'
-import { big } from '../Connext';
-const {
-  Big
-} = big
 
-type ThreadState = Connext.types.ThreadState
-type ThreadStatus = Connext.types.ThreadStatus
-type ThreadStateBN = Connext.types.ThreadStateBN
 type ThreadRowBN = Connext.types.ThreadRowBN
+type ThreadState = Connext.types.ThreadState
+type ThreadStateBN = Connext.types.ThreadStateBN
 type ThreadStateUpdateRowBN = Connext.types.ThreadStateUpdateRowBN
+type ThreadStatus = Connext.types.ThreadStatus
+
+const { Big } = Connext.big
 
 export default interface ThreadsDao {
   applyThreadUpdate(

@@ -1,23 +1,19 @@
-import {expect} from 'chai'
+import { expect } from 'chai'
+
 import { sleep } from '../utils'
-import {SinonFakeTimers, SinonSandbox} from 'sinon'
+
 import { Poller } from './Poller'
-const sinon = require('sinon')
 
 describe('Poller', () => {
+  const interval: number = 10
+  const name: string = 'test-poller'
+  const timeout: number = 50
+  const verbose: boolean = false // change to true for easier debugging
+  let callback: () => Promise<any> = async (): Promise<any> => { runs += 1 }
   let poller: Poller
   let runs: number
-  let callback: () => Promise<any>
 
   beforeEach(() => {
-    callback = async () => {
-      runs += 1
-    }
-    poller = new Poller({
-      name: 'test-poller',
-      interval: 2,
-      callback: () => callback()
-    })
     runs = 0
   })
 
@@ -25,43 +21,43 @@ describe('Poller', () => {
     poller.stop()
   })
 
-  it('should run function once every intervalLength', async () => {
+  it('should start polling once every interval', async () => {
+    poller = new Poller({ callback, interval, name, timeout, verbose })
     await poller.start()
     expect(runs).to.equal(1)
-    await sleep(12)
-    expect(runs).greaterThan(3)
+    await sleep(timeout)
+    expect(runs).greaterThan(1)
   })
 
-  it('should stop running when stop is called', async () => {
+  it('should stop polling when stop is called', async () => {
+    poller = new Poller({ callback, interval, name, timeout, verbose })
     await poller.start()
     expect(runs).to.equal(1)
     poller.stop()
-    await sleep(10)
+    await sleep(timeout)
     expect(runs).to.equal(1)
   })
 
-  it('should time out', async () => {
-    poller = new Poller({
-      name: 'test-poller',
-      interval: 2,
-      timeout: 5,
-      callback: () => {
-        runs += 1
-        return new Promise((res, rej) => null)
-      }
-    })
+  it('should continue pollling after callback times out', async () => {
+    callback = (): Promise<undefined> => {
+      runs += 1
+      return new Promise((res: any, rej: any): undefined => undefined)
+    }
+    poller = new Poller({ callback, interval, name, timeout, verbose })
     await poller.start()
-    await sleep(15)
-    expect(runs).greaterThan(2)
+    expect(runs).to.equal(1)
+    await sleep(timeout * 2)
+    expect(runs).greaterThan(1)
   })
 
-  it('should handle errors in the callback', async () => {
-    callback = async () => {
+  it('should continue polling after callback throws an error', async () => {
+    callback = async (): Promise<undefined> => {
       runs += 1
-      throw new Error('uhoh')
+      throw new Error('Ohh no this is a test error')
     }
+    poller = new Poller({ callback, interval, name, timeout, verbose })
     await poller.start()
-    await sleep(15)
-    expect(runs).greaterThan(2)
+    await sleep(timeout)
+    expect(runs).greaterThan(1)
   })
 })
