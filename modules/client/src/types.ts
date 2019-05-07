@@ -68,6 +68,9 @@ export type HubConfig<T=string> = ContractOptions & {
 }
 export type HubConfigBN = HubConfig<BN>
 
+// TODO: correctly define type
+export type ConnextProvider = any
+
 /*********************************
  ****** HELPER FUNCTIONS *********
  *********************************/
@@ -762,6 +765,13 @@ export type SuccinctWithdrawalParameters<T = string> = Partial<Payment> & {
   recipient?: Address
 }
 export type SuccinctWithdrawalParametersBN = SuccinctWithdrawalParameters<BN>
+
+/*********************************
+ ******* PAYMENT PROFILES ********
+ *********************************/
+
+// TODO: correctly define type
+export type PaymentProfileConfig = any
 
 /*********************************
  ****** PAYMENT & PURCHASE *******
