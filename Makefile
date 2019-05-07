@@ -123,7 +123,6 @@ test-default: test-client
 test-all: test-client test-contracts test-hub
 
 test-client: client
-	bash ops/start-ganache.sh
 	bash ops/test-client.sh
 
 watch-client:
@@ -134,6 +133,9 @@ test-contracts: client contract-artifacts
 
 test-hub: hub database
 	bash ops/test-hub.sh
+
+watch-hub:
+	bash ops/watch-hub.sh
 
 ########################################
 # Begin Real Rules

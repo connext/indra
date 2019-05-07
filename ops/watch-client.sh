@@ -5,14 +5,14 @@ set -e
 dir=`pwd | sed 's/indra.*/indra/'`/modules/client
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
-docker network create --attachable --driver overlay ganache 2> /dev/null || true
+bash ops/start-ganache.sh
 
 echo "Activating client watcher.."
 
 docker run \
   --entrypoint=bash \
   --interactive \
-  --name=${project}_watcher \
+  --name=${project}_client_watcher \
   --network="ganache" \
   --rm \
   --tty \
