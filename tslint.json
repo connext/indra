@@ -5,6 +5,7 @@
     "completed-docs": false,
     "curly": [true, "ignore-same-line"],
     "file-name-casing": false,
+    "max-classes-per-file": [true, 2],
     "max-line-length": [true, 100],
     "newline-before-return": false,
     "newline-per-chained-call": false,
@@ -31,7 +32,8 @@
       "property-declaration",
       "variable-declaration",
       "member-variable-declaration"
-    ]
+    ],
+    "variable-name": false
 
   },
   "jsRules": {

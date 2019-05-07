@@ -1,4 +1,5 @@
-import * as eth from 'ethers';
+import * as eth from 'ethers'
+
 import { Networking } from './lib/networking'
 import {
   Address,
@@ -6,9 +7,11 @@ import {
   ChannelState,
   ChannelStateUpdate,
   channelUpdateToUpdateRequest,
+  CustodialBalanceRow,
   ExchangeRates,
   HubConfig,
   Payment,
+  PaymentProfileConfig,
   PurchasePayment,
   PurchasePaymentHubResponse,
   SignedDepositRequestProposal,
@@ -18,10 +21,8 @@ import {
   ThreadStateUpdate,
   UpdateRequest,
   WithdrawalParameters,
-  CustodialBalanceRow,
-  PaymentProfileConfig,
 } from './types'
-import Wallet from './Wallet';
+import Wallet from './Wallet'
 
 /*********************************
  ****** CONSTRUCTOR TYPES ********
@@ -30,39 +31,47 @@ import Wallet from './Wallet';
 export interface IHubAPIClient {
   authChallenge(): Promise<string>
   authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string>
+  buy<PurchaseMetaType = any, PaymentMetaType = any>(
+    meta: PurchaseMetaType,
+    payments: Array<PurchasePayment<PaymentMetaType>>,
+  ): Promise<PurchasePaymentHubResponse>
+  config(): Promise<HubConfig>
+  getActiveThreads(): Promise<ThreadState[]>
+  getAllThreads(): Promise<ThreadState[]>
   getAuthStatus(): Promise<{ success: boolean, address?: Address }>
   getAuthToken(): Promise<string>
   getChannel(): Promise<ChannelRow>
   getChannelByUser(user: Address): Promise<ChannelRow>
   getChannelStateAtNonce(txCountGlobal: number): Promise<ChannelStateUpdate>
-  getThreadInitialStates(): Promise<ThreadState[]>
-  getIncomingThreads(): Promise<ThreadRow[]>
-  getActiveThreads(): Promise<ThreadState[]>
-  getLastThreadUpdateId(): Promise<number>
-  getAllThreads(): Promise<ThreadState[]>
-  getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
-  sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
+  getCustodialBalance(): Promise<CustodialBalanceRow | null>
   getExchangeRates(): Promise<ExchangeRates> // TODO: name is typo
-  buy<PurchaseMetaType=any, PaymentMetaType=any>(
-    meta: PurchaseMetaType,
-    payments: PurchasePayment<PaymentMetaType>[],
-  ): Promise<PurchasePaymentHubResponse>
-  requestDeposit(deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number): Promise<Sync>
-  requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
-  requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
-  requestCollateral(txCountGlobal: number): Promise<Sync>
-  updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{
-    error: string | null
-    updates: Sync
-  }>
-  updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
+  getIncomingThreads(): Promise<ThreadRow[]>
+  getLastThreadUpdateId(): Promise<number>
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
-  config(): Promise<HubConfig>
-  redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment }>
-  getCustodialBalance(): Promise<CustodialBalanceRow | null>
   getProfileConfig(): Promise<PaymentProfileConfig>
+  getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
+  getThreadInitialStates(): Promise<ThreadState[]>
+  redeem(
+    secret: string,
+    txCount: number,
+    lastThreadUpdateId: number,
+  ): Promise<PurchasePaymentHubResponse & { amount: Payment }>
+  requestCollateral(txCountGlobal: number): Promise<Sync>
+  requestDeposit(
+    deposit: SignedDepositRequestProposal,
+    txCount: number,
+    lastThreadUpdateId: number,
+  ): Promise<Sync>
+  requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
+  requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
   startProfileSession(): Promise<void>
+  sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
+  updateHub(
+    updates: UpdateRequest[],
+    lastThreadUpdateId: number,
+  ): Promise<{ error: string | null, updates: Sync }>
+  updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
 }
 
 export class HubAPIClient implements IHubAPIClient {
@@ -77,22 +86,24 @@ export class HubAPIClient implements IHubAPIClient {
     this.wallet = wallet
   }
 
-  async getProfileConfig(): Promise<PaymentProfileConfig> {
-    throw new Error("Implement getProfileConfig on the hub and client properly.")
+  public async getProfileConfig(): Promise<PaymentProfileConfig> {
+    throw new Error('Implement getProfileConfig on the hub and client properly.')
   }
 
-  async startProfileSession(): Promise<void> {
-    throw new Error("Implement startProfileSession on the hub and client properly.")
+  public async startProfileSession(): Promise<void> {
+    throw new Error('Implement startProfileSession on the hub and client properly.')
   }
 
-  async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
+  public async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
     try {
-      const res = (await this.networking.post(`custodial/${this.wallet.address}/balance`, {
-        authToken: await this.getAuthToken(),
-      })).data
+      const res: CustodialBalanceRow | null = (await this.networking.post(
+        `custodial/${this.wallet.address}/balance`, {
+          authToken: await this.getAuthToken(),
+        },
+      )).data
       return res ? res : null
     } catch (e) {
-      if (e.status == 404) {
+      if (e.status === 404) {
         console.log(`Custodial balances not found for user ${this.wallet.address}`)
         return null
       }
@@ -101,17 +112,17 @@ export class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async config(): Promise<HubConfig> {
+  public async config(): Promise<HubConfig> {
     const res = (await this.networking.get(`config`)).data
     return res ? res : null
   }
 
-  async authChallenge(): Promise<string> {
+  public async authChallenge(): Promise<string> {
     const res = (await this.networking.post(`auth/challenge`, {})).data
     return res && res.nonce ? res.nonce : null
   }
 
-  async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
+  public async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
     const res = (await this.networking.post(`auth/response`, {
       nonce,
       address,
@@ -121,17 +132,17 @@ export class HubAPIClient implements IHubAPIClient {
     return res && res.token ? res.token : null
   }
 
-  async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
+  public async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
     const res = (await this.networking.post(`auth/status`, {
       authToken: this.authToken
     })).data
     return res ? res : { success: false }
   }
 
-  async getAuthToken(): Promise<string> {
+  public async getAuthToken(): Promise<string> {
     // if we already have an auth token that works, return it
     const status = await this.getAuthStatus()
-    if (this.authToken && status.success && status.address && status.address.toLowerCase() == this.wallet.address) {
+    if (this.authToken && status.success && status.address && status.address.toLowerCase() === this.wallet.address) {
       return this.authToken
     }
     console.log(`Getting a new auth token, current one is invalid: ${this.authToken}`)
@@ -148,14 +159,14 @@ export class HubAPIClient implements IHubAPIClient {
     return this.authToken
   }
 
-  async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
+  public async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
     try {
       const res = (await this.networking.post(`channel/${this.wallet.address}/latest-no-pending`, {
         authToken: await this.getAuthToken(),
       })).data
       return res ? res : null
     } catch (e) {
-      if (e.status == 404) {
+      if (e.status === 404) {
         console.log(`Channel not found for user ${this.wallet.address}`)
         return null
       }
@@ -164,14 +175,14 @@ export class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getLastThreadUpdateId(): Promise<number> {
+  public async getLastThreadUpdateId(): Promise<number> {
     try {
       const res = (await this.networking.post(`thread/${this.wallet.address}/last-update-id`, {
         authToken: await this.getAuthToken(),
       })).data
       return res && res.latestThreadUpdateId ? res.latestThreadUpdateId : 0
     } catch (e) {
-      if (e.status == 404) {
+      if (e.status === 404) {
         console.log(`Thread update not found for user ${this.wallet.address}`)
         return 0
       }
@@ -180,14 +191,14 @@ export class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
+  public async getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null> {
     try {
       const res = (await this.networking.post(`channel/${this.wallet.address}/latest-update`, {
         authToken: await this.getAuthToken(),
       })).data
       return res && res.state ? { state: res.state, update: channelUpdateToUpdateRequest(res) } : null
     } catch (e) {
-      if (e.status == 404) {
+      if (e.status === 404) {
         console.log(`Channel not found for user ${this.wallet.address}`)
         return null
       }
@@ -197,7 +208,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // 'POST /:sender/to/:receiver/update': 'doUpdateThread'
-  async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
+  public async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
     try {
       const res = (await this.networking.post(`thread/${update.state.sender}/to/${update.state.receiver}/update`, {
         authToken: await this.getAuthToken(),
@@ -213,7 +224,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // get the current channel state and return it
-  async getChannelByUser(user: Address): Promise<ChannelRow> {
+  public async getChannelByUser(user: Address): Promise<ChannelRow> {
     try {
       const res = (await this.networking.post(`channel/${user}`, {
         authToken: await this.getAuthToken(),
@@ -227,12 +238,12 @@ export class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getChannel(): Promise<ChannelRow> {
+  public async getChannel(): Promise<ChannelRow> {
     return await this.getChannelByUser(this.wallet.address)
   }
 
   // return channel state at specified global nonce
-  async getChannelStateAtNonce(
+  public async getChannelStateAtNonce(
     txCountGlobal: number,
   ): Promise<ChannelStateUpdate> {
     try {
@@ -248,7 +259,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // get the current channel state and return it
-  async getThreadInitialStates(): Promise<ThreadState[]> {
+  public async getThreadInitialStates(): Promise<ThreadState[]> {
     const res = (await this.networking.post(`thread/${this.wallet.address}/initial-states`, {
       authToken: await this.getAuthToken(),
     })).data
@@ -256,7 +267,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // get the current channel state and return it
-  async getActiveThreads(): Promise<ThreadState[]> {
+  public async getActiveThreads(): Promise<ThreadState[]> {
     const res = (await this.networking.post(`thread/${this.wallet.address}/active`, {
       authToken: await this.getAuthToken(),
     })).data
@@ -264,7 +275,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // get the current channel state and return it
-  async getAllThreads(): Promise<ThreadState[]> {
+  public async getAllThreads(): Promise<ThreadState[]> {
     const res = (await this.networking.post(`thread/${this.wallet.address}/all`, {
       authToken: await this.getAuthToken(),
     })).data
@@ -272,7 +283,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // get the current channel state and return it
-  async getIncomingThreads(): Promise<ThreadRow[]> {
+  public async getIncomingThreads(): Promise<ThreadRow[]> {
     const res = (await this.networking.post(`thread/${this.wallet.address}/incoming`, {
       authToken: await this.getAuthToken(),
     })).data
@@ -280,7 +291,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // return all threads between 2 addresses
-  async getThreadByParties(
+  public async getThreadByParties(
     partyB: Address,
     userIsSender: boolean,
   ): Promise<ThreadRow> {
@@ -293,7 +304,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // hits the hubs sync endpoint to return all actionable states
-  async sync(
+  public async sync(
     txCountGlobal: number,
     lastThreadUpdateId: number
   ): Promise<Sync | null> {
@@ -311,12 +322,12 @@ export class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async getExchangeRates(): Promise<ExchangeRates> {
+  public async getExchangeRates(): Promise<ExchangeRates> {
     const res = (await this.networking.get('exchangeRate')).data
     return res && res.rates ? res.rates : null
   }
 
-  async buy<PurchaseMetaType=any, PaymentMetaType=any>(
+  public async buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
     payments: PurchasePayment<PaymentMetaType>[],
   ): Promise<PurchasePaymentHubResponse> {
@@ -332,7 +343,7 @@ export class HubAPIClient implements IHubAPIClient {
     }
   }
 
-  async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
+  public async redeem(secret: string, txCount: number, lastThreadUpdateId: number,): Promise<PurchasePaymentHubResponse & { amount: Payment}> {
     try {
       const res = (await this.networking.post(`payments/redeem/${this.wallet.address}`, {
         authToken: await this.getAuthToken(),
@@ -343,7 +354,7 @@ export class HubAPIClient implements IHubAPIClient {
       return res ? res : null
     } catch (e) {
       console.log(e.message)
-      if (e.message.indexOf("Payment has been redeemed.") != -1) {
+      if (e.message.indexOf('Payment has been redeemed.') != -1) {
         throw new Error(`Payment has been redeemed.`)
       }
       throw e
@@ -351,7 +362,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // post to hub telling user wants to deposit
-  async requestDeposit(
+  public async requestDeposit(
     deposit: SignedDepositRequestProposal,
     txCount: number,
     lastThreadUpdateId: number,
@@ -371,7 +382,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // post to hub telling user wants to withdraw
-  async requestWithdrawal(
+  public async requestWithdrawal(
     withdrawal: WithdrawalParameters,
     txCountGlobal: number
   ): Promise<Sync> {
@@ -383,7 +394,7 @@ export class HubAPIClient implements IHubAPIClient {
     return res ? res : null
   }
 
-  async requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync> {
+  public async requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync> {
     const res = (await this.networking.post(`channel/${this.wallet.address}/request-exchange`, {
       authToken: await this.getAuthToken(),
       weiToSell,
@@ -395,7 +406,7 @@ export class HubAPIClient implements IHubAPIClient {
 
   // performer calls this when they wish to start a show
   // return the proposed deposit fro the hub which should then be verified and cosigned
-  async requestCollateral(txCountGlobal: number): Promise<Sync> {
+  public async requestCollateral(txCountGlobal: number): Promise<Sync> {
     const res = (await this.networking.post(`channel/${this.wallet.address}/request-collateralization`, {
       authToken: await this.getAuthToken(),
       lastChanTx: txCountGlobal,
@@ -404,7 +415,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   // post to hub to batch verify state updates
-  async updateHub(
+  public async updateHub(
     updates: UpdateRequest[],
     lastThreadUpdateId: number,
   ): Promise<{ error: string | null, updates: Sync }> {

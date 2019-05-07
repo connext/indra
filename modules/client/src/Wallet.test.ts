@@ -3,7 +3,6 @@ import { TransactionRequest, Web3Provider } from 'ethers/providers'
 import { BigNumber as BN } from 'ethers/utils'
 import Web3 from 'web3'
 
-import { ConnextClientOptions } from './Connext'
 import { toWeiBig } from './lib/bn'
 import { assert, parameterizedTests } from './testing'
 import { Utils } from './Utils'
@@ -51,10 +50,6 @@ const testSendTransaction: any = async (wallet: Wallet): Promise<void> => {
 
 describe('Wallet', () => {
 
-  it('should throw an error if not given a signing method', async function() {
-    assert.throws(() => new Wallet({ hubUrl }))
-  })
-
   it('should sign messages properly with a private key', async function() {
     testSignMessage(new Wallet({ hubUrl, privateKey }))
   })
@@ -83,6 +78,10 @@ describe('Wallet', () => {
     this.timeout(10000)
     const web3Address = (await (new Web3(web3Provider)).eth.getAccounts())[0].toLowerCase()
     testSignMessage(new Wallet({ hubUrl, user: web3Address, web3Provider }))
+  })
+
+  it('should throw an error if not given a signing method', async function() {
+    assert.throws(() => new Wallet({ hubUrl }))
   })
 
 })

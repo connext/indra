@@ -10,8 +10,17 @@ import * as getters from './state/getters'
 import { ConnextState } from './state/store'
 import {
   ChannelState,
+  convertArgs,
+  convertChannelRow,
   convertChannelState,
+  convertChannelStateUpdateRow,
+  convertDeposit,
+  convertExchange,
+  convertFields,
+  convertPayment,
   convertThreadState,
+  convertWithdrawal,
+  convertWithdrawalParameters,
   ExchangeRates,
   Payment,
   SignedDepositRequestProposal,
@@ -38,6 +47,19 @@ export class Utils {
   public toWeiBig: (amount: number | string | BN) => BN = bigUtils.toWeiBig
   public toWeiString: (amount: number | string | BN) => string = bigUtils.toWeiString
   public weiToAsset: (wei: BN, rate: string) => BN = bigUtils.weiToAsset
+  public convert: any = {
+    Args: convertArgs,
+    ChannelRow: convertChannelRow,
+    ChannelState: convertChannelState,
+    ChannelStateUpdateRow: convertChannelStateUpdateRow,
+    Deposit: convertDeposit,
+    Exchange: convertExchange,
+    Fields: convertFields,
+    Payment:  convertPayment,
+    ThreadState: convertThreadState,
+    Withdrawal: convertWithdrawal,
+    WithdrawalParameters: convertWithdrawalParameters,
+  }
 
   public createChannelStateHash(
     channelState: UnsignedChannelState,
