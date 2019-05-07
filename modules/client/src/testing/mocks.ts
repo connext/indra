@@ -61,6 +61,7 @@ import {
   UpdateRequest,
   WithdrawalParameters,
   CustodialBalanceRow,
+  PaymentProfileConfig,
 } from '../types'
 import Wallet from '../Wallet';
 import { handleStateFlags } from '../state/middleware';
@@ -235,6 +236,13 @@ export class MockHub implements IHubAPIClient {
       hubAddress: mkAddress("0xhhh")
     } as any
   }
+
+  // TODO: implement the profile methods
+  async getProfileConfig(): Promise<PaymentProfileConfig> {
+    return
+  }
+
+  async startProfileSession(): Promise<void> {}
 
   async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
     return getCustodialBalance("empty")

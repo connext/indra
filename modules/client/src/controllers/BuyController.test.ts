@@ -141,10 +141,8 @@ describe('BuyController: unit tests', () => {
       balanceWei: [5, 5],
       balanceToken: [10, 10],
     })
-    const mockHub = new MockHub()
     connext = new MockConnextInternal({ 
       store: mockStore.createStore(), 
-      hub: mockHub,
     })
     user = connext.wallet.address
     secret = connext.generateSecret()
