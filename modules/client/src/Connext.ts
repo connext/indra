@@ -36,6 +36,8 @@ import {
   UnsignedChannelState,
   WithdrawalParameters,
   PartialPurchaseRequest,
+  PurchasePaymentRow,
+  PurchaseRowWithPayments,
 } from './types';
 import { Utils } from './Utils';
 import { Validator, } from './validator';
@@ -165,6 +167,14 @@ export abstract class ConnextClient extends EventEmitter {
 
   async redeem(secret: string): Promise<{ purchaseId: string }> {
     return await this.internal.redeemController.redeem(secret)
+  }
+
+  async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
+    return await this.internal.hub.getPaymentHistory()
+  }
+
+  async getPaymentById(purchaseId: string): Promise<PurchaseRowWithPayments<object, string>> {
+    return await this.internal.hub.getPaymentById(purchaseId)
   }
 }
 
