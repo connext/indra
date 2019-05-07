@@ -16,6 +16,7 @@ const providers: string[] = [
   'http://localhost:8545',
   'http://ethprovider:8545',
   'http://localhost:3000/api/eth',
+  'http://ganache:8545',
 ]
 const utils: Utils = new Utils()
 const wallet: eth.Wallet = eth.Wallet.fromMnemonic(mnemonic)

@@ -123,6 +123,7 @@ test-default: test-client
 test-all: test-client test-contracts test-hub
 
 test-client: client
+	bash ops/start-ganache.sh
 	bash ops/test-client.sh
 
 watch-client:

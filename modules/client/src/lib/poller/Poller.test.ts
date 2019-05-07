@@ -5,9 +5,9 @@ import { sleep } from '../utils'
 import { Poller } from './Poller'
 
 describe('Poller', () => {
-  const interval: number = 100
+  const interval: number = 10
   const name: string = 'test-poller'
-  const timeout: number = 500
+  const timeout: number = 50
   const verbose: boolean = false // change to true for easier debugging
   let callback: () => Promise<any> = async (): Promise<any> => { runs += 1 }
   let poller: Poller

@@ -5,6 +5,8 @@ set -e
 dir=`pwd | sed 's/indra.*/indra/'`/modules/client
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
+docker network create --attachable --driver overlay ganache 2> /dev/null || true
+
 echo "Activating client tester.."
 date "+%s" > /tmp/timestamp
 
@@ -16,12 +18,13 @@ trap cleanup EXIT
 docker container prune -f
 
 docker run \
-  --interactive \
-  --tty \
-  --rm \
-  --name=${project}_tester \
-  --volume=$dir:/root \
   --entrypoint=bash \
+  --interactive \
+  --name=${project}_tester \
+  --network="ganache" \
+  --rm \
+  --tty \
+  --volume=$dir:/root \
   ${project}_builder -c '
     set -e
     echo "Container launched.."

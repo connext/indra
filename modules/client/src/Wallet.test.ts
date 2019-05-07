@@ -15,7 +15,7 @@ const providers: string[] = [
   'http://localhost:8545',
   'http://ethprovider:8545',
   'http://localhost:3000/api/eth',
-  'http://127.0.0.1:8545',
+  'http://ganache:8545',
 ]
 let web3: Web3 | undefined
 let web3Address1: string
@@ -32,19 +32,20 @@ interface ITestCase {
   }
 }
 
-describe.only('Wallet', () => {
+describe.skip('Wallet', () => {
 
   before(async () => {
     for (const p of providers) {
       try {
-        console.log(`Attempting to connect to provider: ${p}`)
         web3 = new Web3(new Web3.providers.HttpProvider(p))
         provider = new eth.providers.JsonRpcProvider(p)
         web3Address1 = (await web3.eth.getAccounts())[0]
         web3Address2 = (await web3.eth.getAccounts())[1]
-        console.log('Success')
+        console.log(`Successfully connected to provider: ${p}`)
         break
-      } catch (e) {/* noop */}
+      } catch (e) {
+        console.warn(`Failed to connect to provider: ${p}`)
+      }
     }
   })
 
