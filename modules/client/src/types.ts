@@ -672,10 +672,10 @@ export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contrac
     const value = val as any
     switch (name) {
       case "senderIdx":
-        if (value !== "0" && value !== "1") {
+        if (value.toString() !== "0" && value.toString() !== "1") {
           throw new Error(`Incorrect senderIdx value detected: ${value}`)
         }
-        ans.sender = value === "1" ? obj.user : hubAddress
+        ans.sender = value.toString() === "1" ? obj.user : hubAddress
         break
       case "weiBalances":
         ans.balanceWeiHub = value[0]
