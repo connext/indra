@@ -21,7 +21,7 @@ ETH_RPC_URL="$ETHPROVIDER_HOST:8545"
 
 # Kill the test database when this script exits
 function cleanup {
-  echo "Tests finished, stopping test containers.."
+  echo;echo "Tests finished, stopping test containers.."
   docker container stop $REDIS_HOST 2> /dev/null || true
   docker container stop $ETHPROVIDER_HOST 2> /dev/null || true
   docker container stop $POSTGRES_HOST 2> /dev/null || true
@@ -83,6 +83,7 @@ docker run --tty --name ${project}_hub_watcher --network=$project \
     echo "Waiting for $POSTGRES_HOST:5431..." && bash ops/wait-for.sh -t 60 $POSTGRES_HOST:5431 2> /dev/null
     echo "Waiting for $DATABASE..." && bash ops/wait-for.sh -t 60 $DATABASE 2> /dev/null
     echo "Waiting for $ETH_RPC_URL_TEST..." && bash ops/wait-for.sh -t 60 $ETH_RPC_URL_TEST 2> /dev/null
+    echo
 
     function finish {
       echo && echo "Goodbye" && exit
