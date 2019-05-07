@@ -3,27 +3,25 @@ import * as express from 'express'
 import log from '../util/log'
 import Config from '../Config'
 
-const LOG = log('ConfigApiService')
+const LOG = log('PaymentProfilesApiService')
 
-export default class ConfigApiService extends ApiService<ConfigApiServiceHandler> {
+export default class PaymentProfilesApiService extends ApiService<PaymentProfilesApiServiceHandler> {
   namespace = 'profile'
   routes = {
-    'POST /': 'doGetConfig',
+    'POST /': 'doAddProfileKey',
   }
-  handler = ConfigApiServiceHandler
+  handler = PaymentProfilesApiServiceHandler
   dependencies = {
-    'config': 'Config',
   }
 }
 
-class ConfigApiServiceHandler {
-  config: Config
-
+class PaymentProfilesApiServiceHandler {
   doAddProfileKey(req: express.Request, res: express.Response) {
+    
     const { key } = req.params
     if (!key) {
       LOG.warn(
-        'Received invalid payment request. Aborting. Params received: {params}, Body received: {body}',
+        'Received invalid profile key request. Aborting. Params received: {params}, Body received: {body}',
         {
           params: JSON.stringify(req.params),
           body: JSON.stringify(req.body),

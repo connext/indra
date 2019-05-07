@@ -12,3 +12,9 @@ export function ownedAddressOrAdmin(req: express.Request) {
 
   return targetAddr === requesterAddr
 }
+
+export function isAdmin(req: express.Request) {
+  const roles = req.session!.roles
+
+  return roles.has(Role.ADMIN)
+}
