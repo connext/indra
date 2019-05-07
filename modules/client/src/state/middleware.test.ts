@@ -1,4 +1,4 @@
-import { mkAddress, assert, mkHash, parameterizedTests, PartialSignedOrSuccinctChannel } from "../testing";
+import { assert, mkHash, parameterizedTests, PartialSignedOrSuccinctChannel } from "../testing";
 import { MockStore } from "../testing/mocks";
 import * as actions from './actions'
 import { SyncResult } from "../types";
@@ -62,7 +62,7 @@ describe("handleStateFlags", () => {
     })
   })
 
-  const collateralTcs = [
+  parameterizedTests([
     {
       name: "hub decollateralizes token, confirmation",
       channel: { pendingWithdrawalToken: [1, 0], },
@@ -147,21 +147,17 @@ describe("handleStateFlags", () => {
         }
       }]
     },
-  ]
+  ], ({ name, channel, expected, sync }) => {
+    const mock = new MockStore()
+    mock.setChannel(channel as PartialSignedOrSuccinctChannel)
+    const store = mock.createStore()
 
-  collateralTcs.forEach(({ name, channel, expected, sync }) => {
-    it(name, () => {
-      const mock = new MockStore()
-      mock.setChannel(channel as PartialSignedOrSuccinctChannel)
-      const store = mock.createStore()
+    store.dispatch(actions.setSortedSyncResultsFromHub(sync as SyncResult[]))
 
-      store.dispatch(actions.setSortedSyncResultsFromHub(sync as SyncResult[]))
+    const state = store.getState()
 
-      const state = store.getState()
-
-      assert.containSubset(state.runtime, {
-        collateral: expected
-      })
+    assert.containSubset(state.runtime, {
+      collateral: expected
     })
   })
 })
