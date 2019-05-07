@@ -100,7 +100,7 @@ describe("StateUpdateController: hub to user payments", () => {
           reason: "Payment",
           args: {
             recipient: "user",
-            amountToken: '-1',
+            amountToken: '1',
             amountWei: '0',
           },
           txCount: 1,
@@ -163,41 +163,39 @@ describe("StateUpdateController: hub to user payments", () => {
       fails: /sigUser not detected in update/
     }
   ], async ({ name, syncResults, fails }) => {
-    it(name, async () => {
-      const mockStore = new MockStore()
-      mockStore.setChannel({
-        user,
-        balanceWei: [5, 5],
-        balanceToken: [10, 10],
-      })
-      mockStore.setSyncResultsFromHub(syncResults as SyncResult[])
-      connext = new MockConnextInternal({
-        user,
-        store: mockStore.createStore()
-      })
-
-      await connext.start()
-
-      if (fails) {
-        await assert.isRejected(connext.start(), fails)
-      }
-
-      await new Promise(res => setTimeout(res, 20))
-
-      for (const res of syncResults) {
-        connext.mockHub.assertReceivedUpdate({
-          reason: res.update.reason as ChannelUpdateReason,
-          args: res.update.args,
-          sigUser: true,
-          sigHub: true,
-        })
-      }
+    const mockStore = new MockStore()
+    mockStore.setChannel({
+      user,
+      balanceWei: [5, 5],
+      balanceToken: [10, 10],
     })
+    mockStore.setSyncResultsFromHub(syncResults as SyncResult[])
+    connext = new MockConnextInternal({
+      user,
+      store: mockStore.createStore()
+    })
+
+    if (fails) {
+      await assert.isRejected(connext.start(), fails)
+      return
+    }
+
+    await connext.start()
+
+    await new Promise(res => setTimeout(res, 20))
+
+    for (const res of syncResults) {
+      connext.mockHub.assertReceivedUpdate({
+        reason: res.update.reason as ChannelUpdateReason,
+        args: res.update.args,
+        sigUser: true,
+        sigHub: true,
+      })
+    }
   })
 
   afterEach(async () => {
-    if (connext)
-      await connext.stop()
+    await connext.stop()
   })
 })
 
