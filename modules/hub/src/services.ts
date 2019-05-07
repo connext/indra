@@ -315,8 +315,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   StateGenerator: {
-    factory: (config: Config) => new StateGenerator(config.hotWalletAddress),
-    dependencies: ['Config'],
+    factory: () => new StateGenerator(),
   },
 
   GasEstimateDao: {

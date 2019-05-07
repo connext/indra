@@ -68,7 +68,7 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
     balanceTokenSender: tokenVal(10),
   })
 
-  const sg = new StateGenerator(registry.get('Config').hotWalletAddress)
+  const sg = new StateGenerator()
   const userUpdate = await sg.openThread(
     convertChannelState('bn', user.state),
     [],
