@@ -1,5 +1,9 @@
 {
-  "extends": ["tslint:recommended", "tslint-plugin-prettier"],
+  "extends": [
+    "tslint:recommended", 
+    "tslint-plugin-prettier", 
+    "tslint-config-prettier"
+  ],
   "rules": {
     "prettier": true,
     "comment-format": [true, "check-space"],
