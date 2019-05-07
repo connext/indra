@@ -37,6 +37,7 @@ import {
   WithdrawalParameters,
   PartialPurchaseRequest,
   PurchasePaymentRow,
+  PurchaseRowWithPayments,
 } from './types';
 import { Utils } from './Utils';
 import { Validator, } from './validator';
@@ -170,6 +171,10 @@ export abstract class ConnextClient extends EventEmitter {
 
   async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
     return await this.internal.hub.getPaymentHistory()
+  }
+
+  async getPaymentById(purchaseId: string): Promise<PurchaseRowWithPayments<object, string>> {
+    return await this.internal.hub.getPaymentById(purchaseId)
   }
 }
 
