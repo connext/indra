@@ -8,6 +8,9 @@ dir=`pwd | sed 's/indra.*/indra/'`/modules/contracts
 mnemonic='candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 ETH_MNEMONIC="${ETH_MNEMONIC:-$mnemonic}"
 
+# turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
+
 if [[ -n "`docker container ls | grep $name`" ]]
 then
   echo "Ganache is already running"
