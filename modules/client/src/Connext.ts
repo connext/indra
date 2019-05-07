@@ -37,6 +37,8 @@ import {
   PartialPurchaseRequest,
   Payment,
   PaymentProfileConfig,
+  PurchasePaymentRow,
+  PurchaseRowWithPayments,
   SignedDepositRequestProposal,
   SuccinctWithdrawalParameters,
   ThreadState,
@@ -217,14 +219,13 @@ export abstract class ConnextClient extends EventEmitter {
     return await this.internal.redeemController.redeem(secret)
   }
 
-  // ******************************
-  // ***** TX HISTORY METHODS *****
-  // ******************************
-  // TODO: merge in PR 200
+  async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
+    return await this.internal.hub.getPaymentHistory()
+  }
 
-  public async getHistory(): Promise<void> {/*See ConnextInternal*/}
-  public async getHistoryById(id: string): Promise<void> {/*See ConnextInternal*/}
-
+  async getPaymentById(purchaseId: string): Promise<PurchaseRowWithPayments<object, string>> {
+    return await this.internal.hub.getPaymentById(purchaseId)
+  }
 }
 
 /**

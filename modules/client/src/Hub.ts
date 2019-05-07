@@ -14,6 +14,8 @@ import {
   PaymentProfileConfig,
   PurchasePayment,
   PurchasePaymentHubResponse,
+  PurchasePaymentRow,
+  PurchaseRowWithPayments,
   SignedDepositRequestProposal,
   Sync,
   ThreadRow,
@@ -57,6 +59,17 @@ export interface IHubAPIClient {
     txCount: number,
     lastThreadUpdateId: number,
   ): Promise<PurchasePaymentHubResponse & { amount: Payment }>
+  sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
+  getExchangeRates(): Promise<ExchangeRates> // TODO: name is typo
+  getPaymentHistory(): Promise<PurchasePaymentRow[]>
+  getPaymentById(id: string): Promise<PurchaseRowWithPayments<object, string>>
+  buy<PurchaseMetaType=any, PaymentMetaType=any>(
+    meta: PurchaseMetaType,
+    payments: PurchasePayment<PaymentMetaType>[],
+  ): Promise<PurchasePaymentHubResponse>
+  requestDeposit(deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number): Promise<Sync>
+  requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
+  requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
   requestCollateral(txCountGlobal: number): Promise<Sync>
   requestDeposit(
     deposit: SignedDepositRequestProposal,
@@ -327,9 +340,23 @@ export class HubAPIClient implements IHubAPIClient {
     return res && res.rates ? res.rates : null
   }
 
-  public async buy<PurchaseMetaType=any, PaymentMetaType=any>(
+  async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
+    const { data } = await this.networking.post(`payments/history/${this.wallet.address}`, {
+      authToken: await this.getAuthToken()
+    })
+    return data ? data : null
+  }
+
+  async getPaymentById(id: string): Promise<PurchaseRowWithPayments<object, string>> {
+    const { data } = await this.networking.post(`payments/purchase/${id}`, {
+      authToken: await this.getAuthToken()
+    })
+    return data ? data : null
+  }
+
+  async buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
-    payments: PurchasePayment<PaymentMetaType>[],
+    payments: PurchasePayment<any, any>[],
   ): Promise<PurchasePaymentHubResponse> {
     try {
       const res = (await this.networking.post('payments/purchase', {
