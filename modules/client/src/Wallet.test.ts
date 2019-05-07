@@ -9,122 +9,80 @@ import { assert, parameterizedTests } from './testing'
 import { Utils } from './Utils'
 import Wallet from './Wallet'
 
+const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
 const mnemonic: string =
   'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
-const providers: string[] = [
-  'http://localhost:8545',
-  'http://ethprovider:8545',
-  'http://localhost:3000/api/eth',
-  'http://ganache:8545',
-]
-let web3: Web3 | undefined
-let web3Address1: string
-let web3Address2: string
-let web3Provider: Web3Provider
-const web3Tests: ITestCase[] = []
-let provider: eth.providers.JsonRpcProvider
+const privateKey: string = '0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6'
+const ethUrl: string = 'http://ganache:8545'
+const hubUrl: string = ''
+const utils: Utils = new Utils()
+const web3Provider: any = new Web3.providers.HttpProvider(ethUrl)
 
-interface ITestCase {
-  name: string,
-  opts: ConnextClientOptions
-  expected: {
-    address: string,
-  }
+let web3: Web3 | undefined
+let web3Address: string = ''
+
+////////////////////////////////////////
+// Helper Functions
+
+const testSignMessage: any = async (wallet: Wallet): Promise<void> => {
+  const msg: string = eth.utils.hexlify(eth.utils.randomBytes(32))
+  const sig: string = await wallet.signMessage(msg)
+  const recovered: string = utils.recoverSigner(msg, sig, wallet.address) || ''
+  assert.equal(recovered, wallet.address)
 }
 
-describe.skip('Wallet', () => {
+const testSendTransaction: any = async (wallet: Wallet): Promise<void> => {
+  const value = eth.utils.parseEther('0.01')
+  const balanceBefore: BN = await wallet.provider.getBalance(wallet.address)
+  const tx: any = await wallet.sendTransaction({
+    gasLimit: 600000,
+    gasPrice: 600000,
+    to: eth.constants.AddressZero,
+    value,
+  })
+  wallet.provider.pollingInterval = 100 // default is 4000 which causes test to time out
+  await wallet.provider.waitForTransaction(tx.hash)
+  const balanceAfter: BN = await wallet.provider.getBalance(wallet.address)
+  assert(balanceAfter.lte(balanceBefore.sub(value))) // lte bc we also pay some amount of gas
+}
 
-  before(async () => {
-    for (const p of providers) {
-      try {
-        web3 = new Web3(new Web3.providers.HttpProvider(p))
-        provider = new eth.providers.JsonRpcProvider(p)
-        web3Address1 = (await web3.eth.getAccounts())[0]
-        web3Address2 = (await web3.eth.getAccounts())[1]
-        console.log(`Successfully connected to provider: ${p}`)
-        break
-      } catch (e) {
-        console.warn(`Failed to connect to provider: ${p}`)
-      }
-    }
+////////////////////////////////////////
+// Tests
+
+describe('Wallet', () => {
+
+  it('should throw an error if not given a signing method', async function() {
+    assert.throws(() => new Wallet({ hubUrl }))
   })
 
-  parameterizedTests([
-    {
-      expected: { address: web3Address1 },
-      name: 'should work with a web3 provider and user',
-      opts: {
-        hubUrl: '',
-        user: web3Address1,
-        web3Provider,
-      },
-    },
-  ], async (tc: any): Promise<any> => {
-    // skip any tests referring to web3 if we could not find it
-    // NOTE: this means web3 string has to be in the test name
-    if (tc.name.includes('web3') && (!web3 || !web3Address1 || !web3Address2)) {
-      return
-    } else if (web3 && tc.name.includes('web3')) {
-      const accts: string[] = await web3.eth.getAccounts()
-      // update the test case values
-      web3Address1 = accts[0].toLowerCase()
-      web3Address2 = accts[1].toLowerCase()
-      web3Provider = web3.currentProvider as any
-      tc = {
-        ...tc,
-        expected: {
-          ...tc.expected,
-          address: web3Address1,
-        },
-        opts: {
-          ...tc.opts,
-          user: web3Address1,
-          web3Provider,
-        },
-      }
-    }
-
-    // instantiate the wallet
-    const wallet: Wallet = new Wallet(tc.opts)
-    console.log('***** instantiated wallet')
-
-    const addr: string = await wallet.getAddress()
-    assert.equal(addr, tc.expected.address)
-    console.log('***** correct address')
-
-    const msg: string = eth.utils.solidityKeccak256(
-      ['bytes32'],
-      [eth.utils.randomBytes(32)],
-    )
-
-    // test signing a message
-    const sig: string = await wallet.signMessage(msg)
-    console.log('***** sig', sig)
-    const recovered: string | undefined = new Utils().recoverSigner(msg, sig, tc.expected.address)
-    console.log('***** recovered', recovered)
-    assert.equal(recovered, tc.expected.address)
-    console.log('***** recoveredCorrectly')
-
-    // test sending a transaction
-    const txReq: TransactionRequest = {
-      from: wallet.address,
-      gasLimit: 600000,
-      gasPrice: 600000,
-      to: web3Address2,
-      value: toWeiBig(10).toString(),
-    }
-    // get balance before sending
-    // TODO: why does the wallet provider just not work for this call?
-    const balanceBefore: BN = await provider.getBalance(wallet.address)
-    console.log('***** previous balance', balanceBefore.toString())
-    const expectedBal: BN = balanceBefore.sub(toWeiBig(10))
-
-    // TODO
-    const tx: any = await wallet.sendTransaction(txReq)
-    console.log('***** tx', tx)
-
-    const balanceAfter: BN = await provider.getBalance(wallet.address)
-
-    assert.equal(balanceAfter.toString(), expectedBal.toString())
+  it('should sign messages properly with a private key', async function() {
+    testSignMessage(new Wallet({ hubUrl, privateKey }))
   })
+
+  it('should sign messages properly with a mnemonic', async function() {
+    testSignMessage(new Wallet({ hubUrl, mnemonic }))
+  })
+
+  it('should sign messages properly with web3', async function() {
+    const web3Address = (await (new Web3(web3Provider)).eth.getAccounts())[0].toLowerCase()
+    testSignMessage(new Wallet({ hubUrl, user: web3Address, web3Provider }))
+  })
+
+  it('should sign transactions properly with a private key', async function() {
+    this.timeout(10000)
+    testSendTransaction(new Wallet({ hubUrl, ethUrl, privateKey }))
+  })
+
+  it('should sign transactions properly with a mnemonic', async function() {
+    this.timeout(10000)
+    testSendTransaction(new Wallet({ hubUrl, ethUrl, mnemonic }))
+  })
+
+  // Ganache does not support the eth_signTransaction method
+  it.skip('should sign transactions properly with web3', async function() {
+    this.timeout(10000)
+    const web3Address = (await (new Web3(web3Provider)).eth.getAccounts())[0].toLowerCase()
+    testSignMessage(new Wallet({ hubUrl, user: web3Address, web3Provider }))
+  })
+
 })

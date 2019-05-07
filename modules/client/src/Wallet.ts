@@ -1,6 +1,5 @@
 import { ethers as eth } from 'ethers'
 import Web3 from 'web3'
-import { TransactionConfig } from 'web3-core'
 
 import { ConnextClientOptions } from './Connext'
 import {
@@ -108,7 +107,7 @@ export default class Wallet extends eth.Signer {
       const resolve: any = async (k: string, v: any): Promise<any> => await v
       const resolved: any = await objMapPromise(tx, resolve) as any
       // convert to right object
-      const txObj: TransactionConfig = {
+      const txObj: any = {
         data: resolved.data,
         from: this.address,
         gas: parseInt(resolved.gasLimit, 10),
