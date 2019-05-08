@@ -706,7 +706,7 @@ export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contrac
         ans.txCountChain = parseInt(value[1], 10)
         break
       default:
-        ans[name] = +value >= 0 && !value.startsWith('0x')
+        ans[name] = +value >= 0 && !value.toString().startsWith('0x')
           ? +value // detected int
           : value
     }
