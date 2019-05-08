@@ -142,6 +142,9 @@ describe.skip("makeEventVerbose", () => {
     // parse events, find matching
     let events = []
     try {
+      // NOTE: must preface the fn with public while testing locally
+      // this will be deleted soon
+      // @ts-ignore
       events = validator.parseChannelEventTxReceipt(
         "DidEmptyChannel", 
         receipt as any, 
