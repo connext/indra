@@ -2,7 +2,7 @@
 set -e
 
 test_command='
-  mocha \
+  ./node_modules/.bin/mocha \
     -r ts-node/register/type-check \
     -r ./src/register/common.ts \
     "src/**/*.test.ts" --exit
@@ -10,7 +10,7 @@ test_command='
 
 watch_command='
     function hash {
-      find src -type f -not -name "*.sw?" -exec stat {} \; \
+      find src -type f -not -name "*.swp" -exec stat {} \; \
        | grep "Modify:" \
        | sha256sum
     }
@@ -30,7 +30,7 @@ watch_command='
       else echo "Compiled successfully, running test suite"
       fi
 
-      mocha \
+      ./node_modules/.bin/mocha \
         -r ./dist/register/common.js \
         "dist/**/*.test.js" --exit
 
@@ -88,7 +88,7 @@ docker run \
   --rm \
   --volume="$root/modules/contracts:/root" \
   --tmpfs="/data" \
-  ${project}_builder ops/entry.sh "signal"
+  ${project}_builder ops/entry.sh signal nomigrate
 
 ########################################
 # Run Tests
@@ -104,7 +104,6 @@ docker run \
   --tty \
   --volume=$root/modules/client:/root \
   ${project}_builder -c '
-    set -e
     PATH=./node_modules/.bin:$PATH
     echo "Client Tester Container launched!";echo
 

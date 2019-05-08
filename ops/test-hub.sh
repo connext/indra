@@ -11,7 +11,7 @@ test_command='
 
 watch_command='
   function hash {
-    find src -type f -not -name "*.sw?" -exec stat {} \; \
+    find /client ./src -type f -not -name "*.swp" -exec stat {} \; \
      | grep "Modify:" \
      | sha256sum
   }
@@ -124,7 +124,7 @@ docker run \
   --rm \
   --volume="$root/modules/contracts:/root" \
   --tmpfs="/data" \
-  ${project}_builder ops/entry.sh "signal"
+  ${project}_builder ops/entry.sh
 
 ########################################
 # Run Tests
@@ -150,7 +150,6 @@ docker run \
   --volume="$root/modules/client:/client" \
   --volume="$root/modules/hub:/root" \
   ${project}_builder -c '
-    set -e
     PATH=./node_modules/.bin:$PATH
     echo "Hub Tester Container launched!";echo
 

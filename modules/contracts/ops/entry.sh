@@ -10,7 +10,8 @@ migration_flag_port=8544
 default_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 network="${ETH_NETWORK:-ganache}"
 mnemonic="${ETH_MNEMONIC:-$default_mnemonic}"
-signal="${1:-nosignal}"
+signal="${1:-signal}"
+migrate="${2:-migrate}"
 
 ########################################
 # Start local testnet if in dev mode
@@ -32,8 +33,11 @@ fi
 ########################################
 # migrate migration script
 
-echo "Running migration script.."
-node ops/migrate.js
+if [[ "$migrate" == "migrate" ]]
+then
+  echo "Running migration script.."
+  node ops/migrate.js
+fi
 
 ########################################
 # In dev-mode, signal that we're done deploying contracts

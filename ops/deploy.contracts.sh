@@ -90,7 +90,7 @@ docker service create \
   --restart-condition="none" \
   $SECRET_ENV \
   --entrypoint "bash ops/entry.sh" \
-  ${project}_builder 2> /dev/null
+  ${project}_builder nosignal 2> /dev/null
 `"
 echo "Success! Deployer service started with id: $id"
 echo

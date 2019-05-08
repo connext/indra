@@ -208,7 +208,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    entrypoint: bash ops/entry.sh signal
+    entrypoint: bash ops/entry.sh
     environment:
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK: $eth_network

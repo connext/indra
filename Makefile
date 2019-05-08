@@ -122,7 +122,7 @@ test: test-default
 test-default: test-client
 test-all: test-client test-contracts test-hub
 
-test-client: client
+test-client: contract-node-modules client
 	bash ops/test-client.sh
 
 watch-client:
