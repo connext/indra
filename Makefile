@@ -135,7 +135,7 @@ test-hub: hub database
 	bash ops/test-hub.sh
 
 watch-hub:
-	bash ops/watch-hub.sh
+	bash ops/test-hub.sh --watch
 
 ########################################
 # Begin Real Rules

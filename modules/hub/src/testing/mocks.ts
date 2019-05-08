@@ -199,7 +199,7 @@ export class MockSignerService extends SignerService {
 }
 
 export const getMockWeb3 = () => {
-  const web3 = new Web3('http://localhost:8545') // now web3 requires a provider
+  const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
   return {
     ...web3,
     eth: {

@@ -76,7 +76,7 @@ docker network create --attachable $NETWORK 2> /dev/null || true
 ########################################
 # Start dependencies
 
-echo "Client tester activated! Starting dependency containers...";echo;
+echo "Client tester activated!";echo;
 
 echo "Starting $ETHPROVIDER_HOST.."
 docker run \
@@ -106,12 +106,11 @@ docker run \
   --volume=$root/modules/client:/root \
   ${project}_builder -c '
     set -e
-    echo "Client Tester Container launched!"
-    echo
     PATH=./node_modules/.bin:$PATH
+    echo "Client Tester Container launched!";echo
 
     function finish {
-      echo && echo "Goodbye" && exit
+      echo && echo "Client tester container exiting.." && exit
     }
     trap finish SIGTERM SIGINT
 

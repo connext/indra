@@ -1,13 +1,55 @@
 #!/bin/bash
 set -e
 
-date "+%s" > /tmp/timestamp
+test_command='
+  ./node_modules/.bin/mocha \
+    -r ts-node/register/type-check \
+    -r ./src/register/common.ts \
+    -r ./src/register/testing.ts \
+    "src/**/*.test.ts" --exit
+'
+
+watch_command='
+  function hash {
+    find src -type f -not -name "*.sw?" -exec stat {} \; \
+     | grep "Modify:" \
+     | sha256sum
+  }
+
+  echo "Triggering first compilation/test cycle..."
+  while true
+  do
+    if [[ "$srcHash" == "`hash`" ]]
+    then sleep 1 && continue
+    else srcHash="`hash`" && echo "Changes detected, compiling..."
+    fi
+
+    tsc
+
+    if [[ "$?" != "0" ]]
+    then sleep 1 && continue
+    else echo "Compiled successfully, running test suite"
+    fi
+
+    ./node_modules/.bin/mocha \
+      -r ./dist/register/common.js \
+      "dist/**/*.test.js" --exit
+
+    echo "Waiting for changes..."
+
+  done
+'
 
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 root=`pwd | sed 's/indra.*/indra/'`
 if [[ "$1" == "--watch" ]]
-then suffix="hub_watcher"
-else suffix="hub_tester"
+then
+  suffix="hub_watcher"
+  command="$watch_command"
+else
+  date "+%s" > /tmp/timestamp
+  suffix="hub_tester"
+  command="$test_command"
 fi
 
 NETWORK="${project}_$suffix"
@@ -36,7 +78,9 @@ function cleanup {
   docker container stop $ETHPROVIDER_HOST 2> /dev/null || true
   docker container stop $POSTGRES_HOST 2> /dev/null || true
   docker container stop $HUB_HOST 2> /dev/null || true
-  echo;echo "Testing hub complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
+  if [[ "$suffix" == "hub_tester" ]]
+  then echo;echo "Testing hub complete in $((`date "+%s"` - `cat /tmp/timestamp`)) seconds!"
+  fi
 }
 trap cleanup EXIT
 
@@ -46,7 +90,7 @@ docker network create --attachable $NETWORK 2> /dev/null || true
 ########################################
 # Start dependencies
 
-echo "Hub tester activated! Starting dependency containers...";echo;
+echo "Hub tester activated!";echo;
 
 echo "Starting $REDIS_HOST..."
 docker run \
@@ -107,16 +151,20 @@ docker run \
   --volume="$root/modules/hub:/root" \
   ${project}_builder -c '
     set -e
-    echo "Hub Tester Container launched!"
-    echo
+    PATH=./node_modules/.bin:$PATH
+    echo "Hub Tester Container launched!";echo
+
     echo "Waiting for $REDIS..." && bash ops/wait-for.sh -t 60 $REDIS 2> /dev/null
     echo "Waiting for $POSTGRES_HOST:5431..." && bash ops/wait-for.sh -t 60 $POSTGRES_HOST:5431 2> /dev/null
     echo "Waiting for $DATABASE..." && bash ops/wait-for.sh -t 60 $DATABASE 2> /dev/null
     echo "Waiting for $ETH_RPC_URL_TEST..." && bash ops/wait-for.sh -t 60 $ETH_RPC_URL_TEST 2> /dev/null
     echo
-    ./node_modules/.bin/mocha \
-      -r ts-node/register/type-check \
-      -r ./src/register/common.ts \
-      -r ./src/register/testing.ts \
-      "src/**/*.test.ts" --exit
+
+    function finish {
+      echo && echo "Hub tester container exiting.." && exit
+    }
+    trap finish SIGTERM SIGINT
+
+    '"$command"'
+
   '
