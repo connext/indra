@@ -100,6 +100,7 @@ export default class ChainsawService {
 
   private async doFetchEvents() {
     const topBlock = await this.web3.eth.getBlockNumber()
+    // @ts-ignore
     const last = await this.chainsawDao.lastPollFor(this.contract.address, 'FETCH_EVENTS')
     const lastBlock = last.blockNumber
     let toBlock = topBlock - CONFIRMATION_COUNT
@@ -117,6 +118,7 @@ export default class ChainsawService {
 
     LOG.info(`Synchronizing chain data between blocks ${fromBlock} and ${toBlock}`)
 
+    // @ts-ignore
     const events = await this.contract.getPastEvents('allEvents', {
       fromBlock,
       toBlock
@@ -143,6 +145,7 @@ export default class ChainsawService {
         log: log,
         txIndex: log.transactionIndex,
         logIndex: log.logIndex,
+        // @ts-ignore
         contract: this.contract.address,
         sender: txsIndex[log.transactionHash].from,
         timestamp: blockIndex[log.blockNumber].timestamp * 1000
@@ -151,10 +154,12 @@ export default class ChainsawService {
 
     if (channelEvents.length) {
       LOG.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
+      // @ts-ignore
       await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
       LOG.info(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
       LOG.info('No new transactions found; nothing to do.')
+      // @ts-ignore
       await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
     }
   }
@@ -162,7 +167,9 @@ export default class ChainsawService {
   private async doProcessEvents() {
     // should look for either successfully processed, or
     // last skipped events
+    // @ts-ignore
     const last = await this.chainsawDao.lastProcessEventPoll(this.contract.address)
+    // @ts-ignore
     const ingestedEvents = await this.chainsawDao.eventsSince(this.contract.address, last.blockNumber, last.txIndex)
 
     if (!ingestedEvents.length) {
@@ -179,6 +186,7 @@ export default class ChainsawService {
       await this.chainsawDao.recordPoll(
         event.event.blockNumber,
         event.event.txIndex,
+        // @ts-ignore
         this.contract.address,
         pollType,
       )
