@@ -50,8 +50,7 @@
     "pg-types": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^3.3.2",
-    "web3": "1.0.0-beta.52",
-    "web3-eth": "1.0.0-beta.52"
+    "web3": "1.0.0-beta.52"
   },
   "devDependencies": {
     "@spankchain/chai-subset": "^1.7.0",
