@@ -322,6 +322,7 @@ $pgsql$;
     // 2. Grab the corresponding onchain tx
     const tx = await web3.eth.getTransaction(confirmPending.args.transactionHash)
     LOG.debug(`tx: ${tx}`)
+    // @ts-ignore
     const rawEvents = await contract.getPastEvents('allEvents', {
       fromBlock: tx.blockNumber,
       toBlock: tx.blockNumber,
