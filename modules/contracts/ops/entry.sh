@@ -20,6 +20,7 @@ if [[ "$network" == "ganache" ]]
 then
   echo "Starting Ganache.."
   mkdir -p /data build/contracts
+  ./node_modules/.bin/ganache-cli --version
   ./node_modules/.bin/ganache-cli \
     --host="0.0.0.0" \
     --port="$ganache_rpc_port" \
