@@ -6,7 +6,7 @@ import Config from './Config'
 import ThreadsDao from './dao/ThreadsDao'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { RedisClient } from './RedisClient'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 import { prettySafeJson, Omit, maybe } from './util'
 import { OnchainTransactionService } from './OnchainTransactionService';
 import DBEngine from './DBEngine';

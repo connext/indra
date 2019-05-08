@@ -13,13 +13,12 @@ import ChainsawService from './ChainsawService'
 import { OnchainTransactionService } from "./OnchainTransactionService";
 import ChannelsService from './ChannelsService';
 import { default as DBEngine, SQL } from './DBEngine'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 const Web3 = require('web3')
 import abi from './abi/ChannelManager'
-import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
+import { ContractEvent, DidUpdateChannelEvent, EventLog } from './domain/ContractEvent'
 import * as readline from 'readline'
 import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
-import { EventLog } from 'web3-core';
 import { OptimisticPaymentsService } from './OptimisticPaymentsService';
 import { ethers } from 'ethers';
 import { BigNumber as BN } from 'ethers/utils'

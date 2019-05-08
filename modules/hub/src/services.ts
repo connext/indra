@@ -9,7 +9,7 @@ import {
   Context,
   Container,
 } from './Container'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 import AuthApiService from './api/AuthApiService'
 import { MemoryCRAuthManager } from './CRAuthManager'
 import Config from './Config'

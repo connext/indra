@@ -1,9 +1,20 @@
-import { EventLog } from 'web3-core';
 import { BigNumber as BN } from 'ethers/utils'
 import { big } from 'connext';
 const {
   Big
 } = big
+
+export interface EventLog {
+    event: string;
+    address: string;
+    returnValues: any;
+    logIndex: number;
+    transactionIndex: number;
+    transactionHash: string;
+    blockHash: string;
+    blockNumber: number;
+    raw?: {data: string; topics: any[]};
+}
 
 export interface RawContractEvent {
   log: EventLog

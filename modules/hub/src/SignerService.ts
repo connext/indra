@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import { types, Utils } from 'connext';
 import Config from './Config'
-import { ChannelManager } from './ChannelManager';
+import { ChannelManager } from './contract/ChannelManager';
 import log from './util/log'
 import { RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
 import { rawTxnToTx } from './util/ethTransaction';
