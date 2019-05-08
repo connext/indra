@@ -11,7 +11,7 @@ test_command='
 
 watch_command='
   function hash {
-    find /client ./src -type f -not -name "*.swp" -exec stat {} \; \
+    find src /client/dist -type f -not -name "*.swp" -exec stat {} \; \
      | grep "Modify:" \
      | sha256sum
   }
@@ -27,7 +27,7 @@ watch_command='
     tsc
 
     if [[ "$?" != "0" ]]
-    then sleep 1 && continue
+    then echo "Compilation failed, waiting for changes..." && sleep 1 && continue
     else echo "Compiled successfully, running test suite"
     fi
 

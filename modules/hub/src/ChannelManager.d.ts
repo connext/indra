@@ -8,6 +8,8 @@ import { EventEmitter } from "events";
 import { Callback, TransactionObject } from "./types";
 
 export class ChannelManager extends Contract {
+  address: string;
+  getPastEvents: any;
   constructor(
     jsonInterface: any[],
     address?: string,

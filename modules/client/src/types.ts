@@ -1,7 +1,4 @@
-import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable';
-import { BigNumber as BN } from 'ethers/utils'
-import { default as CurrencyLib } from './lib/currency/Currency';
-export { Contract } from 'ethers/contract';
+export { Contract } from 'ethers/contract'
 export {
   Block,
   Filter,
@@ -9,18 +6,25 @@ export {
   TransactionReceipt,
   TransactionRequest,
   TransactionResponse,
-} from 'ethers/providers';
+} from 'ethers/providers'
+import { BigNumber as BN } from 'ethers/utils'
 export {
+  BigNumber as BN,
   Interface,
   LogDescription,
   Transaction,
   UnsignedTransaction,
-} from 'ethers/utils';
+} from 'ethers/utils'
+
+import { ChannelManager as ChannelManagerLib } from './contract/ChannelManager';
+import { default as CurrencyLib } from './lib/currency/Currency'
+import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable'
 
 /*********************************
  ****** Currencies & Exchange Rates
  *********************************/
 
+export class ChannelManager extends ChannelManagerLib {}
 export const Currency = CurrencyLib
 export const CurrencyConvertable = CurrencyConvertableLib
 

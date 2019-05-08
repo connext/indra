@@ -9,34 +9,34 @@ test_command='
 '
 
 watch_command='
-    function hash {
-      find src -type f -not -name "*.swp" -exec stat {} \; \
-       | grep "Modify:" \
-       | sha256sum
-    }
+  function hash {
+    find src -type f -not -name "*.swp" -exec stat {} \; \
+     | grep "Modify:" \
+     | sha256sum
+  }
 
-    echo "Triggering first compilation/test cycle..."
-    while true
-    do
-      if [[ "$srcHash" == "`hash`" ]]
-      then sleep 1 && continue
-      else echo "Changes detected, compiling..." && srcHash="`hash`"
-      fi
+  echo "Triggering first compilation/test cycle..."
+  while true
+  do
+    if [[ "$srcHash" == "`hash`" ]]
+    then sleep 1 && continue
+    else echo "Changes detected, compiling..." && srcHash="`hash`"
+    fi
 
-      tsc
+    tsc
 
-      if [[ "$?" != "0" ]] # skip tests if compilation failed
-      then echo "Compilation failed, waiting for changes..." && sleep 1 && continue
-      else echo "Compiled successfully, running test suite"
-      fi
+    if [[ "$?" != "0" ]] # skip tests if compilation failed
+    then echo "Compilation failed, waiting for changes..." && sleep 1 && continue
+    else echo "Compiled successfully, running test suite"
+    fi
 
-      ./node_modules/.bin/mocha \
-        -r ./dist/register/common.js \
-        "dist/**/*.test.js" --exit
+    ./node_modules/.bin/mocha \
+      -r ./dist/register/common.js \
+      "dist/**/*.test.js" --exit
 
-      echo "Waiting for changes..."
+    echo "Waiting for changes..."
 
-    done
+  done
 '
 
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"

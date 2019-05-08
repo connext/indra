@@ -105,7 +105,7 @@ export default class ChannelsService {
     }, user)
 
     if (this.utils.hasPendingOps(channelStateStr)) {
-      LOG.info(`User ${user} requested a deposit while state already has pending operations `)
+      LOG.warn(`User ${user} requested a deposit while state already has pending operations `)
       LOG.debug(`[Request Deposit] Current state: ${JSON.stringify(channelStateStr)}`)
       return 'current state has pending fields'
     }
