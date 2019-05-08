@@ -60,8 +60,7 @@ export default class Wallet extends eth.Signer {
 
     // Default: abort, we need to be given a signer
     } else {
-      // Weird version of web3 that does something else? idk then
-      throw new Error(`Fatal: Wallet needs to be given a signing method`)
+      throw new Error(`Wallet needs to be given a signing method`)
     }
   }
 
@@ -103,7 +102,7 @@ export default class Wallet extends eth.Signer {
       return await this.signer.sign(tx)
     }
     if (this.web3) {
-      // resolve any fields
+      // resolve any promise fields
       const resolve: any = async (k: string, v: any): Promise<any> => await v
       const resolved: any = await objMapPromise(tx, resolve) as any
       // convert to right object
@@ -121,6 +120,18 @@ export default class Wallet extends eth.Signer {
   }
 
   public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
+    txReq.gasPrice = await (txReq.gasPrice || this.provider.getGasPrice())
+    // Sanity check: Do we have sufficient funds for this tx?
+    const balance = eth.utils.bigNumberify(await this.provider.getBalance(this.address))
+    const gasLimit = eth.utils.bigNumberify(await txReq.gasLimit!)
+    const gasPrice = eth.utils.bigNumberify(await txReq.gasPrice!)
+    const value = eth.utils.bigNumberify(await txReq.value!)
+    const total = value.add(gasLimit.mul(gasPrice))
+    if (balance.lt(total)) {
+      throw new Error(`value=${value.toString()} + (gasPrice=${gasPrice.toString()
+        } * gasLimit=${gasLimit.toString()}) = total=${total.toString()
+        } > balance=${balance.toString()}`)
+    }
     if (txReq.nonce == null && this.signer) {
       txReq.nonce = this.signer!.getTransactionCount('pending')
     }
