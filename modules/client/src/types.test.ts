@@ -1,10 +1,11 @@
 import * as t from './testing/index'
 import { BigNumber as BN } from 'ethers/utils'
 import { assert } from './testing/index'
-import { convertChannelState, convertThreadState, convertFields, insertDefault, objMapPromise, objMap, makeEventVerbose } from './types'
-import { Validator } from '.';
+import { convertChannelState, convertThreadState, convertFields, insertDefault, objMapPromise, objMap, makeEventVerbose, isBN, convertVerboseEvent } from './types'
+import { Validator } from './validator';
 import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
 import Web3 from 'web3';
+import { EMPTY_ROOT_HASH } from './lib/constants';
 
 describe('insertDefault', () => {
   it("should work", () => {
@@ -140,28 +141,27 @@ describe.skip("makeEventVerbose", () => {
     const receipt = await provider.getTransactionReceipt(txHash)
 
     // parse events, find matching
-    let events = []
-    try {
-      // NOTE: must preface the fn with public while testing locally
-      // this will be deleted soon
-      // @ts-ignore
-      events = validator.parseChannelEventTxReceipt(
-        "DidEmptyChannel", 
-        receipt as any, 
-        contractAddress
-      )
-    } catch (e) {
-      return e.message
-    }
+    // @ts-ignore
+    const events = validator.parseChannelEventTxReceipt(
+      "DidEmptyChannel", 
+      receipt as any, 
+      contractAddress
+    )
     assert.isTrue(events.length >= 1)
-    assert.containSubset(events[0], {
+    assert.isTrue(isBN(events[0].pendingDepositWeiUser))
+    assert.containSubset(convertVerboseEvent("str",events[0]), {
       txCountGlobal: 7,
       txCountChain: 2,
       pendingDepositWeiHub: "0",
       pendingDepositTokenHub: "0",
       pendingDepositWeiUser: "0",
       pendingDepositTokenUser: "0",
+      threadRoot: EMPTY_ROOT_HASH,
+      threadCount: 0,
+      user: "0x3f1455734de606510c85f10b787b62905fa140ce",
     })
+
+
   })
 
 })
