@@ -8,6 +8,8 @@ import { assert, parameterizedTests } from './testing'
 import { Utils } from './Utils'
 import Wallet from './Wallet'
 
+console.log(`Starting wallet tests in env: ${JSON.stringify(process.env)}`)
+
 const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
 const mnemonic: string =
   'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'

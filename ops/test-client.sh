@@ -70,7 +70,6 @@ function cleanup {
 }
 trap cleanup EXIT
 
-docker swarm init 2> /dev/null || true
 docker network create --attachable $NETWORK 2> /dev/null || true
 
 ########################################
