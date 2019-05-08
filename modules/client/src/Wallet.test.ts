@@ -12,7 +12,7 @@ const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
 const mnemonic: string =
   'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 const privateKey: string = '0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6'
-const ethUrl: string = 'http://ganache:8545'
+const ethUrl: string = process.env.ETH_RPC_URL || 'http://localhost:8545'
 const hubUrl: string = ''
 const utils: Utils = new Utils()
 const web3Provider: any = new Web3.providers.HttpProvider(ethUrl)
@@ -58,8 +58,7 @@ describe('Wallet', () => {
     testSignMessage(new Wallet({ hubUrl, mnemonic }))
   })
 
-  // TODO: FIX THIS
-  it.skip('should sign messages properly with web3', async function() {
+  it('should sign messages properly with web3', async function() {
     const web3Address = (await (new Web3(web3Provider)).eth.getAccounts())[0].toLowerCase()
     testSignMessage(new Wallet({ hubUrl, user: web3Address, web3Provider }))
   })
