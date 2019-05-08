@@ -5,7 +5,6 @@
     "tslint-config-prettier"
   ],
   "rules": {
-    "prettier": true,
     "comment-format": [true, "check-space"],
     "completed-docs": false,
     "curly": [true, "ignore-same-line"],
@@ -35,11 +34,9 @@
       "parameter",
       "arrow-parameter",
       "property-declaration",
-      "variable-declaration",
       "member-variable-declaration"
     ],
     "variable-name": false
-
   },
   "jsRules": {
     "max-line-length": [true, 100]

@@ -1,9 +1,9 @@
 import { types, Utils, Validator } from 'connext';
 import ChainsawDao, { PollType } from './dao/ChainsawDao'
 import log from './util/log'
-import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
+import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent, EventLog } from './domain/ContractEvent'
 import Config from './Config'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 import ChannelsDao from './dao/ChannelsDao'
 import { sleep, prettySafeJson, safeJson } from './util'
 import { default as DBEngine } from './DBEngine'
@@ -11,7 +11,6 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { SignerService } from './SignerService';
 import { RedisClient } from './RedisClient';
 import { OnchainTransactionService } from './OnchainTransactionService';
-import { EventLog } from 'web3-core';
 import Web3 from 'web3';
 
 type ChannelState<T=string> = types.ChannelState<T>

@@ -5,15 +5,14 @@ import ChainsawService from './ChainsawService'
 import ChainsawDao from './dao/ChainsawDao'
 import DBEngine, { SQL } from './DBEngine'
 import ChannelsDao from './dao/ChannelsDao'
-import {ChannelManager} from './ChannelManager'
+import {ChannelManager} from './contract/ChannelManager'
 import abi from './abi/ChannelManager'
 import {assert} from 'chai'
 import * as sinon from 'sinon'
 import Web3 = require('web3')
-import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent';
+import { ContractEvent, DidUpdateChannelEvent, EventLog } from './domain/ContractEvent';
 import { mkAddress, mkSig } from './testing/stateUtils';
 import { channelUpdateFactory } from './testing/factories';
-import { EventLog } from 'web3-core';
 import { BigNumber as BN } from 'ethers/utils'
 
 type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN

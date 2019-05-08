@@ -5,10 +5,11 @@ import Contract, { CustomOptions, contractOptions } from "web3/eth/contract";
 import { TransactionObject, BlockType } from "web3/eth/types";
 import { EventEmitter } from "events";
 import { Provider } from "web3/providers";
-import { EventLog } from "web3-core";
+import { EventLog } from "../domain/ContractEvent";
 
 export class ChannelManager {
   constructor(jsonInterface: any[], address?: string, options?: CustomOptions);
+  address: string;
   _address: string;
   options: contractOptions;
   methods: {
