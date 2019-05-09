@@ -1,3 +1,42 @@
+export interface Transaction {
+    hash: string;
+    nonce: number;
+    blockHash: string | null;
+    blockNumber: number | null;
+    transactionIndex: number | null;
+    from: string;
+    to: string;
+    value: string;
+    gasPrice: string;
+    gas: number;
+    input: string;
+}
+
+export interface BlockHeader {
+    number: number
+    hash: string
+    parentHash: string
+    nonce: string
+    sha3Uncles: string
+    logsBloom: string
+    transactionRoot: string
+    stateRoot: string
+    receiptRoot: string
+    miner: string
+    extraData: string
+    gasLimit: number
+    gasUsed: number
+    timestamp: number
+}
+
+export interface Block extends BlockHeader {
+    transactions: Transaction[];
+    size: number
+    difficulty: number
+    totalDifficulty: number
+    uncles: string[];
+}
+
 export type TransactionMeta = Partial<{
   reason: string
   contract: string

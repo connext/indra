@@ -509,7 +509,7 @@ describe.skip('SyncController: unit tests (ConfirmPending)', () => {
     // NOTE: this validator depends on the eth provider
     // have it just return the generated state
     connext.validator.generateConfirmPending = (prev, args) => {
-      return new StateGenerator("").confirmPending(
+      return new StateGenerator().confirmPending(
         convertChannelState("bn", initialChannel)
       ) as any
     }

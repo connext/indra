@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
 import Config from '../Config'
@@ -298,12 +298,14 @@ export class PostgresChannelsDao implements ChannelsDao {
         SELECT *
         FROM payments
         WHERE 
-        	id = (
-	        	SELECT id 
-	        	FROM payments_optimistic
+        	id in (
+	        	SELECT payments_optimistic.id 
+            FROM payments_optimistic
+            INNER JOIN _payments
+            ON _payments.id = payments_optimistic.payment_id
 	        	WHERE 
-		          recipient = ${user} AND
-		          status = 'NEW'
+		          _payments.recipient = ${user} AND
+              payments_optimistic.status = 'NEW'
 		    ) AND
 	    	created_on > NOW() - ${this.config.recentPaymentsInterval}::interval
       ) as t

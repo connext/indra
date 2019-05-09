@@ -49,13 +49,31 @@ export class SyncControllerState {
   updatesToSync: SyncResult[] = []
 }
 
+export type OnchainMonitoring = {
+  transactionHash: string | null,
+  submitted: boolean,
+  detected: boolean
+}
+
 export class RuntimeState {
-  awaitingOnchainTransaction: boolean = false
-  canDeposit: boolean = false
-  canExchange: boolean = false
-  canWithdraw: boolean = false
-  canBuy: boolean = false
-  canCollateralize: boolean = false
+  deposit: OnchainMonitoring = {
+    transactionHash: null,
+    submitted: false,
+    detected: false
+  }
+
+  withdrawal: OnchainMonitoring = {
+    transactionHash: null,
+    submitted: false,
+    detected: false
+  }
+
+  collateral: OnchainMonitoring = {
+    transactionHash: null,
+    submitted: false,
+    detected: false
+  }
+
   exchangeRate: null | ExchangeRateState = null
   syncResultsFromHub: SyncResult[] = []
   updateRequestTimeout: number = 60 * 10 // default 10 min

@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { types, Validator, big } from './Connext';
+import { types, Validator, big } from 'connext';
 import { maybe } from './util'
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
 import { assertUnreachable } from "./util/assertUnreachable";
@@ -20,10 +20,10 @@ const {
   Big
 } = big
 
-type PurchaseRowWithPayments = types.PurchaseRowWithPayments
 type Payment<T=string> = types.Payment<T>
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type PurchasePayment = types.PurchasePayment
+type PurchaseRowWithPayments = types.PurchaseRowWithPayments
 type UpdateRequest<T=string> = types.UpdateRequest<T>
 
 type MaybeResult<T> = (
@@ -200,7 +200,7 @@ export default class PaymentsService {
         })
 
       } else {
-        assertUnreachable(payment, 'invalid payment type: ' + (payment as any).type)
+        assertUnreachable(payment as never, 'invalid payment type: ' + (payment as any).type)
       }
 
       // Note: this handling of meta isn't ideal. In the future, we should have

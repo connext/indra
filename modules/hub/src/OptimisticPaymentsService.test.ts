@@ -7,7 +7,7 @@ import { mkAddress, mkSig } from "./testing/stateUtils";
 import PaymentsService from "./PaymentsService";
 import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
 import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { big, types } from "./Connext"
+import { big, types } from 'connext'; 
 
 const { Big } = big;
 const { convertDeposit } = types;

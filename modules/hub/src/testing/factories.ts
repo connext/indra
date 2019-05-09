@@ -1,4 +1,4 @@
-import { StateGenerator, types, big } from '../Connext';
+import { StateGenerator, types, big } from 'connext';
 import { TestServiceRegistry } from ".";
 import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel } from "./stateUtils";
 import { default as ChannelsDao } from "../dao/ChannelsDao";
@@ -68,7 +68,7 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
     balanceTokenSender: tokenVal(10),
   })
 
-  const sg = new StateGenerator(registry.get('Config').hotWalletAddress)
+  const sg = new StateGenerator()
   const userUpdate = await sg.openThread(
     convertChannelState('bn', user.state),
     [],

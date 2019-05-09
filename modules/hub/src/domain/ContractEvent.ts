@@ -1,9 +1,20 @@
-import { EventLog } from 'web3-core';
 import { BigNumber as BN } from 'ethers/utils'
-import { big } from '../Connext';
+import { big } from 'connext';
 const {
   Big
 } = big
+
+export interface EventLog {
+    event: string;
+    address: string;
+    returnValues: any;
+    logIndex: number;
+    transactionIndex: number;
+    transactionHash: string;
+    blockHash: string;
+    blockNumber: number;
+    raw?: {data: string; topics: any[]};
+}
 
 export interface RawContractEvent {
   log: EventLog
@@ -189,7 +200,7 @@ export class DidUpdateChannelEvent extends ContractEvent {
   toFields (): Object | any {
     return {
       user: this.user.toLowerCase(),
-      senderIdx: this.senderIdx,
+      senderIdx: (this.senderIdx as any).toNumber(),
       balanceWeiUser: this.balanceWeiUser.toString(),
       balanceWeiHub: this.balanceWeiHub.toString(),
       balanceTokenUser: this.balanceTokenUser.toString(),
@@ -202,10 +213,10 @@ export class DidUpdateChannelEvent extends ContractEvent {
       pendingDepositTokenUser: this.pendingDepositTokenUser.toString(),
       pendingWithdrawalTokenHub: this.pendingWithdrawalTokenHub.toString(),
       pendingWithdrawalTokenUser: this.pendingWithdrawalTokenUser.toString(),
-      txCountGlobal: this.txCountGlobal,
-      txCountChain: this.txCountChain,
+      txCountGlobal: (this.txCountGlobal as any).toNumber(),
+      txCountChain: (this.txCountChain as any).toNumber(),
       threadRoot: this.threadRoot,
-      threadCount: this.threadCount,
+      threadCount: (this.threadCount as any).toNumber(),
     }
   }
 
@@ -281,13 +292,13 @@ export class DidStartExitChannelEvent extends ContractEvent {
   toFields (): Object | any {
     return {
       user: this.user.toLowerCase(),
-      senderIdx: this.senderIdx,
+      senderIdx: (this.senderIdx as any).toNumber(),
       balanceWeiUser: this.balanceWeiUser.toString(),
       balanceWeiHub: this.balanceWeiHub.toString(),
       balanceTokenUser: this.balanceTokenUser.toString(),
       balanceTokenHub: this.balanceTokenHub.toString(),
-      txCountGlobal: this.txCountGlobal,
-      txCountChain: this.txCountChain,
+      txCountGlobal: (this.txCountGlobal as any).toNumber(),
+      txCountChain: (this.txCountChain as any).toNumber(),
       threadCount: this.threadCount,
       exitInitiator: this.exitInitiator
     }
@@ -363,14 +374,14 @@ export class DidEmptyChannelEvent extends ContractEvent {
   toFields (): Object | any {
     return {
       user: this.user.toLowerCase(),
-      senderIdx: this.senderIdx,
+      senderIdx: (this.senderIdx as any).toNumber(),
       balanceWeiUser: this.balanceWeiUser.toString(),
       balanceWeiHub: this.balanceWeiHub.toString(),
       balanceTokenUser: this.balanceTokenUser.toString(),
       balanceTokenHub: this.balanceTokenHub.toString(),
-      txCountGlobal: this.txCountGlobal,
-      txCountChain: this.txCountChain,
-      threadCount: this.threadCount,
+      txCountGlobal: (this.txCountGlobal as any).toNumber(),
+      txCountChain: (this.txCountChain as any).toNumber(),
+      threadCount: (this.threadCount as any).toNumber(),
       exitInitiator: this.exitInitiator
     }
   }
@@ -447,13 +458,13 @@ export class DidStartExitThreadEvent extends ContractEvent {
       user: this.user.toLowerCase(),
       threadSender: this.threadSender,
       threadReceiver: this.threadReceiver,
-      senderIdx: this.senderIdx,
+      senderIdx: (this.senderIdx as any).toNumber(),
       channelWeiBalanceSender: this.channelWeiBalanceSender.toString(),
       channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toString(),
       channelTokenBalanceSender: this.channelTokenBalanceSender.toString(),
       channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toString(),
-      txCountGlobal: this.txCountGlobal,
-      txCountChain: this.txCountChain
+      txCountGlobal: (this.txCountGlobal as any).toNumber(),
+      txCountChain: (this.txCountChain as any).toNumber()
     }
   }
 
@@ -503,15 +514,15 @@ export class DidEmptyThreadEvent extends ContractEvent {
       user: this.user.toLowerCase(),
       threadSender: this.threadSender,
       threadReceiver: this.threadReceiver,
-      senderIdx: this.senderIdx,
+      senderIdx: (this.senderIdx as any).toNumber(),
       channelWeiBalanceSender: this.channelWeiBalanceSender.toString(),
       channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toString(),
       channelTokenBalanceSender: this.channelTokenBalanceSender.toString(),
       channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toString(),
-      channelTxCountGlobal: this.channelTxCountGlobal,
-      channelTxCountChain: this.channelTxCountChain,
+      channelTxCountGlobal: (this.channelTxCountGlobal as any).toNumber(),
+      channelTxCountChain: (this.channelTxCountChain as any).toNumber(),
       channelThreadRoot: this.channelThreadRoot,
-      channelThreadCount: this.channelThreadCount
+      channelThreadCount: (this.channelThreadCount as any).toNumber()
     }
   }
 
@@ -566,10 +577,10 @@ export class DidNukeThreadsEvent extends ContractEvent {
       channelWeiBalanceReceiver: this.channelWeiBalanceReceiver.toString(),
       channelTokenBalanceSender: this.channelTokenBalanceSender.toString(),
       channelTokenBalanceReceiver: this.channelTokenBalanceReceiver.toString(),
-      channelTxCountGlobal: this.channelTxCountGlobal,
-      channelTxCountChain: this.channelTxCountChain,
+      channelTxCountGlobal: (this.channelTxCountGlobal as any).toNumber(),
+      channelTxCountChain: (this.channelTxCountChain as any).toNumber(),
       channelThreadRoot: this.channelThreadRoot,
-      channelThreadCount: this.channelThreadCount
+      channelThreadCount: (this.channelThreadCount as any).toNumber()
     }
   }
 

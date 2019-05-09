@@ -1,5 +1,6 @@
 build
 dist
+types
 ganache*.log
 node_modules
 .bash_history

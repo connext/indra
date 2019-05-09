@@ -64,6 +64,7 @@ clean: stop
 reset-base: stop
 	docker container prune -f
 	docker volume rm $(project)_database_dev 2> /dev/null || true
+	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-client: reset-base
 	rm -rf build/client*  $(client)/dist $(client)/node_modules $(client)/package-lock.json
@@ -74,7 +75,6 @@ reset-contracts: reset-base
 
 reset-dashboard: reset-base
 	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules $(dashboard)/package-lock.json
-	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 reset-database: reset-base
 	rm -rf build/database* $(db)/build/* $(db)/node_modules $(db)/package-lock.json
@@ -122,17 +122,20 @@ test: test-default
 test-default: test-client
 test-all: test-client test-contracts test-hub
 
-test-client: client
+test-client: contract-node-modules client
 	bash ops/test-client.sh
 
 watch-client:
-	bash ops/watch-client.sh
+	bash ops/test-client.sh --watch
 
 test-contracts: client contract-artifacts
 	bash ops/test-contracts.sh
 
 test-hub: hub database
 	bash ops/test-hub.sh
+
+watch-hub:
+	bash ops/test-hub.sh --watch
 
 ########################################
 # Begin Real Rules
@@ -193,6 +196,8 @@ hub-node-modules: builder $(hub)/package.json $(client)/package.json
 	$(docker_run_in_hub) "$(install)"
 	$(docker_run_in_hub) "rm -rf node_modules/connext/dist"
 	$(docker_run_in_hub) "ln -s ../../../client/dist node_modules/connext/dist"
+	$(docker_run_in_hub) "rm -rf node_modules/connext/types"
+	$(docker_run_in_hub) "ln -s ../../../client/types node_modules/connext/types"
 	$(docker_run_in_hub) "rm -rf node_modules/connext/src"
 	$(docker_run_in_hub) "ln -s ../../../client/src node_modules/connext/src"
 	@touch build/hub-node-modules

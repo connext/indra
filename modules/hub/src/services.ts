@@ -1,4 +1,4 @@
-import { StateGenerator, Utils, Validator } from './Connext';
+import { StateGenerator, Utils, Validator } from 'connext';
 import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
 import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
@@ -9,7 +9,7 @@ import {
   Context,
   Container,
 } from './Container'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 import AuthApiService from './api/AuthApiService'
 import { MemoryCRAuthManager } from './CRAuthManager'
 import Config from './Config'
@@ -305,7 +305,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   ConnextUtils: {
-    factory: (config: Config) => new Utils(config.hotWalletAddress),
+    factory: (config: Config) => new Utils(),
     dependencies: ['Config'],
   },
 
@@ -315,8 +315,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   StateGenerator: {
-    factory: (config: Config) => new StateGenerator(config.hotWalletAddress),
-    dependencies: ['Config'],
+    factory: () => new StateGenerator(),
   },
 
   GasEstimateDao: {

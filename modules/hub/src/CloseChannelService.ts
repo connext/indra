@@ -1,9 +1,9 @@
-import { Poller } from './Connext'
+import { Poller } from 'connext'
 import { default as Config } from './Config'
 import { prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
 import { default as ChannelsDao } from './dao/ChannelsDao'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 import DBEngine from './DBEngine';
 import { OnchainTransactionService } from './OnchainTransactionService';
 import ChannelDisputesDao from './dao/ChannelDisputesDao';

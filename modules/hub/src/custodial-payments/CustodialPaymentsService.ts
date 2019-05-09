@@ -5,8 +5,8 @@ import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { OnchainTransactionService } from '../OnchainTransactionService'
 import { BigNumber } from 'ethers/utils'
-import { big, types } from '../Connext'
-const { assetToWei }  = big
+import { Utils, types } from 'connext'
+const { assetToWei, toWeiString } = new Utils()
 
 type CustodialWithdrawalRowBN = types.CustodialWithdrawalRowBN
 
@@ -19,7 +19,7 @@ export interface CreateCustodialWithdrawalArgs {
 }
 
 export class CustodialPaymentsService {
-  MIN_WITHDRAWAL_AMOUNT_TOKEN = big.toWeiString('0.1')
+  MIN_WITHDRAWAL_AMOUNT_TOKEN = toWeiString('0.1')
 
   constructor(
     private config: Config,

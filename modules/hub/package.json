@@ -1,6 +1,6 @@
 {
   "name": "hub",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -24,7 +24,7 @@
     "classnames": "^2.2.5",
     "concurrently": "^4.1.0",
     "connect-redis": "^3.4.1",
-    "connext": "^3.1.6",
+    "connext": "^3.1.12",
     "cookie-parser": "^1.4.3",
     "cookie-signature": "^1.1.0",
     "cors": "^2.8.5",
@@ -50,10 +50,7 @@
     "pg-types": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^3.3.2",
-    "web3": "1.0.0-beta.52",
-    "web3-core": "1.0.0-beta.52",
-    "web3-eth": "1.0.0-beta.52",
-    "web3-utils": "1.0.0-beta.52"
+    "web3": "1.0.0-beta.52"
   },
   "devDependencies": {
     "@spankchain/chai-subset": "^1.7.0",

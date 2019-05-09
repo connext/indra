@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { createStore } from 'redux'
+import { createStore, applyMiddleware, Store } from 'redux'
 import {
   assert,
   getChannelState,
@@ -14,7 +14,7 @@ import {
   PartialSignedOrSuccinctThread,
   getCustodialBalance,
 } from '.'
-import { ConnextClientOptions, ConnextInternal } from '../Connext'
+import { IConnextClientOptions, ConnextInternal } from '../Connext'
 import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
 import { IChannelManager } from '../contract/ChannelManager'
 import { Big } from '../lib/bn'
@@ -61,8 +61,16 @@ import {
   UpdateRequest,
   WithdrawalParameters,
   CustodialBalanceRow,
+  PaymentProfileConfig,
+  PurchasePaymentRow,
+  PurchaseRowWithPayments,
 } from '../types'
 import Wallet from '../Wallet';
+import { handleStateFlags } from '../state/middleware';
+import { AnyAction } from 'typescript-fsa';
+
+const mnemonic: string =
+  'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
@@ -86,7 +94,7 @@ export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager
   mockHub: MockHub
 
-  constructor(opts: Partial<ConnextClientOptions> = {}) {
+  constructor(opts: Partial<IConnextClientOptions> = {}) {
     const store = opts.store || new MockStore().createStore()
 
     const oldDispatch = store.dispatch as any
@@ -113,6 +121,7 @@ export class MockConnextInternal extends ConnextInternal {
       hub: new MockHub(),
       hubAddress: mkAddress('0xhhh'),
       store,
+      mnemonic,
       ...opts,
     } as any
 
@@ -234,6 +243,13 @@ export class MockHub implements IHubAPIClient {
     } as any
   }
 
+  // TODO: implement the profile methods
+  async getProfileConfig(): Promise<PaymentProfileConfig> {
+    return
+  }
+
+  async startProfileSession(): Promise<void> {}
+
   async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
     return getCustodialBalance("empty")
   }
@@ -344,6 +360,49 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
+  async getPaymentHistory(): Promise<PurchasePaymentRow<string, string>[]> {
+    return [{
+      amount: {
+        amountWei: '1000',
+        amountToken: '2000'
+    }, createdOn: new Date(),
+    custodianAddress: mkAddress('0xabc'),
+    id: 42,
+    meta: 'mocked payment',
+    purchaseId: '0xbeef',
+    recipient: mkAddress('0xaaa'),
+    sender: mkAddress('0xbbb'),
+    type: 'PT_CHANNEL'
+    }]
+  }
+
+  async getPaymentById(): Promise<PurchaseRowWithPayments<object, string>> {
+    return {
+      amount: {
+        amountWei: '1000',
+        amountToken: '2000'
+      }, 
+      createdOn: new Date(),
+      meta: {hello: 'mocked payment'},
+      purchaseId: '0xbeef',
+      sender: mkAddress('0xbbb'),
+      payments: [{
+        amount: {
+          amountWei: '1000',
+          amountToken: '2000'
+        }, 
+        createdOn: new Date(),
+        custodianAddress: mkAddress('0xabc'),
+        id: 42,
+        meta: 'mocked payment',
+        purchaseId: '0xbeef',
+        recipient: mkAddress('0xaaa'),
+        sender: mkAddress('0xbbb'),
+        type: 'PT_CHANNEL'
+      }]
+    }
+  }
+
   async sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync> {
     // needs to be able to take an update from the store, and apply it
     return { status: "CS_OPEN", updates: [] }
@@ -359,7 +418,7 @@ export class MockHub implements IHubAPIClient {
         console.log("TEST INCLUSION")
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
-      if (p.type == 'PT_CHANNEL' || p.type == 'PT_LINK' || p.type == 'PT_CUSTODIAL') {
+      if (p.type != 'PT_THREAD') {
         return {
           type: 'channel',
           update: {
@@ -558,7 +617,11 @@ export class MockStore {
   }
 
   public createStore: any = () => {
-    return createStore(reducers, this._initialState)
+    return createStore(
+      reducers, 
+      this._initialState, 
+      applyMiddleware(handleStateFlags)
+    )
   }
 
   public setInitialConnextState = (state: ConnextState) => {
@@ -650,7 +713,7 @@ export class MockStore {
 
     const initialThreadBN = convertThreadState('bn', initialThread)
     // Create new openThread state
-    let newState = new StateGenerator("").openThread(
+    let newState = new StateGenerator().openThread(
       convertChannelState('bn', channel),
       activeInitialThreadStates,
       initialThreadBN,
@@ -688,7 +751,7 @@ export class MockStore {
     const threadBN = convertThreadState('bn', thread[0])
 
     // Create thread update
-    let threadUpdate = new StateGenerator("").threadPayment(threadBN, payment)
+    let threadUpdate = new StateGenerator().threadPayment(threadBN, payment)
     threadUpdate = addSigToThreadState(threadUpdate, mkHash('0xMockUserSig'))
 
     // Update active thread with thread update

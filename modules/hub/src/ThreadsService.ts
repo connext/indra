@@ -1,4 +1,4 @@
-import { types, Validator } from './Connext';
+import { types, Validator } from 'connext';
 import log from './util/log'
 import ChannelsDao from './dao/ChannelsDao'
 import Config from './Config'
@@ -11,8 +11,8 @@ type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN
 type PaymentArgs<T=string> = types.PaymentArgs<T>
 type ThreadRow<T=string> = types.ThreadRow<T>
 type ThreadState<T=string> = types.ThreadState<T>
-type ThreadStateUpdateRow<T=string> = types.ThreadStateUpdateRow<T>
 type ThreadStateBN = types.ThreadStateBN
+type ThreadStateUpdateRow<T=string> = types.ThreadStateUpdateRow<T>
 
 const {
   convertChannelState,

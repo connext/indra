@@ -1,13 +1,15 @@
+import { ethers as eth } from 'ethers'
 import { BigNumber as BN } from 'ethers/utils'
-import { ethers as eth } from 'ethers';
-import { capitalize } from './helpers/naming'
+
+import { Big, maxBN } from './lib/bn'
+import { capitalize } from './lib/naming'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
   argNumericFields,
   ArgsTypes,
-  channelNumericFields,
   ChannelEventReason,
+  channelNumericFields,
   ChannelState,
   ChannelStateBN,
   ChannelUpdateReason,
@@ -29,35 +31,36 @@ import {
   EventInputs,
   ExchangeArgs,
   ExchangeArgsBN,
+  Interface,
   InvalidationArgs,
+  isBN,
   makeEventVerbose,
+  objMap,
   Payment,
-  PaymentBN,
   PaymentArgs,
   PaymentArgsBN,
+  PaymentBN,
   PendingArgs,
   PendingArgsBN,
   PendingExchangeArgs,
   PendingExchangeArgsBN,
   proposePendingNumericArgs,
+  Provider,
   SignedDepositRequestProposal,
   ThreadState,
   ThreadStateBN,
   TransactionReceipt,
-  UpdateRequest,
   UnsignedChannelState,
   UnsignedChannelStateBN,
   UnsignedThreadState,
+  UpdateRequest,
   VerboseChannelEventBN,
   WithdrawalArgs,
   WithdrawalArgsBN,
   WithdrawalParametersBN,
   withdrawalParamsNumericFields,
-  objMap,
-  isBN
 } from './types'
 import { Utils } from './Utils'
-import { Big, maxBN } from './lib/bn';
 
 // this constant is used to not lose precision on exchanges
 // the BN library does not handle non-integers appropriately
@@ -72,18 +75,15 @@ arguments in other places.
 */
 export class Validator {
   private utils: Utils
-
   private stateGenerator: StateGenerator
-
   private generateHandlers: { [name in ChannelUpdateReason]: any }
-
-  provider: any
-  abi: any
+  provider: Provider
+  abi: Interface
   hubAddress: Address
 
   constructor(hubAddress: Address, provider: any, abi: any) {
-    this.utils = new Utils(hubAddress)
-    this.stateGenerator = new StateGenerator(hubAddress)
+    this.utils = new Utils()
+    this.stateGenerator = new StateGenerator()
     this.provider = provider
     this.abi = new eth.utils.Interface(abi)
     this.hubAddress = hubAddress.toLowerCase()
@@ -230,25 +230,6 @@ export class Validator {
     return this.stateGenerator.proposePendingDeposit(prev, args)
   }
 
-  private _pendingValidator = (
-    prev: ChannelStateBN,
-    args: PendingArgsBN | PendingExchangeArgsBN,
-    proposedStr: UnsignedChannelState,
-  ): string | null => {
-
-    const errs = [
-      this.hasTimeout(prev),
-      this.hasPendingOps(prev),
-      this.hasNegative(args, proposePendingNumericArgs),
-      this.hasNegative(proposedStr, channelNumericFields),
-      args.timeout < 0 ? `timeout is negative: ${args.timeout}` : null,
-    ].filter(x => !!x)[0]
-    if (errs)
-      return errs
-
-    return null
-  }
-
   public proposePending = (prev: ChannelStateBN, args: PendingArgsBN): string | null => {
     return this._pendingValidator(prev, args, this.stateGenerator.proposePending(prev, args))
   }
@@ -320,24 +301,27 @@ export class Validator {
     return this.stateGenerator.proposePendingWithdrawal(prev, args)
   }
 
-  public async confirmPending(prev: ChannelStateBN, args: ConfirmPendingArgs): Promise<string | null> {
-    const e = this.isValidStateTransitionRequest(
+  public async confirmPending(
+    prev: ChannelStateBN,
+    args: ConfirmPendingArgs,
+  ): Promise<string | null> {
+    const e: any = this.isValidStateTransitionRequest(
       prev,
-      { args, reason: "ConfirmPending", txCount: prev.txCountGlobal }
+      { args, reason: 'ConfirmPending', txCount: prev.txCountGlobal },
     )
     if (e) {
       return e
     }
 
     // validate on chain information
-    const txHash = args.transactionHash
-    const tx = await this.provider.getTransaction(txHash)
-    const receipt = await this.provider.getTransactionReceipt(txHash)
+    const txHash: any = args.transactionHash
+    const tx: any = await this.provider.getTransaction(txHash)
+    const receipt: any = await this.provider.getTransactionReceipt(txHash)
 
     // apply .toLowerCase to all strings on the prev object
     // (contractAddress, user, recipient, threadRoot, sigHub)
-    for (let field in prev) {
-      if (typeof (prev as any)[field] === "string") {
+    for (const field in prev) {
+      if (typeof (prev as any)[field] === 'string') {
         (prev as any)[field] = (prev as any)[field].toLowerCase()
       }
     }
@@ -347,7 +331,8 @@ export class Validator {
     }
 
     if (tx.to.toLowerCase() !== prev.contractAddress.toLowerCase()) {
-      return `Transaction is not for the correct channel manager contract. (txHash: ${txHash}, contractAddress: ${tx.contractAddress}, prev: ${JSON.stringify(prev)})`
+      return `Transaction is not for the correct channel manager contract. (txHash: ${txHash
+        }, contractAddress: ${tx.contractAddress}, prev: ${JSON.stringify(prev)})`
     }
 
     // parse event values
@@ -358,8 +343,14 @@ export class Validator {
     }
 
     // compare values against previous
-    if (this.hasInequivalent([event, prev], Object.keys(event).filter(key => key !== "sender"))) {
-      return `Decoded tx event values are not properly reflected in the previous state. ` + this.hasInequivalent([event, prev], Object.keys(event).filter(key => key !== "sender")) + `. (txHash: ${txHash}, event: ${JSON.stringify(event)}, prev: ${JSON.stringify(prev)})`
+    const inequivalent: string | null = this.hasInequivalent(
+      [event, prev],
+      Object.keys(event).filter(key => key !== 'sender'),
+    )
+    if (inequivalent) {
+      return `Decoded tx event values are not properly reflected in the previous state. ${
+        inequivalent}. (txHash: ${txHash}, event: ${JSON.stringify(event)
+        }, prev: ${JSON.stringify(prev)})`
     }
 
     return null
@@ -629,11 +620,11 @@ export class Validator {
 
   public assertChannelSigner(channelState: ChannelState, signer: "user" | "hub" = "user"): void {
     const sig = signer === "hub" ? channelState.sigHub : channelState.sigUser
-    const adr = signer === "hub" ? this.hubAddress : channelState.user
+    const adr = signer === "hub" ? this.hubAddress.toLowerCase() : channelState.user.toLowerCase()
     if (!sig) {
       throw new Error(`Channel state does not have the requested signature. channelState: ${channelState}, sig: ${sig}, signer: ${signer}`)
     }
-    if (this.utils.recoverSignerFromChannelState(channelState, sig, signer) != adr.toLowerCase()) {
+    if (this.utils.recoverSignerFromChannelState(channelState, sig, adr) != adr) {
       throw new Error(`Channel state is not correctly signed by ${signer}. Detected: ${this.utils.recoverSignerFromChannelState(channelState, sig, signer)}. Channel state: ${JSON.stringify(channelState)}, sig: ${sig}`)
     }
   }
@@ -679,6 +670,23 @@ export class Validator {
       return `${capitalize(payor)} does not have sufficient ${failedAmounts.join(', ')} balance for a transfer of value: ${JSON.stringify(convertPayment("str", value as any))} (state: ${JSON.stringify(state)})`
     }
 
+    return null
+  }
+
+  private _pendingValidator = (
+    prev: ChannelStateBN,
+    args: PendingArgsBN | PendingExchangeArgsBN,
+    proposedStr: UnsignedChannelState,
+  ): string | null => {
+    const errs = [
+      this.hasTimeout(prev),
+      this.hasPendingOps(prev),
+      this.hasNegative(args, proposePendingNumericArgs),
+      this.hasNegative(proposedStr, channelNumericFields),
+      args.timeout < 0 ? `timeout is negative: ${args.timeout}` : null,
+    ].filter(x => !!x)[0]
+    if (errs)
+      return errs
     return null
   }
 
@@ -1095,6 +1103,7 @@ export class Validator {
       return null
     }
 
+/*
     const inputs = [
       { type: 'address', name: 'user', indexed: true },
       { type: 'uint256', name: 'senderIdx' },
@@ -1106,8 +1115,9 @@ export class Validator {
       { type: 'bytes32', name: 'threadRoot' },
       { type: 'uint256', name: 'threadCount' },
     ]
+*/
 
-    const eventTopic = this.abi.events['DidUpdateChannel'].topic
+    const eventTopic: string = this.abi.events.DidUpdateChannel.topic
 
     /*
     ContractEvent.fromRawEvent({
@@ -1130,8 +1140,7 @@ export class Validator {
           }
         })
       }
-      // NOTE: The second topic in the log with the events topic
-      // is the indexed user.
+      // NOTE: The second topic in the log with the events topic is the indexed user.
       raw.user = '0x' + log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()
     })
 

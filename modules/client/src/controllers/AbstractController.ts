@@ -1,20 +1,29 @@
-import { ConnextInternal } from "../Connext";
-import { IHubAPIClient } from "../Hub";
+import { ConnextInternal } from '../Connext'
+import { IHubAPIClient } from '../Hub'
 import Logger from '../lib/Logger'
-import { ConnextState, ConnextStore } from "../state/store";
-import { Validator } from '../validator';
+import { ConnextState, ConnextStore } from '../state/store'
+import { Validator } from '../validator'
+
+const getLogger: any = (name: string): Logger => {
+  return {
+    source: name,
+    async logToApi(...args: any[]): Promise<any> {
+      console.log(`${name}:`, ...args)
+    },
+  }
+}
 
 export abstract class AbstractController {
-  name: string
-  connext: ConnextInternal
-  logger: Logger
-  hub: IHubAPIClient
-  validator: Validator
+  public name: string
+  public connext: ConnextInternal
+  public logger: Logger
+  public hub: IHubAPIClient
+  public validator: Validator
 
   constructor(name: string, connext: ConnextInternal) {
     this.connext = connext
     this.name = name
-    this.logger = connext.getLogger(this.name)
+    this.logger = getLogger(this.name)
     this.hub = connext.hub
     this.validator = connext.validator
   }
@@ -23,14 +32,14 @@ export abstract class AbstractController {
     return this.connext.store
   }
 
-  getState(): ConnextState {
+  public getState(): ConnextState {
     return this.connext.store.getState()
   }
 
-  async start(): Promise<void> { }
-  async stop(): Promise<void> { }
+  public async start(): Promise<void> {/*noop*/}
+  public async stop(): Promise<void> {/*noop*/}
 
-  protected logToApi(key: string, data: any) {
+  protected logToApi(key: string, data: any): any {
     this.logger.logToApi(key, data)
   }
 }

@@ -1,4 +1,4 @@
-import { types, Utils, big } from '../Connext'
+import { types, Utils, big } from 'connext'
 import * as crypto from 'crypto'
 import { default as DBEngine } from '../DBEngine'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
@@ -109,7 +109,7 @@ export class CoinPaymentsService {
     private channelDao: ChannelsDao,
     private exchangeRateDao: ExchangeRateDao,
   ) {
-    this.utils = new Utils(this.config.hotWalletAddress)
+    this.utils = new Utils()
   }
 
   generateHmac(key: string, rawData: string): string {

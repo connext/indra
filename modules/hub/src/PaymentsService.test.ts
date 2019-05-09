@@ -1,5 +1,5 @@
 import * as eth from 'ethers';
-import { StateGenerator, types, big } from './Connext';
+import { StateGenerator, types, big } from 'connext';
 import { getTestRegistry, assert } from "./testing";
 import PaymentsService from "./PaymentsService";
 import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
@@ -797,6 +797,95 @@ describe('PaymentsService', () => {
       balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).sub(threadUpdate.balanceTokenReceiver).toString(),
       sigUser: mkSig('0xa'),
       sigHub: fakeSig
+    })
+  })
+
+  it('should return payments by purchase id', async () => {
+    const sender = mkAddress('0xa')
+    const receiver = mkAddress('0xb')
+
+    const senderChannel = await channelUpdateFactory(registry, {
+      user: sender,
+      balanceTokenUser: tokenVal(5),
+    })
+    await channelUpdateFactory(registry, {
+      user: receiver,
+      balanceTokenHub: tokenVal(6),
+    })
+
+    const payments: PurchasePayment[] = [
+      {
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: toWeiString(1),
+        },
+        meta: {},
+        type: 'PT_CHANNEL',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 1,
+          args: {
+            amountWei: '0',
+            amountToken: toWeiString(1),
+            recipient: 'hub'
+          },
+        } as UpdateRequest,
+      },
+      {
+        recipient: testHotWalletAddress,
+        amount: {
+          amountWei: '0',
+          amountToken: toWeiString(3),
+        },
+        meta: {},
+        type: 'PT_CHANNEL',
+        update: {
+          reason: 'Payment',
+          sigUser: mkSig('0xa'),
+          txCount: senderChannel.state.txCountGlobal + 2,
+          args: {
+            amountWei: '0',
+            amountToken: toWeiString(3),
+            recipient: 'hub'
+          },
+        } as UpdateRequest,
+      }
+    ]
+
+    const purchase = await service.doPurchase(senderChannel.user, {}, payments)
+    const purchaseId = (purchase as any).res.purchaseId
+    assert.isOk(purchaseId)
+
+    const byId = await service.doPurchaseById(purchaseId)
+    assert.containSubset(byId, {
+      purchaseId,
+      sender: senderChannel.user,
+      meta: { todo: 'this will be filled in later' },
+      amount: {
+        amountToken: toWeiString(4),
+        amountWei: '0'
+      },
+      payments: [{
+        recipient: receiver,
+        amount: {
+          amountWei: '0',
+          amountToken: toWeiString(1),
+        },
+        meta: {},
+        type: 'PT_CHANNEL',
+        purchaseId
+      }, {
+        recipient: testHotWalletAddress,
+        amount: {
+          amountWei: '0',
+          amountToken: toWeiString(3),
+        },
+        meta: {},
+        type: 'PT_CHANNEL',
+        purchaseId
+      }]
     })
   })
 
