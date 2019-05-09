@@ -70,6 +70,9 @@ import ConfigApiService from './api/ConfigApiService';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
 import OptimisticPaymentDao, { PostgresOptimisticPaymentDao } from './dao/OptimisticPaymentDao';
 import { OptimisticPaymentsService } from './OptimisticPaymentsService';
+import PaymentProfilesApiService from './api/PaymentProfilesApiService';
+import PaymentProfilesDao, { PostgresPaymentProfilesDao } from './dao/PaymentProfilesDao';
+import PaymentProfilesService from './PaymentProfilesService';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -177,6 +180,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       PaymentsApiService,
       CoinPaymentsApiService,
       CustodialPaymentsApiService,
+      PaymentProfilesApiService,
     ],
     isSingleton: true,
   },
@@ -364,6 +368,12 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   ChannelDisputesDao: {
     factory: (db: DBEngine<Client>, config: Config) =>
       new PostgresChannelDisputesDao(db, config),
+    dependencies: ['DBEngine', 'Config'],
+  },
+
+  PaymentProfilesDao: {
+    factory: (db: DBEngine<Client>, config: Config) =>
+      new PostgresPaymentProfilesDao(db, config),
     dependencies: ['DBEngine', 'Config'],
   },
 
@@ -574,5 +584,16 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'CustodialPaymentsDao',
       'OnchainTransactionService',
     ],
+  },
+
+  PaymentProfilesService: {
+    factory: (
+      paymentsProfileDao: PaymentProfilesDao,
+    ) => new PaymentProfilesService(
+      paymentsProfileDao,
+    ),
+    dependencies: [
+      'PaymentProfilesDao',
+    ]
   },
 }
