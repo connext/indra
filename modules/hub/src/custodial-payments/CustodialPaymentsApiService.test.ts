@@ -1,5 +1,5 @@
+import { toWei } from '../util'
 import { getMockWeb3 } from '../testing/mocks'
-import { big } from 'connext'
 import { mkAddress } from '../testing/stateUtils'
 import { createTestPayment } from './CustodialPaymentsDao.test'
 import { assert, getTestRegistry } from '../testing'
@@ -14,7 +14,7 @@ describe('CustodialPaymentsApiService', () => {
 
   beforeEach(async () => {
     await registry.clearDatabase()
-    const tokenAmount = big.toWeiString('420')
+    const tokenAmount = toWei('420').toString()
     await createTestPayment(
       registry,
       { amountToken: tokenAmount },
@@ -44,7 +44,7 @@ describe('CustodialPaymentsApiService', () => {
   it('withdrawals', async () => {
     const wdRes = await app.withUser(recipient).request
       .post(`/custodial/withdrawals`)
-      .send({ recipient: recipient, amountToken: big.toWeiString('10') })
+      .send({ recipient: recipient, amountToken: toWei('10').toString() })
     assert.equal(wdRes.status, 200)
     const expectedWithdrawal = {
       'exchangeRate': '123.45',

@@ -1,23 +1,24 @@
-import log from "./util/log";
-import ChannelsDao from "./dao/ChannelsDao";
-import DBEngine from "./DBEngine";
-import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
-import PaymentsService from "./PaymentsService";
-import { maybe } from "./util";
-import ChannelsService from "./ChannelsService";
-import { types, Poller } from 'connext';
+import * as Connext from 'connext'
+import {
+  OptimisticPurchasePaymentRow,
+  OptimisticPurchasePaymentRowBN,
+  PurchasePayment,
+} from 'connext/types'
 
-const { convertPayment } = types
-type PurchasePayment<T=string> = types.PurchasePayment<T>
-type OptimisticPurchasePaymentRow<T=string> = types.OptimisticPurchasePaymentRow<T>
-type OptimisticPurchasePaymentRowBN = types.OptimisticPurchasePaymentRowBN
+import ChannelsService from './ChannelsService'
+import ChannelsDao from './dao/ChannelsDao'
+import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
+import DBEngine from './DBEngine'
+import PaymentsService from './PaymentsService'
+import { maybe } from './util'
+import log from './util/log'
 
+const convertPayment = Connext.utils.convert.Payment
 const LOG = log('OptimisticPaymentsService')
-
 const POLL_INTERVAL = 2 * 1000
 
 export class OptimisticPaymentsService {
-  private poller: Poller
+  private poller: Connext.Poller
 
   constructor(
     private db: DBEngine,
@@ -26,7 +27,7 @@ export class OptimisticPaymentsService {
     private paymentsService: PaymentsService,
     private channelsService: ChannelsService
   ) {
-    this.poller = new Poller({
+    this.poller = new Connext.Poller({
       name: 'OptimisticPaymentsService',
       interval: POLL_INTERVAL,
       callback: this.pollOnce.bind(this),

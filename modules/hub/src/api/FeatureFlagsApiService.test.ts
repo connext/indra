@@ -1,7 +1,8 @@
-import {assert} from 'chai'
-import {Response} from 'supertest'
-import { getTestRegistry, TestApiServer } from '../testing'
+import { assert } from 'chai'
+import { Response } from 'supertest'
+
 import { DEFAULT_FLAGS } from '../dao/FeatureFlagsDao'
+import { getTestRegistry, TestApiServer } from '../testing'
 
 describe('FeatureFlagsApiService', () => {
   (DEFAULT_FLAGS as any).testFlag = 'default value'

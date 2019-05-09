@@ -1,22 +1,21 @@
-import * as eth from 'ethers';
-import { StateGenerator, types, big } from 'connext';
-import { mkSig, mkAddress } from "../testing/stateUtils";
-import { getTestRegistry, TestApiServer, assert } from '../testing'
-import { channelUpdateFactory, tokenVal, channelNextState } from "../testing/factories";
-import { PaymentMetaDao } from "../dao/PaymentMetaDao";
-import Config from "../Config";
-import { testChannelManagerAddress, testHotWalletAddress } from "../testing/mocks";
+import * as connext from 'connext'
+import {
+  PurchasePayment,
+  ThreadState,
+  ThreadStateUpdate,
+  UpdateRequest,
+} from 'connext/types'
+import * as eth from 'ethers'
 
-const { toWeiString } = big;
-type PurchasePayment = types.PurchasePayment
-type ThreadState = types.ThreadState
-type UpdateRequest = types.UpdateRequest
-type ThreadStateUpdate = types.ThreadStateUpdate
-const {
-  convertThreadState,
-  convertPayment,
-  convertChannelState
-} = types
+import Config from '../Config'
+import { PaymentMetaDao } from '../dao/PaymentMetaDao'
+import { assert, getTestRegistry, TestApiServer } from '../testing'
+import { channelNextState, channelUpdateFactory, tokenVal } from '../testing/factories'
+import { testChannelManagerAddress, testHotWalletAddress } from '../testing/mocks'
+import { mkAddress, mkSig } from '../testing/stateUtils'
+import { toWei } from '../util'
+
+const convert = connext.utils.convert
 const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsApiService', () => {
@@ -29,7 +28,7 @@ describe('PaymentsApiService', () => {
     },
   })
   const paymentMetaDao: PaymentMetaDao = registry.get('PaymentMetaDao')
-  const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  const stateGenerator: connext.StateGenerator = registry.get('StateGenerator')
 
   const app: TestApiServer = registry.get('TestApiServer')
   const config: Config = registry.get('Config')
@@ -322,18 +321,18 @@ describe('PaymentsApiService', () => {
   it('should work for thread payments', async() => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
-      balanceTokenUser: toWeiString(5),
+      balanceTokenUser: toWei(5).toString(),
     })
 
     const receiverChannel = await channelUpdateFactory(registry, { 
       user: mkAddress('0xb'), 
-      balanceTokenHub: toWeiString(100) 
+      balanceTokenHub: toWei(100).toString()
     })
 
     const threadState: ThreadState = {
       balanceWeiSender: '0',
       balanceWeiReceiver: '0',
-      balanceTokenSender: toWeiString(1),
+      balanceTokenSender: toWei(1).toString(),
       balanceTokenReceiver: '0',
       contractAddress: testChannelManagerAddress,
       sender: senderChannel.user,
@@ -344,17 +343,17 @@ describe('PaymentsApiService', () => {
     }
 
     const threadUpdate = stateGenerator.threadPayment(
-      convertThreadState('bn', threadState), 
-      convertPayment('bn', {
-        amountToken: toWeiString(0.1),
+      convert.ThreadState('bn', threadState), 
+      convert.Payment('bn', {
+        amountToken: toWei(0.1).toString(),
         amountWei: 0
       })
     )
 
     const openThread = stateGenerator.openThread(
-      convertChannelState('bn', senderChannel.state),
+      convert.ChannelState('bn', senderChannel.state),
       [],
-      convertThreadState('bn', threadState)
+      convert.ThreadState('bn', threadState)
     )
 
     const res = await app.withUser(senderChannel.user).request
@@ -365,7 +364,7 @@ describe('PaymentsApiService', () => {
           recipient: testHotWalletAddress,
           amount: {
             amountWei: '0',
-            amountToken: toWeiString(1),
+            amountToken: toWei(1).toString(),
           },
           meta: {},
           type: 'PT_CHANNEL',
@@ -379,7 +378,7 @@ describe('PaymentsApiService', () => {
           recipient: receiverChannel.user,
           amount: {
             amountWei: '0',
-            amountToken: toWeiString(1),
+            amountToken: toWei(1).toString(),
           },
           meta: {},
           type: 'PT_THREAD',

@@ -1,7 +1,9 @@
-import { ApiService, } from './ApiService'
 import * as express from 'express'
-import log from '../util/log'
+
+import { ApiService } from './ApiService'
+
 import Config from '../Config'
+import log from '../util/log'
 
 const LOG = log('ConfigApiService')
 
