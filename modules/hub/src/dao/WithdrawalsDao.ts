@@ -1,12 +1,9 @@
-import Withdrawal, {WithdrawalStatus} from '../domain/Withdrawal'
-import DBEngine from '../DBEngine'
 import {Client, QueryResult} from 'pg'
-import {TotalsTuple} from '../domain/TotalsTuple'
-import { BigNumber as BN } from 'ethers/utils'
-import { big } from 'connext';
-const {
-  Big
-} = big
+
+import DBEngine from '../DBEngine'
+import { TotalsTuple } from '../domain/TotalsTuple'
+import Withdrawal, { WithdrawalStatus } from '../domain/Withdrawal'
+import { BN, toBN } from '../util'
 
 enum WithdrawalType {
   WEI,
@@ -100,14 +97,14 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
 
       if (!row.totalwei || !row.totalusd) {
         return {
-          totalWei: new BN(0),
-          totalUsd: new BN(0)
+          totalWei: toBN(0),
+          totalUsd: toBN(0)
         }
       }
 
       return {
-        totalWei: new BN(row.totalwei),
-        totalUsd: new BN(row.totalusd)
+        totalWei: toBN(row.totalwei),
+        totalUsd: toBN(row.totalusd)
       }
     })
   }
@@ -206,8 +203,8 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
       id: Number(row.id),
       recipient: row.recipient,
       initiator: row.initiator,
-      amountWei: Big(row.amountwei),
-      amountUsd: Big(row.amountusd),
+      amountWei: toBN(row.amountwei),
+      amountUsd: toBN(row.amountusd),
       txhash: row.txhash,
       status: row.status,
       createdAt: Number(row.createdat),

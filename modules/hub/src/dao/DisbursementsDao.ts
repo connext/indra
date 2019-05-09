@@ -1,12 +1,9 @@
-import DBEngine from '../DBEngine'
 import { Client } from 'pg'
-import { PostgresGenericDao } from './GenericDao'
+
+import DBEngine from '../DBEngine'
 import Disbursement, { DisbursementStatus } from '../domain/Disbursement'
-import { BigNumber as BN } from 'ethers/utils'
-import { big } from 'connext';
-const {
-  Big
-} = big
+import { PostgresGenericDao } from './GenericDao'
+import { BN, toBN } from '../util'
 
 export default interface DisbursementDao {
   create(recipient: string, amountWei: BN): Promise<Disbursement>
@@ -152,8 +149,8 @@ export class PostgresDisbursementDao extends PostgresGenericDao
 
   private inflateRow(row: any): Disbursement {
     return {
-      amountWei: row.amountwei && Big(row.amountwei),
-      amountErc20: row.amounterc20 && Big(row.amounterc20),
+      amountWei: row.amountwei && toBN(row.amountwei),
+      amountErc20: row.amounterc20 && toBN(row.amounterc20),
       confirmedAt: Number(row.confirmedat),
       createdAt: Number(row.createdat),
       failedAt: Number(row.failedat),

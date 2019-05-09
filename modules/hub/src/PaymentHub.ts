@@ -1,32 +1,31 @@
-import { types, big } from 'connext';
-import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
-import { CloseChannelService } from './CloseChannelService'
-import Config from './Config'
-import log from './util/log'
-import { Container, Context, Registry } from './Container'
-import defaultRegistry from './services'
+import * as connext from 'connext'
+import * as eth from 'ethers'
+import * as readline from 'readline'
+const Web3 = require('web3')
+
+import abi from './abi/ChannelManager'
+import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
 import { ApiService } from './api/ApiService'
+import { ApiServer } from './ApiServer'
+import ChainsawService from './ChainsawService'
+import ChannelsService from './ChannelsService'
+import { CloseChannelService } from './CloseChannelService'
+import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
+import Config from './Config'
+import { Container, Context, Registry } from './Container'
+import { ChannelManager } from './contract/ChannelManager'
+import { default as DBEngine, SQL } from './DBEngine'
+import { ContractEvent, DidUpdateChannelEvent, EventLog } from './domain/ContractEvent'
 import ExchangeRateService from './ExchangeRateService'
 import GasEstimateService from './GasEstimateService'
-import { ApiServer } from "./ApiServer"
-import ChainsawService from './ChainsawService'
-import { OnchainTransactionService } from "./OnchainTransactionService";
-import ChannelsService from './ChannelsService';
-import { default as DBEngine, SQL } from './DBEngine'
-import { ChannelManager } from './contract/ChannelManager'
-const Web3 = require('web3')
-import abi from './abi/ChannelManager'
-import { ContractEvent, DidUpdateChannelEvent, EventLog } from './domain/ContractEvent'
-import * as readline from 'readline'
-import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
-import { OptimisticPaymentsService } from './OptimisticPaymentsService';
-import { ethers } from 'ethers';
-import { BigNumber as BN } from 'ethers/utils'
-
-const { channelNumericFields } = types
-const { Big, toWeiString } = big
+import { OnchainTransactionService } from './OnchainTransactionService'
+import { OptimisticPaymentsService } from './OptimisticPaymentsService'
+import defaultRegistry from './services'
+import { BN, toBN, toWei } from './util'
+import log from './util/log'
 
 const LOG = log('PaymentHub')
+const channelNumericFields = connext.utils.channelNumericFields
 
 export default class PaymentHub {
   private web3: any
@@ -350,7 +349,7 @@ $pgsql$;
     }
     for (const field of channelNumericFields)
       event[field] = event[field].toString()
-      LOG.debug(`event: ${event}`)
+    LOG.debug(`event: ${event}`)
 
     // 4. Find the correponding fully-signed ProposePending
     const pps = await db.query(SQL`
@@ -455,28 +454,28 @@ $pgsql$;
     const callArgs = { from: this.config.hotWalletAddress }
     const tokenContract = new this.web3.eth.Contract(mintAndBurnToken.abi, this.config.tokenContractAddress)
     const hubBalanceStr = await tokenContract.methods.balanceOf(this.config.hotWalletAddress).call(callArgs)
-    const hubBalance = ethers.utils.formatEther(hubBalanceStr)
+    const hubBalance = eth.utils.formatEther(hubBalanceStr)
     LOG.info(
       `Current BOOTY (${this.config.tokenContractAddress}) balance of hub ` +
       `(${this.config.hotWalletAddress}): ${hubBalance.toString()}`
     )
 
-    const toWd = Big(amount).sub(Big(hubBalance))
-    if (toWd.gt(Big(0))) {
+    const toWd = toBN(amount).sub(toBN(hubBalance))
+    if (toWd.gt(toBN(0))) {
       LOG.info(`Need to hubContractWithdraw ${toWd.toString()} BOOTY.`)
       const amountConfirm = await input(`Please confirm the amount of BOOTY to hubContractWithdraw (${toWd.toString()}): `)
-      if (!toWd.eq(Big(amountConfirm as string)))
+      if (!toWd.eq(toBN(amountConfirm as string)))
         throw new Error(`Aborting: ${amountConfirm} <> ${toWd.toString()}`)
       const contract = this.container.resolve<ChannelManager>('ChannelManagerContract')
-      LOG.info(`Calling hubContractWithdraw('0', '${toWeiString(toWd)}')...`)
-      const res = await contract.methods.hubContractWithdraw('0', toWeiString(toWd)).send(callArgs)
+      LOG.info(`Calling hubContractWithdraw('0', '${toWei(toWd).toString()}')...`)
+      const res = await contract.methods.hubContractWithdraw('0', toWei(toWd).toString()).send(callArgs)
       LOG.info(`Result of hubContractWithdraw: ${res}`)
     }
 
     const amountConfirm = +(await input(`Please confirm the amount of BOOTY to burn (in BOOTY, not BEI; amount: ${amount}): `))
     if (amountConfirm != amount)
       throw new Error(`Aborting: ${amount} <> ${amountConfirm}`)
-    const burnAmount = toWeiString(amount)
+    const burnAmount = toWei(amount).toString()
     LOG.info(`Calling burn(${burnAmount})...`)
     const burnCall = tokenContract.methods.burn(burnAmount)
     const gas = await burnCall.estimateGas(callArgs)

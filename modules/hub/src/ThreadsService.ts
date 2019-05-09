@@ -1,25 +1,22 @@
-import { types, Validator } from 'connext';
-import log from './util/log'
-import ChannelsDao from './dao/ChannelsDao'
+import * as connext from 'connext'
+import {
+  ChannelStateUpdateRowBN,
+  PaymentArgs,
+  ThreadRow,
+  ThreadState,
+  ThreadStateBN,
+  ThreadStateUpdateRow,
+} from 'connext/types'
+
 import Config from './Config'
+import ChannelsDao from './dao/ChannelsDao'
+import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import ThreadsDao from './dao/ThreadsDao'
 import { SignerService } from './SignerService'
 import { prettySafeJson } from './util'
-import GlobalSettingsDao from './dao/GlobalSettingsDao'
+import log from './util/log'
 
-type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN
-type PaymentArgs<T=string> = types.PaymentArgs<T>
-type ThreadRow<T=string> = types.ThreadRow<T>
-type ThreadState<T=string> = types.ThreadState<T>
-type ThreadStateBN = types.ThreadStateBN
-type ThreadStateUpdateRow<T=string> = types.ThreadStateUpdateRow<T>
-
-const {
-  convertChannelState,
-  convertPayment,
-  convertThreadState,
-} = types
-
+const convert = connext.utils.convert
 const LOG = log('ThreadsService')
 
 export default class ThreadsService {
@@ -29,7 +26,7 @@ export default class ThreadsService {
 
   private threadsDao: ThreadsDao
 
-  private validator: Validator
+  private validator: connext.Validator
 
   private config: Config
 
@@ -39,9 +36,9 @@ export default class ThreadsService {
     signerService: SignerService,
     channelsDao: ChannelsDao,
     threadsDao: ThreadsDao,
-    validator: Validator,
+    validator: connext.Validator,
     config: Config,
-    globalSettings: GlobalSettingsDao
+    globalSettings: GlobalSettingsDao,
   ) {
     this.signerService = signerService
     this.channelsDao = channelsDao
@@ -123,7 +120,7 @@ export default class ThreadsService {
       return
     }
 
-    this.validator.assertThreadSigner(convertThreadState('str', thread))
+    this.validator.assertThreadSigner(convert.ThreadState('str', thread))
 
     // create and validate channel update from input sig
     // add this thread to the initial states and compute the new root
@@ -131,13 +128,13 @@ export default class ThreadsService {
       thread.sender
     )
     let threadStates = threadInitialStates.map(thread =>
-      convertThreadState('str', thread.state)
+      convert.ThreadState('str', thread.state)
     )
 
     const unsignedChannelStateSender = this.validator.generateOpenThread(
-      convertChannelState('str', channelSender.state),
+      convert.ChannelState('str', channelSender.state),
       threadStates,
-      convertThreadState('str', thread)
+      convert.ThreadState('str', thread)
     )
     const channelStateSender = await this.signerService.signChannelState(
       unsignedChannelStateSender,
@@ -150,13 +147,13 @@ export default class ThreadsService {
       thread.receiver
     )
     threadStates = threadInitialStates.map(thread =>
-      convertThreadState('str', thread.state)
+      convert.ThreadState('str', thread.state)
     )
 
     const unsignedChannelStateReceiver = this.validator.generateOpenThread(
-      convertChannelState('str', channelReceiver.state),
+      convert.ChannelState('str', channelReceiver.state),
       threadStates,
-      convertThreadState('str', thread)
+      convert.ThreadState('str', thread)
     )
     const channelStateReceiver = await this.signerService.signChannelState(
       unsignedChannelStateReceiver
@@ -168,17 +165,17 @@ export default class ThreadsService {
       'OpenThread',
       thread.sender,
       channelStateSender,
-      convertThreadState('str', thread)
+      convert.ThreadState('str', thread)
     )
     const insertedChannelReceiver = await this.channelsDao.applyUpdateByUser(
       thread.receiver,
       'OpenThread',
       thread.receiver,
       channelStateReceiver,
-      convertThreadState('str', thread)
+      convert.ThreadState('str', thread)
     )
     await this.threadsDao.applyThreadUpdate(
-      convertThreadState('str', thread),
+      convert.ThreadState('str', thread),
       insertedChannelSender.id,
       insertedChannelReceiver.id
     )
@@ -197,9 +194,9 @@ export default class ThreadsService {
     }
 
     const threadState = this.validator.generateThreadPayment(
-      convertThreadState('str', thread.state),
+      convert.ThreadState('str', thread.state),
       // @ts-ignore TODO: Enable threads --> reciever isnt in payment args
-      convertPayment('str', {
+      convert.Payment('str', {
         amountToken: update.balanceTokenReceiver.sub(thread.state.balanceTokenReceiver),
         amountWei: update.balanceWeiReceiver.sub(thread.state.balanceWeiReceiver),
         recipient: 'receiver'
@@ -209,8 +206,8 @@ export default class ThreadsService {
 
     // TODO: add validation
 
-    const row = await this.threadsDao.applyThreadUpdate(convertThreadState('str', update))
-    return { ...row, state: convertThreadState('str', thread.state) }
+    const row = await this.threadsDao.applyThreadUpdate(convert.ThreadState('str', update))
+    return { ...row, state: convert.ThreadState('str', thread.state) }
   }
 
   // we will need to pass in the thread update for p2p
@@ -253,12 +250,12 @@ export default class ThreadsService {
       sender
     )
     // cast as string type
-    let threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
+    let threadStates = threadStatesBigNum.map(t => convert.ThreadState('str', t.state))
 
     const unsignedChannelUpdateSender = this.validator.generateCloseThread(
-      convertChannelState('str', channelSender.state),
+      convert.ChannelState('str', channelSender.state),
       threadStates,
-      convertThreadState('str', thread.state)
+      convert.ThreadState('str', thread.state)
     )
     if (senderSigned) {
       this.validator.assertChannelSigner({ ...unsignedChannelUpdateSender, sigUser: sig })
@@ -273,12 +270,12 @@ export default class ThreadsService {
       receiver
     )
     // cast as string type
-    threadStates = threadStatesBigNum.map(t => convertThreadState('str', t.state))
+    threadStates = threadStatesBigNum.map(t => convert.ThreadState('str', t.state))
 
     const unsignedChannelUpdateReceiver = this.validator.generateCloseThread(
-      convertChannelState('str', channelReceiver.state),
+      convert.ChannelState('str', channelReceiver.state),
       threadStates,
-      convertThreadState('str', thread.state)
+      convert.ThreadState('str', thread.state)
     )
     if (!senderSigned) {
       this.validator.assertChannelSigner({ ...unsignedChannelUpdateReceiver, sigUser: sig })
@@ -294,14 +291,14 @@ export default class ThreadsService {
       'CloseThread',
       channelUpdateSender.user,
       channelUpdateSender,
-      convertThreadState('str', thread.state)
+      convert.ThreadState('str', thread.state)
     )
     const channelRowReceiver = await this.channelsDao.applyUpdateByUser(
       channelUpdateReceiver.user,
       'CloseThread',
       channelUpdateReceiver.user,
       channelUpdateReceiver,
-      convertThreadState('str', thread.state)
+      convert.ThreadState('str', thread.state)
     )
     await this.threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
 
@@ -310,19 +307,19 @@ export default class ThreadsService {
 
   public async getInitialStates(user: string): Promise<ThreadState[]> {
     return (await this.threadsDao.getThreadInitialStatesByUser(user)).map(
-      thread => convertThreadState('str', thread.state)
+      thread => convert.ThreadState('str', thread.state)
     )
   }
 
   public async getThreadsActive(user: string): Promise<ThreadState[]> {
     return (await this.threadsDao.getThreadsActive(user)).map(
-      thread => convertThreadState('str', thread.state)
+      thread => convert.ThreadState('str', thread.state)
     )
   }
 
   public async getThreads(user: string): Promise<ThreadState[]> {
     const threads = await this.threadsDao.getThreads(user)
-    return threads.map(t => convertThreadState('str', t.state))
+    return threads.map(t => convert.ThreadState('str', t.state))
   }
 
   public async getThread(
@@ -335,13 +332,13 @@ export default class ThreadsService {
     }
     return {
       ...thread,
-      state: convertThreadState('str', thread.state)
+      state: convert.ThreadState('str', thread.state)
     }
   }
 
   public async getThreadsIncoming(user: string): Promise<ThreadRow[]> {
     return (await this.threadsDao.getThreadsIncoming(user)).map(thread => {
-      return { ...thread, state: convertThreadState('str', thread.state) }
+      return { ...thread, state: convert.ThreadState('str', thread.state) }
     })
   }
 
