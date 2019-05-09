@@ -1,21 +1,25 @@
-import * as Connext from 'connext';
-import DBEngine from '../DBEngine'
+import * as connext from 'connext'
+import {
+  PurchasePayment,
+  UpdateRequest,
+} from 'connext/types'
 import * as express from 'express'
+
 import { ApiService } from './ApiService'
+
+import { default as ChannelsService } from '../ChannelsService'
+import { default as Config } from '../Config'
+import ExchangeRateDao from '../dao/ExchangeRateDao'
+import { PaymentMetaDao } from '../dao/PaymentMetaDao'
+import PaymentsDao from '../dao/PaymentsDao'
+import DBEngine from '../DBEngine'
+import PaymentsService from '../PaymentsService'
+import { Role } from '../Role'
+import { default as ThreadsService } from '../ThreadsService'
 import log from '../util/log'
 import { ownedAddressOrAdmin } from '../util/ownedAddressOrAdmin'
-import { PaymentMetaDao } from '../dao/PaymentMetaDao'
-import { Role } from '../Role'
 import WithdrawalsService from '../WithdrawalsService'
-import ExchangeRateDao from '../dao/ExchangeRateDao'
-import { default as ThreadsService } from "../ThreadsService";
-import { default as ChannelsService } from "../ChannelsService";
-import { default as Config } from "../Config";
-import PaymentsService from "../PaymentsService";
-import PaymentsDao from "../dao/PaymentsDao";
 
-type PurchasePayment = Connext.types.PurchasePayment
-type UpdateRequest = Connext.types.UpdateRequest
 const LOG = log('PaymentsApiService')
 
 export default class PaymentsApiService extends ApiService<PaymentsApiServiceHandler> {

@@ -1,16 +1,16 @@
-import { safeJson } from '../util'
-import { CustodialPaymentsService } from './CustodialPaymentsService'
-import { CustodialPaymentsDao } from './CustodialPaymentsDao'
+import * as connext from 'connext'
 import { Request, Response } from 'express'
-import log from '../util/log'
-import Config from '../Config'
+
+import { CustodialPaymentsDao } from './CustodialPaymentsDao'
+import { CustodialPaymentsService } from './CustodialPaymentsService'
+
 import { ApiService } from '../api/ApiService'
+import Config from '../Config'
+import { BN, safeJson, toBN } from '../util'
+import log from '../util/log'
 import { getUserFromRequest } from '../util/request'
-import { BigNumber } from 'ethers/utils'
-import { big, types } from 'connext'
 
-const { convertCustodialBalanceRow, convertCustodialWithdrawalRow } = types
-
+const convert = connext.utils.convert
 const LOG = log('CustodialPaymentsApiService')
 
 function getAttr<T, K extends keyof T>(obj: T, attr: K): T[K] {
@@ -20,10 +20,10 @@ function getAttr<T, K extends keyof T>(obj: T, attr: K): T[K] {
 }
 
 getAttr.address = getAttr // TODO: some basic address validation here
-getAttr.big = <T, K extends keyof T>(obj: T, attr: K): BigNumber => {
+getAttr.big = <T, K extends keyof T>(obj: T, attr: K): BN => {
   const val = getAttr(obj, attr)
   try {
-    return big.Big(val as any)
+    return toBN(val as any)
   } catch (e) {
     throw new Error(`Invalid value for BigNumber: ${val} (attribute: ${attr})`)
   }
@@ -52,13 +52,13 @@ class CustodialPaymentsApiServiceHandler {
   service: CustodialPaymentsService
 
   async doGetBalance(req: Request, res: Response) {
-    res.json(convertCustodialBalanceRow("str", 
+    res.json(convert.CustodialBalanceRow("str", 
       await this.dao.getCustodialBalance(getUserFromRequest(req))
     ))
   }
 
   async doCreateWithdraw(req: Request, res: Response) {
-    res.json(convertCustodialWithdrawalRow("str",
+    res.json(convert.CustodialWithdrawalRow("str",
       await this.service.createCustodialWithdrawal({
         user: getAttr.address(req.session!, 'address'),
         recipient: getAttr.address(req.body, 'recipient'),
@@ -69,11 +69,11 @@ class CustodialPaymentsApiServiceHandler {
 
   async doGetWithdrawals(req: Request, res: Response) {
     const rows = await this.dao.getCustodialWithdrawals(getUserFromRequest(req))
-    res.json(rows.map(r => convertCustodialWithdrawalRow("str", r)))
+    res.json(rows.map(r => convert.CustodialWithdrawalRow("str", r)))
   }
 
   async doGetWithdrawal(req: Request, res: Response) {
-    res.json(convertCustodialWithdrawalRow("str", 
+    res.json(convert.CustodialWithdrawalRow("str", 
       await this.dao.getCustodialWithdrawal(
         getAttr.address(req.session!, 'address'),
         getAttr(req.params, 'withdrawalId'),

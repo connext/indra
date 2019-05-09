@@ -1,15 +1,16 @@
-import * as Connext from 'connext';
-import DBEngine, { SQL } from '../DBEngine'
+import * as connext from 'connext';
+import {
+  ThreadRowBN,
+  ThreadState,
+  ThreadStateBN,
+  ThreadStateUpdateRowBN,
+  ThreadStatus,
+} from 'connext/types'
 import { Client } from 'pg'
+
 import Config from '../Config'
-
-type ThreadRowBN = Connext.types.ThreadRowBN
-type ThreadState = Connext.types.ThreadState
-type ThreadStateBN = Connext.types.ThreadStateBN
-type ThreadStateUpdateRowBN = Connext.types.ThreadStateUpdateRowBN
-type ThreadStatus = Connext.types.ThreadStatus
-
-const { Big } = Connext.big
+import DBEngine, { SQL } from '../DBEngine'
+import { toBN } from '../util'
 
 export default interface ThreadsDao {
   applyThreadUpdate(
@@ -310,10 +311,10 @@ export class PostgresThreadsDao implements ThreadsDao {
         contractAddress: row.contract,
         sender: row.sender,
         receiver: row.receiver,
-        balanceWeiSender: Big(row.balance_wei_sender),
-        balanceWeiReceiver: Big(row.balance_wei_receiver),
-        balanceTokenSender: Big(row.balance_token_sender),
-        balanceTokenReceiver: Big(row.balance_token_receiver),
+        balanceWeiSender: toBN(row.balance_wei_sender),
+        balanceWeiReceiver: toBN(row.balance_wei_receiver),
+        balanceTokenSender: toBN(row.balance_token_sender),
+        balanceTokenReceiver: toBN(row.balance_token_receiver),
         txCount: row.tx_count,
         sigA: row.sig_a,
       }

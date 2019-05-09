@@ -1,4 +1,4 @@
-import * as Connext from 'connext'
+import * as connext from 'connext'
 import {
   OptimisticPurchasePaymentRow,
   OptimisticPurchasePaymentRowBN,
@@ -13,12 +13,12 @@ import PaymentsService from './PaymentsService'
 import { maybe } from './util'
 import log from './util/log'
 
-const convertPayment = Connext.utils.convert.Payment
+const convertPayment = connext.utils.convert.Payment
 const LOG = log('OptimisticPaymentsService')
 const POLL_INTERVAL = 2 * 1000
 
 export class OptimisticPaymentsService {
-  private poller: Connext.Poller
+  private poller: connext.Poller
 
   constructor(
     private db: DBEngine,
@@ -27,7 +27,7 @@ export class OptimisticPaymentsService {
     private paymentsService: PaymentsService,
     private channelsService: ChannelsService
   ) {
-    this.poller = new Connext.Poller({
+    this.poller = new connext.Poller({
       name: 'OptimisticPaymentsService',
       interval: POLL_INTERVAL,
       callback: this.pollOnce.bind(this),

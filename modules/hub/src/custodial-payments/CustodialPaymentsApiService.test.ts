@@ -1,9 +1,9 @@
-import { toWei } from '../util'
-import { getMockWeb3 } from '../testing/mocks'
-import { mkAddress } from '../testing/stateUtils'
 import { createTestPayment } from './CustodialPaymentsDao.test'
+
 import { assert, getTestRegistry } from '../testing'
-import { TestApiServer } from '../testing/mocks'
+import { getMockWeb3, TestApiServer } from '../testing/mocks'
+import { mkAddress } from '../testing/stateUtils'
+import { toWei } from '../util'
 
 describe('CustodialPaymentsApiService', () => {
   const registry = getTestRegistry({

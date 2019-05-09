@@ -1,5 +1,5 @@
 import {assert} from 'chai'
-import * as Connext from 'connext'
+import * as connext from 'connext'
 import {
   ChannelState,
   ChannelStateBN,
@@ -23,7 +23,7 @@ import { channelUpdateFactory } from './testing/factories'
 import { mkAddress, mkSig } from './testing/stateUtils'
 import { BN, toBN } from './util'
 
-const convertChannelState = Connext.utils.convert.ChannelState
+const convertChannelState = connext.utils.convert.ChannelState
 const emptyRootHash = eth.constants.HashZero
 const GAS_PRICE = '1000000000'
 
@@ -38,7 +38,7 @@ describe('ChainsawService::mocked Web3', function() {
 
   let chainsawDao: ChainsawDao
   let chanDao: ChannelsDao
-  let utils: Connext.Utils
+  let utils: connext.Utils
   let contract: ChannelManager
   let w3: any
   let cs: ChainsawService
@@ -175,7 +175,7 @@ describe('ChainsawService::mocked Web3', function() {
 
     it('should return poll type "PROCESS_EVENTS" if state generation is successful', async () => {
       cs.validator.generateConfirmPending = async (prev, args) => {
-        return await new Connext.StateGenerator().confirmPending(convertChannelState("bn", prev))
+        return await new connext.StateGenerator().confirmPending(convertChannelState("bn", prev))
       }
       console.log('chan2:', await chanDao.getChannelByUser(chan2.user))
       const pollType = await cs.processSingleTx(successfulTxHash)
@@ -221,7 +221,7 @@ describe('ChainsawService::mocked Web3', function() {
         },
         Validator: {
           generateConfirmPending: async (prev, args) => {
-            return await new Connext.StateGenerator().confirmPending(convertChannelState("bn", prev))
+            return await new connext.StateGenerator().confirmPending(convertChannelState("bn", prev))
           }
         },
         ChannelManager: {
@@ -245,7 +245,7 @@ describe.skip('ChainsawService', function() {
 
   let csDao: ChainsawDao
   let chanDao: ChannelsDao
-  let utils: Connext.Utils
+  let utils: connext.Utils
   let contract: ChannelManager
   let w3: any
   let cs: ChainsawService
@@ -460,9 +460,9 @@ class StateUpdateBuilder {
   private w3: any
   private hubAddress: string
   private state: ChannelStateBN
-  private utils: Connext.Utils
+  private utils: connext.Utils
 
-  constructor (w3: any, utils: Connext.Utils, contractAddress: string, hubAddress: string, update?: ChannelStateBN) {
+  constructor (w3: any, utils: connext.Utils, contractAddress: string, hubAddress: string, update?: ChannelStateBN) {
     this.w3 = w3
     this.hubAddress = hubAddress.toLowerCase()
     this.utils = utils

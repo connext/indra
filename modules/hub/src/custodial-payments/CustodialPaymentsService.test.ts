@@ -1,14 +1,13 @@
-import { toWei, toBN } from '../util'
-import { parameterizedTests } from '../testing'
-import { OnchainTransactionService } from '../OnchainTransactionService'
-import { SQL } from '../DBEngine'
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { createTestPayment } from './CustodialPaymentsDao.test'
 import { CustodialPaymentsService } from './CustodialPaymentsService'
-import { mkAddress } from '../testing/stateUtils'
-import { default as DBEngine } from '../DBEngine'
-import { assert, getTestRegistry } from '../testing'
+
+import { default as DBEngine, SQL } from '../DBEngine'
+import { OnchainTransactionService } from '../OnchainTransactionService'
+import { assert, getTestRegistry, parameterizedTests } from '../testing'
 import { getMockWeb3 } from '../testing/mocks'
+import { mkAddress } from '../testing/stateUtils'
+import { toBN, toWei } from '../util'
 
 describe('CustodialPaymentsService', () => {
   const registry = getTestRegistry({
