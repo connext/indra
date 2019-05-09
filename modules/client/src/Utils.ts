@@ -1,19 +1,19 @@
 import util from 'ethereumjs-util'
 import { ethers as eth } from 'ethers'
-import { BigNumber as BN } from 'ethers/utils'
 
-import * as bigUtils from './lib/bn'
 import MerkleTree from './lib/merkleTree'
 import { MerkleUtils } from './lib/merkleUtils'
-import { Poller } from './lib/poller/Poller'
 import * as getters from './state/getters'
 import { ConnextState } from './state/store'
 import {
   ChannelState,
+  channelNumericFields,
   convertArgs,
   convertChannelRow,
   convertChannelState,
   convertChannelStateUpdateRow,
+  convertCustodialBalanceRow,
+  convertCustodialWithdrawalRow,
   convertDeposit,
   convertExchange,
   convertFields,
@@ -37,21 +37,16 @@ const { arrayify, isHexString, solidityKeccak256, toUtf8Bytes, verifyMessage } =
 
 // Define the utils functions
 export class Utils {
-  public assetToWei: (fiat: BN, rate: string) => BN[] = bigUtils.assetToWei
-  public emptyAddress: string = eth.constants.AddressZero
+  public channelNumericFields: string[] = channelNumericFields
   public emptyRootHash: string = eth.constants.HashZero
   public getExchangeRates: (state: ConnextState) => ExchangeRates = getters.getExchangeRates
-  public maxBN: (a: BN, b: BN) => BN = bigUtils.maxBN
-  public minBN: (a: BN, ...b: BN[]) => BN = bigUtils.minBN
-  public Poller: any = Poller
-  public toWeiBig: (amount: number | string | BN) => BN = bigUtils.toWeiBig
-  public toWeiString: (amount: number | string | BN) => string = bigUtils.toWeiString
-  public weiToAsset: (wei: BN, rate: string) => BN = bigUtils.weiToAsset
   public convert: any = {
     Args: convertArgs,
     ChannelRow: convertChannelRow,
     ChannelState: convertChannelState,
     ChannelStateUpdateRow: convertChannelStateUpdateRow,
+    CustodialBalanceRow: convertCustodialBalanceRow,
+    CustodialWithdrawalRow: convertCustodialWithdrawalRow,
     Deposit: convertDeposit,
     Exchange: convertExchange,
     Fields: convertFields,
