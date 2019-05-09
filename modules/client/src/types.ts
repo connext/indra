@@ -19,6 +19,7 @@ export {
 import { ChannelManager as ChannelManagerLib } from './contract/ChannelManager';
 import { default as CurrencyLib } from './lib/currency/Currency'
 import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable'
+import { isArray, isNullOrUndefined } from 'util';
 
 /*********************************
  ****** Currencies & Exchange Rates
@@ -668,18 +669,26 @@ export type VerboseChannelEvent<T = string> = UnsignedChannelState<T> & {
 }
 export type VerboseChannelEventBN = VerboseChannelEvent<BN>
 
+// TODO: make this fn more generalized, will fail on other dispute events
+// pushing temp fix
 export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contractAddress: Address): VerboseChannelEvent {
   let ans = {} as any
   ans.contractAddress = contractAddress
   Object.entries(obj).forEach(([name, val]) => {
+    let value = val as any
+    // if value is a BN, cast to a string
+    if (isBN(val)) {
+      value = val.toString()
+    } else if (isArray(val) && isBN(val[0])) {
+      value = val.map(v => v.toString())
+    }
     // if it contains arrays, expand to named
-    const value = val as any
     switch (name) {
       case "senderIdx":
-        if (value.toString() !== "0" && value.toString() !== "1") {
+        if (value !== "0" && value !== "1") {
           throw new Error(`Incorrect senderIdx value detected: ${value}`)
         }
-        ans.sender = value.toString() === "1" ? obj.user : hubAddress
+        ans.sender = value === "1" ? obj.user : hubAddress
         break
       case "weiBalances":
         ans.balanceWeiHub = value[0]
@@ -711,6 +720,10 @@ export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contrac
           : value
     }
   })
+  // in the case of `DidEmptyChannel`, `DidStartEmptyChannel` events, 
+  // there will be no pending** updates
+  // since they will be 0d out
+  ans = insertDefault('0', ans, channelNumericFields)
   return ans
 }
 
@@ -978,7 +991,7 @@ export function insertDefault(val: string, obj: any, keys: string[]) {
   let adjusted = {} as any
   keys.concat(Object.keys(obj)).map(k => {
     // check by index and null
-    if (!obj[k]) {
+    if (isNullOrUndefined(obj[k])) {
       // not supplied set as default val
       adjusted[k] = val
     } else {
