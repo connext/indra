@@ -1484,11 +1484,11 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
     await assertCollateral(channel.user, Big(0), {
       depositTokenHub: defaultConfig.beiMinCollateralization.toString()
     })
-    // perform lots of tips
-    await assertTipUser(channel.user, toWeiString(18), 17)
+    // perform tip to send colltateral over edge
+    await assertTipUser(channel.user, toWeiString(180))
 
     // make sure the collateral is at max in tippers channel  
-    await assertCollateral(channel.user, toWeiBig(18), {
+    await assertCollateral(channel.user, toWeiBig(180), {
       depositTokenHub: defaultConfig.beiMaxCollateralization.toString()
     })
   }).timeout(5000)
