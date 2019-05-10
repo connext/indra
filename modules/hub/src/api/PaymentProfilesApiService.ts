@@ -1,30 +1,32 @@
-import { ApiService, } from './ApiService'
-import * as express from 'express'
-import log, { logApiRequestError } from '../util/log'
-import { isAdmin } from '../util/ownedAddressOrAdmin';
-import { isArray } from 'util';
-import { big } from 'connext';
-import PaymentProfilesService from '../PaymentProfilesService'
+import { ApiService } from "./ApiService"
+import * as express from "express"
+import log, { logApiRequestError } from "../util/log"
+import { isAdmin } from "../util/ownedAddressOrAdmin"
+import { isArray } from "util"
+import { big } from "connext"
+import PaymentProfilesService from "../PaymentProfilesService"
 
 const { Big } = big
 
-const LOG = log('PaymentProfilesApiService')
+const LOG = log("PaymentProfilesApiService")
 
-export default class PaymentProfilesApiService extends ApiService<PaymentProfilesApiServiceHandler> {
-  namespace = 'profile'
+export default class PaymentProfilesApiService extends ApiService<
+  PaymentProfilesApiServiceHandler
+> {
+  namespace = "profile"
   routes = {
-    'POST /add-profile/:key': 'doAddProfileKey',
-    'POST /': 'doCreatePaymentProfile',
-    'GET /:id': 'doGetPaymentProfile'
+    "POST /add-profile/:key": "doAddProfileKey",
+    "POST /": "doCreatePaymentProfile",
+    "GET /:id": "doGetPaymentProfileById",
+    "GET /user/:user": "doGetPaymentProfileByUser"
   }
   handler = PaymentProfilesApiServiceHandler
   dependencies = {
-    paymentProfilesService: 'PaymentProfilesService',
-  } 
+    paymentProfilesService: "PaymentProfilesService"
+  }
 }
 
 class PaymentProfilesApiServiceHandler {
-
   paymentProfilesService: PaymentProfilesService
 
   async doAddProfileKey(req: express.Request, res: express.Response) {
@@ -35,13 +37,18 @@ class PaymentProfilesApiServiceHandler {
 
     const { key } = req.params
     const { addresses } = req.body
-    if (!key || !Number.isInteger(key) || !addresses || !isArray(addresses)) {
+    if (
+      !key ||
+      !Number.isInteger(parseInt(key)) ||
+      !addresses ||
+      !isArray(addresses)
+    ) {
       logApiRequestError(LOG, req)
       return res.sendStatus(400)
     }
 
-    const { paymentProfileId, addressesUpdated } = await this.paymentProfilesService.doAddProfileKey(key, addresses)
-    return res.send({ paymentProfileId, addressesUpdated })
+    await this.paymentProfilesService.doAddProfileKey(parseInt(key), addresses)
+    return res.sendStatus(200)
   }
 
   async doCreatePaymentProfile(req: express.Request, res: express.Response) {
@@ -51,9 +58,9 @@ class PaymentProfilesApiServiceHandler {
     }
 
     const {
-      minimumMaintainedCollateralWei, 
-      minimumMaintainedCollateralToken, 
-      amountToCollateralizeWei, 
+      minimumMaintainedCollateralWei,
+      minimumMaintainedCollateralToken,
+      amountToCollateralizeWei,
       amountToCollateralizeToken
     } = req.body
 
@@ -64,32 +71,32 @@ class PaymentProfilesApiServiceHandler {
       // !minimumMaintainedCollateralWei ||
       !minimumMaintainedCollateralToken ||
       // !amountToCollateralizeWei ||
-      !amountToCollateralizeToken 
+      !amountToCollateralizeToken
     ) {
       logApiRequestError(LOG, req)
       return res.sendStatus(400)
     }
 
     if (
-      minimumMaintainedCollateralWei && !Big(minimumMaintainedCollateralWei).isZero() ||
-      amountToCollateralizeWei && !Big(amountToCollateralizeWei).isZero()
+      (minimumMaintainedCollateralWei &&
+        !Big(minimumMaintainedCollateralWei).isZero()) ||
+      (amountToCollateralizeWei && !Big(amountToCollateralizeWei).isZero())
     ) {
       logApiRequestError(LOG, req)
       return res.sendStatus(400)
     }
 
     const config = await this.paymentProfilesService.doCreatePaymentProfile({
-      minimumMaintainedCollateralWei, 
-      minimumMaintainedCollateralToken, 
-      amountToCollateralizeWei, 
+      minimumMaintainedCollateralWei,
+      minimumMaintainedCollateralToken,
+      amountToCollateralizeWei,
       amountToCollateralizeToken
     })
 
-    // TODO: return value here?
     return res.send({ paymentProfileId: config.id })
   }
 
-  async doGetPaymentProfile(req: express.Request, res: express.Response) {
+  async doGetPaymentProfileById(req: express.Request, res: express.Response) {
     if (!isAdmin(req)) {
       res.status(403)
       res.send({ error: "Admin role not detected on request." })
@@ -97,12 +104,14 @@ class PaymentProfilesApiServiceHandler {
 
     const { id } = req.params
 
-    if (id || !Number.isInteger(id)) {
+    if (!id || !Number.isInteger(parseInt(id))) {
       logApiRequestError(LOG, req)
       return res.sendStatus(400)
     }
 
-    const config = await this.paymentProfilesService.doGetPaymentProfileById(id)
+    const config = await this.paymentProfilesService.doGetPaymentProfileById(
+      parseInt(id)
+    )
 
     if (!config) {
       res.status(400)
@@ -112,4 +121,28 @@ class PaymentProfilesApiServiceHandler {
     return res.send(config)
   }
 
+  async doGetPaymentProfileByUser(req: express.Request, res: express.Response) {
+    if (!isAdmin(req)) {
+      res.status(403)
+      res.send({ error: "Admin role not detected on request." })
+    }
+    
+    const { user } = req.params
+
+    if (!user) {
+      logApiRequestError(LOG, req)
+      return res.sendStatus(400)
+    }
+
+    const config = await this.paymentProfilesService.doGetPaymentProfileByUser(
+      user
+    )
+
+    if (!config) {
+      res.status(400)
+      res.send({ error: `No payment profile config found for user: ${user}` })
+    }
+
+    return res.send(config)
+  }
 }
