@@ -60,6 +60,19 @@ export class TestApiServer extends ApiServer {
       },
     })
   }
+
+  withAdmin(address?: string): TestApiServer {
+    address = address || '0xfeedface'
+    return this.container.resolve('TestApiServer', {
+      'AuthHandler': {
+        rolesFor: (req: any) => {
+          req.session.address = address
+          return [Role.ADMIN]
+        },
+        isAuthorized: () => true,
+      },
+    })
+  }
 }
 
 // NOTE: This is a work in progress
