@@ -17,8 +17,8 @@ export default class PaymentProfilesApiService extends ApiService<
   routes = {
     "POST /add-profile/:key": "doAddProfileKey",
     "POST /": "doCreatePaymentProfile",
-    "GET /:id": "doGetPaymentProfileById",
-    "GET /user/:user": "doGetPaymentProfileByUser"
+    "POST /:id": "doGetPaymentProfileById",
+    "POST /user/:user": "doGetPaymentProfileByUser"
   }
   handler = PaymentProfilesApiServiceHandler
   dependencies = {
@@ -141,6 +141,7 @@ class PaymentProfilesApiServiceHandler {
     if (!config) {
       res.status(400)
       res.send({ error: `No payment profile config found for user: ${user}` })
+      return
     }
 
     return res.send(config)
