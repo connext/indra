@@ -1392,9 +1392,9 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
     return { channel, config }
   }
 
-  const assertCollateral = async (user: string, expected?: Partial<DepositArgs>) => {
+  const assertCollateral = async (user: string, collateralizationAmount = Big(0), expected?: Partial<DepositArgs>) => {
     // calculate collateral deposit args
-    const collateral = await channelsService.getCollateralDepositArgs(user)
+    const collateral = await channelsService.getCollateralDepositArgs(user, collateralizationAmount)
     if (!expected) {
       assert.isNull(collateral)
       return
@@ -1410,11 +1410,11 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
     })
   }
 
-  const assertTipUser = async (recipient: string, numberOfTippers = 1) => {
+  const assertTipUser = async (recipient: string, tipAmount = toWeiString(10), numberOfTippers = 1) => {
     for (let i = 0; i < numberOfTippers; i++) {
       const user = mkAddress('0x' + Math.floor((Math.random() * 100000)))
       const channel = await channelUpdateFactory(registry, {
-        balanceTokenUser: toWeiString(100),
+        balanceTokenUser: tipAmount,
         user,
       })
       // simulate payment
@@ -1422,13 +1422,13 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
         recipient,
         meta: {},
         amount: {
-          amountToken: toWeiString(25),
+          amountToken: tipAmount,
           amountWei: '0'
         },
         type: 'PT_OPTIMISTIC',
         update: {
           args: {
-            amountToken: toWeiString(25),
+            amountToken: tipAmount,
             amountWei: '0',
             recipient: 'hub'
           } as PaymentArgs,
@@ -1438,7 +1438,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
       }])
       // assert payment was successful for tipper
       const updatedChan = await channelsService.getChannel(user)
-      assert.equal(updatedChan.state.balanceTokenUser, toWeiString(75))
+      assert.equal(updatedChan.state.balanceTokenUser, "0")
       // wait for redis state to expire
       await clock.awaitTicks(65 * 1000)
     }
@@ -1454,7 +1454,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
       minimumMaintainedCollateralToken: toWeiString(200), 
       amountToCollateralizeToken: toWeiString(400),
     })
-    await assertCollateral(channel.user, {
+    await assertCollateral(channel.user, null, {
       depositTokenHub: config.amountToCollateralizeToken
     })
   })
@@ -1473,7 +1473,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
   it("should respect config if there is no payment profile defined and deposit min", async () => {
     // insert channel
     const channel = await channelUpdateFactory(registry)
-    await assertCollateral(channel.user, {
+    await assertCollateral(channel.user, Big(0), {
       depositTokenHub: defaultConfig.beiMinCollateralization.toString()
     })
   })
@@ -1481,13 +1481,14 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
   it("should respect config if there is no payment profile defined and deposit max", async () => {
     // insert channel
     const channel = await channelUpdateFactory(registry)
-    await assertCollateral(channel.user, {
+    await assertCollateral(channel.user, Big(0), {
       depositTokenHub: defaultConfig.beiMinCollateralization.toString()
     })
     // perform lots of tips
-    await assertTipUser(channel.user, 17)
+    await assertTipUser(channel.user, toWeiString(18), 17)
+
     // make sure the collateral is at max in tippers channel  
-    await assertCollateral(channel.user, {
+    await assertCollateral(channel.user, toWeiBig(18), {
       depositTokenHub: defaultConfig.beiMaxCollateralization.toString()
     })
   }).timeout(5000)
