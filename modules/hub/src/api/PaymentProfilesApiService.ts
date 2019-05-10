@@ -1,7 +1,7 @@
 import { ApiService } from "./ApiService"
 import * as express from "express"
 import log, { logApiRequestError } from "../util/log"
-import { isAdmin, ownedAddressOrAdmin } from "../util/ownedAddressOrAdmin"
+import { isServiceOrAdmin, isServiceOrAdminOrOwnedAddress } from "../util/ownedAddressOrAdmin"
 import { isArray } from "util"
 import { big } from "connext"
 import PaymentProfilesService from "../PaymentProfilesService"
@@ -30,7 +30,7 @@ class PaymentProfilesApiServiceHandler {
   paymentProfilesService: PaymentProfilesService
 
   async doAddProfileKey(req: express.Request, res: express.Response) {
-    if (!isAdmin(req)) {
+    if (!isServiceOrAdmin(req)) {
       res.status(403)
       return res.send({ error: "Admin role not detected on request." })
     }
@@ -52,7 +52,7 @@ class PaymentProfilesApiServiceHandler {
   }
 
   async doCreatePaymentProfile(req: express.Request, res: express.Response) {
-    if (!isAdmin(req)) {
+    if (!isServiceOrAdmin(req)) {
       res.status(403)
       return res.send({ error: "Admin role not detected on request." })
     }
@@ -97,7 +97,7 @@ class PaymentProfilesApiServiceHandler {
   }
 
   async doGetPaymentProfileById(req: express.Request, res: express.Response) {
-    if (!isAdmin(req)) {
+    if (!isServiceOrAdmin(req)) {
       res.status(403)
       return res.send({ error: "Admin role not detected on request." })
     }
@@ -122,7 +122,7 @@ class PaymentProfilesApiServiceHandler {
   }
 
   async doGetPaymentProfileByUser(req: express.Request, res: express.Response) {
-    if (!ownedAddressOrAdmin(req)) {
+    if (!isServiceOrAdminOrOwnedAddress(req)) {
       logApiRequestError(LOG, req)
       return res.sendStatus(400)
     }
