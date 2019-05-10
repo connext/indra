@@ -86,10 +86,10 @@ export class PostgresPaymentProfilesDao implements PaymentProfilesDao {
   }
 
   async addPaymentProfileByUsers(key: number, addresses: Address[]): Promise<void> {
-    // TODO: this is not efficient, do it in one query
-    for (const address of addresses) {
-      await this.addPaymentProfileByUser(key, address)
-    }
+    const promises = addresses.map(
+      a => this.addPaymentProfileByUser(key, a)
+    )
+    Promise.all(promises)
   }
 
   private inflatePaymentProfileConfigRow(row: any): PaymentProfileConfigBN {
