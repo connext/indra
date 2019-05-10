@@ -15,7 +15,7 @@ const LOG = log('PaymentProfilesService')
 export default class PaymentProfilesService {
 
   constructor(
-    private paymentProfilesDao: PaymentProfilesDao
+    private paymentProfilesDao: PaymentProfilesDao,
   ) {}
 
   public async doCreatePaymentProfile(config: Omit<PaymentProfileConfig, "id">): Promise<PaymentProfileConfig> {
@@ -53,12 +53,14 @@ export default class PaymentProfilesService {
     return convertPaymentProfile("str", profile)
   }
 
-  public async doAddProfileKey(key: number, addresses: Address[]): Promise<{ paymentProfileId: number, addressesUpdated: Address[] }> {
-    const addressesUpdated = await this.paymentProfilesDao.addPaymentProfileByUsers(key, addresses)
-    if (!addressesUpdated || addressesUpdated.length == null) {
-      return { paymentProfileId: key, addressesUpdated: [] }
+  // NOTE: will fail if channel does not exist
+  public async doAddProfileKey(key: number, addresses: Address[]) {
+    if (addresses.length == 1) {
+      await this.paymentProfilesDao.addPaymentProfileByUser(key, addresses[0])
+      return
     }
-    return { paymentProfileId: key, addressesUpdated }
+
+    await this.paymentProfilesDao.addPaymentProfileByUsers(key, addresses)
   }
 
   public async doGetPaymentProfileById(id: number): Promise<PaymentProfileConfig> {
