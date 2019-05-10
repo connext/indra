@@ -2,10 +2,10 @@
 /* Simple payment profile with min collateral and collateral target */
 create table payment_profiles (
 	id bigserial primary key,
-  minimum_maintained_collateral_wei wei_amount default '0',
-  minimum_maintained_collateral_token wei_amount default '0',
-  amount_to_collateralize_wei wei_amount default '0',
-  amount_to_collateralize_token wei_amount default '0'
+  minimum_maintained_collateral_wei wei_amount not null default '0',
+  minimum_maintained_collateral_token wei_amount not null default '0',
+  amount_to_collateralize_wei wei_amount not null default '0',
+  amount_to_collateralize_token wei_amount not null default '0'
 );
 
 /* Add payment profile id to the channels column */
