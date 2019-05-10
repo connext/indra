@@ -32,7 +32,7 @@ class PaymentProfilesApiServiceHandler {
   async doAddProfileKey(req: express.Request, res: express.Response) {
     if (!isAdmin(req)) {
       res.status(403)
-      res.send({ error: "Admin role not detected on request." })
+      return res.send({ error: "Admin role not detected on request." })
     }
 
     const { key } = req.params
@@ -54,7 +54,7 @@ class PaymentProfilesApiServiceHandler {
   async doCreatePaymentProfile(req: express.Request, res: express.Response) {
     if (!isAdmin(req)) {
       res.status(403)
-      res.send({ error: "Admin role not detected on request." })
+      return res.send({ error: "Admin role not detected on request." })
     }
 
     const {
@@ -99,7 +99,7 @@ class PaymentProfilesApiServiceHandler {
   async doGetPaymentProfileById(req: express.Request, res: express.Response) {
     if (!isAdmin(req)) {
       res.status(403)
-      res.send({ error: "Admin role not detected on request." })
+      return res.send({ error: "Admin role not detected on request." })
     }
 
     const { id } = req.params
@@ -115,7 +115,7 @@ class PaymentProfilesApiServiceHandler {
 
     if (!config) {
       res.status(400)
-      res.send({ error: `No payment profile config found with id: ${id}` })
+      return res.send({ error: `No payment profile config found with id: ${id}` })
     }
 
     return res.send(config)
@@ -139,8 +139,7 @@ class PaymentProfilesApiServiceHandler {
 
     if (!config) {
       res.status(400)
-      res.send({ error: `No payment profile config found for user: ${user}` })
-      return
+      return res.send({ error: `No payment profile config found for user: ${user}` })
     }
 
     return res.send(config)
