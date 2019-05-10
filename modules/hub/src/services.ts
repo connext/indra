@@ -467,6 +467,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       config: Config,
       contract: ChannelManager,
       coinPaymentsDao: CoinPaymentsDao,
+      paymentProfilesService: PaymentProfilesService
     ) =>
       new ChannelsService(
         onchainTx,
@@ -484,6 +485,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
         config,
         contract,
         coinPaymentsDao,
+        paymentProfilesService,
       ),
     dependencies: [
       'OnchainTransactionService',
@@ -501,6 +503,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'ChannelManagerContract',
       'CoinPaymentsDao',
+      'PaymentProfilesService'
     ],
   },
 
