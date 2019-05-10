@@ -5,6 +5,7 @@ import { isAdmin } from "../util/ownedAddressOrAdmin"
 import { isArray } from "util"
 import { big } from "connext"
 import PaymentProfilesService from "../PaymentProfilesService"
+import { getUserFromRequest } from "../util/request";
 
 const { Big } = big
 
@@ -122,13 +123,8 @@ class PaymentProfilesApiServiceHandler {
   }
 
   async doGetPaymentProfileByUser(req: express.Request, res: express.Response) {
-    if (!isAdmin(req)) {
-      res.status(403)
-      res.send({ error: "Admin role not detected on request." })
-    }
+    const user = getUserFromRequest(req)
     
-    const { user } = req.params
-
     if (!user) {
       logApiRequestError(LOG, req)
       return res.sendStatus(400)

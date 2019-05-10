@@ -71,7 +71,7 @@ describe("PaymentProfilesApiService", () => {
     assert.equal(res.status, 200)
     // verify all users have that id
     for (const i in addresses) {
-      const userProfileIdRes = await app.withAdmin().request
+      const userProfileIdRes = await app.withUser().request
         .post(`/profile/user/${addresses[i]}`)
         .send()
 
