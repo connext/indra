@@ -3,6 +3,7 @@ import { assert } from 'chai'
 import { getTestRegistry, TestApiServer } from '../testing'
 import { channelUpdateFactory } from '../testing/factories';
 import { mkAddress } from '../testing/stateUtils';
+import ChannelsService from '../ChannelsService';
 
 const {
   toWeiString,
@@ -11,6 +12,7 @@ const {
 describe("PaymentProfilesApiService", () => {
   const registry = getTestRegistry()
   const app: TestApiServer = registry.get('TestApiServer')
+  const channelsService: ChannelsService = registry.get('ChannelsService')
 
   // **** helper functions
   const createAndAssertPaymentProfile = async (config: Partial<types.PaymentProfileConfig>, failsWith?: { status: number, message: string} ) => {
@@ -54,14 +56,12 @@ describe("PaymentProfilesApiService", () => {
     // create 10 channels
     let addresses = []
     for (let i = 1; i < addressCount; i++) {
-      addresses.push(mkAddress('0x' + Math.floor((Math.random() * 100000)).toString().substr(0, 5)))
-    }
-
-    addresses.forEach(async addr => {
+      const addr = mkAddress('0x' + Math.floor((Math.random() * 100000)).toString().substr(0, 5))
+      addresses.push(addr)
       await channelUpdateFactory(registry, {
         user: addr,
       })
-    })
+    }
 
     // submit request
     const res = await app.withAdmin().request
@@ -71,6 +71,9 @@ describe("PaymentProfilesApiService", () => {
     assert.equal(res.status, 200)
     // verify all users have that id
     for (const i in addresses) {
+      const chan = await channelsService.getChannel(addresses[i])
+      assert.ok(chan)
+      assert.equal(chan.user, addresses[i])
       const userProfileIdRes = await app.withUser(addresses[i]).request
         .post(`/profile/user/${addresses[i]}`)
         .send()
