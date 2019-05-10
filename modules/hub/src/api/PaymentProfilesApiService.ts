@@ -1,7 +1,7 @@
 import { ApiService } from "./ApiService"
 import * as express from "express"
 import log, { logApiRequestError } from "../util/log"
-import { isAdmin } from "../util/ownedAddressOrAdmin"
+import { isAdmin, ownedAddressOrAdmin } from "../util/ownedAddressOrAdmin"
 import { isArray } from "util"
 import { big } from "connext"
 import PaymentProfilesService from "../PaymentProfilesService"
@@ -123,7 +123,11 @@ class PaymentProfilesApiServiceHandler {
   }
 
   async doGetPaymentProfileByUser(req: express.Request, res: express.Response) {
-    const user = getUserFromRequest(req)
+    if (!ownedAddressOrAdmin(req)) {
+      logApiRequestError(LOG, req)
+      return res.sendStatus(400)
+    }
+    const { user } = req.params
     
     if (!user) {
       logApiRequestError(LOG, req)
