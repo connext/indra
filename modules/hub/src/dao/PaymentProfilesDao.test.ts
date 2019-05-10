@@ -44,6 +44,7 @@ describe('PaymentProfilesDao', () => {
       const chan = await channelUpdateFactory(registry, {
         user,
       })
+      channels.push(chan)
       return chan
     })
 
