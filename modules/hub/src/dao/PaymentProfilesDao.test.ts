@@ -6,7 +6,6 @@ import { SQL } from '../DBEngine';
 import { mkAddress } from '../testing/stateUtils';
 
 const {
-  Big,
   toWeiString,
 } = big
 const {
