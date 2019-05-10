@@ -10,7 +10,6 @@ const {
 
 describe("PaymentProfilesApiService", () => {
   const registry = getTestRegistry()
-  // const service: PaymentProfilesApiService = registry.get('PaymentProfilesApiService')
   const app: TestApiServer = registry.get('TestApiServer')
 
   // **** helper functions
@@ -43,7 +42,7 @@ describe("PaymentProfilesApiService", () => {
     assert.equal(res.status, 200)
     // check the config
     const ans = await app.withAdmin().request
-      .get(`/profile/${expected.id}`)
+      .post(`/profile/${expected.id}`)
       .send()
     assert.equal(ans.status, 200)
     assert.containSubset(ans.body, expected)
@@ -73,7 +72,7 @@ describe("PaymentProfilesApiService", () => {
     // verify all users have that id
     for (const i in addresses) {
       const userProfileIdRes = await app.withAdmin().request
-        .get(`/profile/user/${addresses[i]}`)
+        .post(`/profile/user/${addresses[i]}`)
         .send()
 
       assert.equal(userProfileIdRes.status, 200)
@@ -122,13 +121,11 @@ describe("PaymentProfilesApiService", () => {
     })
   })
 
-  // TODO: more addresses!!
-  // fails with 10
-  it.skip("should add a payment profile to an array of user addresses", async () => {
+  it("should add a payment profile to an array of user addresses", async () => {
     // register config
     await assignAndAssertPaymentProfile({
       minimumMaintainedCollateralToken: toWeiString(10),
       amountToCollateralizeToken: toWeiString(15),
-    }, 1)
+    }, 10)
   })
 })
