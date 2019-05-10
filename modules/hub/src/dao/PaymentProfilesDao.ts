@@ -14,8 +14,8 @@ export default interface PaymentProfilesDao {
   getPaymentProfileConfigById(profileId: number): Promise<PaymentProfileConfigBN>
   getPaymentProfileConfigByUser(user: Address): Promise<PaymentProfileConfigBN>
   createPaymentProfile(config: PaymentProfileConfigBN): Promise<PaymentProfileConfigBN>
-  addPaymentProfileByUser(key: number, address: Address): Promise<ChannelRowBN>
-  addPaymentProfileByUsers(key: number, addresses: Address[]): Promise<Address[]>
+  addPaymentProfileByUser(key: number, address: Address): Promise<void>
+  addPaymentProfileByUsers(key: number, addresses: Address[]): Promise<void>
 }
 
 export class PostgresPaymentProfilesDao implements PaymentProfilesDao {
@@ -28,11 +28,30 @@ export class PostgresPaymentProfilesDao implements PaymentProfilesDao {
   }
 
   async getPaymentProfileConfigById(profileId: number): Promise<PaymentProfileConfigBN> {
-    return null
+    return this.inflatePaymentProfileConfigRow(
+      await this.db.queryOne(SQL`
+        SELECT * 
+        FROM payment_profiles 
+        WHERE "id" = ${profileId}
+        ;
+      `)
+    )
   }
 
   async getPaymentProfileConfigByUser(user: Address): Promise<PaymentProfileConfigBN> {
-    return null
+    return this.inflatePaymentProfileConfigRow(
+      await this.db.queryOne(SQL`
+        SELECT * 
+        FROM payment_profiles 
+        WHERE id = (
+          SELECT "payment_profile_id"
+          FROM _cm_channels
+          WHERE
+            "user" = ${user.toLowerCase()} AND
+            "contract" = ${this.config.channelManagerAddress.toLowerCase()}
+        );
+      `)
+    )
   }
 
   async createPaymentProfile(c: PaymentProfileConfigBN): Promise<PaymentProfileConfigBN> {
@@ -55,12 +74,22 @@ export class PostgresPaymentProfilesDao implements PaymentProfilesDao {
     return this.inflatePaymentProfileConfigRow(row)
   }
 
-  async addPaymentProfileByUser(key: number, address: Address): Promise<ChannelRowBN> {
-    return null
+  async addPaymentProfileByUser(key: number, address: Address): Promise<void> {
+    await this.db.queryOne(SQL`
+      UPDATE _cm_channels
+      SET "payment_profile_id" = ${key}
+      WHERE 
+        "user" = ${address.toLowerCase()} AND
+        "contract" = ${this.config.channelManagerAddress.toLowerCase()}
+      RETURNING id;
+    `)
   }
 
-  async addPaymentProfileByUsers(key: number, addresses: Address[]): Promise<Address[]> {
-    return null
+  async addPaymentProfileByUsers(key: number, addresses: Address[]): Promise<void> {
+    // TODO: this is not efficient, do it in one query
+    for (const address of addresses) {
+      await this.addPaymentProfileByUser(key, address)
+    }
   }
 
   private inflatePaymentProfileConfigRow(row: any): PaymentProfileConfigBN {
