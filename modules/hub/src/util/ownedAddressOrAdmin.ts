@@ -2,7 +2,7 @@ import * as express from 'express';
 import {Role} from '../Role'
 
 export function ownedAddressOrAdmin(req: express.Request) {
-  const targetAddr = req.params.address
+  const targetAddr = req.params.address || req.params.user
   const requesterAddr = req.session!.address
   const roles = req.session!.roles
 
