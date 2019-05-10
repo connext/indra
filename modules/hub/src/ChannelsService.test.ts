@@ -1422,13 +1422,13 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
         recipient,
         meta: {},
         amount: {
-          amountToken: toWeiString(11),
+          amountToken: toWeiString(25),
           amountWei: '0'
         },
         type: 'PT_OPTIMISTIC',
         update: {
           args: {
-            amountToken: toWeiString(11),
+            amountToken: toWeiString(25),
             amountWei: '0',
             recipient: 'hub'
           } as PaymentArgs,
@@ -1438,7 +1438,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
       }])
       // assert payment was successful for tipper
       const updatedChan = await channelsService.getChannel(user)
-      assert.equal(updatedChan.state.balanceTokenUser, toWeiString(89))
+      assert.equal(updatedChan.state.balanceTokenUser, toWeiString(75))
       // wait for redis state to expire
       await clock.awaitTicks(65 * 1000)
     }
@@ -1490,5 +1490,5 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
     await assertCollateral(channel.user, {
       depositTokenHub: defaultConfig.beiMaxCollateralization.toString()
     })
-  })
+  }).timeout(5000)
 })
