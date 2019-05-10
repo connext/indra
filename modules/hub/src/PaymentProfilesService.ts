@@ -43,7 +43,7 @@ export default class PaymentProfilesService {
 
     // no other checks performed, insert the payment profile
     const profile = await this.paymentProfilesDao.createPaymentProfile(
-      convertPaymentProfile("bn", config)
+      config
     )
 
     if (!profile) {
@@ -69,6 +69,14 @@ export default class PaymentProfilesService {
       return null
     }
 
+    return convertPaymentProfile("str", profile)
+  }
+
+  public async doGetPaymentProfileByUser(user: string): Promise<PaymentProfileConfig> {
+    const profile = await this.paymentProfilesDao.getPaymentProfileConfigByUser(user)
+    if (!profile) {
+      return null
+    }
     return convertPaymentProfile("str", profile)
   }
 }
