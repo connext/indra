@@ -27,3 +27,7 @@ export function isService(req: express.Request) {
 export function isServiceOrAdmin(req: express.Request) {
   return isService(req) || isAdmin(req)
 }
+
+export function isServiceOrAdminOrOwnedAddress(req: express.Request) {
+  return isService(req) || ownedAddressOrAdmin(req)
+}
