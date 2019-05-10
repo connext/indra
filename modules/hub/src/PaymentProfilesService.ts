@@ -3,6 +3,7 @@ import { types, big } from 'connext';
 import PaymentProfilesDao from "./dao/PaymentProfilesDao";
 import { Omit } from "react-redux";
 import { prettySafeJson } from "./util";
+import DBEngine from "./DBEngine";
 const { Big, } = big
 const {
   convertPaymentProfile
@@ -16,6 +17,7 @@ export default class PaymentProfilesService {
 
   constructor(
     private paymentProfilesDao: PaymentProfilesDao,
+    private db: DBEngine,
   ) {}
 
   public async doCreatePaymentProfile(config: Omit<PaymentProfileConfig, "id">): Promise<PaymentProfileConfig> {
@@ -42,8 +44,10 @@ export default class PaymentProfilesService {
     }
 
     // no other checks performed, insert the payment profile
-    const profile = await this.paymentProfilesDao.createPaymentProfile(
-      config
+    const profile = await this.db.withTransaction(() =>
+      this.paymentProfilesDao.createPaymentProfile(
+        config
+      )
     )
 
     if (!profile) {
@@ -55,12 +59,14 @@ export default class PaymentProfilesService {
 
   // NOTE: will fail if channel does not exist
   public async doAddProfileKey(key: number, addresses: Address[]) {
-    if (addresses.length == 1) {
-      await this.paymentProfilesDao.addPaymentProfileByUser(key, addresses[0])
-      return
-    }
+    await this.db.withTransaction(async () => {
+      if (addresses.length == 1) {
+        await this.paymentProfilesDao.addPaymentProfileByUser(key, addresses[0])
+        return
+      }
 
-    await this.paymentProfilesDao.addPaymentProfileByUsers(key, addresses)
+      await this.paymentProfilesDao.addPaymentProfileByUsers(key, addresses)
+    })
   }
 
   public async doGetPaymentProfileById(id: number): Promise<PaymentProfileConfig> {
