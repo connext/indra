@@ -174,7 +174,7 @@ export abstract class ConnextClient extends EventEmitter {
   // ******* PROFILE METHODS ******
   // ******************************
 
-  public async getProfileConfig(): Promise<PaymentProfileConfig> {
+  public async getProfileConfig(): Promise<PaymentProfileConfig | null> {
     return await this.internal.hub.getProfileConfig()
   }
 
