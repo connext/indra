@@ -5,7 +5,6 @@ import { isAdmin, ownedAddressOrAdmin } from "../util/ownedAddressOrAdmin"
 import { isArray } from "util"
 import { big } from "connext"
 import PaymentProfilesService from "../PaymentProfilesService"
-import { getUserFromRequest } from "../util/request";
 
 const { Big } = big
 
