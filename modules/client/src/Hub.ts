@@ -51,7 +51,7 @@ export interface IHubAPIClient {
   getLastThreadUpdateId(): Promise<number>
   getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | null>
   getLatestStateNoPendingOps(): Promise<ChannelState | null>
-  getProfileConfig(): Promise<PaymentProfileConfig>
+  getProfileConfig(): Promise<PaymentProfileConfig | null>
   getThreadByParties(partyB: Address, userIsSender: boolean): Promise<ThreadRow>
   getThreadInitialStates(): Promise<ThreadState[]>
   redeem(
@@ -99,8 +99,22 @@ export class HubAPIClient implements IHubAPIClient {
     this.wallet = wallet
   }
 
-  public async getProfileConfig(): Promise<PaymentProfileConfig> {
-    throw new Error('Implement getProfileConfig on the hub and client properly.')
+  public async getProfileConfig(): Promise<PaymentProfileConfig | null> {
+    try {
+      const res: PaymentProfileConfig | null = (await this.networking.post(
+        `profile/user/${this.wallet.address}`, {
+          authToken: await this.getAuthToken(),
+        },
+      )).data
+      return res ? res : null
+    } catch (e) {
+      if (e.status === 404) {
+        console.log(`No payment profile set for user: ${this.wallet.address}`)
+        return null
+      }
+      console.log(`Error getting the payment profile config for ${this.wallet.address}:`, e)
+      throw e
+    }
   }
 
   public async startProfileSession(): Promise<void> {
