@@ -1,19 +1,20 @@
-import { log } from "util";
 import { types, big } from 'connext';
 import DBEngine, { SQL } from "../DBEngine";
 import { Client } from 'pg'
 import Config from '../Config'
+import { log } from 'util';
 const { Big, } = big
-const { convertPaymentProfile } = types
+
+const LOG = log('PaymentProfilesDao')
 
 type Address = types.Address
 type PaymentProfileConfigBN = types.PaymentProfileConfigBN
-type ChannelRowBN = types.ChannelRowBN
+type PaymentProfileConfig = types.PaymentProfileConfig
 
 export default interface PaymentProfilesDao {
   getPaymentProfileConfigById(profileId: number): Promise<PaymentProfileConfigBN>
   getPaymentProfileConfigByUser(user: Address): Promise<PaymentProfileConfigBN>
-  createPaymentProfile(config: PaymentProfileConfigBN): Promise<PaymentProfileConfigBN>
+  createPaymentProfile(config: PaymentProfileConfig): Promise<PaymentProfileConfigBN>
   addPaymentProfileByUser(key: number, address: Address): Promise<void>
   addPaymentProfileByUsers(key: number, addresses: Address[]): Promise<void>
 }
@@ -54,8 +55,7 @@ export class PostgresPaymentProfilesDao implements PaymentProfilesDao {
     )
   }
 
-  async createPaymentProfile(c: PaymentProfileConfigBN): Promise<PaymentProfileConfigBN> {
-    const config = convertPaymentProfile("str", c)
+  async createPaymentProfile(config: PaymentProfileConfig): Promise<PaymentProfileConfigBN> {
     const row = await this.db.queryOne(SQL`
       INSERT INTO payment_profiles (
         minimum_maintained_collateral_wei,
