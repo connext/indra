@@ -244,8 +244,8 @@ export class MockHub implements IHubAPIClient {
   }
 
   // TODO: implement the profile methods
-  async getProfileConfig(): Promise<PaymentProfileConfig> {
-    return {} as PaymentProfileConfig
+  async getProfileConfig(): Promise<PaymentProfileConfig | null> {
+    return null
   }
 
   async startProfileSession(): Promise<void> {}
