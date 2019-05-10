@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 import { CoinPaymentsIpnData } from './CoinPaymentsService'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { CPGetCallbackAddressResponse } from './CoinPaymentsApiClient'

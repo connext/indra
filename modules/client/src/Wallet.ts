@@ -1,21 +1,21 @@
-import { ethers as eth } from 'ethers';
-import Web3 from 'web3';
-import { ConnextClientOptions } from './Connext';
+import { ethers as eth } from 'ethers'
+import Web3 from 'web3'
+
+import { IConnextClientOptions } from './Connext'
 import {
+  objMapPromise,
   TransactionRequest,
   TransactionResponse,
-  objMapPromise
-} from './types';
-import { TransactionConfig } from 'web3-core';
+} from './types'
 
 export default class Wallet extends eth.Signer {
-  address: string
-  provider: eth.providers.BaseProvider
-  signer?: eth.Wallet
-  web3?: Web3
+  public address: string
+  public provider: eth.providers.BaseProvider
+  private signer?: eth.Wallet
+  private web3?: Web3
   private password: string
 
-  constructor(opts: ConnextClientOptions) {
+  constructor(opts: IConnextClientOptions) {
     super()
     this.password = opts.password || ''
 
@@ -27,12 +27,12 @@ export default class Wallet extends eth.Signer {
       this.provider = new eth.providers.JsonRpcProvider(opts.ethUrl)
 
     // Second choice: use provided web3
-    } else if (opts.web3 && opts.web3.currentProvider) {
-      this.provider = new eth.providers.Web3Provider((opts.web3.currentProvider as any))
+    } else if (opts.web3Provider) {
+      this.provider = new eth.providers.Web3Provider(opts.web3Provider)
 
     // Default: use hub's ethprovider (derived from hubUrl)
     } else {
-      const ethUrl = `${opts.hubUrl.substring(0, opts.hubUrl.length - 4)}/eth`
+      const ethUrl: string = `${opts.hubUrl.substring(0, opts.hubUrl.length - '/hub'.length)}/eth`
       this.provider = new eth.providers.JsonRpcProvider(ethUrl)
     }
 
@@ -42,36 +42,35 @@ export default class Wallet extends eth.Signer {
     // First choice: Sign w private key
     if (opts.privateKey) {
       this.signer = new eth.Wallet(opts.privateKey || '')
-      this.signer.connect(this.provider)
+      this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
 
     // Second choice: Sign w mnemonic
     } else if (opts.mnemonic) {
       this.signer = eth.Wallet.fromMnemonic(opts.mnemonic || '')
-      this.signer.connect(this.provider)
+      this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
 
     // Third choice: Sign w web3
-    } else if (opts.user && opts.web3 && opts.web3.eth && opts.web3.eth.sign) {
-      this.web3 = opts.web3
+    } else if (opts.user && opts.web3Provider) {
+      // TODO: Web3Provider != Web3EthereumProvider
+      this.web3 = new Web3(opts.web3Provider as any)
       this.address = opts.user.toLowerCase()
       this.web3.eth.defaultAccount = this.address
 
-    // Default: create new random mnemonic
+    // Default: abort, we need to be given a signer
     } else {
-      this.signer = eth.Wallet.createRandom()
-      this.signer.connect(this.provider)
-      this.address = this.signer.address.toLowerCase()
-      console.warn(`Generated a new signing key, make sure you back it up before sending funds`)
+      // Weird version of web3 that does something else? idk then
+      throw new Error(`Fatal: Wallet needs to be given a signing method`)
     }
   }
 
-  async getAddress() {
+  public async getAddress(): Promise<string> {
     return this.address
   }
 
-  async signMessage(message: string) {
-    const bytes = eth.utils.isHexString(message)
+  public async signMessage(message: string): Promise<string> {
+    const bytes: Uint8Array = eth.utils.isHexString(message)
       ? eth.utils.arrayify(message)
       : eth.utils.toUtf8Bytes(message)
 
@@ -79,9 +78,9 @@ export default class Wallet extends eth.Signer {
       return await this.signer.signMessage(bytes)
     }
     if (this.web3) {
-      let sig
+      let sig: string
 
-      // Modern versions of web3 will add the standard ethereum message prefix for us 
+      // Modern versions of web3 will add the standard ethereum message prefix for us
       sig = await this.web3.eth.sign(eth.utils.hexlify(bytes), this.address)
       if (this.address === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
         return sig
@@ -99,51 +98,34 @@ export default class Wallet extends eth.Signer {
     throw new Error(`Could not sign message`)
   }
 
-  async signTransaction(tx: TransactionRequest): Promise<string> {
+  public async signTransaction(tx: TransactionRequest): Promise<string> {
     if (this.signer) {
       return await this.signer.sign(tx)
     }
     if (this.web3) {
       // resolve any fields
-      const resolved = await objMapPromise(tx, async (k, v) => await v) as any
+      const resolve: any = async (k: string, v: any): Promise<any> => await v
+      const resolved: any = await objMapPromise(tx, resolve) as any
       // convert to right object
-      const txObj: TransactionConfig = {
+      const txObj: any = {
+        data: resolved.data,
         from: this.address,
+        gas: parseInt(resolved.gasLimit, 10),
+        gasPrice: resolved.gasPrice,
         to: resolved.to,
         value: resolved.value,
-        gas: parseInt(resolved.gasLimit),
-        gasPrice: resolved.gasPrice,
-        data: resolved.data,
       }
       return (await this.web3.eth.signTransaction(txObj)).raw // TODO: fix type
     }
     throw new Error(`Could not sign transaction`)
   }
 
-  async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
-    // TransactionRequest properties can be promises, make sure they've all resolved
-    const tx = await objMapPromise(txReq, async (k, v) => await v) as any
-
-    const signedTx = await this.signTransaction(tx)
-    if (this.provider) {
-      return await this.provider.sendTransaction(signedTx)
-    } else if (this.web3) {
-      const receipt = await this.web3.eth.sendSignedTransaction(signedTx)
-      // cast receipt to object
-      // NOTE: THIS IS AN INCOMPLETE CASTING
-      // Not a huge deal right now, we only ever use the `.hash` property of the return value
-      // TODO: should be consistent
-      const response = {
-        blockHash: receipt.blockHash,
-        blockNumber: receipt.blockNumber,
-        to: receipt.to,
-        hash: receipt.transactionHash,
-        from: receipt.from,
-      } as TransactionResponse
-      return response
+  public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
+    if (txReq.nonce == null && this.signer) {
+      txReq.nonce = this.signer!.getTransactionCount('pending')
     }
-    throw new Error("Could not send transaction")
+    const signedTx: string = await this.signTransaction(txReq)
+    return await this.provider.sendTransaction(signedTx)
   }
 
 }
-

@@ -53,13 +53,17 @@ for snapshot in `find $backup_dir -type f`
 do
   yymmdd="`echo $snapshot | cut -d "-" -f 2`"
   hhmmss="`echo $snapshot | sed 's/.*-\([0-9]\+\)\..*/\1/'`"
-  if [[ "$yymmdd" -lt "`date --date "2 days ago" "+%y%m%d"`" ]]
+  twoDaysAgo="`date --date "2 days ago" "+%y%m%d"`"
+  oneDayAgo="`date --date "1 day ago" "+%y%m%d"`"
+  now="`date "+%H%M%S"`"
+  # $((10#number)) strips leading zeros & prevents octal interpretation
+  if [[ "$((10#$yymmdd))" -lt "$((10#$twoDaysAgo))" ]]
   then
     echo "Snapshot more than two days old, deleting: $snapshot"
     rm $snapshot
-  elif [[ "$yymmdd" -eq "`date --date "1 day ago" "+%y%m%d"`" ]]
+  elif [[ "$((10#$yymmdd))" -eq "$((10#$oneDayAgo))" ]]
   then
-    if [[ "$hhmmss" -lt "`date "+%H%M%S"`" ]]
+    if [[ "$((10#$hmmss))" -lt "$((10#$now))" ]]
     then
       echo "Snapshot more than 24 hours old, deleting: $snapshot"
       rm $snapshot

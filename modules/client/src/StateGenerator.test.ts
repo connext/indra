@@ -20,9 +20,8 @@ import {
   convertWithdrawal,
 } from './types';
 
-const hub = t.mkAddress("0xaa")
-const sg = new StateGenerator(hub)
-const utils = new Utils(hub)
+const sg = new StateGenerator()
+const utils = new Utils()
 
 function createHigherNoncedChannelState(
   prev: ChannelStateBN,

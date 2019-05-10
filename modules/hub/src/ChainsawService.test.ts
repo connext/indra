@@ -1,19 +1,18 @@
 import * as eth from 'ethers';
-import { StateGenerator, types, Utils, big } from './Connext';
+import { StateGenerator, types, Utils, big } from 'connext';
 import {TestServiceRegistry, getTestRegistry } from './testing'
 import ChainsawService from './ChainsawService'
 import ChainsawDao from './dao/ChainsawDao'
 import DBEngine, { SQL } from './DBEngine'
 import ChannelsDao from './dao/ChannelsDao'
-import {ChannelManager} from './ChannelManager'
+import {ChannelManager} from './contract/ChannelManager'
 import abi from './abi/ChannelManager'
 import {assert} from 'chai'
 import * as sinon from 'sinon'
 import Web3 = require('web3')
-import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent';
+import { ContractEvent, DidUpdateChannelEvent, EventLog } from './domain/ContractEvent';
 import { mkAddress, mkSig } from './testing/stateUtils';
 import { channelUpdateFactory } from './testing/factories';
-import { EventLog } from 'web3-core';
 import { BigNumber as BN } from 'ethers/utils'
 
 type ChannelStateUpdateRowBN = types.ChannelStateUpdateRowBN
@@ -84,14 +83,14 @@ describe('ChainsawService::mocked Web3', function() {
       log: {
         returnValues: {
           user: chan1.user,
-          senderIdx: 1,
+          senderIdx: Big(1),
           weiBalances: ["0", "0",],
           tokenBalances: ["0", "0",],
           pendingWeiUpdates: ["0", "0", "0", "0",],
           pendingTokenUpdates: ["100", "0", "0", "0",],
-          txCount: [1, 1],
+          txCount: [Big(1), Big(1)],
           threadRoot: emptyRootHash,
-          threadCount: 0,
+          threadCount: Big(0),
         },
         blockNumber: 1,
         blockHash: emptyRootHash,
@@ -122,14 +121,14 @@ describe('ChainsawService::mocked Web3', function() {
       log: {
         returnValues: {
           user: chan2.user,
-          senderIdx: 1,
+          senderIdx: Big(1),
           weiBalances: ["0", "0",],
           tokenBalances: ["0", "0",],
           pendingWeiUpdates: ["0", "0", "0", "0",],
           pendingTokenUpdates: ["100", "0", "0", "0",],
-          txCount: [1, 1],
+          txCount: [Big(1), Big(1)],
           threadRoot: emptyRootHash,
-          threadCount: 0,
+          threadCount: Big(0),
         },
         blockNumber: 1,
         blockHash: emptyRootHash,
@@ -175,7 +174,7 @@ describe('ChainsawService::mocked Web3', function() {
 
     it('should return poll type "PROCESS_EVENTS" if state generation is successful', async () => {
       cs.validator.generateConfirmPending = async (prev, args) => {
-        return await new StateGenerator(registry.get('Config').hotWalletAddress).confirmPending(convertChannelState("bn", prev))
+        return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
       }
       console.log('chan2:', await chanDao.getChannelByUser(chan2.user))
       const pollType = await cs.processSingleTx(successfulTxHash)
@@ -221,7 +220,7 @@ describe('ChainsawService::mocked Web3', function() {
         },
         Validator: {
           generateConfirmPending: async (prev, args) => {
-            return await new StateGenerator(registry.get('Config').hotWalletAddress).confirmPending(convertChannelState("bn", prev))
+            return await new StateGenerator().confirmPending(convertChannelState("bn", prev))
           }
         },
         ChannelManager: {

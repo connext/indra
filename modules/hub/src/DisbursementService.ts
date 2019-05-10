@@ -3,7 +3,7 @@ import log from './util/log'
 import DisbursementDao from './dao/DisbursementsDao'
 import Disbursement from './domain/Disbursement'
 import erc20TransferAbi from './contract/erc20TransferAbi'
-import { big } from './Connext';
+import { big } from 'connext';
 
 const LOG = log('DisbursementService')
 

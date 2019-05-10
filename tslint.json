@@ -1,0 +1,44 @@
+{
+  "extends": [
+    "tslint:recommended", 
+    "tslint-plugin-prettier", 
+    "tslint-config-prettier"
+  ],
+  "rules": {
+    "comment-format": [true, "check-space"],
+    "completed-docs": false,
+    "curly": [true, "ignore-same-line"],
+    "file-name-casing": [false, "pascal-case"],
+    "max-classes-per-file": [true, 2],
+    "max-line-length": [true, 100],
+    "newline-before-return": false,
+    "newline-per-chained-call": false,
+    "no-any": false,
+    "no-console": false,
+    "no-default-import": false,
+    "no-implicit-dependencies": [true, "dev"],
+    "no-inferrable-types": false,
+    "no-magic-numbers": false,
+    "no-submodule-imports": false,
+    "no-this-assignment": [true, {"allow-destructuring": true}],
+    "object-literal-sort-keys": [true, "ignore-case"],
+    "prefer-function-over-method": [true, "allow-public"],
+    "quotemark": [true, "single", "backtick"],
+    "semicolon": [true, "never"],
+    "trailing-comma": [true,
+      {"multiline": "never", "singleline": "never","esSpecCompliant": true}
+    ],
+    "typedef": [true,
+      "call-signature",
+      "arrow-call-signature",
+      "parameter",
+      "arrow-parameter",
+      "property-declaration",
+      "member-variable-declaration"
+    ],
+    "variable-name": false
+  },
+  "jsRules": {
+    "max-line-length": [true, 100]
+  }
+}

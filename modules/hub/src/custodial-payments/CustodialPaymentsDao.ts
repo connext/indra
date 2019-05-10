@@ -1,4 +1,4 @@
-import { big, types } from '../Connext'
+import { big, types } from 'connext'
 import { default as DBEngine, SQL } from '../DBEngine'
 
 type CustodialBalanceRowBN = types.CustodialBalanceRowBN

@@ -1,4 +1,4 @@
-import { types, big } from './Connext';
+import { types, big } from 'connext';
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import { CloseChannelService } from './CloseChannelService'
 import Config from './Config'
@@ -13,13 +13,12 @@ import ChainsawService from './ChainsawService'
 import { OnchainTransactionService } from "./OnchainTransactionService";
 import ChannelsService from './ChannelsService';
 import { default as DBEngine, SQL } from './DBEngine'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 const Web3 = require('web3')
 import abi from './abi/ChannelManager'
-import { ContractEvent, DidUpdateChannelEvent } from './domain/ContractEvent'
+import { ContractEvent, DidUpdateChannelEvent, EventLog } from './domain/ContractEvent'
 import * as readline from 'readline'
 import { ABI as mintAndBurnToken } from './abi/MintAndBurnToken'
-import { EventLog } from 'web3-core';
 import { OptimisticPaymentsService } from './OptimisticPaymentsService';
 import { ethers } from 'ethers';
 import { BigNumber as BN } from 'ethers/utils'
@@ -74,7 +73,6 @@ export default class PaymentHub {
       'gasEstimateService',
       'apiServer',
       'onchainTransactionService',
-      'coinPaymentsDepositPollingService',
       'optimisticPaymentsService'
     ]
     for (let service of services) {
@@ -323,6 +321,7 @@ $pgsql$;
     // 2. Grab the corresponding onchain tx
     const tx = await web3.eth.getTransaction(confirmPending.args.transactionHash)
     LOG.debug(`tx: ${tx}`)
+    // @ts-ignore
     const rawEvents = await contract.getPastEvents('allEvents', {
       fromBlock: tx.blockNumber,
       toBlock: tx.blockNumber,

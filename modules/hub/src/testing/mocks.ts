@@ -1,4 +1,4 @@
-import { types, Validator, big } from '../Connext'
+import { types, Validator, big } from 'connext'
 import * as request from 'supertest'
 import { default as ChannelManagerABI } from '../abi/ChannelManager'
 import { getRedisClient } from '../RedisClient'
@@ -11,6 +11,7 @@ import { mkAddress, mkSig, mkHash } from "./stateUtils";
 import { SignerService } from '../SignerService';
 import Config from '../Config';
 import { serviceDefinitions } from '../services'
+const Web3 = require('web3')
 
 const {
   Big
@@ -23,8 +24,6 @@ const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6';
 const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545';
 
 console.log(`test urls: database=${databaseUrl} redis=${redisUrl} provider=${providerUrl}`)
-
-const Web3 = require('web3')
 
 export class PgPoolServiceForTest extends PgPoolService {
   testNeedsReset = true
@@ -199,7 +198,7 @@ export class MockSignerService extends SignerService {
 }
 
 export const getMockWeb3 = () => {
-  const web3 = new Web3('http://localhost:8545') // now web3 requires a provider
+  const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
   return {
     ...web3,
     eth: {

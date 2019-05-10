@@ -1,10 +1,10 @@
 import camelize from './util/camelize'
 import { Registry } from './Container'
-import { big } from './Connext';
+import { big } from 'connext';
 const {
-  toWeiBig,
   Big,
-  toWeiString
+  toWeiBig,
+  toWeiString,
 } = big
 
 const ENV_VARS = [
@@ -21,7 +21,7 @@ const ENV_VARS = [
   'SESSION_SECRET',
   'CARD_NAME',
   'CARD_IMAGE_URL',
-  'REALTIME_DB_SECRET',
+  'REALTIME_DB_SECRET', // TODO: do we use this?
   'SERVICE_USER_KEY',
   'REDIS_URL',
   'TOKEN_CONTRACT_ADDRESS',

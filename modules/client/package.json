@@ -1,9 +1,9 @@
 {
   "name": "connext",
   "description": "Shared code between wallet and hub",
-  "version": "3.1.6",
+  "version": "3.1.12",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "types/index.d.ts",
   "devDependencies": {
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",
@@ -42,9 +42,7 @@
     "semaphore": "^1.1.0",
     "typescript-fsa": "^3.0.0-beta-2",
     "typescript-fsa-reducers": "^1.1.0",
-    "web3": "=1.0.0-beta.52",
-    "web3-core": "^1.0.0-beta.52",
-    "web3-eth": "^1.0.0-beta.52"
+    "web3": "=1.0.0-beta.33"
   },
   "engines": {
     "node": ">=9",
@@ -53,7 +51,7 @@
   "scripts": {
     "clean": "rm -rf ./dist",
     "build": "npm run clean && npm run compile",
-    "compile": "node_modules/.bin/tsc",
+    "compile": "tsc -p tsconfig.json",
     "prepare": "npm run build",
     "test": "mocha -r ts-node/register/type-check -r ./src/register/common.ts -r ./src/register/testing.ts \"src/**/*.test.ts\" --exit",
     "generate": "node_modules/.bin/typechain --target=web3-1.0.0 --outDir=./src/typechain/ './.yalc/contracts/build/contracts/*.json'"

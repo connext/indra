@@ -1,10 +1,9 @@
-import { types, Utils, Validator } from './Connext';
-
+import { types, Utils, Validator } from 'connext';
 import ChainsawDao, { PollType } from './dao/ChainsawDao'
 import log from './util/log'
-import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent } from './domain/ContractEvent'
+import { ContractEvent, DidHubContractWithdrawEvent, DidUpdateChannelEvent, DidStartExitChannelEvent, DidEmptyChannelEvent, EventLog } from './domain/ContractEvent'
 import Config from './Config'
-import { ChannelManager } from './ChannelManager'
+import { ChannelManager } from './contract/ChannelManager'
 import ChannelsDao from './dao/ChannelsDao'
 import { sleep, prettySafeJson, safeJson } from './util'
 import { default as DBEngine } from './DBEngine'
@@ -12,7 +11,6 @@ import ChannelDisputesDao from './dao/ChannelDisputesDao';
 import { SignerService } from './SignerService';
 import { RedisClient } from './RedisClient';
 import { OnchainTransactionService } from './OnchainTransactionService';
-import { EventLog } from 'web3-core';
 import Web3 from 'web3';
 
 type ChannelState<T=string> = types.ChannelState<T>
@@ -101,6 +99,7 @@ export default class ChainsawService {
 
   private async doFetchEvents() {
     const topBlock = await this.web3.eth.getBlockNumber()
+    // @ts-ignore
     const last = await this.chainsawDao.lastPollFor(this.contract.address, 'FETCH_EVENTS')
     const lastBlock = last.blockNumber
     let toBlock = topBlock - CONFIRMATION_COUNT
@@ -118,6 +117,7 @@ export default class ChainsawService {
 
     LOG.info(`Synchronizing chain data between blocks ${fromBlock} and ${toBlock}`)
 
+    // @ts-ignore
     const events = await this.contract.getPastEvents('allEvents', {
       fromBlock,
       toBlock
@@ -144,6 +144,7 @@ export default class ChainsawService {
         log: log,
         txIndex: log.transactionIndex,
         logIndex: log.logIndex,
+        // @ts-ignore
         contract: this.contract.address,
         sender: txsIndex[log.transactionHash].from,
         timestamp: blockIndex[log.blockNumber].timestamp * 1000
@@ -152,10 +153,12 @@ export default class ChainsawService {
 
     if (channelEvents.length) {
       LOG.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
+      // @ts-ignore
       await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
       LOG.info(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
       LOG.info('No new transactions found; nothing to do.')
+      // @ts-ignore
       await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
     }
   }
@@ -163,7 +166,9 @@ export default class ChainsawService {
   private async doProcessEvents() {
     // should look for either successfully processed, or
     // last skipped events
+    // @ts-ignore
     const last = await this.chainsawDao.lastProcessEventPoll(this.contract.address)
+    // @ts-ignore
     const ingestedEvents = await this.chainsawDao.eventsSince(this.contract.address, last.blockNumber, last.txIndex)
 
     if (!ingestedEvents.length) {
@@ -180,6 +185,7 @@ export default class ChainsawService {
       await this.chainsawDao.recordPoll(
         event.event.blockNumber,
         event.event.txIndex,
+        // @ts-ignore
         this.contract.address,
         pollType,
       )
@@ -287,6 +293,18 @@ export default class ChainsawService {
     if (event.senderIdx == 0) {
       LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
       return
+    }
+
+    // TODO FIX AND REMOVE
+    LOG.info('event.senderIdx: ' + JSON.stringify(event.senderIdx));
+    try {
+      if ((event.senderIdx as any)._hex == "0x00") {
+        LOG.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
+        return
+      }
+    } catch (error) {
+      LOG.info('Caught error trying to compare BN to 0.')
+      LOG.info(error)
     }
 
     let data

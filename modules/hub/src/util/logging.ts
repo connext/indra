@@ -96,7 +96,9 @@ export class SCLogger {
     const c = console as any
 
     if ((process.env.NODE_ENV !== 'production' || !this.logdna) && levelno >= logLevelLimit) {
-      (c[level] || console.log)(`${level}: ${msg || this.name}`)
+      // Make those warnings really POP
+      level = (level === 'warn' || level === 'error') ? level.toUpperCase() : level
+      ;(c[level] || console.log)(`${level}: ${msg || this.name}`)
     }
 
     if (this.logdna) {

@@ -1,4 +1,4 @@
-import * as Connext from '../Connext';
+import * as Connext from 'connext';
 const vm = require('vm')
 import { PartialSignedOrSuccinctChannel, getChannelState, mkAddress, mkSig } from './stateUtils'
 

@@ -1,4 +1,4 @@
-import { StateGenerator, types, big } from './Connext';
+import { StateGenerator, types, big } from 'connext';
 import { parameterizedTests } from './testing'
 import { PostgresChannelsDao } from './dao/ChannelsDao'
 import ChannelsService from './ChannelsService'
@@ -42,8 +42,9 @@ type ChannelState = types.ChannelState
 type ChannelUpdateReason = types.ChannelUpdateReason
 type DepositArgs = types.DepositArgs
 type InvalidationArgs = types.InvalidationArgs
-type PaymentBN = types.PaymentBN
+type Payment<T=string> = types.Payment<T>
 type PaymentArgs = types.PaymentArgs
+type PaymentBN = types.PaymentBN
 type UpdateRequest = types.UpdateRequest
 type WithdrawalArgs = types.WithdrawalArgs
 type WithdrawalParametersBigNumber = types.WithdrawalParametersBN
@@ -274,7 +275,7 @@ describe('ChannelsService', () => {
   type ExchangeTestType = {
     name: string
     initial: PartialSignedOrSuccinctChannel
-    exchange: types.Payment<number>
+    exchange: Payment<number>
     expected: PartialSignedOrSuccinctChannel
   }
 
