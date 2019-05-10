@@ -18,6 +18,7 @@ import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 import { BigNumber as BN } from 'ethers/utils'
 import * as ethers from 'ethers';
+import PaymentProfilesService from './PaymentProfilesService';
 
 type ChannelRow = types.ChannelRow
 type ChannelStateBN = types.ChannelStateBN
@@ -46,6 +47,7 @@ const {
   convertThreadState,
   convertWithdrawal,
   convertWithdrawalParameters,
+  convertPaymentProfile
 } = types
 const { Big, toWeiBig, maxBN, weiToAsset, minBN, assetToWei } = big
 const LOG = log('ChannelsService')
@@ -75,6 +77,7 @@ export default class ChannelsService {
     private config: Config,
     private contract: ChannelManager,
     private coinPaymentsDao: CoinPaymentsDao,
+    private paymentProfilesService: PaymentProfilesService,
   ) {
     this.utils = new Utils()
   }
@@ -302,6 +305,31 @@ export default class ChannelsService {
       }
     }
 
+    const logAndReturn = (amountToCollateralize: BN) => {
+      LOG.info(`Recollateralizing ${user} with ${ethers.utils.formatEther(amountToCollateralize)} BOOTY`)
+
+      const depositArgs: DepositArgs = {
+        depositWeiHub: '0',
+        depositWeiUser: '0',
+        depositTokenHub: amountToCollateralize.toString(),
+        depositTokenUser: '0',
+        timeout: 0,
+        sigUser: null,
+      }
+      return depositArgs
+    }
+
+    // if a payment profile exists, use those amounts by default
+    const profile = await this.paymentProfilesService.doGetPaymentProfileByUser(channel.user)
+    if (profile) {
+      const hasInsufficient = channel.state.balanceTokenHub.lt(
+        Big(profile.minimumMaintainedCollateralToken)
+      )
+      return hasInsufficient 
+        ? logAndReturn(Big(profile.amountToCollateralizeToken)) 
+        : null
+    }
+
     const calculatedTargets = await this.calculateCollateralizationTargets(channel.state)
     let targets = { ...calculatedTargets }
     // if the provided target is greater than the min target,
@@ -351,17 +379,7 @@ export default class ChannelsService {
       return null
     }
 
-    LOG.info(`Recollateralizing ${user} with ${ethers.utils.formatEther(amountToCollateralize)} BOOTY`)
-
-    const depositArgs: DepositArgs = {
-      depositWeiHub: '0',
-      depositWeiUser: '0',
-      depositTokenHub: amountToCollateralize.toString(),
-      depositTokenUser: '0',
-      timeout: 0,
-      sigUser: null,
-    }
-    return depositArgs
+    return logAndReturn(amountToCollateralize)
   }
 
   public async doRequestWithdrawal(
