@@ -181,7 +181,7 @@ describe('ChannelsService', () => {
   })
 
   it('should create a user deposit request when user deposits more than booty limit', async () => {
-    const weiDeposit = toWeiBig(1)
+    const weiDeposit = toWeiBig(100)
 
     const chan = await channelUpdateFactory(registry, {
       contractAddress: contract,
