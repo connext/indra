@@ -1,15 +1,12 @@
-import { types, big } from 'connext';
-import DBEngine, { SQL } from "../DBEngine";
+import { Address, PaymentProfileConfig, PaymentProfileConfigBN } from 'connext/types'
+import { log } from 'util'
 import { Client } from 'pg'
+
 import Config from '../Config'
-import { log } from 'util';
-const { Big, } = big
+import DBEngine, { SQL } from '../DBEngine'
+import { toBN } from '../util'
 
 const LOG = log('PaymentProfilesDao')
-
-type Address = types.Address
-type PaymentProfileConfigBN = types.PaymentProfileConfigBN
-type PaymentProfileConfig = types.PaymentProfileConfig
 
 export default interface PaymentProfilesDao {
   getPaymentProfileConfigById(profileId: number): Promise<PaymentProfileConfigBN>
@@ -98,14 +95,14 @@ export class PostgresPaymentProfilesDao implements PaymentProfilesDao {
         id: Number(row.id),
 
         minimumMaintainedCollateralWei: 
-          Big(row.minimum_maintained_collateral_wei), 
+          toBN(row.minimum_maintained_collateral_wei), 
 
         minimumMaintainedCollateralToken: 
-          Big(row.minimum_maintained_collateral_token), 
+          toBN(row.minimum_maintained_collateral_token), 
 
-        amountToCollateralizeWei: Big(row.amount_to_collateralize_wei),
+        amountToCollateralizeWei: toBN(row.amount_to_collateralize_wei),
 
-        amountToCollateralizeToken: Big(row.amount_to_collateralize_token),
+        amountToCollateralizeToken: toBN(row.amount_to_collateralize_token),
       }
     )
   }

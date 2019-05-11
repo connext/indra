@@ -7,6 +7,7 @@ import {
   Payment,
   PaymentArgs,
   PaymentBN,
+  PaymentProfileConfig,
   UpdateRequest,
   UpdateRequestTypes,
   WithdrawalArgs,
@@ -1367,7 +1368,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
   const clock =  getFakeClock()
 
   // ** helper functions
-  const createAndAssertPaymentProfile = async (c: Partial<types.PaymentProfileConfig>) => {
+  const createAndAssertPaymentProfile = async (c: Partial<PaymentProfileConfig>) => {
     const configOpts = {
       minimumMaintainedCollateralToken: "0",
       minimumMaintainedCollateralWei: "0",
@@ -1384,7 +1385,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
     return retrieved // PaymentProfileConfig
   }
 
-  const addAndAssertPaymentProfile = async (configOpts: Partial<types.PaymentProfileConfig>, overrides?: PartialSignedOrSuccinctChannel) => {
+  const addAndAssertPaymentProfile = async (configOpts: Partial<PaymentProfileConfig>, overrides?: PartialSignedOrSuccinctChannel) => {
     const config = await createAndAssertPaymentProfile(configOpts)
     const channel = await channelUpdateFactory(registry, overrides)
     // verify all config entries
@@ -1393,8 +1394,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
     assert.containSubset(config, retrieved)
     return { channel, config }
   }
-
-  const assertCollateral = async (user: string, collateralizationAmount = Big(0), expected?: Partial<DepositArgs>) => {
+const assertCollateral = async (user: string, collateralizationAmount = toBN(0), expected?: Partial<DepositArgs>) => {
     // calculate collateral deposit args
     const collateral = await channelsService.getCollateralDepositArgs(user, collateralizationAmount)
     if (!expected) {
@@ -1412,7 +1412,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
     })
   }
 
-  const assertTipUser = async (recipient: string, tipAmount = toWeiString(10), numberOfTippers = 1) => {
+  const assertTipUser = async (recipient: string, tipAmount = toWei(10).toString(), numberOfTippers = 1) => {
     for (let i = 0; i < numberOfTippers; i++) {
       const user = mkAddress('0x' + Math.floor((Math.random() * 100000)))
       const channel = await channelUpdateFactory(registry, {
@@ -1453,8 +1453,8 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
   it("should respect payment profile settings if they are defined", async () => {
     // insert config
     const { config, channel } = await addAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(200), 
-      amountToCollateralizeToken: toWeiString(400),
+      minimumMaintainedCollateralToken: toWei(200).toString(), 
+      amountToCollateralizeToken: toWei(400).toString(),
     })
     await assertCollateral(channel.user, null, {
       depositTokenHub: config.amountToCollateralizeToken
@@ -1464,10 +1464,10 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
   it("should not collateralize if it has sufficient tokens, profile defined", async () => {
     // insert config
     const { config, channel } = await addAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(200), 
-      amountToCollateralizeToken: toWeiString(400),
+      minimumMaintainedCollateralToken: toWei(200).toString(), 
+      amountToCollateralizeToken: toWei(400).toString(),
     }, {
-      balanceTokenHub: toWeiString(200)
+      balanceTokenHub: toWei(200).toString()
     })
     await assertCollateral(channel.user)
   })
@@ -1475,7 +1475,7 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
   it("should respect config if there is no payment profile defined and deposit min", async () => {
     // insert channel
     const channel = await channelUpdateFactory(registry)
-    await assertCollateral(channel.user, Big(0), {
+    await assertCollateral(channel.user, toBN(0), {
       depositTokenHub: defaultConfig.beiMinCollateralization.toString()
     })
   })
@@ -1483,14 +1483,14 @@ describe('ChannelsService.calculateCollateralizationTargets', () => {
   it("should respect config if there is no payment profile defined and deposit max", async () => {
     // insert channel
     const channel = await channelUpdateFactory(registry)
-    await assertCollateral(channel.user, Big(0), {
+    await assertCollateral(channel.user, toBN(0), {
       depositTokenHub: defaultConfig.beiMinCollateralization.toString()
     })
     // perform tip to send colltateral over edge
-    await assertTipUser(channel.user, toWeiString(180))
+    await assertTipUser(channel.user, toWei(180).toString())
 
     // make sure the collateral is at max in tippers channel  
-    await assertCollateral(channel.user, toWeiBig(180), {
+    await assertCollateral(channel.user, toWei(180), {
       depositTokenHub: defaultConfig.beiMaxCollateralization.toString()
     })
   }).timeout(5000)

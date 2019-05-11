@@ -1,14 +1,13 @@
-import { ApiService } from "./ApiService"
-import * as express from "express"
-import log, { logApiRequestError } from "../util/log"
-import { isServiceOrAdmin, isServiceOrAdminOrOwnedAddress } from "../util/ownedAddressOrAdmin"
-import { isArray } from "util"
-import { big } from "connext"
-import PaymentProfilesService from "../PaymentProfilesService"
+import * as express from 'express'
+import { isArray } from 'util'
 
-const { Big } = big
+import PaymentProfilesService from '../PaymentProfilesService'
+import { toBN } from '../util'
+import log, { logApiRequestError } from '../util/log'
+import { isServiceOrAdmin, isServiceOrAdminOrOwnedAddress } from '../util/ownedAddressOrAdmin'
+import { ApiService } from './ApiService'
 
-const LOG = log("PaymentProfilesApiService")
+const LOG = log('PaymentProfilesApiService')
 
 export default class PaymentProfilesApiService extends ApiService<
   PaymentProfilesApiServiceHandler
@@ -79,8 +78,8 @@ class PaymentProfilesApiServiceHandler {
 
     if (
       (minimumMaintainedCollateralWei &&
-        !Big(minimumMaintainedCollateralWei).isZero()) ||
-      (amountToCollateralizeWei && !Big(amountToCollateralizeWei).isZero())
+        !toBN(minimumMaintainedCollateralWei).isZero()) ||
+      (amountToCollateralizeWei && !toBN(amountToCollateralizeWei).isZero())
     ) {
       logApiRequestError(LOG, req)
       return res.sendStatus(400)

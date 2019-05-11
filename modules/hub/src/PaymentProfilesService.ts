@@ -1,16 +1,12 @@
-import { log } from "util";
-import { types, big } from 'connext';
-import PaymentProfilesDao from "./dao/PaymentProfilesDao";
-import { Omit } from "react-redux";
-import { prettySafeJson } from "./util";
-import DBEngine from "./DBEngine";
-const { Big, } = big
-const {
-  convertPaymentProfile
-} = types
-type Address = types.Address
-type PaymentProfileConfig<T=string> = types.PaymentProfileConfig<T>
+import * as connext from 'connext'
+import { Address, Omit, PaymentProfileConfig } from 'connext/types'
 
+import PaymentProfilesDao from './dao/PaymentProfilesDao'
+import DBEngine from './DBEngine'
+import { prettySafeJson, toBN } from './util'
+import log from './util/log'
+
+const convert = connext.utils.convert
 const LOG = log('PaymentProfilesService')
 
 export default class PaymentProfilesService {
@@ -29,16 +25,16 @@ export default class PaymentProfilesService {
     } = config
     // TODO: implement collateralization in wei
     if (
-      minimumMaintainedCollateralWei && !Big(minimumMaintainedCollateralWei).isZero() ||
-      amountToCollateralizeWei && !Big(amountToCollateralizeWei).isZero()
+      minimumMaintainedCollateralWei && !toBN(minimumMaintainedCollateralWei).isZero() ||
+      amountToCollateralizeWei && !toBN(amountToCollateralizeWei).isZero()
     ) {
       throw new Error(`Cannot support wei collateral requests at this time. Requested config: ${prettySafeJson(config)}`)
     }
 
     // check that the profile configurations requested are not negative
     if (
-      Big(amountToCollateralizeToken).lte(0) || 
-      Big(minimumMaintainedCollateralToken).lte(0)
+      toBN(amountToCollateralizeToken).lte(0) || 
+      toBN(minimumMaintainedCollateralToken).lte(0)
     ) {
       throw new Error(`Negative or zero value collateralization parameters requested. Requested config: ${prettySafeJson(config)}`)
     }
@@ -54,7 +50,7 @@ export default class PaymentProfilesService {
       return null
     }
 
-    return convertPaymentProfile("str", profile)
+    return convert.PaymentProfile("str", profile)
   }
 
   // NOTE: will fail if channel does not exist
@@ -75,7 +71,7 @@ export default class PaymentProfilesService {
       return null
     }
 
-    return convertPaymentProfile("str", profile)
+    return convert.PaymentProfile("str", profile)
   }
 
   public async doGetPaymentProfileByUser(user: string): Promise<PaymentProfileConfig> {
@@ -83,6 +79,6 @@ export default class PaymentProfilesService {
     if (!profile) {
       return null
     }
-    return convertPaymentProfile("str", profile)
+    return convert.PaymentProfile("str", profile)
   }
 }

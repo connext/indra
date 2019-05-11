@@ -1,13 +1,12 @@
-import { big, types } from 'connext';
 import { assert } from 'chai'
-import { getTestRegistry, TestApiServer } from '../testing'
-import { channelUpdateFactory } from '../testing/factories';
-import { mkAddress } from '../testing/stateUtils';
-import ChannelsService from '../ChannelsService';
+import { PaymentProfileConfig } from 'connext/types'
+import { isArray } from 'util'
 
-const {
-  toWeiString,
-} = big
+import ChannelsService from '../ChannelsService'
+import { getTestRegistry, TestApiServer } from '../testing'
+import { channelUpdateFactory } from '../testing/factories'
+import { mkAddress } from '../testing/stateUtils'
+import { toWei } from '../util'
 
 describe("PaymentProfilesApiService", () => {
   const registry = getTestRegistry()
@@ -15,7 +14,7 @@ describe("PaymentProfilesApiService", () => {
   const channelsService: ChannelsService = registry.get('ChannelsService')
 
   // **** helper functions
-  const createAndAssertPaymentProfile = async (config: Partial<types.PaymentProfileConfig>, failsWith?: { status: number, message: string} ) => {
+  const createAndAssertPaymentProfile = async (config: Partial<PaymentProfileConfig>, failsWith?: { status: number, message: string} ) => {
     const expected = {
       id: 1,
       minimumMaintainedCollateralToken: "0",
@@ -51,7 +50,7 @@ describe("PaymentProfilesApiService", () => {
     return expected
   }
 
-  const assignAndAssertPaymentProfile = async (c: Partial<types.PaymentProfileConfig>, addressCount: number = 1) => {
+  const assignAndAssertPaymentProfile = async (c: Partial<PaymentProfileConfig>, addressCount: number = 1) => {
     const config = await createAndAssertPaymentProfile(c)
     // create 10 channels
     let addresses = []
@@ -89,15 +88,15 @@ describe("PaymentProfilesApiService", () => {
 
   it("should work to create a new payment profile config", async () => {
     await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(10),
-      amountToCollateralizeToken: toWeiString(15),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
+      amountToCollateralizeToken: toWei(15).toString(),
     })
   })
 
   it("should not create a new payment profile config if it is not an admin user", async () => {
     await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(10),
-      amountToCollateralizeToken: toWeiString(15),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
+      amountToCollateralizeToken: toWei(15).toString(),
     }, {
       status: 403,
       message: "Admin role not detected on request."
@@ -106,7 +105,7 @@ describe("PaymentProfilesApiService", () => {
 
   it("should not create a new payment profile config if there is an invalid body", async () => {
     await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(10),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
     }, {
       status: 400,
       message: "Received invalid request parameters."
@@ -115,9 +114,9 @@ describe("PaymentProfilesApiService", () => {
 
   it("should not create a new payment profile config if there is an invalid body", async () => {
     await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(10),
-      amountToCollateralizeToken: toWeiString(15),
-      minimumMaintainedCollateralWei: toWeiString(10),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
+      amountToCollateralizeToken: toWei(15).toString(),
+      minimumMaintainedCollateralWei: toWei(10).toString(),
     }, {
       status: 400,
       message: "Received invalid request parameters."
@@ -127,8 +126,8 @@ describe("PaymentProfilesApiService", () => {
   it("should add a payment profile to an array of user addresses", async () => {
     // register config
     await assignAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(10),
-      amountToCollateralizeToken: toWeiString(15),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
+      amountToCollateralizeToken: toWei(15).toString(),
     }, 10)
   })
 })
