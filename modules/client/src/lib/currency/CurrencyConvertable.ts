@@ -1,8 +1,9 @@
-import Currency from './Currency'
+import * as eth from 'ethers'
 import { BigNumber as BN } from 'ethers/utils'
-import { BEI_AMOUNT } from '../constants'
 import { BigNumber } from 'bignumber.js'
+
 import { CurrencyType, ExchangeRates } from '../../types';
+import Currency from './Currency'
 
 export default class CurrencyConvertable extends Currency {
   protected exchangeRates: () => ExchangeRates
@@ -23,7 +24,6 @@ export default class CurrencyConvertable extends Currency {
   public toETH = (): CurrencyConvertable => this._convert("ETH")
   public toWEI = (): CurrencyConvertable => this._convert("WEI")
   public toFIN = (): CurrencyConvertable => this._convert("FINNEY")
-  // public toSPANK = (): CurrencyConvertable => this._convert(CurrencyType.SPANK)
   public toBOOTY = (): CurrencyConvertable => this._convert("BOOTY")
   public toBEI = (): CurrencyConvertable => this._convert("BEI")
 
@@ -48,7 +48,7 @@ export default class CurrencyConvertable extends Currency {
     }
 
     if (this.type === "BEI" && toType === "BOOTY") {
-      const amountInBootyBigNumber = this.amountBigNumber.div(new BigNumber(BEI_AMOUNT))
+      const amountInBootyBigNumber = this.amountBigNumber.div(new BigNumber(eth.constants.WeiPerEther.toString()))
       return new CurrencyConvertable(
         toType,
         amountInBootyBigNumber,
@@ -57,7 +57,7 @@ export default class CurrencyConvertable extends Currency {
     }
 
     if (this.type === "BOOTY" && toType === "BEI") {
-      const amountInBeiBigNumber = this.amountBigNumber.times(new BigNumber(BEI_AMOUNT))
+      const amountInBeiBigNumber = this.amountBigNumber.times(new BigNumber(eth.constants.WeiPerEther.toString()))
       return new CurrencyConvertable(
         toType,
         amountInBeiBigNumber,

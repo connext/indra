@@ -1,17 +1,18 @@
-import { isValidAddress } from 'ethereumjs-util';
-import { AbstractController } from './AbstractController'
-import { Big, weiToAsset, assetToWei } from '../lib/bn';
+import { isValidAddress } from 'ethereumjs-util'
+
+import { toBN, tokenToWei, weiToToken } from '../lib/bn'
 import { getTxCount } from '../state/getters'
 import {
+  argNumericFields,
   convertChannelState,
+  convertPayment,
+  insertDefault,
+  PaymentBN,
+  SuccinctWithdrawalParameters,
   WithdrawalParameters,
   withdrawalParamsNumericFields,
-  insertDefault,
-  SuccinctWithdrawalParameters,
-  convertPayment,
-  argNumericFields,
-  PaymentBN
 } from '../types'
+import { AbstractController } from './AbstractController'
 
 /* NOTE: the withdrawal parameters have optional withdrawal tokens and wei to
  * sell values for completeness. In the BOOTY case, there is no need for the
@@ -57,12 +58,12 @@ export default class WithdrawalController extends AbstractController {
     }
 
     // validate withdrawal wei user
-    if (Big(withdrawalStr.withdrawalWeiUser).gt(channelBN.balanceWeiUser)) {
+    if (toBN(withdrawalStr.withdrawalWeiUser).gt(channelBN.balanceWeiUser)) {
       WithdrawalError(`Cannot withdraw more wei than what is in your channel.`)
     }
 
     // validate tokens/wei to sell
-    if (Big(withdrawalStr.tokensToSell).gt(channelBN.balanceTokenUser)) {
+    if (toBN(withdrawalStr.tokensToSell).gt(channelBN.balanceTokenUser)) {
       WithdrawalError(`Cannot sell more tokens than exist in your channel.`)
     }
 
@@ -110,7 +111,7 @@ export default class WithdrawalController extends AbstractController {
       // withdraw all of wei balance in channel
       withdrawalWeiUser = chan.balanceWeiUser.toString()
       // sell the equivalent remaining amount in tokens
-      tokensToSell = weiToAsset(
+      tokensToSell = weiToToken(
         wdAmount.amountWei.sub(chan.balanceWeiUser), exchangeRate
       ).toString()
     }
@@ -124,11 +125,11 @@ export default class WithdrawalController extends AbstractController {
       // withdraw all of wei balance in channel
       withdrawalTokenUser = chan.balanceTokenUser.toString()
       // sell the equivalent remaining amount in tokens
-      const [ wei, remainderTokens ] = assetToWei(
+      const wei = tokenToWei(
         wdAmount.amountToken.sub(chan.balanceTokenUser), exchangeRate
       )
       weiToSell = wei.toString()
-      withdrawalTokenUser = chan.balanceTokenUser.add(remainderTokens).toString()
+      withdrawalTokenUser = chan.balanceTokenUser.toString()
     }
 
     // recipient + exchangeRate is set when inserting defaults into the 

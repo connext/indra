@@ -1,7 +1,6 @@
-import { ethers as eth } from 'ethers'
-import { BigNumber as BN } from 'ethers/utils'
+import * as eth from 'ethers'
 
-import { Big, maxBN } from './lib/bn'
+import { BN, maxBN, toBN } from './lib/bn'
 import { capitalize } from './lib/naming'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
@@ -916,12 +915,12 @@ export class Validator {
     // out of channel balances are accounted for in the
     // previous balance calculations
     let reserves = {
-      amountWei: Big(0),
-      amountToken: Big(0),
+      amountWei: toBN(0),
+      amountToken: toBN(0),
     }
     let compiledPending = {
-      amountWei: Big(0),
-      amountToken: Big(0),
+      amountWei: toBN(0),
+      amountToken: toBN(0),
     }
 
     // if the previous operation has pending operations, and current
@@ -930,14 +929,14 @@ export class Validator {
     if (prevPending && !currPending) {
       // how much reserves were added into contract?
       reserves = {
-        amountWei: maxBN(
+        amountWei: maxBN([
           curr.pendingWithdrawalWeiUser.sub(prev.balanceWeiHub),
-          Big(0)
-        ),
-        amountToken: maxBN(
+          toBN(0)
+        ]),
+        amountToken: maxBN([
           curr.pendingWithdrawalTokenUser.sub(prev.balanceTokenHub),
-          Big(0),
-        )
+          toBN(0),
+        ])
       }
 
       // what pending updates need to be included?
@@ -977,7 +976,7 @@ export class Validator {
     // since we assume that thread state has already been checked and the
     // current channel state is generated directly from it.
     if(Math.abs(curr.threadCount - prev.threadCount) != 1) {
-      errs.push(this.enforceDelta([prevBal, currBal], Big(0), Object.keys(prevBal)))
+      errs.push(this.enforceDelta([prevBal, currBal], toBN(0), Object.keys(prevBal)))
     } else {
       // TODO enforce delta = 1 for threadcount
       // TODO check threadroot != threadroot
@@ -1161,14 +1160,14 @@ export class Validator {
     return {
       user: raw.user,
       sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
-      pendingDepositWeiHub: Big(raw.pendingWeiUpdates[0].toString()),
-      pendingDepositWeiUser: Big(raw.pendingWeiUpdates[2].toString()),
-      pendingDepositTokenHub: Big(raw.pendingTokenUpdates[0].toString()),
-      pendingDepositTokenUser: Big(raw.pendingTokenUpdates[2].toString()),
-      pendingWithdrawalWeiHub: Big(raw.pendingWeiUpdates[1].toString()),
-      pendingWithdrawalWeiUser: Big(raw.pendingWeiUpdates[3].toString()),
-      pendingWithdrawalTokenHub: Big(raw.pendingTokenUpdates[1].toString()),
-      pendingWithdrawalTokenUser: Big(raw.pendingTokenUpdates[3].toString()),
+      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0].toString()),
+      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2].toString()),
+      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0].toString()),
+      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2].toString()),
+      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1].toString()),
+      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3].toString()),
+      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1].toString()),
+      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3].toString()),
       txCountChain: parseInt(raw.txCount[1].toString(), 10),
     }
   }

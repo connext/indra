@@ -1,7 +1,7 @@
 import { mkAddress, parameterizedTests, assert } from '../testing';
 import { MockConnextInternal, MockStore } from '../testing/mocks';
 import { convertChannelState } from '../types';
-import { Big } from '../lib/bn';
+import { toBN } from '../lib/bn';
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 
@@ -167,13 +167,13 @@ describe('WithdrawalController: unit tests', () => {
     await new Promise(res => setTimeout(res, 20))
 
     const targetWeiUser = preWdChan.balanceWeiUser
-      .sub(Big(args.weiToSell || 0))
-      .sub(Big(args.withdrawalWeiUser || 0))
+      .sub(toBN(args.weiToSell || 0))
+      .sub(toBN(args.withdrawalWeiUser || 0))
       .toString()
 
     const targetTokenUser = preWdChan.balanceTokenUser
-      .sub(Big(args.tokensToSell || 0))
-      .sub(Big(args.withdrawalTokenUser || 0))
+      .sub(toBN(args.tokensToSell || 0))
+      .sub(toBN(args.withdrawalTokenUser || 0))
       .toString()
 
     connext.mockHub.assertReceivedUpdate({

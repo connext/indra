@@ -1,9 +1,8 @@
-import { ethers as eth } from 'ethers'
+import * as eth from 'ethers'
 import * as sinon from 'sinon'
 
 import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
-import { Big } from './lib/bn'
-import { EMPTY_ROOT_HASH } from './lib/constants'
+import { toBN } from './lib/bn'
 import * as t from './testing'
 import {
   ChannelState,
@@ -74,7 +73,7 @@ function generateTransactionReceiptValues(...overrides: any[]): any {
     pendingWeiUpdates: ['0', '0', '0', '0'],
     senderIdx: '1', // default to user wei deposit 5
     threadCount: '0',
-    threadRoot: EMPTY_ROOT_HASH,
+    threadRoot: eth.constants.HashZero,
     tokenBalances: ['0', '0'],
     txCount: ['1', '1'],
     user: sampleAddress,
@@ -202,7 +201,7 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
     return {
       initialThreadStates: [],
       threadCount: 0,
-      threadRoot: EMPTY_ROOT_HASH,
+      threadRoot: eth.constants.HashZero,
     }
   }
   const initialThreadStates: ThreadState[] = [] as ThreadState[]
@@ -276,15 +275,15 @@ describe('validator', () => {
     })
 
     let baseWeiToToken = {
-      weiToSell: Big(1),
-      tokensToSell: Big(0),
+      weiToSell: toBN(1),
+      tokensToSell: toBN(0),
       exchangeRate: '5',
       seller: "user"
     }
 
     let baseTokenToWei = {
-      weiToSell: Big(0),
-      tokensToSell: Big(5),
+      weiToSell: toBN(0),
+      tokensToSell: toBN(5),
       exchangeRate: '5',
       seller: "user"
     }
@@ -317,55 +316,55 @@ describe('validator', () => {
       {
         name: 'should return a string if both toSell values are zero',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(0) },
+        args: { ...baseWeiToToken, weiToSell: toBN(0) },
         valid: false,
       },
       {
         name: 'should return a string if neither toSell values are zero',
         prev,
-        args: { ...baseWeiToToken, tokensToSell: Big(1) },
+        args: { ...baseWeiToToken, tokensToSell: toBN(1) },
         valid: false,
       },
       {
         name: 'should return a string if negative wei to sell is provided',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(-5) },
+        args: { ...baseWeiToToken, weiToSell: toBN(-5) },
         valid: false,
       },
       {
         name: 'should return a string if negative tokens to sell is provided',
         prev,
-        args: { ...baseTokenToWei, tokensToSell: Big(-5) },
+        args: { ...baseTokenToWei, tokensToSell: toBN(-5) },
         valid: false,
       },
       {
         name: 'should return a string if seller cannot afford tokens for wei exchange',
         prev,
-        args: { ...baseTokenToWei, tokensToSell: Big(10) },
+        args: { ...baseTokenToWei, tokensToSell: toBN(10) },
         valid: false,
       },
       {
         name: 'should return a string if seller cannot afford wei for tokens exchange',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(10) },
+        args: { ...baseWeiToToken, weiToSell: toBN(10) },
         valid: false,
       },
       {
         name: 'should return a string if payor cannot afford wei for tokens exchange',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(2), },
+        args: { ...baseWeiToToken, weiToSell: toBN(2), },
         valid: false,
       },
       {
         name: 'should return a string if payor as hub cannot afford tokens for wei exchange',
-        prev: { ...prev, balanceWeiHub: Big(0) },
-        args: { ...baseTokenToWei, weiToSell: Big(10) },
+        prev: { ...prev, balanceWeiHub: toBN(0) },
+        args: { ...baseTokenToWei, weiToSell: toBN(10) },
         valid: false,
       },
       {
         name: 'should return a string if payor as user cannot afford tokens for wei exchange',
-        prev: { ...prev, balanceWeiUser: Big(0) },
-        args: { ...baseTokenToWei, weiToSell: Big(10), seller: "user" },
+        prev: { ...prev, balanceWeiUser: toBN(0) },
+        args: { ...baseTokenToWei, weiToSell: toBN(10), seller: "user" },
         valid: false,
       },
     ]
@@ -389,10 +388,10 @@ describe('validator', () => {
       balanceWei: [5, 5]
     })
     const args = {
-      depositWeiHub: Big(1),
-      depositWeiUser: Big(1),
-      depositTokenHub: Big(1),
-      depositTokenUser: Big(1),
+      depositWeiHub: toBN(1),
+      depositWeiUser: toBN(1),
+      depositTokenHub: toBN(1),
+      depositTokenUser: toBN(1),
       timeout: 6969,
     }
 
@@ -405,14 +404,14 @@ describe('validator', () => {
       },
       {
         name: 'should return a string if pending operations exist on the previous state',
-        prev: { ...prev, pendingDepositWeiUser: Big(5) },
+        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
         args,
         valid: false
       },
       {
         name: 'should return a string for negative deposits',
         prev,
-        args: { ...args, depositWeiUser: Big(-5) },
+        args: { ...args, depositWeiUser: toBN(-5) },
         valid: false
       },
       {
@@ -461,26 +460,26 @@ describe('validator', () => {
       },
       {
         name: 'should return a string if there are pending ops in prev',
-        prev: { ...prev, pendingDepositWeiUser: Big(10) },
+        prev: { ...prev, pendingDepositWeiUser: toBN(10) },
         args,
         valid: false
       },
       {
         name: 'should return a string if the args have a negative value',
         prev,
-        args: { ...args, weiToSell: Big(-5) },
+        args: { ...args, weiToSell: toBN(-5) },
         valid: false
       },
       {
         name: 'should return a string if resulting state has negative values',
         prev,
-        args: { ...args, tokensToSell: Big(20) },
+        args: { ...args, tokensToSell: toBN(20) },
         valid: false
       },
       {
         name: 'should return a string if the args result in an invalid transition',
         prev,
-        args: { ...args, weiToSell: Big(10), tokensToSell: Big(0), additionalWeiHubToUser: Big(30) },
+        args: { ...args, weiToSell: toBN(10), tokensToSell: toBN(0), additionalWeiHubToUser: toBN(30) },
         valid: false
       },
       // TODO: find out which args may result in this state from the
@@ -570,73 +569,73 @@ describe('validator', () => {
       },
       // {
       //   name: 'should return a string if balance wei hub is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceWeiHub: Big(5) },
+      //   prev: { ...prevDeposit, balanceWeiHub: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       // {
       //   name: 'should return a string if balance wei user is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceWeiUser: Big(5) },
+      //   prev: { ...prevDeposit, balanceWeiUser: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       // {
       //   name: 'should return a string if balance token hub is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceTokenHub: Big(5) },
+      //   prev: { ...prevDeposit, balanceTokenHub: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       // {
       //   name: 'should return a string if balance token user is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceTokenUser: Big(5) },
+      //   prev: { ...prevDeposit, balanceTokenUser: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       {
         name: 'should return a string if pending deposit wei hub is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositWeiHub: Big(3) },
+        prev: { ...prevDeposit, pendingDepositWeiHub: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
         name: 'should return a string if pending deposit wei user is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositWeiUser: Big(3) },
+        prev: { ...prevDeposit, pendingDepositWeiUser: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
         name: 'should return a string if pending deposit token hub is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositTokenHub: Big(3) },
+        prev: { ...prevDeposit, pendingDepositTokenHub: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
         name: 'should return a string if pending deposit token user is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositTokenUser: Big(3) },
+        prev: { ...prevDeposit, pendingDepositTokenUser: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
         name: 'should return a string if pending withdrawal wei hub is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalWeiHub: Big(10) },
+        prev: { ...prevWd, pendingWithdrawalWeiHub: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
       {
         name: 'should return a string if pending withdrawal wei user is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalWeiUser: Big(10) },
+        prev: { ...prevWd, pendingWithdrawalWeiUser: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
       {
         name: 'should return a string if pending withdrawal token hub is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalTokenHub: Big(10) },
+        prev: { ...prevWd, pendingWithdrawalTokenHub: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
       {
         name: 'should return a string if pending withdrawal token user is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalTokenUser: Big(10) },
+        prev: { ...prevWd, pendingWithdrawalTokenUser: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
@@ -726,7 +725,7 @@ describe('validator', () => {
       },
       {
         name: 'should return string if previous state has pending ops',
-        prev: { ...prev, pendingDepositWeiUser: Big(5) },
+        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
         args,
         valid: false
       },
@@ -809,7 +808,7 @@ describe('validator', () => {
         prev,
         initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiReceiver: Big(2) },
+        args: { ...args, balanceWeiReceiver: toBN(2) },
         message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceWeiReceiver"`,
       },
       {
@@ -817,7 +816,7 @@ describe('validator', () => {
         prev,
         initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceTokenReceiver: Big(2) },
+        args: { ...args, balanceTokenReceiver: toBN(2) },
         message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceTokenReceiver"`,
       },
       {
@@ -825,7 +824,7 @@ describe('validator', () => {
         prev,
         initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiReceiver: Big(-2) },
+        args: { ...args, balanceWeiReceiver: toBN(-2) },
         message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceWeiReceiver"`,
       },
       {
@@ -833,7 +832,7 @@ describe('validator', () => {
         prev,
         initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceTokenReceiver: Big(-2) },
+        args: { ...args, balanceTokenReceiver: toBN(-2) },
         message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceTokenReceiver"`,
       },
       {
@@ -886,7 +885,7 @@ describe('validator', () => {
       },
       {
         name: 'should return a string if thread root is incorrect',
-        prev: {...prev, threadRoot: EMPTY_ROOT_HASH},
+        prev: {...prev, threadRoot: eth.constants.HashZero},
         initialThreadStates,
         sigErr: false,
         args,
@@ -913,7 +912,7 @@ describe('validator', () => {
         prev,
         initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiSender: Big(20), balanceTokenSender: Big(20), receiver: sampleAddress, sender: t.mkAddress("0x111")},
+        args: { ...args, balanceWeiSender: toBN(20), balanceTokenSender: toBN(20), receiver: sampleAddress, sender: t.mkAddress("0x111")},
         message: "Hub does not have sufficient Token, Wei balance",
       },
       {
@@ -921,12 +920,12 @@ describe('validator', () => {
         prev,
         initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiSender: Big(20), balanceTokenSender: Big(20) },
+        args: { ...args, balanceWeiSender: toBN(20), balanceTokenSender: toBN(20) },
         message: "User does not have sufficient Token, Wei balance",
       },
       {
         name: 'should work with first thread',
-        prev: { ...prev, threadRoot: EMPTY_ROOT_HASH, threadCount: 0 },
+        prev: { ...prev, threadRoot: eth.constants.HashZero, threadCount: 0 },
         initialThreadStates: [],
         sigErr: false,
         args,
@@ -1032,7 +1031,7 @@ describe('validator', () => {
       },
       {
         name: 'should return a string if the initial state is not contained in root hash',
-        prev: {...prev, threadRoot: EMPTY_ROOT_HASH},
+        prev: {...prev, threadRoot: eth.constants.HashZero},
         initialThreadStates,
         args,
         sigErr: false,
@@ -1074,7 +1073,7 @@ describe('validator', () => {
         name: 'should return a string if the final state wei balance is not conserved',
         prev,
         initialThreadStates,
-        args: { ...args, balanceWeiSender: Big(10) },
+        args: { ...args, balanceWeiSender: toBN(10) },
         sigErr: false,
         message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"weiSum"',
       },
@@ -1082,7 +1081,7 @@ describe('validator', () => {
         name: 'should return a string if the final state token balance is not conserved',
         prev,
         initialThreadStates,
-        args: { ...args, balanceTokenSender: Big(10) },
+        args: { ...args, balanceTokenSender: toBN(10) },
         sigErr: false, // stubs out sig recover in tests
         message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"tokenSum"',
       },
@@ -1090,7 +1089,7 @@ describe('validator', () => {
         name: 'should return a string if the receiver wei balances are negative',
         prev,
         initialThreadStates,
-        args: {...args, balanceWeiReceiver: Big(-10) },
+        args: {...args, balanceWeiReceiver: toBN(-10) },
         sigErr: false,
         message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceWeiReceiver"'
       }, 
@@ -1098,7 +1097,7 @@ describe('validator', () => {
         name: 'should return a string if the receiver token balances are negative',
         prev,
         initialThreadStates,
-        args: {...args, balanceTokenReceiver: Big(-10) },
+        args: {...args, balanceTokenReceiver: toBN(-10) },
         sigErr: false,
         message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceTokenReceiver"'
       }, 
@@ -1106,7 +1105,7 @@ describe('validator', () => {
         name: 'should return a string if the sender wei balances are negative',
         prev,
         initialThreadStates,
-        args: {...args, balanceWeiSender: Big(-10) },
+        args: {...args, balanceWeiSender: toBN(-10) },
         sigErr: false,
         message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceWeiSender"'
       }, 
@@ -1114,7 +1113,7 @@ describe('validator', () => {
         name: 'should return a string if the sender token balances are negative',
         prev,
         initialThreadStates,
-        args: {...args, balanceTokenSender: Big(-10) },
+        args: {...args, balanceTokenSender: toBN(-10) },
         sigErr: false,
         message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceTokenSender"'
       }, 
@@ -1238,8 +1237,8 @@ describe('validator', () => {
     })
     const args: PendingExchangeArgsBN = {
       exchangeRate: '2',
-      weiToSell: Big(0),
-      tokensToSell: Big(0),
+      weiToSell: toBN(0),
+      tokensToSell: toBN(0),
       seller: "user",
       ...createProposePendingArgs(),
     }
@@ -1260,8 +1259,8 @@ describe('validator', () => {
         prev,
         args: {
           ...args,
-          tokensToSell: Big(2),
-          withdrawalTokenUser: Big(3),
+          tokensToSell: toBN(2),
+          withdrawalTokenUser: toBN(3),
         },
         valid: true,
       },
@@ -1271,8 +1270,8 @@ describe('validator', () => {
         prev,
         args: {
           ...args,
-          tokensToSell: Big(4),
-          withdrawalTokenUser: Big(4),
+          tokensToSell: toBN(4),
+          withdrawalTokenUser: toBN(4),
         },
         valid: false,
       },
@@ -1282,8 +1281,8 @@ describe('validator', () => {
         prev,
         args: {
           ...args,
-          tokensToSell: Big(5),
-          withdrawalTokenHub: Big(7),
+          tokensToSell: toBN(5),
+          withdrawalTokenHub: toBN(7),
         },
         valid: true,
       },
@@ -1293,8 +1292,8 @@ describe('validator', () => {
         prev,
         args: {
           ...args,
-          tokensToSell: Big(4),
-          withdrawalWeiUser: Big(7),
+          tokensToSell: toBN(4),
+          withdrawalWeiUser: toBN(7),
         },
         valid: true,
       },
@@ -1305,7 +1304,7 @@ describe('validator', () => {
 
     describe('with pending cases', () => {
       getProposePendingCases().forEach(tc => {
-        runCase({ ...tc, args: { ...args, weiToSell: Big(1), ...tc.args } })
+        runCase({ ...tc, args: { ...args, weiToSell: toBN(1), ...tc.args } })
       })
     })
 

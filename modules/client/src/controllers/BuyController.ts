@@ -1,18 +1,18 @@
 import { ethers as eth } from 'ethers'
 
-import { Big } from '../lib/bn'
+import { toBN } from '../lib/bn'
 import { assertUnreachable } from '../lib/utils'
 import { getChannel } from '../state/getters'
 import {
   argNumericFields,
   insertDefault,
+  Omit,
   PartialPurchasePaymentRequest,
   PartialPurchaseRequest,
   Payment,
   PaymentArgs,
   PurchasePayment,
   PurchasePaymentRequest,
-  Omit
 } from '../types'
 
 import { AbstractController } from './AbstractController'
@@ -67,8 +67,8 @@ export default class BuyController extends AbstractController {
     // if the payment amount is above what the hub will collateralize
     // it should be a custodial payment
     const config = await this.connext.hub.config()
-    const max = Big(config.beiMaxCollateralization)
-    if (Big(payment.amount.amountToken).gt(max)) {
+    const max = toBN(config.beiMaxCollateralization)
+    if (toBN(payment.amount.amountToken).gt(max)) {
       return {
         ...payment,
         type: "PT_CUSTODIAL",

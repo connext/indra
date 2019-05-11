@@ -54,7 +54,7 @@ import Wallet from './Wallet'
 // Interface Definitions
 ////////////////////////////////////////
 
-export interface IConnextClientOptions {
+export interface IConnextChannelOptions {
   hubUrl: string
   ethUrl?: string
   mnemonic?: string
@@ -95,8 +95,8 @@ export interface IConnextClientOptions {
 // Implementations
 ////////////////////////////////////////
 
-// Used to get an instance of ConnextClient.
-export async function getConnextClient(opts: IConnextClientOptions): Promise<ConnextClient> {
+// Used to get an instance of ConnextChannel.
+export async function createChannel(opts: IConnextChannelOptions): Promise<ConnextChannel> {
 
   const hubConfig: any = (await (new Networking(opts.hubUrl)).get(`config`)).data
   const config: any = {
@@ -133,15 +133,15 @@ export async function getConnextClient(opts: IConnextClientOptions): Promise<Con
  *
  * Create an instance with:
  *
- *  > const client = getConnextClient({...})
+ *  > const client = createChannel({...})
  *  > client.start() // start polling
  *  > client.on('onStateChange', state => {
  *  .   console.log('Connext state changed:', state)
  *  . })
  *
  */
-export abstract class ConnextClient extends EventEmitter {
-  public opts: IConnextClientOptions
+export abstract class ConnextChannel extends EventEmitter {
+  public opts: IConnextChannelOptions
   public StateGenerator?: StateGenerator
   public Utils?: Utils // class constructor (todo: rm?)
   public utils: Utils // instance
@@ -149,7 +149,7 @@ export abstract class ConnextClient extends EventEmitter {
 
   private internal: ConnextInternal
 
-  constructor(opts: IConnextClientOptions) {
+  constructor(opts: IConnextChannelOptions) {
     super()
 
     this.opts = opts
@@ -232,10 +232,10 @@ export abstract class ConnextClient extends EventEmitter {
  * The "actual" implementation of the Connext client. Internal components
  * should use this type, as it provides access to the various controllers, etc.
  */
-export class ConnextInternal extends ConnextClient {
+export class ConnextInternal extends ConnextChannel {
   public contract: IChannelManager
   public hub: IHubAPIClient
-  public opts: IConnextClientOptions
+  public opts: IConnextChannelOptions
   public provider: any
   public store: ConnextStore
   public utils: Utils
@@ -256,7 +256,7 @@ export class ConnextInternal extends ConnextClient {
   private _saving: Promise<void> = Promise.resolve()
   private _savePending: boolean = false
 
-  constructor(opts: IConnextClientOptions, wallet: Wallet) {
+  constructor(opts: IConnextChannelOptions, wallet: Wallet) {
     super(opts)
     this.opts = opts
 
@@ -479,7 +479,7 @@ export class ConnextInternal extends ConnextClient {
   }
 
   ////////////////////////////////////////
-  // Begin Public Method Implementations
+  // Begin Private Method Implementations
 
   private async _saveState(state: ConnextState): Promise<any> {
     if (!this.opts.saveState) {

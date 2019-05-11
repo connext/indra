@@ -1,14 +1,11 @@
-import { ethers as eth } from 'ethers'
+import * as eth from 'ethers'
 import { TransactionRequest, Web3Provider } from 'ethers/providers'
-import { BigNumber as BN } from 'ethers/utils'
 import Web3 from 'web3'
 
-import { toWeiBig } from './lib/bn'
+import { BN } from './lib/bn'
 import { assert, parameterizedTests } from './testing'
 import { Utils } from './Utils'
 import Wallet from './Wallet'
-
-console.log(`Starting wallet tests in env: ${JSON.stringify(process.env)}`)
 
 const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
 const mnemonic: string =

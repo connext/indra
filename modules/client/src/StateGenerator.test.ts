@@ -1,10 +1,23 @@
+import { toBN } from './lib/bn'
+import { calculateExchange, StateGenerator } from './StateGenerator'
+import { getChannelState, getWithdrawalArgs } from './testing'
 import { assert } from './testing/index'
 import * as t from './testing/index'
-import { StateGenerator, calculateExchange, } from './StateGenerator';
-import { Utils } from './Utils';
-import { convertChannelState, convertPayment, ChannelStateBN, convertThreadState, ThreadStateBN, convertExchange, convertDeposit, convertWithdrawal, convertThreadPayment, ChannelState, WithdrawalArgs, InvalidationArgs, } from './types';
-import { getChannelState, getWithdrawalArgs } from './testing'
-import { Big } from './lib/bn';
+import {
+  ChannelState,
+  ChannelStateBN,
+  convertChannelState,
+  convertDeposit,
+  convertExchange,
+  convertPayment,
+  convertThreadPayment,
+  convertThreadState,
+  convertWithdrawal,
+  InvalidationArgs,
+  ThreadStateBN,
+  WithdrawalArgs,
+} from './types'
+import { Utils } from './Utils'
 
 const sg = new StateGenerator()
 const utils = new Utils()
@@ -384,8 +397,8 @@ describe('StateGenerator', () => {
           const actual = calculateExchange({
             exchangeRate: '' + t.exchangeRate,
             seller: seller as any,
-            tokensToSell: Big(t.tokensToSell),
-            weiToSell: Big(t.weiToSell),
+            tokensToSell: toBN(t.tokensToSell),
+            weiToSell: toBN(t.weiToSell),
           })
 
           assert.deepEqual({

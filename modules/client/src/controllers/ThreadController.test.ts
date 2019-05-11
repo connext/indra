@@ -1,5 +1,5 @@
 import { PaymentArgs, ThreadState } from '../types';
-import { Big } from '../lib/bn';
+import { toBN } from '../lib/bn';
 import { assert, mkAddress } from '../testing';
 import { MockConnextInternal, MockStore } from '../testing/mocks'
 
@@ -147,8 +147,8 @@ describe('ThreadController: unit tests', () => {
         mockStore.updateThread(
           {sender, receiver, threadId},
           {
-            amountWei: Big(1),
-            amountToken: Big(2),
+            amountWei: toBN(1),
+            amountToken: toBN(2),
           }
         )
         connext = new MockConnextInternal({ user: sender, store: mockStore.createStore()})

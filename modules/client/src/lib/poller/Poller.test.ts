@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 
 import { sleep } from '../utils'
-
 import { Poller } from './Poller'
 
 describe('Poller', () => {

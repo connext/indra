@@ -1,7 +1,7 @@
+import * as eth from 'ethers'
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext';
-import { Big, mul, toWeiBig, toWeiString } from '../lib/bn';
-import { BEI_AMOUNT, FINNEY_AMOUNT, WEI_AMOUNT } from '../lib/constants'
+import { toBN, toWei } from '../lib/bn';
 import { getExchangeRates, getTxCount } from '../state/getters'
 import { Poller } from '../lib/poller/Poller';
 import * as actions from '../state/actions'
@@ -53,14 +53,13 @@ export class ExchangeController extends AbstractController {
   private pollExchangeRates = async () => {
     try {
       const rates = await this.hub.getExchangeRates()
+      const WeiPerEther = eth.constants.WeiPerEther
       if (rates.USD) {
         // These are the values wallet expects
         rates.USD = rates.USD,
-        rates.BEI = toWeiString(rates.USD) // multiply by bei amt = 10e18
-        rates.WEI = Big(WEI_AMOUNT).toString()
-        rates.ETH = Big(1).toString()
-        rates.BOOTY = rates.USD
-        rates.FINNEY = Big(FINNEY_AMOUNT).toString()
+        rates.ETH = toBN(1).toString()
+        rates.FINNEY = WeiPerEther.div(eth.utils.parseUnits('1', 'finney')).toString()
+        rates.WEI = WeiPerEther.toString()
 
         this.store.dispatch(actions.setExchangeRate({
           lastUpdated: new Date(),
@@ -77,7 +76,7 @@ export class ExchangeController extends AbstractController {
     if (currency != "wei" && currency != "token") {
       throw new Error(`Currency type not detected. Must provide either "wei" or "token" to indicate which type of currency you are sellling with exchange.`)
     }
-    if (!toSell || toSell == '0' || Big(toSell).lt(0)) {
+    if (!toSell || toSell == '0' || toBN(toSell).lt(0)) {
       throw new Error(`Invalid toSell amount provided. Must be greater than 0.`)
     }
 
@@ -86,7 +85,7 @@ export class ExchangeController extends AbstractController {
     // before requesting exchange, verify the user has enough wei 
     // and tokens
     const channel = this.getState().persistent.channel
-    if (Big(channel.balanceWeiUser).lt(weiToSell) || Big(channel.balanceTokenUser).lt(tokensToSell)) {
+    if (toBN(channel.balanceWeiUser).lt(weiToSell) || toBN(channel.balanceTokenUser).lt(tokensToSell)) {
       console.error(`User does not have sufficient wei or token for exchange. Wei: ${weiToSell}, tokens: ${tokensToSell}, channel: ${JSON.stringify(channel, null, 2)}`)
       return
     }

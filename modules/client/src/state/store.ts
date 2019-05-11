@@ -1,21 +1,22 @@
-import { Store } from 'redux';
-import { EMPTY_ROOT_HASH, ZERO_ADDRESS } from '../lib/constants'
+import * as eth from 'ethers'
+import { Store } from 'redux'
+
 import {
   ChannelState,
   ChannelStatus,
+  CustodialBalanceRow,
   ExchangeRateState,
   Payment,
   SyncResult,
   ThreadHistoryItem,
   ThreadState,
   UpdateRequest,
-  CustodialBalanceRow,
 } from '../types'
 
 export const CHANNEL_ZERO_STATE = {
   user: '0x0',
   recipient: '0x0',
-  contractAddress: ZERO_ADDRESS,
+  contractAddress: eth.constants.AddressZero,
   balanceWeiUser: '0',
   balanceWeiHub: '0',
   balanceTokenUser: '0',
@@ -30,7 +31,7 @@ export const CHANNEL_ZERO_STATE = {
   pendingWithdrawalTokenHub: '0',
   txCountGlobal: 0,
   txCountChain: 0,
-  threadRoot: EMPTY_ROOT_HASH,
+  threadRoot: eth.constants.HashZero,
   threadCount: 0,
   timeout: 0,
   // To maintain the invariant that the current channel is always signed, add

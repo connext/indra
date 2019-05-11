@@ -1,5 +1,6 @@
 import * as eth from 'ethers';
 import { createStore, applyMiddleware, Store } from 'redux'
+
 import {
   assert,
   getChannelState,
@@ -14,10 +15,10 @@ import {
   PartialSignedOrSuccinctThread,
   getCustodialBalance,
 } from '.'
-import { IConnextClientOptions, ConnextInternal } from '../Connext'
+import { IConnextChannelOptions, ConnextInternal } from '../Connext'
 import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
 import { IChannelManager } from '../contract/ChannelManager'
-import { Big } from '../lib/bn'
+import { toBN } from '../lib/bn'
 import { IHubAPIClient } from '../Hub'
 import { reducers } from "../state/reducers";
 import { ConnextState, PersistentState, RuntimeState } from '../state/store';
@@ -94,7 +95,7 @@ export class MockConnextInternal extends ConnextInternal {
   mockContract: MockChannelManager
   mockHub: MockHub
 
-  constructor(opts: Partial<IConnextClientOptions> = {}) {
+  constructor(opts: Partial<IConnextChannelOptions> = {}) {
     const store = opts.store || new MockStore().createStore()
 
     const oldDispatch = store.dispatch as any
@@ -506,8 +507,8 @@ export class MockHub implements IHubAPIClient {
           createdOn: new Date(),
           args: getExchangeArgs('full', {
             exchangeRate: '5',
-            tokensToSell: Big(tokensToSell),
-            weiToSell: Big(weiToSell),
+            tokensToSell: toBN(tokensToSell),
+            weiToSell: toBN(weiToSell),
             seller: "user"
           }),
           txCount: txCountGlobal + 1,
@@ -530,10 +531,10 @@ export class MockHub implements IHubAPIClient {
           reason: 'ProposePendingDeposit',
           createdOn: new Date(),
           args: getDepositArgs('full', {
-            depositTokenHub: Big(69),
-            depositTokenUser: Big(0),
-            depositWeiHub: Big(420),
-            depositWeiUser: Big(0),
+            depositTokenHub: toBN(69),
+            depositTokenUser: toBN(0),
+            depositWeiHub: toBN(420),
+            depositWeiUser: toBN(0),
             timeout: Math.floor(Date.now() / 1000) + 69
           }),
           txCount: txCountGlobal + 1,
