@@ -34,6 +34,7 @@ async function run() {
     'hub': args => hub.start(),
     'chainsaw': args => hub.startChainsaw(),
     'exit-channels': args => hub.startUnilateralExitChannels(args),
+    'exit-stale-channels': args => hub.exitStaleChannels(args[0], args[1]), // days, maxDisputes?
     'process-tx': args => hub.processTx(args[0]),
     'fix-channels': args => hub.fixBrokenChannels(),
     'burn-booty': args => hub.hubBurnBooty(+args[0]),
