@@ -1354,3 +1354,142 @@ describe('ChannelsService.shouldCollateralize', () => {
     // })
   })
 })
+
+describe('ChannelsService.calculateCollateralizationTargets', () => {
+
+  const registry = getTestRegistry()
+  const profileService = registry.get('PaymentProfilesService')
+  const channelsService = registry.get('ChannelsService')
+  const paymentsService = registry.get('PaymentsService')
+  const defaultConfig = registry.get('Config')
+  const clock =  getFakeClock()
+
+  // ** helper functions
+  const createAndAssertPaymentProfile = async (c: Partial<types.PaymentProfileConfig>) => {
+    const configOpts = {
+      minimumMaintainedCollateralToken: "0",
+      minimumMaintainedCollateralWei: "0",
+      amountToCollateralizeToken: "0",
+      amountToCollateralizeWei: "0",
+      ...c,
+    }
+    const profile = await profileService.doCreatePaymentProfile(configOpts)
+    const retrieved = await profileService.doGetPaymentProfileById(profile.id)
+    // ensure both equal
+    assert.deepEqual(retrieved, profile)
+    // ensure as expected
+    assert.containSubset(retrieved, configOpts)
+    return retrieved // PaymentProfileConfig
+  }
+
+  const addAndAssertPaymentProfile = async (configOpts: Partial<types.PaymentProfileConfig>, overrides?: PartialSignedOrSuccinctChannel) => {
+    const config = await createAndAssertPaymentProfile(configOpts)
+    const channel = await channelUpdateFactory(registry, overrides)
+    // verify all config entries
+    await profileService.doAddProfileKey(config.id, [channel.user])
+    const retrieved = await profileService.doGetPaymentProfileByUser(channel.user)
+    assert.containSubset(config, retrieved)
+    return { channel, config }
+  }
+
+  const assertCollateral = async (user: string, collateralizationAmount = Big(0), expected?: Partial<DepositArgs>) => {
+    // calculate collateral deposit args
+    const collateral = await channelsService.getCollateralDepositArgs(user, collateralizationAmount)
+    if (!expected) {
+      assert.isNull(collateral)
+      return
+    }
+    assert.containSubset(collateral, {
+      depositWeiHub: '0',
+      depositWeiUser: '0',
+      depositTokenHub: '0',
+      depositTokenUser: '0',
+      timeout: 0,
+      sigUser: null,
+      ...expected
+    })
+  }
+
+  const assertTipUser = async (recipient: string, tipAmount = toWeiString(10), numberOfTippers = 1) => {
+    for (let i = 0; i < numberOfTippers; i++) {
+      const user = mkAddress('0x' + Math.floor((Math.random() * 100000)))
+      const channel = await channelUpdateFactory(registry, {
+        balanceTokenUser: tipAmount,
+        user,
+      })
+      // simulate payment
+      await paymentsService.doPurchase(user, {}, [{
+        recipient,
+        meta: {},
+        amount: {
+          amountToken: tipAmount,
+          amountWei: '0'
+        },
+        type: 'PT_OPTIMISTIC',
+        update: {
+          args: {
+            amountToken: tipAmount,
+            amountWei: '0',
+            recipient: 'hub'
+          } as PaymentArgs,
+          reason: 'Payment',
+          txCount: channel.update.state.txCountGlobal + 1
+        }
+      }])
+      // assert payment was successful for tipper
+      const updatedChan = await channelsService.getChannel(user)
+      assert.equal(updatedChan.state.balanceTokenUser, "0")
+      // wait for redis state to expire
+      await clock.awaitTicks(65 * 1000)
+    }
+  }
+
+  beforeEach(async () => {
+    await registry.clearDatabase()
+  })
+
+  it("should respect payment profile settings if they are defined", async () => {
+    // insert config
+    const { config, channel } = await addAndAssertPaymentProfile({
+      minimumMaintainedCollateralToken: toWeiString(200), 
+      amountToCollateralizeToken: toWeiString(400),
+    })
+    await assertCollateral(channel.user, null, {
+      depositTokenHub: config.amountToCollateralizeToken
+    })
+  })
+
+  it("should not collateralize if it has sufficient tokens, profile defined", async () => {
+    // insert config
+    const { config, channel } = await addAndAssertPaymentProfile({
+      minimumMaintainedCollateralToken: toWeiString(200), 
+      amountToCollateralizeToken: toWeiString(400),
+    }, {
+      balanceTokenHub: toWeiString(200)
+    })
+    await assertCollateral(channel.user)
+  })
+
+  it("should respect config if there is no payment profile defined and deposit min", async () => {
+    // insert channel
+    const channel = await channelUpdateFactory(registry)
+    await assertCollateral(channel.user, Big(0), {
+      depositTokenHub: defaultConfig.beiMinCollateralization.toString()
+    })
+  })
+
+  it("should respect config if there is no payment profile defined and deposit max", async () => {
+    // insert channel
+    const channel = await channelUpdateFactory(registry)
+    await assertCollateral(channel.user, Big(0), {
+      depositTokenHub: defaultConfig.beiMinCollateralization.toString()
+    })
+    // perform tip to send colltateral over edge
+    await assertTipUser(channel.user, toWeiString(180))
+
+    // make sure the collateral is at max in tippers channel  
+    await assertCollateral(channel.user, toWeiBig(180), {
+      depositTokenHub: defaultConfig.beiMaxCollateralization.toString()
+    })
+  }).timeout(5000)
+})

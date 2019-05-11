@@ -70,6 +70,9 @@ import ConfigApiService from './api/ConfigApiService';
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
 import OptimisticPaymentDao, { PostgresOptimisticPaymentDao } from './dao/OptimisticPaymentDao';
 import { OptimisticPaymentsService } from './OptimisticPaymentsService';
+import PaymentProfilesApiService from './api/PaymentProfilesApiService';
+import PaymentProfilesDao, { PostgresPaymentProfilesDao } from './dao/PaymentProfilesDao';
+import PaymentProfilesService from './PaymentProfilesService';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -177,6 +180,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       PaymentsApiService,
       CoinPaymentsApiService,
       CustodialPaymentsApiService,
+      PaymentProfilesApiService,
     ],
     isSingleton: true,
   },
@@ -367,6 +371,12 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: ['DBEngine', 'Config'],
   },
 
+  PaymentProfilesDao: {
+    factory: (db: DBEngine<Client>, config: Config) =>
+      new PostgresPaymentProfilesDao(db, config),
+    dependencies: ['DBEngine', 'Config'],
+  },
+
   SignerService: {
     factory: (web3: any, contract: ChannelManager, utils: Utils, config: Config) => new SignerService(web3, contract, utils, config),
     dependencies: ['Web3', 'ChannelManagerContract', 'ConnextUtils', 'Config']
@@ -457,6 +467,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       config: Config,
       contract: ChannelManager,
       coinPaymentsDao: CoinPaymentsDao,
+      paymentProfilesService: PaymentProfilesService
     ) =>
       new ChannelsService(
         onchainTx,
@@ -474,6 +485,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
         config,
         contract,
         coinPaymentsDao,
+        paymentProfilesService,
       ),
     dependencies: [
       'OnchainTransactionService',
@@ -491,6 +503,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'ChannelManagerContract',
       'CoinPaymentsDao',
+      'PaymentProfilesService'
     ],
   },
 
@@ -574,5 +587,19 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'CustodialPaymentsDao',
       'OnchainTransactionService',
     ],
+  },
+
+  PaymentProfilesService: {
+    factory: (
+      paymentsProfileDao: PaymentProfilesDao,
+      db: DBEngine,
+    ) => new PaymentProfilesService(
+      paymentsProfileDao,
+      db,
+    ),
+    dependencies: [
+      'PaymentProfilesDao',
+      'DBEngine'
+    ]
   },
 }
