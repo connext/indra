@@ -108,7 +108,7 @@ export default class Config {
   public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
 
   public threadBeiLimit = toWeiBig(process.env.THREAD_BEI_LIMIT || 10)
-  public channelBeiDeposit = this.channelBeiLimit.add(Big(1069))
+  public channelBeiDeposit = toWeiBig(process.env.CHANNEL_BEI_DEPOSIT || 1200)
   
   public privateKeyFile: string = ''
 
