@@ -26,6 +26,8 @@ INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
 number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
 should_collateralize_url="NO_CHECK"
 bei_min_collateralization="10000000000000000000"
+channel_bei_limit=${CHANNEL_BEI_LIMIT}
+channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
 # hard-coded config (you probably won't ever need to change these)
 log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
@@ -220,6 +222,8 @@ services:
       REDIS_URL: $redis_url
       SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
+      CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
       TOKEN_ADDRESS: $token_address
     logging:
       driver: "json-file"
