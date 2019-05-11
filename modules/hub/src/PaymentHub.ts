@@ -96,6 +96,17 @@ export default class PaymentHub {
     return new Promise(res => {})
   }
 
+  public async exitStaleChannels(interval: string, maxDisputes: string) {
+    if (!interval || !Number.isInteger(parseInt(interval))) {
+      throw new Error(`Must specify a number of days for channels to be stale`)
+    }
+    const closeChannelsService = this.container.resolve<CloseChannelService>('CloseChannelService')
+    await closeChannelsService.disputeStaleChannels(
+      parseInt(interval), 
+      maxDisputes ? parseInt(maxDisputes) : null
+    )
+  }
+
   public async startUnilateralExitChannels(channels: string[]) {
     if (!channels) {
       throw new Error(`Must specify addresses of channels to be closed as args`)
