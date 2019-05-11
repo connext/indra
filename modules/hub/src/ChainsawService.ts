@@ -110,6 +110,7 @@ export default class ChainsawService {
 
     // need to check for >= here since we were previously not checking for a confirmation count
     if (lastBlock >= toBlock) {
+      LOG.info(`lastBlock: ${lastBlock} >= toBlock: ${toBlock}`)
       return
     }
 
