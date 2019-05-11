@@ -27,7 +27,6 @@ import {
 } from './testing/stateUtils'
 import { toBN, toWei } from './util'
 
-const convert = connext.utils.convert
 const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsService', () => {
@@ -456,8 +455,8 @@ describe('PaymentsService', () => {
     const latest = updates.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
     const collateralState = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', receiverChannel.state),
-      convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', receiverChannel.state),
+      connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
     // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
@@ -501,8 +500,8 @@ describe('PaymentsService', () => {
     const latest = updates.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
     const collateralState = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', receiverChannel.state),
-      convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', receiverChannel.state),
+      connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
 
     assertChannelStateEqual(collateralState, {
@@ -706,17 +705,17 @@ describe('PaymentsService', () => {
     }
 
     const threadUpdate = stateGenerator.threadPayment(
-      convert.ThreadState('bn', threadState), 
-      convert.Payment('bn', {
+      connext.convert.ThreadState('bn', threadState), 
+      connext.convert.Payment('bn', {
         amountToken: toWei(0.1).toString(),
         amountWei: 0
       })
     )
 
     const openThread = stateGenerator.openThread(
-      convert.ChannelState('bn', senderChannel.state),
+      connext.convert.ChannelState('bn', senderChannel.state),
       [],
-      convert.ThreadState('bn', threadState)
+      connext.convert.ThreadState('bn', threadState)
     )
 
     const payments: PurchasePayment[] = [{

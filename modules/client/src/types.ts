@@ -1272,3 +1272,20 @@ export function convertPaymentProfile(
   const from = getType(obj.amountToCollateralizeToken)
   return convertFields(from, to, paymentProfileNumericFields, obj)
 }
+
+export const convert: any = {
+  Args: convertArgs,
+  ChannelRow: convertChannelRow,
+  ChannelState: convertChannelState,
+  ChannelStateUpdateRow: convertChannelStateUpdateRow,
+  CustodialBalanceRow: convertCustodialBalanceRow,
+  CustodialWithdrawalRow: convertCustodialWithdrawalRow,
+  Deposit: convertDeposit,
+  Exchange: convertExchange,
+  Fields: convertFields,
+  Payment:  convertPayment,
+  PaymentProfile:  convertPaymentProfile,
+  ThreadState: convertThreadState,
+  Withdrawal: convertWithdrawal,
+  WithdrawalParameters: convertWithdrawalParameters,
+}

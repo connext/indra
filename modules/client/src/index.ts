@@ -1,3 +1,4 @@
+import { convert } from './types'
 import { getConnextClient } from './Connext'
 import { Poller } from './lib/poller/Poller'
 import { StateGenerator } from './StateGenerator'
@@ -9,6 +10,7 @@ export * from './types'
 const utils = new Utils()
 
 export {
+  convert,
   getConnextClient,
   Poller,
   StateGenerator,

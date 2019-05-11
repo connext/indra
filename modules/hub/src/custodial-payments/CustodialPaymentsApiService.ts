@@ -10,7 +10,6 @@ import { BN, safeJson, toBN } from '../util'
 import log from '../util/log'
 import { getUserFromRequest } from '../util/request'
 
-const convert = connext.utils.convert
 const LOG = log('CustodialPaymentsApiService')
 
 function getAttr<T, K extends keyof T>(obj: T, attr: K): T[K] {
@@ -52,13 +51,13 @@ class CustodialPaymentsApiServiceHandler {
   service: CustodialPaymentsService
 
   async doGetBalance(req: Request, res: Response) {
-    res.json(convert.CustodialBalanceRow("str", 
+    res.json(connext.convert.CustodialBalanceRow("str", 
       await this.dao.getCustodialBalance(getUserFromRequest(req))
     ))
   }
 
   async doCreateWithdraw(req: Request, res: Response) {
-    res.json(convert.CustodialWithdrawalRow("str",
+    res.json(connext.convert.CustodialWithdrawalRow("str",
       await this.service.createCustodialWithdrawal({
         user: getAttr.address(req.session!, 'address'),
         recipient: getAttr.address(req.body, 'recipient'),
@@ -69,11 +68,11 @@ class CustodialPaymentsApiServiceHandler {
 
   async doGetWithdrawals(req: Request, res: Response) {
     const rows = await this.dao.getCustodialWithdrawals(getUserFromRequest(req))
-    res.json(rows.map(r => convert.CustodialWithdrawalRow("str", r)))
+    res.json(rows.map(r => connext.convert.CustodialWithdrawalRow("str", r)))
   }
 
   async doGetWithdrawal(req: Request, res: Response) {
-    res.json(convert.CustodialWithdrawalRow("str", 
+    res.json(connext.convert.CustodialWithdrawalRow("str", 
       await this.dao.getCustodialWithdrawal(
         getAttr.address(req.session!, 'address'),
         getAttr(req.params, 'withdrawalId'),

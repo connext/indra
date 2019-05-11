@@ -26,7 +26,6 @@ import { SignerService } from './SignerService'
 import { prettySafeJson, safeJson, sleep } from './util'
 import log from './util/log'
 
-const convert = connext.utils.convert
 const CONFIRMATION_COUNT = 3
 const LOG = log('ChainsawService')
 const POLL_INTERVAL = 1000
@@ -241,7 +240,7 @@ export default class ChainsawService {
     }
     try {
       const state = await this.validator.generateConfirmPending(
-        convert.ChannelState('str', prev.state),
+        connext.convert.ChannelState('str', prev.state),
         { transactionHash: event.txHash }
       )
       if (prev.status == "CS_CHAINSAW_ERROR") {
@@ -380,7 +379,7 @@ export default class ChainsawService {
     // zero out channel with new state
     const channel = await this.channelsDao.getChannelOrInitialState(event.user)
     const args: EmptyChannelArgs = { transactionHash: event.txHash }
-    const newState = await this.validator.generateEmptyChannel(convert.ChannelState('str', channel.state), args)
+    const newState = await this.validator.generateEmptyChannel(connext.convert.ChannelState('str', channel.state), args)
     const signed = await this.signerService.signChannelState(newState)
     await this.channelsDao.applyUpdateByUser(event.user, 'EmptyChannel', event.user, signed, args, chainsawId)
   }

@@ -15,12 +15,8 @@ import { Client } from 'pg'
 import Config from '../Config'
 import DBEngine, { SQL } from '../DBEngine'
 import { mkSig } from '../testing/stateUtils'
-
 import { BN, prettySafeJson, toBN } from '../util'
 import { default as log } from '../util/log'
-
-const convert = connext.utils.convert
-const emptyRootHash = eth.constants.HashZero
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBN | null>
@@ -77,7 +73,7 @@ export function getChannelInitialState(
     pendingWithdrawalTokenHub: toBN(0),
     pendingWithdrawalTokenUser: toBN(0),
     threadCount: 0,
-    threadRoot: emptyRootHash,
+    threadRoot: eth.constants.HashZero,
     timeout: 0,
     txCountChain: 0,
     txCountGlobal: 0,
@@ -510,7 +506,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         channelId: Number(row.channel_id),
         chainsawId: Number(row.chainsaw_event_id),
         createdOn: row.created_on,
-        args: convert.Args('bn', row.reason, row.args),
+        args: connext.convert.Args('bn', row.reason, row.args),
         invalid: row.invalid,
         onchainTxLogicalId: row.onchain_tx_logical_id
       }

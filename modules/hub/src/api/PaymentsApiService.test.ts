@@ -15,9 +15,6 @@ import { testChannelManagerAddress, testHotWalletAddress } from '../testing/mock
 import { mkAddress, mkSig } from '../testing/stateUtils'
 import { toWei } from '../util'
 
-const convert = connext.utils.convert
-const emptyAddress = eth.constants.AddressZero
-
 describe('PaymentsApiService', () => {
   const registry = getTestRegistry({
     'Web3': {
@@ -195,7 +192,7 @@ describe('PaymentsApiService', () => {
         meta: {},
         payments: [
           {
-            recipient: emptyAddress,
+            recipient: eth.constants.AddressZero,
             amount: {
               amountWei: '0',
               amountToken: tokenVal(1),
@@ -224,7 +221,7 @@ describe('PaymentsApiService', () => {
 
     const payments = await paymentMetaDao.byPurchase(purchaseId)
     assert.containSubset(payments[0], {
-      recipient: emptyAddress,
+      recipient: eth.constants.AddressZero,
       sender: chan.user,
       amount: {
         amountWei: '0',
@@ -250,7 +247,7 @@ describe('PaymentsApiService', () => {
       meta: {},
       payments: [
         {
-          recipient: emptyAddress,
+          recipient: eth.constants.AddressZero,
           amount: {
             amountWei: '0',
             amountToken: tokenVal(1),
@@ -343,17 +340,17 @@ describe('PaymentsApiService', () => {
     }
 
     const threadUpdate = stateGenerator.threadPayment(
-      convert.ThreadState('bn', threadState), 
-      convert.Payment('bn', {
+      connext.convert.ThreadState('bn', threadState), 
+      connext.convert.Payment('bn', {
         amountToken: toWei(0.1).toString(),
         amountWei: 0
       })
     )
 
     const openThread = stateGenerator.openThread(
-      convert.ChannelState('bn', senderChannel.state),
+      connext.convert.ChannelState('bn', senderChannel.state),
       [],
-      convert.ThreadState('bn', threadState)
+      connext.convert.ThreadState('bn', threadState)
     )
 
     const res = await app.withUser(senderChannel.user).request

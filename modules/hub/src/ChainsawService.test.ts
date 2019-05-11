@@ -23,7 +23,6 @@ import { channelUpdateFactory } from './testing/factories'
 import { mkAddress, mkSig } from './testing/stateUtils'
 import { BN, toBN } from './util'
 
-const convertChannelState = connext.utils.convert.ChannelState
 const emptyRootHash = eth.constants.HashZero
 const GAS_PRICE = '1000000000'
 
@@ -175,7 +174,7 @@ describe('ChainsawService::mocked Web3', function() {
 
     it('should return poll type "PROCESS_EVENTS" if state generation is successful', async () => {
       cs.validator.generateConfirmPending = async (prev, args) => {
-        return await new connext.StateGenerator().confirmPending(convertChannelState("bn", prev))
+        return await new connext.StateGenerator().confirmPending(connext.convert.ChannelState("bn", prev))
       }
       console.log('chan2:', await chanDao.getChannelByUser(chan2.user))
       const pollType = await cs.processSingleTx(successfulTxHash)
@@ -221,7 +220,7 @@ describe('ChainsawService::mocked Web3', function() {
         },
         Validator: {
           generateConfirmPending: async (prev, args) => {
-            return await new connext.StateGenerator().confirmPending(convertChannelState("bn", prev))
+            return await new connext.StateGenerator().confirmPending(connext.convert.ChannelState("bn", prev))
           }
         },
         ChannelManager: {
@@ -313,7 +312,7 @@ describe.skip('ChainsawService', function() {
   describe('when a deposit is broadcast', () => {
     before(async () => {
       const state = await chanDao.getChannelOrInitialState(USER_ADDRESS)
-      const fingerprint = utils.createChannelStateHash(convertChannelState('str-unsigned', state.state))
+      const fingerprint = utils.createChannelStateHash(connext.convert.ChannelState('str-unsigned', state.state))
       const sigHub = await w3.eth.sign(fingerprint, HUB_ADDRESS)
       await contract.methods.userAuthorizedUpdate(
         USER_ADDRESS,
@@ -360,10 +359,10 @@ describe.skip('ChainsawService', function() {
     before(async () => {
       // start by countersigning the previous state
       const update = await chanDao.getChannelByUser(USER_ADDRESS)
-      const fingerprint = utils.createChannelStateHash(convertChannelState('str', update.state))
+      const fingerprint = utils.createChannelStateHash(connext.convert.ChannelState('str', update.state))
       const sigUser = await w3.eth.sign(fingerprint, USER_ADDRESS)
       update.state.sigUser = sigUser
-      await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, convertChannelState('str', update.state), {} as PaymentArgs)
+      await chanDao.applyUpdateByUser(USER_ADDRESS, 'Payment', USER_ADDRESS, connext.convert.ChannelState('str', update.state), {} as PaymentArgs)
 
       // now send a couple of payment updates
       let next = update.state

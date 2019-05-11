@@ -13,7 +13,6 @@ import PaymentsService from './PaymentsService'
 import { maybe } from './util'
 import log from './util/log'
 
-const convertPayment = connext.utils.convert.Payment
 const LOG = log('OptimisticPaymentsService')
 const POLL_INTERVAL = 2 * 1000
 
@@ -59,7 +58,7 @@ export class OptimisticPaymentsService {
         // if the hub has sufficient collateral, forward the
         // payment
         try {
-          const paymentBig = convertPayment("bn", p.amount)
+          const paymentBig = connext.convertPayment("bn", p.amount)
           const sufficientCollateral = (type: 'Token' | 'Wei') => {
             const hubKey = 'balance' + type + 'Hub'
             const paymentKey = 'amount' + type
@@ -90,12 +89,12 @@ export class OptimisticPaymentsService {
     const purchasePayment: PurchasePayment = {
       recipient: payment.recipient,
       type: "PT_CHANNEL",
-      amount: convertPayment("str", payment.amount),
+      amount: connext.convertPayment("str", payment.amount),
       meta: payment.meta,
       update: {
         reason: "Payment",
         args: {
-          ...convertPayment("str", payment.amount),
+          ...connext.convertPayment("str", payment.amount),
           recipient: "hub"
         },
         txCount: null,

@@ -16,7 +16,6 @@ import {
 } from './testing/stateUtils'
 import { toBN } from './util'
 
-const convert = connext.utils.convert
 const fakeSig = mkSig('0xfff')
 
 describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
@@ -88,7 +87,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     const channelSenderUpdateAfterThreadOpen = await threadsService.open(
-      convert.ThreadState(
+      connext.convert.ThreadState(
         'bn',
         getThreadState('empty', {
           sender,
@@ -107,7 +106,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
 
     // assert that balance was bonded out of channel
     assertChannelStateEqual(
-      convert.ChannelState('str', channelSenderUpdateAfterThreadOpen.state),
+      connext.convert.ChannelState('str', channelSenderUpdateAfterThreadOpen.state),
       {
         user: sender,
         sigHub: fakeSig,
@@ -122,7 +121,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     assertChannelStateEqual(
-      convert.ChannelState('str', channelReceiverFinal.state),
+      connext.convert.ChannelState('str', channelReceiverFinal.state),
       {
         sigHub: fakeSig,
         balanceTokenHub: toBN(channelReceiver.balanceTokenHub)
@@ -161,7 +160,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
 
     await threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
     await threadsService.open(
-      convert.ThreadState(
+      connext.convert.ThreadState(
         'bn',
         getThreadState('empty', {
           threadId: thread.state.threadId + 1,
@@ -236,7 +235,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     assertChannelStateEqual(
-      convert.ChannelState('str', channelSenderAfterClose.state),
+      connext.convert.ChannelState('str', channelSenderAfterClose.state),
       {
         balanceTokenUser: channelSenderBeforeClose.state.balanceTokenUser
           .plus(2)
@@ -248,7 +247,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     assertChannelStateEqual(
-      convert.ChannelState('str', channelReceiverAfterClose.state),
+      connext.convert.ChannelState('str', channelReceiverAfterClose.state),
       {
         balanceTokenHub: channelReceiverBeforeClose.state.balanceTokenHub
           .plus(2)

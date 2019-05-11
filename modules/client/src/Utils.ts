@@ -8,20 +8,7 @@ import { ConnextState } from './state/store'
 import {
   ChannelState,
   channelNumericFields,
-  convertArgs,
-  convertChannelRow,
-  convertChannelState,
-  convertChannelStateUpdateRow,
-  convertCustodialBalanceRow,
-  convertCustodialWithdrawalRow,
-  convertDeposit,
-  convertExchange,
-  convertFields,
-  convertPayment,
-  convertPaymentProfile,
-  convertThreadState,
-  convertWithdrawal,
-  convertWithdrawalParameters,
+  convert,
   ExchangeRates,
   Payment,
   SignedDepositRequestProposal,
@@ -41,22 +28,6 @@ export class Utils {
   public channelNumericFields: string[] = channelNumericFields
   public emptyRootHash: string = eth.constants.HashZero
   public getExchangeRates: (state: ConnextState) => ExchangeRates = getters.getExchangeRates
-  public convert: any = {
-    Args: convertArgs,
-    ChannelRow: convertChannelRow,
-    ChannelState: convertChannelState,
-    ChannelStateUpdateRow: convertChannelStateUpdateRow,
-    CustodialBalanceRow: convertCustodialBalanceRow,
-    CustodialWithdrawalRow: convertCustodialWithdrawalRow,
-    Deposit: convertDeposit,
-    Exchange: convertExchange,
-    Fields: convertFields,
-    Payment:  convertPayment,
-    PaymentProfile:  convertPaymentProfile,
-    ThreadState: convertThreadState,
-    Withdrawal: convertWithdrawal,
-    WithdrawalParameters: convertWithdrawalParameters,
-  }
 
   public createChannelStateHash(
     channelState: UnsignedChannelState,
@@ -203,7 +174,7 @@ export class Utils {
       threadRootHash = this.emptyRootHash
     } else {
       for (const state of threadInitialStates) {
-        temp.push(convertThreadState('str-unsigned', state))
+        temp.push(convert.ThreadState('str-unsigned', state))
       }
       const merkle: any = this.generateThreadMerkleTree(temp)
       threadRootHash = MerkleUtils.bufferToHex(merkle.getRoot())
@@ -212,7 +183,7 @@ export class Utils {
   }
 
   public hasPendingOps(stateAny: ChannelState<any>): boolean {
-    const state: any = convertChannelState('str', stateAny)
+    const state: any = convert.ChannelState('str', stateAny)
     for (const field in state) {
       if (!field.startsWith('pending')) {
         continue

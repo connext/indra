@@ -11,7 +11,6 @@ import { BN, prettySafeJson, toBN } from '../util'
 import log from '../util/log'
 import { getUserFromRequest } from '../util/request'
 
-const convert = connext.utils.convert
 const LOG = log('ChannelsApiService')
 
 export default class ChannelsApiService extends ApiService<ChannelsApiServiceHandler> {
@@ -211,7 +210,7 @@ export class ChannelsApiServiceHandler {
 
     await this.channelsService.doRequestWithdrawal(
       user,
-      convert.WithdrawalParameters("bn", req.body)
+      connext.convert.WithdrawalParameters("bn", req.body)
     )
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,

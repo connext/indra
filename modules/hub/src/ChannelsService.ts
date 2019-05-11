@@ -48,7 +48,6 @@ import {
 } from './util'
 import log from './util/log'
 
-const convert = connext.utils.convert
 const LOG = log('ChannelsService')
 
 type RedisReason = 'user-authorized' | 'hub-authorized' | 'offchain'
@@ -88,7 +87,7 @@ export default class ChannelsService {
     sigUser: string,
   ): Promise<string | null> {
     const channel = await this.channelsDao.getChannelOrInitialState(user)
-    const channelStateStr = convert.ChannelState("str", channel.state)
+    const channelStateStr = connext.convert.ChannelState("str", channel.state)
 
     // channel checks
     if (channel.status !== 'CS_OPEN') {
@@ -402,7 +401,7 @@ export default class ChannelsService {
       withdrawalTokenUser: params.withdrawalTokenUser || toBN(0),
     }
 
-    const hasNegative = this.validator.withdrawalParams(convert.WithdrawalParameters('bn', params))
+    const hasNegative = this.validator.withdrawalParams(connext.convert.WithdrawalParameters('bn', params))
     if (hasNegative)
       throw new Error(`Invalid withdrawal: ${hasNegative}`)
 
@@ -491,8 +490,8 @@ export default class ChannelsService {
     }
 
     const state = await this.generator.proposePendingWithdrawal(
-      convert.ChannelState('bn', channel.state),
-      convert.Withdrawal('bn', withdrawalArgs),
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Withdrawal('bn', withdrawalArgs),
     )
     const minWithdrawalAmount = toBN(1e13)
     const sufficientPendingArgs = (
@@ -637,7 +636,7 @@ export default class ChannelsService {
       throw new Error('Channel is not open, channel: ${channel}')
     }
 
-    let signedChannelStatePrevious = convert.ChannelState(
+    let signedChannelStatePrevious = connext.convert.ChannelState(
       'bn',
       channel.state,
     )
@@ -693,7 +692,7 @@ export default class ChannelsService {
       // user calls sync -> hub responds with hub-signed ConfirmPending update
       // user countersigns and sends back here
 
-      const signedChannelStateHub = convert.ChannelState(
+      const signedChannelStateHub = connext.convert.ChannelState(
         'str',
         hubsVersionOfUpdate.state,
       )
@@ -725,8 +724,8 @@ export default class ChannelsService {
     switch (update.reason) {
       case 'Payment':
         unsignedChannelStateCurrent = this.validator.generateChannelPayment(
-          convert.ChannelState("str", signedChannelStatePrevious),
-          convert.Payment("str", update.args as PaymentArgs)
+          connext.convert.ChannelState("str", signedChannelStatePrevious),
+          connext.convert.Payment("str", update.args as PaymentArgs)
         )
         // if the user is redeeming a payment, there will
         // be no sigUser on the update. redeemed payments
@@ -869,7 +868,7 @@ export default class ChannelsService {
         }
 
         unsignedChannelStateCurrent = this.validator.generateInvalidation(
-          convert.ChannelState('str', lastStateNoPendingOps.state),
+          connext.convert.ChannelState('str', lastStateNoPendingOps.state),
           update.args as InvalidationArgs
         )
         this.validator.assertChannelSigner({
@@ -916,7 +915,7 @@ export default class ChannelsService {
         // will store unsigned state in redis for the next sync response
         await this.doCollateralizeIfNecessary((update.args as ThreadState).receiver)
         return await this.threadsService.open(
-          convert.ThreadState('bn', update.args as ThreadState),
+          connext.convert.ThreadState('bn', update.args as ThreadState),
           update.sigUser
         )
 
@@ -985,7 +984,7 @@ export default class ChannelsService {
       if (pushChan) {
         curChan += 1
         pushChannel({
-          args: convert.Args('str', chan.reason, chan.args as any),
+          args: connext.convert.Args('str', chan.reason, chan.args as any),
           reason: chan.reason,
           sigUser: chan.state.sigUser,
           sigHub: chan.state.sigHub,
@@ -997,7 +996,7 @@ export default class ChannelsService {
         curThread += 1
         pushThread({
           ...thread,
-          state: convert.ThreadState('str', thread.state),
+          state: connext.convert.ThreadState('str', thread.state),
         })
       }
     }
@@ -1023,26 +1022,26 @@ export default class ChannelsService {
       return null
     }
 
-    return convert.ChannelRow("str", res)
+    return connext.convert.ChannelRow("str", res)
   }
 
   public async getChannelUpdateByTxCount(
     user: string,
     txCount: number,
   ): Promise<ChannelStateUpdate> {
-    return convert.ChannelStateUpdateRow("str", 
+    return connext.convert.ChannelStateUpdateRow("str", 
       await this.channelsDao.getChannelUpdateByTxCount(user, txCount),
     )
   }
 
   public async getLatestDoubleSignedState(user: string) {
     const row = await this.channelsDao.getLatestDoubleSignedState(user)
-    return row ? convert.ChannelStateUpdateRow("str", row) : null
+    return row ? connext.convert.ChannelStateUpdateRow("str", row) : null
   }
 
   public async getLastStateNoPendingOps(user: string) {
     const row = await this.channelsDao.getLastStateNoPendingOps(user)
-    return row ? convert.ChannelStateUpdateRow("str", row) : null
+    return row ? connext.convert.ChannelStateUpdateRow("str", row) : null
   }
 
   public async redisGetUnsignedState(
@@ -1106,7 +1105,7 @@ export default class ChannelsService {
     }
 
     const unsigned = await this.validator.generateChannelStateFromRequest(
-      convert.ChannelState('str', currentState),
+      connext.convert.ChannelState('str', currentState),
       {
         args: fromRedis.update.args,
         reason: fromRedis.update.reason,
@@ -1164,7 +1163,7 @@ export default class ChannelsService {
       message: `Transaction failed: ${prettySafeJson(txn)}`,
     }
     const unsignedState = this.validator.generateInvalidation(
-      convert.ChannelState('str', lastValidState.state),
+      connext.convert.ChannelState('str', lastValidState.state),
       invalidationArgs
     )
     const sigHub = await this.signerService.getSigForChannelState(unsignedState)

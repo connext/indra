@@ -53,7 +53,6 @@ import {
 import ThreadsService from './ThreadsService'
 import { isBN, toBN, tokenToWei, toWei, weiToToken } from './util'
 
-const convert = connext.utils.convert
 const contract = mkAddress('0xCCC')
 
 function fieldsToWei<T>(obj: T): T {
@@ -124,8 +123,8 @@ describe('ChannelsService', () => {
     )
 
     const generatedState = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', getChannelState('initial', { user })),
-      convert.Deposit('bn', (updateRequest.update as UpdateRequest)
+      connext.convert.ChannelState('bn', getChannelState('initial', { user })),
+      connext.convert.Deposit('bn', (updateRequest.update as UpdateRequest)
         .args as DepositArgs),
     )
 
@@ -170,8 +169,8 @@ describe('ChannelsService', () => {
     )
 
     const generatedState = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', chan.state),
-      convert.Deposit('bn', (latestState.update as UpdateRequest)
+      connext.convert.ChannelState('bn', chan.state),
+      connext.convert.Deposit('bn', (latestState.update as UpdateRequest)
         .args as DepositArgs),
     )
     assert.equal((generatedState as ChannelState).timeout >= timeout, true)
@@ -208,8 +207,8 @@ describe('ChannelsService', () => {
     )
 
     const generatedState = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', chan.state),
-      convert.Deposit('bn', (latestState.update as UpdateRequest)
+      connext.convert.ChannelState('bn', chan.state),
+      connext.convert.Deposit('bn', (latestState.update as UpdateRequest)
         .args as DepositArgs),
     )
     assert.equal(generatedState.timeout >= timeout, true)
@@ -245,8 +244,8 @@ describe('ChannelsService', () => {
       .sub(toWei(1))
 
     const generatedState = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', chan.state),
-      convert.Deposit('bn', (latestState.update as UpdateRequest)
+      connext.convert.ChannelState('bn', chan.state),
+      connext.convert.Deposit('bn', (latestState.update as UpdateRequest)
         .args as DepositArgs),
     )
 
@@ -437,8 +436,8 @@ describe('ChannelsService', () => {
     const latestUpdate = updates.pop()
 
     const state = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', channel.state),
-      convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
     assertChannelStateEqual(state, {
       pendingDepositTokenHub: toWei(10).toString()
@@ -476,8 +475,8 @@ describe('ChannelsService', () => {
     const latestUpdate = updates.pop()
 
     const state = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', channel.state),
-      convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
     // target should be:
@@ -523,8 +522,8 @@ describe('ChannelsService', () => {
     const latestUpdate = updates.pop()
 
     const state = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', channel.state),
-      convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
     assertChannelStateEqual(state, {
@@ -540,8 +539,8 @@ describe('ChannelsService', () => {
     const latestUpdate = updates.pop()
 
     const state = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', channel.state),
-      convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
     assertChannelStateEqual(state, {
@@ -557,8 +556,8 @@ describe('ChannelsService', () => {
     const latestUpdate = updates.pop()
 
     const state = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', channel.state),
-      convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Deposit('bn', (latestUpdate.update as UpdateRequest).args as DepositArgs)
     )
 
     assertChannelStateEqual(state, {
@@ -572,8 +571,8 @@ describe('ChannelsService', () => {
 
     const depositArgs = await service.doCollateralizeIfNecessary(user)
     const unsigned = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', getChannelState('initial', { user })),
-      convert.Deposit('bn', depositArgs),
+      connext.convert.ChannelState('bn', getChannelState('initial', { user })),
+      connext.convert.Deposit('bn', depositArgs),
     )
 
     await service.doUpdates(user, [
@@ -592,8 +591,8 @@ describe('ChannelsService', () => {
     )
     const proposePending = syncUpdates[syncUpdates.length - 1].update as UpdateRequest
     const generated = stateGenerator.proposePendingDeposit(
-      convert.ChannelState('bn', getChannelState('initial', { user })),
-      convert.Deposit('bn', proposePending.args as DepositArgs),
+      connext.convert.ChannelState('bn', getChannelState('initial', { user })),
+      connext.convert.Deposit('bn', proposePending.args as DepositArgs),
     )
 
     assert.equal(proposePending.reason, 'ProposePendingDeposit')
@@ -626,8 +625,8 @@ describe('ChannelsService', () => {
       toWei(10),
     )
     const unsigned = stateGenerator.exchange(
-      convert.ChannelState('bn', channel.state),
-      convert.Exchange('bn', exchangeArgs),
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Exchange('bn', exchangeArgs),
     )
 
     await service.doUpdates(channel.user, [
@@ -650,8 +649,8 @@ describe('ChannelsService', () => {
       .update as UpdateRequest
 
     const generated = stateGenerator.exchange(
-      convert.ChannelState('bn', channel.state),
-      convert.Exchange('bn', exchangeArgs),
+      connext.convert.ChannelState('bn', channel.state),
+      connext.convert.Exchange('bn', exchangeArgs),
     )
 
     assert.equal(exchangeUpdate.reason, 'Exchange')
@@ -800,7 +799,7 @@ describe('ChannelsService', () => {
 
     // simulate collateralization
     await service.doUpdates(chan.user, [{
-      args: convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
+      args: connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
       reason: 'ProposePendingDeposit',
       txCount: chan.state.txCountGlobal + 1,
       sigUser: mkSig()
@@ -884,7 +883,7 @@ describe('ChannelsService', () => {
 
     // simulate collateralization
     await service.doUpdates(chan.user, [{
-      args: convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
+      args: connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
       reason: 'ProposePendingDeposit',
       txCount: chan.state.txCountGlobal + 1,
       sigUser: mkSig()
@@ -944,13 +943,13 @@ describe('ChannelsService', () => {
         delete args.timeout
 
         const expected = makeBigNumsBigger(
-          convert.Withdrawal('bn', {
+          connext.convert.Withdrawal('bn', {
             ...args,
             exchangeRate: '123.45',
             recipient: mkAddress('0x666'),
           }),
         )
-        assert.containSubset(actualArgs, convert.Withdrawal('str', expected))
+        assert.containSubset(actualArgs, connext.convert.Withdrawal('str', expected))
       }).timeout(5000)
     })
   })
@@ -1056,7 +1055,7 @@ describe('ChannelsService', () => {
 
     let chan = await channelsDao.getChannelByUser(channel.user)
     assertChannelStateEqual(
-      convert.ChannelState('str', chan.state),
+      connext.convert.ChannelState('str', chan.state),
       {
         pendingDepositToken: [0, 0],
         pendingDepositWei: [0, 0],
@@ -1087,7 +1086,7 @@ describe('ChannelsService', () => {
 
     let chan = await channelsDao.getChannelByUser(channel.user)
     assertChannelStateEqual(
-      convert.ChannelState('str', chan.state),
+      connext.convert.ChannelState('str', chan.state),
       {
         pendingDepositToken: [0, 0],
         pendingDepositWei: [0, 0],
@@ -1313,7 +1312,7 @@ describe('ChannelsService.shouldCollateralize', () => {
   
       await service.doUpdates(channel.user, [{
         reason: 'ProposePendingDeposit',
-        args: convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
+        args: connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
         txCount: channel.state.txCountGlobal + 1,
         sigUser: mkSig('0xc')
       }])
@@ -1330,7 +1329,7 @@ describe('ChannelsService.shouldCollateralize', () => {
       latest = sync2.pop()
       assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
       const generated = stateGenerator.invalidation(
-        convert.ChannelState('bn', channel.state), 
+        connext.convert.ChannelState('bn', channel.state), 
         {
           lastInvalidTxCount: channel.state.txCountGlobal + 1,
           previousValidTxCount: channel.state.txCountGlobal,

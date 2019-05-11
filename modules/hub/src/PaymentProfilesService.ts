@@ -6,7 +6,6 @@ import DBEngine from './DBEngine'
 import { prettySafeJson, toBN } from './util'
 import log from './util/log'
 
-const convert = connext.utils.convert
 const LOG = log('PaymentProfilesService')
 
 export default class PaymentProfilesService {
@@ -50,7 +49,7 @@ export default class PaymentProfilesService {
       return null
     }
 
-    return convert.PaymentProfile("str", profile)
+    return connext.convert.PaymentProfile("str", profile)
   }
 
   // NOTE: will fail if channel does not exist
@@ -71,7 +70,7 @@ export default class PaymentProfilesService {
       return null
     }
 
-    return convert.PaymentProfile("str", profile)
+    return connext.convert.PaymentProfile("str", profile)
   }
 
   public async doGetPaymentProfileByUser(user: string): Promise<PaymentProfileConfig> {
@@ -79,6 +78,6 @@ export default class PaymentProfilesService {
     if (!profile) {
       return null
     }
-    return convert.PaymentProfile("str", profile)
+    return connext.convert.PaymentProfile("str", profile)
   }
 }

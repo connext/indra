@@ -28,7 +28,6 @@ type MaybeResult<T> = (
   { error: false; res: T }
 )
 
-const convert = connext.utils.convert
 const emptyAddress = eth.constants.AddressZero
 const LOG = log('PaymentsService')
 
@@ -119,7 +118,7 @@ export default class PaymentsService {
         const row = await this.threadsService.update(
           user,
           payment.recipient,
-          convert.ThreadState('bn', payment.update.state),
+          connext.convert.ThreadState('bn', payment.update.state),
         )
 
         afterPayment = paymentId => afterPayments.push(async () => {
@@ -250,8 +249,8 @@ export default class PaymentsService {
     }
     // if hub can afford the payment, sign and forward payment
     // otherwise, collateralize the channel
-    const prev = convert.ChannelState('bn', channel.state)
-    const amt = convert.Payment('bn', payment.amount)
+    const prev = connext.convert.ChannelState('bn', channel.state)
+    const amt = connext.convert.Payment('bn', payment.amount)
 
     // always check for collateralization regardless of payment status
     const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
@@ -276,7 +275,7 @@ export default class PaymentsService {
     } as PaymentArgs
 
     const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
-      convert.ChannelState('str', channel.state),
+      connext.convert.ChannelState('str', channel.state),
       paymentArgs
     )
     const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
@@ -354,7 +353,7 @@ export default class PaymentsService {
     const argsHubToRecipient = {...paymentArgs, recipient: 'user'} as PaymentArgs
 
     const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
-      convert.ChannelState('str', recipientChannel.state),
+      connext.convert.ChannelState('str', recipientChannel.state),
       argsHubToRecipient
     )
     const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)

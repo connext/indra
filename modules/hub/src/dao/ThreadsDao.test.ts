@@ -1,7 +1,5 @@
 import * as connext from 'connext'
 
-import { PostgresThreadsDao } from './ThreadsDao'
-
 import { getTestRegistry } from '../testing'
 import { channelAndThreadFactory } from '../testing/factories'
 import { testChannelManagerAddress } from '../testing/mocks'
@@ -12,8 +10,7 @@ import {
   mkAddress,
 } from '../testing/stateUtils'
 import { toBN } from '../util'
-
-const convert = connext.utils.convert
+import { PostgresThreadsDao } from './ThreadsDao'
 
 describe('ThreadsDao', () => {
   const registry = getTestRegistry()
@@ -31,7 +28,7 @@ describe('ThreadsDao', () => {
     const chans = await channelAndThreadFactory(registry)
 
     let thread = await threadsDao.getActiveThread(chans.user.user, chans.performer.user)
-    assertThreadStateEqual(convert.ThreadState('str', thread.state), {
+    assertThreadStateEqual(connext.convert.ThreadState('str', thread.state), {
       balanceWeiSender: chans.thread.balanceWeiSender,
       balanceTokenSender: chans.thread.balanceTokenSender,
     })
@@ -54,7 +51,7 @@ describe('ThreadsDao', () => {
     await threadsDao.applyThreadUpdate(threadStateUpdate)
 
     thread = await threadsDao.getActiveThread(chans.user.user, chans.performer.user)
-    assertThreadStateEqual(convert.ThreadState('str', thread.state), threadStateUpdate)
+    assertThreadStateEqual(connext.convert.ThreadState('str', thread.state), threadStateUpdate)
   })
 
   it('getLastThreadUpdateId should return 0 if no thread exists', async () => {

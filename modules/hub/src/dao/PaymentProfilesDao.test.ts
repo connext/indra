@@ -8,8 +8,6 @@ import { channelUpdateFactory } from '../testing/factories'
 import { mkAddress } from '../testing/stateUtils'
 import { isBN, toWei } from '../util'
 
-const convert = connext.utils.convert
-
 describe('PaymentProfilesDao', () => {
   const registry = getTestRegistry()
   const dao = registry.get('PaymentProfilesDao')
@@ -30,7 +28,7 @@ describe('PaymentProfilesDao', () => {
       if (isBN(value))
         expected[name] = value.toString()
     })
-    assert.containSubset(convert.PaymentProfile("str", c), expected)
+    assert.containSubset(connext.convert.PaymentProfile("str", c), expected)
     return c // PaymentProfileConfigBN
   }
 
@@ -53,10 +51,10 @@ describe('PaymentProfilesDao', () => {
     // verify all config entries
     channels.forEach(async chan => {
       await dao.addPaymentProfileByUser(config.id, chan.user)
-      const configByUser = convert.PaymentProfile("str",
+      const configByUser = connext.convert.PaymentProfile("str",
         await dao.getPaymentProfileConfigByUser(chan.user)
       )
-      const configById = convert.PaymentProfile("str", 
+      const configById = connext.convert.PaymentProfile("str", 
         await dao.getPaymentProfileConfigById(config.id)
       )
       // assert configs are the same
@@ -83,7 +81,7 @@ describe('PaymentProfilesDao', () => {
   })
 
   it('should add a payment profile to the user', async () => {
-    const config = convert.PaymentProfile(
+    const config = connext.convert.PaymentProfile(
       "str",
       await createAndAssertPaymentProfile({
         minimumMaintainedCollateralToken: toWei(2).toString(), 
@@ -94,7 +92,7 @@ describe('PaymentProfilesDao', () => {
   })
 
   it('should add a payment profile to multiple users', async () => {
-    const config = convert.PaymentProfile(
+    const config = connext.convert.PaymentProfile(
       "str", await createAndAssertPaymentProfile({
         minimumMaintainedCollateralToken: toWei(2).toString(), 
         amountToCollateralizeToken: toWei(1).toString(),

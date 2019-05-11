@@ -11,8 +11,6 @@ import { getMockWeb3, getTestConfig, setFakeClosingTime } from './testing/mocks'
 import { assertChannelStateEqual, mkAddress } from './testing/stateUtils'
 import { toWei } from './util'
 
-const convert = connext.utils.convert
-
 async function rewindUpdates(db: DBEngine, days: number, user: string) {
   await db.queryOne(`
     UPDATE _cm_channel_updates
@@ -63,7 +61,7 @@ describe('CloseChannelService', () => {
     await closeChannelService.pollOnce()
 
     dbChannel = await channelsDao.getChannelByUser(channel.user)
-    const chanString = convert.ChannelRow("str", dbChannel)
+    const chanString = connext.convert.ChannelRow("str", dbChannel)
     assertChannelStateEqual(chanString.state, {
       balanceWei: [0,0],
       balanceToken: [0,0]

@@ -19,8 +19,6 @@ import ExchangeRateDao from '../dao/ExchangeRateDao'
 import { default as ThreadsDao } from '../dao/ThreadsDao'
 import { toWei } from '../util'
 
-const convert = connext.utils.convert
-
 export function tokenVal(x: number | string): string {
   return toWei(x).toString()
 }
@@ -79,16 +77,16 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
 
   const sg = new connext.StateGenerator()
   const userUpdate = await sg.openThread(
-    convert.ChannelState('bn', user.state),
+    connext.convert.ChannelState('bn', user.state),
     [],
-    convert.ThreadState('bn', thread)
+    connext.convert.ThreadState('bn', thread)
   )
   user = await channelUpdateFactory(registry, userUpdate)
 
   const perfUpdate = await sg.openThread(
-    convert.ChannelState('bn', perf.state),
+    connext.convert.ChannelState('bn', perf.state),
     [],
-    convert.ThreadState('bn', thread)
+    connext.convert.ThreadState('bn', thread)
   )
   perf = await channelUpdateFactory(registry, perfUpdate)
 
