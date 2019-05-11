@@ -55,18 +55,27 @@ export class CloseChannelService {
     }
   }
 
-  private async disputeStaleChannels() {
-    const staleChannelDays = this.config.staleChannelDays
-    if (!staleChannelDays) {
+  private async _disputeStaleChannels(
+    staleChannelDays?: number, 
+    additionalMessage: string = "", 
+    maintainMin: boolean = true,
+    maxDisputes?: number,
+  ) {
+    if (!staleChannelDays && !this.config.staleChannelDays) {
       return
     }
 
-    const staleChannels = await this.channelsDao.getStaleChannels()
+    if (!staleChannelDays) {
+      staleChannelDays = this.config.staleChannelDays
+    }
+
+    const staleChannels = await this.channelsDao.getStaleChannels(staleChannelDays)
     if (staleChannels.length === 0) {
       return
     }
 
     // dispute stale channels
+    let initiatedDisputes = 0
     for (const channel of staleChannels) {
       const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
       LOG.info(`Found stale channel: ${safeJson(channel)}, latestUpdate: ${safeJson(latestUpdate)}`)
@@ -79,7 +88,10 @@ export class CloseChannelService {
         continue
       }
       // do not dispute if the value is below the min bei
-      if (channel.state.balanceTokenHub.lt(this.config.beiMinCollateralization)) {
+      if (
+        maintainMin && 
+        channel.state.balanceTokenHub.lt(this.config.beiMinCollateralization)
+      ) {
         continue
       }
 
@@ -89,10 +101,36 @@ export class CloseChannelService {
       }
 
       // TODO: should take into account thread dispute costs here
-
+      
+      // increase dispute count
+      initiatedDisputes += 1
       // proceed with channel dispute
-      await this.db.withTransaction(() => this.startUnilateralExit(channel.user, "Automatically decollateralizing stale channel"))
+      this.startUnilateralExit(
+        channel.user, "Decollateralizing stale channel" + additionalMessage
+      )
+
+      // check against max
+      if (maxDisputes && initiatedDisputes >= maxDisputes) {
+        break
+      }
     }
+
+    LOG.info(`Attempted to initiate ${initiatedDisputes} disputes`)
+  }
+
+  public async autoDisputeStaleChannels(staleChannelDays?: number) {
+    await this.db.withTransaction(() => this._disputeStaleChannels(staleChannelDays, ", autodispute"))
+  }
+
+  public async disputeStaleChannels(staleChannelDays: number, maxDisputes: number = 20) {
+    await this.db.withTransaction(() => 
+      this._disputeStaleChannels(
+        staleChannelDays, 
+        ", from command line", 
+        false,
+        maxDisputes
+      )
+    )
   }
 
   private async emptyDisputedChannels() {
