@@ -31,6 +31,7 @@ import ThreadsDao from './dao/ThreadsDao'
 import DBEngine from './DBEngine'
 import { OnchainTransactionRow } from './domain/OnchainTransaction'
 import { OnchainTransactionService } from './OnchainTransactionService'
+import PaymentProfilesService from './PaymentProfilesService'
 import { redisCache, RedisClient } from './RedisClient'
 import { SignerService } from './SignerService'
 import ThreadsService from './ThreadsService'
@@ -75,6 +76,7 @@ export default class ChannelsService {
     private config: Config,
     private contract: ChannelManager,
     private coinPaymentsDao: CoinPaymentsDao,
+    private paymentProfilesService: PaymentProfilesService,
   ) {
     this.utils = new connext.Utils()
   }
@@ -304,6 +306,31 @@ export default class ChannelsService {
       }
     }
 
+    const logAndReturn = (amountToCollateralize: BN) => {
+      LOG.info(`Recollateralizing ${user} with ${eth.utils.formatEther(amountToCollateralize)} BOOTY`)
+
+      const depositArgs: DepositArgs = {
+        depositWeiHub: '0',
+        depositWeiUser: '0',
+        depositTokenHub: amountToCollateralize.toString(),
+        depositTokenUser: '0',
+        timeout: 0,
+        sigUser: null,
+      }
+      return depositArgs
+    }
+
+    // if a payment profile exists, use those amounts by default
+    const profile = await this.paymentProfilesService.doGetPaymentProfileByUser(channel.user)
+    if (profile) {
+      const hasInsufficient = channel.state.balanceTokenHub.lt(
+        toBN(profile.minimumMaintainedCollateralToken)
+      )
+      return hasInsufficient 
+        ? logAndReturn(toBN(profile.amountToCollateralizeToken)) 
+        : null
+    }
+
     const calculatedTargets = await this.calculateCollateralizationTargets(channel.state)
     let targets = { ...calculatedTargets }
     // if the provided target is greater than the min target,
@@ -353,17 +380,7 @@ export default class ChannelsService {
       return null
     }
 
-    LOG.info(`Recollateralizing ${user} with ${eth.utils.formatEther(amountToCollateralize)} BOOTY`)
-
-    const depositArgs: DepositArgs = {
-      depositWeiHub: '0',
-      depositWeiUser: '0',
-      depositTokenHub: amountToCollateralize.toString(),
-      depositTokenUser: '0',
-      timeout: 0,
-      sigUser: null,
-    }
-    return depositArgs
+    return logAndReturn(amountToCollateralize)
   }
 
   public async doRequestWithdrawal(

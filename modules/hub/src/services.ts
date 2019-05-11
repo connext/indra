@@ -10,6 +10,7 @@ import ConfigApiService from './api/ConfigApiService'
 import ExchangeRateApiService from './api/ExchangeRateApiService'
 import FeatureFlagsApiService from './api/FeatureFlagsApiService'
 import { default as GasEstimateApiService } from './api/GasEstimateApiService'
+import PaymentProfilesApiService from './api/PaymentProfilesApiService'
 import PaymentsApiService from './api/PaymentsApiService'
 import ThreadsApiService from './api/ThreadsApiService'
 import { ApiServer } from './ApiServer'
@@ -39,6 +40,7 @@ import GlobalSettingsDao, { PostgresGlobalSettingsDao } from './dao/GlobalSettin
 import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao'
 import OptimisticPaymentDao, { PostgresOptimisticPaymentDao } from './dao/OptimisticPaymentDao'
 import { PaymentMetaDao, PostgresPaymentMetaDao } from './dao/PaymentMetaDao'
+import PaymentProfilesDao, { PostgresPaymentProfilesDao } from './dao/PaymentProfilesDao'
 import PaymentsDao, { PostgresPaymentsDao } from './dao/PaymentsDao'
 import ThreadsDao, { PostgresThreadsDao } from './dao/ThreadsDao'
 import { PostgresWithdrawalsDao } from './dao/WithdrawalsDao'
@@ -49,6 +51,7 @@ import { DefaultAuthHandler } from './middleware/AuthHandler'
 import { NgrokService } from './NgrokService'
 import { OnchainTransactionService } from './OnchainTransactionService'
 import { OptimisticPaymentsService } from './OptimisticPaymentsService'
+import PaymentProfilesService from './PaymentProfilesService'
 import PaymentsService from './PaymentsService'
 import { getRedisClient, RedisClient } from './RedisClient'
 import { SignerService } from './SignerService'
@@ -160,6 +163,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       PaymentsApiService,
       CoinPaymentsApiService,
       CustodialPaymentsApiService,
+      PaymentProfilesApiService,
     ],
     isSingleton: true,
   },
@@ -350,6 +354,12 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: ['DBEngine', 'Config'],
   },
 
+  PaymentProfilesDao: {
+    factory: (db: DBEngine<Client>, config: Config) =>
+      new PostgresPaymentProfilesDao(db, config),
+    dependencies: ['DBEngine', 'Config'],
+  },
+
   SignerService: {
     factory: (web3: any, contract: ChannelManager, utils: connext.Utils, config: Config) => new SignerService(web3, contract, utils, config),
     dependencies: ['Web3', 'ChannelManagerContract', 'ConnextUtils', 'Config']
@@ -440,6 +450,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       config: Config,
       contract: ChannelManager,
       coinPaymentsDao: CoinPaymentsDao,
+      paymentProfilesService: PaymentProfilesService
     ) =>
       new ChannelsService(
         onchainTx,
@@ -457,6 +468,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
         config,
         contract,
         coinPaymentsDao,
+        paymentProfilesService,
       ),
     dependencies: [
       'OnchainTransactionService',
@@ -474,6 +486,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'ChannelManagerContract',
       'CoinPaymentsDao',
+      'PaymentProfilesService'
     ],
   },
 
@@ -557,5 +570,19 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'CustodialPaymentsDao',
       'OnchainTransactionService',
     ],
+  },
+
+  PaymentProfilesService: {
+    factory: (
+      paymentsProfileDao: PaymentProfilesDao,
+      db: DBEngine,
+    ) => new PaymentProfilesService(
+      paymentsProfileDao,
+      db,
+    ),
+    dependencies: [
+      'PaymentProfilesDao',
+      'DBEngine'
+    ]
   },
 }

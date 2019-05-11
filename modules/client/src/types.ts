@@ -787,8 +787,16 @@ export type SuccinctWithdrawalParametersBN = SuccinctWithdrawalParameters<BN>
  ******* PAYMENT PROFILES ********
  *********************************/
 
-// TODO: correctly define type
-export type PaymentProfileConfig = any
+export type PaymentProfileConfig<T=string> = {
+  id?: number, // defined when stored by hub
+  minimumMaintainedCollateralToken: T, 
+  amountToCollateralizeToken: T,
+
+  // TODO: not yet supported
+  minimumMaintainedCollateralWei?: T, 
+  amountToCollateralizeWei?: T,
+}
+export type PaymentProfileConfigBN = PaymentProfileConfig<BN>
 
 /*********************************
  ****** PAYMENT & PURCHASE *******
@@ -1246,4 +1254,21 @@ export function convertArgs<
   To extends NumericTypeName,
   >(to: To, reason: Reason, args: UpdateArgTypes[Reason]): UpdateArgTypes<To>[Reason] {
   return argConvertFunctions[reason](to, args)
+}
+
+// TODO: fields should not be optional
+export const paymentProfileNumericFields = [
+  "minimumMaintainedCollateralWei?",
+  "minimumMaintainedCollateralToken",
+  "amountToCollateralizeWei?",
+  "amountToCollateralizeToken",
+]
+
+export function convertPaymentProfile(to: "bn", obj: PaymentProfileConfig<any>): PaymentProfileConfigBN
+export function convertPaymentProfile(to: "str", obj: PaymentProfileConfig<any>): PaymentProfileConfig
+export function convertPaymentProfile(
+  to: "bn" | "str", // state objs always have sigs in rows
+  obj: PaymentProfileConfig<any>): PaymentProfileConfig | PaymentProfileConfigBN {
+  const from = getType(obj.amountToCollateralizeToken)
+  return convertFields(from, to, paymentProfileNumericFields, obj)
 }
