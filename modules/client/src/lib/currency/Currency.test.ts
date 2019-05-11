@@ -4,9 +4,9 @@ import CurrencyConvertable from './CurrencyConvertable';
 import { CurrencyType } from '../../types'
 import { parameterizedTests } from '../../testing'
 
-describe('Currency', () => {
+describe.only('Currency', () => {
   it('should return formatted currency', () => {
-    const c = new Currency("USD", 105.70)
+    const c = new Currency("DAI", 105.70)
 
     assert.equal(c.format({
       decimals: 2,
@@ -24,9 +24,9 @@ describe('Currency', () => {
   })
 
   it('Currency.equals should determine if ICurrencies are equal', () => {
-    const convertable = new CurrencyConvertable("BOOTY", 69, (() => {}) as any)
-    const currency = Currency.BOOTY(69)
-    const iCurrency = {type: "BOOTY", amount: '69'}
+    const convertable = new CurrencyConvertable("DAI", 69, (() => {}) as any)
+    const currency = Currency.DAI(69)
+    const iCurrency = {type: "DAI", amount: '69'}
 
     expect(
       Currency.equals(convertable, currency) &&
@@ -36,9 +36,9 @@ describe('Currency', () => {
   })
 
   it('Currency.equals should determine if ICurrencies are not equal', () => {
-    const convertable = new CurrencyConvertable("BOOTY", 69, (() => {}) as any)
-    const currency = Currency.BOOTY(420)
-    const iCurrency = {type: "BOOTY", amount: '0'}
+    const convertable = new CurrencyConvertable("DAI", 69, (() => {}) as any)
+    const currency = Currency.DAI(420)
+    const iCurrency = {type: "DAI", amount: '0'}
 
     expect(
       Currency.equals(convertable, currency) ||
@@ -49,7 +49,7 @@ describe('Currency', () => {
 
   it('Currency.floor should take the floor of a currency', () => {
     expect(
-      Currency.BOOTY(69.69)
+      Currency.DAI(69.69)
         .floor()
         .amount
     ).eq('69')
@@ -65,7 +65,7 @@ describe('Currency', () => {
       { name: 'decimals 3', input: 1.234, opts: undefined, expected: '$1.23' },
       { name: 'intcomma', input: 1234567.89, opts: undefined, expected: '$1,234,567.89' },
     ], t => {
-      assert.equal(Currency.USD(t.input).format(t.opts), t.expected)
+      assert.equal(Currency.DAI(t.input).format(t.opts), t.expected)
     })
   })
 })

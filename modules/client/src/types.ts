@@ -7,7 +7,6 @@ export {
   TransactionRequest,
   TransactionResponse,
 } from 'ethers/providers'
-import { BigNumber as BN } from 'ethers/utils'
 export {
   BigNumber as BN,
   Interface,
@@ -17,6 +16,7 @@ export {
 } from 'ethers/utils'
 
 import { ChannelManager as ChannelManagerLib } from './contract/ChannelManager';
+import { BN, isBN, toBN } from './lib/bn'
 import { default as CurrencyLib } from './lib/currency/Currency'
 import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable'
 import { isArray, isNullOrUndefined } from 'util';
@@ -80,9 +80,6 @@ export type ConnextProvider = any
  ****** HELPER FUNCTIONS *********
  *********************************/
 
-// alias functions
-export const isBN = BN.isBigNumber
-
 export type NumericTypes = {
   'str': string
   'bn': BN
@@ -102,12 +99,12 @@ function getType(input: any): NumericTypeName {
 }
 
 const castFunctions: any = {
-  'str-bn': (x: string) => new BN(x),
+  'str-bn': (x: string) => toBN(x),
   'bn-str': (x: BN) => x.toString(),
 
   // Used for testing
   'number-str': (x: number) => '' + x,
-  'number-bn': (x: number) => new BN(x),
+  'number-bn': (x: number) => toBN(x),
 }
 
 export function convertFields(fromType: NumericTypeName, toType: NumericTypeName, fields: string[], input: any) {

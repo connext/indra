@@ -3,10 +3,8 @@ import CurrencyConvertable from './CurrencyConvertable'
 import Currency from './Currency';
 import { default as generateExchangeRates } from '../../testing/generateExchangeRates'
 import { getExchangeRates } from '../../state/getters'
-import { isBN } from '../../types'
+import { BN, isBN, toBN } from '../bn'
 import { MockStore } from '../../testing/mocks';
-import BigNumber from 'bignumber.js';
-import BN = require('bn.js')
 
 describe('CurrencyConvertable', () => {
 
@@ -40,6 +38,7 @@ describe('CurrencyConvertable', () => {
       '64 digits mostly 0s with a 5 at end',
       'another normal number',
       'purely decimal number',
+      'integer w many trailing zeros',
       'number with a ton of leading 0s',
     ]
     const bigStrings = [
@@ -53,15 +52,15 @@ describe('CurrencyConvertable', () => {
       '69696969696969696969696942069694295423952969696969696996962520700000000000000000000000000000000000000000000000000000',
       '0.00000000000000000000000000000000000000000000000000000696969696969696969696969420696942954239529696969696969969625207',
     ]
-    const bigNums = bigStrings.map(bigString => new BigNumber(bigString))
-    const bnTomfoolery = bigStrings.map(bigString => new BN(bigString))
 
-    type TestCase = BigNumber | string | any
+    const listOfBNs = bigStrings.map(bigString => toBN(bigString))
+
+    type TestCase =  string | any
 
 
     function testIt(tc: TestCase) {
       const eth = new CurrencyConvertable("ETH", tc, () => getExchangeRates(store.getState()))
-      const eth2 = eth//.toBEI().toETH().toETH().toBEI().toWEI().toFIN().toBOOTY().toFIN().toUSD().toETH().toBEI().toWEI().toBOOTY().toETH().toFIN().toUSD().toWEI().toETH().toBOOTY().toETH().toFIN().toBEI().toBOOTY().toBEI().toETH()
+      const eth2 = eth.toETH().toUSD().toETH().toWEI().toUSD().toWEI().toETH()
 
       expect(Currency.equals(eth2, eth)).equals(true)
 
@@ -70,19 +69,12 @@ describe('CurrencyConvertable', () => {
       expect(eth.amount).equals(eth2.amount)
       expect(eth.amountBN.eq(eth2.amountBN)).equals(true)
 
-      expect(eth.amountBigNumber.minus(eth2.amountBigNumber).eq(0))
-      expect(eth.amountBigNumber.eq(eth2.amountBigNumber)).equals(true)
+      expect(eth.amountBN.sub(eth2.amountBN).eq(0))
+      expect(eth.amountBN.eq(eth2.amountBN)).equals(true)
 
       if (isBN(tc)) {
         expect(tc.eq(eth2.amountBN)).equals(true)
       }
-
-      if (tc instanceof BigNumber) {
-        expect(tc.eq(eth2.amountBigNumber)).equals(true)
-        expect(tc.eq(eth2.amount)).equals(true)
-      }
-
-      BigNumber.config({ DECIMAL_PLACES: 200 })
 
       if (typeof tc === 'string') {
         expect(eth2.amount).equals(tc)
@@ -93,8 +85,7 @@ describe('CurrencyConvertable', () => {
       const numberType = testCases[i]
 
       it('should not lose precision with string amounts: ' + numberType, () => testIt(bigStrings[i]))
-      it('should not lose precision with BN amounts: ' + numberType, () => testIt(bnTomfoolery[i]))
-      it('should not lose precision with BigNumber amounts: ' + numberType, () => testIt(bigNums[i]))
+      it('should not lose precision with BN amounts: ' + numberType, () => testIt(listOfBNs[i]))
     }
   })
 })

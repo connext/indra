@@ -1,6 +1,6 @@
 import * as eth from 'ethers'
 
-import { BN, maxBN, toBN } from './lib/bn'
+import { BN, isBN, maxBN, toBN } from './lib/bn'
 import { capitalize } from './lib/naming'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
@@ -32,7 +32,6 @@ import {
   ExchangeArgsBN,
   Interface,
   InvalidationArgs,
-  isBN,
   makeEventVerbose,
   objMap,
   Payment,

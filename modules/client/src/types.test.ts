@@ -1,11 +1,20 @@
 import * as eth from 'ethers'
-import { BigNumber as BN } from 'ethers/utils'
 import Web3 from 'web3'
 
 import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
+import { BN, isBN, toBN } from './lib/bn'
 import * as t from './testing/index'
 import { assert } from './testing/index'
-import { convertChannelState, convertThreadState, convertFields, insertDefault, objMapPromise, objMap, makeEventVerbose, isBN, convertVerboseEvent } from './types'
+import {
+  convertChannelState,
+  convertFields,
+  convertThreadState,
+  convertVerboseEvent,
+  insertDefault,
+  makeEventVerbose,
+  objMap,
+  objMapPromise,
+} from './types'
 import { Validator } from './validator'
 
 describe('insertDefault', () => {
@@ -63,7 +72,7 @@ describe('convertFields', () => {
   const types = ['str', 'bn']
   const examples: any = {
     'str': '69',
-    'bn': new BN('69'),
+    'bn': toBN('69'),
   }
 
   for (const fromType of types) {
@@ -84,7 +93,7 @@ describe('objMap', () => {
   it("should work with promises", async () => {
     const obj = {
       test: "str",
-      me: new BN(7),
+      me: toBN(7),
       out: new Promise((res, rej) => res('10'))
     }
 
@@ -94,7 +103,7 @@ describe('objMap', () => {
 
     assert.deepEqual(res, {
       test: "str",
-      me: new BN(7),
+      me: toBN(7),
       out: "10"
     })
   })
@@ -103,13 +112,13 @@ describe('objMap', () => {
     let args = {
       str: "This IS A CASIng TesT",
       num: 19,
-      bn: new BN(8)
+      bn: toBN(8)
     }
     args = objMap(args, (k, v) => typeof v == 'string' ? v.toLowerCase() : v) as any
     assert.deepEqual(args, {
       str: "this is a casing test",
       num: 19,
-      bn: new BN(8)
+      bn: toBN(8)
     })
   })
 })
