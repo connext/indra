@@ -7,7 +7,7 @@ import Currency from './Currency'
 export default class CurrencyConvertable extends Currency {
   protected exchangeRates: () => ExchangeRates
 
-  constructor(type: CurrencyType, amount: BN|string|number, exchangeRates: () => ExchangeRates) {
+  constructor(type: CurrencyType, amount: number | string, exchangeRates: () => ExchangeRates) {
     super(type, amount)
     this.exchangeRates = () => {
       const rates = exchangeRates()
@@ -39,7 +39,7 @@ export default class CurrencyConvertable extends Currency {
     if (!this.amountWad.gt(toBN(0))) {
       return new CurrencyConvertable(
         toType,
-        this.amountWad,
+        this.amount,
         this.exchangeRates
       )
     }
@@ -57,7 +57,7 @@ export default class CurrencyConvertable extends Currency {
 
     return new CurrencyConvertable(
       toType,
-      amountInToType,
+      amountInToType.toString(),
       this.exchangeRates
     )
   }
