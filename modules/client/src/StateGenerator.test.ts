@@ -25,53 +25,53 @@ const utils = new Utils()
 function createHigherNoncedChannelState(
   prev: ChannelStateBN,
   ...overrides: t.PartialSignedOrSuccinctChannel[]
-) {
+): any {
   const state = t.getChannelState('empty', {
     recipient: prev.user,
     ...overrides[0],
     txCountGlobal: prev.txCountGlobal + 1,
   })
-  return convertChannelState("str-unsigned", state)
+  return convertChannelState('str-unsigned', state)
 }
 
 function createHigherNoncedThreadState(
   prev: ThreadStateBN,
   ...overrides: t.PartialSignedOrSuccinctThread[]
-) {
+): any {
   const state = t.getThreadState('empty', {
     ...prev, // for address vars
     ...overrides[0],
-    txCount: prev.txCount + 1,
     sigA: t.mkHash('buttstuff'),
+    txCount: prev.txCount + 1,
   })
-  return convertThreadState("bn", state)
+  return convertThreadState('bn', state)
 }
 
-function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]) {
+function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]): any {
   const state = t.getChannelState('empty', {
-    user: t.mkAddress('0xAAA'),
     recipient: t.mkAddress('0xAAA'),
-    ...overrides[0],
-    sigUser: t.mkHash('booty'),
     sigHub: t.mkHash('errywhere'),
+    sigUser: t.mkHash('booty'),
+    user: t.mkAddress('0xAAA'),
+    ...overrides[0],
   })
-  return convertChannelState("bn", state)
+  return convertChannelState('bn', state)
 }
 
-function createPreviousThreadState(...overrides: t.PartialSignedOrSuccinctThread[]) {
+function createPreviousThreadState(...overrides: t.PartialSignedOrSuccinctThread[]): any {
   const state = t.getThreadState('empty', {
-    ...overrides[0],
     sigA: t.mkHash('peachy'),
+    ...overrides[0],
   })
-  return convertThreadState("bn", state)
+  return convertThreadState('bn', state)
 }
 
 describe('StateGenerator', () => {
   describe('channel payment', () => {
     it('should generate a channel payment', async () => {
       const prev = createPreviousChannelState({
-        balanceWei: ['3', '0'],
         balanceToken: ['2', '0'],
+        balanceWei: ['3', '0'],
       })
 
       const payment = {
@@ -79,11 +79,11 @@ describe('StateGenerator', () => {
         amountWei: '3',
       }
 
-      const curr = sg.channelPayment(prev, convertPayment("bn", { ...payment, recipient: "user" }))
+      const curr = sg.channelPayment(prev, convertPayment('bn', { ...payment, recipient: 'user' }))
 
       assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
-        balanceWei: [0, 3],
         balanceToken: [0, 2],
+        balanceWei: [0, 3],
       }))
     })
   })
@@ -97,16 +97,16 @@ describe('StateGenerator', () => {
 
       const args = convertExchange('bn', {
         exchangeRate: '4',
+        seller: 'user',
         tokensToSell: 0,
         weiToSell: 3,
-        seller: "user"
       })
 
       const curr = sg.exchange(prev, args)
 
       assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceToken: [0, 17],
-        balanceWei: [8, 0]
+        balanceWei: [8, 0],
       }))
     })
 
@@ -118,16 +118,16 @@ describe('StateGenerator', () => {
 
       const args = convertExchange('bn', {
         exchangeRate: '5',
+        seller: 'user',
         tokensToSell: '25',
         weiToSell: '0',
-        seller: "user"
       })
 
       const curr = sg.exchange(prev, args)
 
       assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceToken: [42, 25],
-        balanceWei: [20, 8]
+        balanceWei: [20, 8],
       }))
     })
   })
@@ -137,11 +137,11 @@ describe('StateGenerator', () => {
       const prev = createPreviousChannelState()
 
       const args = convertDeposit('bn', {
-        depositWeiHub: '5',
-        depositWeiUser: '3',
         depositTokenHub: '1',
         depositTokenUser: '9',
-        timeout: 600
+        depositWeiHub: '5',
+        depositWeiUser: '3',
+        timeout: 600,
       })
 
       const curr = sg.proposePendingDeposit(prev, args)
@@ -346,11 +346,11 @@ describe('StateGenerator', () => {
       const args: InvalidationArgs = {
         previousValidTxCount: prev.txCountGlobal,
         lastInvalidTxCount: 7,
-        reason: "CU_INVALID_ERROR",
+        reason: 'CU_INVALID_ERROR',
       }
 
       const curr = sg.invalidation(prev, args)
-      assert.deepEqual(curr, { ...convertChannelState("str-unsigned", prev), txCountGlobal: 8, })
+      assert.deepEqual(curr, { ...convertChannelState('str-unsigned', prev), txCountGlobal: 8, })
     })
   })
 
@@ -437,7 +437,7 @@ describe('StateGenerator', () => {
         balanceToken: [10, 0],
         balanceWei: [10, 0],
         threadCount: 1,
-        threadRoot: utils.generateThreadRootHash([convertThreadState("str", args)]),
+        threadRoot: utils.generateThreadRootHash([convertThreadState('str', args)]),
       }))
     })
 
@@ -459,7 +459,7 @@ describe('StateGenerator', () => {
         balanceToken: [0, 10],
         balanceWei: [0, 10],
         threadCount: 1,
-        threadRoot: utils.generateThreadRootHash([convertThreadState("str", args)]),
+        threadRoot: utils.generateThreadRootHash([convertThreadState('str', args)]),
       }))
     })
   })
@@ -482,7 +482,7 @@ describe('StateGenerator', () => {
         balanceWei: [9, 1],
       })
 
-      const curr = sg.closeThread(prev, [convertThreadState("str", initialThread)], currThread)
+      const curr = sg.closeThread(prev, [convertThreadState('str', initialThread)], currThread)
 
       assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceToken: [11, 9],
@@ -507,7 +507,7 @@ describe('StateGenerator', () => {
         balanceWei: [9, 1],
       })
 
-      const curr = sg.closeThread(prev, [convertThreadState("str", initialThread)], currThread)
+      const curr = sg.closeThread(prev, [convertThreadState('str', initialThread)], currThread)
 
       assert.deepEqual(curr, createHigherNoncedChannelState(prev, {
         balanceToken: [9, 11],
@@ -528,14 +528,14 @@ describe('StateGenerator', () => {
         amountWei: '10',
       }
 
-      const curr = sg.threadPayment(prev, convertThreadPayment("bn", payment))
+      const curr = sg.threadPayment(prev, convertThreadPayment('bn', payment))
 
       const check = createHigherNoncedThreadState(prev, {
         balanceToken: [0, 10],
         balanceWei: [0, 10]
       })
 
-      assert.deepEqual(curr, convertThreadState("str-unsigned", check))
+      assert.deepEqual(curr, convertThreadState('str-unsigned', check))
     })
   })
 
@@ -544,7 +544,7 @@ describe('StateGenerator', () => {
       const prev = createPreviousChannelState({
         pendingDepositToken: [8, 4],
         pendingDepositWei: [1, 6],
-        recipient: t.mkHash('0x222')
+        recipient: t.mkHash('0x222'),
       })
 
       // For the purposes of these tests, ensure that the recipient is not the

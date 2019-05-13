@@ -1,7 +1,7 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 import * as sinon from 'sinon'
 
-import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
+import * as ChannelManagerAbi from './contract/ChannelManagerAbi.json'
 import { toBN } from './lib/bn'
 import * as t from './testing'
 import {

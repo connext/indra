@@ -1,7 +1,7 @@
 import * as eth from 'ethers'
 import Web3 from 'web3'
 
-import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
+import * as ChannelManagerAbi from './contract/ChannelManagerAbi.json'
 import { BN, isBN, toBN } from './lib/bn'
 import * as t from './testing/index'
 import { assert } from './testing/index'

@@ -16,7 +16,7 @@ import SyncController from './controllers/SyncController'
 import ThreadsController from './controllers/ThreadsController'
 import WithdrawalController from './controllers/WithdrawalController'
 import {  HubAPIClient, IHubAPIClient } from './Hub'
-import { Logger } from './lib/logger'
+import { ILogger } from './lib/logger'
 import { Networking } from './lib/networking'
 import { isFunction, timeoutPromise } from './lib/utils'
 import * as actions from './state/actions'
@@ -83,7 +83,7 @@ export interface IConnextChannelOptions {
 
   origin?: string
   gasMultiple?: number
-  getLogger?: (name: string) => Logger
+  getLogger?: (name: string) => ILogger
 
   // Optional, useful for dependency injection
   hub?: IHubAPIClient
@@ -114,7 +114,7 @@ export async function createChannel(opts: IConnextChannelOptions): Promise<Conne
     (merged as any)[k] = (config as any)[k]
   }
 
-  // if web3, create a new web3 
+  // if web3, create a new web3
   if (merged.web3Provider && !merged.user) {
     // set default address
     // TODO: improve this
@@ -200,7 +200,7 @@ export abstract class ConnextChannel extends EventEmitter {
 
   public async recipientNeedsCollateral(
     recipient: Address,
-    amount: Payment
+    amount: Payment,
   ): Promise<string|null> {
     return await this.internal.recipientNeedsCollateral(recipient, amount)
   }
@@ -219,11 +219,13 @@ export abstract class ConnextChannel extends EventEmitter {
     return await this.internal.redeemController.redeem(secret)
   }
 
-  async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
+  public async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
     return await this.internal.hub.getPaymentHistory()
   }
 
-  async getPaymentById(purchaseId: string): Promise<PurchaseRowWithPayments<object, string>> {
+  public async getPaymentById(
+    purchaseId: string,
+  ): Promise<PurchaseRowWithPayments<object, string>> {
     return await this.internal.hub.getPaymentById(purchaseId)
   }
 }

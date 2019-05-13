@@ -128,9 +128,11 @@ export default class Wallet extends eth.Signer {
     const value = eth.utils.bigNumberify(await txReq.value!)
     const total = value.add(gasLimit.mul(gasPrice))
     if (balance.lt(total)) {
-      throw new Error(`Insufficient funds: value=${value.toString()} + (gasPrice=${gasPrice.toString()
+      throw new Error(
+        `Insufficient funds: value=${value.toString()} + (gasPrice=${gasPrice.toString()
         } * gasLimit=${gasLimit.toString()}) = total=${total.toString()
-        } > balance=${balance.toString()}`)
+        } > balance=${balance.toString()}`,
+      )
     }
     if (txReq.nonce == null && this.signer) {
       txReq.nonce = this.signer!.getTransactionCount('pending')

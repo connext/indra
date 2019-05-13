@@ -16,9 +16,6 @@ const hubUrl: string = ''
 const utils: Utils = new Utils()
 const web3Provider: any = new Web3.providers.HttpProvider(ethUrl)
 
-let web3: Web3 | undefined
-let web3Address: string = ''
-
 ////////////////////////////////////////
 // Helper Functions
 
@@ -49,37 +46,34 @@ const testSendTransaction: any = async (wallet: Wallet): Promise<void> => {
 
 describe('Wallet', () => {
 
-  it('should sign messages properly with a private key', async function() {
+  it('should sign messages properly with a private key', async () => {
     testSignMessage(new Wallet({ hubUrl, privateKey }))
   })
 
-  it('should sign messages properly with a mnemonic', async function() {
+  it('should sign messages properly with a mnemonic', async () => {
     testSignMessage(new Wallet({ hubUrl, mnemonic }))
   })
 
-  it('should sign messages properly with web3', async function() {
+  it('should sign messages properly with web3', async () => {
     const web3Address = (await (new Web3(web3Provider)).eth.getAccounts())[0].toLowerCase()
     testSignMessage(new Wallet({ hubUrl, user: web3Address, web3Provider }))
   })
 
-  it('should sign transactions properly with a private key', async function() {
-    this.timeout(10000)
+  it('should sign transactions properly with a private key', async () => {
     testSendTransaction(new Wallet({ hubUrl, ethUrl, privateKey }))
   })
 
-  it('should sign transactions properly with a mnemonic', async function() {
-    this.timeout(10000)
+  it('should sign transactions properly with a mnemonic', async () => {
     testSendTransaction(new Wallet({ hubUrl, ethUrl, mnemonic }))
   })
 
   // Ganache does not support the eth_signTransaction method
-  it.skip('should sign transactions properly with web3', async function() {
-    this.timeout(10000)
+  it.skip('should sign transactions properly with web3', async () => {
     const web3Address = (await (new Web3(web3Provider)).eth.getAccounts())[0].toLowerCase()
     testSignMessage(new Wallet({ hubUrl, user: web3Address, web3Provider }))
   })
 
-  it('should throw an error if not given a signing method', async function() {
+  it('should throw an error if not given a signing method', async () => {
     assert.throws(() => new Wallet({ hubUrl }))
   })
 

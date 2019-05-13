@@ -2,21 +2,21 @@ export const GET = 'GET'
 export const POST = 'POST'
 
 export class Networking {
-  baseUrl: string
+  public baseUrl: string
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl
   }
 
-  get = (url: string) => {
+  public get = (url: string): Promise<any> => {
     return this.request(url, GET)
   }
 
-  post = (url: string, body: any) => {
+  public post = (url: string, body: any): Promise<any> => {
     return this.request(url, POST, body)
   }
 
-  request = async (url: string, method: any, body?: any) => {
+  private request = async (url: string, method: any, body?: any): Promise<any> => {
     // TO DO: better type
     const opts = {
       method,
@@ -63,10 +63,10 @@ export class Networking {
   }
 }
 
-export const errorResponse = (status: number, body: any, message: string) => {
+export const errorResponse = (status: number, body: any, message: string): any => {
   return {
-    status,
     body,
     message,
+    status,
   }
 }

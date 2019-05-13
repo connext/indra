@@ -1,5 +1,5 @@
 
-// Capitalizes a string
+// Capitalizes first char of a string
 export function capitalize(str: string): string {
   return str.substring(0, 1).toUpperCase() + str.substring(1)
 }
@@ -24,24 +24,24 @@ export function capitalize(str: string): string {
  *
  */
 export class Lock<T=void> implements PromiseLike<T> {
-  _resolve: (arg?: T) => void
-  _p: Promise<T>
+  public static released(): any {
+    return new Lock().release()
+  }
 
-  then: any
-  catch: any
+  public then: any
+  public catch: any
+
+  private _resolve: (arg?: T) => void
+  private _p: Promise<T>
 
   constructor() {
     this._resolve = null as any
-    this._p = new Promise(res => this._resolve = res)
+    this._p = new Promise((res: any): any => this._resolve = res)
     this.then = this._p.then.bind(this._p)
     this.catch = this._p.catch.bind(this._p)
   }
 
-  static released() {
-    return new Lock().release()
-  }
-
-  release(val?: T) {
+  public release(val?: T): any {
     this._resolve(val)
     return this
   }
@@ -72,10 +72,10 @@ export class Lock<T=void> implements PromiseLike<T> {
  *   ... 1 more second ...
  *   msg: second
  */
-export function synchronized(lockName: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function synchronized(lockName: string): any {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor): any => {
     const oldFunc = descriptor.value
-    descriptor.value = async function(this: any, ...args: any[]) {
+    descriptor.value = async function(this: any, ...args: any[]): Promise<any> {
       await this[lockName]
       this[lockName] = new Lock()
       try {
@@ -112,12 +112,12 @@ export function isFunction(functionToCheck: any): boolean {
  *
  */
 export class Queue<T> {
-  static readonly EMPTY: unique symbol = Symbol('Queue.EMPTY')
+  public static readonly EMPTY: unique symbol = Symbol('Queue.EMPTY')
 
-  protected _notEmpty = new Lock()
-
-  protected _items: T[]
   public length: number
+
+  private _notEmpty: Lock = new Lock()
+  private _items: T[]
 
   constructor(items?: T[]) {
     this._items = []
@@ -125,26 +125,28 @@ export class Queue<T> {
     this.put(...(items || []))
   }
 
-  put(...items: T[]) {
+  public put(...items: T[]): void {
     this._items = [
       ...this._items,
       ...items,
     ]
     this.length = this._items.length
-    if (this.length > 0)
+    if (this.length > 0) {
       this._notEmpty.release()
+    }
   }
 
-  async shift(): Promise<T> {
+  public async shift(): Promise<T> {
     await this._notEmpty
     this.length -= 1
     const item = this._items.shift()
-    if (this.length == 0)
+    if (this.length === 0) {
       this._notEmpty = new Lock()
+    }
     return item!
   }
 
-  peek(): T | (typeof Queue)['EMPTY'] {
+  public peek(): T | (typeof Queue)['EMPTY'] {
     return this.length > 0 ? this._items[0] : Queue.EMPTY
   }
 
@@ -154,17 +156,17 @@ export class Queue<T> {
  * A promise that exposes `resolve()` and `reject()` methods.
  */
 export class ResolveablePromise<T=void> implements PromiseLike<T> {
-  _p: Promise<T>
+  public catch: any
+  public reject: (err: any) => void
+  public resolve: (arg?: T) => void
+  public then: any
 
-  then: any
-  catch: any
-  resolve: (arg?: T) => void
-  reject: (err: any) => void
+  private _p: Promise<T>
 
   constructor() {
     this.resolve = null as any
     this.reject = null as any
-    this._p = new Promise((res, rej) => {
+    this._p = new Promise((res: any, rej: any): void => {
       this.resolve = res
       this.reject = rej
     })
@@ -196,8 +198,8 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
 type MaybeRes<T> = [T, any] & { res: T, err: any }
 export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
   return (p as Promise<T>).then(
-    res => Object.assign([res, null], { res, err: null }) as any,
-    err => Object.assign([null, err], { res: null, err }) as any,
+    (res: any): any => Object.assign([res, null], { res, err: null }) as any,
+    (err: any): any => Object.assign([null, err], { res: null, err }) as any,
   )
 }
 
@@ -216,22 +218,22 @@ export function timeoutPromise<T>(p: Promise<T>, timeout: number | null | undefi
 > {
 
   if (!timeout) {
-    return p.then(res => [false, res]) as any
+    return p.then((res: any): any => [false, res]) as any
   }
 
   let toClear: any
-  const res = Promise.race([
-    p.then(res => [false, res]),
-    new Promise(res => {
+  const result = Promise.race([
+    p.then((res: any): any => [false, res]),
+    new Promise((res: any): any=> {
       toClear = setTimeout(() => {
         res([true, p])
       }, timeout)
     }),
   ])
-  res.then(null, () => null).then(() => {
-    toClear && clearTimeout(timeout)
+  result.then(null, () => null).then(() => {
+    return toClear && clearTimeout(timeout)
   })
-  return res as any
+  return result as any
 }
 
 /**
@@ -258,6 +260,6 @@ export function assertUnreachable(x: never): never {
  *
  *    await sleep(1000)
  */
-export function sleep(t: number) {
-  return new Promise(res => setTimeout(res, t))
+export function sleep(t: number): Promise<any> {
+  return new Promise((res: any): any => setTimeout(res, t))
 }

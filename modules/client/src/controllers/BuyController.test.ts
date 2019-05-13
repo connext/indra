@@ -14,10 +14,7 @@ import {
   PurchasePaymentType,
 } from '../types'
 
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill')
-
-describe("BuyController: assignPaymentTypes", () => {
+describe('BuyController: assignPaymentTypes', () => {
   let connext: MockConnextInternal
 
   const user = mkAddress('0x7fab')

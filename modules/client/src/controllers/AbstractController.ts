@@ -1,10 +1,10 @@
 import { ConnextInternal } from '../Connext'
 import { IHubAPIClient } from '../Hub'
-import { Logger } from '../lib/logger'
+import { ILogger } from '../lib/logger'
 import { ConnextState, ConnextStore } from '../state/store'
 import { Validator } from '../validator'
 
-const getLogger: any = (name: string): Logger => {
+const getLogger: any = (name: string): ILogger => {
   return {
     source: name,
     async logToApi(...args: any[]): Promise<any> {
@@ -16,7 +16,7 @@ const getLogger: any = (name: string): Logger => {
 export abstract class AbstractController {
   public name: string
   public connext: ConnextInternal
-  public logger: Logger
+  public logger: ILogger
   public hub: IHubAPIClient
   public validator: Validator
 

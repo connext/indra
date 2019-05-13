@@ -28,7 +28,7 @@ describe('Currency', () => {
         name: 'Round if last digit is >= 5',
         opts: { decimals: 2 },
       },
-      { 
+      {
         expected: '$1001',
         input: '1000.825',
         name: 'Handle the decimal properly while rounding',

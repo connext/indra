@@ -1,4 +1,4 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 
 import { BN, isBN, maxBN, toBN } from './lib/bn'
 import { capitalize } from './lib/utils'

@@ -6,8 +6,8 @@ import { MerkleUtils } from './lib/merkleUtils'
 import * as getters from './state/getters'
 import { ConnextState } from './state/store'
 import {
-  ChannelState,
   channelNumericFields,
+  ChannelState,
   convert,
   ExchangeRates,
   Payment,
@@ -96,8 +96,7 @@ export class Utils {
       ],
     )
   }
-
-  public createThreadStateHash(threadState: UnsignedThreadState): string {
+public createThreadStateHash(threadState: UnsignedThreadState): string {
     return solidityKeccak256(
       [
         'address',
@@ -126,7 +125,7 @@ export class Utils {
     )
   }
 
-  public generateThreadMerkleTree(
+  private generateThreadMerkleTree(
     threadInitialStates: UnsignedThreadState[],
   ): MerkleTree {
     if (threadInitialStates.length === 0) {

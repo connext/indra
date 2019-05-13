@@ -1,8 +1,8 @@
+import { ReducerBuilder, reducerWithInitialState } from 'typescript-fsa-reducers/dist'
 import { isFunction } from '../lib/utils'
-import {ConnextState} from './store'
-import {reducerWithInitialState, ReducerBuilder} from 'typescript-fsa-reducers/dist'
+import { ChannelState, UpdateRequest } from '../types'
 import * as actions from './actions'
-import { UpdateRequest, ChannelState } from '../types';
+import {ConnextState} from './store'
 
 export let reducers = reducerWithInitialState(new ConnextState())
 
@@ -14,10 +14,15 @@ export let reducers = reducerWithInitialState(new ConnextState())
 //     return { ...state, someValue: action.value }
 //   })
 
-export function handleChannelChange(state: ConnextState, channel: ChannelState, update?: UpdateRequest) {
+export function handleChannelChange(
+  state: ConnextState,
+  channel: ChannelState,
+  update?: UpdateRequest,
+): any {
   const hasPending = (
     Object.keys(channel)
-      .some(field => field.startsWith('pending') && (channel as any)[field] != '0')
+      .some((field: any): any =>
+        field.startsWith('pending') && (channel as any)[field].toString() !== '0')
   )
   if (!hasPending) {
     state = {
@@ -37,17 +42,22 @@ export function handleChannelChange(state: ConnextState, channel: ChannelState, 
     ...state,
     persistent: {
       ...state.persistent,
-      channel: channel,
+      channel,
       channelUpdate: update,
     },
   }
 }
 
-reducers = reducers.case(actions.setChannelAndUpdate, (state, action: any) => handleChannelChange(state, action.state, action.update))
+reducers = reducers.case(actions.setChannelAndUpdate, (state: any, action: any): any =>
+  handleChannelChange(state, action.state, action.update),
+)
 // @ts-ignore
-reducers = reducers.case(actions.setChannel, (state, action) => handleChannelChange(state, action))
+reducers = reducers.case(actions.setChannel, (state: any, action: any): any =>
+  handleChannelChange(state, action),
+)
 
-for (let action of Object.values(actions) as any[]) {
-  if (isFunction(action && action.handler))
+for (const action of Object.values(actions) as any[]) {
+  if (isFunction(action && action.handler)) {
     reducers = reducers.case(action, action.handler)
+  }
 }

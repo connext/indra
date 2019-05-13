@@ -16,7 +16,7 @@ import {
   getCustodialBalance,
 } from '.'
 import { IConnextChannelOptions, ConnextInternal } from '../Connext'
-import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
+import * as ChannelManagerAbi from '../contract/ChannelManagerAbi.json'
 import { IChannelManager } from '../contract/ChannelManager'
 import { toBN } from '../lib/bn'
 import { IHubAPIClient } from '../Hub'

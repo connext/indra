@@ -12,12 +12,8 @@ import { Utils } from './Utils'
 
 const mnemonic: string =
   'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
-const providers: string[] = [
-  'http://localhost:8545',
-  'http://ethprovider:8545',
-  'http://localhost:3000/api/eth',
-  'http://ganache:8545',
-]
+const provider: string =
+  process.env.ETH_RPC_URL || 'http://localhost:8545'
 const utils: Utils = new Utils()
 const wallet: eth.Wallet = eth.Wallet.fromMnemonic(mnemonic)
 let web3: Web3 | undefined
@@ -26,13 +22,10 @@ let web3Address: string
 describe('Utils', () => {
   beforeEach('instantiate wallets with pk and with web3', async () => {
     // Try to connect to web3 and get an associated address
-    for (const p of providers) {
-      try {
-        web3 = new Web3(new Web3.providers.HttpProvider(p))
-        web3Address = (await web3.eth.getAccounts())[0]
-        break
-      } catch (e) {/* noop */}
-    }
+    try {
+      web3 = new Web3(new Web3.providers.HttpProvider(provider))
+      web3Address = (await web3.eth.getAccounts())[0]
+    } catch (e) {/* noop */}
   })
 
   it('should properly recover the signer from the channel state update hash', async () => {
