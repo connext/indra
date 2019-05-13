@@ -1,4 +1,4 @@
-import { maybe, timeoutPromise } from '../utils'
+import { maybe, timeoutPromise } from './utils'
 
 export interface IPollerOptions {
   // How often the poller should be run

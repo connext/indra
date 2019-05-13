@@ -1,7 +1,11 @@
 import { ConnextState } from '../state/store'
 import {
  ChannelState,
+ convertChannelState,
+ convertPayment,
+ convertCustodialBalanceRow,
  ExchangeRates,
+ Payment,
  ThreadState,
 } from '../types'
 
@@ -16,6 +20,19 @@ export function getChannel(state: ConnextState): ChannelState {
   return state.persistent.channel
 }
 
+export function getCustodialAndChannelBalance(state: ConnextState): Payment {
+  const channel = convertChannelState("bn", state.persistent.channel)
+  const custodial = convertCustodialBalanceRow("bn", state.persistent.custodialBalance)
+  const total = {
+    amountWei: custodial.balanceWei.add(
+      channel.balanceWeiUser
+    ),
+    amountToken: custodial.balanceToken.add(
+      channel.balanceTokenUser
+    )
+  }
+  return convertPayment("str", total)
+}
 export function getExchangeRates(state: ConnextState): ExchangeRates {
   const rate = state.runtime.exchangeRate
   return rate && rate.rates ? rate.rates : {}

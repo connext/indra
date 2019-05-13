@@ -1,11 +1,10 @@
-import { ethers as eth } from 'ethers';
+import { ethers as eth } from 'ethers'
 import Semaphore = require('semaphore')
-import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext'
-import { getChannel, getLastThreadUpdateId } from '../state/getters';
-import { Poller } from '../lib/poller/Poller'
+import { Poller } from '../lib/poller'
 import { assertUnreachable, maybe } from '../lib/utils'
 import * as actions from '../state/actions'
+import { getChannel, getLastThreadUpdateId } from '../state/getters'
 import { SyncControllerState } from '../state/store'
 import {
   ArgsTypes,
@@ -13,15 +12,16 @@ import {
   ChannelState,
   ChannelStateUpdate,
   channelUpdateToUpdateRequest,
-  LogDescription,
   InvalidationArgs,
   InvalidationReason,
+  LogDescription,
   Sync,
   SyncResult,
   ThreadStateUpdate,
   Transaction,
   UpdateRequest,
 } from '../types'
+import { AbstractController } from './AbstractController'
 
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 

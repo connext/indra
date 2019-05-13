@@ -1,4 +1,4 @@
-import { MockConnextInternal, } from '../testing/mocks';
+import { MockConnextInternal } from '../testing/mocks'
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 

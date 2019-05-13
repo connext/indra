@@ -1,9 +1,9 @@
-import { mkAddress, parameterizedTests, assert } from '../testing';
-import { MockConnextInternal, MockStore } from '../testing/mocks';
-import { convertChannelState } from '../types';
-import { toBN } from '../lib/bn';
+import { toBN } from '../lib/bn'
+import { assert, mkAddress, parameterizedTests } from '../testing'
+import { MockConnextInternal, MockStore } from '../testing/mocks'
+import { convertChannelState } from '../types'
 // @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+global.fetch = require('node-fetch-polyfill')
 
 const user = mkAddress('0xAAA')
 let connext: MockConnextInternal

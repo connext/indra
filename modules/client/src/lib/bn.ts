@@ -1,5 +1,7 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 import { BigNumber } from 'ethers/utils'
+
+const { Zero, MaxUint256 } = eth.constants
 
 export type BN = BigNumber
 
@@ -21,7 +23,7 @@ export const tokenToWei = (token: BN, tokenPerEth: string): BN =>
   toWei(token).div(toWei(tokenPerEth))
 
 export const maxBN = (lon: BN[]): BN =>
-  lon.reduce((max, current) => max.gt(current) ? max : current, eth.constants.Zero)
+  lon.reduce((max: BN, current: BN): BN => max.gt(current) ? max : current, Zero)
 
 export const minBN = (lon: BN[]): BN =>
-  lon.reduce((min, current) => min.lt(current) ? min : current, eth.constants.MaxUint256)
+  lon.reduce((min: BN, current: BN): BN => min.lt(current) ? min : current, MaxUint256)

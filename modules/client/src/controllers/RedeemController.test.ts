@@ -1,8 +1,8 @@
-import { ethers as eth } from 'ethers';
-import { assert } from '../testing';
-import { MockConnextInternal } from '../testing/mocks';
+import { ethers as eth } from 'ethers'
+import { assert } from '../testing'
+import { MockConnextInternal } from '../testing/mocks'
 // @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+global.fetch = require('node-fetch-polyfill')
 
 describe('Redeem Controller: unit tests', () => {
   let connext: MockConnextInternal

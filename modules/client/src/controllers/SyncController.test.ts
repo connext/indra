@@ -1,8 +1,15 @@
-import { mergeSyncResults, filterPendingSyncResults } from './SyncController'
-import { assert, getChannelState, mkAddress, mkHash, parameterizedTests, getThreadState } from '../testing'
-import { MockConnextInternal, MockStore } from '../testing/mocks';
-import { StateGenerator } from '../StateGenerator';
+import { StateGenerator } from '../StateGenerator'
+import {
+  assert,
+  getChannelState,
+  getThreadState,
+  mkAddress,
+  mkHash,
+  parameterizedTests,
+} from '../testing'
+import { MockConnextInternal, MockStore } from '../testing/mocks'
 import { ChannelUpdateReason, convertChannelState, InvalidationArgs, SyncResult } from '../types'
+import { filterPendingSyncResults, mergeSyncResults } from './SyncController'
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill');
 

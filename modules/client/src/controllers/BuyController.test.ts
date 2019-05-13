@@ -1,5 +1,4 @@
 import { ethers as eth } from 'ethers'
-
 import {
   assert,
   mkAddress,
@@ -8,11 +7,11 @@ import {
 } from '../testing'
 import { MockConnextInternal, MockHub, MockStore } from '../testing/mocks'
 import {
+  PartialPurchasePaymentRequest,
   Payment,
   PaymentArgs,
   PurchasePayment,
   PurchasePaymentType,
-  PartialPurchasePaymentRequest,
 } from '../types'
 
 // @ts-ignore

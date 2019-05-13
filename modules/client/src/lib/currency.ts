@@ -1,5 +1,5 @@
-import * as eth from 'ethers'
-import { BN } from '../bn'
+import { ethers as eth } from 'ethers'
+import { BN } from './bn'
 
 const { bigNumberify, commify, formatUnits, parseUnits } = eth.utils
 
@@ -167,5 +167,4 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   }
 
 }
-
 export default Currency

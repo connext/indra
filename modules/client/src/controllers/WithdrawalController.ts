@@ -1,5 +1,4 @@
 import { isValidAddress } from 'ethereumjs-util'
-
 import { toBN, tokenToWei, weiToToken } from '../lib/bn'
 import { getTxCount } from '../state/getters'
 import {

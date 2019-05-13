@@ -1,9 +1,9 @@
 import { expect } from 'chai'
-import { getExchangeRates } from '../../state/getters'
-import { generateExchangeRates } from '../../testing/generateExchangeRates'
-import { MockStore } from '../../testing/mocks'
-import { ExchangeRates } from '../../types'
-import { CurrencyConvertable } from './CurrencyConvertable'
+import { getExchangeRates } from '../state/getters'
+import { generateExchangeRates } from '../testing/generateExchangeRates'
+import { MockStore } from '../testing/mocks'
+import { ExchangeRates } from '../types'
+import { CurrencyConvertable } from './currencyConvertable'
 
 const mockStore = new MockStore()
 mockStore.setExchangeRate(generateExchangeRates('420'))

@@ -1,6 +1,6 @@
 import { convert } from './types'
 import { createChannel } from './Connext'
-import { Poller } from './lib/poller/Poller'
+import { Poller } from './lib/poller'
 import { StateGenerator } from './StateGenerator'
 import { Utils } from './Utils'
 import { Validator } from './validator'

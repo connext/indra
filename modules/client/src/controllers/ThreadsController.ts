@@ -1,4 +1,3 @@
-import { AbstractController } from './AbstractController';
 import {
   Address,
   ChannelState,
@@ -8,6 +7,7 @@ import {
   ThreadState,
   UpdateRequest,
 } from '../types'
+import { AbstractController } from './AbstractController'
 
 export default class ThreadsController extends AbstractController {
   // only thread senders should call the openThread function

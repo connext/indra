@@ -1,7 +1,7 @@
 import { ethers as eth } from 'ethers'
-import { ExchangeRates } from '../../types'
-import { fromWei, tokenToWei, weiToToken } from '../bn'
-import { Currency, CurrencyType } from './Currency'
+import { ExchangeRates } from '../types'
+import { fromWei, tokenToWei, weiToToken } from './bn'
+import { Currency, CurrencyType } from './currency'
 
 export class CurrencyConvertable extends Currency {
   private exchangeRates: () => ExchangeRates

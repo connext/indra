@@ -1,8 +1,6 @@
 import { Unsubscribe } from 'redux'
 import { Action } from 'typescript-fsa/lib'
-import { AbstractController } from './AbstractController'
-import { validateExchangeRate } from './ExchangeController';
-import { validateTimestamp } from '../lib/timestamp';
+import { validateTimestamp } from '../lib/timestamp'
 import { assertUnreachable } from '../lib/utils'
 import * as actions from '../state/actions'
 import { ConnextState, ConnextStore } from '../state/store'
@@ -11,12 +9,14 @@ import {
   convertChannelState,
   convertExchange,
   SyncResult,
+  ThreadState,
   UnsignedChannelState,
   UpdateRequest,
   UpdateRequestTypes,
-  ThreadState,
 } from '../types'
-import { Utils } from '../Utils';
+import { Utils } from '../Utils'
+import { AbstractController } from './AbstractController'
+import { validateExchangeRate } from './ExchangeController'
 
 type StateUpdateHandlers = {
   [Type in keyof UpdateRequestTypes]: (

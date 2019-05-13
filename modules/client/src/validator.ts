@@ -1,7 +1,7 @@
 import * as eth from 'ethers'
 
 import { BN, isBN, maxBN, toBN } from './lib/bn'
-import { capitalize } from './lib/naming'
+import { capitalize } from './lib/utils'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,

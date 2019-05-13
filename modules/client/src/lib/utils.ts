@@ -1,3 +1,9 @@
+
+// Capitalizes a string
+export function capitalize(str: string): string {
+  return str.substring(0, 1).toUpperCase() + str.substring(1)
+}
+
 /**
  * A simple lock that can be used with async/await.
  *

@@ -23,6 +23,7 @@ watch_command='
     else echo "Changes detected, compiling..." && srcHash="`hash`"
     fi
 
+    rm -rf dist/* types/*
     tsc
 
     if [[ "$?" != "0" ]] # skip tests if compilation failed

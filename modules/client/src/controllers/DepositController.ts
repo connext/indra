@@ -1,14 +1,14 @@
-import { ethers as eth } from 'ethers';
-import { AbstractController } from './AbstractController';
-import { getTxCount, getLastThreadUpdateId } from '../state/getters'
-import { validateTimestamp } from '../lib/timestamp';
+import { ethers as eth } from 'ethers'
+import { validateTimestamp } from '../lib/timestamp'
+import { getLastThreadUpdateId, getTxCount } from '../state/getters'
 import {
+  argNumericFields,
   ChannelState,
+  insertDefault,
   Payment,
   UpdateRequestTypes,
-  insertDefault,
-  argNumericFields,
 } from '../types'
+import { AbstractController } from './AbstractController'
 const tokenAbi = require('human-standard-token-abi')
 
 /*

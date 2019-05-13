@@ -1,5 +1,4 @@
 import { ethers as eth } from 'ethers'
-
 import { toBN } from '../lib/bn'
 import { assertUnreachable } from '../lib/utils'
 import { getChannel } from '../state/getters'
@@ -14,7 +13,6 @@ import {
   PurchasePayment,
   PurchasePaymentRequest,
 } from '../types'
-
 import { AbstractController } from './AbstractController'
 
 // **********************************************//

@@ -1,8 +1,8 @@
-import { assert, getThreadState, mkAddress, parameterizedTests, mkHash } from '../testing';
-import { MockStore, MockConnextInternal, MockHub } from '../testing/mocks';
-import { PaymentArgs, SyncResult, ChannelUpdateReason } from '../types';
+import { assert, getThreadState, mkAddress, mkHash, parameterizedTests } from '../testing'
+import { MockConnextInternal, MockHub, MockStore } from '../testing/mocks'
+import { ChannelUpdateReason, PaymentArgs, SyncResult } from '../types'
 // @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+global.fetch = require('node-fetch-polyfill')
 
 /*
 StateUpdateController is used by all the other controllers to handle various types of state updates that are present in the `runtime.syncResultsFromHub` state. To do this, it subscribes to the store, and handles the the updates from the hub in the `handleSyncItem` method. As it is an internal controller with no public API there are no unit tests written.

@@ -1,14 +1,14 @@
-import { PaymentArgs, ThreadState } from '../types';
-import { toBN } from '../lib/bn';
-import { assert, mkAddress } from '../testing';
+import { toBN } from '../lib/bn'
+import { assert, mkAddress } from '../testing'
 import { MockConnextInternal, MockStore } from '../testing/mocks'
+import { PaymentArgs, ThreadState } from '../types'
 
 describe('ThreadController: unit tests', () => {
     let connext: MockConnextInternal
     let mockStore: MockStore
-    const sender = "0xfb482f8f779fd96a857f1486471524808b97452d"
-    const receiver1 = "0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F"
-    const receiver2 = "0x17b105bcb3f06b3098de6eed0497a3e36aa72471"
+    const sender = '0xfb482f8f779fd96a857f1486471524808b97452d'
+    const receiver1 = '0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F'
+    const receiver2 = '0x17b105bcb3f06b3098de6eed0497a3e36aa72471'
     
     describe('OpenThread', () => {
         beforeEach(async () => {

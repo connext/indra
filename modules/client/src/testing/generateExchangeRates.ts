@@ -1,5 +1,5 @@
 import { ExchangeRates } from '../types'
-import { CurrencyType } from '../lib/currency/Currency'
+import { CurrencyType } from '../lib/currency'
 
 // NOTE: only used in testing
 // daiRate is the number of DAI that equals the value of 1 ETH

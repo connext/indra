@@ -1,5 +1,5 @@
+import { getTxCount } from '../state/getters'
 import { AbstractController } from './AbstractController'
-import { getTxCount } from '../state/getters';
 
 export default class CollateralController extends AbstractController {
 
