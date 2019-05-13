@@ -1,10 +1,6 @@
 import { assert, expect } from 'chai'
-
 import { parameterizedTests } from '../../testing'
 import Currency from './Currency'
-import CurrencyConvertable from './CurrencyConvertable'
-
-const noop: any = (): undefined => undefined
 
 describe('Currency', () => {
   it('Should construct a currency from either a string or number', () => {
@@ -19,7 +15,7 @@ describe('Currency', () => {
   })
 
   describe('round', () => {
-    parameterizedTests([
+    for (const testCase of [
       {
         expected: '$1000.8',
         input: '1000.825',
@@ -50,9 +46,11 @@ describe('Currency', () => {
         name: 'Pad with zeros if rounding to more decimals than are available',
         opts: { decimals: 5 },
       },
-    ], (t: any): void => {
-      assert.equal(Currency.DAI(t.input).format(t.opts), t.expected)
-    })
+    ]) {
+      it(testCase.name, () => {
+        assert.equal(Currency.DAI(testCase.input).format(testCase.opts), testCase.expected)
+      })
+    }
   })
 
   it('Currency.floor should take the floor of a currency', () => {

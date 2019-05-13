@@ -17,7 +17,11 @@ export interface ICurrency<ThisType extends CurrencyType = any> {
   amount: string
 }
 
-export default class Currency<ThisType extends CurrencyType = any> implements ICurrency<ThisType> {
+export class Currency<ThisType extends CurrencyType = any> implements ICurrency<ThisType> {
+
+  ////////////////////////////////////////
+  // Static Properties/Methods
+
   public static DAI = (amount: number | string): Currency => new Currency('DAI', amount)
   public static ETH = (amount: number | string): Currency => new Currency('ETH', amount)
   public static FIN = (amount: number | string): Currency => new Currency('FIN', amount)
@@ -53,16 +57,18 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
     } as ICurrencyFormatOptions,
   }
 
+  ////////////////////////////////////////
+  // Private Properties
+
   // _amount is in units like MakerDAO's "wad" aka a decimal w 18 units of precision
   // So: this._amount is to the currency amount as wei is to an ether amount
   // This lets us handle decimals cleanly w/out needing a BigDecimal library
   private precision: number = 18
-
   private _amount: BN
   private _type: ThisType
 
   ////////////////////////////////////////
-  // Constructors
+  // Constructor
 
   constructor (currency: ICurrency<ThisType>);
   constructor (type: ThisType, amount: number | string);
@@ -80,57 +86,35 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
   }
 
   ////////////////////////////////////////
-  // Public Getters
+  // Getters
 
-  get type (): ThisType {
-    return this._type
-  }
-
-  get symbol (): string {
-    return Currency.typeToSymbol[this._type] as string
-  }
-
+  // Returns a decimal string
   get amount(): string {
     return this.fromWad(this._amount)
   }
 
-  get currency (): ICurrency {
+  // Just like amountWei when talking about ETH amounts
+  get amountWad(): BN {
+    return this._amount
+  }
+
+  get currency(): ICurrency {
     return {
       amount: this.amount,
       type: this._type,
     }
   }
 
-  // Just like amountWei when talking about ETH amounts
-  get amountWad (): BN {
-    return this._amount
+  get symbol(): string {
+    return Currency.typeToSymbol[this._type] as string
+  }
+
+  get type(): ThisType {
+    return this._type
   }
 
   ////////////////////////////////////////
   // Public Methods
-
-  public toString(): string {
-    return this.amount
-  }
-
-  public round(decimals?: number): string {
-    const amt = this.amount
-    const nDecimals = amt.length - amt.indexOf('.') - 1
-    // rounding to more decimals than are available: pad with zeros
-    if (typeof decimals === 'number' && decimals > nDecimals) {
-      return amt + '0'.repeat(decimals - nDecimals)
-    // rounding to fewer decimals than are available: round
-    } else if (typeof decimals === 'number' && decimals < nDecimals) {
-      // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
-      // roundUp is equivalent number to 0.5 in above example
-      const roundUp = bigNumberify('5' + '0'.repeat(this.precision - decimals - 1))
-      const rounded = this.fromWad(this.amountWad.add(roundUp))
-      return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, '')
-    // rounding to same decimals as are available: return amount w no changes
-    } else {
-      return this.amount
-    }
-  }
 
   public floor(): string {
     return this.amount.slice(0, this.amount.indexOf('.'))
@@ -148,8 +132,31 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
     return `${symbol}${amount}`
   }
 
+  public round(decimals?: number): string {
+    const amt = this.amount
+    const nDecimals = amt.length - amt.indexOf('.') - 1
+    // rounding to more decimals than are available: pad with zeros
+    if (typeof decimals === 'number' && decimals > nDecimals) {
+      return amt + '0'.repeat(decimals - nDecimals)
+    // rounding to fewer decimals than are available: round
+    } else if (typeof decimals === 'number' && decimals < nDecimals) {
+      // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
+      // roundUp plays same role as 0.5 in above example
+      const roundUp = bigNumberify('5' + '0'.repeat(this.precision - decimals - 1))
+      const rounded = this.fromWad(this.amountWad.add(roundUp))
+      return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, '')
+    // rounding to same decimals as are available: return amount w no changes
+    } else {
+      return this.amount
+    }
+  }
+
+  public toString(): string {
+    return this.format()
+  }
+
   ////////////////////////////////////////
-  // Private helper functions
+  // Private Methods
 
   private toWad = (n: number|string): BN => {
     return parseUnits(n.toString(), this.precision)
@@ -160,3 +167,5 @@ export default class Currency<ThisType extends CurrencyType = any> implements IC
   }
 
 }
+
+export default Currency

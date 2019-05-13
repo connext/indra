@@ -11,6 +11,9 @@ export const toBN = (n: string|number|BN): BN =>
 export const toWei = (n: string|number|BN): BN =>
   eth.utils.parseEther(n.toString())
 
+export const fromWei = (n: BN): string =>
+  eth.utils.formatEther(n)
+
 export const weiToToken = (wei: BN, tokenPerEth: string): BN =>
   toBN(eth.utils.formatEther(toWei(tokenPerEth).mul(wei)).slice(0, -2))
 
