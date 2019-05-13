@@ -19,17 +19,15 @@ export default class CurrencyConvertable extends Currency {
   }
 
   public to = (toType: CurrencyType): CurrencyConvertable => this._convert(toType)
-  public toUSD = (): CurrencyConvertable => this._convert("USD")
+  public toDAI = (): CurrencyConvertable => this._convert("DAI")
   public toETH = (): CurrencyConvertable => this._convert("ETH")
+  public toFIN = (): CurrencyConvertable => this._convert("FIN")
   public toWEI = (): CurrencyConvertable => this._convert("WEI")
-  public toFIN = (): CurrencyConvertable => this._convert("FINNEY")
-  public toBOOTY = (): CurrencyConvertable => this._convert("BOOTY")
-  public toBEI = (): CurrencyConvertable => this._convert("BEI")
 
-  public getExchangeRate = (currency: 'USD'): string => {
-    const rate = this.exchangeRates().USD
+  public getExchangeRate = (currency: 'DAI'): string => {
+    const rate = this.exchangeRates().DAI
     if (!rate)
-      throw new Error('No exchange rate for USD! Have: ' + JSON.stringify(this.exchangeRates()))
+      throw new Error('No exchange rate for DAI! Have: ' + JSON.stringify(this.exchangeRates()))
     return rate.toString()
   }
 
@@ -38,10 +36,10 @@ export default class CurrencyConvertable extends Currency {
       return this
     }
 
-    if (!this.amountBN.gt(toBN(0))) {
+    if (!this.amountWad.gt(toBN(0))) {
       return new CurrencyConvertable(
         toType,
-        this.amountBN,
+        this.amountWad,
         this.exchangeRates
       )
     }
@@ -52,7 +50,7 @@ export default class CurrencyConvertable extends Currency {
     if (rates[this.type] != null && rates[toType] != null) {
       const typeToETH = toBN(rates[this.type])
       const toTypeToETH = toBN(rates[toType])
-      const amountInETH = this.amountBN.div(typeToETH)
+      const amountInETH = this.amountWad.div(typeToETH)
 
       amountInToType = amountInETH.mul(toTypeToETH)
     }

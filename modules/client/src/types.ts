@@ -1,3 +1,10 @@
+import { isArray, isNullOrUndefined } from 'util'
+import { BN, isBN, toBN } from './lib/bn'
+import { CurrencyType } from './lib/currency/Currency'
+
+////////////////////////////////////////
+// Export useful types defined in other modules
+
 export { Contract } from 'ethers/contract'
 export {
   Block,
@@ -15,31 +22,14 @@ export {
   UnsignedTransaction,
 } from 'ethers/utils'
 
-import { ChannelManager as ChannelManagerLib } from './contract/ChannelManager';
-import { BN, isBN, toBN } from './lib/bn'
-import { default as CurrencyLib } from './lib/currency/Currency'
-import { default as CurrencyConvertableLib } from './lib/currency/CurrencyConvertable'
-import { isArray, isNullOrUndefined } from 'util';
+export { ChannelManager } from './contract/ChannelManager'
+export { CurrencyType, default as Currency } from './lib/currency/Currency'
+export { default as CurrencyConvertable } from './lib/currency/CurrencyConvertable'
 
-/*********************************
- ****** Currencies & Exchange Rates
- *********************************/
+////////////////////////////////////////
+// Common types eg Exchange Rates
 
-export class ChannelManager extends ChannelManagerLib {}
-export const Currency = CurrencyLib
-export const CurrencyConvertable = CurrencyConvertableLib
-
-// TODO replace enums with not enums to be consistent throughout platform
-// see DW for how to do this
-export const CurrencyType = {
-  USD: 'USD',
-  ETH: 'ETH',
-  WEI: 'WEI',
-  FINNEY: 'FINNEY',
-  BOOTY: 'BOOTY',
-  BEI: 'BEI',
-}
-export type CurrencyType = keyof typeof CurrencyType
+export type Address = string
 
 export type ExchangeRates = {
   [key in CurrencyType]?: string
@@ -50,13 +40,9 @@ export interface ExchangeRateState {
   rates: ExchangeRates
 }
 
-// define the common interfaces
-export type Address = string
+////////////////////////////////////////
+// Constructor Types
 
-/*********************************
- ****** CONSTRUCTOR TYPES ********
- *********************************/
-// contract constructor options
 export interface ContractOptions {
   hubAddress: string
   tokenAddress: string
@@ -227,7 +213,7 @@ export const ChannelUpdateReasons: { [key in keyof UpdateRequestTypes]: string }
 export type ChannelUpdateReason = keyof UpdateRequestTypes
 
 // exchangeRate is in units of ERC20 / ETH
-// since booty is in 1 USD == USD / ETH
+// since booty is in 1 DAI == DAI / ETH
 export type ExchangeArgs<T=string> = {
   exchangeRate: string // ERC20 / ETH
   seller: 'user' | 'hub' // who is initiating trade

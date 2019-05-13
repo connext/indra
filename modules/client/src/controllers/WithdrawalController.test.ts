@@ -59,7 +59,7 @@ describe("createWithdrawalParameters", () => {
       balanceWei: [10, 5],
       balanceToken: [0, 50],
     })
-    mockStore.setExchangeRate({ 'USD': exchangeRate })
+    mockStore.setExchangeRate({ 'DAI': exchangeRate })
     connext = new MockConnextInternal({ 
       store: mockStore.createStore(),
     })
@@ -88,7 +88,7 @@ describe('WithdrawalController: unit tests', () => {
       balanceWei: [10, 5],
       balanceToken: [0, 50],
     })
-    mockStore.setExchangeRate({ 'USD': exchangeRate })
+    mockStore.setExchangeRate({ 'DAI': exchangeRate })
     connext = new MockConnextInternal({ 
       user, 
       store: mockStore.createStore() 

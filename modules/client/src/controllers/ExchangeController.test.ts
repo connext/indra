@@ -20,7 +20,7 @@ describe('ExchangeController: unit tests', () => {
       balanceWei: [0, 10],
       balanceToken: [50, 0],
     })
-    mockStore.setExchangeRate({ 'USD': '5' })
+    mockStore.setExchangeRate({ 'DAI': '5' })
     connext = new MockConnextInternal({ user, store: mockStore.createStore() })
     await connext.start()
     await connext.exchangeController.exchange('10', 'wei')

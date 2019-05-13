@@ -11,18 +11,18 @@ const ONE_MINUTE = 1000 * 60
 
 export function validateExchangeRate(store: ConnextStore, rate: string) {
   const rates = getExchangeRates(store.getState())
-  if (!rates || !rates.USD) {
+  if (!rates || !rates.DAI) {
     return (
       `No exchange rates set in store.`
     )
   }
-  const delta = Math.abs(+rates.USD - +rate)
-  const allowableDelta = +rates.USD * 0.02
+  const delta = Math.abs(+rates.DAI - +rate)
+  const allowableDelta = +rates.DAI * 0.02
   if (delta > allowableDelta) {
     // TODO: send an invalidating state back to the hub (REB-12)
     return (
       `Proposed exchange rate '${rate}' exceeds ` +
-      `difference from current rate '${rates.USD}'`
+      `difference from current rate '${rates.DAI}'`
     )
   }
 }
@@ -54,11 +54,11 @@ export class ExchangeController extends AbstractController {
     try {
       const rates = await this.hub.getExchangeRates()
       const WeiPerEther = eth.constants.WeiPerEther
-      if (rates.USD) {
+      if (rates.DAI) {
         // These are the values wallet expects
-        rates.USD = rates.USD,
+        rates.DAI = rates.DAI,
         rates.ETH = toBN(1).toString()
-        rates.FINNEY = WeiPerEther.div(eth.utils.parseUnits('1', 'finney')).toString()
+        rates.FIN = WeiPerEther.div(eth.utils.parseUnits('1', 'finney')).toString()
         rates.WEI = WeiPerEther.toString()
 
         this.store.dispatch(actions.setExchangeRate({

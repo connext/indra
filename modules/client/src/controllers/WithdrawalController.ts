@@ -37,7 +37,7 @@ export default class WithdrawalController extends AbstractController {
     return {
       recipient: args.recipient || this.connext.wallet.address,
       // TODO: should be dependent on the token in the channel
-      exchangeRate: this.getState().runtime.exchangeRate!.rates.USD,
+      exchangeRate: this.getState().runtime.exchangeRate!.rates.DAI,
       ...insertDefault('0', args, withdrawalParamsNumericFields)
     }
   }
@@ -90,7 +90,7 @@ export default class WithdrawalController extends AbstractController {
     // TODO: should be dependent on the token in the channel
     // NOTE: if a wd is requested without an exchange rate in store
     // this will fail
-    const exchangeRate = state.runtime.exchangeRate!.rates.USD!
+    const exchangeRate = state.runtime.exchangeRate!.rates.DAI!
     const chan = convertChannelState("bn", channel)
     // insert the default values
     const fullArgs = insertDefault('0', args, argNumericFields.Payment)

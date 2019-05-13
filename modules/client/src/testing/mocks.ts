@@ -518,7 +518,7 @@ export class MockHub implements IHubAPIClient {
   }
 
   async getExchangeRates(): Promise<ExchangeRates> {
-    return { 'USD': '5' }
+    return { 'DAI': '5' }
   }
 
   async requestCollateral(txCountGlobal: number): Promise<Sync> {
