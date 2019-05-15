@@ -49,6 +49,7 @@ export class OptimisticPaymentsService {
     // get all payments to be processed
     const newPayments = await this.opPaymentDao.getNewOptimisticPayments()
     for (const p of newPayments) {
+      // each payment within the fetched set of payments will be done inside a transaction
       await this.db.withTransaction(async () => {
         const payeeChan = await this.channelsDao.getChannelOrInitialState(
           p.recipient
