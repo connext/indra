@@ -51,7 +51,13 @@ export default class Wallet extends eth.Signer {
       this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
 
-    // Third choice: Sign w web3
+    // Third choice: External wallets
+    }
+		else if (opts.externalWallet) {
+			this.signer = opts.externalWallet;
+			this.address = this.signer.address.toLowerCase();
+
+		// Fourth choice: Sign w web3
     } else if (opts.user && opts.web3Provider) {
       // TODO: Web3Provider != Web3EthereumProvider
       this.web3 = new Web3(opts.web3Provider as any)
