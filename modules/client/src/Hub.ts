@@ -49,7 +49,9 @@ export interface IHubAPIClient {
   getExchangeRates(): Promise<ExchangeRates> // TODO: name is typo
   getIncomingThreads(): Promise<ThreadRow[]>
   getLastThreadUpdateId(): Promise<number>
-  getLatestChannelStateAndUpdate(): Promise<{state: ChannelState, update: UpdateRequest} | undefined>
+  getLatestChannelStateAndUpdate(): Promise<{
+    state: ChannelState, update: UpdateRequest,
+  } | undefined>
   getLatestStateNoPendingOps(): Promise<ChannelState | undefined>
   getPaymentById(id: string): Promise<PurchaseRowWithPayments<object, string>>
   getPaymentHistory(): Promise<PurchasePaymentRow[]>
@@ -83,7 +85,7 @@ export class HubAPIClient implements IHubAPIClient {
   private wallet: Wallet
   private authToken?: string
 
-  constructor(networking: Networking, wallet: Wallet) {
+  public constructor(networking: Networking, wallet: Wallet) {
     this.networking = networking
     this.wallet = wallet
   }
@@ -272,7 +274,7 @@ export class HubAPIClient implements IHubAPIClient {
   }
 
   public async getChannel(): Promise<ChannelRow> {
-    return await this.getChannelByUser(this.wallet.address)
+    return this.getChannelByUser(this.wallet.address)
   }
 
   // return channel state at specified global nonce

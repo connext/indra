@@ -55,23 +55,28 @@ import Wallet from './Wallet'
 
 export interface IConnextChannelOptions {
   connextProvider?: ConnextProvider // NOTE: only a placeholder
-  contract?: IChannelManager // Optional, useful for dependency injection
-  contractAddress?: string
   ethUrl?: string
-  gasMultiple?: number
-  hub?: IHubAPIClient // Optional, useful for dependency injection
-  hubAddress?: string
   hubUrl: string
   mnemonic?: string
   password?: string
   privateKey?: string
-  store?: ConnextStore // Optional, useful for dependency injection
-  tokenAddress?: string
   user?: string
   web3Provider?: Web3Provider
   loadState?(): Promise<string | undefined>
   safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder
   saveState?(state: string): Promise<any>
+}
+
+export interface IConnextChannelInternalOptions extends IConnextChannelOptions{
+  contract?: IChannelManager // Optional, useful for dependency injection
+  contractAddress: string
+  gasMultiple: number
+  hub?: IHubAPIClient // Optional, useful for dependency injection
+  hubAddress: string
+  saveState(state: string): Promise<any>
+  store?: ConnextStore // Optional, useful for dependency injection
+  tokenAddress: string
+  user: string
 }
 
 ////////////////////////////////////////
@@ -99,14 +104,14 @@ export const createClient = async (opts: IConnextChannelOptions): Promise<Connex
 
   // if web3, create a new web3
   if (merged.web3Provider && !merged.user) {
-    // set default address
-    // TODO: improve this
+    // set default address TODO: improve this
     const tmp = new Web3(opts.web3Provider as any)
     merged.user = (await tmp.eth.getAccounts())[0]
   }
 
   const wallet: Wallet = new Wallet(merged)
   merged.user = merged.user || wallet.address
+  merged.saveState = merged.saveState || console.log
 
   return new ConnextInternal({ ...merged }, wallet)
 }
@@ -124,7 +129,7 @@ export const createClient = async (opts: IConnextChannelOptions): Promise<Connex
  *
  */
 export abstract class ConnextChannel extends EventEmitter {
-  public opts: IConnextChannelOptions
+  public opts: IConnextChannelInternalOptions
   public StateGenerator?: StateGenerator
   public Utils?: Utils // class constructor (todo: rm?)
   public utils: Utils // instance
@@ -132,7 +137,7 @@ export abstract class ConnextChannel extends EventEmitter {
 
   private internal: ConnextInternal
 
-  public constructor(opts: IConnextChannelOptions) {
+  public constructor(opts: IConnextChannelInternalOptions) {
     super()
 
     this.opts = opts
@@ -199,17 +204,17 @@ export abstract class ConnextChannel extends EventEmitter {
   }
 
   public async redeem(secret: string): Promise<{ purchaseId: string }> {
-    return await this.internal.redeemController.redeem(secret)
+    return this.internal.redeemController.redeem(secret)
   }
 
   public async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
-    return await this.internal.hub.getPaymentHistory()
+    return this.internal.hub.getPaymentHistory()
   }
 
   public async getPaymentById(
     purchaseId: string,
   ): Promise<PurchaseRowWithPayments<object, string>> {
-    return await this.internal.hub.getPaymentById(purchaseId)
+    return this.internal.hub.getPaymentById(purchaseId)
   }
 }
 
@@ -220,7 +225,7 @@ export abstract class ConnextChannel extends EventEmitter {
 export class ConnextInternal extends ConnextChannel {
   public contract: IChannelManager
   public hub: IHubAPIClient
-  public opts: IConnextChannelOptions
+  public opts: IConnextChannelInternalOptions
   public provider: any
   public store: ConnextStore
   public utils: Utils
@@ -241,7 +246,7 @@ export class ConnextInternal extends ConnextChannel {
   private _saving: Promise<void> = Promise.resolve()
   private _savePending: boolean = false
 
-  constructor(opts: IConnextChannelOptions, wallet: Wallet) {
+  public constructor(opts: IConnextChannelInternalOptions, wallet: Wallet) {
     super(opts)
     this.opts = opts
 
@@ -258,9 +263,9 @@ export class ConnextInternal extends ConnextChannel {
       this.wallet,
     )
 
-    opts.user = opts.user!.toLowerCase()
-    opts.hubAddress = opts.hubAddress!.toLowerCase()
-    opts.contractAddress = opts.contractAddress!.toLowerCase()
+    opts.user = opts.user.toLowerCase()
+    opts.hubAddress = opts.hubAddress.toLowerCase()
+    opts.contractAddress = opts.contractAddress.toLowerCase()
     opts.gasMultiple = opts.gasMultiple || 1.5
 
     this.contract = opts.contract
@@ -299,7 +304,10 @@ export class ConnextInternal extends ConnextChannel {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
-  public async recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string|undefined> {
+  public async recipientNeedsCollateral(
+    recipient: Address,
+    amount: Payment,
+  ): Promise<string|undefined> {
     // get recipients channel
     let channel: ChannelRow
     try {
@@ -352,22 +360,20 @@ export class ConnextInternal extends ConnextChannel {
       const lastThreadUpdateId: any = await this.hub.getLastThreadUpdateId()
       this.store.dispatch(actions.setLastThreadUpdateId(lastThreadUpdateId))
       // extract thread history, sort by descending threadId
-      const threadHistoryDuplicates: any = (await this.hub.getAllThreads()).map((t: any): any => {
-        return {
-          receiver: t.receiver,
-          sender: t.sender,
-          threadId: t.threadId,
-        }
-      }).sort((a: any, b: any): any => b.threadId - a.threadId)
+      const threadHistoryDuplicates: any = (await this.hub.getAllThreads()).map((t: any): any => ({
+        receiver: t.receiver,
+        sender: t.sender,
+        threadId: t.threadId,
+      })).sort((a: any, b: any): any => b.threadId - a.threadId)
       // filter duplicates
       const threadHistory: any = threadHistoryDuplicates.filter((thread: any, i: any): any => {
         const search: string = JSON.stringify({
           receiver: thread.receiver,
           sender: thread.sender,
         })
-        const elts: any = threadHistoryDuplicates.map((t: any): any => {
-          return JSON.stringify({ sender: t.sender, receiver: t.receiver })
-        })
+        const elts: any = threadHistoryDuplicates.map((t: any): any =>
+          JSON.stringify({ sender: t.sender, receiver: t.receiver }),
+        )
         return elts.indexOf(search) === i
       })
       this.store.dispatch(actions.setThreadHistory(threadHistory))
@@ -405,13 +411,13 @@ export class ConnextInternal extends ConnextChannel {
   }
 
   public async getContractEvents(eventName: string, fromBlock: number): Promise<any> {
-    return this.contract.getPastEvents(eventName, [this.opts.user!], fromBlock)
+    return this.contract.getPastEvents(eventName, [this.opts.user], fromBlock)
   }
 
   public async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
-      state.user.toLowerCase() !== this.opts.user!.toLowerCase() ||
-      state.contractAddress.toLowerCase() !== (this.opts.contractAddress! as any).toLowerCase()
+      state.user.toLowerCase() !== this.opts.user.toLowerCase() ||
+      state.contractAddress.toLowerCase() !== this.opts.contractAddress.toLowerCase()
     ) {
       throw new Error(
         `Refusing to sign channel state update which changes user or contract: ` +
@@ -481,7 +487,7 @@ export class ConnextInternal extends ConnextChannel {
       // Only save the state after all the currently pending operations have
       // completed to make sure that subsequent state updates will be atomic.
       setTimeout(async () => {
-        let err: any = undefined
+        let err: any
         try {
           await this._saveLoop()
         } catch (e) {
@@ -501,10 +507,10 @@ export class ConnextInternal extends ConnextChannel {
    * it's being saved before we return.
    */
   private async _saveLoop(): Promise<void> {
-    let result: Promise<any> | undefined = undefined
+    let result: Promise<any> | undefined
     while (true) {
-      const state: any = this._latestState!
-      result = this.opts.saveState!(JSON.stringify(state))
+      const state: any = this._latestState
+      result = this.opts.saveState(JSON.stringify(state))
 
       // Wait for any current save to finish, but ignore any error it might raise
       const [timeout, _] = await timeoutPromise(
@@ -566,9 +572,9 @@ export class ConnextInternal extends ConnextChannel {
     const state: any = new ConnextState()
     state.persistent.channel = {
       ...state.persistent.channel,
-      contractAddress: this.opts.contractAddress || '', // TODO: how to handle this while undefined?
-      recipient: this.opts.user!,
-      user: this.opts.user!,
+      contractAddress: this.opts.contractAddress, // TODO: how to handle this while undefined?
+      recipient: this.opts.user,
+      user: this.opts.user,
     }
     state.persistent.latestValidState = state.persistent.channel
 
