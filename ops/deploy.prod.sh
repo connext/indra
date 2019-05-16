@@ -176,6 +176,8 @@ services:
       - database
       - chainsaw
     environment:
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
+      CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
@@ -207,6 +209,8 @@ services:
     depends_on:
       - postgres
     environment:
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
+      CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
@@ -222,8 +226,6 @@ services:
       REDIS_URL: $redis_url
       SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
-      CHANNEL_BEI_LIMIT: $channel_bei_limit
-      CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
       TOKEN_ADDRESS: $token_address
     logging:
       driver: "json-file"
