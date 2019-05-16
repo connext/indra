@@ -72,7 +72,7 @@ export class ChannelManager implements IChannelManager {
     for (const log of logs) {
       events.push(this.abi.parseLog(log) as LogDescription)
     }
-    console.log(`Got events: ${JSON.stringify(events,null,2)}`)
+    console.log(`Got events: ${JSON.stringify(events,undefined,2)}`)
     return events
   }
 

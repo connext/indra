@@ -86,7 +86,7 @@ export class ExchangeController extends AbstractController {
     // and tokens
     const channel = this.getState().persistent.channel
     if (toBN(channel.balanceWeiUser).lt(weiToSell) || toBN(channel.balanceTokenUser).lt(tokensToSell)) {
-      console.error(`User does not have sufficient wei or token for exchange. Wei: ${weiToSell}, tokens: ${tokensToSell}, channel: ${JSON.stringify(channel, null, 2)}`)
+      console.error(`User does not have sufficient wei or token for exchange. Wei: ${weiToSell}, tokens: ${tokensToSell}, channel: ${JSON.stringify(channel, undefined, 2)}`)
       return
     }
     const sync = await this.hub.requestExchange(weiToSell, tokensToSell, getTxCount(this.store.getState()))

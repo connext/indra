@@ -50,7 +50,7 @@ export class SyncControllerState {
 }
 
 export interface IOnchainMonitoring {
-  transactionHash: string | null,
+  transactionHash: string | undefined,
   submitted: boolean,
   detected: boolean
 }
@@ -59,22 +59,22 @@ export class RuntimeState {
   public deposit: IOnchainMonitoring = {
     detected: false,
     submitted: false,
-    transactionHash: null,
+    transactionHash: undefined,
   }
 
   public withdrawal: IOnchainMonitoring = {
     detected: false,
     submitted: false,
-    transactionHash: null,
+    transactionHash: undefined,
   }
 
   public collateral: IOnchainMonitoring = {
     detected: false,
     submitted: false,
-    transactionHash: null,
+    transactionHash: undefined,
   }
 
-  public exchangeRate: null | ExchangeRateState = null
+  public exchangeRate: undefined | ExchangeRateState = undefined
   public syncResultsFromHub: SyncResult[] = []
   public updateRequestTimeout: number = 60 * 10 // default 10 min
   public channelStatus: ChannelStatus = 'CS_OPEN'
@@ -83,7 +83,7 @@ export class RuntimeState {
 export interface IPendingRequestedDeposit {
   amount: Payment
   requestedOn: number
-  txCount: number | null
+  txCount: number | undefined
 }
 
 export class PersistentState {

@@ -54,39 +54,24 @@ import Wallet from './Wallet'
 ////////////////////////////////////////
 
 export interface IConnextChannelOptions {
-  hubUrl: string
+  connextProvider?: ConnextProvider // NOTE: only a placeholder
+  contract?: IChannelManager // Optional, useful for dependency injection
+  contractAddress?: string
   ethUrl?: string
-  mnemonic?: string
-  privateKey?: string
-  password?: string
-  user?: string
-
-  // NOTE: these are not used, do not pass them in.
-  // These are currently placeholders so that other
-  // instances may be passed in.
-  // TODO: implement injected provider functionality
-  web3Provider?: Web3Provider
-  connextProvider?: ConnextProvider
-  safeSignHook?: (state: ChannelState | ThreadState) => Promise<string>
-
-  // Functions used to save/load the persistent portions of its internal state
-  loadState?: () => Promise<string | null>
-  saveState?: (state: string) => Promise<any>
-
-  // Used to (in)validate the hubUrl if it's config has info that conflicts w below
-  ethNetworkId?: string
-  contractAddress?: Address
-  hubAddress?: Address
-  tokenAddress?: Address
-  tokenName?: string
-
-  origin?: string
   gasMultiple?: number
-
-  // Optional, useful for dependency injection
-  hub?: IHubAPIClient
-  store?: ConnextStore
-  contract?: IChannelManager
+  hub?: IHubAPIClient // Optional, useful for dependency injection
+  hubAddress?: string
+  hubUrl: string
+  mnemonic?: string
+  password?: string
+  privateKey?: string
+  store?: ConnextStore // Optional, useful for dependency injection
+  tokenAddress?: string
+  user?: string
+  web3Provider?: Web3Provider
+  loadState?(): Promise<string | undefined>
+  safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder
+  saveState?(state: string): Promise<any>
 }
 
 ////////////////////////////////////////
@@ -94,7 +79,7 @@ export interface IConnextChannelOptions {
 ////////////////////////////////////////
 
 // Used to get an instance of ConnextChannel.
-export async function createChannel(opts: IConnextChannelOptions): Promise<ConnextChannel> {
+export const createClient = async (opts: IConnextChannelOptions): Promise<ConnextChannel> => {
 
   const hubConfig: any = (await (new Networking(opts.hubUrl)).get(`config`)).data
   const config: any = {
@@ -147,7 +132,7 @@ export abstract class ConnextChannel extends EventEmitter {
 
   private internal: ConnextInternal
 
-  constructor(opts: IConnextChannelOptions) {
+  public constructor(opts: IConnextChannelOptions) {
     super()
 
     this.opts = opts
@@ -172,12 +157,12 @@ export abstract class ConnextChannel extends EventEmitter {
   // ******* PROFILE METHODS ******
   // ******************************
 
-  public async getProfileConfig(): Promise<PaymentProfileConfig | null> {
-    return await this.internal.hub.getProfileConfig()
+  public async getProfileConfig(): Promise<PaymentProfileConfig | undefined> {
+    return this.internal.hub.getProfileConfig()
   }
 
   public async startProfileSession(): Promise<void> {
-    await this.internal.hub.startProfileSession()
+   return this.internal.hub.startProfileSession()
   }
 
   // ******************************
@@ -185,7 +170,7 @@ export abstract class ConnextChannel extends EventEmitter {
   // ******************************
 
   public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
-    return await this.internal.buyController.buy(purchase)
+    return this.internal.buyController.buy(purchase)
   }
 
   public async deposit(payment: Partial<Payment>): Promise<void> {
@@ -199,8 +184,8 @@ export abstract class ConnextChannel extends EventEmitter {
   public async recipientNeedsCollateral(
     recipient: Address,
     amount: Payment,
-  ): Promise<string|null> {
-    return await this.internal.recipientNeedsCollateral(recipient, amount)
+  ): Promise<string|undefined> {
+    return this.internal.recipientNeedsCollateral(recipient, amount)
   }
 
   public async withdraw(
@@ -252,7 +237,7 @@ export class ConnextInternal extends ConnextChannel {
   public threadsController: ThreadsController
   public withdrawalController: WithdrawalController
 
-  private _latestState: PersistentState | null = null
+  private _latestState: PersistentState | undefined = undefined
   private _saving: Promise<void> = Promise.resolve()
   private _savePending: boolean = false
 
@@ -262,16 +247,14 @@ export class ConnextInternal extends ConnextChannel {
 
     // Internal things
     // The store shouldn't be used by anything before calling `start()`, so
-    // leave it null until then.
-    this.store = null as any
+    // leave it undefined until then.
+    this.store = undefined as any
     this.wallet = wallet
     this.provider = wallet.provider
-    this.opts.origin = opts.origin || 'unknown'
 
     console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
       new Networking(this.opts.hubUrl),
-      this.opts.origin,
       this.wallet,
     )
 
@@ -316,7 +299,7 @@ export class ConnextInternal extends ConnextChannel {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
-  public async recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string|null> {
+  public async recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string|undefined> {
     // get recipients channel
     let channel: ChannelRow
     try {
@@ -335,7 +318,7 @@ export class ConnextInternal extends ConnextChannel {
       return 'Recipient needs collateral to facilitate payment.'
     }
     // otherwise, no collateral is needed to make payment
-    return null
+    return undefined
   }
 
   public async start(): Promise<void> {
@@ -466,7 +449,7 @@ export class ConnextInternal extends ConnextChannel {
   ): Promise<SignedDepositRequestProposal> {
     const hash: string = this.utils.createDepositRequestProposalHash(args)
     const sig: string = await this.wallet.signMessage(hash)
-    console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
+    console.log(`Signing deposit request ${JSON.stringify(args, undefined, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 
@@ -498,7 +481,7 @@ export class ConnextInternal extends ConnextChannel {
       // Only save the state after all the currently pending operations have
       // completed to make sure that subsequent state updates will be atomic.
       setTimeout(async () => {
-        let err: any = null
+        let err: any = undefined
         try {
           await this._saveLoop()
         } catch (e) {
@@ -518,14 +501,14 @@ export class ConnextInternal extends ConnextChannel {
    * it's being saved before we return.
    */
   private async _saveLoop(): Promise<void> {
-    let result: Promise<any> | null = null
+    let result: Promise<any> | undefined = undefined
     while (true) {
       const state: any = this._latestState!
       result = this.opts.saveState!(JSON.stringify(state))
 
       // Wait for any current save to finish, but ignore any error it might raise
       const [timeout, _] = await timeoutPromise(
-        result.then(null, () => null),
+        result.then(undefined, () => undefined),
         10 * 1000,
       )
       if (timeout) {

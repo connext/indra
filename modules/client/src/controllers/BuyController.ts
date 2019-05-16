@@ -108,7 +108,7 @@ export default class BuyController extends AbstractController {
     // with this as the initial state
     let curChannelState = getChannel(this.store.getState())
     for (const p of purchase.payments) {
-      let newChannelState = null
+      let newChannelState = undefined
       // insert 0 defaults on purchase payment amount
       const payment = await this.assignPaymentType(p)
 
@@ -178,11 +178,11 @@ export default class BuyController extends AbstractController {
           // check that a secret exists
           const { secret } = payment.meta
           if (!secret) {
-            throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
+            throw new Error(`Secret is not present on linked payment, aborting purchase. Purchase: ${JSON.stringify(purchase, undefined, 2)}`)
           }
 
           if (!eth.utils.isHexString(secret)) {
-            throw new Error(`Secret is not hex string, aborting purchase. Purchase: ${JSON.stringify(purchase, null, 2)}`)
+            throw new Error(`Secret is not hex string, aborting purchase. Purchase: ${JSON.stringify(purchase, undefined, 2)}`)
           }
 
           const linkArgs: PaymentArgs = {

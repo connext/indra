@@ -26,7 +26,7 @@ import { AbstractController } from './AbstractController'
 /**
  * This function should be used to update the `syncResultsFromHub` value in the 
  * runtime state. Both arrays of sync results should have fields that are given 
- * by the hub (e.g createdOn will not be null)
+ * by the hub (e.g createdOn will not be undefined)
  */
 
 /*
@@ -146,7 +146,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     return a.txCount - b.txCount
   })
 
-  // ensure there is only one state with a null txCount
+  // ensure there is only one state with a undefined txCount
   let hasNull = false
   channelUpdates = channelUpdates.filter(s => {
     if (!s.txCount) {
@@ -611,7 +611,7 @@ export default class SyncController extends AbstractController {
         break
       case "CS_CHANNEL_DISPUTE":
       case "CS_CHAINSAW_ERROR":
-        console.warn(`Channel error with hub (status: ${sync.status}), please contact admin. Channel: ${JSON.stringify(state.persistent.channel, null, 2)}`)
+        console.warn(`Channel error with hub (status: ${sync.status}), please contact admin. Channel: ${JSON.stringify(state.persistent.channel, undefined, 2)}`)
         break
       case "CS_THREAD_DISPUTE":
         throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')

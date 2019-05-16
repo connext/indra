@@ -23,7 +23,7 @@ type StateUpdateHandlers = {
     this: StateUpdateController,
     prev: ChannelState,
     update: UpdateRequestTypes[Type],
-  ) => Promise<string | null | void>
+  ) => Promise<string | undefined | void>
 }
 
 /**
@@ -98,7 +98,7 @@ export async function watchStore<T>(
 }
 
 export default class StateUpdateController extends AbstractController {
-  private unsubscribe: Unsubscribe | null = null
+  private unsubscribe: Unsubscribe | undefined = undefined
 
   async start() {
     this.unsubscribe = await watchStore(
@@ -109,23 +109,23 @@ export default class StateUpdateController extends AbstractController {
         const status = state.runtime.channelStatus
         if (status === "CS_CHANNEL_DISPUTE") {
           console.warn(`Not processing updates, channel is not open. Status: ${status}`)
-          return null
+          return undefined
         } else if (status === "CS_THREAD_DISPUTE") {
           console.warn(`Not processing updates, channel is not open. Status: ${status}`)
-          return null
+          return undefined
         }
         // channel is open
         const item = state.runtime.syncResultsFromHub[0]
 
         // No sync results from hub; nothing to do
         if (!item)
-          return null
+          return undefined
 
         // Wait until we've flushed all the updates to the hub before
         // processing the next item.
         const { updatesToSync } = state.persistent.syncControllerState
         if (updatesToSync.length > 0)
-          return null
+          return undefined
 
         // Otherwise, call `syncOneItemFromStore` on the item.
         return item
@@ -139,7 +139,7 @@ export default class StateUpdateController extends AbstractController {
       this.unsubscribe()
   }
 
-  private _queuedActions: null | Action<any>[] = null
+  private _queuedActions: undefined | Action<any>[] = undefined
 
   /**
    * Used by state update handlers to queue an action to be run after
@@ -156,10 +156,10 @@ export default class StateUpdateController extends AbstractController {
       throw new Error('Can only flush queue while `handleStateUpdates` is running!')
     for (const action of this._queuedActions)
       this.store.dispatch(action)
-    this._queuedActions = null
+    this._queuedActions = undefined
   }
 
-  private async syncOneItemFromStore(item: SyncResult | null) {
+  private async syncOneItemFromStore(item: SyncResult | undefined) {
     if (!item)
       return
 
@@ -172,7 +172,7 @@ export default class StateUpdateController extends AbstractController {
 
     if (item.type === 'thread') { // handle thread updates
       if (item.update.state.txCount == 0) {
-        console.log(`Received opening thread state, should be handled in OpenThread channel update. State: ${JSON.stringify(this.getState(), null, 2)}`)
+        console.log(`Received opening thread state, should be handled in OpenThread channel update. State: ${JSON.stringify(this.getState(), undefined, 2)}`)
         return
       }
 

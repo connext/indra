@@ -14,7 +14,7 @@ import { filterPendingSyncResults, mergeSyncResults } from './SyncController'
 global.fetch = require('node-fetch-polyfill');
 
 describe('mergeSyncResults', () => {
-  function mkChanResult(txCount: number | null, sigs: 'hub' | 'user' | 'both' = 'both', reason: ChannelUpdateReason = 'Payment', createdOn: Date = new Date()): SyncResult {
+  function mkChanResult(txCount: number | undefined, sigs: 'hub' | 'user' | 'both' = 'both', reason: ChannelUpdateReason = 'Payment', createdOn: Date = new Date()): SyncResult {
     return {
       type: 'channel',
       update: {
@@ -141,9 +141,9 @@ describe('mergeSyncResults', () => {
     })
   })
 
-  it('should handle null states', () => {
-    const actual = mergeSyncResults([mkChanResult(null), mkChanResult(1)], [mkChanResult(null), mkChanResult(2)])
-    assert.deepEqual(actual.map(t => (t.update as any).txCount), [1, 2, null])
+  it('should handle undefined states', () => {
+    const actual = mergeSyncResults([mkChanResult(undefined), mkChanResult(1)], [mkChanResult(undefined), mkChanResult(2)])
+    assert.deepEqual(actual.map(t => (t.update as any).txCount), [1, 2, undefined])
   })
 
 })
@@ -330,7 +330,7 @@ describe('filterPendingSyncResults', () => {
 describe.skip('SyncController.findBlockNearestTimeout', () => {
   const connext = new MockConnextInternal()
 
-  let latestBlockNumber: number | null = null
+  let latestBlockNumber: number | undefined = undefined
   connext.provider.getBlock = ((num: any) => {
     if (num == 'latest')
       num = latestBlockNumber
@@ -458,7 +458,7 @@ describe.skip("SyncController: invalidation handling", () => {
   ], async _test => {
     const test = {
       curBlockTimestamp: prevStateTimeout + 100,
-      eventTxCounts: null,
+      eventTxCounts: undefined,
       ..._test,
     }
 

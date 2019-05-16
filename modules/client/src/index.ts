@@ -1,4 +1,4 @@
-import { createChannel } from './Connext'
+import { createClient } from './Connext'
 import { Poller } from './lib/poller'
 import { StateGenerator } from './StateGenerator'
 import { convert } from './types'
@@ -13,7 +13,7 @@ const utils = new Utils()
 
 export {
   convert,
-  createChannel,
+  createClient,
   Poller,
   StateGenerator,
   Utils,

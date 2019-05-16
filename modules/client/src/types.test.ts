@@ -21,7 +21,7 @@ describe('insertDefault', () => {
   it("should work", () => {
     const tst = {
       tokensToSell: '10',
-      testing: null,
+      testing: undefined,
     }
     const keys = [
       'testing',

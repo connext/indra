@@ -52,7 +52,7 @@ export function setterAction<Payload>(
   ...args: any[]
 ): ActionCreatorWithHandler<Payload> {
   const transform = args[args.length - 1]
-  const action = args.length === 1 ? null : args[0]
+  const action = args.length === 1 ? undefined : args[0]
   const res = actionCreator<Payload>((action || 'set') + ':' + attr) as any
   const bits = attr.split('.')
   res.handler = (state: any, value: any): any => {
@@ -99,7 +99,7 @@ export const setChannelAndUpdate = actionCreator<ISetChannelActionArgs>('setChan
 export const setChannel = setterAction<ChannelState>('persistent.channel')
 export const setLatestValidState = setterAction<ChannelState>('persistent.latestValidState')
 export const setSyncControllerState = setterAction<SyncControllerState>('persistent.syncControllerState')
-export const setRequestedDeposit = setterAction<IPendingRequestedDeposit | null>('persistent.requestedDeposit')
+export const setRequestedDeposit = setterAction<IPendingRequestedDeposit | undefined>('persistent.requestedDeposit')
 export const setThreadHistory = setterAction<ThreadHistoryItem[]>('persistent.threadHistory')
 export const setActiveInitialThreadStates = setterAction<ThreadState[]>('persistent.activeInitialThreadStates')
 export const setActiveThreads = setterAction<ThreadState[]>('persistent.activeThreads')

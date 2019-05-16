@@ -245,20 +245,20 @@ export class MockHub implements IHubAPIClient {
   }
 
   // TODO: implement the profile methods
-  async getProfileConfig(): Promise<PaymentProfileConfig | null> {
-    return null
+  async getProfileConfig(): Promise<PaymentProfileConfig | undefined> {
+    return undefined
   }
 
   async startProfileSession(): Promise<void> {}
 
-  async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
+  async getCustodialBalance(): Promise<CustodialBalanceRow | undefined> {
     return getCustodialBalance("empty")
   }
 
   async authChallenge(): Promise<string> {
     return 'nonce'
   }
-  async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
+  async authResponse(nonce: string, address: string, signature: string): Promise<string> {
     return 'hub-token-returned'
   }
   async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
@@ -279,8 +279,8 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
-  async recipientNeedsCollateral(): Promise<string | null> {
-    return null
+  async recipientNeedsCollateral(): Promise<string | undefined> {
+    return undefined
   }
 
   async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }> {
@@ -543,14 +543,14 @@ export class MockHub implements IHubAPIClient {
     }
   }
 
-  async updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{ error: null, updates: Sync }> {
+  async updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{ error: undefined, updates: Sync }> {
     this.receivedUpdateRequests = [
       ...this.receivedUpdateRequests,
       ...updates,
     ]
     let createdOn = new Date;
     return {
-      error: null,
+      error: undefined,
       updates: {
         status: "CS_OPEN",
         updates: updates.map(up => ({
@@ -571,13 +571,13 @@ export class MockHub implements IHubAPIClient {
   }
   
   async getLatestChannelStateAndUpdate() {
-    return null
+    return undefined
     // let store = new MockStore()
     // return {state: store._initialState.persistent.channel, update: store._initialState.persistent.channelUpdate}
   }
 
-  async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
-    return null
+  async getLatestStateNoPendingOps(): Promise<ChannelState | undefined> {
+    return undefined
   }
 
   assertReceivedUpdate(expected: PartialUpdateRequest) {

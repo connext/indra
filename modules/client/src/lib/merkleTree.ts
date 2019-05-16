@@ -66,7 +66,7 @@ export default class MerkleTree {
   }
 
   public verify(proof: string): boolean {
-    const proofArray: RegExpMatchArray | null = proof.substring(2).match(/.{64}/g)
+    const proofArray: RegExpMatchArray = proof.substring(2).match(/.{64}/g) || []
     if (!proofArray || proofArray.length * 64 !== proof.length -2) {
       console.warn(`Invalid proof: expected a hex string describing n 32 byte chunks`)
       return false

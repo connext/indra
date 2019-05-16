@@ -133,7 +133,7 @@ export default class Wallet extends eth.Signer {
         } * gasLimit=${gasLimit}) = total=${total} > balance=${balance}`,
       )
     }
-    if (txReq.nonce == null && this.signer) {
+    if (!txReq.nonce && this.signer) {
       txReq.nonce = this.signer!.getTransactionCount('pending')
     }
     const signedTx: string = await this.signTransaction(txReq)

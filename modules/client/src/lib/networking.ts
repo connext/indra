@@ -51,7 +51,7 @@ export class Networking {
 
     if (res.status === 204) {
       return {
-        data: null,
+        data: undefined,
       }
     }
 

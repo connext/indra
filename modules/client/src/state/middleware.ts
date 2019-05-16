@@ -38,7 +38,7 @@ export function handleStateFlags(args: any): any {
       // of transaction it pertains to
       let txType: any
       let isUnsigned = false
-      let txHash: string | null = null
+      let txHash: string | undefined = undefined
       const detectTxType = (sync: SyncResult): any => {
         if (sync.type !== 'channel') {
           // TODO: any special flags for threads needed

@@ -23,7 +23,7 @@ const tokenAbi = require('human-standard-token-abi')
  *   will be used by the DepositController.
  */
 export default class DepositController extends AbstractController {
-  private resolvePendingDepositPromise: any = null
+  private resolvePendingDepositPromise: any = undefined
 
   public async requestUserDeposit(args: Partial<Payment>) {
     // insert '0' strs to the obj
@@ -67,7 +67,7 @@ export default class DepositController extends AbstractController {
       )
       this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.rej(e)
     } finally {
-      this.resolvePendingDepositPromise = null
+      this.resolvePendingDepositPromise = undefined
     }
   }
 

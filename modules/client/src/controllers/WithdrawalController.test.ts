@@ -102,8 +102,8 @@ describe('WithdrawalController: unit tests', () => {
         recipient: mkAddress('0xBBB'),
         tokensToSell: '50',
         withdrawalWeiUser: '5',
-        weiToSell: null,
-        withdrawalTokenUser: null,
+        weiToSell: undefined,
+        withdrawalTokenUser: undefined,
       },
     },
     {

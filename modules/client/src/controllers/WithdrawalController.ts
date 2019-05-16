@@ -48,7 +48,7 @@ export default class WithdrawalController extends AbstractController {
     const channelStr = this.getState().persistent.channel
     const channelBN = convertChannelState('bn', channelStr)
     const WithdrawalError = (msg: string) => {
-      throw new Error(`${msg}. Parameters: ${JSON.stringify(withdrawalStr, null, 2)}. Channel: ${JSON.stringify(channelStr, null, 2)}.`)
+      throw new Error(`${msg}. Parameters: ${JSON.stringify(withdrawalStr, undefined, 2)}. Channel: ${JSON.stringify(channelStr, undefined, 2)}.`)
     }
     
     // validate recipient

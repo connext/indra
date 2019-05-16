@@ -35,7 +35,7 @@ export class Lock<T=void> implements PromiseLike<T> {
   private _p: Promise<T>
 
   constructor() {
-    this._resolve = null as any
+    this._resolve = undefined as any
     this._p = new Promise((res: any): any => this._resolve = res)
     this.then = this._p.then.bind(this._p)
     this.catch = this._p.catch.bind(this._p)
@@ -164,8 +164,8 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
   private _p: Promise<T>
 
   constructor() {
-    this.resolve = null as any
-    this.reject = null as any
+    this.resolve = undefined as any
+    this.reject = undefined as any
     this._p = new Promise((res: any, rej: any): void => {
       this.resolve = res
       this.reject = rej
@@ -198,8 +198,8 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
 type MaybeRes<T> = [T, any] & { res: T, err: any }
 export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
   return (p as Promise<T>).then(
-    (res: any): any => Object.assign([res, null], { res, err: null }) as any,
-    (err: any): any => Object.assign([null, err], { res: null, err }) as any,
+    (res: any): any => Object.assign([res, undefined], { res, err: undefined }) as any,
+    (err: any): any => Object.assign([undefined, err], { res: undefined, err }) as any,
   )
 }
 
@@ -212,7 +212,7 @@ export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
  *
  * If timeout is false-y then `[false, T]` will be unconditionally returned.
  */
-export function timeoutPromise<T>(p: Promise<T>, timeout: number | null | undefined): Promise<
+export function timeoutPromise<T>(p: Promise<T>, timeout: number | undefined): Promise<
   [false, T] |
   [true, Promise<T>]
 > {
@@ -230,7 +230,7 @@ export function timeoutPromise<T>(p: Promise<T>, timeout: number | null | undefi
       }, timeout)
     }),
   ])
-  result.then(null, () => null).then(() => {
+  result.then(undefined, () => undefined).then(() => {
     return toClear && clearTimeout(timeout)
   })
   return result as any

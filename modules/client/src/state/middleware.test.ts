@@ -17,7 +17,7 @@ describe('handleStateFlags', () => {
         },
         reason: 'ProposePendingDeposit',
         sigHub: mkHash('0xas'),
-        txCount: null,
+        txCount: undefined,
       },
     }]))
 
@@ -27,7 +27,7 @@ describe('handleStateFlags', () => {
       deposit: {
         detected: false,
         submitted: true,
-        transactionHash: null,
+        transactionHash: undefined,
       },
     })
   })
@@ -47,7 +47,7 @@ describe('handleStateFlags', () => {
         },
         reason: 'ConfirmPending',
         sigHub: mkHash('0xas'),
-        txCount: null,
+        txCount: undefined,
       },
     }]))
 
@@ -79,7 +79,7 @@ describe('handleStateFlags', () => {
           },
           reason: 'ConfirmPending',
           sigHub: mkHash('0xas'),
-          txCount: null,
+          txCount: undefined,
         },
       }],
     },
@@ -99,7 +99,7 @@ describe('handleStateFlags', () => {
           },
           reason: 'ConfirmPending',
           sigHub: mkHash('0xas'),
-          txCount: null,
+          txCount: undefined,
         },
       }],
     },
@@ -108,7 +108,7 @@ describe('handleStateFlags', () => {
       expected: {
         detected: false,
         submitted: true,
-        transactionHash: null,
+        transactionHash: undefined,
       },
       name: 'hub collateralizes, proposed',
       sync: [{
@@ -122,7 +122,7 @@ describe('handleStateFlags', () => {
           },
           reason: 'ProposePendingDeposit',
           sigHub: mkHash('0xas'),
-          txCount: null,
+          txCount: undefined,
         },
       }],
     },
@@ -131,7 +131,7 @@ describe('handleStateFlags', () => {
       expected: {
         detected: false,
         submitted: true,
-        transactionHash: null,
+        transactionHash: undefined,
       },
       name: 'hub decollateralizes, proposed',
       sync: [{
@@ -143,7 +143,7 @@ describe('handleStateFlags', () => {
           },
           reason: 'ProposePendingWithdrawal',
           sigHub: mkHash('0xas'),
-          txCount: null,
+          txCount: undefined,
         },
       }],
     },

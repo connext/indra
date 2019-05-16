@@ -297,7 +297,7 @@ export type WithdrawalArgs<T=string> = {
   //    targetTokenUser: current.balanceTokenUser
   //      .sub(userTokensToSell)
   //
-  // If either value is omitted (or null), the previous balance will be used,
+  // If either value is omitted (or undefined), the previous balance will be used,
   // minus any `{wei,tokens}ToSell`; ie, the default value is:
   //   target{Wei,Token}User = prev.balance{Wei,Token}User - args.{wei,tokens}ToSell
   targetWeiUser?: T
@@ -313,7 +313,7 @@ export type WithdrawalArgs<T=string> = {
   //    difference will be deposited into the hub's balance from the reserve
   //    (ie, added to `pendingDeposit{Wei,Token}Hub`).
   //
-  // If either value is omitted (or null), the previous balance will be used;
+  // If either value is omitted (or undefined), the previous balance will be used;
   // ie, the default value is:
   //   target{Wei,Token}Hub = prev.balance{Wei,Token}Hub
   targetWeiHub?: T
@@ -405,8 +405,8 @@ export type UpdateRequest<T=string, Args=ArgsTypes<T>> = {
   id?: number
   reason: ChannelUpdateReason
   args: Args
-  // the txCount will be null if the update is an unsigned update
-  txCount: number | null
+  // the txCount will be undefined if the update is an unsigned update
+  txCount: number | undefined
   sigUser?: string
   sigHub?: string
   // If this update is coming from the hub, this will be the database timestamp
@@ -981,7 +981,7 @@ export async function objMapPromise<T, F extends keyof T, R>(obj: T, func: (val:
 export function insertDefault(val: string, obj: any, keys: string[]) {
   let adjusted = {} as any
   keys.concat(Object.keys(obj)).map(k => {
-    // check by index and null
+    // check by index and undefined
     if (isNullOrUndefined(obj[k])) {
       // not supplied set as default val
       adjusted[k] = val

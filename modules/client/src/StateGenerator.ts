@@ -66,9 +66,9 @@ export function calculateExchange(args: ExchangeArgsBN) {
   }
 }
 
-function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
+function coalesce<T>(...vals: (T | undefined)[]): T | undefined {
   for (let v of vals) {
-    if (v !== null && v !== undefined)
+    if (v !== undefined)
       return v
   }
   return undefined
