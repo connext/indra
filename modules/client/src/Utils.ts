@@ -14,9 +14,7 @@ import {
   UnsignedThreadState,
 } from './types'
 
-const {
-  arrayify, concat, hexlify, isHexString, solidityKeccak256, toUtf8Bytes, verifyMessage,
-} = eth.utils
+const { arrayify, isHexString, solidityKeccak256, toUtf8Bytes, verifyMessage } = eth.utils
 
 ////////////////////////////////////////
 // Begin Utils class definition

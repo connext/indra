@@ -1,6 +1,6 @@
 {
   "extends": [
-    "tslint:recommended", 
+    "tslint:all", 
     "tslint-plugin-prettier", 
     "tslint-config-prettier"
   ],
@@ -10,6 +10,7 @@
     "curly": [true, "ignore-same-line"],
     "file-name-casing": [false, "pascal-case"],
     "max-classes-per-file": false,
+    "max-file-line-count": false,
     "max-line-length": [true, 100],
     "newline-before-return": false,
     "newline-per-chained-call": false,
@@ -22,6 +23,7 @@
     "no-submodule-imports": false,
     "no-this-assignment": [true, {"allow-destructuring": true}],
     "no-trailing-whitespace": [true],
+    "no-unused-variable": true,
     "object-literal-sort-keys": [true, "ignore-case"],
     "prefer-function-over-method": [true, "allow-public"],
     "quotemark": [true, "single", "backtick"],

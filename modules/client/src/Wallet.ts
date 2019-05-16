@@ -7,7 +7,9 @@ import {
   TransactionResponse,
 } from './types'
 
-const { bigNumberify } = eth.utils
+const {
+  arrayify, bigNumberify, hashMessage, hexlify, isHexString, toUtf8Bytes, verifyMessage,
+} = eth.utils
 
 export default class Wallet extends eth.Signer {
   public address: string
@@ -69,9 +71,7 @@ export default class Wallet extends eth.Signer {
   }
 
   public async signMessage(message: string): Promise<string> {
-    const bytes: Uint8Array = eth.utils.isHexString(message)
-      ? eth.utils.arrayify(message)
-      : eth.utils.toUtf8Bytes(message)
+    const bytes: Uint8Array = isHexString(message) ? arrayify(message) : toUtf8Bytes(message)
 
     if (this.signer) {
       return await this.signer.signMessage(bytes)
@@ -80,14 +80,14 @@ export default class Wallet extends eth.Signer {
       let sig: string
 
       // Modern versions of web3 will add the standard ethereum message prefix for us
-      sig = await this.web3.eth.sign(eth.utils.hexlify(bytes), this.address)
-      if (this.address === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+      sig = await this.web3.eth.sign(hexlify(bytes), this.address)
+      if (this.address === verifyMessage(bytes, sig).toLowerCase()) {
         return sig
       }
 
       // Old versions of web3 did not, we'll add it ourself
-      sig = await this.web3.eth.sign(eth.utils.hashMessage(bytes), this.address)
-      if (this.address === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+      sig = await this.web3.eth.sign(hashMessage(bytes), this.address)
+      if (this.address === verifyMessage(bytes, sig).toLowerCase()) {
         return sig
       }
 
@@ -122,10 +122,10 @@ export default class Wallet extends eth.Signer {
   public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
     txReq.gasPrice = await (txReq.gasPrice || this.provider.getGasPrice())
     // Sanity check: Do we have sufficient funds for this tx?
-    const balance = eth.utils.bigNumberify(await this.provider.getBalance(this.address))
-    const gasLimit = eth.utils.bigNumberify(await txReq.gasLimit!)
-    const gasPrice = eth.utils.bigNumberify(await txReq.gasPrice!)
-    const value = eth.utils.bigNumberify(await txReq.value!)
+    const balance = bigNumberify(await this.provider.getBalance(this.address))
+    const gasLimit = bigNumberify(await txReq.gasLimit!)
+    const gasPrice = bigNumberify(await txReq.gasPrice!)
+    const value = bigNumberify(await txReq.value!)
     const total = value.add(gasLimit.mul(gasPrice))
     if (balance.lt(total)) {
       throw new Error(
