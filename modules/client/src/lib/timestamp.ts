@@ -1,7 +1,7 @@
 import { getUpdateRequestTimeout } from '../state/getters'
 import { ConnextStore } from '../state/store'
 
-export function validateTimestamp(store: ConnextStore, timeout: number): string|undefined {
+export const validateTimestamp = (store: ConnextStore, timeout: number): string|undefined => {
   // timeout will be 0 for request collateral
   if (timeout === 0) {
     return

@@ -1,4 +1,5 @@
 import { ethers as eth } from 'ethers'
+
 import { BN } from './bn'
 
 const { bigNumberify, commify, formatUnits, parseUnits } = eth.utils
@@ -39,22 +40,22 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
       commas: false,
       decimals: 2,
       withSymbol: true,
-    } as ICurrencyFormatOptions,
+    },
     'ETH': {
       commas: false,
       decimals: 3,
       withSymbol: true,
-    } as ICurrencyFormatOptions,
+    },
     'FIN': {
       commas: false,
       decimals: 3,
       withSymbol: true,
-    } as ICurrencyFormatOptions,
+    },
     'WEI': {
       commas: false,
       decimals: 0,
       withSymbol: true,
-    } as ICurrencyFormatOptions,
+    },
   }
 
   ////////////////////////////////////////
@@ -70,13 +71,12 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   ////////////////////////////////////////
   // Constructor
 
-  constructor (currency: ICurrency<ThisType>);
-  constructor (type: ThisType, amount: number | string);
-  constructor (...args: any[]) {
+  public constructor (currency: ICurrency<ThisType>);
+  public constructor (type: ThisType, amount: number | string);
+  public constructor (...args: any[]) {
     const [type, amount] = (
       args.length === 1 ? [args[0].type, args[0].amount] : args
     )
-
     try {
       this._amount = this.toWad(amount)
       this._type = type
@@ -89,27 +89,27 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   // Getters
 
   // Returns a decimal string
-  get amount(): string {
+  public get amount(): string {
     return this.fromWad(this._amount)
   }
 
   // Just like amountWei when talking about ETH amounts
-  get amountWad(): BN {
+  public get amountWad(): BN {
     return this._amount
   }
 
-  get currency(): ICurrency {
+  public get currency(): ICurrency {
     return {
       amount: this.amount,
       type: this._type,
     }
   }
 
-  get symbol(): string {
+  public get symbol(): string {
     return Currency.typeToSymbol[this._type] as string
   }
 
-  get type(): ThisType {
+  public get type(): ThisType {
     return this._type
   }
 
@@ -138,17 +138,17 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
     // rounding to more decimals than are available: pad with zeros
     if (typeof decimals === 'number' && decimals > nDecimals) {
       return amt + '0'.repeat(decimals - nDecimals)
+    }
     // rounding to fewer decimals than are available: round
-    } else if (typeof decimals === 'number' && decimals < nDecimals) {
-      // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
-      // roundUp plays same role as 0.5 in above example
-      const roundUp = bigNumberify('5' + '0'.repeat(this.precision - decimals - 1))
+    // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
+    // roundUp plays same role as 0.5 in above example
+    if (typeof decimals === 'number' && decimals < nDecimals) {
+      const roundUp = bigNumberify(`5${'0'.repeat(this.precision - decimals - 1)}`)
       const rounded = this.fromWad(this.amountWad.add(roundUp))
       return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, '')
-    // rounding to same decimals as are available: return amount w no changes
-    } else {
-      return this.amount
     }
+    // rounding to same decimals as are available: return amount w no changes
+    return this.amount
   }
 
   public toString(): string {
@@ -158,13 +158,10 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   ////////////////////////////////////////
   // Private Methods
 
-  private toWad = (n: number|string): BN => {
-    return parseUnits(n.toString(), this.precision)
-  }
+  private toWad = (n: number|string): BN =>
+    parseUnits(n.toString(), this.precision)
 
-  private fromWad = (n: BN): string => {
-    return formatUnits(n.toString(), this.precision)
-  }
+  private fromWad = (n: BN): string =>
+    formatUnits(n.toString(), this.precision)
 
 }
-export default Currency

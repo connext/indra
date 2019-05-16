@@ -1,4 +1,5 @@
 import { assert } from '../testing'
+
 import { timeoutPromise } from './utils'
 
 describe('timeoutPromise', () => {

@@ -1,8 +1,7 @@
 
 // Capitalizes first char of a string
-export function capitalize(str: string): string {
-  return str.substring(0, 1).toUpperCase() + str.substring(1)
-}
+export const capitalize = (str: string): string =>
+  str.substring(0, 1).toUpperCase() + str.substring(1)
 
 /**
  * A simple lock that can be used with async/await.
@@ -34,7 +33,7 @@ export class Lock<T=void> implements PromiseLike<T> {
   private _resolve: (arg?: T) => void
   private _p: Promise<T>
 
-  constructor() {
+  public constructor() {
     this._resolve = undefined as any
     this._p = new Promise((res: any): any => this._resolve = res)
     this.then = this._p.then.bind(this._p)
@@ -72,8 +71,8 @@ export class Lock<T=void> implements PromiseLike<T> {
  *   ... 1 more second ...
  *   msg: second
  */
-export function synchronized(lockName: string): any {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor): any => {
+export const synchronized = (lockName: string): any =>
+  (target: any, propertyKey: string, descriptor: PropertyDescriptor): any => {
     const oldFunc = descriptor.value
     descriptor.value = async function(this: any, ...args: any[]): Promise<any> {
       await this[lockName]
@@ -86,11 +85,9 @@ export function synchronized(lockName: string): any {
     }
     return descriptor
   }
-}
 
-export function isFunction(functionToCheck: any): boolean {
-  return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
-}
+export const isFunction = (functionToCheck: any): boolean =>
+  functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
 
 /**
  * A simple FIFO queue.
@@ -119,7 +116,7 @@ export class Queue<T> {
   private _notEmpty: Lock = new Lock()
   private _items: T[]
 
-  constructor(items?: T[]) {
+  public constructor(items?: T[]) {
     this._items = []
     this.length = 0
     this.put(...(items || []))
@@ -163,7 +160,7 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
 
   private _p: Promise<T>
 
-  constructor() {
+  public constructor() {
     this.resolve = undefined as any
     this.reject = undefined as any
     this._p = new Promise((res: any, rej: any): void => {
@@ -196,12 +193,11 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
  *
  */
 type MaybeRes<T> = [T, any] & { res: T, err: any }
-export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
-  return (p as Promise<T>).then(
+export const maybe = <T>(p: Promise<T>): Promise<MaybeRes<T>> =>
+  (p as Promise<T>).then(
     (res: any): any => Object.assign([res, undefined], { res, err: undefined }) as any,
     (err: any): any => Object.assign([undefined, err], { res: undefined, err }) as any,
   )
-}
 
 /**
  * Times out a promise. Waits for either:
@@ -212,10 +208,10 @@ export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
  *
  * If timeout is false-y then `[false, T]` will be unconditionally returned.
  */
-export function timeoutPromise<T>(p: Promise<T>, timeout: number | undefined): Promise<
+export const timeoutPromise = <T>(p: Promise<T>, timeout: number | undefined): Promise<
   [false, T] |
   [true, Promise<T>]
-> {
+> => {
 
   if (!timeout) {
     return p.then((res: any): any => [false, res]) as any
@@ -230,9 +226,9 @@ export function timeoutPromise<T>(p: Promise<T>, timeout: number | undefined): P
       }, timeout)
     }),
   ])
-  result.then(undefined, () => undefined).then(() => {
-    return toClear && clearTimeout(timeout)
-  })
+  result.then(undefined, () => undefined).then(() =>
+    toClear && clearTimeout(timeout),
+  )
   return result as any
 }
 
@@ -251,8 +247,8 @@ export function timeoutPromise<T>(p: Promise<T>, timeout: number | undefined): P
  *    assertUnreachable(o)
  *  }
  */
-export function assertUnreachable(x: never): never {
-  throw new Error('Reached unreachable statement: ' + JSON.stringify(x))
+export const assertUnreachable = (x: never): never => {
+  throw new Error(`Reached unreachable statement: ${JSON.stringify(x)}`)
 }
 
 /**
@@ -260,6 +256,5 @@ export function assertUnreachable(x: never): never {
  *
  *    await sleep(1000)
  */
-export function sleep(t: number): Promise<any> {
-  return new Promise((res: any): any => setTimeout(res, t))
-}
+export const sleep = (t: number): Promise<any> =>
+  new Promise((res: any): any => setTimeout(res, t))

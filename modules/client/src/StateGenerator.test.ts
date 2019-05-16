@@ -66,7 +66,7 @@ const createPreviousThreadState = (...overrides: t.PartialSignedOrSuccinctThread
   return convertThreadState('bn', state)
 }
 
-describe.only('StateGenerator', () => {
+describe('StateGenerator', () => {
   describe('channel payment', () => {
     it('should generate a channel payment', async () => {
       const prev = createPreviousChannelState({

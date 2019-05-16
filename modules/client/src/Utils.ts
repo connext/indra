@@ -1,5 +1,6 @@
 import { ethers as eth } from 'ethers'
-import MerkleTree from './lib/merkleTree'
+
+import { MerkleTree } from './lib/merkleTree'
 import * as getters from './state/getters'
 import { ConnextState } from './state/store'
 import {

@@ -1,4 +1,5 @@
 import * as eth from 'ethers'
+
 import {
   ChannelManagerChannelDetails,
   ChannelState,
@@ -10,7 +11,8 @@ import {
   ThreadState,
   Transaction,
 } from '../types'
-import Wallet from '../Wallet'
+import { Wallet } from '../Wallet'
+
 import * as ChannelManagerAbi from './ChannelManagerAbi.json'
 
 // To recreate abi:
@@ -50,7 +52,7 @@ export class ChannelManager implements IChannelManager {
   private defaultSendArgs: any = { value: 0 }
   private provider: Provider
 
-  constructor(wallet: Wallet, address: string, gasMultiple: number) {
+  public constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
     // NOTE: doing wallet.provider, we can still create this
     // and have sendTransaction in the wallet return
@@ -106,16 +108,17 @@ export class ChannelManager implements IChannelManager {
       state.threadRoot,
       state.threadCount,
       state.timeout,
-      state.sigHub!,
+      state.sigHub,
     ]
-    return await this._send('userAuthorizedUpdate', args, Object.assign({}, this.defaultSendArgs, {
+    return this._send('userAuthorizedUpdate', args, {
+      ...this.defaultSendArgs,
       value: eth.utils.bigNumberify(state.pendingDepositWeiUser),
-    }))
+    })
   }
 
   public async startExit(state: ChannelState): Promise<any> {
     const args = [ state.user ]
-    return await this._send('startExit', args, this.defaultSendArgs)
+    return this._send('startExit', args, this.defaultSendArgs)
   }
 
   public async startExitWithUpdate(state: ChannelState): Promise<any> {
@@ -148,7 +151,7 @@ export class ChannelManager implements IChannelManager {
       state.sigHub as string,
       state.sigUser as string,
     ]
-    return await this._send('startExitWithUpdate', args, this.defaultSendArgs)
+    return this._send('startExitWithUpdate', args, this.defaultSendArgs)
   }
 
   public async emptyChannelWithChallenge(state: ChannelState): Promise<any> {
@@ -181,12 +184,12 @@ export class ChannelManager implements IChannelManager {
       state.sigHub as string,
       state.sigUser as string,
     ]
-    return await this._send('emptyChannelWithChallenge', args, this.defaultSendArgs)
+    return this._send('emptyChannelWithChallenge', args, this.defaultSendArgs)
   }
 
   public async emptyChannel(state: ChannelState): Promise<any> {
     const args = [ state.user ]
-    return await this._send('emptyChannel', args, this.defaultSendArgs)
+    return this._send('emptyChannel', args, this.defaultSendArgs)
   }
 
   public async startExitThread(
@@ -204,7 +207,7 @@ export class ChannelManager implements IChannelManager {
       proof,
       threadState.sigA,
     ]
-    return await this._send('startExitThread', args, this.defaultSendArgs)
+    return this._send('startExitThread', args, this.defaultSendArgs)
   }
 
   public async startExitThreadWithUpdate(
@@ -226,7 +229,7 @@ export class ChannelManager implements IChannelManager {
       threadUpdateState.txCount,
       threadUpdateState.sigA,
     ]
-    return await this._send('startExitThreadWithUpdate', args, this.defaultSendArgs)
+    return this._send('startExitThreadWithUpdate', args, this.defaultSendArgs)
   }
 
   public async challengeThread(state: ChannelState, threadState: ThreadState): Promise<any> {
@@ -239,7 +242,7 @@ export class ChannelManager implements IChannelManager {
       threadState.txCount,
       threadState.sigA,
     ]
-    return await this._send('challengeThread', args, this.defaultSendArgs)
+    return this._send('challengeThread', args, this.defaultSendArgs)
   }
 
   public async emptyThread(
@@ -257,12 +260,12 @@ export class ChannelManager implements IChannelManager {
       proof,
       threadState.sigA,
     ]
-    return await this._send('emptyThread', args, this.defaultSendArgs)
+    return this._send('emptyThread', args, this.defaultSendArgs)
   }
 
   public async nukeThreads(state: ChannelState): Promise<any> {
     const args = [ state.user ]
-    return await this._send('nukeThreads', args, this.defaultSendArgs)
+    return this._send('nukeThreads', args, this.defaultSendArgs)
   }
 
   public async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
@@ -282,7 +285,7 @@ export class ChannelManager implements IChannelManager {
     const gasEstimate = (await this.cm.estimate[method](...args, overrides)).toNumber()
     overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.gasMultiple))
     overrides.gasPrice = await this.provider.getGasPrice()
-    return await this.cm[method](...args, overrides)
+    return this.cm[method](...args, overrides)
   }
 
 }

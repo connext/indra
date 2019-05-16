@@ -808,6 +808,86 @@ export class Validator {
     return undefined
   }
 
+  public parseChannelEventTxReceipt(
+    name: ChannelEventReason,
+    txReceipt: TransactionReceipt,
+    contractAddress: string,
+  ): VerboseChannelEventBN[] {
+    if (!txReceipt.logs) {
+      throw new Error('Uh-oh! No Tx logs found. Are you sure the receipt is correct?')
+    }
+    const inputs = EventInputs[name]
+    if (!inputs) {
+      // indicates invalid name provided
+      throw new Error(`Uh-oh! No inputs found. Are you sure you did typescript good? ` +
+      `Check 'ChannelEventReason' in 'types.ts' in the source. Event name provided: ${name}`)
+    }
+    const eventTopic = this.abi.events[name].topic
+    const parsed: VerboseChannelEventBN[] = []
+    txReceipt.logs.forEach((log: any) => {
+      // logs have the format where multiple topics
+      // can adhere to the piece of data you are looking for
+      // only seach the logs if the topic is contained
+      const raw = {} as any
+      if (log.topics[0] !== eventTopic) {
+        return
+      }
+      // will be returned with values double indexed, one under
+      // their field names, and one under an `_{index}` value, where
+      // there index is a numeric value in the list corr to the order
+      // in which they are emitted/defined in the contract
+      const tmp = (this.abi.parseLog(log) as any).values
+      // store only the descriptive field names
+      Object.keys(tmp).forEach((field: any): any => {
+        if (!field.match(/\d/g) && !field.startsWith('__')) {
+          raw[field] = tmp[field]
+        }
+      })
+      // NOTE: The second topic in the log with the events topic
+      // is the indexed user. This is valid for all Channel events in contract
+      raw.user = `0x${log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()}`
+      parsed.push(convertVerboseEvent('bn', makeEventVerbose(
+        raw,
+        this.hubAddress,
+        contractAddress),
+      ))
+    })
+    return parsed
+  }
+
+  public parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
+    if (!txReceipt.logs) {
+      return undefined
+    }
+    const eventTopic: string = this.abi.events.DidUpdateChannel.topic
+    const raw = {} as any
+    txReceipt.logs.forEach((log: any) => {
+      if (log.topics.indexOf(eventTopic) > -1) {
+        const tmp = (this.abi.parseLog(log) as any).values
+        Object.keys(tmp).forEach((field: any): any => {
+          if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
+            raw[field] = tmp[field]
+          }
+        })
+      }
+      // NOTE: The second topic in the log with the events topic is the indexed user.
+      raw.user = `0x${log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()}`
+    })
+    return {
+      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0].toString()),
+      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2].toString()),
+      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0].toString()),
+      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2].toString()),
+      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1].toString()),
+      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3].toString()),
+      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1].toString()),
+      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3].toString()),
+      sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
+      txCountChain: parseInt(raw.txCount[1].toString(), 10),
+      user: raw.user,
+    }
+  }
+
   public payment = (params: PaymentBN): string | undefined =>
     hasNegative(params, argNumericFields.Payment)
 
@@ -1123,86 +1203,6 @@ export class Validator {
       return errs.filter(falsy)[0]
     }
     return undefined
-  }
-
-  private parseChannelEventTxReceipt(
-    name: ChannelEventReason,
-    txReceipt: TransactionReceipt,
-    contractAddress: string,
-  ): VerboseChannelEventBN[] {
-    if (!txReceipt.logs) {
-      throw new Error('Uh-oh! No Tx logs found. Are you sure the receipt is correct?')
-    }
-    const inputs = EventInputs[name]
-    if (!inputs) {
-      // indicates invalid name provided
-      throw new Error(`Uh-oh! No inputs found. Are you sure you did typescript good? ` +
-      `Check 'ChannelEventReason' in 'types.ts' in the source. Event name provided: ${name}`)
-    }
-    const eventTopic = this.abi.events[name].topic
-    const parsed: VerboseChannelEventBN[] = []
-    txReceipt.logs.forEach((log: any) => {
-      // logs have the format where multiple topics
-      // can adhere to the piece of data you are looking for
-      // only seach the logs if the topic is contained
-      const raw = {} as any
-      if (log.topics[0] !== eventTopic) {
-        return
-      }
-      // will be returned with values double indexed, one under
-      // their field names, and one under an `_{index}` value, where
-      // there index is a numeric value in the list corr to the order
-      // in which they are emitted/defined in the contract
-      const tmp = (this.abi.parseLog(log) as any).values
-      // store only the descriptive field names
-      Object.keys(tmp).forEach((field: any): any => {
-        if (!field.match(/\d/g) && !field.startsWith('__')) {
-          raw[field] = tmp[field]
-        }
-      })
-      // NOTE: The second topic in the log with the events topic
-      // is the indexed user. This is valid for all Channel events in contract
-      raw.user = `0x${log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()}`
-      parsed.push(convertVerboseEvent('bn', makeEventVerbose(
-        raw,
-        this.hubAddress,
-        contractAddress),
-      ))
-    })
-    return parsed
-  }
-
-  private parseDidUpdateChannelTxReceipt(txReceipt: TransactionReceipt): any {
-    if (!txReceipt.logs) {
-      return undefined
-    }
-    const eventTopic: string = this.abi.events.DidUpdateChannel.topic
-    const raw = {} as any
-    txReceipt.logs.forEach((log: any) => {
-      if (log.topics.indexOf(eventTopic) > -1) {
-        const tmp = (this.abi.parseLog(log) as any).values
-        Object.keys(tmp).forEach((field: any): any => {
-          if (isNaN(parseInt(field.substring(0, 1), 10)) && !field.startsWith('_')) {
-            raw[field] = tmp[field]
-          }
-        })
-      }
-      // NOTE: The second topic in the log with the events topic is the indexed user.
-      raw.user = `0x${log.topics[1].substring('0x'.length + 12 * 2).toLowerCase()}`
-    })
-    return {
-      pendingDepositTokenHub: toBN(raw.pendingTokenUpdates[0].toString()),
-      pendingDepositTokenUser: toBN(raw.pendingTokenUpdates[2].toString()),
-      pendingDepositWeiHub: toBN(raw.pendingWeiUpdates[0].toString()),
-      pendingDepositWeiUser: toBN(raw.pendingWeiUpdates[2].toString()),
-      pendingWithdrawalTokenHub: toBN(raw.pendingTokenUpdates[1].toString()),
-      pendingWithdrawalTokenUser: toBN(raw.pendingTokenUpdates[3].toString()),
-      pendingWithdrawalWeiHub: toBN(raw.pendingWeiUpdates[1].toString()),
-      pendingWithdrawalWeiUser: toBN(raw.pendingWeiUpdates[3].toString()),
-      sender: raw.senderIdx === '1' ? raw.user : this.hubAddress,
-      txCountChain: parseInt(raw.txCount[1].toString(), 10),
-      user: raw.user,
-    }
   }
 
 }

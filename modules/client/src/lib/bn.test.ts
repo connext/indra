@@ -1,4 +1,5 @@
 import { assert } from 'chai'
+
 import { BN, maxBN, minBN, toBN, tokenToWei, weiToToken } from './bn'
 
 describe('BN Helpers', () => {

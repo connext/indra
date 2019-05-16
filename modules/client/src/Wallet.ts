@@ -1,5 +1,6 @@
 import * as eth from 'ethers'
 import Web3 from 'web3'
+
 import { IConnextChannelOptions } from './Connext'
 import {
   objMapPromise,
@@ -11,14 +12,14 @@ const {
   arrayify, bigNumberify, hashMessage, hexlify, isHexString, toUtf8Bytes, verifyMessage,
 } = eth.utils
 
-export default class Wallet extends eth.Signer {
+export class Wallet extends eth.Signer {
   public address: string
   public provider: eth.providers.BaseProvider
   private signer?: eth.Wallet
   private web3?: Web3
   private password: string
 
-  constructor(opts: IConnextChannelOptions) {
+  public constructor(opts: IConnextChannelOptions) {
     super()
     this.password = opts.password || ''
 
@@ -74,7 +75,7 @@ export default class Wallet extends eth.Signer {
     const bytes: Uint8Array = isHexString(message) ? arrayify(message) : toUtf8Bytes(message)
 
     if (this.signer) {
-      return await this.signer.signMessage(bytes)
+      return this.signer.signMessage(bytes)
     }
     if (this.web3) {
       let sig: string
@@ -99,11 +100,11 @@ export default class Wallet extends eth.Signer {
 
   public async signTransaction(tx: TransactionRequest): Promise<string> {
     if (this.signer) {
-      return await this.signer.sign(tx)
+      return this.signer.sign(tx)
     }
     if (this.web3) {
       // resolve any promise fields
-      const resolve: any = async (k: string, v: any): Promise<any> => await v
+      const resolve: any = async (k: string, v: any): Promise<any> => v
       const resolved: any = await objMapPromise(tx, resolve) as any
       // convert to right object
       const txObj: any = {
@@ -123,9 +124,9 @@ export default class Wallet extends eth.Signer {
     txReq.gasPrice = await (txReq.gasPrice || this.provider.getGasPrice())
     // Sanity check: Do we have sufficient funds for this tx?
     const balance = bigNumberify(await this.provider.getBalance(this.address))
-    const gasLimit = bigNumberify(await txReq.gasLimit!)
-    const gasPrice = bigNumberify(await txReq.gasPrice!)
-    const value = bigNumberify(await txReq.value!)
+    const gasLimit = bigNumberify(await txReq.gasLimit || '21000')
+    const gasPrice = bigNumberify(await txReq.gasPrice)
+    const value = bigNumberify(await (txReq.value || '0'))
     const total = value.add(gasLimit.mul(gasPrice))
     if (balance.lt(total)) {
       throw new Error(
@@ -134,10 +135,10 @@ export default class Wallet extends eth.Signer {
       )
     }
     if (!txReq.nonce && this.signer) {
-      txReq.nonce = this.signer!.getTransactionCount('pending')
+      txReq.nonce = this.signer.getTransactionCount('pending')
     }
     const signedTx: string = await this.signTransaction(txReq)
-    return await this.provider.sendTransaction(signedTx)
+    return this.provider.sendTransaction(signedTx)
   }
 
 }

@@ -47,7 +47,7 @@ import {
 } from './types'
 import { Utils } from './Utils'
 import { Validator } from './validator'
-import Wallet from './Wallet'
+import { Wallet } from './Wallet'
 
 ////////////////////////////////////////
 // Interface Definitions

@@ -1,5 +1,6 @@
 import { assert, expect } from 'chai'
-import Currency from './currency'
+
+import { Currency } from './currency'
 
 describe('Currency', () => {
   it('should construct a currency from either a string or number', () => {

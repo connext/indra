@@ -1,5 +1,6 @@
 import * as t from './index'
-import { assert } from './index'
+
+const assert = t.assert
 
 describe('makeSuccinctChannel', () => {
   it('should work', () => {
@@ -217,9 +218,9 @@ describe('assertCustodialBalancesEqual', () => {
     })
 
     t.assertCustodialBalancesEqual(bal, {
-      balanceWei: '10',
       balanceToken: '1',
-      totalReceived: [2, 1]
+      balanceWei: '10',
+      totalReceived: [2, 1],
     })
   })
 })

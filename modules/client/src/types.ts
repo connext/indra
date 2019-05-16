@@ -1,4 +1,5 @@
 import { isArray, isNullOrUndefined } from 'util'
+
 import { BN, isBN, toBN } from './lib/bn'
 import { CurrencyType } from './lib/currency'
 

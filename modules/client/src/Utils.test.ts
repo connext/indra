@@ -1,7 +1,8 @@
 import { assert, expect } from 'chai'
 import { ethers as eth } from 'ethers'
 import Web3 from 'web3'
-import MerkleTree from './lib/merkleTree'
+
+import { MerkleTree } from './lib/merkleTree'
 import * as testUtils from './testing/index'
 import {
   ChannelState,

@@ -1,8 +1,10 @@
 import { expect } from 'chai'
+
 import { getExchangeRates } from '../state/getters'
 import { generateExchangeRates } from '../testing/generateExchangeRates'
 import { MockStore } from '../testing/mocks'
 import { ExchangeRates } from '../types'
+
 import { CurrencyConvertable } from './currencyConvertable'
 
 const mockStore = new MockStore()
@@ -40,7 +42,7 @@ describe('CurrencyConvertable', () => {
       { input: '100000000000000000.000000000000000001', name: 'big decimal with mostly 0s' },
       { input: '999999999999999999.999999999999999999', name: 'big decimal with all 9s' },
     ]) {
-      it('during conversion of: ' + testCase.name, () => {
+      it(`during conversion of: ${testCase.name}`, () => {
         const eth = new CurrencyConvertable('ETH', testCase.input, exchangeRateGetter)
         const eth2 = eth.toETH().toDAI().toETH().toWEI().toDAI().toWEI().toETH().toETH()
         expect(eth.type).equals(eth2.type)

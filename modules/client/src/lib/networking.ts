@@ -4,17 +4,15 @@ export const POST = 'POST'
 export class Networking {
   public baseUrl: string
 
-  constructor(baseUrl: string) {
+  public constructor(baseUrl: string) {
     this.baseUrl = baseUrl
   }
 
-  public get = (url: string): Promise<any> => {
-    return this.request(url, GET)
-  }
+  public get = (url: string): Promise<any> =>
+    this.request(url, GET)
 
-  public post = (url: string, body: any): Promise<any> => {
-    return this.request(url, POST, body)
-  }
+  public post = (url: string, body: any): Promise<any> =>
+    this.request(url, POST, body)
 
   private request = async (url: string, method: any, body?: any): Promise<any> => {
     // TO DO: better type
@@ -63,10 +61,8 @@ export class Networking {
   }
 }
 
-export const errorResponse = (status: number, body: any, message: string): any => {
-  return {
-    body,
-    message,
-    status,
-  }
-}
+export const errorResponse = (status: number, body: any, message: string): any => ({
+  body,
+  message,
+  status,
+})

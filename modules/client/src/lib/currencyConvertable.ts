@@ -1,12 +1,18 @@
 import { ethers as eth } from 'ethers'
+
 import { ExchangeRates } from '../types'
+
 import { fromWei, tokenToWei, weiToToken } from './bn'
 import { Currency, CurrencyType } from './currency'
 
 export class CurrencyConvertable extends Currency {
   private exchangeRates: () => ExchangeRates
 
-  constructor(type: CurrencyType, amount: number | string, exchangeRates: () => ExchangeRates) {
+  public constructor(
+    type: CurrencyType,
+    amount: number | string,
+    exchangeRates: () => ExchangeRates,
+  ) {
     super(type, amount)
     this.exchangeRates = exchangeRates
   }
@@ -17,7 +23,7 @@ export class CurrencyConvertable extends Currency {
   public getExchangeRate = (currency: CurrencyType): string => {
     const rates = this.exchangeRates()
     if (rates[currency]) {
-      return rates[currency]!.toString()
+      return (rates[currency] || '0').toString()
     }
     throw new Error(`No exchange rate for ${currency}! Rates: ${JSON.stringify(rates)}`)
   }
@@ -42,4 +48,3 @@ export class CurrencyConvertable extends Currency {
   }
 
 }
-export default CurrencyConvertable

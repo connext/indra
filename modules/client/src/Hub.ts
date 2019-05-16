@@ -24,7 +24,7 @@ import {
   UpdateRequest,
   WithdrawalParameters,
 } from './types'
-import Wallet from './Wallet'
+import { Wallet } from './Wallet'
 
 /*********************************
  ****** CONSTRUCTOR TYPES ********

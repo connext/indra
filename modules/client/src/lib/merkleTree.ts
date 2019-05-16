@@ -8,20 +8,20 @@ const combinedHash = (first: string, second: string): string => {
   return keccak256(concat([first, second].sort()))
 }
 
-export default class MerkleTree {
+export class MerkleTree {
   public elements: string[]
   public root: string
   public layers: string[][]
 
-  constructor(_elements: string[]) {
+  public constructor(_elements: string[]) {
     if (!_elements.every((e: string): boolean => isHexString(e) && arrayify(e).length === 32)) {
       throw new Error('Each element must be a 32 byte hex string')
     }
 
     // deduplicate elements
-    this.elements = _elements.filter((element: string, i: number): boolean => {
-      return _elements.findIndex((e: string): boolean => element === e) === i
-    }).sort()
+    this.elements = _elements.filter((element: string, i: number): boolean =>
+      _elements.findIndex((e: string): boolean => element === e) === i,
+    ).sort()
 
     // Can't have an odd number of leaves
     if (this.elements.length % 2 !== 0) {
@@ -47,7 +47,7 @@ export default class MerkleTree {
     this.root = this.topLayer[0]
   }
 
-  get topLayer(): string[] {
+  public get topLayer(): string[] {
     return this.layers[this.layers.length -1]
   }
 
@@ -71,13 +71,8 @@ export default class MerkleTree {
       console.warn(`Invalid proof: expected a hex string describing n 32 byte chunks`)
       return false
     }
-    const proofs: string[] = proofArray.map((p: string): string => '0x' + p.replace('0x', ''))
-    return this.root === (
-      proofs.slice(1).reduce(
-        (hash: string, pair: string): string => combinedHash(hash, pair),
-        proofs[0],
-      )
-    )
+    const proofs: string[] = proofArray.map((p: string): string => `0x${p.replace('0x', '')}`)
+    return this.root === (proofs.slice(1).reduce(combinedHash, proofs[0]))
   }
 
 }

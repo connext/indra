@@ -1,4 +1,4 @@
-import * as eth from 'ethers';
+import { ethers as eth } from 'ethers'
 import { createStore, applyMiddleware, Store } from 'redux'
 
 import {
@@ -66,7 +66,7 @@ import {
   PurchasePaymentRow,
   PurchaseRowWithPayments,
 } from '../types'
-import Wallet from '../Wallet';
+import { Wallet } from '../Wallet';
 import { handleStateFlags } from '../state/middleware';
 import { AnyAction } from 'typescript-fsa';
 
