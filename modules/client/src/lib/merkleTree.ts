@@ -1,91 +1,83 @@
 import { ethers as eth } from 'ethers'
-import { MerkleUtils } from './merkleUtils'
 
-const { keccak256 } = eth.utils
+const { arrayify, concat, hexlify, isHexString, keccak256, padZeros } = eth.utils
 
-function combinedHash(first: Buffer, second: Buffer): Buffer {
+const combinedHash = (first: string, second: string): string => {
   if (!second) { return first }
   if (!first) { return second }
-  // @ts-ignore
-  const sorted: Buffer = Buffer.concat([first, second].sort(Buffer.compare))
-  return Buffer.from(keccak256('0x' + sorted.toString('hex')))
-}
-
-function deduplicate(buffers: Buffer[]): Buffer[] {
-  return buffers.filter((buffer: Buffer, i: number): boolean => {
-    return buffers.findIndex((e: Buffer): boolean => e.equals(buffer)) === i
-  })
-}
-
-function getPair(index: number, layer: any): any {
-  const pairIndex: number = index % 2 ? index - 1 : index + 1
-  if (pairIndex < layer.length) {
-    return layer[pairIndex]
-  } else {
-    return null
-  }
-}
-
-function getNextLayer(elements: any[]): any {
-  return elements.reduce((layer: any, element: any, index: number, arr: any[]) => {
-    if (index % 2 === 0) {
-      layer.push(combinedHash(element, arr[index + 1]))
-    }
-    return layer
-  }, [])
-}
-
-function getLayers(elements: any): any {
-  if (elements.length === 0) {
-    return [[Buffer.from('')]]
-  }
-  const layers: any[] = []
-  layers.push(elements)
-  while (layers[layers.length - 1].length > 1) {
-    layers.push(getNextLayer(layers[layers.length - 1]))
-  }
-  return layers
+  return keccak256(concat([first, second].sort()))
 }
 
 export default class MerkleTree {
-  public elements: any
-  public root: any
-  public layers: any
+  public elements: string[]
+  public root: string
+  public layers: string[][]
 
-  constructor(_elements: Buffer[]) {
-    if (!_elements.every(MerkleUtils.isHash)) {
-      throw new Error('elements must be 32 byte buffers')
+  constructor(_elements: string[]) {
+    if (!_elements.every((e: string): boolean => isHexString(e) && arrayify(e).length === 32)) {
+      throw new Error('Each element must be a 32 byte hex string')
     }
-    const e = { elements: deduplicate(_elements) }
-    Object.assign(this, e)
-    this.elements.sort(Buffer.compare)
-    const l = { layers: getLayers(this.elements) }
-    Object.assign(this, l)
-  }
 
-  public getRoot(): any {
-    if (!this.root) {
-      const r = { root: this.layers[this.layers.length - 1][0] }
-      Object.assign(this, r)
+    // deduplicate elements
+    this.elements = _elements.filter((element: string, i: number): boolean => {
+      return _elements.findIndex((e: string): boolean => element === e) === i
+    }).sort()
+
+    // Can't have an odd number of leaves
+    if (this.elements.length % 2 !== 0) {
+      this.elements.push(eth.constants.HashZero)
     }
-    return this.root
+
+    // Build merkle tree layers
+    this.layers = []
+    // Set root to HashZero if given zero elements
+    if (this.elements.length === 0) {
+      this.layers.push([eth.constants.HashZero])
+    } else {
+      this.layers.push(this.elements)
+      while (this.topLayer.length > 1) {
+        this.layers.push(this.topLayer.reduce(
+          (layer: string[], element: string, index: number, arr: string[]): string[] =>
+            index % 2 ? layer : layer.concat([combinedHash(element, arr[index + 1])]),
+          [],
+        ))
+      }
+    }
+
+    this.root = this.topLayer[0]
   }
 
-  public verify(proof: any, element: any): any {
-    return this.root.equals(
-      proof.reduce((hash: any, pair: any) => combinedHash(hash, pair), element),
-    )
+  get topLayer(): string[] {
+    return this.layers[this.layers.length -1]
   }
 
-  public proof(element: any): any {
-    let index = this.elements.findIndex((e: any) => e.equals(element))
+  public proof(element: string): string {
+    let index = this.elements.findIndex((e: string): boolean => e === element)
     if (index === -1) { throw new Error('element not found in merkle tree') }
-    return this.layers.reduce((proof: any, layer: any) => {
-      const pair = getPair(index, layer)
-      if (pair) { proof.push(pair) }
+    const proofArray = this.layers.reduce((proof: string[], layer: string[]): string[] => {
+      const pairIndex: number = index % 2 ? index - 1 : index + 1
+      if (pairIndex < layer.length) {
+        proof.push(layer[pairIndex])
+      }
       index = Math.floor(index / 2)
       return proof
-    }, [])
+    }, [element])
+    return hexlify(concat(proofArray))
+  }
+
+  public verify(proof: string): boolean {
+    const proofArray: RegExpMatchArray | null = proof.substring(2).match(/.{64}/g)
+    if (!proofArray || proofArray.length * 64 !== proof.length -2) {
+      console.warn(`Invalid proof: expected a hex string describing n 32 byte chunks`)
+      return false
+    }
+    const proofs: string[] = proofArray.map((p: string): string => '0x' + p.replace('0x', ''))
+    return this.root === (
+      proofs.slice(1).reduce(
+        (hash: string, pair: string): string => combinedHash(hash, pair),
+        proofs[0],
+      )
+    )
   }
 
 }
