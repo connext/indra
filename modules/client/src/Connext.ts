@@ -16,7 +16,6 @@ import SyncController from './controllers/SyncController'
 import ThreadsController from './controllers/ThreadsController'
 import WithdrawalController from './controllers/WithdrawalController'
 import {  HubAPIClient, IHubAPIClient } from './Hub'
-import { ILogger } from './lib/logger'
 import { Networking } from './lib/networking'
 import { isFunction, timeoutPromise } from './lib/utils'
 import * as actions from './state/actions'
@@ -83,7 +82,6 @@ export interface IConnextChannelOptions {
 
   origin?: string
   gasMultiple?: number
-  getLogger?: (name: string) => ILogger
 
   // Optional, useful for dependency injection
   hub?: IHubAPIClient

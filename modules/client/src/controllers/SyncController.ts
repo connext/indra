@@ -393,20 +393,17 @@ export default class SyncController extends AbstractController {
       this.handleHubSync(hubSync)
     } catch (e) {
       console.error('Sync error:', e)
-      this.logToApi('sync', { message: '' + e })
     }
 
     try {
       await this.flushPendingUpdatesToHub()
     } catch (e) {
       console.error('Flush error:', e)
-      this.logToApi('flush', { message: '' + e })
     }
 
     try {
       await this.checkCurrentStateTimeoutAndInvalidate()
     } catch (e) {
-      this.logToApi('invalidation-check', { message: '' + e })
       console.error('Error checking whether current state should be invalidated:', e)
     }
 

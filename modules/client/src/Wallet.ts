@@ -1,12 +1,13 @@
 import * as eth from 'ethers'
 import Web3 from 'web3'
-
 import { IConnextChannelOptions } from './Connext'
 import {
   objMapPromise,
   TransactionRequest,
   TransactionResponse,
 } from './types'
+
+const { bigNumberify } = eth.utils
 
 export default class Wallet extends eth.Signer {
   public address: string
@@ -53,7 +54,6 @@ export default class Wallet extends eth.Signer {
 
     // Third choice: Sign w web3
     } else if (opts.user && opts.web3Provider) {
-      // TODO: Web3Provider != Web3EthereumProvider
       this.web3 = new Web3(opts.web3Provider as any)
       this.address = opts.user.toLowerCase()
       this.web3.eth.defaultAccount = this.address
@@ -129,9 +129,8 @@ export default class Wallet extends eth.Signer {
     const total = value.add(gasLimit.mul(gasPrice))
     if (balance.lt(total)) {
       throw new Error(
-        `Insufficient funds: value=${value.toString()} + (gasPrice=${gasPrice.toString()
-        } * gasLimit=${gasLimit.toString()}) = total=${total.toString()
-        } > balance=${balance.toString()}`,
+        `Insufficient funds: value=${value} + (gasPrice=${gasPrice
+        } * gasLimit=${gasLimit}) = total=${total} > balance=${balance}`,
       )
     }
     if (txReq.nonce == null && this.signer) {

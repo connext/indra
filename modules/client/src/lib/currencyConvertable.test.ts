@@ -31,32 +31,14 @@ describe('CurrencyConvertable', () => {
     expect(eth.type).equals(eth2.type)
   })
 
-  describe('currency convertable should not lose precision', () => {
+  describe('should not lose precision..', () => {
     for (const testCase of [
-      {
-        input: '69696969696969696969696969696969696.0',
-        name: 'big integer',
-      },
-      {
-        input: '10000000000000000000000000000000001.0',
-        name: 'big integer with mostly 0s',
-      },
-      {
-        input: '99999999999999999999999999999999999.0',
-        name: 'big integer with all 9s',
-      },
-      {
-        input: '696969696969696969.696969696969696969',
-        name: 'big decimal',
-      },
-      {
-        input: '100000000000000000.000000000000000001',
-        name: 'big decimal with mostly 0s',
-      },
-      {
-        input: '999999999999999999.999999999999999999',
-        name: 'big decimal with all 9s',
-      },
+      { input: '69696969696969696969696969696969696.0', name: 'big integer' },
+      { input: '10000000000000000000000000000000001.0', name: 'big integer with mostly 0s' },
+      { input: '99999999999999999999999999999999999.0', name: 'big integer with all 9s' },
+      { input: '696969696969696969.696969696969696969', name: 'big decimal' },
+      { input: '100000000000000000.000000000000000001', name: 'big decimal with mostly 0s' },
+      { input: '999999999999999999.999999999999999999', name: 'big decimal with all 9s' },
     ]) {
       it('during conversion of: ' + testCase.name, () => {
         const eth = new CurrencyConvertable('ETH', testCase.input, exchangeRateGetter)

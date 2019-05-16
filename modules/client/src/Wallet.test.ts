@@ -28,17 +28,20 @@ const testSignMessage: any = async (wallet: Wallet): Promise<void> => {
 
 const testSendTransaction: any = async (wallet: Wallet): Promise<void> => {
   const value = eth.utils.parseEther('0.01')
+  const nonceBefore: number = await wallet.provider.getTransactionCount(wallet.address)
   const balanceBefore: BN = await wallet.provider.getBalance(wallet.address)
   const tx: any = await wallet.sendTransaction({
-    gasLimit: 600000,
-    gasPrice: 600000,
+    gasLimit: 21000,
+    gasPrice: await wallet.provider.getGasPrice(),
     to: eth.constants.AddressZero,
     value,
   })
   wallet.provider.pollingInterval = 100 // default is 4000 which causes test to time out
   await wallet.provider.waitForTransaction(tx.hash)
+  const nonceAfter: number = await wallet.provider.getTransactionCount(wallet.address)
   const balanceAfter: BN = await wallet.provider.getBalance(wallet.address)
-  assert(balanceAfter.lte(balanceBefore.sub(value))) // lte bc we also pay some amount of gas
+  assert(balanceAfter.lt(balanceBefore.sub(value))) // lt bc we also pay some amount of gas
+  assert(nonceAfter === nonceBefore + 1)
 }
 
 ////////////////////////////////////////
