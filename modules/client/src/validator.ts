@@ -369,10 +369,7 @@ export class Validator {
       ),
       hasTimeout(prev),
     ].filter(falsy)[0]
-    if (errs) {
-      return errs
-    }
-    return undefined
+    return errs ? errs : undefined
   }
 
   public closeThread(

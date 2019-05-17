@@ -144,7 +144,7 @@ export class Utils {
     return (new MerkleTree(hashes)).root
   }
 
-  public hasPendingOps(stateAny: ChannelState): boolean {
+  public hasPendingOps(stateAny: ChannelState<any>): boolean {
     const state: ChannelState = convert.ChannelState('str', stateAny)
     for (const field in state) {
       if (!field.startsWith('pending')) {

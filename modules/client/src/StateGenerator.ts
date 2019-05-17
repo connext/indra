@@ -45,19 +45,17 @@ import { Utils } from './Utils'
 export const calculateExchange = (args: ExchangeArgsBN): any => {
   // Assume the exchange is done from the perspective of the user. If it's
   // the hub, multiply all the values by -1 so the math will still work.
-  if (args.seller === 'hub') {
-    const neg1 = toBN(-1)
-    args.tokensToSell = args.tokensToSell.mul(neg1)
-    args.weiToSell = args.weiToSell.mul(neg1)
-  }
-  const weiReceived = tokenToWei(args.tokensToSell, args.exchangeRate)
-  const tokensReceived = weiToToken(args.weiToSell, args.exchangeRate)
-  const tokenRemainder = args.tokensToSell.sub(weiToToken(weiReceived, args.exchangeRate))
+  const toUserPOV = args.seller === 'hub' ? toBN(-1) : toBN(1)
+  const tokensToSell = args.tokensToSell.mul(toUserPOV)
+  const weiToSell = args.weiToSell.mul(toUserPOV)
+  const weiReceived = tokenToWei(tokensToSell, args.exchangeRate)
+  const tokensReceived = weiToToken(weiToSell, args.exchangeRate)
+  const tokenRemainder = tokensToSell.sub(weiToToken(weiReceived, args.exchangeRate))
   return {
     tokensReceived: tokensReceived.add(tokenRemainder),
-    tokensSold: args.tokensToSell.sub(tokenRemainder),
+    tokensSold: tokensToSell.sub(tokenRemainder),
     weiReceived,
-    weiSold: args.weiToSell,
+    weiSold: weiToSell,
   }
 }
 
@@ -182,27 +180,21 @@ export class StateGenerator {
     exchangeArgs: ExchangeArgsBN,
   ): UnsignedChannelStateBN {
     const exchange = calculateExchange(exchangeArgs)
-
     const res = {
       ...state,
-
-      balanceWeiUser: state.balanceWeiUser
-        .add(exchange.weiReceived)
-        .sub(exchange.weiSold),
-
-      balanceTokenUser: state.balanceTokenUser
-        .add(exchange.tokensReceived)
-        .sub(exchange.tokensSold),
-
-      balanceWeiHub: state.balanceWeiHub
-        .sub(exchange.weiReceived)
-        .add(exchange.weiSold),
-
       balanceTokenHub: state.balanceTokenHub
         .sub(exchange.tokensReceived)
         .add(exchange.tokensSold),
+      balanceTokenUser: state.balanceTokenUser
+        .add(exchange.tokensReceived)
+        .sub(exchange.tokensSold),
+      balanceWeiHub: state.balanceWeiHub
+        .sub(exchange.weiReceived)
+        .add(exchange.weiSold),
+      balanceWeiUser: state.balanceWeiUser
+        .add(exchange.weiReceived)
+        .sub(exchange.weiSold),
     }
-
     return res
   }
 
