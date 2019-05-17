@@ -12,6 +12,17 @@ import {
   CustodialBalanceRow,
 } from '../types'
 
+export const CUSTODIAL_BALANCE_ZERO_STATE = {
+  balanceWei: '0',
+  balanceToken: '0',
+  totalReceivedToken: '0',
+  totalReceivedWei: '0',
+  totalWithdrawnToken: '0',
+  totalWithdrawnWei: '0',
+  sentWei: '0',
+  user: '0x0'
+}
+
 export const CHANNEL_ZERO_STATE = {
   user: '0x0',
   recipient: '0x0',
@@ -109,16 +120,7 @@ export class PersistentState {
   // reducer in reducers.
   latestValidState: ChannelState = CHANNEL_ZERO_STATE
 
-  custodialBalance: CustodialBalanceRow = {
-    balanceWei: '0',
-    balanceToken: '0',
-    totalReceivedToken: '0',
-    totalReceivedWei: '0',
-    totalWithdrawnToken: '0',
-    totalWithdrawnWei: '0',
-    sentWei: '0',
-    user: '0x0'
-  }
+  custodialBalance: CustodialBalanceRow = CUSTODIAL_BALANCE_ZERO_STATE
 
   activeThreads: ThreadState[] = [] // all open and active threads at latest state
   activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
