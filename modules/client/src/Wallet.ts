@@ -50,13 +50,14 @@ export default class Wallet extends eth.Signer {
       this.signer = eth.Wallet.fromMnemonic(opts.mnemonic || '')
       this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
-      // Third choice: Sign w web3
+      // Third choice: External wallets
     } else if (opts.externalWallet) {
       this.signer = opts.externalWallet
       this.external = true
       this.web3 = new web3_1.default(opts.web3Provider)
       this.address = opts.user.toLowerCase()
       this.web3.eth.defaultAccount = this.address
+      // Fourth choice: Sign w web3
     }else if (opts.user && opts.web3Provider) {
       // TODO: Web3Provider != Web3EthereumProvider
       this.web3 = new Web3(opts.web3Provider as any)
