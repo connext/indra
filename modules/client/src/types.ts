@@ -351,12 +351,12 @@ export type ConfirmPendingArgs = {
  * 
  * Rules for state invalidation:
  * 1. A fully-signed state can only be invalidated if it has a timeout and that
- *    timeout has expired (per the definition of "expired", above)
+ *    timeout has expired (per the definition of 'expired', above)
  *
  * 2. An invalidation must reference the latest valid state (ie, the one which
  *    should be reverted to) and the latest invalid state.
  *
- *    These will typically be "N - 1" and "N", except in the case of purchases,
+ *    These will typically be 'N - 1' and 'N', except in the case of purchases,
  *    where the client may send multiple half-signed states to the hub*. In
  *    this case, the hub will invalidate all the states or none of them.
  *
@@ -467,8 +467,8 @@ export type ChannelStateUpdateRowBN = ChannelStateUpdateRow<BN>
 // this is the typical form of responses from POST
 // hub endpoints and the sync endpoint
 export type SyncResult<T = string> =
-  | { type: "thread", update: ThreadStateUpdate<T> }
-  | { type: "channel", update: UpdateRequest<T> }
+  | { type: 'thread', update: ThreadStateUpdate<T> }
+  | { type: 'channel', update: UpdateRequest<T> }
 export type SyncResultBN = SyncResult<BN>
 
 // this is the typical form of responses from POST
@@ -544,7 +544,7 @@ export type ThreadStatus = keyof typeof ThreadStatus
 
 // thread state update
 export type ThreadStateUpdate<T = string> = {
-  // reason: "Payment"
+  // reason: 'Payment'
   id?: number
   createdOn?: Date // present once it is added to the hub
   state: ThreadState<T> // signed or unsigned?
@@ -596,7 +596,7 @@ export type ChannelEventReason = keyof typeof ChannelEventReasons
 // DidStartExit, DidEmptyChannel
 type BaseChannelEvent<T = string> = {
   user: Address, // indexed
-  senderIdx: "0" | "1", // 0: hub, 1: user
+  senderIdx: '0' | '1', // 0: hub, 1: user
   weiBalances: [T, T], // [hub, user]
   tokenBalances: [T, T], // [hub, user]
   txCount: [string, string], // [global, onchain]
@@ -668,33 +668,33 @@ export function makeEventVerbose(obj: ChannelEvent, hubAddress: Address, contrac
     }
     // if it contains arrays, expand to named
     switch (name) {
-      case "senderIdx":
-        if (value !== "0" && value !== "1") {
+      case 'senderIdx':
+        if (value !== '0' && value !== '1') {
           throw new Error(`Incorrect senderIdx value detected: ${value}`)
         }
-        ans.sender = value === "1" ? obj.user : hubAddress
+        ans.sender = value === '1' ? obj.user : hubAddress
         break
-      case "weiBalances":
+      case 'weiBalances':
         ans.balanceWeiHub = value[0]
         ans.balanceWeiUser = value[1]
         break
-      case "tokenBalances":
+      case 'tokenBalances':
         ans.balanceTokenHub = value[0]
         ans.balanceTokenUser = value[1]
         break
-      case "pendingWeiUpdates":
+      case 'pendingWeiUpdates':
         ans.pendingDepositWeiHub = value[0]
         ans.pendingWithdrawalWeiHub = value[1]
         ans.pendingDepositWeiUser = value[2]
         ans.pendingWithdrawalWeiUser = value[3]
         break
-      case "pendingTokenUpdates":
+      case 'pendingTokenUpdates':
         ans.pendingDepositTokenHub = value[0]
         ans.pendingWithdrawalTokenHub = value[1]
         ans.pendingDepositTokenUser = value[2]
         ans.pendingWithdrawalTokenUser = value[3]
         break
-      case "txCount":
+      case 'txCount':
         ans.txCountGlobal = parseInt(value[0], 10)
         ans.txCountChain = parseInt(value[1], 10)
         break
@@ -760,7 +760,7 @@ export type WithdrawalParameters<T = string> = {
 }
 export type WithdrawalParametersBN = WithdrawalParameters<BN>
 
-// what users can input when trying to withdrawal, or the 
+// what users can input when trying to withdrawal, or the
 // more illustrative withdrawal parameters
 export type SuccinctWithdrawalParameters<T = string> = Partial<Payment> & {
   recipient?: Address
@@ -773,11 +773,11 @@ export type SuccinctWithdrawalParametersBN = SuccinctWithdrawalParameters<BN>
 
 export type PaymentProfileConfig<T=string> = {
   id?: number, // defined when stored by hub
-  minimumMaintainedCollateralToken: T, 
+  minimumMaintainedCollateralToken: T,
   amountToCollateralizeToken: T,
 
   // TODO: not yet supported
-  minimumMaintainedCollateralWei?: T, 
+  minimumMaintainedCollateralWei?: T,
   amountToCollateralizeWei?: T,
 }
 export type PaymentProfileConfigBN = PaymentProfileConfig<BN>
@@ -833,9 +833,9 @@ export type CustodialPaymentsRow = {
 }
 
 // optimistic payments
-export type OptimisticPaymentStatus = "NEW" | "COMPLETED" | "FAILED"
+export type OptimisticPaymentStatus = 'NEW' | 'COMPLETED' | 'FAILED'
 
-export type OptimisticPurchasePaymentRow<T = string> = Omit<PurchasePaymentRow<any, T>, "type" | "id" | "custodianAddress"> & {
+export type OptimisticPurchasePaymentRow<T = string> = Omit<PurchasePaymentRow<any, T>, 'type' | 'id' | 'custodianAddress'> & {
   status: OptimisticPaymentStatus
   channelUpdateId: number
   paymentId: number,
@@ -995,39 +995,39 @@ export function insertDefault(val: string, obj: any, keys: string[]) {
 }
 
 export const custodialBalanceRowNumericFields = [
-  "totalReceivedWei",
-  "totalReceivedWei",
-  "totalReceivedToken",
-  "totalWithdrawnWei",
-  "totalWithdrawnToken",
-  "balanceWei",
-  "balanceToken",
-  "sentWei",
+  'totalReceivedWei',
+  'totalReceivedWei',
+  'totalReceivedToken',
+  'totalWithdrawnWei',
+  'totalWithdrawnToken',
+  'balanceWei',
+  'balanceToken',
+  'sentWei',
 ]
 
-export function convertCustodialBalanceRow(to: "bn", obj: CustodialBalanceRow<any>): CustodialBalanceRowBN
-export function convertCustodialBalanceRow(to: "str", obj: CustodialBalanceRow<any>): CustodialBalanceRow
+export function convertCustodialBalanceRow(to: 'bn', obj: CustodialBalanceRow<any>): CustodialBalanceRowBN
+export function convertCustodialBalanceRow(to: 'str', obj: CustodialBalanceRow<any>): CustodialBalanceRow
 export function convertCustodialBalanceRow(
-  to: "bn" | "str", // state objs always have sigs in rows
+  to: 'bn' | 'str', // state objs always have sigs in rows
   obj: CustodialBalanceRow<any>): CustodialBalanceRow | CustodialBalanceRowBN {
   const fromType = getType(obj.balanceToken)
   return convertFields(fromType, to, custodialBalanceRowNumericFields, obj)
 }
 
-export const custodialWithdrawalRowNumericFields = [ "requestedToken", "sentWei"]
-export function convertCustodialWithdrawalRow(to: "bn", obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRowBN
-export function convertCustodialWithdrawalRow(to: "str", obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRow
+export const custodialWithdrawalRowNumericFields = [ 'requestedToken', 'sentWei']
+export function convertCustodialWithdrawalRow(to: 'bn', obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRowBN
+export function convertCustodialWithdrawalRow(to: 'str', obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRow
 export function convertCustodialWithdrawalRow(
-  to: "bn" | "str", // state objs always have sigs in rows
+  to: 'bn' | 'str', // state objs always have sigs in rows
   obj: CustodialWithdrawalRow<any>): CustodialWithdrawalRow | CustodialWithdrawalRowBN {
   const fromType = getType(obj.sentWei)
   return convertFields(fromType, to, custodialWithdrawalRowNumericFields, obj)
 }
 
-export function convertChannelRow(to: "bn", obj: ChannelRow<any>): ChannelRowBN
-export function convertChannelRow(to: "str", obj: ChannelRow<any>): ChannelRow
+export function convertChannelRow(to: 'bn', obj: ChannelRow<any>): ChannelRowBN
+export function convertChannelRow(to: 'str', obj: ChannelRow<any>): ChannelRow
 export function convertChannelRow(
-  to: "bn" | "str", // state objs always have sigs in rows
+  to: 'bn' | 'str', // state objs always have sigs in rows
   obj: ChannelRow<any>): ChannelRow | ChannelRowBN {
   return {
     ...obj,
@@ -1035,10 +1035,10 @@ export function convertChannelRow(
   }
 }
 
-export function convertChannelStateUpdateRow(to: "bn", obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRowBN
-export function convertChannelStateUpdateRow(to: "str", obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRow
+export function convertChannelStateUpdateRow(to: 'bn', obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRowBN
+export function convertChannelStateUpdateRow(to: 'str', obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRow
 export function convertChannelStateUpdateRow(
-  to: "bn" | "str", // state objs always have sigs in rows
+  to: 'bn' | 'str', // state objs always have sigs in rows
   obj: ChannelStateUpdateRow<any>): ChannelStateUpdateRow | ChannelStateUpdateRowBN {
   return {
     ...obj,
@@ -1080,12 +1080,12 @@ export const channelNumericFields = [
   'pendingWithdrawalTokenHub',
 ]
 
-export function convertChannelState(to: "bn", obj: ChannelState<any>): ChannelStateBN
-export function convertChannelState(to: "str", obj: ChannelState<any>): ChannelState
-export function convertChannelState(to: "bn-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBN
-export function convertChannelState(to: "str-unsigned", obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelState
+export function convertChannelState(to: 'bn', obj: ChannelState<any>): ChannelStateBN
+export function convertChannelState(to: 'str', obj: ChannelState<any>): ChannelState
+export function convertChannelState(to: 'bn-unsigned', obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelStateBN
+export function convertChannelState(to: 'str-unsigned', obj: ChannelState<any> | UnsignedChannelState<any>): UnsignedChannelState
 export function convertChannelState(
-  to: "bn" | "str" | "bn-unsigned" | "str-unsigned",
+  to: 'bn' | 'str' | 'bn-unsigned' | 'str-unsigned',
   obj: ChannelState<any> | UnsignedChannelState<any>,
 ) {
   const [toType, unsigned] = to.split('-') as any
@@ -1095,7 +1095,7 @@ export function convertChannelState(
     return res
 
   if (unsigned != 'unsigned')
-    throw new Error(`Invalid "to": ${to}`)
+    throw new Error(`Invalid 'to': ${to}`)
   return unsignedChannel(res)
 }
 
@@ -1104,12 +1104,12 @@ export function unsignedChannel<T>(obj: ChannelState<T> | UnsignedChannelState<T
   return unsigned
 }
 
-export function convertThreadState(to: "bn", obj: ThreadState<any>): ThreadStateBN
-export function convertThreadState(to: "str", obj: ThreadState<any>): ThreadState
-export function convertThreadState(to: "bn-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBN
-export function convertThreadState(to: "str-unsigned", obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadState
+export function convertThreadState(to: 'bn', obj: ThreadState<any>): ThreadStateBN
+export function convertThreadState(to: 'str', obj: ThreadState<any>): ThreadState
+export function convertThreadState(to: 'bn-unsigned', obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadStateBN
+export function convertThreadState(to: 'str-unsigned', obj: ThreadState<any> | UnsignedThreadState<any>): UnsignedThreadState
 export function convertThreadState(
-  to: "bn" | "str" | "bn-unsigned" | "str-unsigned",
+  to: 'bn' | 'str' | 'bn-unsigned' | 'str-unsigned',
   obj: ThreadState<any> | UnsignedThreadState<any>,
 ) {
   const fromType = getType(obj.balanceWeiReceiver)
@@ -1119,7 +1119,7 @@ export function convertThreadState(
     return res
 
   if (unsigned != 'unsigned')
-    throw new Error(`Invalid "to": ${to}`)
+    throw new Error(`Invalid 'to': ${to}`)
 
   return unsignedThread(res)
 }
@@ -1242,16 +1242,16 @@ export function convertArgs<
 
 // TODO: fields should not be optional
 export const paymentProfileNumericFields = [
-  "minimumMaintainedCollateralWei?",
-  "minimumMaintainedCollateralToken",
-  "amountToCollateralizeWei?",
-  "amountToCollateralizeToken",
+  'minimumMaintainedCollateralWei?',
+  'minimumMaintainedCollateralToken',
+  'amountToCollateralizeWei?',
+  'amountToCollateralizeToken',
 ]
 
-export function convertPaymentProfile(to: "bn", obj: PaymentProfileConfig<any>): PaymentProfileConfigBN
-export function convertPaymentProfile(to: "str", obj: PaymentProfileConfig<any>): PaymentProfileConfig
+export function convertPaymentProfile(to: 'bn', obj: PaymentProfileConfig<any>): PaymentProfileConfigBN
+export function convertPaymentProfile(to: 'str', obj: PaymentProfileConfig<any>): PaymentProfileConfig
 export function convertPaymentProfile(
-  to: "bn" | "str", // state objs always have sigs in rows
+  to: 'bn' | 'str', // state objs always have sigs in rows
   obj: PaymentProfileConfig<any>): PaymentProfileConfig | PaymentProfileConfigBN {
   const from = getType(obj.amountToCollateralizeToken)
   return convertFields(from, to, paymentProfileNumericFields, obj)
