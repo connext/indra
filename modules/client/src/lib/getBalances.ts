@@ -1,8 +1,8 @@
-import { ConnextStore } from '../state/store'
+import { ConnextState } from '../state/store'
 import { Payment, convertChannelState, convertPayment, convertCustodialBalanceRow } from '../types'
 
-export function getCustodialAndChannelBalance(store: ConnextStore): Payment {
-  const persistent = store.getState().persistent
+export function getCustodialAndChannelBalance(state: ConnextState): Payment {
+  const { persistent } = state
   const channel = convertChannelState("bn", persistent.channel)
   const custodial = convertCustodialBalanceRow("bn", persistent.custodialBalance)
 
