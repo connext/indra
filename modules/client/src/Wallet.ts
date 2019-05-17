@@ -50,15 +50,14 @@ export default class Wallet extends eth.Signer {
       this.signer = eth.Wallet.fromMnemonic(opts.mnemonic || '')
       this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
-
-    // Third choice: External wallets
-    }
-		else if (opts.externalWallet) {
-			this.signer = opts.externalWallet;
-			this.address = this.signer.address.toLowerCase();
-
-		// Fourth choice: Sign w web3
-    } else if (opts.user && opts.web3Provider) {
+      // Third choice: Sign w web3
+    } else if (opts.externalWallet) {
+      this.signer = opts.externalWallet
+      this.external = true
+      this.web3 = new web3_1.default(opts.web3Provider)
+      this.address = opts.user.toLowerCase()
+      this.web3.eth.defaultAccount = this.address
+    }else if (opts.user && opts.web3Provider) {
       // TODO: Web3Provider != Web3EthereumProvider
       this.web3 = new Web3(opts.web3Provider as any)
       this.address = opts.user.toLowerCase()
@@ -127,11 +126,27 @@ export default class Wallet extends eth.Signer {
   }
 
   public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
-    if (txReq.nonce == null && this.signer) {
+    if (txReq.nonce == null && this.signer && !this.external) {
       txReq.nonce = this.signer!.getTransactionCount('pending')
     }
-    const signedTx: string = await this.signTransaction(txReq)
-    return await this.provider.sendTransaction(signedTx)
+    if (!this.external){
+      const signedTx: string = await this.signTransaction(txReq)
+	  return await this.provider.sendTransaction(signedTx)
+	} else {
+      // resolve any fields
+      const resolve = (k, v) => __awaiter(this, void 0, void 0, function* () { return yield v; });
+      const resolved = yield types_1.objMapPromise(txReq, resolve);
+      // convert to right object
+      const txObj = {
+        data: resolved.data,
+        from: this.address,
+        gas: parseInt(resolved.gasLimit, 10),
+        gasPrice: resolved.gasPrice,
+        to: resolved.to,
+        value: resolved.value,
+      };
+      return await this.web3.eth.sendTransaction(txObj);
+    }
   }
 
 }
