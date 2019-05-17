@@ -54,7 +54,7 @@ export default class Wallet extends eth.Signer {
     } else if (opts.externalWallet) {
       this.signer = opts.externalWallet
       this.external = true
-      this.web3 = new web3_1.default(opts.web3Provider)
+      this.web3 = new Web3(opts.web3Provider)
       this.address = opts.user.toLowerCase()
       this.web3.eth.defaultAccount = this.address
       // Fourth choice: Sign w web3
