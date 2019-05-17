@@ -26,4 +26,5 @@ describe('BN Helpers', () => {
     const expected = toBN('9')
     assert(actual.eq(expected), `actual=${actual} !== expected=${expected}`)
   })
+
 })

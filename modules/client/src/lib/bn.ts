@@ -2,22 +2,23 @@ import { ethers as eth } from 'ethers'
 import { BigNumber } from 'ethers/utils'
 
 const { Zero, MaxUint256 } = eth.constants
+const { bigNumberify, parseEther, formatEther } = eth.utils
 
 export type BN = BigNumber
 
 export const isBN = BigNumber.isBigNumber
 
 export const toBN = (n: string|number|BN): BN =>
-  eth.utils.bigNumberify(n.toString())
+  bigNumberify(n.toString())
 
 export const toWei = (n: string|number|BN): BN =>
-  eth.utils.parseEther(n.toString())
+  parseEther(n.toString())
 
 export const fromWei = (n: BN): string =>
-  eth.utils.formatEther(n)
+  formatEther(n)
 
 export const weiToToken = (wei: BN, tokenPerEth: string): BN =>
-  toBN(eth.utils.formatEther(toWei(tokenPerEth).mul(wei)).slice(0, -2))
+  toBN(formatEther(toWei(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ''))
 
 export const tokenToWei = (token: BN, tokenPerEth: string): BN =>
   toWei(token).div(toWei(tokenPerEth))

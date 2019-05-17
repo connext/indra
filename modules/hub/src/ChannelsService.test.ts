@@ -661,8 +661,8 @@ describe('ChannelsService', () => {
       balanceWeiUser: toBN(channel.state.balanceWeiUser).add(
         expectedExchangeAmountWei,
       ),
-      balanceTokenHub: tweakBalance(10, -28, true),
-      balanceTokenUser: tweakBalance(10, 28, true),
+      balanceTokenHub: tweakBalance(10, -30, true),
+      balanceTokenUser: tweakBalance(10, 30, true),
       txCount: [2, 1],
     })
   })
