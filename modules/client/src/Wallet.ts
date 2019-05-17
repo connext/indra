@@ -133,7 +133,7 @@ export default class Wallet extends eth.Signer {
     if (!this.external){
       const signedTx: string = await this.signTransaction(txReq)
 	  return await this.provider.sendTransaction(signedTx)
-	} else {
+    } else {
       // resolve any fields
       const resolve = (k, v) => __awaiter(this, void 0, void 0, function* () { return yield v; });
       const resolved = yield types_1.objMapPromise(txReq, resolve);
