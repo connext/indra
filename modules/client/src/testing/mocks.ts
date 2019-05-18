@@ -68,7 +68,6 @@ import {
 } from '../types'
 import Wallet from '../Wallet';
 import { handleStateFlags } from '../state/middleware';
-import { AnyAction } from 'typescript-fsa';
 
 const mnemonic: string =
   'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
