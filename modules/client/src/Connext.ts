@@ -48,6 +48,9 @@ import {
   convertCustodialBalanceRow,
   CustodialBalanceRowBN,
   convertFields,
+  insertDefault,
+  argNumericFields,
+  withdrawalParamsNumericFields,
 } from './types'
 import { Utils } from './Utils'
 import { Validator } from './validator'
@@ -220,16 +223,29 @@ export abstract class ConnextClient extends EventEmitter {
   ) {
     // get args type
     const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
-    
+
+    withdrawal = isSuccinct 
+      ? insertDefault("0", withdrawal, argNumericFields.Payment) 
+      : insertDefault("0", withdrawal, withdrawalParamsNumericFields)
+
     // preferentially withdraw from your custodial balance when wding
     // TODO: exchange on withdrawal account for custodial balances?
     const channelTokenWithdrawal = isSuccinct
-      ? (withdrawal as any).amountToken.sub(custodial.balanceToken)
-      : (withdrawal as any).withdrawalTokenUser.sub(custodial.balanceToken)
+      ? maxBN(
+          Big(0), 
+          Big((withdrawal as any).amountToken).sub(custodial.balanceToken)
+        )
+      : maxBN(Big(0), Big((withdrawal as any).withdrawalTokenUser).sub(custodial.balanceToken))
 
     const channelWeiWithdrawal = isSuccinct
-      ? maxBN(Big(0), Big((withdrawal as any).amountWei).sub(custodial.balanceWei))
-      : maxBN(Big(0), Big((withdrawal as any).withdrawalWeiUser).sub(custodial.balanceWei))
+      ? maxBN(
+          Big(0), 
+          Big((withdrawal as any).amountWei).sub(custodial.balanceWei)
+        )
+      : maxBN(
+          Big(0), 
+          Big((withdrawal as any).withdrawalWeiUser).sub(custodial.balanceWei)
+        )
 
     // get the amount youll wd custodially
     const custodialTokenWithdrawal = isSuccinct
