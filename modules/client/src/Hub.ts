@@ -98,7 +98,7 @@ export class HubAPIClient implements IHubAPIClient {
   public async requestCustodialWithdrawal(amountToken: BN, recipient: Address): Promise<CustodialWithdrawalRow | null> {
     try {
       const res = (await this.networking.post(
-        `custodial/withdrawals/${this.wallet.address}`, {
+        `custodial/withdrawals`, {
           amountToken: amountToken.toString(),
           recipient,
         },
