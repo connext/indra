@@ -1,4 +1,3 @@
-import { ethers as eth } from 'ethers';
 import Semaphore = require('semaphore')
 import { AbstractController } from './AbstractController'
 import { ConnextInternal } from '../Connext'
@@ -6,7 +5,7 @@ import { getChannel, getLastThreadUpdateId } from '../state/getters';
 import { Poller } from '../lib/poller/Poller'
 import { assertUnreachable, maybe } from '../lib/utils'
 import * as actions from '../state/actions'
-import { SyncControllerState } from '../state/store'
+import { SyncControllerState, CUSTODIAL_BALANCE_ZERO_STATE } from '../state/store'
 import {
   ArgsTypes,
   Block,
@@ -19,7 +18,6 @@ import {
   Sync,
   SyncResult,
   ThreadStateUpdate,
-  Transaction,
   UpdateRequest,
 } from '../types'
 
@@ -396,6 +394,14 @@ export default class SyncController extends AbstractController {
       this.logToApi('sync', { message: '' + e })
     }
 
+    // sync any custodial payments
+    try {
+      await this.syncCustodialBalance()
+    } catch (e) {
+      console.error('Syncing custodial balance error:', e)
+      this.logToApi('syncCustodialBalance', { message: '' + e })
+    }
+
     try {
       await this.flushPendingUpdatesToHub()
     } catch (e) {
@@ -723,6 +729,16 @@ export default class SyncController extends AbstractController {
 
     console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${filtered.length}:`, filtered)
     this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
+  }
+
+  private async syncCustodialBalance() {
+    // get any custodial balances
+    const custodialBalance: any = await this.hub.getCustodialBalance()
+    if (!custodialBalance) {
+      return
+    }
+    // zero state/user set in start()
+    this.store.dispatch(actions.setCustodialBalance(custodialBalance))
   }
 
   /**

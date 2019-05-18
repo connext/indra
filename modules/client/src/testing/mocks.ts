@@ -64,10 +64,10 @@ import {
   PaymentProfileConfig,
   PurchasePaymentRow,
   PurchaseRowWithPayments,
+  CustodialWithdrawalRow,
 } from '../types'
 import Wallet from '../Wallet';
 import { handleStateFlags } from '../state/middleware';
-import { AnyAction } from 'typescript-fsa';
 
 const mnemonic: string =
   'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
@@ -241,6 +241,10 @@ export class MockHub implements IHubAPIClient {
       beiMaxCollateralization: '100',
       hubAddress: mkAddress("0xhhh")
     } as any
+  }
+
+  async requestCustodialWithdrawal(): Promise<CustodialWithdrawalRow | null> {
+    return null // default test is no custodial balance owed
   }
 
   // TODO: implement the profile methods

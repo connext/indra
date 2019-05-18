@@ -28,6 +28,7 @@ import {
   UnsignedChannelState,
   UnsignedThreadState,
 } from './types'
+import { getCustodialAndChannelBalance } from './lib/getBalances';
 
 /*********************************
  *********** UTIL FNS ************
@@ -44,6 +45,7 @@ export class Utils {
   public maxBN: (a: BN, b: BN) => BN = bigUtils.maxBN
   public minBN: (a: BN, ...b: BN[]) => BN = bigUtils.minBN
   public Poller: any = Poller
+  public getCustodialAndChannelBalance: (state: ConnextState) => Payment = getCustodialAndChannelBalance
   public toWeiBig: (amount: number | string | BN) => BN = bigUtils.toWeiBig
   public toWeiString: (amount: number | string | BN) => string = bigUtils.toWeiString
   public weiToAsset: (wei: BN, rate: string) => BN = bigUtils.weiToAsset

@@ -23,6 +23,8 @@ import {
   ThreadStateUpdate,
   UpdateRequest,
   WithdrawalParameters,
+  CustodialWithdrawalRow,
+  BN,
 } from './types'
 import Wallet from './Wallet'
 
@@ -60,7 +62,7 @@ export interface IHubAPIClient {
     lastThreadUpdateId: number,
   ): Promise<PurchasePaymentHubResponse & { amount: Payment }>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
-  getExchangeRates(): Promise<ExchangeRates> // TODO: name is typo
+  getExchangeRates(): Promise<ExchangeRates>
   getPaymentHistory(): Promise<PurchasePaymentRow[]>
   getPaymentById(id: string): Promise<PurchaseRowWithPayments<object, string>>
   buy<PurchaseMetaType=any, PaymentMetaType=any>(
@@ -69,15 +71,9 @@ export interface IHubAPIClient {
   ): Promise<PurchasePaymentHubResponse>
   requestDeposit(deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number): Promise<Sync>
   requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
+  requestCustodialWithdrawal(amountToken: BN, recipient: Address): Promise<CustodialWithdrawalRow | null>
   requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
   requestCollateral(txCountGlobal: number): Promise<Sync>
-  requestDeposit(
-    deposit: SignedDepositRequestProposal,
-    txCount: number,
-    lastThreadUpdateId: number,
-  ): Promise<Sync>
-  requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync>
-  requestWithdrawal(withdrawal: WithdrawalParameters, txCountGlobal: number): Promise<Sync>
   startProfileSession(): Promise<void>
   sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync | null>
   updateHub(
@@ -97,6 +93,25 @@ export class HubAPIClient implements IHubAPIClient {
     this.networking = networking
     this.origin = origin
     this.wallet = wallet
+  }
+
+  public async requestCustodialWithdrawal(amountToken: BN, recipient: Address): Promise<CustodialWithdrawalRow | null> {
+    try {
+      const res = (await this.networking.post(
+        `custodial/withdrawals`, {
+          amountToken: amountToken.toString(),
+          recipient,
+        },
+      )).data
+      return res ? res : null
+    } catch (e) {
+      if (e.status === 404) {
+        console.log(`No custodial withdrawals available for: ${this.wallet.address}`)
+        return null
+      }
+      console.log(`Error creating a custodial withdrawal for ${this.wallet.address}:`, e)
+      throw e
+    }
   }
 
   public async getProfileConfig(): Promise<PaymentProfileConfig | null> {
@@ -123,18 +138,21 @@ export class HubAPIClient implements IHubAPIClient {
 
   public async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
     try {
-      const res: CustodialBalanceRow | null = (await this.networking.post(
+      const res = (await this.networking.post(
         `custodial/${this.wallet.address}/balance`, {
           authToken: await this.getAuthToken(),
         },
       )).data
+      // const res = (await this.networking.get(
+      //   `custodial/${this.wallet.address}/balance`)
+      // ).data
       return res ? res : null
     } catch (e) {
       if (e.status === 404) {
         console.log(`Custodial balances not found for user ${this.wallet.address}`)
         return null
       }
-      console.log('Error getting latest state no pending ops:', e)
+      console.log('Error getting custodial balance:', e)
       throw e
     }
   }
