@@ -1,10 +1,9 @@
-import * as Connext from 'connext';
-import { getTestRegistry, TestApiServer, assert } from '../testing'
-import { channelUpdateFactory, tokenVal } from "../testing/factories";
-import ChannelsService from '../ChannelsService';
-import { mkHash } from '../testing/stateUtils';
+import { UpdateRequest } from 'connext/types'
 
-type UpdateRequest = Connext.types.UpdateRequest
+import ChannelsService from '../ChannelsService'
+import { assert, getTestRegistry, TestApiServer } from '../testing'
+import { channelUpdateFactory, tokenVal } from '../testing/factories'
+import { mkHash } from '../testing/stateUtils'
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()

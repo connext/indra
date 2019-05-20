@@ -1,5 +1,6 @@
-import { getTestRegistry, assert, nock } from '../testing'
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
+
+import { assert, getTestRegistry, nock } from '../testing'
 import { maybe, parseQueryString } from '../util'
 
 describe.skip('CoinPaymentsApiClient', () => {

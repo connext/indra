@@ -1,15 +1,17 @@
-import { Poller, types } from 'connext'
-import { CoinPaymentsService } from './CoinPaymentsService'
-import { default as log } from '../util/log'
-import { CoinPaymentsDao } from './CoinPaymentsDao'
-import { default as DBEngine } from '../DBEngine'
-import { default as Config } from '../Config'
+import * as connext from 'connext'
+import { DepositArgs } from 'connext/types'
 
-type DepositArgs = types.DepositArgs
+import { CoinPaymentsDao } from './CoinPaymentsDao'
+import { CoinPaymentsService } from './CoinPaymentsService'
+
+import { default as Config } from '../Config'
+import { default as DBEngine } from '../DBEngine'
+import { default as log } from '../util/log'
+
 const LOG = log('CoinPaymentsDepositPollingService')
 
 export class CoinPaymentsDepositPollingService {
-  private poller: Poller
+  private poller: connext.Poller
 
   constructor(
     private config: Config,
@@ -17,7 +19,7 @@ export class CoinPaymentsDepositPollingService {
     private service: CoinPaymentsService,
     private dao: CoinPaymentsDao,
   ) {
-    this.poller = new Poller({
+    this.poller = new connext.Poller({
       name: 'CoinPaymentsDepositPollingService',
       interval: 2 * 60 * 1000,
       callback: this.pollOnce.bind(this),

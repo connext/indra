@@ -1,9 +1,9 @@
-import { big, types } from 'connext';
-import log from "../util/log";
-import DBEngine, { SQL } from "../DBEngine";
+import { OptimisticPurchasePaymentRowBN } from 'connext/types'
 import { Client } from 'pg'
-const { Big } = big
-type OptimisticPurchasePaymentRowBN = types.OptimisticPurchasePaymentRowBN
+
+import DBEngine, { SQL } from '../DBEngine'
+import { toBN } from '../util'
+import log from '../util/log'
 
 export default interface OptimisticPaymentDao {
   createOptimisticPayment(paymentId: number, channelUpdateId: number)
@@ -120,8 +120,8 @@ export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
       sender: row.sender,
       recipient: row.recipient,
       amount: {
-        amountWei: Big(row.amount_wei),
-        amountToken: Big(row.amount_token),
+        amountWei: toBN(row.amount_wei),
+        amountToken: toBN(row.amount_token),
       },
       meta: row.meta,
       channelUpdateId: Number(row.channel_update_id),

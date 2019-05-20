@@ -1,4 +1,9 @@
-import { Poller, types } from 'connext'
+import * as connext from 'connext'
+import {
+  OptimisticPurchasePaymentRow,
+  OptimisticPurchasePaymentRowBN,
+  PurchasePayment,
+} from 'connext/types'
 
 import ChannelsService from './ChannelsService'
 import ChannelsDao from './dao/ChannelsDao'
@@ -8,19 +13,11 @@ import PaymentsService from './PaymentsService'
 import { maybe } from './util'
 import log from './util/log'
 
-const { convertPayment } = types
-type PurchasePayment<T = string> = types.PurchasePayment<T>
-type OptimisticPurchasePaymentRow<
-  T = string
-> = types.OptimisticPurchasePaymentRow<T>
-type OptimisticPurchasePaymentRowBN = types.OptimisticPurchasePaymentRowBN
-
 const LOG = log('OptimisticPaymentsService')
-
 const POLL_INTERVAL = 2 * 1000
 
 export class OptimisticPaymentsService {
-  private poller: Poller
+  private poller: connext.Poller
 
   constructor(
     private db: DBEngine,
@@ -29,11 +26,11 @@ export class OptimisticPaymentsService {
     private paymentsService: PaymentsService,
     private channelsService: ChannelsService
   ) {
-    this.poller = new Poller({
+    this.poller = new connext.Poller({
       callback: this.pollOnce.bind(this),
       interval: POLL_INTERVAL,
       name: 'OptimisticPaymentsService',
-      timeout: POLL_INTERVAL
+      timeout: POLL_INTERVAL,
     })
   }
 
@@ -63,7 +60,7 @@ export class OptimisticPaymentsService {
 
         // if the hub has sufficient collateral, forward the
         // payment
-        const paymentBig = convertPayment('bn', p.amount)
+        const paymentBig = connext.convert.Payment('bn', p.amount)
         const sufficientCollateral = (type: 'Token' | 'Wei'): boolean => {
           const hubKey = 'balance' + type + 'Hub'
           const paymentKey = 'amount' + type
@@ -94,14 +91,14 @@ export class OptimisticPaymentsService {
   ): Promise<void> {
     // reconstruct purchase payment as if it came from user
     const purchasePayment: PurchasePayment = {
-      amount: convertPayment('str', payment.amount),
+      amount: connext.convert.Payment("str", payment.amount),
       meta: payment.meta,
       recipient: payment.recipient,
       type: 'PT_CHANNEL',
       update: {
         args: {
-          ...convertPayment('str', payment.amount),
-          recipient: 'hub'
+          ...connext.convertPayment("str", payment.amount),
+          recipient: "hub"
         },
         reason: 'Payment',
         txCount: null

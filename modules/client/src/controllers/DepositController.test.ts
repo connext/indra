@@ -1,7 +1,5 @@
-import { assert, } from '../testing/index';
-import { MockConnextInternal, patch } from '../testing/mocks';
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+import { assert } from '../testing/index'
+import { MockConnextInternal, patch } from '../testing/mocks'
 
 describe('DepositController: unit tests', () => {
   let connext: MockConnextInternal
@@ -14,21 +12,21 @@ describe('DepositController: unit tests', () => {
   // TODO: properly mock out token transfer approval
   it('should work for wei', async () => {
     await connext.depositController.requestUserDeposit({ amountWei: '420', amountToken: '0' })
-    await new Promise(res => setTimeout(res, 10))
+    await new Promise((res: any): any => setTimeout(res, 10))
 
     connext.mockHub.assertReceivedUpdate({
-      reason: 'ProposePendingDeposit',
       args: {
-        depositWeiUser: '420',
         depositTokenUser: '0',
+        depositWeiUser: '420',
       },
-      sigUser: true,
+      reason: 'ProposePendingDeposit',
       sigHub: true,
+      sigUser: true,
     })
 
     connext.mockContract.assertCalled('userAuthorizedUpdate', {
-      pendingDepositWeiUser: '420',
       pendingDepositTokenUser: '0',
+      pendingDepositWeiUser: '420',
     })
 
     assert.containSubset(connext.store.getState(), {
@@ -44,14 +42,16 @@ describe('DepositController: unit tests', () => {
   })
 
   it('should fail if the hub returns invalidly signed update', async () => {
-    connext.validator.generateProposePendingDeposit = (req, signer) => { throw new Error('Invalid signer') }
+    connext.validator.generateProposePendingDeposit = (req: any, signer: any): any => {
+      throw new Error('Invalid signer')
+    }
 
     await assert.isRejected(
       connext.depositController.requestUserDeposit({
-        amountWei: '420',
         amountToken: '69',
+        amountWei: '420',
       }),
-      /Invalid signer/
+      /Invalid signer/,
     )
 
   })
@@ -65,10 +65,10 @@ describe('DepositController: unit tests', () => {
 
     await assert.isRejected(
       connext.depositController.requestUserDeposit({
-        amountWei: '420',
         amountToken: '69',
+        amountWei: '420',
       }),
-      /timestamp/
+      /timestamp/,
     )
   })
 })

@@ -1,20 +1,20 @@
-import { getTestRegistry, assert, getFakeClock, parameterizedTests } from "./testing";
-import { OptimisticPaymentsService } from "./OptimisticPaymentsService";
-import ChannelsService from "./ChannelsService";
-import ChannelsDao from "./dao/ChannelsDao";
-import { channelUpdateFactory, tokenVal } from "./testing/factories";
-import { mkAddress, mkSig } from "./testing/stateUtils";
-import PaymentsService from "./PaymentsService";
-import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
-import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { big, types } from 'connext'; 
+import * as connext from 'connext'
+import {
+  PaymentArgs,
+  PurchasePayment,
+  UpdateRequest,
+} from 'connext/types'
 
-const { Big } = big;
-const { convertDeposit } = types;
-type PurchasePayment = types.PurchasePayment
-type UpdateRequest<T=string> = types.UpdateRequest<T>
-type PaymentArgs<T=string> = types.PaymentArgs<T>
-
+import ChannelsService from './ChannelsService'
+import ChannelsDao from './dao/ChannelsDao'
+import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
+import { PaymentMetaDao } from './dao/PaymentMetaDao'
+import { OptimisticPaymentsService } from './OptimisticPaymentsService'
+import PaymentsService from './PaymentsService'
+import { assert, getFakeClock, getTestRegistry, parameterizedTests } from './testing'
+import { channelUpdateFactory, tokenVal } from './testing/factories'
+import { mkAddress, mkSig } from './testing/stateUtils'
+import { toBN } from './util'
 
 describe('OptimisticPaymentsService', () => {
 
@@ -26,7 +26,7 @@ describe('OptimisticPaymentsService', () => {
   const paymentsService: PaymentsService = registry.get('PaymentsService')
   const channelsService: ChannelsService = registry.get('ChannelsService')
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
-  const db = registry.get("DBEngine")
+  const db = registry.get('DBEngine')
 
   // variables
   const sender = mkAddress('0xc251')
@@ -129,7 +129,7 @@ describe('OptimisticPaymentsService', () => {
       reason: 'ProposePendingDeposit'
     })
     assert.isTrue(
-      Big((collateralReceiver.args as any).depositTokenHub).gte(Big(0))
+      toBN((collateralReceiver.args as any).depositTokenHub).gte(toBN(0))
     )
 
     // add sufficient collateral, and redeem payments
@@ -161,7 +161,7 @@ describe('OptimisticPaymentsService', () => {
       reason: 'ProposePendingDeposit'
     })
     assert.isTrue(
-      Big((collateral.args as any).depositTokenHub).gte(Big(0))
+      toBN((collateral.args as any).depositTokenHub).gte(toBN(0))
     )
     
   })
@@ -239,7 +239,7 @@ describe('OptimisticPaymentsService', () => {
       reason: 'ProposePendingDeposit'
     })
     assert.isTrue(
-      Big((collateralReceiver.args as any).depositTokenHub).gte(Big(0))
+      toBN((collateralReceiver.args as any).depositTokenHub).gte(toBN(0))
     )
 
     // get the payment and make sure it was updated

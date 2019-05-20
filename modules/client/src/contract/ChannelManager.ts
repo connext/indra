@@ -1,53 +1,60 @@
-import * as eth from 'ethers';
-import { default as ChannelManagerAbi } from './ChannelManagerAbi'
+import { ethers as eth } from 'ethers'
+
 import {
   ChannelManagerChannelDetails,
   ChannelState,
   Contract,
-  LogDescription,
   Filter,
   Interface,
+  LogDescription,
   Provider,
   ThreadState,
   Transaction,
 } from '../types'
-import Wallet from '../Wallet';
+import { Wallet } from '../Wallet'
+
+import * as ChannelManagerAbi from './ChannelManagerAbi.json'
 
 // To recreate abi:
-//  - npm run build # in contracts module
-//  - cp contracts/build/contracts/ChannelManager.json client/src/contract/ChannelManagerAbi.ts
-//  - # extract abi & add "export default" on first line 
+//  - npm run build # in contracts module or make in Indra project root
+//  - cp contracts/build/contracts/ChannelManager.json client/src/contract/ChannelManagerAbi.json
 
 export interface IChannelManager {
   abi: Interface
-  rawAbi: any
   gasMultiple: number
-  getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<LogDescription[]>
-  userAuthorizedUpdate(state: ChannelState): Promise<Transaction>
-  getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
-  startExit(state: ChannelState): Promise<Transaction>
-  startExitWithUpdate(state: ChannelState): Promise<Transaction>
-  emptyChannelWithChallenge(state: ChannelState): Promise<Transaction>
-  emptyChannel(state: ChannelState): Promise<Transaction>
-  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction>
-  startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<Transaction>
+  rawAbi: any
   challengeThread(state: ChannelState, threadState: ThreadState): Promise<Transaction>
+  emptyChannel(state: ChannelState): Promise<Transaction>
+  emptyChannelWithChallenge(state: ChannelState): Promise<Transaction>
   emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction>
+  getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
+  getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<LogDescription[]>
   nukeThreads(state: ChannelState): Promise<Transaction>
+  startExit(state: ChannelState): Promise<Transaction>
+  startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction>
+  startExitThreadWithUpdate(
+    state: ChannelState,
+    threadInitialState: ThreadState,
+    threadUpdateState: ThreadState,
+    proof: any,
+  ): Promise<Transaction>
+  startExitWithUpdate(state: ChannelState): Promise<Transaction>
+  userAuthorizedUpdate(state: ChannelState): Promise<Transaction>
 }
 
 export class ChannelManager implements IChannelManager {
-  address: string
-  cm: Contract
-  gasMultiple: number
-  provider: Provider
-  abi: Interface
-  rawAbi: any
-  defaultSendArgs: any
+  public abi: Interface
+  public address: string
+  public gasMultiple: number
+  public rawAbi: any
 
-  constructor(wallet: Wallet, address: string, gasMultiple: number) {
+  private cm: Contract
+  private defaultSendArgs: any = { value: 0 }
+  private provider: Provider
+
+  public constructor(wallet: Wallet, address: string, gasMultiple: number) {
     this.address = address
-    // NOTE: doing wallet.provider, we can still create this 
+    // NOTE: doing wallet.provider, we can still create this
     // and have sendTransaction in the wallet return
     // a transactionReceipt
     this.cm = new eth.Contract(address, ChannelManagerAbi.abi, wallet)
@@ -58,31 +65,20 @@ export class ChannelManager implements IChannelManager {
     this.abi = new eth.utils.Interface(this.rawAbi)
   }
 
-  async getPastEvents(eventName: string, args: string[], fromBlock: number) {
+  public async getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<any> {
     const filter = this.cm.filters[eventName](...args) as Filter
     filter.fromBlock = fromBlock
-    filter.toBlock = "latest"
-
+    filter.toBlock = 'latest'
     const logs = await this.provider.getLogs(filter)
-
     const events = []
-    for (let i in logs) {
-      events.push(this.abi.parseLog(logs[i]) as LogDescription)
+    for (const log of logs) {
+      events.push(this.abi.parseLog(log) as LogDescription)
     }
-
-    console.log(`Got events: ${JSON.stringify(events,null,2)}`)
-
+    console.log(`Got events: ${JSON.stringify(events,undefined,2)}`)
     return events
   }
 
-  async _send(method: string, args: any, overrides: any) {
-    const gasEstimate = (await this.cm.estimate[method](...args, overrides)).toNumber()
-    overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.gasMultiple))
-    overrides.gasPrice = await this.provider.getGasPrice()
-    return await this.cm[method](...args, overrides)
-  }
-
-  async userAuthorizedUpdate(state: ChannelState) {
+  public async userAuthorizedUpdate(state: ChannelState): Promise<any> {
     const args = [
       state.recipient,
       [
@@ -112,19 +108,20 @@ export class ChannelManager implements IChannelManager {
       state.threadRoot,
       state.threadCount,
       state.timeout,
-      state.sigHub!,
+      state.sigHub,
     ]
-    return await this._send('userAuthorizedUpdate', args, Object.assign({}, this.defaultSendArgs, {
-      value: eth.utils.bigNumberify(state.pendingDepositWeiUser)
-    }))
+    return this._send('userAuthorizedUpdate', args, {
+      ...this.defaultSendArgs,
+      value: eth.utils.bigNumberify(state.pendingDepositWeiUser),
+    })
   }
 
-  async startExit(state: ChannelState) {
+  public async startExit(state: ChannelState): Promise<any> {
     const args = [ state.user ]
-    return await this._send('startExit', args, this.defaultSendArgs)
+    return this._send('startExit', args, this.defaultSendArgs)
   }
 
-  async startExitWithUpdate(state: ChannelState) {
+  public async startExitWithUpdate(state: ChannelState): Promise<any> {
     const args = [
       [ state.user, state.recipient ],
       [
@@ -154,10 +151,10 @@ export class ChannelManager implements IChannelManager {
       state.sigHub as string,
       state.sigUser as string,
     ]
-    return await this._send('startExitWithUpdate', args, this.defaultSendArgs)
+    return this._send('startExitWithUpdate', args, this.defaultSendArgs)
   }
 
-  async emptyChannelWithChallenge(state: ChannelState) {
+  public async emptyChannelWithChallenge(state: ChannelState): Promise<any> {
     const args = [
       [ state.user, state.recipient ],
       [
@@ -187,15 +184,19 @@ export class ChannelManager implements IChannelManager {
       state.sigHub as string,
       state.sigUser as string,
     ]
-    return await this._send('emptyChannelWithChallenge', args, this.defaultSendArgs)
+    return this._send('emptyChannelWithChallenge', args, this.defaultSendArgs)
   }
 
-  async emptyChannel(state: ChannelState) {
+  public async emptyChannel(state: ChannelState): Promise<any> {
     const args = [ state.user ]
-    return await this._send('emptyChannel', args, this.defaultSendArgs)
+    return this._send('emptyChannel', args, this.defaultSendArgs)
   }
 
-  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any) {
+  public async startExitThread(
+    state: ChannelState,
+    threadState: ThreadState,
+    proof: any,
+  ): Promise<any> {
     const args = [
       state.user,
       threadState.sender,
@@ -206,10 +207,15 @@ export class ChannelManager implements IChannelManager {
       proof,
       threadState.sigA,
     ]
-    return await this._send('startExitThread', args, this.defaultSendArgs)
+    return this._send('startExitThread', args, this.defaultSendArgs)
   }
 
-  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any) {
+  public async startExitThreadWithUpdate(
+    state: ChannelState,
+    threadInitialState: ThreadState,
+    threadUpdateState: ThreadState,
+    proof: any,
+  ): Promise<any> {
     const args = [
       state.user,
       [threadInitialState.sender, threadInitialState.receiver],
@@ -221,12 +227,12 @@ export class ChannelManager implements IChannelManager {
       [threadUpdateState.balanceWeiSender, threadUpdateState.balanceWeiReceiver],
       [threadUpdateState.balanceTokenSender, threadUpdateState.balanceTokenReceiver],
       threadUpdateState.txCount,
-      threadUpdateState.sigA
+      threadUpdateState.sigA,
     ]
-    return await this._send('startExitThreadWithUpdate', args, this.defaultSendArgs)
+    return this._send('startExitThreadWithUpdate', args, this.defaultSendArgs)
   }
 
-  async challengeThread(state: ChannelState, threadState: ThreadState) {
+  public async challengeThread(state: ChannelState, threadState: ThreadState): Promise<any> {
     const args = [
       threadState.sender,
       threadState.receiver,
@@ -234,12 +240,16 @@ export class ChannelManager implements IChannelManager {
       [threadState.balanceWeiSender, threadState.balanceWeiReceiver],
       [threadState.balanceTokenSender, threadState.balanceTokenReceiver],
       threadState.txCount,
-      threadState.sigA
+      threadState.sigA,
     ]
-    return await this._send('challengeThread', args, this.defaultSendArgs)
+    return this._send('challengeThread', args, this.defaultSendArgs)
   }
 
-  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any) {
+  public async emptyThread(
+    state: ChannelState,
+    threadState: ThreadState,
+    proof: any,
+  ): Promise<any> {
     const args = [
       state.user,
       threadState.sender,
@@ -250,27 +260,32 @@ export class ChannelManager implements IChannelManager {
       proof,
       threadState.sigA,
     ]
-    return await this._send('emptyThread', args, this.defaultSendArgs)
+    return this._send('emptyThread', args, this.defaultSendArgs)
   }
 
-  async nukeThreads(state: ChannelState) {
-    const args = [
-      state.user
-    ]
-    return await this._send('nukeThreads', args, this.defaultSendArgs)
+  public async nukeThreads(state: ChannelState): Promise<any> {
+    const args = [ state.user ]
+    return this._send('nukeThreads', args, this.defaultSendArgs)
   }
 
-  async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
+  public async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
     const res = await this.cm.getChannelDetails(user, { from: user })
     return {
-      txCountGlobal: +res[0],
-      txCountChain: +res[1],
-      threadRoot: res[2],
-      threadCount: +res[3],
-      exitInitiator: res[4],
       channelClosingTime: +res[5],
+      exitInitiator: res[4],
       status: res[6],
+      threadCount: +res[3],
+      threadRoot: res[2],
+      txCountChain: +res[1],
+      txCountGlobal: +res[0],
     }
+  }
+
+  private async _send(method: string, args: any, overrides: any): Promise<any> {
+    const gasEstimate = (await this.cm.estimate[method](...args, overrides)).toNumber()
+    overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.gasMultiple))
+    overrides.gasPrice = await this.provider.getGasPrice()
+    return this.cm[method](...args, overrides)
   }
 
 }

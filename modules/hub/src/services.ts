@@ -1,78 +1,61 @@
-import { StateGenerator, Utils, Validator } from 'connext';
-import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
-import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
-import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
-import { CoinPaymentsService } from './coinpayments/CoinPaymentsService'
-import {
-  Registry,
-  PartialServiceDefinitions,
-  Context,
-  Container,
-} from './Container'
-import { ChannelManager } from './contract/ChannelManager'
-import AuthApiService from './api/AuthApiService'
-import { MemoryCRAuthManager } from './CRAuthManager'
-import Config from './Config'
-import BrandingApiService from './api/BrandingApiService'
-import {
-  default as DBEngine,
-  PostgresDBEngine,
-  PgPoolService,
-} from './DBEngine'
-import PaymentsApiService from './api/PaymentsApiService'
-import ExchangeRateService from './ExchangeRateService'
-import ExchangeRateDao, { PostgresExchangeRateDao } from './dao/ExchangeRateDao'
+import * as connext from 'connext'
 import { Client } from 'pg'
-import PaymentsDao, { PostgresPaymentsDao } from './dao/PaymentsDao'
-import { PostgresWithdrawalsDao } from './dao/WithdrawalsDao'
-import GlobalSettingsDao, {
-  PostgresGlobalSettingsDao
-} from './dao/GlobalSettingsDao'
-//import GlobalSettingsApiService from './api/GlobalSettingsApiService'
-import ExchangeRateApiService from './api/ExchangeRateApiService'
-import { default as ChannelsDao, PostgresChannelsDao } from './dao/ChannelsDao'
-import { PaymentMetaDao, PostgresPaymentMetaDao } from './dao/PaymentMetaDao'
-import { default as ChainsawDao, PostgresChainsawDao } from './dao/ChainsawDao'
-import ChannelsService from './ChannelsService'
-import ThreadsDao, { PostgresThreadsDao } from './dao/ThreadsDao'
-import ChannelsApiService from './api/ChannelsApiService'
-import ChainsawService from './ChainsawService'
-
-import {
-  PostgresDisbursementDao,
-} from './dao/DisbursementsDao'
-import { getRedisClient, RedisClient } from './RedisClient'
-import {
-  default as GasEstimateDao,
-  PostgresGasEstimateDao,
-} from './dao/GasEstimateDao'
-import { default as GasEstimateService } from './GasEstimateService'
-import { default as GasEstimateApiService } from './api/GasEstimateApiService'
 import Web3 from 'web3'
-import { PostgresFeatureFlagsDao } from './dao/FeatureFlagsDao'
+
+import { default as ChannelManagerABI } from './abi/ChannelManager'
+import AuthApiService from './api/AuthApiService'
+import BrandingApiService from './api/BrandingApiService'
+import ChannelsApiService from './api/ChannelsApiService'
+import ConfigApiService from './api/ConfigApiService'
+import ExchangeRateApiService from './api/ExchangeRateApiService'
 import FeatureFlagsApiService from './api/FeatureFlagsApiService'
+import { default as GasEstimateApiService } from './api/GasEstimateApiService'
+import PaymentProfilesApiService from './api/PaymentProfilesApiService'
+import PaymentsApiService from './api/PaymentsApiService'
+import ThreadsApiService from './api/ThreadsApiService'
 import { ApiServer } from './ApiServer'
-import { DefaultAuthHandler } from './middleware/AuthHandler'
-import ThreadsService from './ThreadsService'
-import ThreadsApiService from './api/ThreadsApiService';
-import { OnchainTransactionService } from "./OnchainTransactionService";
-import { OnchainTransactionsDao } from "./dao/OnchainTransactionsDao";
-import { SignerService } from './SignerService';
-import PaymentsService from './PaymentsService';
-import { NgrokService } from './NgrokService'
+import ChainsawService from './ChainsawService'
+import ChannelsService from './ChannelsService'
+import { CloseChannelService } from './CloseChannelService'
 import { CoinPaymentsApiClient } from './coinpayments/CoinPaymentsApiClient'
 import { CoinPaymentsApiService } from './coinpayments/CoinPaymentsApiService'
-import { default as ChannelManagerABI } from './abi/ChannelManager'
-import { CloseChannelService } from './CloseChannelService'
-import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDisputesDao';
+import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
-import ConfigApiService from './api/ConfigApiService';
+import { CoinPaymentsService } from './coinpayments/CoinPaymentsService'
+import Config from './Config'
+import { Container, Context, PartialServiceDefinitions, Registry } from './Container'
+import { ChannelManager } from './contract/ChannelManager'
+import { MemoryCRAuthManager } from './CRAuthManager'
+import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
-import OptimisticPaymentDao, { PostgresOptimisticPaymentDao } from './dao/OptimisticPaymentDao';
-import { OptimisticPaymentsService } from './OptimisticPaymentsService';
-import PaymentProfilesApiService from './api/PaymentProfilesApiService';
-import PaymentProfilesDao, { PostgresPaymentProfilesDao } from './dao/PaymentProfilesDao';
-import PaymentProfilesService from './PaymentProfilesService';
+import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
+import { default as ChainsawDao, PostgresChainsawDao } from './dao/ChainsawDao'
+import ChannelDisputesDao, { PostgresChannelDisputesDao } from './dao/ChannelDisputesDao'
+import { default as ChannelsDao, PostgresChannelsDao } from './dao/ChannelsDao'
+import { PostgresDisbursementDao } from './dao/DisbursementsDao'
+import ExchangeRateDao, { PostgresExchangeRateDao } from './dao/ExchangeRateDao'
+import { PostgresFeatureFlagsDao } from './dao/FeatureFlagsDao'
+import { default as GasEstimateDao, PostgresGasEstimateDao } from './dao/GasEstimateDao'
+import GlobalSettingsDao, { PostgresGlobalSettingsDao } from './dao/GlobalSettingsDao'
+import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao'
+import OptimisticPaymentDao, { PostgresOptimisticPaymentDao } from './dao/OptimisticPaymentDao'
+import { PaymentMetaDao, PostgresPaymentMetaDao } from './dao/PaymentMetaDao'
+import PaymentProfilesDao, { PostgresPaymentProfilesDao } from './dao/PaymentProfilesDao'
+import PaymentsDao, { PostgresPaymentsDao } from './dao/PaymentsDao'
+import ThreadsDao, { PostgresThreadsDao } from './dao/ThreadsDao'
+import { PostgresWithdrawalsDao } from './dao/WithdrawalsDao'
+import { default as DBEngine, PgPoolService, PostgresDBEngine } from './DBEngine'
+import ExchangeRateService from './ExchangeRateService'
+import { default as GasEstimateService } from './GasEstimateService'
+import { DefaultAuthHandler } from './middleware/AuthHandler'
+import { NgrokService } from './NgrokService'
+import { OnchainTransactionService } from './OnchainTransactionService'
+import { OptimisticPaymentsService } from './OptimisticPaymentsService'
+import PaymentProfilesService from './PaymentProfilesService'
+import PaymentsService from './PaymentsService'
+import { getRedisClient, RedisClient } from './RedisClient'
+import { SignerService } from './SignerService'
+import ThreadsService from './ThreadsService'
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -112,10 +95,10 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       channelDisputesDao: ChannelDisputesDao,
       contract: ChannelManager,
       web3: Web3,
-      utils: Utils,
+      utils: connext.Utils,
       config: Config,
       db: DBEngine,
-      validator: Validator,
+      validator: connext.Validator,
       redis: RedisClient
     ) => new ChainsawService(signerService, onchainTransactionService, chainsawDao, channelsDao, channelDisputesDao, contract, web3, utils, config, db, validator, redis),
     dependencies: [
@@ -309,17 +292,17 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   ConnextUtils: {
-    factory: (config: Config) => new Utils(),
+    factory: (config: Config) => new connext.Utils(),
     dependencies: ['Config'],
   },
 
   Validator: {
-    factory: (web3: any, config: Config) => new Validator(config.hotWalletAddress, web3.eth, ChannelManagerABI.abi),
+    factory: (web3: any, config: Config) => new connext.Validator(config.hotWalletAddress, web3.eth, ChannelManagerABI.abi),
     dependencies: ['Web3', 'Config'],
   },
 
   StateGenerator: {
-    factory: () => new StateGenerator(),
+    factory: () => new connext.StateGenerator(),
   },
 
   GasEstimateDao: {
@@ -378,7 +361,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   SignerService: {
-    factory: (web3: any, contract: ChannelManager, utils: Utils, config: Config) => new SignerService(web3, contract, utils, config),
+    factory: (web3: any, contract: ChannelManager, utils: connext.Utils, config: Config) => new SignerService(web3, contract, utils, config),
     dependencies: ['Web3', 'ChannelManagerContract', 'ConnextUtils', 'Config']
   },
 
@@ -392,7 +375,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       optimisticPaymentDao: OptimisticPaymentDao,
       channelsDao: ChannelsDao,
       custodialPaymentsDao: CustodialPaymentsDao,
-      validator: Validator,
+      validator: connext.Validator,
       config: Config,
       db: DBEngine,
       gds: GlobalSettingsDao,
@@ -460,8 +443,8 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       exchangeRateDao: ExchangeRateDao,
       channelDisputesDao: ChannelDisputesDao,
       onchainTransactionDao: OnchainTransactionsDao,
-      generator: StateGenerator,
-      validation: Validator,
+      generator: connext.StateGenerator,
+      validation: connext.Validator,
       redis: RedisClient,
       db: DBEngine,
       config: Config,
@@ -512,7 +495,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       signerService: SignerService,
       channelsDao: ChannelsDao,
       threadsDao: ThreadsDao,
-      validation: Validator,
+      validation: connext.Validator,
       config: Config,
       gsd: GlobalSettingsDao
     ) => new ThreadsService(signerService, channelsDao, threadsDao, validation, config, gsd),

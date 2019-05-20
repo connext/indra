@@ -1,15 +1,17 @@
-import { ethers as eth } from 'ethers';
-import { AbstractController } from './AbstractController';
-import { getTxCount, getLastThreadUpdateId } from '../state/getters'
-import { validateTimestamp } from '../lib/timestamp';
+import { ethers as eth } from 'ethers'
+import tokenAbi from 'human-standard-token-abi'
+
+import { validateTimestamp } from '../lib/timestamp'
+import { getLastThreadUpdateId, getTxCount } from '../state/getters'
 import {
+  argNumericFields,
   ChannelState,
+  insertDefault,
   Payment,
   UpdateRequestTypes,
-  insertDefault,
-  argNumericFields,
 } from '../types'
-const tokenAbi = require('human-standard-token-abi')
+
+import { AbstractController } from './AbstractController'
 
 /*
  * Rule:
@@ -22,19 +24,19 @@ const tokenAbi = require('human-standard-token-abi')
  *   because they will be picked up on the next sync anyway), and this method
  *   will be used by the DepositController.
  */
-export default class DepositController extends AbstractController {
-  private resolvePendingDepositPromise: any = null
+export class DepositController extends AbstractController {
+  private resolvePendingDepositPromise: any = undefined
 
-  public async requestUserDeposit(args: Partial<Payment>) {
+  public async requestUserDeposit(args: Partial<Payment>): Promise<any> {
     // insert '0' strs to the obj
     const deposit = insertDefault('0', args, argNumericFields.Payment)
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
-    
+
     try {
       const sync = await this.hub.requestDeposit(
         signedRequest,
         getTxCount(this.store.getState()),
-        getLastThreadUpdateId(this.store.getState())
+        getLastThreadUpdateId(this.store.getState()),
       )
       this.connext.syncController.handleHubSync(sync)
     } catch (e) {
@@ -44,7 +46,7 @@ export default class DepositController extends AbstractController {
     // There can only be one pending deposit at a time, so it's safe to return
     // a promise that will resolve/reject when we eventually hear back from the
     // hub.
-    return new Promise((res, rej) => {
+    return new Promise((res: any, rej: any): any => {
       this.resolvePendingDepositPromise = { res, rej }
     })
   }
@@ -54,27 +56,31 @@ export default class DepositController extends AbstractController {
    * to chain, generate a state for that deposit, send that state to chain,
    * and return the state once it has been successfully added to the mempool.
    */
-  public async sendUserAuthorizedDeposit(prev: ChannelState, update: UpdateRequestTypes['ProposePendingDeposit']) {
+  public async sendUserAuthorizedDeposit(
+    prev: ChannelState, update: UpdateRequestTypes['ProposePendingDeposit'],
+  ): Promise<any> {
+    let check
     try {
       await this._sendUserAuthorizedDeposit(prev, update)
-      this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.res()
+      check = this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.res()
     } catch (e) {
       console.warn(
         `Error handling userAuthorizedUpdate (this update will be ` +
         `countersigned and held until it expires - at which point it ` +
         `will be invalidated - or the hub sends us a subsequent ` +
-        `ConfirmPending. (update: ${JSON.stringify(update)}; prev: ${JSON.stringify(prev)})`, e
-      )
-      this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.rej(e)
+        `ConfirmPending. (update: ${JSON.stringify(update)}; prev: ${JSON.stringify(prev)})` +
+        `Error: ${e}`)
+      check = this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.rej(e)
     } finally {
-      this.resolvePendingDepositPromise = null
+      this.resolvePendingDepositPromise = undefined
     }
   }
 
-  private async _sendUserAuthorizedDeposit(prev: ChannelState, update: UpdateRequestTypes['ProposePendingDeposit']) {
-    function DepositError(msg: string) {
-      return new Error(`${msg} (update: ${JSON.stringify(update)}; prev: ${JSON.stringify(prev)})`)
-    }
+  private async _sendUserAuthorizedDeposit(
+    prev: ChannelState, update: UpdateRequestTypes['ProposePendingDeposit'],
+  ): Promise<any> {
+    const DepositError = (msg: string): Error =>
+      new Error(`${msg} (update: ${JSON.stringify(update)}; prev: ${JSON.stringify(prev)})`)
 
     if (!update.sigHub) {
       throw DepositError(`A userAuthorizedUpdate must have a sigHub`)
@@ -88,8 +94,7 @@ export default class DepositController extends AbstractController {
       // somewhere.
       throw DepositError(
         `Cannot send a userAuthorizedUpdate which already has a sigUser ` +
-        `(see comments in source)`
-      )
+        `(see comments in source)`)
     }
 
     const { args } = update
@@ -103,7 +108,7 @@ export default class DepositController extends AbstractController {
       this.connext.validator.assertDepositRequestSigner({
         amountToken: args.depositTokenUser,
         amountWei: args.depositWeiUser,
-        sigUser: args.sigUser
+        sigUser: args.sigUser,
       }, prev.user)
     } catch (e) {
       throw DepositError(e.message)
@@ -123,22 +128,26 @@ export default class DepositController extends AbstractController {
     }
 
 
+    let tx
     try {
       if (args.depositTokenUser !== '0') {
         console.log(`Approving transfer of ${args.depositTokenUser} tokens`)
         const token = new eth.Contract(
-          this.connext.opts.tokenAddress!,
+          this.connext.opts.tokenAddress,
           tokenAbi,
           this.connext.wallet,
         )
         const overrides: any = { }
-        const gasEstimate = (await token.estimate.approve(prev.contractAddress, args.depositTokenUser)).toNumber()
-        overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(gasEstimate * this.connext.contract.gasMultiple))
+        const gasEstimate = (
+          await token.estimate.approve(prev.contractAddress, args.depositTokenUser)
+        ).toNumber()
+        overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(
+          gasEstimate * this.connext.contract.gasMultiple))
         overrides.gasPrice = await this.connext.wallet.provider.getGasPrice()
-        const tx = await token.approve(prev.contractAddress, args.depositTokenUser, overrides)
+        tx = await token.approve(prev.contractAddress, args.depositTokenUser, overrides)
         await this.connext.wallet.provider.waitForTransaction(tx.hash)
       }
-      const tx = await this.connext.contract.userAuthorizedUpdate(state)
+      tx = await this.connext.contract.userAuthorizedUpdate(state)
       console.log(`Sent user authorized deposit to chain: ${(tx as any).hash}`)
     } catch (e) {
       const currentChannel = await this.connext.contract.getChannelDetails(prev.user)
@@ -148,14 +157,13 @@ export default class DepositController extends AbstractController {
         console.log(
           `Update has already been applied to chain ` +
           `(${currentChannel.txCountGlobal} >= ${update.txCount}), ` +
-          `countersigning and returning update.`
-        )
+          `countersigning and returning update.`)
         return
       }
 
       // logic should be retry transaction UNTIL timeout elapses, then
       // submit the invalidation update
-      throw DepositError('Sending userAuthorizedUpdate to chain: ' + e)
+      throw DepositError(`Sending userAuthorizedUpdate to chain: ${e}`)
     }
   }
 

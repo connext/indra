@@ -6,33 +6,40 @@ import Web3 from 'web3'
 
 import { ChannelManager, IChannelManager } from './contract/ChannelManager'
 import { AbstractController } from './controllers/AbstractController'
-import BuyController from './controllers/BuyController'
-import CollateralController from './controllers/CollateralController'
-import DepositController from './controllers/DepositController'
+import { BuyController } from './controllers/BuyController'
+import { CollateralController } from './controllers/CollateralController'
+import { DepositController } from './controllers/DepositController'
 import { ExchangeController } from './controllers/ExchangeController'
 import { RedeemController } from './controllers/RedeemController'
-import StateUpdateController from './controllers/StateUpdateController'
-import SyncController from './controllers/SyncController'
-import ThreadsController from './controllers/ThreadsController'
-import WithdrawalController from './controllers/WithdrawalController'
+import { StateUpdateController } from './controllers/StateUpdateController'
+import { SyncController } from './controllers/SyncController'
+import { ThreadsController } from './controllers/ThreadsController'
+import { WithdrawalController } from './controllers/WithdrawalController'
 import {  HubAPIClient, IHubAPIClient } from './Hub'
-import { default as Logger } from './lib/Logger'
+import { maxBN, toBN } from './lib/bn'
 import { Networking } from './lib/networking'
 import { isFunction, timeoutPromise } from './lib/utils'
 import * as actions from './state/actions'
 import { handleStateFlags } from './state/middleware'
 import { reducers } from './state/reducers'
-import { ConnextState, ConnextStore, PersistentState } from './state/store'
+import {
+  ConnextState, ConnextStore, CUSTODIAL_BALANCE_ZERO_STATE, PersistentState,
+} from './state/store'
 import { StateGenerator } from './StateGenerator'
 import {
   Address,
   addSigToChannelState,
   addSigToThreadState,
+  argNumericFields,
   ChannelRow,
   ChannelState,
   ConnextProvider,
   convertChannelState,
+  convertCustodialBalanceRow,
+  convertFields,
   convertPayment,
+  CustodialBalanceRowBN,
+  insertDefault,
   Omit,
   PartialPurchaseRequest,
   Payment,
@@ -45,58 +52,48 @@ import {
   UnsignedChannelState,
   UnsignedThreadState,
   WithdrawalParameters,
+  withdrawalParamsNumericFields,
 } from './types'
 import { Utils } from './Utils'
 import { Validator } from './validator'
-import Wallet from './Wallet'
+import { Wallet } from './Wallet'
 
 ////////////////////////////////////////
 // Interface Definitions
 ////////////////////////////////////////
 
-export interface IConnextClientOptions {
-  hubUrl: string
+export interface IConnextChannelOptions {
+  connextProvider?: ConnextProvider // NOTE: only a placeholder
   ethUrl?: string
+  hubUrl: string
   mnemonic?: string
-  privateKey?: string
   password?: string
+  privateKey?: string
   user?: string
-
-  // NOTE: these are not used, do not pass them in.
-  // These are currently placeholders so that other
-  // instances may be passed in.
-  // TODO: implement injected provider functionality
   web3Provider?: Web3Provider
-  connextProvider?: ConnextProvider
-  safeSignHook?: (state: ChannelState | ThreadState) => Promise<string>
+  loadState?(): Promise<string | undefined>
+  safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder
+  saveState?(state: string): Promise<any>
+}
 
-  // Functions used to save/load the persistent portions of its internal state
-  loadState?: () => Promise<string | null>
-  saveState?: (state: string) => Promise<any>
-
-  // Used to (in)validate the hubUrl if it's config has info that conflicts w below
-  ethNetworkId?: string
-  contractAddress?: Address
-  hubAddress?: Address
-  tokenAddress?: Address
-  tokenName?: string
-
-  origin?: string
-  gasMultiple?: number
-  getLogger?: (name: string) => Logger
-
-  // Optional, useful for dependency injection
-  hub?: IHubAPIClient
-  store?: ConnextStore
-  contract?: IChannelManager
+export interface IConnextChannelInternalOptions extends IConnextChannelOptions{
+  contract?: IChannelManager // Optional, useful for dependency injection
+  contractAddress: string
+  gasMultiple: number
+  hub?: IHubAPIClient // Optional, useful for dependency injection
+  hubAddress: string
+  saveState(state: string): Promise<any>
+  store?: ConnextStore // Optional, useful for dependency injection
+  tokenAddress: string
+  user: string
 }
 
 ////////////////////////////////////////
 // Implementations
 ////////////////////////////////////////
 
-// Used to get an instance of ConnextClient.
-export async function getConnextClient(opts: IConnextClientOptions): Promise<ConnextClient> {
+// Used to get an instance of ConnextChannel.
+export const createClient = async (opts: IConnextChannelOptions): Promise<ConnextChannel> => {
 
   const hubConfig: any = (await (new Networking(opts.hubUrl)).get(`config`)).data
   const config: any = {
@@ -114,16 +111,16 @@ export async function getConnextClient(opts: IConnextClientOptions): Promise<Con
     (merged as any)[k] = (config as any)[k]
   }
 
-  // if web3, create a new web3 
+  // if web3, create a new web3
   if (merged.web3Provider && !merged.user) {
-    // set default address
-    // TODO: improve this
+    // set default address TODO: improve this
     const tmp = new Web3(opts.web3Provider as any)
     merged.user = (await tmp.eth.getAccounts())[0]
   }
 
   const wallet: Wallet = new Wallet(merged)
   merged.user = merged.user || wallet.address
+  merged.saveState = merged.saveState || console.log
 
   return new ConnextInternal({ ...merged }, wallet)
 }
@@ -133,15 +130,15 @@ export async function getConnextClient(opts: IConnextClientOptions): Promise<Con
  *
  * Create an instance with:
  *
- *  > const client = getConnextClient({...})
+ *  > const client = createChannel({...})
  *  > client.start() // start polling
  *  > client.on('onStateChange', state => {
  *  .   console.log('Connext state changed:', state)
  *  . })
  *
  */
-export abstract class ConnextClient extends EventEmitter {
-  public opts: IConnextClientOptions
+export abstract class ConnextChannel extends EventEmitter {
+  public opts: IConnextChannelInternalOptions
   public StateGenerator?: StateGenerator
   public Utils?: Utils // class constructor (todo: rm?)
   public utils: Utils // instance
@@ -149,7 +146,7 @@ export abstract class ConnextClient extends EventEmitter {
 
   private internal: ConnextInternal
 
-  constructor(opts: IConnextClientOptions) {
+  public constructor(opts: IConnextChannelInternalOptions) {
     super()
 
     this.opts = opts
@@ -174,12 +171,12 @@ export abstract class ConnextClient extends EventEmitter {
   // ******* PROFILE METHODS ******
   // ******************************
 
-  public async getProfileConfig(): Promise<PaymentProfileConfig | null> {
-    return await this.internal.hub.getProfileConfig()
+  public async getProfileConfig(): Promise<PaymentProfileConfig | undefined> {
+    return this.internal.hub.getProfileConfig()
   }
 
   public async startProfileSession(): Promise<void> {
-    await this.internal.hub.startProfileSession()
+   return this.internal.hub.startProfileSession()
   }
 
   // ******************************
@@ -187,7 +184,7 @@ export abstract class ConnextClient extends EventEmitter {
   // ******************************
 
   public async buy(purchase: PartialPurchaseRequest): Promise<{ purchaseId: string }> {
-    return await this.internal.buyController.buy(purchase)
+    return this.internal.buyController.buy(purchase)
   }
 
   public async deposit(payment: Partial<Payment>): Promise<void> {
@@ -200,15 +197,110 @@ export abstract class ConnextClient extends EventEmitter {
 
   public async recipientNeedsCollateral(
     recipient: Address,
-    amount: Payment
-  ): Promise<string|null> {
-    return await this.internal.recipientNeedsCollateral(recipient, amount)
+    amount: Payment,
+  ): Promise<string|undefined> {
+    return this.internal.recipientNeedsCollateral(recipient, amount)
+  }
+
+  public isSuccinctWithdrawal(
+    withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+  ): boolean {
+    return !!(withdrawal as SuccinctWithdrawalParameters).amountToken ||
+    !!(withdrawal as SuccinctWithdrawalParameters).amountWei
+  }
+
+  private calculateChannelWithdrawal(
+    _withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+    custodial: CustodialBalanceRowBN,
+  ): any {
+    // get args type
+    const isSuccinct = this.isSuccinctWithdrawal(_withdrawal)
+
+    const withdrawal = isSuccinct
+      ? insertDefault('0', _withdrawal, argNumericFields.Payment)
+      : insertDefault('0', _withdrawal, withdrawalParamsNumericFields)
+
+    // preferentially withdraw from your custodial balance when wding
+    // TODO: exchange on withdrawal account for custodial balances?
+    const channelTokenWithdrawal = isSuccinct
+      ? maxBN([
+          toBN(0),
+          toBN((withdrawal as any).amountToken).sub(custodial.balanceToken),
+        ])
+      : maxBN([toBN(0), toBN((withdrawal as any).withdrawalTokenUser).sub(custodial.balanceToken)])
+
+    const channelWeiWithdrawal = isSuccinct
+      ? maxBN([
+          toBN(0),
+          toBN((withdrawal as any).amountWei).sub(custodial.balanceWei),
+        ])
+      : maxBN([
+          toBN(0),
+          toBN((withdrawal as any).withdrawalWeiUser).sub(custodial.balanceWei),
+        ])
+
+    // get the amount youll wd custodially
+    const custodialTokenWithdrawal = isSuccinct
+      ? maxBN([toBN(0), toBN((withdrawal as any).amountToken).sub(channelTokenWithdrawal)])
+      : maxBN([toBN(0), toBN((withdrawal as any).withdrawalTokenUser).sub(channelTokenWithdrawal)])
+
+    const custodialWeiWithdrawal = isSuccinct
+      ? maxBN([toBN(0), toBN((withdrawal as any).amountWei).sub(channelWeiWithdrawal)])
+      : maxBN([toBN(0), toBN((withdrawal as any).withdrawalWeiUser).sub(channelWeiWithdrawal)])
+
+    const updated = {
+      channelTokenWithdrawal,
+      channelWeiWithdrawal,
+      custodialTokenWithdrawal,
+      custodialWeiWithdrawal,
+    }
+
+    return convertFields('bn', 'str', Object.keys(updated), updated)
   }
 
   public async withdraw(
     withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
   ): Promise<void> {
-    await this.internal.withdrawalController.requestUserWithdrawal(withdrawal)
+    const { custodialBalance, channel } = this.internal.store.getState().persistent
+    const custodial = convertCustodialBalanceRow('bn', custodialBalance)
+    // if there is no custodial balance, wd from channel
+    if (
+      custodial.balanceWei.isZero() &&
+      custodial.balanceToken.isZero()
+    ) {
+      await this.internal.withdrawalController.requestUserWithdrawal(withdrawal)
+      return
+    }
+
+    // if custodial balance exists, withdraw custodial balance
+    // preferentially
+    const updatedWd = this.calculateChannelWithdrawal(withdrawal, custodial)
+
+    // withdraw the custodial amount
+    await this.internal.hub.requestCustodialWithdrawal(
+      updatedWd.custodialTokenWithdrawal,
+      withdrawal.recipient || this.internal.wallet.address,
+    )
+
+    // withdraw the remainder from the channel
+    const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
+
+    const succinctWithdrawal = isSuccinct
+      ? {
+        ...withdrawal,
+        amountToken: updatedWd.channelTokenWithdrawal,
+        amountWei: updatedWd.channelWeiWithdrawal,
+      }
+      : {
+        ...withdrawal,
+        withdrawalTokenUser: updatedWd.channelTokenWithdrawal,
+        withdrawalWeiUser: updatedWd.channelWeiWithdrawal,
+      }
+
+    await this.internal.withdrawalController.requestUserWithdrawal({
+      ...succinctWithdrawal,
+    })
+    return
   }
 
   public async requestCollateral(): Promise<void> {
@@ -216,26 +308,28 @@ export abstract class ConnextClient extends EventEmitter {
   }
 
   public async redeem(secret: string): Promise<{ purchaseId: string }> {
-    return await this.internal.redeemController.redeem(secret)
+    return this.internal.redeemController.redeem(secret)
   }
 
-  async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
-    return await this.internal.hub.getPaymentHistory()
+  public async getPaymentHistory(): Promise<PurchasePaymentRow[]> {
+    return this.internal.hub.getPaymentHistory()
   }
 
-  async getPaymentById(purchaseId: string): Promise<PurchaseRowWithPayments<object, string>> {
-    return await this.internal.hub.getPaymentById(purchaseId)
+  public async getPaymentById(
+    purchaseId: string,
+  ): Promise<PurchaseRowWithPayments<object, string>> {
+    return this.internal.hub.getPaymentById(purchaseId)
   }
 }
 
 /**
- * The "actual" implementation of the Connext client. Internal components
+ * The 'actual' implementation of the Connext client. Internal components
  * should use this type, as it provides access to the various controllers, etc.
  */
-export class ConnextInternal extends ConnextClient {
+export class ConnextInternal extends ConnextChannel {
   public contract: IChannelManager
   public hub: IHubAPIClient
-  public opts: IConnextClientOptions
+  public opts: IConnextChannelInternalOptions
   public provider: any
   public store: ConnextStore
   public utils: Utils
@@ -252,32 +346,30 @@ export class ConnextInternal extends ConnextClient {
   public threadsController: ThreadsController
   public withdrawalController: WithdrawalController
 
-  private _latestState: PersistentState | null = null
+  private _latestState: PersistentState | undefined = undefined
   private _saving: Promise<void> = Promise.resolve()
   private _savePending: boolean = false
 
-  constructor(opts: IConnextClientOptions, wallet: Wallet) {
+  public constructor(opts: IConnextChannelInternalOptions, wallet: Wallet) {
     super(opts)
     this.opts = opts
 
     // Internal things
     // The store shouldn't be used by anything before calling `start()`, so
-    // leave it null until then.
-    this.store = null as any
+    // leave it undefined until then.
+    this.store = undefined as any
     this.wallet = wallet
     this.provider = wallet.provider
-    this.opts.origin = opts.origin || 'unknown'
 
-    console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
+    // console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
       new Networking(this.opts.hubUrl),
-      this.opts.origin,
       this.wallet,
     )
 
-    opts.user = opts.user!.toLowerCase()
-    opts.hubAddress = opts.hubAddress!.toLowerCase()
-    opts.contractAddress = opts.contractAddress!.toLowerCase()
+    opts.user = opts.user.toLowerCase()
+    opts.hubAddress = opts.hubAddress.toLowerCase()
+    opts.contractAddress = opts.contractAddress.toLowerCase()
     opts.gasMultiple = opts.gasMultiple || 1.5
 
     this.contract = opts.contract
@@ -316,7 +408,10 @@ export class ConnextInternal extends ConnextClient {
     await this.withdrawalController.requestUserWithdrawal(params)
   }
 
-  public async recipientNeedsCollateral(recipient: Address, amount: Payment): Promise<string|null> {
+  public async recipientNeedsCollateral(
+    recipient: Address,
+    amount: Payment,
+  ): Promise<string|undefined> {
     // get recipients channel
     let channel: ChannelRow
     try {
@@ -335,7 +430,7 @@ export class ConnextInternal extends ConnextClient {
       return 'Recipient needs collateral to facilitate payment.'
     }
     // otherwise, no collateral is needed to make payment
-    return null
+    return undefined
   }
 
   public async start(): Promise<void> {
@@ -353,10 +448,14 @@ export class ConnextInternal extends ConnextClient {
     const custodialBalance: any = await this.hub.getCustodialBalance()
     if (custodialBalance) {
       this.store.dispatch(actions.setCustodialBalance(custodialBalance))
+    } else {
+      // make sure the user is the same as the channel user
+      this.store.dispatch(actions.setCustodialBalance({
+        ...CUSTODIAL_BALANCE_ZERO_STATE,
+        user: this.wallet.address,
+      }))
     }
 
-    // TODO: appropriately set the latest
-    // valid state ??
     const channelAndUpdate: any = await this.hub.getLatestChannelStateAndUpdate()
     if (channelAndUpdate) {
       this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))
@@ -369,22 +468,20 @@ export class ConnextInternal extends ConnextClient {
       const lastThreadUpdateId: any = await this.hub.getLastThreadUpdateId()
       this.store.dispatch(actions.setLastThreadUpdateId(lastThreadUpdateId))
       // extract thread history, sort by descending threadId
-      const threadHistoryDuplicates: any = (await this.hub.getAllThreads()).map((t: any): any => {
-        return {
-          receiver: t.receiver,
-          sender: t.sender,
-          threadId: t.threadId,
-        }
-      }).sort((a: any, b: any): any => b.threadId - a.threadId)
+      const threadHistoryDuplicates: any = (await this.hub.getAllThreads()).map((t: any): any => ({
+        receiver: t.receiver,
+        sender: t.sender,
+        threadId: t.threadId,
+      })).sort((a: any, b: any): any => b.threadId - a.threadId)
       // filter duplicates
       const threadHistory: any = threadHistoryDuplicates.filter((thread: any, i: any): any => {
         const search: string = JSON.stringify({
           receiver: thread.receiver,
           sender: thread.sender,
         })
-        const elts: any = threadHistoryDuplicates.map((t: any): any => {
-          return JSON.stringify({ sender: t.sender, receiver: t.receiver })
-        })
+        const elts: any = threadHistoryDuplicates.map((t: any): any =>
+          JSON.stringify({ sender: t.sender, receiver: t.receiver }),
+        )
         return elts.indexOf(search) === i
       })
       this.store.dispatch(actions.setThreadHistory(threadHistory))
@@ -422,13 +519,13 @@ export class ConnextInternal extends ConnextClient {
   }
 
   public async getContractEvents(eventName: string, fromBlock: number): Promise<any> {
-    return this.contract.getPastEvents(eventName, [this.opts.user!], fromBlock)
+    return this.contract.getPastEvents(eventName, [this.opts.user], fromBlock)
   }
 
   public async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     if (
-      state.user.toLowerCase() !== this.opts.user!.toLowerCase() ||
-      state.contractAddress.toLowerCase() !== (this.opts.contractAddress! as any).toLowerCase()
+      state.user.toLowerCase() !== this.opts.user.toLowerCase() ||
+      state.contractAddress.toLowerCase() !== this.opts.contractAddress.toLowerCase()
     ) {
       throw new Error(
         `Refusing to sign channel state update which changes user or contract: ` +
@@ -466,7 +563,7 @@ export class ConnextInternal extends ConnextClient {
   ): Promise<SignedDepositRequestProposal> {
     const hash: string = this.utils.createDepositRequestProposalHash(args)
     const sig: string = await this.wallet.signMessage(hash)
-    console.log(`Signing deposit request ${JSON.stringify(args, null, 2)}. Sig: ${sig}`)
+    console.log(`Signing deposit request ${JSON.stringify(args, undefined, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 
@@ -479,7 +576,7 @@ export class ConnextInternal extends ConnextClient {
   }
 
   ////////////////////////////////////////
-  // Begin Public Method Implementations
+  // Begin Private Method Implementations
 
   private async _saveState(state: ConnextState): Promise<any> {
     if (!this.opts.saveState) {
@@ -498,7 +595,7 @@ export class ConnextInternal extends ConnextClient {
       // Only save the state after all the currently pending operations have
       // completed to make sure that subsequent state updates will be atomic.
       setTimeout(async () => {
-        let err: any = null
+        let err: any
         try {
           await this._saveLoop()
         } catch (e) {
@@ -518,14 +615,14 @@ export class ConnextInternal extends ConnextClient {
    * it's being saved before we return.
    */
   private async _saveLoop(): Promise<void> {
-    let result: Promise<any> | null = null
+    let result: Promise<any> | undefined
     while (true) {
-      const state: any = this._latestState!
-      result = this.opts.saveState!(JSON.stringify(state))
+      const state: any = this._latestState
+      result = this.opts.saveState(JSON.stringify(state))
 
       // Wait for any current save to finish, but ignore any error it might raise
       const [timeout, _] = await timeoutPromise(
-        result.then(null, () => null),
+        result.then(undefined, () => undefined),
         10 * 1000,
       )
       if (timeout) {
@@ -583,9 +680,9 @@ export class ConnextInternal extends ConnextClient {
     const state: any = new ConnextState()
     state.persistent.channel = {
       ...state.persistent.channel,
-      contractAddress: this.opts.contractAddress || '', // TODO: how to handle this while undefined?
-      recipient: this.opts.user!,
-      user: this.opts.user!,
+      contractAddress: this.opts.contractAddress, // TODO: how to handle this while undefined?
+      recipient: this.opts.user,
+      user: this.opts.user,
     }
     state.persistent.latestValidState = state.persistent.channel
 

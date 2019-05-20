@@ -1,21 +1,25 @@
-import { ethers as eth } from 'ethers'
+import * as eth from 'ethers'
 import Web3 from 'web3'
 
-import { IConnextClientOptions } from './Connext'
+import { IConnextChannelOptions } from './Connext'
 import {
   objMapPromise,
   TransactionRequest,
   TransactionResponse,
 } from './types'
 
-export default class Wallet extends eth.Signer {
+const {
+  arrayify, bigNumberify, hashMessage, hexlify, isHexString, toUtf8Bytes, verifyMessage,
+} = eth.utils
+
+export class Wallet extends eth.Signer {
   public address: string
   public provider: eth.providers.BaseProvider
   private signer?: eth.Wallet
   private web3?: Web3
   private password: string
 
-  constructor(opts: IConnextClientOptions) {
+  public constructor(opts: IConnextChannelOptions) {
     super()
     this.password = opts.password || ''
 
@@ -59,15 +63,13 @@ export default class Wallet extends eth.Signer {
       this.web3.eth.defaultAccount = this.address
       // Fourth choice: Sign w web3
     } else if (opts.user && opts.web3Provider) {
-      // TODO: Web3Provider != Web3EthereumProvider
       this.web3 = new Web3(opts.web3Provider as any)
       this.address = opts.user.toLowerCase()
       this.web3.eth.defaultAccount = this.address
 
     // Default: abort, we need to be given a signer
     } else {
-      // Weird version of web3 that does something else? idk then
-      throw new Error(`Fatal: Wallet needs to be given a signing method`)
+      throw new Error(`Wallet needs to be given a signing method`)
     }
   }
 
@@ -76,25 +78,23 @@ export default class Wallet extends eth.Signer {
   }
 
   public async signMessage(message: string): Promise<string> {
-    const bytes: Uint8Array = eth.utils.isHexString(message)
-      ? eth.utils.arrayify(message)
-      : eth.utils.toUtf8Bytes(message)
+    const bytes: Uint8Array = isHexString(message) ? arrayify(message) : toUtf8Bytes(message)
 
     if (this.signer) {
-      return await this.signer.signMessage(bytes)
+      return this.signer.signMessage(bytes)
     }
     if (this.web3) {
       let sig: string
 
       // Modern versions of web3 will add the standard ethereum message prefix for us
-      sig = await this.web3.eth.sign(eth.utils.hexlify(bytes), this.address)
-      if (this.address === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+      sig = await this.web3.eth.sign(hexlify(bytes), this.address)
+      if (this.address === verifyMessage(bytes, sig).toLowerCase()) {
         return sig
       }
 
       // Old versions of web3 did not, we'll add it ourself
-      sig = await this.web3.eth.sign(eth.utils.hashMessage(bytes), this.address)
-      if (this.address === eth.utils.verifyMessage(bytes, sig).toLowerCase()) {
+      sig = await this.web3.eth.sign(hashMessage(bytes), this.address)
+      if (this.address === verifyMessage(bytes, sig).toLowerCase()) {
         return sig
       }
 
@@ -103,17 +103,13 @@ export default class Wallet extends eth.Signer {
     }
     throw new Error(`Could not sign message`)
   }
-
-  public async signTransaction(tx: TransactionRequest): Promise<string> {
-    if (this.signer) {
-      return await this.signer.sign(tx)
-    }
-    if (this.web3) {
-      // resolve any fields
-      const resolve: any = async (k: string, v: any): Promise<any> => await v
+  
+  public async prepareTransaction(tx: TransactionRequest): Promise<any> {
+       // resolve any promise fields
+      const resolve: any = async (k: string, v: any): Promise<any> => v
       const resolved: any = await objMapPromise(tx, resolve) as any
       // convert to right object
-      const txObj: any = {
+      return txObj: any = {
         data: resolved.data,
         from: this.address,
         gas: parseInt(resolved.gasLimit, 10),
@@ -121,33 +117,51 @@ export default class Wallet extends eth.Signer {
         to: resolved.to,
         value: resolved.value,
       }
+  }
+
+  public async signTransaction(tx: TransactionRequest): Promise<string> {
+    if (this.signer) {
+      return this.signer.sign(tx)
+    }
+    if (this.web3) {
+      const txObj = this.prepareTransaction(tx);
       return (await this.web3.eth.signTransaction(txObj)).raw // TODO: fix type
+    }
+    throw new Error(`Could not sign transaction`)
+  }
+  
+  
+  public async signTransactionExternally(tx: TransactionRequest): Promise<string> {
+    if (this.web3) {
+      const txObj = this.prepareTransaction(tx);
+      return await this.web3.eth.sendTransaction(txObj)
     }
     throw new Error(`Could not sign transaction`)
   }
 
   public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
-    if (txReq.nonce == null && this.signer && !this.external) {
-      txReq.nonce = this.signer!.getTransactionCount('pending')
+    if (this.external){
+      return this.signTransactionExternally(txReq);
     }
-    if (!this.external){
-      const signedTx: string = await this.signTransaction(txReq)
-	  return await this.provider.sendTransaction(signedTx)
-    } else {
-      // resolve any fields
-      const resolve = (k, v) => __awaiter(this, void 0, void 0, function* () { return yield v; });
-      const resolved = yield types_1.objMapPromise(txReq, resolve);
-      // convert to right object
-      const txObj = {
-        data: resolved.data,
-        from: this.address,
-        gas: parseInt(resolved.gasLimit, 10),
-        gasPrice: resolved.gasPrice,
-        to: resolved.to,
-        value: resolved.value,
-      };
-      return await this.web3.eth.sendTransaction(txObj);
+
+    txReq.gasPrice = await (txReq.gasPrice || this.provider.getGasPrice())
+    // Sanity check: Do we have sufficient funds for this tx?
+    const balance = bigNumberify(await this.provider.getBalance(this.address))
+    const gasLimit = bigNumberify(await txReq.gasLimit || '21000')
+    const gasPrice = bigNumberify(await txReq.gasPrice)
+    const value = bigNumberify(await (txReq.value || '0'))
+    const total = value.add(gasLimit.mul(gasPrice))
+    if (balance.lt(total)) {
+      throw new Error(
+        `Insufficient funds: value=${value} + (gasPrice=${gasPrice
+        } * gasLimit=${gasLimit}) = total=${total} > balance=${balance}`,
+      )
     }
+    if (!txReq.nonce && this.signer) {
+      txReq.nonce = this.signer.getTransactionCount('pending')
+    }
+    const signedTx: string = await this.signTransaction(txReq)
+    return await this.provider.sendTransaction(signedTx)
   }
 
 }

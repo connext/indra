@@ -1,25 +1,24 @@
-import { default as DBEngine } from '../DBEngine'
-import { default as Config } from '../Config'
-import { default as log } from '../util/log'
-import { CustodialPaymentsDao } from './CustodialPaymentsDao'
-import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
-import { OnchainTransactionService } from '../OnchainTransactionService'
-import { BigNumber } from 'ethers/utils'
-import { Utils, types } from 'connext'
-const { assetToWei, toWeiString } = new Utils()
+import { CustodialWithdrawalRowBN } from 'connext/types'
 
-type CustodialWithdrawalRowBN = types.CustodialWithdrawalRowBN
+import { CustodialPaymentsDao } from './CustodialPaymentsDao'
+
+import { default as Config } from '../Config'
+import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
+import { default as DBEngine } from '../DBEngine'
+import { OnchainTransactionService } from '../OnchainTransactionService'
+import { BN, toBN, tokenToWei, toWei } from '../util'
+import { default as log } from '../util/log'
 
 const LOG = log('CustodialPaymentsService')
 
 export interface CreateCustodialWithdrawalArgs {
   user: string
   recipient: string
-  amountToken: BigNumber
+  amountToken: BN
 }
 
 export class CustodialPaymentsService {
-  MIN_WITHDRAWAL_AMOUNT_TOKEN = toWeiString('0.1')
+  MIN_WITHDRAWAL_AMOUNT_TOKEN = toWei('0.1').toString()
 
   constructor(
     private config: Config,
@@ -54,7 +53,7 @@ export class CustodialPaymentsService {
     }
 
     const exchangeRate = await this.exchangeRates.getLatestUsdRate()
-    const [amountWei, remainder] = assetToWei(amountToken, exchangeRate)
+    const amountWei = tokenToWei(amountToken, exchangeRate)
     const txn = await this.onchainTxnService.sendTransaction(this.db, {
       from: this.config.hotWalletAddress,
       to: recipient,

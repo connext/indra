@@ -1,9 +1,8 @@
 import { ethers as eth } from 'ethers'
 import * as sinon from 'sinon'
 
-import { default as ChannelManagerAbi } from './contract/ChannelManagerAbi'
-import { Big } from './lib/bn'
-import { EMPTY_ROOT_HASH } from './lib/constants'
+import * as ChannelManagerAbi from './contract/ChannelManagerAbi.json'
+import { toBN } from './lib/bn'
 import * as t from './testing'
 import {
   ChannelState,
@@ -23,8 +22,8 @@ import {
   PendingArgs,
   PendingArgsBN,
   PendingExchangeArgsBN,
-  Provider,
   proposePendingNumericArgs,
+  Provider,
   ThreadState,
   UnsignedThreadState,
   WithdrawalArgsBN,
@@ -38,15 +37,18 @@ const sampleAddress2: string = '0x17b105bcb3f06b3098de6eed0497a3e36aa72471'
 const sampleAddress3: string = '0x23a1e8118EA985bBDcb7c40DE227a9880a79cf7F'
 const hubAddress: string = '0xFB482f8f779fd96A857f1486471524808B97452D'
 
+const conditionFailure = (condition: string, field: string): string =>
+  `There were ${condition} fields detected (detected fields and values: [{"field":"${field}"`
+
 /* Overrides for these fns function must be in the contract format
 as they are used in solidity decoding. Returns tx with default deposit
 values of all 5s
 */
-function createMockedWithdrawalTxReceipt(
+const createMockedWithdrawalTxReceipt = (
   sender: 'user' | 'hub',
   abi: Interface,
   ...overrides: any[]
-): any {
+): any => {
   const vals: any = generateTransactionReceiptValues({
     pendingTokenUpdates: ['0', '5', '0', '5'],
     pendingWeiUpdates: ['0', '5', '0', '5'],
@@ -55,11 +57,11 @@ function createMockedWithdrawalTxReceipt(
   return createMockedTransactionReceipt(abi, vals)
 }
 
-function createMockedDepositTxReceipt(
+const createMockedDepositTxReceipt = (
   sender: 'user' | 'hub',
   abi: Interface,
   ...overrides: any[]
-): any {
+): any => {
   const vals: any = generateTransactionReceiptValues({
     pendingTokenUpdates: ['5', '0', '5', '0'],
     pendingWeiUpdates: ['5', '0', '5', '0'],
@@ -68,22 +70,21 @@ function createMockedDepositTxReceipt(
   return createMockedTransactionReceipt(abi, vals)
 }
 
-function generateTransactionReceiptValues(...overrides: any[]): any {
-  return Object.assign({
-    pendingTokenUpdates: ['0', '0', '0', '0'],
-    pendingWeiUpdates: ['0', '0', '0', '0'],
-    senderIdx: '1', // default to user wei deposit 5
-    threadCount: '0',
-    threadRoot: EMPTY_ROOT_HASH,
-    tokenBalances: ['0', '0'],
-    txCount: ['1', '1'],
-    user: sampleAddress,
-    weiBalances: ['0', '0'],
-  }, ...overrides)
-}
+const generateTransactionReceiptValues = (...overrides: any[]): any => Object.assign({
+  pendingTokenUpdates: ['0', '0', '0', '0'],
+  pendingWeiUpdates: ['0', '0', '0', '0'],
+  senderIdx: '1', // default to user wei deposit 5
+  threadCount: '0',
+  threadRoot: eth.constants.HashZero,
+  tokenBalances: ['0', '0'],
+  txCount: ['1', '1'],
+  user: sampleAddress,
+  weiBalances: ['0', '0'],
+}, ...overrides)
 
-function createMockedTransactionReceipt(abi: Interface, vals: any): any {
-  //console.log(`creating tx receipt from vals: ${JSON.stringify(vals,null,2)}`)
+
+const createMockedTransactionReceipt = (abi: Interface, vals: any): any => {
+  // console.log(`creating tx receipt from vals: ${JSON.stringify(vals,undefined,2)}`)
   const eventTopic: string = abi.events.DidUpdateChannel.topic
   const addrTopic: any = eth.utils.defaultAbiCoder.encode(['address'], [vals.user])
   const data: any = eth.utils.defaultAbiCoder.encode(
@@ -105,7 +106,8 @@ function createMockedTransactionReceipt(abi: Interface, vals: any): any {
     topics: [eventTopic, addrTopic],
   }]
 
-  // console.log(`Created logs w pending wei update: ${JSON.stringify(abi.parseLog(logs[0]).pendingWeiUpdates)}`)
+  // console.log(`Created logs w pending wei update: ${
+  //   JSON.stringify(abi.parseLog(logs[0]).pendingWeiUpdates)}`)
 
   return {
     contractAddress: t.mkAddress('0xCCC'),
@@ -118,7 +120,7 @@ function createMockedTransactionReceipt(abi: Interface, vals: any): any {
   }
 }
 
-function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChannel[]): any {
+const createPreviousChannelState = (...overrides: t.PartialSignedOrSuccinctChannel[]): any => {
   const state: any = t.getChannelState('empty', Object.assign({
     sigHub: t.mkHash('errywhere'),
     sigUser: t.mkHash('booty'),
@@ -127,14 +129,14 @@ function createPreviousChannelState(...overrides: t.PartialSignedOrSuccinctChann
   return convertChannelState('bn', state)
 }
 
-function createThreadPaymentArgs(...overrides: Array<Partial<PaymentArgs<any>>>): any {
+const createThreadPaymentArgs = (...overrides: Array<Partial<PaymentArgs<any>>>): any => {
   const { recipient, ...amts }: any = createPaymentArgs(...overrides)
   return amts
 }
 
-function createPaymentArgs(
+const createPaymentArgs = (
   ...overrides: Array<Partial<PaymentArgs<any>>>
-): PaymentArgsBN {
+): PaymentArgsBN => {
   const args: any = Object.assign({
     amountToken: '0',
     amountWei: '0',
@@ -143,11 +145,11 @@ function createPaymentArgs(
   return convertPayment('bn', { ...convertPayment('str', args) })
 }
 
-function createProposePendingArgs(overrides?: Partial<PendingArgs<number>>): PendingArgsBN {
+const createProposePendingArgs = (overrides?: Partial<PendingArgs<number>>): PendingArgsBN => {
   const res: any = {
     recipient: '0x1234',
     timeout: 0,
-  } as PendingArgs
+  }
   proposePendingNumericArgs.forEach((a: string) => (res as any)[a] = 0)
   return convertProposePending('bn', {
     ...res,
@@ -155,7 +157,7 @@ function createProposePendingArgs(overrides?: Partial<PendingArgs<number>>): Pen
   })
 }
 
-function createThreadState(...overrides: t.PartialSignedOrSuccinctThread[]): any {
+const createThreadState = (...overrides: t.PartialSignedOrSuccinctThread[]): any => {
   const opts: any = Object.assign({}, ...overrides)
   const thread: any = t.getThreadState('empty', {
     balanceToken: [5, 0],
@@ -196,20 +198,20 @@ function createThreadState(...overrides: t.PartialSignedOrSuccinctThread[]): any
   threadRoot: '0xbb97e9652a4754f4e543a7ed79b654dc5e5914060451f5d87e0b9ab1bde73bef' }
  */
 
-function createChannelThreadOverrides(targetThreadCount: number, ...overrides: any[]): any {
+const createChannelThreadOverrides = (targetThreadCount: number, ...overrides: any[]): any => {
   const utils: Utils = new Utils()
   if (!targetThreadCount) {
     return {
       initialThreadStates: [],
       threadCount: 0,
-      threadRoot: EMPTY_ROOT_HASH,
+      threadRoot: eth.constants.HashZero,
     }
   }
   const initialThreadStates: ThreadState[] = [] as ThreadState[]
-  for (let i: number = 0; i < targetThreadCount; i++) {
+  for (let i: number = 0; i < targetThreadCount; i += 1) {
     initialThreadStates.push(convertThreadState('str', createThreadState(Object.assign({
       receiver: t.mkAddress(`0x${i + 1}`),
-      threadId: 69 + i,
+      threadId: i + 69,
       txCount: 0,
     }, ...overrides),
     )))
@@ -222,7 +224,6 @@ function createChannelThreadOverrides(targetThreadCount: number, ...overrides: a
 }
 
 describe('validator', () => {
-
   const provider: Provider = new eth.providers.JsonRpcProvider('http://localhost:8545')
   const abi: Interface = new eth.utils.Interface(ChannelManagerAbi.abi)
   const validator: Validator = new Validator(hubAddress, provider, ChannelManagerAbi.abi)
@@ -233,149 +234,150 @@ describe('validator', () => {
       balanceWei: [5, 5],
     })
 
-    const paymentTestCases = [
+    for (const tc of [
       {
-        name: 'valid hub to user payment',
         args: createPaymentArgs({
           amountToken: 1,
           amountWei: '1',
         }),
-        valid: true
+        name: 'should pass if given a valid hub to user payment',
+        valid: true,
       },
       {
-        name: 'valid user to hub payment',
-        args: createPaymentArgs({ recipient: "hub" }),
-        valid: true
+        args: createPaymentArgs({ recipient: 'hub' }),
+        name: 'should pass if given a valid user to hub payment',
+        valid: true,
       },
       {
-        name: 'should return a string payment args are negative',
         args: createPaymentArgs({ amountToken: -1, amountWei: -1 }),
+        name: 'should fail if payment args are negative',
         valid: false,
       },
       {
-        name: 'should return a string if payment exceeds available channel balance',
         args: createPaymentArgs({ amountToken: 10, amountWei: 10 }),
+        name: 'should fail if payment exceeds available channel balance',
         valid: false,
-      }
-    ]
+      },
+    ]) {
 
-    paymentTestCases.forEach(({ name, args, valid }) => {
-      it(name, () => {
-        if (valid)
-          assert.isNull(validator.channelPayment(prev, args))
-        else
-          assert.exists(validator.channelPayment(prev, args))
+      it(tc.name, () => {
+        if (tc.valid) {
+          assert.isUndefined(validator.channelPayment(prev, tc.args))
+        } else {
+          assert.exists(validator.channelPayment(prev, tc.args))
+        }
       })
-    })
+    }
+
   })
 
-  function getExchangeCases() {
+  const getExchangeCases = (): any => {
     const prev = createPreviousChannelState({
       balanceToken: [5, 5],
       balanceWei: [5, 5],
     })
 
-    let baseWeiToToken = {
-      weiToSell: Big(1),
-      tokensToSell: Big(0),
+    const baseWeiToToken = {
       exchangeRate: '5',
-      seller: "user"
+      seller: 'user',
+      tokensToSell: toBN(0),
+      weiToSell: toBN(1),
     }
 
-    let baseTokenToWei = {
-      weiToSell: Big(0),
-      tokensToSell: Big(5),
+    const baseTokenToWei = {
       exchangeRate: '5',
-      seller: "user"
+      seller: 'user',
+      tokensToSell: toBN(5),
+      weiToSell: toBN(0),
     }
 
     return [
       {
-        name: 'valid token for wei exchange seller is user',
-        prev,
         args: baseTokenToWei,
+        name: 'should pass if valid token for wei exchange seller is user',
+        prev,
         valid: true,
       },
       {
-        name: 'valid token for wei exchange seller is hub',
+        args: { ...baseTokenToWei, seller: 'hub' },
+        name: 'should pass if valid token for wei exchange seller is hub',
         prev,
-        args: { ...baseTokenToWei, seller: "hub" },
         valid: true,
       },
       {
-        name: 'valid wei for token exchange seller is user',
-        prev,
         args: baseWeiToToken,
+        name: 'should pass if valid wei for token exchange seller is user',
+        prev,
         valid: true,
       },
       {
-        name: 'valid wei for token exchange seller is user',
+        args: { ...baseWeiToToken, seller: 'hub' },
+        name: 'should pass if valid wei for token exchange seller is user',
         prev,
-        args: { ...baseWeiToToken, seller: "hub" },
         valid: true,
       },
       {
-        name: 'should return a string if both toSell values are zero',
+        args: { ...baseWeiToToken, weiToSell: toBN(0) },
+        name: 'should fail if both toSell values are zero',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(0) },
         valid: false,
       },
       {
-        name: 'should return a string if neither toSell values are zero',
+        args: { ...baseWeiToToken, tokensToSell: toBN(1) },
+        name: 'should fail if neither toSell values are zero',
         prev,
-        args: { ...baseWeiToToken, tokensToSell: Big(1) },
         valid: false,
       },
       {
-        name: 'should return a string if negative wei to sell is provided',
+        args: { ...baseWeiToToken, weiToSell: toBN(-5) },
+        name: 'should fail if negative wei to sell is provided',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(-5) },
         valid: false,
       },
       {
-        name: 'should return a string if negative tokens to sell is provided',
+        args: { ...baseTokenToWei, tokensToSell: toBN(-5) },
+        name: 'should fail if negative tokens to sell is provided',
         prev,
-        args: { ...baseTokenToWei, tokensToSell: Big(-5) },
         valid: false,
       },
       {
-        name: 'should return a string if seller cannot afford tokens for wei exchange',
+        args: { ...baseTokenToWei, tokensToSell: toBN(10) },
+        name: 'should fail if seller cannot afford tokens for wei exchange',
         prev,
-        args: { ...baseTokenToWei, tokensToSell: Big(10) },
         valid: false,
       },
       {
-        name: 'should return a string if seller cannot afford wei for tokens exchange',
+        args: { ...baseWeiToToken, weiToSell: toBN(10) },
+        name: 'should fail if seller cannot afford wei for tokens exchange',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(10) },
         valid: false,
       },
       {
-        name: 'should return a string if payor cannot afford wei for tokens exchange',
+        args: { ...baseWeiToToken, weiToSell: toBN(2) },
+        name: 'should fail if payor cannot afford wei for tokens exchange',
         prev,
-        args: { ...baseWeiToToken, weiToSell: Big(2), },
         valid: false,
       },
       {
-        name: 'should return a string if payor as hub cannot afford tokens for wei exchange',
-        prev: { ...prev, balanceWeiHub: Big(0) },
-        args: { ...baseTokenToWei, weiToSell: Big(10) },
+        args: { ...baseTokenToWei, weiToSell: toBN(10) },
+        name: 'should fail if payor as hub cannot afford tokens for wei exchange',
+        prev: { ...prev, balanceWeiHub: toBN(0) },
         valid: false,
       },
       {
-        name: 'should return a string if payor as user cannot afford tokens for wei exchange',
-        prev: { ...prev, balanceWeiUser: Big(0) },
-        args: { ...baseTokenToWei, weiToSell: Big(10), seller: "user" },
+        args: { ...baseTokenToWei, weiToSell: toBN(10), seller: 'user' },
+        name: 'should fail if payor as user cannot afford tokens for wei exchange',
+        prev: { ...prev, balanceWeiUser: toBN(0) },
         valid: false,
       },
     ]
   }
 
   describe('exchange', () => {
-    getExchangeCases().forEach(({ name, prev, args, valid }) => {
+    getExchangeCases().forEach(({ name, prev, args, valid }: any) => {
       it(name, () => {
         if (valid) {
-          assert.isNull(validator.exchange(prev, args as ExchangeArgsBN))
+          assert.isUndefined(validator.exchange(prev, args as ExchangeArgsBN))
         } else {
           assert.exists(validator.exchange(prev, args as ExchangeArgsBN))
         }
@@ -386,123 +388,125 @@ describe('validator', () => {
   describe('proposePendingDeposit', () => {
     const prev = createPreviousChannelState({
       balanceToken: [5, 5],
-      balanceWei: [5, 5]
+      balanceWei: [5, 5],
     })
     const args = {
-      depositWeiHub: Big(1),
-      depositWeiUser: Big(1),
-      depositTokenHub: Big(1),
-      depositTokenUser: Big(1),
+      depositTokenHub: toBN(1),
+      depositTokenUser: toBN(1),
+      depositWeiHub: toBN(1),
+      depositWeiUser: toBN(1),
       timeout: 6969,
     }
 
-    const proposePendingDepositCases = [
+    for (const tc of [
       {
+        args,
         name: 'should work',
         prev,
+        valid: true,
+      },
+      {
         args,
-        valid: true
+        name: 'should fail if pending operations exist on the previous state',
+        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
+        valid: false,
       },
       {
-        name: 'should return a string if pending operations exist on the previous state',
-        prev: { ...prev, pendingDepositWeiUser: Big(5) },
-        args,
-        valid: false
-      },
-      {
-        name: 'should return a string for negative deposits',
+        args: { ...args, depositWeiUser: toBN(-5) },
+        name: 'should fail for negative deposits',
         prev,
-        args: { ...args, depositWeiUser: Big(-5) },
-        valid: false
+        valid: false,
       },
       {
-        name: 'should return a string if 0 timeout provided',
-        prev,
         args: { ...args, timeout: 0 },
-        valid: true
+        name: 'should fail if 0 timeout provided',
+        prev,
+        valid: true,
       },
       {
-        name: 'should return a string if negative timeout provided',
-        prev,
         args: { ...args, timeout: -5 },
-        valid: false
+        name: 'should fail if negative timeout provided',
+        prev,
+        valid: false,
       },
-    ]
+    ]) {
 
-    proposePendingDepositCases.forEach(({ name, prev, args, valid }) => {
-      it(name, () => {
-        if (valid) {
-          assert.isNull(validator.proposePendingDeposit(prev, args))
+      it(tc.name, () => {
+        if (tc.valid) {
+          assert.isUndefined(validator.proposePendingDeposit(tc.prev, tc.args))
         } else {
-          assert.exists(validator.proposePendingDeposit(prev, args))
+          assert.exists(validator.proposePendingDeposit(tc.prev, tc.args))
         }
       })
-    })
+
+    }
   })
 
   describe('proposePendingWithdrawal', () => {
     const prev: ChannelStateBN = createPreviousChannelState({
+      balanceToken: [5, 10],
       balanceWei: [10, 5],
-      balanceToken: [5, 10]
     })
-    const args: WithdrawalArgsBN = convertWithdrawal("bn", t.getWithdrawalArgs("empty", {
+    const args: WithdrawalArgsBN = convertWithdrawal('bn', t.getWithdrawalArgs('empty', {
       exchangeRate: '2',
-      tokensToSell: 10,
-      targetWeiUser: 0,
       targetWeiHub: 5,
+      targetWeiUser: 0,
+      tokensToSell: 10,
     }))
 
-    const withdrawalCases: { name: any, prev: ChannelStateBN, args: WithdrawalArgsBN, valid: boolean }[] = [
+    for (const tc of [
       {
+        args,
         name: 'should work',
         prev,
+        valid: true,
+      },
+      {
         args,
-        valid: true
+        name: 'should fail if there are pending ops in prev',
+        prev: { ...prev, pendingDepositWeiUser: toBN(10) },
+        valid: false,
       },
       {
-        name: 'should return a string if there are pending ops in prev',
-        prev: { ...prev, pendingDepositWeiUser: Big(10) },
-        args,
-        valid: false
-      },
-      {
-        name: 'should return a string if the args have a negative value',
+        args: { ...args, weiToSell: toBN(-5) },
+        name: 'should fail if the args have a negative value',
         prev,
-        args: { ...args, weiToSell: Big(-5) },
-        valid: false
+        valid: false,
       },
       {
-        name: 'should return a string if resulting state has negative values',
+        args: { ...args, tokensToSell: toBN(20) },
+        name: 'should fail if resulting state has negative values',
         prev,
-        args: { ...args, tokensToSell: Big(20) },
-        valid: false
+        valid: false,
       },
       {
-        name: 'should return a string if the args result in an invalid transition',
+        args: {
+          ...args, additionalWeiHubToUser: toBN(30), tokensToSell: toBN(0), weiToSell: toBN(10),
+        },
+        name: 'should fail if the args result in an invalid transition',
         prev,
-        args: { ...args, weiToSell: Big(10), tokensToSell: Big(0), additionalWeiHubToUser: Big(30) },
-        valid: false
+        valid: false,
       },
       // TODO: find out which args may result in this state from the
       // withdrawal function (if any) from wolever
       // {
-      //   name: 'should return a string if hub collateralizes an exchange and withdraws with the same currency',
+      //   name: 'should fail if hub collateralizes an exchange and withdraws',
       //   prev,
       //   args: '',
       //   valid: false
       // },
-    ]
+    ]) {
 
-    withdrawalCases.forEach(({ name, prev, args, valid }) => {
-      it(name, () => {
-        const res = validator.proposePendingWithdrawal(prev, args)
-        if (valid) {
-          assert.isNull(res)
+      it(tc.name, () => {
+        const res = validator.proposePendingWithdrawal(tc.prev, tc.args)
+        if (tc.valid) {
+          assert.isUndefined(res)
         } else {
           assert.exists(res)
         }
       })
-    })
+
+    }
   })
 
   describe('confirmPending', () => {
@@ -524,7 +528,7 @@ describe('validator', () => {
       to: prevDeposit.contractAddress,
     }
 
-    const confirmCases: any[] = [
+    for (const tc of [
       {
         name: 'should work for deposits',
         prev: prevDeposit,
@@ -540,424 +544,426 @@ describe('validator', () => {
       },
       {
         name: 'should work depsite casing differences',
-        prev: { ...prevDeposit, user: prevDeposit.user.toUpperCase(), recipient: prevDeposit.user.toUpperCase() },
+        prev: {
+          ...prevDeposit,
+          user: prevDeposit.user.toUpperCase(),
+          recipient: prevDeposit.user.toUpperCase(),
+        },
         stubs: [tx, depositReceipt],
         valid: true,
       },
       {
-        name: 'should return a string if no transaction is found with that hash',
+        name: 'should fail if no transaction is found with that hash',
         prev: prevWd,
-        stubs: [null, depositReceipt],
+        stubs: [undefined, depositReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if transaction is not sent to contract',
+        name: 'should fail if transaction is not sent to contract',
         prev: prevDeposit,
         stubs: [{ ...tx, to: t.mkAddress('0xfail') }, depositReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if transaction is not sent by participants',
+        name: 'should fail if transaction is not sent by participants',
         prev: { ...prevDeposit, user: t.mkAddress('0xUUU'), },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if user is not same in receipt and previous',
+        name: 'should fail if user is not same in receipt and previous',
         prev: { ...prevDeposit, user: t.mkAddress('0xUUU'), },
         stubs: [tx, createMockedDepositTxReceipt("hub", abi)],
         valid: false,
       },
       // {
-      //   name: 'should return a string if balance wei hub is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceWeiHub: Big(5) },
+      //   name: 'should fail if balance wei hub is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceWeiHub: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       // {
-      //   name: 'should return a string if balance wei user is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceWeiUser: Big(5) },
+      //   name: 'should fail if balance wei user is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceWeiUser: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       // {
-      //   name: 'should return a string if balance token hub is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceTokenHub: Big(5) },
+      //   name: 'should fail if balance token hub is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceTokenHub: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       // {
-      //   name: 'should return a string if balance token user is not same in receipt and previous',
-      //   prev: { ...prevDeposit, balanceTokenUser: Big(5) },
+      //   name: 'should fail if balance token user is not same in receipt and previous',
+      //   prev: { ...prevDeposit, balanceTokenUser: toBN(5) },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       {
-        name: 'should return a string if pending deposit wei hub is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositWeiHub: Big(3) },
+        name: 'should fail if pending deposit wei hub is not same in receipt and previous',
+        prev: { ...prevDeposit, pendingDepositWeiHub: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if pending deposit wei user is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositWeiUser: Big(3) },
+        name: 'should fail if pending deposit wei user is not same in receipt and previous',
+        prev: { ...prevDeposit, pendingDepositWeiUser: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if pending deposit token hub is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositTokenHub: Big(3) },
+        name: 'should fail if pending deposit token hub is not same in receipt and previous',
+        prev: { ...prevDeposit, pendingDepositTokenHub: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if pending deposit token user is not same in receipt and previous',
-        prev: { ...prevDeposit, pendingDepositTokenUser: Big(3) },
+        name: 'should fail if pending deposit token user is not same in receipt and previous',
+        prev: { ...prevDeposit, pendingDepositTokenUser: toBN(3) },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if pending withdrawal wei hub is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalWeiHub: Big(10) },
+        name: 'should fail if pending withdrawal wei hub is not same in receipt and previous',
+        prev: { ...prevWd, pendingWithdrawalWeiHub: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if pending withdrawal wei user is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalWeiUser: Big(10) },
+        name: 'should fail if pending withdrawal wei user is not same in receipt and previous',
+        prev: { ...prevWd, pendingWithdrawalWeiUser: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if pending withdrawal token hub is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalTokenHub: Big(10) },
+        name: 'should fail if pending withdrawal token hub is not same in receipt and previous',
+        prev: { ...prevWd, pendingWithdrawalTokenHub: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
       {
-        name: 'should return a string if pending withdrawal token user is not same in receipt and previous',
-        prev: { ...prevWd, pendingWithdrawalTokenUser: Big(10) },
+        name: 'should fail if pending withdrawal token user is not same in receipt and previous',
+        prev: { ...prevWd, pendingWithdrawalTokenUser: toBN(10) },
         stubs: [tx, wdReceipt],
         valid: false,
       },
       // {
-      //   name: 'should return a string if tx count global is not same in receipt and previous',
+      //   name: 'should fail if tx count global is not same in receipt and previous',
       //   prev: { ...prevDeposit, txCountGlobal: 7 },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       {
-        name: 'should return a string if tx count chain is not same in receipt and previous',
+        name: 'should fail if tx count chain is not same in receipt and previous',
         prev: { ...prevDeposit, txCountChain: 7 },
         stubs: [tx, depositReceipt],
         valid: false,
       },
       // {
-      //   name: 'should return a string if thread root is not same in receipt and previous',
+      //   name: 'should fail if thread root is not same in receipt and previous',
       //   prev: { ...prevDeposit, threadRoot: t.mkHash('0xROOTZ') },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       // {
-      //   name: 'should return a string if thread count is not same in receipt and previous',
+      //   name: 'should fail if thread count is not same in receipt and previous',
       //   prev: { ...prevDeposit, threadCount: 7 },
       //   stubs: [tx, depositReceipt],
       //   valid: false,
       // },
       */
-    ]
+    ]) {
 
-    confirmCases.forEach(async ({ name, prev, stubs, valid }: any): Promise<any> => {
-
-      it.skip(name, async () => {
+      it.skip(tc.name, async () => {
         // set tx receipt stub
-        validator.provider.getTransaction = sinon.stub().returns(stubs[0])
-        validator.provider.getTransactionReceipt = sinon.stub().returns(stubs[1])
-
+        validator.provider.getTransaction = sinon.stub().returns(tc.stubs[0])
+        validator.provider.getTransactionReceipt = sinon.stub().returns(tc.stubs[1])
         // console.log(`comparing event to prev`)
-        // console.log(`event logs: ${JSON.stringify(abi.parseLog(stubs[1][0]),null,2)}`)
-        // console.log(`prev: ${JSON.stringify(prev,null,2)}`)
-
+        // console.log(`event logs: ${JSON.stringify(abi.parseLog(stubs[1][0]),undefined,2)}`)
+        // console.log(`prev: ${JSON.stringify(prev,undefined,2)}`)
         // set args
         const transactionHash: string = depositReceipt.transactionHash
-          //(stubs[1] && (stubs[1] as any).transactionHash === depositReceipt.transactionHash)
-          //  ? depositReceipt.transactionHash
-          //  : wdReceipt.transactionHash
-
-        if (valid) {
-          assert.isNull(await validator.confirmPending(prev, { transactionHash }))
+          // (stubs[1] && (stubs[1] as any).transactionHash === depositReceipt.transactionHash)
+          //   ? depositReceipt.transactionHash
+          //   : wdReceipt.transactionHash
+        if (tc.valid) {
+          assert.isUndefined(await validator.confirmPending(tc.prev, { transactionHash }))
         } else {
-          assert.exists(await validator.confirmPending(prev, { transactionHash }))
+          assert.exists(await validator.confirmPending(tc.prev, { transactionHash }))
         }
       })
 
-    })
+    }
   })
 
   describe('invalidation', () => {
     const prev = createPreviousChannelState({
-      txCount: [1, 1]
+      txCount: [1, 1],
     })
 
     const args: InvalidationArgs = {
-      previousValidTxCount: prev.txCountGlobal,
       lastInvalidTxCount: prev.txCountGlobal + 1,
-      reason: "CU_INVALID_ERROR",
+      previousValidTxCount: prev.txCountGlobal,
+      reason: 'CU_INVALID_ERROR',
     }
 
-    const invalidationCases = [
+    for (const tc of [
       {
+        args,
         name: 'should work',
         prev,
-        args,
-        valid: true
+        valid: true,
       },
       {
-        name: 'should return string if previous nonce is higher than nonce to be invalidated',
-        prev,
         args: { ...args, previousValidTxCount: 3 },
-        valid: false
+        name: 'should fail if previous nonce is higher than nonce to be invalidated',
+        prev,
+        valid: false,
       },
       {
-        name: 'should return string if previous state nonce and nonce in args do not match',
-        prev: { ...prev, txCountGlobal: 5 },
         args: { ...args, previousValidTxCount: 3, lastInvalidTxCount: 3 },
-        valid: false
+        name: 'should fail if previous state nonce and nonce in args do not match',
+        prev: { ...prev, txCountGlobal: 5 },
+        valid: false,
       },
       {
-        name: 'should return string if previous state has pending ops',
-        prev: { ...prev, pendingDepositWeiUser: Big(5) },
         args,
-        valid: false
+        name: 'should fail if previous state has pending ops',
+        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
+        valid: false,
       },
       {
-        name: 'should return string if previous state is missing sigHub',
+        args,
+        name: 'should fail if previous state is missing sigHub',
         prev: { ...prev, sigHub: '' },
-        args,
-        valid: false
+        valid: false,
       },
       {
-        name: 'should return string if previous state is missing sigUser',
-        prev: { ...prev, sigUser: '' },
         args,
-        valid: false
+        name: 'should fail if previous state is missing sigUser',
+        prev: { ...prev, sigUser: '' },
+        valid: false,
       },
-    ]
+    ]) {
 
-    invalidationCases.forEach(({ name, prev, args, valid }) => {
-      it(name, () => {
-        if (valid) {
-          assert.isNull(validator.invalidation(prev, args))
+      it(tc.name, () => {
+        if (tc.valid) {
+          assert.isUndefined(validator.invalidation(tc.prev, tc.args))
         } else {
-          assert.exists(validator.invalidation(prev, args))
+          assert.exists(validator.invalidation(tc.prev, tc.args))
         }
       })
-    })
+
+    }
   })
 
+  ////////////////////////////////////////
+  // Should test success of the following cases:
+  // 1. Should work with first thread
+  // 2. Should work with subsequent threads
+  // Should test failures of the following cases:
+  // 1. User must be sender or receiver
+  // 2. Receiver wei balance must be zero for thread state
+  // 3. Receiver token balance must be zero for thread state
+  // 4. Sender cannot be receiver
+  // 5. Sender or receiver cannot be hub
+  // 6. Sender or receiver cannot be channel manager
+  // 7. Incorrect signature or signer (not signed by sender or wrong payload)
+  // 8. Thread root must be correct on previous state
+  // 9. Thread count must be correct on previous state
+  // 10. TxCount must be zero
+  // 11. Contract address must be consistent with channel
+  // 12. Sender or hub has sufficient funds
+  // 13. Sender wei balance must be not negative
+  // 14. Sender token balance must be not negative
+  // 15. TxCount must not be negative
+  // 16. Sender, receiver, contract all have valid addresses
+  // 17. Sender or receiver is channel user
+  // 18. Previous state has signature
   describe('validator.openThread', () => {
-
-    // Should test success of the following cases:
-    // 1. Should work with first thread
-    // 2. Should work with subsequent threads
-
-    // Should test failures of the following cases:
-    // 1. User must be sender or receiver
-    // 2. Receiver wei balance must be zero for thread state
-    // 3. Receiver token balance must be zero for thread state
-    // 4. Sender cannot be receiver
-    // 5. Sender or receiver cannot be hub
-    // 6. Sender or receiver cannot be channel manager
-    // 7. Incorrect signature or signer (not signed by sender or wrong payload)
-    // 8. Thread root must be correct on previous state
-    // 9. Thread count must be correct on previous state
-    // 10. TxCount must be zero
-    // 11. Contract address must be consistent with channel
-    // 12. Sender or hub has sufficient funds
-    // 13. Sender wei balance must be not negative
-    // 14. Sender token balance must be not negative
-    // 15. TxCount must not be negative
-    // 16. Sender, receiver, contract all have valid addresses
-    // 17. Sender or receiver is channel user
-    // 18. Previous state has signature
-
-
-    const params = createChannelThreadOverrides(2)
-    const initialThreadStates = params.initialThreadStates
-    const { threadRoot, threadCount, ...res } = params
-
+    const { initialThreadStates, threadRoot, threadCount } = createChannelThreadOverrides(2)
     const prev = createPreviousChannelState({
+      balanceToken: [10, 10],
+      balanceWei: [10, 10],
       threadCount,
       threadRoot,
-      balanceToken: [10, 10],
-      balanceWei: [10, 10]
     })
 
-    const args = createThreadState()
+    const defaultArgs = createThreadState()
 
-    const cases = [
+    for (const tc of [
       {
+        args: defaultArgs,
+        initialThreadStates: [],
+        message: undefined,
+        name: 'should pass with first thread',
+        prev: { ...prev, threadRoot: eth.constants.HashZero, threadCount: 0 },
+        sigErr: false,
+      },
+      {
+        args: defaultArgs,
+        initialThreadStates,
+        message: undefined,
+        name: 'should pass for additional threads',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: {...defaultArgs, sender: t.mkAddress('0xA11')},
+        initialThreadStates,
+        message: 'Channel user is not a member of this thread state.',
         name: 'should fail if user is not either sender or receiver',
         prev,
-        initialThreadStates,
         sigErr: false,
-        args: {...args, sender: t.mkAddress('0xA11')},
-        message: "Channel user is not a member of this thread state.",
       },
       {
+        args: { ...defaultArgs, balanceWeiReceiver: toBN(2) },
+        initialThreadStates,
+        message: conditionFailure('1 non-zero', 'balanceWeiReceiver'),
         name: 'should fail if the receiver wei balance is greater than zero',
         prev,
-        initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiReceiver: Big(2) },
-        message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceWeiReceiver"`,
       },
       {
+        args: { ...defaultArgs, balanceTokenReceiver: toBN(2) },
+        initialThreadStates,
+        message: conditionFailure('1 non-zero', 'balanceTokenReceiver'),
         name: 'should fail if the receiver token balance is greater than zero',
         prev,
-        initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceTokenReceiver: Big(2) },
-        message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceTokenReceiver"`,
       },
       {
-        name: 'should return a string if the receiver wei balance is less than zero',
-        prev,
+        args: { ...defaultArgs, balanceWeiReceiver: toBN(-2) },
         initialThreadStates,
+        message: conditionFailure('1 non-zero', 'balanceWeiReceiver'),
+        name: 'should fail if the receiver wei balance is less than zero',
+        prev,
         sigErr: false,
-        args: { ...args, balanceWeiReceiver: Big(-2) },
-        message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceWeiReceiver"`,
       },
       {
-        name: 'should return a string if the receiver token balance is less than zero',
-        prev,
+        args: { ...defaultArgs, balanceTokenReceiver: toBN(-2) },
         initialThreadStates,
+        message: conditionFailure('1 non-zero', 'balanceTokenReceiver'),
+        name: 'should fail if the receiver token balance is less than zero',
+        prev,
         sigErr: false,
-        args: { ...args, balanceTokenReceiver: Big(-2) },
-        message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"balanceTokenReceiver"`,
       },
       {
-        name: 'should return a string if the sender is the receiver',
-        prev,
+        args: {...defaultArgs, receiver: sampleAddress },
         initialThreadStates,
+        message: 'Sender cannot be receiver.',
+        name: 'should fail if the sender is the receiver',
+        prev,
         sigErr: false,
-        args: {...args, receiver: sampleAddress },
-        message: "Sender cannot be receiver.",
       },
       {
-        name: 'should return a string if sender is hub',
-        prev,
+        args: { ...defaultArgs, sender: hubAddress, receiver: sampleAddress },
         initialThreadStates,
+        message: 'Sender cannot be hub',
+        name: 'should fail if sender is hub',
+        prev,
         sigErr: false,
-        args: { ...args, sender: hubAddress, receiver: sampleAddress },
-        message: "Sender cannot be hub",
       },
       {
-        name: 'should return a string if receiver is hub',
-        prev,
+        args: {...defaultArgs, receiver: hubAddress },
         initialThreadStates,
+        message: 'Receiver cannot be hub',
+        name: 'should fail if receiver is hub',
+        prev,
         sigErr: false,
-        args: {...args, receiver: hubAddress },
-        message: "Receiver cannot be hub",
       },
       {
-        name: 'should return a string if sender is channel manager',
-        prev,
+        args: {...defaultArgs, sender: prev.contractAddress, receiver: sampleAddress },
         initialThreadStates,
+        message: 'Sender cannot be contract',
+        name: 'should fail if sender is channel manager',
+        prev,
         sigErr: false,
-        args: {...args, sender: prev.contractAddress, receiver: sampleAddress },
-        message: "Sender cannot be contract",
       },
       {
-        name: 'should return a string if receiver is channel manager',
-        prev,
+        args: {...defaultArgs, receiver: prev.contractAddress},
         initialThreadStates,
+        message: 'Receiver cannot be contract',
+        name: 'should fail if receiver is channel manager',
+        prev,
         sigErr: false,
-        args: {...args, receiver: prev.contractAddress},
-        message: "Receiver cannot be contract",
       },
       {
-        name: 'should return a string if an incorrect signer is detected',
-        prev,
+        args: defaultArgs,
         initialThreadStates,
+        message: 'Incorrect signer',
+        name: 'should fail if an incorrect signer is detected',
+        prev,
         sigErr: true,
-        args,
-        message: "Incorrect signer",
       },
       {
-        name: 'should return a string if thread root is incorrect',
-        prev: {...prev, threadRoot: EMPTY_ROOT_HASH},
+        args: defaultArgs,
         initialThreadStates,
+        message: 'Initial thread states not contained in previous state root hash',
+        name: 'should fail if thread root is incorrect',
+        prev: {...prev, threadRoot: eth.constants.HashZero},
         sigErr: false,
-        args,
-        message: "Initial thread states not contained in previous state root hash",
       },
       {
-        name: 'should return a string if the tx count is non-zero',
+        args: { ...defaultArgs, txCount: 7 },
+        initialThreadStates,
+        message: conditionFailure('1 non-zero', 'txCount'),
+        name: 'should fail if the tx count is non-zero',
         prev,
-        initialThreadStates,
         sigErr: false,
-        args: { ...args, txCount: 7 },
-        message: `There were 1 non-zero fields detected (detected fields and values: [{"field":"txCount"`,
       },
       {
-        name: 'should return a string if the contract address is not the same as channel',
+        args: { ...defaultArgs, contractAddress: t.mkAddress('0xFFF') },
+        initialThreadStates,
+        message: conditionFailure('1 non-equivalent', 'contractAddress'),
+        name: 'should fail if the contract address is not the same as channel',
         prev,
-        initialThreadStates,
         sigErr: false,
-        args: { ...args, contractAddress: t.mkAddress('0xFFF') },
-        message: `There were 1 non-equivalent fields detected (detected fields and values: [{"field":"contractAddress"`,
       },
       {
-        name: 'should return a string if the thread sender (as hub) cannot afford to create the thread',
+        args: {
+          ...defaultArgs,
+          balanceTokenSender: toBN(20),
+          balanceWeiSender: toBN(20),
+          receiver: sampleAddress,
+          sender: t.mkAddress('0x111'),
+        },
+        initialThreadStates,
+        message: 'Hub does not have sufficient Token, Wei balance',
+        name: 'should fail if the thread sender (as hub) cannot afford to create the thread',
         prev,
-        initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiSender: Big(20), balanceTokenSender: Big(20), receiver: sampleAddress, sender: t.mkAddress("0x111")},
-        message: "Hub does not have sufficient Token, Wei balance",
       },
       {
-        name: 'should return a string if the thread sender (as user) cannot afford to create the thread',
+        args: { ...defaultArgs, balanceWeiSender: toBN(20), balanceTokenSender: toBN(20) },
+        initialThreadStates,
+        message: 'User does not have sufficient Token, Wei balance',
+        name: 'should fail if the thread sender (as user) cannot afford to create the thread',
         prev,
-        initialThreadStates,
         sigErr: false,
-        args: { ...args, balanceWeiSender: Big(20), balanceTokenSender: Big(20) },
-        message: "User does not have sufficient Token, Wei balance",
       },
-      {
-        name: 'should work with first thread',
-        prev: { ...prev, threadRoot: EMPTY_ROOT_HASH, threadCount: 0 },
-        initialThreadStates: [],
-        sigErr: false,
-        args,
-        message: null,
-      },
-      {
-        name: 'should work for additional threads',
-        prev,
-        initialThreadStates,
-        sigErr: false,
-        args,
-        message: null,
-      },
-    ]
+    ]) {
 
-    cases.forEach(async ({ name, prev, initialThreadStates, sigErr, args, message }) => {
-      it(name, async () => {
+      it(tc.name, async () => {
         // ignore recovery by default
-        validator.assertThreadSigner = () => {}
-        if (sigErr) {
-          validator.assertThreadSigner = () => { throw new Error(`Incorrect signer`) }
+        validator.assertThreadSigner = (): any => {/* noop */}
+        if (tc.sigErr) {
+          validator.assertThreadSigner = (): any => { throw new Error(`Incorrect signer`) }
         }
         // Test against case messages
-        const res = validator.openThread(prev, initialThreadStates, args)
-        if (message) {
-          assert(res && res.includes(message))
+        const res = validator.openThread(tc.prev, tc.initialThreadStates, tc.args)
+        if (tc.message) {
+          assert(
+            res && res.includes(tc.message),
+            `response "${res}" should include "${tc.message}"`,
+          )
         } else {
-          assert.isNull(res)
+          assert.isUndefined(res, `response "${res}" should be undefined`)
         }
       })
-    })
+
+    }
   })
 
   describe('validator.closeThread', () => {
@@ -983,202 +989,205 @@ describe('validator', () => {
     // 9. TxCount must not be negative
     // 10. Previous channel state is incorrectly signed
 
-    const params = createChannelThreadOverrides(2, { sender: sampleAddress, receiver: sampleAddress2 })
-    // contains 2 threads, one where user is sender 
+    const params = createChannelThreadOverrides(2, {
+      receiver: sampleAddress2,
+      sender: sampleAddress,
+    })
+    // contains 2 threads, one where user is sender
     // one where user is receiver
     const initialThreadStates = params.initialThreadStates
     const { threadRoot, threadCount, ...res } = params
 
     const prev = createPreviousChannelState({
+      balanceToken: [10, 10],
+      balanceWei: [10, 10],
       threadCount,
       threadRoot,
-      balanceToken: [10, 10],
-      balanceWei: [10, 10]
     })
 
     const args = createThreadState({
       ...initialThreadStates[0], // user is receiver
-      balanceWeiSender: 3,
-      balanceWeiReceiver: 2,
-      balanceTokenSender: 2,
       balanceTokenReceiver: 3,
-      txCount: 1
+      balanceTokenSender: 2,
+      balanceWeiReceiver: 2,
+      balanceWeiSender: 3,
+      txCount: 1,
     })
 
-    const cases = [
+    for (const tc of [
       {
-        name: 'should return a string if the user is not either sender or receiver',
-        prev: {...prev, user: sampleAddress3},
-        initialThreadStates,
         args,
+        initialThreadStates,
+        message: undefined,
+        name: 'should pass with user as sender',
+        prev,
         sigErr: false,
-        message: 'Channel user is not a member of this thread state.'
       },
       {
-        name: 'should return a string if the args provided is not included in initial state',
-        prev,
-        initialThreadStates: [initialThreadStates[1]],
         args,
-        sigErr: false,
-        message: 'Thread is not included in channel open threads.',
-      },
-      {
-        name: 'should return a string if the initial state is not signed',
-        prev,
-        initialThreadStates: [{...initialThreadStates[0], sigA: ''}, initialThreadStates[1]],
-        args,
-        sigErr: true,
-        message: 'Incorrect signer'
-      },
-      {
-        name: 'should return a string if the initial state is not contained in root hash',
-        prev: {...prev, threadRoot: EMPTY_ROOT_HASH},
         initialThreadStates,
-        args,
-        sigErr: false,
-        message: 'Initial thread states not contained in previous state root hash.'
-      },
-      {
-        name: 'should return a string if receiver has changed from initial state',
-        prev,
-        initialThreadStates,
-        args: {...args, receiver: sampleAddress3},
-        sigErr: false,
-        message: 'Thread is not included in channel open threads.'
-      },
-      {
-        name: 'should return a string if the sender has changed from initial state',
-        prev,
-        initialThreadStates,
-        args: {...args, sender: sampleAddress3},
-        sigErr: false,
-        message: 'Thread is not included in channel open threads.',
-      },
-      {
-        name: 'should return a string if the contract address has changed from initial state',
-        prev,
-        initialThreadStates,
-        args: {...args, contractAddress: eth.constants.AddressZero },
-        sigErr: false,
-        message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"contractAddress"',
-      },
-      {
-        name: 'should return a string if the signer did not sign args',
-        prev,
-        initialThreadStates,
-        args,
-        sigErr: true, // stubs out sig recover in tests
-        message: 'Incorrect sig',
-      },
-      {
-        name: 'should return a string if the final state wei balance is not conserved',
-        prev,
-        initialThreadStates,
-        args: { ...args, balanceWeiSender: Big(10) },
-        sigErr: false,
-        message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"weiSum"',
-      },
-      {
-        name: 'should return a string if the final state token balance is not conserved',
-        prev,
-        initialThreadStates,
-        args: { ...args, balanceTokenSender: Big(10) },
-        sigErr: false, // stubs out sig recover in tests
-        message: 'There were 1 non-equivalent fields detected (detected fields and values: [{"field":"tokenSum"',
-      },
-      {
-        name: 'should return a string if the receiver wei balances are negative',
-        prev,
-        initialThreadStates,
-        args: {...args, balanceWeiReceiver: Big(-10) },
-        sigErr: false,
-        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceWeiReceiver"'
-      }, 
-      {
-        name: 'should return a string if the receiver token balances are negative',
-        prev,
-        initialThreadStates,
-        args: {...args, balanceTokenReceiver: Big(-10) },
-        sigErr: false,
-        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceTokenReceiver"'
-      }, 
-      {
-        name: 'should return a string if the sender wei balances are negative',
-        prev,
-        initialThreadStates,
-        args: {...args, balanceWeiSender: Big(-10) },
-        sigErr: false,
-        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceWeiSender"'
-      }, 
-      {
-        name: 'should return a string if the sender token balances are negative',
-        prev,
-        initialThreadStates,
-        args: {...args, balanceTokenSender: Big(-10) },
-        sigErr: false,
-        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"balanceTokenSender"'
-      }, 
-      {
-        name: 'should return a string if the txCount is negative',
-        prev,
-        initialThreadStates,
-        args: {...args, txCount: -1 },
-        sigErr: false,
-        message: 'There were 1 negative fields detected (detected fields and values: [{"field":"diff"'
-      }, 
-      {
-        name: 'should return a string if the previous channel state is incorrectly signed',
-        prev: {...prev, sigUser: ''},
-        initialThreadStates,
-        args,
-        sigErr: true,
-        message: 'Incorrect signer'
-      },
-      {
-        name: 'should work with user as sender',
-        prev,
-        initialThreadStates,
-        args,
-        sigErr: false,
-        message: null,
-      },
-      {
-        name: 'should work with user as receiver',
+        message: undefined,
+        name: 'should pass with user as receiver',
         prev: {...prev, user: sampleAddress2 },
-        initialThreadStates,
-        args,
         sigErr: false,
-        message: null
       },
       {
-        name: 'should work with multiple threads',
-        prev,
-        initialThreadStates,
         args: {...args, threadId: 70},
+        initialThreadStates,
+        message: undefined,
+        name: 'should pass with multiple threads',
+        prev,
         sigErr: false,
-        message: null
       },
-    ]
+      {
+        args,
+        initialThreadStates,
+        message: 'Channel user is not a member of this thread state.',
+        name: 'should fail if the user is not either sender or receiver',
+        prev: {...prev, user: sampleAddress3},
+        sigErr: false,
+      },
+      {
+        args,
+        initialThreadStates: [initialThreadStates[1]],
+        message: 'Thread is not included in channel open threads.',
+        name: 'should fail if the args provided is not included in initial state',
+        prev,
+        sigErr: false,
+      },
+      {
+        args,
+        initialThreadStates: [{...initialThreadStates[0], sigA: ''}, initialThreadStates[1]],
+        message: 'Incorrect signer',
+        name: 'should fail if the initial state is not signed',
+        prev,
+        sigErr: true,
+      },
+      {
+        args,
+        initialThreadStates,
+        message: 'Initial thread states not contained in previous state root hash.',
+        name: 'should fail if the initial state is not contained in root hash',
+        prev: {...prev, threadRoot: eth.constants.HashZero},
+        sigErr: false,
+      },
+      {
+        args: {...args, receiver: sampleAddress3},
+        initialThreadStates,
+        message: 'Thread is not included in channel open threads.',
+        name: 'should fail if receiver has changed from initial state',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: {...args, sender: sampleAddress3},
+        initialThreadStates,
+        message: 'Thread is not included in channel open threads.',
+        name: 'should fail if the sender has changed from initial state',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: {...args, contractAddress: eth.constants.AddressZero },
+        initialThreadStates,
+        message: conditionFailure('1 non-equivalent', 'contractAddress'),
+        name: 'should fail if the contract address has changed from initial state',
+        prev,
+        sigErr: false,
+      },
+      {
+        args,
+        initialThreadStates,
+        message: 'Incorrect sig',
+        name: 'should fail if the signer did not sign args',
+        prev,
+        sigErr: true, // stubs out sig recover in tests
+      },
+      {
+        args: { ...args, balanceWeiSender: toBN(10) },
+        initialThreadStates,
+        message: conditionFailure('1 non-equivalent', 'weiSum'),
+        name: 'should fail if the final state wei balance is not conserved',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: { ...args, balanceTokenSender: toBN(10) },
+        initialThreadStates,
+        message: conditionFailure('1 non-equivalent', 'tokenSum'),
+        name: 'should fail if the final state token balance is not conserved',
+        prev,
+        sigErr: false, // stubs out sig recover in tests
+      },
+      {
+        args: {...args, balanceWeiReceiver: toBN(-10) },
+        initialThreadStates,
+        message: conditionFailure('1 negative', 'balanceWeiReceiver'),
+        name: 'should fail if the receiver wei balances are negative',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: {...args, balanceTokenReceiver: toBN(-10) },
+        initialThreadStates,
+        message: conditionFailure('1 negative', 'balanceTokenReceiver'),
+        name: 'should fail if the receiver token balances are negative',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: {...args, balanceWeiSender: toBN(-10) },
+        initialThreadStates,
+        message: conditionFailure('1 negative', 'balanceWeiSender'),
+        name: 'should fail if the sender wei balances are negative',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: {...args, balanceTokenSender: toBN(-10) },
+        initialThreadStates,
+        message: conditionFailure('1 negative', 'balanceTokenSender'),
+        name: 'should fail if the sender token balances are negative',
+        prev,
+        sigErr: false,
+      },
+      {
+        args: {...args, txCount: -1 },
+        initialThreadStates,
+        message: conditionFailure('1 negative', 'diff'),
+        name: 'should fail if the txCount is negative',
+        prev,
+        sigErr: false,
+      },
+      {
+        args,
+        initialThreadStates,
+        message: 'Incorrect signer',
+        name: 'should fail if the previous channel state is incorrectly signed',
+        prev: {...prev, sigUser: ''},
+        sigErr: true,
+      },
+    ]) {
 
-    cases.forEach(async ({ name, prev, initialThreadStates, sigErr, args, message }) => {
-      it(name, async () => {
+      it(tc.name, async () => {
         // ignore recovery by default
-        validator.assertThreadSigner = () => {}
-        if (sigErr) {
-          validator.assertThreadSigner = () => { throw new Error(`Incorrect signer`) }
+        validator.assertThreadSigner = (): any => {/* noop */}
+        if (tc.sigErr) {
+          validator.assertThreadSigner = (): any => { throw new Error(`Incorrect signer`) }
         }
         // Test against case messages
-        const res = validator.closeThread(prev, initialThreadStates, args)
-        if (message) {
-          assert(res && res.includes(message + ""))
+        const result = validator.closeThread(tc.prev, tc.initialThreadStates, tc.args)
+        if (tc.message) {
+          assert(result && result.includes(tc.message))
         } else {
-          assert.isNull(res)
+          assert.isUndefined(result)
         }
       })
-    })
+
+    }
   })
 
-  function getProposePendingCases() {
+  const getProposePendingCases = (): any => {
     const prev = createPreviousChannelState({
       balanceToken: [5, 5],
       balanceWei: [5, 5],
@@ -1187,43 +1196,43 @@ describe('validator', () => {
 
     return [
       {
+        args,
         name: 'should work',
         prev,
-        args,
         valid: true,
       },
       {
-        name: 'should return a string if args are negative',
-        prev,
         args: createProposePendingArgs({
           depositWeiUser: -1,
         }),
+        name: 'should fail if args are negative',
+        prev,
         valid: false,
       },
       {
-        name: 'should error if withdrawal exceeds balance',
-        prev,
         args: createProposePendingArgs({
           withdrawalWeiUser: 100,
         }),
+        name: 'should error if withdrawal exceeds balance',
+        prev,
         valid: false,
       },
       {
-        name: 'should error if timeout is negative',
-        prev,
         args: createProposePendingArgs({
           timeout: -1,
         }),
+        name: 'should error if timeout is negative',
+        prev,
         valid: false,
       },
     ]
   }
 
   describe('proposePending', () => {
-    getProposePendingCases().forEach(async ({ name, prev, args, valid }) => {
+    getProposePendingCases().forEach(async ({ name, prev, args, valid }: any) => {
       it(name, async () => {
         if (valid) {
-          assert.isNull(await validator.proposePending(prev, args))
+          assert.isUndefined(await validator.proposePending(prev, args))
         } else {
           assert.exists(await validator.proposePending(prev, args))
         }
@@ -1238,143 +1247,135 @@ describe('validator', () => {
     })
     const args: PendingExchangeArgsBN = {
       exchangeRate: '2',
-      weiToSell: Big(0),
-      tokensToSell: Big(0),
-      seller: "user",
+      seller: 'user',
+      tokensToSell: toBN(0),
+      weiToSell: toBN(0),
       ...createProposePendingArgs(),
     }
 
-    function runCase(tc: { name: string, prev: ChannelStateBN, args: PendingExchangeArgsBN, valid: boolean }) {
+    const proposePendingExchangeCases = [
+      {
+        args: {
+          ...args,
+          tokensToSell: toBN(2),
+          withdrawalTokenUser: toBN(3),
+        },
+        name: 'exchange + withdrawal makes balance 0',
+        prev,
+        valid: true,
+      },
+      {
+        args: {
+          ...args,
+          tokensToSell: toBN(4),
+          withdrawalTokenUser: toBN(4),
+        },
+        name: 'exchange + withdrawal makes balance negative',
+        prev,
+        valid: false,
+      },
+      {
+        args: {
+          ...args,
+          tokensToSell: toBN(5),
+          withdrawalTokenHub: toBN(7),
+        },
+        name: 'hub withdraws sold tokens',
+        prev,
+        valid: true,
+      },
+      {
+        args: {
+          ...args,
+          tokensToSell: toBN(4),
+          withdrawalWeiUser: toBN(7),
+        },
+        name: 'user withdraws purchased wei',
+        prev,
+        valid: true,
+      },
+    ]
+
+    const runCase = (tc: {
+      args: PendingExchangeArgsBN, name: string, prev: ChannelStateBN, valid: boolean,
+    }): void => {
       it(tc.name, async () => {
         if (tc.valid) {
-          assert.isNull(await validator.proposePendingExchange(tc.prev, tc.args))
+          assert.isUndefined(await validator.proposePendingExchange(tc.prev, tc.args))
         } else {
           assert.exists(await validator.proposePendingExchange(tc.prev, tc.args))
         }
       })
     }
 
-    const proposePendingExchangeCases = [
-      {
-        name: 'exchange + withdrawal makes balance 0',
-        prev,
-        args: {
-          ...args,
-          tokensToSell: Big(2),
-          withdrawalTokenUser: Big(3),
-        },
-        valid: true,
-      },
-
-      {
-        name: 'exchange + withdrawal makes balance negative',
-        prev,
-        args: {
-          ...args,
-          tokensToSell: Big(4),
-          withdrawalTokenUser: Big(4),
-        },
-        valid: false,
-      },
-
-      {
-        name: 'hub withdraws sold tokens',
-        prev,
-        args: {
-          ...args,
-          tokensToSell: Big(5),
-          withdrawalTokenHub: Big(7),
-        },
-        valid: true,
-      },
-
-      {
-        name: 'user withdraws purchased wei',
-        prev,
-        args: {
-          ...args,
-          tokensToSell: Big(4),
-          withdrawalWeiUser: Big(7),
-        },
-        valid: true,
-      },
-
-    ]
-
     proposePendingExchangeCases.forEach(runCase)
 
     describe('with pending cases', () => {
-      getProposePendingCases().forEach(tc => {
-        runCase({ ...tc, args: { ...args, weiToSell: Big(1), ...tc.args } })
+      getProposePendingCases().forEach((tc: any): any => {
+        runCase({ ...tc, args: { ...args, weiToSell: toBN(1), ...tc.args } })
       })
     })
 
     describe('with exchange cases', () => {
-      getExchangeCases().forEach(tc => {
+      getExchangeCases().forEach((tc: any): any => {
         runCase({ ...tc, args: { ...args, ...tc.args as ExchangeArgsBN } })
       })
     })
   })
 
+  // Should test the following success cases:
+  // 1. A thread payment from sender to receiver works
+  // 2. Multiple more payments work
+  // Should test the following fail cases:
+  // 1. Incorrect thread initial state (use initial state helper)
+  // 2. Same following fields as initial state
+  //        - sender
+  //        - receiver
+  //        - contract address
+  // 3. Incorrect signer
+  // 4. Balances are not conserved
+  // 5. Balances are negative
+  // 6. Receiver balances decrease as compared to previous thread state
+  // 7. TxCount must be one higher than previous thread state
+  // 8. Initial thread states are incorrectly signed
+  // 9. Previous thread state is incorrectly signed(?)
+
   describe('threadPayment', () => {
-    // Should test the following success cases:
-    // 1. A thread payment from sender to receiver works
-    // 2. Multiple more payments work
-
-    // Should test the following fail cases:
-    // 1. Incorrect thread initial state (use initial state helper)
-    // 2. Same following fields as initial state
-    //        - sender
-    //        - receiver
-    //        - contract address
-    // 3. Incorrect signer
-    // 4. Balances are not conserved
-    // 5. Balances are negative
-    // 6. Receiver balances decrease as compared to previous thread state
-    // 7. TxCount must be one higher than previous thread state
-    // 8. Initial thread states are incorrectly signed
-    // 9. Previous thread state is incorrectly signed(?)
-
     const prev = createThreadState()
     const args = createThreadPaymentArgs()
 
-    const threadPaymentCases = [
+    for (const tc of [
       {
-        name: 'should work',
         args,
+        name: 'should work',
         valid: true,
       },
       {
-        name: 'should return a string if payment args are negative',
         args: createThreadPaymentArgs({
           amountToken: -1,
           amountWei: -1,
         }),
+        name: 'should fail if payment args are negative',
         valid: false,
       },
       {
-        name: 'should return a string if payment exceeds available thread balance',
         args: createThreadPaymentArgs({
           amountToken: 20,
           amountWei: 20,
         }),
+        name: 'should fail if payment exceeds available thread balance',
         valid: false,
       },
-    ]
+    ]) {
 
-    threadPaymentCases.forEach(async ({ name, args, valid }) => {
-      it(name, async () => {
-        if (valid) {
-          assert.isNull(await validator.threadPayment(prev, args))
+      it(tc.name, async () => {
+        if (tc.valid) {
+          assert.isUndefined(await validator.threadPayment(prev, tc.args))
         } else {
-          assert.exists(await validator.threadPayment(prev, args))
+          assert.exists(await validator.threadPayment(prev, tc.args))
         }
       })
-    })
+
+    }
   })
 })
-
-
-/* EG of tx receipt obj string, use JSON.parse
-const txReceipt = `{"transactionHash":"${t.mkHash('0xhash')}","transactionIndex":0,"blockHash":"0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55","blockNumber":437,"gasUsed":609307,"cumulativeGasUsed":609307,"contractAddress":"${t.mkAddress('0xCCC')}","logs":[{"logIndex":0,"transactionIndex":0,"transactionHash":"0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7","blockHash":"${t.mkHash('0xblock')}","blockNumber":437,"address":"0x9378e143606A4666AD5F20Ac8865B44e703e321e","data":"0x0000000000000000000000000000000000000000000000000000000000000000","topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53","0x0000000000000000000000003638eeb7733ed1fb83cf028200dfb2c41a6d9da8"],"type":"mined","id":"log_9f6b5361"},{"logIndex":1,"transactionIndex":0,"transactionHash":"0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7","blockHash":"0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55","blockNumber":437,"address":"0x9378e143606A4666AD5F20Ac8865B44e703e321e","data":"0x0000000000000000000000000000000000000000000000000000000000000000","topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000003638eeb7733ed1fb83cf028200dfb2c41a6d9da8","0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53"],"type":"mined","id":"log_18b4ce0a"},{"logIndex":2,"transactionIndex":0,"transactionHash":"0xae51947afec970dd134ce1d8589c924b99bfa6a3b7f2d61cb95a447804a196a7","blockHash":"0xe352de5c890efc61876e239e15ed474f93604fdbc5f542ff28c165c25b0b6d55","blockNumber":437,"address":"0x3638EEB7733ed1Fb83Cf028200dfb2C41A6D9DA8","data":"0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","topics":["0xeace9ecdebd30bbfc243bdc30bfa016abfa8f627654b4989da4620271dc77b1c","0x0000000000000000000000002da565caa7037eb198393181089e92181ef5fb53"],"type":"mined","id":"log_bc5572a6"}],"status":true,"logsBloom":"0x00000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000020000000000000000000008000000000000000000040000000000000008000000420000000000000000000000000000080000000000000000000810000000000000000000000000000000000000000000020000000000000000000000000000000100000000000000000000000000000000000000000000000000040000000000000002000008000000000000000000000000000000000000000000000000000000008000000000000000000000000000001000000000000000000000000000"}`
-*/

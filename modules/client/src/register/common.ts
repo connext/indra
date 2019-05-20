@@ -4,6 +4,8 @@
  * Does some minimal environment configuration.
  */
 
+/* tslint:disable */
+
 // Bluebird has the ability to include the entire call stack in a Promise (ie,
 // including the original caller).
 // This incurs a 4x-5x performance penalty, though, so only use it in dev +
@@ -16,8 +18,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Enable more verbose debug logging outside of production
 if (process.env.NODE_ENV !== 'production') {
-  let debug = require('debug')
-  debug.enable([
+  require('debug').enable([
     '*',
     '-nodemon',
     '-express:application',

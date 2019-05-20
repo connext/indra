@@ -1,33 +1,37 @@
 import * as chai from 'chai'
+import asPromised from 'chai-as-promised'
+import subset from 'chai-subset'
 import { BigNumber as BN } from 'ethers/utils'
+
+import { capitalize } from '../lib/utils'
+import { StateGenerator } from '../StateGenerator'
 import {
   Address,
-  ChannelState,
-  ThreadState,
-  ChannelStateUpdate,
-  WithdrawalArgs,
-  PaymentArgs,
-  ExchangeArgs,
-  ChannelUpdateReason,
-  DepositArgs,
   addSigToChannelState,
-  PendingArgs,
-  CustodialBalanceRow,
+  ChannelState,
+  ChannelStateUpdate,
+  ChannelUpdateReason,
   CreateCustodialWithdrawalOptions,
+  CustodialBalanceRow,
   CustodialWithdrawalRow,
+  DepositArgs,
+  ExchangeArgs,
+  PaymentArgs,
+  PendingArgs,
+  ThreadState,
+  WithdrawalArgs,
 } from '../types'
-import { capitalize } from '../lib/naming';
-import { StateGenerator } from '../StateGenerator';
 
-//
 // chai
-//
-chai.use(require('chai-subset'))
-chai.use(require('chai-as-promised'))
+chai.use(subset)
+chai.use(asPromised)
 export const assert = chai.assert
 
+export const mkAddress = (prefix: string = '0x'): Address => prefix.padEnd(42, '0')
+export const mkHash = (prefix: string = '0x'): string => prefix.padEnd(66, '0')
+
 /* Channel and Thread Succinct Types */
-export type SuccinctChannelState<T = string | number | BN> = {
+export interface SuccinctChannelState<T = string | number | BN> {
   contractAddress: Address
   user: Address
   recipient: Address
@@ -44,7 +48,7 @@ export type SuccinctChannelState<T = string | number | BN> = {
   timeout: number
 }
 
-export type SuccinctThreadState<T = string | number | BN> = {
+export interface SuccinctThreadState<T = string | number | BN> {
   contractAddress: Address
   sender: Address
   receiver: Address
@@ -68,7 +72,7 @@ export type PartialSignedOrSuccinctThread = Partial<
 >
 
 /* Arg Succinct Types */
-export type SuccinctDepositArgs<T = string | number | BN> = {
+export interface SuccinctDepositArgs<T = string | number | BN> {
   depositWei: [T, T],
   depositToken: [T, T],
   timeout: number,
@@ -81,7 +85,7 @@ export type PartialVerboseOrSuccinctDepositArgs = Partial<
 >
 
 /* Arg Succinct Types */
-export type SuccinctPendingArgs<T = string | number | BN> = {
+export interface SuccinctPendingArgs<T = string | number | BN> {
   depositWei: [T, T],
   depositToken: [T, T],
   withdrawalWei: [T, T],
@@ -113,9 +117,9 @@ export type PartialVerboseOrSuccinctWithdrawalArgs = Partial<
   SuccinctWithdrawalArgs & WithdrawalArgs<string | number | BN>
 >
 
-export type SuccinctPaymentArgs<T = string | number | BN> = {
+export interface SuccinctPaymentArgs<T = string | number | BN> {
   recipient: 'user' | 'hub' // | 'receiver',
-  amount: [T, T] // [token, wei]
+  amount: [T, T], // [token, wei]
 }
 
 export type VerboseOrSuccinctPaymentArgs = SuccinctPaymentArgs | PaymentArgs
@@ -124,7 +128,7 @@ export type PartialVerboseOrSuccinctPaymentArgs = Partial<
   SuccinctPaymentArgs & PaymentArgs<string | number | BN>
 >
 
-export type SuccinctExchangeArgs<T = string | number | BN> = {
+export interface SuccinctExchangeArgs<T = string | number | BN> {
   exchangeRate: string, // ERC20 / ETH
   seller: 'user' | 'hub', // who is initiating trade
   toSell: [T, T],
@@ -143,7 +147,7 @@ export type PartialArgsType = PartialVerboseOrSuccinctDepositArgs |
   PartialVerboseOrSuccinctPendingArgs
 
 /* Custodial types */
-export type SuccinctCustodialBalanceRow<T = string | number | BN> = {
+export interface SuccinctCustodialBalanceRow<T = string | number | BN> {
   totalReceived: [T, T], // [wei, token]
   totalWithdrawn: [T, T], // [wei, token]
   balance: [T, T], // [wei, token]
@@ -157,9 +161,11 @@ export type PartialVerboseOrSuccinctCustodialBalanceRow = Partial<
 SuccinctCustodialBalanceRow & CustodialBalanceRow<string | number | BN>
 >
 
-export type SuccinctCreateCustodialWithdrawalOptions<T = string | number | BN> = CreateCustodialWithdrawalOptions<T>
+export type SuccinctCreateCustodialWithdrawalOptions<T = string | number | BN> =
+  CreateCustodialWithdrawalOptions<T>
 
-export type VerboseOrSuccinctCreateCustodialWithdrawalOptions = SuccinctCreateCustodialWithdrawalOptions | CreateCustodialWithdrawalOptions
+export type VerboseOrSuccinctCreateCustodialWithdrawalOptions =
+  SuccinctCreateCustodialWithdrawalOptions | CreateCustodialWithdrawalOptions
 
 export type PartialVerboseOrSuccinctCreateCustodialWithdrawalOptions = Partial<
 SuccinctCreateCustodialWithdrawalOptions & CreateCustodialWithdrawalOptions<string | number | BN>
@@ -167,244 +173,128 @@ SuccinctCreateCustodialWithdrawalOptions & CreateCustodialWithdrawalOptions<stri
 
 export type SuccinctCustodialWithdrawalRow<T = string | number | BN> = CustodialWithdrawalRow<T>
 
-export type VerboseOrSuccinctCustodialWithdrawalRow = SuccinctCustodialWithdrawalRow | CustodialWithdrawalRow
+export type VerboseOrSuccinctCustodialWithdrawalRow =
+  SuccinctCustodialWithdrawalRow | CustodialWithdrawalRow
 
-export type PartialVerboseOrSuccinctCustodialWithdrawalRow = Partial<
-SuccinctCustodialWithdrawalRow & CustodialWithdrawalRow<string | number | BN>
->
+export type PartialVerboseOrSuccinctCustodialWithdrawalRow =
+  Partial<SuccinctCustodialWithdrawalRow & CustodialWithdrawalRow<string | number | BN>>
 
-/* Channel and Thread Functions */
-export function expandSuccinctChannel(
-  s: SignedOrSuccinctChannel,
-): ChannelState<string>
-export function expandSuccinctChannel(
-  s: PartialSignedOrSuccinctChannel,
-): Partial<ChannelState<string>>
+////////////////////////////////////////
+// Expand Succinct Channels and Threads
 
-export function expandSuccinctChannel(
-  s: SignedOrSuccinctChannel | Partial<SignedOrSuccinctChannel>,
-) {
-  return expandSuccinct(['Hub', 'User'], s, true)
-}
-
-export function expandSuccinctThread(
-  s: SignedOrSuccinctThread,
-): ThreadState<string>
-
-export function expandSuccinctThread(
-  s: PartialSignedOrSuccinctThread,
-): Partial<ThreadState<string>>
-
-export function expandSuccinctThread(
-  s: SignedOrSuccinctThread | Partial<SignedOrSuccinctThread>,
-) {
-  return expandSuccinct(['Sender', 'Receiver'], s)
-}
-
-export function expandSuccinctDepositArgs(
-  s: VerboseOrSuccinctDepositArgs,
-): DepositArgs<string>
-export function expandSuccinctDepositArgs(
-  s: PartialVerboseOrSuccinctDepositArgs,
-): Partial<DepositArgs<string>>
-export function expandSuccinctDepositArgs(
-  s: SuccinctDepositArgs | Partial<VerboseOrSuccinctDepositArgs>,
-) {
-  return expandSuccinct(['Hub', 'User'], s)
-}
-
-export function expandSuccinctWithdrawalArgs(
-  s: VerboseOrSuccinctWithdrawalArgs,
-): WithdrawalArgs<string>
-export function expandSuccinctWithdrawalArgs(
-  s: PartialVerboseOrSuccinctWithdrawalArgs,
-): Partial<WithdrawalArgs<string>>
-export function expandSuccinctWithdrawalArgs(
-  s: SuccinctWithdrawalArgs | Partial<VerboseOrSuccinctWithdrawalArgs>,
-) {
-  return expandSuccinct(['Hub', 'User'], s)
-}
-
-export function expandSuccinctPaymentArgs(
-  s: VerboseOrSuccinctPaymentArgs,
-): PaymentArgs<string>
-export function expandSuccinctPaymentArgs(
-  s: PartialVerboseOrSuccinctPaymentArgs,
-): Partial<PaymentArgs<string>>
-export function expandSuccinctPaymentArgs(
-  s: SuccinctPaymentArgs | Partial<VerboseOrSuccinctPaymentArgs>,
-) {
-  return expandSuccinct(['Token', 'Wei'], s)
-}
-
-export function expandSuccinctExchangeArgs(
-  s: VerboseOrSuccinctExchangeArgs,
-): ExchangeArgs<string>
-export function expandSuccinctExchangeArgs(
-  s: PartialVerboseOrSuccinctExchangeArgs,
-): Partial<ExchangeArgs<string>>
-export function expandSuccinctExchangeArgs(
-  s: SuccinctExchangeArgs | Partial<VerboseOrSuccinctExchangeArgs>,
-) {
-  return expandSuccinct(['tokens', 'wei'], s, false, false)
-}
-
-export function expandSuccinctPendingArgs(
-  s: VerboseOrSuccinctPendingArgs,
-): PendingArgs<string>
-export function expandSuccinctPendingArgs(
-  s: PartialVerboseOrSuccinctPendingArgs,
-): Partial<PendingArgs<string>>
-export function expandSuccinctPendingArgs(
-  s: SuccinctPendingArgs | Partial<VerboseOrSuccinctPendingArgs>,
-) {
-  return expandSuccinct(['Hub', 'User'], s)
-}
-
-export function expandSuccinctCustodialBalanceRow(
-  s: VerboseOrSuccinctCustodialBalanceRow,
-): CustodialBalanceRow<string>
-export function expandSuccinctCustodialBalanceRow(
-  s: PartialVerboseOrSuccinctCustodialBalanceRow,
-): Partial<CustodialBalanceRow<string>>
-export function expandSuccinctCustodialBalanceRow(
-  s: SuccinctCustodialBalanceRow | Partial<VerboseOrSuccinctCustodialBalanceRow>,
-) {
-  return expandSuccinct(['Wei', 'Token'], s)
-}
-
-/* Common */
-function expandSuccinct(
+const expandSuccinct = (
   strs: string[],
   s: any,
   expandTxCount: boolean = false,
   isSuffix: boolean = true,
-) {
-  let res = {} as any
-  Object.entries(s).forEach(([name, value]) => {
+): any => {
+  const res = {} as any
+  Object.entries(s).forEach(([name, value]: any): any => {
     if (Array.isArray(value)) {
-      let cast = (x: any) => x.toString()
-      if (expandTxCount && name == 'txCount') {
-        strs = ['Global', 'Chain']
-        cast = (x: any) => x
-      }
-      res[isSuffix ? (name + strs[0]) : (strs[0] + capitalize(name))] = cast(value[0])
-      res[isSuffix ? (name + strs[1]) : (strs[1] + capitalize(name))] = cast(value[1])
+      const cast = (expandTxCount && name === 'txCount')
+        ? (x: any): any => x
+        : (x: any): string => x.toString()
+      const newStrs = (expandTxCount && name === 'txCount')
+        ? ['Global', 'Chain']
+        : strs
+      res[isSuffix ? (name + newStrs[0]) : (newStrs[0] + capitalize(name))] = cast(value[0])
+      res[isSuffix ? (name + newStrs[1]) : (newStrs[1] + capitalize(name))] = cast(value[1])
     } else {
-      const condition = isSuffix ? name.endsWith(strs[0]) || name.endsWith(strs[1]) : name.startsWith(strs[0]) || name.startsWith(strs[1])
-      if (condition)
-        value = !value && value != 0 ? value : value.toString()
-      res[name] = value
+      const condition = isSuffix
+        ? name.endsWith(strs[0]) || name.endsWith(strs[1])
+        : name.startsWith(strs[0]) || name.startsWith(strs[1])
+      res[name] = condition
+        ? !value && value !== 0 ? value : value.toString()
+        : value
     }
   })
   return res
 }
 
-export function makeSuccinctChannel(
-  s: SignedOrSuccinctChannel,
-): SuccinctChannelState<string>
-export function makeSuccinctChannel(
-  s: PartialSignedOrSuccinctChannel,
-): Partial<SuccinctChannelState<string>>
-export function makeSuccinctChannel(
+export interface ExpandSuccinctChannelOverloaded {
+  (s: SignedOrSuccinctChannel): ChannelState<string>
+  (s: PartialSignedOrSuccinctChannel): Partial<ChannelState<string>>
+}
+export const expandSuccinctChannel: ExpandSuccinctChannelOverloaded = (
   s: SignedOrSuccinctChannel | Partial<SignedOrSuccinctChannel>,
-) {
-  return makeSuccinct(['Hub', 'User', 'Global', 'Chain'], s)
-}
+): any =>
+  expandSuccinct(['Hub', 'User'], s, true)
 
-export function makeSuccinctThread(
-  s: SignedOrSuccinctThread,
-): SuccinctThreadState<string>
-export function makeSuccinctThread(
-  s: PartialSignedOrSuccinctThread,
-): Partial<SuccinctThreadState<string>>
-export function makeSuccinctThread(
+export interface ExpandSuccinctThreadOverloaded {
+  (s: SignedOrSuccinctThread): ThreadState<string>
+  (s: PartialSignedOrSuccinctThread): Partial<ThreadState<string>>
+}
+export const expandSuccinctThread: ExpandSuccinctThreadOverloaded = (
   s: SignedOrSuccinctThread | Partial<SignedOrSuccinctThread>,
-) {
-  return makeSuccinct(['Sender', 'Receiver'], s)
-}
+): any =>
+  expandSuccinct(['Sender', 'Receiver'], s)
 
-export function makeSuccinctPending(
-  s: VerboseOrSuccinctPendingArgs,
-): SuccinctPendingArgs<string>
-export function makeSuccinctPending(
-  s: PartialVerboseOrSuccinctPendingArgs,
-): Partial<SuccinctPendingArgs<string>>
-export function makeSuccinctPending(
-  s: VerboseOrSuccinctPendingArgs | Partial<VerboseOrSuccinctPendingArgs>,
-) {
-  return makeSuccinct(['Hub', 'User'], s)
+export interface ExpandSuccinctDepositArgsOverloaded {
+  (s: VerboseOrSuccinctDepositArgs): DepositArgs<string>
+  (s: PartialVerboseOrSuccinctDepositArgs): Partial<DepositArgs<string>>
 }
+export const expandSuccinctDepositArgs: ExpandSuccinctDepositArgsOverloaded = (
+  s: SuccinctDepositArgs | Partial<VerboseOrSuccinctDepositArgs>,
+): any =>
+  expandSuccinct(['Hub', 'User'], s)
 
-export function makeSuccinctDeposit(
-  s: VerboseOrSuccinctDepositArgs,
-): SuccinctDepositArgs<string>
-export function makeSuccinctDeposit(
-  s: PartialVerboseOrSuccinctDepositArgs,
-): Partial<SuccinctDepositArgs<string>>
-export function makeSuccinctDeposit(
-  s: VerboseOrSuccinctDepositArgs | Partial<VerboseOrSuccinctDepositArgs>,
-) {
-  return makeSuccinct(['Hub', 'User'], s)
+export interface ExpandSuccinctWithdrawalArgsOverloaded {
+  (s: VerboseOrSuccinctWithdrawalArgs): WithdrawalArgs<string>
+  (s: PartialVerboseOrSuccinctWithdrawalArgs): Partial<WithdrawalArgs<string>>
 }
+export const expandSuccinctWithdrawalArgs: ExpandSuccinctWithdrawalArgsOverloaded = (
+  s: SuccinctWithdrawalArgs | Partial<VerboseOrSuccinctWithdrawalArgs>,
+): any =>
+  expandSuccinct(['Hub', 'User'], s)
 
-export function makeSuccinctWithdrawal(
-  s: VerboseOrSuccinctWithdrawalArgs,
-): SuccinctWithdrawalArgs<string>
-export function makeSuccinctWithdrawal(
-  s: PartialVerboseOrSuccinctWithdrawalArgs,
-): Partial<SuccinctWithdrawalArgs<string>>
-export function makeSuccinctWithdrawal(
-  s: VerboseOrSuccinctWithdrawalArgs | Partial<VerboseOrSuccinctWithdrawalArgs>,
-) {
-  return makeSuccinct(['Hub', 'User'], s)
+export interface ExpandSuccinctPaymentArgsOverloaded {
+  (s: VerboseOrSuccinctPaymentArgs): PaymentArgs<string>
+  (s: PartialVerboseOrSuccinctPaymentArgs): Partial<PaymentArgs<string>>
 }
+export const expandSuccinctPaymentArgs: ExpandSuccinctPaymentArgsOverloaded = (
+  s: SuccinctPaymentArgs | Partial<VerboseOrSuccinctPaymentArgs>,
+): any =>
+  expandSuccinct(['Token', 'Wei'], s)
 
-export function makeSuccinctPayment(
-  s: VerboseOrSuccinctPaymentArgs,
-): SuccinctPaymentArgs<string>
-export function makeSuccinctPayment(
-  s: PartialVerboseOrSuccinctPaymentArgs,
-): Partial<SuccinctPaymentArgs<string>>
-export function makeSuccinctPayment(
-  s: VerboseOrSuccinctPaymentArgs | Partial<VerboseOrSuccinctPaymentArgs>,
-) {
-  return makeSuccinct(['Token', 'Wei'], s)
+export interface ExpandSuccinctExchangeArgsOverloaded {
+  (s: VerboseOrSuccinctExchangeArgs): ExchangeArgs<string>
+  (s: PartialVerboseOrSuccinctExchangeArgs): Partial<ExchangeArgs<string>>
 }
+export const expandSuccinctExchangeArgs: ExpandSuccinctExchangeArgsOverloaded = (
+  s: SuccinctExchangeArgs | Partial<VerboseOrSuccinctExchangeArgs>,
+): any =>
+  expandSuccinct(['tokens', 'wei'], s, false, false)
 
-export function makeSuccinctExchange(
-  s: VerboseOrSuccinctExchangeArgs,
-): SuccinctExchangeArgs<string>
-export function makeSuccinctExchange(
-  s: PartialVerboseOrSuccinctExchangeArgs,
-): Partial<SuccinctExchangeArgs<string>>
-export function makeSuccinctExchange(
-  s: VerboseOrSuccinctExchangeArgs | Partial<VerboseOrSuccinctExchangeArgs>,
-) {
-  return makeSuccinct(['tokens', 'wei'], s, 'toSell')
+export interface ExpandSuccinctPendingArgsOverloaded {
+  (s: VerboseOrSuccinctPendingArgs): PendingArgs<string>
+  (s: PartialVerboseOrSuccinctPendingArgs): Partial<PendingArgs<string>>
 }
+export const expandSuccinctPendingArgs: ExpandSuccinctPendingArgsOverloaded = (
+  s: SuccinctPendingArgs | Partial<VerboseOrSuccinctPendingArgs>,
+): any =>
+  expandSuccinct(['Hub', 'User'], s)
 
-export function makeSuccinctCustodialBalanceRow(
-  s: VerboseOrSuccinctCustodialBalanceRow,
-): SuccinctCustodialBalanceRow<string>
-export function makeSuccinctCustodialBalanceRow(
-  s: PartialVerboseOrSuccinctCustodialBalanceRow,
-): Partial<SuccinctCustodialBalanceRow<string>>
-export function makeSuccinctCustodialBalanceRow(
-  s: VerboseOrSuccinctCustodialBalanceRow | Partial<VerboseOrSuccinctCustodialBalanceRow>,
-) {
-  return makeSuccinct(['Wei', 'Token'], s)
+export interface ExpandSuccinctCustodialBalanceRowOverloaded {
+  (s: VerboseOrSuccinctCustodialBalanceRow): CustodialBalanceRow<string>
+  (s: PartialVerboseOrSuccinctCustodialBalanceRow): Partial<CustodialBalanceRow<string>>
 }
+export const expandSuccinctCustodialBalanceRow = (
+  s: SuccinctCustodialBalanceRow | Partial<VerboseOrSuccinctCustodialBalanceRow>,
+): any =>
+  expandSuccinct(['Wei', 'Token'], s)
 
-function makeSuccinct(
+////////////////////////////////////////
+// Make Succinct Channels and Threads
+
+const makeSuccinct = (
   strs: string[],
   s: any,
   replacement: string = '',
-) {
-  let res = {} as any
-  Object.entries(s).forEach(([name, value]) => {
+): any => {
+  const res = {} as any
+  Object.entries(s).forEach(([name, value]: any): any => {
     let didMatchStr = false
-    strs.forEach((str, idx) => {
+    strs.forEach((str: any, idx: number): any => {
       const condition = replacement === ''
         ? name.endsWith(str)
         : name.startsWith(str)
@@ -417,66 +307,143 @@ function makeSuccinct(
     })
     if (!didMatchStr) res[name] = value
   })
-
   return res
 }
 
-export function mkAddress(prefix: string = '0x'): Address {
-  return prefix.padEnd(42, '0')
+export interface MakeSuccinctChannelOverloaded {
+  (s: SignedOrSuccinctChannel): SuccinctChannelState<string>
+  (s: PartialSignedOrSuccinctChannel): Partial<SuccinctChannelState<string>>
+}
+export const makeSuccinctChannel: MakeSuccinctChannelOverloaded = (
+  s: SignedOrSuccinctChannel | Partial<SignedOrSuccinctChannel>,
+): any =>
+  makeSuccinct(['Hub', 'User', 'Global', 'Chain'], s)
+
+export interface MakeSuccinctThreadOverloaded {
+  (s: SignedOrSuccinctThread): SuccinctThreadState<string>
+  (s: PartialSignedOrSuccinctThread): Partial<SuccinctThreadState<string>>
+}
+export const makeSuccinctThread: MakeSuccinctThreadOverloaded = (
+  s: SignedOrSuccinctThread | Partial<SignedOrSuccinctThread>,
+): any =>
+  makeSuccinct(['Sender', 'Receiver'], s)
+
+export interface MakeSuccinctPendingOverloaded {
+  (s: VerboseOrSuccinctPendingArgs): SuccinctPendingArgs<string>
+  (s: PartialVerboseOrSuccinctPendingArgs): Partial<SuccinctPendingArgs<string>>
+}
+export const makeSuccinctPending: MakeSuccinctPendingOverloaded = (
+  s: VerboseOrSuccinctPendingArgs | Partial<VerboseOrSuccinctPendingArgs>,
+): any =>
+  makeSuccinct(['Hub', 'User'], s)
+
+export interface MakeSuccinctDepositOverloaded {
+  (s: VerboseOrSuccinctDepositArgs): SuccinctDepositArgs<string>
+  (s: PartialVerboseOrSuccinctDepositArgs): Partial<SuccinctDepositArgs<string>>
+}
+export const makeSuccinctDeposit: MakeSuccinctDepositOverloaded = (
+  s: VerboseOrSuccinctDepositArgs | Partial<VerboseOrSuccinctDepositArgs>,
+): any =>
+  makeSuccinct(['Hub', 'User'], s)
+
+export interface MakeSuccinctWithdrawalOverloaded {
+  (s: VerboseOrSuccinctWithdrawalArgs): SuccinctWithdrawalArgs<string>
+  (s: PartialVerboseOrSuccinctWithdrawalArgs): Partial<SuccinctWithdrawalArgs<string>>
+}
+export const makeSuccinctWithdrawal: MakeSuccinctWithdrawalOverloaded = (
+  s: VerboseOrSuccinctWithdrawalArgs | Partial<VerboseOrSuccinctWithdrawalArgs>,
+): any =>
+  makeSuccinct(['Hub', 'User'], s)
+
+export interface MakeSuccinctPaymentOverloaded {
+  (s: VerboseOrSuccinctPaymentArgs): SuccinctPaymentArgs<string>
+  (s: PartialVerboseOrSuccinctPaymentArgs): Partial<SuccinctPaymentArgs<string>>
+}
+export const makeSuccinctPayment: MakeSuccinctPaymentOverloaded = (
+  s: VerboseOrSuccinctPaymentArgs | Partial<VerboseOrSuccinctPaymentArgs>,
+): any =>
+  makeSuccinct(['Token', 'Wei'], s)
+
+export interface MakeSuccinctExchangeOverloaded {
+  (s: VerboseOrSuccinctExchangeArgs): SuccinctExchangeArgs<string>
+  (s: PartialVerboseOrSuccinctExchangeArgs): Partial<SuccinctExchangeArgs<string>>
+}
+export const makeSuccinctExchange: MakeSuccinctExchangeOverloaded = (
+  s: VerboseOrSuccinctExchangeArgs | Partial<VerboseOrSuccinctExchangeArgs>,
+): any =>
+  makeSuccinct(['tokens', 'wei'], s, 'toSell')
+
+export interface MakeSuccinctCustodialBalanceRowOverloaded {
+  (s: VerboseOrSuccinctCustodialBalanceRow): SuccinctCustodialBalanceRow<string>
+  (s: PartialVerboseOrSuccinctCustodialBalanceRow): Partial<SuccinctCustodialBalanceRow<string>>
+}
+export const makeSuccinctCustodialBalanceRow: MakeSuccinctCustodialBalanceRowOverloaded = (
+  s: VerboseOrSuccinctCustodialBalanceRow | Partial<VerboseOrSuccinctCustodialBalanceRow>,
+): any =>
+  makeSuccinct(['Wei', 'Token'], s)
+
+
+////////////////////////////////////////
+// Update Obj Helpers
+
+export interface UpdateObjOverloaded {
+  (
+    type: 'channel',
+    s: SignedOrSuccinctChannel,
+    ...rest: PartialSignedOrSuccinctChannel[]
+  ): ChannelState<string>
+
+  (
+    type: 'thread',
+    s: SignedOrSuccinctThread,
+    ...rest: PartialSignedOrSuccinctThread[]
+  ): ThreadState<string>
+
+  (
+    type: 'ProposePendingDeposit',
+    s: VerboseOrSuccinctDepositArgs,
+    ...rest: PartialVerboseOrSuccinctDepositArgs[]
+  ): DepositArgs<string>
+
+  (
+    type: 'ProposePendingWithdrawal',
+    s: VerboseOrSuccinctWithdrawalArgs,
+    ...rest: PartialVerboseOrSuccinctWithdrawalArgs[]
+  ): WithdrawalArgs<string>
+
+  (
+    type: 'Payment',
+    s: VerboseOrSuccinctPaymentArgs,
+    ...rest: PartialVerboseOrSuccinctPaymentArgs[]
+  ): PaymentArgs<string>
+
+  (
+    type: 'Exchange',
+    s: VerboseOrSuccinctExchangeArgs,
+    ...rest: PartialVerboseOrSuccinctExchangeArgs[]
+  ): ExchangeArgs<string>
+
+  (
+    type: 'Pending',
+    s: VerboseOrSuccinctPendingArgs,
+    ...rest: PartialVerboseOrSuccinctPendingArgs[]
+  ): PendingArgs<string>
+
+  (
+    type: 'custodialBalance',
+    s: VerboseOrSuccinctCustodialBalanceRow,
+    ...rest: PartialVerboseOrSuccinctCustodialBalanceRow[]
+  ): CustodialBalanceRow<string>
 }
 
-export function mkHash(prefix: string = '0x') {
-  return prefix.padEnd(66, '0')
-}
-
-export function updateObj(type: "channel",
-  s: SignedOrSuccinctChannel,
-  ...rest: PartialSignedOrSuccinctChannel[]
-): ChannelState<string>
-
-export function updateObj(type: "thread",
-  s: SignedOrSuccinctThread,
-  ...rest: PartialSignedOrSuccinctThread[]
-): ThreadState<string>
-
-export function updateObj(type: "ProposePendingDeposit",
-  s: VerboseOrSuccinctDepositArgs,
-  ...rest: PartialVerboseOrSuccinctDepositArgs[]
-): DepositArgs<string>
-
-export function updateObj(type: "ProposePendingWithdrawal",
-  s: VerboseOrSuccinctWithdrawalArgs,
-  ...rest: PartialVerboseOrSuccinctWithdrawalArgs[]
-): WithdrawalArgs<string>
-
-export function updateObj(type: "Payment",
-  s: VerboseOrSuccinctPaymentArgs,
-  ...rest: PartialVerboseOrSuccinctPaymentArgs[]
-): PaymentArgs<string>
-
-export function updateObj(type: "Exchange",
-  s: VerboseOrSuccinctExchangeArgs,
-  ...rest: PartialVerboseOrSuccinctExchangeArgs[]
-): ExchangeArgs<string>
-
-export function updateObj(type: "Pending",
-  s: VerboseOrSuccinctPendingArgs,
-  ...rest: PartialVerboseOrSuccinctPendingArgs[]
-): PendingArgs<string>
-
-export function updateObj(type: "custodialBalance",
-  s: VerboseOrSuccinctCustodialBalanceRow,
-  ...rest: PartialVerboseOrSuccinctCustodialBalanceRow[]
-): CustodialBalanceRow<string>
-
-export function updateObj(
+export const updateObj: UpdateObjOverloaded = (
   type: objUpdateType,
-  s: any,
+  args: any,
   ...rest: any[]
-) {
+): any => {
   const transform = updateFns[type]
-  let res = transform(s)
-  for (let s of rest) {
+  let res = transform(args)
+  for (const s of rest) {
     res = !s ? res : {
       ...res,
       ...transform(s),
@@ -485,404 +452,396 @@ export function updateObj(
   return res
 }
 
+////////////////////////////////////////
+
 const objUpdateTypes = {
   channel: 'channel',
+  custodialBalance: 'custodialBalance',
+  Pending: 'Pending',
   thread: 'thread',
-  Pending: "Pending",
-  custodialBalance: 'custodialBalance'
 }
 type objUpdateType = keyof typeof objUpdateTypes | ChannelUpdateReason
 
 const updateFns: any = {
-  'ProposePendingWithdrawal': expandSuccinctWithdrawalArgs,
-  'ProposePendingDeposit': expandSuccinctDepositArgs,
+  'channel': expandSuccinctChannel,
+  'custodialBalance': expandSuccinctCustodialBalanceRow,
   'Exchange': expandSuccinctExchangeArgs,
   'Payment': expandSuccinctPaymentArgs,
   'Pending': expandSuccinctPendingArgs,
-  'channel': expandSuccinctChannel,
+  'ProposePendingDeposit': expandSuccinctDepositArgs,
+  'ProposePendingWithdrawal': expandSuccinctWithdrawalArgs,
   'thread': expandSuccinctThread,
-  'custodialBalance': expandSuccinctCustodialBalanceRow
 }
 
 const initialChannelStates = {
-  full: () => ({
-    contractAddress: mkAddress('0xCCC'),
-    user: mkAddress('0xAAA'),
-    recipient: mkAddress('0x222'),
-    balanceWeiHub: '1',
-    balanceWeiUser: '2',
+  full: (): any => ({
     balanceTokenHub: '3',
     balanceTokenUser: '4',
-    pendingDepositWeiHub: '4',
-    pendingDepositWeiUser: '5',
+    balanceWeiHub: '1',
+    balanceWeiUser: '2',
+    contractAddress: mkAddress('0xCCC'),
     pendingDepositTokenHub: '6',
     pendingDepositTokenUser: '7',
-    pendingWithdrawalWeiHub: '8',
-    pendingWithdrawalWeiUser: '9',
+    pendingDepositWeiHub: '4',
+    pendingDepositWeiUser: '5',
     pendingWithdrawalTokenHub: '10',
     pendingWithdrawalTokenUser: '11',
-    txCountGlobal: 13,
-    txCountChain: 12,
-    threadRoot: mkHash('0x141414'),
-    threadCount: 14,
-    timeout: 15,
-    sigUser: mkHash('0xA5'),
+    pendingWithdrawalWeiHub: '8',
+    pendingWithdrawalWeiUser: '9',
+    recipient: mkAddress('0x222'),
     sigHub: mkHash('0x15'),
+    sigUser: mkHash('0xA5'),
+    threadCount: 14,
+    threadRoot: mkHash('0x141414'),
+    timeout: 15,
+    txCountChain: 12,
+    txCountGlobal: 13,
+    user: mkAddress('0xAAA'),
   }),
 
-  unsigned: () =>
-    ({
-      contractAddress: mkAddress('0xCCC'),
-      user: mkAddress('0xAAA'),
-      recipient: mkAddress('0x222'),
-      balanceWeiHub: '0',
-      balanceWeiUser: '0',
-      balanceTokenHub: '0',
-      balanceTokenUser: '0',
-      pendingDepositWeiHub: '0',
-      pendingDepositWeiUser: '0',
-      pendingDepositTokenHub: '0',
-      pendingDepositTokenUser: '0',
-      pendingWithdrawalWeiHub: '0',
-      pendingWithdrawalWeiUser: '0',
-      pendingWithdrawalTokenHub: '0',
-      pendingWithdrawalTokenUser: '0',
-      txCountGlobal: 1,
-      txCountChain: 1,
-      threadRoot: mkHash('0x0'),
-      threadCount: 0,
-      timeout: 0,
-    } as ChannelState),
-
-  empty: () => ({
-    contractAddress: mkAddress('0xCCC'),
-    user: mkAddress('0xAAA'),
-    recipient: mkAddress('0x222'),
-    balanceWeiHub: '0',
-    balanceWeiUser: '0',
+  unsigned: (): any => ({
     balanceTokenHub: '0',
     balanceTokenUser: '0',
-    pendingDepositWeiHub: '0',
-    pendingDepositWeiUser: '0',
+    balanceWeiHub: '0',
+    balanceWeiUser: '0',
+    contractAddress: mkAddress('0xCCC'),
     pendingDepositTokenHub: '0',
     pendingDepositTokenUser: '0',
-    pendingWithdrawalWeiHub: '0',
-    pendingWithdrawalWeiUser: '0',
+    pendingDepositWeiHub: '0',
+    pendingDepositWeiUser: '0',
     pendingWithdrawalTokenHub: '0',
     pendingWithdrawalTokenUser: '0',
-    txCountGlobal: 1,
-    txCountChain: 1,
-    threadRoot: mkHash('0x0'),
+    pendingWithdrawalWeiHub: '0',
+    pendingWithdrawalWeiUser: '0',
+    recipient: mkAddress('0x222'),
     threadCount: 0,
+    threadRoot: mkHash('0x0'),
     timeout: 0,
-    sigUser: '',
+    txCountChain: 1,
+    txCountGlobal: 1,
+    user: mkAddress('0xAAA'),
+  }),
+
+  empty: (): any => ({
+    balanceTokenHub: '0',
+    balanceTokenUser: '0',
+    balanceWeiHub: '0',
+    balanceWeiUser: '0',
+    contractAddress: mkAddress('0xCCC'),
+    pendingDepositTokenHub: '0',
+    pendingDepositTokenUser: '0',
+    pendingDepositWeiHub: '0',
+    pendingDepositWeiUser: '0',
+    pendingWithdrawalTokenHub: '0',
+    pendingWithdrawalTokenUser: '0',
+    pendingWithdrawalWeiHub: '0',
+    pendingWithdrawalWeiUser: '0',
+    recipient: mkAddress('0x222'),
     sigHub: '',
+    sigUser: '',
+    threadCount: 0,
+    threadRoot: mkHash('0x0'),
+    timeout: 0,
+    txCountChain: 1,
+    txCountGlobal: 1,
+    user: mkAddress('0xAAA'),
   }),
 }
 
 const initialThreadStates = {
-  full: () => ({
-    contractAddress: mkAddress('0xCCC'),
-    sender: mkAddress('0x222'),
-    receiver: mkAddress('0x333'),
-    threadId: 69,
-    balanceWeiSender: '1',
-    balanceWeiReceiver: '2',
-    balanceTokenSender: '3',
+  full: (): any => ({
     balanceTokenReceiver: '4',
-    txCount: 22,
+    balanceTokenSender: '3',
+    balanceWeiReceiver: '2',
+    balanceWeiSender: '1',
+    contractAddress: mkAddress('0xCCC'),
+    receiver: mkAddress('0x333'),
+    sender: mkAddress('0x222'),
     sigA: mkHash('siga'),
+    threadId: 69,
+    txCount: 22,
   }),
 
-  unsigned: () =>
-    ({
-      contractAddress: mkAddress('0xCCC'),
-      sender: mkAddress('0x222'),
-      receiver: mkAddress('0x333'),
-      threadId: 69,
-      balanceWeiSender: '1',
-      balanceWeiReceiver: '2',
-      balanceTokenSender: '3',
-      balanceTokenReceiver: '4',
-      txCount: 22,
-    } as ThreadState),
-
-  empty: () => ({
+  unsigned: (): any => ({
+    balanceTokenReceiver: '4',
+    balanceTokenSender: '3',
+    balanceWeiReceiver: '2',
+    balanceWeiSender: '1',
     contractAddress: mkAddress('0xCCC'),
-    sender: mkAddress('0x222'),
     receiver: mkAddress('0x333'),
+    sender: mkAddress('0x222'),
     threadId: 69,
-    balanceWeiSender: '0',
-    balanceWeiReceiver: '0',
-    balanceTokenSender: '0',
+    txCount: 22,
+  }),
+
+  empty: (): any => ({
     balanceTokenReceiver: '0',
-    txCount: 0,
+    balanceTokenSender: '0',
+    balanceWeiReceiver: '0',
+    balanceWeiSender: '0',
+    contractAddress: mkAddress('0xCCC'),
+    receiver: mkAddress('0x333'),
+    sender: mkAddress('0x222'),
     sigA: '',
+    threadId: 69,
+    txCount: 0,
   }),
 }
 
-type WDInitial = { [key: string]: () => WithdrawalArgs }
+interface WDInitial { [key: string]: () => WithdrawalArgs }
 
 const initialWithdrawalArgs: WDInitial = {
-  full: () => ({
+  full: (): any => ({
+    additionalTokenHubToUser: '11',
+    additionalWeiHubToUser: '10',
     exchangeRate: '5', // wei to token
-    tokensToSell: '1',
-    seller: "user",
-    weiToSell: '2',
     recipient: mkAddress('0x222'),
-    targetWeiUser: '3',
+    seller: 'user',
+    targetTokenHub: '6',
     targetTokenUser: '4',
     targetWeiHub: '5',
-    targetTokenHub: '6',
-    additionalWeiHubToUser: '10',
-    additionalTokenHubToUser: '11',
+    targetWeiUser: '3',
     timeout: 600,
+    tokensToSell: '1',
+    weiToSell: '2',
   }),
 
-  empty: () => ({
+  empty: (): any => ({
+    additionalTokenHubToUser: '0',
+    additionalWeiHubToUser: '0',
     exchangeRate: '5', // wei to token
-    seller: "user",
+    recipient: mkAddress('0x222'),
+    seller: 'user',
+    timeout: 6969,
     tokensToSell: '0',
     weiToSell: '0',
-    recipient: mkAddress('0x222'),
-    additionalWeiHubToUser: '0',
-    additionalTokenHubToUser: '0',
-    timeout: 6969,
   }),
 }
 
-type DepositInitial = { [key: string]: () => DepositArgs }
+interface DepositInitial { [key: string]: () => DepositArgs }
 
 const initialDepositArgs: DepositInitial = {
-  full: () => ({
-    depositTokenUser: '6',
-    depositWeiUser: '7',
-    depositWeiHub: '8',
+  full: (): any => ({
     depositTokenHub: '9',
-    timeout: 696969
+    depositTokenUser: '6',
+    depositWeiHub: '8',
+    depositWeiUser: '7',
+    timeout: 696969,
   }),
 
-  empty: () => ({
-    depositTokenUser: '0',
-    depositWeiUser: '0',
-    depositWeiHub: '0',
+  empty: (): any => ({
     depositTokenHub: '0',
-    timeout: 696969
-  })
+    depositTokenUser: '0',
+    depositWeiHub: '0',
+    depositWeiUser: '0',
+    timeout: 696969,
+  }),
 }
 
-type PaymentInitial = { [key: string]: () => PaymentArgs }
+interface PaymentInitial { [key: string]: () => PaymentArgs }
 
 const initialPaymentArgs: PaymentInitial = {
-  full: () => ({
-    recipient: "hub",
+  full: (): any => ({
     amountToken: '1',
-    amountWei: '2'
+    amountWei: '2',
+    recipient: 'hub',
   }),
 
-  empty: () => ({
-    recipient: "hub",
+  empty: (): any => ({
     amountToken: '0',
-    amountWei: '0'
-  })
+    amountWei: '0',
+    recipient: 'hub',
+  }),
 }
 
-type ExchangeInitial = { [key: string]: () => ExchangeArgs }
+interface ExchangeInitial { [key: string]: () => ExchangeArgs }
 
 const initialExchangeArgs: ExchangeInitial = {
-  full: () => ({
+  full: (): any => ({
     exchangeRate: '5',
     seller: 'user',
     tokensToSell: '5',
     weiToSell: '0',
   }),
 
-  empty: () => ({
+  empty: (): any => ({
     exchangeRate: '5',
     seller: 'user',
     tokensToSell: '0',
     weiToSell: '0',
-  })
+  }),
 }
 
-type PendingInitial = { [key: string]: () => PendingArgs }
+interface PendingInitial { [key: string]: () => PendingArgs }
 
 const initialPendingArgs: PendingInitial = {
-  full: () => ({
-    withdrawalWeiUser: '2',
-    withdrawalWeiHub: '3',
-    withdrawalTokenUser: '4',
-    withdrawalTokenHub: '5',
-    depositTokenUser: '6',
-    depositWeiUser: '7',
-    depositWeiHub: '8',
+  full: (): any => ({
     depositTokenHub: '9',
+    depositTokenUser: '6',
+    depositWeiHub: '8',
+    depositWeiUser: '7',
     recipient: mkAddress('0xRRR'),
-    timeout: 696969
+    timeout: 696969,
+    withdrawalTokenHub: '5',
+    withdrawalTokenUser: '4',
+    withdrawalWeiHub: '3',
+    withdrawalWeiUser: '2',
   }),
 
-  empty: () => ({
-    withdrawalWeiUser: '0',
-    withdrawalWeiHub: '0',
-    withdrawalTokenUser: '0',
-    withdrawalTokenHub: '0',
-    depositTokenUser: '0',
-    depositWeiUser: '0',
-    depositWeiHub: '0',
+  empty: (): any => ({
     depositTokenHub: '0',
+    depositTokenUser: '0',
+    depositWeiHub: '0',
+    depositWeiUser: '0',
     recipient: mkAddress('0xRRR'),
-    timeout: 0
-  })
+    timeout: 0,
+    withdrawalTokenHub: '0',
+    withdrawalTokenUser: '0',
+    withdrawalWeiHub: '0',
+    withdrawalWeiUser: '0',
+  }),
 }
 
-type CustodialBalanceInitial = { [key: string]: () => CustodialBalanceRow }
+interface CustodialBalanceInitial { [key: string]: () => CustodialBalanceRow }
 
 const initialCustodialBalance: CustodialBalanceInitial = {
-  full: () => ({
-    user: mkAddress('0xAAA'),
+  full: (): any => ({
+    balanceToken: '5',
+    balanceWei: '6',
+    sentWei: '7',
     totalReceivedToken: '1',
     totalReceivedWei: '2',
     totalWithdrawnToken: '3',
     totalWithdrawnWei: '4',
-    balanceToken: '5',
-    balanceWei: '6',
-    sentWei: '7'
+    user: mkAddress('0xAAA'),
   }),
 
-  empty: () => ({
-    user: mkAddress('0xAAA'),
+  empty: (): any => ({
+    balanceToken: '0',
+    balanceWei: '0',
+    sentWei: '0',
     totalReceivedToken: '0',
     totalReceivedWei: '0',
     totalWithdrawnToken: '0',
     totalWithdrawnWei: '0',
-    balanceToken: '0',
-    balanceWei: '0',
-    sentWei: '0'
-  })
+    user: mkAddress('0xAAA'),
+  }),
 }
 
-export function getChannelState(
+export const getChannelState = (
   type: keyof typeof initialChannelStates,
   ...overrides: PartialSignedOrSuccinctChannel[]
-): ChannelState<string> {
-  return updateObj("channel", initialChannelStates[type](), ...overrides)
-}
+): ChannelState<string> =>
+  updateObj('channel', initialChannelStates[type](), ...overrides)
 
-export function getThreadState(
+export const getThreadState = (
   type: keyof typeof initialThreadStates,
   ...overrides: PartialSignedOrSuccinctThread[]
-): ThreadState<string> {
-  return updateObj("thread", initialThreadStates[type](), ...overrides)
-}
+): ThreadState<string> =>
+  updateObj('thread', initialThreadStates[type](), ...overrides)
 
 const getInitialArgs: any = {
-  "ProposePendingDeposit": initialDepositArgs,
-  "ProposePendingWithdrawal": initialWithdrawalArgs,
-  "ConfirmPending": () => { },
-  "Payment": initialPaymentArgs,
-  "Exchange": initialExchangeArgs,
-  "Pending": initialPendingArgs,
+  'ConfirmPending': (): any => {/* noop */},
+  'Exchange': initialExchangeArgs,
+  'Payment': initialPaymentArgs,
+  'Pending': initialPendingArgs,
+  'ProposePendingDeposit': initialDepositArgs,
+  'ProposePendingWithdrawal': initialWithdrawalArgs,
 }
 
-export function getChannelStateUpdate(
+export const getChannelStateUpdate = (
   reason: ChannelUpdateReason,
-  ...overrides: {
+  ...overrides: Array<{
     channel: PartialSignedOrSuccinctChannel,
-    args: PartialArgsType
-  }[]
-): ChannelStateUpdate {
-  const argOverrides = overrides.map(o => o.args)
-  const stateOverrides = overrides.map(o => o.channel)
+    args: PartialArgsType,
+  }>
+): ChannelStateUpdate => {
+  const argOverrides = overrides.map((o: any): any => o.args)
+  const stateOverrides = overrides.map((o: any): any => o.channel)
   return {
     args: updateObj(reason as any, getInitialArgs[reason].empty(), ...argOverrides),
     reason,
-    state: updateObj("channel", initialChannelStates.empty(), ...stateOverrides)
+    state: updateObj('channel', initialChannelStates.empty(), ...stateOverrides),
   }
 }
 
-export function getPendingArgs(
+export const getPendingArgs = (
   type: keyof typeof initialPendingArgs,
   ...overrides: PartialVerboseOrSuccinctPendingArgs[]
-): PendingArgs<string> {
-  return updateObj("Pending", initialPendingArgs[type](), ...overrides)
-}
+): PendingArgs<string> =>
+  updateObj('Pending', initialPendingArgs[type](), ...overrides)
 
-export function getDepositArgs(
+export const getDepositArgs = (
   type: keyof typeof initialDepositArgs,
   ...overrides: PartialVerboseOrSuccinctDepositArgs[]
-): DepositArgs<string> {
-  return updateObj("ProposePendingDeposit", initialDepositArgs[type](), ...overrides)
-}
+): DepositArgs<string> =>
+  updateObj('ProposePendingDeposit', initialDepositArgs[type](), ...overrides)
 
-export function getWithdrawalArgs(
+export const getWithdrawalArgs = (
   type: keyof typeof initialWithdrawalArgs,
   ...overrides: PartialVerboseOrSuccinctWithdrawalArgs[]
-): WithdrawalArgs<string> {
-  return updateObj("ProposePendingWithdrawal", initialWithdrawalArgs[type](), ...overrides)
-}
+): WithdrawalArgs<string> =>
+  updateObj('ProposePendingWithdrawal', initialWithdrawalArgs[type](), ...overrides)
 
-export function getPaymentArgs(
+export const getPaymentArgs = (
   type: keyof typeof initialPaymentArgs,
   ...overrides: PartialVerboseOrSuccinctPaymentArgs[]
-): PaymentArgs<string> {
-  return updateObj("Payment", initialPaymentArgs[type](), ...overrides)
-}
+): PaymentArgs<string> =>
+  updateObj('Payment', initialPaymentArgs[type](), ...overrides)
 
-export function getExchangeArgs(
+export const getExchangeArgs = (
   type: keyof typeof initialExchangeArgs,
   ...overrides: PartialVerboseOrSuccinctExchangeArgs[]
-): ExchangeArgs<string> {
-  return updateObj("Exchange", initialExchangeArgs[type](), ...overrides)
-}
+): ExchangeArgs<string> =>
+  updateObj('Exchange', initialExchangeArgs[type](), ...overrides)
 
-export function getCustodialBalance(
+export const getCustodialBalance = (
   type: keyof typeof initialCustodialBalance,
   ...overrides: PartialVerboseOrSuccinctCustodialBalanceRow[]
-): CustodialBalanceRow<string> {
-  return updateObj("custodialBalance", initialCustodialBalance[type](), ...overrides)
-}
+): CustodialBalanceRow<string> =>
+  updateObj('custodialBalance', initialCustodialBalance[type](), ...overrides)
 
-export function assertChannelStateEqual(
+export const assertChannelStateEqual = (
   actual: ChannelState,
   expected: Partial<SignedOrSuccinctChannel>,
-): void {
+): void => {
   assert.containSubset(
     expandSuccinctChannel(actual),
     expandSuccinctChannel(expected),
   )
 }
 
-export function assertThreadStateEqual(
+export const assertThreadStateEqual = (
   actual: ThreadState,
   expected: Partial<SignedOrSuccinctThread>,
-): void {
+): void => {
   assert.containSubset(
     expandSuccinctThread(actual),
     expandSuccinctThread(expected),
   )
 }
 
-export function assertCustodialBalancesEqual(
+export const assertCustodialBalancesEqual = (
   actual: CustodialBalanceRow,
   expected: Partial<VerboseOrSuccinctCustodialBalanceRow>,
-): void {
+): void => {
   assert.containSubset(
     expandSuccinctCustodialBalanceRow(actual),
     expandSuccinctCustodialBalanceRow(expected),
   )
 }
 
-export function updateStateUpdate(
+export const updateStateUpdate = (
   stateUpdate: ChannelStateUpdate,
   ...rest: PartialSignedOrSuccinctChannel[]
-): ChannelStateUpdate {
+): ChannelStateUpdate => {
   const succinct = makeSuccinctChannel(stateUpdate.state)
-  const updatedState = updateObj("channel", succinct, ...rest)
+  const updatedState = updateObj('channel', succinct, ...rest)
 
   return {
+    args: stateUpdate.args,
     reason: stateUpdate.reason,
-    state: updateObj("channel", updatedState),
-    args: stateUpdate.args
+    state: updateObj('channel', updatedState),
   }
 }
 
@@ -890,51 +849,52 @@ export function updateStateUpdate(
 // ability to override
 const sg = new StateGenerator()
 const stateGeneratorFns: any = {
-  "Payment": sg.channelPayment,
-  "Exchange": sg.exchange,
-  "ProposePendingDeposit": sg.proposePendingDeposit,
-  "ProposePendingWithdrawal": sg.proposePendingWithdrawal,
-  "ConfirmPending": sg.confirmPending,
+  'ConfirmPending': sg.confirmPending,
+  'Exchange': sg.exchange,
+  'Payment': sg.channelPayment,
+  'ProposePendingDeposit': sg.proposePendingDeposit,
+  'ProposePendingWithdrawal': sg.proposePendingWithdrawal,
 }
 
-export type TestParamType = {
+export interface TestParamType {
   update: ChannelStateUpdate
   prev: ChannelState
 }
-export function generateParams(
+export const generateParams = (
   reason: ChannelUpdateReason,
-  ...overrides: Partial<{
+  ...overrides: Array<Partial<{
     args: PartialArgsType,
     prev: PartialSignedOrSuccinctChannel,
     curr: PartialSignedOrSuccinctChannel,
-  }>[]
-): TestParamType {
-  const argOverrides = Object.assign(overrides.map(o => o.args))
-  const prevOverrides = Object.assign(overrides.map(o => o.prev))
-  const currOverrides = Object.assign(overrides.map(o => o.curr))
-  const prev = getChannelState("empty", ...prevOverrides)
+  }>>
+): TestParamType => {
+  const argOverrides = Object.assign(overrides.map((o: any): any => o.args))
+  const prevOverrides = Object.assign(overrides.map((o: any): any => o.prev))
+  const currOverrides = Object.assign(overrides.map((o: any): any => o.curr))
+  const prev = getChannelState('empty', ...prevOverrides)
   const args = updateObj(
     reason as any,
     getInitialArgs[reason].empty(),
-    Object.assign({ timeout: Math.floor(Date.now() / 100) + 696969 }, ...argOverrides,
-    )
+    Object.assign({ timeout: Math.floor(Date.now() / 100) + 696969 }, ...argOverrides),
   )
   const curr = stateGeneratorFns[reason](prev, args)
   return {
+    prev: prev.sigHub !== '' && prev.sigUser !== ''
+      ? addSigToChannelState(prev, mkHash('0x15'))
+      : prev,
     update: {
-      reason,
       args,
-      state: updateObj("channel" as any, curr, ...currOverrides),
+      reason,
+      state: updateObj('channel' as any, curr, ...currOverrides),
     },
-    prev: prev.sigHub !== '' && prev.sigUser !== '' ? addSigToChannelState(prev, mkHash('0x15')) : prev,
   }
 }
 
-export function parameterizedTests<TestInput>(
-  inputs: (TestInput & { name: string })[],
-  func: (input: TestInput) => any
-) {
-  inputs.forEach(input => {
+export const parameterizedTests = <TestInput>(
+  inputs: Array<TestInput & { name: string }>,
+  func: (input: TestInput) => any,
+): any => {
+  inputs.forEach((input: any): any => {
     it(input.name, () => func(input))
   })
 }

@@ -1,19 +1,26 @@
-import { StateGenerator, types, big } from 'connext';
-import { TestServiceRegistry } from ".";
-import { getChannelState, mkAddress, getThreadState, PartialSignedOrSuccinctChannel } from "./stateUtils";
-import { default as ChannelsDao } from "../dao/ChannelsDao";
-import { default as ThreadsDao } from "../dao/ThreadsDao";
-import ExchangeRateDao from "../dao/ExchangeRateDao";
+import * as connext from 'connext'
+import { 
+  ArgsTypes,
+  ChannelState,
+  ChannelUpdateReason,
+  PaymentArgs,
+} from 'connext/types'
 
-type ChannelUpdateReason = types.ChannelUpdateReason
-type ChannelState = types.ChannelState
-type PaymentArgs = types.PaymentArgs
-type ArgsTypes = types.ArgsTypes
+import { TestServiceRegistry } from '.'
+import {
+  getChannelState,
+  getThreadState,
+  mkAddress,
+  PartialSignedOrSuccinctChannel,
+} from './stateUtils'
 
-const { convertChannelState, convertThreadState } = types
+import { default as ChannelsDao } from '../dao/ChannelsDao'
+import ExchangeRateDao from '../dao/ExchangeRateDao'
+import { default as ThreadsDao } from '../dao/ThreadsDao'
+import { toWei } from '../util'
 
 export function tokenVal(x: number | string): string {
-  return big.toWeiString(x)
+  return toWei(x).toString()
 }
 
 /**
@@ -68,18 +75,18 @@ export async function channelAndThreadFactory(registry: TestServiceRegistry, sen
     balanceTokenSender: tokenVal(10),
   })
 
-  const sg = new StateGenerator()
+  const sg = new connext.StateGenerator()
   const userUpdate = await sg.openThread(
-    convertChannelState('bn', user.state),
+    connext.convert.ChannelState('bn', user.state),
     [],
-    convertThreadState('bn', thread)
+    connext.convert.ThreadState('bn', thread)
   )
   user = await channelUpdateFactory(registry, userUpdate)
 
   const perfUpdate = await sg.openThread(
-    convertChannelState('bn', perf.state),
+    connext.convert.ChannelState('bn', perf.state),
     [],
-    convertThreadState('bn', thread)
+    connext.convert.ThreadState('bn', thread)
   )
   perf = await channelUpdateFactory(registry, perfUpdate)
 

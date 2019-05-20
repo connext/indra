@@ -1,8 +1,10 @@
-import { ApiService } from './ApiService'
 import * as express from 'express'
+
+import { ApiService } from './ApiService'
+
+import Config from '../Config'
 import CRAuthManager from '../CRAuthManager'
 import log from '../util/log'
-import Config from '../Config'
 
 const LOG = log('AuthApiService')
 
