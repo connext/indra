@@ -161,7 +161,7 @@ export class Wallet extends eth.Signer {
       txReq.nonce = this.signer.getTransactionCount('pending')
     }
     const signedTx: string = await this.signTransaction(txReq)
-    return await this.provider.sendTransaction(signedTx)
+    return this.provider.sendTransaction(signedTx)
   }
 
 }
