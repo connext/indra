@@ -1,7 +1,8 @@
 import { getTxCount } from '../state/getters'
+
 import { AbstractController } from './AbstractController'
 
-export default class CollateralController extends AbstractController {
+export class CollateralController extends AbstractController {
 
   public requestCollateral = async (): Promise<void> => {
     console.log(`requestCollateral`)

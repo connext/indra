@@ -9,14 +9,14 @@ export abstract class AbstractController {
   public hub: IHubAPIClient
   public validator: Validator
 
-  constructor(name: string, connext: ConnextInternal) {
+  public constructor(name: string, connext: ConnextInternal) {
     this.connext = connext
     this.name = name
     this.hub = connext.hub
     this.validator = connext.validator
   }
 
-  get store(): ConnextStore {
+  public get store(): ConnextStore {
     return this.connext.store
   }
 

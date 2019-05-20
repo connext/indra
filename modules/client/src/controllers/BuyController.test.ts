@@ -1,4 +1,5 @@
 import { ethers as eth } from 'ethers'
+
 import {
   assert,
   mkAddress,
@@ -24,9 +25,9 @@ describe('BuyController: assignPaymentTypes', () => {
   beforeEach(async () => {
     mockStore.setHubAddress()
     const store = mockStore.createStore()
-    connext = new MockConnextInternal({ 
-      user, 
+    connext = new MockConnextInternal({
       store,
+      user,
     })
     await connext.start()
   })
@@ -278,7 +279,7 @@ describe('BuyController: unit tests', () => {
           meta: meta || {},
           payments: payments as any,
         }),
-        fails
+        fails,
       )
       return
     }
@@ -288,58 +289,58 @@ describe('BuyController: unit tests', () => {
       payments: payments as any,
     })
 
-    await new Promise(res => setTimeout(res, 20))
+    await new Promise((res: any): any => setTimeout(res, 20))
 
     // hub should receive the user-signed update
     for (const p of payments) {
       // is hub to user payment?
-      const isUser = p.recipient == connext.wallet.address
+      const isUser = p.recipient === connext.wallet.address
       // is thread payment?
-      if ((p as any).type == "PT_THREAD") {
+      if ((p as any).type === 'PT_THREAD') {
         // check that user has sent thread update
         const syncRes = connext.store.getState().runtime.syncResultsFromHub
         for (const res of syncRes) {
           assert.containSubset(res, {
-            type: "thread",
+            type: 'thread',
             update: {
               state: {
-                balanceWeiSender: '0',
-                balanceWeiReceiver: (p as any).amountWei || '0',
-                balanceTokenSender: '0',
                 balanceTokenReceiver: (p as any).amountToken || '0',
+                balanceTokenSender: '0',
+                balanceWeiReceiver: (p as any).amountWei || '0',
+                balanceWeiSender: '0',
+                receiver: p.recipient,
                 txCount: 1,
-                receiver: p.recipient
-              }
-            }
+              },
+            },
           })
         }
         // check that there is an open thread
-        await new Promise(r => setTimeout(r, 20))
+        await new Promise((r: any): any => setTimeout(r, 20))
 
         connext.mockHub.assertReceivedUpdate({
-          reason: 'OpenThread',
           args: {
-            balanceWeiReceiver: '0',
-            balanceWeiSender: (p as any).amountWei || '0',
             balanceTokenReceiver: '0',
             balanceTokenSender: (p as any).amountToken || '0',
+            balanceWeiReceiver: '0',
+            balanceWeiSender: (p as any).amountWei || '0',
           },
-          sigUser: true,
+          reason: 'OpenThread',
           sigHub: false,
+          sigUser: true,
         })
 
         continue
       }
 
       connext.mockHub.assertReceivedUpdate({
-        reason: 'Payment',
         args: {
           amountToken: (p as any).amountToken || '0',
           amountWei: (p as any).amountWei || '0',
           recipient: isUser ? 'user' : 'hub',
-        } as PaymentArgs,
-        sigUser: true,
+        },
+        reason: 'Payment',
         sigHub: isUser,
+        sigUser: true,
       })
     }
   })

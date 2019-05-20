@@ -1,5 +1,7 @@
 import { ethers as eth } from 'ethers'
+
 import { Payment } from '../types'
+
 import { AbstractController } from './AbstractController'
 
 export class RedeemController extends AbstractController {
@@ -13,15 +15,14 @@ export class RedeemController extends AbstractController {
 
     try {
       const { purchaseId, sync, amount } = await this.hub.redeem(
-        secret, 
+        secret,
         state.persistent.channel.txCountGlobal, state.persistent.lastThreadUpdateId,
       )
       this.connext.syncController.handleHubSync(sync)
       // get amount of purchase
       return { purchaseId, amount }
     } catch (e) {
-      throw new Error(`Error redeeming payment with secret: ${secret}. ` + e.message)
+      throw new Error(`Error redeeming payment with secret: ${secret}. ${e.message}`)
     }
-    
   }
 }
