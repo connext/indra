@@ -13,15 +13,11 @@ export default interface AuthHandler {
 }
 
 export class DefaultAuthHandler implements AuthHandler {
-  private acl: RouteBasedACL = new RouteBasedACL()
+  private readonly acl: RouteBasedACL = new RouteBasedACL()
 
-  private config: Config
+  private readonly adminAddresses: Set<string> = new Set()
 
-  private adminAddresses: Set<string> = new Set()
-
-  constructor(config: Config) {
-    this.config = config
-
+  public constructor(private readonly config: Config) {
     this.cacheConfig()
     this.defaultAcl()
   }
@@ -47,14 +43,14 @@ export class DefaultAuthHandler implements AuthHandler {
     return roles
   }
 
-  async isAuthorized(req: express.Request): Promise<boolean> {
-    const perm = this.acl.permissionForRoute(req.path as string)
+  public async isAuthorized(req: express.Request): Promise<boolean> {
+    const perm = this.acl.permissionForRoute(req.path)
 
     if (perm === Role.NONE) {
       return true
     }
 
-    const authorized = req.session!.roles.has(Role.AUTHENTICATED)
+    const authorized = req.session.roles.has(Role.AUTHENTICATED)
 
     if (!authorized) {
       LOG.warn(`Unauthorized request by ${req.session!.address} for route: ${req.path}`)

@@ -1,25 +1,24 @@
-import * as express from 'express'
 import { sign } from 'cookie-signature'
-import parseAuthHeader from '../util/parseAuthHeader'
+import * as express from 'express'
+
 import log from '../util/log'
+import { parseAuthHeader, parseAuthTokenHeader} from '../util/parseAuthHeader'
 
 const LOG = log('AuthHeaderMiddleware')
 
 export default class AuthHeaderMiddleware {
-  private cookieName: string
-  private cookieSecret: string
-
-  constructor(cookieName: string, cookieSecret: string) {
-    this.cookieName = cookieName
-    this.cookieSecret = cookieSecret
+  public constructor(private readonly cookieName: string, private readonly cookieSecret: string) {
+    // TODO: how to fix this lint issue
     this.middleware = this.middleware.bind(this)
   }
 
-  public middleware(req: express.Request, res: express.Response, next: () => void) {
-    const bodyToken = req.body && req.body.authToken ? req.body.authToken : null
-    const cookieToken = req.headers.cookie
+  public middleware(req: express.Request, res: express.Response, next: () => void): void {
+    const bodyToken = req.body.authToken ? req.body.authToken : null
     const headerToken = parseAuthHeader(req)
+    const headerAuthToken = parseAuthTokenHeader(req)
     let token
+
+    // First: check the POST body, this is the most trustworthy token location
 
     // First: check the POST body, this is the most trustworthy token location
     if (bodyToken) {
@@ -31,15 +30,11 @@ export default class AuthHeaderMiddleware {
       token = headerToken
       LOG.debug(`Found token in header: ${token.substring(0,8)}..`)
 
-    // Last: if we already have a cookie available, use it (blocked by many browsers tho)
-    } else if (cookieToken) {
-      LOG.debug(`Found token in cookie: ${cookieToken}`)
-      return next() // skip last step
-
     // If we didn't find a token, too bad so sad
     } else {
       LOG.debug(`No token found`)
-      return next()
+      next()
+      return
     }
 
     // If we DID find a token, copy it into a cookie
