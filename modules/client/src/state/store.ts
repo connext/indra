@@ -1,5 +1,6 @@
 import { ethers as eth } from 'ethers'
 import { Store } from 'redux'
+
 import {
   ChannelState,
   ChannelStatus,
@@ -19,6 +20,18 @@ import {
 // 2. The initial state (ie, with zll zero values) is indistinguishable from
 //    some subsequent state which has no value (ie, user and hub have
 //    withdrawn their entire balance)
+
+export const CUSTODIAL_BALANCE_ZERO_STATE = {
+  balanceToken: '0',
+  balanceWei: '0',
+  sentWei: '0',
+  totalReceivedToken: '0',
+  totalReceivedWei: '0',
+  totalWithdrawnToken: '0',
+  totalWithdrawnWei: '0',
+  user: '0x0',
+}
+
 export const CHANNEL_ZERO_STATE = {
   balanceTokenHub: '0',
   balanceTokenUser: '0',
@@ -109,16 +122,7 @@ export class PersistentState {
   // reducer in reducers.
   public latestValidState: ChannelState = CHANNEL_ZERO_STATE
 
-  public custodialBalance: CustodialBalanceRow = {
-    balanceToken: '0',
-    balanceWei: '0',
-    sentWei: '0',
-    totalReceivedToken: '0',
-    totalReceivedWei: '0',
-    totalWithdrawnToken: '0',
-    totalWithdrawnWei: '0',
-    user: '0x0',
-  }
+  public custodialBalance: CustodialBalanceRow = CUSTODIAL_BALANCE_ZERO_STATE
 
   public activeThreads: ThreadState[] = [] // all open and active threads at latest state
   public activeInitialThreadStates: ThreadState[] = [] // used to generate root hash

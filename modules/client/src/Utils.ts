@@ -1,5 +1,6 @@
 import { ethers as eth } from 'ethers'
 
+import { getCustodialAndChannelBalance } from './lib/getBalances'
 import { MerkleTree } from './lib/merkleTree'
 import * as getters from './state/getters'
 import { ConnextState } from './state/store'
@@ -23,6 +24,8 @@ const { arrayify, isHexString, solidityKeccak256, toUtf8Bytes, verifyMessage } =
 export class Utils {
   public channelNumericFields: string[] = channelNumericFields
   public getExchangeRates: (state: ConnextState) => ExchangeRates = getters.getExchangeRates
+  public getCustodialAndChannelBalance: (state: ConnextState) => Payment =
+    getCustodialAndChannelBalance
 
   public createChannelStateHash(
     channelState: UnsignedChannelState,

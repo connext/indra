@@ -16,22 +16,30 @@ import SyncController from './controllers/SyncController'
 import ThreadsController from './controllers/ThreadsController'
 import WithdrawalController from './controllers/WithdrawalController'
 import {  HubAPIClient, IHubAPIClient } from './Hub'
+import { maxBN, toBN } from './lib/bn'
 import { Networking } from './lib/networking'
 import { isFunction, timeoutPromise } from './lib/utils'
 import * as actions from './state/actions'
 import { handleStateFlags } from './state/middleware'
 import { reducers } from './state/reducers'
-import { ConnextState, ConnextStore, PersistentState } from './state/store'
+import {
+  ConnextState, ConnextStore, CUSTODIAL_BALANCE_ZERO_STATE, PersistentState,
+} from './state/store'
 import { StateGenerator } from './StateGenerator'
 import {
   Address,
   addSigToChannelState,
   addSigToThreadState,
+  argNumericFields,
   ChannelRow,
   ChannelState,
   ConnextProvider,
   convertChannelState,
+  convertCustodialBalanceRow,
+  convertFields,
   convertPayment,
+  CustodialBalanceRowBN,
+  insertDefault,
   Omit,
   PartialPurchaseRequest,
   Payment,
@@ -44,6 +52,7 @@ import {
   UnsignedChannelState,
   UnsignedThreadState,
   WithdrawalParameters,
+  withdrawalParamsNumericFields,
 } from './types'
 import { Utils } from './Utils'
 import { Validator } from './validator'
@@ -193,10 +202,105 @@ export abstract class ConnextChannel extends EventEmitter {
     return this.internal.recipientNeedsCollateral(recipient, amount)
   }
 
+  private isSuccinctWithdrawal(
+    withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+  ): boolean {
+    return !!(withdrawal as SuccinctWithdrawalParameters).amountToken ||
+    !!(withdrawal as SuccinctWithdrawalParameters).amountWei
+  }
+
+  private calculateChannelWithdrawal(
+    withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+    custodial: CustodialBalanceRowBN,
+  ): any {
+    // get args type
+    const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
+
+    withdrawal = isSuccinct
+      ? insertDefault('0', withdrawal, argNumericFields.Payment) 
+      : insertDefault('0', withdrawal, withdrawalParamsNumericFields)
+
+    // preferentially withdraw from your custodial balance when wding
+    // TODO: exchange on withdrawal account for custodial balances?
+    const channelTokenWithdrawal = isSuccinct
+      ? maxBN(
+          toBN(0), 
+          toBN((withdrawal as any).amountToken).sub(custodial.balanceToken)
+        )
+      : maxBN(toBN(0), toBN((withdrawal as any).withdrawalTokenUser).sub(custodial.balanceToken))
+
+    const channelWeiWithdrawal = isSuccinct
+      ? maxBN(
+          toBN(0), 
+          toBN((withdrawal as any).amountWei).sub(custodial.balanceWei)
+        )
+      : maxBN(
+          toBN(0), 
+          toBN((withdrawal as any).withdrawalWeiUser).sub(custodial.balanceWei)
+        )
+
+    // get the amount youll wd custodially
+    const custodialTokenWithdrawal = isSuccinct
+      ? maxBN(toBN(0), toBN((withdrawal as any).amountToken).sub(channelTokenWithdrawal))
+      : maxBN(toBN(0), toBN((withdrawal as any).withdrawalTokenUser).sub(channelTokenWithdrawal))
+
+    const custodialWeiWithdrawal = isSuccinct
+      ? maxBN(toBN(0), toBN((withdrawal as any).amountWei).sub(channelWeiWithdrawal))
+      : maxBN(toBN(0), toBN((withdrawal as any).withdrawalWeiUser).sub(channelWeiWithdrawal))
+
+    const updated = {
+      channelTokenWithdrawal,
+      channelWeiWithdrawal,
+      custodialWeiWithdrawal,
+      custodialTokenWithdrawal,
+    }
+
+    return convertFields("bn", "str", Object.keys(updated), updated)
+  }
+
   public async withdraw(
     withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
   ): Promise<void> {
-    await this.internal.withdrawalController.requestUserWithdrawal(withdrawal)
+    const { custodialBalance, channel } = this.internal.store.getState().persistent
+    const custodial = convertCustodialBalanceRow("bn", custodialBalance)
+    // if there is no custodial balance, wd from channel
+    if (
+      custodial.balanceWei.isZero() && 
+      custodial.balanceToken.isZero()
+    ) {
+      await this.internal.withdrawalController.requestUserWithdrawal(withdrawal)
+      return
+    }
+  
+    // if custodial balance exists, withdraw custodial balance 
+    // preferentially
+    const updatedWd = this.calculateChannelWithdrawal(withdrawal, custodial)
+
+    // withdraw the custodial amount
+    await this.internal.hub.requestCustodialWithdrawal(
+      updatedWd.custodialTokenWithdrawal, 
+      withdrawal.recipient || this.internal.wallet.address
+    )
+
+    // withdraw the remainder from the channel
+    const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
+
+    withdrawal = isSuccinct
+      ? {
+        ...withdrawal,
+        amountToken: updatedWd.channelTokenWithdrawal,
+        amountWei: updatedWd.channelWeiWithdrawal,
+      }
+      : {
+        ...withdrawal,
+        withdrawalTokenUser: updatedWd.channelTokenWithdrawal,
+        withdrawalWeiUser: updatedWd.channelWeiWithdrawal,
+      }
+
+    await this.internal.withdrawalController.requestUserWithdrawal({
+      ...withdrawal,
+    })
+    return
   }
 
   public async requestCollateral(): Promise<void> {
@@ -344,10 +448,14 @@ export class ConnextInternal extends ConnextChannel {
     const custodialBalance: any = await this.hub.getCustodialBalance()
     if (custodialBalance) {
       this.store.dispatch(actions.setCustodialBalance(custodialBalance))
+    } else {
+      // make sure the user is the same as the channel user
+      this.store.dispatch(actions.setCustodialBalance({
+        ...CUSTODIAL_BALANCE_ZERO_STATE, 
+        user: this.wallet.address, 
+      }))
     }
 
-    // TODO: appropriately set the latest
-    // valid state ??
     const channelAndUpdate: any = await this.hub.getLatestChannelStateAndUpdate()
     if (channelAndUpdate) {
       this.store.dispatch(actions.setChannelAndUpdate(channelAndUpdate))

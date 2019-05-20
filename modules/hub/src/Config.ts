@@ -26,7 +26,7 @@ const ENV_VARS = [
   'COINPAYMENTS_API_KEY',
   'COINPAYMENTS_API_SECRET',
   'COINPAYMENTS_IPN_SECRET',
-  'PRIVATE_KEY_FILE'
+  'PRIVATE_KEY_FILE',
 ]
 
 const env = process.env.NODE_ENV || 'development'
@@ -103,7 +103,7 @@ export default class Config {
   public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
 
   public threadBeiLimit = toWei(process.env.THREAD_BEI_LIMIT || 10)
-  public channelBeiDeposit = toWei(process.env.CHANNEL_BEI_DEPOSIT || 1200)
+  public channelBeiDeposit = toWei(process.env.CHANNEL_BEI_DEPOSIT || 1000)
   
   public privateKeyFile: string = ''
 

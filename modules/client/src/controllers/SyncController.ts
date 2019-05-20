@@ -1,11 +1,12 @@
 import { ethers as eth } from 'ethers'
 import Semaphore = require('semaphore')
+
 import { ConnextInternal } from '../Connext'
 import { Poller } from '../lib/poller'
 import { assertUnreachable, maybe } from '../lib/utils'
 import * as actions from '../state/actions'
 import { getChannel, getLastThreadUpdateId } from '../state/getters'
-import { SyncControllerState } from '../state/store'
+import { CUSTODIAL_BALANCE_ZERO_STATE, SyncControllerState } from '../state/store'
 import {
   ArgsTypes,
   Block,
@@ -18,14 +19,14 @@ import {
   Sync,
   SyncResult,
   ThreadStateUpdate,
-  Transaction,
   UpdateRequest,
 } from '../types'
+
 import { AbstractController } from './AbstractController'
 
 /**
- * This function should be used to update the `syncResultsFromHub` value in the 
- * runtime state. Both arrays of sync results should have fields that are given 
+ * This function should be used to update the `syncResultsFromHub` value in the
+ * runtime state. Both arrays of sync results should have fields that are given
  * by the hub (e.g createdOn will not be undefined)
  */
 
@@ -395,6 +396,14 @@ export default class SyncController extends AbstractController {
       console.error('Sync error:', e)
     }
 
+    // sync any custodial payments
+    try {
+      await this.syncCustodialBalance()
+    } catch (e) {
+      console.error('Syncing custodial balance error:', e)
+      this.logToApi('syncCustodialBalance', { message: '' + e })
+    }
+
     try {
       await this.flushPendingUpdatesToHub()
     } catch (e) {
@@ -720,6 +729,16 @@ export default class SyncController extends AbstractController {
 
     console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${filtered.length}:`, filtered)
     this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
+  }
+
+  private async syncCustodialBalance() {
+    // get any custodial balances
+    const custodialBalance: any = await this.hub.getCustodialBalance()
+    if (!custodialBalance) {
+      return
+    }
+    // zero state/user set in start()
+    this.store.dispatch(actions.setCustodialBalance(custodialBalance))
   }
 
   /**

@@ -117,7 +117,8 @@ export class OptimisticPaymentsService {
       )
     } catch (e) {
       // if the custodial payment fails, the payment should fail
-      LOG.info('Error redeeming optimistic channel payment. ID: {id}', {
+      LOG.info('Error redeeming optimistic channel payment. ID: {id}, error: {e}', {
+        e,
         id: payment.paymentId
       })
     }

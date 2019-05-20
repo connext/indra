@@ -1,14 +1,14 @@
 import * as connext from 'connext'
 import { Request, Response } from 'express'
 
-import { CustodialPaymentsDao } from './CustodialPaymentsDao'
-import { CustodialPaymentsService } from './CustodialPaymentsService'
-
 import { ApiService } from '../api/ApiService'
 import Config from '../Config'
 import { BN, safeJson, toBN } from '../util'
-import log from '../util/log'
+import log, { logApiRequestError } from '../util/log'
 import { getUserFromRequest } from '../util/request'
+
+import { CustodialPaymentsDao } from './CustodialPaymentsDao'
+import { CustodialPaymentsService } from './CustodialPaymentsService'
 
 const LOG = log('CustodialPaymentsApiService')
 
@@ -35,6 +35,7 @@ export class CustodialPaymentsApiService extends ApiService<CustodialPaymentsApi
     'GET /withdrawals/:withdrawalId': 'doGetWithdrawal',
     'GET /:user/withdrawals': 'doGetWithdrawals',
     'GET /:user/balance': 'doGetBalance',
+    'POST /:user/balance': 'doGetBalance',
   }
   handler = CustodialPaymentsApiServiceHandler
   dependencies = {
@@ -57,12 +58,32 @@ class CustodialPaymentsApiServiceHandler {
   }
 
   async doCreateWithdraw(req: Request, res: Response) {
+<<<<<<< HEAD
     res.json(connext.convert.CustodialWithdrawalRow("str",
       await this.service.createCustodialWithdrawal({
         user: getAttr.address(req.session!, 'address'),
         recipient: getAttr.address(req.body, 'recipient'),
         amountToken: getAttr.big(req.body, 'amountToken'),
+=======
+    let withdrawal
+    try {
+      const user = getAttr.address(req.session!, 'address')
+      const recipient = getAttr.address(req.body, 'recipient')
+      const amountToken = getAttr.big(req.body, 'amountToken')
+      withdrawal = await this.service.createCustodialWithdrawal({
+        user,
+        recipient,
+        amountToken,
+>>>>>>> master
       })
+    } catch (e) {
+      // send error response, invalid params
+      logApiRequestError(LOG, req)
+      return res.sendStatus(400)
+    }
+
+    res.json(convertCustodialWithdrawalRow("str",
+      withdrawal
     ))
   }
 
