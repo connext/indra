@@ -1,4 +1,4 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 
 import {
   ChannelManagerChannelDetails,

@@ -217,7 +217,7 @@ export abstract class ConnextChannel extends EventEmitter {
     const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
 
     withdrawal = isSuccinct
-      ? insertDefault('0', withdrawal, argNumericFields.Payment) 
+      ? insertDefault('0', withdrawal, argNumericFields.Payment)
       : insertDefault('0', withdrawal, withdrawalParamsNumericFields)
 
     // preferentially withdraw from your custodial balance when wding
@@ -251,35 +251,35 @@ export abstract class ConnextChannel extends EventEmitter {
     const updated = {
       channelTokenWithdrawal,
       channelWeiWithdrawal,
-      custodialWeiWithdrawal,
       custodialTokenWithdrawal,
+      custodialWeiWithdrawal,
     }
 
-    return convertFields("bn", "str", Object.keys(updated), updated)
+    return convertFields('bn', 'str', Object.keys(updated), updated)
   }
 
   public async withdraw(
     withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
   ): Promise<void> {
     const { custodialBalance, channel } = this.internal.store.getState().persistent
-    const custodial = convertCustodialBalanceRow("bn", custodialBalance)
+    const custodial = convertCustodialBalanceRow('bn', custodialBalance)
     // if there is no custodial balance, wd from channel
     if (
-      custodial.balanceWei.isZero() && 
+      custodial.balanceWei.isZero() &&
       custodial.balanceToken.isZero()
     ) {
       await this.internal.withdrawalController.requestUserWithdrawal(withdrawal)
       return
     }
-  
-    // if custodial balance exists, withdraw custodial balance 
+
+    // if custodial balance exists, withdraw custodial balance
     // preferentially
     const updatedWd = this.calculateChannelWithdrawal(withdrawal, custodial)
 
     // withdraw the custodial amount
     await this.internal.hub.requestCustodialWithdrawal(
-      updatedWd.custodialTokenWithdrawal, 
-      withdrawal.recipient || this.internal.wallet.address
+      updatedWd.custodialTokenWithdrawal,
+      withdrawal.recipient || this.internal.wallet.address,
     )
 
     // withdraw the remainder from the channel
@@ -323,7 +323,7 @@ export abstract class ConnextChannel extends EventEmitter {
 }
 
 /**
- * The "actual" implementation of the Connext client. Internal components
+ * The 'actual' implementation of the Connext client. Internal components
  * should use this type, as it provides access to the various controllers, etc.
  */
 export class ConnextInternal extends ConnextChannel {
@@ -361,7 +361,7 @@ export class ConnextInternal extends ConnextChannel {
     this.wallet = wallet
     this.provider = wallet.provider
 
-    console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
+    // console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
     this.hub = opts.hub || new HubAPIClient(
       new Networking(this.opts.hubUrl),
       this.wallet,
@@ -451,8 +451,8 @@ export class ConnextInternal extends ConnextChannel {
     } else {
       // make sure the user is the same as the channel user
       this.store.dispatch(actions.setCustodialBalance({
-        ...CUSTODIAL_BALANCE_ZERO_STATE, 
-        user: this.wallet.address, 
+        ...CUSTODIAL_BALANCE_ZERO_STATE,
+        user: this.wallet.address,
       }))
     }
 

@@ -180,6 +180,7 @@ export class StateUpdateController extends AbstractController {
     this.store.dispatch(actions.dequeueSyncResultsFromHub(item))
   }
 
+  // TODO: This function is too complicated, split it into simpler pieces
   public async handleSyncItem(item: SyncResult): Promise<any> {
     this._queuedActions = []
 
@@ -431,177 +432,7 @@ export class StateUpdateController extends AbstractController {
    * payment from user-> hub).
    */
   public updateHandlers: StateUpdateHandlers = {
-    'Payment': async (prev: any, update: any): Promise<any> => {
-      // We will receive Payment updates from the hub when:
-      // 1. The hub has countersigned a payment we've made (ex, `recipient ==
-      //    'hub'` and we have already signed it)
-      // 2. The hub is sending us a payment (ex, a custodial payment; in this
-      //    case, `recipient == 'user'` and will only have a hub sig)
-      // 3. We're doing a multi-device sync (but we won't get here, because the
-      //    state will be fully signed)
 
-      // Allow any payment being made to us (ie, where recipient == 'user'),
-      // but double check that we've signed the update if the hub is the
-      // recipient (ie, because it was a state we generated in BuyController)
-      assertSigPresence(update, 'sigHub')
-
-      if (update.args.recipient !== 'user') {
-        assertSigPresence(update, 'sigUser')
-      }
-    },
-
-    'Exchange': async (prev: any, update: any): Promise<any> => {
-      // We will receive Exchange updates from the hub only when:
-      // 1. The hub is countersigning and returning an exchange we have sent
-      //    from the `ExchangeController`
-      // 2. The ExchangeController sends an unsigned update here
-      if (!update.sigHub) {
-        const ExchangeError = (msg: string): Error =>
-          new Error(`${msg} (args: ${JSON.stringify(convertExchange('str', update.args))}; ` +
-            `prev: ${JSON.stringify(prev)})`)
-
-        // validate the exchange rate against store
-        const err = validateExchangeRate(this.store, update.args.exchangeRate)
-        if (err) {
-          throw ExchangeError(err)
-        }
-        return
-      }
-      assertSigPresence(update)
-    },
-
-    'ProposePendingDeposit': async (prev: any, update: any): Promise<any> => {
-      // We will recieve ProposePendingDeposit updates from the hub when:
-      // 1. The hub wants to collatoralize
-      // 2. We have proposed a deposit (see DepositController)
-
-      // 1: The hub is requesting a deposit, ex: it wants to collateralize
-      if (!update.sigHub) {
-        // This is a hub authorized deposit (ex, because the hub wants to
-        // recollatoralize). We don't need to check or do anything other than
-        // countersign and return to the hub.
-        console.log('Received a hub authorized deposit; countersigning and returning.')
-        const CollateralError = (msg: string): Error =>
-          new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
-
-        // verification of args
-        const tsErr = validateTimestamp(this.store, update.args.timeout)
-        if (tsErr) {
-          throw CollateralError(tsErr)
-        }
-        return
-      }
-
-      // 2: We have requested a deposit
-      if (update.sigHub && !update.sigUser) {
-        // Because we will only save the signed update once it has been sent to
-        // chain, we can safely assume that the deposit is on chain
-        // if-and-only-if we have signed it.
-        // Note that the `sendDepositToChain` method will validate that the
-        // deposit amount is the amount we expect.
-        return this.connext.depositController.sendUserAuthorizedDeposit(prev, update)
-      }
-
-      throw new Error(
-        `Recieved a ProposePendingDeposit from the hub that was not signed ` +
-        `by the user (update: ${update})`)
-    },
-
-    'ProposePendingWithdrawal': async (prev: any, update: any): Promise<any> => {
-      if (!update.sigHub) {
-        const WithdrawalError = (msg: string): Error =>
-          new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
-
-        const tsErr = validateTimestamp(this.store, update.args.timeout)
-        if (tsErr) {
-          throw WithdrawalError(tsErr)
-        }
-
-        const exchangeErr = validateExchangeRate(this.store, update.args.exchangeRate)
-        if (exchangeErr) {
-          throw WithdrawalError(exchangeErr)
-        }
-
-        return
-      }
-    },
-
-    'Invalidation': async (prev: any, update: any): Promise<any> => {
-      // NOTE (BSU-72): this will break in two ways if the hub tries to
-      // invalidate a state without a timeout:
-      // 1. The txCountGlobal will not necessarily be the most recent (ex,
-      //    because there may have been tips on top of the pending state)
-      // 2. The `didContractEmitUpdateEvent` will throw an error because it
-      //    has not been tested with `timeout = 0` states.
-
-      if (update.args.lastInvalidTxCount !== prev.txCountGlobal) {
-        throw new Error(
-          `Hub proposed invalidation for a state which isn't our latest. ` +
-          `Invalidation: ${JSON.stringify(update)} ` +
-          `Latest state: ${JSON.stringify(prev)}`)
-      }
-
-      if (!this.connext.utils.hasPendingOps(prev)) {
-        throw new Error(
-          `Hub proposed invalidation for a double signed state with no ` +
-          `pending fields. Invalidation: ${JSON.stringify(update)} ` +
-          `state: ${JSON.stringify(prev)}`)
-      }
-
-      const { syncController } = this.connext
-      const { didEmit, latestBlock, event } = await syncController.didContractEmitUpdateEvent(
-        prev, update.createdOn,
-      )
-
-      switch (didEmit) {
-        case 'unknown':
-          throw new Error(
-            `Hub proposed an invalidation for an update that has not yet ` +
-            `timed out. Update timeout: ${prev.timeout}; latest block: ` +
-            `timestamp: ${latestBlock.timestamp} (hash: ${latestBlock.hash})`)
-
-        case 'yes':
-          throw new Error(
-            `Hub proposed invalidation for a state that has made it to chain. ` +
-            `State txCount: ${prev.txCountGlobal}, event: ${JSON.stringify(event)}`)
-
-        case 'no':
-          // No event was emitted, the state has timed out; countersign and
-          // return the invalidation
-          return
-
-        default:
-          assertUnreachable(didEmit)
-      }
-
-    },
-
-    'ConfirmPending': async (prev: any, update: any): Promise<any> => {
-      /* noop */
-    },
-
-    'OpenThread': async (prev: any, update: any): Promise<any> => {
-      // Clients could be receiving open thread updates when:
-      // 1. The hub has countersigned the channel update with the
-      //    client user as the thread sender (client initiated thread
-      //    opening)
-      //      - update should have both user and hub sig
-      //        and should not make it to this point in the code
-      // 2. The client is the receiver, and the hub is letting the client
-      //    know that it has bonded in the channel. In this case:
-      //      - client should verify it is the receiver and cosign
-      //        and validate the thread update (store is updated  on
-      //        second round of syncing when both sigs present)
-      assertSigPresence(update, 'sigHub')
-      if (update.args.receiver !== prev.user) {
-        throw new Error(
-          `Something funny is going on. Client has received an open thread update from the hub, ` +
-          `where the client is the sender. Somehow, this was missing a user sig. ` +
-          `See comments in source. Update: ${JSON.stringify(update)}, ` +
-          `previous: ${JSON.stringify(prev)}`)
-      }
-      // someone is opening a thread with us!
-    },
     'CloseThread': async (prev: any, update: any): Promise<any> => {
       // Close thread updates can be received in the following
       // conditions:
@@ -640,9 +471,165 @@ export class StateUpdateController extends AbstractController {
           `Update: ${JSON.stringify(update)}`)
       }
     },
+
+    'ConfirmPending': async (prev: any, update: any): Promise<any> => {
+      /* noop */
+    },
+
     'EmptyChannel': async (prev: any, update: any): Promise<any> => {
       /* noop */
     },
+
+    'Payment': async (prev: any, update: any): Promise<any> => {
+      // We will receive Payment updates from the hub when:
+      // 1. The hub has countersigned a payment we've made (ex, `recipient ==
+      //    'hub'` and we have already signed it)
+      // 2. The hub is sending us a payment (ex, a custodial payment; in this
+      //    case, `recipient == 'user'` and will only have a hub sig)
+      // 3. We're doing a multi-device sync (but we won't get here, because the
+      //    state will be fully signed)
+      // Allow any payment being made to us (ie, where recipient == 'user'),
+      // but double check that we've signed the update if the hub is the
+      // recipient (ie, because it was a state we generated in BuyController)
+      assertSigPresence(update, 'sigHub')
+      if (update.args.recipient !== 'user') {
+        assertSigPresence(update, 'sigUser')
+      }
+    },
+
+    'Exchange': async (prev: any, update: any): Promise<any> => {
+      // We will receive Exchange updates from the hub only when:
+      // 1. The hub is countersigning and returning an exchange we have sent
+      //    from the `ExchangeController`
+      // 2. The ExchangeController sends an unsigned update here
+      if (!update.sigHub) {
+        const ExchangeError = (msg: string): Error =>
+          new Error(`${msg} (args: ${JSON.stringify(convertExchange('str', update.args))}; ` +
+            `prev: ${JSON.stringify(prev)})`)
+        // validate the exchange rate against store
+        const err = validateExchangeRate(this.store, update.args.exchangeRate)
+        if (err) {
+          throw ExchangeError(err)
+        }
+        return
+      }
+      assertSigPresence(update)
+    },
+
+    'Invalidation': async (prev: any, update: any): Promise<any> => {
+      // NOTE (BSU-72): this will break in two ways if the hub tries to
+      // invalidate a state without a timeout:
+      // 1. The txCountGlobal will not necessarily be the most recent (ex,
+      //    because there may have been tips on top of the pending state)
+      // 2. The `didContractEmitUpdateEvent` will throw an error because it
+      //    has not been tested with `timeout = 0` states.
+      if (update.args.lastInvalidTxCount !== prev.txCountGlobal) {
+        throw new Error(
+          `Hub proposed invalidation for a state which isn't our latest. ` +
+          `Invalidation: ${JSON.stringify(update)} ` +
+          `Latest state: ${JSON.stringify(prev)}`)
+      }
+      if (!this.connext.utils.hasPendingOps(prev)) {
+        throw new Error(
+          `Hub proposed invalidation for a double signed state with no ` +
+          `pending fields. Invalidation: ${JSON.stringify(update)} ` +
+          `state: ${JSON.stringify(prev)}`)
+      }
+      const { syncController } = this.connext
+      const { didEmit, latestBlock, event } = await syncController.didContractEmitUpdateEvent(
+        prev, update.createdOn,
+      )
+      switch (didEmit) {
+        case 'unknown':
+          throw new Error(
+            `Hub proposed an invalidation for an update that has not yet ` +
+            `timed out. Update timeout: ${prev.timeout}; latest block: ` +
+            `timestamp: ${latestBlock.timestamp} (hash: ${latestBlock.hash})`)
+        case 'yes':
+          throw new Error(
+            `Hub proposed invalidation for a state that has made it to chain. ` +
+            `State txCount: ${prev.txCountGlobal}, event: ${JSON.stringify(event)}`)
+        case 'no':
+          // No event was emitted, the state has timed out; countersign and
+          // return the invalidation
+          return
+        default:
+          assertUnreachable(didEmit)
+      }
+    },
+
+    'OpenThread': async (prev: any, update: any): Promise<any> => {
+      // Clients could be receiving open thread updates when:
+      // 1. The hub has countersigned the channel update with the
+      //    client user as the thread sender (client initiated thread
+      //    opening)
+      //      - update should have both user and hub sig
+      //        and should not make it to this point in the code
+      // 2. The client is the receiver, and the hub is letting the client
+      //    know that it has bonded in the channel. In this case:
+      //      - client should verify it is the receiver and cosign
+      //        and validate the thread update (store is updated  on
+      //        second round of syncing when both sigs present)
+      assertSigPresence(update, 'sigHub')
+      if (update.args.receiver !== prev.user) {
+        throw new Error(
+          `Something funny is going on. Client has received an open thread update from the hub, ` +
+          `where the client is the sender. Somehow, this was missing a user sig. ` +
+          `See comments in source. Update: ${JSON.stringify(update)}, ` +
+          `previous: ${JSON.stringify(prev)}`)
+      }
+      // someone is opening a thread with us!
+    },
+
+    'ProposePendingDeposit': async (prev: any, update: any): Promise<any> => {
+      // We will recieve ProposePendingDeposit updates from the hub when:
+      // 1. The hub wants to collatoralize
+      // 2. We have proposed a deposit (see DepositController)
+      // 1: The hub is requesting a deposit, ex: it wants to collateralize
+      if (!update.sigHub) {
+        // This is a hub authorized deposit (ex, because the hub wants to
+        // recollatoralize). We don't need to check or do anything other than
+        // countersign and return to the hub.
+        console.log('Received a hub authorized deposit; countersigning and returning.')
+        const CollateralError = (msg: string): Error =>
+          new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
+        // verification of args
+        const tsErr = validateTimestamp(this.store, update.args.timeout)
+        if (tsErr) {
+          throw CollateralError(tsErr)
+        }
+        return
+      }
+      // 2: We have requested a deposit
+      if (update.sigHub && !update.sigUser) {
+        // Because we will only save the signed update once it has been sent to
+        // chain, we can safely assume that the deposit is on chain
+        // if-and-only-if we have signed it.
+        // Note that the `sendDepositToChain` method will validate that the
+        // deposit amount is the amount we expect.
+        return this.connext.depositController.sendUserAuthorizedDeposit(prev, update)
+      }
+      throw new Error(
+        `Recieved a ProposePendingDeposit from the hub that was not signed ` +
+        `by the user (update: ${update})`)
+    },
+
+    'ProposePendingWithdrawal': async (prev: any, update: any): Promise<any> => {
+      if (!update.sigHub) {
+        const WithdrawalError = (msg: string): Error =>
+          new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
+        const tsErr = validateTimestamp(this.store, update.args.timeout)
+        if (tsErr) {
+          throw WithdrawalError(tsErr)
+        }
+        const exchangeErr = validateExchangeRate(this.store, update.args.exchangeRate)
+        if (exchangeErr) {
+          throw WithdrawalError(exchangeErr)
+        }
+        return
+      }
+    },
+
   }
 
   private assertValidSigs(update: UpdateRequest, proposed: UnsignedChannelState): any {

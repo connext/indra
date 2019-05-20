@@ -8,6 +8,7 @@
     "comment-format": [true, "check-space"],
     "completed-docs": false,
     "curly": [true, "ignore-same-line"],
+    "cyclomatic-complexity": [true, 26],
     "file-name-casing": [false, "pascal-case"],
     "jsdoc-format": false,
     "max-classes-per-file": false,

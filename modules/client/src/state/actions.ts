@@ -1,4 +1,5 @@
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
+
 import { ConnextState } from '../state/store'
 import {
   Address,
@@ -11,15 +12,16 @@ import {
   ThreadState,
   UpdateRequest,
 } from '../types'
+
 import { IPendingRequestedDeposit, RuntimeState, SyncControllerState } from './store'
 
 const actionCreator = actionCreatorFactory('connext')
 
 export type ActionCreatorWithHandler<T> = ActionCreator<T> & {
-  handler: (...args: any[]) => any,
+  handler(...args: any[]): any,
 }
 
-function setattr(obj: any, bits: string[], value: any): any {
+const setattr = (obj: any, bits: string[], value: any): any => {
   if (!bits.length) {
     return value
   }
@@ -29,7 +31,7 @@ function setattr(obj: any, bits: string[], value: any): any {
   }
 }
 
-function getattr(obj: any, bits: string[]): any {
+const getattr = (obj: any, bits: string[]): any => {
   for (const b of bits) {
     obj = obj[b]
   }
@@ -53,12 +55,12 @@ export function setterAction<Payload>(
 ): ActionCreatorWithHandler<Payload> {
   const transform = args[args.length - 1]
   const action = args.length === 1 ? undefined : args[0]
-  const res = actionCreator<Payload>((action || 'set') + ':' + attr) as any
+  const res = actionCreator<Payload>(`${action || 'set'}:${attr}`) as any
   const bits = attr.split('.')
-  res.handler = (state: any, value: any): any => {
-    if (transform) {
-      value = transform(state, value, getattr(state, bits))
-    }
+  res.handler = (state: any, _value: any): any => {
+    const value = transform
+      ? transform(state, _value, getattr(state, bits))
+      : _value
     return setattr(state, bits, value)
   }
   return res
@@ -69,20 +71,18 @@ export const setExchangeRate = setterAction<ExchangeRateState>('runtime.exchange
 export const updateTransactionFields = setterAction<Partial<RuntimeState>>(
   'runtime',
   'updateTransactionFields',
-  (state: any, fields: any, prev: any): any => {
-    return {
-      ...prev,
-      ...fields,
-    }
-  },
+  (state: any, fields: any, prev: any): any => ({
+    ...prev,
+    ...fields,
+  }),
 )
+
 export const setSortedSyncResultsFromHub = setterAction<SyncResult[]>('runtime.syncResultsFromHub')
 export const dequeueSyncResultsFromHub = setterAction<SyncResult>(
   'runtime.syncResultsFromHub',
   'dequeue',
-  (state: any, toRemove: any, prev: any): any => {
-    return prev.filter((x: any) => x !== toRemove)
-  },
+  (state: any, toRemove: any, prev: any): any =>
+    prev.filter((x: any) => x !== toRemove),
 )
 export const setChannelStatus = setterAction<ChannelStatus>('runtime.channelStatus')
 

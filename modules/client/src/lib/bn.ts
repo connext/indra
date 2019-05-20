@@ -14,8 +14,7 @@ export const toBN = (n: string|number|BN): BN =>
 export const toWei = (n: string|number|BN): BN =>
   parseEther(n.toString())
 
-export const fromWei = (n: BN): string =>
-  formatEther(n)
+export const fromWei = formatEther
 
 export const weiToToken = (wei: BN, tokenPerEth: string): BN =>
   toBN(formatEther(toWei(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ''))

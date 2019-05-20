@@ -1,8 +1,9 @@
 import { ConfirmPendingArgs, DepositArgs, SyncResult, WithdrawalArgs } from '../types'
+
 import * as actions from './actions'
 import { ConnextState } from './store'
 
-export function handleStateFlags(args: any): any {
+export const handleStateFlags = (args: any): any => {
   let didInitialUpdate = false
 
   const { dispatch, getState } = args
@@ -38,7 +39,7 @@ export function handleStateFlags(args: any): any {
       // of transaction it pertains to
       let txType: any
       let isUnsigned = false
-      let txHash: string | undefined = undefined
+      let txHash: string | undefined
       const detectTxType = (sync: SyncResult): any => {
         if (sync.type !== 'channel') {
           // TODO: any special flags for threads needed
@@ -104,7 +105,7 @@ export function handleStateFlags(args: any): any {
         }
       }
 
-      updatesToSync.concat(syncResultsFromHub).forEach((sync: any): any => detectTxType(sync))
+      updatesToSync.concat(syncResultsFromHub).forEach(detectTxType)
 
       // assign the fields
       if (txType) {

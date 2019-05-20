@@ -133,14 +133,14 @@ export class Queue<T> {
     }
   }
 
-  public async shift(): Promise<T> {
+  public async shift(): Promise<T | undefined> {
     await this._notEmpty
     this.length -= 1
     const item = this._items.shift()
     if (this.length === 0) {
       this._notEmpty = new Lock()
     }
-    return item!
+    return item
   }
 
   public peek(): T | (typeof Queue)['EMPTY'] {
@@ -194,9 +194,9 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
  */
 type MaybeRes<T> = [T, any] & { res: T, err: any }
 export const maybe = <T>(p: Promise<T>): Promise<MaybeRes<T>> =>
-  (p as Promise<T>).then(
-    (res: any): any => Object.assign([res, undefined], { res, err: undefined }) as any,
-    (err: any): any => Object.assign([undefined, err], { res: undefined, err }) as any,
+  p.then(
+    (res: any): any => [res, undefined],
+    (err: any): any => [undefined, err],
   )
 
 /**

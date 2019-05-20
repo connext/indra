@@ -1,4 +1,5 @@
 import { assert } from '../testing'
+
 import { setterAction } from './actions'
 
 describe('setterAction', () => {

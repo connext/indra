@@ -1,6 +1,7 @@
 import { assert, mkHash, parameterizedTests, PartialSignedOrSuccinctChannel } from '../testing'
 import { MockStore } from '../testing/mocks'
 import { SyncResult } from '../types'
+
 import * as actions from './actions'
 
 describe('handleStateFlags', () => {
