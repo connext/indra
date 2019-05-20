@@ -1,5 +1,4 @@
-import { Big, minBN, maxBN, assetToWei, weiToAsset } from "./lib/bn";
-import { BigNumber as BN } from 'ethers/utils'
+import { BN, maxBN, minBN, toBN, tokenToWei, weiToToken } from './lib/bn'
 import {
   ChannelStateBN,
   ChannelUpdateReason,
@@ -14,15 +13,14 @@ import {
   PendingExchangeArgsBN,
   ThreadState,
   ThreadStateBN,
-  UpdateRequestBN,
   UnsignedChannelState,
   UnsignedChannelStateBN,
   UnsignedThreadState,
+  UpdateRequestBN,
   VerboseChannelEventBN,
   WithdrawalArgsBN,
-} from "./types";
-import { Utils } from "./Utils";
-import { mul, divmod, EXCHANGE_MULTIPLIER, EXCHANGE_MULTIPLIER_BN } from "./lib/bn";
+} from './types'
+import { Utils } from './Utils'
 
 /**
  * Calculate the amount of wei/tokens to sell/recieve from the perspective of
@@ -44,33 +42,28 @@ import { mul, divmod, EXCHANGE_MULTIPLIER, EXCHANGE_MULTIPLIER_BN } from "./lib/
  *   state.balanceTokenHub += exchange.tokensReceived
  *
  */
-export function calculateExchange(args: ExchangeArgsBN) {
+export const calculateExchange = (args: ExchangeArgsBN): any => {
   // Assume the exchange is done from the perspective of the user. If it's
   // the hub, multiply all the values by -1 so the math will still work.
-  if (args.seller == 'hub') {
-    const neg1 = Big(-1)
-    args = {
-      ...args,
-      weiToSell: args.weiToSell.mul(neg1),
-      tokensToSell: args.tokensToSell.mul(neg1),
-    }
-  }
-
-  const [weiReceived, tokenRemainder] = assetToWei(args.tokensToSell, args.exchangeRate)
-  const tokensReceived = weiToAsset(args.weiToSell, args.exchangeRate)
-
+  const toUserPOV = args.seller === 'hub' ? toBN(-1) : toBN(1)
+  const tokensToSell = args.tokensToSell.mul(toUserPOV)
+  const weiToSell = args.weiToSell.mul(toUserPOV)
+  const weiReceived = tokenToWei(tokensToSell, args.exchangeRate)
+  const tokensReceived = weiToToken(weiToSell, args.exchangeRate)
+  const tokenRemainder = tokensToSell.sub(weiToToken(weiReceived, args.exchangeRate))
   return {
-    weiSold: args.weiToSell,
-    weiReceived: weiReceived,
-    tokensSold: args.tokensToSell.sub(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
-    tokensReceived: tokensReceived.add(tokenRemainder.div(EXCHANGE_MULTIPLIER_BN)),
+    tokensReceived: tokensReceived.add(tokenRemainder),
+    tokensSold: tokensToSell.sub(tokenRemainder),
+    weiReceived,
+    weiSold: weiToSell,
   }
 }
 
-function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
-  for (let v of vals) {
-    if (v !== null && v !== undefined)
+const coalesce = <T>(...vals: Array<T | undefined>): T | undefined => {
+  for (const v of vals) {
+    if (v !== undefined) {
       return v
+    }
   }
   return undefined
 }
@@ -79,88 +72,101 @@ function coalesce<T>(...vals: (T | null | undefined)[]): T | undefined {
  * Subtracts the arguments, returning either the value (if greater than zero)
  * or zero.
  */
-export function subOrZero(a: (BN | undefined), ...args: (BN | undefined)[]): BN {
-  let res = a!
-  for (let arg of args)
-    res = res.sub(arg!)
-  return maxBN(Big(0), res)
+export const subOrZero = (a: (BN | undefined), ...args: Array<BN | undefined>): BN => {
+  let res = a || toBN(0)
+  for (const arg of args) {
+    res = res.sub(arg || toBN(0))
+  }
+  return maxBN([toBN(0), res])
 }
 
 /**
  * Returns 'a' if a > 0 else 0.
  */
-function ifPositive(a: BN) {
-  const zero = Big(0)
+const ifPositive = (a: BN): BN => {
+  const zero = toBN(0)
   return a.gt(zero) ? a : zero
 }
 
 /**
  * Returns 'a.abs()' if a < 0 else 0.
  */
-function ifNegative(a: BN) {
-  const zero = Big(0)
+const ifNegative = (a: BN): BN => {
+  const zero = toBN(0)
   return a.lt(zero) ? a.abs() : zero
 }
 
 export class StateGenerator {
   private utils: Utils
 
-  stateTransitionHandlers: { [name in ChannelUpdateReason]: any }
+  public stateTransitionHandlers: { [name in ChannelUpdateReason]: any }
 
-  constructor() {
+  public constructor() {
     this.utils = new Utils()
     this.stateTransitionHandlers = {
-      'Payment': this.channelPayment.bind(this),
+      'CloseThread': this.closeThread.bind(this),
+      'ConfirmPending': this.confirmPending.bind(this),
+      'EmptyChannel': this.emptyChannel.bind(this),
       'Exchange': this.exchange.bind(this),
+      'Invalidation': this.invalidation.bind(this),
+      'OpenThread': this.openThread.bind(this),
+      'Payment': this.channelPayment.bind(this),
       'ProposePendingDeposit': this.proposePendingDeposit.bind(this),
       'ProposePendingWithdrawal': this.proposePendingWithdrawal.bind(this),
-      'ConfirmPending': this.confirmPending.bind(this),
-      'OpenThread': this.openThread.bind(this),
-      'Invalidation': this.invalidation.bind(this),
-      'CloseThread': this.closeThread.bind(this),
-      'EmptyChannel': this.emptyChannel.bind(this),
     }
   }
 
-  public createChannelStateFromRequest(prev: ChannelStateBN, request: UpdateRequestBN): UnsignedChannelState {
-    if(request.reason == 'OpenThread' || request.reason == 'CloseThread') {
-      return this.stateTransitionHandlers[request.reason](prev, request.initialThreadStates, request.args)
-    } else {
-      return this.stateTransitionHandlers[request.reason](prev, request.args)
+  public createChannelStateFromRequest(
+    prev: ChannelStateBN,
+    request: UpdateRequestBN,
+  ): UnsignedChannelState {
+    if(request.reason === 'OpenThread' || request.reason === 'CloseThread') {
+      return this.stateTransitionHandlers[request.reason](
+        prev, request.initialThreadStates, request.args,
+      )
     }
+    return this.stateTransitionHandlers[request.reason](prev, request.args)
   }
 
   public channelPayment(prev: ChannelStateBN, args: PaymentArgsBN): UnsignedChannelState {
-    return convertChannelState("str-unsigned", {
+    return convertChannelState('str-unsigned', {
       ...prev,
-      balanceWeiHub: args.recipient === 'hub' ? prev.balanceWeiHub.add(args.amountWei) : prev.balanceWeiHub.sub(args.amountWei),
-      balanceWeiUser: args.recipient === 'user' ? prev.balanceWeiUser.add(args.amountWei) : prev.balanceWeiUser.sub(args.amountWei),
-      balanceTokenHub: args.recipient === 'hub' ? prev.balanceTokenHub.add(args.amountToken) : prev.balanceTokenHub.sub(args.amountToken),
-      balanceTokenUser: args.recipient === 'user' ? prev.balanceTokenUser.add(args.amountToken) : prev.balanceTokenUser.sub(args.amountToken),
-      txCountGlobal: prev.txCountGlobal + 1,
+      balanceTokenHub: args.recipient === 'hub'
+        ? prev.balanceTokenHub.add(args.amountToken)
+        : prev.balanceTokenHub.sub(args.amountToken),
+      balanceTokenUser: args.recipient === 'user'
+        ? prev.balanceTokenUser.add(args.amountToken)
+        : prev.balanceTokenUser.sub(args.amountToken),
+      balanceWeiHub: args.recipient === 'hub'
+        ? prev.balanceWeiHub.add(args.amountWei)
+        : prev.balanceWeiHub.sub(args.amountWei),
+      balanceWeiUser: args.recipient === 'user'
+        ? prev.balanceWeiUser.add(args.amountWei)
+        : prev.balanceWeiUser.sub(args.amountWei),
       timeout: 0,
+      txCountGlobal: prev.txCountGlobal + 1,
     })
   }
 
   public exchange(prev: ChannelStateBN, args: ExchangeArgsBN): UnsignedChannelState {
-    return convertChannelState("str-unsigned", {
+    return convertChannelState('str-unsigned', {
       ...this.applyInChannelExchange(prev, args),
-      txCountGlobal: prev.txCountGlobal + 1,
       timeout: 0,
+      txCountGlobal: prev.txCountGlobal + 1,
     })
   }
 
   public proposePendingDeposit(prev: ChannelStateBN, args: DepositArgsBN): UnsignedChannelState {
-    return convertChannelState("str-unsigned", {
+    return convertChannelState('str-unsigned', {
       ...prev,
-      recipient: prev.user, // set explicitly for case of 1st deposit
-      pendingDepositWeiHub: args.depositWeiHub,
-      pendingDepositWeiUser: args.depositWeiUser,
       pendingDepositTokenHub: args.depositTokenHub,
       pendingDepositTokenUser: args.depositTokenUser,
-      txCountGlobal: prev.txCountGlobal + 1,
-      txCountChain: prev.txCountChain + 1,
+      pendingDepositWeiHub: args.depositWeiHub,
+      pendingDepositWeiUser: args.depositWeiUser,
+      recipient: prev.user, // set explicitly for case of 1st deposit
       timeout: args.timeout,
+      txCountChain: prev.txCountChain + 1,
+      txCountGlobal: prev.txCountGlobal + 1,
     })
   }
 
@@ -169,29 +175,26 @@ export class StateGenerator {
    * (otherwise the result may have negative balances; see also:
    * applyCollateralizedExchange).
    */
-  public applyInChannelExchange(state: UnsignedChannelStateBN, exchangeArgs: ExchangeArgsBN): UnsignedChannelStateBN {
+  public applyInChannelExchange(
+    state: UnsignedChannelStateBN,
+    exchangeArgs: ExchangeArgsBN,
+  ): UnsignedChannelStateBN {
     const exchange = calculateExchange(exchangeArgs)
-
     const res = {
       ...state,
-
-      balanceWeiUser: state.balanceWeiUser
-        .add(exchange.weiReceived)
-        .sub(exchange.weiSold),
-
-      balanceTokenUser: state.balanceTokenUser
-        .add(exchange.tokensReceived)
-        .sub(exchange.tokensSold),
-
-      balanceWeiHub: state.balanceWeiHub
-        .sub(exchange.weiReceived)
-        .add(exchange.weiSold),
-
       balanceTokenHub: state.balanceTokenHub
         .sub(exchange.tokensReceived)
         .add(exchange.tokensSold),
+      balanceTokenUser: state.balanceTokenUser
+        .add(exchange.tokensReceived)
+        .sub(exchange.tokensSold),
+      balanceWeiHub: state.balanceWeiHub
+        .sub(exchange.weiReceived)
+        .add(exchange.weiSold),
+      balanceWeiUser: state.balanceWeiUser
+        .add(exchange.weiReceived)
+        .sub(exchange.weiSold),
     }
-
     return res
   }
 
@@ -201,17 +204,20 @@ export class StateGenerator {
    * added when the hub is selling to the user; collateral will never be
    * deposited into the user's channel).
    */
-  public applyCollateralizedExchange(state: UnsignedChannelStateBN, exchangeArgs: ExchangeArgsBN): UnsignedChannelStateBN {
+  public applyCollateralizedExchange(
+    state: UnsignedChannelStateBN,
+    exchangeArgs: ExchangeArgsBN,
+  ): UnsignedChannelStateBN {
     let res = this.applyInChannelExchange(state, exchangeArgs)
 
-    function depositIfNegative(r: any, src: string, dst: string) {
+      const depositIfNegative = (r: any, src: string, dst: string): any => {
       // If `balance${src}` is negative, make it zero, remove that balance from
       // `balance${dst}` and add the balance to the `pendingDeposit${dst}`
-      const bal = r['balance' + src] as BN
-      if (bal.lt(Big(0))) {
-        r['balance' + src] = Big(0)
-        r['balance' + dst] = r['balance' + dst].sub(bal.abs())
-        r['pendingDeposit' + dst] = r['pendingDeposit' + dst].add(bal.abs())
+      const bal = r[`balance${src}`] as BN
+      if (bal.lt(toBN(0))) {
+        r[`balance${src}`] = toBN(0)
+        r[`balance${dst}`] = r[`balance${dst}`].sub(bal.abs())
+        r[`pendingDeposit${dst}`] = r[`pendingDeposit${dst}`].add(bal.abs())
       }
       return res
     }
@@ -225,16 +231,14 @@ export class StateGenerator {
   public applyPending(state: UnsignedChannelStateBN, args: PendingArgsBN): UnsignedChannelStateBN {
     const res = {
       ...state,
-
-      pendingDepositWeiHub: args.depositWeiHub.add(state.pendingDepositWeiHub),
-      pendingDepositWeiUser: args.depositWeiUser.add(state.pendingDepositWeiUser),
       pendingDepositTokenHub: args.depositTokenHub.add(state.pendingDepositTokenHub),
       pendingDepositTokenUser: args.depositTokenUser.add(state.pendingDepositTokenUser),
-      pendingWithdrawalWeiHub: args.withdrawalWeiHub.add(state.pendingWithdrawalWeiHub),
-      pendingWithdrawalWeiUser: args.withdrawalWeiUser.add(state.pendingWithdrawalWeiUser),
+      pendingDepositWeiHub: args.depositWeiHub.add(state.pendingDepositWeiHub),
+      pendingDepositWeiUser: args.depositWeiUser.add(state.pendingDepositWeiUser),
       pendingWithdrawalTokenHub: args.withdrawalTokenHub.add(state.pendingWithdrawalTokenHub),
       pendingWithdrawalTokenUser: args.withdrawalTokenUser.add(state.pendingWithdrawalTokenUser),
-
+      pendingWithdrawalWeiHub: args.withdrawalWeiHub.add(state.pendingWithdrawalWeiHub),
+      pendingWithdrawalWeiUser: args.withdrawalWeiUser.add(state.pendingWithdrawalWeiUser),
       recipient: args.recipient,
       timeout: args.timeout,
     }
@@ -270,7 +274,10 @@ export class StateGenerator {
   //
   // This can result in negative balances - the validator for this will prevent
   // this
-  public proposePendingExchange(prev: UnsignedChannelStateBN, args: PendingExchangeArgsBN): UnsignedChannelState {
+  public proposePendingExchange(
+    prev: UnsignedChannelStateBN,
+    args: PendingExchangeArgsBN,
+  ): UnsignedChannelState {
     const exchange = this.applyInChannelExchange(convertChannelState('bn-unsigned', prev), args)
     const pending = this.applyPending(exchange, args)
     return convertChannelState('str-unsigned', {
@@ -299,10 +306,10 @@ export class StateGenerator {
    *   pendingWithdrawalHub: 0
    *
    * NOTE: This function is un-used. See comment at top of function.
-   */
-  private _unused_applyInChannelTransferSimplifications(state: UnsignedChannelStateBN): UnsignedChannelStateBN {
-    state = { ...state }
-
+  private _unused_applyInChannelTransferSimplifications(
+    _state: UnsignedChannelStateBN,
+  ): UnsignedChannelStateBN {
+    const state = { ..._state }
     // !!! NOTE !!!
     // This function is currently un-used because:
     // 1. At present there isn't a need to optimize in-channel balance
@@ -312,13 +319,11 @@ export class StateGenerator {
     // It is being left in place because:
     // 1. In the future it may be desierable to optimize in-channel balance
     //    exchanges, and
-    // 2. There will likely be future discussions around "maybe we should
-    //    optmize balance transfers!", and this comment will serve as a
+    // 2. There will likely be future discussions around 'maybe we should
+    //    optmize balance transfers!', and this comment will serve as a
     //    starting point to the discussion.
     // !!! NOTE !!!
-
     const s = state as any
-
     // Hub is withdrawing from their balance and a balance is being sent from
     // reserve to the user. Deduct from the hub's pending withdrawal, the
     // user's pending deposit, and add to the user's balance:
@@ -352,16 +357,15 @@ export class StateGenerator {
       //   pendingDepositUser: 1 (4 - (4 - 1))
       //   balanceUser: 3 (0 + (4 - 1))
       //
-      let delta = minBN(
+      let delta = minBN([
         // Amount being deducted from the hub's balance
         subOrZero(s[`pendingWithdrawal${type}Hub`], s[`pendingDeposit${type}Hub`]),
         // Amount being added to the user's balance
         subOrZero(s[`pendingDeposit${type}User`], s[`pendingWithdrawal${type}User`]),
-      )
+      ])
       s[`pendingWithdrawal${type}Hub`] = s[`pendingWithdrawal${type}Hub`].sub(delta)
       s[`pendingDeposit${type}User`] = s[`pendingDeposit${type}User`].sub(delta)
       s[`balance${type}User`] = s[`balance${type}User`].add(delta)
-
       // Second, calculate how much can be deducted from both the hub's
       // withdrawal and the user deposit:
       //
@@ -377,16 +381,15 @@ export class StateGenerator {
       //   pendingDepositUser: 0 (1 - 1)
       //   balanceUser: 3
       //
-      delta = minBN(
+      delta = minBN([
         // Amount being deducted from the hub's balance
         subOrZero(s[`pendingWithdrawal${type}Hub`], s[`pendingDeposit${type}Hub`]),
         // Amount being sent to the user for direct withdrawal
         s[`pendingDeposit${type}User`],
-      )
+      ])
       s[`pendingWithdrawal${type}Hub`] = s[`pendingWithdrawal${type}Hub`].sub(delta)
       s[`pendingDeposit${type}User`] = s[`pendingDeposit${type}User`].sub(delta)
     }
-
     // User is withdrawing from their balance and a deposit is being made from
     // reserve into the hub's balance. Increase the user's pending deposit,
     // decrease the hub's deposit, and add to the hub's balance:
@@ -402,71 +405,82 @@ export class StateGenerator {
     //   balanceHub: 3
     //
     for (const type of ['Wei', 'Token']) {
-      let delta = minBN(
+      const delta = minBN([
         // Amount being deducted from the user's balance
         subOrZero(s[`pendingWithdrawal${type}User`], s[`pendingDeposit${type}User`]),
         // Amount being added from reserve to the hub's balance
         subOrZero(s[`pendingDeposit${type}Hub`], s[`pendingWithdrawal${type}Hub`]),
-      )
+      ])
       s[`pendingDeposit${type}User`] = s[`pendingDeposit${type}User`].add(delta)
       s[`pendingDeposit${type}Hub`] = s[`pendingDeposit${type}Hub`].sub(delta)
       s[`balance${type}Hub`] = s[`balance${type}Hub`].add(delta)
     }
-
     return state
   }
+  */
 
   /**
    * Creates WithdrawalArgs based on more user-friendly inputs.
    *
    * See comments on the CreateWithdrawal type for a description.
    */
-  public proposePendingWithdrawal(prev: UnsignedChannelStateBN, args: WithdrawalArgsBN): UnsignedChannelState {
-    args = {
-      ...args,
-      targetWeiUser: coalesce(
-        args.targetWeiUser,
-        prev.balanceWeiUser.sub(args.weiToSell),
-      ),
+  public proposePendingWithdrawal(
+    prev: UnsignedChannelStateBN,
+    _args: WithdrawalArgsBN,
+  ): UnsignedChannelState {
+    const args = {
+      ..._args,
+      targetTokenHub: coalesce(_args.targetTokenHub, prev.balanceTokenHub) || toBN(0),
       targetTokenUser: coalesce(
-        args.targetTokenUser,
-        prev.balanceTokenUser.sub(args.tokensToSell),
-      ),
-      targetWeiHub: coalesce(args.targetWeiHub, prev.balanceWeiHub),
-      targetTokenHub: coalesce(args.targetTokenHub, prev.balanceTokenHub),
+        _args.targetTokenUser,
+        prev.balanceTokenUser.sub(_args.tokensToSell),
+      ) || toBN(0),
+      targetWeiHub: coalesce(_args.targetWeiHub, prev.balanceWeiHub) || toBN(0),
+      targetWeiUser: coalesce(
+        _args.targetWeiUser,
+        prev.balanceWeiUser.sub(_args.weiToSell),
+      ) || toBN(0),
     }
 
     const exchange = this.applyCollateralizedExchange(prev, args)
 
     const deltas = {
-      userWei: args.targetWeiUser!.sub(exchange.balanceWeiUser.add(exchange.pendingDepositWeiUser)),
-      userToken: args.targetTokenUser!.sub(exchange.balanceTokenUser.add(exchange.pendingDepositTokenUser)),
-      hubWei: args.targetWeiHub!.sub(exchange.balanceWeiHub.add(exchange.pendingDepositWeiHub)),
-      hubToken: args.targetTokenHub!.sub(exchange.balanceTokenHub.add(exchange.pendingDepositTokenHub)),
+      hubToken: args.targetTokenHub.sub(
+        exchange.balanceTokenHub.add(exchange.pendingDepositTokenHub),
+      ),
+      hubWei: args.targetWeiHub.sub(
+        exchange.balanceWeiHub.add(exchange.pendingDepositWeiHub),
+      ),
+      userToken: args.targetTokenUser.sub(
+        exchange.balanceTokenUser.add(exchange.pendingDepositTokenUser),
+      ),
+      userWei: args.targetWeiUser.sub(
+        exchange.balanceWeiUser.add(exchange.pendingDepositWeiUser),
+      ),
     }
 
     const pending = this.applyPending(exchange, {
-      depositWeiUser: Big(0)
+      depositWeiUser: toBN(0)
         .add(ifPositive(deltas.userWei))
-        .add(args.additionalWeiHubToUser || Big(0)),
+        .add(args.additionalWeiHubToUser || toBN(0)),
 
       depositWeiHub: ifPositive(deltas.hubWei),
 
-      depositTokenUser: Big(0)
+      depositTokenUser: toBN(0)
         .add(ifPositive(deltas.userToken))
-        .add(args.additionalTokenHubToUser || Big(0)),
+        .add(args.additionalTokenHubToUser || toBN(0)),
 
       depositTokenHub: ifPositive(deltas.hubToken),
 
-      withdrawalWeiUser: Big(0)
+      withdrawalWeiUser: toBN(0)
         .add(ifNegative(deltas.userWei))
-        .add(args.additionalWeiHubToUser || Big(0)),
+        .add(args.additionalWeiHubToUser || toBN(0)),
 
       withdrawalWeiHub: ifNegative(deltas.hubWei),
 
-      withdrawalTokenUser: Big(0)
+      withdrawalTokenUser: toBN(0)
         .add(ifNegative(deltas.userToken))
-        .add(args.additionalTokenHubToUser || Big(0)),
+        .add(args.additionalTokenHubToUser || toBN(0)),
 
       withdrawalTokenHub: ifNegative(deltas.hubToken),
 
@@ -484,38 +498,43 @@ export class StateGenerator {
 
   public confirmPending(prev: ChannelStateBN): UnsignedChannelState {
     // consider case where confirmPending for a withdrawal with exchange:
-    // prev.pendingWeiUpdates = [0, 0, 5, 5] // i.e. hub deposits into user's channel for facilitating exchange
+    // prev.pendingWeiUpdates = [0, 0, 5, 5]
+    // i.e. hub deposits into user's channel for facilitating exchange
     // generated.balanceWei = [0, 0]
     //
     // initial = [0, 2]
     // prev.balance = [0, 1]
     // prev.pending = [0, 0, 1, 2]
     // final.balance = [0, 1]
-    return convertChannelState("str-unsigned", {
+    return convertChannelState('str-unsigned', {
       ...prev,
+      balanceTokenHub: prev.pendingDepositTokenHub.gt(prev.pendingWithdrawalTokenHub)
+        ? prev.balanceTokenHub
+          .add(prev.pendingDepositTokenHub)
+          .sub(prev.pendingWithdrawalTokenHub)
+        : prev.balanceTokenHub,
+      balanceTokenUser: prev.pendingDepositTokenUser.gt(prev.pendingWithdrawalTokenUser)
+        ? prev.balanceTokenUser
+          .add(prev.pendingDepositTokenUser)
+          .sub(prev.pendingWithdrawalTokenUser)
+        : prev.balanceTokenUser,
       balanceWeiHub: prev.pendingDepositWeiHub.gt(prev.pendingWithdrawalWeiHub)
         ? prev.balanceWeiHub.add(prev.pendingDepositWeiHub).sub(prev.pendingWithdrawalWeiHub)
         : prev.balanceWeiHub,
       balanceWeiUser: prev.pendingDepositWeiUser.gt(prev.pendingWithdrawalWeiUser)
         ? prev.balanceWeiUser.add(prev.pendingDepositWeiUser).sub(prev.pendingWithdrawalWeiUser)
         : prev.balanceWeiUser,
-      balanceTokenHub: prev.pendingDepositTokenHub.gt(prev.pendingWithdrawalTokenHub)
-        ? prev.balanceTokenHub.add(prev.pendingDepositTokenHub).sub(prev.pendingWithdrawalTokenHub)
-        : prev.balanceTokenHub,
-      balanceTokenUser: prev.pendingDepositTokenUser.gt(prev.pendingWithdrawalTokenUser)
-        ? prev.balanceTokenUser.add(prev.pendingDepositTokenUser).sub(prev.pendingWithdrawalTokenUser)
-        : prev.balanceTokenUser,
-      pendingDepositWeiHub: Big(0),
-      pendingDepositWeiUser: Big(0),
-      pendingDepositTokenHub: Big(0),
-      pendingDepositTokenUser: Big(0),
-      pendingWithdrawalWeiHub: Big(0),
-      pendingWithdrawalWeiUser: Big(0),
-      pendingWithdrawalTokenHub: Big(0),
-      pendingWithdrawalTokenUser: Big(0),
-      txCountGlobal: prev.txCountGlobal + 1,
+      pendingDepositTokenHub: toBN(0),
+      pendingDepositTokenUser: toBN(0),
+      pendingDepositWeiHub: toBN(0),
+      pendingDepositWeiUser: toBN(0),
+      pendingWithdrawalTokenHub: toBN(0),
+      pendingWithdrawalTokenUser: toBN(0),
+      pendingWithdrawalWeiHub: toBN(0),
+      pendingWithdrawalWeiUser: toBN(0),
       recipient: prev.user,
       timeout: 0,
+      txCountGlobal: prev.txCountGlobal + 1,
     })
   }
 
@@ -529,7 +548,7 @@ export class StateGenerator {
     // state called to represent the channel being emptied
     // should increase the global nonce
     const { sender, ...channel } = event
-    return convertChannelState("str-unsigned", {
+    return convertChannelState('str-unsigned', {
       ...channel,
       recipient: channel.user,
       timeout: 0,
@@ -537,60 +556,88 @@ export class StateGenerator {
     })
   }
 
-  // Use signed thread state since only sender will ever call openThread and sender signs initial thread state
-  public openThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): UnsignedChannelState {
-    const initThreads = initialThreadStates.concat([convertThreadState("str", args)])
-    return convertChannelState("str-unsigned", {
+  // Use signed thread state since only sender will ever call openThread
+  // and sender signs initial thread state
+  public openThread(
+    prev: ChannelStateBN,
+    initialThreadStates: ThreadState[],
+    args: ThreadStateBN,
+  ): UnsignedChannelState {
+    const initThreads = initialThreadStates.concat([convertThreadState('str', args)])
+    return convertChannelState('str-unsigned', {
       ...prev,
-      balanceWeiHub: args.sender === prev.user ? prev.balanceWeiHub : prev.balanceWeiHub.sub(args.balanceWeiSender),
-      balanceWeiUser: args.sender === prev.user ? prev.balanceWeiUser.sub(args.balanceWeiSender) : prev.balanceWeiUser,
-      balanceTokenHub: args.sender === prev.user ? prev.balanceTokenHub : prev.balanceTokenHub.sub(args.balanceTokenSender),
-      balanceTokenUser: args.sender === prev.user ? prev.balanceTokenUser.sub(args.balanceTokenSender) : prev.balanceTokenUser,
-      txCountGlobal: prev.txCountGlobal + 1,
-      threadRoot: this.utils.generateThreadRootHash(initThreads),
+      balanceTokenHub: args.sender === prev.user
+        ? prev.balanceTokenHub
+        : prev.balanceTokenHub.sub(args.balanceTokenSender),
+      balanceTokenUser: args.sender === prev.user
+        ? prev.balanceTokenUser.sub(args.balanceTokenSender)
+        : prev.balanceTokenUser,
+      balanceWeiHub: args.sender === prev.user
+        ? prev.balanceWeiHub
+        : prev.balanceWeiHub.sub(args.balanceWeiSender),
+      balanceWeiUser: args.sender === prev.user
+        ? prev.balanceWeiUser.sub(args.balanceWeiSender)
+        : prev.balanceWeiUser,
       threadCount: initThreads.length,
+      threadRoot: this.utils.generateThreadRootHash(initThreads),
       timeout: 0,
+      txCountGlobal: prev.txCountGlobal + 1,
     })
   }
 
-  // Use signed thread state because we should only be able to generate a thread closing update on a real thread state update
-  public closeThread(prev: ChannelStateBN, initialThreadStates: ThreadState[], args: ThreadStateBN): UnsignedChannelState {
-    initialThreadStates = initialThreadStates.filter(state => !(state.sender === args.sender && state.receiver == args.receiver && state.threadId == args.threadId))
+  // Use signed thread state because we should only be able to generate a thread closing
+  // update on a real thread state update
+  public closeThread(
+    prev: ChannelStateBN,
+    _initialThreadStates: ThreadState[],
+    args: ThreadStateBN,
+  ): UnsignedChannelState {
+    const initialThreadStates = _initialThreadStates.filter(
+      (state: ThreadState): boolean =>
+        !(
+          state.sender === args.sender
+          && state.receiver === args.receiver
+          && state.threadId === args.threadId
+        ),
+    )
     const userIsSender = args.sender === prev.user
-    return convertChannelState("str-unsigned", {
+    return convertChannelState('str-unsigned', {
       ...prev,
-      balanceWeiHub: userIsSender
-        ? prev.balanceWeiHub.add(args.balanceWeiReceiver)
-        : prev.balanceWeiHub.add(args.balanceWeiSender),
-      balanceWeiUser: userIsSender
-        ? prev.balanceWeiUser.add(args.balanceWeiSender)
-        : prev.balanceWeiUser.add(args.balanceWeiReceiver),
       balanceTokenHub: userIsSender
         ? prev.balanceTokenHub.add(args.balanceTokenReceiver)
         : prev.balanceTokenHub.add(args.balanceTokenSender),
       balanceTokenUser: userIsSender
         ? prev.balanceTokenUser.add(args.balanceTokenSender)
         : prev.balanceTokenUser.add(args.balanceTokenReceiver),
-      txCountGlobal: prev.txCountGlobal + 1,
-      threadRoot: this.utils.generateThreadRootHash(initialThreadStates),
+      balanceWeiHub: userIsSender
+        ? prev.balanceWeiHub.add(args.balanceWeiReceiver)
+        : prev.balanceWeiHub.add(args.balanceWeiSender),
+      balanceWeiUser: userIsSender
+        ? prev.balanceWeiUser.add(args.balanceWeiSender)
+        : prev.balanceWeiUser.add(args.balanceWeiReceiver),
       threadCount: initialThreadStates.length,
+      threadRoot: this.utils.generateThreadRootHash(initialThreadStates),
       timeout: 0,
+      txCountGlobal: prev.txCountGlobal + 1,
     })
   }
 
   public threadPayment(prev: ThreadStateBN, args: PaymentBN): UnsignedThreadState {
-    return convertThreadState("str-unsigned", {
+    return convertThreadState('str-unsigned', {
       ...prev,
-      balanceTokenSender: prev.balanceTokenSender.sub(args.amountToken),
       balanceTokenReceiver: prev.balanceTokenReceiver.add(args.amountToken),
-      balanceWeiSender: prev.balanceWeiSender.sub(args.amountWei),
+      balanceTokenSender: prev.balanceTokenSender.sub(args.amountToken),
       balanceWeiReceiver: prev.balanceWeiReceiver.add(args.amountWei),
+      balanceWeiSender: prev.balanceWeiSender.sub(args.amountWei),
       txCount: prev.txCount + 1,
     })
   }
 
-  public invalidation(latestValidState: ChannelStateBN, args: InvalidationArgs): UnsignedChannelState {
-    return convertChannelState("str-unsigned", {
+  public invalidation(
+    latestValidState: ChannelStateBN,
+    args: InvalidationArgs,
+  ): UnsignedChannelState {
+    return convertChannelState('str-unsigned', {
       ...latestValidState,
       timeout: 0,
       txCountGlobal: args.lastInvalidTxCount + 1,

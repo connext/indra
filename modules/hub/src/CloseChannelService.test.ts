@@ -1,16 +1,15 @@
-import { types, big } from 'connext'
-import { channelUpdateFactory } from './testing/factories'
-import { getTestRegistry, assert, getFakeClock } from './testing'
-import { CloseChannelService } from './CloseChannelService';
-import ChannelsService from './ChannelsService';
-import { assertChannelStateEqual, mkAddress } from './testing/stateUtils';
-import ChannelsDao from './dao/ChannelsDao';
-import { setFakeClosingTime, getTestConfig, getMockWeb3 } from './testing/mocks';
-import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import DBEngine from './DBEngine';
+import * as connext from 'connext'
 
-const { convertChannelRow } = types;
-const { toWeiString } = big;
+import ChannelsService from './ChannelsService'
+import { CloseChannelService } from './CloseChannelService'
+import ChannelDisputesDao from './dao/ChannelDisputesDao'
+import ChannelsDao from './dao/ChannelsDao'
+import DBEngine from './DBEngine'
+import { assert, getFakeClock, getTestRegistry } from './testing'
+import { channelUpdateFactory } from './testing/factories'
+import { getMockWeb3, getTestConfig, setFakeClosingTime } from './testing/mocks'
+import { assertChannelStateEqual, mkAddress } from './testing/stateUtils'
+import { toWei } from './util'
 
 async function rewindUpdates(db: DBEngine, days: number, user: string) {
   await db.queryOne(`
@@ -62,7 +61,7 @@ describe('CloseChannelService', () => {
     await closeChannelService.pollOnce()
 
     dbChannel = await channelsDao.getChannelByUser(channel.user)
-    const chanString = convertChannelRow("str", dbChannel)
+    const chanString = connext.convert.ChannelRow("str", dbChannel)
     assertChannelStateEqual(chanString.state, {
       balanceWei: [0,0],
       balanceToken: [0,0]
@@ -89,7 +88,7 @@ describe('CloseChannelService', () => {
     const channelsDao: ChannelsDao = registry.get('ChannelsDao')
     const db: DBEngine = registry.get("DBEngine")
     const staleChannel = await channelUpdateFactory(registry, {
-      balanceTokenHub: toWeiString(15),
+      balanceTokenHub: toWei(15).toString(),
     })
 
     let updated = await channelsDao.getChannelByUser(staleChannel.user)
@@ -124,7 +123,7 @@ describe('CloseChannelService', () => {
     const db: DBEngine = registry.get("DBEngine")
 
     const staleChannel = await channelUpdateFactory(registry, {
-      balanceTokenHub: toWeiString(15),
+      balanceTokenHub: toWei(15).toString(),
     })
 
     let updated = await channelsDao.getChannelByUser(staleChannel.user)
@@ -145,11 +144,11 @@ describe('CloseChannelService', () => {
       user: mkAddress('0xAAA'),
     })
     const recentChan = await channelUpdateFactory(registry, {
-      balanceTokenHub: toWeiString(15),
+      balanceTokenHub: toWei(15).toString(),
       user: mkAddress('0xBBB'),
     })
     const staleChan = await channelUpdateFactory(registry, {
-      balanceTokenHub: toWeiString(15),
+      balanceTokenHub: toWei(15).toString(),
       user: mkAddress('0xEFF'),
     })
 

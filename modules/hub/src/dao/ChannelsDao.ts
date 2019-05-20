@@ -1,25 +1,22 @@
-import * as eth from 'ethers';
-import * as Connext from 'connext';
-import DBEngine, { SQL } from '../DBEngine'
+import * as connext from 'connext'
+import {
+  Address,
+  ArgsTypes,
+  ChannelRowBN,
+  ChannelState,
+  ChannelStateBN,
+  ChannelStateUpdateRowBN,
+  ChannelUpdateReason,
+  InvalidationArgs,
+} from 'connext/types'
+import * as eth from 'ethers'
 import { Client } from 'pg'
+
 import Config from '../Config'
-import { prettySafeJson } from '../util'
+import DBEngine, { SQL } from '../DBEngine'
+import { mkSig } from '../testing/stateUtils'
+import { BN, prettySafeJson, toBN } from '../util'
 import { default as log } from '../util/log'
-import { mkSig } from '../testing/stateUtils';
-import { BigNumber as BN } from 'ethers/utils'
-
-type Address = Connext.types.Address
-type ArgsTypes = Connext.types.ArgsTypes
-type ChannelRowBN = Connext.types.ChannelRowBN
-type ChannelState = Connext.types.ChannelState
-type ChannelStateBN = Connext.types.ChannelStateBN
-type ChannelStateUpdateRowBN = Connext.types.ChannelStateUpdateRowBN
-type ChannelUpdateReason = Connext.types.ChannelUpdateReason
-type InvalidationArgs = Connext.types.InvalidationArgs
-
-const convertArgs = Connext.types.convertArgs
-const emptyRootHash = eth.constants.HashZero
-const Big = Connext.big.Big
 
 export default interface ChannelsDao {
   getChannelByUser(user: string): Promise<ChannelRowBN | null>
@@ -63,20 +60,20 @@ export function getChannelInitialState(
     contractAddress,
     user,
     recipient: user,
-    balanceWeiHub: Big(0),
-    balanceWeiUser: Big(0),
-    balanceTokenHub: Big(0),
-    balanceTokenUser: Big(0),
-    pendingDepositWeiHub: Big(0),
-    pendingDepositWeiUser: Big(0),
-    pendingDepositTokenHub: Big(0),
-    pendingDepositTokenUser: Big(0),
-    pendingWithdrawalWeiHub: Big(0),
-    pendingWithdrawalWeiUser: Big(0),
-    pendingWithdrawalTokenHub: Big(0),
-    pendingWithdrawalTokenUser: Big(0),
+    balanceWeiHub: toBN(0),
+    balanceWeiUser: toBN(0),
+    balanceTokenHub: toBN(0),
+    balanceTokenUser: toBN(0),
+    pendingDepositWeiHub: toBN(0),
+    pendingDepositWeiUser: toBN(0),
+    pendingDepositTokenHub: toBN(0),
+    pendingDepositTokenUser: toBN(0),
+    pendingWithdrawalWeiHub: toBN(0),
+    pendingWithdrawalWeiUser: toBN(0),
+    pendingWithdrawalTokenHub: toBN(0),
+    pendingWithdrawalTokenUser: toBN(0),
     threadCount: 0,
-    threadRoot: emptyRootHash,
+    threadRoot: eth.constants.HashZero,
     timeout: 0,
     txCountChain: 0,
     txCountGlobal: 0,
@@ -254,7 +251,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         ), 0)
       ) AS result
     `)
-    return Big(result)
+    return toBN(result)
   }
 
   // gets the amount of tokens in all open threads where user is receiver
@@ -271,7 +268,7 @@ export class PostgresChannelsDao implements ChannelsDao {
             status = 'CT_OPEN'
     `)
 
-    return Big(co_amount)
+    return toBN(co_amount)
   }
 
   async getRecentTippers(user: string): Promise<number> {
@@ -454,28 +451,28 @@ export class PostgresChannelsDao implements ChannelsDao {
         recipient: row.recipient,
         txCountChain: row.tx_count_chain,
         txCountGlobal: row.tx_count_global,
-        balanceWeiHub: Big(row.balance_wei_hub),
-        balanceWeiUser: Big(row.balance_wei_user),
-        balanceTokenHub: Big(row.balance_token_hub),
-        balanceTokenUser: Big(row.balance_token_user),
-        pendingDepositWeiHub: Big(row.pending_deposit_wei_hub || 0),
-        pendingDepositWeiUser: Big(row.pending_deposit_wei_user || 0),
-        pendingDepositTokenHub: Big(
+        balanceWeiHub: toBN(row.balance_wei_hub),
+        balanceWeiUser: toBN(row.balance_wei_user),
+        balanceTokenHub: toBN(row.balance_token_hub),
+        balanceTokenUser: toBN(row.balance_token_user),
+        pendingDepositWeiHub: toBN(row.pending_deposit_wei_hub || 0),
+        pendingDepositWeiUser: toBN(row.pending_deposit_wei_user || 0),
+        pendingDepositTokenHub: toBN(
           row.pending_deposit_token_hub || 0,
         ),
-        pendingDepositTokenUser: Big(
+        pendingDepositTokenUser: toBN(
           row.pending_deposit_token_user || 0,
         ),
-        pendingWithdrawalWeiHub: Big(
+        pendingWithdrawalWeiHub: toBN(
           row.pending_withdrawal_wei_hub || 0,
         ),
-        pendingWithdrawalWeiUser: Big(
+        pendingWithdrawalWeiUser: toBN(
           row.pending_withdrawal_wei_user || 0,
         ),
-        pendingWithdrawalTokenHub: Big(
+        pendingWithdrawalTokenHub: toBN(
           row.pending_withdrawal_token_hub || 0,
         ),
-        pendingWithdrawalTokenUser: Big(
+        pendingWithdrawalTokenUser: toBN(
           row.pending_withdrawal_token_user || 0,
         ),
         threadCount: row.thread_count,
@@ -509,7 +506,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         channelId: Number(row.channel_id),
         chainsawId: Number(row.chainsaw_event_id),
         createdOn: row.created_on,
-        args: convertArgs('bn', row.reason, row.args),
+        args: connext.convert.Args('bn', row.reason, row.args),
         invalid: row.invalid,
         onchainTxLogicalId: row.onchain_tx_logical_id
       }

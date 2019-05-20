@@ -1,16 +1,19 @@
-import { default as Config } from '../Config'
-import { mkSig } from '../testing/stateUtils'
-import { getTestRegistry, assert, parameterizedTests } from '../testing'
-import { CoinPaymentsApiClient, encodeQueryString } from './CoinPaymentsApiClient'
-import { CoinPaymentsService, CoinPaymentsIpnData } from './CoinPaymentsService'
-import { mkAddress, mkHash } from '../testing/stateUtils'
-import { default as DBEngine, SQL } from '../DBEngine'
-import { CoinPaymentsDao } from './CoinPaymentsDao'
-import { MockExchangeRateDao, MockGasEstimateDao } from '../testing/mocks'
-import { default as ChannelsService } from '../ChannelsService'
-import { big } from 'connext'
-import { channelUpdateFactory } from '../testing/factories'
+import * as connext from 'connext'
 import Web3 = require('web3')
+
+import { CoinPaymentsApiClient, encodeQueryString } from './CoinPaymentsApiClient'
+import { CoinPaymentsDao } from './CoinPaymentsDao'
+import { CoinPaymentsIpnData, CoinPaymentsService } from './CoinPaymentsService'
+
+import { default as ChannelsService } from '../ChannelsService'
+import { default as Config } from '../Config'
+import { default as DBEngine, SQL } from '../DBEngine'
+
+import { assert, getTestRegistry, parameterizedTests } from '../testing'
+import { channelUpdateFactory } from '../testing/factories'
+import { MockExchangeRateDao, MockGasEstimateDao } from '../testing/mocks'
+import { mkAddress, mkHash, mkSig } from '../testing/stateUtils'
+import { toBN, toWei } from '../util'
 
 let mockIpnCounter = 0
 const mkIpnData = (overrides: Partial<CoinPaymentsIpnData> = {}): CoinPaymentsIpnData => ({
@@ -195,7 +198,7 @@ describe('CoinPaymentsService', () => {
         ipnData: {},
         expected: {
           depositWeiUser: '0',
-          depositTokenUser: big.toWeiString(50)
+          depositTokenUser: toWei(50)
         },
       },
 
@@ -206,7 +209,7 @@ describe('CoinPaymentsService', () => {
         },
         expected: {
           depositWeiUser: '251113811259619279',
-          depositTokenUser: big.toWeiString('69'),
+          depositTokenUser: toWei('69').toString(),
         },
       },
     ], async t => {

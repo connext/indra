@@ -1,11 +1,6 @@
-import * as Connext from 'connext';
 import * as chai from 'chai'
+import { Address, ChannelState, ThreadState, UnsignedChannelState } from 'connext/types'
 import { BigNumber as BN } from 'ethers/utils'
-
-type Address = Connext.types.Address
-type ChannelState<T = string> = Connext.types.ChannelState<T>
-type ThreadState<T = string> = Connext.types.ThreadState<T>
-type UnsignedChannelState<T = string> = Connext.types.UnsignedChannelState<T>
 
 //
 // chai

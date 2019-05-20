@@ -1,6 +1,4 @@
-import { MockConnextInternal, } from '../testing/mocks';
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+import { MockConnextInternal } from '../testing/mocks'
 
 describe('CollateralController: unit tests', () => {
 
@@ -14,18 +12,18 @@ describe('CollateralController: unit tests', () => {
   it('should work', async () => {
     await connext.collateralController.requestCollateral()
 
-    await new Promise(res => setTimeout(res, 10))
+    await new Promise((res: any): any => setTimeout(res, 10))
 
     connext.mockHub.assertReceivedUpdate({
-      reason: 'ProposePendingDeposit',
       args: {
-        depositWeiHub: '420',
         depositTokenHub: '69',
         depositTokenUser: '0',
+        depositWeiHub: '420',
         depositWeiUser: '0',
       },
-      sigUser: true,
+      reason: 'ProposePendingDeposit',
       sigHub: false,
+      sigUser: true,
     })
   })
 

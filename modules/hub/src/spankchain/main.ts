@@ -1,43 +1,37 @@
-require('../register/common')
+import * as eth from 'ethers'
 
-import PaymentHub from '../PaymentHub'
-import { big } from 'connext';
 import { default as Config } from '../Config'
-const {
-  Big
-} = big
+import PaymentHub from '../PaymentHub'
+import '../register/common'
 
 const config = Config.fromEnv({
-  authRealm: 'SpankChain',
-  sessionSecret:
-    'c2TVc9SZfPjOLp6pTw60J4Pp4I1UWU23PqO3nWYh2tBamQPLYuKdFsTsBdJZ5kn',
-  port: 8080,
+  adminAddresses: [ process.env.WALLET_ADDRESS!, '0x6e5b92889c3299d9aaf23d59df0bdf0a9ad67e3c' ],
   authDomainWhitelist: [], // whitelist check is being skipped. All domains are allowed now
-  recipientAddress: process.env.WALLET_ADDRESS!,
-  adminAddresses: [
-    process.env.WALLET_ADDRESS!,
-    '0x6e5b92889c3299d9aaf23d59df0bdf0a9ad67e3c',
-  ],
+  authRealm: 'SpankChain',
   branding: {
-    title: 'SpankPay',
-    companyName: 'SpankChain',
     backgroundColor: '#ff3b81',
+    companyName: 'SpankChain',
     textColor: '#fff',
+    title: 'SpankPay',
   },
+  port: 8080,
+  recipientAddress: process.env.WALLET_ADDRESS!,
+  sessionSecret: 'c2TVc9SZfPjOLp6pTw60J4Pp4I1UWU23PqO3nWYh2tBamQPLYuKdFsTsBdJZ5kn',
   staleChannelDays: 7,
 })
 
 const hub = new PaymentHub(config)
 
-async function run() {
+async function run(): Promise<void> {
   const subcommands = {
-    'hub': args => hub.start(),
-    'chainsaw': args => hub.startChainsaw(),
-    'exit-channels': args => hub.startUnilateralExitChannels(args),
-    'process-tx': args => hub.processTx(args[0]),
-    'fix-channels': args => hub.fixBrokenChannels(),
-    'burn-booty': args => hub.hubBurnBooty(+args[0]),
-    'collateralize': args => hub.collateralizeChannel(args[0], Big(args[1]))
+    'burn-booty': (args: string[]): Promise<void> => hub.hubBurnBooty(+args[0]),
+    'chainsaw': (args: string[]): Promise<any> => hub.startChainsaw(),
+    'collateralize': (args: string[]): Promise<void> =>
+      hub.collateralizeChannel(args[0], eth.utils.bigNumberify(args[1])),
+    'exit-channels': (args: string[]): Promise<void> => hub.startUnilateralExitChannels(args),
+    'fix-channels': (args: string[]): Promise<void> => hub.fixBrokenChannels(),
+    'hub': (args: string[]): Promise<any> => hub.start(),
+    'process-tx': (args: string[]): Promise<void> => hub.processTx(args[0]),
   }
 
   const cmd = process.argv[2] || 'hub'
@@ -49,12 +43,11 @@ async function run() {
   }
 
   await handler(process.argv.slice(3))
-
 }
 
 run().then(
   () => process.exit(0),
-  err => {
+  (err: Error) => {
     console.error(err)
     process.exit(1)
   },

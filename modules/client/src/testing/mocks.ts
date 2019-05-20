@@ -1,27 +1,15 @@
-import * as eth from 'ethers';
-import { createStore, applyMiddleware, Store } from 'redux'
-import {
-  assert,
-  getChannelState,
-  getDepositArgs,
-  getExchangeArgs,
-  getPaymentArgs,
-  getThreadState,
-  getWithdrawalArgs,
-  mkAddress,
-  mkHash,
-  PartialSignedOrSuccinctChannel,
-  PartialSignedOrSuccinctThread,
-  getCustodialBalance,
-} from '.'
-import { IConnextClientOptions, ConnextInternal } from '../Connext'
-import { default as ChannelManagerAbi } from '../contract/ChannelManagerAbi'
+import { ethers as eth } from 'ethers'
+import { applyMiddleware, createStore, Store } from 'redux'
+
+import { ConnextInternal, IConnextChannelInternalOptions } from '../Connext'
 import { IChannelManager } from '../contract/ChannelManager'
-import { Big } from '../lib/bn'
+import * as ChannelManagerAbi from '../contract/ChannelManagerAbi.json'
 import { IHubAPIClient } from '../Hub'
-import { reducers } from "../state/reducers";
-import { ConnextState, PersistentState, RuntimeState } from '../state/store';
-import { StateGenerator } from '../StateGenerator';
+import { toBN } from '../lib/bn'
+import { handleStateFlags } from '../state/middleware'
+import { reducers } from '../state/reducers'
+import { ConnextState, PersistentState, RuntimeState } from '../state/store'
+import { StateGenerator } from '../StateGenerator'
 import {
   Address,
   addSigToChannelState,
@@ -35,18 +23,23 @@ import {
   convertChannelState,
   convertThreadState,
   convertWithdrawalParameters,
+  CustodialBalanceRow,
+  CustodialWithdrawalRow,
   DepositArgs,
   DepositArgsBN,
-  LogDescription,
   ExchangeArgs,
   ExchangeArgsBN,
   ExchangeRates,
   HubConfig,
+  LogDescription,
   Omit,
-  PaymentBN,
   Payment,
+  PaymentBN,
+  PaymentProfileConfig,
   PurchasePayment,
   PurchasePaymentHubResponse,
+  PurchasePaymentRow,
+  PurchaseRowWithPayments,
   SignedDepositRequestProposal,
   Sync,
   SyncResult,
@@ -60,68 +53,77 @@ import {
   UnsignedThreadState,
   UpdateRequest,
   WithdrawalParameters,
-  CustodialBalanceRow,
-  PaymentProfileConfig,
-  PurchasePaymentRow,
-  PurchaseRowWithPayments,
-  CustodialWithdrawalRow,
 } from '../types'
-import Wallet from '../Wallet';
-import { handleStateFlags } from '../state/middleware';
+import { Wallet } from '../Wallet'
+
+import {
+  assert,
+  getChannelState,
+  getCustodialBalance,
+  getDepositArgs,
+  getExchangeArgs,
+  getPaymentArgs,
+  getThreadState,
+  getWithdrawalArgs,
+  mkAddress,
+  mkHash,
+  PartialSignedOrSuccinctChannel,
+  PartialSignedOrSuccinctThread,
+} from '.'
 
 const mnemonic: string =
   'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
-    hash: '0xabc123',
-    to: '0xabc123',
+    chainId: '0x1',
+    data: '0x',
     from: '0xabc123',
-    nonce: 1,
     gasLimit: eth.utils.bigNumberify('0x1'),
     gasPrice: eth.utils.bigNumberify('0x2'),
-    data: '0x',
-    value: eth.utils.bigNumberify('0x100'),
-    chainId: '0x1',
+    hash: '0xabc123',
+    nonce: 1,
     r: '0xabc123',
     s: '0xabc123',
+    to: '0xabc123',
     v: 0,
+    value: eth.utils.bigNumberify('0x100'),
   }
-  return Object.assign(defaultTx, opts)
+  return ({ ...defaultTx, ...opts })
 }
 
 export class MockConnextInternal extends ConnextInternal {
-  mockContract: MockChannelManager
-  mockHub: MockHub
+  public mockContract: MockChannelManager
+  public mockHub: MockHub
 
-  constructor(opts: Partial<IConnextClientOptions> = {}) {
+  public constructor(opts: Partial<IConnextChannelInternalOptions> = {}) {
     const store = opts.store || new MockStore().createStore()
 
     const oldDispatch = store.dispatch as any
     const actions: any[] = []
-    store.dispatch = function (...args: any[]) {
+    store.dispatch = function (...args: any[]): any {
       actions.push(args[0])
       return oldDispatch.call(this, ...args)
     }
-    afterEach(function () {
+    afterEach(function (): any {
       // ignore this as any ts err
-      if ((this as any).currentTest.state == 'failed') {
-        console.error('Actions emitted during test: ' + (actions.length ? '' : '(no actions)'))
-        actions.forEach(action => {
+      if ((this as any).currentTest.state === 'failed') {
+        console.error(`Actions emitted during test: ${actions.length ? `` : `(no actions)`}`)
+        actions.forEach((action: any): any => {
           console.error('  ', JSON.stringify(action))
         })
       }
     })
 
     const moreOpts = {
-      user: mkAddress('0x123'),
-      contractAddress: mkAddress('0xccc'),
       contract: new MockChannelManager(),
+      contractAddress: mkAddress('0xccc'),
       ethUrl: 'http://localhost:8545',
       hub: new MockHub(),
       hubAddress: mkAddress('0xhhh'),
-      store,
       mnemonic,
+      store,
+      user: mkAddress('0x123'),
       ...opts,
     } as any
 
@@ -134,44 +136,48 @@ export class MockConnextInternal extends ConnextInternal {
     this.mockHub = this.hub as MockHub
 
     // stub out actual sig recovery methods, only test presence
-    this.validator.assertChannelSigner = (channelState: ChannelState, signer: "user" | "hub" = "user"): void => { return }
+    this.validator.assertChannelSigner =
+      (channelState: ChannelState, signer: 'user' | 'hub' = 'user'): void => undefined
 
-    this.validator.assertThreadSigner = (thread: ThreadState): void => { return }
+    this.validator.assertThreadSigner =
+      (thread: ThreadState): void => undefined
 
-    this.validator.assertDepositRequestSigner = (req: SignedDepositRequestProposal, signer: Address): void => { return }
+    this.validator.assertDepositRequestSigner =
+      (req: SignedDepositRequestProposal, signer: Address): void => undefined
 
     after(() => this.stop())
   }
 
-  async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
+  public async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
     const { user, hubAddress } = this.opts
     return addSigToChannelState(state, mkHash('0x987123'), user !== hubAddress)
   }
 
-  async signThreadState(state: UnsignedThreadState): Promise<ThreadState> {
+  public async signThreadState(state: UnsignedThreadState): Promise<ThreadState> {
     return addSigToThreadState(state, mkHash('0x51512'))
   }
 
-  async signDepositRequestProposal(args: Omit<SignedDepositRequestProposal, 'sigUser'>,): Promise<SignedDepositRequestProposal> {
+  public async signDepositRequestProposal(
+    args: Omit<SignedDepositRequestProposal, 'sigUser'>,
+  ): Promise<SignedDepositRequestProposal> {
     return { ...args, sigUser: mkHash('0xalsd23')}
   }
 
-  async getContractEvents(eventName: string, fromBlock: number): Promise<LogDescription[]> {
+  public async getContractEvents(eventName: string, fromBlock: number): Promise<LogDescription[]> {
     return []
   }
 
 }
 
 export class MockChannelManager implements IChannelManager {
-  contractMethodCalls = [] as any[]
+  public abi: any
+  public contractMethodCalls: any[] = []
+  public gasMultiple: number = 1.5
+  public rawAbi: any = ChannelManagerAbi.abi
 
-  gasMultiple = 1.5
-  abi: any
-  rawAbi: any = ChannelManagerAbi.abi
-
-  assertCalled(method: keyof MockChannelManager, ...args: any[]) {
-    for (let call of this.contractMethodCalls) {
-      if (call.name == method) {
+  public assertCalled(method: keyof MockChannelManager, ...args: any[]): any {
+    for (const call of this.contractMethodCalls) {
+      if (call.name === method) {
         try {
           assert.containSubset(call.args, args)
           return
@@ -182,219 +188,219 @@ export class MockChannelManager implements IChannelManager {
     }
 
     assert.fail(
-      `No contract methods calls matching '${method}(${JSON.stringify(args)})' were made!\n` +
-      `Method calls:\n${this.contractMethodCalls.map(c => JSON.stringify(c)).join('\n')}`
-    )
+      `No contract methods calls matching '${method}(${JSON.stringify(args)})' were made!` +
+      `Method calls:${this.contractMethodCalls.map((c: any): any => JSON.stringify(c)).join('\n')}`)
   }
 
-  async userAuthorizedUpdate(state: ChannelState) {
+  public async userAuthorizedUpdate(state: ChannelState): Promise<any> {
     this.contractMethodCalls.push({
-      name: 'userAuthorizedUpdate',
       args: [state],
+      name: 'userAuthorizedUpdate',
     })
     return createTx()
   }
 
-  async getPastEvents(eventName: string, user: string[], fromBlock: number) {
+  public async getPastEvents(eventName: string, user: string[], fromBlock: number): Promise<any> {
     return []
   }
 
-  async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
+  public async getChannelDetails(user: string): Promise<ChannelManagerChannelDetails> {
     throw new Error('TODO: mock getChannelDetails')
   }
 
-  async startExit(state: ChannelState): Promise<Transaction> {
+  public async startExit(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock startExit')
   }
-  async startExitWithUpdate(state: ChannelState): Promise<Transaction> {
+  public async startExitWithUpdate(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock startExitWithUpdate')
   }
-  async emptyChannelWithChallenge(state: ChannelState): Promise<Transaction> {
+  public async emptyChannelWithChallenge(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock emptyChannelWithChallenge')
   }
-  async emptyChannel(state: ChannelState): Promise<Transaction> {
+  public async emptyChannel(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock emptyChannel')
   }
-  async startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction> {
+  public async startExitThread(
+    state: ChannelState, threadState: ThreadState, proof: any,
+  ): Promise<Transaction> {
     throw new Error('TODO: mock startExitThread')
   }
-  async startExitThreadWithUpdate(state: ChannelState, threadInitialState: ThreadState, threadUpdateState: ThreadState, proof: any): Promise<Transaction> {
+  public async startExitThreadWithUpdate(
+    state: ChannelState,
+    threadInitialState: ThreadState,
+    threadUpdateState: ThreadState,
+    proof: any,
+  ): Promise<Transaction> {
     throw new Error('TODO: mock startExitThreadWithUpdate')
   }
-  async challengeThread(state: ChannelState, threadState: ThreadState): Promise<Transaction> {
+  public async challengeThread(
+    state: ChannelState, threadState: ThreadState,
+  ): Promise<Transaction> {
     throw new Error('TODO: mock challengeThread')
   }
-  async emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction> {
+  public async emptyThread(
+    state: ChannelState, threadState: ThreadState, proof: any,
+  ): Promise<Transaction> {
     throw new Error('TODO: mock emptyThread')
   }
-  async nukeThreads(state: ChannelState): Promise<Transaction> {
+  public async nukeThreads(state: ChannelState): Promise<Transaction> {
     throw new Error('TODO: mock nukeThreads')
   }
 }
 
 export class MockHub implements IHubAPIClient {
-  receivedUpdateRequests: UpdateRequest[] = []
+  public receivedUpdateRequests: UpdateRequest[] = []
 
-  async config(): Promise<HubConfig> {
-    //TODO: implement correctly
-    return { 
+  public async config(): Promise<HubConfig> {
+    // TODO: implement correctly
+    return {
       beiMaxCollateralization: '100',
-      hubAddress: mkAddress("0xhhh")
+      hubAddress: mkAddress('0xhhh'),
     } as any
   }
 
-  async requestCustodialWithdrawal(): Promise<CustodialWithdrawalRow | null> {
-    return null // default test is no custodial balance owed
+  public async requestCustodialWithdrawal(): Promise<CustodialWithdrawalRow | undefined> {
+    return undefined // default test is no custodial balance owed
   }
 
   // TODO: implement the profile methods
-  async getProfileConfig(): Promise<PaymentProfileConfig | null> {
-    return null
+  public async getProfileConfig(): Promise<PaymentProfileConfig | undefined> {
+    return undefined
   }
 
-  async startProfileSession(): Promise<void> {}
+  public async startProfileSession(): Promise<void> {/* noop */}
 
-  async getCustodialBalance(): Promise<CustodialBalanceRow | null> {
-    return getCustodialBalance("empty")
+  public async getCustodialBalance(): Promise<CustodialBalanceRow | undefined> {
+    return getCustodialBalance('empty')
   }
 
-  async authChallenge(): Promise<string> {
+  public async authChallenge(): Promise<string> {
     return 'nonce'
   }
-  async authResponse(nonce: string, address: string, origin: string, signature: string): Promise<string> {
+  public async authResponse(nonce: string, address: string, signature: string): Promise<string> {
     return 'hub-token-returned'
   }
-  async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
+  public async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
     return { success: true, address: mkAddress('0xUUU') }
   }
 
-  async getAuthToken(): Promise<string> {
+  public async getAuthToken(): Promise<string> {
     return 'abc123'
   }
-  
-  async getChannelByUser(recipient: string): Promise<ChannelRow> {
+
+  public async getChannelByUser(recipient: string): Promise<ChannelRow> {
     return {
       id: 0,
-      status: 'CS_OPEN',
       lastUpdateOn: new Date(),
-      user: mkAddress('0xUUU'),
       state: getChannelState('full', { user: recipient }),
+      status: 'CS_OPEN',
+      user: mkAddress('0xUUU'),
     }
   }
 
-  async recipientNeedsCollateral(): Promise<string | null> {
-    return null
+  public async recipientNeedsCollateral(): Promise<string | undefined> {
+    return undefined
   }
 
-  async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }> {
+  public async redeem(secret: string): Promise<PurchasePaymentHubResponse & { amount: Payment }> {
     // NOTE: by default assumes this is redeemers first payment
     // if this is not what you are testing against, must use
     // the patch functions in test
     return {
+      amount: { amountToken: '1', amountWei: '0' },
       purchaseId: 'async-payment-bb',
-      sync: { status: "CS_OPEN", 
+      sync: { status: 'CS_OPEN',
       updates: [{
         type: 'channel',
         update: {
-          reason: 'ProposePendingDeposit',
+          args: getDepositArgs('full', { depositToken: [0, 1], depositWei: [0, 0] }),
           createdOn: new Date(),
-          args: getDepositArgs('full', {
-            depositToken: [0, 1],
-            depositWei: [0, 0],
-          }),
+          reason: 'ProposePendingDeposit',
           sigHub: mkHash('0x51512'),
           sigUser: '',
           txCount: 1,
         },
       }]},
-      amount: {
-        amountWei: '0',
-        amountToken: '1',
-      }
     }
   }
 
-  async getChannel(): Promise<ChannelRow> {
+  public async getChannel(): Promise<ChannelRow> {
     return {
       id: 0,
-      status: 'CS_OPEN',
       lastUpdateOn: new Date(),
-      user: mkAddress('0xUUU'),
       state: getChannelState('full'),
+      status: 'CS_OPEN',
+      user: mkAddress('0xUUU'),
     }
   }
 
-  async getActiveThreads(): Promise<ThreadState[]> {
+  public async getActiveThreads(): Promise<ThreadState[]> {
     return []
   }
 
-  async getLastThreadUpdateId(): Promise<number> {
+  public async getLastThreadUpdateId(): Promise<number> {
     return 0
   }
 
-  async getAllThreads(): Promise<ThreadState[]> {
+  public async getAllThreads(): Promise<ThreadState[]> {
     return []
   }
 
-  async getChannelStateAtNonce(): Promise<ChannelStateUpdate> {
+  public async getChannelStateAtNonce(): Promise<ChannelStateUpdate> {
     return {
-      args: {} as ExchangeArgs,
+      args: {},
       reason: 'Exchange',
       state: getChannelState('full'),
     }
   }
 
-  async getThreadInitialStates(): Promise<ThreadState[]> {
+  public async getThreadInitialStates(): Promise<ThreadState[]> {
     return [getThreadState('full')]
   }
 
-  async getIncomingThreads(): Promise<ThreadRow[]> {
+  public async getIncomingThreads(): Promise<ThreadRow[]> {
     return [{
       id: 1,
+      state: getThreadState('full'),
       status: 'CT_OPEN',
-      state: getThreadState('full')
     }]
   }
 
-  async getThreadByParties(): Promise<ThreadRow> {
+  public async getThreadByParties(): Promise<ThreadRow> {
     return {
       id: 1,
+      state: getThreadState('full'),
       status: 'CT_OPEN',
-      state: getThreadState('full')
     }
   }
 
-  async getPaymentHistory(): Promise<PurchasePaymentRow<string, string>[]> {
+  public async getPaymentHistory(): Promise<Array<PurchasePaymentRow<string, string>>> {
     return [{
-      amount: {
-        amountWei: '1000',
-        amountToken: '2000'
-    }, createdOn: new Date(),
-    custodianAddress: mkAddress('0xabc'),
-    id: 42,
-    meta: 'mocked payment',
-    purchaseId: '0xbeef',
-    recipient: mkAddress('0xaaa'),
-    sender: mkAddress('0xbbb'),
-    type: 'PT_CHANNEL'
+      amount: { amountWei: '1000', amountToken: '2000' },
+      createdOn: new Date(),
+      custodianAddress: mkAddress('0xabc'),
+      id: 42,
+      meta: 'mocked payment',
+      purchaseId: '0xbeef',
+      recipient: mkAddress('0xaaa'),
+      sender: mkAddress('0xbbb'),
+      type: 'PT_CHANNEL',
     }]
   }
 
-  async getPaymentById(): Promise<PurchaseRowWithPayments<object, string>> {
+  public async getPaymentById(): Promise<PurchaseRowWithPayments<object, string>> {
     return {
       amount: {
+        amountToken: '2000',
         amountWei: '1000',
-        amountToken: '2000'
-      }, 
+      },
       createdOn: new Date(),
       meta: {hello: 'mocked payment'},
-      purchaseId: '0xbeef',
-      sender: mkAddress('0xbbb'),
       payments: [{
         amount: {
+          amountToken: '2000',
           amountWei: '1000',
-          amountToken: '2000'
-        }, 
+        },
         createdOn: new Date(),
         custodianAddress: mkAddress('0xabc'),
         id: 42,
@@ -402,193 +408,210 @@ export class MockHub implements IHubAPIClient {
         purchaseId: '0xbeef',
         recipient: mkAddress('0xaaa'),
         sender: mkAddress('0xbbb'),
-        type: 'PT_CHANNEL'
-      }]
+        type: 'PT_CHANNEL',
+      }],
+      purchaseId: '0xbeef',
+      sender: mkAddress('0xbbb'),
     }
   }
 
-  async sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync> {
+  public async sync(txCountGlobal: number, lastThreadUpdateId: number): Promise<Sync> {
     // needs to be able to take an update from the store, and apply it
-    return { status: "CS_OPEN", updates: [] }
+    return { status: 'CS_OPEN', updates: [] }
   }
 
-  async buy<PurchaseMetaType=any, PaymentMetaType=any>(
+  public async buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,
-    payments: PurchasePayment<PaymentMetaType>[],
+    payments: Array<PurchasePayment<PaymentMetaType>>,
   ): Promise<PurchasePaymentHubResponse> {
-    const updates = payments.map(p => {
+    const updates = payments.map((p: any): any => {
       if ((p.update as UpdateRequest).sigUser) {
         // user signed update, add to recieved
-        console.log("TEST INCLUSION")
+        console.log('TEST INCLUSION')
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
-      if (p.type != 'PT_THREAD') {
+      if (p.type !== 'PT_THREAD') {
         return {
           type: 'channel',
           update: {
-            reason: 'Payment',
+            args: getPaymentArgs('full', {
+              amountToken: p.amount.amountToken,
+              amountWei: p.amount.amountWei,
+            }),
             createdOn: new Date(),
-            args: getPaymentArgs('full', { amountToken: p.amount.amountToken, amountWei: p.amount.amountWei }),
+            reason: 'Payment',
             sigHub: mkHash('0x51512'),
             sigUser: (p.update as UpdateRequest).sigUser || '',
-            txCount: (p.update as UpdateRequest).sigUser ? (p.update as UpdateRequest).txCount! : (p.update as UpdateRequest).txCount! + 1,
-          } as UpdateRequest
-        } as SyncResult
-      } else {
-        return {
-          type: 'thread',
-          update: { 
-            state: (p.update as any).state, 
-            id: (p.update as any).state.threadId, 
-            createdOn: new Date() 
-          }
-        } as SyncResult
+            txCount: (p.update as UpdateRequest).sigUser
+              ? (p.update as UpdateRequest).txCount || 0
+              : (p.update as UpdateRequest).txCount || 0 + 1,
+          },
+        }
+      }
+      return {
+        type: 'thread',
+        update: {
+          createdOn: new Date(),
+          id: (p.update as any).state.threadId,
+          state: (p.update as any).state,
+        },
       }
     })
 
     return {
       purchaseId: 'some-purchase-id',
-      sync: { status: "CS_OPEN", updates },
+      sync: { status: 'CS_OPEN', updates },
     }
   }
 
-  async requestDeposit(deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number): Promise<Sync> {
+  public async requestDeposit(
+    deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number,
+  ): Promise<Sync> {
     return {
       status: 'CS_OPEN',
       updates: [{
         type: 'channel',
         update: {
-          reason: 'ProposePendingDeposit',
-          createdOn: new Date(),
           args: getDepositArgs('full', {
-            sigUser: deposit.sigUser,
-            depositWeiUser: deposit.amountWei,
             depositTokenUser: deposit.amountToken,
-            timeout: parseInt('' + (Date.now() / 1000 + 269)),
+            depositWeiUser: deposit.amountWei,
+            sigUser: deposit.sigUser,
+            timeout: parseInt((Date.now() / 1000 + 269).toString(), 10),
           }),
+          createdOn: new Date(),
+          reason: 'ProposePendingDeposit',
           sigHub: mkHash('0x51512'),
           txCount: txCount + 1,
         },
-      }]
+      }],
     }
   }
 
-  async requestWithdrawal(params: WithdrawalParameters, txCountGlobal: number): Promise<Sync> {
+  public async requestWithdrawal(
+    params: WithdrawalParameters, txCountGlobal: number,
+  ): Promise<Sync> {
     const { withdrawalWeiUser, withdrawalTokenUser, ...res } = params
     return {
       status: 'CS_OPEN',
-      updates: 
+      updates:
       [{
         type: 'channel',
         update: {
-          reason: 'ProposePendingWithdrawal',
-          createdOn: new Date(),
           args: getWithdrawalArgs('empty', {
             ...res,
-            targetWeiHub: '0',
-            targetWeiUser: '0',
+            additionalTokenHubToUser: '0',
+            additionalWeiHubToUser: '0',
             targetTokenHub: '0',
             targetTokenUser: '0',
-            additionalWeiHubToUser: '0',
-            additionalTokenHubToUser: '0',
+            targetWeiHub: '0',
+            targetWeiUser: '0',
             timeout: +(Date.now() / 1000 + 60).toFixed(),
           }),
+          createdOn: new Date(),
+          reason: 'ProposePendingWithdrawal',
           txCount: txCountGlobal + 1,
         },
-      }]
+      }],
     }
   }
 
-  async requestExchange(weiToSell: string, tokensToSell: string, txCountGlobal: number): Promise<Sync> {
+  public async requestExchange(
+    weiToSell: string, tokensToSell: string, txCountGlobal: number,
+  ): Promise<Sync> {
     return {
       status: 'CS_OPEN',
       updates:
       [{
         type: 'channel',
         update: {
-          reason: 'Exchange',
-          createdOn: new Date(),
           args: getExchangeArgs('full', {
             exchangeRate: '5',
-            tokensToSell: Big(tokensToSell),
-            weiToSell: Big(weiToSell),
-            seller: "user"
+            seller: 'user',
+            tokensToSell: toBN(tokensToSell),
+            weiToSell: toBN(weiToSell),
           }),
+          createdOn: new Date(),
+          reason: 'Exchange',
           txCount: txCountGlobal + 1,
         },
-      }]
+      }],
     }
   }
 
-  async getExchangeRates(): Promise<ExchangeRates> {
-    return { 'USD': '5' }
+  public async getExchangeRates(): Promise<ExchangeRates> {
+    return { 'DAI': '5' }
   }
 
-  async requestCollateral(txCountGlobal: number): Promise<Sync> {
+  public async requestCollateral(txCountGlobal: number): Promise<Sync> {
     return {
       status: 'CS_OPEN',
       updates:
       [{
         type: 'channel',
         update: {
-          reason: 'ProposePendingDeposit',
-          createdOn: new Date(),
           args: getDepositArgs('full', {
-            depositTokenHub: Big(69),
-            depositTokenUser: Big(0),
-            depositWeiHub: Big(420),
-            depositWeiUser: Big(0),
-            timeout: Math.floor(Date.now() / 1000) + 69
+            depositTokenHub: toBN(69),
+            depositTokenUser: toBN(0),
+            depositWeiHub: toBN(420),
+            depositWeiUser: toBN(0),
+            timeout: Math.floor(Date.now() / 1000) + 69,
           }),
+          createdOn: new Date(),
+          reason: 'ProposePendingDeposit',
           txCount: txCountGlobal + 1,
         },
-      }]
+      }],
     }
   }
 
-  async updateHub(updates: UpdateRequest[], lastThreadUpdateId: number): Promise<{ error: null, updates: Sync }> {
+  public async updateHub(
+    updates: UpdateRequest[], lastThreadUpdateId: number,
+  ): Promise<{ error: undefined, updates: Sync }> {
     this.receivedUpdateRequests = [
       ...this.receivedUpdateRequests,
       ...updates,
     ]
-    let createdOn = new Date;
+    const createdOn = new Date()
     return {
-      error: null,
+      error: undefined,
       updates: {
-        status: "CS_OPEN",
-        updates: updates.map(up => ({
+        status: 'CS_OPEN',
+        updates: updates.map((up: any): any => ({
           type: 'channel' as 'channel',
           update: {
             ...up,
             createdOn,
             sigHub: up.sigHub || '0xMockHubSig',
           },
-        }))
+        })),
       },
     }
   }
 
-  async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
-    update.createdOn = new Date();
+  public async updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate> {
+    update.createdOn = new Date()
     return update
   }
-  
-  async getLatestChannelStateAndUpdate() {
-    return null
+
+  public async getLatestChannelStateAndUpdate(): Promise<any> {
+    return undefined
     // let store = new MockStore()
-    // return {state: store._initialState.persistent.channel, update: store._initialState.persistent.channelUpdate}
+    // return {state: store._initialState.persistent.channel,
+    // update: store._initialState.persistent.channelUpdate}
   }
 
-  async getLatestStateNoPendingOps(): Promise<ChannelState | null> {
-    return null
+  public async getLatestStateNoPendingOps(): Promise<ChannelState | undefined> {
+    return undefined
   }
 
-  assertReceivedUpdate(expected: PartialUpdateRequest) {
+  public assertReceivedUpdate(expected: PartialUpdateRequest): any {
     for (let req of this.receivedUpdateRequests as any[]) {
-      if (typeof expected.sigUser == 'boolean')
+      if (typeof expected.sigUser === 'boolean') {
         req = { ...req, sigUser: !!req.sigUser }
-      if (typeof expected.sigHub == 'boolean')
+      }
+      if (typeof expected.sigHub === 'boolean') {
         req = { ...req, sigHub: !!req.sigHub }
+      }
       try {
         assert.containSubset(req, expected)
         return
@@ -597,16 +620,15 @@ export class MockHub implements IHubAPIClient {
       }
     }
 
-    console.log('this.receivedUpdateRequests: ', this.receivedUpdateRequests);
+    console.log('this.receivedUpdateRequests: ', this.receivedUpdateRequests)
 
     assert.fail(
-      `Hub did not recieve any updates matching ${JSON.stringify(expected)}. Got:\n` +
-      this.receivedUpdateRequests.map(x => JSON.stringify(x)).join('\n')
-    )
+      `Hub did not recieve any updates matching ${JSON.stringify(expected)}. Got:` +
+      `${this.receivedUpdateRequests.map((x: any): any => JSON.stringify(x)).join('\n')}`)
   }
 }
 
-type PartialUpdateRequest = {
+interface PartialUpdateRequest {
   reason: ChannelUpdateReason
   args: Partial<ArgsTypes>
   txCount?: number
@@ -616,103 +638,105 @@ type PartialUpdateRequest = {
 
 export class MockStore {
   public _initialState: ConnextState = {
-    runtime: new RuntimeState(),
     persistent: new PersistentState(),
+    runtime: new RuntimeState(),
   }
 
-  public createStore: any = () => {
-    return createStore(
-      reducers, 
-      this._initialState, 
-      applyMiddleware(handleStateFlags)
+  public createStore: any = () =>
+    createStore(
+      reducers,
+      this._initialState,
+      applyMiddleware(handleStateFlags),
     )
-  }
 
-  public setInitialConnextState = (state: ConnextState) => {
+  public setInitialConnextState = (state: ConnextState): any => {
     this._initialState = state
   }
 
-  public setExchangeRate = (rates: ExchangeRates) => {
+  public setExchangeRate = (rates: ExchangeRates): any => {
     this._initialState = {
       ...this._initialState,
       runtime: {
         ...this._initialState.runtime,
-        exchangeRate: { lastUpdated: new Date(), rates }
-      }
+        exchangeRate: { lastUpdated: new Date(), rates },
+      },
     }
   }
 
-  public setSyncResultsFromHub = (syncResultsFromHub: SyncResult[]) => {
+  public setSyncResultsFromHub = (syncResultsFromHub: SyncResult[]): any => {
     this._initialState = {
       ...this._initialState,
       runtime: {
         ...this._initialState.runtime,
         syncResultsFromHub,
-      }
+      },
     }
   }
 
   /* PERSISTENT STORE SETTINGS */
-  public setChannel = (overrides: PartialSignedOrSuccinctChannel = {}) => {
+  public setChannel = (overrides: PartialSignedOrSuccinctChannel = {}): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        channel: getChannelState("empty", {
-          txCountChain: 0,
-          txCountGlobal: 0,
+        channel: getChannelState('empty', {
           sigHub: '0xsig-hub',
           sigUser: '0xsig-user',
-        }, overrides)
-      }
+          txCountChain: 0,
+          txCountGlobal: 0,
+        }, overrides),
+      },
     }
   }
 
-  public setHubAddress = (hubAddress: string = mkAddress("0xhhh")) => {
+  public setHubAddress = (hubAddress: string = mkAddress('0xhhh')): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
         hubAddress,
-      }
+      },
     }
   }
 
-  public setLatestValidState = (overrides: PartialSignedOrSuccinctChannel = {}) => {
+  public setLatestValidState = (overrides: PartialSignedOrSuccinctChannel = {}): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        latestValidState: getChannelState("empty", {
-          txCountChain: 0,
-          txCountGlobal: 0,
+        latestValidState: getChannelState('empty', {
           sigHub: '0xsig-hub',
           sigUser: '0xsig-user',
-        }, overrides)
-      }
+          txCountChain: 0,
+          txCountGlobal: 0,
+        }, overrides),
+      },
     }
   }
 
-  public setChannelUpdate = (update: UpdateRequest) => {
+  public setChannelUpdate = (update: UpdateRequest): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
         channelUpdate: update,
-      }
+      },
     }
   }
 
-  public addThread = (overrides: PartialSignedOrSuccinctThread) => {
-    const initialThread = addSigToThreadState(getThreadState("empty", overrides), mkHash('0xMockUserSig'))
+  public addThread = (overrides: PartialSignedOrSuccinctThread): any => {
+    const initialThread = addSigToThreadState(
+      getThreadState('empty', overrides), mkHash('0xMockUserSig'))
 
     // Get state from store
+    const {
+      channel,
+      lastThreadUpdateId,
+    } = this._initialState.persistent
     let {
+      activeInitialThreadStates,
       activeThreads,
       threadHistory,
-      channel,
-      activeInitialThreadStates,
-      lastThreadUpdateId,
     } = this._initialState.persistent
 
     const initialThreadBN = convertThreadState('bn', initialThread)
@@ -726,31 +750,36 @@ export class MockStore {
     newState = addSigToChannelState(newState, mkHash('0xMockHubSig'), false)
 
     activeInitialThreadStates = activeInitialThreadStates.concat([initialThread])
-    threadHistory = threadHistory.concat([{ sender: initialThread.sender, receiver: initialThread.receiver, threadId: initialThread.threadId }])
+    threadHistory = threadHistory.concat([{
+      receiver: initialThread.receiver,
+      sender: initialThread.sender,
+      threadId: initialThread.threadId,
+    }])
     activeThreads = activeThreads.concat([initialThread])
 
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        channel: newState as ChannelState,
-        threadHistory,
         activeInitialThreadStates,
         activeThreads,
+        channel: newState as ChannelState,
         lastThreadUpdateId, // only updated on thread updates
+        threadHistory,
       },
     }
   }
 
-  public updateThread = (threadHistoryItem: ThreadHistoryItem, payment: PaymentBN) => {
+  public updateThread = (threadHistoryItem: ThreadHistoryItem, payment: PaymentBN): any => {
     // Get state from store
     let {
       activeThreads,
       lastThreadUpdateId,
     } = this._initialState.persistent
 
-    const thread = activeThreads.filter(state => (state.sender === threadHistoryItem.sender && 
-      threadHistoryItem.receiver == threadHistoryItem.receiver && state.threadId == threadHistoryItem.threadId))
+    const thread = activeThreads.filter((state: any): boolean => (
+      state.sender === threadHistoryItem.sender
+      && state.threadId === threadHistoryItem.threadId))
 
     const threadBN = convertThreadState('bn', thread[0])
 
@@ -759,20 +788,22 @@ export class MockStore {
     threadUpdate = addSigToThreadState(threadUpdate, mkHash('0xMockUserSig'))
 
     // Update active thread with thread update
-    activeThreads = activeThreads.filter(state => !(state.sender === threadHistoryItem.sender && 
-      threadHistoryItem.receiver == threadHistoryItem.receiver && state.threadId == threadHistoryItem.threadId)).concat([threadUpdate as ThreadState])
+    activeThreads = activeThreads.filter((state: any): boolean => !(
+      state.sender === threadHistoryItem.sender
+      && state.threadId === threadHistoryItem.threadId
+    )).concat([threadUpdate as ThreadState])
 
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
         activeThreads,
-        lastThreadUpdateId: lastThreadUpdateId++
+        lastThreadUpdateId: lastThreadUpdateId += 1,
       },
     }
-  }  
+  }
 
-  public setThreadHistory = (threadHistory: ThreadHistoryItem[]) => {
+  public setThreadHistory = (threadHistory: ThreadHistoryItem[]): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
@@ -782,7 +813,7 @@ export class MockStore {
     }
   }
 
-  public setLastThreadUpdateId = (lastThreadUpdateId: number) => {
+  public setLastThreadUpdateId = (lastThreadUpdateId: number): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
@@ -792,15 +823,15 @@ export class MockStore {
     }
   }
 
-  public setSyncControllerState = (syncResults: SyncResult[]) => {
+  public setSyncControllerState = (syncResults: SyncResult[]): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
         syncControllerState: {
           updatesToSync: syncResults,
-        }
-      }
+        },
+      },
     }
   }
 }
@@ -818,15 +849,16 @@ export class MockStore {
  *    old.call(this, '[LOG] ', ...args)
  *  })
  */
-export function patch<T, Attr extends keyof T>(host: T, attr: Attr, func: any) {
-  let old: any = host[attr]
+export const patch = <T, Attr extends keyof T>(host: T, attr: Attr, func: any): any => {
+  const old: any = host[attr]
   if (!old) {
     let suffix = ''
-    if ((old.prototype || {} as any)[attr])
+    if ((old.prototype || {} as any)[attr]) {
       suffix = ` (but its prototype does; did you forget '.prototype'?)`
+    }
     throw new Error(`${host} has no attribute '${attr}'${suffix}`)
   }
-  host[attr] = function (this: T) {
+  host[attr] = function (this: T): any {
     // NOTE: causes compiler errors in the wallet
     return (func as any).call(this, old.bind(this), ...(arguments as any))
   } as any

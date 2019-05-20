@@ -1,5 +1,6 @@
+import { Client } from 'pg'
+
 import DBEngine from '../DBEngine'
-import {Client} from 'pg'
 
 export default async function eraseDb (engine: DBEngine<Client>): Promise<any> {
   return engine.exec(truncateAllTables)

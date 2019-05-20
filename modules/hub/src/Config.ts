@@ -1,11 +1,6 @@
-import camelize from './util/camelize'
 import { Registry } from './Container'
-import { big } from 'connext';
-const {
-  Big,
-  toWeiBig,
-  toWeiString,
-} = big
+import { BN, toBN, toWei } from './util'
+import camelize from './util/camelize'
 
 const ENV_VARS = [
   'ETH_RPC_URL',
@@ -31,7 +26,7 @@ const ENV_VARS = [
   'COINPAYMENTS_API_KEY',
   'COINPAYMENTS_API_SECRET',
   'COINPAYMENTS_IPN_SECRET',
-  'PRIVATE_KEY_FILE'
+  'PRIVATE_KEY_FILE',
 ]
 
 const env = process.env.NODE_ENV || 'development'
@@ -92,23 +87,23 @@ export default class Config {
   public shouldCollateralizeUrl: string | 'NO_CHECK' = 'NO_CHECK'
   public recipientAddress: string = ''
   public hotWalletAddress: string = ''
-  public hotWalletMinBalance: string = toWeiString('6.9')
+  public hotWalletMinBalance: string = toWei('6.9').toString()
   public sessionSecret: string = ''
   public staleChannelDays?: number = process.env.STALE_CHANNEL_DAYS ? parseInt(process.env.STALE_CHANNEL_DAYS) : null // if null, will not dispute
   public registry?: Registry
   public branding: BrandingConfig
   public tokenContractAddress: string = ''
   // amount users can have in any one channel for their balance
-  public channelBeiLimit = toWeiBig(process.env.CHANNEL_BEI_LIMIT || 69)
+  public channelBeiLimit = toWei(process.env.CHANNEL_BEI_LIMIT || 69)
   // minimum amount of bei the hub will put into any one channel
   // for collateral
-  public beiMinCollateralization = toWeiBig(process.env.BEI_MIN_COLLATERALIZATION || 10)
+  public beiMinCollateralization = toWei(process.env.BEI_MIN_COLLATERALIZATION || 10)
   // max bei the hub will collateralize at any point
-  public beiMaxCollateralization = toWeiBig(process.env.BEI_MAX_COLLATERALIZATION || 169)
+  public beiMaxCollateralization = toWei(process.env.BEI_MAX_COLLATERALIZATION || 169)
   public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
 
-  public threadBeiLimit = toWeiBig(process.env.THREAD_BEI_LIMIT || 10)
-  public channelBeiDeposit = toWeiBig(process.env.CHANNEL_BEI_DEPOSIT || 1000)
+  public threadBeiLimit = toWei(process.env.THREAD_BEI_LIMIT || 10)
+  public channelBeiDeposit = toWei(process.env.CHANNEL_BEI_DEPOSIT || 1000)
   
   public privateKeyFile: string = ''
 

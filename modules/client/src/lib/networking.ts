@@ -2,21 +2,19 @@ export const GET = 'GET'
 export const POST = 'POST'
 
 export class Networking {
-  baseUrl: string
+  public baseUrl: string
 
-  constructor(baseUrl: string) {
+  public constructor(baseUrl: string) {
     this.baseUrl = baseUrl
   }
 
-  get = (url: string) => {
-    return this.request(url, GET)
-  }
+  public get = (url: string): Promise<any> =>
+    this.request(url, GET)
 
-  post = (url: string, body: any) => {
-    return this.request(url, POST, body)
-  }
+  public post = (url: string, body: any): Promise<any> =>
+    this.request(url, POST, body)
 
-  request = async (url: string, method: any, body?: any) => {
+  private request = async (url: string, method: any, body?: any): Promise<any> => {
     // TO DO: better type
     const opts = {
       method,
@@ -51,7 +49,7 @@ export class Networking {
 
     if (res.status === 204) {
       return {
-        data: null,
+        data: undefined,
       }
     }
 
@@ -63,10 +61,8 @@ export class Networking {
   }
 }
 
-export const errorResponse = (status: number, body: any, message: string) => {
-  return {
-    status,
-    body,
-    message,
-  }
-}
+export const errorResponse = (status: number, body: any, message: string): any => ({
+  body,
+  message,
+  status,
+})

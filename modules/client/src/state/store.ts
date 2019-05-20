@@ -1,142 +1,144 @@
-import { Store } from 'redux';
-import { EMPTY_ROOT_HASH, ZERO_ADDRESS } from '../lib/constants'
+import { ethers as eth } from 'ethers'
+import { Store } from 'redux'
+
 import {
   ChannelState,
   ChannelStatus,
+  CustodialBalanceRow,
   ExchangeRateState,
   Payment,
   SyncResult,
   ThreadHistoryItem,
   ThreadState,
   UpdateRequest,
-  CustodialBalanceRow,
 } from '../types'
 
+// To maintain the invariant that the current channel is always signed, add
+// non-empty signatures here. Note: this is a valid assumption because:
+// 1. The signatures of the current channel state should never need to be
+//    checked, and
+// 2. The initial state (ie, with zll zero values) is indistinguishable from
+//    some subsequent state which has no value (ie, user and hub have
+//    withdrawn their entire balance)
+
 export const CUSTODIAL_BALANCE_ZERO_STATE = {
-  balanceWei: '0',
   balanceToken: '0',
+  balanceWei: '0',
+  sentWei: '0',
   totalReceivedToken: '0',
   totalReceivedWei: '0',
   totalWithdrawnToken: '0',
   totalWithdrawnWei: '0',
-  sentWei: '0',
-  user: '0x0'
+  user: '0x0',
 }
 
 export const CHANNEL_ZERO_STATE = {
-  user: '0x0',
-  recipient: '0x0',
-  contractAddress: ZERO_ADDRESS,
-  balanceWeiUser: '0',
-  balanceWeiHub: '0',
-  balanceTokenUser: '0',
   balanceTokenHub: '0',
-  pendingDepositWeiUser: '0',
-  pendingDepositWeiHub: '0',
-  pendingDepositTokenUser: '0',
+  balanceTokenUser: '0',
+  balanceWeiHub: '0',
+  balanceWeiUser: '0',
+  contractAddress: eth.constants.AddressZero,
   pendingDepositTokenHub: '0',
-  pendingWithdrawalWeiUser: '0',
-  pendingWithdrawalWeiHub: '0',
-  pendingWithdrawalTokenUser: '0',
+  pendingDepositTokenUser: '0',
+  pendingDepositWeiHub: '0',
+  pendingDepositWeiUser: '0',
   pendingWithdrawalTokenHub: '0',
-  txCountGlobal: 0,
-  txCountChain: 0,
-  threadRoot: EMPTY_ROOT_HASH,
-  threadCount: 0,
-  timeout: 0,
-  // To maintain the invariant that the current channel is always signed, add
-  // non-empty signatures here. Note: this is a valid assumption because:
-  // 1. The signatures of the current channel state should never need to be
-  //    checked, and
-  // 2. The initial state (ie, with zll zero values) is indistinguishable from
-  //    some subsequent state which has no value (ie, user and hub have
-  //    withdrawn their entire balance)
-  sigUser: '0x0',
+  pendingWithdrawalTokenUser: '0',
+  pendingWithdrawalWeiHub: '0',
+  pendingWithdrawalWeiUser: '0',
+  recipient: '0x0',
   sigHub: '0x0',
+  sigUser: '0x0',
+  threadCount: 0,
+  threadRoot: eth.constants.HashZero,
+  timeout: 0,
+  txCountChain: 0,
+  txCountGlobal: 0,
+  user: '0x0',
 }
 
 export class SyncControllerState {
   // Updates we need to send back to the hub
-  updatesToSync: SyncResult[] = []
+  public updatesToSync: SyncResult[] = []
 }
 
-export type OnchainMonitoring = {
-  transactionHash: string | null,
+export interface IOnchainMonitoring {
+  transactionHash: string | undefined,
   submitted: boolean,
   detected: boolean
 }
 
 export class RuntimeState {
-  deposit: OnchainMonitoring = {
-    transactionHash: null,
+  public deposit: IOnchainMonitoring = {
+    detected: false,
     submitted: false,
-    detected: false
+    transactionHash: undefined,
   }
 
-  withdrawal: OnchainMonitoring = {
-    transactionHash: null,
+  public withdrawal: IOnchainMonitoring = {
+    detected: false,
     submitted: false,
-    detected: false
+    transactionHash: undefined,
   }
 
-  collateral: OnchainMonitoring = {
-    transactionHash: null,
+  public collateral: IOnchainMonitoring = {
+    detected: false,
     submitted: false,
-    detected: false
+    transactionHash: undefined,
   }
 
-  exchangeRate: null | ExchangeRateState = null
-  syncResultsFromHub: SyncResult[] = []
-  updateRequestTimeout: number = 60 * 10 // default 10 min
-  channelStatus: ChannelStatus = "CS_OPEN"
+  public exchangeRate: undefined | ExchangeRateState = undefined
+  public syncResultsFromHub: SyncResult[] = []
+  public updateRequestTimeout: number = 60 * 10 // default 10 min
+  public channelStatus: ChannelStatus = 'CS_OPEN'
 }
 
-export interface PendingRequestedDeposit {
+export interface IPendingRequestedDeposit {
   amount: Payment
   requestedOn: number
-  txCount: number | null
+  txCount: number | undefined
 }
 
 export class PersistentState {
-  channel: ChannelState = CHANNEL_ZERO_STATE
+  public channel: ChannelState = CHANNEL_ZERO_STATE
 
   // The update that created this channel, or an empty payment if the channel
   // update is the initial.
-  channelUpdate: UpdateRequest = {
-    reason: 'Payment',
+  public channelUpdate: UpdateRequest = {
     args: {
-      recipient: 'hub',
       amountToken: '0',
       amountWei: '0',
+      recipient: 'hub',
     },
-    txCount: 0,
+    reason: 'Payment',
     sigHub: '0x0',
     sigUser: '0x0',
+    txCount: 0,
   }
 
   // The 'latestValidState' is the latest state with no pending operations
   // which will be used by the Invalidation update (since the current channel
   // might have pending operations which need to be invalidated). Set by the
   // reducer in reducers.
-  latestValidState: ChannelState = CHANNEL_ZERO_STATE
+  public latestValidState: ChannelState = CHANNEL_ZERO_STATE
 
-  custodialBalance: CustodialBalanceRow = CUSTODIAL_BALANCE_ZERO_STATE
+  public custodialBalance: CustodialBalanceRow = CUSTODIAL_BALANCE_ZERO_STATE
 
-  activeThreads: ThreadState[] = [] // all open and active threads at latest state
-  activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
-  // threadHistory is how the client will generate and track the 
+  public activeThreads: ThreadState[] = [] // all open and active threads at latest state
+  public activeInitialThreadStates: ThreadState[] = [] // used to generate root hash
+  // threadHistory is how the client will generate and track the
   // appropriate threadID for each sender/receiver
   // combo. Only the latest sender/receiver threadId should be
   // included in this history
-  threadHistory: ThreadHistoryItem[] = []
-  lastThreadUpdateId: number = 0 // global hub db level
-  syncControllerState = new SyncControllerState()
-  hubAddress: string = "0x0"
+  public threadHistory: ThreadHistoryItem[] = []
+  public lastThreadUpdateId: number = 0 // global hub db level
+  public syncControllerState: SyncControllerState = new SyncControllerState()
+  public hubAddress: string = '0x0'
 }
 
 export class ConnextState {
-  persistent = new PersistentState()
-  runtime = new RuntimeState()
+  public persistent: PersistentState = new PersistentState()
+  public runtime: RuntimeState = new RuntimeState()
 }
 
 export type ConnextStore = Store<ConnextState>

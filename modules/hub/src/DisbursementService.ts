@@ -1,12 +1,11 @@
 import Config from './Config'
-import log from './util/log'
+import erc20TransferAbi from './contract/erc20TransferAbi'
 import DisbursementDao from './dao/DisbursementsDao'
 import Disbursement from './domain/Disbursement'
-import erc20TransferAbi from './contract/erc20TransferAbi'
-import { big } from 'connext';
+import { toBN } from './util'
+import log from './util/log'
 
 const LOG = log('DisbursementService')
-
 const DISBURSEMENT_AMOUNT_FINNEY = 45
 const DISBURSEMENT_AMOUNT_BEI = 69
 
@@ -35,7 +34,7 @@ export default class DisbursementService {
     try {
       disbursement = await this.disbursementDao.create(
         address.toLowerCase(),
-        big.Big(
+        toBN(
           this.web3.utils.toWei(
             DISBURSEMENT_AMOUNT_FINNEY.toString(),
             'finney'
@@ -99,7 +98,7 @@ export default class DisbursementService {
     try {
       disbursement = await this.disbursementDao.createErc20(
         address.toLowerCase(),
-        big.Big(DISBURSEMENT_AMOUNT_BEI)
+        toBN(DISBURSEMENT_AMOUNT_BEI)
       )
     } catch (err) {
       LOG.error('Failed to create ERC-20 disbursement: {err}', {

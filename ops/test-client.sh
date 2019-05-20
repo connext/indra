@@ -2,10 +2,14 @@
 set -e
 
 test_command='
+  set -e
+  echo "Compiling..."
+  tsc
+  echo "Compiled successfully, running test suite..."
+
   ./node_modules/.bin/mocha \
-    -r ts-node/register/type-check \
-    -r ./src/register/common.ts \
-    "src/**/*.test.ts" --exit
+    -r ./dist/register/common.js \
+    "dist/**/*.test.js" --exit
 '
 
 watch_command='
@@ -23,6 +27,7 @@ watch_command='
     else echo "Changes detected, compiling..." && srcHash="`hash`"
     fi
 
+    rm -rf dist/* types/*
     tsc
 
     if [[ "$?" != "0" ]] # skip tests if compilation failed

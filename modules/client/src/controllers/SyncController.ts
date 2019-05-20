@@ -1,57 +1,69 @@
-import Semaphore = require('semaphore')
-import { AbstractController } from './AbstractController'
+import { ethers as eth } from 'ethers'
+import Semaphore from 'semaphore'
+
 import { ConnextInternal } from '../Connext'
-import { getChannel, getLastThreadUpdateId } from '../state/getters';
-import { Poller } from '../lib/poller/Poller'
+import { Poller } from '../lib/poller'
 import { assertUnreachable, maybe } from '../lib/utils'
 import * as actions from '../state/actions'
-import { SyncControllerState, CUSTODIAL_BALANCE_ZERO_STATE } from '../state/store'
+import { getChannel, getLastThreadUpdateId } from '../state/getters'
+import { CUSTODIAL_BALANCE_ZERO_STATE, SyncControllerState } from '../state/store'
 import {
   ArgsTypes,
   Block,
   ChannelState,
   ChannelStateUpdate,
   channelUpdateToUpdateRequest,
-  LogDescription,
   InvalidationArgs,
   InvalidationReason,
+  LogDescription,
   Sync,
   SyncResult,
   ThreadStateUpdate,
   UpdateRequest,
 } from '../types'
 
-/**
- * This function should be used to update the `syncResultsFromHub` value in the 
- * runtime state. Both arrays of sync results should have fields that are given 
- * by the hub (e.g createdOn will not be null)
- */
+import { AbstractController } from './AbstractController'
+
+const noCreatedOnError: string = `Item does not contain a 'createdOn' field, ` +
+  `this likely means this function was called incorrectly. See comments in source.`
 
 /*
-  This function needs to dedupe states, sort channel states by txCount, sort thread states by createdOn,
-  and then sort both against each other so that openThread channel states are always before thread updates
-  
+ This function should be used to update the `syncResultsFromHub` value in the
+ runtime state. Both arrays of sync results should have fields that are given
+ by the hub (e.g createdOn will not be undefined)
+
+  This function needs to:
+  1. dedupe states
+  2. sort channel states by txCount
+  3. sort thread states by createdOn
+  4. and then sort so that openThread channel states are always before thread updates
+
   Constraints:
   1. All states need to have a createdOn field
   2. States that are not signed or have no txCount should be appended
-  3. States are passed in as SyncResult but then need to be casted either ThreadUpdateStates or UpdateRequests
+  3. States are passed in as SyncResult but then need to be casted to either
+     ThreadUpdateStates or UpdateRequests
 */
 
-export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult[] {
+export const mergeSyncResults = (xs: SyncResult[], ys: SyncResult[]): SyncResult[] => {
+
   // Helper which takes in a sorted channel update request array and returns a deduped version
   const dedupeChannel = (arr : UpdateRequest[]): UpdateRequest[] => {
     const deduped = arr.slice(0, 1)
-    for (let next of arr.slice(1)) {
+    for (const next of arr.slice(1)) {
       const cur = deduped[deduped.length - 1]
 
-      if (next.txCount && next.txCount < cur.txCount!) {
-        throw new Error(
-          `next update txCount should never be < cur: ` +
-          `${JSON.stringify(next)} >= ${JSON.stringify(cur)}`
-        )
+      if (!cur || !cur.txCount) {
+        throw new Error(`Can't dedup an empty array: ${arr}`)
       }
 
-      if (!next.txCount || next.txCount > cur.txCount!) {
+      if (next.txCount && next.txCount < cur.txCount) {
+        throw new Error(
+          `next update txCount should never be < cur: ` +
+          `${JSON.stringify(next)} >= ${JSON.stringify(cur)}`)
+      }
+
+      if (!next.txCount || next.txCount > cur.txCount) {
         deduped.push(next)
         continue
       }
@@ -61,25 +73,24 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
       // don't it means that the hub has sent us two different updates with the
       // same txCount, and that is Very Bad. But better safe than sorry.)
       const nextAndCurMatch = (
-        next.reason == cur.reason &&
-        ((next.sigHub && cur.sigHub) ? next.sigHub == cur.sigHub : true) &&
-        ((next.sigUser && cur.sigUser) ? next.sigUser == cur.sigUser : true)
+        next.reason === cur.reason &&
+        ((next.sigHub && cur.sigHub) ? next.sigHub === cur.sigHub : true) &&
+        ((next.sigUser && cur.sigUser) ? next.sigUser === cur.sigUser : true)
       )
       if (!nextAndCurMatch) {
         throw new Error(
           `Got two updates from the hub with the same txCount but different ` +
-          `reasons or signatures: ${JSON.stringify(next)} != ${JSON.stringify(cur)}`
-        )
+          `reasons or signatures: ${JSON.stringify(next)} != ${JSON.stringify(cur)}`)
       }
 
       // If the two updates have different sigs (ex, the next update is the
       // countersigned version of the prev), then keep both
-      if (next.sigHub != cur.sigHub || next.sigUser != cur.sigUser) {
+      if (next.sigHub !== cur.sigHub || next.sigUser !== cur.sigUser) {
         deduped.push(next)
         continue
       }
 
-      // Otherwise the updates are identical; ignore the "next" update.
+      // Otherwise the updates are identical; ignore the 'next' update.
     }
 
     return deduped
@@ -88,91 +99,89 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   // Helper which takes in a sorted thread update array and returns a deduped version
   const dedupeThread = (arr : ThreadStateUpdate[]): ThreadStateUpdate[] => {
     const deduped = arr.slice(0, 1)
-    for (let next of arr.slice(1)) {
+    for (const next of arr.slice(1)) {
       const cur = deduped[deduped.length - 1]
       if (!next.createdOn || !cur.createdOn) {
-        throw new Error(`This function has been called incorrecty. Should only be deduping threads that come from the hub, meaning they have a 'createdOn' field. See comments in the source.`)
+        throw new Error(`This function has been called incorrecty. ` +
+          `Should only be deduping threads that come from the hub, ` +
+          `meaning they have a 'createdOn' field. See comments in the source.`)
       }
       // ensure the array is sorted appropriately
       if (next.createdOn < cur.createdOn) {
         throw new Error(
           `next update createdOn should never be < cur: ` +
-          `${JSON.stringify(next)} >= ${JSON.stringify(cur)}`
-        )
+          `${JSON.stringify(next)} >= ${JSON.stringify(cur)}`)
       }
 
-      if (next.createdOn != cur.createdOn) {
+      if (next.createdOn !== cur.createdOn) {
         deduped.push(next)
         continue
-      } 
-      
+      }
+
       // the updates have the same createdOn date
       // check the sigs to see if they are duplicates.
       // safe because at no point should unsigned thread states
       // arrive here, and no 2 threads should have identical sigs
-      if (next.state.sigA != cur.state.sigA) {
+      if (next.state.sigA !== cur.state.sigA) {
         deduped.push(next)
         continue
       }
-      
     }
     return deduped
   }
 
   // Converts an array of SyncResults into either ThreadStateUpate[] or UpdateRequest[]
   const convert = (arr: SyncResult[]): ThreadStateUpdate[] | UpdateRequest[] => {
-    let output = []
-    for(let i = 0; i < arr.length; i++) {
-      if(arr[i].type == 'channel')
+    const output = []
+    for(let i = 0; i < arr.length; i += 1) {
+      if(arr[i].type === 'channel') {
         output[i] = arr[i].update as UpdateRequest
-      if(arr[i].type == 'thread')
+      }
+      if(arr[i].type === 'thread') {
         output[i] = arr[i].update as ThreadStateUpdate
+      }
     }
     return output as ThreadStateUpdate[] | UpdateRequest[]
   }
 
   // Get channel states, convert them, sort, and then dedupe.
-  let channelUpdates = convert(xs.filter(u => u.type == 'channel').concat(ys.filter(u => u.type == 'channel'))) as UpdateRequest[]
+  let channelUpdates = convert(xs.filter((u: any): boolean => u.type === 'channel')
+    .concat(ys.filter((u: any): boolean => u.type === 'channel'))) as UpdateRequest[]
 
-  channelUpdates.sort((a,b) => {
+  channelUpdates.sort((a: any, b: any): number => {
     // All updates should have a createdOn field
     // if (!a.createdOn || !b.createdOn) {
-    //   throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+    //   throw new Error(noCreatedOnError)
     // }
     if (!a.txCount) return 1
     if (!b.txCount) return -1
     return a.txCount - b.txCount
   })
 
-  // ensure there is only one state with a null txCount
+  // ensure there is only one state with a undefined txCount
   let hasNull = false
-  channelUpdates = channelUpdates.filter(s => {
+  channelUpdates = channelUpdates.filter((s: any): boolean => {
     if (!s.txCount) {
-      if (hasNull)
-        return false
+      if (hasNull) return false
       hasNull = true
       return true
     }
-
     return true
   })
 
   channelUpdates = dedupeChannel(channelUpdates)
 
   // Get thread states, convert, sort, dedupe.
-  let threadUpdates = convert(xs.filter(u => u.type == 'thread').concat(ys.filter(u => u.type == 'thread'))) as ThreadStateUpdate[]
-  
-  threadUpdates.sort((a,b) => {
-    if (!a.createdOn || !b.createdOn) {
-      throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
-    }
+  let threadUpdates = convert(xs.filter((u: any): boolean => u.type === 'thread')
+    .concat(ys.filter((u: any): boolean => u.type === 'thread'))) as ThreadStateUpdate[]
 
-    if (a.createdOn > b.createdOn)
-      return 1;
-    else if (a.createdOn < b.createdOn)
-      return -1;
-    else
-      return 0;
+  threadUpdates.sort((a: any, b: any): any => {
+    if (!a.createdOn || !b.createdOn) {
+      throw new Error(noCreatedOnError)
+    }
+    if (a.createdOn > b.createdOn) return 1
+    if (a.createdOn < b.createdOn) return -1
+    return 0
   })
 
   threadUpdates = dedupeThread(threadUpdates)
@@ -181,23 +190,23 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   let curThread = 0
 
   // Merge sort channel and thread states arrays
-  let res: SyncResult[] = []
-  const pushChannel = (update: UpdateRequest) => res.push({ type: 'channel', update })
-  const pushThread = (update: ThreadStateUpdate) => res.push({ type: 'thread', update })
+  const res: SyncResult[] = []
+  const pushChannel = (update: UpdateRequest): any => res.push({ type: 'channel', update })
+  const pushThread = (update: ThreadStateUpdate): any => res.push({ type: 'thread', update })
 
   while (
     curChan < channelUpdates.length ||
     curThread < threadUpdates.length
   ) {
-    // We want to iterate over every sync result, validate that it has a 
+    // We want to iterate over every sync result, validate that it has a
     // created on and then push it to channel or thread and increment counter
     // This needs to happen with the following logic:
-    //  1. When there is a chan update and no thread update, chan update should 
+    //  1. When there is a chan update and no thread update, chan update should
     //     be pushed and curChan incremented
-    //  2. When there is a thread update and no chan update, thread update 
+    //  2. When there is a thread update and no chan update, thread update
     //     should be pushed and curThread incremented
-    //  3. When there are both, channel update should be pushed if channel was 
-    //     created before thread OR if they were created at the same time but 
+    //  3. When there are both, channel update should be pushed if channel was
+    //     created before thread OR if they were created at the same time but
     //     the chan update reason is open thread
 
     // TODO: ^^^ this is the exact logic that is implemented on the hub side
@@ -222,12 +231,13 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
   //   }
   // }
 
-    let chanUp, threadUp
+    let chanUp
+    let threadUp
 
     if (channelUpdates[curChan]) {
       chanUp = channelUpdates[curChan]
 
-      if (!chanUp.createdOn && curChan == channelUpdates.length - 1) {
+      if (!chanUp.createdOn && curChan === channelUpdates.length - 1) {
         // this is the unsigned update being returned from the hub
         // since this update is stored in redis, it will not have
         // a created on field. push the channel, and break out of the
@@ -237,8 +247,8 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
         continue
       }
 
-      if (!chanUp.createdOn && curChan != channelUpdates.length - 1) {
-        throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
+      if (!chanUp.createdOn && curChan !== channelUpdates.length - 1) {
+        throw new Error(noCreatedOnError)
       }
 
       if (!threadUpdates[curThread]) {
@@ -250,12 +260,15 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
     if (threadUpdates[curThread]) {
       threadUp = threadUpdates[curThread]
 
-      if (!threadUp.createdOn)
-        throw new Error(`Item does not contain a 'createdOn' field, this likely means this function was called incorrectly. See comments in source.`)
-      
-      if (!threadUp.state.sigA) 
-        throw new Error(`Thread update does not contain a signature, this likely means this function was called incorrectly.`)
-      
+      if (!threadUp.createdOn) {
+        throw new Error(noCreatedOnError)
+      }
+
+      if (!threadUp.state.sigA)  {
+        throw new Error(`Thread update does not contain a signature, ` +
+          `this likely means this function was called incorrectly.`)
+      }
+
       if (!channelUpdates[curChan]) {
         curThread += 1
         pushThread(threadUp)
@@ -264,7 +277,7 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
 
     if (chanUp && threadUp) {
       const shouldAdd = !threadUp || (chanUp as any).createdOn < (threadUp as any).createdOn ||
-        (chanUp.createdOn == threadUp.createdOn && chanUp.reason == 'OpenThread')
+        (chanUp.createdOn === threadUp.createdOn && chanUp.reason === 'OpenThread')
       if (shouldAdd) {
         curChan += 1
         pushChannel(chanUp)
@@ -284,9 +297,10 @@ export function mergeSyncResults(xs: SyncResult[], ys: SyncResult[]): SyncResult
 }
 
 /**
- * This function should be used to update the `syncResultsFromHub` by removing * any updates from the hub that are already in queue to be returned to the hub
+ * This function should be used to update the `syncResultsFromHub` by removing
+ * any updates from the hub that are already in queue to be returned to the hub
  */
-export function filterPendingSyncResults(fromHub: SyncResult[], toHub: SyncResult[]) {
+export const filterPendingSyncResults = (fromHub: SyncResult[], toHub: SyncResult[]): any => {
   // De-dupe incoming updates and remove any that are already in queue to be
   // sent to the hub. This is done by removing any incoming updates which
   // have a corresponding (by txCount, or id, in the case of unsigned
@@ -295,27 +309,27 @@ export function filterPendingSyncResults(fromHub: SyncResult[], toHub: SyncResul
   // to be sent, the corresponding incoming update will be ignored.
 
   // TODO: first ensure that any updates from or to hub are for the instantiated
-  // user, hub currently does not return user for channels, users must 
+  // user, hub currently does not return user for channels, users must
   // reinstantiate connext
 
-
-  const updateKey = (x: SyncResult) => {
-    if (x.type == 'channel') {
-      return x.update.id && x.update.id < 0 ? `unsigned:${x.update.id}` : `tx:${x.update.txCount}`
-    } else {
-      return `tx:${x.update.state.txCount}`
+  const updateKey = (x: SyncResult): string => {
+    if (x.type === 'channel') {
+      return x.update.id && x.update.id < 0
+        ? `unsigned:${x.update.id}`
+        : `tx:${x.update.txCount}`
     }
+    return `tx:${x.update.state.txCount}`
   }
 
   const existing: {[key: string]: { sigHub: boolean, sigUser: boolean } | { sigA: boolean }} = {}
-  toHub.forEach(u => {
+  toHub.forEach((u: any): any => {
     // register the key as existing for checking against fromHub
-    existing[updateKey(u)] = u.type == 'channel' ? {
+    existing[updateKey(u)] = u.type === 'channel' ? {
       sigHub: !!u.update.sigHub,
       sigUser: !!u.update.sigUser,
     } : { sigA: !!u.update.state.sigA }
 
-    if (u.type == 'channel' && u.update.reason == 'Invalidation') {
+    if (u.type === 'channel' && u.update.reason === 'Invalidation') {
       const args: InvalidationArgs = u.update.args as InvalidationArgs
       for (let i = args.previousValidTxCount + 1; i <= args.lastInvalidTxCount; i += 1) {
         existing[`tx:${i}`] = {
@@ -326,55 +340,44 @@ export function filterPendingSyncResults(fromHub: SyncResult[], toHub: SyncResul
     }
   })
 
-  return fromHub.filter(u => {
+  return fromHub.filter((u: any): any => {
     const cur = existing[updateKey(u)] as any
-    if (!cur)
-      return true
-    
+    if (!cur) return true
+
     // address threads
-    // TODO: this should probably throw an error
-    // since it means the thread is unsigned
-    if (cur.sigA && !(u.update as ThreadStateUpdate).state.sigA)
-      return false
-    
-    if (cur.sigHub && !(u.update as UpdateRequest).sigHub)
-      return false
-
-    if (cur.sigUser && !(u.update as UpdateRequest).sigUser)
-      return false
-
+    // TODO: this should probably throw an error since it means the thread is unsigned
+    if (cur.sigA && !(u.update as ThreadStateUpdate).state.sigA) return false
+    if (cur.sigHub && !(u.update as UpdateRequest).sigHub) return false
+    if (cur.sigUser && !(u.update as UpdateRequest).sigUser) return false
     return true
   })
 }
 
-
-export default class SyncController extends AbstractController {
-  static POLLER_INTERVAL_LENGTH = 2 * 1000
-
+export class SyncController extends AbstractController {
+  private static POLLER_INTERVAL_LENGTH: number = 2 * 1000
   private poller: Poller
+  private flushErrorCount: number = 0
 
-  private flushErrorCount = 0
-
-  constructor(name: string, connext: ConnextInternal) {
+  public constructor(name: string, connext: ConnextInternal) {
     super(name, connext)
     this.poller = new Poller({
-      name: 'SyncController',
-      interval: SyncController.POLLER_INTERVAL_LENGTH,
       callback: this.sync.bind(this),
+      interval: SyncController.POLLER_INTERVAL_LENGTH,
+      name: 'SyncController',
       timeout: 5 * 60 * 1000,
     })
 
   }
 
-  async start() {
+  public async start(): Promise<void> {
     await this.poller.start()
   }
 
-  async stop() {
+  public async stop(): Promise<void>{
     this.poller.stop()
   }
 
-  async sync() {
+  public async sync(): Promise<void> {
     try {
       const state = this.store.getState()
       const txCount = state.persistent.channel.txCountGlobal
@@ -391,7 +394,6 @@ export default class SyncController extends AbstractController {
       this.handleHubSync(hubSync)
     } catch (e) {
       console.error('Sync error:', e)
-      this.logToApi('sync', { message: '' + e })
     }
 
     // sync any custodial payments
@@ -399,20 +401,17 @@ export default class SyncController extends AbstractController {
       await this.syncCustodialBalance()
     } catch (e) {
       console.error('Syncing custodial balance error:', e)
-      this.logToApi('syncCustodialBalance', { message: '' + e })
     }
 
     try {
       await this.flushPendingUpdatesToHub()
     } catch (e) {
       console.error('Flush error:', e)
-      this.logToApi('flush', { message: '' + e })
     }
 
     try {
       await this.checkCurrentStateTimeoutAndInvalidate()
     } catch (e) {
-      this.logToApi('invalidation-check', { message: '' + e })
       console.error('Error checking whether current state should be invalidated:', e)
     }
 
@@ -422,26 +421,25 @@ export default class SyncController extends AbstractController {
     return this.store.getState().persistent.syncControllerState
   }
 
-  private async checkCurrentStateTimeoutAndInvalidate() {
+  private async checkCurrentStateTimeoutAndInvalidate(): Promise<any> {
     // If latest state has a timeout, check to see if event is mined
     const state = this.getState()
 
     const { channel, channelUpdate } = this.getState().persistent
-    if (!this.connext.utils.hasPendingOps(channel))
-      return
-    
+    if (!this.connext.utils.hasPendingOps(channel)) return
+
     // do not invalidate any states without a timeout
-    if (channel.timeout == 0) 
-      return
+    if (channel.timeout === 0) return
 
     // Wait until all the hub's sync results have been handled before checking
     // if we need to invalidate (the current state might be invalid, but the
     // pending updates from the hub might resolve that; ex, they might contain
     // an ConfirmPending).
-    if (state.runtime.syncResultsFromHub.length > 0)
-      return
+    if (state.runtime.syncResultsFromHub.length > 0) return
 
-    const { didEmit, latestBlock } = await this.didContractEmitUpdateEvent(channel, channelUpdate.createdOn)
+    const { didEmit, latestBlock } = await this.didContractEmitUpdateEvent(
+      channel, channelUpdate.createdOn,
+    )
     switch (didEmit) {
       case 'unknown':
         // The timeout hasn't expired yet; do nothing.
@@ -476,7 +474,7 @@ export default class SyncController extends AbstractController {
   public async didContractEmitUpdateEvent(channel: ChannelState, updateTimestamp?: Date): Promise<{
     didEmit: 'yes' | 'no' | 'unknown'
     latestBlock: Block
-    event?: LogDescription
+    event?: LogDescription,
   }> {
     let timeout = channel.timeout
     if (!channel.timeout) {
@@ -485,9 +483,8 @@ export default class SyncController extends AbstractController {
         // now to make sure we don't accidentally do Bad Things for states
         // with pending operations where the timeout = 0.
         throw new Error(
-          'Cannot check whether the contract has emitted an event ' +
-          'for a state without a timeout. State: ' + JSON.stringify(channel)
-        )
+          `Cannot check whether the contract has emitted an event ` +
+          `for a state without a timeout. State: ${JSON.stringify(channel)}`)
       }
 
       // If the state doesn't have a timeout, use the update's timestamp + 5 minutes
@@ -495,25 +492,26 @@ export default class SyncController extends AbstractController {
       timeout = +(new Date(updateTimestamp)) / 1000 + 60 * 5
     }
 
-    let block = await this.findBlockNearestTimeout(timeout)
-    if (block.timestamp < timeout)
+    const block = await this.findBlockNearestTimeout(timeout)
+    if (block.timestamp < timeout) {
       return { didEmit: 'unknown', latestBlock: block }
+    }
 
     const evts = await this.connext.getContractEvents(
       'DidUpdateChannel',
       Math.max(block.number - 4000, 0), // 4000 blocks = ~16 hours
     )
     const event: any = evts.find((e: any): any => e.values.txCount[0] === channel.txCountGlobal)
-    if (event)
+    if (event) {
       return { didEmit: 'yes', latestBlock: block, event }
-
+    }
     return { didEmit: 'no', latestBlock: block }
   }
 
-  public async sendUpdateToHub(update: ChannelStateUpdate | ThreadStateUpdate) {
+  public async sendUpdateToHub(update: ChannelStateUpdate | ThreadStateUpdate): Promise<any> {
     const state = this.getSyncState()
-    const sync = Object.keys(update.state).indexOf('sigA') == -1 
-      ? { type: 'channel', update: channelUpdateToUpdateRequest(update as any)} 
+    const sync = Object.keys(update.state).indexOf('sigA') === -1
+      ? { type: 'channel', update: channelUpdateToUpdateRequest(update as any)}
       : { type: 'thread', update }
     this.store.dispatch(actions.setSyncControllerState({
       ...state,
@@ -532,10 +530,11 @@ export default class SyncController extends AbstractController {
    * with a timestamp greater than the timeout, but no more than 60 minutes
    * greater).
    */
-  async findBlockNearestTimeout(timeout: number, delta = 60 * 60): Promise<Block> {
+  public async findBlockNearestTimeout(
+    timeout: number, delta: number = 60 * 60,
+  ): Promise<Block> {
     let block = await this.connext.wallet.provider.getBlock('latest')
-    if (block.timestamp < timeout + delta)
-      return block
+    if (block.timestamp < timeout + delta) return block
 
     // Do a sort of binary search for a valid target block
     // Start with a step of 10k blocks (~2 days)
@@ -545,15 +544,14 @@ export default class SyncController extends AbstractController {
     //   1. block.number + step < latestBlock.number
     //   2. if step < 0: block.timestamp >= timeout + delta
     //   3. if step > 0: block.timestamp < timeout + delta
-    let step = -1 * Math.min(block.number, 10000)
+    let step =  Math.min(block.number, 10000) * -1
     while (true) {
       if (Math.abs(step) <= 2) {
         // This should never happen, and is a sign that we'll get into an
         // otherwise infinite loop. Indicative of a bug in the code.
         throw new Error(
           `Step too small trying to find block (this should never happen): ` +
-          `target timeout: ${timeout}; block: ${JSON.stringify(block)}`
-        )
+          `target timeout: ${timeout}; block: ${JSON.stringify(block)}`)
       }
 
       block = await this.connext.wallet.provider.getBlock(block.number + step)
@@ -561,20 +559,16 @@ export default class SyncController extends AbstractController {
         break
       }
 
-      if (block.timestamp < timeout) {
+      step = (block.timestamp < timeout)
         // If the current block's timestamp is before the timeout, step
         // forward half a step.
-        step = Math.ceil(Math.abs(step) / 2)
-      } else {
+        ? Math.ceil(Math.abs(step) / 2)
         // If the current block's timestamp is after the timeout, step
         // backwards a full step. Note: we can't step backwards half a step
         // because we don't know how far back we're going to need to look,
-        // so guarantee progress only in the "step forward" stage.
-        step = Math.abs(step) * -1
-      }
-
+        // so guarantee progress only in the 'step forward' stage.
+        : Math.abs(step) * -1
     }
-
     return block
   }
 
@@ -582,11 +576,11 @@ export default class SyncController extends AbstractController {
    * Sends all pending updates (that is, those which have been put onto the
    * store, but not yet sync'd) to the hub.
    */
-  private flushLock = Semaphore(1)
-  private async flushPendingUpdatesToHub() {
+  private flushLock: any = Semaphore(1)
+  private async flushPendingUpdatesToHub(): Promise<any> {
     // Lock around `flushPendingUpdatesToHub` to make sure it doesn't get
     // called by both the poller something else at the same time.
-    return new Promise(res => {
+    return new Promise((res: any): any => {
       this.flushLock.take(async () => {
         try {
           await this._flushPendingUpdatesToHub()
@@ -604,62 +598,65 @@ export default class SyncController extends AbstractController {
    * Responsible for handling sync responses from the hub, specifically
    * the channel status.
   */
- public handleHubSync(sync: Sync) {
+ public handleHubSync(sync: Sync): any {
    const state = this.store.getState()
     if (state.runtime.channelStatus !== sync.status) {
       this.store.dispatch(actions.setChannelStatus(sync.status))
-    }   
-     
+    }
+
     // signing disabled in state update controller based on channel sync status
     // unconditionally enqueue results
     this.enqueueSyncResultsFromHub(sync.updates)
 
     // descriptive status error handling
     switch (sync.status) {
-      case "CS_OPEN":
+      case 'CS_OPEN':
         break
-      case "CS_CHANNEL_DISPUTE":
-      case "CS_CHAINSAW_ERROR":
-        console.warn(`Channel error with hub (status: ${sync.status}), please contact admin. Channel: ${JSON.stringify(state.persistent.channel, null, 2)}`)
+      case 'CS_CHANNEL_DISPUTE':
+      case 'CS_CHAINSAW_ERROR':
+        console.warn(
+          `Channel error with hub (status: ${sync.status}), please contact admin. ` +
+          `Channel: ${JSON.stringify(state.persistent.channel, undefined, 2)}`)
         break
-      case "CS_THREAD_DISPUTE":
-        throw new Error('THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. See See REB-36. Disabling client.')
+      case 'CS_THREAD_DISPUTE':
+        throw new Error(
+          `THIS IS BAD. Channel is set to thread dispute state, before threads are enabled. ` +
+          `See See REB-36. Disabling client.`)
       default:
         assertUnreachable(sync.status)
     }
   }
 
-  private async _flushPendingUpdatesToHub() {
+  private async _flushPendingUpdatesToHub(): Promise<any> {
     const state = this.getSyncState()
-    if (!state.updatesToSync.length)
-      return
+    if (!state.updatesToSync.length) return
 
-    // console.log(`Sending updates to hub: ${state.updatesToSync.map(u => u && u.reason)}`, state.updatesToSync)
     // const [res, err] = await maybe(this.hub.updateHub(
     //   state.updatesToSync,
     //   getLastThreadUpdateId(this.store.getState()),
     // ))
 
-    const chanSync = state.updatesToSync.filter(u => u.type == "channel")
-    const channelUp = chanSync.map(u => u.update) as UpdateRequest<string, ArgsTypes<string>>[]
-    console.log(`Sending channel updates to hub: ${channelUp.map(u => u && u.reason)}`, chanSync)
+    const chanSync = state.updatesToSync.filter((u: any): boolean => u.type === 'channel')
+    const channelUp = chanSync.map((u: any): any => u.update) as
+      Array<UpdateRequest<string, ArgsTypes<string>>>
+    console.log(`Sending channel updates to hub: ${
+      channelUp.map((u: any): any => u && u.reason)
+    } ${chanSync}`)
     const [res, err] = await maybe(this.hub.updateHub(
       channelUp,
       getLastThreadUpdateId(this.store.getState()),
     ))
 
-    const threadSync = state.updatesToSync.filter(u => u.type == "thread")
-    const threadUp = threadSync.map(u => u.update) as ThreadStateUpdate[]
+    const threadSync = state.updatesToSync.filter((u: any): boolean => u.type === 'thread')
+    const threadUp = threadSync.map((u: any): any => u.update) as ThreadStateUpdate[]
     console.log(`Sending thread updates to hub: ${threadUp.length}`, threadSync)
 
     // each thread update must be sent to the appropriate
     // update thread endpoint
-    let threadRes = []
-    let threadErr = []
-    for (let t of threadUp) {
-      const [tRes, tErr] = await maybe(this.hub.updateThread(
-        t
-      ))
+    const threadRes = []
+    const threadErr = []
+    for (const t of threadUp) {
+      const [tRes, tErr] = await maybe(this.hub.updateThread(t))
       threadRes.push(tRes)
       threadErr.push(tErr)
     }
@@ -675,8 +672,7 @@ export default class SyncController extends AbstractController {
       console.error(
         `Error sending updates to hub (will flush and reset ` +
         `${triesRemaining ? `after ${triesRemaining} attempts` : `now`}): ` +
-        `${error}`
-      )
+        `${error}`)
 
       if (triesRemaining <= 0) {
         console.error(
@@ -693,7 +689,7 @@ export default class SyncController extends AbstractController {
       // back to the hub... so sleep a bit to make sure we don't clobber the
       // poor hub.
       console.log('Sleeping for a bit before trying again...')
-      await new Promise(res => setTimeout(res, 6.9 * 1000))
+      await new Promise((resolve: any): any => setTimeout(resolve, 6.9 * 1000))
     } else {
       this.flushErrorCount = 0
     }
@@ -715,23 +711,27 @@ export default class SyncController extends AbstractController {
   /**
    * Enqueues updates from the hub, to be handled by `StateUpdateController`.
    */
-  private enqueueSyncResultsFromHub(updates: SyncResult[]) {
-    if (updates.length === undefined)
-      throw new Error(`This should never happen, this was called incorrectly. An array of SyncResults should always have a defined length.`)
+  private enqueueSyncResultsFromHub(updates: SyncResult[]): any {
+    if (updates.length === undefined) {
+      throw new Error(
+        `This should never happen, this was called incorrectly. ` +
+        `An array of SyncResults should always have a defined length.`)
+    }
 
-    if (updates.length == 0)
-      return
+    if (updates.length === 0) return
 
     const oldSyncResults = this.getState().runtime.syncResultsFromHub
     const merged = mergeSyncResults(oldSyncResults, updates)
     const updatesToSync = this.getSyncState().updatesToSync
     const filtered = filterPendingSyncResults(merged, updatesToSync)
 
-    console.info(`updates from hub: ${updates.length}; old len: ${oldSyncResults.length}; merged: ${filtered.length}:`, filtered)
+    console.info(`updates from hub: ${updates.length}; ` +
+      `old len: ${oldSyncResults.length}; ` +
+      `merged: ${filtered.length}: ${filtered}`)
     this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
   }
 
-  private async syncCustodialBalance() {
+  private async syncCustodialBalance(): Promise<any> {
     // get any custodial balances
     const custodialBalance: any = await this.hub.getCustodialBalance()
     if (!custodialBalance) {
@@ -756,11 +756,10 @@ export default class SyncController extends AbstractController {
     updateToInvalidate: UpdateRequest,
     reason: InvalidationReason,
     message: string,
-  ) {
+  ): Promise<any> {
     console.log(
       `Sending invalidation of txCount=${updateToInvalidate.txCount} ` +
-      `because: ${reason} (${message})`
-    )
+      `because: ${reason} (${message})`)
     console.log(`Update being invalidated:`, updateToInvalidate)
 
     if (!updateToInvalidate.txCount || !updateToInvalidate.sigHub) {
@@ -778,15 +777,14 @@ export default class SyncController extends AbstractController {
     if (
       // If the very first propose pending is invalidated, then the
       // channel.txCountGlobal will be 0
-      !(channel.txCountGlobal == 0 && updateToInvalidate.txCount == 1) &&
+      !(channel.txCountGlobal === 0 && updateToInvalidate.txCount === 1) &&
       updateToInvalidate.txCount < channel.txCountGlobal &&
-      updateToInvalidate.reason.startsWith("ProposePending")
+      updateToInvalidate.reason.startsWith('ProposePending')
     ) {
       throw new Error(
         `Cannot invalidate 'ProposePending*' type updates that have been built ` +
         `on (channel: ${JSON.stringify(channel)}; updateToInvalidate: ` +
-        `${JSON.stringify(updateToInvalidate)})`
-      )
+        `${JSON.stringify(updateToInvalidate)})`)
     }
 
     // If we've already signed the update that's being invalidated, make sure
@@ -796,26 +794,24 @@ export default class SyncController extends AbstractController {
     if (updateToInvalidate.sigUser && !this.connext.utils.hasPendingOps(channel)) {
       throw new Error(
         `Refusing to invalidate an update with no pending operations we have already signed: ` +
-        `${JSON.stringify(updateToInvalidate)}`
-      )
+        `${JSON.stringify(updateToInvalidate)}`)
     }
 
     const latestValidState = this.getState().persistent.latestValidState
     const args: InvalidationArgs = {
-      previousValidTxCount: latestValidState.txCountGlobal,
       lastInvalidTxCount: updateToInvalidate.txCount,
-      reason,
       message,
+      previousValidTxCount: latestValidState.txCountGlobal,
+      reason,
     }
 
     const invalidationState = await this.connext.signChannelState(
-      this.validator.generateInvalidation(latestValidState, args)
-    )
+      this.validator.generateInvalidation(latestValidState, args))
 
     await this.sendUpdateToHub({
+      args,
       reason: 'Invalidation',
       state: invalidationState,
-      args,
     })
   }
 }

@@ -1,9 +1,8 @@
-import * as Connext from 'connext';
+import * as connext from 'connext'
+import { WithdrawalArgs } from 'connext/types'
 const vm = require('vm')
-import { PartialSignedOrSuccinctChannel, getChannelState, mkAddress, mkSig } from './stateUtils'
 
-type WithdrawalArgs = Connext.types.WithdrawalArgs
-const { convertChannelState, convertWithdrawal, convertFields } = Connext.types
+import { getChannelState, mkAddress, mkSig, PartialSignedOrSuccinctChannel } from './stateUtils'
 
 /**
  * Generates a list of all the possible types of withdrawal that can be
@@ -337,7 +336,7 @@ function createChannelState(type: string, ...overrides: PartialSignedOrSuccinctC
         sigHub: mkSig('0x5151'),
         sigUser: mkSig('0x5252')
     })
-    return convertChannelState(type as any, state)
+    return connext.convert.ChannelState(type as any, state)
 }
 
 function createWithdrawalArgs(type: string, overrides: WithdrawalArgs) {
@@ -353,7 +352,7 @@ function createWithdrawalArgs(type: string, overrides: WithdrawalArgs) {
     }
     args.timeout = +args.timeout
     args.exchangeRate = args.exchangeRate.toString()
-    return convertWithdrawal(type as any, args)
+    return connext.convert.Withdrawal(type as any, args)
 }
 
 type PartialRequest = Partial<{
@@ -404,7 +403,7 @@ export function createWithdrawalParams(
         txCount: [prev.txCountGlobal + 1, prev.txCountChain + 1],
     })
 
-    const request = convertFields(
+    const request = connext.convert.Fields(
       // should be string or number
       (typeof wdOverrides.request.token).toString() as any, 
       type, 

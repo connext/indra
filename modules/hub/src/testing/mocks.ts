@@ -1,27 +1,24 @@
-import { types, Validator, big } from 'connext'
+import * as connext from 'connext'
+import { ChannelManagerChannelDetails } from 'connext/types'
 import * as request from 'supertest'
-import { default as ChannelManagerABI } from '../abi/ChannelManager'
-import { getRedisClient } from '../RedisClient'
-import { PgPoolService } from '../DBEngine'
-import { Container } from '../Container'
-import { truncateAllTables } from './eraseDb'
-import { ApiServer } from '../ApiServer'
-import { Role } from "../Role";
-import { mkAddress, mkSig, mkHash } from "./stateUtils";
-import { SignerService } from '../SignerService';
-import Config from '../Config';
-import { serviceDefinitions } from '../services'
 const Web3 = require('web3')
 
-const {
-  Big
-} = big
+import { truncateAllTables } from './eraseDb'
+import { mkAddress, mkHash, mkSig } from './stateUtils'
 
-type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
+import { default as ChannelManagerABI } from '../abi/ChannelManager'
+import { ApiServer } from '../ApiServer'
+import Config from '../Config'
+import { Container } from '../Container'
+import { PgPoolService } from '../DBEngine'
+import { getRedisClient } from '../RedisClient'
+import { Role } from '../Role'
+import { serviceDefinitions } from '../services'
+import { SignerService } from '../SignerService'
 
-const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432';
-const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6';
-const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545';
+const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
+const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
+const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
 console.log(`test urls: database=${databaseUrl} redis=${redisUrl} provider=${providerUrl}`)
 
@@ -114,7 +111,7 @@ class MockWeb3Provider {
   }
 }
 
-class MockValidator extends Validator {
+class MockValidator extends connext.Validator {
   constructor() {
     super('0xfoobar', {} as any, ChannelManagerABI.abi)
   }

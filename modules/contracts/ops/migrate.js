@@ -46,7 +46,8 @@ const contractIsDeployed = async (address) => {
     console.log(`This contract is not in our address book.`)
     return false
   }
-  if ((await wallet.provider.getCode(address)) === "0x00") {
+  const bytecode = await wallet.provider.getCode(address)
+  if (bytecode === "0x00" || bytecode === "0x") {
     console.log(`No bytecode exists at the address in our address book`)
     return false
   }

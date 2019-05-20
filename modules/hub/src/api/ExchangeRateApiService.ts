@@ -1,5 +1,7 @@
-import * as express from 'express';
+import * as express from 'express'
+
 import { ApiService } from './ApiService'
+
 import ExchangeRateDao from '../dao/ExchangeRateDao'
 import log from '../util/log'
 

@@ -1,8 +1,7 @@
 import { expect } from 'chai'
 
-import { sleep } from '../utils'
-
-import { Poller } from './Poller'
+import { Poller } from './poller'
+import { sleep } from './utils'
 
 describe('Poller', () => {
   const interval: number = 10

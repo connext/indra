@@ -1,11 +1,10 @@
-export { Request, Response } from 'express';
 import { Router as IRouter } from 'express'
-
-export type Router = IRouter
-export const Router = require('express-promise-router')
 
 import { Container, Context } from '../Container'
 
+export { Request, Response } from 'express'
+export const Router = require('express-promise-router')
+export type Router = IRouter
 
 export abstract class ApiService<Handler=any> {
   abstract namespace: string

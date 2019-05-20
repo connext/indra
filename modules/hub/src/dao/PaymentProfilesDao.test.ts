@@ -1,17 +1,12 @@
-import { big, types } from 'connext';
 import { assert } from 'chai'
-import { getTestRegistry } from '../testing'
-import { channelUpdateFactory } from '../testing/factories';
-import { SQL } from '../DBEngine';
-import { mkAddress } from '../testing/stateUtils';
+import * as connext from 'connext'
+import { PaymentProfileConfig } from 'connext/types'
 
-const {
-  toWeiString,
-} = big
-const {
-  convertPaymentProfile,
-  isBN
-} = types
+import { SQL } from '../DBEngine'
+import { getTestRegistry } from '../testing'
+import { channelUpdateFactory } from '../testing/factories'
+import { mkAddress } from '../testing/stateUtils'
+import { isBN, toWei } from '../util'
 
 describe('PaymentProfilesDao', () => {
   const registry = getTestRegistry()
@@ -19,7 +14,7 @@ describe('PaymentProfilesDao', () => {
   const db = registry.get('DBEngine')
 
   // **** helper functions
-  const createAndAssertPaymentProfile = async (config: Partial<types.PaymentProfileConfig>) => {
+  const createAndAssertPaymentProfile = async (config: Partial<PaymentProfileConfig>) => {
     const c = await dao.createPaymentProfile(config)
     let expected = {
       id: 1,
@@ -33,11 +28,11 @@ describe('PaymentProfilesDao', () => {
       if (isBN(value))
         expected[name] = value.toString()
     })
-    assert.containSubset(convertPaymentProfile("str", c), expected)
+    assert.containSubset(connext.convert.PaymentProfile("str", c), expected)
     return c // PaymentProfileConfigBN
   }
 
-  const assertAddPaymentProfileToUsers = async (config: types.PaymentProfileConfig, users: string[] = [mkAddress('0xAAA')]) => {
+  const assertAddPaymentProfileToUsers = async (config: PaymentProfileConfig, users: string[] = [mkAddress('0xAAA')]) => {
     let channels = []
     users.forEach(async user => {
       const chan = await channelUpdateFactory(registry, {
@@ -56,10 +51,10 @@ describe('PaymentProfilesDao', () => {
     // verify all config entries
     channels.forEach(async chan => {
       await dao.addPaymentProfileByUser(config.id, chan.user)
-      const configByUser = convertPaymentProfile("str",
+      const configByUser = connext.convert.PaymentProfile("str",
         await dao.getPaymentProfileConfigByUser(chan.user)
       )
-      const configById = convertPaymentProfile("str", 
+      const configById = connext.convert.PaymentProfile("str", 
         await dao.getPaymentProfileConfigById(config.id)
       )
       // assert configs are the same
@@ -80,27 +75,27 @@ describe('PaymentProfilesDao', () => {
 
   it('should insert a new payment profile with 0 as the default config values', async () => {
     await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWeiString(2), 
-      amountToCollateralizeToken: toWeiString(1),
+      minimumMaintainedCollateralToken: toWei(2).toString(), 
+      amountToCollateralizeToken: toWei(1).toString(),
     })
   })
 
   it('should add a payment profile to the user', async () => {
-    const config = convertPaymentProfile(
+    const config = connext.convert.PaymentProfile(
       "str",
       await createAndAssertPaymentProfile({
-        minimumMaintainedCollateralToken: toWeiString(2), 
-        amountToCollateralizeToken: toWeiString(1),
+        minimumMaintainedCollateralToken: toWei(2).toString(), 
+        amountToCollateralizeToken: toWei(1).toString(),
       })
     )
     await assertAddPaymentProfileToUsers(config)
   })
 
   it('should add a payment profile to multiple users', async () => {
-    const config = convertPaymentProfile(
+    const config = connext.convert.PaymentProfile(
       "str", await createAndAssertPaymentProfile({
-        minimumMaintainedCollateralToken: toWeiString(2), 
-        amountToCollateralizeToken: toWeiString(1),
+        minimumMaintainedCollateralToken: toWei(2).toString(), 
+        amountToCollateralizeToken: toWei(1).toString(),
       })
     )
     let addresses = []

@@ -1,42 +1,33 @@
-import * as eth from 'ethers';
-import { types, Validator, big } from 'connext';
-import { maybe } from './util'
-import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-import { assertUnreachable } from "./util/assertUnreachable";
-import ChannelsService from "./ChannelsService";
-import ThreadsService from "./ThreadsService";
-import ChannelsDao from "./dao/ChannelsDao";
-import Config from "./Config";
-import { prettySafeJson } from "./util";
-import { SignerService } from "./SignerService";
-import PaymentsDao from "./dao/PaymentsDao";
-import { default as DBEngine } from './DBEngine'
-import { default as log } from './util/log'
-import GlobalSettingsDao from './dao/GlobalSettingsDao';
+import * as connext from 'connext'
+import {
+  Payment,
+  PaymentArgs,
+  PurchasePayment,
+  PurchaseRowWithPayments,
+  UpdateRequest,
+} from 'connext/types'
+import * as eth from 'ethers'
+
+import ChannelsService from './ChannelsService'
+import Config from './Config'
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
-import OptimisticPaymentDao from './dao/OptimisticPaymentDao';
-
-const {
-  Big
-} = big
-
-type Payment<T=string> = types.Payment<T>
-type PaymentArgs<T=string> = types.PaymentArgs<T>
-type PurchasePayment = types.PurchasePayment
-type PurchaseRowWithPayments = types.PurchaseRowWithPayments
-type UpdateRequest<T=string> = types.UpdateRequest<T>
+import ChannelsDao from './dao/ChannelsDao'
+import GlobalSettingsDao from './dao/GlobalSettingsDao'
+import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
+import { PaymentMetaDao } from './dao/PaymentMetaDao'
+import PaymentsDao from './dao/PaymentsDao'
+import { default as DBEngine } from './DBEngine'
+import { SignerService } from './SignerService'
+import ThreadsService from './ThreadsService'
+import { maybe, prettySafeJson, toBN } from './util'
+import { assertUnreachable } from './util/assertUnreachable'
+import { default as log } from './util/log'
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
   { error: false; res: T }
 )
 
-const {
-  convertChannelState,
-  convertDeposit,
-  convertPayment,
-  convertThreadState,
-} = types
 const emptyAddress = eth.constants.AddressZero
 const LOG = log('PaymentsService')
 
@@ -50,7 +41,7 @@ export default class PaymentsService {
     private optimisticPaymentDao: OptimisticPaymentDao,
     private channelsDao: ChannelsDao,
     private custodialPaymentsDao: CustodialPaymentsDao,
-    private validator: Validator,
+    private validator: connext.Validator,
     private config: Config,
     private db: DBEngine,
     private gsd: GlobalSettingsDao,
@@ -100,7 +91,7 @@ export default class PaymentsService {
               await this.doChannelInstantPayment(payment, paymentId, row.id)
             } finally {
               // Check to see if collateral is needed, even if the tip failed
-              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient, Big(payment.amount.amountToken)))
+              const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient, toBN(payment.amount.amountToken)))
               if (err) {
                 LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
               }
@@ -127,7 +118,7 @@ export default class PaymentsService {
         const row = await this.threadsService.update(
           user,
           payment.recipient,
-          convertThreadState('bn', payment.update.state),
+          connext.convert.ThreadState('bn', payment.update.state),
         )
 
         afterPayment = paymentId => afterPayments.push(async () => {
@@ -258,8 +249,8 @@ export default class PaymentsService {
     }
     // if hub can afford the payment, sign and forward payment
     // otherwise, collateralize the channel
-    const prev = convertChannelState('bn', channel.state)
-    const amt = convertPayment('bn', payment.amount)
+    const prev = connext.convert.ChannelState('bn', channel.state)
+    const amt = connext.convert.Payment('bn', payment.amount)
 
     // always check for collateralization regardless of payment status
     const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
@@ -284,7 +275,7 @@ export default class PaymentsService {
     } as PaymentArgs
 
     const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
-      convertChannelState('str', channel.state),
+      connext.convert.ChannelState('str', channel.state),
       paymentArgs
     )
     const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)
@@ -321,11 +312,11 @@ export default class PaymentsService {
       amountToken: '0',
     }
     for (let payment of payments) {
-      totalAmount.amountWei = Big(totalAmount.amountWei).add(
-        Big(payment.amount.amountWei)
+      totalAmount.amountWei = toBN(totalAmount.amountWei).add(
+        toBN(payment.amount.amountWei)
       ).toString()
-      totalAmount.amountToken = Big(totalAmount.amountToken).add(
-        Big(payment.amount.amountToken)
+      totalAmount.amountToken = toBN(totalAmount.amountToken).add(
+        toBN(payment.amount.amountToken)
       ).toString()
     }
 
@@ -362,7 +353,7 @@ export default class PaymentsService {
     const argsHubToRecipient = {...paymentArgs, recipient: 'user'} as PaymentArgs
 
     const unsignedStateHubToRecipient = this.validator.generateChannelPayment(
-      convertChannelState('str', recipientChannel.state),
+      connext.convert.ChannelState('str', recipientChannel.state),
       argsHubToRecipient
     )
     const signedStateHubToRecipient = await this.signerService.signChannelState(unsignedStateHubToRecipient)

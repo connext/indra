@@ -1,6 +1,6 @@
 {
   "extends": [
-    "tslint:recommended", 
+    "tslint:all", 
     "tslint-plugin-prettier", 
     "tslint-config-prettier"
   ],
@@ -8,9 +8,15 @@
     "comment-format": [true, "check-space"],
     "completed-docs": false,
     "curly": [true, "ignore-same-line"],
+    "cyclomatic-complexity": [true, 26],
     "file-name-casing": [false, "pascal-case"],
-    "max-classes-per-file": [true, 2],
+    "interface-name": false,
+    "interface-over-type-literal": true,
+    "jsdoc-format": false,
+    "max-classes-per-file": false,
+    "max-file-line-count": false,
     "max-line-length": [true, 100],
+    "member-ordering": false,
     "newline-before-return": false,
     "newline-per-chained-call": false,
     "no-any": false,
@@ -21,12 +27,14 @@
     "no-magic-numbers": false,
     "no-submodule-imports": false,
     "no-this-assignment": [true, {"allow-destructuring": true}],
+    "no-trailing-whitespace": [true],
+    "no-unused-variable": true,
     "object-literal-sort-keys": [true, "ignore-case"],
     "prefer-function-over-method": [true, "allow-public"],
     "quotemark": [true, "single", "backtick"],
     "semicolon": [true, "never"],
     "trailing-comma": [true,
-      {"multiline": "never", "singleline": "never","esSpecCompliant": true}
+      {"multiline": "always", "singleline": "never","esSpecCompliant": true}
     ],
     "typedef": [true,
       "call-signature",

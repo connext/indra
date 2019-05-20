@@ -1,6 +1,8 @@
 import * as express from 'express'
-import {ApiService, Router} from './ApiService'
-import FeatureFlagsDao, {DEFAULT_FLAGS} from '../dao/FeatureFlagsDao'
+
+import { ApiService, Router } from './ApiService'
+
+import FeatureFlagsDao, { DEFAULT_FLAGS } from '../dao/FeatureFlagsDao'
 import log from '../util/log'
 
 const LOG = log('FeatureFlagsApiService')

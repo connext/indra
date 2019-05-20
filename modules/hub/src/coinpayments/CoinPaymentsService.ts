@@ -1,17 +1,27 @@
-import { types, Utils, big } from 'connext'
+import * as connext from 'connext'
+import { DepositArgs } from 'connext/types'
 import * as crypto from 'crypto'
-import { default as DBEngine } from '../DBEngine'
+
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
-import { default as Config } from '../Config'
-import { CoinPaymentsDao, CoinPaymentsIpnRow, CoinPaymentsDepositAddress } from './CoinPaymentsDao'
-import { default as ChannelsDao } from '../dao/ChannelsDao'
-import { prettySafeJson, parseQueryString, safeInt } from '../util'
-import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
+import { CoinPaymentsDao, CoinPaymentsDepositAddress, CoinPaymentsIpnRow } from './CoinPaymentsDao'
+
 import { default as ChannelsService } from '../ChannelsService'
+import { default as Config } from '../Config'
+import { default as ChannelsDao } from '../dao/ChannelsDao'
+import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
+import { default as DBEngine } from '../DBEngine'
+import {
+  maxBN,
+  minBN,
+  parseQueryString,
+  prettySafeJson,
+  safeInt,
+  toBN,
+  tokenToWei,
+  toWei,
+} from '../util'
 import { default as log } from '../util/log'
 
-type DepositArgs = types.DepositArgs
-const { maxBN, Big, minBN, toWeiBig, assetToWei } = big
 const LOG = log('CoinPaymentsService')
 
 // See also: https://www.coinpayments.net/merchant-tools-ipn
@@ -99,7 +109,7 @@ export type CoinPaymentsIpnData = {
 export const COINPAYMENTS_MAX_DEPOSIT_FIAT = 300
 
 export class CoinPaymentsService {
-  private utils: Utils
+  private utils: connext.Utils
   constructor(
     private config: Config,
     private api: CoinPaymentsApiClient,
@@ -109,7 +119,7 @@ export class CoinPaymentsService {
     private channelDao: ChannelsDao,
     private exchangeRateDao: ExchangeRateDao,
   ) {
-    this.utils = new Utils()
+    this.utils = new connext.Utils()
   }
 
   generateHmac(key: string, rawData: string): string {
@@ -264,19 +274,19 @@ export class CoinPaymentsService {
 
     // Calculate the amount to deposit: deposit up to channelBeiLimit, then
     // credit the rest as wei
-    const beiLimit = maxBN(
-      Big(0),
+    const beiLimit = maxBN([
+      toBN(0),
       this.config.channelBeiLimit.sub(channel.state.balanceTokenUser),
-    )
+    ])
 
     // Since 1 BOOTY = 1 USD, credit the user for the fiat amount in bei
     // (the .integerValue(BigNumber.ROUND_FLOOR) is _probably_ unnecessary, but just in case CoinPayments
     // sends us a fiat value with more than 18 decimal places).
 
-    const ipnAmountToken = toWeiBig(ipn.amountFiat)
-    const amountToken = minBN(beiLimit, ipnAmountToken)
+    const ipnAmountToken = toWei(ipn.amountFiat)
+    const amountToken = minBN([beiLimit, ipnAmountToken])
     const remainingBeiToCredit = ipnAmountToken.sub(amountToken)
-    const amountWei = assetToWei(remainingBeiToCredit, currentExchangeRate)
+    const amountWei = tokenToWei(remainingBeiToCredit, currentExchangeRate)
 
     const depositArgs: DepositArgs = {
       depositWeiHub: '0',

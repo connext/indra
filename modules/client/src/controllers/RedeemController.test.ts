@@ -1,8 +1,7 @@
-import { ethers as eth } from 'ethers';
-import { assert } from '../testing';
-import { MockConnextInternal } from '../testing/mocks';
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+import { ethers as eth } from 'ethers'
+
+import { assert } from '../testing'
+import { MockConnextInternal } from '../testing/mocks'
 
 describe('Redeem Controller: unit tests', () => {
   let connext: MockConnextInternal
@@ -18,16 +17,16 @@ describe('Redeem Controller: unit tests', () => {
     const res = await connext.redeemController.redeem(secret)
     assert.ok(res.purchaseId)
 
-    await new Promise(res => setTimeout(res, 10))
+    await new Promise((resolve: any): any => setTimeout(resolve, 10))
 
     connext.mockHub.assertReceivedUpdate({
-      reason: 'ProposePendingDeposit',
       args: {
-        depositWeiUser: '0',
         depositTokenUser: '1',
+        depositWeiUser: '0',
       },
-      sigUser: true,
+      reason: 'ProposePendingDeposit',
       sigHub: true,
+      sigUser: true,
     })
 
     assert.containSubset(connext.store.getState(), {
@@ -46,7 +45,7 @@ describe('Redeem Controller: unit tests', () => {
   it('should fail if invalid secret is provided', async () => {
     await assert.isRejected(
       connext.redeemController.redeem('fail'),
-      /The secret provided is not a hex string./
+      /The secret provided is not a hex string./,
     )
   })
 

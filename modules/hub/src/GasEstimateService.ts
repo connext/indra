@@ -1,4 +1,4 @@
-import { Poller } from 'connext';
+import * as connext from 'connext';
 import GasEstimateDao from './dao/GasEstimateDao'
 import log from './util/log'
 
@@ -27,12 +27,12 @@ export default class GasEstimateService {
 
   static MAX_RETRY_COUNT = 5
 
-  private poller: Poller
+  private poller: connext.Poller
 
   constructor (
     private dao: GasEstimateDao,
   ) {
-    this.poller = new Poller({
+    this.poller = new connext.Poller({
       name: 'GasEstimateService',
       interval: GasEstimateService.POLL_INTERVAL_MS,
       callback: this.pollGasEstimates.bind(this),

@@ -1,22 +1,22 @@
-import { Poller } from 'connext'
+import * as connext from 'connext'
+
 import { default as Config } from './Config'
+import { ChannelManager } from './contract/ChannelManager'
+import ChannelDisputesDao from './dao/ChannelDisputesDao'
+import { default as ChannelsDao } from './dao/ChannelsDao'
+import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao'
+import DBEngine from './DBEngine'
+import { OnchainTransactionRow } from './domain/OnchainTransaction'
+import { OnchainTransactionService } from './OnchainTransactionService'
+import { SignerService } from './SignerService'
 import { prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
-import { default as ChannelsDao } from './dao/ChannelsDao'
-import { ChannelManager } from './contract/ChannelManager'
-import DBEngine from './DBEngine';
-import { OnchainTransactionService } from './OnchainTransactionService';
-import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import { OnchainTransactionRow } from './domain/OnchainTransaction';
-import { SignerService } from './SignerService';
-import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 
 const LOG = log('CloseChannelService')
-
 const POLL_INTERVAL = 1000 * 60 * 3
 
 export class CloseChannelService {
-  private poller: Poller
+  private poller: connext.Poller
 
   constructor(
       private onchainTxService: OnchainTransactionService,
@@ -29,7 +29,7 @@ export class CloseChannelService {
       private web3: any,
       private db: DBEngine
   ) {
-    this.poller = new Poller({
+    this.poller = new connext.Poller({
       name: 'CloseChannelService',
       interval: POLL_INTERVAL,
       callback: this.pollOnce.bind(this),
