@@ -22,11 +22,11 @@ const COOKIE_NAME = 'hub.sid'
 const RedisStore = connectRedis(session)
 
 const requestLog = log('requests')
-const requestLogMiddleware = (req: any, res: any, next: any): any => {
-  req._startTime = Date.now()
+const requestLogMiddleware = (req: express.Request, res: express.Response, next: any): any => {
+  const startTime = Date.now()
   res.on('finish', () => {
     const remoteAddr = req.ip || req.headers['x-forwarded-for'] || req.address
-    let duration = Date.now() - req._startTime
+    let duration = Date.now() - startTime
     requestLog.info('{remoteAddr} {method} {url} {inSize} -> {statusCode} ({outSize}; {duration})', {
       remoteAddr,
       method: req.method,
