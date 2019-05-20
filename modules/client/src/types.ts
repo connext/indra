@@ -76,12 +76,9 @@ export type NumericTypes = {
 export type NumericTypeName = keyof NumericTypes
 
 function getType(input: any): NumericTypeName {
-  if (typeof input == 'string')
-    return 'str'
-  if (isBN(input))
-    return 'bn'
-  if (typeof input == 'number')
-    return 'number' // used for testing purposes
+  if (typeof input === 'string') return 'str'
+  if (isBN(input)) return 'bn'
+  if (typeof input === 'number') return 'number' // used for testing purposes
   throw new Error('Unknown input type: ' + typeof input + ', value: ' + JSON.stringify(input))
 }
 
@@ -1130,8 +1127,8 @@ export function unsignedThread<T>(obj: ThreadState<T> | UnsignedThreadState<T>):
 }
 
 export const argNumericFields: { [Name in keyof UpdateArgTypes]: (keyof UpdateArgTypes[Name])[] } = {
-  Payment: ['amountWei', 'amountToken'],
   Exchange: ['weiToSell', 'tokensToSell'],
+  Payment: ['amountWei', 'amountToken'],
   ProposePendingDeposit: [
     'depositWeiHub',
     'depositWeiUser',
@@ -1150,8 +1147,12 @@ export const argNumericFields: { [Name in keyof UpdateArgTypes]: (keyof UpdateAr
   ] as any,
   ConfirmPending: [],
   Invalidation: [],
-  OpenThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
-  CloseThread: ['balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver'],
+  OpenThread: [
+    'balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver',
+  ],
+  CloseThread: [
+    'balanceWeiSender', 'balanceWeiReceiver', 'balanceTokenSender', 'balanceTokenReceiver',
+  ],
   EmptyChannel: [],
 }
 
@@ -1209,36 +1210,45 @@ export const proposePendingNumericArgs = [
   'withdrawalTokenHub',
 ]
 
-export function convertProposePending<To extends NumericTypeName>(to: To, obj: PendingArgs<any>): PendingArgs<NumericTypes[To]> {
+export const convertProposePending = <
+  To extends NumericTypeName,
+>(
+  to: To, obj: PendingArgs<any>,
+): PendingArgs<NumericTypes[To]> => {
   const fromType = getType(obj.depositWeiUser)
   return convertFields(fromType, to, proposePendingNumericArgs, obj)
 }
 
-export const proposePendingExchangeNumericArgs = proposePendingNumericArgs.concat(argNumericFields.Exchange)
+export const proposePendingExchangeNumericArgs =
+  proposePendingNumericArgs.concat(argNumericFields.Exchange)
 
-export function convertProposePendingExchange<To extends NumericTypeName>(to: To, obj: PendingExchangeArgs<any>): PendingExchangeArgs<NumericTypes[To]> {
+export const convertProposePendingExchange = <
+  To extends NumericTypeName,
+>(
+  to: To, obj: PendingExchangeArgs<any>,
+): PendingExchangeArgs<NumericTypes[To]> => {
   const fromType = getType(obj.depositWeiUser)
   return convertFields(fromType, to, proposePendingExchangeNumericArgs, obj)
 }
 
 const argConvertFunctions: { [name in keyof UpdateArgTypes]: any } = {
-  Payment: convertPayment,
+  CloseThread: convertThreadState,
+  ConfirmPending: (to: any, args: ConfirmPendingArgs): any => args,
+  EmptyChannel: (to: any, args: EmptyChannelArgs): any => args,
   Exchange: convertExchange,
+  Invalidation: (to: any, args: InvalidationArgs): any => args,
+  OpenThread: convertThreadState,
+  Payment: convertPayment,
   ProposePendingDeposit: convertDeposit,
   ProposePendingWithdrawal: convertWithdrawal,
-  ConfirmPending: (to: any, args: ConfirmPendingArgs) => args,
-  Invalidation: (to: any, args: InvalidationArgs) => args,
-  OpenThread: convertThreadState,
-  CloseThread: convertThreadState,
-  EmptyChannel: (to: any, args: EmptyChannelArgs) => args,
 }
 
-export function convertArgs<
-  Reason extends keyof UpdateArgTypes,
-  To extends NumericTypeName,
-  >(to: To, reason: Reason, args: UpdateArgTypes[Reason]): UpdateArgTypes<To>[Reason] {
-  return argConvertFunctions[reason](to, args)
-}
+export const convertArgs = <
+  Reason extends keyof UpdateArgTypes, To extends NumericTypeName,
+>(
+  to: To, reason: Reason, args: UpdateArgTypes[Reason],
+): UpdateArgTypes<To>[Reason] =>
+  argConvertFunctions[reason](to, args)
 
 // TODO: fields should not be optional
 export const paymentProfileNumericFields = [
@@ -1248,11 +1258,15 @@ export const paymentProfileNumericFields = [
   'amountToCollateralizeToken',
 ]
 
-export function convertPaymentProfile(to: 'bn', obj: PaymentProfileConfig<any>): PaymentProfileConfigBN
-export function convertPaymentProfile(to: 'str', obj: PaymentProfileConfig<any>): PaymentProfileConfig
-export function convertPaymentProfile(
+export interface ConvertPaymentProfileOverloaded {
+  (to: 'bn', obj: PaymentProfileConfig<any>): PaymentProfileConfigBN
+  (to: 'str', obj: PaymentProfileConfig<any>): PaymentProfileConfig
+}
+
+export const convertPaymentProfile: ConvertPaymentProfileOverloaded = (
   to: 'bn' | 'str', // state objs always have sigs in rows
-  obj: PaymentProfileConfig<any>): PaymentProfileConfig | PaymentProfileConfigBN {
+  obj: PaymentProfileConfig<any>,
+): any => {
   const from = getType(obj.amountToCollateralizeToken)
   return convertFields(from, to, paymentProfileNumericFields, obj)
 }

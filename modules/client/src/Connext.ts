@@ -202,7 +202,7 @@ export abstract class ConnextChannel extends EventEmitter {
     return this.internal.recipientNeedsCollateral(recipient, amount)
   }
 
-  private isSuccinctWithdrawal(
+  public isSuccinctWithdrawal(
     withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
   ): boolean {
     return !!(withdrawal as SuccinctWithdrawalParameters).amountToken ||
@@ -210,15 +210,15 @@ export abstract class ConnextChannel extends EventEmitter {
   }
 
   private calculateChannelWithdrawal(
-    withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+    _withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
     custodial: CustodialBalanceRowBN,
   ): any {
     // get args type
-    const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
+    const isSuccinct = this.isSuccinctWithdrawal(_withdrawal)
 
-    withdrawal = isSuccinct
-      ? insertDefault('0', withdrawal, argNumericFields.Payment)
-      : insertDefault('0', withdrawal, withdrawalParamsNumericFields)
+    const withdrawal = isSuccinct
+      ? insertDefault('0', _withdrawal, argNumericFields.Payment)
+      : insertDefault('0', _withdrawal, withdrawalParamsNumericFields)
 
     // preferentially withdraw from your custodial balance when wding
     // TODO: exchange on withdrawal account for custodial balances?
@@ -285,7 +285,7 @@ export abstract class ConnextChannel extends EventEmitter {
     // withdraw the remainder from the channel
     const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
 
-    withdrawal = isSuccinct
+    const succinctWithdrawal = isSuccinct
       ? {
         ...withdrawal,
         amountToken: updatedWd.channelTokenWithdrawal,
@@ -298,7 +298,7 @@ export abstract class ConnextChannel extends EventEmitter {
       }
 
     await this.internal.withdrawalController.requestUserWithdrawal({
-      ...withdrawal,
+      ...succinctWithdrawal,
     })
     return
   }

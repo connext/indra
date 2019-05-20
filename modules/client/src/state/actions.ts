@@ -33,13 +33,16 @@ const setattr = (obj: any, bits: string[], value: any): any => {
 
 const getattr = (obj: any, bits: string[]): any => {
   for (const b of bits) {
+    /* tslint:disable */// TODO: Make this function not depend on side effects
     obj = obj[b]
+    /* tslint:enable */
   }
   return obj
 }
 
 export type StateTransform<T> = (state: ConnextState, payload: T, old: any) => any
 
+/* tslint:disable */// TODO: Overload function w an interface instead
 export function setterAction<Payload>(
   attr: string,
   transform?: StateTransform<Payload>,
@@ -53,6 +56,7 @@ export function setterAction<Payload>(
   attr: string,
   ...args: any[]
 ): ActionCreatorWithHandler<Payload> {
+/* tslint:enable */
   const transform = args[args.length - 1]
   const action = args.length === 1 ? undefined : args[0]
   const res = actionCreator<Payload>(`${action || 'set'}:${attr}`) as any

@@ -3,11 +3,13 @@ import * as eth from 'ethers'
 import { Networking } from './lib/networking'
 import {
   Address,
+  BN,
   ChannelRow,
   ChannelState,
   ChannelStateUpdate,
   channelUpdateToUpdateRequest,
   CustodialBalanceRow,
+  CustodialWithdrawalRow,
   ExchangeRates,
   HubConfig,
   Payment,
@@ -23,8 +25,6 @@ import {
   ThreadStateUpdate,
   UpdateRequest,
   WithdrawalParameters,
-  CustodialWithdrawalRow,
-  BN,
 } from './types'
 import { Wallet } from './Wallet'
 
@@ -64,7 +64,7 @@ export interface IHubAPIClient {
   requestCollateral(txCountGlobal: number): Promise<Sync>
   requestCustodialWithdrawal(
     amountToken: BN, recipient: Address,
-  ): Promise<CustodialWithdrawalRow | null>
+  ): Promise<CustodialWithdrawalRow | undefined>
   requestDeposit(
     deposit: SignedDepositRequestProposal, txCount: number, lastThreadUpdateId: number,
   ): Promise<Sync>
@@ -88,7 +88,10 @@ export class HubAPIClient implements IHubAPIClient {
     this.networking = networking
     this.wallet = wallet
   }
-  public async requestCustodialWithdrawal(amountToken: BN, recipient: Address): Promise<CustodialWithdrawalRow | null> {
+
+  public async requestCustodialWithdrawal(
+    amountToken: BN, recipient: Address,
+  ): Promise<CustodialWithdrawalRow | undefined> {
     try {
       const res = (await this.networking.post(
         `custodial/withdrawals`, {
@@ -96,11 +99,11 @@ export class HubAPIClient implements IHubAPIClient {
           recipient,
         },
       )).data
-      return res ? res : null
+      return res ? res : undefined
     } catch (e) {
       if (e.status === 404) {
         console.log(`No custodial withdrawals available for: ${this.wallet.address}`)
-        return null
+        return undefined
       }
       console.log(`Error creating a custodial withdrawal for ${this.wallet.address}:`, e)
       throw e

@@ -10,6 +10,8 @@
     "curly": [true, "ignore-same-line"],
     "cyclomatic-complexity": [true, 26],
     "file-name-casing": [false, "pascal-case"],
+    "interface-name": false,
+    "interface-over-type-literal": true,
     "jsdoc-format": false,
     "max-classes-per-file": false,
     "max-file-line-count": false,
