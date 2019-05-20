@@ -58,13 +58,6 @@ class CustodialPaymentsApiServiceHandler {
   }
 
   async doCreateWithdraw(req: Request, res: Response) {
-<<<<<<< HEAD
-    res.json(connext.convert.CustodialWithdrawalRow("str",
-      await this.service.createCustodialWithdrawal({
-        user: getAttr.address(req.session!, 'address'),
-        recipient: getAttr.address(req.body, 'recipient'),
-        amountToken: getAttr.big(req.body, 'amountToken'),
-=======
     let withdrawal
     try {
       const user = getAttr.address(req.session!, 'address')
@@ -74,7 +67,6 @@ class CustodialPaymentsApiServiceHandler {
         user,
         recipient,
         amountToken,
->>>>>>> master
       })
     } catch (e) {
       // send error response, invalid params
@@ -82,7 +74,7 @@ class CustodialPaymentsApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    res.json(convertCustodialWithdrawalRow("str",
+    res.json(connext.convert.CustodialWithdrawalRow("str",
       withdrawal
     ))
   }
