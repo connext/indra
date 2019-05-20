@@ -13,12 +13,13 @@ export default class AuthHeaderMiddleware {
   }
 
   public middleware(req: express.Request, res: express.Response, next: () => void): void {
-    const bodyToken = req.body.authToken ? req.body.authToken : null
+    const bodyToken = req.body.authToken
     const headerToken = parseAuthHeader(req)
     const headerAuthToken = parseAuthTokenHeader(req)
     let token
 
-    // First: check the POST body, this is the most trustworthy token location
+    // First: check the header token, this is the most trustworthy token location
+    
 
     // First: check the POST body, this is the most trustworthy token location
     if (bodyToken) {

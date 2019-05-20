@@ -1,24 +1,25 @@
-import { MaybeRes } from './util'
-import { ezPromise, maybe } from './util'
-import Config from './Config'
+import connectRedis from 'connect-redis'
+import * as cookie from 'cookie-parser'
+import * as cors from 'cors'
 import * as express from 'express'
 import * as session from 'express-session'
-import * as cookie from 'cookie-parser'
-import log from './util/log'
-import { Container } from './Container'
+
 import { ApiService } from './api/ApiService'
-import {
-  default as AuthHandler,
-} from './middleware/AuthHandler'
-import AuthHeaderMiddleware from './middleware/AuthHeaderMiddleware'
-import * as cors from 'cors'
+import Config from './Config'
+import { Container } from './Container'
+  import {
+    default as AuthHandler,
+  } from './middleware/AuthHandler'
+  import AuthHeaderMiddleware from './middleware/AuthHeaderMiddleware'
+import { ezPromise, maybe, MaybeRes } from './util'
+import log from './util/log'
 
 const LOG = log('ApiServer')
 const SESSION_LOG = log('ConnectRedis')
 
 const COOKIE_NAME = 'hub.sid'
 
-const RedisStore = require('connect-redis')(session)
+const RedisStore = connectRedis(session)
 
 const requestLog = log('requests')
 const requestLogMiddleware = (req: any, res: any, next: any): any => {
