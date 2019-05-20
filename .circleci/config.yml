@@ -93,13 +93,13 @@ workflows:
       - test-client
       - test-contracts
       - test-hub
-      # - test-e2e
+      - test-e2e
       - push-images:
           requires:
             - test-client
             - test-contracts
             - test-hub
-            # - test-e2e
+            - test-e2e
       - push-live-images:
           filters:
             branches:
@@ -108,7 +108,7 @@ workflows:
             - test-client
             - test-contracts
             - test-hub
-            # - test-e2e
+            - test-e2e
       - deploy-staging:
           filters:
             branches:
