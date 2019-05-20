@@ -70,6 +70,7 @@ export interface IConnextChannelOptions {
   password?: string
   privateKey?: string
   user?: string
+  externalWallet?: any,
   web3Provider?: Web3Provider
   loadState?(): Promise<string | undefined>
   safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder

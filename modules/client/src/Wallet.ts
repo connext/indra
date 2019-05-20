@@ -7,6 +7,7 @@ import {
   TransactionRequest,
   TransactionResponse,
 } from './types'
+import { TransactionReceipt } from 'ethers/providers';
 
 const {
   arrayify, bigNumberify, hashMessage, hexlify, isHexString, toUtf8Bytes, verifyMessage,
@@ -18,6 +19,7 @@ export class Wallet extends eth.Signer {
   private signer?: eth.Wallet
   private web3?: Web3
   private password: string
+  private external?: boolean
 
   public constructor(opts: IConnextChannelOptions) {
     super()
@@ -58,8 +60,8 @@ export class Wallet extends eth.Signer {
     } else if (opts.externalWallet) {
       this.signer = opts.externalWallet
       this.external = true
-      this.web3 = new Web3(opts.web3Provider)
-      this.address = opts.user.toLowerCase()
+      this.web3 = new Web3(opts.web3Provider as any)
+      this.address = opts.externalWallet.address.toLowerCase()
       this.web3.eth.defaultAccount = this.address
     // Fourth choice: Sign w web3
     } else if (opts.user && opts.web3Provider) {
@@ -109,7 +111,7 @@ export class Wallet extends eth.Signer {
       const resolve: any = async (k: string, v: any): Promise<any> => v
       const resolved: any = await objMapPromise(tx, resolve) as any
       // convert to right object
-      return txObj: any = {
+      return {
         data: resolved.data,
         from: this.address,
         gas: parseInt(resolved.gasLimit, 10),
@@ -124,17 +126,17 @@ export class Wallet extends eth.Signer {
       return this.signer.sign(tx)
     }
     if (this.web3) {
-      const txObj = this.prepareTransaction(tx);
+      const txObj:any = this.prepareTransaction(tx);
       return (await this.web3.eth.signTransaction(txObj)).raw // TODO: fix type
     }
     throw new Error(`Could not sign transaction`)
   }
   
   
-  public async signTransactionExternally(tx: TransactionRequest): Promise<string> {
+  public async signTransactionExternally(tx: TransactionRequest): Promise<any> {
     if (this.web3) {
-      const txObj = this.prepareTransaction(tx);
-      return await this.web3.eth.sendTransaction(txObj)
+      const txObj:any = this.prepareTransaction(tx);
+      return this.web3.eth.sendTransaction(txObj)
     }
     throw new Error(`Could not sign transaction`)
   }
