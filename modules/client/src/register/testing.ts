@@ -1,6 +1,6 @@
+/* tslint:disable */
 const _Mocha = require('mocha')
 
-/* tslint:disable */
 // @ts-ignore
 global.fetch = require('node-fetch-polyfill')
 

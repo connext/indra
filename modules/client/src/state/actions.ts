@@ -42,21 +42,18 @@ const getattr = (obj: any, bits: string[]): any => {
 
 export type StateTransform<T> = (state: ConnextState, payload: T, old: any) => any
 
-/* tslint:disable */// TODO: Overload function w an interface instead
-export function setterAction<Payload>(
-  attr: string,
-  transform?: StateTransform<Payload>,
-): ActionCreatorWithHandler<Payload>
-export function setterAction<Payload>(
-  attr: string,
-  action: string,
-  transform: StateTransform<Payload>,
-): ActionCreatorWithHandler<Payload>
-export function setterAction<Payload>(
+export interface SetterActionOverloaded {
+  <Payload>(
+    attr: string, transform?: StateTransform<Payload>,
+  ): ActionCreatorWithHandler<Payload>
+  <Payload>(
+    attr: string, action: string, transform: StateTransform<Payload>,
+  ): ActionCreatorWithHandler<Payload>
+}
+export const setterAction: SetterActionOverloaded = <Payload>(
   attr: string,
   ...args: any[]
-): ActionCreatorWithHandler<Payload> {
-/* tslint:enable */
+): any => {
   const transform = args[args.length - 1]
   const action = args.length === 1 ? undefined : args[0]
   const res = actionCreator<Payload>(`${action || 'set'}:${attr}`) as any

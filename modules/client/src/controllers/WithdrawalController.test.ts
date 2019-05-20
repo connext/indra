@@ -1,4 +1,5 @@
 import { toBN } from '../lib/bn'
+
 import { assert, mkAddress, parameterizedTests } from '../testing'
 import { MockConnextInternal, MockStore } from '../testing/mocks'
 import { convertChannelState } from '../types'

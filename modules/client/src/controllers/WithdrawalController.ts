@@ -1,4 +1,4 @@
-import { isValidAddress } from 'ethereumjs-util'
+import { ethers as eth } from 'ethers'
 
 import { toBN, tokenToWei, weiToToken } from '../lib/bn'
 import { getTxCount } from '../state/getters'
@@ -14,6 +14,8 @@ import {
 } from '../types'
 
 import { AbstractController } from './AbstractController'
+
+const { arrayify, isHexString } = eth.utils
 
 /* NOTE: the withdrawal parameters have optional withdrawal tokens and wei to
  * sell values for completeness. In the BOOTY case, there is no need for the
@@ -61,7 +63,7 @@ export class WithdrawalController extends AbstractController {
     }
 
     // validate recipient
-    if (!isValidAddress(withdrawalStr.recipient)) {
+    if (!isHexString(withdrawalStr.recipient) || arrayify(withdrawalStr.recipient).length !== 20) {
       WithdrawalError(`Recipient is not a valid address.`)
     }
 
