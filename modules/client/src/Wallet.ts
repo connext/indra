@@ -5,9 +5,8 @@ import { IConnextChannelOptions } from './Connext'
 import {
   objMapPromise,
   TransactionRequest,
-  TransactionResponse,
+  TransactionResponse
 } from './types'
-import { TransactionReceipt } from 'ethers/providers';
 
 const {
   arrayify, bigNumberify, hashMessage, hexlify, isHexString, toUtf8Bytes, verifyMessage,
