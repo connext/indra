@@ -125,7 +125,7 @@ export class Wallet extends eth.Signer {
       return this.signer.sign(tx)
     }
     if (this.web3) {
-      const txObj:any = this.prepareTransaction(tx);
+      const txObj:any = await this.prepareTransaction(tx);
       return (await this.web3.eth.signTransaction(txObj)).raw // TODO: fix type
     }
     throw new Error(`Could not sign transaction`)
@@ -134,7 +134,7 @@ export class Wallet extends eth.Signer {
   
   public async signTransactionExternally(tx: TransactionRequest): Promise<any> {
     if (this.web3) {
-      const txObj:any = this.prepareTransaction(tx);
+      const txObj:any = await this.prepareTransaction(tx);
       return this.web3.eth.sendTransaction(txObj)
     }
     throw new Error(`Could not sign transaction`)
