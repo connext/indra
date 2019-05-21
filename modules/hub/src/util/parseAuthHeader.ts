@@ -1,5 +1,7 @@
 import * as express from 'express'
 
+// TODO: remove this once new auth schame is confirmed working
+
 export function parseAuthHeader(req: express.Request): string|undefined {
   const authHeader = req.get('Authorization')
 

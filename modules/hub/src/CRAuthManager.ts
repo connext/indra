@@ -1,9 +1,9 @@
-import * as eth from 'ethers';
+import { ethers as eth } from 'ethers';
 import uuid = require('uuid')
 import log from './util/log'
-
 const util = require('ethereumjs-util')
 
+const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
 const LOG = log('AuthManager')
 
 export default interface CRAuthManager {
@@ -44,10 +44,7 @@ export class MemoryCRAuthManager implements CRAuthManager {
       return null
     }
 
-    const bytes = eth.utils.isHexString(nonce)
-      ? eth.utils.arrayify(nonce)
-      : eth.utils.toUtf8Bytes(nonce)
-
+    const bytes = isHexString(nonce) ? arrayify(nonce) : toUtf8Bytes(nonce)
     let sigAddr = eth.utils.verifyMessage(bytes, signature).toLowerCase()
 
     if (!sigAddr || sigAddr !== address) {

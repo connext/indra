@@ -1,9 +1,10 @@
 import { sign } from 'cookie-signature'
+import { ethers as eth } from 'ethers'
 import * as express from 'express'
 
 import log from '../util/log'
-import { parseAuthHeader, parseAuthTokenHeader} from '../util/parseAuthHeader'
 
+const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
 const LOG = log('AuthHeaderMiddleware')
 
 export default class AuthHeaderMiddleware {
@@ -13,38 +14,26 @@ export default class AuthHeaderMiddleware {
   }
 
   public middleware(req: express.Request, res: express.Response, next: () => void): void {
-    const bodyToken = req.body.authToken
-    const headerToken = parseAuthHeader(req)
-    const headerAuthToken = parseAuthTokenHeader(req)
-    let token
-
-    // First: check the header token, this is the most trustworthy token location
-    if (headerAuthToken) {
-      token = headerAuthToken
-      LOG.debug(`Found token in header: ${token.substring(0,8)}..`)
+    const address = req.get('x-address')
+    const nonce = req.get('x-nonce')
+    const signature = req.get('x-signature')
+    req.session = {} as any
+    if (!address || !nonce || !signature) {
+      LOG.warn(`Missing auth headers: address="${address}" nonce="${nonce}" sig="${signature}"`)
+      return next()
     }
-
-    // First: check the POST body, this is the most trustworthy token location
-    if (bodyToken) {
-      token = bodyToken
-      LOG.debug(`Found token in body: ${token.substring(0,8)}..`)
-
-    // Second: check the bearer auth header for Auth fields
-    } else if (headerToken) {
-      token = headerToken
-      LOG.debug(`Found bearer token in header: ${token.substring(0,8)}..`)
-
-    // If we didn't find a token, too bad so sad
-    } else {
-      LOG.debug(`No token found`)
-      next()
-      return
+    const bytes = isHexString(nonce) ? arrayify(nonce) : toUtf8Bytes(nonce)
+    const signer = verifyMessage(bytes, signature).toLowerCase()
+    if (signer !== address.toLowerCase()) {
+      LOG.warn(`Invalid signature for nonce "${nonce}": Got "${signer}", expected "${address}"`)
+      return next()
     }
-
-    // If we DID find a token, copy it into a cookie
-    const cookie = `${this.cookieName}=s:${sign(token, this.cookieSecret)}`
-    req.headers.cookie = cookie
-    LOG.debug(`Stuffing header/body token into a cookie`)
+    // We only set req.session.address after this address's
+    // signature has been validated. If it's set, then auth was successful
+    // This is made explict by the AuthHandler later in the express pipeline
+    req.session.id = nonce
+    req.session.address = signer
     next()
   }
+
 }

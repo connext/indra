@@ -34,6 +34,7 @@ export class DefaultAuthHandler implements AuthHandler {
         roles.push(Role.ADMIN)
       }
     } else if (this.config.serviceUserKey && this.config.serviceUserKey === authHeader) {
+      LOG.warn(`Provided auth header doesn't match the service user key set by hub config`)
       roles.push(Role.AUTHENTICATED)
       roles.push(Role.SERVICE)
     } else {

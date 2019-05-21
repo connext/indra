@@ -2,10 +2,10 @@ import * as express from 'express'
 
 import Config from '../Config'
 import CRAuthManager from '../CRAuthManager'
+import { RedisClient } from '../RedisClient'
 import log from '../util/log'
 
 import { ApiService } from './ApiService'
-import { RedisClient } from '../RedisClient';
 
 const LOG = log('AuthApiService')
 
@@ -42,6 +42,7 @@ class AuthApiServiceHandler {
     })
   }
 
+  // TODO: This endpoing will probably be entirely removed under new auth schema
   public async doResponse(req: express.Request, res: express.Response) {
     const address = req.body.address
     const nonce = req.body.nonce
@@ -50,11 +51,8 @@ class AuthApiServiceHandler {
 
     if (!address || !nonce || !origin || !signature) {
       LOG.warn(
-        'Received invalid challenge request. Aborting. Body received: {body}',
-        {
-          body: req.body
-        }
-      )
+        `Received invalid challenge request. Aborting. Body received: ${
+          JSON.stringify(req.body)}`)
       return res.sendStatus(400)
     }
 
@@ -68,9 +66,7 @@ class AuthApiServiceHandler {
         signature
       )
     } catch (err) {
-      LOG.error('Caught error checking signature: {err}', {
-        err
-      })
+      LOG.error(`Caught error checking signature: ${err}`)
       return res.sendStatus(400)
     }
 
@@ -81,17 +77,17 @@ class AuthApiServiceHandler {
 
     await this.redis.save()
 
+    /*
     req.session!.regenerate(async err => {
       if (err) {
-        LOG.error('Caught error while regenerating session: {err}', {
-          err
-        })
+        LOG.error(`Caught error while regenerating session: ${err}`)
         return res.sendStatus(500)
       }
 
       req.session!.address = result
       res.send({ token: req.session!.id })
     })
+    */
   }
 
   doStatus(req: express.Request, res: express.Response) {
