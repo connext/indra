@@ -1,5 +1,4 @@
 import * as connectRedis from 'connect-redis'
-import * as cookie from 'cookie-parser'
 import * as cors from 'cors'
 import * as express from 'express'
 import * as session from 'express-session'
@@ -15,15 +14,13 @@ import log from './util/log'
 const LOG = log('ApiServer')
 const SESSION_LOG = log('ConnectRedis')
 
-const COOKIE_NAME = 'hub.sid'
-
 const RedisStore = connectRedis(session)
 
 const requestLog = log('requests')
 const requestLogMiddleware = (
   req: express.Request,
   res: express.Response,
-  next: () => any,
+  next: () => any
 ): void => {
   const startTime = Date.now()
   res.on('finish', () => {
@@ -39,8 +36,8 @@ const requestLogMiddleware = (
         outSize: `${res.get('content-length') || '?'} bytes`,
         remoteAddr,
         statusCode: res.statusCode,
-        url: req.originalUrl,
-      },
+        url: req.originalUrl
+      }
     )
   })
   next()
@@ -55,7 +52,7 @@ function bodyTextMiddleware(opts: { maxSize: number }): any {
   return (
     req: express.Request,
     res: express.Response,
-    next: () => any,
+    next: () => any
   ): any => {
     const rawPromise = ezPromise<MaybeRes<Buffer>>()
     const textPromise = ezPromise<MaybeRes<string>>()
@@ -104,7 +101,6 @@ export class ApiServer {
   private readonly apiServices: ApiService[]
 
   public constructor(protected readonly container: Container) {
-    this.container = container
     this.config = container.resolve('Config')
     this.authHandler = this.container.resolve('AuthHandler')
 
@@ -113,15 +109,13 @@ export class ApiServer {
 
     const corsHandler = cors({
       credentials: true,
-      origin: true,
+      origin: true
     })
     this.app.options('*', corsHandler)
     this.app.use(corsHandler)
 
     this.app.use(express.json())
-    this.app.use(
-      new AuthHeaderMiddleware(COOKIE_NAME, this.config.sessionSecret)
-        .middleware)
+    this.app.use(new AuthHeaderMiddleware().middleware)
 
     // TODO: remove session completely
     // this.app.use(
@@ -158,7 +152,7 @@ export class ApiServer {
     this.setupRoutes()
   }
 
-  public async start() {
+  public async start(): Promise<any> {
     return new Promise(resolve =>
       this.app.listen(this.config.port, () => {
         LOG.info(`Listening on port ${this.config.port}.`)

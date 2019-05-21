@@ -1,8 +1,9 @@
 import * as express from 'express'
-import {RouteBasedACL} from '../RouteBasedAcl'
-import log from '../util/log'
+
 import Config from '../Config'
-import {Role} from '../Role'
+import { Role } from '../Role'
+import { RouteBasedACL } from '../RouteBasedAcl'
+import log from '../util/log'
 import { parseAuthHeader } from '../util/parseAuthHeader'
 
 const LOG = log('AuthHandler')
@@ -22,22 +23,28 @@ export class DefaultAuthHandler implements AuthHandler {
     this.defaultAcl()
   }
 
-  async rolesFor(req: express.Request): Promise<Role[]> {
+  public async rolesFor(req: express.Request): Promise<Role[]> {
     const authHeader = parseAuthHeader(req)
 
     const roles = []
 
+    console.log('req.session: ', req.session);
     if (req.session && req.session.address) {
       roles.push(Role.AUTHENTICATED)
 
-      if (req.session && this.adminAddresses.has(req.session!.address)) {
+      if (req.session && this.adminAddresses.has(req.session.address)) {
         roles.push(Role.ADMIN)
       }
-    } else if (this.config.serviceUserKey && this.config.serviceUserKey === authHeader) {
-      LOG.warn(`Provided auth header doesn't match the service user key set by hub config`)
+    } else if (
+      this.config.serviceUserKey &&
+      this.config.serviceUserKey === authHeader
+    ) {
       roles.push(Role.AUTHENTICATED)
       roles.push(Role.SERVICE)
     } else {
+      LOG.warn(
+        `Provided auth header doesn't match the service user key set by hub config`,
+      )
       roles.push(Role.NONE)
     }
 
@@ -54,10 +61,12 @@ export class DefaultAuthHandler implements AuthHandler {
     const authorized = req.session.roles.has(Role.AUTHENTICATED)
 
     if (!authorized) {
-      LOG.warn(`Unauthorized request by ${req.session!.address} for route: ${req.path}`)
+      LOG.warn(
+        `Unauthorized request by ${req.session.address} for route: ${req.path}`,
+      )
     }
 
-    return true //authorized
+    return true // authorized
   }
 
   private cacheConfig() {
@@ -65,7 +74,9 @@ export class DefaultAuthHandler implements AuthHandler {
       return
     }
 
-    this.config.adminAddresses.forEach((addr: string) => this.adminAddresses.add(addr))
+    this.config.adminAddresses.forEach((addr: string) =>
+      this.adminAddresses.add(addr),
+    )
   }
 
   private defaultAcl() {

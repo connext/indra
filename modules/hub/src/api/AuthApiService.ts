@@ -15,13 +15,12 @@ export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
     'POST /challenge': 'doChallenge',
     'POST /response': 'doResponse',
     'POST /status': 'doStatus',
-    'GET /status': 'doStatus'
+    'GET /status': 'doStatus',
   }
   handler = AuthApiServiceHandler
   dependencies = {
     config: 'Config',
     crManager: 'CRAuthManager',
-    redis: 'RedisClient'
   }
 }
 
@@ -30,20 +29,21 @@ class AuthApiServiceHandler {
 
   public config: Config
 
-  public redis: RedisClient
-
-  public async doChallenge(req: express.Request, res: express.Response) {
+  public async doChallenge(req: express.Request, res: express.Response): Promise<express.Response> {
     const nonce = await this.crManager.generateNonce()
 
     LOG.debug(`Sending challenge nonce.`)
 
-    res.send({
-      nonce
+    return res.send({
+      nonce,
     })
   }
 
   // TODO: This endpoing will probably be entirely removed under new auth schema
-  public async doResponse(req: express.Request, res: express.Response) {
+  public async doResponse(
+    req: express.Request,
+    res: express.Response,
+  ): Promise<express.Response> {
     const address = req.body.address
     const nonce = req.body.nonce
     const origin = req.body.origin
@@ -51,8 +51,10 @@ class AuthApiServiceHandler {
 
     if (!address || !nonce || !origin || !signature) {
       LOG.warn(
-        `Received invalid challenge request. Aborting. Body received: ${
-          JSON.stringify(req.body)}`)
+        `Received invalid challenge request. Aborting. Body received: ${JSON.stringify(
+          req.body,
+        )}`,
+      )
       return res.sendStatus(400)
     }
 
@@ -63,7 +65,7 @@ class AuthApiServiceHandler {
         address,
         nonce,
         origin,
-        signature
+        signature,
       )
     } catch (err) {
       LOG.error(`Caught error checking signature: ${err}`)
@@ -74,8 +76,6 @@ class AuthApiServiceHandler {
       LOG.warn('Received invalid challenge response. Aborting.')
       return res.sendStatus(400)
     }
-
-    await this.redis.save()
 
     /*
     req.session!.regenerate(async err => {
@@ -88,20 +88,25 @@ class AuthApiServiceHandler {
       res.send({ token: req.session!.id })
     })
     */
+
+    res.send({
+      address,
+      nonce,
+    })
   }
 
   doStatus(req: express.Request, res: express.Response) {
     if (req.session && req.session.address) {
       return res.send({
+        address: req.session.address,
         success: true,
-        address: req.session.address
       })
     }
 
     LOG.info('No session found. Returning unsuccessful auth status.')
 
     return res.send({
-      success: false
+      success: false,
     })
   }
 }
