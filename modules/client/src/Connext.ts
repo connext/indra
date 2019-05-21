@@ -39,6 +39,7 @@ import {
   convertFields,
   convertPayment,
   CustodialBalanceRowBN,
+  HubConfig,
   insertDefault,
   Omit,
   PartialPurchaseRequest,
@@ -109,18 +110,19 @@ export const createClient = async (opts: IConnextChannelOptions): Promise<Connex
     wallet,
   )
 
+  console.log('Authenticating with hub...')
   await hub.authenticate()
 
-  const hubConfig: any = await hub.config()
+  const hubConfig: HubConfig = await hub.config()
 
-  const config: any = {
+  const config = {
     contractAddress: hubConfig.channelManagerAddress.toLowerCase(),
     ethNetworkId: hubConfig.ethNetworkId.toLowerCase(),
     hubAddress: hubConfig.hubWalletAddress.toLowerCase(),
     tokenAddress: hubConfig.tokenAddress.toLowerCase(),
   }
 
-  const merged: any = { ...opts }
+  const merged = { ...opts } as any
   for (const k in config) {
     if ((opts as any)[k]) {
       continue
