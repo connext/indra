@@ -3,9 +3,15 @@ export const POST = 'POST'
 
 export class Networking {
   public baseUrl: string
+  private address: string | undefined
+  private nonce: string | undefined
+  private signature: string | undefined
 
-  public constructor(baseUrl: string) {
+  public constructor(baseUrl: string, address?: string, nonce?: string, signature?: string) {
     this.baseUrl = baseUrl
+    this.address = address || undefined
+    this.nonce = nonce || undefined
+    this.signature = signature || undefined
   }
 
   public get = (url: string): Promise<any> =>
@@ -15,16 +21,18 @@ export class Networking {
     this.request(url, POST, body)
 
   private request = async (url: string, method: any, body?: any): Promise<any> => {
-    // TO DO: better type
-    const opts = {
-      method,
-    } as any
+    const opts = { method } as any
 
     let res
     if (method === POST) {
       opts.body = JSON.stringify(body)
       opts.headers = {
         'Content-Type': 'application/json',
+      }
+      if (this.nonce && this.signature) {
+        opts.headers['x-address'] = this.address
+        opts.headers['x-nonce'] = this.nonce
+        opts.headers['x-signature'] = this.signature
       }
     }
     opts.mode = 'cors'

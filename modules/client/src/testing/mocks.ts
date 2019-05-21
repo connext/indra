@@ -127,10 +127,11 @@ export class MockConnextInternal extends ConnextInternal {
       ...opts,
     } as any
 
-    const wallet = new Wallet(moreOpts)
+    const wallet =  new Wallet(moreOpts)
+    moreOpts.wallet = wallet
     const provider = new eth.providers.JsonRpcProvider(moreOpts.ethUrl)
 
-    super(moreOpts , wallet)
+    super(moreOpts)
 
     this.mockContract = this.contract as MockChannelManager
     this.mockHub = this.hub as MockHub

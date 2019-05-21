@@ -1,4 +1,4 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 
 import { Networking } from './lib/networking'
 import {
@@ -80,13 +80,27 @@ export interface IHubAPIClient {
 }
 
 export class HubAPIClient implements IHubAPIClient {
+  private hubUrl: string
   private networking: Networking
   private wallet: Wallet
   private authToken?: string
 
   public constructor(networking: Networking, wallet: Wallet) {
     this.networking = networking
+    this.hubUrl = this.networking.baseUrl
     this.wallet = wallet
+  }
+
+  // TODO: remove other auth functions once this one works
+  public async authenticate(): Promise<void> {
+    const nonce = await this.authChallenge()
+    const signature = await this.wallet.signMessage(nonce)
+    this.networking = new Networking(
+      this.hubUrl,
+      this.wallet.address,
+      nonce,
+      signature,
+    )
   }
 
   public async requestCustodialWithdrawal(
@@ -195,8 +209,6 @@ export class HubAPIClient implements IHubAPIClient {
 
     // reset authtoken
     const nonce = await this.authChallenge()
-
-    // create hash and sign
     const signature = await this.wallet.signMessage(nonce)
 
     // set auth token

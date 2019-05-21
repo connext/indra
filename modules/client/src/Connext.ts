@@ -62,6 +62,8 @@ import { Wallet } from './Wallet'
 // Interface Definitions
 ////////////////////////////////////////
 
+// These are options passed in from the app layer eg daicard
+// They should be optimized to be as flexible and as simple as possible
 export interface IConnextChannelOptions {
   connextProvider?: ConnextProvider // NOTE: only a placeholder
   ethUrl?: string
@@ -76,16 +78,20 @@ export interface IConnextChannelOptions {
   saveState?(state: string): Promise<any>
 }
 
+// These are options passed from the internal client creation function to the class constructor
+// They are derived from the IConnextChannelOptions, they should be thorough and inflexible
+// These are good things to override while injecting mocks during testing
 export interface IConnextChannelInternalOptions extends IConnextChannelOptions{
   contract?: IChannelManager // Optional, useful for dependency injection
   contractAddress: string
   gasMultiple: number
-  hub?: IHubAPIClient // Optional, useful for dependency injection
+  hub: IHubAPIClient // Either injected during tests or set during async client creation
   hubAddress: string
   saveState(state: string): Promise<any>
   store?: ConnextStore // Optional, useful for dependency injection
   tokenAddress: string
   user: string
+  wallet: Wallet
 }
 
 ////////////////////////////////////////
@@ -93,9 +99,20 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions{
 ////////////////////////////////////////
 
 // Used to get an instance of ConnextChannel.
+// Key task here is to convert IConnextChannelOptions into IConnextChannelInternalOptions
 export const createClient = async (opts: IConnextChannelOptions): Promise<ConnextChannel> => {
 
-  const hubConfig: any = (await (new Networking(opts.hubUrl)).get(`config`)).data
+  const wallet: Wallet = new Wallet(opts)
+
+  const hub: HubAPIClient = new HubAPIClient(
+    new Networking(opts.hubUrl),
+    wallet,
+  )
+
+  await hub.authenticate()
+
+  const hubConfig: any = await hub.config()
+
   const config: any = {
     contractAddress: hubConfig.channelManagerAddress.toLowerCase(),
     ethNetworkId: hubConfig.ethNetworkId.toLowerCase(),
@@ -118,11 +135,11 @@ export const createClient = async (opts: IConnextChannelOptions): Promise<Connex
     merged.user = (await tmp.eth.getAccounts())[0]
   }
 
-  const wallet: Wallet = new Wallet(merged)
   merged.user = merged.user || wallet.address
   merged.saveState = merged.saveState || console.log
+  merged.wallet = wallet
 
-  return new ConnextInternal({ ...merged }, wallet)
+  return new ConnextInternal(merged)
 }
 
 /**
@@ -350,7 +367,7 @@ export class ConnextInternal extends ConnextChannel {
   private _saving: Promise<void> = Promise.resolve()
   private _savePending: boolean = false
 
-  public constructor(opts: IConnextChannelInternalOptions, wallet: Wallet) {
+  public constructor(opts: IConnextChannelInternalOptions) {
     super(opts)
     this.opts = opts
 
@@ -358,14 +375,9 @@ export class ConnextInternal extends ConnextChannel {
     // The store shouldn't be used by anything before calling `start()`, so
     // leave it undefined until then.
     this.store = undefined as any
-    this.wallet = wallet
-    this.provider = wallet.provider
-
-    // console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
-    this.hub = opts.hub || new HubAPIClient(
-      new Networking(this.opts.hubUrl),
-      this.wallet,
-    )
+    this.wallet = opts.wallet
+    this.provider = this.wallet.provider
+    this.hub = opts.hub
 
     opts.user = opts.user.toLowerCase()
     opts.hubAddress = opts.hubAddress.toLowerCase()
@@ -373,7 +385,7 @@ export class ConnextInternal extends ConnextChannel {
     opts.gasMultiple = opts.gasMultiple || 1.5
 
     this.contract = opts.contract
-      || new ChannelManager(wallet, opts.contractAddress, opts.gasMultiple)
+      || new ChannelManager(this.wallet, opts.contractAddress, opts.gasMultiple)
     this.validator = new Validator(opts.hubAddress, this.provider, this.contract.rawAbi)
     this.utils = new Utils()
 
