@@ -7,10 +7,8 @@ import * as session from 'express-session'
 import { ApiService } from './api/ApiService'
 import Config from './Config'
 import { Container } from './Container'
-  import {
-    default as AuthHandler,
-  } from './middleware/AuthHandler'
-  import AuthHeaderMiddleware from './middleware/AuthHeaderMiddleware'
+import { default as AuthHandler } from './middleware/AuthHandler'
+import AuthHeaderMiddleware from './middleware/AuthHeaderMiddleware'
 import { ezPromise, maybe, MaybeRes } from './util'
 import log from './util/log'
 
@@ -22,20 +20,28 @@ const COOKIE_NAME = 'hub.sid'
 const RedisStore = connectRedis(session)
 
 const requestLog = log('requests')
-const requestLogMiddleware = (req: express.Request, res: express.Response, next: any): any => {
+const requestLogMiddleware = (
+  req: express.Request,
+  res: express.Response,
+  next: () => any
+): void => {
   const startTime = Date.now()
   res.on('finish', () => {
-    const remoteAddr = req.ip || req.headers['x-forwarded-for'] || req.address
-    let duration = Date.now() - startTime
-    requestLog.info('{remoteAddr} {method} {url} {inSize} -> {statusCode} ({outSize}; {duration})', {
-      remoteAddr,
-      method: req.method,
-      url: req.originalUrl,
-      statusCode: res.statusCode,
-      inSize: (req.get('content-length') || '0') + ' bytes',
-      outSize: (res.get('content-length') || '?') + ' bytes',
-      duration: (duration / 1000).toFixed(3) + 'ms',
-    })
+    const remoteAddr =
+      req.ip || req.headers['x-forwarded-for'] || (req as any).address
+    const duration = Date.now() - startTime
+    requestLog.info(
+      '{remoteAddr} {method} {url} {inSize} -> {statusCode} ({outSize}; {duration})',
+      {
+        duration: `${(duration / 1000).toFixed(3)} ms`,
+        inSize: `${req.get('content-length') || '0'} bytes`,
+        method: req.method,
+        outSize: `${res.get('content-length') || '?'} bytes`,
+        remoteAddr,
+        statusCode: res.statusCode,
+        url: req.originalUrl
+      }
+    )
   })
   next()
 }
@@ -45,8 +51,12 @@ const requestLogMiddleware = (req: express.Request, res: express.Response, next:
  * methods to `req`. They will reject if no content-length is provided,
  * or the content-length > maxSize.
  */
-function bodyTextMiddleware(opts: { maxSize: number }) {
-  return (req, res, next) => {
+function bodyTextMiddleware(opts: { maxSize: number }): any {
+  return (
+    req: express.Request,
+    res: express.Response,
+    next: () => any
+  ): any => {
     const rawPromise = ezPromise<MaybeRes<Buffer>>()
     const textPromise = ezPromise<MaybeRes<string>>()
 
@@ -54,12 +64,13 @@ function bodyTextMiddleware(opts: { maxSize: number }) {
     req.getText = () => maybe.unwrap(textPromise.promise)
 
     const size = +req.headers['content-length']
-    if (size != size || size > opts.maxSize) {
-      const msg = (
-        size > opts.maxSize ?
-          `bodyTextMiddleware: body too large (${size} > ${opts.maxSize}); not parsing.` :
-          `bodyTextMiddleware: no content-length; not parsing body.`
-      )
+    if (size > opts.maxSize) {
+      const msg =
+        size > opts.maxSize
+          ? `bodyTextMiddleware: body too large (${size} > ${
+              opts.maxSize
+            }); not parsing.`
+          : `bodyTextMiddleware: no content-length; not parsing body.`
       LOG.debug(msg)
       const rej = maybe.reject(new Error(msg))
       rawPromise.resolve(rej as any)
@@ -86,14 +97,13 @@ function bodyTextMiddleware(opts: { maxSize: number }) {
 }
 
 export class ApiServer {
-  app: express.Application
+  public app: express.Application
 
-  config: Config
-  container: Container
-  authHandler: AuthHandler
-  apiServices: ApiService[]
+  private readonly config: Config
+  private readonly authHandler: AuthHandler
+  private readonly apiServices: ApiService[]
 
-  constructor(container: Container) {
+  public constructor(private readonly container: Container) {
     this.container = container
     this.config = container.resolve('Config')
     this.authHandler = this.container.resolve('AuthHandler')
@@ -102,35 +112,36 @@ export class ApiServer {
     this.app.use(requestLogMiddleware)
 
     const corsHandler = cors({
-      origin: true,
       credentials: true,
+      origin: true
     })
     this.app.options('*', corsHandler)
     this.app.use(corsHandler)
 
-    this.app.use(cookie())
     this.app.use(express.json())
     this.app.use(
       new AuthHeaderMiddleware(COOKIE_NAME, this.config.sessionSecret)
-        .middleware,
+        .middleware
     )
-    this.app.use(
-      session({
-        secret: this.config.sessionSecret,
-        name: COOKIE_NAME,
-        resave: false,
-        store: new RedisStore({
-          url: this.config.redisUrl,
-          logErrors: (err: any) =>
-            SESSION_LOG.error('Encountered error in Redis session: {err}', {
-              err,
-            }),
-        }),
-        cookie: {
-          httpOnly: true,
-        },
-      }),
-    )
+
+    // TODO: remove session completely
+    // this.app.use(
+    //   session({
+    //     secret: this.config.sessionSecret,
+    //     name: COOKIE_NAME,
+    //     resave: false,
+    //     store: new RedisStore({
+    //       url: this.config.redisUrl,
+    //       logErrors: (err: any) =>
+    //         SESSION_LOG.error('Encountered error in Redis session: {err}', {
+    //           err
+    //         })
+    //     }),
+    //     cookie: {
+    //       httpOnly: true
+    //     }
+    //   })
+    // )
 
     // Note: this needs to come before the `express.json()` middlware, but
     // after the session middleware. I have no idea why, but if it's before the
@@ -153,7 +164,7 @@ export class ApiServer {
       this.app.listen(this.config.port, () => {
         LOG.info(`Listening on port ${this.config.port}.`)
         resolve()
-      }),
+      })
     )
   }
 
@@ -167,7 +178,7 @@ export class ApiServer {
   protected async authenticateRoutes(
     req: express.Request,
     res: express.Response,
-    next: () => void,
+    next: () => void
   ) {
     const roles = await this.authHandler.rolesFor(req)
     req.session!.roles = new Set(roles)
@@ -184,7 +195,7 @@ export class ApiServer {
     err: any,
     req: express.Request,
     res: express.Response,
-    next: any,
+    next: any
   ) {
     if (res.headersSent) {
       return next(err)
@@ -195,7 +206,7 @@ export class ApiServer {
       error: true,
       reason: 'Unknown Error',
       msg: err.message,
-      stack: err.stack,
+      stack: err.stack
     })
 
     LOG.error('Unknown error in {req.method} {req.path}: {message}', {
@@ -205,9 +216,8 @@ export class ApiServer {
         method: req.method,
         path: req.path,
         query: req.query,
-        body: req.body,
-      },
+        body: req.body
+      }
     })
   }
 }
-

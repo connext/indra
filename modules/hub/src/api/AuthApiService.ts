@@ -1,10 +1,11 @@
 import * as express from 'express'
 
-import { ApiService } from './ApiService'
-
 import Config from '../Config'
 import CRAuthManager from '../CRAuthManager'
 import log from '../util/log'
+
+import { ApiService } from './ApiService'
+import { RedisClient } from '../RedisClient';
 
 const LOG = log('AuthApiService')
 
@@ -14,51 +15,61 @@ export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
     'POST /challenge': 'doChallenge',
     'POST /response': 'doResponse',
     'POST /status': 'doStatus',
-    'GET /status': 'doStatus',
+    'GET /status': 'doStatus'
   }
   handler = AuthApiServiceHandler
   dependencies = {
-    'crManager': 'CRAuthManager',
-    'config': 'Config',
+    config: 'Config',
+    crManager: 'CRAuthManager',
+    redis: 'RedisClient'
   }
 }
 
-
 class AuthApiServiceHandler {
-  crManager: CRAuthManager
+  public crManager: CRAuthManager
 
-  config: Config
+  public config: Config
 
-  async doChallenge(req: express.Request, res: express.Response) {
+  public redis: RedisClient
+
+  public async doChallenge(req: express.Request, res: express.Response) {
     const nonce = await this.crManager.generateNonce()
 
     LOG.debug(`Sending challenge nonce.`)
 
     res.send({
-      nonce,
+      nonce
     })
   }
 
-  async doResponse(req: express.Request, res: express.Response) {
+  public async doResponse(req: express.Request, res: express.Response) {
     const address = req.body.address
     const nonce = req.body.nonce
     const origin = req.body.origin
     const signature = req.body.signature
 
     if (!address || !nonce || !origin || !signature) {
-      LOG.warn('Received invalid challenge request. Aborting. Body received: {body}', {
-        body: req.body,
-      })
+      LOG.warn(
+        'Received invalid challenge request. Aborting. Body received: {body}',
+        {
+          body: req.body
+        }
+      )
       return res.sendStatus(400)
     }
 
-    let result: string|null
+    let result: string | null
 
     try {
-      result = await this.crManager.checkSignature(address, nonce, origin, signature)
+      result = await this.crManager.checkSignature(
+        address,
+        nonce,
+        origin,
+        signature
+      )
     } catch (err) {
       LOG.error('Caught error checking signature: {err}', {
-        err,
+        err
       })
       return res.sendStatus(400)
     }
@@ -68,10 +79,12 @@ class AuthApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    req.session!.regenerate(async (err) => {
+    await this.redis.save()
+
+    req.session!.regenerate(async err => {
       if (err) {
         LOG.error('Caught error while regenerating session: {err}', {
-          err,
+          err
         })
         return res.sendStatus(500)
       }
@@ -85,15 +98,14 @@ class AuthApiServiceHandler {
     if (req.session && req.session.address) {
       return res.send({
         success: true,
-        address: req.session.address,
+        address: req.session.address
       })
     }
 
     LOG.info('No session found. Returning unsuccessful auth status.')
 
     return res.send({
-      success: false,
+      success: false
     })
   }
-
 }

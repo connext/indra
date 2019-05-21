@@ -3,7 +3,7 @@ import {RouteBasedACL} from '../RouteBasedAcl'
 import log from '../util/log'
 import Config from '../Config'
 import {Role} from '../Role'
-import parseAuthHeader from '../util/parseAuthHeader'
+import { parseAuthHeader } from '../util/parseAuthHeader'
 
 const LOG = log('AuthHandler')
 

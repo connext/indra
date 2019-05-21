@@ -19,17 +19,20 @@ export default class AuthHeaderMiddleware {
     let token
 
     // First: check the header token, this is the most trustworthy token location
-    
+    if (headerAuthToken) {
+      token = headerAuthToken
+      LOG.debug(`Found token in header: ${token.substring(0,8)}..`)
+    }
 
     // First: check the POST body, this is the most trustworthy token location
     if (bodyToken) {
       token = bodyToken
       LOG.debug(`Found token in body: ${token.substring(0,8)}..`)
 
-    // Second: check the header for Auth fields
+    // Second: check the bearer auth header for Auth fields
     } else if (headerToken) {
       token = headerToken
-      LOG.debug(`Found token in header: ${token.substring(0,8)}..`)
+      LOG.debug(`Found bearer token in header: ${token.substring(0,8)}..`)
 
     // If we didn't find a token, too bad so sad
     } else {

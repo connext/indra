@@ -38,7 +38,7 @@
     "semicolon": [true, "never"],
     "strict-boolean-expressions": false,
     "trailing-comma": [true,
-      {"multiline": "always", "singleline": "never","esSpecCompliant": true}
+      {"multiline": "never", "singleline": "never","esSpecCompliant": true}
     ],
     "typedef": [true,
       "call-signature",

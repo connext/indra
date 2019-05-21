@@ -21,6 +21,7 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
+    "@types/body-parser": "^1.17.0",
     "classnames": "^2.2.5",
     "concurrently": "^4.1.0",
     "connect-redis": "^3.4.1",
