@@ -29,11 +29,11 @@ then
   echo
   if [[ "$REPLY" =~ ^[Yy]$ ]]
   then
-    git tag -f indra-$version
+    git tag indra-$version || true
     echo "You should override the remote tag too: git push origin indra-$version --no-verify --force";echo
   fi
 else
   echo "connextproject/$image:$version does not exist on docker hub yet"
-  git tag indra-$version
+  git tag indra-$version || true
   echo "You should share this tag: git push origin indra-$version --no-verify";echo
 fi
