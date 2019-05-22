@@ -25,7 +25,7 @@ import { reducers } from './state/reducers'
 import {
   ConnextState, ConnextStore, CUSTODIAL_BALANCE_ZERO_STATE, PersistentState,
 } from './state/store'
-import { StateGenerator } from './StateGenerator'
+import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
   addSigToChannelState,
@@ -209,7 +209,7 @@ export abstract class ConnextChannel extends EventEmitter {
     !!(withdrawal as SuccinctWithdrawalParameters).amountWei
   }
 
-  private calculateChannelWithdrawal(
+  public calculateChannelWithdrawal(
     _withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
     custodial: CustodialBalanceRowBN,
   ): any {
@@ -220,33 +220,39 @@ export abstract class ConnextChannel extends EventEmitter {
       ? insertDefault('0', _withdrawal, argNumericFields.Payment)
       : insertDefault('0', _withdrawal, withdrawalParamsNumericFields)
 
-    // preferentially withdraw from your custodial balance when wding
-    // TODO: exchange on withdrawal account for custodial balances?
-    const channelTokenWithdrawal = isSuccinct
-      ? maxBN([
-          toBN(0),
-          toBN((withdrawal as any).amountToken).sub(custodial.balanceToken),
-        ])
-      : maxBN([toBN(0), toBN((withdrawal as any).withdrawalTokenUser).sub(custodial.balanceToken)])
+    const totalTokens = isSuccinct 
+      ? toBN(withdrawal.amountToken)
+      : toBN(withdrawal.tokensToSell).add(
+          toBN(withdrawal.withdrawalTokenUser)
+        )
 
-    const channelWeiWithdrawal = isSuccinct
-      ? maxBN([
-          toBN(0),
-          toBN((withdrawal as any).amountWei).sub(custodial.balanceWei),
-        ])
-      : maxBN([
-          toBN(0),
-          toBN((withdrawal as any).withdrawalWeiUser).sub(custodial.balanceWei),
-        ])
+    const totalWei = isSuccinct 
+      ? toBN(withdrawal.amountWei)
+      : toBN(withdrawal.weiToSell).add(
+          toBN(withdrawal.withdrawalWeiUser)
+        )
+
+    // preferentially withdraw from your custodial balance
+    const channelTokenWithdrawal = subOrZero(
+      totalTokens, 
+      custodial.balanceToken
+    )
+
+    const channelWeiWithdrawal = subOrZero(
+      totalWei,
+      custodial.balanceWei
+    )
 
     // get the amount youll wd custodially
-    const custodialTokenWithdrawal = isSuccinct
-      ? maxBN([toBN(0), toBN((withdrawal as any).amountToken).sub(channelTokenWithdrawal)])
-      : maxBN([toBN(0), toBN((withdrawal as any).withdrawalTokenUser).sub(channelTokenWithdrawal)])
-
-    const custodialWeiWithdrawal = isSuccinct
-      ? maxBN([toBN(0), toBN((withdrawal as any).amountWei).sub(channelWeiWithdrawal)])
-      : maxBN([toBN(0), toBN((withdrawal as any).withdrawalWeiUser).sub(channelWeiWithdrawal)])
+    const custodialTokenWithdrawal = subOrZero(
+      totalTokens, 
+      channelTokenWithdrawal
+    )
+    
+    const custodialWeiWithdrawal = subOrZero(
+      totalWei,
+      channelWeiWithdrawal
+    )
 
     const updated = {
       channelTokenWithdrawal,
