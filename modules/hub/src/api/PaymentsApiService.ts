@@ -72,15 +72,15 @@ export class PaymentsApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    const result = await this.paymentsService.doPurchase(req.session!.address, meta, payments)
+    const result = await this.paymentsService.doPurchase(req.address, meta, payments)
     if (result.error != false) {
       LOG.warn(result.msg)
       return res.send(400).json(result.msg)
     }
 
-    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount).filter(f => typeof f === "number")) - 1
+    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount).filter(f => typeof f === 'number')) - 1
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
-      req.session!.address,
+      req.address,
       lastChanTx,
       0,
     )
@@ -96,7 +96,7 @@ export class PaymentsApiServiceHandler {
     res: express.Response,
   ) {
     const targetAddr = req.params.address
-    const requesterAddr = req.session!.address
+    const requesterAddr = req.address
 
     if (!ownedAddressOrAdmin(req)) {
       LOG.info(
@@ -118,10 +118,10 @@ export class PaymentsApiServiceHandler {
     const { id } = req.params
 
     if (
-      !req.session!.roles.has(Role.ADMIN) &&
-      !req.session!.roles.has(Role.SERVICE)
+      !req.roles.has(Role.ADMIN) &&
+      !req.roles.has(Role.SERVICE)
     ) {
-      const address = req.session!.address
+      const address = req.address
       LOG.error(
         'Received request to view purchase {id} from non-admin or owning address {address}', {
           id,
@@ -140,7 +140,7 @@ export class PaymentsApiServiceHandler {
   }
 
   async doRedeem(req: express.Request, res: express.Response) {
-    const user = req.session!.address
+    const user = req.address
     const { secret, lastThreadUpdateId, lastChanTx } = req.body
     if (!user || !secret || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
       LOG.warn(
@@ -163,7 +163,7 @@ export class PaymentsApiServiceHandler {
     }
 
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
-      req.session!.address,
+      req.address,
       lastChanTx,
       lastThreadUpdateId,
     )

@@ -17,12 +17,28 @@ import { SignerService } from '../SignerService'
 import { truncateAllTables } from './eraseDb'
 import { mkAddress, mkHash, mkSig } from './stateUtils'
 
+const serviceKey = 'unspank the unbanked'
 const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
 const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
 console.log(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
+
+export const testChannelManagerAddress = mkAddress('0xCCC')
+export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
+export const getTestConfig = (overrides?: any) => ({
+  ...Config.fromEnv(),
+  adminAddresses: [ testHotWalletAddress ],
+  databaseUrl,
+  redisUrl,
+  serviceKey,
+  sessionSecret: 'hummus',
+  hotWalletAddress: testHotWalletAddress,
+  channelManagerAddress: testChannelManagerAddress,
+  staleChannelDays: 1,
+  ...(overrides || {}),
+})
 
 export class PgPoolServiceForTest extends PgPoolService {
   testNeedsReset = true
@@ -40,21 +56,18 @@ export class PgPoolServiceForTest extends PgPoolService {
 }
 
 export class TestApiServer extends ApiServer {
-  request: request.SuperTest<request.Test>
-
-  constructor(container: Container) {
+  public constructor(container: Container) {
     super(container)
     this.request = request(this.app)
   }
 
-  withUser(address?: string): TestApiServer {
-    address = address || '0xfeedface'
-    // this.request.set('x-address', eth.constants.AddressZero)
+  public request: request.SuperTest<request.Test>
+
+  public withUser(address?: string): TestApiServer {
     return this.container.resolve('TestApiServer')
   }
 
-  withAdmin(address?: string): TestApiServer {
-    address = address || '0xfeedface'
+  public withAdmin(address?: string): TestApiServer {
     return this.container.resolve('TestApiServer')
   }
 }
@@ -118,19 +131,6 @@ class MockValidator extends connext.Validator {
     return null
   }
 }
-
-export const testChannelManagerAddress = mkAddress('0xCCC')
-export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
-export const getTestConfig = (overrides?: any) => ({
-  ...Config.fromEnv(),
-  databaseUrl,
-  redisUrl,
-  sessionSecret: 'hummus',
-  hotWalletAddress: testHotWalletAddress,
-  channelManagerAddress: testChannelManagerAddress,
-  staleChannelDays: 1,
-  ...(overrides || {}),
-})
 
 export class MockGasEstimateDao {
   async latest() {

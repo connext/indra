@@ -5,6 +5,7 @@ import PaymentProfilesService from '../PaymentProfilesService'
 import { toBN } from '../util'
 import log, { logApiRequestError } from '../util/log'
 import { isServiceOrAdmin, isServiceOrAdminOrOwnedAddress } from '../util/ownedAddressOrAdmin'
+
 import { ApiService } from './ApiService'
 
 const LOG = log('PaymentProfilesApiService')
@@ -12,16 +13,16 @@ const LOG = log('PaymentProfilesApiService')
 export default class PaymentProfilesApiService extends ApiService<
   PaymentProfilesApiServiceHandler
 > {
-  namespace = "profile"
-  routes = {
-    "POST /add-profile/:key": "doAddProfileKey",
-    "POST /": "doCreatePaymentProfile",
-    "POST /:id": "doGetPaymentProfileById",
-    "POST /user/:user": "doGetPaymentProfileByUser"
+  public namespace = 'profile'
+  public routes = {
+    'POST /add-profile/:key': 'doAddProfileKey',
+    'POST /': 'doCreatePaymentProfile',
+    'POST /:id': 'doGetPaymentProfileById',
+    'POST /user/:user': 'doGetPaymentProfileByUser'
   }
-  handler = PaymentProfilesApiServiceHandler
-  dependencies = {
-    paymentProfilesService: "PaymentProfilesService"
+  public handler = PaymentProfilesApiServiceHandler
+  public dependencies = {
+    paymentProfilesService: 'PaymentProfilesService'
   }
 }
 
@@ -31,7 +32,7 @@ class PaymentProfilesApiServiceHandler {
   async doAddProfileKey(req: express.Request, res: express.Response) {
     if (!isServiceOrAdmin(req)) {
       res.status(403)
-      return res.send({ error: "Admin role not detected on request." })
+      return res.send({ error: 'Admin role not detected on request.' })
     }
 
     const { key } = req.params
@@ -53,7 +54,7 @@ class PaymentProfilesApiServiceHandler {
   async doCreatePaymentProfile(req: express.Request, res: express.Response) {
     if (!isServiceOrAdmin(req)) {
       res.status(403)
-      return res.send({ error: "Admin role not detected on request." })
+      return res.send({ error: 'Admin role not detected on request.' })
     }
 
     const {
@@ -98,7 +99,7 @@ class PaymentProfilesApiServiceHandler {
   async doGetPaymentProfileById(req: express.Request, res: express.Response) {
     if (!isServiceOrAdmin(req)) {
       res.status(403)
-      return res.send({ error: "Admin role not detected on request." })
+      return res.send({ error: 'Admin role not detected on request.' })
     }
 
     const { id } = req.params

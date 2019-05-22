@@ -60,7 +60,7 @@ class CustodialPaymentsApiServiceHandler {
   async doCreateWithdraw(req: Request, res: Response) {
     let withdrawal
     try {
-      const user = getAttr.address(req.session!, 'address')
+      const user = getAttr.address(req, 'address')
       const recipient = getAttr.address(req.body, 'recipient')
       const amountToken = getAttr.big(req.body, 'amountToken')
       withdrawal = await this.service.createCustodialWithdrawal({
@@ -87,7 +87,7 @@ class CustodialPaymentsApiServiceHandler {
   async doGetWithdrawal(req: Request, res: Response) {
     res.json(connext.convert.CustodialWithdrawalRow("str", 
       await this.dao.getCustodialWithdrawal(
-        getAttr.address(req.session!, 'address'),
+        getAttr.address(req, 'address'),
         getAttr(req.params, 'withdrawalId'),
       ))
     )

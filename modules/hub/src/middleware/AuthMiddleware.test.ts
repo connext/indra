@@ -49,7 +49,7 @@ const getReq = (path: string, headers: object | undefined = undefined): any => (
 
 const testAuthMiddleware = (req: any, adminAddresses: string[] = []): void => getAuthMiddleware({
   adminAddresses,
-  serviceUserKey: serviceKey,
+  serviceKey,
 }, testAcl, logLevel)(req, res, next)
 
 const assertRoles = (req: any, roles: number[]): void => {
@@ -81,7 +81,6 @@ describe('AuthMiddleware', async () => {
       'x-signature': await wallet.signMessage(toUtf8Bytes(nonce)),
     }
     serviceHeaders = {
-      ...sigHeaders,
       'x-service-key': serviceKey,
     }
   })
@@ -89,7 +88,12 @@ describe('AuthMiddleware', async () => {
   beforeEach(() => res.sendStatus(0))
 
   it('should not set any roles if requesting a public route', () => {
-    const req = getReq('/none', sigHeaders)
+    let req
+    req = getReq('/none', sigHeaders)
+    testAuthMiddleware(req)
+    assertRoles(req, [])
+    assertSentStatus(0)
+    req = getReq('/none', serviceHeaders)
     testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(0)
@@ -116,13 +120,6 @@ describe('AuthMiddleware', async () => {
     assertSentStatus(0)
   })
 
-  it('should set AUTHENTICATED and SERVICE and ADMIN roles if proper auth is provided', () => {
-    const req = getReq('/authenticated', serviceHeaders)
-    testAuthMiddleware(req, [ address ])
-    assertRoles(req, [Role.AUTHENTICATED, Role.ADMIN, Role.SERVICE])
-    assertSentStatus(0)
-  })
-
   it('should deny access if no headers are provided', () => {
     const req = getReq('/authenticated')
     testAuthMiddleware(req)
@@ -141,12 +138,9 @@ describe('AuthMiddleware', async () => {
   })
 
   it('should deny access to service routes if given an invalid service key', () => {
-    const req = getReq('/service', {
-      ...serviceHeaders,
-      'x-service-key': `${serviceKey} oops`,
-    })
+    const req = getReq('/service', { 'x-service-key': `${serviceKey} oops` })
     testAuthMiddleware(req)
-    assertRoles(req, [Role.AUTHENTICATED])
+    assertRoles(req, [])
     assertSentStatus(forbidden)
   })
 

@@ -8,6 +8,7 @@ import { getLogger } from '../util/log'
 import { parseAuthHeader } from '../util/parseAuthHeader'
 
 const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
+
 const defaultAcl: RouteBasedACL = new RouteBasedACL()
     .addRoute('/auth/(.*)', Role.NONE)
     .addRoute('/branding', Role.NONE)
@@ -43,41 +44,47 @@ export const getAuthMiddleware = (
   const signature = req.get('x-signature')
   const serviceKey = req.get('x-service-key')
 
-  if (!address || !nonce || !signature) {
-    log.warn(`Missing auth headers: address="${address}" nonce="${nonce}" sig="${signature}"`)
-    res.sendStatus(403)
-    return
-  }
-
-  // TODO: use redis to cache the message verification
-  const bytes = isHexString(nonce) ? arrayify(nonce) : toUtf8Bytes(nonce)
-  const signer = verifyMessage(bytes, signature).toLowerCase()
-  if (signer !== address.toLowerCase()) {
-    log.warn(`Invalid signature for nonce "${nonce}": Got "${signer}", expected "${address}"`)
-    res.sendStatus(403)
-    return
-  }
-
-  req.address = signer
-  req.roles.push(Role.AUTHENTICATED)
-  log.debug(`Successfully authenticated signature for ${req.address}`)
-
-  // Check if we should assign service user role
-  if (config.serviceUserKey && serviceKey) {
-    if (config.serviceUserKey === serviceKey) {
+  // Check whether we should auth via service key headers
+  if (config.serviceKey && serviceKey) {
+    if (config.serviceKey === serviceKey) {
+      req.roles.push(Role.AUTHENTICATED)
       req.roles.push(Role.SERVICE)
+      req.address = address || eth.constants.AddressZero
       log.info(`Successfully authenticated service key for user ${req.address}`)
     } else {
       log.warn(`Service key provided by ${req.address} doesn't match the one set in hub config`)
+      res.sendStatus(403)
+      return
     }
+
+  // Check whether we should auth via signature verification headers
+  } else if (address && nonce && signature) {
+    // TODO: check whether this nonce is valid
+    // TODO: use redis to cache the message verification
+    const bytes = isHexString(nonce) ? arrayify(nonce) : toUtf8Bytes(nonce)
+    const signer = verifyMessage(bytes, signature).toLowerCase()
+    if (signer !== address.toLowerCase()) {
+      log.warn(`Invalid signature for nonce "${nonce}": Got "${signer}", expected "${address}"`)
+      res.sendStatus(403)
+      return
+    }
+    req.address = signer
+    req.roles.push(Role.AUTHENTICATED)
+    log.debug(`Successfully authenticated signature for ${req.address}`)
+
+  } else {
+    log.warn(`Missing address auth headers: address=${address} nonce=${nonce} sig=${signature} key=${serviceKey}`)
+    res.sendStatus(403)
+    return
   }
 
-  // Check if we should assign admin role
+  // Check if we should also assign an admin role
   if (config.adminAddresses.indexOf(req.address) > -1) {
     req.roles.push(Role.ADMIN)
     log.info(`Admin role added for user ${req.address}`)
   }
 
+  // Given the set roles, do we have permission to access this route?
   const perm = acl.permissionForRoute(req.path)
   if (req.roles.indexOf(perm) === -1) {
     const roleStrings = JSON.stringify(req.roles.map((role: number): string => Role[role]))
