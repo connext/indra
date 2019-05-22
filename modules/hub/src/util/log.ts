@@ -3,8 +3,8 @@ import * as LogDNALogger from 'logdna'
 
 import { prettySafeJson } from '.'
 
-const levels: any = { 'debug': 10, 'info': 20, 'warn': 30, 'error': 40 }
-const logLevelLimit = parseInt(process.env.LOG_LEVEL, 10) || 20
+const levels: any = { 'debug': 40, 'info': 30, 'warn': 20, 'error': 10 }
+const defaultLogLevel = parseInt(process.env.LOG_LEVEL, 10) || 30
 
 export interface ILogger {
   debug(msgFmt: string, meta?: object): void
@@ -14,38 +14,26 @@ export interface ILogger {
   warn(msgFmt: string, meta?: object): void
 }
 
-export function getLogger(name: string, app: string = 'indra-hub'): ILogger {
-  return new Logger(app, name || app, process.env.SC_LOGDNA_KEY)
-}
-
-export const mockLogger: ILogger = ({
-  debug: (msgFmt: string, meta?: object): void => undefined,
-  error: (msgFmt: string, meta?: object): void => undefined,
-  info: (msgFmt: string, meta?: object): void => undefined,
-  setDefaultMeta: (meta: object): any => undefined,
-  warn: (msgFmt: string, meta?: object): void => undefined,
-})
-
-export const logApiRequestError = (log: ILogger, req: express.Request): void => {
-  log.warn(
-    `Received invalid request parameters. Aborting. ` +
-    `Params received: ${JSON.stringify(req.params)}, ` +
-    `Body received: ${JSON.stringify(req.body)}, ` +
-    `Query received: ${JSON.stringify(req.query)}`)
+export function getLogger(
+  name: string, logLevel: number = defaultLogLevel, app: string = 'indra-hub',
+): ILogger {
+  return new Logger(app, name || app, logLevel, process.env.SC_LOGDNA_KEY)
 }
 
 export class Logger implements ILogger {
   private logdna: any
+  private logLevel: number
   private name: string
   private defaultMeta: object
 
-  public constructor(app: string, name: string, key?: string) {
+  public constructor(app: string, name: string, logLevel: number, key?: string) {
     if (key) {
       this.logdna = LogDNALogger.createLogger(key, {
         app,
         index_meta: true,
       })
     }
+    this.logLevel = logLevel
     this.name = name
     this.defaultMeta = {
       env: process.env.NODE_ENV || 'local',
@@ -93,24 +81,25 @@ export class Logger implements ILogger {
     }
 
     meta = Object.assign({}, meta || {}, this.defaultMeta)
-    let levelno = levels[level] || 0
-    let msg = fmt && fmt.replace(/{(.*?)}/g, (_: string, field: any): any => {
+    const levelno = levels[level] || 0
+    const msg = fmt && fmt.replace(/{(.*?)}/g, (_: string, field: any): any => {
       field = field.replace(/^\s*(.*?)\s*$/, '$1')
-      let val = lookup(meta!, field)
+      const val = lookup(meta!, field)
       return val === undefined ? `{${field}}` : this.renderVal(val)
     })
 
-    let toLog = Object.assign({
+    const toLog = {
       level,
       levelno,
-      name: this.name,
       message: msg,
-    }, meta)
+      name: this.name,
+      ...meta,
+    }
 
-    if ((process.env.NODE_ENV !== 'production' || !this.logdna) && levelno >= logLevelLimit) {
-      // Make those warnings really POP
-      level = (level === 'warn' || level === 'error') ? level.toUpperCase() : level
-      ;(console[level] || console.log)(`${level}: ${msg || this.name}`)
+    if ((process.env.NODE_ENV !== 'production' || !this.logdna) && levelno <= this.logLevel) {
+      (level === 'warn' || level === 'error') // Make those warnings really POP
+        ? (console[level] || console.log)(`${level.toUpperCase()}: ${msg || this.name}`)
+        : (console[level] || console.log)(`${level}: ${msg || this.name}`)
     }
 
     if (this.logdna) {
@@ -125,6 +114,14 @@ export class Logger implements ILogger {
     return prettySafeJson(val)
   }
 
+}
+
+export const logApiRequestError = (log: ILogger, req: express.Request): void => {
+  log.warn(
+    `Received invalid request parameters. Aborting. ` +
+    `Params received: ${JSON.stringify(req.params)}, ` +
+    `Body received: ${JSON.stringify(req.body)}, ` +
+    `Query received: ${JSON.stringify(req.query)}`)
 }
 
 export default getLogger
