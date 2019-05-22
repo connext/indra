@@ -134,7 +134,7 @@ export class ApiServer {
     this.app.use(express.urlencoded({ extended: false }))
     this.app.use(logErrors.bind(this))
     this.apiServices.forEach((s: any): any => {
-      LOG.info(`Setting up API service at /${s.namespace}`)
+      LOG.debug(`Setting up API service at /${s.namespace}`)
       this.app.use(`/${s.namespace}`, s.getRouter())
     })
     // Done constructing API pipeline

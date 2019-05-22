@@ -13,7 +13,7 @@ import { AuthMiddleware, getAuthMiddleware } from './AuthMiddleware'
 
 const { arrayify, bigNumberify, toUtf8Bytes } = eth.utils
 
-const logLevel = 10
+const logLevel = 50
 const forbidden = 403
 const nonce = '7c965885-407a-4637-95cb-797dd9a8d8a2'
 const serviceKey = 'unspank the unbanked'
@@ -31,6 +31,10 @@ const res: any = {
   sendStatus(status: number): void {
     this.sentStatus = status
   },
+  status(status: number): any {
+    this.sentStatus = status
+    return { send: (): void => {/* noop */} }
+  },
   sentStatus: 0,
 }
 
@@ -47,10 +51,8 @@ const getReq = (path: string, headers: object | undefined = undefined): any => (
   path,
 })
 
-const testAuthMiddleware = (req: any, adminAddresses: string[] = []): void => getAuthMiddleware({
-  adminAddresses,
-  serviceKey,
-}, testAcl, logLevel)(req, res, next)
+const testAuthMiddleware = async (req: any, adminAddresses: string[] = []): Promise<void> =>
+  getAuthMiddleware({ adminAddresses, serviceKey }, testAcl, logLevel)(req, res, next)
 
 const assertRoles = (req: any, roles: number[]): void => {
   assert(
@@ -70,7 +72,7 @@ const assertSentStatus = (status: number): void =>
 ////////////////////////////////////////
 // Run tests
 
-describe('AuthMiddleware', async () => {
+describe.only('AuthMiddleware', async () => {
 
   let sigHeaders
   let serviceHeaders
@@ -85,82 +87,82 @@ describe('AuthMiddleware', async () => {
     }
   })
 
-  beforeEach(() => res.sendStatus(0))
+  beforeEach(() => res.status(0))
 
-  it('should not set any roles if requesting a public route', () => {
+  it('should not set any roles if requesting a public route', async () => {
     let req
     req = getReq('/none', sigHeaders)
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(0)
     req = getReq('/none', serviceHeaders)
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(0)
   })
 
-  it('should set an AUTHENTICATED role if given a valid signature', () => {
+  it('should set an AUTHENTICATED role if given a valid signature', async () => {
     const req = getReq('/authenticated', sigHeaders)
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [Role.AUTHENTICATED])
     assertSentStatus(0)
   })
 
-  it('should set both AUTHENTICATED and ADMIN roles if the user is an admin', () => {
+  it.only('should set both AUTHENTICATED and ADMIN roles if the user is an admin', async () => {
     const req = getReq('/admin', sigHeaders)
-    testAuthMiddleware(req, [ address ])
+    await testAuthMiddleware(req, [ address ])
     assertRoles(req, [Role.AUTHENTICATED, Role.ADMIN])
     assertSentStatus(0)
   })
 
-  it('should set both AUTHENTICATED and SERVICE roles if the user is service user', () => {
+  it('should set both AUTHENTICATED and SERVICE roles if the user is service user', async () => {
     const req = getReq('/service', serviceHeaders)
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [Role.AUTHENTICATED, Role.SERVICE])
     assertSentStatus(0)
   })
 
-  it('should deny access if no headers are provided', () => {
+  it('should deny access if no headers are provided', async () => {
     const req = getReq('/authenticated')
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(forbidden)
   })
 
-  it('should deny access if given an invalid signature', () => {
+  it('should deny access if given an invalid signature', async () => {
     const req = getReq('/authenticated', {
       ...sigHeaders,
       'x-signature': increment(sigHeaders['x-signature']),
     })
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(forbidden)
   })
 
-  it('should deny access to service routes if given an invalid service key', () => {
+  it('should deny access to service routes if given an invalid service key', async () => {
     const req = getReq('/service', { 'x-service-key': `${serviceKey} oops` })
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(forbidden)
   })
 
-  it('should deny access to admin routes if user is not an admin', () => {
+  it('should deny access to admin routes if user is not an admin', async () => {
     const req = getReq('/admin', sigHeaders)
-    testAuthMiddleware(req, [ increment(address) ])
+    await testAuthMiddleware(req, [ increment(address) ])
     assertRoles(req, [Role.AUTHENTICATED])
     assertSentStatus(forbidden)
   })
 
-  it('should deny access if SERVICE user tries to access admin route', () => {
+  it('should deny access if SERVICE user tries to access admin route', async () => {
     const req = getReq('/admin', serviceHeaders)
-    testAuthMiddleware(req)
+    await testAuthMiddleware(req)
     assertRoles(req, [Role.AUTHENTICATED, Role.SERVICE])
     assertSentStatus(forbidden)
   })
 
-  it('should deny access if ADMIN user tries to access service route', () => {
+  it('should deny access if ADMIN user tries to access service route', async () => {
     const req = getReq('/service', sigHeaders)
-    testAuthMiddleware(req, [ address ])
+    await testAuthMiddleware(req, [ address ])
     assertRoles(req, [Role.AUTHENTICATED, Role.ADMIN])
     assertSentStatus(forbidden)
   })
