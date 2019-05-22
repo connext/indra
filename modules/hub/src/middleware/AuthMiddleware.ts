@@ -62,33 +62,26 @@ export const getAuthMiddleware = (
 
   // Check whether we should auth via signature verification headers
   } else if (address && nonce && signature) {
-
     const redis = await getRedisClient(config.redisUrl)
 
     // Is this nonce valid?
     try {
+      // TODO: Why aren't errors here hitting the catch block?!
       const expectedNonce = await redis.get(`nonce:${address}`)
-      if (expectedNonce !== nonce) {
+      if (expectedNonce && expectedNonce !== nonce) {
         log.warn(`Invalid nonce for address ${address}: Got ${nonce}, expected ${expectedNonce}`)
         res.status(403).send(`Invalid nonce`)
         return
       }
     } catch (e) {
-      log.warn(`No nonce has been given to ${address} yet`)
-      res.status(403).send(`Invalid nonce`)
+      log.warn(`Not connected to redis ${config.redisUrl}`)
+      res.status(500).send(`Server Error`)
       return
     }
 
     // Have we cached the verification for this signature?
-    try {
-      const cachedSig = await redis.get(`signature:${address}`)
-      if (cachedSig !== signature) {
-        log.warn(`Invalid signature for address "${address}": Doesn't match cache`)
-        res.status(403).send('Invalid signature')
-        return
-      }
-    } catch (e) {
-      log.error(`oh no: ${e}`)
+    const cachedSig = await redis.get(`signature:${address}`)
+    if (!cachedSig) {
       const bytes = isHexString(nonce) ? arrayify(nonce) : toUtf8Bytes(nonce)
       const signer = verifyMessage(bytes, signature).toLowerCase()
       if (signer !== address.toLowerCase()) {
@@ -96,11 +89,11 @@ export const getAuthMiddleware = (
         res.status(403).send('Invalid signature')
         return
       }
-      try {
-        await redis.set(`signature:${address}`, signature)
-      } catch (e) {
-        log.error(`oh no: ${e}`)
-      }
+      await redis.set(`signature:${address}`, signature)
+    } else if (cachedSig && cachedSig !== signature) {
+      log.warn(`Invalid signature for address "${address}": Doesn't match cache: ${cachedSig}`)
+      res.status(403).send('Invalid signature')
+      return
     }
 
     req.address = address

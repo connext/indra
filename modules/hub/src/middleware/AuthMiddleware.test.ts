@@ -3,8 +3,10 @@ import { ethers as eth } from 'ethers'
 import * as express from 'express'
 
 import { Config } from '../Config'
+import { getRedisClient } from '../RedisClient'
 import { Role } from '../Role'
 import { RouteBasedACL } from '../RouteBasedAcl'
+import { getTestConfig } from '../testing/mocks'
 
 import { AuthMiddleware, getAuthMiddleware } from './AuthMiddleware'
 
@@ -13,13 +15,14 @@ import { AuthMiddleware, getAuthMiddleware } from './AuthMiddleware'
 
 const { arrayify, bigNumberify, toUtf8Bytes } = eth.utils
 
-const logLevel = 50
+const logLevel = 10
 const forbidden = 403
 const nonce = '7c965885-407a-4637-95cb-797dd9a8d8a2'
 const serviceKey = 'unspank the unbanked'
 const Two = eth.constants.Two
 const wallet = eth.Wallet.createRandom()
 const address = wallet.address.toLowerCase()
+const config = getTestConfig()
 
 const testAcl: RouteBasedACL = new RouteBasedACL()
   .addRoute('/none', Role.NONE)
@@ -52,7 +55,9 @@ const getReq = (path: string, headers: object | undefined = undefined): any => (
 })
 
 const testAuthMiddleware = async (req: any, adminAddresses: string[] = []): Promise<void> =>
-  getAuthMiddleware({ adminAddresses, serviceKey }, testAcl, logLevel)(req, res, next)
+  getAuthMiddleware(
+    getTestConfig({ adminAddresses, serviceKey }), testAcl, logLevel,
+  )(req, res, next)
 
 const assertRoles = (req: any, roles: number[]): void => {
   assert(
@@ -72,7 +77,7 @@ const assertSentStatus = (status: number): void =>
 ////////////////////////////////////////
 // Run tests
 
-describe.only('AuthMiddleware', async () => {
+describe('AuthMiddleware', async () => {
 
   let sigHeaders
   let serviceHeaders
@@ -85,6 +90,8 @@ describe.only('AuthMiddleware', async () => {
     serviceHeaders = {
       'x-service-key': serviceKey,
     }
+    const redis = await getRedisClient(config.redisUrl)
+    await redis.set(`nonce:${address}`, nonce)
   })
 
   beforeEach(() => res.status(0))
@@ -108,7 +115,7 @@ describe.only('AuthMiddleware', async () => {
     assertSentStatus(0)
   })
 
-  it.only('should set both AUTHENTICATED and ADMIN roles if the user is an admin', async () => {
+  it('should set both AUTHENTICATED and ADMIN roles if the user is an admin', async () => {
     const req = getReq('/admin', sigHeaders)
     await testAuthMiddleware(req, [ address ])
     assertRoles(req, [Role.AUTHENTICATED, Role.ADMIN])
@@ -124,6 +131,17 @@ describe.only('AuthMiddleware', async () => {
 
   it('should deny access if no headers are provided', async () => {
     const req = getReq('/authenticated')
+    await testAuthMiddleware(req)
+    assertRoles(req, [])
+    assertSentStatus(forbidden)
+  })
+
+  it('should deny access if given an invalid nonce', async () => {
+    const req = getReq('/authenticated', {
+      'x-address': address,
+      'x-nonce': `${nonce} oops`,
+      'x-signature': await wallet.signMessage(toUtf8Bytes(`${nonce} oops`)),
+    })
     await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(forbidden)

@@ -24,7 +24,7 @@ const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
 const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
 console.log(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
-console.log(`\nTest env:\n${JSON.stringify(process.env,null,2)}`)
+// console.log(`\nTest env:\n${JSON.stringify(process.env,null,2)}`)
 
 export const testChannelManagerAddress = mkAddress('0xCCC')
 export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
