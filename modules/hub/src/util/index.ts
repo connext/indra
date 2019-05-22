@@ -13,7 +13,7 @@ export const toWei = (n: string|number|BN): BN =>
   eth.utils.parseEther(n.toString())
 
 export const weiToToken = (wei: BN, tokenPerEth: string): BN =>
-  toBN(formatEther(toWei(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ''))
+  toBN(eth.utils.formatEther(toWei(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ''))
 
 export const tokenToWei = (token: BN, tokenPerEth: string): BN =>
   toWei(token).div(toWei(tokenPerEth))
