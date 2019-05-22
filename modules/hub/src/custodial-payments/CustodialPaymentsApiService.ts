@@ -52,40 +52,48 @@ class CustodialPaymentsApiServiceHandler {
   service: CustodialPaymentsService
 
   async doGetBalance(req: Request, res: Response) {
-    res.json(connext.convert.CustodialBalanceRow("str", 
+    return res.json(connext.convert.CustodialBalanceRow("str", 
       await this.dao.getCustodialBalance(getUserFromRequest(req))
     ))
   }
 
   async doCreateWithdraw(req: Request, res: Response) {
-    let withdrawal
+    let withdrawal, user, recipient, amountToken
     try {
-      const user = getAttr.address(req.session!, 'address')
-      const recipient = getAttr.address(req.body, 'recipient')
-      const amountToken = getAttr.big(req.body, 'amountToken')
-      withdrawal = await this.service.createCustodialWithdrawal({
-        user,
-        recipient,
-        amountToken,
-      })
+      user = getAttr.address(req.session!, 'address')
+      recipient = getAttr.address(req.body, 'recipient')
+      amountToken = getAttr.big(req.body, 'amountToken')
     } catch (e) {
       // send error response, invalid params
       logApiRequestError(LOG, req)
       return res.sendStatus(400)
     }
 
-    res.json(connext.convert.CustodialWithdrawalRow("str",
+
+    try {
+      withdrawal = await this.service.createCustodialWithdrawal({
+        user,
+        recipient,
+        amountToken,
+      })
+    } catch (e) {
+      LOG.error(`Error creating custodial withdrawal: {e}`, { e })
+      return res.sendStatus(400)
+    }
+    
+
+    return res.json(connext.convert.CustodialWithdrawalRow("str",
       withdrawal
     ))
   }
 
   async doGetWithdrawals(req: Request, res: Response) {
     const rows = await this.dao.getCustodialWithdrawals(getUserFromRequest(req))
-    res.json(rows.map(r => connext.convert.CustodialWithdrawalRow("str", r)))
+    return res.json(rows.map(r => connext.convert.CustodialWithdrawalRow("str", r)))
   }
 
   async doGetWithdrawal(req: Request, res: Response) {
-    res.json(connext.convert.CustodialWithdrawalRow("str", 
+    return res.json(connext.convert.CustodialWithdrawalRow("str", 
       await this.dao.getCustodialWithdrawal(
         getAttr.address(req.session!, 'address'),
         getAttr(req.params, 'withdrawalId'),
