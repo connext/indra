@@ -5,7 +5,7 @@ import PaymentHub from '../PaymentHub'
 import '../register/common'
 
 const config = Config.fromEnv({
-  adminAddresses: [ process.env.WALLET_ADDRESS!, '0x6e5b92889c3299d9aaf23d59df0bdf0a9ad67e3c' ],
+  adminAddresses: [ process.env.WALLET_ADDRESS! ],
   authDomainWhitelist: [], // whitelist check is being skipped. All domains are allowed now
   authRealm: 'SpankChain',
   branding: {

@@ -44,7 +44,7 @@ export interface BrandingConfig {
   textColor?: string
 }
 
-export default class Config {
+export class Config {
   static fromEnv(overrides?: Partial<Config>): Config {
     const instance = new Config()
 
@@ -137,3 +137,5 @@ export default class Config {
     production: 'set by environment variable',
   })
 }
+
+export default Config

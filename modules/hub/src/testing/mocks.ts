@@ -1,10 +1,8 @@
 import * as connext from 'connext'
 import { ChannelManagerChannelDetails } from 'connext/types'
+import { ethers as eth } from 'ethers'
 import * as request from 'supertest'
 const Web3 = require('web3')
-
-import { truncateAllTables } from './eraseDb'
-import { mkAddress, mkHash, mkSig } from './stateUtils'
 
 import { default as ChannelManagerABI } from '../abi/ChannelManager'
 import { ApiServer } from '../ApiServer'
@@ -16,11 +14,15 @@ import { Role } from '../Role'
 import { serviceDefinitions } from '../services'
 import { SignerService } from '../SignerService'
 
+import { truncateAllTables } from './eraseDb'
+import { mkAddress, mkHash, mkSig } from './stateUtils'
+
+const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
 const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
-console.log(`test urls: database=${databaseUrl} redis=${redisUrl} provider=${providerUrl}`)
+console.log(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
 
 export class PgPoolServiceForTest extends PgPoolService {
   testNeedsReset = true
@@ -47,28 +49,13 @@ export class TestApiServer extends ApiServer {
 
   withUser(address?: string): TestApiServer {
     address = address || '0xfeedface'
-    return this.container.resolve('TestApiServer', {
-      'AuthHandler': {
-        rolesFor: (req: any) => {
-          req.session.address = address
-          return [Role.AUTHENTICATED]
-        },
-        isAuthorized: () => true,
-      },
-    })
+    // this.request.set('x-address', eth.constants.AddressZero)
+    return this.container.resolve('TestApiServer')
   }
 
   withAdmin(address?: string): TestApiServer {
     address = address || '0xfeedface'
-    return this.container.resolve('TestApiServer', {
-      'AuthHandler': {
-        rolesFor: (req: any) => {
-          req.session.address = address
-          return [Role.ADMIN]
-        },
-        isAuthorized: () => true,
-      },
-    })
+    return this.container.resolve('TestApiServer')
   }
 }
 

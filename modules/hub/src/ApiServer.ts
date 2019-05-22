@@ -4,8 +4,7 @@ import * as express from 'express'
 import { ApiService } from './api/ApiService'
 import Config from './Config'
 import { Container } from './Container'
-import { default as AuthHandler } from './middleware/AuthHandler'
-import AuthHeaderMiddleware from './middleware/AuthHeaderMiddleware'
+import { getAuthMiddleware } from './middleware/AuthMiddleware'
 import { ezPromise, maybe, MaybeRes } from './util'
 import log from './util/log'
 
@@ -77,13 +76,11 @@ function bodyTextMiddleware(opts: { maxSize: number }): any {
       chunk.copy(rawData, offset)
       offset += chunk.length
     })
-
     req.on('end', () => {
       // Assume UTF-8 because there's no easy way to get the correct charset ¯\_(ツ)_/¯
       rawPromise.resolve(maybe.accept(rawData))
       textPromise.resolve(maybe.accept(rawData.toString('utf8')))
     })
-
     return next()
   }
 }
@@ -116,38 +113,31 @@ const logErrors = (
 
 export class ApiServer {
   public app: express.Application
-
   private readonly config: Config
-  private readonly authHandler: AuthHandler
   private readonly apiServices: ApiService[]
 
   public constructor(protected readonly container: Container) {
     this.config = container.resolve('Config')
-    this.authHandler = this.container.resolve('AuthHandler')
-
-    this.app = express()
-    this.app.use(requestLogMiddleware)
-
-    const corsHandler = cors({
-      credentials: true,
-      origin: true,
-    })
-    this.app.options('*', corsHandler)
-    this.app.use(corsHandler)
-
-    this.app.use(express.json())
-    this.app.use(new AuthHeaderMiddleware().middleware)
-
-    this.app.use(bodyTextMiddleware({ maxSize: 1024 * 1024 * 10 }))
-
-    this.app.use(express.urlencoded())
-
-    this.app.use(this.authenticateRoutes.bind(this))
-    this.app.use(logErrors.bind(this))
-
+    const corsHandler = cors({ credentials: true, origin: true })
     const apiServiceClasses = container.resolve('ApiServerServices') as any[]
     this.apiServices = apiServiceClasses.map((cls: any): any => new cls(this.container))
-    this.setupRoutes()
+
+    this.app = express()
+    this.app.options('*', corsHandler)
+
+    // Start constructing API pipeline
+    this.app.use(requestLogMiddleware)
+    this.app.use(corsHandler)
+    this.app.use(getAuthMiddleware(this.config))
+    this.app.use(express.json())
+    this.app.use(bodyTextMiddleware({ maxSize: 1024 * 1024 * 10 }))
+    this.app.use(express.urlencoded({ extended: false }))
+    this.app.use(logErrors.bind(this))
+    this.apiServices.forEach((s: any): any => {
+      LOG.info(`Setting up API service at /${s.namespace}`)
+      this.app.use(`/${s.namespace}`, s.getRouter())
+    })
+    // Done constructing API pipeline
   }
 
   public async start(): Promise<any> {
@@ -157,26 +147,4 @@ export class ApiServer {
         resolve()
       }))
   }
-
-  private setupRoutes(): void {
-    this.apiServices.forEach((s: any): any => {
-      LOG.info(`Setting up API service at /${s.namespace}`)
-      this.app.use(`/${s.namespace}`, s.getRouter())
-    })
-  }
-
-  protected async authenticateRoutes(
-    req: express.Request,
-    res: express.Response,
-    next: () => void,
-  ): Promise<any> {
-    const roles = await this.authHandler.rolesFor(req)
-    req.session.roles = new Set(roles)
-    const allowed = await this.authHandler.isAuthorized(req)
-    if (!allowed) {
-      return res.sendStatus(403)
-    }
-    next()
-  }
-
 }

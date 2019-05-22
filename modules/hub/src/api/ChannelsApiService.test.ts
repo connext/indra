@@ -41,11 +41,11 @@ describe('ChannelsApiService', () => {
     const res = await app.withUser(chan.user).request
       .post(`/channel/${chan.user}/request-deposit`)
       .send({
-        depositWei: '1',
         depositToken: '0',
-        sigUser: mkHash('0xsigUser'),
+        depositWei: '1',
         lastChanTx: chan.state.txCountGlobal,
         lastThreadUpdateId: 0,
+        sigUser: mkHash('0xsigUser'),
       })
 
     assert.equal(res.status, 400, JSON.stringify(res.body))
@@ -62,13 +62,13 @@ describe('ChannelsApiService', () => {
     const res = await app.withUser(chan.user).request
       .post(`/channel/${chan.user}/request-withdrawal`)
       .send({
+        exchangeRate: '123.45',
+        lastChanTx: 0,
+        recipient: chan.user,
         tokensToSell: '0',
         weiToSell: '0',
-        recipient: chan.user,
-        withdrawalWeiUser: '0',
         withdrawalTokenUser: '0',
-        lastChanTx: 0,
-        exchangeRate: '123.45'
+        withdrawalWeiUser: '0',
       })
     assert.equal(res.status, 200, JSON.stringify(res.body))
   })
