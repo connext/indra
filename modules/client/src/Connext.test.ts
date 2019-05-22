@@ -79,4 +79,24 @@ describe("calculateChannelWithdrawal", async () => {
       custodialWeiWithdrawal: "0",
     })
   })
+
+  it("should withdraw preferentially from custodial balance if withdrawal value is less than the custodial owed", async () => {
+    const _withdrawal = {
+      exchangeRate: "5",
+      tokensToSell: "120",
+      withdrawalWeiUser: "1",
+    }
+
+    const custodial = {
+      totalReceivedToken: "100",
+      balanceToken: "100",
+    }
+
+    assertChannelWithdrawalCalculation(_withdrawal, custodial, {
+      custodialTokenWithdrawal: "100",
+      channelTokenWithdrawal: "20",
+      channelWeiWithdrawal: "1",
+      custodialWeiWithdrawal: "0",
+    })
+  })
 })
