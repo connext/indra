@@ -3,7 +3,7 @@ import * as express from 'express'
 import Config from '../Config'
 import CRAuthManager from '../CRAuthManager'
 import { RedisClient } from '../RedisClient'
-import log from '../util/log'
+import log, { logApiRequestError } from '../util/log'
 
 import { ApiService } from './ApiService'
 
@@ -14,13 +14,13 @@ export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
   routes = {
     'POST /challenge': 'doChallenge',
     'POST /response': 'doResponse',
-    'POST /status': 'doStatus',
-    'GET /status': 'doStatus',
+    'GET /status/:user': 'doStatus',
   }
   handler = AuthApiServiceHandler
   dependencies = {
     config: 'Config',
     crManager: 'CRAuthManager',
+    redis: 'RedisClient',
   }
 }
 
@@ -29,8 +29,25 @@ class AuthApiServiceHandler {
 
   public config: Config
 
+  private redis: RedisClient
+
   public async doChallenge(req: express.Request, res: express.Response): Promise<express.Response> {
+    // save the nonce to redis, with the address
+    // provided in the request body
+    const { address } = req.body
+    if (!address) {
+      logApiRequestError(LOG, req)
+      return res.sendStatus(400)
+    }
+
     const nonce = await this.crManager.generateNonce()
+
+    LOG.debug(`Saving challenge nonce for address ${address}: ${nonce}`)
+
+    await this.redis.set(
+      `AuthAddress:${address}`, 
+      nonce
+    )
 
     LOG.debug(`Sending challenge nonce.`)
 
@@ -39,22 +56,38 @@ class AuthApiServiceHandler {
     })
   }
 
-  // TODO: This endpoing will probably be entirely removed under new auth schema
+  private async getNonceFromRedis(address: string) {
+    try {
+      const nonce = await this.redis.get(`AuthorizedAddress:${address}`)
+      return nonce
+    } catch (e) {
+      LOG.warn(`No nonce found in redis for address: ${address}`)
+      return null
+    }
+  }
+
+  // TODO: This endpoint will probably be entirely removed under new auth schema
   public async doResponse(
     req: express.Request,
     res: express.Response,
   ): Promise<express.Response> {
     const address = req.body.address
-    const nonce = req.body.nonce
     const origin = req.body.origin
     const signature = req.body.signature
 
-    if (!address || !nonce || !origin || !signature) {
+    if (!address || !origin || !signature) {
       LOG.warn(
         `Received invalid challenge request. Aborting. Body received: ${JSON.stringify(
           req.body,
         )}`,
       )
+      return res.sendStatus(400)
+    }
+
+    const nonce = await this.getNonceFromRedis(address)
+
+    if (!nonce) {
+      LOG.warn(`No nonce found for address: ${address}`)
       return res.sendStatus(400)
     }
 
@@ -77,28 +110,25 @@ class AuthApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    /*
-    req.session!.regenerate(async err => {
-      if (err) {
-        LOG.error(`Caught error while regenerating session: ${err}`)
-        return res.sendStatus(500)
-      }
-
-      req.session!.address = result
-      res.send({ token: req.session!.id })
-    })
-    */
-
     res.send({
       address,
       nonce,
     })
   }
 
-  doStatus(req: express.Request, res: express.Response) {
-    if (req.session && req.session.address) {
+  public async doStatus(req: express.Request, res: express.Response) {
+    const { address } = req.params
+
+    if (!address) {
+      logApiRequestError(LOG, req)
+      return res.sendStatus(400)
+    }
+
+    const nonce = await this.getNonceFromRedis(address)
+    if (nonce) {
       return res.send({
         address: req.session.address,
+        nonce: req.session.nonce,
         success: true,
       })
     }
