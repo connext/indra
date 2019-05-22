@@ -280,18 +280,22 @@ export abstract class ConnextChannel extends EventEmitter {
 
     // if custodial balance exists, withdraw custodial balance
     // preferentially
-    const updatedWd = this.calculateChannelWithdrawal(withdrawal, custodial)
-
-    // withdraw the custodial amount
-    await this.internal.hub.requestCustodialWithdrawal(
-      updatedWd.custodialTokenWithdrawal,
-      withdrawal.recipient || this.internal.wallet.address,
+    const updatedWd = this.calculateChannelWithdrawal(
+      withdrawal, custodial
     )
+
+    // withdraw the custodial amount if needed
+    if (updatedWd.custodialTokenWithdrawal != "0") {
+      await this.internal.hub.requestCustodialWithdrawal(
+        updatedWd.custodialTokenWithdrawal,
+        withdrawal.recipient || this.internal.wallet.address,
+      )
+    }
 
     // withdraw the remainder from the channel
     const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
 
-    const succinctWithdrawal = isSuccinct
+    const updatedChannelWd = isSuccinct
       ? {
         ...withdrawal,
         amountToken: updatedWd.channelTokenWithdrawal,
@@ -304,7 +308,7 @@ export abstract class ConnextChannel extends EventEmitter {
       }
 
     await this.internal.withdrawalController.requestUserWithdrawal({
-      ...succinctWithdrawal,
+      ...updatedChannelWd,
     })
     return
   }
