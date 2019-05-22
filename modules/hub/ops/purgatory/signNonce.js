@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const Web3 = require('web3-old')
+const Web3 = require('web3')
 
 const w3 = new Web3(
   new Web3.providers.HttpProvider('http://geth.spankchain.com:8545'),

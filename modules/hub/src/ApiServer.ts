@@ -1,7 +1,5 @@
-import * as connectRedis from 'connect-redis'
 import * as cors from 'cors'
 import * as express from 'express'
-import * as session from 'express-session'
 
 import { ApiService } from './api/ApiService'
 import Config from './Config'
@@ -14,13 +12,11 @@ import log from './util/log'
 const LOG = log('ApiServer')
 const SESSION_LOG = log('ConnectRedis')
 
-const RedisStore = connectRedis(session)
-
 const requestLog = log('requests')
 const requestLogMiddleware = (
   req: express.Request,
   res: express.Response,
-  next: () => any
+  next: () => any,
 ): void => {
   const startTime = Date.now()
   res.on('finish', () => {
@@ -36,9 +32,8 @@ const requestLogMiddleware = (
         outSize: `${res.get('content-length') || '?'} bytes`,
         remoteAddr,
         statusCode: res.statusCode,
-        url: req.originalUrl
-      }
-    )
+        url: req.originalUrl,
+      })
   })
   next()
 }
@@ -52,7 +47,7 @@ function bodyTextMiddleware(opts: { maxSize: number }): any {
   return (
     req: express.Request,
     res: express.Response,
-    next: () => any
+    next: () => any,
   ): any => {
     const rawPromise = ezPromise<MaybeRes<Buffer>>()
     const textPromise = ezPromise<MaybeRes<string>>()
@@ -93,6 +88,32 @@ function bodyTextMiddleware(opts: { maxSize: number }): any {
   }
 }
 
+const logErrors = (
+  err: any,
+  req: express.Request,
+  res: express.Response,
+  next: any,
+): void => {
+  if (res.headersSent) { return next(err) }
+  res.status(500)
+  res.json({
+    error: true,
+    msg: err.message,
+    reason: 'Unknown Error',
+    stack: err.stack,
+  })
+  LOG.error('Unknown error in {req.method} {req.path}: {message}', {
+    message: err.message,
+    req: {
+      body: req.body,
+      method: req.method,
+      path: req.path,
+      query: req.query,
+    },
+    stack: err.stack,
+  })
+}
+
 export class ApiServer {
   public app: express.Application
 
@@ -109,7 +130,7 @@ export class ApiServer {
 
     const corsHandler = cors({
       credentials: true,
-      origin: true
+      origin: true,
     })
     this.app.options('*', corsHandler)
     this.app.use(corsHandler)
@@ -117,52 +138,28 @@ export class ApiServer {
     this.app.use(express.json())
     this.app.use(new AuthHeaderMiddleware().middleware)
 
-    // TODO: remove session completely
-    // this.app.use(
-    //   session({
-    //     secret: this.config.sessionSecret,
-    //     name: COOKIE_NAME,
-    //     resave: false,
-    //     store: new RedisStore({
-    //       url: this.config.redisUrl,
-    //       logErrors: (err: any) =>
-    //         SESSION_LOG.error('Encountered error in Redis session: {err}', {
-    //           err
-    //         })
-    //     }),
-    //     cookie: {
-    //       httpOnly: true
-    //     }
-    //   })
-    // )
-
-    // Note: this needs to come before the `express.json()` middlware, but
-    // after the session middleware. I have no idea why, but if it's before the
-    // session middleware requests hang, and the `express.json()` middleware
-    // reads and exhausts the body, so we can't go after that one.
     this.app.use(bodyTextMiddleware({ maxSize: 1024 * 1024 * 10 }))
 
     this.app.use(express.urlencoded())
 
     this.app.use(this.authenticateRoutes.bind(this))
-    this.app.use(this.logErrors.bind(this))
+    this.app.use(logErrors.bind(this))
 
     const apiServiceClasses = container.resolve('ApiServerServices') as any[]
-    this.apiServices = apiServiceClasses.map(cls => new cls(this.container))
+    this.apiServices = apiServiceClasses.map((cls: any): any => new cls(this.container))
     this.setupRoutes()
   }
 
   public async start(): Promise<any> {
-    return new Promise(resolve =>
+    return new Promise((resolve: any): any =>
       this.app.listen(this.config.port, () => {
         LOG.info(`Listening on port ${this.config.port}.`)
         resolve()
-      })
-    )
+      }))
   }
 
-  private setupRoutes() {
-    this.apiServices.forEach(s => {
+  private setupRoutes(): void {
+    this.apiServices.forEach((s: any): any => {
       LOG.info(`Setting up API service at /${s.namespace}`)
       this.app.use(`/${s.namespace}`, s.getRouter())
     })
@@ -171,46 +168,15 @@ export class ApiServer {
   protected async authenticateRoutes(
     req: express.Request,
     res: express.Response,
-    next: () => void
-  ) {
+    next: () => void,
+  ): Promise<any> {
     const roles = await this.authHandler.rolesFor(req)
-    req.session!.roles = new Set(roles)
+    req.session.roles = new Set(roles)
     const allowed = await this.authHandler.isAuthorized(req)
-
     if (!allowed) {
       return res.sendStatus(403)
     }
-
     next()
   }
 
-  private logErrors(
-    err: any,
-    req: express.Request,
-    res: express.Response,
-    next: any
-  ) {
-    if (res.headersSent) {
-      return next(err)
-    }
-
-    res.status(500)
-    res.json({
-      error: true,
-      reason: 'Unknown Error',
-      msg: err.message,
-      stack: err.stack
-    })
-
-    LOG.error('Unknown error in {req.method} {req.path}: {message}', {
-      message: err.message,
-      stack: err.stack,
-      req: {
-        method: req.method,
-        path: req.path,
-        query: req.query,
-        body: req.body
-      }
-    })
-  }
 }
