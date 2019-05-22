@@ -99,4 +99,24 @@ describe("calculateChannelWithdrawal", async () => {
       custodialWeiWithdrawal: "0",
     })
   })
+
+  it("should work with these specific values, test case for customer support", async () => {
+    const _withdrawal = {
+      exchangeRate: "258.94",
+      tokensToSell: "8003287580000000000000",
+      withdrawalWeiUser: "103405366207000000",
+    }
+
+    const custodial = {
+      totalReceivedToken: "4016900000000000000000",
+      balanceToken: "4016900000000000000000",
+    }
+
+    assertChannelWithdrawalCalculation(_withdrawal, custodial, {
+      custodialTokenWithdrawal: "4016900000000000000000",
+      channelTokenWithdrawal: "3986387580000000000000",
+      channelWeiWithdrawal: "103405366207000000",
+      custodialWeiWithdrawal: "0",
+    })
+  })
 })
