@@ -40,7 +40,7 @@ describe("calculateChannelWithdrawal", async () => {
     amountToken = amountToken.add(_withdrawal.withdrawalTokenUser || 0)
 
     let amountWei = toBN(_withdrawal.weiToSell || 0)
-    amountToken = amountToken.add(_withdrawal.withdrawalWeiUser || 0)
+    amountWei = amountWei.add(_withdrawal.withdrawalWeiUser || 0)
 
     const _withdrawalSuccinct = {
       exchangeRate: "5",
