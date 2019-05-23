@@ -9,7 +9,6 @@ import { ezPromise, maybe, MaybeRes } from './util'
 import log from './util/log'
 
 const LOG = log('ApiServer')
-const SESSION_LOG = log('ConnectRedis')
 
 const requestLog = log('requests')
 const requestLogMiddleware = (
@@ -134,7 +133,7 @@ export class ApiServer {
     this.app.use(express.urlencoded({ extended: false }))
     this.app.use(logErrors.bind(this))
     this.apiServices.forEach((s: any): any => {
-      LOG.debug(`Setting up API service at /${s.namespace}`)
+      LOG.info(`Setting up API service at /${s.namespace}`)
       this.app.use(`/${s.namespace}`, s.getRouter())
     })
     // Done constructing API pipeline

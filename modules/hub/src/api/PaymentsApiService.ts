@@ -29,8 +29,6 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
     'POST /redeem/:user': 'doRedeem',
     'GET /purchase/:id': 'doPurchaseById',
     'GET /history/:address': 'doPaymentHistory',
-    'POST /purchase/:id': 'doPurchaseById',
-    'POST /history/:address': 'doPaymentHistory',
   }
   handler = PaymentsApiServiceHandler
   dependencies = {

@@ -10,7 +10,7 @@ import { ApiService } from './ApiService'
 const LOG = log('AuthApiService')
 
 export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
-  public namespace: string = 'auth'
+  public namespace: string = 'nonce'
   public routes: any = {
     'GET /': 'doNonce',
   }

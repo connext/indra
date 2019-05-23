@@ -30,7 +30,7 @@ channel_bei_limit=${CHANNEL_BEI_LIMIT}
 channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
 # hard-coded config (you probably won't ever need to change these)
-log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
+log_level="30" # set to 10 for all logs or to 30 to only print warnings/errors
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
 private_key_file="/run/secrets/$private_key_name"
 
@@ -182,7 +182,7 @@ services:
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      LOG_LEVEL: 20
+      LOG_LEVEL: $log_level
       NODE_ENV: production
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
@@ -215,7 +215,7 @@ services:
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      LOG_LEVEL: 20
+      LOG_LEVEL: $log_level
       NODE_ENV: production
       POLLING_INTERVAL: 2000
       POSTGRES_DB: $postgres_db

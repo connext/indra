@@ -17,8 +17,8 @@ export default class PaymentProfilesApiService extends ApiService<
   public routes = {
     'POST /add-profile/:key': 'doAddProfileKey',
     'POST /': 'doCreatePaymentProfile',
-    'POST /:id': 'doGetPaymentProfileById',
-    'POST /user/:user': 'doGetPaymentProfileByUser'
+    'GET /:id': 'doGetPaymentProfileById',
+    'GET /user/:user': 'doGetPaymentProfileByUser'
   }
   public handler = PaymentProfilesApiServiceHandler
   public dependencies = {
