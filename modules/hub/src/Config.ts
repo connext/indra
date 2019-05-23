@@ -46,7 +46,7 @@ export interface BrandingConfig {
   textColor?: string
 }
 
-export default class Config {
+export class Config {
   static fromEnv(overrides?: Partial<Config>): Config {
     const instance = new Config()
 
@@ -74,7 +74,7 @@ export default class Config {
   public authRealm: string = ''
   public authDomainWhitelist: string[] = []
   public adminAddresses?: string[] = []
-  public serviceUserKey: string = 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
+  public serviceKey: string = 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
   public port: number = 8080
   public httpsPort: number = 8443
   // URL used to check whether a user should receive collateral.
@@ -141,3 +141,5 @@ export default class Config {
     production: 'set by environment variable',
   })
 }
+
+export default Config

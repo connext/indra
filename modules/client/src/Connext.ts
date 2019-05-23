@@ -17,7 +17,6 @@ import { ThreadsController } from './controllers/ThreadsController'
 import { WithdrawalController } from './controllers/WithdrawalController'
 import {  HubAPIClient, IHubAPIClient } from './Hub'
 import { maxBN, toBN } from './lib/bn'
-import { Networking } from './lib/networking'
 import { isFunction, timeoutPromise } from './lib/utils'
 import * as actions from './state/actions'
 import { handleStateFlags } from './state/middleware'
@@ -39,6 +38,7 @@ import {
   convertFields,
   convertPayment,
   CustodialBalanceRowBN,
+  HubConfig,
   insertDefault,
   Omit,
   PartialPurchaseRequest,
@@ -62,67 +62,58 @@ import { Wallet } from './Wallet'
 // Interface Definitions
 ////////////////////////////////////////
 
+// These are options passed in from the app layer eg daicard
+// They should be optimized to be as flexible and as simple as possible
 export interface IConnextChannelOptions {
   connextProvider?: ConnextProvider // NOTE: only a placeholder
   ethUrl?: string
   hubUrl: string
   mnemonic?: string
-  password?: string
   privateKey?: string
-  user?: string
+  user?: string,
   web3Provider?: Web3Provider
-  loadState?(): Promise<string | undefined>
+  loadState?(): any
   safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder
-  saveState?(state: string): Promise<any>
+  saveState?(state: any): any
 }
 
-export interface IConnextChannelInternalOptions extends IConnextChannelOptions{
-  contract?: IChannelManager // Optional, useful for dependency injection
-  contractAddress: string
-  gasMultiple: number
-  hub?: IHubAPIClient // Optional, useful for dependency injection
-  hubAddress: string
-  saveState(state: string): Promise<any>
-  store?: ConnextStore // Optional, useful for dependency injection
-  tokenAddress: string
-  user: string
-}
+// These are options passed from the internal client creation function to the class constructor
+// They are derived from the IConnextChannelOptions, they should be thorough and inflexible
+// These are good things to override while injecting mocks during testing
+export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
+    contract: IChannelManager
+    contractAddress: string,
+    ethChainId: string,
+    hub: IHubAPIClient
+    hubAddress: string,
+    maxCollateralization: string
+    store?: ConnextStore
+    tokenAddress: string,
+    user: string
+    wallet: Wallet
+    saveState?(state: any): any
+    loadState?(): any
+  }
 
 ////////////////////////////////////////
 // Implementations
 ////////////////////////////////////////
 
 // Used to get an instance of ConnextChannel.
+// Key task here is to convert IConnextChannelOptions into IConnextChannelInternalOptions
 export const createClient = async (opts: IConnextChannelOptions): Promise<ConnextChannel> => {
-
-  const hubConfig: any = (await (new Networking(opts.hubUrl)).get(`config`)).data
-  const config: any = {
-    contractAddress: hubConfig.channelManagerAddress.toLowerCase(),
-    ethNetworkId: hubConfig.ethNetworkId.toLowerCase(),
-    hubAddress: hubConfig.hubWalletAddress.toLowerCase(),
-    tokenAddress: hubConfig.tokenAddress.toLowerCase(),
+  const wallet: Wallet = new Wallet(opts)
+  const hub: HubAPIClient = new HubAPIClient(opts.hubUrl, wallet)
+  const hubConfig: HubConfig = await hub.config()
+  const internalOpts: IConnextChannelInternalOptions = {
+    ...opts,
+    ...hubConfig,
+    contract: new ChannelManager(wallet, hubConfig.contractAddress),
+    hub,
+    user: opts.user || wallet.address,
+    wallet,
   }
-
-  const merged: any = { ...opts }
-  for (const k in config) {
-    if ((opts as any)[k]) {
-      continue
-    }
-    (merged as any)[k] = (config as any)[k]
-  }
-
-  // if web3, create a new web3
-  if (merged.web3Provider && !merged.user) {
-    // set default address TODO: improve this
-    const tmp = new Web3(opts.web3Provider as any)
-    merged.user = (await tmp.eth.getAccounts())[0]
-  }
-
-  const wallet: Wallet = new Wallet(merged)
-  merged.user = merged.user || wallet.address
-  merged.saveState = merged.saveState || console.log
-
-  return new ConnextInternal({ ...merged }, wallet)
+  return new ConnextInternal(internalOpts)
 }
 
 /**
@@ -360,7 +351,7 @@ export class ConnextInternal extends ConnextChannel {
   private _saving: Promise<void> = Promise.resolve()
   private _savePending: boolean = false
 
-  public constructor(opts: IConnextChannelInternalOptions, wallet: Wallet) {
+  public constructor(opts: IConnextChannelInternalOptions) {
     super(opts)
     this.opts = opts
 
@@ -368,22 +359,15 @@ export class ConnextInternal extends ConnextChannel {
     // The store shouldn't be used by anything before calling `start()`, so
     // leave it undefined until then.
     this.store = undefined as any
-    this.wallet = wallet
-    this.provider = wallet.provider
-
-    // console.log('Using hub', opts.hub ? 'provided by caller' : `at ${this.opts.hubUrl}`)
-    this.hub = opts.hub || new HubAPIClient(
-      new Networking(this.opts.hubUrl),
-      this.wallet,
-    )
+    this.wallet = opts.wallet
+    this.provider = this.wallet.provider
+    this.hub = opts.hub
 
     opts.user = opts.user.toLowerCase()
     opts.hubAddress = opts.hubAddress.toLowerCase()
     opts.contractAddress = opts.contractAddress.toLowerCase()
-    opts.gasMultiple = opts.gasMultiple || 1.5
 
     this.contract = opts.contract
-      || new ChannelManager(wallet, opts.contractAddress, opts.gasMultiple)
     this.validator = new Validator(opts.hubAddress, this.provider, this.contract.rawAbi)
     this.utils = new Utils()
 
@@ -625,23 +609,26 @@ export class ConnextInternal extends ConnextChannel {
    * it's being saved before we return.
    */
   private async _saveLoop(): Promise<void> {
-    let result: Promise<any> | undefined
+    let result: Promise<any>
     while (true) {
       const state: any = this._latestState
-      result = this.opts.saveState(JSON.stringify(state))
 
-      // Wait for any current save to finish, but ignore any error it might raise
-      const [timeout, _] = await timeoutPromise(
-        result.then(undefined, () => undefined),
-        10 * 1000,
-      )
-      if (timeout) {
-        console.warn(
-          'Timeout (10 seconds) while waiting for state to save. ' +
-          'This error will be ignored (which may cause data loss). ' +
-          'User supplied function that has not returned:',
-          this.opts.saveState,
+      if (this.opts.saveState) {
+        result = this.opts.saveState(JSON.stringify(state))
+        // Wait for any current save to finish, but ignore any error it might raise
+        const [timeout, _] = await timeoutPromise(
+          result.then(undefined, () => undefined),
+          10 * 1000,
         )
+
+        if (timeout) {
+          console.warn(
+            'Timeout (10 seconds) while waiting for state to save. ' +
+            'This error will be ignored (which may cause data loss). ' +
+            'User supplied function that has not returned:',
+            this.opts.saveState,
+          )
+        }
       }
 
       if (this._latestState === state) {

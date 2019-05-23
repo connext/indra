@@ -1,38 +1,39 @@
-import DBEngine, { SQL } from '../DBEngine'
 import { Client } from 'pg'
-import ExchangeRate from '../domain/ExchangeRate'
+
+import DBEngine, { SQL } from '../DBEngine'
 import CurrencyCode from '../domain/CurrencyCode'
+import ExchangeRate from '../domain/ExchangeRate'
 import { prettySafeJson } from '../util'
 
 export default interface ExchangeRateDao {
-  record(retrievedAt: number, rateUsd: string): Promise<ExchangeRate>
+  record(retrievedAt: number, rateDai: string): Promise<ExchangeRate>
   latest(): Promise<ExchangeRate>
-  getLatestUsdRate(): Promise<string>
-  getUsdRateAtTime(date: Date): Promise<string>
+  getLatestDaiRate(): Promise<string>
+  getDaiRateAtTime(date: Date): Promise<string>
 }
 
 export class PostgresExchangeRateDao implements ExchangeRateDao {
   private engine: DBEngine<Client>
 
-  constructor(engine: DBEngine<Client>) {
+  public constructor(engine: DBEngine<Client>) {
     this.engine = engine
   }
 
   public async record(
     retrievedAt: number,
-    rateUsd: string,
+    rateDai: string,
   ): Promise<ExchangeRate> {
     return this.inflateRow(
       await this.engine.queryOne(SQL`
-        INSERT INTO exchange_rates 
+        INSERT INTO exchange_rates
           (retrievedat, base, rate_usd)
-        VALUES (${retrievedAt}, ${CurrencyCode.ETH.toString()}, ${rateUsd}) 
+        VALUES (${retrievedAt}, ${CurrencyCode.ETH}, ${rateDai})
         RETURNING *
       `),
     )
   }
 
-  public async latest() {
+  public async latest(): Promise<any> {
     return this.inflateRow(
       await this.engine.queryOne(
         'SELECT * FROM exchange_rates ORDER BY retrievedat DESC LIMIT 1',
@@ -40,11 +41,11 @@ export class PostgresExchangeRateDao implements ExchangeRateDao {
     )
   }
 
-  public async getLatestUsdRate(): Promise<string> {
-    return await this.getUsdRateAtTime(new Date())
+  public async getLatestDaiRate(): Promise<string> {
+    return this.getDaiRateAtTime(new Date())
   }
 
-  public async getUsdRateAtTime(date: Date): Promise<string> {
+  public async getDaiRateAtTime(date: Date): Promise<string> {
     const res = this.inflateRow(await this.engine.queryOne(SQL`
       SELECT *
       FROM exchange_rates
@@ -59,19 +60,20 @@ export class PostgresExchangeRateDao implements ExchangeRateDao {
         `is more than 24 hours older than the date; refusing to use it.`,
       )
     }
-    return res.rates['USD']
+    return res.rates.DAI
   }
 
   private inflateRow(row: any): ExchangeRate {
     return (
       row && {
-        id: row.id,
-        retrievedAt: row.retrievedat,
         base: row.base,
+        id: row.id,
         rates: {
-          [CurrencyCode.USD.toString()]: row.rate_usd,
+          ['DAI']: row.rate_usd,
         },
+        retrievedAt: row.retrievedat,
       }
     )
   }
+
 }

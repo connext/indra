@@ -1,38 +1,33 @@
 import * as express from 'express'
 
-import { ApiService, Router } from './ApiService'
-
 import FeatureFlagsDao, { DEFAULT_FLAGS } from '../dao/FeatureFlagsDao'
 import log from '../util/log'
+
+import { ApiService, Router } from './ApiService'
 
 const LOG = log('FeatureFlagsApiService')
 
 export default class FeatureFlagsApiService extends ApiService<FeatureFlagsApiHandler> {
-  namespace = 'featureflags'
-  routes = {
+  public namespace: string = 'featureflags'
+  public routes: any = {
     'GET /': 'doFeatureFlags',
   }
-  handler = FeatureFlagsApiHandler
-  dependencies = {
+  public handler: any = FeatureFlagsApiHandler
+  public dependencies: any = {
     'flagsDao': 'FeatureFlagsDao',
   }
 }
 
 class FeatureFlagsApiHandler {
-  flagsDao: FeatureFlagsDao
+  public flagsDao: FeatureFlagsDao
 
-  public async doFeatureFlags (req: express.Request, res: express.Response) {
+  public async doFeatureFlags (req: express.Request, res: express.Response): Promise<void> {
     let flags
 
     try {
-      flags = await this.flagsDao.flagsFor(req.session!.address)
+      flags = await this.flagsDao.flagsFor(req.address)
     } catch (err) {
-      LOG.error(
-        'Caught error getting feature flags: {err}',
-        {
-          err
-        }
-      )
+      LOG.error(`Caught error getting feature flags: ${err}`)
 
       flags = DEFAULT_FLAGS
     }

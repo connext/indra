@@ -38,7 +38,7 @@ export default class WithdrawalsService {
     this.config = config
   }
 
-  public async withdrawUsd(address: string): Promise<Withdrawal> {
+  public async withdrawDai(address: string): Promise<Withdrawal> {
     const enabled = (await this.globalSettingsDao.fetch()).withdrawalsEnabled
 
     if (!enabled) {

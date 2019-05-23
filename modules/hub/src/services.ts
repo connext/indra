@@ -25,7 +25,6 @@ import { CoinPaymentsService } from './coinpayments/CoinPaymentsService'
 import Config from './Config'
 import { Container, Context, PartialServiceDefinitions, Registry } from './Container'
 import { ChannelManager } from './contract/ChannelManager'
-import { MemoryCRAuthManager } from './CRAuthManager'
 import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
 import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
@@ -47,7 +46,6 @@ import { PostgresWithdrawalsDao } from './dao/WithdrawalsDao'
 import { default as DBEngine, PgPoolService, PostgresDBEngine } from './DBEngine'
 import ExchangeRateService from './ExchangeRateService'
 import { default as GasEstimateService } from './GasEstimateService'
-import { DefaultAuthHandler } from './middleware/AuthHandler'
 import { NgrokService } from './NgrokService'
 import { OnchainTransactionService } from './OnchainTransactionService'
 import { OptimisticPaymentsService } from './OptimisticPaymentsService'
@@ -188,12 +186,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     isSingleton: true,
   },
 
-  CRAuthManager: {
-    factory: () => new MemoryCRAuthManager(),
-    dependencies: [],
-    isSingleton: true,
-  },
-
   NgrokService: {
     factory: (config: Config) => new NgrokService(config),
     dependencies: ['Config'],
@@ -320,11 +312,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   FeatureFlagsDao: {
     factory: (client: DBEngine<Client>) => new PostgresFeatureFlagsDao(client),
     dependencies: ['DBEngine'],
-  },
-
-  AuthHandler: {
-    factory: (config: Config) => new DefaultAuthHandler(config),
-    dependencies: ['Config'],
   },
 
   Context: {

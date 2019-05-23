@@ -52,7 +52,7 @@ export class ChannelManager implements IChannelManager {
   private defaultSendArgs: any = { value: 0 }
   private provider: Provider
 
-  public constructor(wallet: Wallet, address: string, gasMultiple: number) {
+  public constructor(wallet: Wallet, address: string, gasMultiple: number = 1.5) {
     this.address = address
     // NOTE: doing wallet.provider, we can still create this
     // and have sendTransaction in the wallet return

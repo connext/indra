@@ -1,10 +1,10 @@
 import { Address, PaymentProfileConfig, PaymentProfileConfigBN } from 'connext/types'
-import { log } from 'util'
 import { Client } from 'pg'
 
 import Config from '../Config'
 import DBEngine, { SQL } from '../DBEngine'
 import { toBN } from '../util'
+import log from '../util/log'
 
 const LOG = log('PaymentProfilesDao')
 

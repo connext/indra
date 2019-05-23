@@ -1,19 +1,25 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 import { BigNumber } from 'ethers/utils'
 
-// BN Helper wrapers
+export { getLogger } from './log'
+
+const { Zero, MaxUint256 } = eth.constants
+const { arrayify, bigNumberify, isHexString, parseEther, formatEther } = eth.utils
+
 export type BN = BigNumber
 
 export const isBN = BigNumber.isBigNumber
 
 export const toBN = (n: string|number|BN): BN =>
-  eth.utils.bigNumberify(n.toString())
+  bigNumberify(n.toString())
 
 export const toWei = (n: string|number|BN): BN =>
-  eth.utils.parseEther(n.toString())
+  parseEther(n.toString())
+
+export const fromWei = formatEther
 
 export const weiToToken = (wei: BN, tokenPerEth: string): BN =>
-  toBN(eth.utils.formatEther(toWei(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ''))
+  toBN(formatEther(toWei(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ''))
 
 export const tokenToWei = (token: BN, tokenPerEth: string): BN =>
   toWei(token).div(toWei(tokenPerEth))
@@ -24,7 +30,10 @@ export const maxBN = (lon: BN[]): BN =>
   )
 
 export const minBN = (lon: BN[]): BN =>
-  lon.reduce((min, current) => min.lt(current) ? min : current, eth.constants.MaxUint256)
+  lon.reduce((min: BN, current: BN): BN => min.lt(current) ? min : current, MaxUint256)
+
+export const isValidHex = (hex: string, length: number): boolean =>
+  isHexString(hex) && arrayify(hex).length === length
 
 
 /**

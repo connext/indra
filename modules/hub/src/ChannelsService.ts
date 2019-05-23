@@ -131,7 +131,7 @@ export default class ChannelsService {
         `is more than 24 hours old; refusing to use it.`,
       )
     }
-    const currentExchangeRateStr = currentExchangeRate.rates['USD']
+    const currentExchangeRateStr = currentExchangeRate.rates['DAI']
 
     // equivalent token amount to deposit based on booty amount
     const bootyRequestToDeposit = weiToToken(depositWei,
@@ -419,7 +419,7 @@ export default class ChannelsService {
         `is more than 24 hours old; refusing to use it.`,
       )
     }
-    const currentExchangeRateStr = currentExchangeRate.rates['USD']
+    const currentExchangeRateStr = currentExchangeRate.rates['DAI']
     
     // NOTE: should be safe to use the Math instead of
     // BigNumber libraries here
@@ -572,7 +572,7 @@ export default class ChannelsService {
     }
     // TODO: fix all exchange things!!!!!!
     // check git diff to see the funkyness
-    const exchangeRate = currentExchangeRate.rates['USD']
+    const exchangeRate = currentExchangeRate.rates['DAI']
 
     // exchanges where user sells wei for tokens are capped by:
     // - the balance of the hub

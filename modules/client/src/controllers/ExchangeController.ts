@@ -58,6 +58,7 @@ export class ExchangeController extends AbstractController {
       if (rates.DAI) {
         // These are the values wallet expects
         rates.DAI = rates.DAI
+        rates.DEI = eth.utils.parseEther(rates.DAI).toString()
         rates.ETH = toBN(1).toString()
         rates.FIN = WeiPerEther.div(eth.utils.parseUnits('1', 'finney')).toString()
         rates.WEI = WeiPerEther.toString()

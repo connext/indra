@@ -7,7 +7,7 @@ import Config from './Config'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import WithdrawalsDao from './dao/WithdrawalsDao'
 import { toBN, toWei } from './util'
-import { SCLogger } from './util/logging'
+import { Logger } from './util/log'
 import WithdrawalsService from './WithdrawalsService'
 
 const assert = chai.assert
@@ -104,11 +104,11 @@ describe.skip('WithdrawalsService', () => {
       it('warns if the hot wallet balance is low', async () => {
         web3.eth.mockBalanceEth[config.hotWalletAddress] = '0.1'
 
-        let oldError: any = SCLogger.prototype.error
+        let oldError: any = Logger.prototype.error
         let didGetErrorLog: boolean = false
 
         try {
-          SCLogger.prototype.error = (msg: string, args: any) => {
+          Logger.prototype.error = (msg: string, args: any) => {
             assert.include(msg, 'reduces hot wallet balance')
             assert.equal(args.newBalanceEth, '0.09999999999999999')
             didGetErrorLog = true
@@ -125,7 +125,7 @@ describe.skip('WithdrawalsService', () => {
           assert.isTrue(didGetErrorLog, 'No error was logged!')
 
         } finally {
-          SCLogger.prototype.error = oldError
+          Logger.prototype.error = oldError
         }
       })
 

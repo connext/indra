@@ -4,15 +4,15 @@ import { Role } from '../Role'
 export function getUserFromRequest(req: express.Request) {
   const { user } = req.params
   const hasAccess = (
-    (user && user == req.session!.address) ||
-    req.session!.roles.has(Role.ADMIN) ||
-    req.session!.roles.has(Role.SERVICE)
+    (user && user == req.address) ||
+    req.roles.has(Role.ADMIN) ||
+    req.roles.has(Role.SERVICE)
   )
 
   if (!hasAccess) {
     throw new Error(
-      `Current user '${req.session!.address}' with roles ` +
-      `'${JSON.stringify(Array.from(req.session!.roles))}' is not ` +
+      `Current user '${req.address}' with roles ` +
+      `'${JSON.stringify(Array.from(req.roles))}' is not ` +
       `authorized to act on behalf of requested user '${user}'.`
     )
   }
