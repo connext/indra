@@ -19,6 +19,10 @@ const SESSION_LOG = log('ConnectRedis')
 const COOKIE_NAME = 'hub.sid'
 
 const RedisStore = require('connect-redis')(session)
+const fs = require('fs')
+const https = require('https')
+const path = require('path')
+const selfsigned = require('selfsigned')
 
 const requestLog = log('requests')
 const requestLogMiddleware = (req: any, res: any, next: any): any => {
@@ -148,6 +152,18 @@ export class ApiServer {
   }
 
   public async start() {
+    if (this.config.forceSsl) {
+      const attrs = [{ name: 'commonName', value: 'localhost' }]
+      const pems = selfsigned.generate(attrs, { days: 365, keySize: 4096 })
+      return new Promise(resolve =>
+        https.createServer({key: pems.private, cert: pems.cert}, this.app).listen(this.config.httpsPort, err => {
+          if (err) throw err;
+          LOG.info(`Listening on SSL port ${this.config.httpsPort}.`)
+          resolve()
+        })
+      )
+    }
+
     return new Promise(resolve =>
       this.app.listen(this.config.port, () => {
         LOG.info(`Listening on port ${this.config.port}.`)
