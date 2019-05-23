@@ -11,6 +11,8 @@ import { parseAuthHeader } from '../util/parseAuthHeader'
 
 const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
 
+const nonceExpiry = 1000 * 60 * 2 // 2 hours
+
 const defaultAcl: RouteBasedACL = new RouteBasedACL()
     .addRoute('/auth/(.*)', Role.NONE)
     .addRoute('/branding', Role.NONE)
@@ -64,12 +66,19 @@ export const getAuthMiddleware = (
   } else if (address && nonce && signature) {
     const redis = await getRedisClient(config.redisUrl)
 
-    // Is this nonce valid?
     try {
+      // Is this nonce valid?
       // TODO: Why aren't errors here hitting the catch block?!
       const expectedNonce = await redis.get(`nonce:${address}`)
       if (expectedNonce && expectedNonce !== nonce) {
         log.warn(`Invalid nonce for address ${address}: Got ${nonce}, expected ${expectedNonce}`)
+        res.status(403).send(`Invalid nonce`)
+        return
+      }
+      // check whether this nonce has expired
+      const nonceCreated = parseInt(await redis.get(`nonce-timestamp:${address}`), 10)
+      if (Date.now() - nonceCreated > nonceExpiry) {
+        log.warn(`Invalid nonce for ${address}: expired`)
         res.status(403).send(`Invalid nonce`)
         return
       }

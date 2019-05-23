@@ -25,7 +25,6 @@ import { CoinPaymentsService } from './coinpayments/CoinPaymentsService'
 import Config from './Config'
 import { Container, Context, PartialServiceDefinitions, Registry } from './Container'
 import { ChannelManager } from './contract/ChannelManager'
-import { MemoryCRAuthManager } from './CRAuthManager'
 import { CustodialPaymentsApiService } from './custodial-payments/CustodialPaymentsApiService'
 import { CustodialPaymentsDao } from './custodial-payments/CustodialPaymentsDao'
 import { CustodialPaymentsService } from './custodial-payments/CustodialPaymentsService'
@@ -184,12 +183,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'SignerService',
       'Container'
     ],
-    isSingleton: true,
-  },
-
-  CRAuthManager: {
-    factory: () => new MemoryCRAuthManager(),
-    dependencies: [],
     isSingleton: true,
   },
 
