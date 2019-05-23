@@ -1,7 +1,7 @@
 {
   "name": "connext",
   "description": "Shared code between wallet and hub",
-  "version": "4.0.0-beta",
+  "version": "4.0.0-beta.1",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "devDependencies": {
