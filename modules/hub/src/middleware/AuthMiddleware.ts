@@ -7,7 +7,6 @@ import { getRedisClient } from '../RedisClient'
 import { Role } from '../Role'
 import { RouteBasedACL } from '../RouteBasedAcl'
 import { getLogger } from '../util/log'
-import { parseAuthHeader } from '../util/parseAuthHeader'
 
 const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
 
