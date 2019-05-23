@@ -13,16 +13,17 @@ import { AuthMiddleware, getAuthMiddleware } from './AuthMiddleware'
 ////////////////////////////////////////
 // Define helpful constants
 
-const { arrayify, bigNumberify, toUtf8Bytes } = eth.utils
+const { arrayify, bigNumberify, hexlify, randomBytes } = eth.utils
 
 const logLevel = 10
 const forbidden = 403
-const nonce = '7c965885-407a-4637-95cb-797dd9a8d8a2'
-const serviceKey = 'unspank the unbanked'
-const Two = eth.constants.Two
+const day = 1000 * 60 * 24
+const nonce = hexlify(randomBytes(32))
+const serviceKey = hexlify(randomBytes(32))
 const wallet = eth.Wallet.createRandom()
 const address = wallet.address.toLowerCase()
 const config = getTestConfig()
+const redis = getRedisClient(config.redisUrl)
 
 const testAcl: RouteBasedACL = new RouteBasedACL()
   .addRoute('/none', Role.NONE)
@@ -85,16 +86,19 @@ describe('AuthMiddleware', async () => {
     sigHeaders = {
       'x-address': address,
       'x-nonce': nonce,
-      'x-signature': await wallet.signMessage(toUtf8Bytes(nonce)),
+      'x-signature': await wallet.signMessage(arrayify(nonce)),
     }
     serviceHeaders = {
       'x-service-key': serviceKey,
     }
-    const redis = await getRedisClient(config.redisUrl)
     await redis.set(`nonce:${address}`, nonce)
   })
 
-  beforeEach(() => res.status(0))
+  beforeEach(async () => {
+    res.status(0)
+    await redis.set(`nonce-timestamp:${address}`, Date.now().toString())
+    await redis.del(`signature:${address}`)
+  })
 
   it('should not set any roles if requesting a public route', async () => {
     let req
@@ -139,9 +143,17 @@ describe('AuthMiddleware', async () => {
   it('should deny access if given an invalid nonce', async () => {
     const req = getReq('/authenticated', {
       'x-address': address,
-      'x-nonce': `${nonce} oops`,
-      'x-signature': await wallet.signMessage(toUtf8Bytes(`${nonce} oops`)),
+      'x-nonce': increment(nonce),
+      'x-signature': await wallet.signMessage(arrayify(increment(nonce))),
     })
+    await testAuthMiddleware(req)
+    assertRoles(req, [])
+    assertSentStatus(forbidden)
+  })
+
+  it('should deny access if given an expired nonce', async () => {
+    await redis.set(`nonce-timestamp:${address}`, (Date.now() - day).toString())
+    const req = getReq('/authenticated', sigHeaders)
     await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(forbidden)
@@ -158,7 +170,7 @@ describe('AuthMiddleware', async () => {
   })
 
   it('should deny access to service routes if given an invalid service key', async () => {
-    const req = getReq('/service', { 'x-service-key': `${serviceKey} oops` })
+    const req = getReq('/service', { 'x-service-key': `invalid-${serviceKey}` })
     await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(forbidden)

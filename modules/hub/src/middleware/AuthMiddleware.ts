@@ -76,9 +76,11 @@ export const getAuthMiddleware = (
         return
       }
       // check whether this nonce has expired
-      const nonceCreated = parseInt(await redis.get(`nonce-timestamp:${address}`), 10)
-      if (Date.now() - nonceCreated > nonceExpiry) {
-        log.warn(`Invalid nonce for ${address}: expired`)
+      const nonceTimestamp = (await redis.get(`nonce-timestamp:${address}`)) || '0'
+      const nonceAge = Date.now() - parseInt(nonceTimestamp, 10)
+      log.debug(`Nonce for ${address} was created ${nonceAge} ms ago`)
+      if (nonceAge > nonceExpiry) {
+        log.warn(`Invalid nonce for ${address}: expired ${nonceAge - nonceExpiry} ms ago`)
         res.status(403).send(`Invalid nonce`)
         return
       }
