@@ -1,8 +1,7 @@
 import {Context} from './Container'
 import {Pool, PoolClient, ClientBase, Client, QueryResult} from 'pg'
 import Config from './Config'
-import {SCLogger} from './util/logging'
-import log from './util/log'
+import { getLogger as log, ILogger } from './util/log'
 import patch from './util/patch'
 
 export type Executor<T, U> = (client: T) => Promise<U>
@@ -169,7 +168,7 @@ export class PgTransaction implements DBEngine {
 let poolCount = 0
 export class PgPoolService {
   pool: Pool
-  log: SCLogger
+  log: ILogger
 
   constructor(config: Config) {
     this.log = log('PgPoolService:' + ++poolCount)
@@ -305,7 +304,7 @@ export class PostgresDBEngine implements DBEngine<Client> {
       if (!this.context) {
         // This *should* never happen. See the rules described on the `Context`
         // class.
-        LOG.warning(
+        LOG.warn(
           `DBEngine.withTransaction(...) used without a Context available. ` +
           `The transaction will not be automatically shared with callers.`
         )

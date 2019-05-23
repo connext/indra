@@ -34,7 +34,7 @@ const mkIpnData = (overrides: Partial<CoinPaymentsIpnData> = {}): CoinPaymentsIp
   currency: 'DOGE',
   fee: '6',
 
-  fiat_coin: 'USD',
+  fiat_coin: 'DAI',
   fiat_amount: '50',
   fiat_fee: '9',
 
@@ -227,10 +227,10 @@ describe('CoinPaymentsService', () => {
       })
     })
 
-    it('fails for currency <> USD', async () => {
+    it('fails for currency <> DAI', async () => {
       await assert.isRejected(
         service.handleCoinPaymentsIpn(user, mkIpnData({ fiat_coin: 'CAD' })),
-        /currency != USD/,
+        /currency != DAI/,
       )
     })
 

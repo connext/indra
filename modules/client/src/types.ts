@@ -1,7 +1,6 @@
 import { isArray, isNullOrUndefined } from 'util'
 
 import { BN, isBN, toBN } from './lib/bn'
-import { CurrencyType } from './lib/currency'
 
 ////////////////////////////////////////
 // Export useful types defined in other modules
@@ -24,8 +23,6 @@ export {
 } from 'ethers/utils'
 
 export { ChannelManager } from './contract/ChannelManager'
-export { CurrencyType, default as Currency } from './lib/currency'
-export { CurrencyConvertable } from './lib/currencyConvertable'
 
 ////////////////////////////////////////
 // Common types eg Exchange Rates
@@ -41,27 +38,23 @@ export interface ExchangeRateState {
   rates: ExchangeRates
 }
 
+export const CurrencyType = { DAI: 'DAI', DEI: 'DEI', ETH: 'ETH', FIN: 'FIN', WEI: 'WEI' }
+export type CurrencyType = keyof typeof CurrencyType
+
 ////////////////////////////////////////
 // Constructor Types
 
-export interface ContractOptions {
-  hubAddress: string
-  tokenAddress: string
-}
-
 // config that could be returned from hub
-export interface HubConfig<T=string> extends ContractOptions {
-  channelManagerAddress: Address,
-  hubWalletAddress: Address,
+export interface HubConfig<T=string> {
+  contractAddress: Address,
+  ethChainId: string,
+  hubAddress: Address,
+  maxCollateralization: T
   tokenAddress: Address,
-  ethRpcUrl: string,
-  ethNetworkId: string,
-  beiMaxCollateralization: T
 }
 export type HubConfigBN = HubConfig<BN>
 
-// TODO: correctly define type
-export type ConnextProvider = any
+export type ConnextProvider = any // TODO
 
 /*********************************
  ****** HELPER FUNCTIONS *********

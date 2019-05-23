@@ -5,6 +5,9 @@ import { assert, getTestRegistry, TestApiServer } from '../testing'
 import { channelUpdateFactory, tokenVal } from '../testing/factories'
 import { mkHash } from '../testing/stateUtils'
 
+// User service key to short-circuit address authorization
+const authHeaders = { 'x-service-key': 'unspank the unbanked' }
+
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()
   const app: TestApiServer = registry.get('TestApiServer')
@@ -22,6 +25,7 @@ describe('ChannelsApiService', () => {
     await chanService.doCollateralizeIfNecessary(chan.user)
     const res = await app.withUser(chan.user).request
       .get(`/channel/${chan.user}/sync?lastChanTx=2&lastThreadUpdateId=0`)
+      .set(authHeaders).set('x-address', chan.user)
       .send()
 
     assert.equal(res.status, 200, JSON.stringify(res.body))
@@ -40,12 +44,13 @@ describe('ChannelsApiService', () => {
 
     const res = await app.withUser(chan.user).request
       .post(`/channel/${chan.user}/request-deposit`)
+      .set(authHeaders).set('x-address', chan.user)
       .send({
-        depositWei: '1',
         depositToken: '0',
-        sigUser: mkHash('0xsigUser'),
+        depositWei: '1',
         lastChanTx: chan.state.txCountGlobal,
         lastThreadUpdateId: 0,
+        sigUser: mkHash('0xsigUser'),
       })
 
     assert.equal(res.status, 400, JSON.stringify(res.body))
@@ -61,14 +66,15 @@ describe('ChannelsApiService', () => {
 
     const res = await app.withUser(chan.user).request
       .post(`/channel/${chan.user}/request-withdrawal`)
+      .set(authHeaders).set('x-address', chan.user)
       .send({
+        exchangeRate: '123.45',
+        lastChanTx: 0,
+        recipient: chan.user,
         tokensToSell: '0',
         weiToSell: '0',
-        recipient: chan.user,
-        withdrawalWeiUser: '0',
         withdrawalTokenUser: '0',
-        lastChanTx: 0,
-        exchangeRate: '123.45'
+        withdrawalWeiUser: '0',
       })
     assert.equal(res.status, 200, JSON.stringify(res.body))
   })

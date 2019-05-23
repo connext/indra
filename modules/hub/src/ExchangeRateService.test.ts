@@ -32,7 +32,7 @@ describe('ExchangeRateService', () => {
       json: () => Promise.resolve({
         data: {
           rates: {
-            USD: '123.50'
+            DAI: '123.50'
           }
         }
       })
@@ -55,7 +55,7 @@ describe('ExchangeRateService', () => {
       json: () => Promise.resolve({
         data: {
           rates: {
-            USD: '123.50'
+            DAI: '123.50'
           }
         }
       })
@@ -81,7 +81,7 @@ describe('ExchangeRateService', () => {
         json: (): Promise<any> => Promise.resolve({
           data: {
             rates: {
-              USD: '123.50'
+              DAI: '123.50'
             }
           }
         })

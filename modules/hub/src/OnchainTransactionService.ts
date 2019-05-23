@@ -234,7 +234,7 @@ export class OnchainTransactionService {
       case 'temporary':
         // If the error is temporary (ex, network error), do nothing; this txn
         // will be retried on the next loop.
-        LOG.warning(`Temporary error while submitting tx '${txn.hash}': ${'' + error} (will retry)`)
+        LOG.warn(`Temporary error while submitting tx '${txn.hash}': ${'' + error} (will retry)`)
         break
 
       case 'unknown':
@@ -261,7 +261,7 @@ export class OnchainTransactionService {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
       if (err) {
         // TODO: what errors can happen here?
-        LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
+        LOG.warn(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
         return
       }
 
@@ -288,7 +288,7 @@ export class OnchainTransactionService {
         // with an equal or higher nonce too... but this is probably safe for
         // now.
         if (txnAgeS > 60 * 15) {
-          LOG.warning(`Transaction '${txn.hash}' has been unconfirmed for ${txnAge}; marking failed.`)
+          LOG.warn(`Transaction '${txn.hash}' has been unconfirmed for ${txnAge}; marking failed.`)
           await this.updateTxState(txn, {
             state: 'failed',
             reason: `timeout (${txnAge})`,
@@ -304,7 +304,7 @@ export class OnchainTransactionService {
       const [txReceipt, errReceipt] = await maybe(this.web3.eth.getTransactionReceipt(txn.hash))
       if (errReceipt) {
         // TODO: what errors can happen here?
-        LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + errReceipt} (will retry)`)
+        LOG.warn(`Error checking status of tx '${txn.hash}': ${'' + errReceipt} (will retry)`)
         return
       }
       if (!txReceipt) {
@@ -327,7 +327,7 @@ export class OnchainTransactionService {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
       if (err) {
         // TODO: what errors can happen here?
-        LOG.warning(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
+        LOG.warn(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
         return
       }
 
@@ -348,7 +348,7 @@ export class OnchainTransactionService {
 
       const latestConfirmed = await this.onchainTransactionDao.getLatestConfirmed(this.db, txn.from)
       if (latestConfirmed && latestConfirmed.nonce > txn.nonce) {
-        LOG.warning(`Transaction '${txn.hash}' is invalidated by a higher confirmed nonce: ${latestConfirmed.nonce}; marking as failed.`)
+        LOG.warn(`Transaction '${txn.hash}' is invalidated by a higher confirmed nonce: ${latestConfirmed.nonce}; marking as failed.`)
         await this.updateTxState(txn, {
           state: 'failed',
           reason: `higher confirmed nonce by txn id: ${txn.id}`,
@@ -358,7 +358,7 @@ export class OnchainTransactionService {
 
       // if polled for 54 seconds and still nothing, mark as failed
       if (txnAgeS > 6 * 9) {
-        LOG.warning(`Transaction '${txn.hash}' has been pending_failure for ${txnAge}; marking failed.`)
+        LOG.warn(`Transaction '${txn.hash}' has been pending_failure for ${txnAge}; marking failed.`)
         await this.updateTxState(txn, {
           state: 'failed',
           reason: `timeout (${txnAge})`,

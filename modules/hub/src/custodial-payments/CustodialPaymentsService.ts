@@ -52,7 +52,7 @@ export class CustodialPaymentsService {
       )
     }
 
-    const exchangeRate = await this.exchangeRates.getLatestUsdRate()
+    const exchangeRate = await this.exchangeRates.getLatestDaiRate()
     const amountWei = tokenToWei(amountToken, exchangeRate)
     const txn = await this.onchainTxnService.sendTransaction(this.db, {
       from: this.config.hotWalletAddress,
