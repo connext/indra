@@ -118,7 +118,7 @@ export default class ChainsawService {
 
     // need to check for >= here since we were previously not checking for a confirmation count
     if (lastBlock >= toBlock) {
-      LOG.info(`lastBlock: ${lastBlock} >= toBlock: ${toBlock}`)
+      LOG.debug(`lastBlock: ${lastBlock} >= toBlock: ${toBlock}`)
       return
     }
 
@@ -166,7 +166,7 @@ export default class ChainsawService {
       await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
       LOG.info(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
-      LOG.info('No new transactions found; nothing to do.')
+      LOG.debug('No new transactions found; nothing to do.')
       // @ts-ignore
       await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
     }

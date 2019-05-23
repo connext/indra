@@ -24,8 +24,6 @@ export {
 } from 'ethers/utils'
 
 export { ChannelManager } from './contract/ChannelManager'
-export { CurrencyType, default as Currency } from './lib/currency'
-export { CurrencyConvertable } from './lib/currencyConvertable'
 
 ////////////////////////////////////////
 // Common types eg Exchange Rates

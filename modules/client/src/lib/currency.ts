@@ -1,6 +1,8 @@
 import { ethers as eth } from 'ethers'
 
-import { BN } from './bn'
+import { ExchangeRates } from '../types'
+
+import { BN, fromWei, tokenToWei, weiToToken } from './bn'
 
 const { bigNumberify, commify, formatUnits, parseUnits } = eth.utils
 
@@ -28,14 +30,15 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   public static FIN = (amount: number | string): Currency => new Currency('FIN', amount)
   public static WEI = (amount: number | string): Currency => new Currency('WEI', amount)
 
-  private static typeToSymbol: { [key: string]: string } = {
+
+  private typeToSymbol: { [key: string]: string } = {
     'DAI': '$',
     'ETH': eth.constants.EtherSymbol,
     'FIN': 'FIN',
     'WEI': 'WEI',
   }
 
-  private static defaultOptions: any = {
+  private defaultOptions: any = {
     'DAI': {
       commas: false,
       decimals: 2,
@@ -67,19 +70,18 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   private precision: number = 18
   private _amount: BN
   private _type: ThisType
+  private exchangeRates?: () => ExchangeRates
 
   ////////////////////////////////////////
   // Constructor
 
-  public constructor (currency: ICurrency<ThisType>);
-  public constructor (type: ThisType, amount: number | string);
-  public constructor (...args: any[]) {
-    const [type, amount] = (
-      args.length === 1 ? [args[0].type, args[0].amount] : args
-    )
+  public constructor (
+    type: ThisType, amount: number | string, exchangeRates?: () => ExchangeRates,
+  ) {
+    this._type = type
+    this.exchangeRates = exchangeRates
     try {
       this._amount = this.toWad(amount)
-      this._type = type
     } catch (e) {
       throw new Error(`Invalid amount ${amount}: ${e})`)
     }
@@ -106,7 +108,7 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   }
 
   public get symbol(): string {
-    return Currency.typeToSymbol[this._type] as string
+    return this.typeToSymbol[this._type] as string
   }
 
   public get type(): ThisType {
@@ -122,7 +124,7 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
 
   public format(_options?: ICurrencyFormatOptions): string {
     const options: ICurrencyFormatOptions = {
-      ...Currency.defaultOptions[this._type] as any,
+      ...this.defaultOptions[this._type] as any,
       ..._options || {},
     }
     const symbol = options.withSymbol ? `${this.symbol}` : ``
@@ -155,8 +157,35 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
     return this.format()
   }
 
+  public getExchangeRate = (currency: CurrencyType): string => {
+    if (!this.exchangeRates) {
+      throw new Error(`Pass exchange rates into the constructor to enable conversions`)
+    }
+    const rates = this.exchangeRates()
+    if (rates && rates[currency]) {
+      return (rates[currency] || '0').toString()
+    }
+    throw new Error(`No exchange rate for ${currency}! Rates: ${JSON.stringify(rates)}`)
+  }
+
+  public to = (toType: CurrencyType): Currency => this._convert(toType)
+  public toDAI = (): Currency => this._convert('DAI')
+  public toETH = (): Currency => this._convert('ETH')
+  public toFIN = (): Currency => this._convert('FIN')
+  public toWEI = (): Currency => this._convert('WEI')
+
   ////////////////////////////////////////
   // Private Methods
+
+  private _convert = (targetType: CurrencyType): Currency => {
+    const amountInEth = tokenToWei(this.amountWad, this.getExchangeRate(this.type))
+    const targetAmount = fromWei(weiToToken(amountInEth, this.getExchangeRate(targetType)))
+    return new Currency(
+      targetType,
+      targetAmount.toString(),
+      this.exchangeRates,
+    )
+  }
 
   private toWad = (n: number|string): BN =>
     parseUnits(n.toString(), this.precision)

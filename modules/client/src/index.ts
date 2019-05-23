@@ -1,4 +1,5 @@
 import { createClient } from './Connext'
+import { Currency } from './lib/currency'
 import { Poller } from './lib/poller'
 import { StateGenerator } from './StateGenerator'
 import { convert } from './types'
@@ -14,6 +15,7 @@ const utils = new Utils()
 export {
   convert,
   createClient,
+  Currency,
   Poller,
   StateGenerator,
   Utils,
