@@ -71,7 +71,7 @@ export class BuyController extends AbstractController {
     // if the payment amount is above what the hub will collateralize
     // it should be a custodial payment
     const config = await this.connext.hub.config()
-    const max = toBN(config.beiMaxCollateralization)
+    const max = toBN(config.maxCollateralization)
     if (toBN(payment.amount.amountToken).gt(max)) {
       return {
         ...payment,

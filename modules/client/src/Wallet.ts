@@ -17,11 +17,9 @@ export class Wallet extends eth.Signer {
   public provider: eth.providers.BaseProvider
   private signer?: eth.Wallet
   private web3?: Web3
-  private password: string
 
   public constructor(opts: IConnextChannelOptions) {
     super()
-    this.password = opts.password || ''
 
     ////////////////////////////////////////
     // Connect to an eth provider

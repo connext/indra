@@ -44,24 +44,17 @@ export interface ExchangeRateState {
 ////////////////////////////////////////
 // Constructor Types
 
-export interface ContractOptions {
-  hubAddress: string
-  tokenAddress: string
-}
-
 // config that could be returned from hub
-export interface HubConfig<T=string> extends ContractOptions {
-  channelManagerAddress: Address,
-  hubWalletAddress: Address,
+export interface HubConfig<T=string> {
+  contractAddress: Address,
+  ethChainId: string,
+  hubAddress: Address,
+  maxCollateralization: T
   tokenAddress: Address,
-  ethRpcUrl: string,
-  ethNetworkId: string,
-  beiMaxCollateralization: T
 }
 export type HubConfigBN = HubConfig<BN>
 
-// TODO: correctly define type
-export type ConnextProvider = any
+export type ConnextProvider = any // TODO
 
 /*********************************
  ****** HELPER FUNCTIONS *********

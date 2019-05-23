@@ -17,7 +17,6 @@ import { ThreadsController } from './controllers/ThreadsController'
 import { WithdrawalController } from './controllers/WithdrawalController'
 import {  HubAPIClient, IHubAPIClient } from './Hub'
 import { maxBN, toBN } from './lib/bn'
-import { Networking } from './lib/networking'
 import { isFunction, timeoutPromise } from './lib/utils'
 import * as actions from './state/actions'
 import { handleStateFlags } from './state/middleware'
@@ -70,30 +69,31 @@ export interface IConnextChannelOptions {
   ethUrl?: string
   hubUrl: string
   mnemonic?: string
-  password?: string
   privateKey?: string
-  user?: string
+  user?: string,
   web3Provider?: Web3Provider
-  loadState?(): Promise<string | undefined>
+  loadState?(): any
   safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder
-  saveState?(state: string): Promise<any>
+  saveState?(state: any): any
 }
 
 // These are options passed from the internal client creation function to the class constructor
 // They are derived from the IConnextChannelOptions, they should be thorough and inflexible
 // These are good things to override while injecting mocks during testing
-export interface IConnextChannelInternalOptions extends IConnextChannelOptions{
-  contract?: IChannelManager // Optional, useful for dependency injection
-  contractAddress: string
-  gasMultiple: number
-  hub: IHubAPIClient // Either injected during tests or set during async client creation
-  hubAddress: string
-  saveState(state: string): Promise<any>
-  store?: ConnextStore // Optional, useful for dependency injection
-  tokenAddress: string
-  user: string
-  wallet: Wallet
-}
+export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
+    contract: IChannelManager
+    contractAddress: string,
+    ethChainId: string,
+    hub: IHubAPIClient
+    hubAddress: string,
+    maxCollateralization: string
+    store?: ConnextStore
+    tokenAddress: string,
+    user: string
+    wallet: Wallet
+    saveState(state: any): any
+    loadState?(): any
+  }
 
 ////////////////////////////////////////
 // Implementations
@@ -102,46 +102,21 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions{
 // Used to get an instance of ConnextChannel.
 // Key task here is to convert IConnextChannelOptions into IConnextChannelInternalOptions
 export const createClient = async (opts: IConnextChannelOptions): Promise<ConnextChannel> => {
-
   const wallet: Wallet = new Wallet(opts)
-
-  const hub: HubAPIClient = new HubAPIClient(
-    new Networking(opts.hubUrl),
-    wallet,
-  )
-
-  console.log('Authenticating with hub...')
-  await hub.authenticate()
-
+  const hub: HubAPIClient = new HubAPIClient(opts.hubUrl, wallet)
   const hubConfig: HubConfig = await hub.config()
-
-  const config = {
-    contractAddress: hubConfig.channelManagerAddress.toLowerCase(),
-    ethNetworkId: hubConfig.ethNetworkId.toLowerCase(),
-    hubAddress: hubConfig.hubWalletAddress.toLowerCase(),
-    tokenAddress: hubConfig.tokenAddress.toLowerCase(),
+  const promiseLog = (msg: string): Promise<void> =>
+    new Promise((res: any): any => res(console.log(msg)))
+  const internalOpts: IConnextChannelInternalOptions = {
+    ...opts,
+    ...hubConfig,
+    contract: new ChannelManager(wallet, hubConfig.contractAddress),
+    hub,
+    saveState: opts.saveState || promiseLog,
+    user: opts.user || wallet.address,
+    wallet,
   }
-
-  const merged = { ...opts } as any
-  for (const k in config) {
-    if ((opts as any)[k]) {
-      continue
-    }
-    (merged as any)[k] = (config as any)[k]
-  }
-
-  // if web3, create a new web3
-  if (merged.web3Provider && !merged.user) {
-    // set default address TODO: improve this
-    const tmp = new Web3(opts.web3Provider as any)
-    merged.user = (await tmp.eth.getAccounts())[0]
-  }
-
-  merged.user = merged.user || wallet.address
-  merged.saveState = merged.saveState || console.log
-  merged.wallet = wallet
-
-  return new ConnextInternal(merged)
+  return new ConnextInternal(internalOpts)
 }
 
 /**
@@ -384,10 +359,8 @@ export class ConnextInternal extends ConnextChannel {
     opts.user = opts.user.toLowerCase()
     opts.hubAddress = opts.hubAddress.toLowerCase()
     opts.contractAddress = opts.contractAddress.toLowerCase()
-    opts.gasMultiple = opts.gasMultiple || 1.5
 
     this.contract = opts.contract
-      || new ChannelManager(this.wallet, opts.contractAddress, opts.gasMultiple)
     this.validator = new Validator(opts.hubAddress, this.provider, this.contract.rawAbi)
     this.utils = new Utils()
 
@@ -629,7 +602,7 @@ export class ConnextInternal extends ConnextChannel {
    * it's being saved before we return.
    */
   private async _saveLoop(): Promise<void> {
-    let result: Promise<any> | undefined
+    let result: Promise<any>
     while (true) {
       const state: any = this._latestState
       result = this.opts.saveState(JSON.stringify(state))

@@ -31,6 +31,10 @@ export class DepositController extends AbstractController {
     // insert '0' strs to the obj
     const deposit = insertDefault('0', args, argNumericFields.Payment)
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
+    if (!signedRequest.sigUser) {
+      console.warn(`No signature detected on the deposit request.`)
+      return
+    }
 
     try {
       const sync = await this.hub.requestDeposit(

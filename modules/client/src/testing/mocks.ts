@@ -255,8 +255,8 @@ export class MockHub implements IHubAPIClient {
   public async config(): Promise<HubConfig> {
     // TODO: implement correctly
     return {
-      beiMaxCollateralization: '100',
       hubAddress: mkAddress('0xhhh'),
+      maxCollateralization: '100',
     } as any
   }
 
@@ -273,20 +273,6 @@ export class MockHub implements IHubAPIClient {
 
   public async getCustodialBalance(): Promise<CustodialBalanceRow | undefined> {
     return getCustodialBalance('empty')
-  }
-
-  public async authChallenge(): Promise<string> {
-    return 'nonce'
-  }
-  public async authResponse(nonce: string, address: string, signature: string): Promise<string> {
-    return 'hub-token-returned'
-  }
-  public async getAuthStatus(): Promise<{ success: boolean, address?: Address }> {
-    return { success: true, address: mkAddress('0xUUU') }
-  }
-
-  public async getAuthToken(): Promise<string> {
-    return 'abc123'
   }
 
   public async getChannelByUser(recipient: string): Promise<ChannelRow> {
