@@ -91,7 +91,7 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
     tokenAddress: string,
     user: string
     wallet: Wallet
-    saveState(state: any): any
+    saveState?(state: any): any
     loadState?(): any
   }
 
@@ -105,14 +105,11 @@ export const createClient = async (opts: IConnextChannelOptions): Promise<Connex
   const wallet: Wallet = new Wallet(opts)
   const hub: HubAPIClient = new HubAPIClient(opts.hubUrl, wallet)
   const hubConfig: HubConfig = await hub.config()
-  const promiseLog = (msg: string): Promise<void> =>
-    new Promise((res: any): any => res(console.log(msg)))
   const internalOpts: IConnextChannelInternalOptions = {
     ...opts,
     ...hubConfig,
     contract: new ChannelManager(wallet, hubConfig.contractAddress),
     hub,
-    saveState: opts.saveState || promiseLog,
     user: opts.user || wallet.address,
     wallet,
   }
@@ -605,20 +602,23 @@ export class ConnextInternal extends ConnextChannel {
     let result: Promise<any>
     while (true) {
       const state: any = this._latestState
-      result = this.opts.saveState(JSON.stringify(state))
 
-      // Wait for any current save to finish, but ignore any error it might raise
-      const [timeout, _] = await timeoutPromise(
-        result.then(undefined, () => undefined),
-        10 * 1000,
-      )
-      if (timeout) {
-        console.warn(
-          'Timeout (10 seconds) while waiting for state to save. ' +
-          'This error will be ignored (which may cause data loss). ' +
-          'User supplied function that has not returned:',
-          this.opts.saveState,
+      if (this.opts.saveState) {
+        result = this.opts.saveState(JSON.stringify(state))
+        // Wait for any current save to finish, but ignore any error it might raise
+        const [timeout, _] = await timeoutPromise(
+          result.then(undefined, () => undefined),
+          10 * 1000,
         )
+
+        if (timeout) {
+          console.warn(
+            'Timeout (10 seconds) while waiting for state to save. ' +
+            'This error will be ignored (which may cause data loss). ' +
+            'User supplied function that has not returned:',
+            this.opts.saveState,
+          )
+        }
       }
 
       if (this._latestState === state) {
