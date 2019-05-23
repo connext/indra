@@ -149,26 +149,26 @@ export class ApiServer {
     // Done constructing API pipeline
   }
 
-  public async start() {
+  public async start(): Promise<void> {
     if (this.config.forceSsl) {
       const attrs = [{ name: 'commonName', value: 'localhost' }]
       const pems = selfsigned.generate(attrs, { days: 365, keySize: 4096 })
-      return new Promise(resolve =>
+      return new Promise((resolve: any): any => {
+        const callback: any = (err: any): void => {
+          if (err) throw err
+          LOG.info(`Listening on SSL port ${this.config.httpsPort}.`)
+          resolve()
+        }
         https
           .createServer({ key: pems.private, cert: pems.cert }, this.app)
-          .listen(this.config.httpsPort, err => {
-            if (err) throw err
-            LOG.info(`Listening on SSL port ${this.config.httpsPort}.`)
-            resolve()
-          }),
-      )
+          .listen(this.config.httpsPort, callback)
+      })
     }
-
-    return new Promise(resolve =>
+    return new Promise((resolve: any): void => {
       this.app.listen(this.config.port, () => {
         LOG.info(`Listening on port ${this.config.port}.`)
         resolve()
-      }),
-    )
+      })
+    })
   }
 }
