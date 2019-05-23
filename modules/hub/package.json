@@ -22,7 +22,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "classnames": "^2.2.5",
-    "connext": "^4.0.0-beta",
+    "connext": "^4.0.0",
     "concurrently": "^4.1.0",
     "cors": "^2.8.5",
     "debug": "^4.1.1",
