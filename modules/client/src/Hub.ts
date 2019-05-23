@@ -410,7 +410,10 @@ export class HubAPIClient implements IHubAPIClient {
     let res = await fetch(`${this.hubUrl}/${url}`, opts)
 
     if (res.status === 403 && url !== `${this.hubUrl}/nonce`) {
-      this.authenticate()
+      console.log(`Got a 403, let's re-authenticate and try again`)
+      await this.authenticate()
+      opts.headers['x-nonce'] = this.nonce
+      opts.headers['x-signature'] = this.signature
       res = await fetch(`${this.hubUrl}/${url}`, opts)
     }
 
