@@ -10,14 +10,16 @@ const ENV_VARS = [
   'AUTH_REALM',
   'AUTH_DOMAIN_WHITELIST',
   'PORT',
+  'HTTPS_PORT',
   'SHOULD_COLLATERALIZE_URL',
   'MIN_SETTLEMENT_PERIOD',
   'RECIPIENT_WHITELIST',
   'SESSION_SECRET',
   'CARD_NAME',
   'CARD_IMAGE_URL',
-  'REALTIME_DB_SECRET',
-  'SERVICE_KEY',
+  'REALTIME_DB_SECRET', // TODO: do we use this?
+  'SERVICE_USER_KEY',
+  'FORCE_SSL',
   'REDIS_URL',
   'TOKEN_CONTRACT_ADDRESS',
   'HOT_WALLET_ADDRESS',
@@ -74,6 +76,7 @@ export class Config {
   public adminAddresses?: string[] = []
   public serviceKey: string = 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
   public port: number = 8080
+  public httpsPort: number = 8443
   // URL used to check whether a user should receive collateral.
   // Called by ChannelsService.shouldCollateralize:
   //
@@ -85,6 +88,7 @@ export class Config {
   //
   // If the value is 'NO_CHECK' then no check will be performed.
   public shouldCollateralizeUrl: string | 'NO_CHECK' = 'NO_CHECK'
+  public forceSsl: boolean | false = process.env.FORCE_SSL && process.env.FORCE_SSL.toLowerCase() === 'true'
   public recipientAddress: string = ''
   public hotWalletAddress: string = ''
   public hotWalletMinBalance: string = toWei('6.9').toString()

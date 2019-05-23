@@ -1,5 +1,7 @@
 import * as cors from 'cors'
 import * as express from 'express'
+import https from 'https'
+import selfsigned from 'selfsigned'
 
 import { ApiService } from './api/ApiService'
 import Config from './Config'
@@ -7,6 +9,7 @@ import { Container } from './Container'
 import { getAuthMiddleware } from './middleware/AuthMiddleware'
 import { ezPromise, maybe, MaybeRes } from './util'
 import log from './util/log'
+
 
 const LOG = log('ApiServer')
 
@@ -31,7 +34,8 @@ const requestLogMiddleware = (
         remoteAddr,
         statusCode: res.statusCode,
         url: req.originalUrl,
-      })
+      },
+    )
   })
   next()
 }
@@ -90,7 +94,9 @@ const logErrors = (
   res: express.Response,
   next: any,
 ): void => {
-  if (res.headersSent) { return next(err) }
+  if (res.headersSent) {
+    return next(err)
+  }
   res.status(500)
   res.json({
     error: true,
@@ -119,7 +125,9 @@ export class ApiServer {
     this.config = container.resolve('Config')
     const corsHandler = cors({ credentials: true, origin: true })
     const apiServiceClasses = container.resolve('ApiServerServices') as any[]
-    this.apiServices = apiServiceClasses.map((cls: any): any => new cls(this.container))
+    this.apiServices = apiServiceClasses.map(
+      (cls: any): any => new cls(this.container),
+    )
 
     this.app = express()
     this.app.options('*', corsHandler)
@@ -132,18 +140,35 @@ export class ApiServer {
     this.app.use(bodyTextMiddleware({ maxSize: 1024 * 1024 * 10 }))
     this.app.use(express.urlencoded({ extended: false }))
     this.app.use(logErrors.bind(this))
-    this.apiServices.forEach((s: any): any => {
-      LOG.info(`Setting up API service at /${s.namespace}`)
-      this.app.use(`/${s.namespace}`, s.getRouter())
-    })
+    this.apiServices.forEach(
+      (s: any): any => {
+        LOG.info(`Setting up API service at /${s.namespace}`)
+        this.app.use(`/${s.namespace}`, s.getRouter())
+      },
+    )
     // Done constructing API pipeline
   }
 
-  public async start(): Promise<any> {
-    return new Promise((resolve: any): any =>
+  public async start() {
+    if (this.config.forceSsl) {
+      const attrs = [{ name: 'commonName', value: 'localhost' }]
+      const pems = selfsigned.generate(attrs, { days: 365, keySize: 4096 })
+      return new Promise(resolve =>
+        https
+          .createServer({ key: pems.private, cert: pems.cert }, this.app)
+          .listen(this.config.httpsPort, err => {
+            if (err) throw err
+            LOG.info(`Listening on SSL port ${this.config.httpsPort}.`)
+            resolve()
+          }),
+      )
+    }
+
+    return new Promise(resolve =>
       this.app.listen(this.config.port, () => {
         LOG.info(`Listening on port ${this.config.port}.`)
         resolve()
-      }))
+      }),
+    )
   }
 }
