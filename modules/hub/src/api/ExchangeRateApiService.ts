@@ -23,7 +23,7 @@ export default class ExchangeRateApiService extends ApiService<
 class ExchangeRateApiServiceHandler {
   private dao: ExchangeRateDao
 
-  public async doRate (req: express.Request, res: express.Response): any {
+  public async doRate (req: express.Request, res: express.Response): Promise<any> {
     try {
       const rate = await this.dao.latest()
       LOG.info(`Returning exchange rate: ${JSON.stringify(rate)}`)

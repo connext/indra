@@ -33,7 +33,7 @@ export class PostgresExchangeRateDao implements ExchangeRateDao {
     )
   }
 
-  public async latest(): any {
+  public async latest(): Promise<any> {
     return this.inflateRow(
       await this.engine.queryOne(
         'SELECT * FROM exchange_rates ORDER BY retrievedat DESC LIMIT 1',

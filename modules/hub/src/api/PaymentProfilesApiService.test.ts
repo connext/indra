@@ -52,7 +52,7 @@ describe('PaymentProfilesApiService', () => {
     assert.equal(res.status, 200)
     // check the config
     const ans = await app.withAdmin().request
-      .post(`/profile/${expected.id}`)
+      .get(`/profile/${expected.id}`)
       .set(authHeaders).set('x-address', eth.constants.AddressZero)
       .send()
     assert.equal(ans.status, 200)
@@ -66,8 +66,8 @@ describe('PaymentProfilesApiService', () => {
     const config = await createAndAssertPaymentProfile(c)
     // create 10 channels
     const addresses = []
-    for (let i = 1; i < addressCount; i++) {
-      const addr = mkAddress('0x' + Math.floor((Math.random() * 100000)).toString().substr(0, 5))
+    for (let i = 1; i < addressCount; i += 1) {
+      const addr = mkAddress(`0x${Math.floor(Math.random() * 100000).toString().substr(0, 5)}`)
       addresses.push(addr)
       await channelUpdateFactory(registry, {
         user: addr,
@@ -82,12 +82,12 @@ describe('PaymentProfilesApiService', () => {
 
     assert.equal(res.status, 200)
     // verify all users have that id
-    for (const i in addresses) {
-      const chan = await channelsService.getChannel(addresses[i])
+    for (const address of addresses) {
+      const chan = await channelsService.getChannel(address)
       assert.ok(chan)
-      assert.equal(chan.user, addresses[i])
-      const userProfileIdRes = await app.withUser(addresses[i]).request
-        .post(`/profile/user/${addresses[i]}`)
+      assert.equal(chan.user, address)
+      const userProfileIdRes = await app.withUser(address).request
+        .get(`/profile/user/${address}`)
         .set(authHeaders).set('x-address', chan.user)
         .send()
 
@@ -102,46 +102,47 @@ describe('PaymentProfilesApiService', () => {
 
   it('should work to create a new payment profile config', async () => {
     await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWei(10).toString(),
       amountToCollateralizeToken: toWei(15).toString(),
-    })
-  })
-
-  it('should not create a new payment profile config if it is not an admin user', async () => {
-    await createAndAssertPaymentProfile({
       minimumMaintainedCollateralToken: toWei(10).toString(),
-      amountToCollateralizeToken: toWei(15).toString(),
-    }, {
-      status: 403,
-      message: 'Admin role not detected on request.'
-    })
-  })
-
-  it('should not create a new payment profile config if there is an invalid body', async () => {
-    await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWei(10).toString(),
-    }, {
-      status: 400,
-      message: 'Received invalid request parameters.'
-    })
-  })
-
-  it('should not create a new payment profile config if there is an invalid body', async () => {
-    await createAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWei(10).toString(),
-      amountToCollateralizeToken: toWei(15).toString(),
-      minimumMaintainedCollateralWei: toWei(10).toString(),
-    }, {
-      status: 400,
-      message: 'Received invalid request parameters.'
     })
   })
 
   it('should add a payment profile to an array of user addresses', async () => {
     // register config
     await assignAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWei(10).toString(),
       amountToCollateralizeToken: toWei(15).toString(),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
     }, 10)
   })
+
+  it('should not create a new payment profile config if it is not an admin user', async () => {
+    await createAndAssertPaymentProfile({
+      amountToCollateralizeToken: toWei(15).toString(),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
+    }, {
+      message: 'Admin role not detected on request.',
+      status: 403,
+    })
+  })
+
+  it('should not create a new payment profile config if there is an invalid body', async () => {
+    await createAndAssertPaymentProfile({
+      minimumMaintainedCollateralToken: toWei(10).toString(),
+    }, {
+      message: 'Received invalid request parameters.',
+      status: 400,
+    })
+  })
+
+  it('should not create a new payment profile config if there is an invalid body', async () => {
+    await createAndAssertPaymentProfile({
+      amountToCollateralizeToken: toWei(15).toString(),
+      minimumMaintainedCollateralToken: toWei(10).toString(),
+      minimumMaintainedCollateralWei: toWei(10).toString(),
+    }, {
+      message: 'Received invalid request parameters.',
+      status: 400,
+    })
+  })
+
 })

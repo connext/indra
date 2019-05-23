@@ -2,9 +2,6 @@ import * as connext from 'connext'
 import { DepositArgs } from 'connext/types'
 import * as crypto from 'crypto'
 
-import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
-import { CoinPaymentsDao, CoinPaymentsDepositAddress, CoinPaymentsIpnRow } from './CoinPaymentsDao'
-
 import { default as ChannelsService } from '../ChannelsService'
 import { default as Config } from '../Config'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
@@ -21,6 +18,9 @@ import {
   toWei,
 } from '../util'
 import { default as log } from '../util/log'
+
+import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
+import { CoinPaymentsDao, CoinPaymentsDepositAddress, CoinPaymentsIpnRow } from './CoinPaymentsDao'
 
 const LOG = log('CoinPaymentsService')
 
