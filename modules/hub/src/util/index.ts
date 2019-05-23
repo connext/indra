@@ -25,13 +25,28 @@ export const tokenToWei = (token: BN, tokenPerEth: string): BN =>
   toWei(token).div(toWei(tokenPerEth))
 
 export const maxBN = (lon: BN[]): BN =>
-  lon.reduce((max: BN, current: BN): BN => max.gt(current) ? max : current, Zero)
+  lon.reduce(
+    (max, current) => max.gt(current) ? max : current
+  )
 
 export const minBN = (lon: BN[]): BN =>
   lon.reduce((min: BN, current: BN): BN => min.lt(current) ? min : current, MaxUint256)
 
 export const isValidHex = (hex: string, length: number): boolean =>
   isHexString(hex) && arrayify(hex).length === length
+
+
+/**
+ * Subtracts the arguments, returning either the value (if greater than zero)
+ * or zero.
+ */
+export const subOrZero = (a: (BN | undefined), ...args: Array<BN | undefined>): BN => {
+  let res = a || toBN(0)
+  for (const arg of args) {
+    res = res.sub(arg || toBN(0))
+  }
+  return maxBN([toBN(0), res])
+}
 
 /**
  * Shorten a string.
