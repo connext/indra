@@ -1,13 +1,10 @@
 import { ethers as eth } from 'ethers'
 
-import { ExchangeRates } from '../types'
+import { CurrencyType, ExchangeRates } from '../types'
 
 import { BN, fromWei, tokenToWei, weiToToken } from './bn'
 
 const { bigNumberify, commify, formatUnits, parseUnits } = eth.utils
-
-export const CurrencyType = { DAI: 'DAI', ETH: 'ETH', FIN: 'FIN', WEI: 'WEI' }
-export type CurrencyType = keyof typeof CurrencyType
 
 export interface ICurrencyFormatOptions {
   commas?: boolean
@@ -16,7 +13,7 @@ export interface ICurrencyFormatOptions {
 }
 
 export interface ICurrency<ThisType extends CurrencyType = any> {
-  type: ThisType,
+  type: ThisType
   amount: string
 }
 
@@ -25,40 +22,31 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
   ////////////////////////////////////////
   // Static Properties/Methods
 
-  public static DAI = (amount: number | string): Currency => new Currency('DAI', amount)
-  public static ETH = (amount: number | string): Currency => new Currency('ETH', amount)
-  public static FIN = (amount: number | string): Currency => new Currency('FIN', amount)
-  public static WEI = (amount: number | string): Currency => new Currency('WEI', amount)
-
+  public static DAI = (amount: number | string, getRates?: () => ExchangeRates): Currency =>
+    new Currency('DAI', amount, getRates)
+  public static DEI = (amount: number | string, getRates?: () => ExchangeRates): Currency =>
+    new Currency('DEI', amount, getRates)
+  public static ETH = (amount: number | string, getRates?: () => ExchangeRates): Currency =>
+    new Currency('ETH', amount, getRates)
+  public static FIN = (amount: number | string, getRates?: () => ExchangeRates): Currency =>
+    new Currency('FIN', amount, getRates)
+  public static WEI = (amount: number | string, getRates?: () => ExchangeRates): Currency =>
+    new Currency('WEI', amount, getRates)
 
   private typeToSymbol: { [key: string]: string } = {
     'DAI': '$',
+    'DEI': 'DEI ',
     'ETH': eth.constants.EtherSymbol,
-    'FIN': 'FIN',
-    'WEI': 'WEI',
+    'FIN': 'FIN ',
+    'WEI': 'WEI ',
   }
 
   private defaultOptions: any = {
-    'DAI': {
-      commas: false,
-      decimals: 2,
-      withSymbol: true,
-    },
-    'ETH': {
-      commas: false,
-      decimals: 3,
-      withSymbol: true,
-    },
-    'FIN': {
-      commas: false,
-      decimals: 3,
-      withSymbol: true,
-    },
-    'WEI': {
-      commas: false,
-      decimals: 0,
-      withSymbol: true,
-    },
+    'DAI': { commas: false, decimals: 2, withSymbol: true },
+    'DEI': { commas: false, decimals: 0, withSymbol: false },
+    'ETH': { commas: false, decimals: 3, withSymbol: true },
+    'FIN': { commas: false, decimals: 3, withSymbol: false },
+    'WEI': { commas: false, decimals: 0, withSymbol: false },
   }
 
   ////////////////////////////////////////
@@ -83,7 +71,7 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
     try {
       this._amount = this.toWad(amount)
     } catch (e) {
-      throw new Error(`Invalid amount ${amount}: ${e})`)
+      throw new Error(`Invalid currency amount: ${amount}`)
     }
   }
 
@@ -170,6 +158,7 @@ export class Currency<ThisType extends CurrencyType = any> implements ICurrency<
 
   public to = (toType: CurrencyType): Currency => this._convert(toType)
   public toDAI = (): Currency => this._convert('DAI')
+  public toDEI = (): Currency => this._convert('DEI')
   public toETH = (): Currency => this._convert('ETH')
   public toFIN = (): Currency => this._convert('FIN')
   public toWEI = (): Currency => this._convert('WEI')

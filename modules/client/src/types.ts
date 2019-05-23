@@ -1,7 +1,6 @@
 import { isArray, isNullOrUndefined } from 'util'
 
 import { BN, isBN, toBN } from './lib/bn'
-import { CurrencyType } from './lib/currency'
 
 ////////////////////////////////////////
 // Export useful types defined in other modules
@@ -38,6 +37,9 @@ export interface ExchangeRateState {
   lastUpdated: Date
   rates: ExchangeRates
 }
+
+export const CurrencyType = { DAI: 'DAI', DEI: 'DEI', ETH: 'ETH', FIN: 'FIN', WEI: 'WEI' }
+export type CurrencyType = keyof typeof CurrencyType
 
 ////////////////////////////////////////
 // Constructor Types
