@@ -68,7 +68,7 @@ class CustodialPaymentsApiServiceHandler {
     let amountToken
 
     try {
-      user = getAttr.address(req.session!, 'address')
+      user = req.address
       recipient = getAttr.address(req.body, 'recipient')
       amountToken = getAttr.big(req.body, 'amountToken')
     } catch (e) {
