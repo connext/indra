@@ -79,6 +79,7 @@ describe('CustodialPaymentsApiService', () => {
   it("should work with these values specifically", async () => {
     const wdRes = await app.withUser(recipient).request
       .post(`/custodial/withdrawals`)
+      .set(authHeaders).set('x-address', recipient)
       .send({ 
         recipient, 
         amountToken: "4016900000000000000000"
@@ -95,12 +96,14 @@ describe('CustodialPaymentsApiService', () => {
 
     const wdGet = await app.withUser(recipient).request
       .get(`/custodial/withdrawals/${wdRes.body.id}`)
+      .set(authHeaders).set('x-address', recipient)
       .send()
     assert.equal(wdGet.status, 200)
     assert.containSubset(wdGet.body, expectedWithdrawal)
 
     const wdListGet = await app.withUser(recipient).request
       .get(`/custodial/${recipient}/withdrawals`)
+      .set(authHeaders).set('x-address', recipient)
       .send()
     assert.equal(wdListGet.status, 200)
     assert.containSubset(wdListGet.body[0], expectedWithdrawal)
