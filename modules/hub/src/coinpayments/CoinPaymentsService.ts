@@ -62,7 +62,7 @@ export type CoinPaymentsIpnData = {
 // [hub]   feei: '5868',
 // [hub]   fiat_amount: '1.46808038',
 // [hub]   fiat_amounti: '146808038',
-// [hub]   fiat_coin: 'USD',
+// [hub]   fiat_coin: 'DAI',
 // [hub]   fiat_fee: '0.00734087',
 // [hub]   fiat_feei: '734087',
 // [hub]   ipn_id: 'faf25de6a6f874dad7685dd799e1fe22',
@@ -91,7 +91,7 @@ export type CoinPaymentsIpnData = {
 // [hub]   feei: '5868',
 // [hub]   fiat_amount: '1.46808038',
 // [hub]   fiat_amounti: '146808038',
-// [hub]   fiat_coin: 'USD',
+// [hub]   fiat_coin: 'DAI',
 // [hub]   fiat_fee: '0.00734087',
 // [hub]   fiat_feei: '734087',
 // [hub]   ipn_id: 'faf25de6a6f874dad7685dd799e1fe22',
@@ -245,9 +245,9 @@ export class CoinPaymentsService {
     }
 
     // Check the IPN
-    if (ipn.currencyFiat != 'USD') {
+    if (ipn.currencyFiat != 'DAI') {
       throw new Error(
-        `Refusing to credit user for IPN where fiat currency != USD: ` +
+        `Refusing to credit user for IPN where fiat currency != DAI: ` +
         `${prettySafeJson(ipn)}`
       )
     }
@@ -270,7 +270,7 @@ export class CoinPaymentsService {
     }
 
     // Get current exchange rate
-    const currentExchangeRate = await this.exchangeRateDao.getUsdRateAtTime(ipn.createdOn)
+    const currentExchangeRate = await this.exchangeRateDao.getDaiRateAtTime(ipn.createdOn)
 
     // Calculate the amount to deposit: deposit up to channelBeiLimit, then
     // credit the rest as wei
@@ -279,7 +279,7 @@ export class CoinPaymentsService {
       this.config.channelBeiLimit.sub(channel.state.balanceTokenUser),
     ])
 
-    // Since 1 BOOTY = 1 USD, credit the user for the fiat amount in bei
+    // Since 1 BOOTY = 1 DAI, credit the user for the fiat amount in bei
     // (the .integerValue(BigNumber.ROUND_FLOOR) is _probably_ unnecessary, but just in case CoinPayments
     // sends us a fiat value with more than 18 decimal places).
 

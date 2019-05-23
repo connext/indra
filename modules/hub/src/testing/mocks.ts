@@ -162,16 +162,16 @@ export class MockExchangeRateDao {
     return {
       retrievedAt: Date.now(),
       rates: {
-        USD: mockRate
+        DAI: mockRate
       }
     }
   }
 
-  async getLatestUsdRate() {
+  async getLatestDaiRate() {
     return mockRate
   }
 
-  async getUsdRateAtTime(date: Date) {
+  async getDaiRateAtTime(date: Date) {
     return mockRate
   }
 }

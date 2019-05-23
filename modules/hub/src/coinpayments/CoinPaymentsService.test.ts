@@ -34,7 +34,7 @@ const mkIpnData = (overrides: Partial<CoinPaymentsIpnData> = {}): CoinPaymentsIp
   currency: 'DOGE',
   fee: '6',
 
-  fiat_coin: 'USD',
+  fiat_coin: 'DAI',
   fiat_amount: '50',
   fiat_fee: '9',
 
@@ -49,7 +49,7 @@ const mkIpnData = (overrides: Partial<CoinPaymentsIpnData> = {}): CoinPaymentsIp
 export const ipnTestCases = [
   {
     name: 'valid IPN',
-    rawData: 'address=0x77c7d48ea9b5bf57256745b3b9aef7e403e1a22b&amount=0.01271186&amounti=1271186&confirms=6&currency=ETH&fee=0.00006356&feei=6356&fiat_amount=1.47483322&fiat_amounti=147483322&fiat_coin=USD&fiat_fee=0.00737425&fiat_feei=737425&ipn_id=6239290766d3d78c7054031dc4192019&ipn_mode=hmac&ipn_type=deposit&ipn_version=1.0&merchant=898d6ead05235f6081e97a58a6699289&status=100&status_text=Deposit+confirmed&txn_id=0x42995a06b0b11bd6ca9b20fa5af858971354be1b194ac1689740b767f57a4ba2',
+    rawData: 'address=0x77c7d48ea9b5bf57256745b3b9aef7e403e1a22b&amount=0.01271186&amounti=1271186&confirms=6&currency=ETH&fee=0.00006356&feei=6356&fiat_amount=1.47483322&fiat_amounti=147483322&fiat_coin=DAI&fiat_fee=0.00737425&fiat_feei=737425&ipn_id=6239290766d3d78c7054031dc4192019&ipn_mode=hmac&ipn_type=deposit&ipn_version=1.0&merchant=898d6ead05235f6081e97a58a6699289&status=100&status_text=Deposit+confirmed&txn_id=0x42995a06b0b11bd6ca9b20fa5af858971354be1b194ac1689740b767f57a4ba2',
     key: 'U1BC9v1s3l0zxdH3',
     sig: 'dd12aab950be3b459bb70e1b9c24f39cd81597496cfe779efd82023c71e38cb3ae83b8f7cef203a01c8aa885e1219ba1a1ef5c8be72d6a5cff2e5e9c7bdf5842',
   },
@@ -227,10 +227,10 @@ describe('CoinPaymentsService', () => {
       })
     })
 
-    it('fails for currency <> USD', async () => {
+    it('fails for currency <> DAI', async () => {
       await assert.isRejected(
         service.handleCoinPaymentsIpn(user, mkIpnData({ fiat_coin: 'CAD' })),
-        /currency != USD/,
+        /currency != DAI/,
       )
     })
 
