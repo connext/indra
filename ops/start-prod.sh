@@ -29,21 +29,20 @@ number_of_services=7 # NOTE: Gotta update this manually when adding/removing ser
 channel_bei_limit=${CHANNEL_BEI_LIMIT}
 channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
-# hard-coded config (you probably won't ever need to change these)
-log_level="3" # set to 10 for all logs or to 30 to only print warnings/errors
-private_key_name="hub_key_$INDRA_ETH_NETWORK"
-private_key_file="/run/secrets/$private_key_name"
-
 # Docker image settings
 registry="connextproject"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
-# database connection settings
-postgres_db="$project"
-postgres_password_file="/run/secrets/${project}_database"
-postgres_url="database:5432"
-postgres_user="$project"
-redis_url="redis://redis:6379"
+public_http_port=80
+public_https_port=443
+db_volume="database:"
+eth_volume=""
+db_secret="${project}_database"
+
+# hard-coded config (you probably won't ever need to change these)
+log_level="3" # set to 10 for all logs or to 30 to only print warnings/errors
+private_key_name="hub_key_$INDRA_ETH_NETWORK"
+private_key_file="/run/secrets/$private_key_name"
 
 # ethereum settings
 # Allow contract address overrides if an address book is present in project root
@@ -60,6 +59,38 @@ elif [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
 then 
   eth_network_id="4"
   eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_RINKEBY"
+elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
+then
+  public_http_port=2999
+  public_https_port=3000
+  db_volume="database_dev:"
+  eth_volume="chain_dev:"
+  db_secret="${project}_database_dev"
+  eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  eth_network_id="4447"
+  eth_rpc_url="http://ethprovider:8545"
+  ethprovider_image=${project}_builder
+  ethprovider_service="
+  ethprovider:
+    image: ${project}_builder
+    entrypoint: bash ops/entry.sh
+    environment:
+      ETH_MNEMONIC: \"$eth_mnemonic\"
+      ETH_NETWORK: $INDRA_ETH_NETWORK
+      ETH_PROVIDER: $eth_rpc_url
+    ports:
+      - \"8545:8545\"
+    volumes:
+      - $eth_volume/data
+      - \"`pwd`/modules/contracts:/root\""
+
+# database connection settings
+postgres_db="$project"
+postgres_password_file="/run/secrets/$db_secret"
+postgres_url="database:5432"
+postgres_user="$project"
+redis_url="redis://redis:6379"
+
 else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit 1
 fi
 
@@ -130,17 +161,19 @@ cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
 secrets:
-  ${project}_database:
+  $db_secret:
     external: true
   $private_key_name:
     external: true
 
 volumes:
-  ${project}_database:
-    external: true
+  $db_volume
+  $eth_volume
   certs:
 
 services:
+  $ethprovider_service
+
   proxy:
     image: $proxy_image
     environment:
@@ -154,8 +187,8 @@ services:
           max-file: 10
           max-size: 10m
     ports:
-      - "80:80"
-      - "443:443"
+      - "$public_http_port:80"
+      - "$public_https_port:443"
     volumes:
       - certs:/etc/letsencrypt
 
@@ -167,7 +200,7 @@ services:
       POSTGRES_URL: $postgres_url
       POSTGRES_USER: $postgres_user
     secrets:
-      - ${project}_database
+      - $db_secret
 
   hub:
     image: $hub_image
@@ -199,7 +232,7 @@ services:
           max-file: 10
           max-size: 10m
     secrets:
-      - ${project}_database
+      - $db_secret
       - $private_key_name
 
   chainsaw:
@@ -231,7 +264,7 @@ services:
           max-file: 10
           max-size: 10m
     secrets:
-      - ${project}_database
+      - $db_secret
       - $private_key_name
 
   redis:
@@ -242,7 +275,7 @@ services:
     deploy:
       mode: global
     secrets:
-      - ${project}_database
+      - $db_secret
     environment:
       AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
@@ -251,7 +284,7 @@ services:
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $postgres_user
     volumes:
-      - ${project}_database:/var/lib/postgresql/data
+      - $db_volume/var/lib/postgresql/data
       - `pwd`/modules/database/snapshots:/root/snapshots
 
   logdna:
@@ -262,6 +295,8 @@ services:
       LOGDNA_KEY: $INDRA_LOGDNA_KEY
       TAGS: logdna
 EOF
+
+cat /tmp/$project/docker-compose.yml
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 rm -rf /tmp/$project

@@ -51,6 +51,9 @@ prod: hooks database-prod hub-prod-image proxy-prod dashboard-server-prod
 start: dev
 	bash ops/start-dev.sh
 
+start-test: prod
+	INDRA_ETH_NETWORK="ganache" INDRA_MODE="test" bash ops/start-prod.sh
+
 start-prod: prod
 	bash ops/start-prod.sh
 
