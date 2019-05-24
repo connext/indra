@@ -89,7 +89,7 @@ describe('AuthMiddleware', async () => {
       'x-signature': await wallet.signMessage(arrayify(nonce)),
     }
     serviceHeaders = {
-      'x-service-key': serviceKey,
+      'authorization': `bearer ${serviceKey}`,
     }
     await redis.set(`nonce:${address}`, nonce)
   })
@@ -169,8 +169,15 @@ describe('AuthMiddleware', async () => {
     assertSentStatus(forbidden)
   })
 
+  it('should deny access to service routes if given a malformed bearer authorization header', async () => {
+    const req = getReq('/service', { 'authorization': `notbearer ${serviceKey}` })
+    await testAuthMiddleware(req)
+    assertRoles(req, [])
+    assertSentStatus(forbidden)
+  })
+
   it('should deny access to service routes if given an invalid service key', async () => {
-    const req = getReq('/service', { 'x-service-key': `invalid-${serviceKey}` })
+    const req = getReq('/service', { 'authorization': `bearer invalid-${serviceKey}` })
     await testAuthMiddleware(req)
     assertRoles(req, [])
     assertSentStatus(forbidden)

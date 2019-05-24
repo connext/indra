@@ -6,7 +6,7 @@ import { channelUpdateFactory, tokenVal } from '../testing/factories'
 import { mkHash } from '../testing/stateUtils'
 
 // User service key to short-circuit address authorization
-const authHeaders = { 'x-service-key': 'unspank the unbanked' }
+const authHeaders = { 'authorization': 'bearer unspank-the-unbanked' }
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry()

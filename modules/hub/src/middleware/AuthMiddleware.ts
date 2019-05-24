@@ -35,7 +35,7 @@ export const getAuthMiddleware = (
   const address = req.get('x-address')
   const nonce = req.get('x-nonce')
   const signature = req.get('x-signature')
-  const serviceKey = req.get('x-service-key')
+  const authorization = req.get('authorization')
 
   req.address = address
   req.roles = []
@@ -47,8 +47,16 @@ export const getAuthMiddleware = (
     return
   }
 
-  // Check whether we should auth via service key headers
-  if (config.serviceKey && serviceKey) {
+  // Check whether we should auth service key against bearer authorization header
+  if (config.serviceKey && authorization) {
+    const authHeaderParts = authorization.split(' ')
+    if (authHeaderParts.length != 2 || authHeaderParts[0].toLowerCase() !== 'bearer') {
+      log.warn(`Malformed bearer authorization header`)
+      res.status(403).send(`Malformed bearer authorization header`)
+      return
+    }
+
+    const serviceKey = authHeaderParts[1]
     if (config.serviceKey === serviceKey) {
       req.roles.push(Role.AUTHENTICATED)
       req.roles.push(Role.SERVICE)

@@ -17,7 +17,7 @@ import { SignerService } from '../SignerService'
 import { truncateAllTables } from './eraseDb'
 import { mkAddress, mkHash, mkSig } from './stateUtils'
 
-const serviceKey = 'unspank the unbanked'
+const serviceKey = 'unspank-the-unbanked'
 const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
