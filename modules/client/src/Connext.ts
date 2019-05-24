@@ -70,7 +70,8 @@ export interface IConnextChannelOptions {
   hubUrl: string
   mnemonic?: string
   privateKey?: string
-  user?: string,
+  user?: string
+  externalWallet?: any,
   web3Provider?: Web3Provider
   loadState?(): any
   safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder

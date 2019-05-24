@@ -17,6 +17,7 @@ export class Wallet extends eth.Signer {
   public provider: eth.providers.BaseProvider
   private signer?: eth.Wallet
   private web3?: Web3
+  private external?: boolean
 
   public constructor(opts: IConnextChannelOptions) {
     super()
@@ -52,8 +53,12 @@ export class Wallet extends eth.Signer {
       this.signer = eth.Wallet.fromMnemonic(opts.mnemonic || '')
       this.signer = this.signer.connect(this.provider)
       this.address = this.signer.address.toLowerCase()
-
-    // Third choice: Sign w web3
+    // Third choice: External wallets
+    } else if (opts.externalWallet) {
+      this.signer = opts.externalWallet
+      this.external = true
+      this.address = opts.externalWallet.address.toLowerCase()
+    // Fourth choice: Sign w web3
     } else if (opts.user && opts.web3Provider) {
       this.web3 = new Web3(opts.web3Provider as any)
       this.address = opts.user.toLowerCase()
@@ -95,17 +100,32 @@ export class Wallet extends eth.Signer {
     }
     throw new Error(`Could not sign message`)
   }
+  
+  private async prepareTransaction(tx: TransactionRequest): Promise<any> {
 
-  public async signTransaction(tx: TransactionRequest): Promise<string> {
-    if (this.signer) {
-      return this.signer.sign(tx)
-    }
-    if (this.web3) {
-      // resolve any promise fields
+      tx.gasPrice = await (tx.gasPrice || this.provider.getGasPrice())
+      // Sanity check: Do we have sufficient funds for this tx?
+      const balance = bigNumberify(await this.provider.getBalance(this.address))
+      const gasLimit = bigNumberify(await tx.gasLimit || '21000')
+      const gasPrice = bigNumberify(await tx.gasPrice)
+      const value = bigNumberify(await (tx.value || '0'))
+      const total = value.add(gasLimit.mul(gasPrice))
+      if (balance.lt(total)) {
+        throw new Error(
+          `Insufficient funds: value=${value} + (gasPrice=${gasPrice
+          } * gasLimit=${gasLimit}) = total=${total} > balance=${balance}`,
+        )
+      }
+
+      // External wallets should have their own nonce calculation
+      if (!tx.nonce && this.signer && !this.external) {
+        tx.nonce = this.signer.getTransactionCount('pending')
+      }
+       // resolve any promise fields
       const resolve: any = async (k: string, v: any): Promise<any> => v
       const resolved: any = await objMapPromise(tx, resolve) as any
       // convert to right object
-      const txObj: any = {
+      return {
         data: resolved.data,
         from: this.address,
         gas: parseInt(resolved.gasLimit, 10),
@@ -113,27 +133,31 @@ export class Wallet extends eth.Signer {
         to: resolved.to,
         value: resolved.value,
       }
+  }
+
+  public async signTransaction(tx: TransactionRequest): Promise<string> {
+    if (this.signer) {
+      return this.signer.sign(tx)
+    }
+    if (this.web3) {
+      const txObj:any = await this.prepareTransaction(tx);
       return (await this.web3.eth.signTransaction(txObj)).raw // TODO: fix type
+    }
+    throw new Error(`Could not sign transaction`)
+  }
+  
+  
+  private async signAndSendTransactionExternally(tx: TransactionRequest): Promise<any> {
+    if (this.signer) {
+      const txObj:any = await this.prepareTransaction(tx);
+      return this.signer.sign(txObj)
     }
     throw new Error(`Could not sign transaction`)
   }
 
   public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
-    txReq.gasPrice = await (txReq.gasPrice || this.provider.getGasPrice())
-    // Sanity check: Do we have sufficient funds for this tx?
-    const balance = bigNumberify(await this.provider.getBalance(this.address))
-    const gasLimit = bigNumberify(await txReq.gasLimit || '21000')
-    const gasPrice = bigNumberify(await txReq.gasPrice)
-    const value = bigNumberify(await (txReq.value || '0'))
-    const total = value.add(gasLimit.mul(gasPrice))
-    if (balance.lt(total)) {
-      throw new Error(
-        `Insufficient funds: value=${value} + (gasPrice=${gasPrice
-        } * gasLimit=${gasLimit}) = total=${total} > balance=${balance}`,
-      )
-    }
-    if (!txReq.nonce && this.signer) {
-      txReq.nonce = this.signer.getTransactionCount('pending')
+    if (this.external){
+      return this.signAndSendTransactionExternally(txReq);
     }
     const signedTx: string = await this.signTransaction(txReq)
     return this.provider.sendTransaction(signedTx)
