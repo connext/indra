@@ -16,7 +16,7 @@ import { mkAddress, mkSig } from '../testing/stateUtils'
 import { toWei } from '../util'
 
 // User service key to short-circuit address authorization
-const authHeaders = { 'x-service-key': 'unspank the unbanked' }
+const authHeaders = { 'authorization': 'bearer unspank-the-unbanked' }
 
 describe('PaymentsApiService', () => {
   const registry = getTestRegistry({
