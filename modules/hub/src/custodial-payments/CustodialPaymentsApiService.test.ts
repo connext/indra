@@ -6,7 +6,7 @@ import { toWei, } from '../util'
 import { createTestPayment } from './CustodialPaymentsDao.test'
 
 // User service key to short-circuit address authorization
-const authHeaders = { 'x-service-key': 'unspank the unbanked' }
+const authHeaders = { 'authorization': 'bearer unspank-the-unbanked' }
 
 describe('CustodialPaymentsApiService', () => {
   const registry = getTestRegistry({
