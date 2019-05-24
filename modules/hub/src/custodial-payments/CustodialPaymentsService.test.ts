@@ -1,14 +1,13 @@
-import { parameterizedTests } from '../testing'
-import { OnchainTransactionService } from '../OnchainTransactionService'
-import { SQL } from '../DBEngine'
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { createTestPayment } from './CustodialPaymentsDao.test'
 import { CustodialPaymentsService } from './CustodialPaymentsService'
-import { mkAddress } from '../testing/stateUtils'
-import { default as DBEngine } from '../DBEngine'
-import { assert, getTestRegistry } from '../testing'
-import { big } from 'connext'
+
+import { default as DBEngine, SQL } from '../DBEngine'
+import { OnchainTransactionService } from '../OnchainTransactionService'
+import { assert, getTestRegistry, parameterizedTests } from '../testing'
 import { getMockWeb3 } from '../testing/mocks'
+import { mkAddress } from '../testing/stateUtils'
+import { toBN, toWei } from '../util'
 
 describe('CustodialPaymentsService', () => {
   const registry = getTestRegistry({
@@ -25,7 +24,7 @@ describe('CustodialPaymentsService', () => {
     service.MIN_WITHDRAWAL_AMOUNT_TOKEN = '3'
 
     it('works', async () => {
-      const tokenAmount = big.toWeiBig('420')
+      const tokenAmount = toWei('420')
       const { recipient } = await createTestPayment(
         registry,
         { amountToken: tokenAmount.toString() },
@@ -36,7 +35,7 @@ describe('CustodialPaymentsService', () => {
         balanceWei: '69',
       })
 
-      const wdAmount = big.toWeiBig('6')
+      const wdAmount = toWei('6')
       const wd = await service.createCustodialWithdrawal({
         user: recipient,
         recipient: mkAddress('0x74'),
@@ -54,7 +53,7 @@ describe('CustodialPaymentsService', () => {
       })
 
       assert.containSubset(await dao.getCustodialBalance(recipient), {
-        balanceToken: big.toWeiString(420 - 6),
+        balanceToken: toWei(420 - 6).toString(),
         balanceWei: '69',
       })
 
@@ -93,7 +92,7 @@ describe('CustodialPaymentsService', () => {
       await assert.isRejected(service.createCustodialWithdrawal({
         user: t.recipient || recipient,
         recipient: mkAddress('0x74'),
-        amountToken: big.Big(t.amountToken),
+        amountToken: toBN(t.amountToken),
       }), t.expectedError)
     })
 
@@ -129,9 +128,9 @@ describe('CustodialPaymentsService', () => {
       await assert.isRejected(dao.createCustodialWithdrawal({
         user: recipient,
         recipient,
-        requestedToken: big.Big(t.requestedToken),
+        requestedToken: toBN(t.requestedToken),
         exchangeRate: t.exchangeRate || '1',
-        sentWei: big.Big(t.sentWei || t.requestedToken),
+        sentWei: toBN(t.sentWei || t.requestedToken),
         onchainTransactionId: txn.id,
       }), t.expectedError)
     })

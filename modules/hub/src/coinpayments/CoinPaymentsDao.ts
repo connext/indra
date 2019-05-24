@@ -1,12 +1,11 @@
-import * as Connext from 'connext';
-import { CoinPaymentsIpnData } from './CoinPaymentsService'
-import { default as DBEngine, SQL } from '../DBEngine'
+import * as connext from 'connext';
+import { ChannelStateUpdateRow } from 'connext/types'
+
 import { CPGetCallbackAddressResponse } from './CoinPaymentsApiClient'
-import { BigNumber } from 'ethers/utils'
+import { CoinPaymentsIpnData } from './CoinPaymentsService'
 
-type ChannelStateUpdateRow<T=string> = Connext.types.ChannelStateUpdateRow<T>
-
-const { Big } = Connext.big
+import { default as DBEngine, SQL } from '../DBEngine'
+import { BN, toBN } from '../util'
 
 export interface CoinPaymentsDepositAddress {
   address: string
@@ -32,10 +31,10 @@ export interface CoinPaymentsIpnRow {
   currency: string
   currencyFiat: string
   address: string
-  amount: BigNumber
-  amountFiat: BigNumber
-  fee: BigNumber
-  feeFiat: BigNumber
+  amount: BN
+  amountFiat: BN
+  fee: BN
+  feeFiat: BN
   data: CoinPaymentsIpnData
 }
 
@@ -225,10 +224,10 @@ export class CoinPaymentsDao {
       currency: row.currency,
       currencyFiat: row.currency_fiat,
       address: row.address,
-      amount: Big(row.amount),
-      amountFiat: Big(row.amount_fiat),
-      fee: Big(row.fee),
-      feeFiat: Big(row.fee_fiat),
+      amount: toBN(row.amount),
+      amountFiat: toBN(row.amount_fiat),
+      fee: toBN(row.fee),
+      feeFiat: toBN(row.fee_fiat),
       data: row.data,
     }
   }

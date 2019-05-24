@@ -1,104 +1,29 @@
-import { BigNumber as BN } from 'ethers/utils'
-import { ethers } from 'ethers';
+import { ethers as eth } from 'ethers'
+import { BigNumber } from 'ethers/utils'
 
-export const WEI_CONVERSION = ethers.constants.WeiPerEther // 1 eth = 10^18 wei
+const { Zero, MaxUint256 } = eth.constants
+const { bigNumberify, parseEther, formatEther } = eth.utils
 
-// this constant is used to not lose precision on exchanges
-// the BN library does not handle non-integers appropriately
-export const EXCHANGE_MULTIPLIER = 10000000000
-export const EXCHANGE_MULTIPLIER_BN = Big(EXCHANGE_MULTIPLIER)
+export type BN = BigNumber
 
-export function fiatToWei(fiat: BN, rate: string): { 
-  weiReceived: string, 
-  fiatRemaining: string 
-} {
-  const [wei, fiatInWei] = assetToWei(fiat.mul(WEI_CONVERSION), rate)
-  return { 
-    weiReceived: wei.toString(), 
-    fiatRemaining: ethers.utils.formatEther(fiatInWei),
-  }
-}
+export const isBN = BigNumber.isBigNumber
 
-export function weiToFiat(wei: BN, rate: string): string {
-  return ethers.utils.formatEther(weiToAsset(wei, rate))
-}
+export const toBN = (n: string|number|BN): BN =>
+  bigNumberify(n.toString())
 
-// rate should be given in tokens / eth
-export function assetToWei(assetWei: BN, rate: string) {
-  const exchangeRate = Big(mul(rate, EXCHANGE_MULTIPLIER))
-  const [wei, assetRemaining] = divmod(
-    assetWei.mul(EXCHANGE_MULTIPLIER_BN), exchangeRate
-  )
-  // the remainder is negligible, so you can drop it
-  return [wei, assetRemaining]
-}
+export const toWei = (n: string|number|BN): BN =>
+  parseEther(n.toString())
 
-// rate should be given in tokens / eth
-export function weiToAsset(wei: BN, rate: string): BN {
-  const exchangeRate = Big(mul(rate, EXCHANGE_MULTIPLIER))
-  const ans = wei.mul(exchangeRate).div(EXCHANGE_MULTIPLIER)
-  return ans
-}
+export const fromWei = formatEther
 
-export function Big(n: number | string | BN): BN {
-  return ethers.utils.bigNumberify(n.toString())
-}
+export const weiToToken = (wei: BN, tokenPerEth: string): BN =>
+  toBN(formatEther(toWei(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ''))
 
-export function toWeiBig(amount: number | string | BN): BN {
-  return ethers.utils.parseEther(amount.toString())
-}
+export const tokenToWei = (token: BN, tokenPerEth: string): BN =>
+  toWei(token).div(toWei(tokenPerEth))
 
-export function toWeiString(amount: number | string | BN): string {
-  return toWeiBig(amount).toString()
-}
+export const maxBN = (lon: BN[]): BN =>
+  lon.reduce((max: BN, current: BN): BN => max.gt(current) ? max : current, Zero)
 
-export function maxBN(a: BN, b: BN): BN {
-  return a.gte(b) ? a : b
-}
-
-export function minBN(a: BN, ...bs: BN[]): BN {
-  for (let b of bs)
-    a = a.lte(b) ? a : b
-  return a
-}
-
-// this function uses string manipulation
-// to move the decimal point of the non-integer number provided
-// multiplier is of base10
-// this is added because of exchange rate issues with BN lib
-export function mul(num: string, multiplier: number) {
-  const n = Math.log10(multiplier)
-  const decimalPos = num.indexOf('.') === -1 ? num.length : num.indexOf('.')
-  const prefix = num.slice(0, decimalPos)
-  let istr = prefix
-  for (let i = 0; i < n; i++) {
-    if (num.charAt(i + prefix.length + 1)) {
-      istr += num.charAt(i + prefix.length + 1)
-    } else {
-      istr += '0'
-    }
-  }
-  const newPos = decimalPos + 1 + n
-  const suffix = num.substr(newPos) ? '.' + num.substr(newPos) : ''
-  istr += suffix
-  return istr
-}
-
-export function divmod(num: BN, div: BN): [BN, BN] {
-  return [
-    safeDiv(num, div),
-    safeMod(num, div),
-  ]
-}
-
-export function safeMod(num: BN, div: BN) {
-  if (div.isZero())
-    return div
-  return num.mod(div)
-}
-
-export function safeDiv(num: BN, div: BN) {
-  if (div.isZero())
-    return div
-  return num.div(div)
-}
+export const minBN = (lon: BN[]): BN =>
+  lon.reduce((min: BN, current: BN): BN => min.lt(current) ? min : current, MaxUint256)

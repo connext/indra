@@ -60,6 +60,7 @@ clean: stop
 	rm -rf build/*
 	rm -rf modules/**/build
 	rm -rf modules/**/dist
+	rm -rf modules/**/types
 
 reset-base: stop
 	docker container prune -f

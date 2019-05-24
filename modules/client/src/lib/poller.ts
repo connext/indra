@@ -1,4 +1,4 @@
-import { maybe, timeoutPromise } from '../utils'
+import { maybe, timeoutPromise } from './utils'
 
 export interface IPollerOptions {
   // How often the poller should be run
@@ -40,14 +40,14 @@ export class Poller {
     return this.polling
   }
 
-  public start(): any {
+  public start(): Promise<any> {
     const { interval, name, timeout, verbose, callback } = this.opts
     if (this.polling) {
       throw new Error(`Poller ${name} was already started`)
     }
     this.polling = true
 
-    const poll: () => Promise<any> = async (): Promise<any> => {
+    const poll = async (): Promise<void> => {
       if (!this.polling) {
         return
       }

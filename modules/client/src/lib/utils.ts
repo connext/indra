@@ -1,3 +1,8 @@
+
+// Capitalizes first char of a string
+export const capitalize = (str: string): string =>
+  str.substring(0, 1).toUpperCase() + str.substring(1)
+
 /**
  * A simple lock that can be used with async/await.
  *
@@ -18,24 +23,24 @@
  *
  */
 export class Lock<T=void> implements PromiseLike<T> {
-  _resolve: (arg?: T) => void
-  _p: Promise<T>
+  public static released(): any {
+    return new Lock().release()
+  }
 
-  then: any
-  catch: any
+  public then: any
+  public catch: any
 
-  constructor() {
-    this._resolve = null as any
-    this._p = new Promise(res => this._resolve = res)
+  private _resolve: (arg?: T) => void
+  private _p: Promise<T>
+
+  public constructor() {
+    this._resolve = undefined as any
+    this._p = new Promise((res: any): any => this._resolve = res)
     this.then = this._p.then.bind(this._p)
     this.catch = this._p.catch.bind(this._p)
   }
 
-  static released() {
-    return new Lock().release()
-  }
-
-  release(val?: T) {
+  public release(val?: T): any {
     this._resolve(val)
     return this
   }
@@ -66,10 +71,10 @@ export class Lock<T=void> implements PromiseLike<T> {
  *   ... 1 more second ...
  *   msg: second
  */
-export function synchronized(lockName: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export const synchronized = (lockName: string): any =>
+  (target: any, propertyKey: string, descriptor: PropertyDescriptor): any => {
     const oldFunc = descriptor.value
-    descriptor.value = async function(this: any, ...args: any[]) {
+    descriptor.value = async function(this: any, ...args: any[]): Promise<any> {
       await this[lockName]
       this[lockName] = new Lock()
       try {
@@ -80,11 +85,9 @@ export function synchronized(lockName: string) {
     }
     return descriptor
   }
-}
 
-export function isFunction(functionToCheck: any): boolean {
-  return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
-}
+export const isFunction = (functionToCheck: any): boolean =>
+  functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
 
 /**
  * A simple FIFO queue.
@@ -106,39 +109,41 @@ export function isFunction(functionToCheck: any): boolean {
  *
  */
 export class Queue<T> {
-  static readonly EMPTY: unique symbol = Symbol('Queue.EMPTY')
+  public static readonly EMPTY: unique symbol = Symbol('Queue.EMPTY')
 
-  protected _notEmpty = new Lock()
-
-  protected _items: T[]
   public length: number
 
-  constructor(items?: T[]) {
+  private _notEmpty: Lock = new Lock()
+  private _items: T[]
+
+  public constructor(items?: T[]) {
     this._items = []
     this.length = 0
     this.put(...(items || []))
   }
 
-  put(...items: T[]) {
+  public put(...items: T[]): void {
     this._items = [
       ...this._items,
       ...items,
     ]
     this.length = this._items.length
-    if (this.length > 0)
+    if (this.length > 0) {
       this._notEmpty.release()
+    }
   }
 
-  async shift(): Promise<T> {
+  public async shift(): Promise<T | undefined> {
     await this._notEmpty
     this.length -= 1
     const item = this._items.shift()
-    if (this.length == 0)
+    if (this.length === 0) {
       this._notEmpty = new Lock()
-    return item!
+    }
+    return item
   }
 
-  peek(): T | (typeof Queue)['EMPTY'] {
+  public peek(): T | (typeof Queue)['EMPTY'] {
     return this.length > 0 ? this._items[0] : Queue.EMPTY
   }
 
@@ -148,17 +153,17 @@ export class Queue<T> {
  * A promise that exposes `resolve()` and `reject()` methods.
  */
 export class ResolveablePromise<T=void> implements PromiseLike<T> {
-  _p: Promise<T>
+  public catch: any
+  public reject: (err: any) => void
+  public resolve: (arg?: T) => void
+  public then: any
 
-  then: any
-  catch: any
-  resolve: (arg?: T) => void
-  reject: (err: any) => void
+  private _p: Promise<T>
 
-  constructor() {
-    this.resolve = null as any
-    this.reject = null as any
-    this._p = new Promise((res, rej) => {
+  public constructor() {
+    this.resolve = undefined as any
+    this.reject = undefined as any
+    this._p = new Promise((res: any, rej: any): void => {
       this.resolve = res
       this.reject = rej
     })
@@ -188,12 +193,11 @@ export class ResolveablePromise<T=void> implements PromiseLike<T> {
  *
  */
 type MaybeRes<T> = [T, any] & { res: T, err: any }
-export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
-  return (p as Promise<T>).then(
-    res => Object.assign([res, null], { res, err: null }) as any,
-    err => Object.assign([null, err], { res: null, err }) as any,
+export const maybe = <T>(p: Promise<T>): Promise<MaybeRes<T>> =>
+  p.then(
+    (res: any): any => [res, undefined],
+    (err: any): any => [undefined, err],
   )
-}
 
 /**
  * Times out a promise. Waits for either:
@@ -204,28 +208,28 @@ export function maybe<T>(p: Promise<T>): Promise<MaybeRes<T>> {
  *
  * If timeout is false-y then `[false, T]` will be unconditionally returned.
  */
-export function timeoutPromise<T>(p: Promise<T>, timeout: number | null | undefined): Promise<
+export const timeoutPromise = <T>(p: Promise<T>, timeout: number | undefined): Promise<
   [false, T] |
   [true, Promise<T>]
-> {
+> => {
 
   if (!timeout) {
-    return p.then(res => [false, res]) as any
+    return p.then((res: any): any => [false, res]) as any
   }
 
   let toClear: any
-  const res = Promise.race([
-    p.then(res => [false, res]),
-    new Promise(res => {
+  const result = Promise.race([
+    p.then((res: any): any => [false, res]),
+    new Promise((res: any): any=> {
       toClear = setTimeout(() => {
         res([true, p])
       }, timeout)
     }),
   ])
-  res.then(null, () => null).then(() => {
-    toClear && clearTimeout(timeout)
-  })
-  return res as any
+  result.then(undefined, () => undefined).then(() =>
+    toClear && clearTimeout(timeout),
+  )
+  return result as any
 }
 
 /**
@@ -243,8 +247,8 @@ export function timeoutPromise<T>(p: Promise<T>, timeout: number | null | undefi
  *    assertUnreachable(o)
  *  }
  */
-export function assertUnreachable(x: never): never {
-  throw new Error('Reached unreachable statement: ' + JSON.stringify(x))
+export const assertUnreachable = (x: never): never => {
+  throw new Error(`Reached unreachable statement: ${JSON.stringify(x)}`)
 }
 
 /**
@@ -252,6 +256,5 @@ export function assertUnreachable(x: never): never {
  *
  *    await sleep(1000)
  */
-export function sleep(t: number) {
-  return new Promise(res => setTimeout(res, t))
-}
+export const sleep = (t: number): Promise<any> =>
+  new Promise((res: any): any => setTimeout(res, t))

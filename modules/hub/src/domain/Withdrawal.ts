@@ -12,7 +12,7 @@ export default interface Withdrawal {
   initiator: string
   recipient: string
   amountWei: BN
-  amountUsd: BN
+  amountDai: BN
   txhash: string|null
   status: WithdrawalStatus
   createdAt: number
@@ -25,7 +25,7 @@ export function withdrawalToJson(wd: Withdrawal) {
     id: wd.id,
     recipient: wd.recipient,
     amountWei: wd.amountWei.toString(),
-    amountUsd: wd.amountUsd.toString(),
+    amountDai: wd.amountDai.toString(),
     txhash: wd.txhash,
     status: wd.status.toString(),
     createdAt: wd.createdAt,

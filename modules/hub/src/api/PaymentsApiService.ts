@@ -1,21 +1,25 @@
-import * as Connext from 'connext';
-import DBEngine from '../DBEngine'
+import * as connext from 'connext'
+import {
+  PurchasePayment,
+  UpdateRequest,
+} from 'connext/types'
 import * as express from 'express'
+
 import { ApiService } from './ApiService'
+
+import { default as ChannelsService } from '../ChannelsService'
+import { default as Config } from '../Config'
+import ExchangeRateDao from '../dao/ExchangeRateDao'
+import { PaymentMetaDao } from '../dao/PaymentMetaDao'
+import PaymentsDao from '../dao/PaymentsDao'
+import DBEngine from '../DBEngine'
+import PaymentsService from '../PaymentsService'
+import { Role } from '../Role'
+import { default as ThreadsService } from '../ThreadsService'
 import log from '../util/log'
 import { ownedAddressOrAdmin } from '../util/ownedAddressOrAdmin'
-import { PaymentMetaDao } from '../dao/PaymentMetaDao'
-import { Role } from '../Role'
 import WithdrawalsService from '../WithdrawalsService'
-import ExchangeRateDao from '../dao/ExchangeRateDao'
-import { default as ThreadsService } from "../ThreadsService";
-import { default as ChannelsService } from "../ChannelsService";
-import { default as Config } from "../Config";
-import PaymentsService from "../PaymentsService";
-import PaymentsDao from "../dao/PaymentsDao";
 
-type PurchasePayment = Connext.types.PurchasePayment
-type UpdateRequest = Connext.types.UpdateRequest
 const LOG = log('PaymentsApiService')
 
 export default class PaymentsApiService extends ApiService<PaymentsApiServiceHandler> {
@@ -25,8 +29,6 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
     'POST /redeem/:user': 'doRedeem',
     'GET /purchase/:id': 'doPurchaseById',
     'GET /history/:address': 'doPaymentHistory',
-    'POST /purchase/:id': 'doPurchaseById',
-    'POST /history/:address': 'doPaymentHistory',
   }
   handler = PaymentsApiServiceHandler
   dependencies = {
@@ -68,15 +70,15 @@ export class PaymentsApiServiceHandler {
       return res.sendStatus(400)
     }
 
-    const result = await this.paymentsService.doPurchase(req.session!.address, meta, payments)
+    const result = await this.paymentsService.doPurchase(req.address, meta, payments)
     if (result.error != false) {
       LOG.warn(result.msg)
       return res.send(400).json(result.msg)
     }
 
-    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount).filter(f => typeof f === "number")) - 1
+    const lastChanTx = Math.min(...payments.map(p => (p.update as UpdateRequest).txCount).filter(f => typeof f === 'number')) - 1
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
-      req.session!.address,
+      req.address,
       lastChanTx,
       0,
     )
@@ -92,7 +94,7 @@ export class PaymentsApiServiceHandler {
     res: express.Response,
   ) {
     const targetAddr = req.params.address
-    const requesterAddr = req.session!.address
+    const requesterAddr = req.address
 
     if (!ownedAddressOrAdmin(req)) {
       LOG.info(
@@ -114,10 +116,10 @@ export class PaymentsApiServiceHandler {
     const { id } = req.params
 
     if (
-      !req.session!.roles.has(Role.ADMIN) &&
-      !req.session!.roles.has(Role.SERVICE)
+      !req.roles.has(Role.ADMIN) &&
+      !req.roles.has(Role.SERVICE)
     ) {
-      const address = req.session!.address
+      const address = req.address
       LOG.error(
         'Received request to view purchase {id} from non-admin or owning address {address}', {
           id,
@@ -136,7 +138,7 @@ export class PaymentsApiServiceHandler {
   }
 
   async doRedeem(req: express.Request, res: express.Response) {
-    const user = req.session!.address
+    const user = req.address
     const { secret, lastThreadUpdateId, lastChanTx } = req.body
     if (!user || !secret || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
       LOG.warn(
@@ -159,7 +161,7 @@ export class PaymentsApiServiceHandler {
     }
 
     const updates = await this.channelService.getChannelAndThreadUpdatesForSync(
-      req.session!.address,
+      req.address,
       lastChanTx,
       lastThreadUpdateId,
     )

@@ -1,8 +1,4 @@
-import { BigNumber as BN } from 'ethers/utils'
-import { big } from 'connext';
-const {
-  Big
-} = big
+import { toBN, BN } from '../util'
 
 export interface EventLog {
     event: string;
@@ -108,8 +104,8 @@ export class DidHubContractWithdrawEvent extends ContractEvent {
   ) {
     super(event)
     const vals = event.log.returnValues
-    this.weiAmount = Big(vals.weiAmount)
-    this.tokenAmount = Big(vals.tokenAmount)
+    this.weiAmount = toBN(vals.weiAmount)
+    this.tokenAmount = toBN(vals.tokenAmount)
   }
 
   toFields (): Object | null {
@@ -179,18 +175,18 @@ export class DidUpdateChannelEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderIdx = vals.senderIdx
-    this.balanceWeiUser = Big(vals.weiBalances[0])
-    this.balanceWeiHub = Big(vals.weiBalances[1])
-    this.balanceTokenUser = Big(vals.tokenBalances[0])
-    this.balanceTokenHub = Big(vals.tokenBalances[1])
-    this.pendingDepositWeiHub = Big(vals.pendingWeiUpdates[0])
-    this.pendingDepositWeiUser = Big(vals.pendingWeiUpdates[2])
-    this.pendingWithdrawalWeiHub = Big(vals.pendingWeiUpdates[1])
-    this.pendingWithdrawalWeiUser = Big(vals.pendingWeiUpdates[3])
-    this.pendingDepositTokenHub = Big(vals.pendingTokenUpdates[0])
-    this.pendingDepositTokenUser = Big(vals.pendingTokenUpdates[2])
-    this.pendingWithdrawalTokenHub = Big(vals.pendingTokenUpdates[1])
-    this.pendingWithdrawalTokenUser = Big(vals.pendingTokenUpdates[3])
+    this.balanceWeiUser = toBN(vals.weiBalances[0])
+    this.balanceWeiHub = toBN(vals.weiBalances[1])
+    this.balanceTokenUser = toBN(vals.tokenBalances[0])
+    this.balanceTokenHub = toBN(vals.tokenBalances[1])
+    this.pendingDepositWeiHub = toBN(vals.pendingWeiUpdates[0])
+    this.pendingDepositWeiUser = toBN(vals.pendingWeiUpdates[2])
+    this.pendingWithdrawalWeiHub = toBN(vals.pendingWeiUpdates[1])
+    this.pendingWithdrawalWeiUser = toBN(vals.pendingWeiUpdates[3])
+    this.pendingDepositTokenHub = toBN(vals.pendingTokenUpdates[0])
+    this.pendingDepositTokenUser = toBN(vals.pendingTokenUpdates[2])
+    this.pendingWithdrawalTokenHub = toBN(vals.pendingTokenUpdates[1])
+    this.pendingWithdrawalTokenUser = toBN(vals.pendingTokenUpdates[3])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
     this.threadRoot = vals.threadRoot
@@ -279,10 +275,10 @@ export class DidStartExitChannelEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderIdx = vals.senderIdx
-    this.balanceWeiUser = Big(vals.weiBalances[0])
-    this.balanceWeiHub = Big(vals.weiBalances[1])
-    this.balanceTokenUser = Big(vals.tokenBalances[0])
-    this.balanceTokenHub = Big(vals.tokenBalances[1])
+    this.balanceWeiUser = toBN(vals.weiBalances[0])
+    this.balanceWeiHub = toBN(vals.weiBalances[1])
+    this.balanceTokenUser = toBN(vals.tokenBalances[0])
+    this.balanceTokenHub = toBN(vals.tokenBalances[1])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
     this.threadCount = vals.threadCount
@@ -361,10 +357,10 @@ export class DidEmptyChannelEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderIdx = vals.senderIdx
-    this.balanceWeiUser = Big(vals.weiBalances[0])
-    this.balanceWeiHub = Big(vals.weiBalances[1])
-    this.balanceTokenUser = Big(vals.tokenBalances[0])
-    this.balanceTokenHub = Big(vals.tokenBalances[1])
+    this.balanceWeiUser = toBN(vals.weiBalances[0])
+    this.balanceWeiHub = toBN(vals.weiBalances[1])
+    this.balanceTokenUser = toBN(vals.tokenBalances[0])
+    this.balanceTokenHub = toBN(vals.tokenBalances[1])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
     this.threadCount = vals.threadCount
@@ -445,10 +441,10 @@ export class DidStartExitThreadEvent extends ContractEvent {
     this.threadSender = vals.sender
     this.threadReceiver = vals.receiver
     this.senderIdx = vals.senderIdx
-    this.channelWeiBalanceSender = Big(vals.channelWeiBalances[0])
-    this.channelWeiBalanceReceiver = Big(vals.channelWeiBalances[1])
-    this.channelTokenBalanceSender = Big(vals.channelTokenBalances[0])
-    this.channelTokenBalanceReceiver = Big(vals.channelTokenBalances[1])
+    this.channelWeiBalanceSender = toBN(vals.channelWeiBalances[0])
+    this.channelWeiBalanceReceiver = toBN(vals.channelWeiBalances[1])
+    this.channelTokenBalanceSender = toBN(vals.channelTokenBalances[0])
+    this.channelTokenBalanceReceiver = toBN(vals.channelTokenBalances[1])
     this.txCountGlobal = vals.txCount[0]
     this.txCountChain = vals.txCount[1]
   }
@@ -499,10 +495,10 @@ export class DidEmptyThreadEvent extends ContractEvent {
     this.threadSender = vals.sender
     this.threadReceiver = vals.receiver
     this.senderIdx = vals.senderIdx
-    this.channelWeiBalanceSender = Big(vals.channelWeiBalances[0])
-    this.channelWeiBalanceReceiver = Big(vals.channelWeiBalances[1])
-    this.channelTokenBalanceSender = Big(vals.channelTokenBalances[0])
-    this.channelTokenBalanceReceiver = Big(vals.channelTokenBalances[1])
+    this.channelWeiBalanceSender = toBN(vals.channelWeiBalances[0])
+    this.channelWeiBalanceReceiver = toBN(vals.channelWeiBalances[1])
+    this.channelTokenBalanceSender = toBN(vals.channelTokenBalances[0])
+    this.channelTokenBalanceReceiver = toBN(vals.channelTokenBalances[1])
     this.channelTxCountGlobal = vals.txCount[0]
     this.channelTxCountChain = vals.txCount[1]
     this.channelThreadRoot = vals.channelThreadRoot
@@ -555,12 +551,12 @@ export class DidNukeThreadsEvent extends ContractEvent {
     const vals = event.log.returnValues
     this.user = vals.user
     this.senderAddress = vals.senderAddress
-    this.weiAmount = Big(vals.weiAmount)
-    this.tokenAmount = Big(vals.tokenAmount)
-    this.channelWeiBalanceSender = Big(vals.channelWeiBalances[0])
-    this.channelWeiBalanceReceiver = Big(vals.channelWeiBalances[1])
-    this.channelTokenBalanceSender = Big(vals.channelTokenBalances[0])
-    this.channelTokenBalanceReceiver = Big(vals.channelTokenBalances[1])
+    this.weiAmount = toBN(vals.weiAmount)
+    this.tokenAmount = toBN(vals.tokenAmount)
+    this.channelWeiBalanceSender = toBN(vals.channelWeiBalances[0])
+    this.channelWeiBalanceReceiver = toBN(vals.channelWeiBalances[1])
+    this.channelTokenBalanceSender = toBN(vals.channelTokenBalances[0])
+    this.channelTokenBalanceReceiver = toBN(vals.channelTokenBalances[1])
     this.channelTxCountGlobal = vals.txCount[0]
     this.channelTxCountChain = vals.txCount[1]
     this.channelThreadRoot = vals.channelThreadRoot

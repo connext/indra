@@ -38,7 +38,7 @@
     "ethers": "^4.0.26",
     "ethjs-provider-http": "^0.1.6",
     "ethjs-rpc": "^0.2.0",
-    "ganache-cli": "6.1.8",
+    "ganache-cli": "^6.4.3",
     "solc": "^0.4.25",
     "truffle": "^5.0.13",
     "truffle-hdwallet-provider": "^1.0.0-web3one.1",

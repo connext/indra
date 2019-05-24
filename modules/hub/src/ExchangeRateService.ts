@@ -4,39 +4,31 @@ import log from './util/log'
 const LOG = log('ExchangeRateService')
 
 interface RateResponse {
-  data: {
-    rates: {
-      [k: string]: string
-    }
-  }
+  data: { rates: { [k: string]: string } }
 }
 
 export default class ExchangeRateService {
-  static fetch = fetch
-
-  private static POLL_INTERVAL_MS = 60000
-
-  private static COINBASE_URL = 'https://api.coinbase.com/v2/exchange-rates?currency=ETH'
-
+  public static fetch: any = fetch
+  private static POLL_INTERVAL_MS: number = 60000
+  private static COINBASE_URL: string = 'https://api.coinbase.com/v2/exchange-rates?currency=ETH'
   private dao: ExchangeRateDao
-
   private started: boolean = false
 
-  constructor (dao: ExchangeRateDao) {
+ public  constructor (dao: ExchangeRateDao) {
     this.dao = dao
   }
 
-  public start() {
+  public start(): void {
     LOG.info('Starting exchange rate polling service.')
     this.started = true
     this.updateRates()
   }
 
-  public stop() {
+  public stop(): void {
     this.started = false
   }
 
-  private updateRates() {
+  private updateRates(): void {
     if (!this.started) {
       return
     }

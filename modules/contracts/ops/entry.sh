@@ -20,13 +20,16 @@ if [[ "$network" == "ganache" ]]
 then
   echo "Starting Ganache.."
   mkdir -p /data build/contracts
+  ./node_modules/.bin/ganache-cli --version
   ./node_modules/.bin/ganache-cli \
-    --host="0.0.0.0" \
-    --port="$ganache_rpc_port" \
+    --blockTime=3 \
     --db="/data" \
+    --gasPrice="10000000000" \
+    --host="0.0.0.0" \
     --mnemonic="$mnemonic" \
     --networkId="$ganache_net_id" \
-    --blockTime=3 > ops/ganache.log &
+    --port="$ganache_rpc_port" \
+     > ops/ganache.log &
   bash /ops/wait-for.sh localhost:8545 2> /dev/null
 fi
 

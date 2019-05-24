@@ -1,8 +1,10 @@
+import { ReducerBuilder, reducerWithInitialState } from 'typescript-fsa-reducers/dist'
+
 import { isFunction } from '../lib/utils'
-import {ConnextState} from './store'
-import {reducerWithInitialState, ReducerBuilder} from 'typescript-fsa-reducers/dist'
+import { ChannelState, UpdateRequest } from '../types'
+
 import * as actions from './actions'
-import { UpdateRequest, ChannelState } from '../types';
+import {ConnextState} from './store'
 
 export let reducers = reducerWithInitialState(new ConnextState())
 
@@ -14,40 +16,44 @@ export let reducers = reducerWithInitialState(new ConnextState())
 //     return { ...state, someValue: action.value }
 //   })
 
-export function handleChannelChange(state: ConnextState, channel: ChannelState, update?: UpdateRequest) {
+export const handleChannelChange = (
+  state: ConnextState,
+  channel: ChannelState,
+  update?: UpdateRequest,
+): any => {
   const hasPending = (
     Object.keys(channel)
-      .some(field => field.startsWith('pending') && (channel as any)[field] != '0')
+      .some((field: any): any =>
+        field.startsWith('pending') && (channel as any)[field].toString() !== '0')
   )
-  if (!hasPending) {
-    state = {
-      ...state,
-      persistent: {
-        ...state.persistent,
-        latestValidState: channel,
-      },
-    }
-  }
 
-  if (!update) {
-    update = state.persistent.channelUpdate
-  }
-
-  return {
+  const channelState = hasPending ? state : {
     ...state,
     persistent: {
       ...state.persistent,
-      channel: channel,
-      channelUpdate: update,
+      latestValidState: channel,
+    },
+  }
+
+  const channelUpdate = update ? update : channelState.persistent.channelUpdate
+
+  return {
+    ...channelState,
+    persistent: {
+      ...channelState.persistent,
+      channel,
+      channelUpdate,
     },
   }
 }
 
-reducers = reducers.case(actions.setChannelAndUpdate, (state, action: any) => handleChannelChange(state, action.state, action.update))
-// @ts-ignore
-reducers = reducers.case(actions.setChannel, (state, action) => handleChannelChange(state, action))
+reducers = reducers.case(actions.setChannelAndUpdate, (state: any, action: any): any =>
+  handleChannelChange(state, action.state, action.update),
+)
+reducers = reducers.case(actions.setChannel as any, handleChannelChange)
 
-for (let action of Object.values(actions) as any[]) {
-  if (isFunction(action && action.handler))
+for (const action of Object.values(actions) as any[]) {
+  if (isFunction(action && action.handler)) {
     reducers = reducers.case(action, action.handler)
+  }
 }

@@ -1,12 +1,13 @@
+import * as connext from 'connext'
 import * as express from 'express'
-import { ApiService } from './ApiService'
-import log from '../util/log'
-import ThreadsService from '../ThreadsService'
-import ChannelsService from '../ChannelsService'
-import { big } from 'connext'
-import GlobalSettingsDao from '../dao/GlobalSettingsDao'
 
-const { Big } = big
+import { ApiService } from './ApiService'
+
+import ChannelsService from '../ChannelsService'
+import GlobalSettingsDao from '../dao/GlobalSettingsDao'
+import ThreadsService from '../ThreadsService'
+import { toBN } from '../util'
+import log from '../util/log'
 
 const LOG = log('ThreadsApiService')
 
@@ -22,12 +23,6 @@ export default class ThreadsApiService extends ApiService<
     'GET /:user/active': 'doGetThreadsActive',
     'GET /:user/last-update-id': 'doGetLastUpdateId',
     'GET /:user/all': 'doGetThreads',
-    'POST /:sender/to/:receiver': 'doGetThread',
-    'POST /:user/initial-states': 'doGetInitialStates',
-    'POST /:user/incoming': 'doGetThreadsIncoming',
-    'POST /:user/active': 'doGetThreadsActive',
-    'POST /:user/last-update-id': 'doGetLastUpdateId',
-    'POST /:user/all': 'doGetThreads',
   }
   handler = ThreadsApiServiceHandler
   dependencies = {
@@ -65,10 +60,10 @@ class ThreadsApiServiceHandler {
     res.send(
       await this.threadsService.update(sender, receiver, {
         ...update,
-        balanceWeiSender: Big(update.balanceWeiSender),
-        balanceWeiReceiver: Big(update.balanceWeiReceiver),
-        balanceTokenSender: Big(update.balanceTokenSender),
-        balanceTokenReceiver: Big(update.balanceTokenReceiver),
+        balanceWeiSender: toBN(update.balanceWeiSender),
+        balanceWeiReceiver: toBN(update.balanceWeiReceiver),
+        balanceTokenSender: toBN(update.balanceTokenSender),
+        balanceTokenReceiver: toBN(update.balanceTokenReceiver),
       }),
     )
   }

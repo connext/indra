@@ -1,11 +1,10 @@
-import * as Connext from 'connext';
 import { assert } from 'chai'
-import ChannelsDao from './ChannelsDao'
-import { getTestRegistry } from '../testing'
-import { assertChannelStateEqual } from '../testing/stateUtils'
-import { channelUpdateFactory } from '../testing/factories';
+import * as connext from 'connext'
 
-const { convertChannelState } = Connext.types
+import { getTestRegistry } from '../testing'
+import { channelUpdateFactory } from '../testing/factories'
+import { assertChannelStateEqual } from '../testing/stateUtils'
+import ChannelsDao from './ChannelsDao'
 
 describe('ChannelsDao', () => {
   const registry = getTestRegistry()
@@ -33,7 +32,7 @@ describe('ChannelsDao', () => {
     assert.equal(channel.status, 'CS_OPEN')
 
     assertChannelStateEqual(
-      convertChannelState('str', channel.state), 
+      connext.convert.ChannelState('str', channel.state), 
       {
         balanceWeiHub: '150',
         balanceWeiUser: '150',

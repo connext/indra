@@ -1,13 +1,14 @@
-import { SyncResult, DepositArgs, WithdrawalArgs, ConfirmPendingArgs, } from '../types'
-import { ConnextState } from './store'
-import * as actions from './actions'
+import { ConfirmPendingArgs, DepositArgs, SyncResult, WithdrawalArgs } from '../types'
 
-export function handleStateFlags(args: any): any {
+import * as actions from './actions'
+import { ConnextState } from './store'
+
+export const handleStateFlags = (args: any): any => {
   let didInitialUpdate = false
 
   const { dispatch, getState } = args
 
-  return (next: any) => (action: any) => {
+  return (next: any): any => (action: any): any => {
     const res = next(action)
 
     // iterate the queued updates and set store flags accordingly
@@ -24,38 +25,38 @@ export function handleStateFlags(args: any): any {
 
       const connextState: ConnextState = getState()
       const {
-        runtime: {
-          syncResultsFromHub // updates from hub to client
-        },
+      // updates from hub to client
+        runtime: { syncResultsFromHub },
         persistent: {
           channel,
           syncControllerState: {
             updatesToSync, // updates that have been processed by client to send to hub
           },
-        }
+        },
       } = connextState
 
       // find out what type of update it is, and which type
       // of transaction it pertains to
       let txType: any
       let isUnsigned = false
-      let txHash: string | null = null
-      const detectTxType = (sync: SyncResult) => {
-        if (sync.type != 'channel') {
+      let txHash: string | undefined
+      const detectTxType = (sync: SyncResult): any => {
+        if (sync.type !== 'channel') {
           // TODO: any special flags for threads needed
           return
         }
         // determine if anything is unsigned
         isUnsigned = isUnsigned || !(sync.update.sigHub && sync.update.sigUser)
 
-        if (sync.update.reason == 'ProposePendingWithdrawal') {
+        if (sync.update.reason === 'ProposePendingWithdrawal') {
           // if it is a user-submitted withdrawal, the user will have
           // a changing withdrawal, otherwise it is the hub
           // decollateralizing a channel
-          const args = sync.update.args as WithdrawalArgs
-          const userTokenBalChange = args.targetTokenUser 
-            && args.targetTokenUser != channel.balanceTokenUser
-          const userWeiBalChange = args.targetWeiUser && args.targetWeiUser != channel.balanceWeiUser
+          const withdrawal = sync.update.args as WithdrawalArgs
+          const userTokenBalChange = withdrawal.targetTokenUser
+            && withdrawal.targetTokenUser.toString() !== channel.balanceTokenUser.toString()
+          const userWeiBalChange = withdrawal.targetWeiUser
+            && withdrawal.targetWeiUser.toString() !== channel.balanceWeiUser.toString()
           if (userTokenBalChange || userWeiBalChange) {
             txType = 'withdrawal'
             return
@@ -63,11 +64,11 @@ export function handleStateFlags(args: any): any {
           txType = 'collateral'
           return
         }
-        
-        if (sync.update.reason == "ProposePendingDeposit") {
+
+        if (sync.update.reason === 'ProposePendingDeposit') {
           // if the users balance increases, it is a user deposit
-          const args = sync.update.args as DepositArgs
-          if (args.depositTokenUser != '0' || args.depositWeiUser != '0') {
+          const deposit = sync.update.args as DepositArgs
+          if (deposit.depositTokenUser !== '0' || deposit.depositWeiUser !== '0') {
             txType = 'deposit'
             return
           }
@@ -78,17 +79,22 @@ export function handleStateFlags(args: any): any {
 
         // must also check the confirm pending update to determine
         // which type of tx it is confirming
-        if (sync.update.reason == "ConfirmPending") {
+        if (sync.update.reason === 'ConfirmPending') {
           // can use the pending operations on the channel state
           txHash = (sync.update.args as ConfirmPendingArgs).transactionHash
           // if there are withdrawal user values it is a wd
-          if (channel.pendingWithdrawalTokenUser != '0' || channel.pendingWithdrawalWeiUser != '0') {
+          if (
+            channel.pendingWithdrawalTokenUser !== '0'
+            || channel.pendingWithdrawalWeiUser !== '0'
+          ) {
             txType = 'withdrawal'
             return
           }
 
           // if there is a user deposit without wds, its a deposit
-          if (channel.pendingDepositTokenUser != '0' || channel.pendingDepositWeiUser != '0') {
+          if (channel.pendingDepositTokenUser !== '0'
+            || channel.pendingDepositWeiUser !== '0'
+          ) {
             txType = 'deposit'
             return
           }
@@ -99,17 +105,15 @@ export function handleStateFlags(args: any): any {
         }
       }
 
-      updatesToSync.concat(syncResultsFromHub).forEach(
-        sync => detectTxType(sync)
-      )
+      updatesToSync.concat(syncResultsFromHub).forEach(detectTxType)
 
       // assign the fields
       if (txType) {
-        let r = { ...connextState.runtime } as any
+        const r = { ...connextState.runtime } as any
         const updated = {
-          transactionHash: txHash,
-          submitted: true, // if a type is detected, the tx has been submitted 
           detected: !!txHash,
+          submitted: true, // if a type is detected, the tx has been submitted
+          transactionHash: txHash,
         }
         r[txType]= updated
         dispatch(actions.updateTransactionFields(r))

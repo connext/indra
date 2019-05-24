@@ -1,66 +1,56 @@
-import { mkAddress, parameterizedTests, assert } from '../testing';
-import { MockConnextInternal, MockStore } from '../testing/mocks';
-import { convertChannelState } from '../types';
-import { Big } from '../lib/bn';
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+import { toBN } from '../lib/bn'
+
+import { assert, mkAddress, parameterizedTests } from '../testing'
+import { MockConnextInternal, MockStore } from '../testing/mocks'
+import { convertChannelState } from '../types'
 
 const user = mkAddress('0xAAA')
 let connext: MockConnextInternal
 const mockStore = new MockStore()
 const exchangeRate = '5'
 
-describe("createWithdrawalParameters", () => {
-  const user = mkAddress('0xAAA')
-  let connext: MockConnextInternal
-  const mockStore = new MockStore()
-  const exchangeRate = '5'
+describe('createWithdrawalParameters', () => {
 
   parameterizedTests([
     {
-      name: "createWithdrawalParameters should work when supplied with only an amountWei",
-      args: { 
-        amountWei: '1',
-      },
-      expected: { withdrawalWeiUser: '1' }
+      args: { amountWei: '1' },
+      expected: { withdrawalWeiUser: '1' },
+      name: 'createWithdrawalParameters should work when supplied with only an amountWei',
     },
+
     {
-      name: "should work when supplied with only an amountToken",
-      args: { 
-        amountToken: '1',
-      },
-      expected: { withdrawalTokenUser: '1' }
+      args: { amountToken: '1' },
+      expected: { withdrawalTokenUser: '1' },
+      name: 'should work when supplied with only an amountToken',
     },
+
     {
-      name: "should insert default values for partial withdrawal parameters",
-      args: { 
-        withdrawalWeiUser: '1',
-      },
-      expected: { withdrawalWeiUser: '1', withdrawalTokenUser: '0' }
+      args: { withdrawalWeiUser: '1' },
+      expected: { withdrawalWeiUser: '1', withdrawalTokenUser: '0' },
+      name: 'should insert default values for partial withdrawal parameters',
     },
+
     {
-      name: "should correctly exchange on withdrawals when provided with an amount (native balance first)",
-      args: { 
-        amountWei: '10'
-      },
-      expected: { withdrawalWeiUser: '5', tokensToSell: '25' }
+      args: { amountWei: '10' },
+      expected: { withdrawalWeiUser: '5', tokensToSell: '25' },
+      name: 'should correctly exchange on withdrawals when provided with an amount ' +
+        '(native balance first)',
     },
+
     {
-      name: "should correctly calculate parameters if both wd amounts are supplied",
-      args: { 
-        amountWei: '10', 
-        amountToken: '15'
-      },
-      expected: { withdrawalWeiUser: '5', tokensToSell: '25', withdrawalTokenUser: '15' }
+      args: { amountWei: '10', amountToken: '15' },
+      expected: { withdrawalWeiUser: '5', tokensToSell: '25', withdrawalTokenUser: '15' },
+      name: 'should correctly calculate parameters if both wd amounts are supplied',
     },
-  ], async ({ args, expected }) => {
+
+  ], async ({ args, expected }: any): Promise<any> => {
     mockStore.setChannel({
-      user,
-      balanceWei: [10, 5],
       balanceToken: [0, 50],
+      balanceWei: [10, 5],
+      user,
     })
-    mockStore.setExchangeRate({ 'USD': exchangeRate })
-    connext = new MockConnextInternal({ 
+    mockStore.setExchangeRate({ 'DAI': exchangeRate })
+    connext = new MockConnextInternal({
       store: mockStore.createStore(),
     })
 
@@ -69,13 +59,13 @@ describe("createWithdrawalParameters", () => {
     const ans = connext.withdrawalController.createWithdrawalParameters(args)
     console.log('************ ans', ans)
     assert.containSubset(ans, {
-      withdrawalWeiUser: '0',
-      tokensToSell: '0',
-      withdrawalTokenUser: '0',
-      weiToSell: '0',
       exchangeRate: '5',
       recipient: connext.wallet.address,
-      ...expected
+      tokensToSell: '0',
+      weiToSell: '0',
+      withdrawalTokenUser: '0',
+      withdrawalWeiUser: '0',
+      ...expected,
     })
   })
 })
@@ -84,110 +74,96 @@ describe('WithdrawalController: unit tests', () => {
   beforeEach(async () => {
      // add channel with initial booty balance to exchange and withdraw
      mockStore.setChannel({
-      user,
-      balanceWei: [10, 5],
       balanceToken: [0, 50],
+      balanceWei: [10, 5],
+      user,
     })
-    mockStore.setExchangeRate({ 'USD': exchangeRate })
-    connext = new MockConnextInternal({ 
-      user, 
-      store: mockStore.createStore() 
+    mockStore.setExchangeRate({ 'DAI': exchangeRate })
+    connext = new MockConnextInternal({
+      store: mockStore.createStore(),
+      user,
     })
   })
 
   parameterizedTests([
     {
-      name: "should withdraw all of users tokens as wei",
       args: {
         recipient: mkAddress('0xBBB'),
         tokensToSell: '50',
+        weiToSell: undefined,
+        withdrawalTokenUser: undefined,
         withdrawalWeiUser: '5',
-        weiToSell: null,
-        withdrawalTokenUser: null,
       },
+      name: 'should withdraw all of users tokens as wei',
     },
     {
-      name: "should fail if recipient is not a valid address",
-      args: {
-        recipient: 'fail'
-      },
-      failsWith: /Recipient is not a valid address./
+      args: { recipient: 'fail' },
+      failsWith: /Recipient is not a valid address./,
+      name: 'should fail if recipient is not a valid address',
     },
     {
-      name: "should fail if user wds more wei than is in their channel",
-      args: {
-        withdrawalWeiUser: '100'
-      },
-      failsWith: /Cannot withdraw more wei than what is in your channel./
+      args: { withdrawalWeiUser: '100' },
+      failsWith: /Cannot withdraw more wei than what is in your channel./,
+      name: 'should fail if user wds more wei than is in their channel',
     },
     {
-      name: "should fail if user tries to sell more tokens than they have",
-      args: {
-        tokensToSell: '100'
-      },
-      failsWith: /Cannot sell more tokens than exist in your channel./
+      args: { tokensToSell: '100' },
+      failsWith: /Cannot sell more tokens than exist in your channel./,
+      name: 'should fail if user tries to sell more tokens than they have',
     },
     {
-      name: "should fail if user tries to withdraw tokens",
-      args: {
-        withdrawalTokenUser: '5'
-      },
-      failsWith: /User token withdrawals are not permitted at this time./
+      args: { withdrawalTokenUser: '5' },
+      failsWith: /User token withdrawals are not permitted at this time./,
+      name: 'should fail if user tries to withdraw tokens',
     },
     {
-      name: "should fail if user tries to exchange wei",
-      args: {
-        weiToSell: '5'
-      },
-      failsWith: /User exchanging wei at withdrawal is not permitted at this time./
+      args: { weiToSell: '5' },
+      failsWith: /User exchanging wei at withdrawal is not permitted at this time./,
+      name: 'should fail if user tries to exchange wei',
     },
-  ], async ({ name, args, failsWith }) => {
+  ], async ({ name, args, failsWith }: any): Promise<any> => {
     await connext.start()
 
-    const preWdChan = convertChannelState("bn",
-      connext.store.getState().persistent.channel
-    )
+    const preWdChan = convertChannelState('bn', connext.store.getState().persistent.channel)
 
     // wait to allow controller to set exchange rates
-    await new Promise(res => setTimeout(res, 20))
+    await new Promise((res: any): any => setTimeout(res, 20))
 
     if (failsWith) {
-      // ignore args, should be Partial<Withdrawal> | SuccinctWithdrawal
+      // args should be Partial<Withdrawal> | SuccinctWithdrawal
       await assert.isRejected(
-        // @ts-ignore
-        connext.withdrawalController.requestUserWithdrawal(args),
-        failsWith
+        connext.withdrawalController.requestUserWithdrawal(args as any),
+        failsWith,
       )
       return
     }
-    // ignore args, should be Partial<Withdrawal> | SuccinctWithdrawal
-    // @ts-ignore
-    await connext.withdrawalController.requestUserWithdrawal(args)
+    // args should be Partial<Withdrawal> | SuccinctWithdrawal
+    await connext.withdrawalController.requestUserWithdrawal(args as any)
 
-    await new Promise(res => setTimeout(res, 20))
+    await new Promise((res: any): any => setTimeout(res, 20))
 
     const targetWeiUser = preWdChan.balanceWeiUser
-      .sub(Big(args.weiToSell || 0))
-      .sub(Big(args.withdrawalWeiUser || 0))
+      .sub(toBN(args.weiToSell || 0))
+      .sub(toBN(args.withdrawalWeiUser || 0))
       .toString()
 
     const targetTokenUser = preWdChan.balanceTokenUser
-      .sub(Big(args.tokensToSell || 0))
-      .sub(Big(args.withdrawalTokenUser || 0))
+      .sub(toBN(args.tokensToSell || 0))
+      .sub(toBN(args.withdrawalTokenUser || 0))
       .toString()
 
     connext.mockHub.assertReceivedUpdate({
-      reason: 'ProposePendingWithdrawal',
       args: {
         exchangeRate,
         recipient: args.recipient || user,
+        targetTokenUser,
+        targetWeiUser,
         tokensToSell: args.tokensToSell || '0',
         weiToSell: args.weiToSell || '0',
-        targetWeiUser,
-        targetTokenUser,
       },
-      sigUser: true,
+      reason: 'ProposePendingWithdrawal',
       sigHub: false,
+      sigUser: true,
     })
   })
 

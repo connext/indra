@@ -10,12 +10,7 @@ const Connext = require("connext");
 const ConnextTester = require("connext/dist/testing");
 
 /* Setup Connext Client Stuff */
-const {
-  convertChannelState,
-  convertWithdrawal,
-  convertProposePending,
-  isBN
-} = Connext.types
+const convert = Connext.convert
 
 const {
   getChannelState,
@@ -125,7 +120,7 @@ function zeroBalances(state) {
 
 // takes a Connext channel state and converts it to the contract format
 function normalize(state) {
-  state = convertChannelState("bn", state);
+  state = convert.ChannelState("bn", state);
   return {
     ...state,
     user: state.user,
@@ -424,7 +419,7 @@ contract("ChannelManager", accounts => {
   // asserts that the onchain-channel state matches provided offchain state
 
   const verifyChannelBalances = async (account, state) => {
-    const stateBN = convertChannelState("bn", state); // This is an ethers BN
+    const stateBN = convert.ChannelState("bn", state); // This is an ethers BN
     const channelBalances = await cm.getChannelBalances(account.address); // This is a BigNumber
 
     // Wei balances are equal
@@ -441,7 +436,7 @@ contract("ChannelManager", accounts => {
   // status, exitInitiator, and channelClosingTime must be explicitely
   // set on the state object or are assumed to be 0, emptyAddress, and 0
   const verifyChannelDetails = async (account, state) => {
-    const stateBN = convertChannelState("bn", state);
+    const stateBN = convert.ChannelState("bn", state);
     const channelDetails = await cm.getChannelDetails(account.address);
     // Tx counts are equal to the original update (state increments)
     assert(channelDetails.txCountGlobal.eq(toBN(stateBN.txCountGlobal)));
@@ -468,7 +463,7 @@ contract("ChannelManager", accounts => {
     // use update for verifying channel details b/c txCounts will match
     await verifyChannelDetails(account, update);
 
-    const updateBN = convertChannelState("bn", update);
+    const updateBN = convert.ChannelState("bn", update);
 
     const event = getEventParams(tx, "DidUpdateChannel");
     assert.equal(event.user.toLowerCase(), account.address.toLowerCase());
@@ -512,7 +507,7 @@ contract("ChannelManager", accounts => {
     await verifyChannelBalances(account, update);
     await verifyChannelDetails(account, update);
 
-    const updateBN = convertChannelState("bn", update);
+    const updateBN = convert.ChannelState("bn", update);
 
     const event = getEventParams(tx, "DidStartExitChannel");
     assert.equal(event.user.toLowerCase(), account.address.toLowerCase());
@@ -845,6 +840,7 @@ contract("ChannelManager", accounts => {
           amountToken: 69,
           recipient: "hub"
         });
+
         const update3 = validator.generateChannelPayment(update2, payment);
 
         // 4. user tops up wei while hub withdraws wei
@@ -855,7 +851,7 @@ contract("ChannelManager", accounts => {
           depositWeiUser: 50,
           withdrawalWeiHub: 69
         });
-        const update4 = sg.proposePending(update3, convertProposePending("bn", pending));
+        const update4 = sg.proposePending(update3, convert.ProposePending("bn", pending));
         update4.sigHub = await getSig(update4, hub);
         const tx2 = await userAuthorizedUpdate(update4, viewer, 50);
         await verifyUserAuthorizedUpdate(viewer, update4, tx2, false);
@@ -1211,7 +1207,7 @@ contract("ChannelManager", accounts => {
           ...state,
           additionalWeiHubToUser: 5
         });
-        const update = sg.proposePendingWithdrawal(convertChannelState("bn", state), convertWithdrawal("bn", withdrawal));
+        const update = sg.proposePendingWithdrawal(convert.ChannelState("bn", state), convert.Withdrawal("bn", withdrawal));
 
         update.sigUser = await getSig(update, viewer);
         const tx = await hubAuthorizedUpdate(update, hub, 0);
@@ -1235,7 +1231,7 @@ contract("ChannelManager", accounts => {
           ...state,
           additionalTokenHubToUser: 5
         });
-        const update = sg.proposePendingWithdrawal(convertChannelState("bn", state), convertWithdrawal("bn", withdrawal));
+        const update = sg.proposePendingWithdrawal(convert.ChannelState("bn", state), convert.Withdrawal("bn", withdrawal));
 
         update.sigUser = await getSig(update, viewer);
         const tx = await hubAuthorizedUpdate(update, hub, 0);
@@ -1324,7 +1320,7 @@ contract("ChannelManager", accounts => {
           targetWeiUser: 0,
           targetWeiHub: 0
         });
-        const update3 = validator.generateProposePendingWithdrawal(update2, convertWithdrawal("bn", withdrawal));
+        const update3 = validator.generateProposePendingWithdrawal(update2, convert.Withdrawal("bn", withdrawal));
         update3.sigUser = await getSig(update3, viewer);
         const tx2 = await hubAuthorizedUpdate(update3, hub, 0);
         await verifyHubAuthorizedUpdate(viewer, update3, tx2, true);
@@ -1370,7 +1366,7 @@ contract("ChannelManager", accounts => {
           targetTokenUser: 0,
           targetTokenHub: 0
         });
-        const update3 = validator.generateProposePendingWithdrawal(update2, convertWithdrawal("bn", withdrawal));
+        const update3 = validator.generateProposePendingWithdrawal(update2, convert.Withdrawal("bn", withdrawal));
         update3.sigUser = await getSig(update3, viewer);
         const tx2 = await hubAuthorizedUpdate(update3, hub, 0);
         await verifyHubAuthorizedUpdate(viewer, update3, tx2, true);
@@ -1723,7 +1719,7 @@ contract("ChannelManager", accounts => {
           timeout: 0
         });
 
-        const update2 = sg.proposePending(confirmed, convertProposePending("bn", pending));
+        const update2 = sg.proposePending(confirmed, convert.ProposePending("bn", pending));
         // TODO use validator
         // const update2 = validator.generateProposePending(confirmed, pending)
 
@@ -1793,7 +1789,7 @@ contract("ChannelManager", accounts => {
             tokensToSell: 2,
             exchangeRate: "2"
           });
-          const update = sg.proposePendingWithdrawal(convertChannelState("bn", state), convertWithdrawal("bn", withdrawal));
+          const update = sg.proposePendingWithdrawal(convert.ChannelState("bn", state), convert.Withdrawal("bn", withdrawal));
 
           update.sigUser = await getSig(update, viewer);
 
@@ -1827,7 +1823,7 @@ contract("ChannelManager", accounts => {
             exchangeRate: "2",
             recipient: someAddress
           });
-          const update = sg.proposePendingWithdrawal(convertChannelState("bn", state), convertWithdrawal("bn", withdrawal));
+          const update = sg.proposePendingWithdrawal(convert.ChannelState("bn", state), convert.Withdrawal("bn", withdrawal));
 
           update.sigUser = await getSig(update, viewer);
 
@@ -2340,7 +2336,7 @@ contract("ChannelManager", accounts => {
         targetTokenUser: 3,
         targetTokenHub: 4
       });
-      const update = sg.proposePendingWithdrawal(convertChannelState("bn", state), convertWithdrawal("bn", withdrawal));
+      const update = sg.proposePendingWithdrawal(convert.ChannelState("bn", state), convert.Withdrawal("bn", withdrawal));
 
       update.sigUser = await getSig(update, viewer);
       update.sigHub = await getSig(update, hub);
@@ -2374,7 +2370,7 @@ contract("ChannelManager", accounts => {
         withdrawalTokenHub: 17
       });
 
-      const update = sg.proposePending(state, convertProposePending("bn", pending));
+      const update = sg.proposePending(state, convert.ProposePending("bn", pending));
 
       update.sigUser = await getSig(update, viewer);
       update.sigHub = await getSig(update, hub);
@@ -2410,7 +2406,7 @@ contract("ChannelManager", accounts => {
         timeout: 0
       });
 
-      const update = sg.proposePending(state, convertProposePending("bn", pending));
+      const update = sg.proposePending(state, convert.ProposePending("bn", pending));
       update.sigUser = await getSig(update, viewer);
 
       // 2. generate a valid payment update on the pending deposit update
@@ -3452,13 +3448,13 @@ contract("ChannelManager", accounts => {
       it("succeeds if sender empties thread then reciever", async () => {
         let channelDetails = await cm.getChannelDetails(viewer.address);
         for (const [key, val] of Object.entries(channelDetails)) {
-          if (isBN(val)) {
+          if (typeof val !== 'string') {
             channelDetails[key] = val.toString();
           }
         }
         let channelBalances = await cm.getChannelBalances(viewer.address);
         for (const [key, val] of Object.entries(channelBalances)) {
-          if (isBN(val)) {
+          if (typeof val !== 'string') {
             channelBalances[key] = val.toString();
           }
         }

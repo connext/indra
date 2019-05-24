@@ -1,4 +1,5 @@
-import {ApiService, Request, Response} from './ApiService'
+import { ApiService, Request, Response } from './ApiService'
+
 import GasEstimateDao from '../dao/GasEstimateDao'
 import log from '../util/log'
 

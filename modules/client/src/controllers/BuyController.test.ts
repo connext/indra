@@ -8,122 +8,107 @@ import {
 } from '../testing'
 import { MockConnextInternal, MockHub, MockStore } from '../testing/mocks'
 import {
+  PartialPurchasePaymentRequest,
   Payment,
   PaymentArgs,
   PurchasePayment,
   PurchasePaymentType,
-  PartialPurchasePaymentRequest,
 } from '../types'
 
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill')
-
-describe("BuyController: assignPaymentTypes", () => {
-  let connext: MockConnextInternal
-
-  const user = mkAddress('0x7fab')
+describe('BuyController: assignPaymentTypes', async () => {
   const receiver = mkAddress('0x22c')
-  const mockStore: MockStore = new MockStore()
 
-  beforeEach(async () => {
-    mockStore.setHubAddress()
-    const store = mockStore.createStore()
-    connext = new MockConnextInternal({ 
-      user, 
-      store,
-    })
-    await connext.start()
-  })
-
-  parameterizedTests([
+  for (const tc of [
     {
-      name: "should retain a type if its provided",
-      payment: {
-        recipient: receiver,
-        amountToken: '15',
-        type: "PT_LINK",
-      } as PartialPurchasePaymentRequest,
       expected: {
         amount: {
           amountWei: '0',
         },
       },
-    },
-
-    {
-      name: "should assign a PT_LINK payment if there is a secret provided in the meta",
+      name: 'should retain a type if its provided',
       payment: {
-        recipient: receiver,
         amountToken: '15',
-        meta: {
-          secret: mkHash("0xss")
-        },
-      } as PartialPurchasePaymentRequest,
+        recipient: receiver,
+        type: 'PT_LINK',
+      },
+    },
+    {
       expected: {
         amount: {
           amountWei: '0',
         },
-        type: "PT_LINK",
+        type: 'PT_LINK',
+      },
+      name: 'should assign a PT_LINK payment if there is a secret provided in the meta',
+      payment: {
+        amountToken: '15',
+        meta: { secret: mkHash('0xss') },
+        recipient: receiver,
       },
     },
-
     {
-      name: "should assign a PT_CUSTODIAL if the amount is greater than the amount the hub will collateralize",
+      expected: {
+        amount: { amountWei: '0' },
+        meta: {},
+        type: 'PT_CUSTODIAL',
+      },
+      name: 'should assign a PT_CUSTODIAL if the amount is greater than ' +
+        'the amount the hub will collateralize',
       payment: {
-        recipient: receiver,
         amountToken: '150',
-      } as PartialPurchasePaymentRequest,
-      expected: {
-        amount: {
-          amountWei: '0',
-        },
-        type: "PT_CUSTODIAL",
-        meta: {}
-      },
-    },
-
-    {
-      name: "should assign a PT_CHANNEL if the payment is to the hub",
-      payment: {
-        recipient: mkAddress("0xhhh"),
-        amountToken: '10',
-      } as PartialPurchasePaymentRequest,
-      expected: {
-        amount: {
-          amountWei: '0',
-        },
-        type: "PT_CHANNEL",
-        meta: {}
-      },
-    },
-
-    {
-      name: "should assign a PT_OPTIMISTIC if the type is not provided, and the hub can handle forwarding the payment (below max)",
-      payment: {
         recipient: receiver,
-        amountToken: '10',
-      } as PartialPurchasePaymentRequest,
-      expected: {
-        amount: {
-          amountWei: '0',
-        },
-        type: "PT_OPTIMISTIC",
-        meta: {}
       },
     },
-
-  ], async (tc) => {
-    const ans = await connext.buyController.assignPaymentType(tc.payment)
-    const { amountToken, amountWei, ...res } = tc.payment
-    assert.containSubset(ans, {
-      ...res,
-      amount: {
-        amountToken,
-        amountWei,
+    {
+      expected: {
+        amount: { amountWei: '0' },
+        meta: {},
+        type: 'PT_CHANNEL',
       },
-      ...tc.expected,
+      name: 'should assign a PT_CHANNEL if the payment is to the hub',
+      payment: {
+        amountToken: '10',
+        recipient: mkAddress('0xhhh'),
+      },
+    },
+    {
+      expected: {
+        amount: { amountWei: '0' },
+        meta: {},
+        type: 'PT_OPTIMISTIC',
+      },
+      name: 'should assign a PT_OPTIMISTIC if the type is not provided, ' +
+        'and the hub can handle forwarding the payment (below max)',
+      payment: {
+        amountToken: '10',
+        recipient: receiver,
+      },
+    },
+  ]) {
+
+    it(tc.name, async () => {
+      const user = mkAddress('0x7fab')
+      const mockStore: MockStore = new MockStore()
+      mockStore.setHubAddress()
+      const connext: MockConnextInternal = new MockConnextInternal({
+        store: mockStore.createStore(),
+        user,
+      })
+      await connext.start()
+      const ans = await connext.buyController.assignPaymentType(
+        tc.payment as PartialPurchasePaymentRequest)
+      const { amountToken, amountWei, ...res } = tc.payment as PartialPurchasePaymentRequest
+      assert.containSubset(ans, {
+        ...res,
+        amount: {
+          amountToken,
+          amountWei,
+        },
+        ...tc.expected,
+      })
     })
-  })
+
+  }
 })
 
 describe('BuyController: unit tests', () => {
@@ -138,11 +123,11 @@ describe('BuyController: unit tests', () => {
   beforeEach(async () => {
     mockStore = new MockStore()
     mockStore.setChannel({
-      balanceWei: [5, 5],
       balanceToken: [10, 10],
+      balanceWei: [5, 5],
     })
-    connext = new MockConnextInternal({ 
-      store: mockStore.createStore(), 
+    connext = new MockConnextInternal({
+      store: mockStore.createStore(),
     })
     user = connext.wallet.address
     secret = connext.generateSecret()
@@ -150,14 +135,15 @@ describe('BuyController: unit tests', () => {
 
   parameterizedTests([
     {
+      meta: { test: 'This is a test'},
       name: 'should work for PT_CHANNEL user to hub token payments with type',
       payments: [{
         amountToken: '1',
-        type: 'PT_CHANNEL',
         recipient: hubAddress,
+        type: 'PT_CHANNEL',
       }],
-      meta: { test: "This is a test"}
     },
+
     {
       name: 'should work for PT_CHANNEL user to hub token payments without type',
       payments: [{
@@ -165,115 +151,125 @@ describe('BuyController: unit tests', () => {
         recipient: hubAddress,
       }],
     },
+
     {
       name: 'should work for PT_CUSTODIAL user to hub token payments',
       payments: [{
         amountToken: '1',
-        type: 'PT_CUSTODIAL',
         recipient: receiver,
-      }]
+        type: 'PT_CUSTODIAL',
+      }],
     },
+
     {
+      fails: /User does not have sufficient Wei balance for a transfer of value/,
       name: 'should fail for invalid PT_CHANNEL user to hub payments',
       payments: [{
-        amountToken: '1', 
+        amountToken: '1',
         amountWei: '10',
-        type: 'PT_CHANNEL',
         recipient: receiver,
+        type: 'PT_CHANNEL',
       }],
-      fails: /User does not have sufficient Wei balance for a transfer of value/
     },
+
     {
+      fails: /User does not have sufficient Wei balance for a transfer of value/,
       name: 'should fail for invalid PT_CUSTODIAL user to hub payments',
       payments: [{
-        amountToken: '1', 
+        amountToken: '1',
         amountWei: '10',
-        type: 'PT_CUSTODIAL',
         meta: {},
         recipient: receiver,
+        type: 'PT_CUSTODIAL',
       }],
-      fails: /User does not have sufficient Wei balance for a transfer of value/
     },
+
     {
-      name: "should work for PT_LINK user token payments",
+      name: 'should work for PT_LINK user token payments',
       payments: [{
         amountToken: '1',
+        meta: { secret: mkHash('0xff') },
+        recipient: eth.constants.AddressZero,
         type: 'PT_LINK',
-        meta: { secret: mkHash("0xff"), },
+      }],
+    },
+
+    {
+      name: 'should work for PT_LINK user token payments without type',
+      payments: [{
+        amountToken: '1',
+        meta: { secret: mkHash('0xff') },
         recipient: eth.constants.AddressZero,
       }],
     },
+
     {
-      name: "should work for PT_LINK user token payments without type",
-      payments: [{
-        amountToken: '1',
-        meta: { secret: mkHash("0xff"), },
-        recipient: eth.constants.AddressZero,
-      }],
-    },
-    {
-      name: "should fail for PT_LINK user token payments if secret is not provided",
-      payments: [{
-        amountToken: '1',
-        type: 'PT_LINK' as PurchasePaymentType,
-        recipient: eth.constants.AddressZero,
-      }],
       fails: /Secret is not present/,
-    },
-    {
       name: 'should fail for PT_LINK user token payments if secret is not provided',
       payments: [{
         amountToken: '1',
-        type: 'PT_LINK' as PurchasePaymentType,
-        meta: { secret: 'secret' },
         recipient: eth.constants.AddressZero,
+        type: 'PT_LINK' as PurchasePaymentType,
       }],
-      fails: /Secret is not hex string/,
     },
+
     {
-      name: "should work for a single thread payment to a receiver",
+      fails: /Secret is not hex string/,
+      name: 'should fail for PT_LINK user token payments if secret is not provided',
       payments: [{
         amountToken: '1',
-        type: 'PT_THREAD' as PurchasePaymentType,
+        meta: { secret: 'secret' },
+        recipient: eth.constants.AddressZero,
+        type: 'PT_LINK' as PurchasePaymentType,
+      }],
+    },
+
+    {
+      name: 'should work for a single thread payment to a receiver',
+      payments: [{
+        amountToken: '1',
         recipient: receiver,
-      }]
+        type: 'PT_THREAD' as PurchasePaymentType,
+      }],
     },
+
     {
-      name: "should work for a thread payment to a different receiver",
+      name: 'should work for a thread payment to a different receiver',
       payments: [
         {
-          amountToken: '1', 
+          amountToken: '1',
           amountWei: '0',
-          type: 'PT_THREAD',
           recipient: receiver,
+          type: 'PT_THREAD',
         },
         {
-          aamountToken: '0', 
+          aamountToken: '0',
           amountWei: '1',
-          type: 'PT_THREAD',
           recipient: receiver2,
-        },
-      ]
-    },
-    {
-      name: "should work for mixed payments",
-      payments: [
-        {
-          amountToken: '1', 
-          amountWei: '0',
           type: 'PT_THREAD',
-          recipient: receiver,
-        },
-        {
-          amountToken: '1', 
-          amountWei: '0',
-          type: 'PT_LINK',
-          meta: { secret: mkHash("0xff") },
-          recipient: eth.constants.AddressZero,
         },
       ],
-    }
-  ], async ({ name, payments, fails, meta }) => {
+    },
+
+    {
+      name: 'should work for mixed payments',
+      payments: [
+        {
+          amountToken: '1',
+          amountWei: '0',
+          recipient: receiver,
+          type: 'PT_THREAD',
+        },
+        {
+          amountToken: '1',
+          amountWei: '0',
+          meta: { secret: mkHash('0xff') },
+          recipient: eth.constants.AddressZero,
+          type: 'PT_LINK',
+        },
+      ],
+    },
+  ], async ({ name, payments, fails, meta }: any): Promise<any> => {
     await connext.start()
 
     if (fails) {
@@ -282,7 +278,7 @@ describe('BuyController: unit tests', () => {
           meta: meta || {},
           payments: payments as any,
         }),
-        fails
+        fails,
       )
       return
     }
@@ -292,58 +288,58 @@ describe('BuyController: unit tests', () => {
       payments: payments as any,
     })
 
-    await new Promise(res => setTimeout(res, 20))
+    await new Promise((res: any): any => setTimeout(res, 20))
 
     // hub should receive the user-signed update
     for (const p of payments) {
       // is hub to user payment?
-      const isUser = p.recipient == connext.wallet.address
+      const isUser = p.recipient === connext.wallet.address
       // is thread payment?
-      if ((p as any).type == "PT_THREAD") {
+      if ((p as any).type === 'PT_THREAD') {
         // check that user has sent thread update
         const syncRes = connext.store.getState().runtime.syncResultsFromHub
         for (const res of syncRes) {
           assert.containSubset(res, {
-            type: "thread",
+            type: 'thread',
             update: {
               state: {
-                balanceWeiSender: '0',
-                balanceWeiReceiver: (p as any).amountWei || '0',
-                balanceTokenSender: '0',
                 balanceTokenReceiver: (p as any).amountToken || '0',
+                balanceTokenSender: '0',
+                balanceWeiReceiver: (p as any).amountWei || '0',
+                balanceWeiSender: '0',
+                receiver: p.recipient,
                 txCount: 1,
-                receiver: p.recipient
-              }
-            }
+              },
+            },
           })
         }
         // check that there is an open thread
-        await new Promise(r => setTimeout(r, 20))
+        await new Promise((r: any): any => setTimeout(r, 20))
 
         connext.mockHub.assertReceivedUpdate({
-          reason: 'OpenThread',
           args: {
-            balanceWeiReceiver: '0',
-            balanceWeiSender: (p as any).amountWei || '0',
             balanceTokenReceiver: '0',
             balanceTokenSender: (p as any).amountToken || '0',
+            balanceWeiReceiver: '0',
+            balanceWeiSender: (p as any).amountWei || '0',
           },
-          sigUser: true,
+          reason: 'OpenThread',
           sigHub: false,
+          sigUser: true,
         })
 
         continue
       }
 
       connext.mockHub.assertReceivedUpdate({
-        reason: 'Payment',
         args: {
           amountToken: (p as any).amountToken || '0',
           amountWei: (p as any).amountWei || '0',
           recipient: isUser ? 'user' : 'hub',
-        } as PaymentArgs,
-        sigUser: true,
+        },
+        reason: 'Payment',
         sigHub: isUser,
+        sigUser: true,
       })
     }
   })
