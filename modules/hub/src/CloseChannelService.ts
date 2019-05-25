@@ -59,7 +59,7 @@ export class CloseChannelService {
     staleChannelDays?: number, 
     additionalMessage: string = "", 
     maintainMin: boolean = true,
-    maxDisputes?: number,
+    maxDisputes: number = 20,
   ) {
     if (!staleChannelDays && !this.config.staleChannelDays) {
       return
@@ -77,6 +77,10 @@ export class CloseChannelService {
     // dispute stale channels
     let initiatedDisputes = 0
     for (const channel of staleChannels) {
+      // check against max
+      if (initiatedDisputes >= maxDisputes) {
+        break
+      }
       const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
       LOG.info(`Found stale channel: ${safeJson(channel)}, latestUpdate: ${safeJson(latestUpdate)}`)
       if (!latestUpdate) {
@@ -102,16 +106,16 @@ export class CloseChannelService {
 
       // TODO: should take into account thread dispute costs here
       
-      // increase dispute count
-      initiatedDisputes += 1
       // proceed with channel dispute
-      this.startUnilateralExit(
-        channel.user, "Decollateralizing stale channel" + additionalMessage
-      )
-
-      // check against max
-      if (maxDisputes && initiatedDisputes >= maxDisputes) {
-        break
+      try {
+        const onchain = await this.startUnilateralExit(
+          channel.user, "Decollateralizing stale channel" + additionalMessage
+        )
+        LOG.info(`Successfully initiated dispute for ${channel.user}. Onchain id: ${onchain.id}, hash: ${onchain.hash}`)
+        // increase dispute count
+        initiatedDisputes += 1
+      } catch (e) {
+        LOG.warn(`Caught error trying to initiate dispute: ${e}`)
       }
     }
 
