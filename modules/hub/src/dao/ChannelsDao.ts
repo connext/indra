@@ -408,6 +408,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         contract = ${this.config.channelManagerAddress} AND
         last_updated_on < NOW() - (${staleChannelDays}::text || ' days')::INTERVAL AND
         status = 'CS_OPEN'
+        ORDER BY "balance_token_hub" DESC
     `)
     return rows.map(r => this.inflateChannelRow(r))
   }
