@@ -108,10 +108,12 @@ export class CloseChannelService {
       
       // proceed with channel dispute
       try {
-        const onchain = await this.startUnilateralExit(
-          channel.user, "Decollateralizing stale channel" + additionalMessage
-        )
-        LOG.info(`Successfully initiated dispute for ${channel.user}. Onchain id: ${onchain.id}, hash: ${onchain.hash}`)
+        await this.db.withTransaction(async () => {
+          const onchain = await this.startUnilateralExit(
+            channel.user, "Decollateralizing stale channel" + additionalMessage
+          )
+          LOG.info(`Successfully initiated dispute for ${channel.user}. Onchain id: ${onchain.id}, hash: ${onchain.hash}`)
+        })
         // increase dispute count
         initiatedDisputes += 1
       } catch (e) {
@@ -123,17 +125,15 @@ export class CloseChannelService {
   }
 
   public async autoDisputeStaleChannels(staleChannelDays?: number) {
-    await this.db.withTransaction(() => this._disputeStaleChannels(staleChannelDays, ", autodispute"))
+    await this._disputeStaleChannels(staleChannelDays, ", autodispute")
   }
 
   public async disputeStaleChannels(staleChannelDays: number, maxDisputes: number = 20) {
-    await this.db.withTransaction(() => 
-      this._disputeStaleChannels(
-        staleChannelDays, 
-        ", from command line", 
-        false,
-        maxDisputes
-      )
+    await this._disputeStaleChannels(
+      staleChannelDays, 
+      ", from command line", 
+      false,
+      maxDisputes
     )
   }
 
