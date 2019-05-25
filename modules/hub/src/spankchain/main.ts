@@ -29,6 +29,7 @@ async function run(): Promise<void> {
     'collateralize': (args: string[]): Promise<void> =>
       hub.collateralizeChannel(args[0], eth.utils.bigNumberify(args[1])),
     'exit-channels': (args: string[]): Promise<void> => hub.startUnilateralExitChannels(args),
+    'exit-stale-channels': args => hub.exitStaleChannels(args[0], args[1]), // days, maxDisputes?
     'fix-channels': (args: string[]): Promise<void> => hub.fixBrokenChannels(),
     'hub': (args: string[]): Promise<any> => hub.start(),
     'process-tx': (args: string[]): Promise<void> => hub.processTx(args[0]),

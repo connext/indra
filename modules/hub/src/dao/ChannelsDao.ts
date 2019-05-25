@@ -46,7 +46,7 @@ export default interface ChannelsDao {
   getLatestDoubleSignedState(user: string): Promise<ChannelStateUpdateRowBN|null>
   invalidateUpdates(user: string, invalidationArgs: InvalidationArgs): Promise<void>
   getDisputedChannelsForClose(disputePeriod: number): Promise<ChannelRowBN[]>
-  getStaleChannels(): Promise<ChannelRowBN[]>
+  getStaleChannels(staleChannelDays: number): Promise<ChannelRowBN[]>
   addChainsawErrorId(user: Address, id: number): Promise<void>
   removeChainsawErrorId(user: Address): Promise<void>
   getChannelUpdateById(id: number): Promise<ChannelStateUpdateRowBN>
@@ -393,17 +393,13 @@ export class PostgresChannelsDao implements ChannelsDao {
     `)
   }
 
-  async getStaleChannels() {
+  async getStaleChannels(staleChannelDays: number) {
     // stale channels are channels that havent been updated
     // within the `staleChannelDays` days
 
     // custodial withdrawals occur via direct eth transfer, so 
     // there is no reason to include any custodial payments
     // in the query logic. only need to check against latest channel update
-    const staleChannelDays = this.config.staleChannelDays
-    if (!staleChannelDays) {
-      return []
-    }
 
     const { rows } = await this.db.query(SQL`
       SELECT * 
@@ -412,6 +408,7 @@ export class PostgresChannelsDao implements ChannelsDao {
         contract = ${this.config.channelManagerAddress} AND
         last_updated_on < NOW() - (${staleChannelDays}::text || ' days')::INTERVAL AND
         status = 'CS_OPEN'
+        ORDER BY "balance_token_hub" DESC
     `)
     return rows.map(r => this.inflateChannelRow(r))
   }
