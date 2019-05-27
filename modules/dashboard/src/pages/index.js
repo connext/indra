@@ -55,8 +55,8 @@ class Index extends React.Component {
     console.log(`Got hub config: ${JSON.stringify(config, null, 2)}`);
     this.setState(state => {
       state.tokenAddress = config.tokenAddress.toLowerCase();
-      state.channelManager.address = config.channelManagerAddress.toLowerCase();
-      state.hubWallet.address = config.hubWalletAddress.toLowerCase();
+      state.channelManager.address = config.contractAddress.toLowerCase();
+      state.hubWallet.address = config.hubAddress.toLowerCase();
       return state;
     });
   }
