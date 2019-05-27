@@ -524,7 +524,8 @@ app.get("/deposits/frequency", async function(req, res) {
         LIMIT 7
     `,
     req,
-    res
+    res,
+    false
   );
 });
 
