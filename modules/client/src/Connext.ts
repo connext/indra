@@ -322,6 +322,16 @@ export abstract class ConnextChannel extends EventEmitter {
   ): Promise<PurchaseRowWithPayments<object, string>> {
     return this.internal.hub.getPaymentById(purchaseId)
   }
+
+  // TODO: best way to handle types atm?
+  public async installApp(params: any) {}
+
+  public async uninstallApp(identifier: string) {}
+
+  // TODO: best way to handle types atm?
+  public async setAppState(params: any) {
+    return this.buy(params)
+  }
 }
 
 /**
