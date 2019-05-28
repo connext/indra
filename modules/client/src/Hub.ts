@@ -24,6 +24,7 @@ import {
   ThreadStateUpdate,
   UpdateRequest,
   WithdrawalParameters,
+  EmailRequest,
 } from './types'
 import { Wallet } from './Wallet'
 
@@ -72,6 +73,7 @@ export interface IHubAPIClient {
     lastThreadUpdateId: number,
   ): Promise<{ error: string | undefined, updates: Sync }>
   updateThread(update: ThreadStateUpdate): Promise<ThreadStateUpdate>
+  sendEmail(email: EmailRequest): Promise<{ message: string, id: string }>
 }
 
 export class HubAPIClient implements IHubAPIClient {
@@ -89,6 +91,10 @@ export class HubAPIClient implements IHubAPIClient {
 
   ////////////////////////////////////////
   // Public Methods
+
+  public async sendEmail(email: EmailRequest): Promise<{ message: string, id: string }> {
+    return this.post(`payments/${this.address}/email`, { ...email })
+  }
 
   public async buy<PurchaseMetaType=any, PaymentMetaType=any>(
     meta: PurchaseMetaType,

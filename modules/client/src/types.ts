@@ -775,6 +775,13 @@ export type PaymentProfileConfigBN = PaymentProfileConfig<BN>
 // Accepts: { metadata: MetadataType, payments: PurchasePayment[], }
 // Returns: { purchaseId: string, updates: SyncResponse, }
 
+// sending email
+export type EmailRequest = {
+  to: string, 
+  subject: string, 
+  text: string
+}
+
 // custodial payments
 export interface CustodialBalanceRow<T=string> {
   user: string
