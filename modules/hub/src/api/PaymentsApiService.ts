@@ -16,7 +16,7 @@ import DBEngine from '../DBEngine'
 import PaymentsService from '../PaymentsService'
 import { Role } from '../Role'
 import { default as ThreadsService } from '../ThreadsService'
-import log from '../util/log'
+import log, { logApiRequestError } from '../util/log'
 import { ownedAddressOrAdmin } from '../util/ownedAddressOrAdmin'
 import WithdrawalsService from '../WithdrawalsService'
 
@@ -29,6 +29,7 @@ export default class PaymentsApiService extends ApiService<PaymentsApiServiceHan
     'POST /redeem/:user': 'doRedeem',
     'GET /purchase/:id': 'doPurchaseById',
     'GET /history/:address': 'doPaymentHistory',
+    'POST /:user/email': 'doPaymentEmail',
   }
   handler = PaymentsApiServiceHandler
   dependencies = {
@@ -110,6 +111,36 @@ export class PaymentsApiServiceHandler {
 
     const history = await this.paymentMetaDao.historyByUser(targetAddr)
     res.send(history)
+  }
+
+  async doPaymentEmail(req: express.Request, res: express.Response) {
+    const user = req.address
+    const {
+      subject,
+      to,
+      text
+    } = req.body
+
+    if (!subject || !to || !text || !user) {
+      logApiRequestError(LOG, req)
+      return res.sendStatus(400)
+    }
+
+    const result = await this.paymentsService.doPaymentEmail(
+      to, subject, text
+    )
+
+    if (result.error) {
+      LOG.error(
+        `Error trying to send email via mailgun for user {user}. Error: {err}`, {
+          user,
+          err: result.msg,
+        }
+      )
+      return res.sendStatus(400)
+    }
+
+    return res.send((result as any).res)
   }
 
   async doPurchaseById(req: express.Request, res: express.Response) {
