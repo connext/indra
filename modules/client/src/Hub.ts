@@ -1,4 +1,5 @@
 import { ethers as eth } from 'ethers'
+import WebSocket from 'isomorphic-ws'
 
 import {
   Address,
@@ -9,6 +10,7 @@ import {
   channelUpdateToUpdateRequest,
   CustodialBalanceRow,
   CustodialWithdrawalRow,
+  EmailRequest,
   ExchangeRates,
   HubConfig,
   Payment,
@@ -24,7 +26,6 @@ import {
   ThreadStateUpdate,
   UpdateRequest,
   WithdrawalParameters,
-  EmailRequest,
 } from './types'
 import { Wallet } from './Wallet'
 
@@ -82,11 +83,34 @@ export class HubAPIClient implements IHubAPIClient {
   private nonce: string | undefined
   private signature: string | undefined
   private wallet: Wallet
+  private ws: WebSocket
 
   public constructor(hubUrl: string, wallet: Wallet) {
     this.hubUrl = hubUrl
     this.wallet = wallet
     this.address = wallet.address
+
+    const hubWsUrl = this.hubUrl.replace(/^http/, 'ws')
+    console.log(`===== WS connecting to: ${hubWsUrl}`)
+    this.ws = new WebSocket(hubWsUrl)
+
+    this.ws.onopen = (): void => {
+      console.log(`===== WS successfully connected to ${hubWsUrl}`)
+      this.ws.send('Hello Hubby')
+    }
+
+    this.ws.onclose = (): void => {
+      console.log(`===== WS disconnected from ${hubWsUrl}`)
+    }
+
+    this.ws.onmessage = (event: any): void => {
+      console.log(`===== WS message: ${event.data}`)
+    }
+
+    this.ws.onerror = (e: any): void => {
+      console.log(`===== WS error`)
+    }
+
   }
 
   ////////////////////////////////////////
