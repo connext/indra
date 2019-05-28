@@ -169,6 +169,7 @@ services:
       - $project
     ports:
       - "8080:8080"
+      - "8081:8081"
     secrets:
       - ${project}_database_dev
       - hub_key_ganache

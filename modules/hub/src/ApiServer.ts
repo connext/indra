@@ -2,6 +2,7 @@ import * as cors from 'cors'
 import * as express from 'express'
 import https from 'https'
 import selfsigned from 'selfsigned'
+import * as WebSocket from 'ws'
 
 import { ApiService } from './api/ApiService'
 import Config from './Config'
@@ -9,7 +10,6 @@ import { Container } from './Container'
 import { getAuthMiddleware } from './middleware/AuthMiddleware'
 import { ezPromise, maybe, MaybeRes } from './util'
 import log from './util/log'
-
 
 const LOG = log('ApiServer')
 
@@ -150,25 +150,38 @@ export class ApiServer {
   }
 
   public async start(): Promise<void> {
-    if (this.config.forceSsl) {
-      const attrs = [{ name: 'commonName', value: 'localhost' }]
-      const pems = selfsigned.generate(attrs, { days: 365, keySize: 4096 })
-      return new Promise((resolve: any): any => {
-        const callback: any = (err: any): void => {
-          if (err) throw err
-          LOG.info(`Listening on SSL port ${this.config.httpsPort}.`)
-          resolve()
-        }
-        https
-          .createServer({ key: pems.private, cert: pems.cert }, this.app)
-          .listen(this.config.httpsPort, callback)
-      })
-    }
     return new Promise((resolve: any): void => {
-      this.app.listen(this.config.port, () => {
-        LOG.info(`Listening on port ${this.config.port}.`)
+      let port = this.config.port
+      let server: any = this.app
+
+      if (this.config.forceSsl) {
+        const pems = selfsigned.generate(
+          [{ name: 'commonName', value: 'localhost' }],
+          { days: 365, keySize: 4096 },
+        )
+        port = this.config.httpsPort
+        server = https.createServer({ key: pems.private, cert: pems.cert }, this.app)
+      }
+
+      const wsPort = port + 1
+      const wsServer = new WebSocket.Server({ port: wsPort })
+      wsServer.on('connection', (ws: WebSocket): void => {
+        LOG.info(`New WS connection established`)
+        ws.on('message', (message: any): void => {
+          LOG.info(`WS received message: [${typeof message}] ${message}`)
+        })
+        const toSend = `Hello WS client, I'm the hub`
+        LOG.info(`WS sending message: [${typeof toSend}] ${toSend}`)
+        ws.send(toSend)
+      })
+
+      server.listen(port, (err: any): void => {
+        if (err) throw err
+        LOG.info(`Listening on port: ${port}.`)
         resolve()
       })
+
     })
   }
+
 }

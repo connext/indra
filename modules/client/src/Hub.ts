@@ -90,7 +90,7 @@ export class HubAPIClient implements IHubAPIClient {
     this.wallet = wallet
     this.address = wallet.address
 
-    const hubWsUrl = this.hubUrl.replace(/^http/, 'ws')
+    const hubWsUrl = `${this.hubUrl}/subscribe`.replace(/^http/, 'ws')
     console.log(`===== WS connecting to: ${hubWsUrl}`)
     this.ws = new WebSocket(hubWsUrl)
 
