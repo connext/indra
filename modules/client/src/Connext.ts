@@ -332,6 +332,11 @@ export abstract class ConnextChannel extends EventEmitter {
   public async setAppState(params: any) {
     return this.buy(params)
   }
+
+  // TODO: finalize dispute methods, types
+  public async challenge(params: any) {}
+  public async respondToChallenge(params: any) {}
+  public async resolveDispute(params: any) {}
 }
 
 /**
