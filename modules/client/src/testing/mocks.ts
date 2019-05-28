@@ -53,6 +53,7 @@ import {
   UnsignedThreadState,
   UpdateRequest,
   WithdrawalParameters,
+  EmailRequest,
 } from '../types'
 import { Wallet } from '../Wallet'
 
@@ -251,6 +252,13 @@ export class MockChannelManager implements IChannelManager {
 
 export class MockHub implements IHubAPIClient {
   public receivedUpdateRequests: UpdateRequest[] = []
+
+  public async sendEmail(email: EmailRequest): Promise<{ message: string, id: string }> {
+    return {
+      message: "You requested to send an email: " + JSON.stringify(email, null, 2),
+      id: "adsklfn33"
+    }
+  }
 
   public async config(): Promise<HubConfig> {
     // TODO: implement correctly
