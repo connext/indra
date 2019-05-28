@@ -432,6 +432,7 @@ export class StateUpdateController extends AbstractController {
    */
   public updateHandlers: StateUpdateHandlers = {
 
+    // TODO: use safeSignHook
     'CloseThread': async (prev: any, update: any): Promise<any> => {
       // Close thread updates can be received in the following
       // conditions:
@@ -471,14 +472,17 @@ export class StateUpdateController extends AbstractController {
       }
     },
 
+    // TODO: use safeSignHook
     'ConfirmPending': async (prev: any, update: any): Promise<any> => {
       /* noop */
     },
 
+    // TODO: use safeSignHook
     'EmptyChannel': async (prev: any, update: any): Promise<any> => {
       /* noop */
     },
 
+    // TODO: sign with popup
     'Payment': async (prev: any, update: any): Promise<any> => {
       // We will receive Payment updates from the hub when:
       // 1. The hub has countersigned a payment we've made (ex, `recipient ==
@@ -496,6 +500,7 @@ export class StateUpdateController extends AbstractController {
       }
     },
 
+    // TODO: use safeSignHook
     'Exchange': async (prev: any, update: any): Promise<any> => {
       // We will receive Exchange updates from the hub only when:
       // 1. The hub is countersigning and returning an exchange we have sent
@@ -515,6 +520,7 @@ export class StateUpdateController extends AbstractController {
       assertSigPresence(update)
     },
 
+    // TODO: use safeSignHook
     'Invalidation': async (prev: any, update: any): Promise<any> => {
       // NOTE (BSU-72): this will break in two ways if the hub tries to
       // invalidate a state without a timeout:
@@ -557,6 +563,7 @@ export class StateUpdateController extends AbstractController {
       }
     },
 
+    // TODO: use safeSignHook
     'OpenThread': async (prev: any, update: any): Promise<any> => {
       // Clients could be receiving open thread updates when:
       // 1. The hub has countersigned the channel update with the
@@ -599,6 +606,7 @@ export class StateUpdateController extends AbstractController {
         }
         return
       }
+      // TODO: sign with popup
       // 2: We have requested a deposit
       if (update.sigHub && !update.sigUser) {
         // Because we will only save the signed update once it has been sent to
@@ -614,7 +622,9 @@ export class StateUpdateController extends AbstractController {
     },
 
     'ProposePendingWithdrawal': async (prev: any, update: any): Promise<any> => {
+      // hub always returns unsigned for withdrawal request
       if (!update.sigHub) {
+        // TODO: sign with popup IFF users balance/wds unchanged
         const WithdrawalError = (msg: string): Error =>
           new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
         const tsErr = validateTimestamp(this.store, update.args.timeout)
