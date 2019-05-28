@@ -195,6 +195,7 @@ services:
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
       BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
+      MAILGUN_API_KEY: $MAILGUN_API_KEY
     logging:
       driver: "json-file"
       options:
