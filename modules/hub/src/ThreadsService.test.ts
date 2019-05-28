@@ -1,20 +1,21 @@
-import { BigNumber } from 'ethers/utils';
-import { types, big } from 'connext';
-import {assert, getTestRegistry, TestServiceRegistry} from './testing'
+import * as connext from 'connext'
+import {
+  ChannelStateUpdateRowBN,
+  ThreadState,
+  ThreadStateBN,
+} from 'connext/types'
+
+import { assert, getTestRegistry, TestServiceRegistry } from './testing'
 import {
   assertChannelStateEqual,
   assertThreadStateEqual,
   getChannelState,
   getThreadState,
   mkAddress,
-  mkSig
+  mkSig,
 } from './testing/stateUtils'
-const { Big } = big
+import { toBN } from './util'
 
-type ChannelStateUpdateRowBigNum = types.ChannelStateUpdateRow<BigNumber>
-type ThreadState<T=string> = types.ThreadState<T>
-type ThreadStateBigNum = ThreadState<BigNumber>
-const { convertChannelState, convertThreadState } = types
 const fakeSig = mkSig('0xfff')
 
 describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
@@ -69,7 +70,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     sig: [sigThread, sigChannel]
   })
 
-  async function createThread (): Promise<ChannelStateUpdateRowBigNum> {
+  async function createThread (): Promise<ChannelStateUpdateRowBN> {
     await channelsDao.applyUpdateByUser(
       sender,
       'ConfirmPending',
@@ -86,7 +87,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     const channelSenderUpdateAfterThreadOpen = await threadsService.open(
-      convertThreadState(
+      connext.convert.ThreadState(
         'bn',
         getThreadState('empty', {
           sender,
@@ -105,12 +106,12 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
 
     // assert that balance was bonded out of channel
     assertChannelStateEqual(
-      convertChannelState('str', channelSenderUpdateAfterThreadOpen.state),
+      connext.convert.ChannelState('str', channelSenderUpdateAfterThreadOpen.state),
       {
         user: sender,
         sigHub: fakeSig,
-        balanceTokenUser: Big(channelSender.balanceTokenUser)
-          .sub(Big(10))
+        balanceTokenUser: toBN(channelSender.balanceTokenUser)
+          .sub(toBN(10))
           .toString()
       }
     )
@@ -120,11 +121,11 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     assertChannelStateEqual(
-      convertChannelState('str', channelReceiverFinal.state),
+      connext.convert.ChannelState('str', channelReceiverFinal.state),
       {
         sigHub: fakeSig,
-        balanceTokenHub: Big(channelReceiver.balanceTokenHub)
-          .sub(Big(10))
+        balanceTokenHub: toBN(channelReceiver.balanceTokenHub)
+          .sub(toBN(10))
           .toString()
       }
     )
@@ -159,7 +160,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
 
     await threadsDao.changeThreadStatus(sender, receiver, 'CT_CLOSED')
     await threadsService.open(
-      convertThreadState(
+      connext.convert.ThreadState(
         'bn',
         getThreadState('empty', {
           threadId: thread.state.threadId + 1,
@@ -194,11 +195,11 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     })
     await threadsService.update(sender, receiver, {
       ...threadUpdate,
-      balanceTokenReceiver: Big(threadUpdate.balanceTokenReceiver),
-      balanceTokenSender: Big(threadUpdate.balanceTokenSender),
-      balanceWeiSender: Big(threadUpdate.balanceWeiSender),
-      balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver)
-    } as ThreadStateBigNum)
+      balanceTokenReceiver: toBN(threadUpdate.balanceTokenReceiver),
+      balanceTokenSender: toBN(threadUpdate.balanceTokenSender),
+      balanceWeiSender: toBN(threadUpdate.balanceWeiSender),
+      balanceWeiReceiver: toBN(threadUpdate.balanceWeiReceiver)
+    } as ThreadStateBN)
 
     threadUpdate = getThreadState('empty', {
       sender,
@@ -210,11 +211,11 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     })
     await threadsService.update(sender, receiver, {
       ...threadUpdate,
-      balanceTokenReceiver: Big(threadUpdate.balanceTokenReceiver),
-      balanceTokenSender: Big(threadUpdate.balanceTokenSender),
-      balanceWeiSender: Big(threadUpdate.balanceWeiSender),
-      balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver)
-    } as ThreadStateBigNum)
+      balanceTokenReceiver: toBN(threadUpdate.balanceTokenReceiver),
+      balanceTokenSender: toBN(threadUpdate.balanceTokenSender),
+      balanceWeiSender: toBN(threadUpdate.balanceWeiSender),
+      balanceWeiReceiver: toBN(threadUpdate.balanceWeiReceiver)
+    } as ThreadStateBN)
 
     const thread = await threadsService.getThread(sender, receiver)
     assertThreadStateEqual(thread.state, {balanceToken: [2, 8], txCount: 8})
@@ -234,7 +235,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     assertChannelStateEqual(
-      convertChannelState('str', channelSenderAfterClose.state),
+      connext.convert.ChannelState('str', channelSenderAfterClose.state),
       {
         balanceTokenUser: channelSenderBeforeClose.state.balanceTokenUser
           .plus(2)
@@ -246,7 +247,7 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
     )
 
     assertChannelStateEqual(
-      convertChannelState('str', channelReceiverAfterClose.state),
+      connext.convert.ChannelState('str', channelReceiverAfterClose.state),
       {
         balanceTokenHub: channelReceiverBeforeClose.state.balanceTokenHub
           .plus(2)
@@ -279,11 +280,11 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
 
       await assert.isRejected(threadsService.update(sender, receiver, {
         ...threadUpdate,
-        balanceTokenReceiver: Big(threadUpdate.balanceTokenReceiver),
-        balanceTokenSender: Big(threadUpdate.balanceTokenSender),
-        balanceWeiSender: Big(threadUpdate.balanceWeiSender),
-        balanceWeiReceiver: Big(threadUpdate.balanceWeiReceiver)
-      } as ThreadStateBigNum), 'Threads are disabled.')
+        balanceTokenReceiver: toBN(threadUpdate.balanceTokenReceiver),
+        balanceTokenSender: toBN(threadUpdate.balanceTokenSender),
+        balanceWeiSender: toBN(threadUpdate.balanceWeiSender),
+        balanceWeiReceiver: toBN(threadUpdate.balanceWeiReceiver)
+      } as ThreadStateBN), 'Threads are disabled.')
     })
 
     it('should prevent threads from being closed', async () => {

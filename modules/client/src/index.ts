@@ -1,25 +1,24 @@
-import { getConnextClient } from './Connext'
-import * as big from './lib/bn'
-import { Poller } from './lib/poller/Poller'
+import { createClient } from './Connext'
+import { Currency } from './lib/currency'
+import { Poller } from './lib/poller'
 import { StateGenerator } from './StateGenerator'
-import * as types from './types'
+import { convert } from './types'
 import { Utils } from './Utils'
 import { Validator } from './validator'
 
-const Connext: any = {
-  getConnextClient,
-  StateGenerator,
-  Utils,
-  Validator,
-}
+// So that all types are available via the type delcaration's index
+// Lets us import types like this: import { RandomType } from 'connext/types'
+export * from './types'
+
+const utils = new Utils()
 
 export {
-  big,
-  getConnextClient,
+  convert,
+  createClient,
+  Currency,
   Poller,
   StateGenerator,
-  types,
   Utils,
+  utils,
   Validator,
 }
-export default Connext

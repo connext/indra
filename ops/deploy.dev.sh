@@ -18,7 +18,7 @@ eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble swe
 eth_network="ganache"
 eth_network_id="4447"
 eth_rpc_url="http://ethprovider:8545"
-log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
+log_level="30" # set to 0 for no logs or to 50 for all the logs
 private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 private_key_file="/run/secrets/hub_key_ganache"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
@@ -155,7 +155,7 @@ services:
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      LOG_LEVEL: 20
+      LOG_LEVEL: $log_level
       NODE_ENV: development
       POSTGRES_USER: $postgres_user
       POSTGRES_PASSWORD_FILE: $postgres_password_file
@@ -186,7 +186,7 @@ services:
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      LOG_LEVEL: 20
+      LOG_LEVEL: $log_level
       NODE_ENV: development
       POSTGRES_USER: $postgres_user
       POSTGRES_PASSWORD_FILE: $postgres_password_file

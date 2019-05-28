@@ -1,7 +1,5 @@
-import { mkAddress } from '../testing';
-import { MockStore, MockConnextInternal } from '../testing/mocks';
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+import { mkAddress } from '../testing'
+import { MockConnextInternal, MockStore } from '../testing/mocks'
 
 describe('ExchangeController: unit tests', () => {
   const user = mkAddress('0xAAA')
@@ -13,28 +11,28 @@ describe('ExchangeController: unit tests', () => {
     await connext.start()
   })
 
-  it('should exchange all of users wei balance if total exchanged tokens under booty limit', async () => {
+  it('should exchange all of users wei balance if total exchanged is under limit', async () => {
     // add channel to the store
     mockStore.setChannel({
-      user,
-      balanceWei: [0, 10],
       balanceToken: [50, 0],
+      balanceWei: [0, 10],
+      user,
     })
-    mockStore.setExchangeRate({ 'USD': '5' })
+    mockStore.setExchangeRate({ 'DAI': '5' })
     connext = new MockConnextInternal({ user, store: mockStore.createStore() })
     await connext.start()
     await connext.exchangeController.exchange('10', 'wei')
-    await new Promise(res => setTimeout(res, 20))
+    await new Promise((res: any): any => setTimeout(res, 20))
 
     connext.mockHub.assertReceivedUpdate({
-      reason: 'Exchange',
       args: {
-        weiToSell: '10',
+        seller: 'user',
         tokensToSell: '0',
-        seller: "user",
+        weiToSell: '10',
       },
-      sigUser: true,
+      reason: 'Exchange',
       sigHub: false,
+      sigUser: true,
     })
   })
 

@@ -1,17 +1,19 @@
+import * as connext from 'connext'
+import {
+  ChannelManagerChannelDetails,
+  ChannelState,
+  Omit,
+  UnsignedChannelState,
+} from 'connext/types'
+import * as eth from 'ethers'
 import * as fs from 'fs'
-import { types, Utils } from 'connext';
-import Config from './Config'
-import { ChannelManager } from './contract/ChannelManager';
-import log from './util/log'
-import { Block, RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction';
-import { rawTxnToTx } from './util/ethTransaction';
-import Web3 from 'web3';
-import * as eth from 'ethers';
+import Web3 from 'web3'
 
-type ChannelState<T=string> = types.ChannelState<T>
-type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
-type Omit<T, K extends keyof T> = types.Omit<T, K>
-type UnsignedChannelState = types.UnsignedChannelState
+import Config from './Config'
+import { ChannelManager } from './contract/ChannelManager'
+import { Block, RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction'
+import { rawTxnToTx } from './util/ethTransaction'
+import log from './util/log'
 
 const LOG = log('SignerService')
 
@@ -19,7 +21,7 @@ export class SignerService {
   constructor(
     private web3: Web3, 
     private contract: ChannelManager,
-    private utils: Utils, 
+    private utils: connext.Utils, 
     private config: Config
   ) {
   }

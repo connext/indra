@@ -26,9 +26,11 @@ INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
 number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
 should_collateralize_url="NO_CHECK"
 bei_min_collateralization="10000000000000000000"
+channel_bei_limit=${CHANNEL_BEI_LIMIT}
+channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
 # hard-coded config (you probably won't ever need to change these)
-log_level="20" # set to 10 for all logs or to 30 to only print warnings/errors
+log_level="30" # set to 10 for all logs or to 30 to only print warnings/errors
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
 private_key_file="/run/secrets/$private_key_name"
 
@@ -174,11 +176,13 @@ services:
       - database
       - chainsaw
     environment:
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
+      CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      LOG_LEVEL: 20
+      LOG_LEVEL: $log_level
       NODE_ENV: production
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
@@ -205,11 +209,13 @@ services:
     depends_on:
       - postgres
     environment:
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
+      CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
       HUB_WALLET_ADDRESS: $hub_wallet_address
-      LOG_LEVEL: 20
+      LOG_LEVEL: $log_level
       NODE_ENV: production
       POLLING_INTERVAL: 2000
       POSTGRES_DB: $postgres_db

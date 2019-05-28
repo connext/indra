@@ -1,32 +1,31 @@
-import * as eth from 'ethers';
-import { StateGenerator, types, big } from 'connext';
-import { getTestRegistry, assert } from "./testing";
-import PaymentsService from "./PaymentsService";
-import { mkAddress, mkSig, assertChannelStateEqual, assertThreadStateEqual } from "./testing/stateUtils";
-import { channelUpdateFactory, tokenVal } from "./testing/factories";
-import { testChannelManagerAddress, testHotWalletAddress, fakeSig } from "./testing/mocks";
-import ChannelsService from "./ChannelsService";
+import * as connext from 'connext'
+import {
+  DepositArgs,
+  PaymentArgs,
+  PurchasePayment,
+  ThreadState,
+  ThreadStateUpdate,
+  UpdateRequest,
+} from 'connext/types'
+import * as eth from 'ethers'
+
+import ChannelsService from './ChannelsService'
+import Config from './Config'
 import { default as ChannelsDao } from './dao/ChannelsDao'
-import GlobalSettingsDao from "./dao/GlobalSettingsDao";
-import Config from "./Config";
-import OptimisticPaymentDao from "./dao/OptimisticPaymentDao";
-import { PaymentMetaDao } from "./dao/PaymentMetaDao";
-
-const { toWeiString, Big } = big;
-
-type DepositArgs<T=string> = types.DepositArgs<T>
-type PaymentArgs<T=string> = types.PaymentArgs<T>
-type PurchasePayment = types.PurchasePayment
-type ThreadState = types.ThreadState
-type ThreadStateUpdate = types.ThreadStateUpdate
-type UpdateRequest = types.UpdateRequest
-
-const {
-  convertChannelState,
-  convertDeposit,
-  convertPayment,
-  convertThreadState,
-} = types
+import GlobalSettingsDao from './dao/GlobalSettingsDao'
+import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
+import { PaymentMetaDao } from './dao/PaymentMetaDao'
+import PaymentsService from './PaymentsService'
+import { assert, getTestRegistry } from './testing'
+import { channelUpdateFactory, tokenVal } from './testing/factories'
+import { fakeSig, testChannelManagerAddress, testHotWalletAddress } from './testing/mocks'
+import {
+  assertChannelStateEqual,
+  assertThreadStateEqual,
+  mkAddress,
+  mkSig,
+} from './testing/stateUtils'
+import { toBN, toWei } from './util'
 
 const emptyAddress = eth.constants.AddressZero
 
@@ -38,7 +37,7 @@ describe('PaymentsService', () => {
   const paymentDao: PaymentMetaDao = registry.get('PaymentMetaDao')
   const channelsService: ChannelsService = registry.get('ChannelsService')
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
-  const stateGenerator: StateGenerator = registry.get('StateGenerator')
+  const stateGenerator: connext.StateGenerator = registry.get('StateGenerator')
   const globalSettingsDao: GlobalSettingsDao = registry.get('GlobalSettingsDao')
   const config: Config = registry.get('Config')
 
@@ -421,7 +420,7 @@ describe('PaymentsService', () => {
   it('PT_CHANNEL payment should collateralize recipient channel with failing tip', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
-      balanceTokenUser: toWeiString(5),
+      balanceTokenUser: toWei(5).toString(),
     })
 
     const receiverChannel = await channelUpdateFactory(registry, { user: mkAddress('0xb') })
@@ -430,7 +429,7 @@ describe('PaymentsService', () => {
       recipient: receiverChannel.user,
       amount: {
         amountWei: '0',
-        amountToken: toWeiString(1),
+        amountToken: toWei(1).toString(),
       },
       meta: {},
       type: 'PT_CHANNEL',
@@ -440,7 +439,7 @@ describe('PaymentsService', () => {
         txCount: senderChannel.state.txCountGlobal + 1,
         args: {
           amountWei: '0',
-          amountToken: toWeiString(1),
+          amountToken: toWei(1).toString(),
           recipient: 'hub'
         },
       } as UpdateRequest,
@@ -456,8 +455,8 @@ describe('PaymentsService', () => {
     const latest = updates.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
     const collateralState = stateGenerator.proposePendingDeposit(
-      convertChannelState('bn', receiverChannel.state),
-      convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', receiverChannel.state),
+      connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
     // custodial payments mean recent payers = 1
     assertChannelStateEqual(collateralState, {
@@ -468,16 +467,16 @@ describe('PaymentsService', () => {
   it('PT_CHANNEL payment should collateralize recipient channel and still send tip', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
-      balanceTokenUser: toWeiString(5),
+      balanceTokenUser: toWei(5).toString(),
     })
 
-    const receiverChannel = await channelUpdateFactory(registry, { user: mkAddress('0xb'), balanceTokenHub: toWeiString(1) })
+    const receiverChannel = await channelUpdateFactory(registry, { user: mkAddress('0xb'), balanceTokenHub: toWei(1).toString() })
 
     const payments: PurchasePayment[] = [{
       recipient: receiverChannel.user,
       amount: {
         amountWei: '0',
-        amountToken: toWeiString(1),
+        amountToken: toWei(1).toString(),
       },
       meta: {},
       type: 'PT_CHANNEL',
@@ -487,7 +486,7 @@ describe('PaymentsService', () => {
         txCount: senderChannel.state.txCountGlobal + 1,
         args: {
           amountWei: '0',
-          amountToken: toWeiString(1),
+          amountToken: toWei(1).toString(),
           recipient: 'hub'
         },
       } as UpdateRequest,
@@ -501,8 +500,8 @@ describe('PaymentsService', () => {
     const latest = updates.pop()
     assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
     const collateralState = stateGenerator.proposePendingDeposit(
-      convertChannelState('bn', receiverChannel.state),
-      convertDeposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
+      connext.convert.ChannelState('bn', receiverChannel.state),
+      connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs)
     )
 
     assertChannelStateEqual(collateralState, {
@@ -684,18 +683,18 @@ describe('PaymentsService', () => {
   it('single thread payment e2e', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
       user: mkAddress('0xa'),
-      balanceTokenUser: toWeiString(5),
+      balanceTokenUser: toWei(5).toString(),
     })
 
     const receiverChannel = await channelUpdateFactory(registry, { 
       user: mkAddress('0xb'), 
-      balanceTokenHub: toWeiString(100) 
+      balanceTokenHub: toWei(100).toString() 
     })
 
     const threadState: ThreadState = {
       balanceWeiSender: '0',
       balanceWeiReceiver: '0',
-      balanceTokenSender: toWeiString(1),
+      balanceTokenSender: toWei(1).toString(),
       balanceTokenReceiver: '0',
       contractAddress: testChannelManagerAddress,
       sender: senderChannel.user,
@@ -706,24 +705,24 @@ describe('PaymentsService', () => {
     }
 
     const threadUpdate = stateGenerator.threadPayment(
-      convertThreadState('bn', threadState), 
-      convertPayment('bn', {
-        amountToken: toWeiString(0.1),
+      connext.convert.ThreadState('bn', threadState), 
+      connext.convert.Payment('bn', {
+        amountToken: toWei(0.1).toString(),
         amountWei: 0
       })
     )
 
     const openThread = stateGenerator.openThread(
-      convertChannelState('bn', senderChannel.state),
+      connext.convert.ChannelState('bn', senderChannel.state),
       [],
-      convertThreadState('bn', threadState)
+      connext.convert.ThreadState('bn', threadState)
     )
 
     const payments: PurchasePayment[] = [{
       recipient: testHotWalletAddress,
       amount: {
         amountWei: '0',
-        amountToken: toWeiString(1),
+        amountToken: toWei(1).toString(),
       },
       meta: {},
       type: 'PT_CHANNEL',
@@ -737,7 +736,7 @@ describe('PaymentsService', () => {
       recipient: receiverChannel.user,
       amount: {
         amountWei: '0',
-        amountToken: toWeiString(1),
+        amountToken: toWei(1).toString(),
       },
       meta: {},
       type: 'PT_THREAD',
@@ -793,8 +792,8 @@ describe('PaymentsService', () => {
     assertChannelStateEqual(update[0].state, {
       ...receiverChannel.state,
       txCountGlobal: receiverChannel.state.txCountGlobal + 2,
-      balanceTokenUser: Big(receiverChannel.state.balanceTokenUser).add(threadUpdate.balanceTokenReceiver).toString(),
-      balanceTokenHub: Big(receiverChannel.state.balanceTokenHub).sub(threadUpdate.balanceTokenReceiver).toString(),
+      balanceTokenUser: toBN(receiverChannel.state.balanceTokenUser).add(threadUpdate.balanceTokenReceiver).toString(),
+      balanceTokenHub: toBN(receiverChannel.state.balanceTokenHub).sub(threadUpdate.balanceTokenReceiver).toString(),
       sigUser: mkSig('0xa'),
       sigHub: fakeSig
     })
@@ -818,7 +817,7 @@ describe('PaymentsService', () => {
         recipient: receiver,
         amount: {
           amountWei: '0',
-          amountToken: toWeiString(1),
+          amountToken: toWei(1).toString(),
         },
         meta: {},
         type: 'PT_CHANNEL',
@@ -828,7 +827,7 @@ describe('PaymentsService', () => {
           txCount: senderChannel.state.txCountGlobal + 1,
           args: {
             amountWei: '0',
-            amountToken: toWeiString(1),
+            amountToken: toWei(1).toString(),
             recipient: 'hub'
           },
         } as UpdateRequest,
@@ -837,7 +836,7 @@ describe('PaymentsService', () => {
         recipient: testHotWalletAddress,
         amount: {
           amountWei: '0',
-          amountToken: toWeiString(3),
+          amountToken: toWei(3).toString(),
         },
         meta: {},
         type: 'PT_CHANNEL',
@@ -847,7 +846,7 @@ describe('PaymentsService', () => {
           txCount: senderChannel.state.txCountGlobal + 2,
           args: {
             amountWei: '0',
-            amountToken: toWeiString(3),
+            amountToken: toWei(3).toString(),
             recipient: 'hub'
           },
         } as UpdateRequest,
@@ -864,14 +863,14 @@ describe('PaymentsService', () => {
       sender: senderChannel.user,
       meta: { todo: 'this will be filled in later' },
       amount: {
-        amountToken: toWeiString(4),
+        amountToken: toWei(4).toString(),
         amountWei: '0'
       },
       payments: [{
         recipient: receiver,
         amount: {
           amountWei: '0',
-          amountToken: toWeiString(1),
+          amountToken: toWei(1).toString(),
         },
         meta: {},
         type: 'PT_CHANNEL',
@@ -880,7 +879,7 @@ describe('PaymentsService', () => {
         recipient: testHotWalletAddress,
         amount: {
           amountWei: '0',
-          amountToken: toWeiString(3),
+          amountToken: toWei(3).toString(),
         },
         meta: {},
         type: 'PT_CHANNEL',

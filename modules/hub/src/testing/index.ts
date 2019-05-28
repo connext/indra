@@ -1,19 +1,21 @@
-import { types } from 'connext';
-import { Context } from "../Container";
 import * as chai from 'chai'
-import * as sinon from 'sinon'
 import * as _nock from 'nock'
+import * as sinon from 'sinon'
 
+import { clearFakeClosingTime, mockServices } from './mocks'
+
+import { Container, Context, Registry } from '../Container'
 import defaultRegistry, { serviceDefinitions } from '../services'
-import { Registry, Container } from '../Container'
-import { mockServices, clearFakeClosingTime } from './mocks'
-export { TestApiServer, getTestConfig } from './mocks'
+import { isBN } from '../util'
+
+export { getTestConfig, TestApiServer } from './mocks'
 
 export type ServiceName = keyof typeof serviceDefinitions
 export type ServiceDict = {
   [N in ServiceName]?: ServiceType<N>
 }
-export type ServiceType<N extends ServiceName> = ReturnType<(typeof serviceDefinitions)[N]['factory']>
+export type ServiceType<N extends ServiceName> =
+  ReturnType<(typeof serviceDefinitions)[N]['factory']>
 
 export class TestServiceRegistry {
   overrides: any
@@ -182,7 +184,7 @@ chai.use(require('@spankchain/chai-subset'))
 chai.use(require('chai-as-promised'))
 export const assert = chai.assert
 ;(assert.containSubset as any).options.check = (expected: any, actual: any) => {
-  if (types.isBN(actual))
+  if (isBN(actual))
     return actual.eq(expected)
 }
 

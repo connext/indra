@@ -1,5 +1,6 @@
 import * as crypto from 'crypto'
 import { default as fetch } from 'node-fetch'
+
 import { default as Config } from '../Config'
 import { NgrokService } from '../NgrokService'
 

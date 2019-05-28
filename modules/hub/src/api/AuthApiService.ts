@@ -1,97 +1,40 @@
-import { ApiService } from './ApiService'
+import { ethers as eth } from 'ethers'
 import * as express from 'express'
-import CRAuthManager from '../CRAuthManager'
-import log from '../util/log'
-import Config from '../Config'
 
-const LOG = log('AuthApiService')
+import Config from '../Config'
+import { RedisClient } from '../RedisClient'
+import { getLogger, isValidHex } from '../util'
+
+import { ApiService } from './ApiService'
+
+const log = getLogger('AuthApiService')
 
 export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
-  namespace = 'auth'
-  routes = {
-    'POST /challenge': 'doChallenge',
-    'POST /response': 'doResponse',
-    'POST /status': 'doStatus',
-    'GET /status': 'doStatus',
+  public namespace: string = 'nonce'
+  public routes: any = {
+    'GET /': 'doNonce',
   }
-  handler = AuthApiServiceHandler
-  dependencies = {
-    'crManager': 'CRAuthManager',
-    'config': 'Config',
+  public handler: any = AuthApiServiceHandler
+  public dependencies: any = {
+    redis: 'RedisClient',
   }
 }
 
-
 class AuthApiServiceHandler {
-  crManager: CRAuthManager
+  private redis: RedisClient
+  private nonces: { [s: string]: number } = {}
 
-  config: Config
-
-  async doChallenge(req: express.Request, res: express.Response) {
-    const nonce = await this.crManager.generateNonce()
-
-    LOG.debug(`Sending challenge nonce.`)
-
-    res.send({
-      nonce,
-    })
-  }
-
-  async doResponse(req: express.Request, res: express.Response) {
-    const address = req.body.address
-    const nonce = req.body.nonce
-    const origin = req.body.origin
-    const signature = req.body.signature
-
-    if (!address || !nonce || !origin || !signature) {
-      LOG.warn('Received invalid challenge request. Aborting. Body received: {body}', {
-        body: req.body,
-      })
-      return res.sendStatus(400)
+  public async doNonce(req: express.Request, res: express.Response): Promise<express.Response> {
+    if (!isValidHex(req.address, 20)) {
+      return res.status(400).send('Invalid address in "x-address" header')
     }
-
-    let result: string|null
-
-    try {
-      result = await this.crManager.checkSignature(address, nonce, origin, signature)
-    } catch (err) {
-      LOG.error('Caught error checking signature: {err}', {
-        err,
-      })
-      return res.sendStatus(400)
-    }
-
-    if (!result) {
-      LOG.warn('Received invalid challenge response. Aborting.')
-      return res.sendStatus(400)
-    }
-
-    req.session!.regenerate(async (err) => {
-      if (err) {
-        LOG.error('Caught error while regenerating session: {err}', {
-          err,
-        })
-        return res.sendStatus(500)
-      }
-
-      req.session!.address = result
-      res.send({ token: req.session!.id })
-    })
-  }
-
-  doStatus(req: express.Request, res: express.Response) {
-    if (req.session && req.session.address) {
-      return res.send({
-        success: true,
-        address: req.session.address,
-      })
-    }
-
-    LOG.info('No session found. Returning unsuccessful auth status.')
-
-    return res.send({
-      success: false,
-    })
+    const nonce = eth.utils.hexlify(eth.utils.randomBytes(32))
+    await this.redis.set(`nonce:${req.address}`, nonce)
+    await this.redis.set(`nonce-timestamp:${req.address}`, Date.now().toString())
+    await this.redis.del(`signature:${req.address}`)
+    log.info(`Set nonce ${nonce} for address ${req.address}`)
+    log.debug(`Saving challenge nonce for address ${req.address}: ${nonce}`)
+    return res.send({ nonce })
   }
 
 }

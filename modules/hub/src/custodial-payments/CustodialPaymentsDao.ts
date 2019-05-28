@@ -1,10 +1,12 @@
-import { big, types } from 'connext'
-import { default as DBEngine, SQL } from '../DBEngine'
+import {
+  CreateCustodialWithdrawalOptionsBN,
+  CustodialBalanceRowBN,
+  CustodialPaymentsRow,
+  CustodialWithdrawalRowBN,
+} from 'connext/types'
 
-type CustodialBalanceRowBN = types.CustodialBalanceRowBN
-type CustodialPaymentsRow = types.CustodialPaymentsRow
-type CreateCustodialWithdrawalOptionsBN = types.CreateCustodialWithdrawalOptionsBN
-type CustodialWithdrawalRowBN = types.CustodialWithdrawalRowBN
+import { default as DBEngine, SQL } from '../DBEngine'
+import { toBN } from '../util'
 
 export class CustodialPaymentsDao {
   constructor(
@@ -80,13 +82,13 @@ export class CustodialPaymentsDao {
     row = row || { user }
     return {
       user: row.user,
-      totalReceivedWei: big.Big(row.total_received_wei || '0'),
-      totalReceivedToken: big.Big(row.total_received_token || '0'),
-      totalWithdrawnWei: big.Big(row.total_withdrawn_wei || '0'),
-      totalWithdrawnToken: big.Big(row.total_withdrawn_token || '0'),
-      balanceWei: big.Big(row.balance_wei || '0'),
-      balanceToken: big.Big(row.balance_token || '0'),
-      sentWei: big.Big(row.sent_wei || '0'),
+      totalReceivedWei: toBN(row.total_received_wei || '0'),
+      totalReceivedToken: toBN(row.total_received_token || '0'),
+      totalWithdrawnWei: toBN(row.total_withdrawn_wei || '0'),
+      totalWithdrawnToken: toBN(row.total_withdrawn_token || '0'),
+      balanceWei: toBN(row.balance_wei || '0'),
+      balanceToken: toBN(row.balance_token || '0'),
+      sentWei: toBN(row.sent_wei || '0'),
     }
   }
 
@@ -96,9 +98,9 @@ export class CustodialPaymentsDao {
       createdOn: row.created_on,
       user: row.user,
       recipient: row.recipient,
-      requestedToken: big.Big(row.requested_token),
+      requestedToken: toBN(row.requested_token),
       exchangeRate: row.exchange_rate,
-      sentWei: big.Big(row.sent_wei),
+      sentWei: toBN(row.sent_wei),
       state: row.state,
       txHash: row.tx_hash,
       onchainTransactionId: row.onchain_tx_id,

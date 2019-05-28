@@ -1,21 +1,19 @@
-import * as Connext from 'connext';
-import { getUserFromRequest } from '../util/request'
-import { default as Config } from '../Config'
+import * as connext from 'connext'
+import { UpdateRequest } from 'connext/types'
 import * as express from 'express'
-import { ApiService } from './ApiService'
-import log from '../util/log'
-import ChannelsService from '../ChannelsService'
-import { default as ChannelsDao } from '../dao/ChannelsDao'
-import { prettySafeJson } from '../util'
 
-const Big = Connext.big.Big
-type UpdateRequest = Connext.types.UpdateRequest
-const convertWithdrawalParameters = Connext.types.convertWithdrawalParameters
+import { ApiService } from './ApiService'
+
+import ChannelsService from '../ChannelsService'
+import { default as Config } from '../Config'
+import { default as ChannelsDao } from '../dao/ChannelsDao'
+import { BN, prettySafeJson, toBN } from '../util'
+import log from '../util/log'
+import { getUserFromRequest } from '../util/request'
+
 const LOG = log('ChannelsApiService')
 
-export default class ChannelsApiService extends ApiService<
-  ChannelsApiServiceHandler
-  > {
+export default class ChannelsApiService extends ApiService<ChannelsApiServiceHandler> {
   namespace = 'channel'
   routes = {
     'POST /:user/request-deposit': 'doRequestDeposit',
@@ -28,11 +26,6 @@ export default class ChannelsApiService extends ApiService<
     'GET /:user': 'doGetChannelByUser',
     'GET /:user/latest-update': 'doGetLatestDoubleSignedState',
     'GET /:user/latest-no-pending': 'doGetLastStateNoPendingOps',
-    'POST /:user/sync': 'doSync', // params: lastChanTx=1&lastThreadUpdateId=2
-    'POST /:user/debug': 'doGetChannelDebug',
-    'POST /:user': 'doGetChannelByUser',
-    'POST /:user/latest-update': 'doGetLatestDoubleSignedState',
-    'POST /:user/latest-no-pending': 'doGetLastStateNoPendingOps',
   }
   handler = ChannelsApiServiceHandler
   dependencies = {
@@ -114,8 +107,8 @@ export class ChannelsApiServiceHandler {
 
     const err = await this.channelsService.doRequestDeposit(
       user,
-      Big(depositWei),
-      Big(depositToken),
+      toBN(depositWei),
+      toBN(depositToken),
       sigUser,
     )
     if (err) {
@@ -175,8 +168,8 @@ export class ChannelsApiServiceHandler {
 
     await this.channelsService.doRequestExchange(
       user,
-      Big(weiToSell),
-      Big(tokensToSell),
+      toBN(weiToSell),
+      toBN(tokensToSell),
     )
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
@@ -212,7 +205,7 @@ export class ChannelsApiServiceHandler {
 
     await this.channelsService.doRequestWithdrawal(
       user,
-      convertWithdrawalParameters("bn", req.body)
+      connext.convert.WithdrawalParameters("bn", req.body)
     )
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,

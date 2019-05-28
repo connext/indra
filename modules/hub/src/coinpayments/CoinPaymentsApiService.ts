@@ -1,11 +1,13 @@
+import { Request, Response } from 'express'
+
+import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
+import { CoinPaymentsDepositAddress } from './CoinPaymentsDao'
 import { CoinPaymentsService } from './CoinPaymentsService'
-import { default as log } from '../util/log'
+
 import { ApiService } from '../api/ApiService'
 import { default as Config } from '../Config'
-import { Request, Response } from 'express'
-import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
+import { default as log } from '../util/log'
 import { getUserFromRequest } from '../util/request'
-import { CoinPaymentsDepositAddress } from './CoinPaymentsDao'
 
 const LOG = log('CoinPaymentsApiService')
 

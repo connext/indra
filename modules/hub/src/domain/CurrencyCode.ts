@@ -1,6 +1,5 @@
 export enum CurrencyCode {
-  USD = 'USD',
-  ETH = 'ETH'
+  DAI = 'DAI',
+  ETH = 'ETH',
 }
-
 export default CurrencyCode

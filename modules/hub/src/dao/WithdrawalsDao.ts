@@ -1,20 +1,17 @@
-import Withdrawal, {WithdrawalStatus} from '../domain/Withdrawal'
-import DBEngine from '../DBEngine'
 import {Client, QueryResult} from 'pg'
-import {TotalsTuple} from '../domain/TotalsTuple'
-import { BigNumber as BN } from 'ethers/utils'
-import { big } from 'connext';
-const {
-  Big
-} = big
+
+import DBEngine from '../DBEngine'
+import { TotalsTuple } from '../domain/TotalsTuple'
+import Withdrawal, { WithdrawalStatus } from '../domain/Withdrawal'
+import { BN, toBN } from '../util'
 
 enum WithdrawalType {
   WEI,
-  USD
+  DAI
 }
 
 export default interface WithdrawalsDao {
-  createUsdWithdrawal(recipient: string): Promise<Withdrawal|null>
+  createDaiWithdrawal(recipient: string): Promise<Withdrawal|null>
 
   createWeiWithdrawal(recipient: string): Promise<Withdrawal|null>
 
@@ -40,7 +37,7 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
     this.engine = engine
   }
 
-  createUsdWithdrawal (recipient: string): Promise<Withdrawal|null> {
+  createDaiWithdrawal (recipient: string): Promise<Withdrawal|null> {
     throw new Error('This method has been removed as part of the non-custodial hub migration.')
   }
 
@@ -98,16 +95,16 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
 
       const row = res.rows[0]
 
-      if (!row.totalwei || !row.totalusd) {
+      if (!row.totalwei || !row.totaldai) {
         return {
-          totalWei: new BN(0),
-          totalUsd: new BN(0)
+          totalWei: toBN(0),
+          totalDai: toBN(0)
         }
       }
 
       return {
-        totalWei: new BN(row.totalwei),
-        totalUsd: new BN(row.totalusd)
+        totalWei: toBN(row.totalwei),
+        totalDai: toBN(row.totaldai)
       }
     })
   }
@@ -175,7 +172,7 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
 
   private createWithdrawal(recipient: string, type: WithdrawalType): Promise<Withdrawal|null> {
     return this.engine.exec(async (c: Client) => {
-      const func = type === WithdrawalType.USD ? 'create_withdrawal_usd_amount' : 'create_withdrawal_wei_amount'
+      const func = type === WithdrawalType.DAI ? 'create_withdrawal_usd_amount' : 'create_withdrawal_wei_amount'
 
       let res = await c.query(
         `SELECT ${func}($1) as id`,
@@ -206,8 +203,8 @@ export class PostgresWithdrawalsDao implements WithdrawalsDao {
       id: Number(row.id),
       recipient: row.recipient,
       initiator: row.initiator,
-      amountWei: Big(row.amountwei),
-      amountUsd: Big(row.amountusd),
+      amountWei: toBN(row.amountwei),
+      amountDai: toBN(row.amountdai),
       txhash: row.txhash,
       status: row.status,
       createdAt: Number(row.createdat),

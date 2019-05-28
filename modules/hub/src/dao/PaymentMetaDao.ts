@@ -1,9 +1,7 @@
-import * as Connext from 'connext';
-import DBEngine, {SQL} from '../DBEngine'
-import Config from '../Config'
+import { PurchasePaymentRow, PurchasePaymentSummary } from 'connext/types'
 
-type PurchasePaymentSummary = Connext.types.PurchasePaymentSummary
-type PurchasePaymentRow = Connext.types.PurchasePaymentRow
+import Config from '../Config'
+import DBEngine, {SQL} from '../DBEngine'
 
 export interface PaymentMetaDao {
   save (purchaseId: string, payment: PurchasePaymentSummary): Promise<number>

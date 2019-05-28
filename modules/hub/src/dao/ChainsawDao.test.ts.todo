@@ -1,3 +1,0 @@
-let func = process.env.DATABASE_URL_TEST ? describe : xdescribe
-
-func('ChainsawDao', () => {})

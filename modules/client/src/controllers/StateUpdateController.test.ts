@@ -1,18 +1,19 @@
-import { assert, getThreadState, mkAddress, parameterizedTests, mkHash } from '../testing';
-import { MockStore, MockConnextInternal, MockHub } from '../testing/mocks';
-import { PaymentArgs, SyncResult, ChannelUpdateReason } from '../types';
-// @ts-ignore
-global.fetch = require('node-fetch-polyfill');
+import { assert, getThreadState, mkAddress, mkHash, parameterizedTests } from '../testing'
+import { MockConnextInternal, MockHub, MockStore } from '../testing/mocks'
+import { ChannelUpdateReason, PaymentArgs, SyncResult } from '../types'
 
 /*
-StateUpdateController is used by all the other controllers to handle various types of state updates that are present in the `runtime.syncResultsFromHub` state. To do this, it subscribes to the store, and handles the the updates from the hub in the `handleSyncItem` method. As it is an internal controller with no public API there are no unit tests written.
+StateUpdateController is used by all the other controllers to handle various
+types of state updates that are present in the `runtime.syncResultsFromHub` state.
+To do this, it subscribes to the store, and handles the
+updates from the hub in the `handleSyncItem` method.
+As it is an internal controller with no public API there are no unit tests written.
 */
 
-const receiver = "0x22597df3d913c197b4d8f01a3530114847c20832"
-const user = "0xc55eddadeeb47fcde0b3b6f25bd47d745ba7e7fa"
+const receiver = '0x22597df3d913c197b4d8f01a3530114847c20832'
+const user = '0xc55eddadeeb47fcde0b3b6f25bd47d745ba7e7fa'
 
 describe('StateUpdateController: thread payments', () => {
-  const user = mkAddress('0xAAA')
   let connext: MockConnextInternal
 
   parameterizedTests([
@@ -25,26 +26,26 @@ describe('StateUpdateController: thread payments', () => {
       name: 'close thread if received thread payment',
       receiver: true,
     },
-  ], async tc => {
+  ], async (tc: any): Promise<any> => {
     const mockStore = new MockStore()
     mockStore.setChannel({
-      user: tc.receiver ? receiver : user,
       balanceToken: [15, 15],
       balanceWei: [15, 15],
-      txCountGlobal: 2,
       txCountChain: 2,
+      txCountGlobal: 2,
+      user: tc.receiver ? receiver : user,
     })
 
     mockStore.addThread({
-      receiver,
-      txCount: 0,
       balanceToken: [10, 0],
       balanceWei: [2, 0],
+      receiver,
+      txCount: 0,
     })
 
     connext = new MockConnextInternal({
-      user,
       store: mockStore.createStore(),
+      user,
     })
 
     await connext.start()
@@ -52,12 +53,12 @@ describe('StateUpdateController: thread payments', () => {
     const res = connext.stateUpdateController.handleSyncItem({
       type: 'thread',
       update: {
+        id: 69,
         state: getThreadState('full', {
-          receiver,
           balanceToken: [9, 1],
-          balanceWei: [2, 0]
+          balanceWei: [2, 0],
+          receiver,
         }),
-        id: 69
       },
     })
 
@@ -70,14 +71,14 @@ describe('StateUpdateController: thread payments', () => {
     } else {
       await res
       connext.mockHub.assertReceivedUpdate({
-        reason: 'CloseThread',
         args: {
-          receiver,
           balanceTokenReceiver: '1',
           balanceTokenSender: '9',
+          receiver,
         },
-        sigUser: true,
+        reason: 'CloseThread',
         sigHub: false,
+        sigUser: true,
       })
     }
 
@@ -88,91 +89,91 @@ describe('StateUpdateController: thread payments', () => {
   })
 })
 
-describe("StateUpdateController: hub to user payments", () => {
+describe('StateUpdateController: hub to user payments', () => {
   let connext: MockConnextInternal
 
   parameterizedTests([
     {
-      name: "should work for hub to user token payments",
+      name: 'should work for hub to user token payments',
       syncResults: [{
-        type: "channel",
+        type: 'channel',
         update: {
-          reason: "Payment",
           args: {
-            recipient: "user",
             amountToken: '1',
             amountWei: '0',
+            recipient: 'user',
           },
-          txCount: 1,
+          createdOn: new Date(),
+          reason: 'Payment',
           sigHub: mkHash('0x51512'),
-          createdOn: new Date()
+          txCount: 1,
         },
       }],
     },
     {
-      name: "should fail for invalid payments from hub to user",
+      fails: /There were 1 negative fields detected/,
+      name: 'should fail for invalid payments from hub to user',
       syncResults: [{
-        type: "channel",
+        type: 'channel',
         update: {
-          reason: "Payment",
           args: {
-            recipient: "user",
             amountToken: '-1',
             amountWei: '0',
+            recipient: 'user',
           },
-          txCount: 1,
+          createdOn: new Date(),
+          reason: 'Payment',
           sigHub: mkHash('0x51512'),
-          createdOn: new Date()
+          txCount: 1,
         },
       }],
-      fails: /There were 1 negative fields detected/
     },
     {
-      name: "should fail if the update returned by hub to sync queue is unsigned by hub",
+      fails: /sigHub not detected in update/,
+      name: 'should fail if the update returned by hub to sync queue is unsigned by hub',
       syncResults: [{
-        type: "channel",
+        type: 'channel',
         update: {
-          reason: "Payment",
           args: {
-            recipient: "hub",
             amountToken: '1',
             amountWei: '1',
+            recipient: 'hub',
           },
-          txCount: 1,
+          reason: 'Payment',
           sigHub: '',
+          txCount: 1,
         },
       }],
-      fails: /sigHub not detected in update/
     },
     {
-      name: "should fail if the update returned by hub to sync queue is unsigned by user and directed to hub",
+      fails: /sigUser not detected in update/,
+      name: 'should fail if the update returned by hub is unsigned by user and directed to hub',
       syncResults: [{
-        type: "channel",
+        type: 'channel',
         update: {
-          reason: "Payment",
           args: {
-            recipient: "hub",
             amountToken: '1',
             amountWei: '1',
-          } as PaymentArgs,
-          txCount: 1,
+            recipient: 'hub',
+          },
+          reason: 'Payment',
           sigHub: mkHash('0x90283'),
           sigUser: '',
+          txCount: 1,
         },
       }],
-      fails: /sigUser not detected in update/
-    }
-  ], async ({ name, syncResults, fails }) => {
+    },
+  ], async ({ name, syncResults, fails }: any): Promise<any> => {
     const mockStore = new MockStore()
     mockStore.setChannel({
-      user,
-      balanceWei: [5, 5],
       balanceToken: [10, 10],
+      balanceWei: [5, 5],
+      user,
     })
     mockStore.setSyncResultsFromHub(syncResults as SyncResult[])
     connext = new MockConnextInternal({
+      store: mockStore.createStore(),
       user,
-      store: mockStore.createStore()
     })
 
     if (fails) {
@@ -182,14 +183,14 @@ describe("StateUpdateController: hub to user payments", () => {
 
     await connext.start()
 
-    await new Promise(res => setTimeout(res, 20))
+    await new Promise((res: any): any => setTimeout(res, 20))
 
     for (const res of syncResults) {
       connext.mockHub.assertReceivedUpdate({
+        args: res.update.args as PaymentArgs,
         reason: res.update.reason as ChannelUpdateReason,
-        args: res.update.args,
-        sigUser: true,
         sigHub: true,
+        sigUser: true,
       })
     }
   })
@@ -200,7 +201,6 @@ describe("StateUpdateController: hub to user payments", () => {
 })
 
 describe.skip('StateUpdateController: invalidation handling', () => {
-  const user = mkAddress('0xUUU')
   let connext: MockConnextInternal
 
   const getDateFromMinutesAgo = (minutes: number): Date => {
@@ -211,69 +211,65 @@ describe.skip('StateUpdateController: invalidation handling', () => {
 
   parameterizedTests([
     {
-      name: 'reject invalidation that has not timed out',
-      timeout: 1000,
       blockTimestamp: 500,
-      shouldFailWith: /Hub proposed an invalidation for an update that has not yet timed out/
+      name: 'reject invalidation that has not timed out',
+      shouldFailWith: /Hub proposed an invalidation for an update that has not yet timed out/,
+      timeout: 1000,
     },
-
     {
+      blockTimestamp: getDateFromMinutesAgo(0),
       name: 'handle an invalidation on a state where there is a 0 timeout',
       timeout: 0,
-      blockTimestamp: getDateFromMinutesAgo(0),
     },
-
     {
+      blockTimestamp: getDateFromMinutesAgo(0),
       name: 'accept a valid invalidation',
       timeout: getDateFromMinutesAgo(15),
-      blockTimestamp: getDateFromMinutesAgo(0),
     },
+  ], async (tc: any): Promise<any> => {
 
-  ], async tc => {
     const mockStore = new MockStore()
     mockStore.setChannel({
-      pendingWithdrawalTokenUser: '100',
       pendingDepositTokenUser: '100',
+      pendingWithdrawalTokenUser: '100',
       pendingWithdrawalWeiHub: '20',
-      txCountGlobal: 2,
-      txCountChain: 2,
       timeout: Math.floor(tc.timeout.valueOf() / 1000),
+      txCountChain: 2,
+      txCountGlobal: 2,
     })
 
     mockStore.setLatestPending(2, {
       exchangeRate: '5',
-      seller: "user",
-      tokensToSell: "0",
-      weiToSell: "20",
-      targetTokenUser: "0",
-      recipient: mkAddress("0x222")
+      recipient: mkAddress('0x222'),
+      seller: 'user',
+      targetTokenUser: '0',
+      tokensToSell: '0',
+      weiToSell: '20',
     })
 
     connext = new MockConnextInternal({
-      user,
       store: mockStore.createStore(),
+      user,
     })
 
-    connext.provider.getBlock = async () => {
-      return {
-        timestamp: Math.floor(tc.blockTimestamp.valueOf() / 1000),
-      } as any
-    }
+    connext.provider.getBlock = async (): Promise<any> => ({
+      timestamp: Math.floor(tc.blockTimestamp.valueOf() / 1000),
+    })
 
     await connext.start()
 
     const res = connext.stateUpdateController.handleSyncItem({
       type: 'channel',
       update: {
-        reason: 'Invalidation',
-        txCount: 3,
         args: {
           previousValidTxCount: 2,
-          reason: "CU_INVALID_TIMEOUT",
-          withdrawal: {}
+          reason: 'CU_INVALID_TIMEOUT',
+          withdrawal: {},
         },
-        sigHub: '0xsig-hub',
         createdOn: getDateFromMinutesAgo(20),
+        reason: 'Invalidation',
+        sigHub: '0xsig-hub',
+        txCount: 3,
       },
     })
 
@@ -283,14 +279,14 @@ describe.skip('StateUpdateController: invalidation handling', () => {
     } else {
       await res
       connext.mockHub.assertReceivedUpdate({
-        reason: 'Invalidation',
         args: {
           previousValidTxCount: 2,
           reason: 'CU_INVALID_TIMEOUT',
-          withdrawal: connext.store.getState().persistent.latestPending.withdrawal
+          withdrawal: connext.store.getState().persistent.latestPending.withdrawal,
         },
-        sigUser: true,
+        reason: 'Invalidation',
         sigHub: true,
+        sigUser: true,
       })
     }
 

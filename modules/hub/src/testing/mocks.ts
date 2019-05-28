@@ -1,29 +1,45 @@
-import { types, Validator, big } from 'connext'
+import * as connext from 'connext'
+import { ChannelManagerChannelDetails } from 'connext/types'
+import { ethers as eth } from 'ethers'
 import * as request from 'supertest'
-import { default as ChannelManagerABI } from '../abi/ChannelManager'
-import { getRedisClient } from '../RedisClient'
-import { PgPoolService } from '../DBEngine'
-import { Container } from '../Container'
-import { truncateAllTables } from './eraseDb'
-import { ApiServer } from '../ApiServer'
-import { Role } from "../Role";
-import { mkAddress, mkSig, mkHash } from "./stateUtils";
-import { SignerService } from '../SignerService';
-import Config from '../Config';
-import { serviceDefinitions } from '../services'
 const Web3 = require('web3')
 
-const {
-  Big
-} = big
+import { default as ChannelManagerABI } from '../abi/ChannelManager'
+import { ApiServer } from '../ApiServer'
+import Config from '../Config'
+import { Container } from '../Container'
+import { PgPoolService } from '../DBEngine'
+import { getRedisClient } from '../RedisClient'
+import { Role } from '../Role'
+import { serviceDefinitions } from '../services'
+import { SignerService } from '../SignerService'
 
-type ChannelManagerChannelDetails = types.ChannelManagerChannelDetails
+import { truncateAllTables } from './eraseDb'
+import { mkAddress, mkHash, mkSig } from './stateUtils'
 
-const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432';
-const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6';
-const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545';
+const serviceKey = 'unspank-the-unbanked'
+const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
+const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
+const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
+const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
-console.log(`test urls: database=${databaseUrl} redis=${redisUrl} provider=${providerUrl}`)
+console.log(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
+// console.log(`\nTest env:\n${JSON.stringify(process.env,null,2)}`)
+
+export const testChannelManagerAddress = mkAddress('0xCCC')
+export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
+export const getTestConfig = (overrides?: any) => ({
+  ...Config.fromEnv(),
+  adminAddresses: [ testHotWalletAddress ],
+  databaseUrl,
+  redisUrl,
+  serviceKey,
+  sessionSecret: 'hummus',
+  hotWalletAddress: testHotWalletAddress,
+  channelManagerAddress: testChannelManagerAddress,
+  staleChannelDays: 1,
+  ...(overrides || {}),
+})
 
 export class PgPoolServiceForTest extends PgPoolService {
   testNeedsReset = true
@@ -41,24 +57,19 @@ export class PgPoolServiceForTest extends PgPoolService {
 }
 
 export class TestApiServer extends ApiServer {
-  request: request.SuperTest<request.Test>
-
-  constructor(container: Container) {
+  public constructor(container: Container) {
     super(container)
     this.request = request(this.app)
   }
 
-  withUser(address?: string): TestApiServer {
-    address = address || '0xfeedface'
-    return this.container.resolve('TestApiServer', {
-      'AuthHandler': {
-        rolesFor: (req: any) => {
-          req.session.address = address
-          return [Role.AUTHENTICATED]
-        },
-        isAuthorized: () => true,
-      },
-    })
+  public request: request.SuperTest<request.Test>
+
+  public withUser(address?: string): TestApiServer {
+    return this.container.resolve('TestApiServer')
+  }
+
+  public withAdmin(address?: string): TestApiServer {
+    return this.container.resolve('TestApiServer')
   }
 }
 
@@ -101,7 +112,7 @@ class MockWeb3Provider {
   }
 }
 
-class MockValidator extends Validator {
+class MockValidator extends connext.Validator {
   constructor() {
     super('0xfoobar', {} as any, ChannelManagerABI.abi)
   }
@@ -121,19 +132,6 @@ class MockValidator extends Validator {
     return null
   }
 }
-
-export const testChannelManagerAddress = mkAddress('0xCCC')
-export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
-export const getTestConfig = (overrides?: any) => ({
-  ...Config.fromEnv(),
-  databaseUrl,
-  redisUrl,
-  sessionSecret: 'hummus',
-  hotWalletAddress: testHotWalletAddress,
-  channelManagerAddress: testChannelManagerAddress,
-  staleChannelDays: 1,
-  ...(overrides || {}),
-})
 
 export class MockGasEstimateDao {
   async latest() {
@@ -164,16 +162,16 @@ export class MockExchangeRateDao {
     return {
       retrievedAt: Date.now(),
       rates: {
-        USD: mockRate
+        DAI: mockRate
       }
     }
   }
 
-  async getLatestUsdRate() {
+  async getLatestDaiRate() {
     return mockRate
   }
 
-  async getUsdRateAtTime(date: Date) {
+  async getDaiRateAtTime(date: Date) {
     return mockRate
   }
 }

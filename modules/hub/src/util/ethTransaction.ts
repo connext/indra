@@ -1,12 +1,16 @@
+import * as connext from 'connext'
+import { Omit } from 'connext/types'
+import EthereumTx from 'ethereumjs-tx'
 import * as eth from 'ethers'
-import * as Connext from 'connext';
-import { UnconfirmedTransaction, OnchainTransactionRow, RawTransaction } from "../domain/OnchainTransaction";
-import EthereumTx from "ethereumjs-tx"
 const Tx = require('ethereumjs-tx')
 
-const toHex = (n: string|number) => eth.utils.bigNumberify(n).toHexString()
+import {
+  OnchainTransactionRow,
+  RawTransaction,
+  UnconfirmedTransaction
+} from '../domain/OnchainTransaction'
 
-type Omit<T, K extends keyof T> = Connext.types.Omit<T, K>
+const toHex = (n: string|number) => eth.utils.bigNumberify(n).toHexString()
 
 /**
  * Serializes a transaction to a raw string.

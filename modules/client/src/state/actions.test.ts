@@ -1,9 +1,10 @@
 import { assert } from '../testing'
+
 import { setterAction } from './actions'
 
 describe('setterAction', () => {
   it('should work with a transform', () => {
-    const action = setterAction('foo', 'incr', (state, amount, old) => {
+    const action = setterAction('foo', 'incr', (state: any, amount: any, old: any): any => {
       assert.equal(old, 1)
       assert.equal(amount, 68)
       return old + amount

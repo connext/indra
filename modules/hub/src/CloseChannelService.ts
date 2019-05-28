@@ -1,22 +1,22 @@
-import { Poller } from 'connext'
+import * as connext from 'connext'
+
 import { default as Config } from './Config'
+import { ChannelManager } from './contract/ChannelManager'
+import ChannelDisputesDao from './dao/ChannelDisputesDao'
+import { default as ChannelsDao } from './dao/ChannelsDao'
+import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao'
+import DBEngine from './DBEngine'
+import { OnchainTransactionRow } from './domain/OnchainTransaction'
+import { OnchainTransactionService } from './OnchainTransactionService'
+import { SignerService } from './SignerService'
 import { prettySafeJson, safeJson } from './util'
 import { default as log } from './util/log'
-import { default as ChannelsDao } from './dao/ChannelsDao'
-import { ChannelManager } from './contract/ChannelManager'
-import DBEngine from './DBEngine';
-import { OnchainTransactionService } from './OnchainTransactionService';
-import ChannelDisputesDao from './dao/ChannelDisputesDao';
-import { OnchainTransactionRow } from './domain/OnchainTransaction';
-import { SignerService } from './SignerService';
-import { OnchainTransactionsDao } from './dao/OnchainTransactionsDao';
 
 const LOG = log('CloseChannelService')
-
 const POLL_INTERVAL = 1000 * 60 * 3
 
 export class CloseChannelService {
-  private poller: Poller
+  private poller: connext.Poller
 
   constructor(
       private onchainTxService: OnchainTransactionService,
@@ -29,7 +29,7 @@ export class CloseChannelService {
       private web3: any,
       private db: DBEngine
   ) {
-    this.poller = new Poller({
+    this.poller = new connext.Poller({
       name: 'CloseChannelService',
       interval: POLL_INTERVAL,
       callback: this.pollOnce.bind(this),
@@ -55,19 +55,32 @@ export class CloseChannelService {
     }
   }
 
-  private async disputeStaleChannels() {
-    const staleChannelDays = this.config.staleChannelDays
-    if (!staleChannelDays) {
+  private async _disputeStaleChannels(
+    staleChannelDays?: number, 
+    additionalMessage: string = "", 
+    maintainMin: boolean = true,
+    maxDisputes: number = 20,
+  ) {
+    if (!staleChannelDays && !this.config.staleChannelDays) {
       return
     }
 
-    const staleChannels = await this.channelsDao.getStaleChannels()
+    if (!staleChannelDays) {
+      staleChannelDays = this.config.staleChannelDays
+    }
+
+    const staleChannels = await this.channelsDao.getStaleChannels(staleChannelDays)
     if (staleChannels.length === 0) {
       return
     }
 
     // dispute stale channels
+    let initiatedDisputes = 0
     for (const channel of staleChannels) {
+      // check against max
+      if (initiatedDisputes >= maxDisputes) {
+        break
+      }
       const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
       LOG.info(`Found stale channel: ${safeJson(channel)}, latestUpdate: ${safeJson(latestUpdate)}`)
       if (!latestUpdate) {
@@ -79,7 +92,10 @@ export class CloseChannelService {
         continue
       }
       // do not dispute if the value is below the min bei
-      if (channel.state.balanceTokenHub.lt(this.config.beiMinCollateralization)) {
+      if (
+        maintainMin && 
+        channel.state.balanceTokenHub.lt(this.config.beiMinCollateralization)
+      ) {
         continue
       }
 
@@ -89,10 +105,36 @@ export class CloseChannelService {
       }
 
       // TODO: should take into account thread dispute costs here
-
+      
       // proceed with channel dispute
-      await this.db.withTransaction(() => this.startUnilateralExit(channel.user, "Automatically decollateralizing stale channel"))
+      try {
+        await this.db.withTransaction(async () => {
+          const onchain = await this.startUnilateralExit(
+            channel.user, "Decollateralizing stale channel" + additionalMessage
+          )
+          LOG.info(`Successfully initiated dispute for ${channel.user}. Onchain id: ${onchain.id}, hash: ${onchain.hash}`)
+        })
+        // increase dispute count
+        initiatedDisputes += 1
+      } catch (e) {
+        LOG.warn(`Caught error trying to initiate dispute: ${e}`)
+      }
     }
+
+    LOG.info(`Attempted to initiate ${initiatedDisputes} disputes`)
+  }
+
+  public async autoDisputeStaleChannels(staleChannelDays?: number) {
+    await this._disputeStaleChannels(staleChannelDays, ", autodispute")
+  }
+
+  public async disputeStaleChannels(staleChannelDays: number, maxDisputes: number = 20) {
+    await this._disputeStaleChannels(
+      staleChannelDays, 
+      ", from command line", 
+      false,
+      maxDisputes
+    )
   }
 
   private async emptyDisputedChannels() {
