@@ -19,9 +19,11 @@ import PaymentsDao from './dao/PaymentsDao'
 import { default as DBEngine } from './DBEngine'
 import { SignerService } from './SignerService'
 import ThreadsService from './ThreadsService'
-import { maybe, prettySafeJson, toBN } from './util'
+import { maybe, prettySafeJson, toBN, MaybeRes } from './util'
 import { assertUnreachable } from './util/assertUnreachable'
 import { default as log } from './util/log'
+
+import * as mailgun from "mailgun-js";
 
 type MaybeResult<T> = (
   { error: true; msg: string } |
@@ -53,6 +55,55 @@ export default class PaymentsService {
     payments: PurchasePayment[],
   ): Promise<MaybeResult<{ purchaseId: string }>> {
     return this.db.withTransaction(() => this._doPurchase(user, meta, payments))
+  }
+
+  // TODO: delete this endpoint
+  public async doPaymentEmail(
+    to: string, // email
+    subject: string,
+    text: string, // email body
+  ): Promise<MaybeResult<mailgun.messages.SendResponse>> {
+    // get config information
+    let {
+      mailgunApiKey,
+      hubPublicUrl,
+      isDev
+    } = this.config
+
+    // NOTE: this is a hack for dev, can then only send to layne
+    // or other authorized addresses
+    if (!hubPublicUrl && isDev) {
+      hubPublicUrl = "sandbox279413abd31e4715862eb5120251f079.mailgun.org"
+    }
+
+    if (!mailgunApiKey || !hubPublicUrl) {
+      throw new Error(`Email configuration not set up, cannot send email via mailgun. mailgunApiKey: ${mailgunApiKey}, hubPublicUrl: ${hubPublicUrl}`)
+    }
+
+    const mg = mailgun({
+      domain: hubPublicUrl,
+      apiKey: mailgunApiKey,
+    })
+
+    // create email data
+    const emailData = {
+      from: 'Connext <requests@money2020.connext.network>',
+      to,
+      subject,
+      text,
+    }
+    try {
+      const res = await mg.messages().send(emailData)
+      return {
+        error: false,
+        res,
+      }
+    } catch (e) {
+      return {
+        error: true,
+        msg: e.message
+      }
+    }
   }
 
   private async _doPurchase(
