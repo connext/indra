@@ -15,7 +15,6 @@ import {
   UpdateRequest,
   UpdateRequestTypes,
 } from '../types'
-import { Utils } from '../Utils'
 
 import { AbstractController } from './AbstractController'
 import { validateExchangeRate } from './ExchangeController'
