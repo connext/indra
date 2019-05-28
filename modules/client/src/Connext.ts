@@ -68,6 +68,7 @@ export interface IConnextChannelOptions {
   connextProvider?: ConnextProvider // NOTE: only a placeholder
   ethUrl?: string
   hubUrl: string
+  logLevel?: number
   mnemonic?: string
   privateKey?: string
   user?: string
@@ -87,6 +88,7 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
     ethChainId: string,
     hub: IHubAPIClient
     hubAddress: string,
+    logLevel: number,
     maxCollateralization: string
     store?: ConnextStore
     tokenAddress: string,
@@ -111,6 +113,7 @@ export const createClient = async (opts: IConnextChannelOptions): Promise<Connex
     ...hubConfig,
     contract: new ChannelManager(wallet, hubConfig.contractAddress),
     hub,
+    logLevel: opts.logLevel || 3,
     user: opts.user || wallet.address,
     wallet,
   }
@@ -212,38 +215,34 @@ export abstract class ConnextChannel extends EventEmitter {
       ? insertDefault('0', _withdrawal, argNumericFields.Payment)
       : insertDefault('0', _withdrawal, withdrawalParamsNumericFields)
 
-    const totalTokens = isSuccinct 
+    const totalTokens = isSuccinct
       ? toBN(withdrawal.amountToken)
-      : toBN(withdrawal.tokensToSell).add(
-          toBN(withdrawal.withdrawalTokenUser)
-        )
+      : toBN(withdrawal.tokensToSell).add(toBN(withdrawal.withdrawalTokenUser))
 
-    const totalWei = isSuccinct 
+    const totalWei = isSuccinct
       ? toBN(withdrawal.amountWei)
-      : toBN(withdrawal.weiToSell).add(
-          toBN(withdrawal.withdrawalWeiUser)
-        )
+      : toBN(withdrawal.weiToSell).add(toBN(withdrawal.withdrawalWeiUser))
 
     // preferentially withdraw from your custodial balance
     const channelTokenWithdrawal = subOrZero(
-      totalTokens, 
-      custodial.balanceToken
+      totalTokens,
+      custodial.balanceToken,
     )
 
     const channelWeiWithdrawal = subOrZero(
       totalWei,
-      custodial.balanceWei
+      custodial.balanceWei,
     )
 
     // get the amount youll wd custodially
     const custodialTokenWithdrawal = subOrZero(
-      totalTokens, 
-      channelTokenWithdrawal
+      totalTokens,
+      channelTokenWithdrawal,
     )
-    
+
     const custodialWeiWithdrawal = subOrZero(
       totalWei,
-      channelWeiWithdrawal
+      channelWeiWithdrawal,
     )
 
     const updated = {
@@ -272,12 +271,10 @@ export abstract class ConnextChannel extends EventEmitter {
 
     // if custodial balance exists, withdraw custodial balance
     // preferentially
-    const updatedWd = this.calculateChannelWithdrawal(
-      withdrawal, custodial
-    )
+    const updatedWd = this.calculateChannelWithdrawal(withdrawal, custodial)
 
     // withdraw the custodial amount if needed
-    if (updatedWd.custodialTokenWithdrawal != "0") {
+    if (updatedWd.custodialTokenWithdrawal !== '0') {
       await this.internal.hub.requestCustodialWithdrawal(
         updatedWd.custodialTokenWithdrawal,
         withdrawal.recipient || this.internal.wallet.address,
@@ -331,6 +328,7 @@ export abstract class ConnextChannel extends EventEmitter {
 export class ConnextInternal extends ConnextChannel {
   public contract: IChannelManager
   public hub: IHubAPIClient
+  public logLevel: number
   public opts: IConnextChannelInternalOptions
   public provider: any
   public store: ConnextStore
@@ -362,6 +360,7 @@ export class ConnextInternal extends ConnextChannel {
     this.store = undefined as any
     this.wallet = opts.wallet
     this.provider = this.wallet.provider
+    this.logLevel = opts.logLevel
     this.hub = opts.hub
 
     opts.user = opts.user.toLowerCase()
