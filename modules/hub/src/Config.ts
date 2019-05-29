@@ -2,33 +2,35 @@ import { Registry } from './Container'
 import { BN, toBN, toWei } from './util'
 import camelize from './util/camelize'
 
+// required / expected environment variables
+// only variables in this array will be camelized
 const ENV_VARS = [
-  'ETH_RPC_URL',
-  'ETH_NETWORK_ID',
-  'DATABASE_URL',
-  'CHANNEL_MANAGER_ADDRESS',
-  'AUTH_REALM',
   'AUTH_DOMAIN_WHITELIST',
-  'PORT',
-  'HTTPS_PORT',
-  'SHOULD_COLLATERALIZE_URL',
-  'MIN_SETTLEMENT_PERIOD',
-  'RECIPIENT_WHITELIST',
-  'SESSION_SECRET',
-  'CARD_NAME',
+  'AUTH_REALM',
   'CARD_IMAGE_URL',
-  'REALTIME_DB_SECRET', // TODO: do we use this?
-  'SERVICE_USER_KEY',
-  'FORCE_SSL',
-  'REDIS_URL',
-  'TOKEN_CONTRACT_ADDRESS',
-  'HOT_WALLET_ADDRESS',
-  'HUB_PUBLIC_URL',
-  'COINPAYMENTS_MERCHANT_ID',
+  'CARD_NAME',
+  'CHANNEL_MANAGER_ADDRESS',
   'COINPAYMENTS_API_KEY',
   'COINPAYMENTS_API_SECRET',
   'COINPAYMENTS_IPN_SECRET',
+  'COINPAYMENTS_MERCHANT_ID',
+  'DATABASE_URL',
+  'ETH_NETWORK_ID',
+  'ETH_RPC_URL',
+  'FORCE_SSL',
+  'HOT_WALLET_ADDRESS',
+  'HTTPS_PORT',
+  'HUB_PUBLIC_URL',
+  'MIN_SETTLEMENT_PERIOD',
+  'PORT',
   'PRIVATE_KEY_FILE',
+  'REALTIME_DB_SECRET',
+  'RECIPIENT_WHITELIST',
+  'REDIS_URL',
+  'SERVICE_USER_KEY',
+  'SESSION_SECRET',
+  'SHOULD_COLLATERALIZE_URL',
+  'TOKEN_CONTRACT_ADDRESS'
 ]
 
 const env = process.env.NODE_ENV || 'development'
@@ -63,20 +65,114 @@ export class Config {
     return instance
   }
 
+  // used in `BrandingApiServiceHandler` of the BrandingApiService
+  // address where this is the hubs wdal address. This value is
+  // set to `process.env.WALLET_ADDRESS!` in `main.ts`
+  // process.env.WALLET_ADDRESS does not exist
+  // TODO: remove or fix, that's a silly assignment
+  public recipientAddress: string = ''
+  
+  
+  ////////////////////////////////////////
+  // HUB GENERAL CONFIG
+
+
+  // ETH CONFIG //
+
+  // private key file, should be txt file
+  public privateKeyFile: string = ''
+  // contract address of onchain assigned token address
+  public tokenContractAddress: string = ''
+  // eth address of hub's wallet (has to deploy contract)
+  public hotWalletAddress: string = ''
+  // used in `WithdrawalsService`, will not withdraw if balance of
+  // hot wallet will go below this threshold
+  // TODO: not in ENV_VARS
+  public hotWalletMinBalance: string = toWei('6.9').toString()
+  // contract address of cm
+  public channelManagerAddress: string = ''
+  // node/provider URL for instantiating web3/ethers
+  public ethRpcUrl: string = ''
+  
+  // returned from the config endpoint only
+  // TODO: keep this? client will use it on start
+  public ethNetworkId: string = ''
+
+
+  // WEB CONFIG //
+
+  // used in `PaymentHub` optionally to create
+  // a new service registry
+  // TODO: not in env_vars, remove?
+  public registry?: Registry
+  // used in `BrandingApiService`, hardcoded in main
+  // TODO: not in env_vars, remove?
+  public branding: BrandingConfig
+  // url in format 'postgresql://...' for db
+  public databaseUrl: string = ''
+  // url for redis when calling `createHandyClient` in `RedisClient`.ts
+  // TODO: is this set anywhere?
+  public redisUrl: string = ''
+  // hardcoded in main as SpankChain
+  // TODO: remove?
+  public authRealm: string = ''
+  // auth whitelist, being hardcoded in main.ts as []
+  // TODO: remove?
+  public authDomainWhitelist: string[] = []
+  // hardcoded in main.ts
+  // as a null env var (should be hub addr?)
+  // TODO: not in env_vars, being used in auth middleware, remove?
+  public adminAddresses?: string[] = []
+  // service key, used in `AuthMiddleware`
+  // TODO: not in env_vars, instead refd as `SERVICE_USER_KEY`
+  public serviceKey: string = 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
+  // being hardcoded in main.ts
+  public port: number = 8080
+  // used in ApiServer.ts if forceSsl is true
+  // TODO: not in env_vars
+  public httpsPort: number = 8443
+  // used in ApiServer.ts
+  // TODO: not in env_vars
+  public forceSsl: boolean | false = process.env.FORCE_SSL && process.env.FORCE_SSL.toLowerCase() === 'true'
+
+  // NODE ENV CONFIG
   public isProduction = env == 'production'
   public isStage = env == 'staging'
   public isDev = env == 'development'
-  public ethRpcUrl: string = ''
-  public ethNetworkId: string = ''
-  public databaseUrl: string = ''
-  public redisUrl: string = ''
-  public channelManagerAddress: string = ''
-  public authRealm: string = ''
-  public authDomainWhitelist: string[] = []
-  public adminAddresses?: string[] = []
-  public serviceKey: string = 'omqGMZzn90vFJskXFxzuO3gYHM6M989spw99f3ngRSiNSOUdB0PmmYTvZMByUKD'
-  public port: number = 8080
-  public httpsPort: number = 8443
+
+
+
+  ////////////////////////////////////////
+  // HUB COLLATERAL CONFIG
+
+
+  // amount users can have in any one channel for their balance
+  // used in ChannelsService as exchange rate ceiling
+  // TODO: not in env_vars
+  public channelBeiLimit = toWei(process.env.CHANNEL_BEI_LIMIT || 69)
+  // minimum amount of bei the hub will put in as collateral
+  // used in CloseChannelService, ChannelsService
+  // TODO: not in env_vars
+  public beiMinCollateralization = toWei(process.env.BEI_MIN_COLLATERALIZATION || 10)
+
+  // max bei the hub will collateralize at any point
+  // for receiving payments used in ChannelsService
+  // TODO: not in env_vars
+  public beiMaxCollateralization = toWei(process.env.BEI_MAX_COLLATERALIZATION || 169)
+  // used as sliding window to calculate collateral based on
+  // recent payments
+  // used in ChannelsService.ts
+  // TODO: not in env_vars
+  public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
+  // max value going to any one thread
+  // TODO: not in env_vars, lines referencing are commented
+  // out, remove?
+  public threadBeiLimit = toWei(process.env.THREAD_BEI_LIMIT || 10)
+  // ceiling of what hub will deposit for exchange alongside
+  // user deposit
+  // TODO: not in env_vars, lower to channelBeiLimit?
+  public channelBeiDeposit = toWei(process.env.CHANNEL_BEI_DEPOSIT || 1000)
+  
   // URL used to check whether a user should receive collateral.
   // Called by ChannelsService.shouldCollateralize:
   //
@@ -88,38 +184,32 @@ export class Config {
   //
   // If the value is 'NO_CHECK' then no check will be performed.
   public shouldCollateralizeUrl: string | 'NO_CHECK' = 'NO_CHECK'
-  public forceSsl: boolean | false = process.env.FORCE_SSL && process.env.FORCE_SSL.toLowerCase() === 'true'
-  public recipientAddress: string = ''
-  public hotWalletAddress: string = ''
-  public hotWalletMinBalance: string = toWei('6.9').toString()
-  public sessionSecret: string = ''
+
+  // DISPUTE CONFIG
+  // number of days without activity until channel is 
+  // considered "stale". used in autodispute
+  // being hardcoded in main.ts
+  // TODO: not in env_vars, also no autodisputes, remove?
   public staleChannelDays?: number = process.env.STALE_CHANNEL_DAYS ? parseInt(process.env.STALE_CHANNEL_DAYS) : null // if null, will not dispute
-  public registry?: Registry
-  public branding: BrandingConfig
-  public tokenContractAddress: string = ''
-  // amount users can have in any one channel for their balance
-  public channelBeiLimit = toWei(process.env.CHANNEL_BEI_LIMIT || 69)
-  // minimum amount of bei the hub will put into any one channel
-  // for collateral
-  public beiMinCollateralization = toWei(process.env.BEI_MIN_COLLATERALIZATION || 10)
-  // max bei the hub will collateralize at any point
-  public beiMaxCollateralization = toWei(process.env.BEI_MAX_COLLATERALIZATION || 169)
-  public recentPaymentsInterval  = (process.env.RECENT_PAYMENTS_INTERVAL || '10 minutes')
 
-  public threadBeiLimit = toWei(process.env.THREAD_BEI_LIMIT || 10)
-  public channelBeiDeposit = toWei(process.env.CHANNEL_BEI_DEPOSIT || 1000)
-  
-  public privateKeyFile: string = ''
+  ////////////////////////////////////////
+  // HUB API AND SERVICE KEYS
+  // being hardcoded in main.ts, not used anywhere
+  // TODO: remove?
+  public sessionSecret: string = ''
+  // mailgun, used in email endpoint
+  public mailgunApiKey = process.env.MAILGUN_API_KEY || ""
 
-  // mailgun
-  public mailgunApiKey = process.env.MAILGUN_API_KEY || "230ca5a7977dbac40b43dceb228d9a66"
-
+  // used in: coin payments service, mailgun email endpoint
+  // TODO: remove? is this being used anywhere else?
   public hubPublicUrl = envswitch({
     development: null, // will be generated by NgrokService
     staging: 'https://staging.hub.connext.network',
     production: 'https://hub.connext.network',
   })
 
+  ////////////////////////////////////////
+  // used in: coinpayments service
   public coinpaymentsMerchantId = envswitch({
     development: '898d6ead05235f6081e97a58a6699289',
     staging: '898d6ead05235f6081e97a58a6699289',
