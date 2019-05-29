@@ -212,20 +212,27 @@ describe('StateUpdateController', () => {
   })
 
   describe.skip('Invalidation handling', () => {
-    let connext: MockConnextInternal
-
     const getDateFromMinutesAgo = (minutes: number): Date => {
       const now = new Date()
       now.setMinutes(now.getMinutes() - minutes)
       return now
     }
+    const mockStore = new MockStore()
+
+    const connext: MockConnextInternal = new MockConnextInternal({
+      logLevel,
+      store: mockStore.createStore(),
+      user,
+    })
+
+    beforeEach(async () => connext.start())
+    afterEach(async () => connext.stop())
 
     parameterizedTests([
       {
-        blockTimestamp: 500,
-        name: 'reject invalidation that has not timed out',
-        shouldFailWith: /Hub proposed an invalidation for an update that has not yet timed out/,
-        timeout: 1000,
+        blockTimestamp: getDateFromMinutesAgo(0),
+        name: 'accept a valid invalidation',
+        timeout: getDateFromMinutesAgo(15),
       },
       {
         blockTimestamp: getDateFromMinutesAgo(0),
@@ -233,13 +240,13 @@ describe('StateUpdateController', () => {
         timeout: 0,
       },
       {
-        blockTimestamp: getDateFromMinutesAgo(0),
-        name: 'accept a valid invalidation',
-        timeout: getDateFromMinutesAgo(15),
+        blockTimestamp: 500,
+        name: 'reject invalidation that has not timed out',
+        shouldFailWith: /Hub proposed an invalidation for an update that has not yet timed out/,
+        timeout: 1000,
       },
     ], async (tc: any): Promise<any> => {
 
-      const mockStore = new MockStore()
       mockStore.setChannel({
         pendingDepositTokenUser: '100',
         pendingWithdrawalTokenUser: '100',
@@ -248,7 +255,6 @@ describe('StateUpdateController', () => {
         txCountChain: 2,
         txCountGlobal: 2,
       })
-
       mockStore.setLatestPending(2, {
         exchangeRate: '5',
         recipient: mkAddress('0x222'),
@@ -256,12 +262,6 @@ describe('StateUpdateController', () => {
         targetTokenUser: '0',
         tokensToSell: '0',
         weiToSell: '20',
-      })
-
-      connext = new MockConnextInternal({
-        logLevel,
-        store: mockStore.createStore(),
-        user,
       })
 
       connext.provider.getBlock = async (): Promise<any> => ({
@@ -302,8 +302,5 @@ describe('StateUpdateController', () => {
 
     })
 
-    afterEach(async () => {
-      await connext.stop()
-    })
   })
 })
