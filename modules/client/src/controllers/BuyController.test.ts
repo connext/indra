@@ -20,6 +20,17 @@ const logLevel = 1 // 0 = no logs, 5 = all logs
 describe('BuyController', async () => {
   describe('assignPaymentTypes', async () => {
     const receiver = mkAddress('0x22c')
+    const user: string = mkAddress('0x7fab')
+    const mockStore: MockStore = new MockStore()
+    mockStore.setHubAddress()
+    const connext: MockConnextInternal = new MockConnextInternal({
+      logLevel,
+      store: mockStore.createStore(),
+      user,
+    })
+
+    beforeEach(async () => connext.start())
+    afterEach(async () => connext.stop())
 
     for (const tc of [
       {
@@ -90,15 +101,6 @@ describe('BuyController', async () => {
     ]) {
 
       it(tc.name, async () => {
-        const user = mkAddress('0x7fab')
-        const mockStore: MockStore = new MockStore()
-        mockStore.setHubAddress()
-        const connext: MockConnextInternal = new MockConnextInternal({
-          logLevel,
-          store: mockStore.createStore(),
-          user,
-        })
-        await connext.start()
         const ans = await connext.buyController.assignPaymentType(
           tc.payment as PartialPurchasePaymentRequest)
         const { amountToken, amountWei, ...res } = tc.payment as PartialPurchasePaymentRequest
@@ -136,7 +138,10 @@ describe('BuyController', async () => {
       })
       user = connext.wallet.address
       secret = connext.generateSecret()
+      await connext.start()
     })
+
+    afterEach(async () => connext.stop())
 
     parameterizedTests([
       {
@@ -275,7 +280,6 @@ describe('BuyController', async () => {
         ],
       },
     ], async ({ name, payments, fails, meta }: any): Promise<any> => {
-      await connext.start()
 
       if (fails) {
         await assert.isRejected(
@@ -349,8 +353,5 @@ describe('BuyController', async () => {
       }
     })
 
-    afterEach(async () => {
-      await connext.stop()
-    })
   })
 })

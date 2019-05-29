@@ -422,7 +422,7 @@ describe('SyncController', () => {
       })
     })
 
-    afterEach(() => connext.stop())
+    afterEach(async () => connext.stop())
 
     parameterizedTests([
       {
@@ -511,6 +511,8 @@ describe('SyncController', () => {
       mockStore.setChannel(initialChannel)
     })
 
+    afterEach(async () => connext.stop())
+
     it('should work when hub returns a confirm pending from sync', async () => {
       connext.store = mockStore.createStore()
 
@@ -537,9 +539,6 @@ describe('SyncController', () => {
         sigUser: true,
       })
     }).timeout(15000)
-
-    afterEach(async () => {
-      await connext.stop()
-    })
   })
+
 })

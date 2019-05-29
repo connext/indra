@@ -27,6 +27,8 @@ describe('StateUpdateController', () => {
   describe('Thread payments', () => {
     let connext: MockConnextInternal
 
+    afterEach(async () => connext.stop())
+
     parameterizedTests([
       {
         name: 'accept thread payment as sender',
@@ -94,10 +96,6 @@ describe('StateUpdateController', () => {
         })
       }
 
-    })
-
-    afterEach(async () => {
-      await connext.stop()
     })
   })
 

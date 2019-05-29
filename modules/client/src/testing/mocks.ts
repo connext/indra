@@ -70,8 +70,12 @@ import {
   PartialSignedOrSuccinctThread,
 } from '.'
 
-const mnemonic: string =
-  'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
+export const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
+export const mnemonic: string = 'candy maple cake sugar pudding cream ' +
+                                'honey rich smooth crumble sweet treat'
+export const privateKey: string = '0x8339a8d4aa2aa5771f0230f50c725a4d' +
+                                    '6e6b7bc87bbf8b63b0c260285346eff6'
+export const ethUrl: string = process.env.ETH_RPC_URL || 'http://localhost:8545'
 
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
@@ -117,7 +121,7 @@ export class MockConnextInternal extends ConnextInternal {
     const moreOpts = {
       contract: new MockChannelManager(),
       contractAddress: mkAddress('0xccc'),
-      ethUrl: 'http://localhost:8545',
+      ethUrl,
       hub: new MockHub(opts.logLevel),
       hubAddress: mkAddress('0xhhh'),
       mnemonic,

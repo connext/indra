@@ -99,6 +99,6 @@ export class ExchangeController extends AbstractController {
       weiToSell, tokensToSell, getTxCount(this.store.getState()),
     )
     this.connext.syncController.handleHubSync(sync)
-
+    return
   }
 }

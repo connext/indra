@@ -70,6 +70,8 @@ describe('WithdrawalController', () => {
         withdrawalWeiUser: '0',
         ...expected,
       })
+      await connext.stop()
+
     })
   })
 
@@ -88,6 +90,8 @@ describe('WithdrawalController', () => {
         user,
       })
     })
+
+    afterEach(async () => connext.stop())
 
     parameterizedTests([
       {
@@ -171,8 +175,5 @@ describe('WithdrawalController', () => {
       })
     })
 
-    afterEach(async () => {
-      await connext.stop()
-    })
   })
 })

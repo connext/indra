@@ -12,6 +12,8 @@ describe('Redeem Controller', () => {
     await connext.start()
   })
 
+  afterEach(async () => connext.stop())
+
   it('should work even if redeemer has no channel', async () => {
     const secret = connext.generateSecret()
     assert.isTrue(eth.utils.isHexString(secret))
@@ -48,9 +50,5 @@ describe('Redeem Controller', () => {
       connext.redeemController.redeem('fail'),
       /The secret provided is not a hex string./,
     )
-  })
-
-  afterEach(async () => {
-    await connext.stop()
   })
 })

@@ -10,6 +10,8 @@ describe('DepositController', () => {
     await connext.start()
   })
 
+  afterEach(async () => connext.stop())
+
   // TODO: properly mock out token transfer approval
   it('should work for wei', async () => {
     await connext.depositController.requestUserDeposit({ amountWei: '420', amountToken: '0' })

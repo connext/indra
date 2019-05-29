@@ -24,7 +24,17 @@ import {
   WithdrawalArgs,
 } from '../types'
 
-export { MockHub, MockChannelManager, MockConnextInternal, MockStore, patch } from './mocks'
+export {
+  address,
+  ethUrl,
+  mnemonic,
+  MockChannelManager,
+  MockConnextInternal,
+  MockHub,
+  MockStore,
+  patch,
+  privateKey,
+} from './mocks'
 
 // chai
 chai.use(subset)

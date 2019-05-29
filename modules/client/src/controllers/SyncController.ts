@@ -550,6 +550,9 @@ export class SyncController extends AbstractController {
     //   3. if step > 0: block.timestamp < timeout + delta
     let step =  Math.min(block.number, 10000) * -1
     while (true) {
+      if (block.number + step < 0) {
+        throw new Error(`Couldn't find any block near timeout ${timeout} (too far in the past)`)
+      }
       if (Math.abs(step) <= 2) {
         // This should never happen, and is a sign that we'll get into an
         // otherwise infinite loop. Indicative of a bug in the code.

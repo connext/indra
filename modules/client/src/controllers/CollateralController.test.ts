@@ -3,7 +3,6 @@ import { MockConnextInternal } from '../testing'
 const logLevel = 1 // 0 = no logs, 5 = all logs
 
 describe('CollateralController', () => {
-
   let connext: MockConnextInternal
 
   beforeEach(async () => {
@@ -11,11 +10,11 @@ describe('CollateralController', () => {
     await connext.start()
   })
 
+  afterEach(async () => connext.stop())
+
   it('should work', async () => {
     await connext.collateralController.requestCollateral()
-
     await new Promise((res: any): any => setTimeout(res, 10))
-
     connext.mockHub.assertReceivedUpdate({
       args: {
         depositTokenHub: '69',
@@ -27,10 +26,6 @@ describe('CollateralController', () => {
       sigHub: false,
       sigUser: true,
     })
-  })
-
-  afterEach(async () => {
-    await connext.stop()
   })
 
 })

@@ -12,119 +12,117 @@ describe('ThreadController', () => {
   const receiver2 = '0x17b105bcb3f06b3098de6eed0497a3e36aa72471'
 
   describe('OpenThread', () => {
-      beforeEach(async () => {
-        mockStore = new MockStore()
-        mockStore.setChannel({
-          balanceToken: [10, 10],
-          balanceWei: [2, 2],
-          user: sender,
-        })
-        connext = new MockConnextInternal({
-          logLevel,
-          store: mockStore.createStore(),
-          user: sender,
-        })
+    beforeEach(async () => {
+      mockStore = new MockStore()
+      mockStore.setChannel({
+        balanceToken: [10, 10],
+        balanceWei: [2, 2],
+        user: sender,
       })
-
-      it('should work for first thread', async () => {
-        await connext.start()
-        // generate openThread state and send to hub
-        await connext.threadController.openThread(receiver1, {
-            amountToken: '2',
-            amountWei: '1',
-        })
-        await new Promise((res: any): any => setTimeout(res, 20))
-        // assert that the received update is correct
-        connext.mockHub.assertReceivedUpdate({
-          args: {
-            balanceTokenReceiver: '0',
-            balanceTokenSender: '2',
-            balanceWeiReceiver: '0',
-            balanceWeiSender: '1',
-            receiver: receiver1,
-            sender,
-          },
-          reason: 'OpenThread',
-          sigHub: false,
-          sigUser: true,
-        })
+      connext = new MockConnextInternal({
+        logLevel,
+        store: mockStore.createStore(),
+        user: sender,
       })
+    })
 
-      it('should work with new sender/receiver', async() => {
-        await connext.start()
-        // generate openThread state and send to hub
-        await connext.threadController.openThread(receiver1, {
+    afterEach(async () => connext.stop())
+
+    it('should work for first thread', async () => {
+      await connext.start()
+      // generate openThread state and send to hub
+      await connext.threadController.openThread(receiver1, {
           amountToken: '2',
           amountWei: '1',
-        })
+      })
+      await new Promise((res: any): any => setTimeout(res, 20))
+      // assert that the received update is correct
+      connext.mockHub.assertReceivedUpdate({
+        args: {
+          balanceTokenReceiver: '0',
+          balanceTokenSender: '2',
+          balanceWeiReceiver: '0',
+          balanceWeiSender: '1',
+          receiver: receiver1,
+          sender,
+        },
+        reason: 'OpenThread',
+        sigHub: false,
+        sigUser: true,
+      })
+    })
 
-        await new Promise((res: any): any => setTimeout(res, 20))
-
-        // assert that the received update is correct
-        connext.mockHub.assertReceivedUpdate({
-          args: {
-            balanceTokenReceiver: '0',
-            balanceTokenSender: '2',
-            balanceWeiReceiver: '0',
-            balanceWeiSender: '1',
-            receiver: receiver1,
-            sender,
-          },
-          reason: 'OpenThread',
-          sigHub: false,
-          sigUser: true,
-        })
-
-        // open a second thread with the same sender, new reciever
-        await connext.threadController.openThread(receiver2, {
-          amountToken: '1',
-          amountWei: '0',
-        })
-
-        await new Promise((res: any): any => setTimeout(res, 20))
-
-        // assert that the received update is correct
-        connext.mockHub.assertReceivedUpdate({
-          args: {
-            balanceTokenReceiver: '0',
-            balanceTokenSender: '1',
-            balanceWeiReceiver: '0',
-            balanceWeiSender: '0',
-            receiver: receiver2,
-            sender,
-          },
-          reason: 'OpenThread',
-          sigHub: false,
-          sigUser: true,
-        })
-
+    it('should work with new sender/receiver', async() => {
+      await connext.start()
+      // generate openThread state and send to hub
+      await connext.threadController.openThread(receiver1, {
+        amountToken: '2',
+        amountWei: '1',
       })
 
-      it('should fail if the threadHistory is inaccurate', async() => {
-        // add an extra thread history item there
-        mockStore.setThreadHistory([
-          { sender, receiver: receiver1, threadId: 2 },
-          { sender, receiver: receiver1, threadId: 0 },
-        ])
+      await new Promise((res: any): any => setTimeout(res, 20))
 
-        connext = new MockConnextInternal({
-          logLevel,
-          store: mockStore.createStore(),
-          user: sender,
-        })
-
-        await connext.start()
-
-        await assert.isRejected(connext.threadController.openThread(receiver1, {
-          amountToken: '1',
-          amountWei: '0',
-        }), /The thread history is inaccurate/)
-
+      // assert that the received update is correct
+      connext.mockHub.assertReceivedUpdate({
+        args: {
+          balanceTokenReceiver: '0',
+          balanceTokenSender: '2',
+          balanceWeiReceiver: '0',
+          balanceWeiSender: '1',
+          receiver: receiver1,
+          sender,
+        },
+        reason: 'OpenThread',
+        sigHub: false,
+        sigUser: true,
       })
 
-      afterEach(async () => {
-        await connext.stop()
+      // open a second thread with the same sender, new reciever
+      await connext.threadController.openThread(receiver2, {
+        amountToken: '1',
+        amountWei: '0',
       })
+
+      await new Promise((res: any): any => setTimeout(res, 20))
+
+      // assert that the received update is correct
+      connext.mockHub.assertReceivedUpdate({
+        args: {
+          balanceTokenReceiver: '0',
+          balanceTokenSender: '1',
+          balanceWeiReceiver: '0',
+          balanceWeiSender: '0',
+          receiver: receiver2,
+          sender,
+        },
+        reason: 'OpenThread',
+        sigHub: false,
+        sigUser: true,
+      })
+
+    })
+
+    it('should fail if the threadHistory is inaccurate', async() => {
+      // add an extra thread history item there
+      mockStore.setThreadHistory([
+        { sender, receiver: receiver1, threadId: 2 },
+        { sender, receiver: receiver1, threadId: 0 },
+      ])
+
+      connext = new MockConnextInternal({
+        logLevel,
+        store: mockStore.createStore(),
+        user: sender,
+      })
+
+      await connext.start()
+
+      await assert.isRejected(connext.threadController.openThread(receiver1, {
+        amountToken: '1',
+        amountWei: '0',
+      }), /The thread history is inaccurate/)
+
+    })
   })
 
   describe('CloseThread', () => {
@@ -158,6 +156,8 @@ describe('ThreadController', () => {
         user: sender,
       })
     })
+
+    afterEach(async () => connext.stop())
 
     it('closing a thread should work', async () => {
       await connext.start()
@@ -232,9 +232,5 @@ describe('ThreadController', () => {
         ), /Multiple threads found/)
       },
     )
-
-    afterEach(async () => {
-      await connext.stop()
-    })
   })
 })
