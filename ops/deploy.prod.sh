@@ -25,8 +25,6 @@ MAILGUN_API_KEY="${MAILGUN_API_KEY:-}"
 
 # meta config & hard-coded stuff you might want to change
 number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
-should_collateralize_url="NO_CHECK"
-bei_min_collateralization="10000000000000000000"
 channel_bei_limit=${CHANNEL_BEI_LIMIT}
 channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
@@ -177,7 +175,6 @@ services:
       - database
       - chainsaw
     environment:
-      BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
       CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
       CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
@@ -194,7 +191,6 @@ services:
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
       SERVICE_KEY: $INDRA_SERVICE_KEY
-      SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_CONTRACT_ADDRESS: $token_contract_address
     logging:
       driver: "json-file"
@@ -227,7 +223,6 @@ services:
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
       SERVICE_KEY: $INDRA_SERVICE_KEY
-      SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_CONTRACT_ADDRESS: $token_contract_address
     logging:
       driver: "json-file"
