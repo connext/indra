@@ -71,6 +71,7 @@ jobs:
               cd indra
               git fetch
               git reset --hard origin/master
+              export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               export INDRA_DOMAINNAME="$RINKEBY_URL"
               export INDRA_ETH_NETWORK="rinkeby"
               export INDRA_MODE="live"
