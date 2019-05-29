@@ -480,7 +480,7 @@ describe('ChannelsService', () => {
     )
 
     // target should be:
-    // num tippers * threadBeiLimit * max collat multiple - bal token hub
+    // num tippers * beiMin * max collat multiple - bal token hub
     const collateralizationTarget = toBN(5)
       .mul(config.beiMinCollateralization)
       // .mul(config.maxCollateralizationMultiple)
