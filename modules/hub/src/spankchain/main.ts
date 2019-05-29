@@ -4,21 +4,7 @@ import { default as Config } from '../Config'
 import PaymentHub from '../PaymentHub'
 import '../register/common'
 
-const config = Config.fromEnv({
-  adminAddresses: [ process.env.WALLET_ADDRESS! ],
-  authDomainWhitelist: [], // whitelist check is being skipped. All domains are allowed now
-  authRealm: 'SpankChain',
-  branding: {
-    backgroundColor: '#ff3b81',
-    companyName: 'SpankChain',
-    textColor: '#fff',
-    title: 'SpankPay',
-  },
-  port: 8080,
-  recipientAddress: process.env.WALLET_ADDRESS!,
-  sessionSecret: 'c2TVc9SZfPjOLp6pTw60J4Pp4I1UWU23PqO3nWYh2tBamQPLYuKdFsTsBdJZ5kn',
-  staleChannelDays: 7,
-})
+const config = Config.fromEnv()
 
 const hub = new PaymentHub(config)
 
