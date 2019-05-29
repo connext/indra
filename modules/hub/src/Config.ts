@@ -8,10 +8,6 @@ const ENV_VARS = [
   'CARD_IMAGE_URL',
   'CARD_NAME',
   'CHANNEL_MANAGER_ADDRESS',
-  'COINPAYMENTS_API_KEY',
-  'COINPAYMENTS_API_SECRET',
-  'COINPAYMENTS_IPN_SECRET',
-  'COINPAYMENTS_MERCHANT_ID',
   'DATABASE_URL',
   'ETH_NETWORK_ID',
   'ETH_RPC_URL',
@@ -126,29 +122,6 @@ export class Config {
     production: 'https://hub.spankchain.com',
   })
 
-  public coinpaymentsMerchantId = envswitch({
-    development: '898d6ead05235f6081e97a58a6699289',
-    staging: '898d6ead05235f6081e97a58a6699289',
-    production: 'set by environment variable',
-  })
-
-  public coinpaymentsApiKey = envswitch({
-    development: '62eceb03e8fcb4f8ebdc1b8f43e1e6f4b9b120f0856061d228cf04b01ed5cf08',
-    staging: '62eceb03e8fcb4f8ebdc1b8f43e1e6f4b9b120f0856061d228cf04b01ed5cf08',
-    production: 'set by environment variable',
-  })
-
-  public coinpaymentsApiSecret = envswitch({
-    development: 'A78Dba053693985Fa8F9aad010352caa61a6e2ECb7E20E87AcfABc7ee37C3005',
-    staging: 'A78Dba053693985Fa8F9aad010352caa61a6e2ECb7E20E87AcfABc7ee37C3005',
-    production: 'set by environment variable',
-  })
-
-  public coinpaymentsIpnSecret = envswitch({
-    development: 'U1BC9v1s3l0zxdH3',
-    staging: 'U1BC9v1s3l0zxdH3',
-    production: 'set by environment variable',
-  })
 }
 
 export default Config
