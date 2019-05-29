@@ -20,9 +20,8 @@ bash ops/wait-for.sh -t 60 $ethprovider 2> /dev/null
 
 export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$POSTGRES_URL/$POSTGRES_DB"
 
-export WALLET_ADDRESS="$HUB_WALLET_ADDRESS"
-export HOT_WALLET_ADDRESS="$HUB_WALLET_ADDRESS"
-export TOKEN_CONTRACT_ADDRESS="$TOKEN_ADDRESS"
+export HOT_WALLET_ADDRESS="$HOT_WALLET_ADDRESS"
+export TOKEN_CONTRACT_ADDRESS="$TOKEN_CONTRACT_ADDRESS"
 
 echo "Starting nodemon $1!"
 exec ./node_modules/.bin/nodemon --nolazy -r ts-node/register ./src/spankchain/main.ts $1
