@@ -45,9 +45,9 @@ if [[ -f "address-book.json" ]] # prefer copy of address book in project root
 then addressBook="address-book.json"
 else addressBook="modules/contracts/ops/address-book.json"
 fi
-hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
+hot_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
 channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
-token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
+token_contract_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
 
 ####################
 # Deploy according to above configuration
@@ -154,7 +154,7 @@ services:
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
       NODE_ENV: development
       POSTGRES_USER: $postgres_user
@@ -164,7 +164,7 @@ services:
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
       SERVICE_KEY: $service_key
-      TOKEN_ADDRESS: $token_address
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     networks:
       - $project
     ports:
@@ -185,7 +185,7 @@ services:
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
       NODE_ENV: development
       POSTGRES_USER: $postgres_user
@@ -195,7 +195,7 @@ services:
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
       SERVICE_KEY: $service_key
-      TOKEN_ADDRESS: $token_address
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     networks:
       - $project
     secrets:

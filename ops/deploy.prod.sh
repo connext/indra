@@ -64,9 +64,9 @@ then
 else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit 1
 fi
 
-hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
+hot_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
 channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
-token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
+token_contract_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
 
 # Figure out which images we should use
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
@@ -177,13 +177,15 @@ services:
       - database
       - chainsaw
     environment:
-      CHANNEL_BEI_LIMIT: $channel_bei_limit
+      BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
       CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
+      MAILGUN_API_KEY: $MAILGUN_API_KEY
       NODE_ENV: production
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
@@ -193,9 +195,7 @@ services:
       REDIS_URL: $redis_url
       SERVICE_KEY: $INDRA_SERVICE_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
-      TOKEN_ADDRESS: $token_address
-      BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
-      MAILGUN_API_KEY: $MAILGUN_API_KEY
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     logging:
       driver: "json-file"
       options:
@@ -211,12 +211,12 @@ services:
     depends_on:
       - postgres
     environment:
-      CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
       NODE_ENV: production
       POLLING_INTERVAL: 2000
@@ -228,7 +228,7 @@ services:
       REDIS_URL: $redis_url
       SERVICE_KEY: $INDRA_SERVICE_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
-      TOKEN_ADDRESS: $token_address
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     logging:
       driver: "json-file"
       options:
