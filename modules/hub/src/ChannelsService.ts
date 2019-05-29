@@ -20,7 +20,6 @@ import {
 } from 'connext/types'
 import * as eth from 'ethers'
 
-import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import Config from './Config'
 import { ChannelManager } from './contract/ChannelManager'
 import ChannelDisputesDao from './dao/ChannelDisputesDao'
@@ -74,7 +73,6 @@ export default class ChannelsService {
     private db: DBEngine,
     private config: Config,
     private contract: ChannelManager,
-    private coinPaymentsDao: CoinPaymentsDao,
     private paymentProfilesService: PaymentProfilesService,
   ) {
     this.utils = new connext.Utils()
@@ -833,13 +831,6 @@ export default class ChannelsService {
           update,
           txn.logicalId,
         )
-
-        if (redisUpdate.reason == 'ProposePendingDeposit') {
-          const args = redisUpdate.args as DepositArgs
-          if (args.reason && args.reason.ipn) {
-            await this.coinPaymentsDao.setUserCreditDepositUpdate(args.reason.ipn, res)
-          }
-        }
 
         return res
 
