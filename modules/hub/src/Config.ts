@@ -6,8 +6,6 @@ import camelize from './util/camelize'
 // only variables in this array will be camelized
 const ENV_VARS = [
   'ADMIN_ADDRESSES',
-  'AUTH_DOMAIN_WHITELIST',
-  'AUTH_REALM',
   'BEI_MIN_COLLATERALIZATION',
   'BEI_MAX_COLLATERALIZATION',
   'CHANNEL_BEI_DEPOSIT',
@@ -21,7 +19,7 @@ const ENV_VARS = [
   'HOT_WALLET_MIN_BALANCE',
   'HUB_PUBLIC_URL',
   'HTTPS_PORT',
-  'HUB_PUBLIC_URL',
+  'HUB_PUBLIC_URL', // TODO: injected from docker?
   'MAILGUN_API_KEY',
   'PORT',
   'PRIVATE_KEY_FILE',
@@ -32,6 +30,9 @@ const ENV_VARS = [
   'STALE_CHANNEL_DAYS',
   'TOKEN_CONTRACT_ADDRESS'
 ]
+
+// TODO: chainsaw polling interval? -- set in docker
+// but dont see where its used
 
 const env = process.env.NODE_ENV || 'development'
 function envswitch(vals: any) {
@@ -107,6 +108,7 @@ export class Config {
   // a new service registry
   public registry?: Registry
   // url in format 'postgresql://...' for db
+  // injected to docker as "POSTGRES_URL"
   public databaseUrl: string = ''
   // url for redis when calling `createHandyClient` in `RedisClient`.ts
   public redisUrl: string = ''
