@@ -104,7 +104,7 @@ export default class PaymentsService {
     // create email data
     const prefixedSubject = await this.addDuplicateFlag(user, subject)
     const emailData = {
-      from: 'Connext <requests@money2020.connext.network>',
+      from: 'Connext <requests@hub.connext.network>',
       to,
       subject: prefixedSubject,
       text,
