@@ -4,7 +4,6 @@ import Web3 from 'web3'
 
 import { default as ChannelManagerABI } from './abi/ChannelManager'
 import AuthApiService from './api/AuthApiService'
-import BrandingApiService from './api/BrandingApiService'
 import ChannelsApiService from './api/ChannelsApiService'
 import ConfigApiService from './api/ConfigApiService'
 import ExchangeRateApiService from './api/ExchangeRateApiService'
@@ -17,11 +16,6 @@ import { ApiServer } from './ApiServer'
 import ChainsawService from './ChainsawService'
 import ChannelsService from './ChannelsService'
 import { CloseChannelService } from './CloseChannelService'
-import { CoinPaymentsApiClient } from './coinpayments/CoinPaymentsApiClient'
-import { CoinPaymentsApiService } from './coinpayments/CoinPaymentsApiService'
-import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
-import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
-import { CoinPaymentsService } from './coinpayments/CoinPaymentsService'
 import Config from './Config'
 import { Container, Context, PartialServiceDefinitions, Registry } from './Container'
 import { ChannelManager } from './contract/ChannelManager'
@@ -153,13 +147,11 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       GasEstimateApiService,
       FeatureFlagsApiService,
       ChannelsApiService,
-      BrandingApiService,
       AuthApiService,
       ConfigApiService,
       ExchangeRateApiService,
       ThreadsApiService,
       PaymentsApiService,
-      CoinPaymentsApiService,
       CustodialPaymentsApiService,
       PaymentProfilesApiService,
     ],
@@ -203,23 +195,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: [
       'Web3',
       'Config',
-    ],
-    isSingleton: true,
-  },
-
-  // TODO: Make sure this is started when the hub starts
-  CoinPaymentsDepositPollingService: {
-    factory: (
-      config: Config,
-      db: DBEngine,
-      service: CoinPaymentsService,
-      dao: CoinPaymentsDao,
-    ) => new CoinPaymentsDepositPollingService(config, db, service, dao),
-    dependencies: [
-      'Config',
-      'DBEngine',
-      'CoinPaymentsService',
-      'CoinPaymentsDao',
     ],
     isSingleton: true,
   },
@@ -436,7 +411,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       db: DBEngine,
       config: Config,
       contract: ChannelManager,
-      coinPaymentsDao: CoinPaymentsDao,
       paymentProfilesService: PaymentProfilesService
     ) =>
       new ChannelsService(
@@ -454,7 +428,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
         db,
         config,
         contract,
-        coinPaymentsDao,
         paymentProfilesService,
       ),
     dependencies: [
@@ -472,7 +445,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'DBEngine',
       'Config',
       'ChannelManagerContract',
-      'CoinPaymentsDao',
       'PaymentProfilesService'
     ],
   },
@@ -494,39 +466,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Config',
       'GlobalSettingsDao'
     ],
-  },
-
-  CoinPaymentsApiClient: {
-    factory: (config: Config, ngrok: NgrokService) => new CoinPaymentsApiClient(config, ngrok),
-    dependencies: ['Config', 'NgrokService'],
-  },
-
-  CoinPaymentsService: {
-    factory: (
-      config: Config,
-      api: CoinPaymentsApiClient,
-      dao: CoinPaymentsDao,
-      db: DBEngine,
-      channelsService: ChannelsService,
-      channelDao: ChannelsDao,
-      exchangeRateDao: ExchangeRateDao,
-    ) => new CoinPaymentsService(config, api, dao, db, channelsService, channelDao, exchangeRateDao),
-    dependencies: [
-      'Config',
-      'CoinPaymentsApiClient',
-      'CoinPaymentsDao',
-      'DBEngine',
-      'ChannelsService',
-      'ChannelsDao',
-      'ExchangeRateDao',
-    ],
-  },
-
-  CoinPaymentsDao: {
-    factory: (
-      db: DBEngine,
-    ) => new CoinPaymentsDao(db),
-    dependencies: ['DBEngine'],
   },
 
   CustodialPaymentsDao: {
