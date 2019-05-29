@@ -14,8 +14,5 @@ bash ops/wait-for.sh -t 60 $database 2> /dev/null
 
 export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$database/$POSTGRES_DB"
 
-export HOT_WALLET_ADDRESS="$HOT_WALLET_ADDRESS"
-export TOKEN_CONTRACT_ADDRESS="$TOKEN_CONTRACT_ADDRESS"
-
 echo "Starting node $1!"
 exec node dist/spankchain/main.js $1
