@@ -10,7 +10,6 @@ import { ApiServer } from './ApiServer'
 import ChainsawService from './ChainsawService'
 import ChannelsService from './ChannelsService'
 import { CloseChannelService } from './CloseChannelService'
-import { CoinPaymentsDepositPollingService } from './coinpayments/CoinPaymentsDepositPollingService'
 import Config from './Config'
 import { Container, Context, Registry } from './Container'
 import { ChannelManager } from './contract/ChannelManager'
@@ -38,7 +37,6 @@ export default class PaymentHub {
   private gasEstimateService: GasEstimateService
   private apiServer: ApiServer
   private onchainTransactionService: OnchainTransactionService
-  private coinPaymentsDepositPollingService: CoinPaymentsDepositPollingService
   private optimisticPaymentsService: OptimisticPaymentsService
 
   constructor(config: Config) {
@@ -62,7 +60,6 @@ export default class PaymentHub {
     this.gasEstimateService = this.container.resolve('GasEstimateService')
     this.apiServer = this.container.resolve('ApiServer')
     this.onchainTransactionService = this.container.resolve('OnchainTransactionService')
-    this.coinPaymentsDepositPollingService = this.container.resolve('CoinPaymentsDepositPollingService')
     this.optimisticPaymentsService = this.container.resolve('OptimisticPaymentsService')
   }
 
