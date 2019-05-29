@@ -113,7 +113,9 @@ export class Config {
   // url for redis when calling `createHandyClient` in `RedisClient`.ts
   public redisUrl: string = ''
   // admin users, not practically used atm so default to hub only reqs
-  public adminAddresses: string[] = [ process.env.HOT_WALLET_ADDRESS.toLowerCase() ]
+  public adminAddresses: string[] = process.env.HOT_WALLET_ADDRESS 
+    ? [ process.env.HOT_WALLET_ADDRESS.toLowerCase() ]
+    : []
   // service key, used in `AuthMiddleware`
   public serviceKey: string = 'foo' // delivered from env
   // default port of hub
