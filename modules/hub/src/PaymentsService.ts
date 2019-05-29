@@ -111,14 +111,13 @@ export default class PaymentsService {
     }
     try {
       const res = await mg.messages().send(emailData)
-      await this.db.withTransaction(
-        () => this.paymentsDao.createEmail(
-          res.id,
-          user,
-          prefixedSubject, 
-          emailData.text
-        )
+      await this.paymentsDao.createEmail(
+        res.id,
+        user,
+        prefixedSubject, 
+        emailData.text
       )
+      
       return {
         error: false,
         res,
