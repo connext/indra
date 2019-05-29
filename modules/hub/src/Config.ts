@@ -68,7 +68,7 @@ export class Config {
     // beiMaxCollateralization
     for (let key in instance) {
       const isBei = key.toLowerCase().includes('bei') || key.toLowerCase().includes('wei')
-      if (isBei && !isBN(instance[key] || 'no')) {
+      if (isBei && !isBN(instance[key])) {
         instance[key] = toWei(instance[key])
       }
     }
