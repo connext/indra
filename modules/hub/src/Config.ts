@@ -1,5 +1,5 @@
 import { Registry } from './Container'
-import { toWei } from './util'
+import { toWei, isBN } from './util'
 import camelize from './util/camelize'
 
 // required / expected environment variables
@@ -67,7 +67,8 @@ export class Config {
     // looking for: channelBeiLimit, channelBeiDeposit, beiMinCollateralization,
     // beiMaxCollateralization
     for (let key in instance) {
-      if (key.toLowerCase().includes('bei') || key.toLowerCase().includes('wei')) {
+      const isBei = key.toLowerCase().includes('bei') || key.toLowerCase().includes('wei')
+      if (isBei && !isBN(instance[key] || 'no')) {
         instance[key] = toWei(instance[key])
       }
     }
