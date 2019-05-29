@@ -66,7 +66,7 @@ export class ThreadsController extends AbstractController {
     const hubResponse = await this.hub.updateHub(
       [updateRequest], state.persistent.lastThreadUpdateId,
     )
-    console.log('hubResponse:', hubResponse)
+    this.log.info(`hubResponse: ${hubResponse}`)
     this.connext.syncController.handleHubSync(hubResponse.updates)
     return { thread: initialState, channel: newChannelState }
   }

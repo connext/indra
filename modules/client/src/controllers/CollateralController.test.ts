@@ -1,11 +1,13 @@
 import { MockConnextInternal } from '../testing/mocks'
 
-describe('CollateralController: unit tests', () => {
+const logLevel = 1 // 0 = no logs, 5 = all logs
+
+describe('CollateralController', () => {
 
   let connext: MockConnextInternal
 
   beforeEach(async () => {
-    connext = new MockConnextInternal()
+    connext = new MockConnextInternal({ logLevel })
     await connext.start()
   })
 

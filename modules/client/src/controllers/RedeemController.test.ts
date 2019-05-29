@@ -3,11 +3,13 @@ import { ethers as eth } from 'ethers'
 import { assert } from '../testing'
 import { MockConnextInternal } from '../testing/mocks'
 
-describe('Redeem Controller: unit tests', () => {
+const logLevel = 1 // 0 = no logs, 5 = all logs
+
+describe('Redeem Controller', () => {
   let connext: MockConnextInternal
 
   beforeEach(async () => {
-    connext = new MockConnextInternal()
+    connext = new MockConnextInternal({ logLevel })
     await connext.start()
   })
 

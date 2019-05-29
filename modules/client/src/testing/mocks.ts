@@ -6,6 +6,7 @@ import { IChannelManager } from '../contract/ChannelManager'
 import * as ChannelManagerAbi from '../contract/ChannelManagerAbi.json'
 import { IHubAPIClient } from '../Hub'
 import { toBN } from '../lib/bn'
+import { Logger } from '../lib/logger'
 import { handleStateFlags } from '../state/middleware'
 import { reducers } from '../state/reducers'
 import { ConnextState, PersistentState, RuntimeState } from '../state/store'
@@ -27,6 +28,7 @@ import {
   CustodialWithdrawalRow,
   DepositArgs,
   DepositArgsBN,
+  EmailRequest,
   ExchangeArgs,
   ExchangeArgsBN,
   ExchangeRates,
@@ -53,7 +55,6 @@ import {
   UnsignedThreadState,
   UpdateRequest,
   WithdrawalParameters,
-  EmailRequest,
 } from '../types'
 import { Wallet } from '../Wallet'
 
@@ -109,9 +110,9 @@ export class MockConnextInternal extends ConnextInternal {
     afterEach(function (): any {
       // ignore this as any ts err
       if ((this as any).currentTest.state === 'failed') {
-        console.error(`Actions emitted during test: ${actions.length ? `` : `(no actions)`}`)
+        this.log.error(`Actions emitted during test: ${actions.length ? `` : `(no actions)`}`)
         actions.forEach((action: any): any => {
-          console.error('  ', JSON.stringify(action))
+          this.log.error(`  ${JSON.stringify(action)}`)
         })
       }
     })
@@ -120,7 +121,7 @@ export class MockConnextInternal extends ConnextInternal {
       contract: new MockChannelManager(),
       contractAddress: mkAddress('0xccc'),
       ethUrl: 'http://localhost:8545',
-      hub: new MockHub(),
+      hub: new MockHub(opts.logLevel),
       hubAddress: mkAddress('0xhhh'),
       mnemonic,
       store,
@@ -252,11 +253,16 @@ export class MockChannelManager implements IChannelManager {
 
 export class MockHub implements IHubAPIClient {
   public receivedUpdateRequests: UpdateRequest[] = []
+  public log: Logger
+
+  public constructor(logLevel?: number) {
+    this.log = new Logger('MockHub', logLevel)
+  }
 
   public async sendEmail(email: EmailRequest): Promise<{ message: string, id: string }> {
     return {
-      message: "You requested to send an email: " + JSON.stringify(email, null, 2),
-      id: "adsklfn33"
+      id: 'adsklfn33',
+      message: `You requested to send an email: ${JSON.stringify(email, undefined, 2)}`,
     }
   }
 
@@ -422,7 +428,7 @@ export class MockHub implements IHubAPIClient {
     const updates = payments.map((p: any): any => {
       if ((p.update as UpdateRequest).sigUser) {
         // user signed update, add to recieved
-        console.log('TEST INCLUSION')
+        this.log.info('TEST INCLUSION')
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
       if (p.type !== 'PT_THREAD') {

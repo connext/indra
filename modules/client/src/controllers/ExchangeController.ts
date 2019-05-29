@@ -69,7 +69,7 @@ export class ExchangeController extends AbstractController {
         }))
       }
     } catch (e) {
-      console.error('Error polling for exchange rates:', e)
+      this.log.error(`Error polling for exchange rates: ${e}`)
       // TODO: properly log this, once API logger is in
     }
   }
@@ -92,7 +92,7 @@ export class ExchangeController extends AbstractController {
       toBN(channel.balanceWeiUser).lt(weiToSell)
       || toBN(channel.balanceTokenUser).lt(tokensToSell)
     ) {
-      console.error(
+      this.log.error(
         `User does not have sufficient wei or token for exchange. ` +
         `Wei: ${weiToSell}, tokens: ${tokensToSell}, ` +
         `channel: ${JSON.stringify(channel, undefined, 2)}`)

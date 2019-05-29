@@ -1,11 +1,13 @@
 import { assert } from '../testing/index'
 import { MockConnextInternal, patch } from '../testing/mocks'
 
-describe('DepositController: unit tests', () => {
+const logLevel = 1 // 0 = no logs, 5 = all logs
+
+describe('DepositController', () => {
   let connext: MockConnextInternal
 
   beforeEach(async () => {
-    connext = new MockConnextInternal()
+    connext = new MockConnextInternal({ logLevel })
     await connext.start()
   })
 

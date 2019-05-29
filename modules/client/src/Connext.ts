@@ -17,6 +17,7 @@ import { ThreadsController } from './controllers/ThreadsController'
 import { WithdrawalController } from './controllers/WithdrawalController'
 import {  HubAPIClient, IHubAPIClient } from './Hub'
 import { maxBN, toBN } from './lib/bn'
+import { Logger } from './lib/logger'
 import { isFunction, timeoutPromise } from './lib/utils'
 import * as actions from './state/actions'
 import { handleStateFlags } from './state/middleware'
@@ -88,7 +89,7 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
     ethChainId: string,
     hub: IHubAPIClient
     hubAddress: string,
-    logLevel: number,
+    logLevel?: number,
     maxCollateralization: string
     store?: ConnextStore
     tokenAddress: string,
@@ -106,14 +107,13 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
 // Key task here is to convert IConnextChannelOptions into IConnextChannelInternalOptions
 export const createClient = async (opts: IConnextChannelOptions): Promise<ConnextChannel> => {
   const wallet: Wallet = new Wallet(opts)
-  const hub: HubAPIClient = new HubAPIClient(opts.hubUrl, wallet)
+  const hub: HubAPIClient = new HubAPIClient(opts.hubUrl, wallet, opts.logLevel)
   const hubConfig: HubConfig = await hub.config()
   const internalOpts: IConnextChannelInternalOptions = {
     ...opts,
     ...hubConfig,
     contract: new ChannelManager(wallet, hubConfig.contractAddress),
     hub,
-    logLevel: opts.logLevel || 3,
     user: opts.user || wallet.address,
     wallet,
   }
@@ -239,13 +239,13 @@ export abstract class ConnextChannel extends EventEmitter {
 export class ConnextInternal extends ConnextChannel {
   public contract: IChannelManager
   public hub: IHubAPIClient
-  public logLevel: number
   public opts: IConnextChannelInternalOptions
   public provider: any
   public store: ConnextStore
   public utils: Utils
   public validator: Validator
   public wallet: Wallet
+  public log: Logger
 
   public buyController: BuyController
   public collateralController: CollateralController
@@ -271,7 +271,7 @@ export class ConnextInternal extends ConnextChannel {
     this.store = undefined as any
     this.wallet = opts.wallet
     this.provider = this.wallet.provider
-    this.logLevel = opts.logLevel
+    this.log = new Logger('ConnextInternal', opts.logLevel)
     this.hub = opts.hub
 
     opts.user = opts.user.toLowerCase()
@@ -306,7 +306,7 @@ export class ConnextInternal extends ConnextChannel {
   //    time is detected for UX. However, it may be best to leave
   //    this up to the implementers to toggle.
   public async setPollInterval(ms: number): Promise<void> {
-    console.warn('This function has not been implemented yet')
+    this.log.warn('This function has not been implemented yet')
   }
 
   public calculateChannelWithdrawal(
@@ -476,9 +476,9 @@ export class ConnextInternal extends ConnextChannel {
 
     // Start all controllers
     for (const controller of this.getControllers()) {
-      console.log('Starting:', controller.name)
+      this.log.info(`Starting: ${controller.name}`)
       await controller.start()
-      console.log('Done!', controller.name, 'started.')
+      this.log.info(`Done! ${controller.name} started`)
     }
     await super.start()
   }
@@ -530,7 +530,7 @@ export class ConnextInternal extends ConnextChannel {
     }
     const hash: string = this.utils.createThreadStateHash(state)
     const sig: string = await this.wallet.signMessage(hash)
-    console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
+    this.log.info(`Signing thread state ${state.txCount}: ${sig} ${state}`)
     return addSigToThreadState(state, sig)
   }
 
@@ -540,7 +540,7 @@ export class ConnextInternal extends ConnextChannel {
   ): Promise<SignedDepositRequestProposal> {
     const hash: string = this.utils.createDepositRequestProposalHash(args)
     const sig: string = await this.wallet.signMessage(hash)
-    console.log(`Signing deposit request ${JSON.stringify(args, undefined, 2)}. Sig: ${sig}`)
+    this.log.info(`Signing deposit request ${JSON.stringify(args, undefined, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 
@@ -605,12 +605,10 @@ export class ConnextInternal extends ConnextChannel {
         )
 
         if (timeout) {
-          console.warn(
-            'Timeout (10 seconds) while waiting for state to save. ' +
-            'This error will be ignored (which may cause data loss). ' +
-            'User supplied function that has not returned:',
-            this.opts.saveState,
-          )
+          this.log.warn(
+            `Timeout (10 seconds) while waiting for state to save. ` +
+            `This error will be ignored (which may cause data loss). ` +
+            `User supplied function that has not returned: ${this.opts.saveState}`)
         }
       }
 
