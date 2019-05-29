@@ -1,5 +1,5 @@
 import { Registry } from './Container'
-import { BN, toBN, toWei } from './util'
+import { toWei } from './util'
 import camelize from './util/camelize'
 
 // required / expected environment variables
@@ -8,27 +8,27 @@ const ENV_VARS = [
   'ADMIN_ADDRESSES',
   'BEI_MIN_COLLATERALIZATION',
   'BEI_MAX_COLLATERALIZATION',
-  'CHANNEL_BEI_DEPOSIT',
-  'CHANNEL_BEI_LIMIT',
+  'CHANNEL_BEI_DEPOSIT', // set in CI on prod
+  'CHANNEL_BEI_LIMIT', // set in CI on prod
   'CHANNEL_MANAGER_ADDRESS',
-  'DATABASE_URL',
-  'ETH_NETWORK_ID',
-  'ETH_RPC_URL',
+  'DATABASE_URL', // set in *.entry.sh from CI
+  'ETH_NETWORK_ID', // set in CI on prod
+  'ETH_RPC_URL', // set in CI on prod
   'FORCE_SSL',
-  'HOT_WALLET_ADDRESS',
+  'HOT_WALLET_ADDRESS', // set in deploy script
   'HOT_WALLET_MIN_BALANCE',
   'HUB_PUBLIC_URL',
   'HTTPS_PORT',
-  'HUB_PUBLIC_URL', // TODO: injected from docker?
-  'MAILGUN_API_KEY',
+  'HUB_PUBLIC_URL', // TODO: update after mailgun removed
+  'MAILGUN_API_KEY', // set in CI on prod, TODO: remove
   'PORT',
-  'PRIVATE_KEY_FILE',
+  'PRIVATE_KEY_FILE', // set in deploy script
   'RECENT_PAYMENTS_INTERVAL',
-  'REDIS_URL',
-  'SERVICE_KEY',
+  'REDIS_URL', // set in deploy script
+  'SERVICE_KEY', // set in CI on prod
   'SHOULD_COLLATERALIZE_URL',
   'STALE_CHANNEL_DAYS',
-  'TOKEN_CONTRACT_ADDRESS'
+  'TOKEN_CONTRACT_ADDRESS' // set in deploy script
 ]
 
 // TODO: chainsaw polling interval? -- set in docker
