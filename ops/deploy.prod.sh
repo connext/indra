@@ -17,7 +17,7 @@ INDRA_DASHBOARD_URL="${INDRA_DASHBOARD_URL:-dashboarddd}"
 INDRA_ETH_RPC_KEY_MAINNET="${INDRA_ETH_RPC_KEY_MAINNET:-qHg6U3i7dKa4cJdMagOljenupIraBE1V}"
 INDRA_ETH_RPC_KEY_RINKEBY="${INDRA_ETH_RPC_KEY_RINKEBY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
+INDRA_SERVICE_KEY="${INDRA_SERVICE_KEY:-foo}"
 MAILGUN_API_KEY="${MAILGUN_API_KEY:-}"
 
 ####################
@@ -191,7 +191,7 @@ services:
       POSTGRES_USER: $postgres_user
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
+      SERVICE_KEY: $INDRA_SERVICE_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
       BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
@@ -226,7 +226,7 @@ services:
       POSTGRES_USER: $postgres_user
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
+      SERVICE_KEY: $INDRA_SERVICE_KEY
       SHOULD_COLLATERALIZE_URL: $should_collateralize_url
       TOKEN_ADDRESS: $token_address
     logging:

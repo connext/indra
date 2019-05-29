@@ -22,7 +22,7 @@ log_level="30" # set to 0 for no logs or to 50 for all the logs
 private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 private_key_file="/run/secrets/hub_key_ganache"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-service_user_key="foo"
+service_key="foo"
 
 # database connection settings
 postgres_db="$project"
@@ -163,7 +163,7 @@ services:
       POSTGRES_DB: $postgres_db
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $service_user_key
+      SERVICE_KEY: $service_key
       TOKEN_ADDRESS: $token_address
     networks:
       - $project
@@ -194,7 +194,7 @@ services:
       POSTGRES_DB: $postgres_db
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $service_user_key
+      SERVICE_KEY: $service_key
       TOKEN_ADDRESS: $token_address
     networks:
       - $project
