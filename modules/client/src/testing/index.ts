@@ -205,14 +205,11 @@ const expandSuccinct = (
   const res = {} as any
   Object.entries(s).forEach(([name, value]: any): any => {
     if (Array.isArray(value)) {
-      const cast = (expandTxCount && name === 'txCount')
-        ? (x: any): any => x
-        : (x: any): string => x.toString()
-      const newStrs = (expandTxCount && name === 'txCount')
-        ? ['Global', 'Chain']
-        : strs
-      res[isSuffix ? (name + newStrs[0]) : (newStrs[0] + capitalize(name))] = cast(value[0])
-      res[isSuffix ? (name + newStrs[1]) : (newStrs[1] + capitalize(name))] = cast(value[1])
+      const isTxCount = expandTxCount && name === 'txCount'
+      const suffs = isTxCount ? ['Global', 'Chain'] : strs
+      const cast = (x: any): string => isTxCount ? x : x.toString()
+      res[isSuffix ? (name + suffs[0]) : (suffs[0] + capitalize(name))] = cast(value[0])
+      res[isSuffix ? (name + suffs[1]) : (suffs[1] + capitalize(name))] = cast(value[1])
     } else {
       const condition = isSuffix
         ? name.endsWith(strs[0]) || name.endsWith(strs[1])
@@ -626,6 +623,10 @@ const initialWithdrawalArgs: WDInitial = {
     exchangeRate: '5', // wei to token
     recipient: mkAddress('0x222'),
     seller: 'user',
+    targetTokenHub: '0',
+    targetTokenUser: '0',
+    targetWeiHub: '0',
+    targetWeiUser: '0',
     timeout: 6969,
     tokensToSell: '0',
     weiToSell: '0',

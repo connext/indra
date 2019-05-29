@@ -16,9 +16,10 @@ import {
   UpdateRequest,
   UpdateRequestBN,
   WithdrawalArgs,
+  WithdrawalArgsBN,
   WithdrawalParametersBN,
 } from 'connext/types'
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 
 import { CoinPaymentsDao } from './coinpayments/CoinPaymentsDao'
 import Config from './Config'
@@ -822,7 +823,10 @@ export default class ChannelsService {
             completeCallback: 'ChannelsService.invalidateUpdate',
             args: {
               user,
-              lastInvalidTxCount: redisUpdate.state.txCountGlobal
+              invalidTxCount: redisUpdate.state.txCountGlobal,
+              withdrawal: update.reason == "ProposePendingWithdrawal"
+                ? update.args
+                : null
             }
           }
         })
@@ -857,19 +861,25 @@ export default class ChannelsService {
         return await this.saveRedisStateUpdate(user, redisUpdate, update)
 
       case 'Invalidation':
-        const lastStateNoPendingOps = await this.channelsDao.getLastStateNoPendingOps(user)
-
         const latestBlock = await this.signerService.getLatestBlock()
 
         // make sure there is no pending timeout
         if (signedChannelStatePrevious.timeout && latestBlock.timestamp <= signedChannelStatePrevious.timeout) {
-          LOG.info(`Cannot invalidate update with timeout that hasnt expired, lastStateNoPendingOps: ${lastStateNoPendingOps}, block: ${latestBlock}`)
+          LOG.info(`Cannot invalidate update with timeout that hasnt expired, prev: ${signedChannelStatePrevious}, block: ${latestBlock}`)
           return
         }
 
+        // get update to be invalidated
+        let args = (update.args as InvalidationArgs)
+        const toBeInvalidated = await this.channelsDao.getChannelUpdateByTxCount(user, args.invalidTxCount)
+        if (toBeInvalidated.reason == "ProposePendingWithdrawal") {
+          // always use own copy of args for withdrawal
+          args = { ...args, withdrawal: connext.convert.Withdrawal("str", toBeInvalidated.args as WithdrawalArgsBN) }
+        }
+
         unsignedChannelStateCurrent = this.validator.generateInvalidation(
-          connext.convert.ChannelState('str', lastStateNoPendingOps.state),
-          update.args as InvalidationArgs
+          connext.convert.ChannelState('str', signedChannelStatePrevious),
+          args as InvalidationArgs,
         )
         this.validator.assertChannelSigner({
           ...unsignedChannelStateCurrent,
@@ -877,16 +887,9 @@ export default class ChannelsService {
         })
 
         // make sure onchain tx isnt in flight
-        const startTxCount = (update.args as InvalidationArgs).previousValidTxCount + 1 // first invalid state is one higher than previous valid
-        const endTxCount = (update.args as InvalidationArgs).lastInvalidTxCount
-        for (let txCount = startTxCount; txCount <= endTxCount; txCount++) {
-          const toBeInvalidated = await this.channelsDao.getChannelUpdateByTxCount(user, txCount)
-          // not a tx the hub sent, candidate or invalidation
-          if (!toBeInvalidated.onchainTxLogicalId) {
-            continue
-          }
-
+        if (toBeInvalidated.onchainTxLogicalId) {
           const onchainTx = await this.onchainTxDao.getTransactionByLogicalId(this.db, toBeInvalidated.onchainTxLogicalId)
+
           // if state isnt new or failed, it means its in flight, so dont accept the invalidation
           if (onchainTx.state !== 'failed' && onchainTx.state !== 'new') {
             LOG.warn(`Client sent an invalidation for a state that might still complete, user: ${user}, update: ${prettySafeJson(update)}`)
@@ -898,17 +901,19 @@ export default class ChannelsService {
             await this.onchainTxDao.updateTransactionState(this.db, onchainTx.id, { state: 'failed', reason: `Invalidated by update.txCountGlobal: ${update.txCount}` })
           }
         }
-        // proceed with invalidation
+        // if there is no logical onchain id
+        // it is not a tx the hub sent
 
+        // proceed with the invalidation
         sigHub = await this.signerService.getSigForChannelState(unsignedChannelStateCurrent)
         const u = await this.channelsDao.applyUpdateByUser(
           user,
           update.reason,
           user,
           { ...unsignedChannelStateCurrent, sigUser: update.sigUser, sigHub },
-          update.args
+          args
         )
-        await this.channelsDao.invalidateUpdates(user, update.args as InvalidationArgs)
+        await this.channelsDao.invalidateUpdates(user, args)
         return u
 
       case 'OpenThread':
@@ -1154,16 +1159,16 @@ export default class ChannelsService {
       return
     }
     LOG.info(`Txn failed, proposing an invalidating update, txn: ${prettySafeJson(txn)}`)
-    const { user, lastInvalidTxCount } = txn.meta.args
-    const lastValidState = await this.channelsDao.getLastStateNoPendingOps(user)
+    const { user, invalidTxCount, withdrawal } = txn.meta.args
+    const chan = await this.channelsDao.getChannelByUser(user)
     const invalidationArgs: InvalidationArgs = {
-      lastInvalidTxCount,
-      previousValidTxCount: lastValidState.state.txCountGlobal,
+      invalidTxCount,
+      withdrawal,
       reason: 'CU_INVALID_ERROR',
       message: `Transaction failed: ${prettySafeJson(txn)}`,
     }
     const unsignedState = this.validator.generateInvalidation(
-      connext.convert.ChannelState('str', lastValidState.state),
+      connext.convert.ChannelState('str', chan.state),
       invalidationArgs
     )
     const sigHub = await this.signerService.getSigForChannelState(unsignedState)

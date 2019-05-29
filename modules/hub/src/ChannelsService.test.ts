@@ -811,8 +811,7 @@ describe('ChannelsService', () => {
 
     await service.doUpdates(chan.user, [{
       args: {
-        previousValidTxCount: chan.state.txCountGlobal,
-        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        invalidTxCount: chan.state.txCountGlobal + 1,
         reason: 'CU_INVALID_ERROR',
       } as InvalidationArgs,
       reason: 'Invalidation',
@@ -895,8 +894,7 @@ describe('ChannelsService', () => {
 
     await service.doUpdates(chan.user, [{
       args: {
-        previousValidTxCount: chan.state.txCountGlobal,
-        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        invalidTxCount: chan.state.txCountGlobal + 1,
         reason: 'CU_INVALID_ERROR',
       } as InvalidationArgs,
       reason: 'Invalidation',
@@ -1020,16 +1018,12 @@ describe('ChannelsService', () => {
     })
     channel = await channelUpdateFactory(registry, {
       ...channel.state,
-      pendingDepositToken: [1, 2],
-      pendingDepositWei: [3, 4],
-      pendingWithdrawalToken: [5, 6],
-      pendingWithdrawalWei: [7, 8],
+      balanceWei: [0, 2],
+      balanceToken: [100, 0],
+      pendingWithdrawalWei: [1, 4],
+      pendingWithdrawalToken: [100, 75],
+      txCountChain: channel.state.txCountChain + 1,
       txCountGlobal: channel.state.txCountGlobal + 1
-    })
-    channel = await channelUpdateFactory(registry, {
-      ...channel.state,
-      txCountGlobal: channel.state.txCountGlobal + 1,
-      sigUser: null
     })
     channel = await channelUpdateFactory(registry, {
       ...channel.state,
@@ -1041,17 +1035,26 @@ describe('ChannelsService', () => {
       reason: 'Invalidation',
       args: {
         reason: 'CU_INVALID_TIMEOUT',
-        previousValidTxCount: 2,
-        lastInvalidTxCount: 5
+        invalidTxCount: 3,
+        withdrawal: {
+          exchangeRate: '25',
+          targetTokenHub: '100',
+          targetTokenUser: '0',
+          targetWeiHub: '0',
+          targetWeiUser: '2',
+          timeout: 6969,
+          weiToSell: '0',
+          tokensToSell: '100',
+          additionalTokenHubToUser: '0',
+          additionalWeiHubToUser: '0'
+        }
       } as InvalidationArgs,
       txCount: channel.state.txCountGlobal + 1,
       sigUser: mkSig('0xa')
     }])
 
-    for (const txCount of [3, 4, 5]) {
-      const update = await channelsDao.getChannelUpdateByTxCount(channel.user, txCount)
-      assert.equal(update.invalid, 'CU_INVALID_TIMEOUT')
-    }
+    const update = await channelsDao.getChannelUpdateByTxCount(channel.user, 3)
+    assert.equal(update.invalid, 'CU_INVALID_TIMEOUT')
 
     let chan = await channelsDao.getChannelByUser(channel.user)
     assertChannelStateEqual(
@@ -1061,6 +1064,7 @@ describe('ChannelsService', () => {
         pendingDepositWei: [0, 0],
         pendingWithdrawalToken: [0, 0],
         pendingWithdrawalWei: [0, 0],
+        txCountChain: channel.state.txCountChain - 1,
         txCountGlobal: channel.state.txCountGlobal + 1,
         sigHub: fakeSig
       }
@@ -1077,8 +1081,7 @@ describe('ChannelsService', () => {
       reason: 'Invalidation',
       args: {
         reason: 'CU_INVALID_TIMEOUT',
-        previousValidTxCount: 0,
-        lastInvalidTxCount: 1
+        invalidTxCount: 1
       } as InvalidationArgs,
       txCount: channel.state.txCountGlobal + 1,
       sigUser: mkSig('0xa')
@@ -1108,9 +1111,9 @@ describe('ChannelsService', () => {
     })
 
     const invalidationArgs: InvalidationArgs = {
-      lastInvalidTxCount: channel.state.txCountGlobal,
-      previousValidTxCount: channel.state.txCountGlobal - 1,
-      reason: 'CU_INVALID_ERROR'
+      invalidTxCount: channel.state.txCountGlobal,
+      reason: 'CU_INVALID_ERROR',
+      withdrawal: null,
     }
 
     await service.doUpdates(channel.user, [{
@@ -1138,9 +1141,9 @@ describe('ChannelsService', () => {
     await clock.awaitTicks(2000)
 
     const invalidationArgs: InvalidationArgs = {
-      lastInvalidTxCount: channel.state.txCountGlobal,
-      previousValidTxCount: channel.state.txCountGlobal - 1,
-      reason: 'CU_INVALID_ERROR'
+      invalidTxCount: channel.state.txCountGlobal,
+      reason: 'CU_INVALID_ERROR',
+      withdrawal: null,
     }
 
     await service.doUpdates(channel.user, [{
@@ -1331,9 +1334,9 @@ describe('ChannelsService.shouldCollateralize', () => {
       const generated = stateGenerator.invalidation(
         connext.convert.ChannelState('bn', channel.state), 
         {
-          lastInvalidTxCount: channel.state.txCountGlobal + 1,
-          previousValidTxCount: channel.state.txCountGlobal,
-          reason: 'CU_INVALID_ERROR'
+          invalidTxCount: channel.state.txCountGlobal + 1,
+          reason: 'CU_INVALID_ERROR',
+          withdrawal: null,
         }
       )
       assertChannelStateEqual(generated, {

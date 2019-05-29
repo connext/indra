@@ -11,6 +11,7 @@ import {
   ThreadHistoryItem,
   ThreadState,
   UpdateRequest,
+  WithdrawalArgs,
 } from '../types'
 
 // To maintain the invariant that the current channel is always signed, add
@@ -98,6 +99,11 @@ export interface IPendingRequestedDeposit {
   requestedOn: number
   txCount: number | undefined
 }
+export interface LatestPendingUpdate {
+  withdrawal: WithdrawalArgs | undefined
+  txCount: number
+}
+
 
 export class PersistentState {
   public channel: ChannelState = CHANNEL_ZERO_STATE
@@ -114,6 +120,11 @@ export class PersistentState {
     sigHub: '0x0',
     sigUser: '0x0',
     txCount: 0,
+  }
+
+  public latestPending: LatestPendingUpdate =  {
+    txCount: 0,
+    withdrawal: undefined,
   }
 
   // The 'latestValidState' is the latest state with no pending operations

@@ -386,8 +386,7 @@ export class PostgresChannelsDao implements ChannelsDao {
       UPDATE _cm_channel_updates
       SET invalid = ${invalidationArgs.reason}
       WHERE
-        tx_count_global > ${invalidationArgs.previousValidTxCount} AND
-        tx_count_global <= ${invalidationArgs.lastInvalidTxCount} AND
+        tx_count_global = ${invalidationArgs.invalidTxCount} AND
         "user" = ${user.toLowerCase()}
       RETURNING id
     `)

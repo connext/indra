@@ -665,7 +665,6 @@ export class ConnextInternal extends ConnextChannel {
       recipient: this.opts.user,
       user: this.opts.user,
     }
-    state.persistent.latestValidState = state.persistent.channel
 
     if (this.opts.loadState) {
       const loadedState: any = await this.opts.loadState()

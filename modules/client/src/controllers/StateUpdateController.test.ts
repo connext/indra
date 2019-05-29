@@ -216,6 +216,12 @@ describe('StateUpdateController', () => {
   describe.skip('Invalidation handling', () => {
     let connext: MockConnextInternal
 
+    const getDateFromMinutesAgo = (minutes: number): Date => {
+      const now = new Date()
+      now.setMinutes(now.getMinutes() - minutes)
+      return now
+    }
+
     parameterizedTests([
       {
         blockTimestamp: 500,
@@ -224,23 +230,34 @@ describe('StateUpdateController', () => {
         timeout: 1000,
       },
       {
-        blockTimestamp: 2000,
-        name: 'accept a valid invalidation',
-        timeout: 1000,
+        blockTimestamp: getDateFromMinutesAgo(0),
+        name: 'handle an invalidation on a state where there is a 0 timeout',
+        timeout: 0,
       },
-
+      {
+        blockTimestamp: getDateFromMinutesAgo(0),
+        name: 'accept a valid invalidation',
+        timeout: getDateFromMinutesAgo(15),
+      },
     ], async (tc: any): Promise<any> => {
+
       const mockStore = new MockStore()
       mockStore.setChannel({
+        pendingDepositTokenUser: '100',
         pendingWithdrawalTokenUser: '100',
-        timeout: tc.timeout,
+        pendingWithdrawalWeiHub: '20',
+        timeout: Math.floor(tc.timeout.valueOf() / 1000),
         txCountChain: 2,
         txCountGlobal: 2,
       })
 
-      mockStore.setLatestValidState({
-        txCountChain: 1,
-        txCountGlobal: 1,
+      mockStore.setLatestPending(2, {
+        exchangeRate: '5',
+        recipient: mkAddress('0x222'),
+        seller: 'user',
+        targetTokenUser: '0',
+        tokensToSell: '0',
+        weiToSell: '20',
       })
 
       connext = new MockConnextInternal({
@@ -250,19 +267,18 @@ describe('StateUpdateController', () => {
       })
 
       connext.provider.getBlock = async (): Promise<any> => ({
-        timestamp: tc.blockTimestamp,
+        timestamp: Math.floor(tc.blockTimestamp.valueOf() / 1000),
       })
-
-      await connext.start()
 
       const res = connext.stateUpdateController.handleSyncItem({
         type: 'channel',
         update: {
           args: {
-            lastInvalidTxCount: 2,
-            previousValidTxCount: 1,
+            previousValidTxCount: 2,
             reason: 'CU_INVALID_TIMEOUT',
+            withdrawal: {},
           },
+          createdOn: getDateFromMinutesAgo(20),
           reason: 'Invalidation',
           sigHub: '0xsig-hub',
           txCount: 3,

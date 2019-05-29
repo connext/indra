@@ -19,6 +19,24 @@ describe('Testing Utils', () => {
     })
   })
 
+  it('should definitely work on my mama', () => {
+    assert.deepEqual(
+      t.expandSuccinctChannel({
+        pendingDepositToken: [ 10, 5 ],
+        pendingDepositWei: [ 1, 1 ],
+        txCount: [ 3, 2 ],
+      }),
+      {
+        pendingDepositTokenHub: '10',
+        pendingDepositTokenUser: '5',
+        pendingDepositWeiHub: '1',
+        pendingDepositWeiUser: '1',
+        txCountChain: 2,
+        txCountGlobal: 3,
+      },
+    )
+  })
+
   describe('makeSuccinctThread', () => {
     it('should work', () => {
       assert.deepEqual(

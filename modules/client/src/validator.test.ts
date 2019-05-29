@@ -575,7 +575,7 @@ describe('Validator', () => {
       {
         name: 'should fail if user is not same in receipt and previous',
         prev: { ...prevDeposit, user: t.mkAddress('0xUUU'), },
-        stubs: [tx, createMockedDepositTxReceipt("hub", abi)],
+        stubs: [tx, createMockedDepositTxReceipt('hub', abi)],
         valid: false,
       },
       // {
@@ -699,61 +699,70 @@ describe('Validator', () => {
     }
   })
 
-  describe('invalidation', () => {
+  describe('validator.invalidation', () => {
     const prev = createPreviousChannelState({
       txCount: [1, 1],
     })
 
     const args: InvalidationArgs = {
-      lastInvalidTxCount: prev.txCountGlobal + 1,
-      previousValidTxCount: prev.txCountGlobal,
+      invalidTxCount: prev.txCountGlobal,
       reason: 'CU_INVALID_ERROR',
+      withdrawal: undefined,
     }
 
     for (const tc of [
       {
         args,
-        name: 'should work',
-        prev,
-        valid: true,
-      },
-      {
-        args: { ...args, previousValidTxCount: 3 },
-        name: 'should fail if previous nonce is higher than nonce to be invalidated',
-        prev,
-        valid: false,
-      },
-      {
-        args: { ...args, previousValidTxCount: 3, lastInvalidTxCount: 3 },
-        name: 'should fail if previous state nonce and nonce in args do not match',
-        prev: { ...prev, txCountGlobal: 5 },
-        valid: false,
+        name: 'validator.invalidator should work',
+        prev: { ...prev, pendingDepositTokenUser: toBN(10) },
+        valid: undefined,
       },
       {
         args,
-        name: 'should fail if previous state has pending ops',
-        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
-        valid: false,
+        name: 'should return string if previous state has timeout and ' +
+              'there are not withdrawal args given',
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1) },
+        valid: new RegExp('Cannot invalidate states containing timed withdrawals timeouts ' +
+               'without providing a valid withdrawal arguments parameter'),
+      },
+      {
+        args: { ...args, invalidTxCount: 2, withdrawal: t.getWithdrawalArgs('empty') },
+        name: 'should return string if previous state has timed wd and ' +
+              'the last invalid count is not the count on the channel',
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1), txCountGlobal: 3 },
+        valid: /Cannot invalidate a timed withdrawal that has been built on top of/,
+      },
+      {
+        args: { ...args, invalidTxCount: 5 },
+        name: 'should return string if previous state nonce is lower than nonce in args',
+        prev: { ...prev, txCountGlobal: 3 },
+        valid: /Cannot invalidate an update with a nonce higher than the channels/,
       },
       {
         args,
-        name: 'should fail if previous state is missing sigHub',
-        prev: { ...prev, sigHub: '' },
-        valid: false,
+        name: 'should return string if previous state is missing sigHub',
+        prev: { ...prev, sigHub: '', pendingDepositTokenHub: toBN(1) },
+        valid: /Invalid signer detected on channel state/,
       },
       {
         args,
-        name: 'should fail if previous state is missing sigUser',
-        prev: { ...prev, sigUser: '' },
-        valid: false,
+        name: 'should return string if previous state is missing sigUser',
+        prev: { ...prev, sigUser: '', pendingDepositTokenHub: toBN(1) },
+        valid: /Invalid signer detected on channel state/,
       },
     ]) {
 
       it(tc.name, () => {
+        validator.assertChannelSigner = (state: any, signer: any): any => {/* noop */}
         if (tc.valid) {
-          assert.isUndefined(validator.invalidation(tc.prev, tc.args))
+          if (tc.valid.toString().includes('Invalid signer')) {
+            validator.assertChannelSigner = (state: any, signer: any): any => {
+              throw new Error('Invalid signer detected on channel state')
+            }
+          }
+          assert.match(validator.invalidation(tc.prev, tc.args) as any, tc.valid as any)
         } else {
-          assert.exists(validator.invalidation(tc.prev, tc.args))
+          assert.isUndefined(validator.invalidation(tc.prev, tc.args))
         }
       })
 
@@ -819,6 +828,7 @@ describe('Validator', () => {
         prev,
         sigErr: false,
       },
+
       {
         args: { ...defaultArgs, balanceWeiReceiver: toBN(2) },
         initialThreadStates,
@@ -827,6 +837,7 @@ describe('Validator', () => {
         prev,
         sigErr: false,
       },
+
       {
         args: { ...defaultArgs, balanceTokenReceiver: toBN(2) },
         initialThreadStates,
@@ -958,10 +969,10 @@ describe('Validator', () => {
         if (tc.message) {
           assert(
             res && res.includes(tc.message),
-            `response "${res}" should include "${tc.message}"`,
+            `response '${res}' should include '${tc.message}'`,
           )
         } else {
-          assert.isUndefined(res, `response "${res}" should be undefined`)
+          assert.isUndefined(res, `response '${res}' should be undefined`)
         }
       })
 

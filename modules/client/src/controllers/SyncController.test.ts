@@ -205,8 +205,7 @@ describe('SyncController', () => {
           type: 'channel',
           update: {
             args: {
-              lastInvalidTxCount: 5,
-              previousValidTxCount: 4,
+              invalidTxCount: 5,
             },
             reason: 'Invalidation',
             sigUser: true,
@@ -251,6 +250,21 @@ describe('SyncController', () => {
             txCount: 5,
           },
         }],
+      },
+
+      {
+        expected: [ { txCount: 4 } ],
+        fromHub: [ mkFromHub({ txCount: 4 }), mkFromHub({ txCount: 5 }) ],
+        name: 'toSync contains invalidation',
+        toHub: [{
+          type: 'channel',
+          update: {
+            args: { invalidTxCount: 5 },
+            reason: 'Invalidation',
+            sigUser: true,
+            txCount: 6,
+          }},
+        ],
       },
 
       {
@@ -348,12 +362,12 @@ describe('SyncController', () => {
         name: 'current block is far in the future',
         targetTimestamp: 500,
       },
+
     ], async (input: any): Promise<any> => {
       latestBlockNumber = input.latestBlockNumber
       const block = await connext.syncController.findBlockNearestTimeout(input.targetTimestamp, 15)
       assert.equal(block.number, input.expectedBlockNumber)
     })
-
   })
 
   describe.skip('Invalidation handling', () => {
@@ -386,7 +400,7 @@ describe('SyncController', () => {
       const mockStore = new MockStore()
       mockStore.setSyncControllerState([])
       mockStore.setChannel(prev)
-      mockStore.setLatestValidState(lastValid)
+      // mockStore.setLatestValidState(lastValid)
       mockStore.setChannelUpdate({
         args: {} as any,
         reason: 'ProposePendingDeposit',
@@ -405,7 +419,7 @@ describe('SyncController', () => {
       connext.provider.getBlock = async (): Promise<any> => ({
         number: curBlockTimestamp,
         timestamp: curBlockTimestamp,
-      }) as any
+      })
     })
 
     afterEach(() => connext.stop())
@@ -443,20 +457,26 @@ describe('SyncController', () => {
       }
 
       curBlockTimestamp = test.curBlockTimestamp
-      connext.getContractEvents = (eventName: any, fromBlock: any): any =>
-        !test.eventTxCounts
-          ? []
-          : [ { returnValues: { txCount: test.eventTxCounts } } ] as any
+      connext.getContractEvents = (eventName: string, fromBlock: number): any =>
+        !test.eventTxCounts ? [] : [
+          {
+            returnValues: {
+              txCount: test.eventTxCounts,
+            },
+          },
+        ] as any
 
       await connext.start()
       await new Promise((res: any): any => setTimeout(res, 20))
 
+      const latestPending = connext.store.getState().persistent.latestPending
+
       if (test.invalidates) {
         connext.mockHub.assertReceivedUpdate({
           args: {
-            lastInvalidTxCount: prev.txCountGlobal,
-            previousValidTxCount: lastValid.txCountGlobal,
+            invalidTxCount: latestPending.txCount,
             reason: 'CU_INVALID_TIMEOUT',
+            withdrawal: latestPending.withdrawal,
           },
           reason: 'Invalidation',
           sigHub: false,
@@ -465,10 +485,6 @@ describe('SyncController', () => {
       } else {
         assert.deepEqual(connext.mockHub.receivedUpdateRequests, [])
       }
-    })
-
-    afterEach(async () => {
-      await connext.stop()
     })
   })
 

@@ -334,11 +334,9 @@ export const filterPendingSyncResults = (fromHub: SyncResult[], toHub: SyncResul
 
     if (u.type === 'channel' && u.update.reason === 'Invalidation') {
       const args: InvalidationArgs = u.update.args as InvalidationArgs
-      for (let i = args.previousValidTxCount + 1; i <= args.lastInvalidTxCount; i += 1) {
-        existing[`tx:${i}`] = {
-          sigHub: true,
-          sigUser: true,
-        }
+      existing[`tx:${args.invalidTxCount}`] = {
+        sigHub: true,
+        sigUser: true,
       }
     }
   })
@@ -490,11 +488,14 @@ export class SyncController extends AbstractController {
           `for a state without a timeout. State: ${JSON.stringify(channel)}`)
       }
 
-      // If the state doesn't have a timeout, use the update's timestamp + 5 minutes
+      // If the state doesn't have a timeout, use the
+      // update's timestamp - challenge period from store
       // as an approximate timeout window.
-      timeout = +(new Date(updateTimestamp)) / 1000 + 60 * 5
-    }
 
+      // TODO: hub uses a default timer of 15 minutes on its txs
+      // use that here
+      timeout = Math.floor(+(new Date(updateTimestamp)) / 1000) + 15 * 60
+    }
     const block = await this.findBlockNearestTimeout(timeout)
     if (block.timestamp < timeout) {
       return { didEmit: 'unknown', latestBlock: block }
@@ -771,41 +772,47 @@ export class SyncController extends AbstractController {
     }
 
     // at the moment, you cannot invalidate states that have pending
-    // operations and have been built on top of
+    // operations and have been built on top of, where the previous
+    // state had a timeout
     const channel = getChannel(this.store.getState())
     if (
       // If the very first propose pending is invalidated, then the
       // channel.txCountGlobal will be 0
       !(channel.txCountGlobal === 0 && updateToInvalidate.txCount === 1) &&
       updateToInvalidate.txCount < channel.txCountGlobal &&
-      updateToInvalidate.reason.startsWith('ProposePending')
+      updateToInvalidate.reason.startsWith('ProposePending') &&
+      channel.timeout !== 0
     ) {
       throw new Error(
         `Cannot invalidate 'ProposePending*' type updates that have been built ` +
-        `on (channel: ${JSON.stringify(channel)}; updateToInvalidate: ` +
-        `${JSON.stringify(updateToInvalidate)})`)
+        `on when your channel has a timeout (channel: ${JSON.stringify(channel)}; ` +
+        `updateToInvalidate: ${JSON.stringify(updateToInvalidate)})`)
     }
 
-    // If we've already signed the update that's being invalidated, make sure
-    // the corresponding state being invalidated (which is, for the moment,
+    // Make sure the state being invalidated (which is, for the moment,
     // always going to be our current state, as guaranteed by the check above)
     // has pending operations.
     if (updateToInvalidate.sigUser && !this.connext.utils.hasPendingOps(channel)) {
       throw new Error(
-        `Refusing to invalidate an update with no pending operations we have already signed: ` +
-        `${JSON.stringify(updateToInvalidate)}`)
+        `Refusing to invalidate an update without pending operations detected on ` +
+        `the channel that has already been signed: ${JSON.stringify(updateToInvalidate)}`)
     }
 
-    const latestValidState = this.getState().persistent.latestValidState
+    // if you are invalidating a withdrawal, retrieve the last withdrawal
+    // requested from the store
+    const { latestPending } = this.getState().persistent
+
+    const chan = this.getState().persistent.channel
     const args: InvalidationArgs = {
-      lastInvalidTxCount: updateToInvalidate.txCount,
+      invalidTxCount: latestPending.txCount,
       message,
-      previousValidTxCount: latestValidState.txCountGlobal,
       reason,
+      withdrawal: latestPending.withdrawal,
     }
 
     const invalidationState = await this.connext.signChannelState(
-      this.validator.generateInvalidation(latestValidState, args))
+      this.validator.generateInvalidation(chan, args),
+    )
 
     await this.sendUpdateToHub({
       args,

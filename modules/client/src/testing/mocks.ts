@@ -697,17 +697,15 @@ export class MockStore {
     }
   }
 
-  public setLatestValidState = (overrides: PartialSignedOrSuccinctChannel = {}): any => {
+  public setLatestPending = (invalidTxCount: number, overrides: any = {}): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        latestValidState: getChannelState('empty', {
-          sigHub: '0xsig-hub',
-          sigUser: '0xsig-user',
-          txCountChain: 0,
-          txCountGlobal: 0,
-        }, overrides),
+        latestPending: {
+          txCount: invalidTxCount,
+          withdrawal: getWithdrawalArgs('empty', overrides),
+        },
       },
     }
   }

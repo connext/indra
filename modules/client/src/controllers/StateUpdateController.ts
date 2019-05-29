@@ -270,7 +270,7 @@ export class StateUpdateController extends AbstractController {
 
     const connextState = this.getState()
     const prevState: ChannelState = connextState.persistent.channel
-    const latestValidState: ChannelState = connextState.persistent.latestValidState
+    const latestPending = connextState.persistent.latestPending
 
     this.log.info(`prevState: ${prevState}`)
 
@@ -292,6 +292,16 @@ export class StateUpdateController extends AbstractController {
         `later than our most recent state)`)
     }
 
+    // change the update args to our latest pending information
+    // if there is any invalidation
+    if (update.reason === 'Invalidation') {
+      update.args = {
+        ...update.args,
+        invalidTxCount: latestPending.txCount,
+        withdrawal: latestPending.withdrawal ? latestPending.withdrawal : undefined,
+      }
+    }
+
     if (update.reason === 'EmptyChannel') {
       this.log.info('Channel has exited dispute phase, re-enabling client')
       this.store.dispatch(actions.setChannelStatus('CS_OPEN'))
@@ -306,7 +316,7 @@ export class StateUpdateController extends AbstractController {
     }
 
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
-      update.reason === 'Invalidation' ? latestValidState : prevState,
+      prevState,
       update,
     )
 
@@ -521,16 +531,20 @@ export class StateUpdateController extends AbstractController {
       //    because there may have been tips on top of the pending state)
       // 2. The `didContractEmitUpdateEvent` will throw an error because it
       //    has not been tested with `timeout = 0` states.
-      if (update.args.lastInvalidTxCount !== prev.txCountGlobal) {
-        throw new Error(
-          `Hub proposed invalidation for a state which isn't our latest. ` +
-          `Invalidation: ${JSON.stringify(update)} ` +
-          `Latest state: ${JSON.stringify(prev)}`)
-      }
+
+      // TODO: should we leave this in for safety...?
+      // if (update.args.invalidTxCount != prev.txCountGlobal) {
+      //   throw new Error(
+      //     `Hub proposed invalidation for a state which isn't our latest. ` +
+      //     `Invalidation: ${JSON.stringify(update)} ` +
+      //     `Latest state: ${JSON.stringify(prev)}`
+      //   )
+      // }
+
       if (!this.connext.utils.hasPendingOps(prev)) {
         throw new Error(
-          `Hub proposed invalidation for a double signed state with no ` +
-          `pending fields. Invalidation: ${JSON.stringify(update)} ` +
+          `Hub proposed invalidation for a state with no pending fields. ` +
+          `Invalidation: ${JSON.stringify(update)} ` +
           `state: ${JSON.stringify(prev)}`)
       }
       const { syncController } = this.connext
