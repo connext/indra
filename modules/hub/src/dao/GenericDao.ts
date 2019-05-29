@@ -1,8 +1,8 @@
 import DBEngine from '../DBEngine'
 import { Client } from 'pg'
-import log from '../util/log'
+import { Logger } from '../util'
 
-const LOG = log('GenericDao')
+const log = new Logger('GenericDao')
 
 export default interface GenericDao {
   asTransaction(queries: Function[]): Promise<any>
@@ -20,15 +20,13 @@ export class PostgresGenericDao implements GenericDao {
       await c.query('BEGIN')
       try {
         for (const query of queries) {
-          LOG.debug('inside asTransaction');
+          log.debug('inside asTransaction');
           await query()
         }
         await c.query('COMMIT')
       } catch (error) {
         await c.query('ROLLBACK')
-        LOG.error('Error during transaction query, rollback: {error}', {
-          error,
-        })
+        log.error(`Error during transaction query, rollback: ${error}`)
         throw error
       }
     })

@@ -4,9 +4,6 @@ import { Address, Omit, PaymentProfileConfig } from 'connext/types'
 import PaymentProfilesDao from './dao/PaymentProfilesDao'
 import DBEngine from './DBEngine'
 import { prettySafeJson, toBN } from './util'
-import log from './util/log'
-
-const LOG = log('PaymentProfilesService')
 
 export default class PaymentProfilesService {
 

@@ -1,4 +1,4 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 import { BigNumber as BN } from 'ethers/utils'
 
 import Config from './Config'
@@ -6,10 +6,10 @@ import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import WithdrawalsDao from './dao/WithdrawalsDao'
 import {TotalsTuple} from './domain/TotalsTuple'
 import {default as Withdrawal, WithdrawalStatus} from './domain/Withdrawal'
-import { toBN } from './util'
-import log from './util/log'
+import { Logger, toBN } from './util'
 
-const LOG = log('WithdrawalsService')
+const log = new Logger('WithdrawalsService')
+const formatEther = eth.utils.formatEther
 
 function p(host: any, attr: any, ...args: any[]): any {
   return new Promise(resolve => {
@@ -42,9 +42,7 @@ export default class WithdrawalsService {
     const enabled = (await this.globalSettingsDao.fetch()).withdrawalsEnabled
 
     if (!enabled) {
-      LOG.error('Blocking withdrawal attempt from {address} while withdrawals are disabled.', {
-        address
-      })
+      log.error(`Blocking withdrawal attempt from ${address} while withdrawals are disabled.`)
       throw new Error('Withdrawals are disabled.')
     }
 
@@ -53,9 +51,7 @@ export default class WithdrawalsService {
     try {
       wd = await this.withdrawalsDao.createWeiWithdrawal(address)
     } catch (err) {
-      LOG.error('Failed to created withdrawal: {err}', {
-        err
-      })
+      log.error(`Failed to created withdrawal: ${err}`)
     }
 
     if (!wd) {
@@ -71,23 +67,14 @@ export default class WithdrawalsService {
     })
 
     if (currentBalanceWei.lt(wd.amountWei)) {
-      LOG.error('Attempt by "{address}" to withdraw "{amountEth}", but hot wallet only has "{walletAmountEth}"!', {
-        address,
-        amountEth: eth.utils.formatEther(wd.amountWei),
-        walletAmountEth: eth.utils.formatEther(currentBalanceWei),
-      })
+      log.error(`Attempt by "${address}" to withdraw "${formatEther(wd.amountWei)}", but hot wallet only has "${formatEther(currentBalanceWei)}"!`)
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
     }
 
     const newBalanceWei = currentBalanceWei.sub(wd.amountWei)
     if (newBalanceWei.lt(this.config.hotWalletMinBalance)) {
-      LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
-        address,
-        wdAmountEth: eth.utils.formatEther(wd.amountWei),  
-        newBalanceEth: eth.utils.formatEther(newBalanceWei),
-        hotWalletMinBalanceEth: eth.utils.formatEther(this.config.hotWalletMinBalance),
-      })
+      log.error(`Withdrawal by "${address}" of "${formatEther(wd.amountWei)}" reduces hot wallet balance to "${formatEther(newBalanceWei)}" (which is less than the warning threshold, "${formatEther(this.config.hotWalletMinBalance)}")!`)
     }
 
     this.web3.eth.sendTransaction({
@@ -96,28 +83,16 @@ export default class WithdrawalsService {
       value: wd.amountWei
     }, (err: any, txHash: string) => {
       if (err) {
-        LOG.error('Failed to process withdrawal for address {address}: {err}', {
-          address,
-          err
-        })
+        log.error(`Failed to process withdrawal for address ${address}: ${err}`)
 
         return this.withdrawalsDao.markFailed(wd!.id)
-          .catch((err) => LOG.error('Failed to mark withdrawal for address {address} as failed: {err}', {
-            address,
-            err
-          }))
+          .catch((err) => log.error(`Failed to mark withdrawal for address ${address} as failed: ${err}`))
       }
 
       this.withdrawalsDao.markPending(wd!.id, txHash).then(() => this.pollStatus(wd!.id, txHash)).catch((err) => {
-        LOG.error('Failed to mark withdrawal for address {address} as pending: {err}', {
-          address,
-          err
-        })
+        log.error(`Failed to mark withdrawal for address ${address} as pending: ${err}`)
 
-        return this.withdrawalsDao.markFailed(wd!.id).catch(() => LOG.error('Failed to mark withdrawal for address {address} as failed: {err}', {
-          address,
-          err
-        }))
+        return this.withdrawalsDao.markFailed(wd!.id).catch(() => log.error(`Failed to mark withdrawal for address ${address} as failed: ${err}`))
       })
     })
 
@@ -128,9 +103,7 @@ export default class WithdrawalsService {
     const enabled = (await this.globalSettingsDao.fetch()).withdrawalsEnabled
 
     if (!enabled) {
-      LOG.error('Blocking withdrawal attempt from {address} while withdrawals are disabled.', {
-        address: initiator
-      })
+      log.error(`Blocking withdrawal attempt from ${initiator} while withdrawals are disabled.`)
       throw new Error('Withdrawals are disabled.')
     }
 
@@ -139,10 +112,7 @@ export default class WithdrawalsService {
     try {
       wd = await this.withdrawalsDao.createChannelDisbursement(initiator, recipient, amount)
     } catch (err) {
-      LOG.error('Failed to created withdrawal for {address}: {err}', {
-        address: initiator,
-        err,
-      })
+      log.error(`Failed to created withdrawal for ${initiator}: ${err}`)
     }
 
     if (!wd) {
@@ -156,23 +126,14 @@ export default class WithdrawalsService {
     })
 
     if (currentBalanceWei.lt(amount)) {
-      LOG.error('Attempt by "{address}" to withdraw "{amountEth}", but hot wallet only has "{walletAmountEth}"!', {
-        address: initiator,
-        amountEth: eth.utils.formatEther(toBN(amount)),
-        walletAmountEth: eth.utils.formatEther(currentBalanceWei),
-      })
+      log.error(`Attempt by "${initiator}" to withdraw "${formatEther(toBN(amount))}", but hot wallet only has "${formatEther(currentBalanceWei)}"!`)
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
     }
 
     const newBalanceWei = currentBalanceWei.sub(amount)
     if (newBalanceWei.lt(toBN(this.config.hotWalletMinBalance))) {
-      LOG.error('Withdrawal by "{address}" of "{wdAmountEth}" reduces hot wallet balance to "{newBalanceEth}" (which is less than the warning threshold, "{hotWalletMinBalanceEth}")!', {
-        address: initiator,
-        wdAmountEth: eth.utils.formatEther(toBN(amount)),
-        newBalanceEth: eth.utils.formatEther(newBalanceWei),
-        hotWalletMinBalanceEth: eth.utils.formatEther(this.config.hotWalletMinBalance),
-      })
+      log.error(`Withdrawal by "${initiator}" of "${formatEther(toBN(amount))}" reduces hot wallet balance to "${formatEther(newBalanceWei)}" (which is less than the warning threshold, "${formatEther(this.config.hotWalletMinBalance)}")!`)
     }
 
     let [err, txHash] = await p(this.web3.eth, 'sendTransaction', {
@@ -181,10 +142,7 @@ export default class WithdrawalsService {
       value: amount
     })
     if (err) {
-      LOG.error('Failed to process withdrawal for address {address}: {err}', {
-        address: initiator,
-        err
-      })
+      log.error(`Failed to process withdrawal for address ${initiator}: ${err}`)
 
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
@@ -195,12 +153,7 @@ export default class WithdrawalsService {
     try {
       await this.pollStatus(wd!.id, txHash)
     } catch (err) {
-      LOG.error('Error while polling for status of withdrawal {id} at txhash {txHash} from {address}: {err}', {
-        id: wd!.id,
-        txHash,
-        address: initiator,
-        err
-      })
+      log.error(`Error while polling for status of withdrawal ${wd!.id} at txhash ${txHash} from ${initiator}: ${err}`)
 
       await this.withdrawalsDao.markFailed(wd!.id)
       return wd
@@ -227,42 +180,25 @@ export default class WithdrawalsService {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       await sleep(1000)
 
-      LOG.info('Checking status of withdrawal {wdId} with txhash {txHash}...', {
-        wdId,
-        txHash
-      })
+      log.info(`Checking status of withdrawal ${wdId} with txhash ${txHash}...`)
       const [err, res] = await p(this.web3.eth, 'getTransaction', txHash)
       if (err) {
-        LOG.error('Got error from Web3 while polling status for {wdId}: {err}', {
-          wdId,
-          err
-        })
+        log.error(`Got error from Web3 while polling status for ${wdId}: ${err}`)
         continue
       }
 
       if (!res || res.blockNumber === null) {
-        LOG.info('Withdrawal {wdId} with tx hash {txHash} not found or unconfirmed. Retrying. Attempt {attempt} of {maxAttempts}', {
-          wdId,
-          txHash,
-          attempt,
-          maxAttempts
-        })
+        log.info(`Withdrawal ${wdId} with tx hash ${txHash} not found or unconfirmed. Retrying. Attempt ${attempt} of ${maxAttempts}`)
         continue
       }
 
-      LOG.info('Withdrawal {wdId} with tx hash {txHash} has been confirmed.', {
-        wdId,
-        txHash
-      })
+      log.info(`Withdrawal ${wdId} with tx hash ${txHash} has been confirmed.`)
 
       await this.withdrawalsDao.markConfirmed(wdId)
       return
     }
 
-    LOG.error('Withdrawal {wdId} with txhash {txHash} timed out.', {
-      wdId,
-      txHash
-    })
+    log.error(`Withdrawal ${wdId} with txhash ${txHash} timed out.`)
 
     await this.withdrawalsDao.markFailed(wdId)
   }

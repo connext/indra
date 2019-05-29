@@ -6,8 +6,7 @@ import { SinonFakeTimers, SinonStub } from 'sinon'
 import Config from './Config'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import WithdrawalsDao from './dao/WithdrawalsDao'
-import { toBN, toWei } from './util'
-import { Logger } from './util/log'
+import { Logger, toBN, toWei } from './util'
 import WithdrawalsService from './WithdrawalsService'
 
 const assert = chai.assert
@@ -108,9 +107,9 @@ describe.skip('WithdrawalsService', () => {
         let didGetErrorLog: boolean = false
 
         try {
-          Logger.prototype.error = (msg: string, args: any) => {
+          Logger.prototype.error = (msg: string) => {
             assert.include(msg, 'reduces hot wallet balance')
-            assert.equal(args.newBalanceEth, '0.09999999999999999')
+            assert.include(msg, '0.09999999999999999')
             didGetErrorLog = true
           }
 

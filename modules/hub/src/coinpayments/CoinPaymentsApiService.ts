@@ -6,10 +6,7 @@ import { CoinPaymentsService } from './CoinPaymentsService'
 
 import { ApiService } from '../api/ApiService'
 import { default as Config } from '../Config'
-import { default as log } from '../util/log'
 import { getUserFromRequest } from '../util/request'
-
-const LOG = log('CoinPaymentsApiService')
 
 export class CoinPaymentsApiService extends ApiService<
   CoinPaymentsApiServiceHandler

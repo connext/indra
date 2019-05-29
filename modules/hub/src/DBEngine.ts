@@ -1,8 +1,10 @@
 import {Context} from './Container'
 import {Pool, PoolClient, ClientBase, Client, QueryResult} from 'pg'
 import Config from './Config'
-import { getLogger as log, ILogger } from './util/log'
+import { Logger } from './util'
 import patch from './util/patch'
+
+const log = new Logger('PostgresDBEngine')
 
 export type Executor<T, U> = (client: T) => Promise<U>
 
@@ -23,8 +25,6 @@ export default interface DBEngine<T=Client> {
   withFreshConnection<Res>(callback: Executor<PgTransaction, Res>): Promise<Res>
   onTransactionCommit(callback: CommitCallback): Promise<void>
 }
-
-const LOG = log('PostgresDBEngine')
 
 export const SQL = require('sql-template-strings')
 
@@ -54,7 +54,7 @@ async function cleanup(e: Error, cxn: any, query: string) {
   try {
     return await cxn.query(query)
   } catch (newErr) {
-    LOG.error(`Error while running "${query}" (${'' + newErr}) which was run because of: ${'' + e}\n${e.stack}`)
+    log.error(`Error while running "${query}" (${'' + newErr}) which was run because of: ${'' + e}\n${e.stack}`)
     throw newErr
   }
 }
@@ -167,11 +167,11 @@ export class PgTransaction implements DBEngine {
  */
 let poolCount = 0
 export class PgPoolService {
-  pool: Pool
-  log: ILogger
+  public pool: Pool
+  public log: Logger
 
   constructor(config: Config) {
-    this.log = log('PgPoolService:' + ++poolCount)
+    this.log = new Logger('PgPoolService:' + ++poolCount, config.logLevel)
     this.pool = this._initPool(config)
   }
 
@@ -213,12 +213,12 @@ export class PgPoolService {
     var connectCount = 0
     pool.on('connect', () => {
       connectCount += 1
-      this.log.debug('Allocating new Postgres connection (active connections: {connectCount})', { connectCount })
+      this.log.debug(`Allocating new Postgres connection (active connections: ${connectCount})`)
     })
 
     pool.on('remove', () => {
       connectCount -= 1
-      this.log.debug('Removing Postgres connection from pool (active connections: {connectCount})', { connectCount })
+      this.log.debug(`Removing Postgres connection from pool (active connections: ${connectCount})`)
     })
 
     return pool
@@ -304,7 +304,7 @@ export class PostgresDBEngine implements DBEngine<Client> {
       if (!this.context) {
         // This *should* never happen. See the rules described on the `Context`
         // class.
-        LOG.warn(
+        log.warn(
           `DBEngine.withTransaction(...) used without a Context available. ` +
           `The transaction will not be automatically shared with callers.`
         )

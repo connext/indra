@@ -3,13 +3,17 @@ import { Response } from 'supertest'
 
 import { DEFAULT_FLAGS } from '../dao/FeatureFlagsDao'
 import { getTestRegistry, TestApiServer } from '../testing'
+import { getTestConfig } from '../testing/mocks'
+import { Logger } from '../util'
+
+const logLevel = 2
 
 describe('FeatureFlagsApiService', () => {
   (DEFAULT_FLAGS as any).testFlag = 'default value'
   const registry = getTestRegistry({
+    Config: getTestConfig({ logLevel }),
     'FeatureFlagsDao': {
       async flagsFor(user: string): Promise<any> {
-        console.log('USER:', user)
         if (user === 'good-user') {
           return { testFlag: 'good value' }
         }

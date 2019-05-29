@@ -2,13 +2,12 @@ import * as express from 'express'
 import { isArray } from 'util'
 
 import PaymentProfilesService from '../PaymentProfilesService'
-import { toBN } from '../util'
-import log, { logApiRequestError } from '../util/log'
+import { logApiRequestError, Logger, toBN } from '../util'
 import { isServiceOrAdmin, isServiceOrAdminOrOwnedAddress } from '../util/ownedAddressOrAdmin'
 
 import { ApiService } from './ApiService'
 
-const LOG = log('PaymentProfilesApiService')
+const log = new Logger('PaymentProfilesApiService')
 
 export default class PaymentProfilesApiService extends ApiService<
   PaymentProfilesApiServiceHandler
@@ -43,7 +42,7 @@ class PaymentProfilesApiServiceHandler {
       !addresses ||
       !isArray(addresses)
     ) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(log, req)
       return res.sendStatus(400)
     }
 
@@ -73,7 +72,7 @@ class PaymentProfilesApiServiceHandler {
       // !amountToCollateralizeWei ||
       !amountToCollateralizeToken
     ) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(log, req)
       return res.sendStatus(400)
     }
 
@@ -82,7 +81,7 @@ class PaymentProfilesApiServiceHandler {
         !toBN(minimumMaintainedCollateralWei).isZero()) ||
       (amountToCollateralizeWei && !toBN(amountToCollateralizeWei).isZero())
     ) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(log, req)
       return res.sendStatus(400)
     }
 
@@ -105,7 +104,7 @@ class PaymentProfilesApiServiceHandler {
     const { id } = req.params
 
     if (!id || !Number.isInteger(parseInt(id, 10))) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(log, req)
       return res.sendStatus(400)
     }
 
@@ -125,13 +124,13 @@ class PaymentProfilesApiServiceHandler {
     req: express.Request, res: express.Response,
   ): Promise<any> {
     if (!isServiceOrAdminOrOwnedAddress(req)) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(log, req)
       return res.sendStatus(400)
     }
     const { user } = req.params
 
     if (!user) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(log, req)
       return res.sendStatus(400)
     }
 

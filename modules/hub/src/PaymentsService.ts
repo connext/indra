@@ -19,9 +19,8 @@ import PaymentsDao from './dao/PaymentsDao'
 import { default as DBEngine } from './DBEngine'
 import { SignerService } from './SignerService'
 import ThreadsService from './ThreadsService'
-import { maybe, prettySafeJson, toBN, MaybeRes } from './util'
+import { Logger, maybe, prettySafeJson, toBN, MaybeRes } from './util'
 import { assertUnreachable } from './util/assertUnreachable'
-import { default as log } from './util/log'
 
 import * as mailgun from "mailgun-js";
 
@@ -31,7 +30,7 @@ type MaybeResult<T> = (
 )
 
 const emptyAddress = eth.constants.AddressZero
-const LOG = log('PaymentsService')
+const log = new Logger('PaymentsService')
 
 export default class PaymentsService {
   constructor(
@@ -144,7 +143,7 @@ export default class PaymentsService {
               // Check to see if collateral is needed, even if the tip failed
               const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient, toBN(payment.amount.amountToken)))
               if (err) {
-                LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+                log.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
               }
             }
           } else {
@@ -237,7 +236,7 @@ export default class PaymentsService {
             this.channelsService.doCollateralizeIfNecessary(payment.recipient)
           )
           if (err) {
-            LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+            log.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
           }
         })
 
@@ -306,7 +305,7 @@ export default class PaymentsService {
     // always check for collateralization regardless of payment status
     const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
     if (err) {
-      LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
+      log.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
     }
 
     if (this.validator.cantAffordFromBalance(prev, amt, "hub")) {

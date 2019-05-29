@@ -1,15 +1,14 @@
 import { UpdateRequest } from 'connext/types'
 
 import ChannelsService from '../ChannelsService'
-import { assert, getTestRegistry, TestApiServer } from '../testing'
+import { assert, authHeaders, getTestConfig, getTestRegistry, TestApiServer } from '../testing'
 import { channelUpdateFactory, tokenVal } from '../testing/factories'
 import { mkHash } from '../testing/stateUtils'
 
-// User service key to short-circuit address authorization
-const authHeaders = { 'authorization': 'bearer unspank-the-unbanked' }
+const logLevel = 2
 
 describe('ChannelsApiService', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
   const app: TestApiServer = registry.get('TestApiServer')
   const chanService: ChannelsService = registry.get('ChannelsService')
 

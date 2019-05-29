@@ -1,7 +1,9 @@
-import ExchangeRateDao from './dao/ExchangeRateDao'
-import log from './util/log'
+import * as WebSocket from 'ws'
 
-const LOG = log('ExchangeRateService')
+import ExchangeRateDao from './dao/ExchangeRateDao'
+import { Logger } from './util'
+
+const log = new Logger('ExchangeRateService')
 
 interface RateResponse {
   data: { rates: { [k: string]: string } }
@@ -14,12 +16,12 @@ export default class ExchangeRateService {
   private dao: ExchangeRateDao
   private started: boolean = false
 
- public  constructor (dao: ExchangeRateDao) {
+  public constructor (dao: ExchangeRateDao) {
     this.dao = dao
   }
 
   public start(): void {
-    LOG.info('Starting exchange rate polling service.')
+    log.info('Starting exchange rate polling service.')
     this.started = true
     this.updateRates()
   }
@@ -33,12 +35,13 @@ export default class ExchangeRateService {
       return
     }
 
-    LOG.debug('Fetching latest exchange rate.')
+    log.debug('Fetching latest exchange rate.')
 
     ExchangeRateService.fetch(ExchangeRateService.COINBASE_URL)
       .then((res: Response) => res.json())
-      .then((res: RateResponse) => this.dao.record(Date.now(), res.data.rates.USD))
-      .catch((e: any) => LOG.error('Failed to update ETH exchange rate: {e}', { e }))
+      .then((res: RateResponse) => {
+        this.dao.record(Date.now(), res.data.rates.USD)
+      }).catch((e: any) => log.error(`Failed to update ETH exchange rate: ${e}`))
       .then(() => setTimeout(() => this.updateRates(), ExchangeRateService.POLL_INTERVAL_MS))
   }
 }

@@ -3,11 +3,11 @@ import * as express from 'express'
 
 import Config from '../Config'
 import { RedisClient } from '../RedisClient'
-import { getLogger, isValidHex } from '../util'
+import { isValidHex, Logger } from '../util'
 
 import { ApiService } from './ApiService'
 
-const log = getLogger('AuthApiService')
+const log = new Logger('AuthApiService', 3)
 
 export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
   public namespace: string = 'nonce'
@@ -16,6 +16,7 @@ export default class AuthApiService extends ApiService<AuthApiServiceHandler> {
   }
   public handler: any = AuthApiServiceHandler
   public dependencies: any = {
+    config: 'Config',
     redis: 'RedisClient',
   }
 }

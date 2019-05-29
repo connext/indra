@@ -1,6 +1,5 @@
 import DBEngine, { SQL } from '../DBEngine'
 import {Client} from 'pg'
-import log from '../util/log'
 
 export default interface PaymentsDao {
   createChannelInstantPayment(paymentId: number, disbursementId: number, updateId: number): Promise<number>
@@ -9,8 +8,6 @@ export default interface PaymentsDao {
   createLinkPayment(paymentId: number, updateId: number, secret: string): Promise<void>
   addLinkedPaymentRedemption(paymentId: number, redemptionId: number): Promise<void>
 }
-
-const LOG = log('PostgresPaymentsDao')
 
 export class PostgresPaymentsDao implements PaymentsDao {
   constructor(

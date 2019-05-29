@@ -17,12 +17,11 @@ import {
   tokenToWei,
   toWei,
 } from '../util'
-import { default as log } from '../util/log'
 
 import { CoinPaymentsApiClient } from './CoinPaymentsApiClient'
 import { CoinPaymentsDao, CoinPaymentsDepositAddress, CoinPaymentsIpnRow } from './CoinPaymentsDao'
 
-const LOG = log('CoinPaymentsService')
+const LOG = console
 
 // See also: https://www.coinpayments.net/merchant-tools-ipn
 export type CoinPaymentsIpnData = {

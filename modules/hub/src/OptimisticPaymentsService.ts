@@ -10,10 +10,9 @@ import ChannelsDao from './dao/ChannelsDao'
 import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
 import DBEngine from './DBEngine'
 import PaymentsService from './PaymentsService'
-import { maybe } from './util'
-import log from './util/log'
+import { Logger, maybe } from './util'
 
-const LOG = log('OptimisticPaymentsService')
+const log = new Logger('OptimisticPaymentsService')
 const POLL_INTERVAL = 2 * 1000
 
 export class OptimisticPaymentsService {
@@ -77,7 +76,7 @@ export class OptimisticPaymentsService {
         )
       )
       if (err) {
-        LOG.error(
+        log.error(
           `Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`
         )
       }
@@ -117,10 +116,7 @@ export class OptimisticPaymentsService {
       )
     } catch (e) {
       // if the custodial payment fails, the payment should fail
-      LOG.info('Error redeeming optimistic channel payment. ID: {id}, error: {e}', {
-        e,
-        id: payment.paymentId
-      })
+      log.info(`Error redeeming optimistic channel payment. ID: ${payment.paymentId}, error: ${e}`)
     }
     // TODO: recollateralization here?
   }

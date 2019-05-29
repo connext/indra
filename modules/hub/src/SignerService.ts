@@ -13,9 +13,6 @@ import Config from './Config'
 import { ChannelManager } from './contract/ChannelManager'
 import { Block, RawTransaction, UnconfirmedTransaction } from './domain/OnchainTransaction'
 import { rawTxnToTx } from './util/ethTransaction'
-import log from './util/log'
-
-const LOG = log('SignerService')
 
 export class SignerService {
   constructor(

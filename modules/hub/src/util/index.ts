@@ -1,7 +1,7 @@
 import { ethers as eth } from 'ethers'
 import { BigNumber } from 'ethers/utils'
 
-export { getLogger } from './log'
+export { Logger, logApiRequestError } from './logger'
 
 const { Zero, MaxUint256 } = eth.constants
 const { arrayify, bigNumberify, isHexString, parseEther, formatEther } = eth.utils

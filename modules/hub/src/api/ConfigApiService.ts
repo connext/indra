@@ -1,11 +1,8 @@
 import * as express from 'express'
 
 import Config from '../Config'
-import log from '../util/log'
 
 import { ApiService } from './ApiService'
-
-const LOG = log('ConfigApiService')
 
 export default class ConfigApiService extends ApiService<ConfigApiServiceHandler> {
   public namespace: string = 'config'

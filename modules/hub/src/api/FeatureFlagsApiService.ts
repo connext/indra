@@ -1,11 +1,11 @@
 import * as express from 'express'
 
 import FeatureFlagsDao, { DEFAULT_FLAGS } from '../dao/FeatureFlagsDao'
-import log from '../util/log'
+import { Logger } from '../util'
 
 import { ApiService, Router } from './ApiService'
 
-const LOG = log('FeatureFlagsApiService')
+const log = new Logger('FeatureFlagsApiService')
 
 export default class FeatureFlagsApiService extends ApiService<FeatureFlagsApiHandler> {
   public namespace: string = 'featureflags'
@@ -27,7 +27,7 @@ class FeatureFlagsApiHandler {
     try {
       flags = await this.flagsDao.flagsFor(req.address)
     } catch (err) {
-      LOG.error(`Caught error getting feature flags: ${err}`)
+      log.error(`Caught error getting feature flags: ${err}`)
 
       flags = DEFAULT_FLAGS
     }

@@ -3,32 +3,33 @@ import { BN, toBN, toWei } from './util'
 import camelize from './util/camelize'
 
 const ENV_VARS = [
-  'ETH_RPC_URL',
-  'ETH_NETWORK_ID',
-  'DATABASE_URL',
-  'CHANNEL_MANAGER_ADDRESS',
-  'AUTH_REALM',
   'AUTH_DOMAIN_WHITELIST',
-  'PORT',
-  'HTTPS_PORT',
-  'SHOULD_COLLATERALIZE_URL',
-  'MIN_SETTLEMENT_PERIOD',
-  'RECIPIENT_WHITELIST',
-  'SESSION_SECRET',
-  'CARD_NAME',
+  'AUTH_REALM',
   'CARD_IMAGE_URL',
-  'REALTIME_DB_SECRET', // TODO: do we use this?
-  'SERVICE_USER_KEY',
-  'FORCE_SSL',
-  'REDIS_URL',
-  'TOKEN_CONTRACT_ADDRESS',
-  'HOT_WALLET_ADDRESS',
-  'HUB_PUBLIC_URL',
-  'COINPAYMENTS_MERCHANT_ID',
+  'CARD_NAME',
+  'CHANNEL_MANAGER_ADDRESS',
   'COINPAYMENTS_API_KEY',
   'COINPAYMENTS_API_SECRET',
   'COINPAYMENTS_IPN_SECRET',
+  'COINPAYMENTS_MERCHANT_ID',
+  'DATABASE_URL',
+  'ETH_NETWORK_ID',
+  'ETH_RPC_URL',
+  'FORCE_SSL',
+  'HOT_WALLET_ADDRESS',
+  'HTTPS_PORT',
+  'HUB_PUBLIC_URL',
+  'LOG_LEVEL',
+  'MIN_SETTLEMENT_PERIOD',
+  'PORT',
   'PRIVATE_KEY_FILE',
+  'REALTIME_DB_SECRET', // TODO: do we use this?
+  'RECIPIENT_WHITELIST',
+  'REDIS_URL',
+  'SERVICE_USER_KEY',
+  'SESSION_SECRET',
+  'SHOULD_COLLATERALIZE_URL',
+  'TOKEN_CONTRACT_ADDRESS',
 ]
 
 const env = process.env.NODE_ENV || 'development'
@@ -69,6 +70,7 @@ export class Config {
   public ethRpcUrl: string = ''
   public ethNetworkId: string = ''
   public databaseUrl: string = ''
+  public logLevel: number = 3
   public redisUrl: string = ''
   public channelManagerAddress: string = ''
   public authRealm: string = ''

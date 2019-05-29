@@ -4,17 +4,16 @@ import { ethers as eth } from 'ethers'
 import { isArray } from 'util'
 
 import ChannelsService from '../ChannelsService'
-import { getTestRegistry, TestApiServer } from '../testing'
+import { authHeaders, getTestConfig, getTestRegistry, TestApiServer } from '../testing'
 import { channelUpdateFactory } from '../testing/factories'
 import { testHotWalletAddress as adminAddress } from '../testing/mocks'
 import { mkAddress } from '../testing/stateUtils'
 import { toWei } from '../util'
 
-// User service key to short-circuit address authorization
-const authHeaders = { 'authorization': 'bearer unspank-the-unbanked' }
+const logLevel = 2
 
 describe('PaymentProfilesApiService', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
   const app: TestApiServer = registry.get('TestApiServer')
   const channelsService: ChannelsService = registry.get('ChannelsService')
 

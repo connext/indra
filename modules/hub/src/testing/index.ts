@@ -8,7 +8,7 @@ import { Container, Context, Registry } from '../Container'
 import defaultRegistry, { serviceDefinitions } from '../services'
 import { isBN } from '../util'
 
-export { getTestConfig, TestApiServer } from './mocks'
+export { authHeaders, getTestConfig, TestApiServer } from './mocks'
 
 export type ServiceName = keyof typeof serviceDefinitions
 export type ServiceDict = {

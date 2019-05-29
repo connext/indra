@@ -1,18 +1,18 @@
 import * as eth from 'ethers'
-import { assertUnreachable } from "./util/assertUnreachable";
-import { OnchainTransactionsDao, TxnStateUpdate } from "./dao/OnchainTransactionsDao";
-import { TransactionRequest, OnchainTransactionRow, RawTransaction } from "./domain/OnchainTransaction";
-import * as crypto from 'crypto'
-import log from './util/log'
-import { default as DBEngine, SQL } from "./DBEngine";
-import { default as GasEstimateDao } from "./dao/GasEstimateDao";
-import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson, safeJson } from "./util";
-import { Container } from "./Container";
-import { SignerService } from "./SignerService";
-import { serializeTxn } from "./util/ethTransaction";
-import Web3 from "web3";
 
-const LOG = log('OnchainTransactionService')
+import Config from './Config'
+import { assertUnreachable } from './util/assertUnreachable'
+import { OnchainTransactionsDao, TxnStateUpdate } from './dao/OnchainTransactionsDao'
+import { TransactionRequest, OnchainTransactionRow, RawTransaction } from './domain/OnchainTransaction'
+import * as crypto from 'crypto'
+import { Logger } from './util'
+import { default as DBEngine, SQL } from './DBEngine'
+import { default as GasEstimateDao } from './dao/GasEstimateDao'
+import { sleep, synchronized, maybe, Lock, Omit, prettySafeJson, safeJson } from './util'
+import { Container } from './Container'
+import { SignerService } from './SignerService'
+import { serializeTxn } from './util/ethTransaction'
+import Web3 from 'web3'
 
 /**
  * Service for submitting and monitoring the state of onchain transactions.
@@ -60,7 +60,7 @@ const LOG = log('OnchainTransactionService')
  *
  *      class MyService {
  *        async completionCallback(txn: OnchainTransactionRow) {
- *          LOG.info('Transaction completed:', txn)
+ *          log.info('Transaction completed:', txn)
  *        }
  *      }
  *
@@ -69,18 +69,22 @@ const LOG = log('OnchainTransactionService')
  *
  */
 export class OnchainTransactionService {
-  pollFinished = Lock.released()
-  stopped: Lock = Lock.released()
-  running: boolean = false
+  public pollFinished: Lock = Lock.released()
+  public stopped: Lock = Lock.released()
+  public running: boolean = false
+  private log: Logger
 
   constructor(
-    private web3: Web3, 
-    private gasEstimateDao: GasEstimateDao, 
-    private onchainTransactionDao: OnchainTransactionsDao, 
+    private web3: Web3,
+    private gasEstimateDao: GasEstimateDao,
+    private onchainTransactionDao: OnchainTransactionsDao,
     private db: DBEngine,
     private signerService: SignerService,
-    private container: Container
-  ) {}
+    private config: Config,
+    private container: Container,
+  ) {
+    this.log = new Logger('OnchainTransactionService', config.logLevel)
+  }
 
   lookupCallback(name: string): (tx: OnchainTransactionRow) => Promise<void> {
     const [serviceName, methodName] = name.split('.')
@@ -144,7 +148,7 @@ export class OnchainTransactionService {
       nonce: nonce,
     }
 
-    LOG.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)
+    this.log.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)
 
     const signedTx = await this.signerService.signTransaction(unsignedTx)
 
@@ -156,7 +160,7 @@ export class OnchainTransactionService {
   }
 
   async start() {
-    LOG.info(`Starting OnchainTransactionService...`)
+    this.log.info(`Starting OnchainTransactionService...`)
     this.runPoller()
   }
 
@@ -169,7 +173,7 @@ export class OnchainTransactionService {
         if (this.running)
           await sleep(pollInterval)
       } catch (e) {
-        LOG.error(`Error polling pending transactions (will retry in 30s): ${'' + e}\n${e.stack}`)
+        this.log.error(`Error polling pending transactions (will retry in 30s): ${'' + e}\n${e.stack}`)
         if (this.running)
           await sleep(30 * 1000)
       }
@@ -179,10 +183,10 @@ export class OnchainTransactionService {
   async stop() {
     if (!this.running)
       return
-    LOG.info('Stopping transaction poller...')
+    this.log.info('Stopping transaction poller...')
     this.running = false
     await this.stopped
-    LOG.info('Transaction poller stopped.')
+    this.log.info('Transaction poller stopped.')
   }
 
   @synchronized('pollFinished')
@@ -199,7 +203,7 @@ export class OnchainTransactionService {
    */
   private async submitToChain(txn: OnchainTransactionRow): Promise<void> {
     const error = await new Promise<string | null>(res => {
-      LOG.info(`Submitting transaction nonce=${txn.nonce} hash=${txn.hash}: ${prettySafeJson(txn)}...`)
+      this.log.info(`Submitting transaction nonce=${txn.nonce} hash=${txn.hash}: ${prettySafeJson(txn)}...`)
       
       const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn))
       tx.on('transactionHash', () => res(null))
@@ -207,11 +211,7 @@ export class OnchainTransactionService {
     })
 
     const errorReason = this.getErrorReason(error)
-    LOG.info('Transaction nonce={txn.nonce} hash={hash} sent: {txn.hash}: {res}', {
-      txn,
-      hash: txn.hash,
-      res: error ? '' + error + ` (${errorReason})`: 'ok!',
-    })
+    this.log.info(`Transaction nonce=${txn.nonce} hash=${txn.hash} sent: ${error ? '' + error + ` (${errorReason})`: 'ok!'}`)
 
     if (!error || errorReason == 'already-imported') {
       await this.updateTxState(txn, {
@@ -224,7 +224,7 @@ export class OnchainTransactionService {
       case 'permanent':
         // In the future we'll be able to be more intelligent about retrying (ex,
         // with a new nonce or more gas) here... but for now, just fail.
-        LOG.error(`Permanent error sending transaction: ${error}. Transaction: ${prettySafeJson(txn)}, marking as pending_failure`)
+        this.log.error(`Permanent error sending transaction: ${error}. Transaction: ${prettySafeJson(txn)}, marking as pending_failure`)
         await this.updateTxState(txn, {
           state: 'pending_failure',
           reason: errorReason
@@ -234,11 +234,11 @@ export class OnchainTransactionService {
       case 'temporary':
         // If the error is temporary (ex, network error), do nothing; this txn
         // will be retried on the next loop.
-        LOG.warn(`Temporary error while submitting tx '${txn.hash}': ${'' + error} (will retry)`)
+        this.log.warn(`Temporary error while submitting tx '${txn.hash}': ${'' + error} (will retry)`)
         break
 
       case 'unknown':
-        LOG.error(
+        this.log.error(
           `Unknown error sending transaction! Refusing to do anything until ` +
           `this error is added to 'OnchainTransactionService.knownTxnErrorMessages': ` +
           `${error}`
@@ -251,7 +251,7 @@ export class OnchainTransactionService {
   }
 
   private async processPendingTxn(txn: OnchainTransactionRow): Promise<void> {
-    LOG.info(`processPendingTxn(${txn.hash}) state: ${txn.state}`)
+    this.log.info(`processPendingTxn(${txn.hash}) state: ${txn.state}`)
     if (txn.state == 'new') {
       await this.submitToChain(txn)
       return
@@ -261,7 +261,7 @@ export class OnchainTransactionService {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
       if (err) {
         // TODO: what errors can happen here?
-        LOG.warn(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
+        this.log.warn(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
         return
       }
 
@@ -288,7 +288,7 @@ export class OnchainTransactionService {
         // with an equal or higher nonce too... but this is probably safe for
         // now.
         if (txnAgeS > 60 * 15) {
-          LOG.warn(`Transaction '${txn.hash}' has been unconfirmed for ${txnAge}; marking failed.`)
+          this.log.warn(`Transaction '${txn.hash}' has been unconfirmed for ${txnAge}; marking failed.`)
           await this.updateTxState(txn, {
             state: 'failed',
             reason: `timeout (${txnAge})`,
@@ -296,7 +296,7 @@ export class OnchainTransactionService {
           return
         }
 
-        LOG.info(`Pending transaction '${txn.hash}' not yet confirmed (age: ${txnAge})`)
+        this.log.info(`Pending transaction '${txn.hash}' not yet confirmed (age: ${txnAge})`)
         return
       }
 
@@ -304,7 +304,7 @@ export class OnchainTransactionService {
       const [txReceipt, errReceipt] = await maybe(this.web3.eth.getTransactionReceipt(txn.hash))
       if (errReceipt) {
         // TODO: what errors can happen here?
-        LOG.warn(`Error checking status of tx '${txn.hash}': ${'' + errReceipt} (will retry)`)
+        this.log.warn(`Error checking status of tx '${txn.hash}': ${'' + errReceipt} (will retry)`)
         return
       }
       if (!txReceipt) {
@@ -327,7 +327,7 @@ export class OnchainTransactionService {
       const [tx, err] = await maybe(this.web3.eth.getTransaction(txn.hash))
       if (err) {
         // TODO: what errors can happen here?
-        LOG.warn(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
+        this.log.warn(`Error checking status of tx '${txn.hash}': ${'' + err} (will retry)`)
         return
       }
 
@@ -348,7 +348,7 @@ export class OnchainTransactionService {
 
       const latestConfirmed = await this.onchainTransactionDao.getLatestConfirmed(this.db, txn.from)
       if (latestConfirmed && latestConfirmed.nonce > txn.nonce) {
-        LOG.warn(`Transaction '${txn.hash}' is invalidated by a higher confirmed nonce: ${latestConfirmed.nonce}; marking as failed.`)
+        this.log.warn(`Transaction '${txn.hash}' is invalidated by a higher confirmed nonce: ${latestConfirmed.nonce}; marking as failed.`)
         await this.updateTxState(txn, {
           state: 'failed',
           reason: `higher confirmed nonce by txn id: ${txn.id}`,
@@ -358,7 +358,7 @@ export class OnchainTransactionService {
 
       // if polled for 54 seconds and still nothing, mark as failed
       if (txnAgeS > 6 * 9) {
-        LOG.warn(`Transaction '${txn.hash}' has been pending_failure for ${txnAge}; marking failed.`)
+        this.log.warn(`Transaction '${txn.hash}' has been pending_failure for ${txnAge}; marking failed.`)
         await this.updateTxState(txn, {
           state: 'failed',
           reason: `timeout (${txnAge})`,
@@ -382,10 +382,7 @@ export class OnchainTransactionService {
       const callback = this.lookupCallback(txn.meta.completeCallback)
       await new Promise(async res => {
         const timeout = setTimeout(() => {
-          LOG.error('Txn complete callback {callbackName} taking too long to process txn {txn}!', {
-            callbackName: txn.meta.completeCallback,
-            txn,
-          })
+          this.log.error(`Txn complete callback ${txn.meta.completeCallback} taking too long to process txn ${txn}!`)
           res()
         }, 30 * 1000)
         try {

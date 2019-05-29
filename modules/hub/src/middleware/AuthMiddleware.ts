@@ -6,7 +6,7 @@ import Config from '../Config'
 import { getRedisClient } from '../RedisClient'
 import { Role } from '../Role'
 import { RouteBasedACL } from '../RouteBasedAcl'
-import { getLogger, isValidHex } from '../util'
+import { isValidHex, Logger } from '../util'
 
 const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
 
@@ -31,7 +31,7 @@ export const getAuthMiddleware = (
   req: express.Request, res: express.Response, next: () => void,
 ): Promise<void> => {
 
-  const log = getLogger('AuthHeaderMiddleware', logLevel)
+  const log = new Logger('AuthHeaderMiddleware', logLevel)
   const address = req.get('x-address')
   const nonce = req.get('x-nonce')
   const signature = req.get('x-signature')
@@ -50,7 +50,7 @@ export const getAuthMiddleware = (
   // Check whether we should auth service key against bearer authorization header
   if (config.serviceKey && authorization) {
     const authHeaderParts = authorization.split(' ')
-    if (authHeaderParts.length != 2 || authHeaderParts[0].toLowerCase() !== 'bearer') {
+    if (authHeaderParts.length !== 2 || authHeaderParts[0].toLowerCase() !== 'bearer') {
       log.warn(`Malformed bearer authorization header`)
       res.status(403).send(`Malformed bearer authorization header`)
       return

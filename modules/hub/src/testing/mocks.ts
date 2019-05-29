@@ -17,26 +17,28 @@ import { SignerService } from '../SignerService'
 import { truncateAllTables } from './eraseDb'
 import { mkAddress, mkHash, mkSig } from './stateUtils'
 
+
 const serviceKey = 'unspank-the-unbanked'
+export const authHeaders = { 'authorization': `bearer ${serviceKey}` }
 const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
 const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
 console.log(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
-// console.log(`\nTest env:\n${JSON.stringify(process.env,null,2)}`)
 
 export const testChannelManagerAddress = mkAddress('0xCCC')
 export const testHotWalletAddress = '0x7776900000000000000000000000000000000000'
 export const getTestConfig = (overrides?: any) => ({
   ...Config.fromEnv(),
   adminAddresses: [ testHotWalletAddress ],
+  channelManagerAddress: testChannelManagerAddress,
   databaseUrl,
+  hotWalletAddress: testHotWalletAddress,
+  logLevel: 3,
   redisUrl,
   serviceKey,
   sessionSecret: 'hummus',
-  hotWalletAddress: testHotWalletAddress,
-  channelManagerAddress: testChannelManagerAddress,
   staleChannelDays: 1,
   ...(overrides || {}),
 })

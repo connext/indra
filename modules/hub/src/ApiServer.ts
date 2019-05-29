@@ -8,12 +8,11 @@ import { ApiService } from './api/ApiService'
 import Config from './Config'
 import { Container } from './Container'
 import { getAuthMiddleware } from './middleware/AuthMiddleware'
-import { ezPromise, maybe, MaybeRes } from './util'
-import log from './util/log'
+import { ezPromise, Logger, maybe, MaybeRes } from './util'
 
-const LOG = log('ApiServer')
+const log = new Logger('ApiServer')
+const requestLog = new Logger('requests')
 
-const requestLog = log('requests')
 const requestLogMiddleware = (
   req: express.Request,
   res: express.Response,
@@ -25,17 +24,9 @@ const requestLogMiddleware = (
       req.ip || req.headers['x-forwarded-for'] || (req as any).address
     const duration = Date.now() - startTime
     requestLog.info(
-      '{remoteAddr} {method} {url} {inSize} -> {statusCode} ({outSize}; {duration})',
-      {
-        duration: `${(duration / 1000).toFixed(3)} ms`,
-        inSize: `${req.get('content-length') || '0'} bytes`,
-        method: req.method,
-        outSize: `${res.get('content-length') || '?'} bytes`,
-        remoteAddr,
-        statusCode: res.statusCode,
-        url: req.originalUrl,
-      },
-    )
+      `${remoteAddr} ${req.method} ${req.originalUrl} ${req.get('content-length') || '0'} bytes` +
+      ` -> ${res.statusCode} (${res.get('content-length') || '?'} bytes; ` +
+      `${(duration / 1000).toFixed(3)} ms)`)
   })
   next()
 }
@@ -65,7 +56,7 @@ function bodyTextMiddleware(opts: { maxSize: number }): any {
               opts.maxSize
             }); not parsing.`
           : `bodyTextMiddleware: no content-length; not parsing body.`
-      LOG.debug(msg)
+      log.debug(msg)
       const rej = maybe.reject(new Error(msg))
       rawPromise.resolve(rej as any)
       textPromise.resolve(rej as any)
@@ -75,7 +66,7 @@ function bodyTextMiddleware(opts: { maxSize: number }): any {
     const rawData = Buffer.alloc(size)
     let offset = 0
     req.on('data', (chunk: Buffer) => {
-      LOG.debug(`Data! max size: ${opts.maxSize}`)
+      log.debug(`Data! max size: ${opts.maxSize}`)
       chunk.copy(rawData, offset)
       offset += chunk.length
     })
@@ -104,25 +95,18 @@ const logErrors = (
     reason: 'Unknown Error',
     stack: err.stack,
   })
-  LOG.error('Unknown error in {req.method} {req.path}: {message}', {
-    message: err.message,
-    req: {
-      body: req.body,
-      method: req.method,
-      path: req.path,
-      query: req.query,
-    },
-    stack: err.stack,
-  })
+  log.error(`Unknown error in ${req.method} ${req.path}: ${err.message}`)
 }
 
 export class ApiServer {
   public app: express.Application
+  private log: Logger
   private readonly config: Config
   private readonly apiServices: ApiService[]
 
   public constructor(protected readonly container: Container) {
     this.config = container.resolve('Config')
+    this.log = new Logger('ApiServer', this.config.logLevel)
     const corsHandler = cors({ credentials: true, origin: true })
     const apiServiceClasses = container.resolve('ApiServerServices') as any[]
     this.apiServices = apiServiceClasses.map(
@@ -142,7 +126,7 @@ export class ApiServer {
     this.app.use(logErrors.bind(this))
     this.apiServices.forEach(
       (s: any): any => {
-        LOG.info(`Setting up API service at /${s.namespace}`)
+        this.log.info(`Setting up API service at /${s.namespace}`)
         this.app.use(`/${s.namespace}`, s.getRouter())
       },
     )
@@ -166,18 +150,18 @@ export class ApiServer {
       const wsPort = port + 1
       const wsServer = new WebSocket.Server({ port: wsPort })
       wsServer.on('connection', (ws: WebSocket): void => {
-        LOG.info(`New WS connection established`)
+        this.log.info(`New WS connection established`)
         ws.on('message', (message: any): void => {
-          LOG.info(`WS received message: [${typeof message}] ${message}`)
+          this.log.info(`WS received message: [${typeof message}] ${message}`)
         })
         const toSend = `Hello WS client, I'm the hub`
-        LOG.info(`WS sending message: [${typeof toSend}] ${toSend}`)
+        this.log.info(`WS sending message: [${typeof toSend}] ${toSend}`)
         ws.send(toSend)
       })
 
       server.listen(port, (err: any): void => {
         if (err) throw err
-        LOG.info(`Listening on port: ${port}.`)
+        this.log.info(`Listening on port: ${port}.`)
         resolve()
       })
 

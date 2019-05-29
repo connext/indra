@@ -6,10 +6,9 @@ import { ApiService } from './ApiService'
 import ChannelsService from '../ChannelsService'
 import GlobalSettingsDao from '../dao/GlobalSettingsDao'
 import ThreadsService from '../ThreadsService'
-import { toBN } from '../util'
-import log from '../util/log'
+import { Logger, toBN } from '../util'
 
-const LOG = log('ThreadsApiService')
+const log = new Logger('ThreadsApiService')
 
 export default class ThreadsApiService extends ApiService<
   ThreadsApiServiceHandler
@@ -47,13 +46,7 @@ class ThreadsApiServiceHandler {
     const { update } = req.body
 
     if (!sender || !receiver || !update) {
-      LOG.warn(
-        'Received invalid update thread request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
+      log.warn(`Received invalid update thread request. Aborting. Body received: ${JSON.stringify(req.body)}, Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
 
@@ -71,13 +64,7 @@ class ThreadsApiServiceHandler {
   async doGetInitialStates(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get thread initial states request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      log.warn(`Receiver invalid get thread initial states request. Aborting. Params received: ${JSON.stringify(req.params)}`)
     }
 
     res.send(await this.threadsService.getInitialStates(user))
@@ -86,13 +73,7 @@ class ThreadsApiServiceHandler {
   async doGetThread(req: express.Request, res: express.Response) {
     const { sender, receiver } = req.params
     if (!sender || !receiver) {
-      LOG.warn(
-        'Receiver invalid get thread request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      log.warn(`Receiver invalid get thread request. Aborting. Params received: ${JSON.stringify(req.params)}`)
     }
 
     let thread = await this.threadsService.getThread(sender, receiver)
@@ -106,12 +87,7 @@ class ThreadsApiServiceHandler {
   async doGetThreadsIncoming(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      log.warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
 
@@ -121,12 +97,7 @@ class ThreadsApiServiceHandler {
   async doGetThreads(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      log.warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
     res.send(await this.threadsService.getThreads(user))
@@ -135,12 +106,7 @@ class ThreadsApiServiceHandler {
   async doGetLastUpdateId(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      log.warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
     const latest = await this.threadsService.doGetLastUpdateId(user)
@@ -150,12 +116,7 @@ class ThreadsApiServiceHandler {
   async doGetThreadsActive(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      log.warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
 
@@ -166,12 +127,8 @@ class ThreadsApiServiceHandler {
     const enabled = (await this.globalSettingsDao.fetch()).threadsEnabled
 
     if (!enabled) {
-      LOG.warn('Received a thread request while threads are disabled. URL: {url}, params: {params}', {
-        url: req.url,
-        params: JSON.stringify(req.params),
-      })
-
-      res.sendStatus(403);
+      log.warn(`Received a thread request while threads are disabled. URL: ${req.url}, params: ${JSON.stringify(req.params)}`)
+      res.sendStatus(403)
       return false
     }
 

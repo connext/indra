@@ -6,9 +6,6 @@ import { CoinPaymentsService } from './CoinPaymentsService'
 
 import { default as Config } from '../Config'
 import { default as DBEngine } from '../DBEngine'
-import { default as log } from '../util/log'
-
-const LOG = log('CoinPaymentsDepositPollingService')
 
 export class CoinPaymentsDepositPollingService {
   private poller: connext.Poller
@@ -28,7 +25,6 @@ export class CoinPaymentsDepositPollingService {
   }
 
   async start() {
-    LOG.info('Starting CoinPaymentsDepositPollingService...')
     this.poller.start()
   }
 

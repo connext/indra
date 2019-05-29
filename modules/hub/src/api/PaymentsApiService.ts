@@ -16,11 +16,11 @@ import DBEngine from '../DBEngine'
 import PaymentsService from '../PaymentsService'
 import { Role } from '../Role'
 import { default as ThreadsService } from '../ThreadsService'
-import log, { logApiRequestError } from '../util/log'
+import { logApiRequestError, Logger } from '../util'
 import { ownedAddressOrAdmin } from '../util/ownedAddressOrAdmin'
 import WithdrawalsService from '../WithdrawalsService'
 
-const LOG = log('PaymentsApiService')
+const log = new Logger('PaymentsApiService')
 
 export default class PaymentsApiService extends ApiService<PaymentsApiServiceHandler> {
   namespace = 'payments'
@@ -61,19 +61,14 @@ export class PaymentsApiServiceHandler {
     const meta: any = req.body.meta
 
     if (!payments || !meta) {
-      LOG.warn(
-        'Received invalid payment request. Aborting. Params received: {params}, Body received: {body}',
-        {
-          params: JSON.stringify(req.params),
-          body: JSON.stringify(req.body),
-        },
-      )
+      log.warn(
+        `Received invalid payment request. Aborting. Params received: ${JSON.stringify(req.params)}, Body received: ${JSON.stringify(req.body)}`)
       return res.sendStatus(400)
     }
 
     const result = await this.paymentsService.doPurchase(req.address, meta, payments)
     if (result.error != false) {
-      LOG.warn(result.msg)
+      log.warn(result.msg)
       return res.send(400).json(result.msg)
     }
 
@@ -98,13 +93,7 @@ export class PaymentsApiServiceHandler {
     const requesterAddr = req.address
 
     if (!ownedAddressOrAdmin(req)) {
-      LOG.info(
-        'Blocked attempt to view received payments for {targetAddr} from {requesterAddr}',
-        {
-          targetAddr,
-          requesterAddr,
-        },
-      )
+      log.info(`Blocked attempt to view received payments for ${targetAddr} from ${requesterAddr}`)
 
       return res.sendStatus(403)
     }
@@ -122,21 +111,17 @@ export class PaymentsApiServiceHandler {
     } = req.body
 
     if (!subject || !to || !text || !user) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(log, req)
       return res.sendStatus(400)
     }
 
     const result = await this.paymentsService.doPaymentEmail(
-      to, subject, text
+      to, subject, text,
     )
 
     if (result.error) {
-      LOG.error(
-        `Error trying to send email via mailgun for user {user}. Error: {err}`, {
-          user,
-          err: result.msg,
-        }
-      )
+      log.error(
+        `Error trying to send email via mailgun for user ${user}. Error: ${result.error}`)
       return res.sendStatus(400)
     }
 
@@ -151,12 +136,8 @@ export class PaymentsApiServiceHandler {
       !req.roles.has(Role.SERVICE)
     ) {
       const address = req.address
-      LOG.error(
-        'Received request to view purchase {id} from non-admin or owning address {address}', {
-          id,
-          address,
-        },
-      )
+      log.error(
+        `Received request to view purchase ${id} from non-admin or owning address ${address}`)
       return res.sendStatus(403)
     }
 
@@ -172,19 +153,13 @@ export class PaymentsApiServiceHandler {
     const user = req.address
     const { secret, lastThreadUpdateId, lastChanTx } = req.body
     if (!user || !secret || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
-      LOG.warn(
-        'Received invalid update redeem request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
+      log.warn(`Received invalid update redeem request. Aborting. Body received: ${JSON.stringify(req.body)}, Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     } 
 
     const result = await this.paymentsService.doRedeem(user, secret)
     if (result.error != false) {
-      LOG.warn(result.msg)
+      log.warn(result.msg)
       // @ts-ignore
       // TODO: wtf? it works, but doesnt compile
       // are the express types out of date somehow?

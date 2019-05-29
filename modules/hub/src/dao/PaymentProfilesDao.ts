@@ -4,9 +4,6 @@ import { Client } from 'pg'
 import Config from '../Config'
 import DBEngine, { SQL } from '../DBEngine'
 import { toBN } from '../util'
-import log from '../util/log'
-
-const LOG = log('PaymentProfilesDao')
 
 export default interface PaymentProfilesDao {
   getPaymentProfileConfigById(profileId: number): Promise<PaymentProfileConfigBN>

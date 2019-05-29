@@ -127,7 +127,6 @@ describe('CoinPaymentsService', () => {
           }
         },
         sendSignedTransaction: () => {
-          console.log(`Called mocked web3 function sendSignedTransaction`)
           return {
             on: (input, cb) => {
               switch (input) {
@@ -140,7 +139,6 @@ describe('CoinPaymentsService', () => {
           }
         },
         sendTransaction: function () {
-          console.log(`Called mocked web3 function sendTransaction`)
           return this.sendSignedTransaction()
         },
       },

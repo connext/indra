@@ -1,8 +1,8 @@
-import * as connext from 'connext';
+import * as connext from 'connext'
 import GasEstimateDao from './dao/GasEstimateDao'
-import log from './util/log'
+import { Logger } from './util'
 
-const LOG = log('GasEstimateService')
+const log = new Logger('GasEstimateService')
 
 export interface EthGasStationResponse {
   fast: number
@@ -41,7 +41,7 @@ export default class GasEstimateService {
   }
 
   public start() {
-    LOG.info('Starting gas estimate service.')
+    log.info('Starting gas estimate service.')
     this.poller.start()
   }
 
@@ -55,21 +55,12 @@ export default class GasEstimateService {
         await this.pollOnce()
       } catch (e) {
         if (retryCount >= GasEstimateService.MAX_RETRY_COUNT) {
-          LOG.error('Fatal error on attempt {retryCount}/{maxRetryCount} to fetch gas prices: {e}', {
-            retryCount,
-            maxRetryCount: GasEstimateService.MAX_RETRY_COUNT,
-            e,
-          })
+          log.error(`Fatal error on attempt ${retryCount}/${GasEstimateService.MAX_RETRY_COUNT} to fetch gas prices: ${e}`)
           break
         }
 
         const retryTimeout = Math.pow(3, retryCount)
-        LOG.warn('Non-fatal error on attempt {retryCount}/{maxRetryCount} to fetch gas prices (retrying in {retryTimeout} seconds): {e}', {
-          retryCount,
-          maxRetryCount: GasEstimateService.MAX_RETRY_COUNT,
-          retryTimeout: retryTimeout,
-          e,
-        })
+        log.warn(`Non-fatal error on attempt ${retryCount}/${GasEstimateService.MAX_RETRY_COUNT} to fetch gas prices (retrying in ${retryTimeout} seconds): ${e}`)
         await new Promise(res => setTimeout(res, retryTimeout * 1000))
         continue
       }
@@ -79,7 +70,7 @@ export default class GasEstimateService {
   }
 
   async pollOnce() {
-    LOG.debug('Fetching latest gas estimate...')
+    log.debug('Fetching latest gas estimate...')
 
     let res: EthGasStationResponse = await (await fetch(GasEstimateService.ETHGASSTATION_URL)).json()
 

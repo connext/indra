@@ -13,10 +13,9 @@ import ChannelsDao from './dao/ChannelsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import ThreadsDao from './dao/ThreadsDao'
 import { SignerService } from './SignerService'
-import { prettySafeJson } from './util'
-import log from './util/log'
+import { Logger, prettySafeJson } from './util'
 
-const LOG = log('ThreadsService')
+const log = new Logger('ThreadsService')
 
 export default class ThreadsService {
   private signerService: SignerService
@@ -99,7 +98,7 @@ export default class ThreadsService {
       channelSenderState.balanceWeiUser.lt(thread.balanceWeiSender) ||
       channelSenderState.balanceTokenUser.lt(thread.balanceTokenSender)
     ) {
-      LOG.error(
+      log.error(
         `channelSenderState: ${JSON.stringify(channelSenderState, null, 2)}`
       )
       throw new Error(
@@ -111,7 +110,7 @@ export default class ThreadsService {
       channelReceiverState.balanceWeiHub.lt(thread.balanceWeiSender) ||
       channelReceiverState.balanceTokenHub.lt(thread.balanceTokenSender)
     ) {
-      LOG.info(
+      log.info(
         `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)}, thread: ${prettySafeJson(thread)},
         hub deposit must be completed before thread can be opened`
       )
@@ -347,7 +346,7 @@ export default class ThreadsService {
 
   async ensureEnabled() {
     // const enabled = (await this.globalSettings.toggleThreadsEnabled(true))
-    // LOG.debug('&&&&& enabled:', enabled)
+    // log.debug('&&&&& enabled:', enabled)
     // if (!enabled) {
     //   throw new Error('Threads are disabled.')
     // }

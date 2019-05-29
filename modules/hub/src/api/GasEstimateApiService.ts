@@ -1,9 +1,9 @@
 import { ApiService, Request, Response } from './ApiService'
 
 import GasEstimateDao from '../dao/GasEstimateDao'
-import log from '../util/log'
+import { Logger } from '../util'
 
-const LOG = log('GasEstimateApiService')
+const log = new Logger('GasEstimateApiService')
 
 export default class GasEstimateApiService extends ApiService<GasEstimateApiHandler> {
   namespace = 'gasPrice'
@@ -29,9 +29,7 @@ class GasEstimateApiHandler {
         gasPrice: latest ? latest.fast : null,
       })
     } catch (err) {
-      LOG.error('Failed to fetch latest gas price: {err}', {
-        err
-      })
+      log.error(`Failed to fetch latest gas price: ${err}`)
       res.sendStatus(500)
     }
   }
