@@ -84,6 +84,7 @@ jobs:
               export INDRA_DOMAINNAME="$MAINNET_URL"
               export INDRA_ETH_NETWORK="mainnet"
               export INDRA_MODE="live"
+              export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               bash ops/restart.sh prod
             EOF
 
