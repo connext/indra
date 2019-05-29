@@ -1,7 +1,5 @@
-import { toBN } from '../lib/bn'
-import { Logger } from '../lib/logger'
-import { assert, mkAddress, parameterizedTests } from '../testing'
-import { MockConnextInternal, MockStore } from '../testing/mocks'
+import { Logger, toBN } from '../lib'
+import { assert, mkAddress, MockConnextInternal, MockStore, parameterizedTests } from '../testing'
 import { convertChannelState } from '../types'
 
 const logLevel = 1 // 0 = no logs, 5 = all logs

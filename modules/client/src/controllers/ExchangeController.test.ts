@@ -1,5 +1,4 @@
-import { mkAddress } from '../testing'
-import { MockConnextInternal, MockStore } from '../testing/mocks'
+import { mkAddress, MockConnextInternal, MockStore  } from '../testing'
 
 const logLevel = 1 // 0 = no logs, 5 = all logs
 

@@ -2,11 +2,14 @@ import { ethers as eth } from 'ethers'
 import Semaphore from 'semaphore'
 
 import { ConnextInternal } from '../Connext'
-import { Poller } from '../lib/poller'
-import { assertUnreachable, maybe } from '../lib/utils'
-import * as actions from '../state/actions'
-import { getChannel, getLastThreadUpdateId } from '../state/getters'
-import { CUSTODIAL_BALANCE_ZERO_STATE, SyncControllerState } from '../state/store'
+import { assertUnreachable, maybe, Poller } from '../lib'
+import {
+  actions,
+  CUSTODIAL_BALANCE_ZERO_STATE,
+  getChannel,
+  getLastThreadUpdateId,
+  SyncControllerState,
+} from '../state'
 import {
   ArgsTypes,
   Block,

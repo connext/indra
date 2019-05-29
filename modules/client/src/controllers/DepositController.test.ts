@@ -1,5 +1,4 @@
-import { assert } from '../testing/index'
-import { MockConnextInternal, patch } from '../testing/mocks'
+import { assert, MockConnextInternal, patch } from '../testing'
 
 const logLevel = 1 // 0 = no logs, 5 = all logs
 

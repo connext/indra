@@ -1,7 +1,6 @@
-import { toBN } from './lib/bn'
+import { toBN } from './lib'
 import { calculateExchange, StateGenerator } from './StateGenerator'
-import { getChannelState, getWithdrawalArgs } from './testing'
-import * as t from './testing/index'
+import * as t from './testing'
 import {
   ChannelState,
   ChannelStateBN,
@@ -290,8 +289,8 @@ describe('StateGenerator', () => {
         Object.entries(args).map((x: any) => `${x[0]}: ${x[1]}`).join(', ')
 
       it(`${tc.name}:${args2Str(tc.args)}`, () => {
-        const prev = convertChannelState('bn', getChannelState('empty', tc.prev))
-        const args = convertWithdrawal('bn', getWithdrawalArgs('empty', tc.args, {
+        const prev = convertChannelState('bn', t.getChannelState('empty', tc.prev))
+        const args = convertWithdrawal('bn', t.getWithdrawalArgs('empty', tc.args, {
           exchangeRate: exchangeRate.toString(),
         }))
         const s = convertChannelState('str-unsigned', sg.proposePendingWithdrawal(prev, args))

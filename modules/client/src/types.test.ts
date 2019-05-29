@@ -2,8 +2,8 @@ import * as eth from 'ethers'
 import Web3 from 'web3'
 
 import * as ChannelManagerAbi from './contract/ChannelManagerAbi.json'
-import { BN, isBN, toBN } from './lib/bn'
-import * as t from './testing/index'
+import { BN, isBN, toBN } from './lib'
+import * as t from './testing'
 import {
   convertChannelState,
   convertFields,

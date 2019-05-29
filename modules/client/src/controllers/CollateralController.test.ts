@@ -1,4 +1,4 @@
-import { MockConnextInternal } from '../testing/mocks'
+import { MockConnextInternal } from '../testing'
 
 const logLevel = 1 // 0 = no logs, 5 = all logs
 

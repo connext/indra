@@ -1,6 +1,6 @@
 import { ReducerBuilder, reducerWithInitialState } from 'typescript-fsa-reducers/dist'
 
-import { isFunction } from '../lib/utils'
+import { isFunction } from '../lib'
 import { ChannelState, UpdateRequest } from '../types'
 
 import * as actions from './actions'

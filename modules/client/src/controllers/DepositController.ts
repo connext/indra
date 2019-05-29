@@ -1,8 +1,8 @@
 import { ethers as eth } from 'ethers'
 import tokenAbi from 'human-standard-token-abi'
 
-import { validateTimestamp } from '../lib/timestamp'
-import { getLastThreadUpdateId, getTxCount } from '../state/getters'
+import { validateTimestamp } from '../lib'
+import { getLastThreadUpdateId, getTxCount, getUpdateRequestTimeout } from '../state'
 import {
   argNumericFields,
   ChannelState,
@@ -126,7 +126,8 @@ export class DepositController extends AbstractController {
     )
     state.sigHub = update.sigHub
 
-    const tsErr = validateTimestamp(this.store, update.args.timeout)
+    const maxTimeout = getUpdateRequestTimeout(this.store.getState())
+    const tsErr = validateTimestamp(maxTimeout, update.args.timeout)
     if (tsErr) {
       throw DepositError(tsErr)
     }

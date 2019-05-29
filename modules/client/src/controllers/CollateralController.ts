@@ -1,4 +1,4 @@
-import { getTxCount } from '../state/getters'
+import { getTxCount } from '../state'
 
 import { AbstractController } from './AbstractController'
 

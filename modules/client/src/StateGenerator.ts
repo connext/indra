@@ -1,4 +1,4 @@
-import { BN, maxBN, minBN, toBN, tokenToWei, weiToToken } from './lib/bn'
+import { BN, maxBN, minBN, toBN, tokenToWei, weiToToken } from './lib'
 import {
   ChannelStateBN,
   ChannelUpdateReason,

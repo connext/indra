@@ -1,5 +1,10 @@
-import { assert, mkHash, parameterizedTests, PartialSignedOrSuccinctChannel } from '../testing'
-import { MockStore } from '../testing/mocks'
+import {
+  assert,
+  mkHash,
+  MockStore,
+  parameterizedTests,
+  PartialSignedOrSuccinctChannel,
+} from '../testing'
 import { SyncResult } from '../types'
 
 import * as actions from './actions'

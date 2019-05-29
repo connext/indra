@@ -1,6 +1,5 @@
-import { toBN } from '../lib/bn'
-import { assert, mkAddress } from '../testing'
-import { MockConnextInternal, MockStore } from '../testing/mocks'
+import { toBN } from '../lib'
+import { assert, mkAddress, MockConnextInternal, MockStore } from '../testing'
 import { PaymentArgs, ThreadState } from '../types'
 
 const logLevel = 1 // 0 = no logs, 5 = all logs
@@ -30,7 +29,7 @@ describe('ThreadController', () => {
       it('should work for first thread', async () => {
         await connext.start()
         // generate openThread state and send to hub
-        await connext.threadsController.openThread(receiver1, {
+        await connext.threadController.openThread(receiver1, {
             amountToken: '2',
             amountWei: '1',
         })
@@ -54,7 +53,7 @@ describe('ThreadController', () => {
       it('should work with new sender/receiver', async() => {
         await connext.start()
         // generate openThread state and send to hub
-        await connext.threadsController.openThread(receiver1, {
+        await connext.threadController.openThread(receiver1, {
           amountToken: '2',
           amountWei: '1',
         })
@@ -77,7 +76,7 @@ describe('ThreadController', () => {
         })
 
         // open a second thread with the same sender, new reciever
-        await connext.threadsController.openThread(receiver2, {
+        await connext.threadController.openThread(receiver2, {
           amountToken: '1',
           amountWei: '0',
         })
@@ -116,7 +115,7 @@ describe('ThreadController', () => {
 
         await connext.start()
 
-        await assert.isRejected(connext.threadsController.openThread(receiver1, {
+        await assert.isRejected(connext.threadController.openThread(receiver1, {
           amountToken: '1',
           amountWei: '0',
         }), /The thread history is inaccurate/)
@@ -163,7 +162,7 @@ describe('ThreadController', () => {
     it('closing a thread should work', async () => {
       await connext.start()
       // generate closeThread state and send to hub
-      await connext.threadsController.closeThread({
+      await connext.threadController.closeThread({
         receiver: receiver1,
         sender,
         threadId: 1,
@@ -188,7 +187,7 @@ describe('ThreadController', () => {
     it('should fail if there is no active thread matching the one to close', async() => {
       await connext.start()
 
-      await assert.isRejected(connext.threadsController.closeThread(
+      await assert.isRejected(connext.threadController.closeThread(
         { sender, receiver: receiver2, threadId: 1 },
       ), /No thread found./)
     })
@@ -228,7 +227,7 @@ describe('ThreadController', () => {
 
         await connext.start()
 
-        await assert.isRejected(connext.threadsController.closeThread(
+        await assert.isRejected(connext.threadController.closeThread(
           { sender, receiver: receiver1, threadId: 1 },
         ), /Multiple threads found/)
       },

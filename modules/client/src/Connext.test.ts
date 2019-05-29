@@ -1,6 +1,5 @@
-import { toBN } from './lib/bn'
-import { assert, mkAddress } from './testing'
-import { MockConnextInternal } from './testing/mocks'
+import { toBN } from './lib'
+import { assert, mkAddress, MockConnextInternal } from './testing'
 import { convertCustodialBalanceRow, CustodialBalanceRow, WithdrawalParameters } from './types'
 
 interface CustodialCalculation {

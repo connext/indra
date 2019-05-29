@@ -1,11 +1,8 @@
 import { ethers as eth } from 'ethers'
 
 import { ConnextInternal } from '../Connext'
-import { toBN, toWei } from '../lib/bn'
-import { Poller } from '../lib/poller'
-import * as actions from '../state/actions'
-import { getExchangeRates, getTxCount } from '../state/getters'
-import { ConnextStore } from '../state/store'
+import { Poller, toBN, toWei } from '../lib'
+import { actions, ConnextStore, getExchangeRates, getTxCount } from '../state'
 
 import { AbstractController } from './AbstractController'
 

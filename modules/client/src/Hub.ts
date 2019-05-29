@@ -1,7 +1,7 @@
 import { ethers as eth } from 'ethers'
 import WebSocket from 'isomorphic-ws'
 
-import { Logger } from './lib/logger'
+import { Logger } from './lib'
 import {
   Address,
   BN,

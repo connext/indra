@@ -5,9 +5,10 @@ import {
   getThreadState,
   mkAddress,
   mkHash,
+  MockConnextInternal,
+  MockStore,
   parameterizedTests,
 } from '../testing'
-import { MockConnextInternal, MockStore } from '../testing/mocks'
 import { ChannelUpdateReason, convertChannelState, InvalidationArgs, SyncResult } from '../types'
 
 import { filterPendingSyncResults, mergeSyncResults } from './SyncController'

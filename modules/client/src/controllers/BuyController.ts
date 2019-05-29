@@ -1,8 +1,7 @@
 import { ethers as eth } from 'ethers'
 
-import { toBN } from '../lib/bn'
-import { assertUnreachable } from '../lib/utils'
-import { getChannel } from '../state/getters'
+import { assertUnreachable, toBN } from '../lib'
+import { getChannel } from '../state'
 import {
   argNumericFields,
   insertDefault,
@@ -118,7 +117,7 @@ export class BuyController extends AbstractController {
       switch (payment.type) {
         case 'PT_THREAD':
           // Create a new thread for the payment value
-          const { thread, channel } = await this.connext.threadsController.openThread(
+          const { thread, channel } = await this.connext.threadController.openThread(
             payment.recipient,
             payment.amount,
           )

@@ -1,6 +1,6 @@
 import { isArray, isNullOrUndefined } from 'util'
 
-import { BN, isBN, toBN } from './lib/bn'
+import { BN, isBN, toBN } from './lib'
 
 ////////////////////////////////////////
 // Export useful types defined in other modules
@@ -776,9 +776,9 @@ export type PaymentProfileConfigBN = PaymentProfileConfig<BN>
 // Returns: { purchaseId: string, updates: SyncResponse, }
 
 // sending email
-export type EmailRequest = {
-  to: string, 
-  subject: string, 
+export interface EmailRequest {
+  to: string
+  subject: string
   text: string
 }
 

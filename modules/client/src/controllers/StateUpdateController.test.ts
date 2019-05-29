@@ -1,5 +1,13 @@
-import { assert, getThreadState, mkAddress, mkHash, parameterizedTests } from '../testing'
-import { MockConnextInternal, MockHub, MockStore } from '../testing/mocks'
+import {
+  assert,
+  getThreadState,
+  mkAddress,
+  mkHash,
+  MockConnextInternal,
+  MockHub,
+  MockStore,
+  parameterizedTests,
+} from '../testing'
 import { ChannelUpdateReason, PaymentArgs, SyncResult } from '../types'
 
 /*

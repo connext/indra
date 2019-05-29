@@ -1,7 +1,6 @@
 import { ethers as eth } from 'ethers'
 
-import { assert } from '../testing'
-import { MockConnextInternal } from '../testing/mocks'
+import { assert, MockConnextInternal } from '../testing'
 
 const logLevel = 1 // 0 = no logs, 5 = all logs
 

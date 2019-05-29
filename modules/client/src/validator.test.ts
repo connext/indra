@@ -2,7 +2,7 @@ import { ethers as eth } from 'ethers'
 import * as sinon from 'sinon'
 
 import * as ChannelManagerAbi from './contract/ChannelManagerAbi.json'
-import { toBN } from './lib/bn'
+import { Logger, toBN } from './lib'
 import * as t from './testing'
 import {
   ChannelState,
@@ -30,6 +30,9 @@ import {
 } from './types'
 import { Utils } from './Utils'
 import { Validator } from './validator'
+
+const logLevel = 2 // 0 = no logs, 5 = all logs
+const log = new Logger('ValidatorTests', logLevel)
 
 const assert: any = t.assert
 const sampleAddress: string = '0x0bfa016abfa8f627654b4989da4620271dc77b1c'
@@ -84,7 +87,7 @@ const generateTransactionReceiptValues = (...overrides: any[]): any => Object.as
 
 
 const createMockedTransactionReceipt = (abi: Interface, vals: any): any => {
-  // console.log(`creating tx receipt from vals: ${JSON.stringify(vals,undefined,2)}`)
+  log.info(`Creating tx receipt from vals: ${JSON.stringify(vals,undefined,2)}`)
   const eventTopic: string = abi.events.DidUpdateChannel.topic
   const addrTopic: any = eth.utils.defaultAbiCoder.encode(['address'], [vals.user])
   const data: any = eth.utils.defaultAbiCoder.encode(
@@ -106,8 +109,7 @@ const createMockedTransactionReceipt = (abi: Interface, vals: any): any => {
     topics: [eventTopic, addrTopic],
   }]
 
-  // console.log(`Created logs w pending wei update: ${
-  //   JSON.stringify(abi.parseLog(logs[0]).pendingWeiUpdates)}`)
+  log.info(`Created mock logs: ${JSON.stringify(abi.parseLog(logs[0]), undefined, 2)}`)
 
   return {
     contractAddress: t.mkAddress('0xCCC'),
@@ -223,7 +225,7 @@ const createChannelThreadOverrides = (targetThreadCount: number, ...overrides: a
   }
 }
 
-describe('validator', () => {
+describe('Validator', () => {
   const provider: Provider = new eth.providers.JsonRpcProvider('http://localhost:8545')
   const abi: Interface = new eth.utils.Interface(ChannelManagerAbi.abi)
   const validator: Validator = new Validator(hubAddress, provider, ChannelManagerAbi.abi)
@@ -679,9 +681,9 @@ describe('validator', () => {
         // set tx receipt stub
         validator.provider.getTransaction = sinon.stub().returns(tc.stubs[0])
         validator.provider.getTransactionReceipt = sinon.stub().returns(tc.stubs[1])
-        // console.log(`comparing event to prev`)
-        // console.log(`event logs: ${JSON.stringify(abi.parseLog(stubs[1][0]),undefined,2)}`)
-        // console.log(`prev: ${JSON.stringify(prev,undefined,2)}`)
+        log.debug(`comparing event to prev`)
+        log.debug(`event logs: ${JSON.stringify(abi.parseLog(tc.stubs[1][0]),undefined,2)}`)
+        log.debug(`prev: ${JSON.stringify(tc.prev,undefined,2)}`)
         // set args
         const transactionHash: string = depositReceipt.transactionHash
           // (stubs[1] && (stubs[1] as any).transactionHash === depositReceipt.transactionHash)

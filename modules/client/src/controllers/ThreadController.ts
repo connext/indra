@@ -10,7 +10,7 @@ import {
 
 import { AbstractController } from './AbstractController'
 
-export class ThreadsController extends AbstractController {
+export class ThreadController extends AbstractController {
   // only thread senders should call the openThread function
   // joining threads that have been initiated with user as receiver
   // should be handled within the `StateUpdateController`

@@ -5,26 +5,29 @@ import { Action, applyMiddleware, createStore } from 'redux'
 import Web3 from 'web3'
 
 import { ChannelManager, IChannelManager } from './contract/ChannelManager'
-import { AbstractController } from './controllers/AbstractController'
-import { BuyController } from './controllers/BuyController'
-import { CollateralController } from './controllers/CollateralController'
-import { DepositController } from './controllers/DepositController'
-import { ExchangeController } from './controllers/ExchangeController'
-import { RedeemController } from './controllers/RedeemController'
-import { StateUpdateController } from './controllers/StateUpdateController'
-import { SyncController } from './controllers/SyncController'
-import { ThreadsController } from './controllers/ThreadsController'
-import { WithdrawalController } from './controllers/WithdrawalController'
-import {  HubAPIClient, IHubAPIClient } from './Hub'
-import { maxBN, toBN } from './lib/bn'
-import { Logger } from './lib/logger'
-import { isFunction, timeoutPromise } from './lib/utils'
-import * as actions from './state/actions'
-import { handleStateFlags } from './state/middleware'
-import { reducers } from './state/reducers'
 import {
-  ConnextState, ConnextStore, CUSTODIAL_BALANCE_ZERO_STATE, PersistentState,
-} from './state/store'
+  AbstractController,
+  BuyController,
+  CollateralController,
+  DepositController,
+  ExchangeController,
+  RedeemController,
+  StateUpdateController,
+  SyncController,
+  ThreadController,
+  WithdrawalController,
+} from './controllers'
+import { HubAPIClient, IHubAPIClient } from './Hub'
+import { isFunction, Logger, maxBN, timeoutPromise, toBN } from './lib'
+import {
+  actions,
+  ConnextState,
+  ConnextStore,
+  CUSTODIAL_BALANCE_ZERO_STATE,
+  handleStateFlags,
+  PersistentState,
+  reducers,
+} from './state'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
@@ -254,7 +257,7 @@ export class ConnextInternal extends ConnextChannel {
   public redeemController: RedeemController
   public stateUpdateController: StateUpdateController
   public syncController: SyncController
-  public threadsController: ThreadsController
+  public threadController: ThreadController
   public withdrawalController: WithdrawalController
 
   private _latestState: PersistentState | undefined = undefined
@@ -290,7 +293,7 @@ export class ConnextInternal extends ConnextChannel {
     this.withdrawalController = new WithdrawalController('WithdrawalController', this)
     this.stateUpdateController = new StateUpdateController('StateUpdateController', this)
     this.collateralController = new CollateralController('CollateralController', this)
-    this.threadsController = new ThreadsController('ThreadsController', this)
+    this.threadController = new ThreadController('ThreadController', this)
     this.redeemController = new RedeemController('RedeemController', this)
   }
 

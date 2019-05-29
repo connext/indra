@@ -5,11 +5,8 @@ import { ConnextInternal, IConnextChannelInternalOptions } from '../Connext'
 import { IChannelManager } from '../contract/ChannelManager'
 import * as ChannelManagerAbi from '../contract/ChannelManagerAbi.json'
 import { IHubAPIClient } from '../Hub'
-import { toBN } from '../lib/bn'
-import { Logger } from '../lib/logger'
-import { handleStateFlags } from '../state/middleware'
-import { reducers } from '../state/reducers'
-import { ConnextState, PersistentState, RuntimeState } from '../state/store'
+import { Logger, toBN } from '../lib'
+import { ConnextState, handleStateFlags, PersistentState, reducers, RuntimeState } from '../state'
 import { StateGenerator } from '../StateGenerator'
 import {
   Address,

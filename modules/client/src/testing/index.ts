@@ -1,9 +1,9 @@
 import * as chai from 'chai'
 import asPromised from 'chai-as-promised'
 import subset from 'chai-subset'
-import { BigNumber as BN } from 'ethers/utils'
+import { ethers as eth } from 'ethers'
 
-import { capitalize } from '../lib/utils'
+import { BN, capitalize } from '../lib'
 import { StateGenerator } from '../StateGenerator'
 import {
   Address,
@@ -12,15 +12,19 @@ import {
   ChannelStateUpdate,
   ChannelUpdateReason,
   CreateCustodialWithdrawalOptions,
+  CurrencyType,
   CustodialBalanceRow,
   CustodialWithdrawalRow,
   DepositArgs,
   ExchangeArgs,
+  ExchangeRates,
   PaymentArgs,
   PendingArgs,
   ThreadState,
   WithdrawalArgs,
 } from '../types'
+
+export { MockHub, MockChannelManager, MockConnextInternal, MockStore, patch } from './mocks'
 
 // chai
 chai.use(subset)
@@ -29,6 +33,16 @@ export const assert = chai.assert
 
 export const mkAddress = (prefix: string = '0x'): Address => prefix.padEnd(42, '0')
 export const mkHash = (prefix: string = '0x'): string => prefix.padEnd(66, '0')
+
+// NOTE: only used in testing
+// daiRate is the number of DAI that equals the value of 1 ETH
+export const generateExchangeRates = (daiRate: string): ExchangeRates => ({
+  [CurrencyType.DAI]: daiRate,
+  [CurrencyType.DEI]: eth.utils.parseEther(daiRate).toString(),
+  [CurrencyType.ETH]: '1',
+  [CurrencyType.FIN]: `1${'0'.repeat(3)}`,
+  [CurrencyType.WEI]: `1${'0'.repeat(18)}`,
+})
 
 /* Channel and Thread Succinct Types */
 export interface SuccinctChannelState<T = string | number | BN> {

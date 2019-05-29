@@ -1,7 +1,6 @@
 import { ethers as eth } from 'ethers'
 
-import { BN, isBN, maxBN, toBN } from './lib/bn'
-import { capitalize } from './lib/utils'
+import { BN, capitalize, isBN, maxBN, toBN } from './lib'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,

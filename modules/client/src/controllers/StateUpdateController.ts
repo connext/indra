@@ -1,10 +1,8 @@
 import { Unsubscribe } from 'redux'
 import { Action } from 'typescript-fsa/lib'
 
-import { validateTimestamp } from '../lib/timestamp'
-import { assertUnreachable } from '../lib/utils'
-import * as actions from '../state/actions'
-import { ConnextState, ConnextStore } from '../state/store'
+import { assertUnreachable, validateTimestamp } from '../lib'
+import { actions, ConnextState, ConnextStore, getUpdateRequestTimeout } from '../state'
 import {
   ChannelState,
   convertChannelState,
@@ -255,7 +253,7 @@ export class StateUpdateController extends AbstractController {
       const channel = persistent.channel
       if (channel.user === newThreadState.receiver) {
         this.log.info('Closing thread after payment receipt.')
-        await this.connext.threadsController.closeThread({
+        await this.connext.threadController.closeThread({
           receiver: newThreadState.receiver,
           sender: newThreadState.sender,
           threadId: newThreadState.threadId,
@@ -594,7 +592,8 @@ export class StateUpdateController extends AbstractController {
         const CollateralError = (msg: string): Error =>
           new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
         // verification of args
-        const tsErr = validateTimestamp(this.store, update.args.timeout)
+        const maxTimeout = getUpdateRequestTimeout(this.store.getState())
+        const tsErr = validateTimestamp(maxTimeout, update.args.timeout)
         if (tsErr) {
           throw CollateralError(tsErr)
         }
@@ -618,7 +617,8 @@ export class StateUpdateController extends AbstractController {
       if (!update.sigHub) {
         const WithdrawalError = (msg: string): Error =>
           new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
-        const tsErr = validateTimestamp(this.store, update.args.timeout)
+        const maxTimeout = getUpdateRequestTimeout(this.store.getState())
+        const tsErr = validateTimestamp(maxTimeout, update.args.timeout)
         if (tsErr) {
           throw WithdrawalError(tsErr)
         }
