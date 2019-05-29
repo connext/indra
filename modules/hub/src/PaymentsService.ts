@@ -87,17 +87,21 @@ export default class PaymentsService {
     // NOTE: this is a hack for dev, can then only send to layne
     // or other authorized addresses
     if (!hubPublicUrl && isDev) {
-      hubPublicUrl = "hub.connext.network"
+      hubPublicUrl = "https://hub.connext.network"
     }
 
-    LOG.warn('hubPublicUrl: {hubPublicUrl}, mailgunApiKey: {mailgunApiKey}', { hubPublicUrl, mailgunApiKey, })
+    const strippedUrl = hubPublicUrl.indexOf("://") != -1
+      ? hubPublicUrl.split("://")[1]
+      : hubPublicUrl
+
+    LOG.warn('hubPublicUrl: {strippedUrl}, mailgunApiKey: {mailgunApiKey}', { strippedUrl, mailgunApiKey, })
 
     if (!mailgunApiKey || !hubPublicUrl) {
       throw new Error(`Email configuration not set up, cannot send email via mailgun. mailgunApiKey: ${mailgunApiKey}, hubPublicUrl: ${hubPublicUrl}`)
     }
 
     const mg = mailgun({
-      domain: hubPublicUrl,
+      domain: strippedUrl,
       apiKey: mailgunApiKey,
     })
 
@@ -111,6 +115,10 @@ export default class PaymentsService {
     }
     try {
       const res = await mg.messages().send(emailData)
+      if (!res) {
+        // should be caught in "catch"
+        throw new Error("Res not created from mailgun")
+      }
       await this.paymentsDao.createEmail(
         res.id,
         user,
