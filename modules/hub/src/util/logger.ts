@@ -2,8 +2,9 @@ import * as express from 'express'
 
 export class Logger {
   private levels: {[key: string]: number} = { 'debug': 4, 'info': 3, 'warn': 2, 'error': 1 }
-  private logLevel: number = 3
   private name: string = 'Logger'
+
+  public logLevel: number = 3
 
   public constructor(name?: string, logLevel?: number) {
     this.name = typeof name !== 'undefined' ? name : this.name

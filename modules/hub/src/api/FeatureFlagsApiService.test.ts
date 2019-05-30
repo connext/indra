@@ -6,7 +6,7 @@ import { getTestRegistry, TestApiServer } from '../testing'
 import { getTestConfig } from '../testing/mocks'
 import { Logger } from '../util'
 
-const logLevel = 2
+const logLevel = 0
 
 describe('FeatureFlagsApiService', () => {
   (DEFAULT_FLAGS as any).testFlag = 'default value'

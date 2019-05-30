@@ -26,12 +26,11 @@ export type AuthMiddleware = (req: express.Request, res: express.Response, next:
 export const getAuthMiddleware = (
   config: Partial<Config>,
   acl: RouteBasedACL = defaultAcl,
-  logLevel: number | undefined = undefined,
 ): AuthMiddleware => async (
   req: express.Request, res: express.Response, next: () => void,
 ): Promise<void> => {
 
-  const log = new Logger('AuthHeaderMiddleware', logLevel)
+  const log = new Logger('AuthHeaderMiddleware', config.logLevel)
   const address = req.get('x-address')
   const nonce = req.get('x-nonce')
   const signature = req.get('x-signature')

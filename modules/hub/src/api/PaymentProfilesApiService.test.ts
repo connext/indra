@@ -10,7 +10,7 @@ import { testHotWalletAddress as adminAddress } from '../testing/mocks'
 import { mkAddress } from '../testing/stateUtils'
 import { toWei } from '../util'
 
-const logLevel = 2
+const logLevel = 0
 
 describe('PaymentProfilesApiService', () => {
   const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })

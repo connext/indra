@@ -9,7 +9,7 @@ import { getUserFromRequest } from '../util/request'
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { CustodialPaymentsService } from './CustodialPaymentsService'
 
-const log = new Logger('CustodialPaymentsApiService')
+const getLog = (config: Config): Logger => new Logger('CustodialPaymentsService', config.logLevel)
 
 function getAttr<T, K extends keyof T>(obj: T, attr: K): T[K] {
   if (!(attr in obj))
@@ -72,7 +72,7 @@ class CustodialPaymentsApiServiceHandler {
       amountToken = getAttr.big(req.body, 'amountToken')
     } catch (e) {
       // send error response, invalid params
-      logApiRequestError(log, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 
@@ -83,7 +83,7 @@ class CustodialPaymentsApiServiceHandler {
         amountToken,
       })
     } catch (e) {
-      log.error(`Error creating custodial withdrawal: ${e}`)
+      getLog(this.config).error(`Error creating custodial withdrawal: ${e}`)
       return res.sendStatus(400)
     }
 

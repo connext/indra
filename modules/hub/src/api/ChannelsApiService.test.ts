@@ -5,7 +5,7 @@ import { assert, authHeaders, getTestConfig, getTestRegistry, TestApiServer } fr
 import { channelUpdateFactory, tokenVal } from '../testing/factories'
 import { mkHash } from '../testing/stateUtils'
 
-const logLevel = 2
+const logLevel = 0
 
 describe('ChannelsApiService', () => {
   const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })

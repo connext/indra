@@ -5,10 +5,8 @@ import {
 } from 'connext/types'
 import * as express from 'express'
 
-import { ApiService } from './ApiService'
-
 import { default as ChannelsService } from '../ChannelsService'
-import { default as Config } from '../Config'
+import { Config } from '../Config'
 import ExchangeRateDao from '../dao/ExchangeRateDao'
 import { PaymentMetaDao } from '../dao/PaymentMetaDao'
 import PaymentsDao from '../dao/PaymentsDao'
@@ -20,55 +18,56 @@ import { logApiRequestError, Logger } from '../util'
 import { ownedAddressOrAdmin } from '../util/ownedAddressOrAdmin'
 import WithdrawalsService from '../WithdrawalsService'
 
-const log = new Logger('PaymentsApiService')
+import { ApiService } from './ApiService'
+
+const getLog = (config: Config): Logger => new Logger('PaymentsApiService', config.logLevel)
 
 export default class PaymentsApiService extends ApiService<PaymentsApiServiceHandler> {
-  namespace = 'payments'
-  routes = {
+  public namespace: string = 'payments'
+  public routes: any = {
+    'GET /history/:address': 'doPaymentHistory',
+    'GET /purchase/:id': 'doPurchaseById',
+    'POST /:user/email': 'doPaymentEmail',
     'POST /purchase': 'doPurchase',
     'POST /redeem/:user': 'doRedeem',
-    'GET /purchase/:id': 'doPurchaseById',
-    'GET /history/:address': 'doPaymentHistory',
-    'POST /:user/email': 'doPaymentEmail',
   }
-  handler = PaymentsApiServiceHandler
-  dependencies = {
+  public handler: any = PaymentsApiServiceHandler
+  public dependencies: any = {
+    'channelService': 'ChannelsService',
+    'config': 'Config',
+    'db': 'DBEngine',
+    'exRateDao': 'ExchangeRateDao',
     'paymentMetaDao': 'PaymentMetaDao',
     'paymentsDao': 'PaymentsDao',
-    'exRateDao': 'ExchangeRateDao',
-    'db': 'DBEngine',
-    'config': 'Config',
     'paymentsService': 'PaymentsService',
-    'channelService': 'ChannelsService',
-    'threadService': 'ThreadsService'
+    'threadService': 'ThreadsService',
   }
-
 }
 
 export class PaymentsApiServiceHandler {
-  paymentsService: PaymentsService
-  threadService: ThreadsService
-  channelService: ChannelsService
-  paymentMetaDao: PaymentMetaDao
-  paymentsDao: PaymentsDao
-  withdrawalsService: WithdrawalsService
-  exRateDao: ExchangeRateDao
-  db: DBEngine
-  config: Config
+  public paymentsService: PaymentsService
+  public threadService: ThreadsService
+  public channelService: ChannelsService
+  public paymentMetaDao: PaymentMetaDao
+  public paymentsDao: PaymentsDao
+  public withdrawalsService: WithdrawalsService
+  public exRateDao: ExchangeRateDao
+  public db: DBEngine
+  public config: Config
 
-  async doPurchase(req: express.Request, res: express.Response) {
+  public async doPurchase(req: express.Request, res: express.Response): Promise<any> {
     const payments: PurchasePayment[] = req.body.payments
     const meta: any = req.body.meta
 
     if (!payments || !meta) {
-      log.warn(
+      getLog(this.config).warn(
         `Received invalid payment request. Aborting. Params received: ${JSON.stringify(req.params)}, Body received: ${JSON.stringify(req.body)}`)
       return res.sendStatus(400)
     }
 
     const result = await this.paymentsService.doPurchase(req.address, meta, payments)
     if (result.error != false) {
-      log.warn(result.msg)
+      getLog(this.config).warn(result.msg)
       return res.send(400).json(result.msg)
     }
 
@@ -93,7 +92,7 @@ export class PaymentsApiServiceHandler {
     const requesterAddr = req.address
 
     if (!ownedAddressOrAdmin(req)) {
-      log.info(`Blocked attempt to view received payments for ${targetAddr} from ${requesterAddr}`)
+      getLog(this.config).info(`Blocked attempt to view received payments for ${targetAddr} from ${requesterAddr}`)
 
       return res.sendStatus(403)
     }
@@ -111,7 +110,7 @@ export class PaymentsApiServiceHandler {
     } = req.body
 
     if (!subject || !to || !text || !user) {
-      logApiRequestError(log, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 
@@ -120,7 +119,7 @@ export class PaymentsApiServiceHandler {
     )
 
     if (result.error) {
-      log.error(
+      getLog(this.config).error(
         `Error trying to send email via mailgun for user ${user}. Error: ${result.error}`)
       return res.sendStatus(400)
     }
@@ -136,7 +135,7 @@ export class PaymentsApiServiceHandler {
       !req.roles.has(Role.SERVICE)
     ) {
       const address = req.address
-      log.error(
+      getLog(this.config).error(
         `Received request to view purchase ${id} from non-admin or owning address ${address}`)
       return res.sendStatus(403)
     }
@@ -153,13 +152,13 @@ export class PaymentsApiServiceHandler {
     const user = req.address
     const { secret, lastThreadUpdateId, lastChanTx } = req.body
     if (!user || !secret || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
-      log.warn(`Received invalid update redeem request. Aborting. Body received: ${JSON.stringify(req.body)}, Params received: ${JSON.stringify(req.params)}`)
+      getLog(this.config).warn(`Received invalid update redeem request. Aborting. Body received: ${JSON.stringify(req.body)}, Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     } 
 
     const result = await this.paymentsService.doRedeem(user, secret)
     if (result.error != false) {
-      log.warn(result.msg)
+      getLog(this.config).warn(result.msg)
       // @ts-ignore
       // TODO: wtf? it works, but doesnt compile
       // are the express types out of date somehow?

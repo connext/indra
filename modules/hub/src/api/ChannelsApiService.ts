@@ -10,6 +10,8 @@ import { getUserFromRequest } from '../util/request'
 
 import { ApiService } from './ApiService'
 
+const getLog = (config: Config): Logger => new Logger('ChannelsApiService', config.logLevel)
+
 export default class ChannelsApiService extends ApiService<ChannelsApiServiceHandler> {
   public namespace: string = 'channel'
   public routes: any = {
@@ -36,11 +38,6 @@ export class ChannelsApiServiceHandler {
   public channelsService: ChannelsService
   public dao: ChannelsDao
   public config: Config
-  private log: Logger
-
-  public constructor() {
-    this.log = new Logger('ChannelsApiService')
-  }
 
   public async doUpdate(req: express.Request, res: express.Response): Promise<any> {
     const user = getUserFromRequest(req)
@@ -49,7 +46,7 @@ export class ChannelsApiServiceHandler {
       lastThreadUpdateId: number,
     }
     if (!updates || !user || !Number.isInteger(lastThreadUpdateId)) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Received invalid update state request. Aborting. ` +
         `Body received: ${JSON.stringify(req.body)}, ` +
         `Params received: ${JSON.stringify(req.params)}`)
@@ -71,7 +68,8 @@ export class ChannelsApiServiceHandler {
     try {
       await this.channelsService.doUpdates(user, sortedUpdates)
     } catch (e) {
-      this.log.error(`Error in doUpdate('${user}', ${prettySafeJson(updates)}): ${e}\n${e.stack}`)
+      getLog(this.config).error(
+        `Error in doUpdate('${user}', ${prettySafeJson(updates)}): ${e}\n${e.stack}`)
       err = e
     }
     const syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
@@ -92,7 +90,7 @@ export class ChannelsApiServiceHandler {
       !depositWei || !depositToken || !user || !sigUser
       || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)
     ) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Received invalid user deposit request. Aborting. ` +
         `Body received: ${JSON.stringify(req.body)}, ` +
         `Params received: ${JSON.stringify(req.params)}`)
@@ -122,7 +120,7 @@ export class ChannelsApiServiceHandler {
     const { user } = req.params
     const { lastChanTx } = req.body
     if (!user) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Received invalid collateral request. Aborting. ` +
         `Body received: ${JSON.stringify(req.body)}, ` +
         `Params received: ${JSON.stringify(req.params)}`)
@@ -142,7 +140,7 @@ export class ChannelsApiServiceHandler {
     const { user } = req.params
     const { weiToSell, tokensToSell, lastChanTx } = req.body
     if (!user || !weiToSell || !tokensToSell) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Received invalid exchange request. Aborting. ` +
         `Body received: ${JSON.stringify(req.body)}, ` +
         `Params received: ${JSON.stringify(req.params)}`)
@@ -178,7 +176,7 @@ export class ChannelsApiServiceHandler {
       // !Number.isInteger(parseInt(withdrawalTokenUser)) ||
       !exchangeRate
     ) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Received invalid withdrawal request. Aborting. ` +
         `Body received: ${JSON.stringify(req.body)}, ` +
         `Params received: ${JSON.stringify(req.params)}`)
@@ -205,7 +203,7 @@ export class ChannelsApiServiceHandler {
       !Number.isInteger(parseInt(lastChanTx, 10)) ||
       !Number.isInteger(parseInt(lastThreadUpdateId, 10))
     ) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Received invalid sync request. Aborting. ` +
         `Params received: ${JSON.stringify(req.params)}, ` +
         `Query received: ${JSON.stringify(req.query)}`)
@@ -226,7 +224,7 @@ export class ChannelsApiServiceHandler {
     // TODO: we get the user from the params like this in other places,
     // but does not seem to check the auth?
     if (!user) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Receiver invalid get channel request. Aborting. ` +
         `Params received: ${JSON.stringify(req.params)}`)
       res.sendStatus(400)
@@ -245,7 +243,7 @@ export class ChannelsApiServiceHandler {
   ): Promise<void> {
     const user = getUserFromRequest(req)
     if (!user) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Receiver invalid get channel request. Aborting. ` +
         `Params received: ${JSON.stringify(req.params)}`)
       res.sendStatus(400)
@@ -264,7 +262,7 @@ export class ChannelsApiServiceHandler {
   ): Promise<void> {
     const user = getUserFromRequest(req)
     if (!user) {
-      this.log.warn(
+      getLog(this.config).warn(
         `Receiver invalid get channel request. Aborting. ` +
         `Params received: ${JSON.stringify(req.params)}`)
       res.sendStatus(400)

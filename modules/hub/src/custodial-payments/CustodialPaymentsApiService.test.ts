@@ -1,15 +1,17 @@
 import { assert, getTestRegistry } from '../testing'
-import { getMockWeb3, TestApiServer, MockExchangeRateDao } from '../testing/mocks'
+import {
+  authHeaders, getMockWeb3, getTestConfig, MockExchangeRateDao, TestApiServer,
+} from '../testing/mocks'
 import { mkAddress } from '../testing/stateUtils'
-import { toWei, } from '../util'
+import { toWei } from '../util'
 
 import { createTestPayment } from './CustodialPaymentsDao.test'
 
-// User service key to short-circuit address authorization
-const authHeaders = { 'authorization': 'bearer unspank-the-unbanked' }
+const logLevel = 1
 
 describe('CustodialPaymentsApiService', () => {
   const registry = getTestRegistry({
+    Config: getTestConfig({ logLevel }),
     Web3: getMockWeb3(),
   })
   const app: TestApiServer = registry.get('TestApiServer')
@@ -76,17 +78,17 @@ describe('CustodialPaymentsApiService', () => {
     assert.equal(wdListGet.body.length, 1)
   })
 
-  it("should work with these values specifically", async () => {
+  it('should work with these values specifically', async () => {
     const wdRes = await app.withUser(recipient).request
       .post(`/custodial/withdrawals`)
       .set(authHeaders).set('x-address', recipient)
-      .send({ 
-        recipient, 
-        amountToken: "4016900000000000000000"
+      .send({
+        amountToken: '4016900000000000000000',
+        recipient,
       })
     assert.equal(wdRes.status, 200)
     const expectedWithdrawal = {
-      'exchangeRate': "123.45",
+      'exchangeRate': '123.45',
       'recipient': '0x2000000000000000000000000000000000000000',
       'requestedToken': '4016900000000000000000',
       'sentWei': '32538679627379505872',

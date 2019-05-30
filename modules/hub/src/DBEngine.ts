@@ -1,20 +1,22 @@
-import {Context} from './Container'
-import {Pool, PoolClient, ClientBase, Client, QueryResult} from 'pg'
+import { Client, ClientBase, Pool, PoolClient, QueryResult } from 'pg'
+
 import Config from './Config'
+import {Context} from './Container'
 import { Logger } from './util'
 import patch from './util/patch'
 
-const log = new Logger('PostgresDBEngine')
+export const SQL = require('sql-template-strings')
 
 export type Executor<T, U> = (client: T) => Promise<U>
 
 export class TxnOptions {
-  savepoint? = false
+  public savepoint: boolean = false
 }
 
 export type CommitCallback = (db?: DBEngine) => any | Promise<any>
 
 export default interface DBEngine<T=Client> {
+  log: Logger
   connect(): Promise<void>
   disconnect(): Promise<void>
   exec<U>(executor: Executor<T, U>): Promise<U>
@@ -26,23 +28,20 @@ export default interface DBEngine<T=Client> {
   onTransactionCommit(callback: CommitCallback): Promise<void>
 }
 
-export const SQL = require('sql-template-strings')
-
 function parseWithTxnArgs(args: any[]): [TxnOptions, (cxn: PgTransaction) => Promise<any>] {
   let callback: (cxn: PgTransaction) => Promise<any>
   let options = new TxnOptions()
-  if (args.length == 1) {
+  if (args.length === 1) {
     callback = args[0]
-  } else if (args.length == 2) {
+  } else if (args.length === 2) {
     options = {
       ...options,
       ...args[0],
     }
     callback = args[1]
   } else {
-    throw TypeError('Too many arguments to withTransaction: ' + args.length)
+    throw TypeError(`Too many arguments to withTransaction: ${args.length}`)
   }
-
   return [options, callback]
 }
 
@@ -50,11 +49,12 @@ function parseWithTxnArgs(args: any[]): [TxnOptions, (cxn: PgTransaction) => Pro
  * Runs `query` to clean up in response to error `e`.
  * If the query results in an error, log `e` then re-raise the query error.
  */
-async function cleanup(e: Error, cxn: any, query: string) {
+const cleanup = async (e: Error, cxn: any, query: string, log: Logger): Promise<any> => {
   try {
     return await cxn.query(query)
   } catch (newErr) {
-    log.error(`Error while running "${query}" (${'' + newErr}) which was run because of: ${'' + e}\n${e.stack}`)
+    log.error(`Error while running "${query}" (${newErr}) which was run because of: ` +
+      `${e} ${e.stack}`)
     throw newErr
   }
 }
@@ -62,9 +62,10 @@ async function cleanup(e: Error, cxn: any, query: string) {
 let savepointCounter = 0
 
 export class PgTransaction implements DBEngine {
-  cxn: ClientBase
-  dbEngine: DBEngine
-  commitCallbacks: Array<CommitCallback> = []
+  public cxn: ClientBase
+  public dbEngine: DBEngine
+  public commitCallbacks: CommitCallback[] = []
+  public log: Logger
 
   /**
    * Where pgUrl can either be a connection string:
@@ -78,6 +79,7 @@ export class PgTransaction implements DBEngine {
   constructor(dbEngine: DBEngine, cxn: ClientBase) {
     this.cxn = cxn
     this.dbEngine = dbEngine
+    this.log = dbEngine.log
   }
 
   /**
@@ -132,7 +134,7 @@ export class PgTransaction implements DBEngine {
     try {
       return await callback(this)
     } catch (e) {
-      await cleanup(e, this.cxn, 'ROLLBACK TO SAVEPOINT ' + savepointName)
+      await cleanup(e, this.cxn, `ROLLBACK TO SAVEPOINT ${savepointName}`, this.log)
       throw e
     }
   }
@@ -159,6 +161,7 @@ export class PgTransaction implements DBEngine {
   withFreshConnection<Res>(callback: Executor<PgTransaction, Res>): Promise<Res> {
     return this.dbEngine.withFreshConnection(callback)
   }
+
 }
 
 /**
@@ -232,10 +235,12 @@ export class PgPoolService {
 export class PostgresDBEngine implements DBEngine<Client> {
   private context?: Context
   private pool: Pool
+  public log: Logger
 
-  constructor(pool: PgPoolService, context?: Context) {
+  constructor(config: Config, pool: PgPoolService, context?: Context) {
     this.context = context
     this.pool = pool.pool
+    this.log = new Logger('PostgresDBEngine', config.logLevel)
   }
 
   async connect(): Promise<void> {
@@ -304,7 +309,7 @@ export class PostgresDBEngine implements DBEngine<Client> {
       if (!this.context) {
         // This *should* never happen. See the rules described on the `Context`
         // class.
-        log.warn(
+        this.log.warn(
           `DBEngine.withTransaction(...) used without a Context available. ` +
           `The transaction will not be automatically shared with callers.`
         )
@@ -313,7 +318,7 @@ export class PostgresDBEngine implements DBEngine<Client> {
       res = await callback(txn)
       await cxn.query('COMMIT')
     } catch (e) {
-      await cleanup(e, cxn, 'ROLLBACK')
+      await cleanup(e, cxn, 'ROLLBACK', this.log)
       throw e
     } finally {
       this.context && this.context.set('pgTransaction', null)

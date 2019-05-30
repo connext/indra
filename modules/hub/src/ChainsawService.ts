@@ -26,24 +26,26 @@ import { SignerService } from './SignerService'
 import { Logger, prettySafeJson, safeJson, sleep } from './util'
 
 const CONFIRMATION_COUNT = 3
-const log = new Logger('ChainsawService')
 const POLL_INTERVAL = 1000
 
 export default class ChainsawService {
+  private log: Logger
   constructor(
     private signerService: SignerService,
     private onchainTransactionService: OnchainTransactionService,
-    private chainsawDao: ChainsawDao, 
-    private channelsDao: ChannelsDao, 
+    private chainsawDao: ChainsawDao,
+    private channelsDao: ChannelsDao,
     private channelDisputesDao: ChannelDisputesDao,
     private contract: ChannelManager,
-    private web3: Web3, 
-    private utils: connext.Utils, 
-    private config: Config, 
-    private db: DBEngine, 
+    private web3: Web3,
+    private utils: connext.Utils,
+    private config: Config,
+    private db: DBEngine,
     public validator: connext.Validator,
-    public redis: RedisClient
-  ) {}
+    public redis: RedisClient,
+  ) {
+    this.log = new Logger('ChainsawService', this.config.logLevel)
+  }
 
   async poll() {
     while (true) {
@@ -61,13 +63,13 @@ export default class ChainsawService {
     try {
       await this.db.withTransaction(() => this.doFetchEvents())
     } catch (e) {
-      log.error(`Fetching events failed: ${e}`)
+      this.log.error(`Fetching events failed: ${e}`)
     }
 
     try {
       await this.db.withTransaction(() => this.doProcessEvents())
     } catch (e) {
-      log.error(`Processing events failed: ${e}`)
+      this.log.error(`Processing events failed: ${e}`)
     }
   }
 
@@ -76,7 +78,7 @@ export default class ChainsawService {
    */
   async processSingleTx(txHash: string, force: boolean = false): Promise<PollType> {
     const event = await this.chainsawDao.eventByHash(txHash)
-    log.info(`Processing event: ${safeJson(event)}`)
+    this.log.info(`Processing event: ${safeJson(event)}`)
 
     let res
     switch (event.TYPE) {
@@ -94,11 +96,11 @@ export default class ChainsawService {
             return this.processDidEmptyChannel(event.chainsawId, event as DidEmptyChannelEvent)
           })
         } catch (e) {
-          log.error(`Error processing DidEmptyChannelEvent (IGNORING THIS FOR NOW): ${'' + e}\n${e.stack}`)
+          this.log.error(`Error processing DidEmptyChannelEvent (IGNORING THIS FOR NOW): ${'' + e}\n${e.stack}`)
         }
         break
       default:
-        log.info(`Got type { type: ${event.TYPE} }. Not implemented yet.`)
+        this.log.info(`Got type { type: ${event.TYPE} }. Not implemented yet.`)
         break
     }
     return res ? res : 'PROCESS_EVENTS'
@@ -117,13 +119,13 @@ export default class ChainsawService {
 
     // need to check for >= here since we were previously not checking for a confirmation count
     if (lastBlock >= toBlock) {
-      log.debug(`lastBlock: ${lastBlock} >= toBlock: ${toBlock}`)
+      this.log.debug(`lastBlock: ${lastBlock} >= toBlock: ${toBlock}`)
       return
     }
 
     const fromBlock = lastBlock + 1
 
-    log.info(`Synchronizing chain data between blocks ${fromBlock} and ${toBlock}`)
+    this.log.info(`Synchronizing chain data between blocks ${fromBlock} and ${toBlock}`)
 
     // @ts-ignore
     const events = await this.contract.getPastEvents('allEvents', {
@@ -147,25 +149,25 @@ export default class ChainsawService {
       txsIndex[txHash] = await this.web3.eth.getTransaction(txHash)
     }))
 
-    const channelEvents: ContractEvent[] = events.map((log: EventLog) => {
+    const channelEvents: ContractEvent[] = events.map((event: EventLog) => {
       return ContractEvent.fromRawEvent({
-        log: log,
-        txIndex: log.transactionIndex,
-        logIndex: log.logIndex,
+        log: event,
+        txIndex: event.transactionIndex,
+        logIndex: event.logIndex,
         // @ts-ignore
         contract: this.contract.address,
-        sender: txsIndex[log.transactionHash].from,
-        timestamp: blockIndex[log.blockNumber].timestamp * 1000
+        sender: txsIndex[event.transactionHash].from,
+        timestamp: blockIndex[event.blockNumber].timestamp * 1000
       })
     })
 
     if (channelEvents.length) {
-      log.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
+      this.log.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
       // @ts-ignore
       await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
-      log.info(`Successfully inserted ${channelEvents.length} transactions.`)
+      this.log.info(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
-      log.debug('No new transactions found; nothing to do.')
+      this.log.debug('No new transactions found; nothing to do.')
       // @ts-ignore
       await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
     }
@@ -214,7 +216,7 @@ export default class ChainsawService {
           `CRITICAL: Event broadcast on chain, but not found in the database. ` +
           `This should never happen! Event body: ${JSON.stringify(event)}`
         )
-        log.error(msg)
+        this.log.error(msg)
         if (this.config.isProduction)
           throw new Error(msg)
         return
@@ -225,7 +227,7 @@ export default class ChainsawService {
           `CRITICAL: Event broadcast on chain, but our version has been invalidated. ` +
           `This should never happen! Event body: ${JSON.stringify(event)}`
         )
-        log.error(msg)
+        this.log.error(msg)
         if (this.config.isProduction)
           throw new Error(msg)
         return
@@ -259,10 +261,10 @@ export default class ChainsawService {
       return 'PROCESS_EVENTS'
     } catch (e) {
       const NUM_RETRY_ATTEMPTS = 10
-      
+
       // add retry count
       let attempt = await this.redisGetRetryAttempt(event.user)
-      log.error(`Error updating user ${event.user} channel, Error: ${e} attempt ${attempt} of ${NUM_RETRY_ATTEMPTS}`) 
+      this.log.error(`Error updating user ${event.user} channel, Error: ${e} attempt ${attempt} of ${NUM_RETRY_ATTEMPTS}`)
       // 10 retries until failing permenently
       // return 'RETRY' so caller knows to not record a poll and retry this event
       if (attempt < NUM_RETRY_ATTEMPTS) {
@@ -270,11 +272,11 @@ export default class ChainsawService {
         return 'RETRY'
       }
 
-      log.error(`Exceeded max error attempts for user ${event.user}, putting channel into CS_CHAINSAW_ERROR status`)
+      this.log.error(`Exceeded max error attempts for user ${event.user}, putting channel into CS_CHAINSAW_ERROR status`)
 
       // switch channel status to cs chainsaw error and break out of
       // function
-      
+
       // update the channel to insert chainsaw error event
       // id, which will trigger the status change check
       await this.channelsDao.addChainsawErrorId(event.user, event.chainsawId!)
@@ -296,26 +298,26 @@ export default class ChainsawService {
 
     // check if sender was user
     if (event.senderIdx == 0) {
-      log.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
+      this.log.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
       return
     }
 
     // TODO FIX AND REMOVE
-    log.info(`event.senderIdx: ${JSON.stringify(event.senderIdx)}`);
+    this.log.info(`event.senderIdx: ${JSON.stringify(event.senderIdx)}`);
     try {
       if ((event.senderIdx as any)._hex == "0x00") {
-        log.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
+        this.log.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
         return
       }
     } catch (error) {
-      log.info('Caught error trying to compare BN to 0.')
-      log.info(error)
+      this.log.info('Caught error trying to compare BN to 0.')
+      this.log.info(error)
     }
 
     let data
     const latestUpdate = await this.channelsDao.getLatestExitableState(event.user)
     if (event.txCountGlobal <= latestUpdate.state.txCountGlobal) {
-      log.info(`Channel has not exited with the latest state, hub will respond with the latest state: ${prettySafeJson(latestUpdate.state)}! event: ${prettySafeJson(event)}`)
+      this.log.info(`Channel has not exited with the latest state, hub will respond with the latest state: ${prettySafeJson(latestUpdate.state)}! event: ${prettySafeJson(event)}`)
       data = this.contract.methods.emptyChannelWithChallenge(
         [latestUpdate.state.user, latestUpdate.state.recipient],
         [
@@ -346,7 +348,7 @@ export default class ChainsawService {
         latestUpdate.state.sigUser,
       ).encodeABI()
     } else {
-      log.info(`Channel has exited with the latest state, hub will empty with onchain state! event: ${prettySafeJson(event)}`)
+      this.log.info(`Channel has exited with the latest state, hub will empty with onchain state! event: ${prettySafeJson(event)}`)
       data = this.contract.methods.emptyChannel(event.user).encodeABI()
     }
     const txn = await this.onchainTransactionService.sendTransaction(this.db, {
@@ -382,7 +384,7 @@ export default class ChainsawService {
   }
 
   private async redisSetRetryAttempt(user: string, attempt: number) {
-    log.info(`Saving chainsaw retry info for user: ${user}, attempt: ${attempt}`)
+    this.log.info(`Saving chainsaw retry info for user: ${user}, attempt: ${attempt}`)
     await this.redis.set(`ChainsawRetry:${user}`, `${attempt}`)
   }
 

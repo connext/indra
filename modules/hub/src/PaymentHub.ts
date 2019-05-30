@@ -22,27 +22,26 @@ import { OptimisticPaymentsService } from './OptimisticPaymentsService'
 import defaultRegistry from './services'
 import { BN, Logger, toBN, toWei } from './util'
 
-const log = new Logger('PaymentHub')
 const channelNumericFields = connext.utils.channelNumericFields
 
 export default class PaymentHub {
-  private web3: any
+  private apiServer: ApiServer
   private config: Config
+  private exchangeRateService: ExchangeRateService
+  private gasEstimateService: GasEstimateService
+  private log: Logger
+  private onchainTransactionService: OnchainTransactionService
+  private optimisticPaymentsService: OptimisticPaymentsService
   private registry: Registry
+  private web3: any
 
   public container: Container
 
-  private exchangeRateService: ExchangeRateService
-  private gasEstimateService: GasEstimateService
-  private apiServer: ApiServer
-  private onchainTransactionService: OnchainTransactionService
-  private optimisticPaymentsService: OptimisticPaymentsService
-
-  constructor(config: Config) {
+  public constructor(config: Config) {
     if (!config.ethRpcUrl) {
       throw new Error('ERROR: ETH_RPC_URL not set!')
     }
-
+    this.log = new Logger('PaymentHub', config.logLevel)
     const registry = defaultRegistry(config.registry)
     this.registry = registry
 
@@ -74,7 +73,7 @@ export default class PaymentHub {
       try {
         await (this as any)[service].start()
       } catch (err) {
-        log.error(`Failed to start ${service}: ${err}`)
+        this.log.error(`Failed to start ${service}: ${err}`)
         process.exit(1)
       }
     }
@@ -294,7 +293,7 @@ $pgsql$;
         throw new Error('ROLLBACK')
       })
     } catch (e) {
-      log.error(e)
+      this.log.error(e)
       process.exit(1)
     } finally {
       process.exit(0)
@@ -302,7 +301,7 @@ $pgsql$;
   }
 
   async fixChannel(container: Container, db: DBEngine, user: string) {
-    log.info(`\n\nProcessing: ${user}`)
+    this.log.info(`\n\nProcessing: ${user}`)
     const config = container.resolve<Config>('Config')
     const web3 = container.resolve<any>('Web3')
     const contract = new web3.eth.Contract(abi, config.channelManagerAddress) as ChannelManager
@@ -316,27 +315,27 @@ $pgsql$;
       order by id desc
     `)
     if (confirmPendings.rowCount > 1) {
-      log.info(`SKIPPING (found ${confirmPendings.rowCount} unsigned confirms)`)
+      this.log.info(`SKIPPING (found ${confirmPendings.rowCount} unsigned confirms)`)
       return
     }
 
     // 1. Find the ConfirmPending event
     const confirmPending = confirmPendings.rows[0]
-    log.info(`Confirmation: ${confirmPending}`)
+    this.log.info(`Confirmation: ${confirmPending}`)
 
     // 2. Grab the corresponding onchain tx
     const tx = await web3.eth.getTransaction(confirmPending.args.transactionHash)
-    log.debug(`tx: ${tx}`)
+    this.log.debug(`tx: ${tx}`)
     // @ts-ignore
     const rawEvents = await contract.getPastEvents('allEvents', {
       fromBlock: tx.blockNumber,
       toBlock: tx.blockNumber,
     })
-    const events: ContractEvent[] = rawEvents.map((log: EventLog) => {
+    const events: ContractEvent[] = rawEvents.map((event: EventLog) => {
       return ContractEvent.fromRawEvent({
-        log: log,
-        txIndex: log.transactionIndex,
-        logIndex: log.logIndex,
+        log: event,
+        txIndex: event.transactionIndex,
+        logIndex: event.logIndex,
         contract: config.channelManagerAddress,
         sender: '0xsender',
         timestamp: 0,
@@ -356,7 +355,7 @@ $pgsql$;
     }
     for (const field of channelNumericFields)
       event[field] = event[field].toString()
-    log.debug(`event: ${event}`)
+    this.log.debug(`event: ${event}`)
 
     // 4. Find the correponding fully-signed ProposePending
     const pps = await db.query(SQL`
@@ -370,7 +369,7 @@ $pgsql$;
     `)
 
     const pp = pps.rows[0]
-    log.debug(`PP: ${pp}`)
+    this.log.debug(`PP: ${pp}`)
 
     const doesMatch = (
       pp.pending_deposit_wei_hub == event.pendingDepositWeiHub &&
@@ -397,7 +396,7 @@ $pgsql$;
         reason = 'Payment' and
         args->>'recipient' = 'user'
     `)
-    log.info(`Payments due: ${amountDue}`)
+    this.log.info(`Payments due: ${amountDue}`)
 
     // 5. Mark the ProposePending as valid, then delete all subsequent states
     await db.query(SQL`
@@ -434,7 +433,7 @@ $pgsql$;
       where id in (select id from to_delete)
       returning *
     `))
-    log.info(`Removed invalid upates: ${deleted.rowCount}`)
+    this.log.info(`Removed invalid upates: ${deleted.rowCount}`)
 
     // 6. Re-proc the chainsaw transaction
     const definition = this.registry.get('ChainsawService')
@@ -462,31 +461,31 @@ $pgsql$;
     const tokenContract = new this.web3.eth.Contract(mintAndBurnToken.abi, this.config.tokenContractAddress)
     const hubBalanceStr = await tokenContract.methods.balanceOf(this.config.hotWalletAddress).call(callArgs)
     const hubBalance = eth.utils.formatEther(hubBalanceStr)
-    log.info(
+    this.log.info(
       `Current BOOTY (${this.config.tokenContractAddress}) balance of hub ` +
       `(${this.config.hotWalletAddress}): ${hubBalance.toString()}`
     )
 
     const toWd = toBN(amount).sub(toBN(hubBalance))
     if (toWd.gt(toBN(0))) {
-      log.info(`Need to hubContractWithdraw ${toWd.toString()} BOOTY.`)
+      this.log.info(`Need to hubContractWithdraw ${toWd.toString()} BOOTY.`)
       const amountConfirm = await input(`Please confirm the amount of BOOTY to hubContractWithdraw (${toWd.toString()}): `)
       if (!toWd.eq(toBN(amountConfirm as string)))
         throw new Error(`Aborting: ${amountConfirm} <> ${toWd.toString()}`)
       const contract = this.container.resolve<ChannelManager>('ChannelManagerContract')
-      log.info(`Calling hubContractWithdraw('0', '${toWei(toWd).toString()}')...`)
+      this.log.info(`Calling hubContractWithdraw('0', '${toWei(toWd).toString()}')...`)
       const res = await contract.methods.hubContractWithdraw('0', toWei(toWd).toString()).send(callArgs)
-      log.info(`Result of hubContractWithdraw: ${res}`)
+      this.log.info(`Result of hubContractWithdraw: ${res}`)
     }
 
     const amountConfirm = +(await input(`Please confirm the amount of BOOTY to burn (in BOOTY, not BEI; amount: ${amount}): `))
     if (amountConfirm != amount)
       throw new Error(`Aborting: ${amount} <> ${amountConfirm}`)
     const burnAmount = toWei(amount).toString()
-    log.info(`Calling burn(${burnAmount})...`)
+    this.log.info(`Calling burn(${burnAmount})...`)
     const burnCall = tokenContract.methods.burn(burnAmount)
     const gas = await burnCall.estimateGas(callArgs)
-    log.info(await burnCall.send({ ...callArgs, gas }))
+    this.log.info(await burnCall.send({ ...callArgs, gas }))
   }
 
 }

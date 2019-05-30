@@ -26,7 +26,7 @@ import DBEngine, { SQL } from './DBEngine'
 import { OnchainTransactionService } from './OnchainTransactionService'
 import PaymentsService from './PaymentsService'
 import { RedisClient } from './RedisClient'
-import { assert, getFakeClock, getTestRegistry, nock, parameterizedTests } from './testing'
+import { assert, getFakeClock, getTestRegistry, getNock, parameterizedTests } from './testing'
 import { channelAndThreadFactory, channelUpdateFactory, tokenVal } from './testing/factories'
 import {
   createWithdrawalParams,
@@ -1192,7 +1192,7 @@ describe('ChannelsService', () => {
       { name: 'works: false', shouldCollateralize: false },
       { name: 'returns false on error', shouldCollateralize: Error('uhoh') },
     ], async t => {
-      nock('https://example.com')
+      getNock({ logLevel })('https://example.com')
         .get(/.*/)
         .reply(url => {
           assert.equal(url, '/should-collateralize/0x1234')

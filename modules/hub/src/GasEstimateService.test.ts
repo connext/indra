@@ -3,9 +3,9 @@ import { assert } from 'chai'
 import GasEstimateDao from './dao/GasEstimateDao'
 import {default as GasEstimateService, EthGasStationResponse} from './GasEstimateService'
 import { serviceDefinitions } from './services'
-import { getFakeClock, getTestConfig, getTestRegistry, nock, sbox } from './testing'
+import { getFakeClock, getTestConfig, getTestRegistry, getNock, sbox } from './testing'
 
-const logLevel = 1 // 0 = no logs, 5 = all logs
+const logLevel = 0 // 0 = no logs, 5 = all logs
 
 function mockEthGasStationResponse(opts?:Partial<EthGasStationResponse>): EthGasStationResponse {
   return {
@@ -36,7 +36,7 @@ describe('GasEstimateService', () => {
   beforeEach(async () => {
     await registry.reset()
     let blockNum = 69
-    nock('https://ethgasstation.info')
+    getNock({ logLevel })('https://ethgasstation.info')
       .persist()
       .get('/json/ethgasAPI.json')
       .reply(() => [200, mockEthGasStationResponse({ blockNum: blockNum++ })])

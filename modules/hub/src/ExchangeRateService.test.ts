@@ -1,10 +1,13 @@
-import { assert } from 'chai';
+import { assert } from 'chai'
 import * as sinon from 'sinon'
 import {SinonFakeTimers, SinonStub} from 'sinon'
 
 import ExchangeRateService from './ExchangeRateService'
 import ExchangeRateDao from './dao/ExchangeRateDao'
 import { SubscriptionServer } from './SubscriptionServer'
+import { getTestConfig } from './testing'
+
+const logLevel = 0
 
 describe('ExchangeRateService', () => {
   let sbox = sinon.createSandbox()
@@ -24,7 +27,7 @@ describe('ExchangeRateService', () => {
     clock = sinon.useFakeTimers()
     dao = {} as ExchangeRateDao
     sub = {'broadcast': () => undefined} as any
-    serv = new ExchangeRateService(dao, sub)
+    serv = new ExchangeRateService(getTestConfig({ logLevel }), dao, sub)
   })
 
   afterEach(() => {

@@ -9,29 +9,25 @@ import WithdrawalsDao from './dao/WithdrawalsDao'
 import { Logger, toBN, toWei } from './util'
 import WithdrawalsService from './WithdrawalsService'
 
+const logLevel = 5
 const assert = chai.assert
 
 describe.skip('WithdrawalsService', () => {
   let clock: SinonFakeTimers
-
   let ws: WithdrawalsService
-
   let wDao: WithdrawalsDao
-
   let sDao: GlobalSettingsDao
-
   let web3: any
-
   let config: Config
 
   beforeEach(() => {
     chai.use(chaiAsPromised)
     clock = sinon.useFakeTimers()
-
     wDao = {} as WithdrawalsDao
     sDao = {} as GlobalSettingsDao
 
     config = {
+      logLevel,
       hotWalletAddress: '0xeee',
       hotWalletMinBalance: toWei('0.69').toString(),
     } as Config
@@ -39,16 +35,14 @@ describe.skip('WithdrawalsService', () => {
     web3 = {
       eth: {
         sendTransaction: sinon.spy(),
-
         mockBalanceEth: {
           [config.hotWalletAddress]: '69',
         },
-
         getBalance: (addr: string, cb: any) => {
           let bal = web3.eth.mockBalanceEth[addr]
-          if (!bal)
+          if (!bal) {
             throw new Error(`No mock balance defined for address: ${addr}`)
-
+          }
           cb(null, toWei(toBN(bal)))
         },
       },

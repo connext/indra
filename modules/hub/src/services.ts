@@ -88,9 +88,10 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   ExchangeRateService: {
-    dependencies: ['ExchangeRateDao', 'SubscriptionServer'],
-    factory: (dao: ExchangeRateDao, subscriptions: SubscriptionServer): ExchangeRateService =>
-      new ExchangeRateService(dao, subscriptions),
+    dependencies: ['Config', 'ExchangeRateDao', 'SubscriptionServer'],
+    factory: (
+      config: Config, dao: ExchangeRateDao, subscriptions: SubscriptionServer,
+    ): ExchangeRateService => new ExchangeRateService(config, dao, subscriptions),
     isSingleton: true,
   },
 
@@ -231,7 +232,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   GlobalSettingsDao: {
-    factory: (db: DBEngine<Client>) => 
+    factory: (db: DBEngine<Client>) =>
       new PostgresGlobalSettingsDao(db),
     dependencies: ['DBEngine']
   },
@@ -260,9 +261,9 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   DBEngine: {
-    factory: (pool: PgPoolService, context: Context) =>
-      new PostgresDBEngine(pool, context),
-    dependencies: ['PgPoolService', 'Context'],
+    factory: (config: Config, pool: PgPoolService, context: Context) =>
+      new PostgresDBEngine(config, pool, context),
+    dependencies: ['Config', 'PgPoolService', 'Context'],
   },
 
   DisbursementDao: {
@@ -385,26 +386,29 @@ export const serviceDefinitions: PartialServiceDefinitions = {
 
   OptimisticPaymentsService: {
     factory: (
+      config: Config,
       db: DBEngine,
       opPaymentDao: OptimisticPaymentDao,
       channelsDao: ChannelsDao,
       paymentsService: PaymentsService,
-      channelsService: ChannelsService
+      channelsService: ChannelsService,
     ) => new OptimisticPaymentsService(
-      db, 
-      opPaymentDao, 
-      channelsDao, 
+      config,
+      db,
+      opPaymentDao,
+      channelsDao,
       paymentsService,
-      channelsService
+      channelsService,
     ),
     dependencies: [
+      'Config',
       'DBEngine',
       'OptimisticPaymentDao',
       'ChannelsDao',
       'PaymentsService',
-      'ChannelsService'
+      'ChannelsService',
     ],
-    isSingleton: true
+    isSingleton: true,
   },
 
   ChannelsService: {

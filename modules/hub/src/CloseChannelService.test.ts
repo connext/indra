@@ -9,8 +9,11 @@ import { assert, getFakeClock, getTestRegistry } from './testing'
 import { channelUpdateFactory } from './testing/factories'
 import { getMockWeb3, getTestConfig, setFakeClosingTime } from './testing/mocks'
 import { assertChannelStateEqual, mkAddress, SuccinctChannelState } from './testing/stateUtils'
-import { toWei, toBN } from './util'
+import { Logger, toWei, toBN } from './util'
 import { ChannelStatus, ChannelState } from 'connext';
+
+const logLevel = 2
+const log = new Logger('CloseChannelServiceTest', logLevel)
 
 async function rewindUpdates(db: DBEngine, days: number, user: string) {
   await db.queryOne(`
@@ -20,17 +23,17 @@ async function rewindUpdates(db: DBEngine, days: number, user: string) {
       "hub_signed_on" = NOW() - '100 days'::INTERVAL,
       "user_signed_on" = NOW() - '100 days'::INTERVAL
     WHERE
-      "user" = '${user}'::text 
+      "user" = '${user}'::text
   `)
 }
 
-
 describe('CloseChannelService', () => {
   let registry = getTestRegistry({
+    Config: getTestConfig({ logLevel }),
     Web3: getMockWeb3(),
     OnchainTransactionService: {
       sendTransaction: async () => {
-        console.log('Called mock function sendTransaction');
+        log.info('Called mock function sendTransaction');
         return true
       }
     },
@@ -74,12 +77,13 @@ describe('CloseChannelService', () => {
   it('should not start disputes if no channel stale days provided in config', async () => {
     registry = getTestRegistry({
       Config: getTestConfig({
+        logLevel,
         staleChannelDays: null,
       }),
       Web3: getMockWeb3(),
       OnchainTransactionService: {
         sendTransaction: async () => {
-          console.log('Called mock function sendTransaction');
+          log.info('Called mock function sendTransaction');
           return true
         }
       },
@@ -109,12 +113,13 @@ describe('CloseChannelService', () => {
   it('should start a dispute with stale channels', async () => {
     registry = getTestRegistry({
       Config: getTestConfig({
+        logLevel,
         staleChannelDays: 1,
       }),
       Web3: getMockWeb3(),
       OnchainTransactionService: {
         sendTransaction: async () => {
-          console.log('Called mock function sendTransaction');
+          log.info('Called mock function sendTransaction');
           return true
         }
       },
@@ -268,84 +273,82 @@ describe('CloseChannelService', () => {
       /Latest double signed update is not the latest update, cannot exit/
     )
   })
-})
 
+  describe('disputeStaleChannels', () => {
+    registry = getTestRegistry({
+      Config: getTestConfig({ logLevel }),
+      OnchainTransactionService: {
+        sendTransaction: async (): Promise<boolean> => {
+          log.info('Called mock function sendTransaction')
+          return true
+        },
+      },
+      Web3: getMockWeb3(),
+    })
 
-describe('CloseChannelService.disputeStaleChannels', () => {
-  let registry = getTestRegistry({
-    Web3: getMockWeb3(),
-    OnchainTransactionService: {
-      sendTransaction: async () => {
-        console.log('Called mock function sendTransaction');
-        return true
+    beforeEach(async () => {
+      await registry.clearDatabase()
+    })
+
+    const closeChannelService: CloseChannelService = registry.get('CloseChannelService')
+    const channelsService: ChannelsService = registry.get('ChannelsService')
+    const db: DBEngine = registry.get("DBEngine")
+
+    const createChannelUpdates = async (rewind: number = 0, updates: any[] = [{}]) => {
+      let channel
+      for (const update of updates) {
+        const providedTx = update.txCount ? update.txCount[0] : update.txCountGlobal
+        channel = await channelUpdateFactory(registry, {
+          ...update,
+          txCountGlobal: providedTx || (updates.indexOf(update) + 1)
+        })
       }
-    },
-  },
-
-  )
-
-  beforeEach(async () => {
-    await registry.clearDatabase()
-  })
-
-  const closeChannelService: CloseChannelService = registry.get('CloseChannelService')
-  const channelsService: ChannelsService = registry.get('ChannelsService')
-  const db: DBEngine = registry.get("DBEngine")
-
-  const createChannelUpdates = async (rewind: number = 0, updates: any[] = [{}]) => {
-    let channel
-    for (const update of updates) {
-      const providedTx = update.txCount ? update.txCount[0] : update.txCountGlobal
-      channel = await channelUpdateFactory(registry, {
-        ...update,
-        txCountGlobal: providedTx || (updates.indexOf(update) + 1)
-      })
+      if (rewind > 0) {
+        await rewindUpdates(db, rewind, channel.user)
+      }
+      return channel
     }
-    if (rewind > 0) {
-      await rewindUpdates(db, rewind, channel.user)
+
+    const assertChannelAndStatus = async (expected: ChannelStatus, originalState: ChannelState) => {
+      const { status } = await channelsService.getChannelAndThreadUpdatesForSync(originalState.user, 0, 0)
+      assert.equal(expected, status)
+      const channel = await channelsService.getChannel(originalState.user)
+      assertChannelStateEqual(channel.state, originalState)
     }
-    return channel
-  }
 
-  const assertChannelAndStatus = async (expected: ChannelStatus, originalState: ChannelState) => {
-    const { status } = await channelsService.getChannelAndThreadUpdatesForSync(originalState.user, 0, 0)
-    assert.equal(expected, status)
-    const channel = await channelsService.getChannel(originalState.user)
-    assertChannelStateEqual(channel.state, originalState)
-  }
+    it("should dispute stale channels with provided arguments", async () => {
+      const channel = await createChannelUpdates()
+      const staleChannel = await createChannelUpdates(20, [
+        { user: mkAddress("0xbbb") }
+      ])
+      // dispute channels that are 15 days old at least
+      await closeChannelService.disputeStaleChannels(15)
+      await assertChannelAndStatus("CS_OPEN", channel.state)
+      await assertChannelAndStatus("CS_CHANNEL_DISPUTE", staleChannel.state)
+    })
 
-  it("should dispute stale channels with provided arguments", async () => {
-    const channel = await createChannelUpdates()
-    const staleChannel = await createChannelUpdates(20, [
-      { user: mkAddress("0xbbb") }
-    ])
-    // dispute channels that are 15 days old at least
-    await closeChannelService.disputeStaleChannels(15)
-    await assertChannelAndStatus("CS_OPEN", channel.state)
-    await assertChannelAndStatus("CS_CHANNEL_DISPUTE", staleChannel.state)
-  })
+    it("should dispute stale channels only up to provided maximum number of initiated disputes", async () => {
+      const channel = await createChannelUpdates()
+      const staleChannel1 = await createChannelUpdates(20, [
+        { user: mkAddress("0xbbb") }
+      ])
+      const staleChannel2 = await createChannelUpdates(20, [
+        { user: mkAddress("0xddd"), balanceTokenHub: toWei(100) }
+      ])
+      // dispute channels that are 15 days old at least
+      await closeChannelService.disputeStaleChannels(15, 1)
+      // only channel with highest balance token hub should be disputed
+      await assertChannelAndStatus("CS_OPEN", channel.state)
+      await assertChannelAndStatus("CS_OPEN", staleChannel1.state)
+      await assertChannelAndStatus("CS_CHANNEL_DISPUTE", staleChannel2.state)
+    })
 
-  it("should dispute stale channels only up to provided maximum number of initiated disputes", async () => {
-    const channel = await createChannelUpdates()
-    const staleChannel1 = await createChannelUpdates(20, [
-      { user: mkAddress("0xbbb") }
-    ])
-    const staleChannel2 = await createChannelUpdates(20, [
-      { user: mkAddress("0xddd"), balanceTokenHub: toWei(100) }
-    ])
-    // dispute channels that are 15 days old at least
-    await closeChannelService.disputeStaleChannels(15, 1)
-    // only channel with highest balance token hub should be disputed
-    await assertChannelAndStatus("CS_OPEN", channel.state)
-    await assertChannelAndStatus("CS_OPEN", staleChannel1.state)
-    await assertChannelAndStatus("CS_CHANNEL_DISPUTE", staleChannel2.state)
-  })
-
-  it("should ignore the minimum amount of collateral if called via command line", async () => {
-    const channel = await createChannelUpdates(20)
-    const config = registry.get('Config')
-    assert.isTrue(toBN(channel.state.balanceTokenHub).lt(config.beiMinCollateralization))
-    await closeChannelService.disputeStaleChannels(15)
-    await assertChannelAndStatus("CS_CHANNEL_DISPUTE", channel.state)
+    it("should ignore the minimum amount of collateral if called via command line", async () => {
+      const channel = await createChannelUpdates(20)
+      const config = registry.get('Config')
+      assert.isTrue(toBN(channel.state.balanceTokenHub).lt(config.beiMinCollateralization))
+      await closeChannelService.disputeStaleChannels(15)
+      await assertChannelAndStatus("CS_CHANNEL_DISPUTE", channel.state)
+    })
   })
 })

@@ -1,5 +1,6 @@
-import { default as Config } from './Config'
 import { default as fetch } from 'node-fetch'
+
+import { default as Config } from './Config'
 import { maybe } from './util'
 
 /**
@@ -15,13 +16,14 @@ import { maybe } from './util'
  *
  */
 export class NgrokService {
-  constructor(
+  public constructor(
     private config: Config,
   ) {}
 
-  public async getDevPublicUrl() {
-    if (!this.config.isDev)
+  public async getDevPublicUrl(): Promise<any> {
+    if (!this.config.isDev) {
       throw new Error('Cannot call getDevPublicUrl() except from dev!')
+    }
 
     /*
     "tunnels": [
@@ -44,17 +46,18 @@ export class NgrokService {
     if (err) {
       throw new Error(
         'Error connecting to ngrok to fetch public URL ' +
-        '(hint: did you run "hub/development/ngrok-run"?)'
-      )
+        '(hint: did you run "hub/development/ngrok-run"?)')
     }
 
     const obj = await res.json()
     for (const tun of obj.tunnels) {
-      if (tun.name == 'hub')
+      if (tun.name === 'hub') {
         return tun.public_url
+      }
     }
 
-    throw new Error('Unexpected response from ngrok (no "hub" tunnel found): ' + JSON.stringify(obj))
+    throw new Error(`Unexpected response from ngrok (no "hub" tunnel found): ` +
+      `${JSON.stringify(obj)}`)
   }
 
 }
