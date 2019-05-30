@@ -1,24 +1,29 @@
-import { CustodialPaymentsDao } from './CustodialPaymentsDao'
-import { createTestPayment } from './CustodialPaymentsDao.test'
-import { CustodialPaymentsService } from './CustodialPaymentsService'
-
+import { Config } from '../Config'
 import { default as DBEngine, SQL } from '../DBEngine'
 import { OnchainTransactionService } from '../OnchainTransactionService'
-import { assert, getTestRegistry, parameterizedTests } from '../testing'
+import { assert, getTestConfig, getTestRegistry, parameterizedTests } from '../testing'
 import { getMockWeb3 } from '../testing/mocks'
 import { mkAddress } from '../testing/stateUtils'
 import { toBN, toWei } from '../util'
 
+import { CustodialPaymentsDao } from './CustodialPaymentsDao'
+import { createTestPayment } from './CustodialPaymentsDao.test'
+import { CustodialPaymentsService } from './CustodialPaymentsService'
+
+const logLevel = 0
+const config = getTestConfig({ logLevel })
+
 describe('CustodialPaymentsService', () => {
   const registry = getTestRegistry({
-    Web3: getMockWeb3(),
+    Config: config,
+    Web3: getMockWeb3(config),
   })
   const db: DBEngine = registry.get('DBEngine')
   const dao: CustodialPaymentsDao = registry.get('CustodialPaymentsDao')
   const service: CustodialPaymentsService = registry.get('CustodialPaymentsService')
   const onchainTxnService: OnchainTransactionService = registry.get('OnchainTransactionService')
 
-  beforeEach(async () => await registry.clearDatabase())
+  beforeEach(async () => registry.clearDatabase())
 
   describe('createCustodialWithdrawal', () => {
     service.MIN_WITHDRAWAL_AMOUNT_TOKEN = '3'
@@ -37,9 +42,9 @@ describe('CustodialPaymentsService', () => {
 
       const wdAmount = toWei('6')
       const wd = await service.createCustodialWithdrawal({
-        user: recipient,
-        recipient: mkAddress('0x74'),
         amountToken: wdAmount,
+        recipient: mkAddress('0x74'),
+        user: recipient,
       })
 
       const sentWei = '48602673147023086'

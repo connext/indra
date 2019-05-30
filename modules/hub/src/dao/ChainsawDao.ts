@@ -3,7 +3,7 @@ import { Client } from 'pg'
 import DBEngine from '../DBEngine'
 import {ContractEvent} from '../domain/ContractEvent'
 import Config from '../Config'
-import { default as log } from '../util/log'
+import { Logger } from '../util'
 
 export type PollType = 'FETCH_EVENTS' | 'PROCESS_EVENTS' | 'SKIP_EVENTS' | 'RETRY'
 
@@ -11,8 +11,6 @@ export type ContractEventWithMeta = {
   event: ContractEvent,
   id: number
 }
-
-const LOG = log('ChainsawDao')
 
 export default interface ChainsawDao {
   lastPollFor(address: string, type: PollType): Promise<ChainsawPollEvent>
@@ -36,12 +34,13 @@ export default interface ChainsawDao {
 
 export class PostgresChainsawDao implements ChainsawDao {
   private engine: DBEngine<Client>
-
   private hubAddress: string
+  private log: Logger
 
   constructor(engine: DBEngine<Client>, config: Config) {
     this.engine = engine
     this.hubAddress = config.hotWalletAddress
+    this.log = new Logger('ChainsawDao', config.logLevel)
   }
 
   lastProcessEventPoll(contract: string): Promise<ChainsawPollEvent> {
@@ -120,7 +119,7 @@ export class PostgresChainsawDao implements ChainsawDao {
               JSON.stringify(fields)
             ]
 
-            LOG.info(`Inserting chainsaw event: ${JSON.stringify(args)}`)
+            this.log.info(`Inserting chainsaw event: ${JSON.stringify(args)}`)
 
             return c.query(
               'SELECT chainsaw_insert_event($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',

@@ -4,9 +4,13 @@ import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 
 import { PaymentMetaDao } from '../dao/PaymentMetaDao'
 import { default as DBEngine, SQL } from '../DBEngine'
-import { assert, getTestRegistry, TestServiceRegistry } from '../testing'
+import { assert, getTestConfig, getTestRegistry, TestServiceRegistry } from '../testing'
 import { channelUpdateFactory } from '../testing/factories'
 import { mkAddress } from '../testing/stateUtils'
+import { Logger } from '../util'
+
+const logLevel = 0
+const log = new Logger('CustodialPaymentsDaoTest', logLevel)
 
 export async function createTestPayment(
   registry: TestServiceRegistry,
@@ -34,14 +38,14 @@ export async function createTestPayment(
     meta: {},
   })
 
-  console.log("UPD:", update)
+  log.info(`UPD: ${update}`)
   await dao.createCustodialPayment(paymentId, update.id)
   return { update, user, paymentId, recipient }
 }
 
 
 describe('CustodialPaymentsDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
   const db: DBEngine = registry.get('DBEngine')
   const dao: CustodialPaymentsDao = registry.get('CustodialPaymentsDao')
 

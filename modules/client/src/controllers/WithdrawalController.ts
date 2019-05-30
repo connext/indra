@@ -1,7 +1,7 @@
 import { ethers as eth } from 'ethers'
 
-import { toBN, tokenToWei, weiToToken } from '../lib/bn'
-import { getTxCount } from '../state/getters'
+import { toBN, tokenToWei, weiToToken } from '../lib'
+import { getTxCount } from '../state'
 import {
   argNumericFields,
   convertChannelState,

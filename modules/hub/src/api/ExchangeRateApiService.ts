@@ -1,11 +1,12 @@
 import * as express from 'express'
 
+import { Config } from '../Config'
 import ExchangeRateDao from '../dao/ExchangeRateDao'
-import log from '../util/log'
+import { Logger } from '../util'
 
 import { ApiService } from './ApiService'
 
-const LOG = log('ExchangeRateApiService')
+const getLog = (config: Config): Logger => new Logger('ExchangeRateApiService', config.logLevel)
 
 export default class ExchangeRateApiService extends ApiService<
   ExchangeRateApiServiceHandler
@@ -16,20 +17,22 @@ export default class ExchangeRateApiService extends ApiService<
   }
   public handler: any = ExchangeRateApiServiceHandler
   public dependencies: any = {
+    config: 'Config',
     dao: 'ExchangeRateDao',
   }
 }
 
 class ExchangeRateApiServiceHandler {
   private dao: ExchangeRateDao
+  private config: Config
 
   public async doRate (req: express.Request, res: express.Response): Promise<any> {
     try {
       const rate = await this.dao.latest()
-      LOG.info(`Returning exchange rate: ${JSON.stringify(rate)}`)
+      getLog(this.config).info(`Returning exchange rate: ${JSON.stringify(rate)}`)
       res.send(rate)
     } catch (err) {
-      LOG.error(`Failed to fetch latest exchange rate: ${err}`)
+      getLog(this.config).error(`Failed to fetch latest exchange rate: ${err}`)
       res.sendStatus(500)
     }
   }

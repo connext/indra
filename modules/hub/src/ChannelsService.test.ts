@@ -14,7 +14,6 @@ import {
   WithdrawalParametersBN,
 } from 'connext/types'
 import * as eth from 'ethers'
-import { BigNumber } from 'ethers/utils'
 import Web3 = require('web3')
 
 import ChannelsService from './ChannelsService'
@@ -27,7 +26,7 @@ import DBEngine, { SQL } from './DBEngine'
 import { OnchainTransactionService } from './OnchainTransactionService'
 import PaymentsService from './PaymentsService'
 import { RedisClient } from './RedisClient'
-import { assert, getFakeClock, getTestRegistry, nock, parameterizedTests } from './testing'
+import { assert, getFakeClock, getTestRegistry, getNock, parameterizedTests } from './testing'
 import { channelAndThreadFactory, channelUpdateFactory, tokenVal } from './testing/factories'
 import {
   createWithdrawalParams,
@@ -51,9 +50,12 @@ import {
   PartialSignedOrSuccinctChannel,
 } from './testing/stateUtils'
 import ThreadsService from './ThreadsService'
-import { isBN, toBN, tokenToWei, toWei, weiToToken } from './util'
+import { isBN, Logger, toBN, tokenToWei, toWei, weiToToken } from './util'
 
+const logLevel = 0
+const log = new Logger('ChannelsServiceTest', logLevel)
 const contract = mkAddress('0xCCC')
+const defaultConfig = getTestConfig({ logLevel })
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -68,11 +70,11 @@ function web3ContractMock() {
     hubAuthorizedUpdate: () => {
       return {
         send: async () => {
-          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          log.info(`Called mocked contract function hubAuthorizedUpdate`)
           return true
         },
         encodeABI: async () => {
-          console.log(`Called mocked contract function hubAuthorizedUpdate`)
+          log.info(`Called mocked contract function hubAuthorizedUpdate`)
           return true
         },
       }
@@ -83,8 +85,9 @@ function web3ContractMock() {
 describe('ChannelsService', () => {
   const clock = getFakeClock()
   const registry = getTestRegistry({
-    Web3: getMockWeb3(),
-    GasEstimateDao: new MockGasEstimateDao()
+    Config: getTestConfig({ logLevel }),
+    GasEstimateDao: new MockGasEstimateDao(),
+    Web3: getMockWeb3(defaultConfig),
   })
 
   const channelsDao: PostgresChannelsDao = registry.get('ChannelsDao')
@@ -190,7 +193,9 @@ describe('ChannelsService', () => {
     })
 
     const timeout = Math.floor(Date.now() / 1000) + 5 * 60
-    await service.doRequestDeposit(chan.state.user, weiDeposit, toBN(0), mkSig())
+    await service.doRequestDeposit(
+      chan.state.user, weiDeposit, toBN(0), mkSig()
+    )
     const {updates: syncUpdates} = await service.getChannelAndThreadUpdatesForSync(
       chan.state.user,
       0,
@@ -202,6 +207,7 @@ describe('ChannelsService', () => {
       (latestState.update as UpdateRequest).reason,
       'ProposePendingDeposit' as ChannelUpdateReason,
     )
+    
     const pendingDepositTokenHub = config.channelBeiDeposit.sub(
       chan.state.balanceTokenHub,
     )
@@ -480,7 +486,7 @@ describe('ChannelsService', () => {
     )
 
     // target should be:
-    // num tippers * threadBeiLimit * max collat multiple - bal token hub
+    // num tippers * beiMin * max collat multiple - bal token hub
     const collateralizationTarget = toBN(5)
       .mul(config.beiMinCollateralization)
       // .mul(config.maxCollateralizationMultiple)
@@ -561,7 +567,7 @@ describe('ChannelsService', () => {
     )
 
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: toWei(149).toString()
+      pendingDepositTokenHub: toWei(150).toString()
     })
   })
 
@@ -772,7 +778,7 @@ describe('ChannelsService', () => {
       },
 
       {
-        targetTokenHub: '69000000000000000000',
+        targetTokenHub: '70000000000000000000',
         targetTokenUser: '9000000000000000000',
         targetWeiUser: '7000000000000000000',
         tokensToSell: '1000000000000000000',
@@ -783,8 +789,9 @@ describe('ChannelsService', () => {
   it('does not check when NO_CHECK is used', async () => {
     const registry = getTestRegistry({
       Config: getTestConfig({
-        shouldCollateralizeUrl: 'NO_CHECK',
         isDev: false,
+        logLevel,
+        shouldCollateralizeUrl: 'NO_CHECK',
       }),
     })
     const service: ChannelsService = registry.get('ChannelsService')
@@ -811,8 +818,7 @@ describe('ChannelsService', () => {
 
     await service.doUpdates(chan.user, [{
       args: {
-        previousValidTxCount: chan.state.txCountGlobal,
-        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        invalidTxCount: chan.state.txCountGlobal + 1,
         reason: 'CU_INVALID_ERROR',
       } as InvalidationArgs,
       reason: 'Invalidation',
@@ -830,8 +836,9 @@ describe('ChannelsService', () => {
 
   it('allows invalidation and marks a new onchain tx as failed', async () => {
     const registry = getTestRegistry({
+      Config: getTestConfig({ logLevel }),
       Web3: {
-        ...getMockWeb3(),
+        ...getMockWeb3(defaultConfig),
         eth: {
           sign: async () => {
             return
@@ -853,7 +860,7 @@ describe('ChannelsService', () => {
             }
           },
           sendSignedTransaction: () => {
-            console.log(`Called mocked web3 function sendSignedTransaction`)
+            log.info(`Called mocked web3 function sendSignedTransaction`)
             return {
               on: (input, cb) => {
                 switch (input) {
@@ -864,7 +871,7 @@ describe('ChannelsService', () => {
             }
           },
           sendTransaction: function () {
-            console.log(`Called mocked web3 function sendTransaction`)
+            log.info(`Called mocked web3 function sendTransaction`)
             return this.sendSignedTransaction()
           },
           getBlock: async () => {
@@ -895,8 +902,7 @@ describe('ChannelsService', () => {
 
     await service.doUpdates(chan.user, [{
       args: {
-        previousValidTxCount: chan.state.txCountGlobal,
-        lastInvalidTxCount: chan.state.txCountGlobal + 1,
+        invalidTxCount: chan.state.txCountGlobal + 1,
         reason: 'CU_INVALID_ERROR',
       } as InvalidationArgs,
       reason: 'Invalidation',
@@ -1016,20 +1022,16 @@ describe('ChannelsService', () => {
     let channel = await channelUpdateFactory(registry)
     channel = await channelUpdateFactory(registry, {
       balanceToken: [100, 175],
-      txCountGlobal: channel.state.txCountGlobal + 1
-    })
-    channel = await channelUpdateFactory(registry, {
-      ...channel.state,
-      pendingDepositToken: [1, 2],
-      pendingDepositWei: [3, 4],
-      pendingWithdrawalToken: [5, 6],
-      pendingWithdrawalWei: [7, 8],
-      txCountGlobal: channel.state.txCountGlobal + 1
-    })
-    channel = await channelUpdateFactory(registry, {
-      ...channel.state,
       txCountGlobal: channel.state.txCountGlobal + 1,
-      sigUser: null
+    })
+    channel = await channelUpdateFactory(registry, {
+      ...channel.state,
+      balanceWei: [0, 2],
+      balanceToken: [100, 0],
+      pendingWithdrawalWei: [1, 4],
+      pendingWithdrawalToken: [100, 75],
+      txCountChain: channel.state.txCountChain + 1,
+      txCountGlobal: channel.state.txCountGlobal + 1
     })
     channel = await channelUpdateFactory(registry, {
       ...channel.state,
@@ -1041,17 +1043,26 @@ describe('ChannelsService', () => {
       reason: 'Invalidation',
       args: {
         reason: 'CU_INVALID_TIMEOUT',
-        previousValidTxCount: 2,
-        lastInvalidTxCount: 5
+        invalidTxCount: 3,
+        withdrawal: {
+          exchangeRate: '25',
+          targetTokenHub: '100',
+          targetTokenUser: '0',
+          targetWeiHub: '0',
+          targetWeiUser: '2',
+          timeout: 6969,
+          weiToSell: '0',
+          tokensToSell: '100',
+          additionalTokenHubToUser: '0',
+          additionalWeiHubToUser: '0'
+        }
       } as InvalidationArgs,
       txCount: channel.state.txCountGlobal + 1,
       sigUser: mkSig('0xa')
     }])
 
-    for (const txCount of [3, 4, 5]) {
-      const update = await channelsDao.getChannelUpdateByTxCount(channel.user, txCount)
-      assert.equal(update.invalid, 'CU_INVALID_TIMEOUT')
-    }
+    const update = await channelsDao.getChannelUpdateByTxCount(channel.user, 3)
+    assert.equal(update.invalid, 'CU_INVALID_TIMEOUT')
 
     let chan = await channelsDao.getChannelByUser(channel.user)
     assertChannelStateEqual(
@@ -1061,6 +1072,7 @@ describe('ChannelsService', () => {
         pendingDepositWei: [0, 0],
         pendingWithdrawalToken: [0, 0],
         pendingWithdrawalWei: [0, 0],
+        txCountChain: channel.state.txCountChain - 1,
         txCountGlobal: channel.state.txCountGlobal + 1,
         sigHub: fakeSig
       }
@@ -1077,8 +1089,7 @@ describe('ChannelsService', () => {
       reason: 'Invalidation',
       args: {
         reason: 'CU_INVALID_TIMEOUT',
-        previousValidTxCount: 0,
-        lastInvalidTxCount: 1
+        invalidTxCount: 1
       } as InvalidationArgs,
       txCount: channel.state.txCountGlobal + 1,
       sigUser: mkSig('0xa')
@@ -1108,9 +1119,9 @@ describe('ChannelsService', () => {
     })
 
     const invalidationArgs: InvalidationArgs = {
-      lastInvalidTxCount: channel.state.txCountGlobal,
-      previousValidTxCount: channel.state.txCountGlobal - 1,
-      reason: 'CU_INVALID_ERROR'
+      invalidTxCount: channel.state.txCountGlobal,
+      reason: 'CU_INVALID_ERROR',
+      withdrawal: null,
     }
 
     await service.doUpdates(channel.user, [{
@@ -1138,9 +1149,9 @@ describe('ChannelsService', () => {
     await clock.awaitTicks(2000)
 
     const invalidationArgs: InvalidationArgs = {
-      lastInvalidTxCount: channel.state.txCountGlobal,
-      previousValidTxCount: channel.state.txCountGlobal - 1,
-      reason: 'CU_INVALID_ERROR'
+      invalidTxCount: channel.state.txCountGlobal,
+      reason: 'CU_INVALID_ERROR',
+      withdrawal: null,
     }
 
     await service.doUpdates(channel.user, [{
@@ -1164,100 +1175,45 @@ describe('ChannelsService', () => {
     const threadUpdates = sync.updates.filter(update => update.type === 'thread')
     assert.deepEqual(threadUpdates, [])
   })
-})
 
-describe('ChannelsService.shouldCollateralize', () => {
-  const registry = getTestRegistry({
-    Config: getTestConfig({
-      shouldCollateralizeUrl: 'https://example.com/should-collateralize/',
-      isDev: false,
-    }),
-  })
-
-  const service: ChannelsService = registry.get('ChannelsService')
-  const redis: RedisClient = registry.get('RedisClient')
-
-  parameterizedTests([
-    { name: 'works: true', shouldCollateralize: true },
-    { name: 'works: false', shouldCollateralize: false },
-    { name: 'returns false on error', shouldCollateralize: Error('uhoh') },
-  ], async t => {
-    nock('https://example.com')
-      .get(/.*/)
-      .reply(url => {
-        assert.equal(url, '/should-collateralize/0x1234')
-        if (t.shouldCollateralize instanceof Error)
-          throw t.shouldCollateralize
-        return [200, { shouldCollateralize: t.shouldCollateralize }]
-      })
-
-    await redis.flushall()
-    const res = await service.shouldCollateralize('0x1234')
-    const expected = t.shouldCollateralize instanceof Error ? false : t.shouldCollateralize
-    assert.equal(res, expected)
-  })
-
-  describe('ChannelsService-txFail', () => {
-    const clock = getFakeClock()
+  describe('shouldCollateralize', () => {
     const registry = getTestRegistry({
-      Web3: {
-        ...Web3,
-        eth: {
-          Contract: web3ContractMock,
-          sign: async () => {
-            return
-          },
-          getTransactionCount: async () => {
-            return 1
-          },
-          estimateGas: async () => {
-            return 1000
-          },
-          signTransaction: async () => {
-            return {
-              tx: {
-                hash: mkHash('0xaaa'),
-                r: mkHash('0xabc'),
-                s: mkHash('0xdef'),
-                v: '0x27',
-              },
-            }
-          },
-          sendSignedTransaction: () => {
-            console.log(`Called mocked web3 function sendSignedTransaction`)
-            return {
-              on: (input, cb) => {
-                switch (input) {
-                  case 'error':
-                    return cb('nonce too low')
-                }
-              },
-            }
-          },
-          getTransaction: async () => {
-            return {
-              hello: 'world'
-            }
-          }
-        },
-      },
-      ExchangeRateDao: new MockExchangeRateDao(),
-      GasEstimateDao: new MockGasEstimateDao(),
+      Config: getTestConfig({
+        isDev: false,
+        logLevel,
+        shouldCollateralizeUrl: 'https://example.com/should-collateralize/',
+      }),
     })
-  
+
     const service: ChannelsService = registry.get('ChannelsService')
-    const stateGenerator: connext.StateGenerator = registry.get('StateGenerator')
-    const txService: OnchainTransactionService = registry.get('OnchainTransactionService')
-    const db: DBEngine = registry.get('DBEngine')
-  
-    beforeEach(async () => {
-      await registry.clearDatabase()
+    const redis: RedisClient = registry.get('RedisClient')
+
+    parameterizedTests([
+      { name: 'works: true', shouldCollateralize: true },
+      { name: 'works: false', shouldCollateralize: false },
+      { name: 'returns false on error', shouldCollateralize: Error('uhoh') },
+    ], async t => {
+      getNock({ logLevel })('https://example.com')
+        .get(/.*/)
+        .reply(url => {
+          assert.equal(url, '/should-collateralize/0x1234')
+          if (t.shouldCollateralize instanceof Error)
+            throw t.shouldCollateralize
+          return [200, { shouldCollateralize: t.shouldCollateralize }]
+        })
+
+      await redis.flushall()
+      const res = await service.shouldCollateralize('0x1234')
+      const expected = t.shouldCollateralize instanceof Error ? false : t.shouldCollateralize
+      assert.equal(res, expected)
     })
-  
-    it('should invalidate a failing hub authorized update', async () => {
+
+    describe('txFail', () => {
+      const clock = getFakeClock()
       const registry = getTestRegistry({
+        Config: getTestConfig({ logLevel }),
         Web3: {
-          ...getMockWeb3(),
+          ...Web3,
           eth: {
             Contract: web3ContractMock,
             sign: async () => {
@@ -1280,7 +1236,7 @@ describe('ChannelsService.shouldCollateralize', () => {
               }
             },
             sendSignedTransaction: () => {
-              console.log(`Called mocked web3 function sendSignedTransaction`)
+              log.info(`Called mocked web3 function sendSignedTransaction`)
               return {
                 on: (input, cb) => {
                   switch (input) {
@@ -1291,7 +1247,9 @@ describe('ChannelsService.shouldCollateralize', () => {
               }
             },
             getTransaction: async () => {
-              return null
+              return {
+                hello: 'world'
+              }
             }
           },
         },
@@ -1303,194 +1261,250 @@ describe('ChannelsService.shouldCollateralize', () => {
       const stateGenerator: connext.StateGenerator = registry.get('StateGenerator')
       const txService: OnchainTransactionService = registry.get('OnchainTransactionService')
       const db: DBEngine = registry.get('DBEngine')
-
-      let channel = await channelUpdateFactory(registry)
-      await service.doCollateralizeIfNecessary(channel.user)
-      let { updates: sync } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
-      let latest = sync.pop()
-      assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
-  
-      await service.doUpdates(channel.user, [{
-        reason: 'ProposePendingDeposit',
-        args: connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
-        txCount: channel.state.txCountGlobal + 1,
-        sigUser: mkSig('0xc')
-      }])
-
-      await db.query(SQL`
-      UPDATE onchain_transactions_raw SET hash = ${mkHash()}
-      `)
-      await txService.poll()
-      // need to wait a long time bc the timer resets
-      await clock.awaitTicks(9553715125000)
-      await txService.poll()
-  
-      let { updates: sync2 } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
-      latest = sync2.pop()
-      assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
-      const generated = stateGenerator.invalidation(
-        connext.convert.ChannelState('bn', channel.state), 
-        {
-          lastInvalidTxCount: channel.state.txCountGlobal + 1,
-          previousValidTxCount: channel.state.txCountGlobal,
-          reason: 'CU_INVALID_ERROR'
-        }
-      )
-      assertChannelStateEqual(generated, {
-        pendingDepositToken: [0, 0],
-        pendingDepositWei: [0, 0],
-        pendingWithdrawalToken: [0, 0],
-        pendingWithdrawalWei: [0, 0],
+    
+      beforeEach(async () => {
+        await registry.clearDatabase()
       })
+    
+      it('should invalidate a failing hub authorized update', async () => {
+        const registry = getTestRegistry({
+          Config: getTestConfig({ logLevel }),
+          Web3: {
+            ...getMockWeb3(defaultConfig),
+            eth: {
+              Contract: web3ContractMock,
+              sign: async () => {
+                return
+              },
+              getTransactionCount: async () => {
+                return 1
+              },
+              estimateGas: async () => {
+                return 1000
+              },
+              signTransaction: async () => {
+                return {
+                  tx: {
+                    hash: mkHash('0xaaa'),
+                    r: mkHash('0xabc'),
+                    s: mkHash('0xdef'),
+                    v: '0x27',
+                  },
+                }
+              },
+              sendSignedTransaction: () => {
+                log.info(`Called mocked web3 function sendSignedTransaction`)
+                return {
+                  on: (input, cb) => {
+                    switch (input) {
+                      case 'error':
+                        return cb('nonce too low')
+                    }
+                  },
+                }
+              },
+              getTransaction: async () => {
+                return null
+              }
+            },
+          },
+          ExchangeRateDao: new MockExchangeRateDao(),
+          GasEstimateDao: new MockGasEstimateDao(),
+        })
+      
+        const service: ChannelsService = registry.get('ChannelsService')
+        const stateGenerator: connext.StateGenerator = registry.get('StateGenerator')
+        const txService: OnchainTransactionService = registry.get('OnchainTransactionService')
+        const db: DBEngine = registry.get('DBEngine')
+
+        let channel = await channelUpdateFactory(registry)
+        await service.doCollateralizeIfNecessary(channel.user)
+        let { updates: sync } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+        let latest = sync.pop()
+        assert.equal((latest.update as UpdateRequest).reason, 'ProposePendingDeposit')
+    
+        await service.doUpdates(channel.user, [{
+          reason: 'ProposePendingDeposit',
+          args: connext.convert.Deposit('bn', (latest.update as UpdateRequest).args as DepositArgs),
+          txCount: channel.state.txCountGlobal + 1,
+          sigUser: mkSig('0xc')
+        }])
+
+        await db.query(SQL`
+        UPDATE onchain_transactions_raw SET hash = ${mkHash()}
+        `)
+        await txService.poll()
+        // need to wait a long time bc the timer resets
+        await clock.awaitTicks(9553715125000)
+        await txService.poll()
+    
+        let { updates: sync2 } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+        latest = sync2.pop()
+        assert.equal((latest.update as UpdateRequest).reason, 'Invalidation')
+        const generated = stateGenerator.invalidation(
+          connext.convert.ChannelState('bn', channel.state), 
+          {
+            invalidTxCount: channel.state.txCountGlobal + 1,
+            reason: 'CU_INVALID_ERROR',
+            withdrawal: null,
+          }
+        )
+        assertChannelStateEqual(generated, {
+          pendingDepositToken: [0, 0],
+          pendingDepositWei: [0, 0],
+          pendingWithdrawalToken: [0, 0],
+          pendingWithdrawalWei: [0, 0],
+        })
+      })
+    
+      // TODO: make this work again
+      // it('should move a disputed channel back to open if tx fails', async () => {
+      //   const channel = await channelUpdateFactory(registry)
+      //   await service.startUnilateralExit(channel.user, 'this is a test')
+      //   // need to sleep here to let the async process fail
+      //   await sleep(20)
+    
+      //   const { status } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
+      //   assert.equal(status, 'CS_OPEN')
+      // })
     })
-  
-    // TODO: make this work again
-    // it('should move a disputed channel back to open if tx fails', async () => {
-    //   const channel = await channelUpdateFactory(registry)
-    //   await service.startUnilateralExit(channel.user, 'this is a test')
-    //   // need to sleep here to let the async process fail
-    //   await sleep(20)
-  
-    //   const { status } = await service.getChannelAndThreadUpdatesForSync(channel.user, 0, 0)
-    //   assert.equal(status, 'CS_OPEN')
-    // })
   })
-})
 
-describe('ChannelsService.calculateCollateralizationTargets', () => {
+  describe('calculateCollateralizationTargets', () => {
 
-  const registry = getTestRegistry()
-  const profileService = registry.get('PaymentProfilesService')
-  const channelsService = registry.get('ChannelsService')
-  const paymentsService = registry.get('PaymentsService')
-  const defaultConfig = registry.get('Config')
-  const clock =  getFakeClock()
+    const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
+    const profileService = registry.get('PaymentProfilesService')
+    const channelsService = registry.get('ChannelsService')
+    const paymentsService = registry.get('PaymentsService')
+    const defaultConfig = registry.get('Config')
+    const clock =  getFakeClock()
 
-  // ** helper functions
-  const createAndAssertPaymentProfile = async (c: Partial<PaymentProfileConfig>) => {
-    const configOpts = {
-      minimumMaintainedCollateralToken: "0",
-      minimumMaintainedCollateralWei: "0",
-      amountToCollateralizeToken: "0",
-      amountToCollateralizeWei: "0",
-      ...c,
+    // ** helper functions
+    const createAndAssertPaymentProfile = async (c: Partial<PaymentProfileConfig>) => {
+      const configOpts = {
+        minimumMaintainedCollateralToken: "0",
+        minimumMaintainedCollateralWei: "0",
+        amountToCollateralizeToken: "0",
+        amountToCollateralizeWei: "0",
+        ...c,
+      }
+      const profile = await profileService.doCreatePaymentProfile(configOpts)
+      const retrieved = await profileService.doGetPaymentProfileById(profile.id)
+      // ensure both equal
+      assert.deepEqual(retrieved, profile)
+      // ensure as expected
+      assert.containSubset(retrieved, configOpts)
+      return retrieved // PaymentProfileConfig
     }
-    const profile = await profileService.doCreatePaymentProfile(configOpts)
-    const retrieved = await profileService.doGetPaymentProfileById(profile.id)
-    // ensure both equal
-    assert.deepEqual(retrieved, profile)
-    // ensure as expected
-    assert.containSubset(retrieved, configOpts)
-    return retrieved // PaymentProfileConfig
-  }
 
-  const addAndAssertPaymentProfile = async (configOpts: Partial<PaymentProfileConfig>, overrides?: PartialSignedOrSuccinctChannel) => {
-    const config = await createAndAssertPaymentProfile(configOpts)
-    const channel = await channelUpdateFactory(registry, overrides)
-    // verify all config entries
-    await profileService.doAddProfileKey(config.id, [channel.user])
-    const retrieved = await profileService.doGetPaymentProfileByUser(channel.user)
-    assert.containSubset(config, retrieved)
-    return { channel, config }
-  }
-const assertCollateral = async (user: string, collateralizationAmount = toBN(0), expected?: Partial<DepositArgs>) => {
-    // calculate collateral deposit args
-    const collateral = await channelsService.getCollateralDepositArgs(user, collateralizationAmount)
-    if (!expected) {
-      assert.isNull(collateral)
-      return
+    const addAndAssertPaymentProfile = async (configOpts: Partial<PaymentProfileConfig>, overrides?: PartialSignedOrSuccinctChannel) => {
+      const config = await createAndAssertPaymentProfile(configOpts)
+      const channel = await channelUpdateFactory(registry, overrides)
+      // verify all config entries
+      await profileService.doAddProfileKey(config.id, [channel.user])
+      const retrieved = await profileService.doGetPaymentProfileByUser(channel.user)
+      assert.containSubset(config, retrieved)
+      return { channel, config }
     }
-    assert.containSubset(collateral, {
-      depositWeiHub: '0',
-      depositWeiUser: '0',
-      depositTokenHub: '0',
-      depositTokenUser: '0',
-      timeout: 0,
-      sigUser: null,
-      ...expected
-    })
-  }
-
-  const assertTipUser = async (recipient: string, tipAmount = toWei(10).toString(), numberOfTippers = 1) => {
-    for (let i = 0; i < numberOfTippers; i++) {
-      const user = mkAddress('0x' + Math.floor((Math.random() * 100000)))
-      const channel = await channelUpdateFactory(registry, {
-        balanceTokenUser: tipAmount,
-        user,
+  const assertCollateral = async (user: string, collateralizationAmount = toBN(0), expected?: Partial<DepositArgs>) => {
+      // calculate collateral deposit args
+      const collateral = await channelsService.getCollateralDepositArgs(user, collateralizationAmount)
+      if (!expected) {
+        assert.isNull(collateral)
+        return
+      }
+      assert.containSubset(collateral, {
+        depositWeiHub: '0',
+        depositWeiUser: '0',
+        depositTokenHub: '0',
+        depositTokenUser: '0',
+        timeout: 0,
+        sigUser: null,
+        ...expected
       })
-      // simulate payment
-      await paymentsService.doPurchase(user, {}, [{
-        recipient,
-        meta: {},
-        amount: {
-          amountToken: tipAmount,
-          amountWei: '0'
-        },
-        type: 'PT_OPTIMISTIC',
-        update: {
-          args: {
+    }
+
+    const assertTipUser = async (recipient: string, tipAmount = toWei(10).toString(), numberOfTippers = 1) => {
+      for (let i = 0; i < numberOfTippers; i++) {
+        const user = mkAddress('0x' + Math.floor((Math.random() * 100000)))
+        const channel = await channelUpdateFactory(registry, {
+          balanceTokenUser: tipAmount,
+          user,
+        })
+        // simulate payment
+        await paymentsService.doPurchase(user, {}, [{
+          recipient,
+          meta: {},
+          amount: {
             amountToken: tipAmount,
-            amountWei: '0',
-            recipient: 'hub'
-          } as PaymentArgs,
-          reason: 'Payment',
-          txCount: channel.update.state.txCountGlobal + 1
-        }
-      }])
-      // assert payment was successful for tipper
-      const updatedChan = await channelsService.getChannel(user)
-      assert.equal(updatedChan.state.balanceTokenUser, "0")
-      // wait for redis state to expire
-      await clock.awaitTicks(65 * 1000)
+            amountWei: '0'
+          },
+          type: 'PT_OPTIMISTIC',
+          update: {
+            args: {
+              amountToken: tipAmount,
+              amountWei: '0',
+              recipient: 'hub'
+            } as PaymentArgs,
+            reason: 'Payment',
+            txCount: channel.update.state.txCountGlobal + 1
+          }
+        }])
+        // assert payment was successful for tipper
+        const updatedChan = await channelsService.getChannel(user)
+        assert.equal(updatedChan.state.balanceTokenUser, "0")
+        // wait for redis state to expire
+        await clock.awaitTicks(65 * 1000)
+      }
     }
-  }
 
-  beforeEach(async () => {
-    await registry.clearDatabase()
+    beforeEach(async () => {
+      await registry.clearDatabase()
+    })
+
+    it("should respect payment profile settings if they are defined", async () => {
+      // insert config
+      const { config, channel } = await addAndAssertPaymentProfile({
+        minimumMaintainedCollateralToken: toWei(200).toString(), 
+        amountToCollateralizeToken: toWei(400).toString(),
+      })
+      await assertCollateral(channel.user, null, {
+        depositTokenHub: config.amountToCollateralizeToken
+      })
+    })
+
+    it("should not collateralize if it has sufficient tokens, profile defined", async () => {
+      // insert config
+      const { config, channel } = await addAndAssertPaymentProfile({
+        minimumMaintainedCollateralToken: toWei(200).toString(), 
+        amountToCollateralizeToken: toWei(400).toString(),
+      }, {
+        balanceTokenHub: toWei(200).toString()
+      })
+      await assertCollateral(channel.user)
+    })
+
+    it("should respect config if there is no payment profile defined and deposit min", async () => {
+      // insert channel
+      const channel = await channelUpdateFactory(registry)
+      await assertCollateral(channel.user, toBN(0), {
+        depositTokenHub: defaultConfig.beiMinCollateralization.toString()
+      })
+    })
+
+    it("should respect config if there is no payment profile defined and deposit max", async () => {
+      // insert channel
+      const channel = await channelUpdateFactory(registry)
+      await assertCollateral(channel.user, toBN(0), {
+        depositTokenHub: defaultConfig.beiMinCollateralization.toString()
+      })
+      // perform tip to send colltateral over edge
+      await assertTipUser(channel.user, toWei(180).toString())
+
+      // make sure the collateral is at max in tippers channel  
+      await assertCollateral(channel.user, toWei(180), {
+        depositTokenHub: defaultConfig.beiMaxCollateralization.toString()
+      })
+    }).timeout(5000)
   })
-
-  it("should respect payment profile settings if they are defined", async () => {
-    // insert config
-    const { config, channel } = await addAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWei(200).toString(), 
-      amountToCollateralizeToken: toWei(400).toString(),
-    })
-    await assertCollateral(channel.user, null, {
-      depositTokenHub: config.amountToCollateralizeToken
-    })
-  })
-
-  it("should not collateralize if it has sufficient tokens, profile defined", async () => {
-    // insert config
-    const { config, channel } = await addAndAssertPaymentProfile({
-      minimumMaintainedCollateralToken: toWei(200).toString(), 
-      amountToCollateralizeToken: toWei(400).toString(),
-    }, {
-      balanceTokenHub: toWei(200).toString()
-    })
-    await assertCollateral(channel.user)
-  })
-
-  it("should respect config if there is no payment profile defined and deposit min", async () => {
-    // insert channel
-    const channel = await channelUpdateFactory(registry)
-    await assertCollateral(channel.user, toBN(0), {
-      depositTokenHub: defaultConfig.beiMinCollateralization.toString()
-    })
-  })
-
-  it("should respect config if there is no payment profile defined and deposit max", async () => {
-    // insert channel
-    const channel = await channelUpdateFactory(registry)
-    await assertCollateral(channel.user, toBN(0), {
-      depositTokenHub: defaultConfig.beiMinCollateralization.toString()
-    })
-    // perform tip to send colltateral over edge
-    await assertTipUser(channel.user, toWei(180).toString())
-
-    // make sure the collateral is at max in tippers channel  
-    await assertCollateral(channel.user, toWei(180), {
-      depositTokenHub: defaultConfig.beiMaxCollateralization.toString()
-    })
-  }).timeout(5000)
 })

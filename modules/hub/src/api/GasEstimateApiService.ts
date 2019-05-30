@@ -1,37 +1,35 @@
+import { Config } from '../Config'
+import GasEstimateDao from '../dao/GasEstimateDao'
+import { Logger } from '../util'
+
 import { ApiService, Request, Response } from './ApiService'
 
-import GasEstimateDao from '../dao/GasEstimateDao'
-import log from '../util/log'
-
-const LOG = log('GasEstimateApiService')
+const getLog = (config: Config): Logger => new Logger('GasEstimateApiService', config.logLevel)
 
 export default class GasEstimateApiService extends ApiService<GasEstimateApiHandler> {
-  namespace = 'gasPrice'
-  routes = {
+  public namespace: string = 'gasPrice'
+  public routes: any = {
     'GET /estimate': 'doEstimate',
   }
-
-  dependencies = {
-    'dao': 'GasEstimateDao',
+  public dependencies: any = {
+    config: 'Config',
+    dao: 'GasEstimateDao',
   }
-
-  handler = GasEstimateApiHandler
+  public handler: any = GasEstimateApiHandler
 }
 
-
 class GasEstimateApiHandler {
-  dao: GasEstimateDao
+  private dao: GasEstimateDao
+  private config: Config
 
-  async doEstimate(req: Request, res: Response) {
+  public async doEstimate(req: Request, res: Response): Promise<void> {
     try {
-      let latest = await this.dao.latest()
+      const latest = await this.dao.latest()
       res.send({
-        gasPrice: latest ? latest.fast : null,
+        gasPrice: latest ? latest.fast : undefined,
       })
     } catch (err) {
-      LOG.error('Failed to fetch latest gas price: {err}', {
-        err
-      })
+      getLog(this.config).error(`Failed to fetch latest gas price: ${err}`)
       res.sendStatus(500)
     }
   }

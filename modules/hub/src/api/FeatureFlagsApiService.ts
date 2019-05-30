@@ -1,11 +1,12 @@
 import * as express from 'express'
 
+import { Config } from '../Config'
 import FeatureFlagsDao, { DEFAULT_FLAGS } from '../dao/FeatureFlagsDao'
-import log from '../util/log'
+import { Logger } from '../util'
 
 import { ApiService, Router } from './ApiService'
 
-const LOG = log('FeatureFlagsApiService')
+const getLog = (config: Config): Logger => new Logger('FeatureFlagsApiService', config.logLevel)
 
 export default class FeatureFlagsApiService extends ApiService<FeatureFlagsApiHandler> {
   public namespace: string = 'featureflags'
@@ -14,12 +15,14 @@ export default class FeatureFlagsApiService extends ApiService<FeatureFlagsApiHa
   }
   public handler: any = FeatureFlagsApiHandler
   public dependencies: any = {
-    'flagsDao': 'FeatureFlagsDao',
+    config: 'Config',
+    flagsDao: 'FeatureFlagsDao',
   }
 }
 
 class FeatureFlagsApiHandler {
-  public flagsDao: FeatureFlagsDao
+  private flagsDao: FeatureFlagsDao
+  private config: Config
 
   public async doFeatureFlags (req: express.Request, res: express.Response): Promise<void> {
     let flags
@@ -27,7 +30,7 @@ class FeatureFlagsApiHandler {
     try {
       flags = await this.flagsDao.flagsFor(req.address)
     } catch (err) {
-      LOG.error(`Caught error getting feature flags: ${err}`)
+      getLog(this.config).error(`Caught error getting feature flags: ${err}`)
 
       flags = DEFAULT_FLAGS
     }

@@ -5,7 +5,7 @@ import {
   ThreadStateBN,
 } from 'connext/types'
 
-import { assert, getTestRegistry, TestServiceRegistry } from './testing'
+import { assert, getTestConfig, getTestRegistry, TestServiceRegistry } from './testing'
 import {
   assertChannelStateEqual,
   assertThreadStateEqual,
@@ -16,6 +16,7 @@ import {
 } from './testing/stateUtils'
 import { toBN } from './util'
 
+const logLevel = 0
 const fakeSig = mkSig('0xfff')
 
 describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
@@ -28,13 +29,8 @@ describe.skip('ThreadsService', () => { // TODO REB-35: enable threads
 
   before(() => {
     registry = getTestRegistry({
-      Web3: {
-        eth: {
-          sign: async () => {
-            return fakeSig
-          }
-        }
-      }
+      Config: getTestConfig({ logLevel }),
+      Web3: { eth: { sign: async (): Promise<any> => fakeSig } },
     })
 
     gsd = registry.get('GlobalSettingsDao')

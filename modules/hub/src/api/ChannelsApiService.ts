@@ -2,109 +2,101 @@ import * as connext from 'connext'
 import { UpdateRequest } from 'connext/types'
 import * as express from 'express'
 
-import { ApiService } from './ApiService'
-
 import ChannelsService from '../ChannelsService'
 import { default as Config } from '../Config'
 import { default as ChannelsDao } from '../dao/ChannelsDao'
-import { BN, prettySafeJson, toBN } from '../util'
-import log from '../util/log'
+import { BN, Logger, prettySafeJson, toBN } from '../util'
 import { getUserFromRequest } from '../util/request'
 
-const LOG = log('ChannelsApiService')
+import { ApiService } from './ApiService'
+
+const getLog = (config: Config): Logger => new Logger('ChannelsApiService', config.logLevel)
 
 export default class ChannelsApiService extends ApiService<ChannelsApiServiceHandler> {
-  namespace = 'channel'
-  routes = {
-    'POST /:user/request-deposit': 'doRequestDeposit',
+  public namespace: string = 'channel'
+  public routes: any = {
+    'GET /:user': 'doGetChannelByUser',
+    'GET /:user/debug': 'doGetChannelDebug',
+    'GET /:user/latest-no-pending': 'doGetLastStateNoPendingOps',
+    'GET /:user/latest-update': 'doGetLatestDoubleSignedState',
+    'GET /:user/sync': 'doSync', // params: lastChanTx=1&lastThreadUpdateId=2
     'POST /:user/request-collateralization': 'doRequestCollateral',
-    'POST /:user/update': 'doUpdate',
+    'POST /:user/request-deposit': 'doRequestDeposit',
     'POST /:user/request-exchange': 'doRequestExchange',
     'POST /:user/request-withdrawal': 'doRequestWithdrawal',
-    'GET /:user/sync': 'doSync', // params: lastChanTx=1&lastThreadUpdateId=2
-    'GET /:user/debug': 'doGetChannelDebug',
-    'GET /:user': 'doGetChannelByUser',
-    'GET /:user/latest-update': 'doGetLatestDoubleSignedState',
-    'GET /:user/latest-no-pending': 'doGetLastStateNoPendingOps',
+    'POST /:user/update': 'doUpdate',
   }
-  handler = ChannelsApiServiceHandler
-  dependencies = {
+  public handler: any = ChannelsApiServiceHandler
+  public dependencies: any = {
     channelsService: 'ChannelsService',
-    dao: 'ChannelsDao',
     config: 'Config',
+    dao: 'ChannelsDao',
   }
 }
 
 export class ChannelsApiServiceHandler {
-  channelsService: ChannelsService
-  dao: ChannelsDao
-  config: Config
+  public channelsService: ChannelsService
+  public dao: ChannelsDao
+  public config: Config
 
-  async doUpdate(req: express.Request, res: express.Response) {
+  public async doUpdate(req: express.Request, res: express.Response): Promise<any> {
     const user = getUserFromRequest(req)
     const { updates, lastThreadUpdateId } = req.body as {
       updates: UpdateRequest[]
-      lastThreadUpdateId: number
+      lastThreadUpdateId: number,
     }
     if (!updates || !user || !Number.isInteger(lastThreadUpdateId)) {
-      LOG.warn(
-        'Received invalid update state request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Received invalid update state request. Aborting. ` +
+        `Body received: ${JSON.stringify(req.body)}, ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     if (!updates.length) {
       res.send({
-        error: null,
-        updates: [],
+        error: undefined,
         msg: 'Did not recieve any updates.',
+        updates: [],
       })
       return
     }
-
     const sortedUpdates = updates
       .concat()
-      .sort((a, b) => a.txCount - b.txCount)
-
-    let err = null
-
+      .sort((a: any, b: any): number => a.txCount - b.txCount)
+    let err
     try {
       await this.channelsService.doUpdates(user, sortedUpdates)
     } catch (e) {
-      LOG.error(`Error in doUpdate('${user}', ${prettySafeJson(updates)}): ${e}\n${e.stack}`)
+      getLog(this.config).error(
+        `Error in doUpdate('${user}', ${prettySafeJson(updates)}): ${e}\n${e.stack}`)
       err = e
     }
-
     const syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
       sortedUpdates[0].txCount - 1,
       lastThreadUpdateId,
     )
-
     res.send({
-      error: err ? '' + err + (!this.config.isProduction ? '\n' + err.stack : '') : null,
+      error: err ? `${err}${!this.config.isProduction ? `\n${err.stack}` : ''}` : undefined,
       updates: syncUpdates,
     })
   }
 
-  async doRequestDeposit(req: express.Request, res: express.Response) {
+  public async doRequestDeposit(req: express.Request, res: express.Response): Promise<void> {
     const user = getUserFromRequest(req)
-    let { depositWei, depositToken, lastChanTx, lastThreadUpdateId, sigUser } = req.body
-    if (!depositWei || !depositToken || !user || !sigUser || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)) {
-      LOG.warn(
-        'Received invalid user deposit request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+    const { depositWei, depositToken, lastChanTx, lastThreadUpdateId, sigUser } = req.body
+    if (
+      !depositWei || !depositToken || !user || !sigUser
+      || !Number.isInteger(lastChanTx) || !Number.isInteger(lastThreadUpdateId)
+    ) {
+      getLog(this.config).warn(
+        `Received invalid user deposit request. Aborting. ` +
+        `Body received: ${JSON.stringify(req.body)}, ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     const err = await this.channelsService.doRequestDeposit(
       user,
       toBN(depositWei),
@@ -116,7 +108,6 @@ export class ChannelsApiServiceHandler {
       res.send({ error: err })
       return
     }
-
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
       lastChanTx,
@@ -125,22 +116,17 @@ export class ChannelsApiServiceHandler {
     res.send(updates)
   }
 
-  async doRequestCollateral(req: express.Request, res: express.Response) {
+  public async doRequestCollateral(req: express.Request, res: express.Response): Promise<void> {
     const { user } = req.params
     const { lastChanTx } = req.body
-
-
     if (!user) {
-      LOG.warn(
-        'Received invalid collateral request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Received invalid collateral request. Aborting. ` +
+        `Body received: ${JSON.stringify(req.body)}, ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     await this.channelsService.doCollateralizeIfNecessary(user)
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
@@ -150,22 +136,17 @@ export class ChannelsApiServiceHandler {
     res.send(updates)
   }
 
-  async doRequestExchange(req: express.Request, res: express.Response) {
+  public async doRequestExchange(req: express.Request, res: express.Response): Promise<void> {
     const { user } = req.params
-    let { weiToSell, tokensToSell, lastChanTx } = req.body
-
-
+    const { weiToSell, tokensToSell, lastChanTx } = req.body
     if (!user || !weiToSell || !tokensToSell) {
-      LOG.warn(
-        'Received invalid exchange request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Received invalid exchange request. Aborting. ` +
+        `Body received: ${JSON.stringify(req.body)}, ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     await this.channelsService.doRequestExchange(
       user,
       toBN(weiToSell),
@@ -179,33 +160,32 @@ export class ChannelsApiServiceHandler {
     res.send(updates)
   }
 
-  async doRequestWithdrawal(req: express.Request, res: express.Response) {
+  public async doRequestWithdrawal(req: express.Request, res: express.Response): Promise<void> {
     const { user } = req.params
-    const { tokensToSell, weiToSell, recipient, withdrawalWeiUser, withdrawalTokenUser, lastChanTx, exchangeRate } = req.body
-
+    const {
+      tokensToSell, weiToSell, recipient, withdrawalWeiUser,
+      withdrawalTokenUser, lastChanTx, exchangeRate,
+    } = req.body
     if (
-      !user || 
+      !user ||
       !recipient ||
-      !Number.isInteger(parseInt(withdrawalWeiUser)) || 
-      !Number.isInteger(parseInt(tokensToSell)) ||
+      !Number.isInteger(parseInt(withdrawalWeiUser, 10)) ||
+      !Number.isInteger(parseInt(tokensToSell, 10)) ||
       // TODO: token withdrawals
-      // !Number.isInteger(parseInt(weiToSell)) || 
+      // !Number.isInteger(parseInt(weiToSell)) ||
       // !Number.isInteger(parseInt(withdrawalTokenUser)) ||
       !exchangeRate
     ) {
-      LOG.warn(
-        'Received invalid withdrawal request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Received invalid withdrawal request. Aborting. ` +
+        `Body received: ${JSON.stringify(req.body)}, ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     await this.channelsService.doRequestWithdrawal(
       user,
-      connext.convert.WithdrawalParameters("bn", req.body)
+      connext.convert.WithdrawalParameters('bn', req.body),
     )
     const updates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
@@ -215,98 +195,88 @@ export class ChannelsApiServiceHandler {
     res.send(updates)
   }
 
-  async doSync(req: express.Request, res: express.Response) {
-    let { lastChanTx, lastThreadUpdateId } = req.query
-    let { user } = req.params
-
+  public async doSync(req: express.Request, res: express.Response): Promise<void> {
+    const { lastChanTx, lastThreadUpdateId } = req.query
+    const { user } = req.params
     if (
       !user ||
-      !Number.isInteger(parseInt(lastChanTx)) ||
-      !Number.isInteger(parseInt(lastThreadUpdateId))
+      !Number.isInteger(parseInt(lastChanTx, 10)) ||
+      !Number.isInteger(parseInt(lastThreadUpdateId, 10))
     ) {
-      LOG.warn(
-        'Received invalid sync request. Aborting. Params received: {params}, Query received: {query}',
-        {
-          params: JSON.stringify(req.params),
-          query: JSON.stringify(req.query),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Received invalid sync request. Aborting. ` +
+        `Params received: ${JSON.stringify(req.params)}, ` +
+        `Query received: ${JSON.stringify(req.query)}`)
+      res.sendStatus(400)
+      return
     }
-
-    let syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
+    const syncUpdates = await this.channelsService.getChannelAndThreadUpdatesForSync(
       user,
-      parseInt(lastChanTx),
-      parseInt(lastThreadUpdateId),
+      parseInt(lastChanTx, 10),
+      parseInt(lastThreadUpdateId, 10),
     )
-
     res.send(syncUpdates)
   }
 
-  async doGetChannelByUser(req: express.Request, res: express.Response) {
+  public async doGetChannelByUser(req: express.Request, res: express.Response): Promise<void> {
     // const user = getUserFromRequest(req)
     const { user } = req.params
     // TODO: we get the user from the params like this in other places,
     // but does not seem to check the auth?
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get channel request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Receiver invalid get channel request. Aborting. ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     const channel = await this.channelsService.getChannel(user)
     if (!channel) {
-      return res.sendStatus(404)
+      res.sendStatus(404)
+      return
     }
-
     res.send(channel)
   }
 
-  async doGetLastStateNoPendingOps(req: express.Request, res: express.Response) {
+  public async doGetLastStateNoPendingOps(
+    req: express.Request, res: express.Response,
+  ): Promise<void> {
     const user = getUserFromRequest(req)
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get channel request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Receiver invalid get channel request. Aborting. ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     const channel = await this.channelsService.getLastStateNoPendingOps(user)
     if (!channel) {
-      return res.sendStatus(404)
+      res.sendStatus(404)
+      return
     }
-
     res.send(channel.state)
   }
 
-  async doGetLatestDoubleSignedState(req: express.Request, res: express.Response) {
+  public async doGetLatestDoubleSignedState(
+    req: express.Request, res: express.Response,
+  ): Promise<void> {
     const user = getUserFromRequest(req)
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get channel request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(
+        `Receiver invalid get channel request. Aborting. ` +
+        `Params received: ${JSON.stringify(req.params)}`)
+      res.sendStatus(400)
+      return
     }
-
     const channel = await this.channelsService.getLatestDoubleSignedState(user)
     if (!channel) {
-      return res.sendStatus(404)
+      res.sendStatus(404)
+      return
     }
-
     res.send(channel)
   }
 
-  async doGetChannelDebug(req: express.Request, res: express.Response) {
+  public async doGetChannelDebug(req: express.Request, res: express.Response): Promise<void> {
     const user = getUserFromRequest(req)
     const channel = await this.dao.getChannelOrInitialState(user)
     const { updates: recentUpdates } = await this.channelsService.getChannelAndThreadUpdatesForSync(
@@ -319,4 +289,5 @@ export class ChannelsApiServiceHandler {
       recentUpdates: recentUpdates.reverse(),
     })
   }
+
 }

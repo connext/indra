@@ -13,25 +13,18 @@ import ChannelsDao from './dao/ChannelsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import ThreadsDao from './dao/ThreadsDao'
 import { SignerService } from './SignerService'
-import { prettySafeJson } from './util'
-import log from './util/log'
-
-const LOG = log('ThreadsService')
+import { Logger, prettySafeJson } from './util'
 
 export default class ThreadsService {
   private signerService: SignerService
-
   private channelsDao: ChannelsDao
-
   private threadsDao: ThreadsDao
-
   private validator: connext.Validator
-
   private config: Config
-
   private globalSettings: GlobalSettingsDao
+  private log: Logger
 
-  constructor(
+  public constructor(
     signerService: SignerService,
     channelsDao: ChannelsDao,
     threadsDao: ThreadsDao,
@@ -45,6 +38,7 @@ export default class ThreadsService {
     this.validator = validator
     this.config = config
     this.globalSettings = globalSettings
+    this.log = new Logger('ThreadsService', this.config.logLevel)
   }
 
   // this function is not directly called from the API, it is called from within
@@ -53,7 +47,7 @@ export default class ThreadsService {
   // TODO: might be able to remove some of this validation
   public async open(
     thread: ThreadStateBN,
-    sigUserChannel: string
+    sigUserChannel: string,
   ): Promise<ChannelStateUpdateRowBN> {
     await this.ensureEnabled()
 
@@ -65,7 +59,7 @@ export default class ThreadsService {
     const existing = await this.threadsDao.getActiveThread(thread.sender, thread.receiver)
     if (existing) {
       throw new Error(
-        `Thread exists already: ${JSON.stringify(existing, null, 2)}`
+        `Thread exists already: ${JSON.stringify(existing, null, 2)}`,
       )
     }
 
@@ -73,23 +67,13 @@ export default class ThreadsService {
     const channelSender = await this.channelsDao.getChannelByUser(thread.sender)
     if (!channelSender || channelSender.status !== ('CS_OPEN' as any)) {
       throw new Error(
-        `ChannelSender invalid, channelSender: ${JSON.stringify(
-          channelSender,
-          null,
-          2
-        )}`
-      )
+        `ChannelSender invalid, channelSender: ${JSON.stringify(channelSender, null, 2)}`)
     }
 
     const channelReceiver = await this.channelsDao.getChannelByUser(thread.receiver)
     if (!channelReceiver || channelReceiver.status !== ('CS_OPEN' as any)) {
       throw new Error(
-        `ChannelReceiver invalid, channelReceiver: ${JSON.stringify(
-          channelReceiver,
-          null,
-          2
-        )}`
-      )
+        `ChannelReceiver invalid, channelReceiver: ${JSON.stringify(channelReceiver, null, 2)}`)
     }
 
     const channelSenderState = channelSender.state
@@ -99,19 +83,17 @@ export default class ThreadsService {
       channelSenderState.balanceWeiUser.lt(thread.balanceWeiSender) ||
       channelSenderState.balanceTokenUser.lt(thread.balanceTokenSender)
     ) {
-      LOG.error(
-        `channelSenderState: ${JSON.stringify(channelSenderState, null, 2)}`
-      )
+      this.log.error(
+        `channelSenderState: ${JSON.stringify(channelSenderState, null, 2)}`)
       throw new Error(
-        'Sender channel does not have enough balance to open thread, please deposit into the channel'
-      )
+        'Sender channel does not have enough balance to open thread, please deposit into the channel')
     }
 
     if (
       channelReceiverState.balanceWeiHub.lt(thread.balanceWeiSender) ||
       channelReceiverState.balanceTokenHub.lt(thread.balanceTokenSender)
     ) {
-      LOG.info(
+      this.log.info(
         `Hub collateral too low, channelReceiverState: ${prettySafeJson(channelReceiverState)}, thread: ${prettySafeJson(thread)},
         hub deposit must be completed before thread can be opened`
       )
@@ -347,7 +329,7 @@ export default class ThreadsService {
 
   async ensureEnabled() {
     // const enabled = (await this.globalSettings.toggleThreadsEnabled(true))
-    // LOG.debug('&&&&& enabled:', enabled)
+    // this.log.debug('&&&&& enabled:', enabled)
     // if (!enabled) {
     //   throw new Error('Threads are disabled.')
     // }

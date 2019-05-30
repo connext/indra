@@ -1,15 +1,13 @@
-import { mkAddress } from '../testing'
-import { MockConnextInternal, MockStore } from '../testing/mocks'
+import { mkAddress, MockConnextInternal, MockStore  } from '../testing'
 
-describe('ExchangeController: unit tests', () => {
+const logLevel = 1 // 0 = no logs, 5 = all logs
+
+describe('ExchangeController', () => {
   const user = mkAddress('0xAAA')
   let connext: MockConnextInternal
   const mockStore = new MockStore()
 
-  beforeEach(async () => {
-    connext = new MockConnextInternal()
-    await connext.start()
-  })
+  afterEach(async () => connext.stop())
 
   it('should exchange all of users wei balance if total exchanged is under limit', async () => {
     // add channel to the store
@@ -19,9 +17,10 @@ describe('ExchangeController: unit tests', () => {
       user,
     })
     mockStore.setExchangeRate({ 'DAI': '5' })
-    connext = new MockConnextInternal({ user, store: mockStore.createStore() })
+    connext = new MockConnextInternal({ logLevel, user, store: mockStore.createStore() })
     await connext.start()
     await connext.exchangeController.exchange('10', 'wei')
+    // TODO: why timeout? Why doesn't above await wait long enough?
     await new Promise((res: any): any => setTimeout(res, 20))
 
     connext.mockHub.assertReceivedUpdate({
@@ -36,7 +35,4 @@ describe('ExchangeController: unit tests', () => {
     })
   })
 
-  afterEach(async () => {
-    await connext.stop()
-  })
 })

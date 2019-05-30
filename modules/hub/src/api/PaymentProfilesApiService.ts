@@ -1,14 +1,14 @@
 import * as express from 'express'
 import { isArray } from 'util'
 
+import { Config } from '../Config'
 import PaymentProfilesService from '../PaymentProfilesService'
-import { toBN } from '../util'
-import log, { logApiRequestError } from '../util/log'
+import { logApiRequestError, Logger, toBN } from '../util'
 import { isServiceOrAdmin, isServiceOrAdminOrOwnedAddress } from '../util/ownedAddressOrAdmin'
 
 import { ApiService } from './ApiService'
 
-const LOG = log('PaymentProfilesApiService')
+const getLog = (config: Config): Logger => new Logger('PaymentProfilesApiService', config.logLevel)
 
 export default class PaymentProfilesApiService extends ApiService<
   PaymentProfilesApiServiceHandler
@@ -22,12 +22,14 @@ export default class PaymentProfilesApiService extends ApiService<
   }
   public handler: any = PaymentProfilesApiServiceHandler
   public dependencies: any = {
+    config: 'Config',
     paymentProfilesService: 'PaymentProfilesService',
   }
 }
 
 class PaymentProfilesApiServiceHandler {
   public paymentProfilesService: PaymentProfilesService
+  private config: Config
 
   public async doAddProfileKey(req: express.Request, res: express.Response): Promise<any> {
     if (!isServiceOrAdmin(req)) {
@@ -43,7 +45,7 @@ class PaymentProfilesApiServiceHandler {
       !addresses ||
       !isArray(addresses)
     ) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 
@@ -73,7 +75,7 @@ class PaymentProfilesApiServiceHandler {
       // !amountToCollateralizeWei ||
       !amountToCollateralizeToken
     ) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 
@@ -82,7 +84,7 @@ class PaymentProfilesApiServiceHandler {
         !toBN(minimumMaintainedCollateralWei).isZero()) ||
       (amountToCollateralizeWei && !toBN(amountToCollateralizeWei).isZero())
     ) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 
@@ -105,7 +107,7 @@ class PaymentProfilesApiServiceHandler {
     const { id } = req.params
 
     if (!id || !Number.isInteger(parseInt(id, 10))) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 
@@ -125,13 +127,13 @@ class PaymentProfilesApiServiceHandler {
     req: express.Request, res: express.Response,
   ): Promise<any> {
     if (!isServiceOrAdminOrOwnedAddress(req)) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
     const { user } = req.params
 
     if (!user) {
-      logApiRequestError(LOG, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 

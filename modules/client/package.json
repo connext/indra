@@ -1,7 +1,7 @@
 {
   "name": "connext",
   "description": "Shared code between wallet and hub",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "devDependencies": {
@@ -15,7 +15,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-subset": "^1.6.0",
-    "mocha": "^6.0.2",
+    "mocha": "^6.1.4",
     "node-fetch-polyfill": "^2.0.6",
     "sinon": "^7.3.1",
     "ts-node": "^8.0.3",
@@ -26,11 +26,13 @@
     "bluebird": "^3.5.3",
     "ethers": "^4.0.27",
     "human-standard-token-abi": "^2.0.0",
+    "isomorphic-ws": "^4.0.1",
     "redux": "^4.0.1",
     "semaphore": "^1.1.0",
     "typescript-fsa": "^3.0.0-beta-2",
     "typescript-fsa-reducers": "^1.1.0",
-    "web3": "=1.0.0-beta.33"
+    "web3": "=1.0.0-beta.33",
+    "ws": "^7.0.0"
   },
   "engines": {
     "node": ">=9",

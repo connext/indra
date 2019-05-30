@@ -2,32 +2,28 @@ import Config from './Config'
 import erc20TransferAbi from './contract/erc20TransferAbi'
 import DisbursementDao from './dao/DisbursementsDao'
 import Disbursement from './domain/Disbursement'
-import { toBN } from './util'
-import log from './util/log'
+import { Logger, toBN } from './util'
 
-const LOG = log('DisbursementService')
 const DISBURSEMENT_AMOUNT_FINNEY = 45
 const DISBURSEMENT_AMOUNT_BEI = 69
 
 export default class DisbursementService {
   private disbursementDao: DisbursementDao
-
   private web3: any
-
   private config: Config
+  private log: Logger
 
-  constructor (disbursementDao: DisbursementDao, web3: any, config: Config) {
+  public constructor(disbursementDao: DisbursementDao, web3: any, config: Config) {
     this.disbursementDao = disbursementDao
     this.web3 = web3
     this.config = config
+    this.log = new Logger('DisbursementService', this.config.logLevel)
   }
 
   public async disburse (address: string): Promise<Disbursement> {
     const current = await this.disbursementDao.getCurrentByAddress(address)
     if (current) {
-      throw new Error(
-        'Pending or confirmed disbursement exists for this address.'
-      )
+      throw new Error('Pending or confirmed disbursement exists for this address.')
     }
 
     let disbursement: Disbursement | null = null
@@ -37,14 +33,12 @@ export default class DisbursementService {
         toBN(
           this.web3.utils.toWei(
             DISBURSEMENT_AMOUNT_FINNEY.toString(),
-            'finney'
-          )
-        )
+            'finney',
+          ),
+        ),
       )
     } catch (err) {
-      LOG.error('Failed to create disbursement: {err}', {
-        err
-      })
+      this.log.error(`Failed to create disbursement: ${err}`)
     }
 
     if (!disbursement) {
@@ -56,30 +50,21 @@ export default class DisbursementService {
       receipt = await this.web3.eth.sendTransaction({
         from: this.config.hotWalletAddress,
         to: address,
-        value: disbursement.amountWei
+        value: disbursement.amountWei,
       })
     } catch (err) {
-      LOG.error('Failed to process disbursement for address {address}: {err}', {
-        address,
-        err
-      })
+      this.log.error(`Failed to process disbursement for address ${address}: ${err}`)
       return this.disbursementDao.markFailed(disbursement.id)
     }
 
     try {
       await this.disbursementDao.markPending(
         disbursement.id,
-        receipt.transactionHash
+        receipt.transactionHash,
       )
       this.pollStatus(disbursement.id, receipt.transactionHash)
     } catch (err) {
-      LOG.error(
-        'Failed to mark disbursement for address {address} as pending: {err}',
-        {
-          address,
-          err
-        }
-      )
+      this.log.error(`Failed to mark disbursement for address ${address} as pending: ${err}`)
       return this.disbursementDao.markFailed(disbursement.id)
     }
 
@@ -101,9 +86,7 @@ export default class DisbursementService {
         toBN(DISBURSEMENT_AMOUNT_BEI)
       )
     } catch (err) {
-      LOG.error('Failed to create ERC-20 disbursement: {err}', {
-        err
-      })
+      this.log.error(`Failed to create ERC-20 disbursement: ${err}`)
     }
 
     if (!disbursement) {
@@ -122,10 +105,7 @@ export default class DisbursementService {
       ).send({
         from: this.config.hotWalletAddress
       }).catch((err: any) => {
-        LOG.error('Failed to process ERC-20 disbursement for address {address}: {err}', {
-          address,
-          err
-        })
+        this.log.error(`Failed to process ERC-20 disbursement for address ${address}: ${err}`)
 
         throw err
       }).then((receipt: { transactionHash: string }) => this.disbursementDao.markPending(
@@ -135,9 +115,7 @@ export default class DisbursementService {
         this.pollStatus(disbursement.id, disbursement.txHash)
       }).catch(() => {
         this.disbursementDao.markFailed(disbursement.id).catch((err: any) => {
-          LOG.error('Failed to mark disbursement as pending/failed: {err}', {
-            err
-          })
+          this.log.error(`Failed to mark disbursement as pending/failed: ${err}`)
         })
       })
     })
@@ -180,22 +158,10 @@ export default class DisbursementService {
 
     const poll = async () => {
       if (attempt === maxAttempts) {
-        LOG.error(
-          'Disbursement {disbursementId} with txhash {txHash} timed out.',
-          {
-            disbursementId,
-            txHash
-          }
-        )
+        this.log.error(`Disbursement ${disbursementId} with txhash ${txHash} timed out.`)
 
         this.disbursementDao.markFailed(disbursementId).catch(err =>
-          LOG.error(
-            'Failed to mark disbursement {disbursementId} as failed: {err}',
-            {
-              disbursementId,
-              err
-            }
-          )
+          this.log.error(`Failed to mark disbursement ${disbursementId} as failed: ${err}`)
         )
 
         return
@@ -206,45 +172,19 @@ export default class DisbursementService {
       try {
         const res = await this.web3.eth.getTransaction(txHash)
         if (res.blockNumber === null) {
-          LOG.info(
-            'Disbursement {disbursementId} with tx hash {txHash} unconfirmed. Retrying. Attempt {attempt} of {maxAttempts}',
-            {
-              disbursementId,
-              txHash,
-              attempt,
-              maxAttempts
-            }
-          )
+          this.log.info(`Disbursement ${disbursementId} with tx hash ${txHash} unconfirmed. Retrying. Attempt ${attempt} of ${maxAttempts}`)
 
           setTimeout(poll, 1000)
           return
         }
 
-        LOG.info(
-          'Disbursement {disbursementId} with tx hash {txHash} has been confirmed.',
-          {
-            disbursementId,
-            txHash
-          }
-        )
+        this.log.info(`Disbursement ${disbursementId} with tx hash ${txHash} has been confirmed.`)
 
         this.disbursementDao.markConfirmed(disbursementId).catch(err =>
-          LOG.error(
-            'Failed to mark disbursement {disbursementId} as confirmed: {err}',
-            {
-              disbursementId,
-              err
-            }
-          )
+          this.log.error(`Failed to mark disbursement ${disbursementId} as confirmed: ${err}`)
         )
       } catch (err) {
-        LOG.error(
-          'Got error from Web3 while polling status for {disbursementId}: {err}',
-          {
-            disbursementId,
-            err
-          }
-        )
+        this.log.error(`Got error from Web3 while polling status for ${disbursementId}: ${err}`)
 
         setTimeout(poll, 1000)
         return

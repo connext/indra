@@ -1,11 +1,15 @@
-import {RedisClient} from '../RedisClient'
-import {default as DBEngine} from '../DBEngine'
-import {PostgresGasEstimateDao} from './GasEstimateDao'
+import { Config } from '../Config'
+import { default as DBEngine } from '../DBEngine'
 import GasEstimate from '../domain/GasEstimate'
-import { getTestRegistry, assert } from '../testing'
+import { RedisClient } from '../RedisClient'
+import { assert, getTestConfig, getTestRegistry } from '../testing'
+
+import { PostgresGasEstimateDao } from './GasEstimateDao'
+
+const logLevel = 0
 
 describe('GasEstimateDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
 
   let db: DBEngine
   let redis: RedisClient

@@ -15,9 +15,9 @@ import { AuthMiddleware, getAuthMiddleware } from './AuthMiddleware'
 
 const { arrayify, bigNumberify, hexlify, randomBytes } = eth.utils
 
-const logLevel = 10
+const logLevel = 0
 const forbidden = 403
-const day = 1000 * 60 * 24
+const day = 1000 * 60 * 60 * 24
 const nonce = hexlify(randomBytes(32))
 const serviceKey = hexlify(randomBytes(32))
 const wallet = eth.Wallet.createRandom()
@@ -57,7 +57,7 @@ const getReq = (path: string, headers: object | undefined = undefined): any => (
 
 const testAuthMiddleware = async (req: any, adminAddresses: string[] = []): Promise<void> =>
   getAuthMiddleware(
-    getTestConfig({ adminAddresses, serviceKey }), testAcl, logLevel,
+    getTestConfig({ adminAddresses, serviceKey, logLevel }), testAcl,
   )(req, res, next)
 
 const assertRoles = (req: any, roles: number[]): void => {
@@ -169,7 +169,7 @@ describe('AuthMiddleware', async () => {
     assertSentStatus(forbidden)
   })
 
-  it('should deny access to service routes if given a malformed bearer authorization header', async () => {
+  it('should deny access to service routes if given a malformed authorization header', async () => {
     const req = getReq('/service', { 'authorization': `notbearer ${serviceKey}` })
     await testAuthMiddleware(req)
     assertRoles(req, [])

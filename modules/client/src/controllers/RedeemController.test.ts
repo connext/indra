@@ -1,15 +1,18 @@
 import { ethers as eth } from 'ethers'
 
-import { assert } from '../testing'
-import { MockConnextInternal } from '../testing/mocks'
+import { assert, MockConnextInternal } from '../testing'
 
-describe('Redeem Controller: unit tests', () => {
+const logLevel = 1 // 0 = no logs, 5 = all logs
+
+describe('Redeem Controller', () => {
   let connext: MockConnextInternal
 
   beforeEach(async () => {
-    connext = new MockConnextInternal()
+    connext = new MockConnextInternal({ logLevel })
     await connext.start()
   })
+
+  afterEach(async () => connext.stop())
 
   it('should work even if redeemer has no channel', async () => {
     const secret = connext.generateSecret()
@@ -47,9 +50,5 @@ describe('Redeem Controller: unit tests', () => {
       connext.redeemController.redeem('fail'),
       /The secret provided is not a hex string./,
     )
-  })
-
-  afterEach(async () => {
-    await connext.stop()
   })
 })

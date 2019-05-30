@@ -1,11 +1,15 @@
-import { assert, getTestRegistry } from '../testing'
-import PaymentsDao from "./PaymentsDao";
-import { channelUpdateFactory, tokenVal } from '../testing/factories';
-import { PaymentMetaDao } from './PaymentMetaDao';
-import { mkAddress } from '../testing/stateUtils';
+import { Config } from '../Config'
+import { assert, getTestConfig, getTestRegistry } from '../testing'
+import { channelUpdateFactory, tokenVal } from '../testing/factories'
+import { mkAddress } from '../testing/stateUtils'
+
+import { PaymentMetaDao } from './PaymentMetaDao'
+import PaymentsDao from './PaymentsDao'
+
+const logLevel = 0
 
 describe('PaymentsDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
   const paymentsDao: PaymentsDao = registry.get('PaymentsDao')
   const paymentMetaDao: PaymentMetaDao = registry.get('PaymentMetaDao')
 

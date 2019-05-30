@@ -19,9 +19,8 @@ import PaymentsDao from './dao/PaymentsDao'
 import { default as DBEngine } from './DBEngine'
 import { SignerService } from './SignerService'
 import ThreadsService from './ThreadsService'
-import { maybe, prettySafeJson, toBN, MaybeRes } from './util'
+import { Logger, maybe, prettySafeJson, toBN, MaybeRes } from './util'
 import { assertUnreachable } from './util/assertUnreachable'
-import { default as log } from './util/log'
 
 import * as mailgun from "mailgun-js";
 
@@ -31,9 +30,9 @@ type MaybeResult<T> = (
 )
 
 const emptyAddress = eth.constants.AddressZero
-const LOG = log('PaymentsService')
 
 export default class PaymentsService {
+  private log: Logger
   constructor(
     private channelsService: ChannelsService,
     private threadsService: ThreadsService,
@@ -47,7 +46,9 @@ export default class PaymentsService {
     private config: Config,
     private db: DBEngine,
     private gsd: GlobalSettingsDao,
-  ) {}
+  ) {
+    this.log = new Logger('PaymentsService', this.config.logLevel)
+  }
 
   public async doPurchase(
     user: string,
@@ -94,7 +95,7 @@ export default class PaymentsService {
       ? hubPublicUrl.split("://")[1]
       : hubPublicUrl
 
-    LOG.warn('hubPublicUrl: {strippedUrl}, mailgunApiKey: {mailgunApiKey}', { strippedUrl, mailgunApiKey, })
+    this.log.warn(`hubPublicUrl: ${strippedUrl}, mailgunApiKey: ${mailgunApiKey}`)
 
     if (!mailgunApiKey || !hubPublicUrl) {
       throw new Error(`Email configuration not set up, cannot send email via mailgun. mailgunApiKey: ${mailgunApiKey}, hubPublicUrl: ${hubPublicUrl}`)
@@ -176,7 +177,7 @@ export default class PaymentsService {
               // Check to see if collateral is needed, even if the tip failed
               const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(payment.recipient, toBN(payment.amount.amountToken)))
               if (err) {
-                LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+                this.log.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
               }
             }
           } else {
@@ -269,7 +270,7 @@ export default class PaymentsService {
             this.channelsService.doCollateralizeIfNecessary(payment.recipient)
           )
           if (err) {
-            LOG.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
+            this.log.error(`Error recollateralizing ${payment.recipient}: ${'' + err}\n${err.stack}`)
           }
         })
 
@@ -338,7 +339,7 @@ export default class PaymentsService {
     // always check for collateralization regardless of payment status
     const [res, err] = await maybe(this.channelsService.doCollateralizeIfNecessary(user))
     if (err) {
-      LOG.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
+      this.log.error(`Error recollateralizing ${user}: ${'' + err}\n${err.stack}`)
     }
 
     if (this.validator.cantAffordFromBalance(prev, amt, "hub")) {

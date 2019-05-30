@@ -11,14 +11,16 @@ import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
 import { PaymentMetaDao } from './dao/PaymentMetaDao'
 import { OptimisticPaymentsService } from './OptimisticPaymentsService'
 import PaymentsService from './PaymentsService'
-import { assert, getFakeClock, getTestRegistry, parameterizedTests } from './testing'
+import { assert, getFakeClock, getTestConfig, getTestRegistry, parameterizedTests } from './testing'
 import { channelUpdateFactory, tokenVal } from './testing/factories'
 import { mkAddress, mkSig } from './testing/stateUtils'
 import { toBN } from './util'
 
-describe('OptimisticPaymentsService', () => {
+const logLevel = 0
+const config = getTestConfig({ logLevel })
 
-  const registry = getTestRegistry()
+describe('OptimisticPaymentsService', () => {
+  const registry = getTestRegistry({ Config: config })
 
   const optimisticService: OptimisticPaymentsService = registry.get('OptimisticPaymentsService')
   const optimisticDao: OptimisticPaymentDao = registry.get('OptimisticPaymentDao')
@@ -33,9 +35,9 @@ describe('OptimisticPaymentsService', () => {
   const receiver = mkAddress('0xe214')
 
   const paymentArgs: PaymentArgs = {
-    amountWei: '0',
     amountToken: tokenVal(1),
-    recipient: 'hub'
+    amountWei: '0',
+    recipient: 'hub',
   }
 
   beforeEach(async () => {
@@ -45,29 +47,29 @@ describe('OptimisticPaymentsService', () => {
 
   it('should work for multiple optimistic payments', async () => {
     const senderChannel = await channelUpdateFactory(registry, {
-      user: sender,
       balanceTokenUser: tokenVal(5),
+      user: sender,
     })
 
     const bigSender = await channelUpdateFactory(registry, {
-      user: mkAddress('0xd'),
       balanceTokenUser: tokenVal(15),
+      user: mkAddress('0xd'),
     })
 
     const payments: PurchasePayment[] = [
       {
-        recipient: receiver,
         amount: {
-          amountWei: '0',
           amountToken: tokenVal(1),
+          amountWei: '0',
         },
         meta: {},
+        recipient: receiver,
         type: 'PT_OPTIMISTIC',
         update: {
+          args: paymentArgs,
           reason: 'Payment',
           sigUser: mkSig('0xa'),
           txCount: senderChannel.state.txCountGlobal + 1,
-          args: paymentArgs,
         } as UpdateRequest,
       },
     ]
@@ -76,7 +78,7 @@ describe('OptimisticPaymentsService', () => {
     const res = await paymentsService.doPurchase(sender, {}, payments) as any
     assert.isFalse(res.error)
     const purchaseId = res.res.purchaseId
-    
+
     // sender's channel should reflect update
     const { updates: senderUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const updateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
@@ -135,7 +137,7 @@ describe('OptimisticPaymentsService', () => {
     // add sufficient collateral, and redeem payments
     receiverChan = channelUpdateFactory(registry, {
       user: receiver,
-      balanceTokenHub: tokenVal(20) 
+      balanceTokenHub: tokenVal(20)
     }) as any
 
     // poll once
@@ -151,7 +153,7 @@ describe('OptimisticPaymentsService', () => {
     })
 
     const paymentLg = receiverUpdates2[receiverUpdates2.length - 2].update as UpdateRequest
-    assert.containSubset(paymentLg, { 
+    assert.containSubset(paymentLg, {
       args: { ...paymentLarge[0].amount },
       reason: "Payment"
     })
@@ -163,7 +165,7 @@ describe('OptimisticPaymentsService', () => {
     assert.isTrue(
       toBN((collateral.args as any).depositTokenHub).gte(toBN(0))
     )
-    
+
   })
 
   it("should redeem channel payments if there is collateral", async () => {
@@ -198,7 +200,7 @@ describe('OptimisticPaymentsService', () => {
     const res = await paymentsService.doPurchase(sender, {}, payments) as any
     assert.isFalse(res.error)
     const purchaseId = res.res.purchaseId
-    
+
     // sender's channel should reflect update
     const { updates: senderUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const updateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
@@ -223,7 +225,7 @@ describe('OptimisticPaymentsService', () => {
 
     // poll once
     await optimisticService.pollOnce()
-    
+
     // check receiver updates
     const { updates: receiverUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, 0, 0)
     const paymentReceiver = receiverUpdates[receiverUpdates.length - 2].update as UpdateRequest
@@ -281,7 +283,7 @@ describe('OptimisticPaymentsService', () => {
     const res = await paymentsService.doPurchase(sender, {}, payments) as any
     assert.isFalse(res.error)
     const purchaseId = res.res.purchaseId
-    
+
     // sender's channel should reflect update
     const {updates: senderUpdates} = await channelsService.getChannelAndThreadUpdatesForSync(sender, 0, 0)
     const updateSender = senderUpdates[senderUpdates.length - 1].update as UpdateRequest
@@ -305,14 +307,14 @@ describe('OptimisticPaymentsService', () => {
     await optimisticService.pollOnce()
 
     // add collateral to channel
-    const receiverChan = await channelUpdateFactory(registry, { 
-      user: receiver, 
-      balanceTokenHub: tokenVal(7) 
+    const receiverChan = await channelUpdateFactory(registry, {
+      user: receiver,
+      balanceTokenHub: tokenVal(7)
     })
 
     // poll again
     await optimisticService.pollOnce()
-    
+
     // check receiver updates
     const { updates: receiverUpdates } = await channelsService.getChannelAndThreadUpdatesForSync(receiver, receiverChan.state.txCountGlobal, 0)
     // since hub collateralized, last update will be "ProposePendingDeposit"
@@ -323,7 +325,7 @@ describe('OptimisticPaymentsService', () => {
     purchasePayments = await paymentMetaDao.byPurchase(purchaseId)
     payment = await optimisticDao.getOptimisticPaymentById(optimisticId)
     const row = await db.queryOne(`
-      SELECT "id" 
+      SELECT "id"
       FROM payments_channel_instant
       WHERE "payment_id" = ${purchasePayments[0].id}
     `)

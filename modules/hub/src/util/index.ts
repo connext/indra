@@ -1,7 +1,7 @@
 import { ethers as eth } from 'ethers'
 import { BigNumber } from 'ethers/utils'
 
-export { getLogger } from './log'
+export { Logger, logApiRequestError } from './logger'
 
 const { Zero, MaxUint256 } = eth.constants
 const { arrayify, bigNumberify, isHexString, parseEther, formatEther } = eth.utils
@@ -172,7 +172,6 @@ export class Lock implements PromiseLike<void> {
  *     @synchronized('fooLock')
  *     async foo(msg: string) {
  *       await sleep(1000)
- *       console.log('msg:', msg)
  *     }
  *   }
  *
@@ -209,7 +208,6 @@ export function synchronized(lockName: string) {
  *   if (err) {
  *     return `Oh no there was an error: ${err}`
  *   }
- *   console.log('The result:', res)
  *
  * The result is also an object with `res` and `err` fields:
  *
@@ -217,7 +215,6 @@ export function synchronized(lockName: string) {
  *   if (someResult.err) {
  *     return `Oh no there was an error: ${someResult.err}`
  *   }
- *   console.log('The result:', someResult.res)
  *
  */
 export type MaybeRes<T> = [T, any] & { res: T, err: any }

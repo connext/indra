@@ -1,180 +1,131 @@
 import * as connext from 'connext'
 import * as express from 'express'
 
-import { ApiService } from './ApiService'
-
 import ChannelsService from '../ChannelsService'
+import { Config } from '../Config'
 import GlobalSettingsDao from '../dao/GlobalSettingsDao'
 import ThreadsService from '../ThreadsService'
-import { toBN } from '../util'
-import log from '../util/log'
+import { Logger, toBN } from '../util'
 
-const LOG = log('ThreadsApiService')
+import { ApiService } from './ApiService'
+
+const getLog = (config: Config): Logger => new Logger('ThreadsApiService', config.logLevel)
 
 export default class ThreadsApiService extends ApiService<
   ThreadsApiServiceHandler
 > {
-  namespace = 'thread'
-  routes = {
-    'POST /:sender/to/:receiver/update': 'doUpdateThread',
+  public namespace: string = 'thread'
+  public routes: any = {
     'GET /:sender/to/:receiver': 'doGetThread',
-    'GET /:user/initial-states': 'doGetInitialStates',
-    'GET /:user/incoming': 'doGetThreadsIncoming',
     'GET /:user/active': 'doGetThreadsActive',
-    'GET /:user/last-update-id': 'doGetLastUpdateId',
     'GET /:user/all': 'doGetThreads',
+    'GET /:user/incoming': 'doGetThreadsIncoming',
+    'GET /:user/initial-states': 'doGetInitialStates',
+    'GET /:user/last-update-id': 'doGetLastUpdateId',
+    'POST /:sender/to/:receiver/update': 'doUpdateThread',
   }
-  handler = ThreadsApiServiceHandler
-  dependencies = {
-    threadsService: 'ThreadsService',
+  public handler: any = ThreadsApiServiceHandler
+  public dependencies: any = {
     channelsService: 'ChannelsService',
-    globalSettingsDao: 'GlobalSettingsDao'
+    config: 'Config',
+    globalSettingsDao: 'GlobalSettingsDao',
+    threadsService: 'ThreadsService',
   }
 }
 
 class ThreadsApiServiceHandler {
-  threadsService: ThreadsService
-  channelsService: ChannelsService
-  globalSettingsDao: GlobalSettingsDao
+  public threadsService: ThreadsService
+  public channelsService: ChannelsService
+  public globalSettingsDao: GlobalSettingsDao
+  public config: Config
 
-  async doUpdateThread(req: express.Request, res: express.Response) {
+  public async doUpdateThread(req: express.Request, res: express.Response): Promise<any> {
     const enabled = await this.ensureThreadsEnabled(req, res)
     if (!enabled) {
       return
     }
-
     const { sender, receiver } = req.params
     const { update } = req.body
-
     if (!sender || !receiver || !update) {
-      LOG.warn(
-        'Received invalid update thread request. Aborting. Body received: {body}, Params received: {params}',
-        {
-          body: JSON.stringify(req.body),
-          params: JSON.stringify(req.params),
-        },
-      )
+      getLog(this.config).warn(`Received invalid update thread request. Aborting. Body received: ${JSON.stringify(req.body)}, Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
-
     res.send(
       await this.threadsService.update(sender, receiver, {
         ...update,
-        balanceWeiSender: toBN(update.balanceWeiSender),
-        balanceWeiReceiver: toBN(update.balanceWeiReceiver),
-        balanceTokenSender: toBN(update.balanceTokenSender),
         balanceTokenReceiver: toBN(update.balanceTokenReceiver),
+        balanceTokenSender: toBN(update.balanceTokenSender),
+        balanceWeiReceiver: toBN(update.balanceWeiReceiver),
+        balanceWeiSender: toBN(update.balanceWeiSender),
       }),
     )
   }
 
-  async doGetInitialStates(req: express.Request, res: express.Response) {
+  public async doGetInitialStates(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get thread initial states request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(`Receiver invalid get thread initial states request. Aborting. Params received: ${JSON.stringify(req.params)}`)
     }
-
     res.send(await this.threadsService.getInitialStates(user))
   }
 
-  async doGetThread(req: express.Request, res: express.Response) {
+  public async doGetThread(req: express.Request, res: express.Response) {
     const { sender, receiver } = req.params
     if (!sender || !receiver) {
-      LOG.warn(
-        'Receiver invalid get thread request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
-      return res.sendStatus(400)
+      getLog(this.config).warn(`Receiver invalid get thread request. Aborting. Params received: ${JSON.stringify(req.params)}`)
     }
-
     let thread = await this.threadsService.getThread(sender, receiver)
     if (!thread) {
       return res.sendStatus(404)
     }
-
     res.send(thread)
   }
 
-  async doGetThreadsIncoming(req: express.Request, res: express.Response) {
+  public async doGetThreadsIncoming(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      getLog(this.config).warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
-
     res.send(await this.threadsService.getThreadsIncoming(user))
   }
 
-  async doGetThreads(req: express.Request, res: express.Response) {
+  public async doGetThreads(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      getLog(this.config).warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
     res.send(await this.threadsService.getThreads(user))
   }
 
-  async doGetLastUpdateId(req: express.Request, res: express.Response) {
+  public async doGetLastUpdateId(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      getLog(this.config).warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
     const latest = await this.threadsService.doGetLastUpdateId(user)
     res.json({ latestThreadUpdateId: latest })
   }
 
-  async doGetThreadsActive(req: express.Request, res: express.Response) {
+  public async doGetThreadsActive(req: express.Request, res: express.Response) {
     const { user } = req.params
     if (!user) {
-      LOG.warn(
-        'Receiver invalid get incoming threads request. Aborting. Params received: {params}',
-        {
-          params: JSON.stringify(req.params),
-        },
-      )
+      getLog(this.config).warn(`Receiver invalid get incoming threads request. Aborting. Params received: ${JSON.stringify(req.params)}`)
       return res.sendStatus(400)
     }
-
     res.send(await this.threadsService.getThreadsActive(user))
   }
 
-  async ensureThreadsEnabled(req: express.Request, res: express.Response): Promise<boolean> {
+  public async ensureThreadsEnabled(req: express.Request, res: express.Response): Promise<boolean> {
     const enabled = (await this.globalSettingsDao.fetch()).threadsEnabled
-
     if (!enabled) {
-      LOG.warn('Received a thread request while threads are disabled. URL: {url}, params: {params}', {
-        url: req.url,
-        params: JSON.stringify(req.params),
-      })
-
-      res.sendStatus(403);
+      getLog(this.config).warn(`Received a thread request while threads are disabled. URL: ${req.url}, params: ${JSON.stringify(req.params)}`)
+      res.sendStatus(403)
       return false
     }
-
     return true
   }
+
 }

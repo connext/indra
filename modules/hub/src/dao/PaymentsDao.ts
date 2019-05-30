@@ -1,6 +1,5 @@
 import DBEngine, { SQL } from '../DBEngine'
 import {Client} from 'pg'
-import log from '../util/log'
 
 // TODO: delete this type
 export interface EmailRow {
@@ -22,8 +21,6 @@ export default interface PaymentsDao {
   // TODO: delete
   createEmail(mailgunId: string, user: string, subject: string, body: string): Promise<EmailRow>
 }
-
-const LOG = log('PostgresPaymentsDao')
 
 export class PostgresPaymentsDao implements PaymentsDao {
   constructor(

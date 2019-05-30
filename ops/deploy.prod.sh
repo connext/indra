@@ -17,7 +17,7 @@ INDRA_DASHBOARD_URL="${INDRA_DASHBOARD_URL:-dashboarddd}"
 INDRA_ETH_RPC_KEY_MAINNET="${INDRA_ETH_RPC_KEY_MAINNET:-qHg6U3i7dKa4cJdMagOljenupIraBE1V}"
 INDRA_ETH_RPC_KEY_RINKEBY="${INDRA_ETH_RPC_KEY_RINKEBY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-INDRA_SERVICE_USER_KEY="${INDRA_SERVICE_USER_KEY:-foo}"
+INDRA_SERVICE_KEY="${INDRA_SERVICE_KEY:-foo}"
 MAILGUN_API_KEY="${MAILGUN_API_KEY:-}"
 
 ####################
@@ -25,13 +25,11 @@ MAILGUN_API_KEY="${MAILGUN_API_KEY:-}"
 
 # meta config & hard-coded stuff you might want to change
 number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
-should_collateralize_url="NO_CHECK"
-bei_min_collateralization="10000000000000000000"
 channel_bei_limit=${CHANNEL_BEI_LIMIT}
 channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
 # hard-coded config (you probably won't ever need to change these)
-log_level="30" # set to 10 for all logs or to 30 to only print warnings/errors
+log_level="3" # set to 10 for all logs or to 30 to only print warnings/errors
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
 private_key_file="/run/secrets/$private_key_name"
 
@@ -64,9 +62,9 @@ then
 else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit 1
 fi
 
-hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
+hot_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
 channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
-token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
+token_contract_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
 
 # Figure out which images we should use
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
@@ -177,13 +175,14 @@ services:
       - database
       - chainsaw
     environment:
-      CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
+      MAILGUN_API_KEY: $MAILGUN_API_KEY
       NODE_ENV: production
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
@@ -191,11 +190,8 @@ services:
       POSTGRES_USER: $postgres_user
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
-      SHOULD_COLLATERALIZE_URL: $should_collateralize_url
-      TOKEN_ADDRESS: $token_address
-      BEI_MIN_COLLATERALIZATION: $bei_min_collateralization
-      MAILGUN_API_KEY: $MAILGUN_API_KEY
+      SERVICE_KEY: $INDRA_SERVICE_KEY
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     logging:
       driver: "json-file"
       options:
@@ -211,12 +207,12 @@ services:
     depends_on:
       - postgres
     environment:
-      CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_BEI_DEPOSIT: $channel_bei_deposit
+      CHANNEL_BEI_LIMIT: $channel_bei_limit
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
       NODE_ENV: production
       POLLING_INTERVAL: 2000
@@ -226,9 +222,8 @@ services:
       POSTGRES_USER: $postgres_user
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $INDRA_SERVICE_USER_KEY
-      SHOULD_COLLATERALIZE_URL: $should_collateralize_url
-      TOKEN_ADDRESS: $token_address
+      SERVICE_KEY: $INDRA_SERVICE_KEY
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     logging:
       driver: "json-file"
       options:

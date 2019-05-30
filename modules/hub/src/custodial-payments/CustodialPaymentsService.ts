@@ -7,9 +7,6 @@ import { default as ExchangeRateDao } from '../dao/ExchangeRateDao'
 import { default as DBEngine } from '../DBEngine'
 import { OnchainTransactionService } from '../OnchainTransactionService'
 import { BN, toBN, tokenToWei, toWei } from '../util'
-import { default as log } from '../util/log'
-
-const LOG = log('CustodialPaymentsService')
 
 export interface CreateCustodialWithdrawalArgs {
   user: string

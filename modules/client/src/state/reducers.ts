@@ -1,10 +1,10 @@
 import { ReducerBuilder, reducerWithInitialState } from 'typescript-fsa-reducers/dist'
 
-import { isFunction } from '../lib/utils'
-import { ChannelState, UpdateRequest } from '../types'
+import { isFunction } from '../lib'
+import { ChannelState, UpdateRequest, WithdrawalArgs } from '../types'
 
 import * as actions from './actions'
-import {ConnextState} from './store'
+import { ConnextState } from './store'
 
 export let reducers = reducerWithInitialState(new ConnextState())
 
@@ -16,33 +16,32 @@ export let reducers = reducerWithInitialState(new ConnextState())
 //     return { ...state, someValue: action.value }
 //   })
 
-export const handleChannelChange = (
-  state: ConnextState,
-  channel: ChannelState,
-  update?: UpdateRequest,
-): any => {
-  const hasPending = (
-    Object.keys(channel)
-      .some((field: any): any =>
-        field.startsWith('pending') && (channel as any)[field].toString() !== '0')
-  )
+export function handleChannelChange(
+  state: ConnextState, channel: ChannelState, _update?: UpdateRequest,
+): any {
+  const update = _update ? _update : state.persistent.channelUpdate
 
-  const channelState = hasPending ? state : {
+  // set the state to be invalidated nonce
+  const latestPending = state.persistent.latestPending
+  if (update.reason.startsWith('ProposePending') && update.txCount) {
+    latestPending.txCount = update.txCount
+  }
+
+  // set latest timed withdrawal
+  if (
+    update.reason === 'ProposePendingWithdrawal'
+    && (update.args as WithdrawalArgs).timeout !== 0
+  ) {
+    latestPending.withdrawal = update.args as WithdrawalArgs
+  }
+
+  return {
     ...state,
     persistent: {
       ...state.persistent,
-      latestValidState: channel,
-    },
-  }
-
-  const channelUpdate = update ? update : channelState.persistent.channelUpdate
-
-  return {
-    ...channelState,
-    persistent: {
-      ...channelState.persistent,
       channel,
-      channelUpdate,
+      channelUpdate: update,
+      latestPending,
     },
   }
 }

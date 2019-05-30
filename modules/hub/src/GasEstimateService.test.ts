@@ -1,84 +1,85 @@
-import { assert } from 'chai';
-import {default as GasEstimateService, EthGasStationResponse} from './GasEstimateService'
+import { assert } from 'chai'
+
 import GasEstimateDao from './dao/GasEstimateDao'
-import {getTestRegistry, getFakeClock, nock, sbox} from './testing'
+import {default as GasEstimateService, EthGasStationResponse} from './GasEstimateService'
 import { serviceDefinitions } from './services'
+import { getFakeClock, getTestConfig, getTestRegistry, getNock, sbox } from './testing'
+
+const logLevel = 0 // 0 = no logs, 5 = all logs
 
 function mockEthGasStationResponse(opts?:Partial<EthGasStationResponse>): EthGasStationResponse {
   return {
-    'fast': 100,
-    'speed': 0.69,
-    'fastest': 7100,
-    'avgWait': 2.8,
-    'fastWait': 0.6,
-    'blockNum': 6142134,
-    'safeLowWait': 2.8,
-    'block_time': 13.69,
-    'fastestWait': 0.5,
-    'safeLow': 24,
     'average': 24,
+    'avgWait': 2.8,
+    'block_time': 13.69,
+    'blockNum': 6142134,
+    'fast': 100,
+    'fastest': 7100,
+    'fastestWait': 0.5,
+    'fastWait': 0.6,
+    'safeLow': 24,
+    'safeLowWait': 2.8,
+    'speed': 0.69,
     ...(opts || {}),
   }
 }
 
 describe('GasEstimateService', () => {
   const registry = getTestRegistry({
-    GasEstimateService: serviceDefinitions['GasEstimateService'],
-    GasEstimateDao: serviceDefinitions['GasEstimateDao'],
+    Config: getTestConfig({ logLevel }),
+    GasEstimateDao: serviceDefinitions.GasEstimateDao,
+    GasEstimateService: serviceDefinitions.GasEstimateService,
+    SubscriptionServer: {'broadcast': (): void => undefined} as any,
   })
   const clock = getFakeClock()
 
   beforeEach(async () => {
     await registry.reset()
     let blockNum = 69
-    nock('https://ethgasstation.info')
+    getNock({ logLevel })('https://ethgasstation.info')
       .persist()
       .get('/json/ethgasAPI.json')
-      .reply(() => {
-        return [200, mockEthGasStationResponse({ blockNum: blockNum++ })]
-      })
-  })
-
-  it('should poll for gas prices', async () => {
-    const dao = registry.get('GasEstimateDao')
-    const serv = registry.get('GasEstimateService')
-
-    await serv.pollOnce()
-    assert.containSubset(await dao.latest(), {
-      fast: 10,
-      safeLow: 3,
-      average: 3,
-      fastest: 100,
-      blockNum: 69,
-      blockTime: 13.69,
-    })
-
-    await serv.pollOnce()
-    assert.containSubset(await dao.latest(), {
-      fast: 10,
-      safeLow: 3,
-      average: 3,
-      fastest: 100,
-      blockNum: 70,
-      blockTime: 13.69,
-    })
+      .reply(() => [200, mockEthGasStationResponse({ blockNum: blockNum++ })])
   })
 
   let pollCount = 0
-  const getRetryServ = () => {
+  const getRetryServ = (): any => {
     pollCount = 0
-
     const serv = registry.get('GasEstimateService')
-    serv.pollOnce = async () => {
+    serv.pollOnce = async (): Promise<void> => {
       pollCount += 1
-      if (pollCount < 3)
+      if (pollCount < 3) {
         throw new Error('mock error')
+      }
     }
     return serv
   }
 
+  it('should poll for gas prices', async () => {
+    const dao = registry.get('GasEstimateDao')
+    const serv = registry.get('GasEstimateService')
+    await serv.pollOnce()
+    assert.containSubset(await dao.latest(), {
+      average: 3,
+      blockNum: 69,
+      blockTime: 13.69,
+      fast: 10,
+      fastest: 100,
+      safeLow: 3,
+    })
+    await serv.pollOnce()
+    assert.containSubset(await dao.latest(), {
+      average: 3,
+      blockNum: 70,
+      blockTime: 13.69,
+      fast: 10,
+      fastest: 100,
+      safeLow: 3,
+    })
+  })
+
   it('should retry on errors', async () => {
-    let serv = getRetryServ()
+    const serv = getRetryServ()
     serv.start()
     await clock.awaitTicks(1000)
     await clock.awaitTicks(3000)

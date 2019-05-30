@@ -1,10 +1,8 @@
 import { Unsubscribe } from 'redux'
 import { Action } from 'typescript-fsa/lib'
 
-import { validateTimestamp } from '../lib/timestamp'
-import { assertUnreachable } from '../lib/utils'
-import * as actions from '../state/actions'
-import { ConnextState, ConnextStore } from '../state/store'
+import { assertUnreachable, validateTimestamp } from '../lib'
+import { actions, ConnextState, ConnextStore, getUpdateRequestTimeout } from '../state'
 import {
   ChannelState,
   convertChannelState,
@@ -29,69 +27,6 @@ type StateUpdateHandlers = {
 }
 
 /**
- * Watch a value on the store, calling `onChange` callback each time it
- * changes.
- *
- * If the value changes while `onChange` is running, it will be called again
- * after it completes.
- */
-export const watchStore = async <T>(
-  store: ConnextStore,
-  getter: (s: ConnextState) => T,
-  onChange: (v: T) => Promise<void>,
-): Promise<any> => {
-  let inCallback = false
-  let didChange = false
-  let lastVal = {}
-  const onStoreChange = async (): Promise<any> => {
-    const val = getter(store.getState())
-    if (val === lastVal) {
-      return
-    }
-    if (inCallback) {
-      didChange = true
-      return
-    }
-    inCallback = true
-    const prevVal = lastVal
-    lastVal = val
-    try {
-      // If ``onChange`` raises an exception, set ``inCallback`` to false, but
-      // don't try to retry. This means that we _could_ get into a weird state
-      // (ie, if ``didChange = true`` and ``onChange(...)`` raises an
-      // exception, then ``onChange(...)`` *should* be called, but also calling
-      // it might raise another exception, so we don't).
-      await onChange(val)
-    } catch (e) {
-      // Some naieve but hopefully useful retry logic. If the onChange callback
-      // throws an exception *and* the current item doesn't change for
-      // 30 seconds, hope that it's a temporary failure and try again. This
-      // should be safe because the callback should be idempotent, and we're
-      // checking that it isn't already running before we call it.
-      setTimeout(() => {
-        console.warn(
-          'Exception was previously raised by watchStore callback ' +
-          'and no progress has been made in the last 30 seconds. ' +
-          'Trying again...')
-        if (lastVal === val && !inCallback) {
-          lastVal = {}
-          onStoreChange()
-        }
-      }, 1000 * 30)
-      throw e
-    } finally {
-      inCallback = false
-    }
-    if (didChange) {
-      didChange = false
-      await onStoreChange()
-    }
-  }
-  await onStoreChange()
-  return store.subscribe(onStoreChange)
-}
-
-/**
  * This function takes sigs and asserts that they exist and that they are
  * signed by the correct person.
  * @param x: string of sigs to assert
@@ -109,18 +44,18 @@ export class StateUpdateController extends AbstractController {
   private unsubscribe: Unsubscribe | undefined = undefined
 
   public async start(): Promise<any> {
-    this.unsubscribe = await watchStore(
+    this.unsubscribe = await this.watchStore(
       this.store,
       (state: any): any => {
         // channel in dispute status, prevent further updates
         // TODO: thoroughly handle client response
         const status = state.runtime.channelStatus
         if (status === 'CS_CHANNEL_DISPUTE') {
-          console.warn(`Not processing updates, channel is not open. Status: ${status}`)
+          this.log.warn(`Not processing updates, channel is not open. Status: ${status}`)
           return
         }
         if (status === 'CS_THREAD_DISPUTE') {
-          console.warn(`Not processing updates, channel is not open. Status: ${status}`)
+          this.log.warn(`Not processing updates, channel is not open. Status: ${status}`)
           return
         }
         // channel is open
@@ -149,6 +84,69 @@ export class StateUpdateController extends AbstractController {
     if (this.unsubscribe) {
       this.unsubscribe()
     }
+  }
+
+  /**
+   * Watch a value on the store, calling `onChange` callback each time it
+   * changes.
+   *
+   * If the value changes while `onChange` is running, it will be called again
+   * after it completes.
+   */
+  private async watchStore <T>(
+    store: ConnextStore,
+    getter: (s: ConnextState) => T,
+    onChange: (v: T) => Promise<void>,
+  ): Promise<any> {
+    let inCallback = false
+    let didChange = false
+    let lastVal = {}
+    const onStoreChange = async (): Promise<any> => {
+      const val = getter(store.getState())
+      if (val === lastVal) {
+        return
+      }
+      if (inCallback) {
+        didChange = true
+        return
+      }
+      inCallback = true
+      const prevVal = lastVal
+      lastVal = val
+      try {
+        // If ``onChange`` raises an exception, set ``inCallback`` to false, but
+        // don't try to retry. This means that we _could_ get into a weird state
+        // (ie, if ``didChange = true`` and ``onChange(...)`` raises an
+        // exception, then ``onChange(...)`` *should* be called, but also calling
+        // it might raise another exception, so we don't).
+        await onChange(val)
+      } catch (e) {
+        // Some naieve but hopefully useful retry logic. If the onChange callback
+        // throws an exception *and* the current item doesn't change for
+        // 30 seconds, hope that it's a temporary failure and try again. This
+        // should be safe because the callback should be idempotent, and we're
+        // checking that it isn't already running before we call it.
+        setTimeout(() => {
+          this.log.warn(
+            'Exception was previously raised by watchStore callback ' +
+            'and no progress has been made in the last 30 seconds. ' +
+            'Trying again...')
+          if (lastVal === val && !inCallback) {
+            lastVal = {}
+            onStoreChange()
+          }
+        }, 1000 * 30)
+        throw e
+      } finally {
+        inCallback = false
+      }
+      if (didChange) {
+        didChange = false
+        await onStoreChange()
+      }
+    }
+    await onStoreChange()
+    return store.subscribe(onStoreChange)
   }
 
   private _queuedActions: undefined | Array<Action<any>> = undefined
@@ -186,7 +184,7 @@ export class StateUpdateController extends AbstractController {
 
     if (item.type === 'thread') { // handle thread updates
       if (item.update.state.txCount === 0) {
-        console.log(
+        this.log.info(
           `Received opening thread state, should be handled in OpenThread channel update. ` +
           `State: ${JSON.stringify(this.getState(), undefined, 2)}`)
         return
@@ -204,11 +202,11 @@ export class StateUpdateController extends AbstractController {
       if (item.update.id <= persistent.lastThreadUpdateId) {
         // TODO: handle case where thread update is one
         // we need to close as a receiver
-        console.warn(`Received old thread update, doing nothing.`)
+        this.log.warn(`Received old thread update, doing nothing.`)
         return
       }
 
-      console.log(`Received a thread payment from the hub. Sync item: ${JSON.stringify(item)}`)
+      this.log.info(`Received a thread payment from the hub. Sync item: ${JSON.stringify(item)}`)
       // since threads are single-payment constructs, received thread
       // payments here should suggest that the thread is ready to be
       // closed if user == recipient
@@ -254,8 +252,8 @@ export class StateUpdateController extends AbstractController {
       // close the thread if the user is the receiver
       const channel = persistent.channel
       if (channel.user === newThreadState.receiver) {
-        console.log('Closing thread after payment receipt.')
-        await this.connext.threadsController.closeThread({
+        this.log.info('Closing thread after payment receipt.')
+        await this.connext.threadController.closeThread({
           receiver: newThreadState.receiver,
           sender: newThreadState.sender,
           threadId: newThreadState.threadId,
@@ -268,16 +266,16 @@ export class StateUpdateController extends AbstractController {
     }
 
     const update = item.update
-    console.log(`Applying update from hub: ${update.reason} txCount=${update.txCount}:`, update)
+    this.log.info(`Applying update from hub: ${update.reason} txCount=${update.txCount}: ${update}`)
 
     const connextState = this.getState()
     const prevState: ChannelState = connextState.persistent.channel
-    const latestValidState: ChannelState = connextState.persistent.latestValidState
+    const latestPending = connextState.persistent.latestPending
 
-    console.log('prevState:', prevState)
+    this.log.info(`prevState: ${prevState}`)
 
     if (update.txCount && update.txCount <= prevState.txCountGlobal) {
-      console.warn(
+      this.log.warn(
         `StateUpdateController received update with old ` +
         `${update.txCount} < ${prevState.txCountGlobal}. Skipping.`)
       return
@@ -294,8 +292,18 @@ export class StateUpdateController extends AbstractController {
         `later than our most recent state)`)
     }
 
+    // change the update args to our latest pending information
+    // if there is any invalidation
+    if (update.reason === 'Invalidation') {
+      update.args = {
+        ...update.args,
+        invalidTxCount: latestPending.txCount,
+        withdrawal: latestPending.withdrawal ? latestPending.withdrawal : undefined,
+      }
+    }
+
     if (update.reason === 'EmptyChannel') {
-      console.log('Channel has exited dispute phase, re-enabling client')
+      this.log.info('Channel has exited dispute phase, re-enabling client')
       this.store.dispatch(actions.setChannelStatus('CS_OPEN'))
     }
 
@@ -308,7 +316,7 @@ export class StateUpdateController extends AbstractController {
     }
 
     const nextState = await this.connext.validator.generateChannelStateFromRequest(
-      update.reason === 'Invalidation' ? latestValidState : prevState,
+      prevState,
       update,
     )
 
@@ -390,7 +398,7 @@ export class StateUpdateController extends AbstractController {
     // `nextState`.
     const err = await (this.updateHandlers as any)[update.reason].call(this, prevState, update)
     if (err) {
-      console.warn(`Not countersigning state update: ${err}`)
+      this.log.warn(`Not countersigning state update: ${err}`)
       return
     }
 
@@ -523,16 +531,20 @@ export class StateUpdateController extends AbstractController {
       //    because there may have been tips on top of the pending state)
       // 2. The `didContractEmitUpdateEvent` will throw an error because it
       //    has not been tested with `timeout = 0` states.
-      if (update.args.lastInvalidTxCount !== prev.txCountGlobal) {
-        throw new Error(
-          `Hub proposed invalidation for a state which isn't our latest. ` +
-          `Invalidation: ${JSON.stringify(update)} ` +
-          `Latest state: ${JSON.stringify(prev)}`)
-      }
+
+      // TODO: should we leave this in for safety...?
+      // if (update.args.invalidTxCount != prev.txCountGlobal) {
+      //   throw new Error(
+      //     `Hub proposed invalidation for a state which isn't our latest. ` +
+      //     `Invalidation: ${JSON.stringify(update)} ` +
+      //     `Latest state: ${JSON.stringify(prev)}`
+      //   )
+      // }
+
       if (!this.connext.utils.hasPendingOps(prev)) {
         throw new Error(
-          `Hub proposed invalidation for a double signed state with no ` +
-          `pending fields. Invalidation: ${JSON.stringify(update)} ` +
+          `Hub proposed invalidation for a state with no pending fields. ` +
+          `Invalidation: ${JSON.stringify(update)} ` +
           `state: ${JSON.stringify(prev)}`)
       }
       const { syncController } = this.connext
@@ -590,11 +602,12 @@ export class StateUpdateController extends AbstractController {
         // This is a hub authorized deposit (ex, because the hub wants to
         // recollatoralize). We don't need to check or do anything other than
         // countersign and return to the hub.
-        console.log('Received a hub authorized deposit; countersigning and returning.')
+        this.log.info('Received a hub authorized deposit; countersigning and returning.')
         const CollateralError = (msg: string): Error =>
           new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
         // verification of args
-        const tsErr = validateTimestamp(this.store, update.args.timeout)
+        const maxTimeout = getUpdateRequestTimeout(this.store.getState())
+        const tsErr = validateTimestamp(maxTimeout, update.args.timeout)
         if (tsErr) {
           throw CollateralError(tsErr)
         }
@@ -618,7 +631,8 @@ export class StateUpdateController extends AbstractController {
       if (!update.sigHub) {
         const WithdrawalError = (msg: string): Error =>
           new Error(`${msg} (args: ${JSON.stringify(update.args)}; prev: ${JSON.stringify(prev)})`)
-        const tsErr = validateTimestamp(this.store, update.args.timeout)
+        const maxTimeout = getUpdateRequestTimeout(this.store.getState())
+        const tsErr = validateTimestamp(maxTimeout, update.args.timeout)
         if (tsErr) {
           throw WithdrawalError(tsErr)
         }

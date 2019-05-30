@@ -1,17 +1,21 @@
-import * as eth from 'ethers';
-import { assert, getTestRegistry } from '../testing'
-import { channelAndThreadFactory, tokenVal, channelUpdateFactory } from "../testing/factories";
-import { getThreadState, getChannelState, mkAddress } from "../testing/stateUtils";
-import ChannelsDao from './ChannelsDao';
-import ThreadsDao from './ThreadsDao';
-import { PaymentMetaDao } from './PaymentMetaDao';
-import PaymentsDao from './PaymentsDao';
-import { testHotWalletAddress } from '../testing/mocks';
+import { ethers as eth } from 'ethers'
 
+import { Config } from '../Config'
+import { assert, getTestConfig, getTestRegistry } from '../testing'
+import { channelAndThreadFactory, channelUpdateFactory, tokenVal } from '../testing/factories'
+import { testHotWalletAddress } from '../testing/mocks'
+import { getChannelState, getThreadState, mkAddress } from '../testing/stateUtils'
+
+import ChannelsDao from './ChannelsDao'
+import { PaymentMetaDao } from './PaymentMetaDao'
+import PaymentsDao from './PaymentsDao'
+import ThreadsDao from './ThreadsDao'
+
+const logLevel = 0
 const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentMetaDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
   const channelsDao: ChannelsDao = registry.get('ChannelsDao')
   const threadsDao: ThreadsDao = registry.get('ThreadsDao')
   const paymentMetDao: PaymentMetaDao = registry.get('PaymentMetaDao')

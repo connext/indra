@@ -1,17 +1,12 @@
-import * as eth from 'ethers'
+import { ethers as eth } from 'ethers'
 import { TransactionRequest, Web3Provider } from 'ethers/providers'
 import Web3 from 'web3'
 
-import { BN } from './lib/bn'
-import { assert, parameterizedTests } from './testing'
+import { BN } from './lib'
+import { address, assert, ethUrl, mnemonic, privateKey } from './testing'
 import { Utils } from './Utils'
 import { Wallet } from './Wallet'
 
-const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
-const mnemonic: string =
-  'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
-const privateKey: string = '0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6'
-const ethUrl: string = process.env.ETH_RPC_URL || 'http://localhost:8545'
 const hubUrl: string = ''
 const utils: Utils = new Utils()
 const web3Provider: any = new Web3.providers.HttpProvider(ethUrl)

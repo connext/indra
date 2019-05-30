@@ -6,25 +6,26 @@ import {
 } from 'connext/types'
 
 import ChannelsService from './ChannelsService'
+import { Config } from './Config'
 import ChannelsDao from './dao/ChannelsDao'
 import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
 import DBEngine from './DBEngine'
 import PaymentsService from './PaymentsService'
-import { maybe } from './util'
-import log from './util/log'
+import { Logger, maybe } from './util'
 
-const LOG = log('OptimisticPaymentsService')
 const POLL_INTERVAL = 2 * 1000
 
 export class OptimisticPaymentsService {
   private poller: connext.Poller
+  private log: Logger
 
-  constructor(
+  public constructor(
+    private config: Config,
     private db: DBEngine,
     private opPaymentDao: OptimisticPaymentDao,
     private channelsDao: ChannelsDao,
     private paymentsService: PaymentsService,
-    private channelsService: ChannelsService
+    private channelsService: ChannelsService,
   ) {
     this.poller = new connext.Poller({
       callback: this.pollOnce.bind(this),
@@ -32,6 +33,7 @@ export class OptimisticPaymentsService {
       name: 'OptimisticPaymentsService',
       timeout: POLL_INTERVAL,
     })
+    this.log = new Logger('OptimisticPaymentsService', config.logLevel)
   }
 
   public start(): any {
@@ -49,7 +51,7 @@ export class OptimisticPaymentsService {
       // each payment within the fetched set of payments will be done inside a transaction
       await this.db.withTransaction(async () => {
         const payeeChan = await this.channelsDao.getChannelOrInitialState(
-          p.recipient
+          p.recipient,
         )
         // do not proceed if channel is not open
         if (payeeChan.status !== 'CS_OPEN') {
@@ -77,7 +79,7 @@ export class OptimisticPaymentsService {
         )
       )
       if (err) {
-        LOG.error(
+        this.log.error(
           `Error recollateralizing ${p.recipient}: ${'' + err}\n${err.stack}`
         )
       }
@@ -87,47 +89,44 @@ export class OptimisticPaymentsService {
   }
 
   private async sendChannelPayment(
-    payment: OptimisticPurchasePaymentRowBN
+    payment: OptimisticPurchasePaymentRowBN,
   ): Promise<void> {
     // reconstruct purchase payment as if it came from user
     const purchasePayment: PurchasePayment = {
-      amount: connext.convert.Payment("str", payment.amount),
+      amount: connext.convert.Payment('str', payment.amount),
       meta: payment.meta,
       recipient: payment.recipient,
       type: 'PT_CHANNEL',
       update: {
         args: {
-          ...connext.convertPayment("str", payment.amount),
-          recipient: "hub"
+          ...connext.convertPayment('str', payment.amount),
+          recipient: 'hub',
         },
         reason: 'Payment',
-        txCount: null
-      }
+        txCount: null,
+      },
     }
     try {
       const redemptionId = await this.paymentsService.doChannelInstantPayment(
         purchasePayment,
         payment.paymentId,
-        payment.channelUpdateId
+        payment.channelUpdateId,
       )
 
       await this.opPaymentDao.addOptimisticPaymentRedemption(
         payment.paymentId,
-        redemptionId
+        redemptionId,
       )
     } catch (e) {
       // if the custodial payment fails, the payment should fail
-      LOG.info('Error redeeming optimistic channel payment. ID: {id}, error: {e}', {
-        e,
-        id: payment.paymentId
-      })
+      this.log.info(`Error redeeming optimistic channel payment. ID: ${payment.paymentId}, error: ${e}`)
     }
     // TODO: recollateralization here?
   }
 
   // TODO: handle hub reverting after a set expiry
   private async revertPayment(
-    payment: OptimisticPurchasePaymentRow
+    payment: OptimisticPurchasePaymentRow,
   ): Promise<void> {
     // how to handle this in the case of this being one failed
     // payment in a purchase? should all the payments that make up

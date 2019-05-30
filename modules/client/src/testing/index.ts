@@ -1,9 +1,9 @@
 import * as chai from 'chai'
 import asPromised from 'chai-as-promised'
 import subset from 'chai-subset'
-import { BigNumber as BN } from 'ethers/utils'
+import { ethers as eth } from 'ethers'
 
-import { capitalize } from '../lib/utils'
+import { BN, capitalize } from '../lib'
 import { StateGenerator } from '../StateGenerator'
 import {
   Address,
@@ -12,15 +12,29 @@ import {
   ChannelStateUpdate,
   ChannelUpdateReason,
   CreateCustodialWithdrawalOptions,
+  CurrencyType,
   CustodialBalanceRow,
   CustodialWithdrawalRow,
   DepositArgs,
   ExchangeArgs,
+  ExchangeRates,
   PaymentArgs,
   PendingArgs,
   ThreadState,
   WithdrawalArgs,
 } from '../types'
+
+export {
+  address,
+  ethUrl,
+  mnemonic,
+  MockChannelManager,
+  MockConnextInternal,
+  MockHub,
+  MockStore,
+  patch,
+  privateKey,
+} from './mocks'
 
 // chai
 chai.use(subset)
@@ -29,6 +43,16 @@ export const assert = chai.assert
 
 export const mkAddress = (prefix: string = '0x'): Address => prefix.padEnd(42, '0')
 export const mkHash = (prefix: string = '0x'): string => prefix.padEnd(66, '0')
+
+// NOTE: only used in testing
+// daiRate is the number of DAI that equals the value of 1 ETH
+export const generateExchangeRates = (daiRate: string): ExchangeRates => ({
+  [CurrencyType.DAI]: daiRate,
+  [CurrencyType.DEI]: eth.utils.parseEther(daiRate).toString(),
+  [CurrencyType.ETH]: '1',
+  [CurrencyType.FIN]: `1${'0'.repeat(3)}`,
+  [CurrencyType.WEI]: `1${'0'.repeat(18)}`,
+})
 
 /* Channel and Thread Succinct Types */
 export interface SuccinctChannelState<T = string | number | BN> {
@@ -191,14 +215,11 @@ const expandSuccinct = (
   const res = {} as any
   Object.entries(s).forEach(([name, value]: any): any => {
     if (Array.isArray(value)) {
-      const cast = (expandTxCount && name === 'txCount')
-        ? (x: any): any => x
-        : (x: any): string => x.toString()
-      const newStrs = (expandTxCount && name === 'txCount')
-        ? ['Global', 'Chain']
-        : strs
-      res[isSuffix ? (name + newStrs[0]) : (newStrs[0] + capitalize(name))] = cast(value[0])
-      res[isSuffix ? (name + newStrs[1]) : (newStrs[1] + capitalize(name))] = cast(value[1])
+      const isTxCount = expandTxCount && name === 'txCount'
+      const suffs = isTxCount ? ['Global', 'Chain'] : strs
+      const cast = (x: any): string => isTxCount ? x : x.toString()
+      res[isSuffix ? (name + suffs[0]) : (suffs[0] + capitalize(name))] = cast(value[0])
+      res[isSuffix ? (name + suffs[1]) : (suffs[1] + capitalize(name))] = cast(value[1])
     } else {
       const condition = isSuffix
         ? name.endsWith(strs[0]) || name.endsWith(strs[1])
@@ -612,6 +633,10 @@ const initialWithdrawalArgs: WDInitial = {
     exchangeRate: '5', // wei to token
     recipient: mkAddress('0x222'),
     seller: 'user',
+    targetTokenHub: '0',
+    targetTokenUser: '0',
+    targetWeiHub: '0',
+    targetWeiUser: '0',
     timeout: 6969,
     tokensToSell: '0',
     weiToSell: '0',

@@ -18,11 +18,11 @@ eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble swe
 eth_network="ganache"
 eth_network_id="4447"
 eth_rpc_url="http://ethprovider:8545"
-log_level="30" # set to 0 for no logs or to 50 for all the logs
+log_level="3" # set to 0 for no logs or to 50 for all the logs
 private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 private_key_file="/run/secrets/hub_key_ganache"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-service_user_key="foo"
+service_key="foo"
 
 # database connection settings
 postgres_db="$project"
@@ -45,9 +45,9 @@ if [[ -f "address-book.json" ]] # prefer copy of address book in project root
 then addressBook="address-book.json"
 else addressBook="modules/contracts/ops/address-book.json"
 fi
-hub_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
+hot_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
 channel_manager_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].address`"
-token_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
+token_contract_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].approvedToken`"
 
 ####################
 # Deploy according to above configuration
@@ -154,7 +154,7 @@ services:
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
       NODE_ENV: development
       POSTGRES_USER: $postgres_user
@@ -163,12 +163,13 @@ services:
       POSTGRES_DB: $postgres_db
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $service_user_key
-      TOKEN_ADDRESS: $token_address
+      SERVICE_KEY: $service_key
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     networks:
       - $project
     ports:
       - "8080:8080"
+      - "8081:8081"
     secrets:
       - ${project}_database_dev
       - hub_key_ganache
@@ -185,7 +186,7 @@ services:
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK_ID: $eth_network_id
       ETH_RPC_URL: $eth_rpc_url
-      HUB_WALLET_ADDRESS: $hub_wallet_address
+      HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
       NODE_ENV: development
       POSTGRES_USER: $postgres_user
@@ -194,8 +195,8 @@ services:
       POSTGRES_DB: $postgres_db
       PRIVATE_KEY_FILE: $private_key_file
       REDIS_URL: $redis_url
-      SERVICE_USER_KEY: $service_user_key
-      TOKEN_ADDRESS: $token_address
+      SERVICE_KEY: $service_key
+      TOKEN_CONTRACT_ADDRESS: $token_contract_address
     networks:
       - $project
     secrets:

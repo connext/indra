@@ -1,25 +1,14 @@
 import * as eth from 'ethers'
 
-import { default as Config } from '../Config'
-import PaymentHub from '../PaymentHub'
+/* tslint:disable */// importing register/common needs to happen first
 import '../register/common'
+import { default as Config } from '../Config'
+/* tslint:enable */
+import PaymentHub from '../PaymentHub'
+import { Logger } from '../util'
 
-const config = Config.fromEnv({
-  adminAddresses: [ process.env.WALLET_ADDRESS! ],
-  authDomainWhitelist: [], // whitelist check is being skipped. All domains are allowed now
-  authRealm: 'SpankChain',
-  branding: {
-    backgroundColor: '#ff3b81',
-    companyName: 'SpankChain',
-    textColor: '#fff',
-    title: 'SpankPay',
-  },
-  port: 8080,
-  recipientAddress: process.env.WALLET_ADDRESS!,
-  sessionSecret: 'c2TVc9SZfPjOLp6pTw60J4Pp4I1UWU23PqO3nWYh2tBamQPLYuKdFsTsBdJZ5kn',
-  staleChannelDays: 7,
-})
-
+const config = Config.fromEnv()
+const log = new Logger('Main', config.logLevel)
 const hub = new PaymentHub(config)
 
 async function run(): Promise<void> {
@@ -29,7 +18,8 @@ async function run(): Promise<void> {
     'collateralize': (args: string[]): Promise<void> =>
       hub.collateralizeChannel(args[0], eth.utils.bigNumberify(args[1])),
     'exit-channels': (args: string[]): Promise<void> => hub.startUnilateralExitChannels(args),
-    'exit-stale-channels': args => hub.exitStaleChannels(args[0], args[1]), // days, maxDisputes?
+    'exit-stale-channels': (args: string[]): Promise<void> =>
+      hub.exitStaleChannels(args[0], args[1]), // days, maxDisputes?
     'fix-channels': (args: string[]): Promise<void> => hub.fixBrokenChannels(),
     'hub': (args: string[]): Promise<any> => hub.start(),
     'process-tx': (args: string[]): Promise<void> => hub.processTx(args[0]),
@@ -38,8 +28,8 @@ async function run(): Promise<void> {
   const cmd = process.argv[2] || 'hub'
   const handler = subcommands[cmd]
   if (!handler) {
-    console.error('Unknown subcommand: ' + cmd)
-    console.error('Known subcommands: ' + Object.keys(subcommands).join(', '))
+    log.error(`Unknown subcommand: ${cmd}`)
+    log.error(`Known subcommands: ${Object.keys(subcommands).join(', ')}`)
     return
   }
 
@@ -49,7 +39,7 @@ async function run(): Promise<void> {
 run().then(
   () => process.exit(0),
   (err: Error) => {
-    console.error(err)
+    log.error(err.message)
     process.exit(1)
   },
 )

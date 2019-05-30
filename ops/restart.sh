@@ -11,6 +11,12 @@ then
   bash $ops/stop.sh
   bash ops/deploy.$flag.sh
 
+# If we're restarting just the proxy
+elif [[ "$flag" == "proxy" ]]
+then
+  docker service scale ${project}_$flag=0
+  docker service scale ${project}_$flag=1
+
 # If we're restarting one service of the stack
 else
   docker service scale ${project}_$flag=0

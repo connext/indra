@@ -2,11 +2,14 @@ import { ethers as eth } from 'ethers'
 import Semaphore from 'semaphore'
 
 import { ConnextInternal } from '../Connext'
-import { Poller } from '../lib/poller'
-import { assertUnreachable, maybe } from '../lib/utils'
-import * as actions from '../state/actions'
-import { getChannel, getLastThreadUpdateId } from '../state/getters'
-import { CUSTODIAL_BALANCE_ZERO_STATE, SyncControllerState } from '../state/store'
+import { assertUnreachable, maybe, Poller } from '../lib'
+import {
+  actions,
+  CUSTODIAL_BALANCE_ZERO_STATE,
+  getChannel,
+  getLastThreadUpdateId,
+  SyncControllerState,
+} from '../state'
 import {
   ArgsTypes,
   Block,
@@ -331,11 +334,9 @@ export const filterPendingSyncResults = (fromHub: SyncResult[], toHub: SyncResul
 
     if (u.type === 'channel' && u.update.reason === 'Invalidation') {
       const args: InvalidationArgs = u.update.args as InvalidationArgs
-      for (let i = args.previousValidTxCount + 1; i <= args.lastInvalidTxCount; i += 1) {
-        existing[`tx:${i}`] = {
-          sigHub: true,
-          sigUser: true,
-        }
+      existing[`tx:${args.invalidTxCount}`] = {
+        sigHub: true,
+        sigUser: true,
       }
     }
   })
@@ -387,32 +388,32 @@ export class SyncController extends AbstractController {
         getLastThreadUpdateId(this.store.getState()),
       )
       if (!hubSync) {
-        console.log('No updates found from the hub to sync')
+        this.log.info('No updates found from the hub to sync')
         return
       }
 
       this.handleHubSync(hubSync)
     } catch (e) {
-      console.error('Sync error:', e)
+      this.log.error(`Sync error: ${e}`)
     }
 
     // sync any custodial payments
     try {
       await this.syncCustodialBalance()
     } catch (e) {
-      console.error('Syncing custodial balance error:', e)
+      this.log.error(`Syncing custodial balance error: ${e}`)
     }
 
     try {
       await this.flushPendingUpdatesToHub()
     } catch (e) {
-      console.error('Flush error:', e)
+      this.log.error(`Flush error: ${e}`)
     }
 
     try {
       await this.checkCurrentStateTimeoutAndInvalidate()
     } catch (e) {
-      console.error('Error checking whether current state should be invalidated:', e)
+      this.log.error(`Error checking whether current state should be invalidated: ${e}`)
     }
 
   }
@@ -487,11 +488,14 @@ export class SyncController extends AbstractController {
           `for a state without a timeout. State: ${JSON.stringify(channel)}`)
       }
 
-      // If the state doesn't have a timeout, use the update's timestamp + 5 minutes
+      // If the state doesn't have a timeout, use the
+      // update's timestamp - challenge period from store
       // as an approximate timeout window.
-      timeout = +(new Date(updateTimestamp)) / 1000 + 60 * 5
-    }
 
+      // TODO: hub uses a default timer of 15 minutes on its txs
+      // use that here
+      timeout = Math.floor(+(new Date(updateTimestamp)) / 1000) + 15 * 60
+    }
     const block = await this.findBlockNearestTimeout(timeout)
     if (block.timestamp < timeout) {
       return { didEmit: 'unknown', latestBlock: block }
@@ -546,6 +550,9 @@ export class SyncController extends AbstractController {
     //   3. if step > 0: block.timestamp < timeout + delta
     let step =  Math.min(block.number, 10000) * -1
     while (true) {
+      if (block.number + step < 0) {
+        throw new Error(`Couldn't find any block near timeout ${timeout} (too far in the past)`)
+      }
       if (Math.abs(step) <= 2) {
         // This should never happen, and is a sign that we'll get into an
         // otherwise infinite loop. Indicative of a bug in the code.
@@ -585,7 +592,7 @@ export class SyncController extends AbstractController {
         try {
           await this._flushPendingUpdatesToHub()
         } catch (e) {
-          console.error('Error flushing updates:', e)
+          this.log.error(`Error flushing updates: ${e}`)
         } finally {
           this.flushLock.leave()
           res()
@@ -614,7 +621,7 @@ export class SyncController extends AbstractController {
         break
       case 'CS_CHANNEL_DISPUTE':
       case 'CS_CHAINSAW_ERROR':
-        console.warn(
+        this.log.warn(
           `Channel error with hub (status: ${sync.status}), please contact admin. ` +
           `Channel: ${JSON.stringify(state.persistent.channel, undefined, 2)}`)
         break
@@ -639,7 +646,7 @@ export class SyncController extends AbstractController {
     const chanSync = state.updatesToSync.filter((u: any): boolean => u.type === 'channel')
     const channelUp = chanSync.map((u: any): any => u.update) as
       Array<UpdateRequest<string, ArgsTypes<string>>>
-    console.log(`Sending channel updates to hub: ${
+    this.log.info(`Sending channel updates to hub: ${
       channelUp.map((u: any): any => u && u.reason)
     } ${chanSync}`)
     const [res, err] = await maybe(this.hub.updateHub(
@@ -649,7 +656,7 @@ export class SyncController extends AbstractController {
 
     const threadSync = state.updatesToSync.filter((u: any): boolean => u.type === 'thread')
     const threadUp = threadSync.map((u: any): any => u.update) as ThreadStateUpdate[]
-    console.log(`Sending thread updates to hub: ${threadUp.length}`, threadSync)
+    this.log.info(`Sending thread updates to hub: ${threadUp.length}\n${threadSync}`)
 
     // each thread update must be sent to the appropriate
     // update thread endpoint
@@ -669,17 +676,15 @@ export class SyncController extends AbstractController {
       const error = err || res.error
       this.flushErrorCount += 1
       const triesRemaining = Math.max(0, 4 - this.flushErrorCount)
-      console.error(
+      this.log.error(
         `Error sending updates to hub (will flush and reset ` +
         `${triesRemaining ? `after ${triesRemaining} attempts` : `now`}): ` +
         `${error}`)
 
       if (triesRemaining <= 0) {
-        console.error(
-          'Too many failed attempts to send updates to hub; flushing all of ' +
-          'our updates. Updates being flushed:',
-          state.updatesToSync,
-        )
+        this.log.error(
+          `Too many failed attempts to send updates to hub; flushing all of ` +
+          `our updates. Updates being flushed: ${state.updatesToSync}`)
       } else {
         shouldRemoveUpdates = false
       }
@@ -688,7 +693,7 @@ export class SyncController extends AbstractController {
       // sends something bad, wallet does something bad, then immidately sends
       // back to the hub... so sleep a bit to make sure we don't clobber the
       // poor hub.
-      console.log('Sleeping for a bit before trying again...')
+      this.log.info('Sleeping for a bit before trying again...')
       await new Promise((resolve: any): any => setTimeout(resolve, 6.9 * 1000))
     } else {
       this.flushErrorCount = 0
@@ -725,7 +730,7 @@ export class SyncController extends AbstractController {
     const updatesToSync = this.getSyncState().updatesToSync
     const filtered = filterPendingSyncResults(merged, updatesToSync)
 
-    console.info(`updates from hub: ${updates.length}; ` +
+    this.log.info(`updates from hub: ${updates.length}; ` +
       `old len: ${oldSyncResults.length}; ` +
       `merged: ${filtered.length}: ${filtered}`)
     this.store.dispatch(actions.setSortedSyncResultsFromHub(filtered))
@@ -757,56 +762,60 @@ export class SyncController extends AbstractController {
     reason: InvalidationReason,
     message: string,
   ): Promise<any> {
-    console.log(
+    this.log.info(
       `Sending invalidation of txCount=${updateToInvalidate.txCount} ` +
       `because: ${reason} (${message})`)
-    console.log(`Update being invalidated:`, updateToInvalidate)
+    this.log.info(`Update being invalidated: ${updateToInvalidate}`)
 
     if (!updateToInvalidate.txCount || !updateToInvalidate.sigHub) {
-      console.error(
-        `Oops, it doesn't make sense to invalidate an unsigned update, ` +
-        `and requested invalidation is an unsigned update without a txCount/sigHub: `,
-        updateToInvalidate,
-      )
+      this.log.error(
+        `Oops, it doesn't make sense to invalidate an unsigned update, and requested ` +
+        `invalidation is an unsigned update without a txCount/sigHub: ${updateToInvalidate}`)
       return
     }
 
     // at the moment, you cannot invalidate states that have pending
-    // operations and have been built on top of
+    // operations and have been built on top of, where the previous
+    // state had a timeout
     const channel = getChannel(this.store.getState())
     if (
       // If the very first propose pending is invalidated, then the
       // channel.txCountGlobal will be 0
       !(channel.txCountGlobal === 0 && updateToInvalidate.txCount === 1) &&
       updateToInvalidate.txCount < channel.txCountGlobal &&
-      updateToInvalidate.reason.startsWith('ProposePending')
+      updateToInvalidate.reason.startsWith('ProposePending') &&
+      channel.timeout !== 0
     ) {
       throw new Error(
         `Cannot invalidate 'ProposePending*' type updates that have been built ` +
-        `on (channel: ${JSON.stringify(channel)}; updateToInvalidate: ` +
-        `${JSON.stringify(updateToInvalidate)})`)
+        `on when your channel has a timeout (channel: ${JSON.stringify(channel)}; ` +
+        `updateToInvalidate: ${JSON.stringify(updateToInvalidate)})`)
     }
 
-    // If we've already signed the update that's being invalidated, make sure
-    // the corresponding state being invalidated (which is, for the moment,
+    // Make sure the state being invalidated (which is, for the moment,
     // always going to be our current state, as guaranteed by the check above)
     // has pending operations.
     if (updateToInvalidate.sigUser && !this.connext.utils.hasPendingOps(channel)) {
       throw new Error(
-        `Refusing to invalidate an update with no pending operations we have already signed: ` +
-        `${JSON.stringify(updateToInvalidate)}`)
+        `Refusing to invalidate an update without pending operations detected on ` +
+        `the channel that has already been signed: ${JSON.stringify(updateToInvalidate)}`)
     }
 
-    const latestValidState = this.getState().persistent.latestValidState
+    // if you are invalidating a withdrawal, retrieve the last withdrawal
+    // requested from the store
+    const { latestPending } = this.getState().persistent
+
+    const chan = this.getState().persistent.channel
     const args: InvalidationArgs = {
-      lastInvalidTxCount: updateToInvalidate.txCount,
+      invalidTxCount: latestPending.txCount,
       message,
-      previousValidTxCount: latestValidState.txCountGlobal,
       reason,
+      withdrawal: latestPending.withdrawal,
     }
 
     const invalidationState = await this.connext.signChannelState(
-      this.validator.generateInvalidation(latestValidState, args))
+      this.validator.generateInvalidation(chan, args),
+    )
 
     await this.sendUpdateToHub({
       args,

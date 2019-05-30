@@ -1,6 +1,7 @@
 import { ConnextInternal } from '../Connext'
 import { IHubAPIClient } from '../Hub'
-import { ConnextState, ConnextStore } from '../state/store'
+import { Logger } from '../lib'
+import { ConnextState, ConnextStore } from '../state'
 import { Validator } from '../validator'
 
 export abstract class AbstractController {
@@ -8,12 +9,14 @@ export abstract class AbstractController {
   public connext: ConnextInternal
   public hub: IHubAPIClient
   public validator: Validator
+  public log: Logger
 
   public constructor(name: string, connext: ConnextInternal) {
     this.connext = connext
     this.name = name
     this.hub = connext.hub
     this.validator = connext.validator
+    this.log = new Logger(name, connext.opts.logLevel)
   }
 
   public get store(): ConnextStore {

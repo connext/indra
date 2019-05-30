@@ -3,7 +3,6 @@ import { Client } from 'pg'
 
 import DBEngine, { SQL } from '../DBEngine'
 import { toBN } from '../util'
-import log from '../util/log'
 
 export default interface OptimisticPaymentDao {
   createOptimisticPayment(paymentId: number, channelUpdateId: number)
@@ -13,8 +12,6 @@ export default interface OptimisticPaymentDao {
   optimisticPaymentFailed(paymentId: number): Promise<void>
   getOptimisticPaymentById(paymentId: number): Promise<OptimisticPurchasePaymentRowBN>
 }
-
-const LOG = log('PostgresOptimisticPaymentDao')
 
 export class PostgresOptimisticPaymentDao implements OptimisticPaymentDao {
   constructor(

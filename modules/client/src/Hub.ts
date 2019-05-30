@@ -1,5 +1,7 @@
 import { ethers as eth } from 'ethers'
+import WebSocket from 'isomorphic-ws'
 
+import { Logger } from './lib'
 import {
   Address,
   BN,
@@ -9,6 +11,7 @@ import {
   channelUpdateToUpdateRequest,
   CustodialBalanceRow,
   CustodialWithdrawalRow,
+  EmailRequest,
   ExchangeRates,
   HubConfig,
   Payment,
@@ -24,7 +27,6 @@ import {
   ThreadStateUpdate,
   UpdateRequest,
   WithdrawalParameters,
-  EmailRequest,
 } from './types'
 import { Wallet } from './Wallet'
 
@@ -82,15 +84,34 @@ export class HubAPIClient implements IHubAPIClient {
   private nonce: string | undefined
   private signature: string | undefined
   private wallet: Wallet
+  private ws: WebSocket
+  private log: Logger
 
-  public constructor(hubUrl: string, wallet: Wallet) {
+  public constructor(hubUrl: string, wallet: Wallet, logLevel?: number) {
     this.hubUrl = hubUrl
     this.wallet = wallet
     this.address = wallet.address
+    this.log = new Logger('HubAPIClient', logLevel)
   }
 
   ////////////////////////////////////////
   // Public Methods
+
+  public async subscribe(callback: any): Promise<WebSocket> {
+    const hubWsUrl = `${this.hubUrl}/subscribe`.replace(/^http/, 'ws')
+    this.log.info(`===== WS connecting to: ${hubWsUrl}`)
+    this.ws = new WebSocket(hubWsUrl)
+    this.ws.onopen = (): void => {
+      this.log.debug(`Successfully subscribed to ${hubWsUrl}`)
+    }
+    this.ws.onclose = (): void => {
+      this.log.debug(`Disconnected from ${hubWsUrl}`)
+    }
+    this.ws.onmessage = (event: any): void => {
+      this.log.info(`Got message from ${hubWsUrl}: ${event.data}`)
+      callback(event.data)
+    }
+  }
 
   public async sendEmail(email: EmailRequest): Promise<{ message: string, id: string }> {
     return this.post(`payments/${this.address}/email`, { ...email })
@@ -152,10 +173,10 @@ export class HubAPIClient implements IHubAPIClient {
       return await this.get(`custodial/${this.address}/balance`)
     } catch (e) {
       if (e.status === 404) {
-        console.log(`Custodial balances not found for user ${this.address}`)
+        this.log.info(`Custodial balances not found for user ${this.address}`)
         return undefined
       }
-      console.log('Error getting custodial balance:', e)
+      this.log.info(`Error getting custodial balance: ${e}`)
       throw e
     }
   }
@@ -176,10 +197,10 @@ export class HubAPIClient implements IHubAPIClient {
       return res && res.latestThreadUpdateId ? res.latestThreadUpdateId : 0
     } catch (e) {
       if (e.status === 404) {
-        console.log(`Thread update not found for user ${this.address}`)
+        this.log.info(`Thread update not found for user ${this.address}`)
         return 0
       }
-      console.log('Error getting latest state no pending ops:', e)
+      this.log.info(`Error getting latest state no pending ops: ${e}`)
       throw e
     }
   }
@@ -193,10 +214,10 @@ export class HubAPIClient implements IHubAPIClient {
         : undefined
     } catch (e) {
       if (e.status === 404) {
-        console.log(`Channel not found for user ${this.address}`)
+        this.log.info(`Channel not found for user ${this.address}`)
         return undefined
       }
-      console.log('Error getting latest state:', e)
+      this.log.info(`Error getting latest state: ${e}`)
       throw e
     }
   }
@@ -206,10 +227,10 @@ export class HubAPIClient implements IHubAPIClient {
       return await this.get(`channel/${this.address}/latest-no-pending`)
     } catch (e) {
       if (e.status === 404) {
-        console.log(`Channel not found for user ${this.address}`)
+        this.log.info(`Channel not found for user ${this.address}`)
         return undefined
       }
-      console.log('Error getting latest state no pending ops:', e)
+      this.log.info(`Error getting latest state no pending ops: ${e}`)
       throw e
     }
   }
@@ -227,10 +248,10 @@ export class HubAPIClient implements IHubAPIClient {
       return await this.get(`profile/user/${this.address}`)
     } catch (e) {
       if (e.status === 404) {
-        console.log(`No payment profile set for user: ${this.address}`)
+        this.log.info(`No payment profile set for user: ${this.address}`)
         return undefined
       }
-      console.log(`Error getting the payment profile config for ${this.address}:`, e)
+      this.log.info(`Error getting the payment profile config for ${this.address}: ${e}`)
       throw e
     }
   }
@@ -288,10 +309,10 @@ export class HubAPIClient implements IHubAPIClient {
       })
     } catch (e) {
       if (e.status === 404) {
-        console.log(`No custodial withdrawals available for: ${this.address}`)
+        this.log.info(`No custodial withdrawals available for: ${this.address}`)
         return undefined
       }
-      console.log(`Error creating a custodial withdrawal for ${this.address}:`, e)
+      this.log.info(`Error creating a custodial withdrawal for ${this.address}: ${e}`)
       throw e
     }
   }
@@ -383,7 +404,7 @@ export class HubAPIClient implements IHubAPIClient {
     const res = await this.get(`nonce`)
     this.nonce = res && res.nonce ? res.nonce : undefined
     if (!this.nonce) {
-      console.error(`Couldn't authenticate, is the hub down?`)
+      this.log.error(`Couldn't authenticate, is the hub awake?`)
       return false
     }
     this.signature = await this.wallet.signMessage(this.nonce)
@@ -416,7 +437,7 @@ export class HubAPIClient implements IHubAPIClient {
     let res = await fetch(`${this.hubUrl}/${url}`, opts)
 
     if (res.status === 403 && url !== `${this.hubUrl}/nonce`) {
-      console.log(`Got a 403, let's re-authenticate and try again`)
+      this.log.info(`Got a 403, let's re-authenticate and try again`)
       await this.authenticate()
       opts.headers['x-nonce'] = this.nonce
       opts.headers['x-signature'] = this.signature

@@ -3,14 +3,13 @@ import { Request, Response } from 'express'
 
 import { ApiService } from '../api/ApiService'
 import Config from '../Config'
-import { BN, safeJson, toBN } from '../util'
-import log, { logApiRequestError } from '../util/log'
+import { BN, logApiRequestError, Logger, safeJson, toBN } from '../util'
 import { getUserFromRequest } from '../util/request'
 
 import { CustodialPaymentsDao } from './CustodialPaymentsDao'
 import { CustodialPaymentsService } from './CustodialPaymentsService'
 
-const LOG = log('CustodialPaymentsApiService')
+const getLog = (config: Config): Logger => new Logger('CustodialPaymentsService', config.logLevel)
 
 function getAttr<T, K extends keyof T>(obj: T, attr: K): T[K] {
   if (!(attr in obj))
@@ -73,7 +72,7 @@ class CustodialPaymentsApiServiceHandler {
       amountToken = getAttr.big(req.body, 'amountToken')
     } catch (e) {
       // send error response, invalid params
-      logApiRequestError(LOG, req)
+      logApiRequestError(getLog(this.config), req)
       return res.sendStatus(400)
     }
 
@@ -84,7 +83,7 @@ class CustodialPaymentsApiServiceHandler {
         amountToken,
       })
     } catch (e) {
-      LOG.error(`Error creating custodial withdrawal: {e}`, { e })
+      getLog(this.config).error(`Error creating custodial withdrawal: ${e}`)
       return res.sendStatus(400)
     }
 

@@ -5,10 +5,8 @@ import { ConnextInternal, IConnextChannelInternalOptions } from '../Connext'
 import { IChannelManager } from '../contract/ChannelManager'
 import * as ChannelManagerAbi from '../contract/ChannelManagerAbi.json'
 import { IHubAPIClient } from '../Hub'
-import { toBN } from '../lib/bn'
-import { handleStateFlags } from '../state/middleware'
-import { reducers } from '../state/reducers'
-import { ConnextState, PersistentState, RuntimeState } from '../state/store'
+import { Logger, toBN } from '../lib'
+import { ConnextState, handleStateFlags, PersistentState, reducers, RuntimeState } from '../state'
 import { StateGenerator } from '../StateGenerator'
 import {
   Address,
@@ -27,6 +25,7 @@ import {
   CustodialWithdrawalRow,
   DepositArgs,
   DepositArgsBN,
+  EmailRequest,
   ExchangeArgs,
   ExchangeArgsBN,
   ExchangeRates,
@@ -53,7 +52,6 @@ import {
   UnsignedThreadState,
   UpdateRequest,
   WithdrawalParameters,
-  EmailRequest,
 } from '../types'
 import { Wallet } from '../Wallet'
 
@@ -72,8 +70,12 @@ import {
   PartialSignedOrSuccinctThread,
 } from '.'
 
-const mnemonic: string =
-  'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
+export const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
+export const mnemonic: string = 'candy maple cake sugar pudding cream ' +
+                                'honey rich smooth crumble sweet treat'
+export const privateKey: string = '0x8339a8d4aa2aa5771f0230f50c725a4d' +
+                                    '6e6b7bc87bbf8b63b0c260285346eff6'
+export const ethUrl: string = process.env.ETH_RPC_URL || 'http://localhost:8545'
 
 const createTx = (opts?: any): Transaction => {
   const defaultTx = {
@@ -109,9 +111,9 @@ export class MockConnextInternal extends ConnextInternal {
     afterEach(function (): any {
       // ignore this as any ts err
       if ((this as any).currentTest.state === 'failed') {
-        console.error(`Actions emitted during test: ${actions.length ? `` : `(no actions)`}`)
+        this.log.error(`Actions emitted during test: ${actions.length ? `` : `(no actions)`}`)
         actions.forEach((action: any): any => {
-          console.error('  ', JSON.stringify(action))
+          this.log.error(`  ${JSON.stringify(action)}`)
         })
       }
     })
@@ -119,8 +121,8 @@ export class MockConnextInternal extends ConnextInternal {
     const moreOpts = {
       contract: new MockChannelManager(),
       contractAddress: mkAddress('0xccc'),
-      ethUrl: 'http://localhost:8545',
-      hub: new MockHub(),
+      ethUrl,
+      hub: new MockHub(opts.logLevel),
       hubAddress: mkAddress('0xhhh'),
       mnemonic,
       store,
@@ -252,11 +254,16 @@ export class MockChannelManager implements IChannelManager {
 
 export class MockHub implements IHubAPIClient {
   public receivedUpdateRequests: UpdateRequest[] = []
+  public log: Logger
+
+  public constructor(logLevel?: number) {
+    this.log = new Logger('MockHub', logLevel)
+  }
 
   public async sendEmail(email: EmailRequest): Promise<{ message: string, id: string }> {
     return {
-      message: "You requested to send an email: " + JSON.stringify(email, null, 2),
-      id: "adsklfn33"
+      id: 'adsklfn33',
+      message: `You requested to send an email: ${JSON.stringify(email, undefined, 2)}`,
     }
   }
 
@@ -422,7 +429,7 @@ export class MockHub implements IHubAPIClient {
     const updates = payments.map((p: any): any => {
       if ((p.update as UpdateRequest).sigUser) {
         // user signed update, add to recieved
-        console.log('TEST INCLUSION')
+        this.log.info('TEST INCLUSION')
         this.receivedUpdateRequests.push(p.update as UpdateRequest)
       }
       if (p.type !== 'PT_THREAD') {
@@ -694,17 +701,15 @@ export class MockStore {
     }
   }
 
-  public setLatestValidState = (overrides: PartialSignedOrSuccinctChannel = {}): any => {
+  public setLatestPending = (invalidTxCount: number, overrides: any = {}): any => {
     this._initialState = {
       ...this._initialState,
       persistent: {
         ...this._initialState.persistent,
-        latestValidState: getChannelState('empty', {
-          sigHub: '0xsig-hub',
-          sigUser: '0xsig-user',
-          txCountChain: 0,
-          txCountGlobal: 0,
-        }, overrides),
+        latestPending: {
+          txCount: invalidTxCount,
+          withdrawal: getWithdrawalArgs('empty', overrides),
+        },
       },
     }
   }

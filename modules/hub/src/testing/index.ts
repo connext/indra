@@ -6,9 +6,11 @@ import { clearFakeClosingTime, mockServices } from './mocks'
 
 import { Container, Context, Registry } from '../Container'
 import defaultRegistry, { serviceDefinitions } from '../services'
-import { isBN } from '../util'
+import { isBN, Logger } from '../util'
 
-export { getTestConfig, TestApiServer } from './mocks'
+import { defaultLogLevel } from './mocks'
+
+export { authHeaders, getTestConfig, TestApiServer } from './mocks'
 
 export type ServiceName = keyof typeof serviceDefinitions
 export type ServiceDict = {
@@ -149,25 +151,21 @@ export function getFakeClock() {
 // Nock
 //
 
-export const nock = _nock
-afterEach(() => {
-  nock.cleanAll()
-})
-
-beforeEach(() => {
-  nock.disableNetConnect()
-
-  // Allow connections to the server that will be started by supertest.
-  nock.enableNetConnect(/127.0.0.1|localhost/)
-})
-
-after(() => {
-  nock.enableNetConnect()
-})
-
-nock.emitter.on('no match', req => {
-  console.error(`nock: no match for ${req.path}!`)
-})
+export const getNock = (opts: any = { logLevel: defaultLogLevel }): any => {
+  const nockLog = new Logger('Nock', opts.logLevel)
+  const nock = _nock
+  beforeEach(() => {
+    nock.disableNetConnect()
+    // Allow connections to the server that will be started by supertest.
+    nock.enableNetConnect(/127.0.0.1|localhost/)
+  })
+  afterEach(() => nock.cleanAll())
+  after(() => nock.enableNetConnect())
+  nock.emitter.on('no match', (req: any): void => {
+    nockLog.warn(`nock: no match for ${req.path}!`)
+  })
+  return nock
+}
 
 //
 // Sinon

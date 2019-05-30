@@ -2,7 +2,7 @@ import { ethers as eth } from 'ethers'
 import * as sinon from 'sinon'
 
 import * as ChannelManagerAbi from './contract/ChannelManagerAbi.json'
-import { toBN } from './lib/bn'
+import { Logger, toBN } from './lib'
 import * as t from './testing'
 import {
   ChannelState,
@@ -30,6 +30,9 @@ import {
 } from './types'
 import { Utils } from './Utils'
 import { Validator } from './validator'
+
+const logLevel = 2 // 0 = no logs, 5 = all logs
+const log = new Logger('ValidatorTests', logLevel)
 
 const assert: any = t.assert
 const sampleAddress: string = '0x0bfa016abfa8f627654b4989da4620271dc77b1c'
@@ -84,7 +87,7 @@ const generateTransactionReceiptValues = (...overrides: any[]): any => Object.as
 
 
 const createMockedTransactionReceipt = (abi: Interface, vals: any): any => {
-  // console.log(`creating tx receipt from vals: ${JSON.stringify(vals,undefined,2)}`)
+  log.info(`Creating tx receipt from vals: ${JSON.stringify(vals,undefined,2)}`)
   const eventTopic: string = abi.events.DidUpdateChannel.topic
   const addrTopic: any = eth.utils.defaultAbiCoder.encode(['address'], [vals.user])
   const data: any = eth.utils.defaultAbiCoder.encode(
@@ -106,8 +109,7 @@ const createMockedTransactionReceipt = (abi: Interface, vals: any): any => {
     topics: [eventTopic, addrTopic],
   }]
 
-  // console.log(`Created logs w pending wei update: ${
-  //   JSON.stringify(abi.parseLog(logs[0]).pendingWeiUpdates)}`)
+  log.info(`Created mock logs: ${JSON.stringify(abi.parseLog(logs[0]), undefined, 2)}`)
 
   return {
     contractAddress: t.mkAddress('0xCCC'),
@@ -223,7 +225,7 @@ const createChannelThreadOverrides = (targetThreadCount: number, ...overrides: a
   }
 }
 
-describe('validator', () => {
+describe('Validator', () => {
   const provider: Provider = new eth.providers.JsonRpcProvider('http://localhost:8545')
   const abi: Interface = new eth.utils.Interface(ChannelManagerAbi.abi)
   const validator: Validator = new Validator(hubAddress, provider, ChannelManagerAbi.abi)
@@ -573,7 +575,7 @@ describe('validator', () => {
       {
         name: 'should fail if user is not same in receipt and previous',
         prev: { ...prevDeposit, user: t.mkAddress('0xUUU'), },
-        stubs: [tx, createMockedDepositTxReceipt("hub", abi)],
+        stubs: [tx, createMockedDepositTxReceipt('hub', abi)],
         valid: false,
       },
       // {
@@ -679,9 +681,9 @@ describe('validator', () => {
         // set tx receipt stub
         validator.provider.getTransaction = sinon.stub().returns(tc.stubs[0])
         validator.provider.getTransactionReceipt = sinon.stub().returns(tc.stubs[1])
-        // console.log(`comparing event to prev`)
-        // console.log(`event logs: ${JSON.stringify(abi.parseLog(stubs[1][0]),undefined,2)}`)
-        // console.log(`prev: ${JSON.stringify(prev,undefined,2)}`)
+        log.debug(`comparing event to prev`)
+        log.debug(`event logs: ${JSON.stringify(abi.parseLog(tc.stubs[1][0]),undefined,2)}`)
+        log.debug(`prev: ${JSON.stringify(tc.prev,undefined,2)}`)
         // set args
         const transactionHash: string = depositReceipt.transactionHash
           // (stubs[1] && (stubs[1] as any).transactionHash === depositReceipt.transactionHash)
@@ -697,61 +699,70 @@ describe('validator', () => {
     }
   })
 
-  describe('invalidation', () => {
+  describe('validator.invalidation', () => {
     const prev = createPreviousChannelState({
       txCount: [1, 1],
     })
 
     const args: InvalidationArgs = {
-      lastInvalidTxCount: prev.txCountGlobal + 1,
-      previousValidTxCount: prev.txCountGlobal,
+      invalidTxCount: prev.txCountGlobal,
       reason: 'CU_INVALID_ERROR',
+      withdrawal: undefined,
     }
 
     for (const tc of [
       {
         args,
-        name: 'should work',
-        prev,
-        valid: true,
-      },
-      {
-        args: { ...args, previousValidTxCount: 3 },
-        name: 'should fail if previous nonce is higher than nonce to be invalidated',
-        prev,
-        valid: false,
-      },
-      {
-        args: { ...args, previousValidTxCount: 3, lastInvalidTxCount: 3 },
-        name: 'should fail if previous state nonce and nonce in args do not match',
-        prev: { ...prev, txCountGlobal: 5 },
-        valid: false,
+        name: 'validator.invalidator should work',
+        prev: { ...prev, pendingDepositTokenUser: toBN(10) },
+        valid: undefined,
       },
       {
         args,
-        name: 'should fail if previous state has pending ops',
-        prev: { ...prev, pendingDepositWeiUser: toBN(5) },
-        valid: false,
+        name: 'should return string if previous state has timeout and ' +
+              'there are not withdrawal args given',
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1) },
+        valid: new RegExp('Cannot invalidate states containing timed withdrawals timeouts ' +
+               'without providing a valid withdrawal arguments parameter'),
+      },
+      {
+        args: { ...args, invalidTxCount: 2, withdrawal: t.getWithdrawalArgs('empty') },
+        name: 'should return string if previous state has timed wd and ' +
+              'the last invalid count is not the count on the channel',
+        prev: { ...prev, timeout: 6969, pendingWithdrawalTokenUser: toBN(1), txCountGlobal: 3 },
+        valid: /Cannot invalidate a timed withdrawal that has been built on top of/,
+      },
+      {
+        args: { ...args, invalidTxCount: 5 },
+        name: 'should return string if previous state nonce is lower than nonce in args',
+        prev: { ...prev, txCountGlobal: 3 },
+        valid: /Cannot invalidate an update with a nonce higher than the channels/,
       },
       {
         args,
-        name: 'should fail if previous state is missing sigHub',
-        prev: { ...prev, sigHub: '' },
-        valid: false,
+        name: 'should return string if previous state is missing sigHub',
+        prev: { ...prev, sigHub: '', pendingDepositTokenHub: toBN(1) },
+        valid: /Invalid signer detected on channel state/,
       },
       {
         args,
-        name: 'should fail if previous state is missing sigUser',
-        prev: { ...prev, sigUser: '' },
-        valid: false,
+        name: 'should return string if previous state is missing sigUser',
+        prev: { ...prev, sigUser: '', pendingDepositTokenHub: toBN(1) },
+        valid: /Invalid signer detected on channel state/,
       },
     ]) {
 
       it(tc.name, () => {
+        validator.assertChannelSigner = (state: any, signer: any): any => {/* noop */}
         if (tc.valid) {
-          assert.isUndefined(validator.invalidation(tc.prev, tc.args))
+          if (tc.valid.toString().includes('Invalid signer')) {
+            validator.assertChannelSigner = (state: any, signer: any): any => {
+              throw new Error('Invalid signer detected on channel state')
+            }
+          }
+          assert.match(validator.invalidation(tc.prev, tc.args) as any, tc.valid as any)
         } else {
-          assert.exists(validator.invalidation(tc.prev, tc.args))
+          assert.isUndefined(validator.invalidation(tc.prev, tc.args))
         }
       })
 
@@ -817,6 +828,7 @@ describe('validator', () => {
         prev,
         sigErr: false,
       },
+
       {
         args: { ...defaultArgs, balanceWeiReceiver: toBN(2) },
         initialThreadStates,
@@ -825,6 +837,7 @@ describe('validator', () => {
         prev,
         sigErr: false,
       },
+
       {
         args: { ...defaultArgs, balanceTokenReceiver: toBN(2) },
         initialThreadStates,
@@ -956,10 +969,10 @@ describe('validator', () => {
         if (tc.message) {
           assert(
             res && res.includes(tc.message),
-            `response "${res}" should include "${tc.message}"`,
+            `response '${res}' should include '${tc.message}'`,
           )
         } else {
-          assert.isUndefined(res, `response "${res}" should be undefined`)
+          assert.isUndefined(res, `response '${res}' should be undefined`)
         }
       })
 

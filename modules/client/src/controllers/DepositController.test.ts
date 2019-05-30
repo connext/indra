@@ -1,13 +1,16 @@
-import { assert } from '../testing/index'
-import { MockConnextInternal, patch } from '../testing/mocks'
+import { assert, MockConnextInternal, patch } from '../testing'
 
-describe('DepositController: unit tests', () => {
+const logLevel = 1 // 0 = no logs, 5 = all logs
+
+describe('DepositController', () => {
   let connext: MockConnextInternal
 
   beforeEach(async () => {
-    connext = new MockConnextInternal()
+    connext = new MockConnextInternal({ logLevel })
     await connext.start()
   })
+
+  afterEach(async () => connext.stop())
 
   // TODO: properly mock out token transfer approval
   it('should work for wei', async () => {

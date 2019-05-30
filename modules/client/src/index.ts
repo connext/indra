@@ -1,6 +1,5 @@
 import { createClient } from './Connext'
-import { Currency } from './lib/currency'
-import { Poller } from './lib/poller'
+import { Currency, Poller } from './lib'
 import { StateGenerator } from './StateGenerator'
 import { convert } from './types'
 import { Utils } from './Utils'

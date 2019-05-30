@@ -1,8 +1,7 @@
 import { assert, expect } from 'chai'
 
-import { getExchangeRates } from '../state/getters'
-import { generateExchangeRates } from '../testing/generateExchangeRates'
-import { MockStore } from '../testing/mocks'
+import { getExchangeRates } from '../state'
+import { generateExchangeRates, MockStore } from '../testing'
 import { ExchangeRates } from '../types'
 
 import { Currency } from './currency'

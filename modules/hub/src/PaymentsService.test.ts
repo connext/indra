@@ -10,13 +10,13 @@ import {
 import * as eth from 'ethers'
 
 import ChannelsService from './ChannelsService'
-import Config from './Config'
+import { Config } from './Config'
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
 import { PaymentMetaDao } from './dao/PaymentMetaDao'
 import PaymentsService from './PaymentsService'
-import { assert, getTestRegistry } from './testing'
+import { assert, getTestConfig, getTestRegistry } from './testing'
 import { channelUpdateFactory, tokenVal } from './testing/factories'
 import { fakeSig, testChannelManagerAddress, testHotWalletAddress } from './testing/mocks'
 import {
@@ -25,12 +25,14 @@ import {
   mkAddress,
   mkSig,
 } from './testing/stateUtils'
-import { toBN, toWei } from './util'
+import { Logger, toBN, toWei } from './util'
 
+const logLevel = 0
+const log = new Logger('PaymentsServiceTest', logLevel)
 const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsService', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
 
   const service: PaymentsService = registry.get('PaymentsService')
   const opPaymentsDao: OptimisticPaymentDao = registry.get('OptimisticPaymentDao')
@@ -768,7 +770,7 @@ describe('PaymentsService', () => {
 
     sync = await channelsService.getChannelAndThreadUpdatesForSync(receiverChannel.user, 0, 0)
     sync.updates.forEach((s, index) => {
-      console.log(JSON.stringify(s.update, null, 2));
+      log.info(JSON.stringify(s.update, undefined, 2))
       switch (index) {
         case 1:
           assertThreadStateEqual((s.update as ThreadStateUpdate).state, threadState)

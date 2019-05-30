@@ -1,7 +1,6 @@
 import { ethers as eth } from 'ethers'
 
-import { BN, isBN, maxBN, toBN } from './lib/bn'
-import { capitalize } from './lib/utils'
+import { BN, capitalize, isBN, maxBN, toBN } from './lib'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
@@ -628,6 +627,65 @@ export class Validator {
     return this.stateGenerator.emptyChannel(matchingEvent)
   }
 
+  // This invalidates any pending operations that exist on the
+  // previous state
+  public invalidation(prev: ChannelStateBN, args: InvalidationArgs): any {
+    if (args.invalidTxCount < prev.txCountChain) {
+      return `Previous valid nonce is higher than the nonce of the state to be invalidated. ` +
+        `${logChannel(prev)}, args: ${logArgs(args, 'Invalidation')}`
+    }
+    // TODO: invalidating offchain state updates?
+    // if the previous state has a timeout withdrawa;, there should be a withdrawal
+    const { withdrawal } = args
+    const isTimedWithdrawal = hasNonzero(prev, [
+      'pendingWithdrawalWeiUser',
+      'pendingWithdrawalTokenUser',
+      'pendingWithdrawalWeiHub',
+      'pendingWithdrawalTokenHub',
+    ]) !== undefined && prev.timeout !== 0
+
+    let errs = [
+      isTimedWithdrawal && !withdrawal
+        ? `Cannot invalidate states containing timed withdrawals timeouts without ` +
+          `providing a valid withdrawal arguments parameter. ` +
+          `${logChannel(prev)}, args: ${logArgs(args, 'Invalidation')}`
+        : undefined,
+
+      isTimedWithdrawal && prev.txCountGlobal !== args.invalidTxCount
+        ? `Cannot invalidate a timed withdrawal that has been built on top of. ` +
+          `${logChannel(prev)}, args: ${logArgs(args, 'Invalidation')}`
+        : undefined,
+
+      args.invalidTxCount > prev.txCountGlobal
+        ? `Cannot invalidate an update with a nonce higher than the channels. ` +
+          `Prev: ${logChannel(prev)}, args: ${logArgs(args, 'Invalidation')}`
+        : undefined,
+
+      !this.hasPendingOps(prev)
+        ? `Cannot invalidate a state without pending operations. ` +
+          `Prev: ${logChannel(prev)}, args: ${logArgs(args, 'Invalidation')}`
+        : undefined,
+    ]
+
+    // TODO: assert here? not done so in other validators
+    // assert signer on state
+    try {
+      this.assertChannelSigner(convertChannelState('str', prev), 'user')
+      this.assertChannelSigner(convertChannelState('str', prev), 'hub')
+    } catch (e) {
+      errs.push(`Invalid signer detected on channel state. ${e.message}. ` +
+        `${logChannel(prev)}, args: ${logArgs(args, 'Invalidation')}`)
+    }
+
+    // safe not to validate the target balances if the
+    // signature on the previous state exists
+    errs = errs.filter(falsy)
+    if (errs.length > 0) {
+      return errs[0]
+    }
+    return undefined
+  }
+
   public generateExchange(prevStr: ChannelState, argsStr: ExchangeArgs): UnsignedChannelState {
     const prev = convertChannelState('bn', prevStr)
     const args = convertExchange('bn', argsStr)
@@ -698,7 +756,7 @@ export class Validator {
     if (error) {
       throw new Error(error)
     }
-    return this.stateGenerator.proposePendingWithdrawal(prev, args)
+    return this.stateGenerator.proposePendingExchange(prev, args)
   }
 
   public generateProposePendingWithdrawal(
@@ -730,38 +788,6 @@ export class Validator {
       x.startsWith('pending'),
     )
     return hasNonzero(state, pendingFields)
-  }
-
-  // NOTE: the prev here is NOT the previous state in the state-chain
-  // of events. Instead it is the previously 'valid' update, meaning the
-  // previously double signed upate with no pending ops
-  public invalidation(
-    latestValidState: ChannelStateBN,
-    args: InvalidationArgs,
-  ): string | undefined {
-    // state should not
-    if (args.lastInvalidTxCount < args.previousValidTxCount) {
-      return `Previous valid nonce is higher than the nonce of the state to be invalidated. ` +
-      `${logChannel(latestValidState)}, args: ${logArgs(args, 'Invalidation')}`
-    }
-    // prev state must have same tx count as args
-    if (latestValidState.txCountGlobal !== args.previousValidTxCount) {
-      return `Previous state nonce does not match the provided previousValidTxCount. ` +
-      `${logChannel(latestValidState)}, args: ${logArgs(args, 'Invalidation')}`
-    }
-    // ensure the state provided is double signed, w/o pending ops
-    if (
-      this.hasPendingOps(latestValidState)
-      || !latestValidState.sigHub
-      || !latestValidState.sigUser
-    ) {
-      return `Previous state has pending operations, or is missing a signature. ` +
-      `See the notes on the previous state supplied to invalidation in source. ` +
-      `(prev: ${logChannel(latestValidState)}, args: ${logArgs(args, 'Invalidation')})`
-    }
-    // NOTE: fully signed states can only be invalidated if timeout passed
-    // this is out of scope of the validator library
-    return undefined
   }
 
   public openThread(

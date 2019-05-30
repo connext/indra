@@ -1,14 +1,16 @@
-import { redisCache } from './RedisClient'
-import { getTestRegistry, assert } from './testing'
-import { RedisClient } from './RedisClient'
+import { Config } from './Config'
+import { redisCache, RedisClient } from './RedisClient'
+import { assert, getTestConfig, getTestRegistry } from './testing'
+
+const logLevel = 0
 
 describe('redisCache', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
   const redis: RedisClient = registry.get('RedisClient')
 
-  let counters = {
-    foo: 0,
+  const counters = {
     bar: 0,
+    foo: 0,
   }
 
   function cachedGet(key: string, val?: any) {

@@ -6,33 +6,28 @@ import { SinonFakeTimers, SinonStub } from 'sinon'
 import Config from './Config'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import WithdrawalsDao from './dao/WithdrawalsDao'
-import { toBN, toWei } from './util'
-import { Logger } from './util/log'
+import { Logger, toBN, toWei } from './util'
 import WithdrawalsService from './WithdrawalsService'
 
+const logLevel = 0
 const assert = chai.assert
 
 describe.skip('WithdrawalsService', () => {
   let clock: SinonFakeTimers
-
   let ws: WithdrawalsService
-
   let wDao: WithdrawalsDao
-
   let sDao: GlobalSettingsDao
-
   let web3: any
-
   let config: Config
 
   beforeEach(() => {
     chai.use(chaiAsPromised)
     clock = sinon.useFakeTimers()
-
     wDao = {} as WithdrawalsDao
     sDao = {} as GlobalSettingsDao
 
     config = {
+      logLevel,
       hotWalletAddress: '0xeee',
       hotWalletMinBalance: toWei('0.69').toString(),
     } as Config
@@ -40,16 +35,14 @@ describe.skip('WithdrawalsService', () => {
     web3 = {
       eth: {
         sendTransaction: sinon.spy(),
-
         mockBalanceEth: {
           [config.hotWalletAddress]: '69',
         },
-
         getBalance: (addr: string, cb: any) => {
           let bal = web3.eth.mockBalanceEth[addr]
-          if (!bal)
+          if (!bal) {
             throw new Error(`No mock balance defined for address: ${addr}`)
-
+          }
           cb(null, toWei(toBN(bal)))
         },
       },
@@ -108,9 +101,9 @@ describe.skip('WithdrawalsService', () => {
         let didGetErrorLog: boolean = false
 
         try {
-          Logger.prototype.error = (msg: string, args: any) => {
+          Logger.prototype.error = (msg: string) => {
             assert.include(msg, 'reduces hot wallet balance')
-            assert.equal(args.newBalanceEth, '0.09999999999999999')
+            assert.include(msg, '0.09999999999999999')
             didGetErrorLog = true
           }
 
@@ -209,12 +202,6 @@ describe.skip('WithdrawalsService', () => {
           return ++i % 2 === 0 ? [ 'oh no', null ] : [ null, { blockNumber: null } ]
         }
 
-        // silence chatty logs
-        const originalInfo = console.info
-        const originalErr = console.error
-        console.info = () => null
-        console.error = () => null
-
         await new Promise((resolve) => {
           wDao.markPending = sinon.stub().resolves()
           wDao.markFailed = sinon.stub().callsFake(() => {
@@ -234,9 +221,6 @@ describe.skip('WithdrawalsService', () => {
 
           ws.withdraw('0xbeef', '0xcafe', toBN(10))
         })
-
-        console.info = originalInfo
-        console.error = originalErr
 
         assert.isTrue((wDao.markFailed as SinonStub).calledWith(1))
       })

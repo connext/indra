@@ -9,17 +9,17 @@ import * as eth from 'ethers'
 
 import Config from '../Config'
 import { PaymentMetaDao } from '../dao/PaymentMetaDao'
-import { assert, getTestRegistry, TestApiServer } from '../testing'
+import { assert, authHeaders, getTestConfig, getTestRegistry, TestApiServer } from '../testing'
 import { channelNextState, channelUpdateFactory, tokenVal } from '../testing/factories'
 import { testChannelManagerAddress, testHotWalletAddress } from '../testing/mocks'
 import { mkAddress, mkSig } from '../testing/stateUtils'
 import { toWei } from '../util'
 
-// User service key to short-circuit address authorization
-const authHeaders = { 'authorization': 'bearer unspank-the-unbanked' }
+const logLevel = 0
 
 describe('PaymentsApiService', () => {
   const registry = getTestRegistry({
+    Config: getTestConfig({ logLevel }),
     'Web3': {
       eth: {
         Contract: () => ({}),
@@ -277,8 +277,6 @@ describe('PaymentsApiService', () => {
         }
       ] as PurchasePayment[]
     })
-
-    console.log('linked payment inserted into db')
 
     const redeemer = redeemerChan.user.toLowerCase()
     const res = await app.withUser(redeemer).request

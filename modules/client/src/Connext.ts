@@ -5,25 +5,29 @@ import { Action, applyMiddleware, createStore } from 'redux'
 import Web3 from 'web3'
 
 import { ChannelManager, IChannelManager } from './contract/ChannelManager'
-import { AbstractController } from './controllers/AbstractController'
-import { BuyController } from './controllers/BuyController'
-import { CollateralController } from './controllers/CollateralController'
-import { DepositController } from './controllers/DepositController'
-import { ExchangeController } from './controllers/ExchangeController'
-import { RedeemController } from './controllers/RedeemController'
-import { StateUpdateController } from './controllers/StateUpdateController'
-import { SyncController } from './controllers/SyncController'
-import { ThreadsController } from './controllers/ThreadsController'
-import { WithdrawalController } from './controllers/WithdrawalController'
-import {  HubAPIClient, IHubAPIClient } from './Hub'
-import { maxBN, toBN } from './lib/bn'
-import { isFunction, timeoutPromise } from './lib/utils'
-import * as actions from './state/actions'
-import { handleStateFlags } from './state/middleware'
-import { reducers } from './state/reducers'
 import {
-  ConnextState, ConnextStore, CUSTODIAL_BALANCE_ZERO_STATE, PersistentState,
-} from './state/store'
+  AbstractController,
+  BuyController,
+  CollateralController,
+  DepositController,
+  ExchangeController,
+  RedeemController,
+  StateUpdateController,
+  SyncController,
+  ThreadController,
+  WithdrawalController,
+} from './controllers'
+import { HubAPIClient, IHubAPIClient } from './Hub'
+import { isFunction, Logger, maxBN, timeoutPromise, toBN } from './lib'
+import {
+  actions,
+  ConnextState,
+  ConnextStore,
+  CUSTODIAL_BALANCE_ZERO_STATE,
+  handleStateFlags,
+  PersistentState,
+  reducers,
+} from './state'
 import { StateGenerator, subOrZero } from './StateGenerator'
 import {
   Address,
@@ -68,6 +72,7 @@ export interface IConnextChannelOptions {
   connextProvider?: ConnextProvider // NOTE: only a placeholder
   ethUrl?: string
   hubUrl: string
+  logLevel?: number
   mnemonic?: string
   privateKey?: string
   user?: string
@@ -87,6 +92,7 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
     ethChainId: string,
     hub: IHubAPIClient
     hubAddress: string,
+    logLevel?: number,
     maxCollateralization: string
     store?: ConnextStore
     tokenAddress: string,
@@ -104,7 +110,7 @@ export interface IConnextChannelInternalOptions extends IConnextChannelOptions {
 // Key task here is to convert IConnextChannelOptions into IConnextChannelInternalOptions
 export const createClient = async (opts: IConnextChannelOptions): Promise<ConnextChannel> => {
   const wallet: Wallet = new Wallet(opts)
-  const hub: HubAPIClient = new HubAPIClient(opts.hubUrl, wallet)
+  const hub: HubAPIClient = new HubAPIClient(opts.hubUrl, wallet, opts.logLevel)
   const hubConfig: HubConfig = await hub.config()
   const internalOpts: IConnextChannelInternalOptions = {
     ...opts,
@@ -117,18 +123,29 @@ export const createClient = async (opts: IConnextChannelOptions): Promise<Connex
   return new ConnextInternal(internalOpts)
 }
 
+////////////////////////////////////////
+// Helper Functions
+////////////////////////////////////////
+
+const isSuccinctWithdrawal = (
+  withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+): boolean =>
+  !!(withdrawal as SuccinctWithdrawalParameters).amountToken
+  || !!(withdrawal as SuccinctWithdrawalParameters).amountWei
+
+////////////////////////////////////////
+// The external interface to the Connext client, used by the app layer
+////////////////////////////////////////
+
 /**
- * The external interface to the Connext client, used by the Wallet.
- *
  * Create an instance with:
- *
  *  > const client = createChannel({...})
  *  > client.start() // start polling
  *  > client.on('onStateChange', state => {
  *  .   console.log('Connext state changed:', state)
  *  . })
- *
  */
+
 export abstract class ConnextChannel extends EventEmitter {
   public opts: IConnextChannelInternalOptions
   public StateGenerator?: StateGenerator
@@ -140,7 +157,6 @@ export abstract class ConnextChannel extends EventEmitter {
 
   public constructor(opts: IConnextChannelInternalOptions) {
     super()
-
     this.opts = opts
     this.utils = new Utils()
     this.internal = this as any
@@ -194,115 +210,10 @@ export abstract class ConnextChannel extends EventEmitter {
     return this.internal.recipientNeedsCollateral(recipient, amount)
   }
 
-  public isSuccinctWithdrawal(
-    withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
-  ): boolean {
-    return !!(withdrawal as SuccinctWithdrawalParameters).amountToken ||
-    !!(withdrawal as SuccinctWithdrawalParameters).amountWei
-  }
-
-  public calculateChannelWithdrawal(
-    _withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
-    custodial: CustodialBalanceRowBN,
-  ): any {
-    // get args type
-    const isSuccinct = this.isSuccinctWithdrawal(_withdrawal)
-
-    const withdrawal = isSuccinct
-      ? insertDefault('0', _withdrawal, argNumericFields.Payment)
-      : insertDefault('0', _withdrawal, withdrawalParamsNumericFields)
-
-    const totalTokens = isSuccinct 
-      ? toBN(withdrawal.amountToken)
-      : toBN(withdrawal.tokensToSell).add(
-          toBN(withdrawal.withdrawalTokenUser)
-        )
-
-    const totalWei = isSuccinct 
-      ? toBN(withdrawal.amountWei)
-      : toBN(withdrawal.weiToSell).add(
-          toBN(withdrawal.withdrawalWeiUser)
-        )
-
-    // preferentially withdraw from your custodial balance
-    const channelTokenWithdrawal = subOrZero(
-      totalTokens, 
-      custodial.balanceToken
-    )
-
-    const channelWeiWithdrawal = subOrZero(
-      totalWei,
-      custodial.balanceWei
-    )
-
-    // get the amount youll wd custodially
-    const custodialTokenWithdrawal = subOrZero(
-      totalTokens, 
-      channelTokenWithdrawal
-    )
-    
-    const custodialWeiWithdrawal = subOrZero(
-      totalWei,
-      channelWeiWithdrawal
-    )
-
-    const updated = {
-      channelTokenWithdrawal,
-      channelWeiWithdrawal,
-      custodialTokenWithdrawal,
-      custodialWeiWithdrawal,
-    }
-
-    return convertFields('bn', 'str', Object.keys(updated), updated)
-  }
-
   public async withdraw(
     withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
   ): Promise<void> {
-    const { custodialBalance, channel } = this.internal.store.getState().persistent
-    const custodial = convertCustodialBalanceRow('bn', custodialBalance)
-    // if there is no custodial balance, wd from channel
-    if (
-      custodial.balanceWei.isZero() &&
-      custodial.balanceToken.isZero()
-    ) {
-      await this.internal.withdrawalController.requestUserWithdrawal(withdrawal)
-      return
-    }
-
-    // if custodial balance exists, withdraw custodial balance
-    // preferentially
-    const updatedWd = this.calculateChannelWithdrawal(
-      withdrawal, custodial
-    )
-
-    // withdraw the custodial amount if needed
-    if (updatedWd.custodialTokenWithdrawal != "0") {
-      await this.internal.hub.requestCustodialWithdrawal(
-        updatedWd.custodialTokenWithdrawal,
-        withdrawal.recipient || this.internal.wallet.address,
-      )
-    }
-
-    // withdraw the remainder from the channel
-    const isSuccinct = this.isSuccinctWithdrawal(withdrawal)
-
-    const updatedChannelWd = isSuccinct
-      ? {
-        ...withdrawal,
-        amountToken: updatedWd.channelTokenWithdrawal,
-        amountWei: updatedWd.channelWeiWithdrawal,
-      }
-      : {
-        ...withdrawal,
-        withdrawalTokenUser: updatedWd.channelTokenWithdrawal,
-        withdrawalWeiUser: updatedWd.channelWeiWithdrawal,
-      }
-
-    await this.internal.withdrawalController.requestUserWithdrawal({
-      ...updatedChannelWd,
-    })
-    return
+    return this.internal.withdraw(withdrawal)
   }
 
   public async requestCollateral(): Promise<void> {
@@ -324,10 +235,10 @@ export abstract class ConnextChannel extends EventEmitter {
   }
 }
 
-/**
- * The 'actual' implementation of the Connext client. Internal components
- * should use this type, as it provides access to the various controllers, etc.
- */
+////////////////////////////////////////
+// The actual implementation of the Connext client, used internally
+////////////////////////////////////////
+
 export class ConnextInternal extends ConnextChannel {
   public contract: IChannelManager
   public hub: IHubAPIClient
@@ -337,6 +248,7 @@ export class ConnextInternal extends ConnextChannel {
   public utils: Utils
   public validator: Validator
   public wallet: Wallet
+  public log: Logger
 
   public buyController: BuyController
   public collateralController: CollateralController
@@ -345,7 +257,7 @@ export class ConnextInternal extends ConnextChannel {
   public redeemController: RedeemController
   public stateUpdateController: StateUpdateController
   public syncController: SyncController
-  public threadsController: ThreadsController
+  public threadController: ThreadController
   public withdrawalController: WithdrawalController
 
   private _latestState: PersistentState | undefined = undefined
@@ -362,6 +274,7 @@ export class ConnextInternal extends ConnextChannel {
     this.store = undefined as any
     this.wallet = opts.wallet
     this.provider = this.wallet.provider
+    this.log = new Logger('ConnextInternal', opts.logLevel)
     this.hub = opts.hub
 
     opts.user = opts.user.toLowerCase()
@@ -380,7 +293,7 @@ export class ConnextInternal extends ConnextChannel {
     this.withdrawalController = new WithdrawalController('WithdrawalController', this)
     this.stateUpdateController = new StateUpdateController('StateUpdateController', this)
     this.collateralController = new CollateralController('CollateralController', this)
-    this.threadsController = new ThreadsController('ThreadsController', this)
+    this.threadController = new ThreadController('ThreadController', this)
     this.redeemController = new RedeemController('RedeemController', this)
   }
 
@@ -396,7 +309,79 @@ export class ConnextInternal extends ConnextChannel {
   //    time is detected for UX. However, it may be best to leave
   //    this up to the implementers to toggle.
   public async setPollInterval(ms: number): Promise<void> {
-    console.warn('This function has not been implemented yet')
+    this.log.warn('This function has not been implemented yet')
+  }
+
+  public calculateChannelWithdrawal(
+    _withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+    custodial: CustodialBalanceRowBN,
+  ): any {
+    // get args type
+    const isSuccinct = isSuccinctWithdrawal(_withdrawal)
+    const withdrawal = isSuccinct
+      ? insertDefault('0', _withdrawal, argNumericFields.Payment)
+      : insertDefault('0', _withdrawal, withdrawalParamsNumericFields)
+    const totalTokens = isSuccinct
+      ? toBN(withdrawal.amountToken)
+      : toBN(withdrawal.tokensToSell).add(toBN(withdrawal.withdrawalTokenUser))
+    const totalWei = isSuccinct
+      ? toBN(withdrawal.amountWei)
+      : toBN(withdrawal.weiToSell).add(toBN(withdrawal.withdrawalWeiUser))
+    // preferentially withdraw from your custodial balance
+    const channelTokenWithdrawal = subOrZero(totalTokens, custodial.balanceToken)
+    const channelWeiWithdrawal = subOrZero( totalWei, custodial.balanceWei)
+    // get the amount youll wd custodially
+    const custodialTokenWithdrawal = subOrZero(totalTokens, channelTokenWithdrawal)
+    const custodialWeiWithdrawal = subOrZero(totalWei, channelWeiWithdrawal)
+    const updated = {
+      channelTokenWithdrawal,
+      channelWeiWithdrawal,
+      custodialTokenWithdrawal,
+      custodialWeiWithdrawal,
+    }
+    return convertFields('bn', 'str', Object.keys(updated), updated)
+  }
+
+  public async withdraw(
+    withdrawal: Partial<WithdrawalParameters> | SuccinctWithdrawalParameters,
+  ): Promise<void> {
+    const { custodialBalance, channel } = this.store.getState().persistent
+    const custodial = convertCustodialBalanceRow('bn', custodialBalance)
+    // if there is no custodial balance, wd from channel
+    if (
+      custodial.balanceWei.isZero() &&
+      custodial.balanceToken.isZero()
+    ) {
+      await this.withdrawalController.requestUserWithdrawal(withdrawal)
+      return
+    }
+    // if custodial balance exists, withdraw custodial balance
+    // preferentially
+    const updatedWd = this.calculateChannelWithdrawal(withdrawal, custodial)
+    // withdraw the custodial amount if needed
+    if (updatedWd.custodialTokenWithdrawal !== '0') {
+      await this.hub.requestCustodialWithdrawal(
+        updatedWd.custodialTokenWithdrawal,
+        withdrawal.recipient || this.wallet.address,
+      )
+    }
+    // withdraw the remainder from the channel
+    const isSuccinct = isSuccinctWithdrawal(withdrawal)
+    const updatedChannelWd = isSuccinct
+      ? {
+        ...withdrawal,
+        amountToken: updatedWd.channelTokenWithdrawal,
+        amountWei: updatedWd.channelWeiWithdrawal,
+      }
+      : {
+        ...withdrawal,
+        withdrawalTokenUser: updatedWd.channelTokenWithdrawal,
+        withdrawalWeiUser: updatedWd.channelWeiWithdrawal,
+      }
+    await this.withdrawalController.requestUserWithdrawal({
+      ...updatedChannelWd,
+    })
+    return
   }
 
   public async withdrawal(params: WithdrawalParameters): Promise<void> {
@@ -494,9 +479,9 @@ export class ConnextInternal extends ConnextChannel {
 
     // Start all controllers
     for (const controller of this.getControllers()) {
-      console.log('Starting:', controller.name)
+      this.log.info(`Starting: ${controller.name}`)
       await controller.start()
-      console.log('Done!', controller.name, 'started.')
+      this.log.info(`Done! ${controller.name} started`)
     }
     await super.start()
   }
@@ -548,7 +533,7 @@ export class ConnextInternal extends ConnextChannel {
     }
     const hash: string = this.utils.createThreadStateHash(state)
     const sig: string = await this.wallet.signMessage(hash)
-    console.log(`Signing thread state ${state.txCount}: ${sig}`, state)
+    this.log.info(`Signing thread state ${state.txCount}: ${sig} ${state}`)
     return addSigToThreadState(state, sig)
   }
 
@@ -558,7 +543,7 @@ export class ConnextInternal extends ConnextChannel {
   ): Promise<SignedDepositRequestProposal> {
     const hash: string = this.utils.createDepositRequestProposalHash(args)
     const sig: string = await this.wallet.signMessage(hash)
-    console.log(`Signing deposit request ${JSON.stringify(args, undefined, 2)}. Sig: ${sig}`)
+    this.log.info(`Signing deposit request ${JSON.stringify(args, undefined, 2)}. Sig: ${sig}`)
     return { ...args, sigUser: sig }
   }
 
@@ -623,12 +608,10 @@ export class ConnextInternal extends ConnextChannel {
         )
 
         if (timeout) {
-          console.warn(
-            'Timeout (10 seconds) while waiting for state to save. ' +
-            'This error will be ignored (which may cause data loss). ' +
-            'User supplied function that has not returned:',
-            this.opts.saveState,
-          )
+          this.log.warn(
+            `Timeout (10 seconds) while waiting for state to save. ` +
+            `This error will be ignored (which may cause data loss). ` +
+            `User supplied function that has not returned: ${this.opts.saveState}`)
         }
       }
 
@@ -682,7 +665,6 @@ export class ConnextInternal extends ConnextChannel {
       recipient: this.opts.user,
       user: this.opts.user,
     }
-    state.persistent.latestValidState = state.persistent.channel
 
     if (this.opts.loadState) {
       const loadedState: any = await this.opts.loadState()

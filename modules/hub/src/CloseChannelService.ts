@@ -9,16 +9,15 @@ import DBEngine from './DBEngine'
 import { OnchainTransactionRow } from './domain/OnchainTransaction'
 import { OnchainTransactionService } from './OnchainTransactionService'
 import { SignerService } from './SignerService'
-import { prettySafeJson, safeJson } from './util'
-import { default as log } from './util/log'
+import { Logger, prettySafeJson, safeJson } from './util'
 
-const LOG = log('CloseChannelService')
 const POLL_INTERVAL = 1000 * 60 * 3
 
 export class CloseChannelService {
   private poller: connext.Poller
+  private log: Logger
 
-  constructor(
+  public constructor(
       private onchainTxService: OnchainTransactionService,
       private signerService: SignerService,
       private onchainTxDao: OnchainTransactionsDao,
@@ -27,40 +26,41 @@ export class CloseChannelService {
       private contract: ChannelManager,
       private config: Config,
       private web3: any,
-      private db: DBEngine
+      private db: DBEngine,
   ) {
     this.poller = new connext.Poller({
-      name: 'CloseChannelService',
-      interval: POLL_INTERVAL,
       callback: this.pollOnce.bind(this),
+      interval: POLL_INTERVAL,
+      name: 'CloseChannelService',
       timeout: POLL_INTERVAL,
     })
+    this.log = new Logger('CloseChannelService', config.logLevel)
   }
 
-  async poll() {
+  public async poll(): Promise<any> {
     return this.poller.start()
   }
 
-  async pollOnce() {
+  public async pollOnce(): Promise<void> {
     // try {
     //   this.disputeStaleChannels()
     // } catch (e) {
-    //   LOG.error('Disputing stale channels failed {e}', { e })
+    //   this.log.error('Disputing stale channels failed {e}', { e })
     // }
 
     try {
       this.emptyDisputedChannels()
     } catch (e) {
-      LOG.error('Emptying disputed channel failed {e}', { e })
+      this.log.error(`Emptying disputed channel failed ${e}`)
     }
   }
 
   private async _disputeStaleChannels(
-    staleChannelDays?: number, 
-    additionalMessage: string = "", 
+    staleChannelDays?: number,
+    additionalMessage: string = '',
     maintainMin: boolean = true,
     maxDisputes: number = 20,
-  ) {
+  ): Promise<any> {
     if (!staleChannelDays && !this.config.staleChannelDays) {
       return
     }
@@ -82,18 +82,18 @@ export class CloseChannelService {
         break
       }
       const latestUpdate = await this.channelsDao.getLatestExitableState(channel.user)
-      LOG.info(`Found stale channel: ${safeJson(channel)}, latestUpdate: ${safeJson(latestUpdate)}`)
+      this.log.info(`Found stale channel: ${safeJson(channel)}, latestUpdate: ${safeJson(latestUpdate)}`)
       if (!latestUpdate) {
-        LOG.info(`No latest update, cannot exit for user: ${channel.user}`)
+        this.log.info(`No latest update, cannot exit for user: ${channel.user}`)
         continue
       }
       if (latestUpdate.state.txCountGlobal !== channel.state.txCountGlobal) {
-        LOG.info(`Found channel with latest update != latest exitable update. Cannot dispute until user comes back online. user: ${channel.user}`)
+        this.log.info(`Found channel with latest update != latest exitable update. Cannot dispute until user comes back online. user: ${channel.user}`)
         continue
       }
       // do not dispute if the value is below the min bei
       if (
-        maintainMin && 
+        maintainMin &&
         channel.state.balanceTokenHub.lt(this.config.beiMinCollateralization)
       ) {
         continue
@@ -105,23 +105,23 @@ export class CloseChannelService {
       }
 
       // TODO: should take into account thread dispute costs here
-      
+
       // proceed with channel dispute
       try {
         await this.db.withTransaction(async () => {
           const onchain = await this.startUnilateralExit(
             channel.user, "Decollateralizing stale channel" + additionalMessage
           )
-          LOG.info(`Successfully initiated dispute for ${channel.user}. Onchain id: ${onchain.id}, hash: ${onchain.hash}`)
+          this.log.info(`Successfully initiated dispute for ${channel.user}. Onchain id: ${onchain.id}, hash: ${onchain.hash}`)
         })
         // increase dispute count
         initiatedDisputes += 1
       } catch (e) {
-        LOG.warn(`Caught error trying to initiate dispute: ${e}`)
+        this.log.warn(`Caught error trying to initiate dispute: ${e}`)
       }
     }
 
-    LOG.info(`Attempted to initiate ${initiatedDisputes} disputes`)
+    this.log.info(`Attempted to initiate ${initiatedDisputes} disputes`)
   }
 
   public async autoDisputeStaleChannels(staleChannelDays?: number) {
@@ -130,8 +130,8 @@ export class CloseChannelService {
 
   public async disputeStaleChannels(staleChannelDays: number, maxDisputes: number = 20) {
     await this._disputeStaleChannels(
-      staleChannelDays, 
-      ", from command line", 
+      staleChannelDays,
+      ", from command line",
       false,
       maxDisputes
     )
@@ -142,18 +142,16 @@ export class CloseChannelService {
     const disputePeriod = +(await this.contract.methods.challengePeriod().call({
       from: this.config.hotWalletAddress,
     }))
-    LOG.info(
+    this.log.info(
       `Checking for disputed channels which can be emptied ` +
       `(dispute period: ${disputePeriod}; latest block: ${latestBlock.number})`
     )
     const channels = await this.channelsDao.getDisputedChannelsForClose(disputePeriod)
     for (const channel of channels) {
       const details = await this.signerService.getChannelDetails(channel.user)
-      LOG.info('channel details: {details}', {
-        details
-      })
+      this.log.info(`channel details: ${details}`)
       if (details.channelClosingTime == 0) {
-        LOG.info(
+        this.log.info(
           `Disputed channel ${channel.user} is listed as being in ` +
           `dispute, but the dispute has been resolved on chain. Chainsaw ` +
           `should pick this up and mark the channel as open shortly.`
@@ -162,7 +160,7 @@ export class CloseChannelService {
       }
 
       if (latestBlock.timestamp < details.channelClosingTime) {
-        LOG.info(
+        this.log.info(
           `Disputed channel ${channel.user} has a ` +
           `latestBlock.timestamp=${latestBlock.timestamp} < ` +
           `channelClosingTime=${details.channelClosingTime}. Not closing ` +
@@ -181,10 +179,8 @@ export class CloseChannelService {
       throw new Error(`No active dispute exists for the user. User: ${prettySafeJson(user)}`)
     }
     if (disputeRow.onchainTxIdEmpty) {
-      LOG.info(
-        `Active transaction to empty channel already exists. currentDispute.onchainTxIdEmpty = {onchainTxIdEmpty}`,
-        { onchainTxIdEmpty: disputeRow.onchainTxIdEmpty }
-      )
+      this.log.info(
+        `Active transaction to empty channel already exists. currentDispute.onchainTxIdEmpty = ${disputeRow.onchainTxIdEmpty}`)
       return
     }
     let data = this.contract.methods.emptyChannel(user).encodeABI()
@@ -209,11 +205,8 @@ export class CloseChannelService {
     if (!disputeRow) {
       throw new Error(`Callback called for nonexistent dispute, txn: ${prettySafeJson(txn)}`)
     }
-    LOG.info(`startEmptyChannelCompleteCallback: transaction completed with state {state}, txn: {txn}`, {
-      txn,
-      state: txn.state
-    })
-    
+    this.log.info(`startEmptyChannelCompleteCallback: transaction completed with state ${txn.state}, txn: ${txn}`)
+
     // if tx failed, remove id from the dispute so we can try again
     if (txn.state == 'failed') {
       await this.channelDisputesDao.removeEmptyOnchainTx(txn.meta.args.disputeId)
@@ -225,19 +218,15 @@ export class CloseChannelService {
 
     // channel checks
     if (channel.status !== 'CS_OPEN') {
-      LOG.error(`channel: ${channel}`)
+      this.log.error(`channel: ${channel}`)
       throw new Error('Channel is not open')
     }
 
     const onchainChannel = await this.signerService.getChannelDetails(user)
-    LOG.info('onchainChannel: {onchainChannel}', {
-      onchainChannel
-    })
+    this.log.info(`onchainChannel: ${onchainChannel}`)
 
     const latestUpdate = await this.channelsDao.getLatestExitableState(user)
-    LOG.info('getLatestExitableState: {latestUpdate}', {
-      latestUpdate
-    })
+    this.log.info(`getLatestExitableState: ${latestUpdate}`)
 
     // for now, we wont start an exit if there have been half signed states on top of
     // our latest double signed state
@@ -253,12 +242,12 @@ export class CloseChannelService {
       latestUpdate.state.txCountChain < onchainChannel.txCountChain // our txCountChain must be equal or greater
     ) {
       // startExit
-      LOG.info('Calling contract function startExit: ' + user);
+      this.log.info(`Calling contract function startExit: ${user}`);
 
       data = this.contract.methods.startExit(user).encodeABI()
     } else {
       // startExitWithUpdate
-      LOG.info(`Calling contract function startExitWithUpdate: ${
+      this.log.info(`Calling contract function startExitWithUpdate: ${
         [[latestUpdate.state.user, latestUpdate.state.recipient],
         [
           latestUpdate.state.balanceWeiHub.toString(),
@@ -318,7 +307,7 @@ export class CloseChannelService {
         latestUpdate.state.sigUser,
       ).encodeABI()
     }
-    
+
     return this.db.withTransaction(async () => {
       const dispute = await this.channelDisputesDao.create(user, reason, null, null)
       const txn = await this.onchainTxService.sendTransaction(this.db, {
@@ -343,10 +332,7 @@ export class CloseChannelService {
     if (!disputeRow) {
       throw new Error(`Callback called for nonexistent dispute, txn: ${prettySafeJson(txn)}`)
     }
-    LOG.info(`startUnilateralExitCompleteCallback: transaction completed with state {state}, txn: {txn}`, {
-      txn,
-      state: txn.state
-    })
+    this.log.info(`startUnilateralExitCompleteCallback: transaction completed with state ${txn.state}, txn: ${txn}`)
     if (txn.state === 'failed') {
       await this.channelDisputesDao.removeStartExitOnchainTx(txn.meta.args.disputeId)
       await this.channelDisputesDao.changeStatus(disputeRow.id, 'CD_FAILED')

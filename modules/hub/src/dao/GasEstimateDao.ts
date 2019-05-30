@@ -1,10 +1,9 @@
 import {Client} from 'pg'
-import DBEngine from '../DBEngine'
-import {RedisClient} from '../RedisClient'
-import GasEstimate from '../domain/GasEstimate'
-import log from '../util/log'
 
-const LOG = log('GasEstimateDao')
+import DBEngine from '../DBEngine'
+import GasEstimate from '../domain/GasEstimate'
+import {RedisClient} from '../RedisClient'
+import { Logger } from '../util'
 
 export default interface GasEstimateDao {
   record(estimate: GasEstimate): Promise<GasEstimate>
@@ -61,7 +60,6 @@ export class PostgresGasEstimateDao implements GasEstimateDao {
       ON CONFLICT (block_num) DO NOTHING
     `, values)
 
-    LOG.debug(`${this.REDIS_KEY} ${this.REDIS_KEY_TIMEOUT_SECONDS} ${JSON.stringify(estimate)}`)
     await this.redis.setex(this.REDIS_KEY, this.REDIS_KEY_TIMEOUT_SECONDS, JSON.stringify(estimate))
     return estimate
   }

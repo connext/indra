@@ -1,8 +1,8 @@
 import { ethers as eth } from 'ethers'
 import tokenAbi from 'human-standard-token-abi'
 
-import { validateTimestamp } from '../lib/timestamp'
-import { getLastThreadUpdateId, getTxCount } from '../state/getters'
+import { validateTimestamp } from '../lib'
+import { getLastThreadUpdateId, getTxCount, getUpdateRequestTimeout } from '../state'
 import {
   argNumericFields,
   ChannelState,
@@ -32,7 +32,7 @@ export class DepositController extends AbstractController {
     const deposit = insertDefault('0', args, argNumericFields.Payment)
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
     if (!signedRequest.sigUser) {
-      console.warn(`No signature detected on the deposit request.`)
+      this.log.warn(`No signature detected on the deposit request.`)
       return
     }
 
@@ -44,7 +44,7 @@ export class DepositController extends AbstractController {
       )
       this.connext.syncController.handleHubSync(sync)
     } catch (e) {
-      console.warn('Error requesting deposit', e)
+      this.log.warn(`Error requesting deposit ${e}`)
     }
 
     // There can only be one pending deposit at a time, so it's safe to return
@@ -68,7 +68,7 @@ export class DepositController extends AbstractController {
       await this._sendUserAuthorizedDeposit(prev, update)
       check = this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.res()
     } catch (e) {
-      console.warn(
+      this.log.warn(
         `Error handling userAuthorizedUpdate (this update will be ` +
         `countersigned and held until it expires - at which point it ` +
         `will be invalidated - or the hub sends us a subsequent ` +
@@ -126,7 +126,8 @@ export class DepositController extends AbstractController {
     )
     state.sigHub = update.sigHub
 
-    const tsErr = validateTimestamp(this.store, update.args.timeout)
+    const maxTimeout = getUpdateRequestTimeout(this.store.getState())
+    const tsErr = validateTimestamp(maxTimeout, update.args.timeout)
     if (tsErr) {
       throw DepositError(tsErr)
     }
@@ -135,7 +136,7 @@ export class DepositController extends AbstractController {
     let tx
     try {
       if (args.depositTokenUser !== '0') {
-        console.log(`Approving transfer of ${args.depositTokenUser} tokens`)
+        this.log.info(`Approving transfer of ${args.depositTokenUser} tokens`)
         const token = new eth.Contract(
           this.connext.opts.tokenAddress,
           tokenAbi,
@@ -152,13 +153,13 @@ export class DepositController extends AbstractController {
         await this.connext.wallet.provider.waitForTransaction(tx.hash)
       }
       tx = await this.connext.contract.userAuthorizedUpdate(state)
-      console.log(`Sent user authorized deposit to chain: ${(tx as any).hash}`)
+      this.log.info(`Sent user authorized deposit to chain: ${(tx as any).hash}`)
     } catch (e) {
       const currentChannel = await this.connext.contract.getChannelDetails(prev.user)
       if (update.txCount && currentChannel.txCountGlobal >= update.txCount) {
         // Update has already been sent to chain
-        console.log(`Non-critical error encountered processing userAuthorizedUpdate:`, e)
-        console.log(
+        this.log.info(`Non-critical error encountered processing userAuthorizedUpdate: ${e}`)
+        this.log.info(
           `Update has already been applied to chain ` +
           `(${currentChannel.txCountGlobal} >= ${update.txCount}), ` +
           `countersigning and returning update.`)

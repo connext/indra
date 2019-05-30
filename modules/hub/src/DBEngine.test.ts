@@ -1,9 +1,11 @@
 import { Context } from "./Container"
-import {TestServiceRegistry, assert} from './testing'
+import { getTestConfig, TestServiceRegistry, assert } from './testing'
 import { PostgresDBEngine, SQL, default as DBEngine } from "./DBEngine"
 
+const logLevel = 0
+
 describe('DBEngine', () => {
-  const registry = new TestServiceRegistry()
+  const registry = new TestServiceRegistry({ logLevel })
 
   describe('SQL formatter', () => {
     const db: PostgresDBEngine = registry.get('DBEngine')

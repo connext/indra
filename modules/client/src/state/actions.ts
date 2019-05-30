@@ -1,6 +1,5 @@
 import actionCreatorFactory, { ActionCreator } from 'typescript-fsa'
 
-import { ConnextState } from '../state/store'
 import {
   Address,
   ChannelState,
@@ -13,7 +12,7 @@ import {
   UpdateRequest,
 } from '../types'
 
-import { IPendingRequestedDeposit, RuntimeState, SyncControllerState } from './store'
+import { ConnextState, IPendingRequestedDeposit, RuntimeState, SyncControllerState } from './store'
 
 const actionCreator = actionCreatorFactory('connext')
 
