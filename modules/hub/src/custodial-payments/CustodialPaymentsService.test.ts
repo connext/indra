@@ -11,11 +11,12 @@ import { createTestPayment } from './CustodialPaymentsDao.test'
 import { CustodialPaymentsService } from './CustodialPaymentsService'
 
 const logLevel = 0
+const config = getTestConfig({ logLevel })
 
 describe('CustodialPaymentsService', () => {
   const registry = getTestRegistry({
-    Config: getTestConfig({ logLevel }),
-    Web3: getMockWeb3(),
+    Config: config,
+    Web3: getMockWeb3(config),
   })
   const db: DBEngine = registry.get('DBEngine')
   const dao: CustodialPaymentsDao = registry.get('CustodialPaymentsDao')

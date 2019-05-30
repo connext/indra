@@ -62,14 +62,16 @@ export default class GasEstimateService {
       } catch (e) {
         if (retryCount >= GasEstimateService.MAX_RETRY_COUNT) {
           this.log.error(`Fatal error on attempt ` +
-            `${retryCount}/${GasEstimateService.MAX_RETRY_COUNT} to fetch gas prices: ${e}`)
+            `${retryCount}/${GasEstimateService.MAX_RETRY_COUNT} to fetch gas prices`)
+          this.log.debug(e.message)
           break
         }
 
         const retryTimeout = Math.pow(3, retryCount)
         this.log.warn(`Non-fatal error on attempt ` +
           `${retryCount}/${GasEstimateService.MAX_RETRY_COUNT} to fetch gas prices ` +
-          `(retrying in ${retryTimeout} seconds): ${e}`)
+          `(retrying in ${retryTimeout} seconds)`)
+        this.log.debug(e.message)
         await new Promise((res: any): any => setTimeout(res, retryTimeout * 1000))
         continue
       }

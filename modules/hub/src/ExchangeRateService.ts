@@ -51,7 +51,10 @@ export default class ExchangeRateService {
           'type': 'ExchangeRate',
         }))
         this.dao.record(Date.now(), res.data.rates.USD)
-      }).catch((e: any) => this.log.error(`Failed to update ETH exchange rate: ${e}`))
+      }).catch((e: any) => {
+        this.log.error(`Couldn't connect to coinbase, failed to update ETH exchange rate.`)
+        this.log.debug(e.message)
+      })
       .then(() => setTimeout(() => this.updateRates(), ExchangeRateService.POLL_INTERVAL_MS))
   }
 }

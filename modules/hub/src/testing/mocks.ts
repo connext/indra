@@ -20,14 +20,13 @@ import { mkAddress, mkHash, mkSig } from './stateUtils'
 
 export const defaultLogLevel = 3
 
-const log = new Logger('TestMocks', defaultLogLevel)
 const serviceKey = 'unspank-the-unbanked'
 const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
 export const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
-log.info(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
+console.log(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
 
 export const authHeaders = { 'authorization': `bearer ${serviceKey}` }
 export const testChannelManagerAddress = mkAddress('0xCCC')
@@ -109,8 +108,6 @@ class MockWeb3Provider {
   sendAsync(payload, callback) {
     if (payload.id)
       this.countId = payload.id
-
-    log.info(`Web3 sending async payload: ${payload}`)
   }
 
   on(type, callback) {
@@ -201,7 +198,8 @@ export class MockSignerService extends SignerService {
   }
 }
 
-export const getMockWeb3 = () => {
+export const getMockWeb3 = (config: Config = getTestConfig()) => {
+  const log = new Logger('MockWeb3', config.logLevel)
   const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl))
   return {
     ...web3,
@@ -270,21 +268,25 @@ export function clearFakeClosingTime() {
 }
 
 export class MockChannelManagerContract {
+  private log: Logger
+  constructor(config: Config = getTestConfig()) {
+    this.log = new Logger('MockChannelManager', config.logLevel)
+  }
   methods = {
     hubAuthorizedUpdate: () => {
       return {
         send: async () => {
-          log.info(`Called mocked contract function hubAuthorizedUpdate`)
+          this.log.info(`Called mocked contract function hubAuthorizedUpdate`)
           return true
         },
         encodeABI: () => {
-          log.info(`Called mocked contract function hubAuthorizedUpdate`)
+          this.log.info(`Called mocked contract function hubAuthorizedUpdate`)
           return true
         },
       }
     },
     getChannelDetails: () => {
-      log.info(`Called mocked contract function getChannelDetails`)
+      this.log.info(`Called mocked contract function getChannelDetails`)
       return {
         call: async () => {
           return [
@@ -300,7 +302,7 @@ export class MockChannelManagerContract {
       }
     },
     startExitWithUpdate: () => {
-      log.info(`Called mocked contract function startExitWithUpdate`)
+      this.log.info(`Called mocked contract function startExitWithUpdate`)
       return {
         send: async () => {
           return true
@@ -311,7 +313,7 @@ export class MockChannelManagerContract {
       }
     },
     startExit: () => {
-      log.info(`Called mocked contract function startExit`)
+      this.log.info(`Called mocked contract function startExit`)
       return {
         send: async () => {
           return true
@@ -322,7 +324,7 @@ export class MockChannelManagerContract {
       }
     },
     emptyChannel: () => {
-      log.info(`Called mocked contract function emptyChannel`)
+      this.log.info(`Called mocked contract function emptyChannel`)
       return {
         send: async () => {
           return true
@@ -392,6 +394,7 @@ export const mockServices: any = {
   },
 
   'ChannelManagerContract': {
-    factory: () => new MockChannelManagerContract(),
+    factory: (config: any) => new MockChannelManagerContract(config),
+    dependencies: ['Config'],
   },
 }

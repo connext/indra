@@ -8,11 +8,12 @@ import { toWei } from '../util'
 import { createTestPayment } from './CustodialPaymentsDao.test'
 
 const logLevel = 0
+const config = getTestConfig({ logLevel })
 
 describe('CustodialPaymentsApiService', () => {
   const registry = getTestRegistry({
-    Config: getTestConfig({ logLevel }),
-    Web3: getMockWeb3(),
+    Config: config,
+    Web3: getMockWeb3(config),
   })
   const app: TestApiServer = registry.get('TestApiServer')
   const recipient = mkAddress('0x2')

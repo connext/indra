@@ -55,6 +55,7 @@ import { isBN, Logger, toBN, tokenToWei, toWei, weiToToken } from './util'
 const logLevel = 0
 const log = new Logger('ChannelsServiceTest', logLevel)
 const contract = mkAddress('0xCCC')
+const defaultConfig = getTestConfig({ logLevel })
 
 function fieldsToWei<T>(obj: T): T {
   const res = {} as any
@@ -86,7 +87,7 @@ describe('ChannelsService', () => {
   const registry = getTestRegistry({
     Config: getTestConfig({ logLevel }),
     GasEstimateDao: new MockGasEstimateDao(),
-    Web3: getMockWeb3(),
+    Web3: getMockWeb3(defaultConfig),
   })
 
   const channelsDao: PostgresChannelsDao = registry.get('ChannelsDao')
@@ -837,7 +838,7 @@ describe('ChannelsService', () => {
     const registry = getTestRegistry({
       Config: getTestConfig({ logLevel }),
       Web3: {
-        ...getMockWeb3(),
+        ...getMockWeb3(defaultConfig),
         eth: {
           sign: async () => {
             return
@@ -1269,7 +1270,7 @@ describe('ChannelsService', () => {
         const registry = getTestRegistry({
           Config: getTestConfig({ logLevel }),
           Web3: {
-            ...getMockWeb3(),
+            ...getMockWeb3(defaultConfig),
             eth: {
               Contract: web3ContractMock,
               sign: async () => {

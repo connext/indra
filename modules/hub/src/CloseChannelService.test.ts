@@ -14,6 +14,7 @@ import { ChannelStatus, ChannelState } from 'connext';
 
 const logLevel = 0
 const log = new Logger('CloseChannelServiceTest', logLevel)
+const config = getTestConfig({ logLevel })
 
 async function rewindUpdates(db: DBEngine, days: number, user: string) {
   await db.queryOne(`
@@ -29,8 +30,8 @@ async function rewindUpdates(db: DBEngine, days: number, user: string) {
 
 describe('CloseChannelService', () => {
   let registry = getTestRegistry({
-    Config: getTestConfig({ logLevel }),
-    Web3: getMockWeb3(),
+    Config: config,
+    Web3: getMockWeb3(config),
     OnchainTransactionService: {
       sendTransaction: async () => {
         log.info('Called mock function sendTransaction');
@@ -80,7 +81,7 @@ describe('CloseChannelService', () => {
         logLevel,
         staleChannelDays: null,
       }),
-      Web3: getMockWeb3(),
+      Web3: getMockWeb3(config),
       OnchainTransactionService: {
         sendTransaction: async () => {
           log.info('Called mock function sendTransaction');
@@ -116,7 +117,7 @@ describe('CloseChannelService', () => {
         logLevel,
         staleChannelDays: 1,
       }),
-      Web3: getMockWeb3(),
+      Web3: getMockWeb3(config),
       OnchainTransactionService: {
         sendTransaction: async () => {
           log.info('Called mock function sendTransaction');
@@ -276,14 +277,14 @@ describe('CloseChannelService', () => {
 
   describe('disputeStaleChannels', () => {
     registry = getTestRegistry({
-      Config: getTestConfig({ logLevel }),
+      Config: config,
       OnchainTransactionService: {
         sendTransaction: async (): Promise<boolean> => {
           log.info('Called mock function sendTransaction')
           return true
         },
       },
-      Web3: getMockWeb3(),
+      Web3: getMockWeb3(config),
     })
 
     beforeEach(async () => {
