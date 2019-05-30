@@ -1,5 +1,5 @@
-import * as dotenv from 'dotenv';
-import * as fs from 'fs';
+import * as dotenv from "dotenv";
+import * as fs from "fs";
 
 export class ConfigService {
   private readonly envConfig: { [key: string]: string };
@@ -13,6 +13,6 @@ export class ConfigService {
   }
 
   nodeMnemonic(): string {
-    return this.get('NODE_MNEMONIC');
+    return this.get("NODE_MNEMONIC");
   }
 }
