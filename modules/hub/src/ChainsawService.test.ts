@@ -259,7 +259,7 @@ describe('ChainsawService', function() {
     let CM_ADDRESS: string
 
     before(async () => {
-      w3 = getTestRegistry({ logLevel }).get('Web3')
+      w3 = getTestRegistry({ Config: getTestConfig({ logLevel }) }).get('Web3')
       clock = sinon.useFakeTimers()
       const accounts = await w3.eth.getAccounts()
       HUB_ADDRESS = "0xfb482f8f779fd96a857f1486471524808b97452d"
@@ -279,9 +279,9 @@ describe('ChainsawService', function() {
       contract = new w3.eth.Contract(abi.abi, CM_ADDRESS)
 
       registry = getTestRegistry({
-        logLevel,
+        channelManagerAddress: CM_ADDRESS,
+        Config: getTestConfig({ logLevel }),
         hotWalletAddress: HUB_ADDRESS,
-        channelManagerAddress: CM_ADDRESS
       })
       csDao = registry.get('ChainsawDao')
       chanDao = registry.get('ChannelsDao')

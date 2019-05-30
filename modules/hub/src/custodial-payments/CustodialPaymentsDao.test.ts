@@ -9,7 +9,7 @@ import { channelUpdateFactory } from '../testing/factories'
 import { mkAddress } from '../testing/stateUtils'
 import { Logger } from '../util'
 
-const logLevel = 1
+const logLevel = 0
 const log = new Logger('CustodialPaymentsDaoTest', logLevel)
 
 export async function createTestPayment(

@@ -15,7 +15,7 @@ import { testChannelManagerAddress, testHotWalletAddress } from '../testing/mock
 import { mkAddress, mkSig } from '../testing/stateUtils'
 import { toWei } from '../util'
 
-const logLevel = 2
+const logLevel = 0
 
 describe('PaymentsApiService', () => {
   const registry = getTestRegistry({

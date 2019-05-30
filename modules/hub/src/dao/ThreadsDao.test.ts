@@ -1,6 +1,7 @@
 import * as connext from 'connext'
 
-import { getTestRegistry } from '../testing'
+import { Config } from '../Config'
+import { getTestConfig, getTestRegistry } from '../testing'
 import { channelAndThreadFactory } from '../testing/factories'
 import { testChannelManagerAddress } from '../testing/mocks'
 import {
@@ -10,10 +11,13 @@ import {
   mkAddress,
 } from '../testing/stateUtils'
 import { toBN } from '../util'
+
 import { PostgresThreadsDao } from './ThreadsDao'
 
+const logLevel = 0
+
 describe('ThreadsDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
 
   const threadsDao: PostgresThreadsDao = registry.get('ThreadsDao')
 

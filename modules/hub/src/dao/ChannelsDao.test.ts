@@ -1,13 +1,17 @@
 import { assert } from 'chai'
 import * as connext from 'connext'
 
-import { getTestRegistry } from '../testing'
+import { Config } from '../Config'
+import { getTestConfig, getTestRegistry } from '../testing'
 import { channelUpdateFactory } from '../testing/factories'
 import { assertChannelStateEqual } from '../testing/stateUtils'
+
 import ChannelsDao from './ChannelsDao'
 
+const logLevel = 0
+
 describe('ChannelsDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
 
   const dao: ChannelsDao = registry.get('ChannelsDao')
 

@@ -4,10 +4,10 @@
  * Will set `host[attr]` to a function which will call `func`, providing the
  * old function as the frist argument.
  *
- * For example, to patch `console.log` so all log lines would be prefixed with
+ * For example, to patch `log.info` so all log lines would be prefixed with
  * '[LOG]':
  *
- *  patch(console, 'log', (old, ...args) => {
+ *  patch(log, 'info', (old, ...args) => {
  *    old.call(this, '[LOG] ', ...args)
  *  })
  */

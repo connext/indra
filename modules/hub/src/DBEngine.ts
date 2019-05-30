@@ -273,15 +273,15 @@ export class PostgresDBEngine implements DBEngine<Client> {
     }
   }
 
-  query(query: string, params?:any[]): Promise<QueryResult> {
+  public async query(query: string, params?:any[]): Promise<QueryResult> {
     const cxn = this.getActiveTransaction()
-    if (cxn)
+    if (cxn) {
       return cxn.query(query, params)
-
+    }
     return this.pool.query(query, params)
   }
 
-  async queryOne(query: string, params?:any[]): Promise<any | null> {
+  public async queryOne(query: string, params?:any[]): Promise<any | null> {
     return (await this.query(query, params)).rows[0]
   }
 

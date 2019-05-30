@@ -5,9 +5,10 @@ import '../register/common'
 import { default as Config } from '../Config'
 /* tslint:enable */
 import PaymentHub from '../PaymentHub'
+import { Logger } from '../util'
 
 const config = Config.fromEnv()
-
+const log = new Logger('Main', config.logLevel)
 const hub = new PaymentHub(config)
 
 async function run(): Promise<void> {
@@ -27,8 +28,8 @@ async function run(): Promise<void> {
   const cmd = process.argv[2] || 'hub'
   const handler = subcommands[cmd]
   if (!handler) {
-    console.error(`Unknown subcommand: ${cmd}`)
-    console.error(`Known subcommands: ${Object.keys(subcommands).join(', ')}`)
+    log.error(`Unknown subcommand: ${cmd}`)
+    log.error(`Known subcommands: ${Object.keys(subcommands).join(', ')}`)
     return
   }
 
@@ -38,7 +39,7 @@ async function run(): Promise<void> {
 run().then(
   () => process.exit(0),
   (err: Error) => {
-    console.error(err)
+    log.error(err.message)
     process.exit(1)
   },
 )

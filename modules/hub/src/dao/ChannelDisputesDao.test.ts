@@ -1,15 +1,20 @@
 import { assert } from 'chai'
-import { getTestRegistry } from '../testing'
-import { mkHash, mkAddress } from '../testing/stateUtils'
-import { channelUpdateFactory } from '../testing/factories';
-import DBEngine from '../DBEngine';
-import { ChannelDisputeRow } from '../domain/ChannelDispute';
-import { OnchainTransactionsDao } from './OnchainTransactionsDao';
-import ChannelsDao from './ChannelsDao';
-import ChannelDisputesDao from './ChannelDisputesDao';
+
+import { Config } from '../Config'
+import DBEngine from '../DBEngine'
+import { ChannelDisputeRow } from '../domain/ChannelDispute'
+import { getTestConfig, getTestRegistry } from '../testing'
+import { channelUpdateFactory } from '../testing/factories'
+import { mkAddress, mkHash } from '../testing/stateUtils'
+
+import ChannelDisputesDao from './ChannelDisputesDao'
+import ChannelsDao from './ChannelsDao'
+import { OnchainTransactionsDao } from './OnchainTransactionsDao'
+
+const logLevel = 0
 
 describe('ChannelDisputesDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
 
   let dao: ChannelDisputesDao = registry.get('ChannelDisputesDao')
   let onchainTxDao: OnchainTransactionsDao = registry.get('OnchainTransactionsDao')

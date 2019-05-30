@@ -9,7 +9,7 @@ import WithdrawalsDao from './dao/WithdrawalsDao'
 import { Logger, toBN, toWei } from './util'
 import WithdrawalsService from './WithdrawalsService'
 
-const logLevel = 5
+const logLevel = 0
 const assert = chai.assert
 
 describe.skip('WithdrawalsService', () => {
@@ -202,12 +202,6 @@ describe.skip('WithdrawalsService', () => {
           return ++i % 2 === 0 ? [ 'oh no', null ] : [ null, { blockNumber: null } ]
         }
 
-        // silence chatty logs
-        const originalInfo = console.info
-        const originalErr = console.error
-        console.info = () => null
-        console.error = () => null
-
         await new Promise((resolve) => {
           wDao.markPending = sinon.stub().resolves()
           wDao.markFailed = sinon.stub().callsFake(() => {
@@ -227,9 +221,6 @@ describe.skip('WithdrawalsService', () => {
 
           ws.withdraw('0xbeef', '0xcafe', toBN(10))
         })
-
-        console.info = originalInfo
-        console.error = originalErr
 
         assert.isTrue((wDao.markFailed as SinonStub).calledWith(1))
       })

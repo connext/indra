@@ -198,7 +198,7 @@ export class PostgresChannelsDao implements ChannelsDao {
     )
   }
 
-  async applyUpdateByUser(
+  public async applyUpdateByUser(
     user: string,
     reason: ChannelUpdateReason,
     originator: string,
@@ -208,7 +208,8 @@ export class PostgresChannelsDao implements ChannelsDao {
     onchainLogicalId?: number,
   ): Promise<ChannelStateUpdateRowBN> {
 
-    this.log.info(`Applying channel update to ${user}: ${reason}(${prettySafeJson(args)}) -> ${prettySafeJson(state)}`)
+    this.log.info(`Applying channel update to ${user}: ${reason}(${prettySafeJson(args)}) ` +
+      `-> ${prettySafeJson(state)}`)
 
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`

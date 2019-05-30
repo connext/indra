@@ -16,7 +16,7 @@ import {
 } from './testing/stateUtils'
 import { toBN } from './util'
 
-const logLevel = 5
+const logLevel = 0
 const fakeSig = mkSig('0xfff')
 
 describe.skip('ThreadsService', () => { // TODO REB-35: enable threads

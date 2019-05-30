@@ -10,7 +10,7 @@ import {
 import * as eth from 'ethers'
 
 import ChannelsService from './ChannelsService'
-import Config from './Config'
+import { Config } from './Config'
 import { default as ChannelsDao } from './dao/ChannelsDao'
 import GlobalSettingsDao from './dao/GlobalSettingsDao'
 import OptimisticPaymentDao from './dao/OptimisticPaymentDao'
@@ -32,7 +32,7 @@ const log = new Logger('PaymentsServiceTest', logLevel)
 const emptyAddress = eth.constants.AddressZero
 
 describe('PaymentsService', () => {
-  const registry = getTestRegistry({ logLevel })
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
 
   const service: PaymentsService = registry.get('PaymentsService')
   const opPaymentsDao: OptimisticPaymentDao = registry.get('OptimisticPaymentDao')

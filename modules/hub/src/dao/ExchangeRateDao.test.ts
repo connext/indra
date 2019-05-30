@@ -1,8 +1,12 @@
+import { Config } from '../Config'
+import { getTestConfig, getTestRegistry, assert } from '../testing'
+
 import { PostgresExchangeRateDao } from './ExchangeRateDao'
-import { getTestRegistry, assert } from '../testing'
+
+const logLevel = 0
 
 describe('ExchangeRateDao', () => {
-  const registry = getTestRegistry()
+  const registry = getTestRegistry({ Config: getTestConfig({ logLevel }) })
   const dao = new PostgresExchangeRateDao(registry.get('DBEngine'))
   before(async () => {
     await registry.clearDatabase()

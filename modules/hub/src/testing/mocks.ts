@@ -18,16 +18,16 @@ import { Logger } from '../util'
 import { truncateAllTables } from './eraseDb'
 import { mkAddress, mkHash, mkSig } from './stateUtils'
 
-export const defaultLogLevel = 2
+export const defaultLogLevel = 3
 
-const log = new Logger('DefaultMock', defaultLogLevel)
+const log = new Logger('TestMocks', defaultLogLevel)
 const serviceKey = 'unspank-the-unbanked'
 const mnemonic = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
 const databaseUrl = process.env.DATABASE_URL_TEST || 'postgres://127.0.0.1:5432'
 const redisUrl = process.env.REDIS_URL_TEST || 'redis://127.0.0.1:6379/6'
 export const providerUrl = process.env.ETH_RPC_URL_TEST || 'http://127.0.0.1:8545'
 
-console.log(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
+log.info(`\nTest urls:\n - db: ${databaseUrl}\n - redis: ${redisUrl}\n - eth: ${providerUrl}`)
 
 export const authHeaders = { 'authorization': `bearer ${serviceKey}` }
 export const testChannelManagerAddress = mkAddress('0xCCC')

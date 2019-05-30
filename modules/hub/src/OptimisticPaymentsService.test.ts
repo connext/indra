@@ -16,7 +16,7 @@ import { channelUpdateFactory, tokenVal } from './testing/factories'
 import { mkAddress, mkSig } from './testing/stateUtils'
 import { toBN } from './util'
 
-const logLevel = 2
+const logLevel = 0
 const config = getTestConfig({ logLevel })
 
 describe('OptimisticPaymentsService', () => {

@@ -2,7 +2,7 @@ import { Context } from "./Container"
 import { getTestConfig, TestServiceRegistry, assert } from './testing'
 import { PostgresDBEngine, SQL, default as DBEngine } from "./DBEngine"
 
-const logLevel = 3
+const logLevel = 0
 
 describe('DBEngine', () => {
   const registry = new TestServiceRegistry({ logLevel })

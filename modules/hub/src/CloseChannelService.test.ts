@@ -12,7 +12,7 @@ import { assertChannelStateEqual, mkAddress, SuccinctChannelState } from './test
 import { Logger, toWei, toBN } from './util'
 import { ChannelStatus, ChannelState } from 'connext';
 
-const logLevel = 2
+const logLevel = 0
 const log = new Logger('CloseChannelServiceTest', logLevel)
 
 async function rewindUpdates(db: DBEngine, days: number, user: string) {

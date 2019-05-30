@@ -516,13 +516,16 @@ export const serviceDefinitions: PartialServiceDefinitions = {
 
   PaymentProfilesService: {
     factory: (
+      config: Config,
       paymentsProfileDao: PaymentProfilesDao,
       db: DBEngine,
     ) => new PaymentProfilesService(
+      config,
       paymentsProfileDao,
       db,
     ),
     dependencies: [
+      'Config',
       'PaymentProfilesDao',
       'DBEngine'
     ]

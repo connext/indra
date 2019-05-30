@@ -7,7 +7,7 @@ import { toWei } from '../util'
 
 import { createTestPayment } from './CustodialPaymentsDao.test'
 
-const logLevel = 1
+const logLevel = 0
 
 describe('CustodialPaymentsApiService', () => {
   const registry = getTestRegistry({
