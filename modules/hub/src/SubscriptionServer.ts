@@ -14,8 +14,7 @@ export class SubscriptionServer {
     this.server = new WebSocket.Server({ port: config.port + 1 })
 
     this.server.on('connection', (ws: WebSocket, req: any): void => {
-      const ip: string = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
-        || req.connection.remoteAddress
+      const ip: string = req.connection.remoteAddress // TODO: check x-forwarded-for header
       this.log.info(`New WebSocket connection established with: ${ip}`)
 
       // The client shouldn't need to write to the subscription ws endpoint
