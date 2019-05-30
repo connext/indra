@@ -147,18 +147,6 @@ export class ApiServer {
         server = https.createServer({ key: pems.private, cert: pems.cert }, this.app)
       }
 
-      const wsPort = port + 1
-      const wsServer = new WebSocket.Server({ port: wsPort })
-      wsServer.on('connection', (ws: WebSocket): void => {
-        this.log.info(`New WS connection established`)
-        ws.on('message', (message: any): void => {
-          this.log.info(`WS received message: [${typeof message}] ${message}`)
-        })
-        const toSend = `Hello WS client, I'm the hub`
-        this.log.info(`WS sending message: [${typeof toSend}] ${toSend}`)
-        ws.send(toSend)
-      })
-
       server.listen(port, (err: any): void => {
         if (err) throw err
         this.log.info(`Listening on port: ${port}.`)

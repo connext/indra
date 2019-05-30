@@ -4,8 +4,10 @@ export class Logger {
   private name: string = 'Logger'
 
   public constructor(name?: string, logLevel?: number) {
-    this.name = name ? name : this.name
-    this.logLevel = logLevel ? logLevel : this.logLevel
+    this.name = typeof name !== 'undefined' ? name : this.name
+    this.logLevel = typeof logLevel !== 'undefined'
+      ? parseInt(logLevel.toString(), 10)
+      : this.logLevel
   }
 
   public error(msg: string): void {

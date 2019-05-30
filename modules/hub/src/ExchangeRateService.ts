@@ -43,7 +43,10 @@ export default class ExchangeRateService {
     ExchangeRateService.fetch(ExchangeRateService.COINBASE_URL)
       .then((res: Response) => res.json())
       .then((res: RateResponse) => {
-        this.subscriptions.broadcast(JSON.stringify(res.data.rates.USD))
+        this.subscriptions.broadcast(JSON.stringify({
+          'data': res.data.rates.USD,
+          'type': 'ExchangeRate',
+        }))
         this.dao.record(Date.now(), res.data.rates.USD)
       }).catch((e: any) => log.error(`Failed to update ETH exchange rate: ${e}`))
       .then(() => setTimeout(() => this.updateRates(), ExchangeRateService.POLL_INTERVAL_MS))

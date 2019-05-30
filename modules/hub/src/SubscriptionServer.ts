@@ -20,13 +20,16 @@ export class SubscriptionServer {
 
       // The client shouldn't need to write to the subscription ws endpoint
       // But we'll log anything that's written just in case
-      ws.on('message', (message: any): void => {
-        this.log.info(`WebSocket received message: ${message}`)
+      ws.on('message', (message: string): void => {
+        if (message.length > 0) {
+          this.log.info(`WebSocket received message: ${message}`)
+        }
       })
     })
   }
 
   public broadcast(data: string): void {
+    this.log.info(`Broadcasting: ${data}`)
     this.server.clients.forEach((client: WebSocket): void => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(data)

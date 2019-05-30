@@ -80,8 +80,10 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   GasEstimateService: {
-    factory: (dao: GasEstimateDao) => new GasEstimateService(dao),
-    dependencies: ['GasEstimateDao'],
+    dependencies: ['Config', 'GasEstimateDao', 'SubscriptionServer'],
+    factory: (
+      config: Config, dao: GasEstimateDao, subscriptions: SubscriptionServer,
+    ): GasEstimateService => new GasEstimateService(config, dao, subscriptions),
     isSingleton: true,
   },
 

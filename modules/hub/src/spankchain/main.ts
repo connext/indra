@@ -1,8 +1,10 @@
 import * as eth from 'ethers'
 
-import { default as Config } from '../Config'
-import PaymentHub from '../PaymentHub'
+/* tslint:disable */// importing register/common needs to happen first
 import '../register/common'
+import { default as Config } from '../Config'
+/* tslint:enable */
+import PaymentHub from '../PaymentHub'
 
 const config = Config.fromEnv()
 
@@ -15,7 +17,8 @@ async function run(): Promise<void> {
     'collateralize': (args: string[]): Promise<void> =>
       hub.collateralizeChannel(args[0], eth.utils.bigNumberify(args[1])),
     'exit-channels': (args: string[]): Promise<void> => hub.startUnilateralExitChannels(args),
-    'exit-stale-channels': args => hub.exitStaleChannels(args[0], args[1]), // days, maxDisputes?
+    'exit-stale-channels': (args: string[]): Promise<void> =>
+      hub.exitStaleChannels(args[0], args[1]), // days, maxDisputes?
     'fix-channels': (args: string[]): Promise<void> => hub.fixBrokenChannels(),
     'hub': (args: string[]): Promise<any> => hub.start(),
     'process-tx': (args: string[]): Promise<void> => hub.processTx(args[0]),
@@ -24,8 +27,8 @@ async function run(): Promise<void> {
   const cmd = process.argv[2] || 'hub'
   const handler = subcommands[cmd]
   if (!handler) {
-    console.error('Unknown subcommand: ' + cmd)
-    console.error('Known subcommands: ' + Object.keys(subcommands).join(', '))
+    console.error(`Unknown subcommand: ${cmd}`)
+    console.error(`Known subcommands: ${Object.keys(subcommands).join(', ')}`)
     return
   }
 
