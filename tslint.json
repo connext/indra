@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "tslint-config-airbnb",
+    "tslint-plugin-prettier",
+    "tslint-config-prettier"
+  ],
+  "rules": {
+    "prettier": true,
+    "ordered-imports": [true, {"grouped-imports": true}],
+    "import-name": false
+  }
+}
