@@ -42,7 +42,7 @@ class ConfigApiServiceHandler {
       return res.send({ error: 'Admin role not detected on request.' })
     }
     // cast bn values to string
-    let response
+    let response = {}
     for (let key in this.config) {
       if (isBN(this.config[key])) {
         response[key] = this.config[key].toString()
