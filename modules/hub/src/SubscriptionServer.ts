@@ -14,9 +14,9 @@ export class SubscriptionServer {
     this.server = new WebSocket.Server({ port: config.port + 1 })
 
     this.server.on('connection', (ws: WebSocket, req: any): void => {
-      this.log.info(`New WebSocket connection established with: ${
-        req.headers['x-forwarded-for'].split(/\s*,\s*/)[0] || req.connection.remoteAddress
-      }`)
+      const ip: string = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
+        || req.connection.remoteAddress
+      this.log.info(`New WebSocket connection established with: ${ip}`)
 
       // The client shouldn't need to write to the subscription ws endpoint
       // But we'll log anything that's written just in case
@@ -25,6 +25,15 @@ export class SubscriptionServer {
           this.log.info(`WebSocket received message: ${message}`)
         }
       })
+
+      ws.on('close', (): void => {
+        this.log.info(`WebSocket connection closed with: ${ip}`)
+      })
+
+      ws.on('error', (e: any): void => {
+        this.log.info(`WebSocket error with ${ip}: ${e.message}`)
+      })
+
     })
   }
 

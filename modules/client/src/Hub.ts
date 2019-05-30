@@ -92,32 +92,26 @@ export class HubAPIClient implements IHubAPIClient {
     this.wallet = wallet
     this.address = wallet.address
     this.log = new Logger('HubAPIClient', logLevel)
-
-    const hubWsUrl = `${this.hubUrl}/subscribe`.replace(/^http/, 'ws')
-    this.log.info(`===== WS connecting to: ${hubWsUrl}`)
-    this.ws = new WebSocket(hubWsUrl)
-
-    this.ws.onopen = (): void => {
-      this.log.info(`===== WS successfully connected to ${hubWsUrl}`)
-      this.ws.send('Hello Hubby')
-    }
-
-    this.ws.onclose = (): void => {
-      this.log.info(`===== WS disconnected from ${hubWsUrl}`)
-    }
-
-    this.ws.onmessage = (event: any): void => {
-      this.log.info(`===== WS message: ${event.data}`)
-    }
-
-    this.ws.onerror = (e: any): void => {
-      this.log.info(`===== WS error`)
-    }
-
   }
 
   ////////////////////////////////////////
   // Public Methods
+
+  public async subscribe(): Promise<WebSocket> {
+    const hubWsUrl = `${this.hubUrl}/subscribe`.replace(/^http/, 'ws')
+    this.log.info(`===== WS connecting to: ${hubWsUrl}`)
+    this.ws = new WebSocket(hubWsUrl)
+    this.ws.onopen = (): void => {
+      this.log.debug(`Successfully subscribed to ${hubWsUrl}`)
+    }
+    this.ws.onclose = (): void => {
+      this.log.debug(`Disconnected from ${hubWsUrl}`)
+    }
+    this.ws.onmessage = (event: any): void => {
+      this.log.info(`Got message from ${hubWsUrl}: ${event.data}`)
+    }
+    return ws
+  }
 
   public async sendEmail(email: EmailRequest): Promise<{ message: string, id: string }> {
     return this.post(`payments/${this.address}/email`, { ...email })
