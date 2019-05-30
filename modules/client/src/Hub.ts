@@ -97,7 +97,7 @@ export class HubAPIClient implements IHubAPIClient {
   ////////////////////////////////////////
   // Public Methods
 
-  public async subscribe(): Promise<WebSocket> {
+  public async subscribe(callback: any): Promise<WebSocket> {
     const hubWsUrl = `${this.hubUrl}/subscribe`.replace(/^http/, 'ws')
     this.log.info(`===== WS connecting to: ${hubWsUrl}`)
     this.ws = new WebSocket(hubWsUrl)
@@ -109,8 +109,8 @@ export class HubAPIClient implements IHubAPIClient {
     }
     this.ws.onmessage = (event: any): void => {
       this.log.info(`Got message from ${hubWsUrl}: ${event.data}`)
+      callback(event.data)
     }
-    return ws
   }
 
   public async sendEmail(email: EmailRequest): Promise<{ message: string, id: string }> {
