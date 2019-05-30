@@ -221,6 +221,24 @@ ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 
 ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 1000 token
 ```
 
+Sometimes the hub's disk fills up. Database backups are safe to clear as long as you've got the remote backups option configured.
+
+```
+ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP rm -rf indra/modules/database/snapshots
+```
+
+Often, docker images are the things taking the most space and `docker image prune` doesn't delete everything. On the hub, run:
+
+```
+docker image ls | awk '{ print $NF,$0 }' | sort -k1,1 -h | cut -f2- -d' '
+```
+
+To see a list of docker images sorted by size, look for ones that are big and old and remove them
+
+```
+docker image rm 17896decd67e 5de6df3d411a 16d412a26980 4a5d62217a93 ...
+```
+
 ## How to interact with an Indra hub
 
 A prod-mode indra hub exposes the following API ([source](https://github.com/ConnextProject/indra/blob/master/modules/proxy/prod.conf#L53)):
