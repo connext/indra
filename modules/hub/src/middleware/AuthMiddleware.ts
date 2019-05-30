@@ -10,7 +10,7 @@ import { isValidHex, Logger } from '../util'
 
 const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
 
-const nonceExpiry = 1000 * 60 * 2 // 2 hours
+const nonceExpiry = 1000 * 60 * 60 * 2 // 2 hours
 
 const defaultAcl: RouteBasedACL = new RouteBasedACL()
     .addRoute('/branding', Role.NONE)

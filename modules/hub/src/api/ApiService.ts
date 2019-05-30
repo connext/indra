@@ -21,13 +21,13 @@ export abstract class ApiService<Handler=any> {
   getRouter() {
     const router = new Router()
     Object.entries(this.routes).forEach(([route, handlerMethod]) => {
-      if (!((handlerMethod as string) in this.handler.prototype))
+      if (!((handlerMethod as string) in this.handler.prototype)) {
         throw new Error(`"${handlerMethod}" does not exist on "${this.handler}"`)
-
+      }
       let [method, path, rest] = route.split(/\s+/)
-      if (rest)
+      if (rest) {
         throw new Error(`Invalid path (too many parts): ${route}`)
-
+      }
       method = method.toLowerCase()
       router[method](path, this.handleRequest.bind(this, handlerMethod))
     })
@@ -42,7 +42,6 @@ export abstract class ApiService<Handler=any> {
         'Context': context,
       })
     })
-
     return handler
   }
 
@@ -50,4 +49,5 @@ export abstract class ApiService<Handler=any> {
     const handler = this.getHandler()
     return handler[handlerMethod](req, res)
   }
+
 }

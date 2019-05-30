@@ -17,7 +17,7 @@ const { arrayify, bigNumberify, hexlify, randomBytes } = eth.utils
 
 const logLevel = 10
 const forbidden = 403
-const day = 1000 * 60 * 24
+const day = 1000 * 60 * 60 * 24
 const nonce = hexlify(randomBytes(32))
 const serviceKey = hexlify(randomBytes(32))
 const wallet = eth.Wallet.createRandom()

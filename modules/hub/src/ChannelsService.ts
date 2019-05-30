@@ -366,11 +366,11 @@ export default class ChannelsService {
       return null
     }
 
-    // 3. Otherwise, deposit the appropriate amount up to the 
+    // 3. Otherwise, deposit the appropriate amount up to the
     // collteralization limit
     const amountToCollateralize = minBN([
-      this.config.beiMaxCollateralization.sub(channel.state.balanceTokenHub), 
-      targets.maxAmount.sub(channel.state.balanceTokenHub)
+      this.config.beiMaxCollateralization.sub(channel.state.balanceTokenHub),
+      targets.maxAmount.sub(channel.state.balanceTokenHub),
     ])
 
     if (amountToCollateralize.isZero()) {
