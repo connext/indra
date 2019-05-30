@@ -116,7 +116,7 @@ export class PaymentsApiServiceHandler {
     }
 
     const result = await this.paymentsService.doPaymentEmail(
-      to, subject, text,
+      user, to, subject, text,
     )
 
     if (result.error) {

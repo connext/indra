@@ -835,10 +835,6 @@ export default class ChannelsService {
           txn.logicalId,
         )
 
-        if (redisUpdate.reason == 'ProposePendingDeposit') {
-          const args = redisUpdate.args as DepositArgs
-        }
-
         return res
 
       case 'Exchange':

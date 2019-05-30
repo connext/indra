@@ -56,8 +56,22 @@ export default class PaymentsService {
     return this.db.withTransaction(() => this._doPurchase(user, meta, payments))
   }
 
+  // TODO: delete
+  private async addDuplicateFlag(
+    user: string,
+    subject: string,
+  ) {
+    const emails = await this.paymentsDao.getEmailsByUser(user)
+    if (emails) {
+      return '[DUPLICATE] ' + subject
+    }
+
+    return subject
+  }
+
   // TODO: delete this endpoint
   public async doPaymentEmail(
+    user: string,
     to: string, // email
     subject: string,
     text: string, // email body
@@ -72,27 +86,45 @@ export default class PaymentsService {
     // NOTE: this is a hack for dev, can then only send to layne
     // or other authorized addresses
     if (!hubPublicUrl && isDev) {
-      hubPublicUrl = "sandbox279413abd31e4715862eb5120251f079.mailgun.org"
+      hubPublicUrl = "https://hub.connext.network"
     }
+
+    const strippedUrl = hubPublicUrl.indexOf("://") != -1
+      ? hubPublicUrl.split("://")[1]
+      : hubPublicUrl
+
+    log.warn(`hubPublicUrl: ${strippedUrl}, mailgunApiKey: ${mailgunApiKey}`)
 
     if (!mailgunApiKey || !hubPublicUrl) {
       throw new Error(`Email configuration not set up, cannot send email via mailgun. mailgunApiKey: ${mailgunApiKey}, hubPublicUrl: ${hubPublicUrl}`)
     }
 
     const mg = mailgun({
-      domain: hubPublicUrl,
+      domain: strippedUrl,
       apiKey: mailgunApiKey,
     })
 
     // create email data
+    const prefixedSubject = await this.addDuplicateFlag(user, subject)
     const emailData = {
-      from: 'Connext <requests@money2020.connext.network>',
+      from: 'Connext <requests@hub.connext.network>',
       to,
-      subject,
+      subject: prefixedSubject,
       text,
     }
     try {
       const res = await mg.messages().send(emailData)
+      if (!res) {
+        // should be caught in "catch"
+        throw new Error("Res not created from mailgun")
+      }
+      await this.paymentsDao.createEmail(
+        res.id,
+        user,
+        prefixedSubject, 
+        emailData.text
+      )
+      
       return {
         error: false,
         res,

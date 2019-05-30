@@ -4,7 +4,6 @@ import Web3 from 'web3'
 
 import { default as ChannelManagerABI } from './abi/ChannelManager'
 import AuthApiService from './api/AuthApiService'
-import BrandingApiService from './api/BrandingApiService'
 import ChannelsApiService from './api/ChannelsApiService'
 import ConfigApiService from './api/ConfigApiService'
 import ExchangeRateApiService from './api/ExchangeRateApiService'
@@ -148,7 +147,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       GasEstimateApiService,
       FeatureFlagsApiService,
       ChannelsApiService,
-      BrandingApiService,
       AuthApiService,
       ConfigApiService,
       ExchangeRateApiService,

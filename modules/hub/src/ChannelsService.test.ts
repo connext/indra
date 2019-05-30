@@ -14,7 +14,6 @@ import {
   WithdrawalParametersBN,
 } from 'connext/types'
 import * as eth from 'ethers'
-import { BigNumber } from 'ethers/utils'
 import Web3 = require('web3')
 
 import ChannelsService from './ChannelsService'
@@ -193,7 +192,9 @@ describe('ChannelsService', () => {
     })
 
     const timeout = Math.floor(Date.now() / 1000) + 5 * 60
-    await service.doRequestDeposit(chan.state.user, weiDeposit, toBN(0), mkSig())
+    await service.doRequestDeposit(
+      chan.state.user, weiDeposit, toBN(0), mkSig()
+    )
     const {updates: syncUpdates} = await service.getChannelAndThreadUpdatesForSync(
       chan.state.user,
       0,
@@ -205,6 +206,7 @@ describe('ChannelsService', () => {
       (latestState.update as UpdateRequest).reason,
       'ProposePendingDeposit' as ChannelUpdateReason,
     )
+    
     const pendingDepositTokenHub = config.channelBeiDeposit.sub(
       chan.state.balanceTokenHub,
     )
@@ -483,7 +485,7 @@ describe('ChannelsService', () => {
     )
 
     // target should be:
-    // num tippers * threadBeiLimit * max collat multiple - bal token hub
+    // num tippers * beiMin * max collat multiple - bal token hub
     const collateralizationTarget = toBN(5)
       .mul(config.beiMinCollateralization)
       // .mul(config.maxCollateralizationMultiple)
@@ -564,7 +566,7 @@ describe('ChannelsService', () => {
     )
 
     assertChannelStateEqual(state, {
-      pendingDepositTokenHub: toWei(149).toString()
+      pendingDepositTokenHub: toWei(150).toString()
     })
   })
 
@@ -775,7 +777,7 @@ describe('ChannelsService', () => {
       },
 
       {
-        targetTokenHub: '69000000000000000000',
+        targetTokenHub: '70000000000000000000',
         targetTokenUser: '9000000000000000000',
         targetWeiUser: '7000000000000000000',
         tokensToSell: '1000000000000000000',
