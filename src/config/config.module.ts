@@ -6,9 +6,9 @@ import { ConfigService } from "./config.service";
   providers: [
     {
       provide: ConfigService,
-      useValue: new ConfigService(`${process.env.NODE_ENV || ""}.env`)
-    }
+      useValue: new ConfigService(`${process.env.NODE_ENV || ""}.env`),
+    },
   ],
-  exports: [ConfigService]
+  exports: [ConfigService],
 })
 export class ConfigModule {}

@@ -6,11 +6,13 @@ describe("Node Controller", () => {
   let module: TestingModule;
   beforeAll(async () => {
     module = await Test.createTestingModule({
-      controllers: [NodeController]
+      controllers: [NodeController],
     }).compile();
   });
   it("should be defined", () => {
-    const controller: NodeController = module.get<NodeController>(NodeController);
+    const controller: NodeController = module.get<NodeController>(
+      NodeController,
+    );
     expect(controller).toBeDefined();
   });
 });

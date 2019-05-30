@@ -10,6 +10,6 @@ import { NodeProvider } from "./node/node.provider";
 @Module({
   imports: [ConfigModule, NodeModule],
   controllers: [AppController, NodeController],
-  providers: [AppService, NodeProvider]
+  providers: [AppService, NodeProvider],
 })
 export class AppModule {}

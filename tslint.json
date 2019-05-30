@@ -6,8 +6,12 @@
   ],
   "rules": {
     "prettier": true,
-    "ordered-imports": [true, {"grouped-imports": true}],
+    "ordered-imports": [true, { "grouped-imports": true }],
     "import-name": false,
-    "variable-name": [true, "allow-pascal-case"]
+    "variable-name": [true, "allow-pascal-case"],
+    "trailing-comma": [
+      true,
+      { "multiline": "always", "singleline": "never", "esSpecCompliant": true }
+    ]
   }
 }

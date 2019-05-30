@@ -9,6 +9,6 @@ import { NodeProvider } from "./node.provider";
   providers: [NodeProvider],
   imports: [ConfigModule],
   controllers: [NodeController],
-  exports: [NodeProvider]
+  exports: [NodeProvider],
 })
 export class NodeModule {}
