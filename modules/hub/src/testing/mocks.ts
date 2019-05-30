@@ -35,7 +35,7 @@ export const getTestConfig = (overrides?: any) => ({
   channelManagerAddress: testChannelManagerAddress,
   databaseUrl,
   hotWalletAddress: testHotWalletAddress,
-  logLevel: 3,
+  logLevel: 2,
   redisUrl,
   serviceKey,
   sessionSecret: 'hummus',

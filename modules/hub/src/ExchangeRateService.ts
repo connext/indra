@@ -1,6 +1,7 @@
 import * as WebSocket from 'ws'
 
 import ExchangeRateDao from './dao/ExchangeRateDao'
+import { SubscriptionServer } from './SubscriptionServer'
 import { Logger } from './util'
 
 const log = new Logger('ExchangeRateService')
@@ -15,9 +16,11 @@ export default class ExchangeRateService {
   private static COINBASE_URL: string = 'https://api.coinbase.com/v2/exchange-rates?currency=ETH'
   private dao: ExchangeRateDao
   private started: boolean = false
+  private subscriptions: SubscriptionServer
 
-  public constructor (dao: ExchangeRateDao) {
+  public constructor (dao: ExchangeRateDao, subscriptions: SubscriptionServer) {
     this.dao = dao
+    this.subscriptions = subscriptions
   }
 
   public start(): void {
@@ -40,6 +43,7 @@ export default class ExchangeRateService {
     ExchangeRateService.fetch(ExchangeRateService.COINBASE_URL)
       .then((res: Response) => res.json())
       .then((res: RateResponse) => {
+        this.subscriptions.broadcast(JSON.stringify(res.data.rates.USD))
         this.dao.record(Date.now(), res.data.rates.USD)
       }).catch((e: any) => log.error(`Failed to update ETH exchange rate: ${e}`))
       .then(() => setTimeout(() => this.updateRates(), ExchangeRateService.POLL_INTERVAL_MS))

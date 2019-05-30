@@ -47,6 +47,7 @@ import PaymentProfilesService from './PaymentProfilesService'
 import PaymentsService from './PaymentsService'
 import { getRedisClient, RedisClient } from './RedisClient'
 import { SignerService } from './SignerService'
+import { SubscriptionServer } from './SubscriptionServer'
 import ThreadsService from './ThreadsService'
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
@@ -59,6 +60,18 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   //
   // Singletons
   //
+
+  ApiServer: {
+    factory: (container: Container) => new ApiServer(container),
+    dependencies: ['Container'],
+    isSingleton: true,
+  },
+
+  SubscriptionServer: {
+    dependencies: ['Config'],
+    factory: (config: Config): SubscriptionServer => new SubscriptionServer(config),
+    isSingleton: true,
+  },
 
   PgPoolService: {
     factory: (config: Config) => new PgPoolService(config),
@@ -73,8 +86,9 @@ export const serviceDefinitions: PartialServiceDefinitions = {
   },
 
   ExchangeRateService: {
-    factory: (dao: ExchangeRateDao) => new ExchangeRateService(dao),
-    dependencies: ['ExchangeRateDao'],
+    dependencies: ['ExchangeRateDao', 'SubscriptionServer'],
+    factory: (dao: ExchangeRateDao, subscriptions: SubscriptionServer): ExchangeRateService =>
+      new ExchangeRateService(dao, subscriptions),
     isSingleton: true,
   },
 
@@ -133,12 +147,6 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'Web3',
       'DBEngine'
     ],
-    isSingleton: true,
-  },
-
-  ApiServer: {
-    factory: (container: Container) => new ApiServer(container),
-    dependencies: ['Container'],
     isSingleton: true,
   },
 
