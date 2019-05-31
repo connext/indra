@@ -8,6 +8,8 @@ import { JsonRpcProvider } from "ethers/providers";
 
 import { ConfigService } from "../config/config.service";
 
+const FirebaseServer = require("firebase-server");
+
 @Injectable()
 export class NodeWrapper {
   public node: Node;
@@ -65,6 +67,12 @@ export const FirebaseProvider: Provider = {
   useFactory: async (config: ConfigService) => {
     const firebaseServerHost = config.get("FIREBASE_SERVER_HOST");
     const firebaseServerPort = config.get("FIREBASE_SERVER_PORT");
+    const firebase = new FirebaseServer(firebaseServerPort, firebaseServerPort);
+    process.on("SIGINT", async () => {
+      console.log("Shutting down playground-server...");
+      firebase.close();
+      process.exit(0);
+    });
     return new FirebaseServiceFactory({
       apiKey: "",
       authDomain: "",
