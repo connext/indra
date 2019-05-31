@@ -178,6 +178,12 @@ export class Config {
     ? parseInt(process.env.STALE_CHANNEL_DAYS, 10)
     : undefined // if undefined, will not dispute
 
+  public natsServers: string = process.env.NATS_SERVERS
+  public natsToken: string = process.env.NATS_TOKEN
+  public natsTls: boolean | true = process.env.NATS_REQUIRE_TLS === 'true'
+  public natsStateUpdateSubject: string | 'indra.hub.sync' = process.env.NATS_HUB_UPDATE_SUBJECT
+  public natsPublishStateUpdates: boolean | false = (this.natsServers && this.natsServers.length > 0 && this.natsToken !== null && this.natsStateUpdateSubject !== null)
+
   ////////////////////////////////////////
   // HUB API AND SERVICE KEYS
 

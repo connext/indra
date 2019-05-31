@@ -41,6 +41,7 @@
     "pg-types": "^2.0.1",
     "selfsigned": "^1.10.4",
     "sql-template-strings": "^2.2.2",
+    "ts-nats": "^1.2.4",
     "web3": "1.0.0-beta.52",
     "ws": "^7.0.0"
   },

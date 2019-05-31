@@ -7,6 +7,7 @@ import {
   ThreadStatus,
 } from 'connext/types'
 import { Client } from 'pg'
+import { getNatsClient, NatsClient } from '../NatsClient'
 
 import Config from '../Config'
 import DBEngine, { SQL } from '../DBEngine'
@@ -51,10 +52,17 @@ export class PostgresThreadsDao implements ThreadsDao {
   private db: DBEngine<Client>
 
   private config: Config
+  private nats: NatsClient
 
   constructor(db: DBEngine<Client>, config: Config) {
     this.db = db
     this.config = config
+
+    if (this.config.natsPublishStateUpdates) {
+      getNatsClient(this.config).then((value: NatsClient) => {
+        this.nats = value
+      })
+    }
   }
 
   public async applyThreadUpdate(
@@ -64,6 +72,18 @@ export class PostgresThreadsDao implements ThreadsDao {
     senderCloseUpdateId?: number,
     receiverCloseUpdateId?: number,
   ): Promise<ThreadStateUpdateRowBN> {
+    if (this.nats && this.config.natsStateUpdateSubject) {
+      const msg = JSON.stringify({
+        type: 'thread_state_update',
+        update: update, 
+        senderOpenUpdateId: senderOpenUpdateId, 
+        receiverOpenUpdateId: receiverOpenUpdateId, 
+        senderCloseUpdateId: senderCloseUpdateId, 
+        receiverCloseUpdateId: receiverCloseUpdateId
+      })
+      this.nats.publish(this.config.natsStateUpdateSubject, msg)
+    }
+
     return this.inflateThreadUpdate(
       await this.db.queryOne(SQL`
         SELECT *

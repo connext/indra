@@ -46,9 +46,11 @@ import { OptimisticPaymentsService } from './OptimisticPaymentsService'
 import PaymentProfilesService from './PaymentProfilesService'
 import PaymentsService from './PaymentsService'
 import { getRedisClient, RedisClient } from './RedisClient'
+import { getNatsClient, NatsClient } from './NatsClient'
 import { SignerService } from './SignerService'
 import { SubscriptionServer } from './SubscriptionServer'
 import ThreadsService from './ThreadsService'
+import { NatsConnectionOptions } from 'ts-nats';
 
 export default function defaultRegistry(otherRegistry?: Registry): Registry {
   const registry = new Registry(otherRegistry)
@@ -291,10 +293,16 @@ export const serviceDefinitions: PartialServiceDefinitions = {
     dependencies: ['DBEngine', 'RedisClient'],
   },
 
+  NatsClient: {
+    factory: (config: Config) => getNatsClient({servers: config.natsServers.split(','), token: config.natsToken, tls: config.natsTls} as NatsConnectionOptions),
+    dependencies: ['Config'],
+    isSingleton: true,
+  },
+
   RedisClient: {
     factory: (config: Config) => getRedisClient(config.redisUrl),
     dependencies: ['Config'],
-    isSingleton: true
+    isSingleton: true,
   },
 
   FeatureFlagsDao: {
@@ -458,6 +466,7 @@ export const serviceDefinitions: PartialServiceDefinitions = {
       'StateGenerator',
       'Validator',
       'RedisClient',
+      'NatsClient',
       'DBEngine',
       'Config',
       'ChannelManagerContract',

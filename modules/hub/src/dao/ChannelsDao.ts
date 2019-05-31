@@ -11,6 +11,7 @@ import {
 } from 'connext/types'
 import * as eth from 'ethers'
 import { Client } from 'pg'
+import { getNatsClient, NatsClient } from '../NatsClient'
 
 import Config from '../Config'
 import DBEngine, { SQL } from '../DBEngine'
@@ -85,11 +86,18 @@ export class PostgresChannelsDao implements ChannelsDao {
   private config: Config
   private db: DBEngine<Client>
   private log: Logger
+  private nats: NatsClient
 
   constructor(db: DBEngine<Client>, config: Config) {
     this.db = db
     this.config = config
     this.log = new Logger('ChannelsDao', config.logLevel)
+
+    if (this.config.natsPublishStateUpdates) {
+      getNatsClient(this.config).then((value: NatsClient) => {
+        this.nats = value
+      })
+    }
   }
 
   async getChannelUpdateById(id: number): Promise<ChannelStateUpdateRowBN> {
@@ -211,6 +219,20 @@ export class PostgresChannelsDao implements ChannelsDao {
     this.log.info(`Applying channel update to ${user}: ${reason}(${prettySafeJson(args)}) ` +
       `-> ${prettySafeJson(state)}`)
 
+    if (this.nats && this.config.natsStateUpdateSubject) {
+      const msg = JSON.stringify({
+        type: 'channel_state_update',
+        user: user, 
+        reason: reason, 
+        state: state, 
+        args: args, 
+        chainsawEventId: chainsawEventId, 
+        onchainLogicalId: onchainLogicalId
+      })
+      this.nats.publish(this.config.natsStateUpdateSubject, msg)
+    }
+
+    // TOOD: dispatch NATS message
     return this.inflateChannelUpdateRow(
       await this.db.queryOne(SQL`
         SELECT *
