@@ -7,6 +7,7 @@ import { Inject, Injectable, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ConfigService } from "../config/config.service";
+import { FirebaseProviderId, NodeProviderId } from "../constants";
 
 const FirebaseServer = require("firebase-server");
 
@@ -51,7 +52,7 @@ export class NodeWrapper {
 }
 
 export const NodeProvider: Provider = {
-  provide: "NODE",
+  provide: NodeProviderId,
   useFactory: async (
     config: ConfigService,
     firebase: FirebaseServiceFactory,
@@ -59,11 +60,11 @@ export const NodeProvider: Provider = {
     const nodeWrapper = new NodeWrapper(config, firebase);
     return await nodeWrapper.createSingleton();
   },
-  inject: [ConfigService, "FIREBASE"],
+  inject: [ConfigService, FirebaseProviderId],
 };
 
 export const FirebaseProvider: Provider = {
-  provide: "FIREBASE",
+  provide: FirebaseProviderId,
   useFactory: (config: ConfigService): FirebaseServiceFactory => {
     const firebaseServerHost = config.get("FIREBASE_SERVER_HOST");
     const firebaseServerPort = config.get("FIREBASE_SERVER_PORT");
