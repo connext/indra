@@ -55,7 +55,7 @@ export const NodeProvider: Provider = {
   useFactory: async (
     config: ConfigService,
     firebase: FirebaseServiceFactory,
-  ) => {
+  ): Promise<Node> => {
     const nodeWrapper = new NodeWrapper(config, firebase);
     return await nodeWrapper.createSingleton();
   },
@@ -64,12 +64,12 @@ export const NodeProvider: Provider = {
 
 export const FirebaseProvider: Provider = {
   provide: "FIREBASE",
-  useFactory: async (config: ConfigService) => {
+  useFactory: (config: ConfigService): FirebaseServiceFactory => {
     const firebaseServerHost = config.get("FIREBASE_SERVER_HOST");
     const firebaseServerPort = config.get("FIREBASE_SERVER_PORT");
     const firebase = new FirebaseServer(firebaseServerPort, firebaseServerPort);
-    process.on("SIGINT", async () => {
-      console.log("Shutting down playground-server...");
+    process.on("SIGINT", () => {
+      console.log("Shutting down indra hub...");
       firebase.close();
       process.exit(0);
     });
