@@ -39,4 +39,8 @@ export class UserService {
   async findAll(): Promise<User[]> {
     return await this.userRepository.find();
   }
+
+  async findByEthAddress(ethAddress: string): Promise<User> {
+    return await this.userRepository.findOneOrFail({ where: { ethAddress } });
+  }
 }

@@ -17,7 +17,8 @@ export class NodeWrapper {
 
   constructor(
     private readonly config: ConfigService,
-    @Inject("FIREBASE") private readonly serviceFactory: FirebaseServiceFactory,
+    @Inject(FirebaseProviderId)
+    private readonly serviceFactory: FirebaseServiceFactory,
   ) {}
 
   async createSingleton(): Promise<Node> {
