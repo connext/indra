@@ -3,12 +3,12 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "../config/config.module";
 
 import { NodeController } from "./node.controller";
-import { NodeProvider } from "./node.provider";
+import { FirebaseProvider, NodeProvider } from "./node.provider";
 
 @Module({
-  providers: [NodeProvider],
+  providers: [NodeProvider, FirebaseProvider],
   imports: [ConfigModule],
   controllers: [NodeController],
-  exports: [NodeProvider],
+  exports: [NodeProvider, FirebaseProvider],
 })
 export class NodeModule {}
