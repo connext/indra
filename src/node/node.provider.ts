@@ -42,7 +42,7 @@ export class NodeWrapper {
       {
         STORE_KEY_PREFIX: "store",
       },
-      new JsonRpcProvider(this.config.get("ETH_RPC_URL")),
+      new JsonRpcProvider("https://rinkeby.infura.io/metamask"),
       "rinkeby",
     );
 
