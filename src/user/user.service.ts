@@ -1,9 +1,9 @@
-import { Inject, Injectable, BadRequestException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { Repository } from "typeorm";
 
 import { UserRepoProviderId } from "../constants";
 
-import { CreateUserDto } from "./create-user.dto";
+import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "./user.entity";
 
 @Injectable()

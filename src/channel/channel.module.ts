@@ -10,5 +10,6 @@ import { ChannelService } from "./channel.service";
   imports: [UserModule, NodeModule],
   providers: [ChannelService],
   controllers: [ChannelController],
+  exports: [ChannelService],
 })
 export class ChannelModule {}

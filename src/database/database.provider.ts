@@ -3,6 +3,7 @@ import { createConnection } from "typeorm";
 import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 
 import { DatabaseProviderId } from "../constants";
+import { User } from "../user/user.entity";
 
 export const databaseProvider: Provider = {
   provide: DatabaseProviderId,
@@ -11,10 +12,10 @@ export const databaseProvider: Provider = {
       type: "postgres",
       host: "localhost",
       port: 5432,
-      username: "root",
-      password: "root",
-      database: "test",
-      entities: [__dirname + "/../**/*.entity{.ts,.js}"],
+      username: "rahul",
+      password: "qwerty",
+      database: "node",
+      entities: [User],
       synchronize: true,
     } as PostgresConnectionOptions),
 };

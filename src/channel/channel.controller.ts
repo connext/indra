@@ -3,8 +3,9 @@ import { Body, Controller, Post } from "@nestjs/common";
 import { UserService } from "../user/user.service";
 
 import { ChannelService } from "./channel.service";
+import { CreateChannelDto } from "./dto/create-channel.dto";
 
-@Controller("channel")
+@Controller("channels")
 export class ChannelController {
   constructor(
     private readonly channelService: ChannelService,
@@ -12,8 +13,10 @@ export class ChannelController {
   ) {}
 
   @Post()
-  async create(@Body() ethAddress: string) {
-    const user = await this.userService.findByEthAddress(ethAddress);
+  async create(@Body() createChannelDto: CreateChannelDto) {
+    const user = await this.userService.findByEthAddress(
+      createChannelDto.ethAddress,
+    );
     const { transactionHash } = await this.channelService.create(
       user.nodeAddress,
     );
