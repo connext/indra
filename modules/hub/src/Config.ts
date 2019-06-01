@@ -23,6 +23,7 @@ const ENV_VARS = [
   'LOG_LEVEL',
   'MAILGUN_API_KEY', // set in CI on prod, TODO: remove
   'PORT',
+  'WEBSOCKET_PORT',
   'PRIVATE_KEY_FILE', // set in deploy script
   'RECENT_PAYMENTS_INTERVAL',
   'REDIS_URL', // set in deploy script
@@ -128,6 +129,7 @@ export class Config {
   public port: number = 8080
   // used in ApiServer.ts if forceSsl is true
   public httpsPort: number = 8443
+  public websocketPort: number = 8082
   // used in ApiServer.ts
   public forceSsl: boolean = process.env.FORCE_SSL && process.env.FORCE_SSL.toLowerCase() === 'true'
 

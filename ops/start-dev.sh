@@ -26,6 +26,8 @@ private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 private_key_file="/run/secrets/hub_key_ganache"
 project="indra"
 service_key="foo"
+hub_port=8080
+hub_ws_port=8081
 
 # database connection settings
 postgres_db="$project"
@@ -142,6 +144,7 @@ services:
       HOT_WALLET_ADDRESS: $hot_wallet_address
       LOG_LEVEL: $log_level
       NODE_ENV: development
+      PORT: $hub_port
       POSTGRES_USER: $postgres_user
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_URL: $postgres_url
@@ -150,9 +153,10 @@ services:
       REDIS_URL: $redis_url
       SERVICE_KEY: $service_key
       TOKEN_CONTRACT_ADDRESS: $token_contract_address
+      WEBSOCKET_PORT: $hub_ws_port
     ports:
-      - "8080:8080"
-      - "8081:8081"
+      - "$hub_port:$hub_port"
+      - "$hub_ws_port:$hub_ws_port"
     secrets:
       - ${project}_database_dev
       - hub_key_ganache
