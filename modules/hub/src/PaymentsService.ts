@@ -64,7 +64,7 @@ export default class PaymentsService {
     subject: string,
   ) {
     const emails = await this.paymentsDao.getEmailsByUser(user)
-    if (emails) {
+    if (emails && emails.length > 0) {
       return '[DUPLICATE] ' + subject
     }
 
