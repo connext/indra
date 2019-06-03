@@ -14,7 +14,9 @@ export class User {
   @Column("text")
   nodeAddress: string;
 
-  @Column("text")
+  @Column("text", {
+    nullable: true,
+  })
   multisigAddress: string;
 
   @Column("text")
