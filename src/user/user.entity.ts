@@ -15,5 +15,8 @@ export class User {
   nodeAddress: string;
 
   @Column("text")
+  multisigAddress: string;
+
+  @Column("text")
   username: string;
 }
