@@ -100,7 +100,7 @@ export class Wallet extends eth.Signer {
     }
     throw new Error(`Could not sign message`)
   }
-  
+
   private async prepareTransaction(tx: TransactionRequest): Promise<any> {
 
       tx.gasPrice = await (tx.gasPrice || this.provider.getGasPrice())
@@ -140,24 +140,26 @@ export class Wallet extends eth.Signer {
       return this.signer.sign(tx)
     }
     if (this.web3) {
-      const txObj:any = await this.prepareTransaction(tx);
+      const txObj:any = await this.prepareTransaction(tx)
       return (await this.web3.eth.signTransaction(txObj)).raw // TODO: fix type
     }
     throw new Error(`Could not sign transaction`)
   }
-  
-  
+
   private async signAndSendTransactionExternally(tx: TransactionRequest): Promise<any> {
     if (this.signer) {
-      const txObj:any = await this.prepareTransaction(tx);
+      const txObj:any = await this.prepareTransaction(tx)
       return this.signer.sign(txObj)
     }
     throw new Error(`Could not sign transaction`)
   }
 
   public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
+    if (this.signer){
+      return this.signer.sendTransaction(txReq)
+    }
     if (this.external){
-      return this.signAndSendTransactionExternally(txReq);
+      return this.signAndSendTransactionExternally(txReq)
     }
     const signedTx: string = await this.signTransaction(txReq)
     return this.provider.sendTransaction(signedTx)
