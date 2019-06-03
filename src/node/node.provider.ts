@@ -3,11 +3,13 @@ import {
   MNEMONIC_PATH,
   Node,
 } from "@counterfactual/node";
+import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ConfigService } from "../config/config.service";
 import { FirebaseProviderId, NodeProviderId } from "../constants";
+import { UserService } from "../user/user.service";
 
 const FirebaseServer = require("firebase-server");
 
@@ -16,6 +18,7 @@ export class NodeWrapper {
   public node: Node;
 
   constructor(
+    private readonly userService: UserService,
     private readonly config: ConfigService,
     @Inject(FirebaseProviderId)
     private readonly serviceFactory: FirebaseServiceFactory,
@@ -46,6 +49,17 @@ export class NodeWrapper {
       "rinkeby",
     );
 
+    // TODO
+    // this.node.on(
+    //   NodeTypes.EventName.DEPOSIT_CONFIRMED,
+    //   onDepositConfirmed.bind(this),
+    // );
+
+    this.node.on(
+      NodeTypes.EventName.CREATE_CHANNEL,
+      this.userService.addMultisig.bind(this),
+    );
+
     console.log("Public Identifier", this.node.publicIdentifier);
 
     return this.node;
@@ -55,13 +69,14 @@ export class NodeWrapper {
 export const NodeProvider: Provider = {
   provide: NodeProviderId,
   useFactory: async (
+    userService: UserService,
     config: ConfigService,
     firebase: FirebaseServiceFactory,
   ): Promise<Node> => {
-    const nodeWrapper = new NodeWrapper(config, firebase);
+    const nodeWrapper = new NodeWrapper(userService, config, firebase);
     return await nodeWrapper.createSingleton();
   },
-  inject: [ConfigService, FirebaseProviderId],
+  inject: [UserService, ConfigService, FirebaseProviderId],
 };
 
 export const FirebaseProvider: Provider = {
