@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, NotFoundException, Post } from "@nestjs/common";
 
 import { UserService } from "../user/user.service";
 
@@ -17,6 +17,9 @@ export class ChannelController {
     const user = await this.userService.findByEthAddress(
       createChannelDto.ethAddress,
     );
+    if (!user) {
+      throw new NotFoundException();
+    }
     const { transactionHash } = await this.channelService.create(
       user.nodeAddress,
     );

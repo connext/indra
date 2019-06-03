@@ -41,8 +41,8 @@ export class UserService {
     return await this.userRepository.find();
   }
 
-  async findByEthAddress(ethAddress: string): Promise<User> {
-    return await this.userRepository.findOneOrFail({ where: { ethAddress } });
+  async findByEthAddress(ethAddress: string): Promise<User | undefined> {
+    return await this.userRepository.findOne({ where: { ethAddress } });
   }
 
   async addMultisig(result: CreateChannelMessage): Promise<User> {
