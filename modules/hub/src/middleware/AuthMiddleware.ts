@@ -76,11 +76,13 @@ export const getAuthMiddleware = (
       if (!expectedNonce) {
         log.warn(`No nonce available for address ${address}`)
         res.status(403).send(`Invalid nonce`)
+        redis.quit()
         return
       }
       if (expectedNonce !== nonce) {
         log.warn(`Invalid nonce for address ${address}: Got ${nonce}, expected ${expectedNonce}`)
         res.status(403).send(`Invalid nonce`)
+        redis.quit()
         return
       }
       // check whether this nonce has expired
@@ -90,6 +92,7 @@ export const getAuthMiddleware = (
       if (nonceAge > nonceExpiry) {
         log.warn(`Invalid nonce for ${address}: expired ${nonceAge - nonceExpiry} ms ago`)
         res.status(403).send(`Invalid nonce`)
+        redis.quit()
         return
       }
     } catch (e) {
@@ -106,12 +109,15 @@ export const getAuthMiddleware = (
       if (signer !== address.toLowerCase()) {
         log.warn(`Invalid signature for nonce "${nonce}": Got "${signer}", expected "${address}"`)
         res.status(403).send('Invalid signature')
+        redis.quit()
         return
       }
       await redis.set(`signature:${address}`, signature)
+      redis.quit()
     } else if (cachedSig && cachedSig !== signature) {
       log.warn(`Invalid signature for address "${address}": Doesn't match cache: ${cachedSig}`)
       res.status(403).send('Invalid signature')
+      redis.quit()
       return
     }
 
