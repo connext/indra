@@ -30,7 +30,14 @@ jobs:
             cd card
             make test-prod
 
-  push-images:
+  push-latest-images:
+    machine: true
+    steps:
+      - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push-latest
+
+  push-live-images:
     machine: true
     steps:
       - checkout
@@ -93,13 +100,18 @@ workflows:
       - test-contracts
       - test-hub
       - test-e2e
-      - push-images:
+
+      - push-latest-images:
+          filters:
+            branches:
+              only: staging
           requires:
             - test-client
             - test-contracts
             - test-hub
             - test-e2e
-      - push-images:
+
+      - push-live-images:
           filters:
             branches:
               only: master
@@ -108,15 +120,17 @@ workflows:
             - test-contracts
             - test-hub
             - test-e2e
+
       - deploy-staging:
           filters:
             branches:
               only: staging
           requires:
-            - push-images
+            - push-latest-images
+
       - deploy-live:
           filters:
             branches:
               only: master
           requires:
-            - push-images
+            - push-live-images
