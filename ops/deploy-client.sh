@@ -37,7 +37,6 @@ fi
 
 echo "Let's go"
 
-
 # edit modules/client/package.json to set new version number
 cd modules/client
 mv package.json .package.json
