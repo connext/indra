@@ -1,8 +1,6 @@
-import {
-  FirebaseServiceFactory,
-  MNEMONIC_PATH,
-  Node,
-} from "@counterfactual/node";
+import {} from "@counterfactual/firebase-client"
+import {} from "@counterfactual/firebase-server"
+import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";

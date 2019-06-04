@@ -20,6 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@counterfactual/firebase-client": "0.0.1",
+    "@counterfactual/firebase-server": "0.0.1",
     "@counterfactual/node": "0.1.21",
     "@nestjs/common": "6.2.4",
     "@nestjs/core": "6.2.4",
