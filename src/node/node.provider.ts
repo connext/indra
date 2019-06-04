@@ -1,5 +1,9 @@
 import { FirebaseServiceFactory } from "@counterfactual/firebase-client";
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import {
+  CreateChannelMessage,
+  MNEMONIC_PATH,
+  Node,
+} from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
@@ -42,7 +46,7 @@ export class NodeWrapper {
       {
         STORE_KEY_PREFIX: "store",
       },
-      new JsonRpcProvider("https://rinkeby.infura.io/metamask"),
+      new JsonRpcProvider("https://rinkeby.infura.io/metamask", "rinkeby"),
       "rinkeby",
     );
 
@@ -54,7 +58,11 @@ export class NodeWrapper {
 
     this.node.on(
       NodeTypes.EventName.CREATE_CHANNEL,
-      this.userService.addMultisig.bind(this),
+      (res: CreateChannelMessage) =>
+        this.userService.addMultisig(
+          res.data.counterpartyXpub,
+          res.data.multisigAddress,
+        ),
     );
 
     console.log("Public Identifier", this.node.publicIdentifier);
