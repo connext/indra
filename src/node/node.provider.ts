@@ -1,4 +1,4 @@
-import { LocalFirebaseServiceFactory } from "@counterfactual/firebase-client"
+import { FirebaseServiceFactory } from "@counterfactual/firebase-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, Provider } from "@nestjs/common";
@@ -18,7 +18,7 @@ export class NodeWrapper {
     private readonly userService: UserService,
     private readonly config: ConfigService,
     @Inject(FirebaseProviderId)
-    private readonly serviceFactory: LocalFirebaseServiceFactory,
+    private readonly serviceFactory: FirebaseServiceFactory,
   ) {}
 
   async createSingleton(): Promise<Node> {
@@ -68,7 +68,7 @@ export const NodeProvider: Provider = {
   useFactory: async (
     userService: UserService,
     config: ConfigService,
-    firebase: LocalFirebaseServiceFactory,
+    firebase: FirebaseServiceFactory,
   ): Promise<Node> => {
     const nodeWrapper = new NodeWrapper(userService, config, firebase);
     return await nodeWrapper.createSingleton();
@@ -78,16 +78,23 @@ export const NodeProvider: Provider = {
 
 export const FirebaseProvider: Provider = {
   provide: FirebaseProviderId,
-  useFactory: (config: ConfigService): LocalFirebaseServiceFactory => {
+  useFactory: (config: ConfigService): FirebaseServiceFactory => {
     const firebaseServerHost = config.get("FIREBASE_SERVER_HOST");
     const firebaseServerPort = config.get("FIREBASE_SERVER_PORT");
-    const firebase = new FirebaseServer(firebaseServerHost, firebaseServerPort);
-    process.on("SIGINT", () => {
-      console.log("Shutting down indra hub...");
-      firebase.close();
-      process.exit(0);
+    // const firebase = new FirebaseServer(firebaseServerHost, firebaseServerPort);
+    // process.on("SIGINT", () => {
+    //   console.log("Shutting down indra hub...");
+    //   firebase.close();
+    //   process.exit(0);
+    // });
+    return new FirebaseServiceFactory({
+      apiKey: "",
+      authDomain: "",
+      databaseURL: `ws://${firebaseServerHost}:${firebaseServerPort}`,
+      projectId: "projectId",
+      storageBucket: "",
+      messagingSenderId: "",
     });
-    return new LocalFirebaseServiceFactory();
   },
   inject: [ConfigService],
 };
