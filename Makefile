@@ -44,7 +44,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 default: dev
 all: dev prod
 dev: hooks database hub proxy client dashboard
-prod: hooks database-prod hub-prod proxy-prod dashboard-server-prod
+prod: hooks database-prod hub-prod-image proxy-prod dashboard-server-prod
 
 start: dev
 	bash ops/start-dev.sh
@@ -167,12 +167,17 @@ dashboard-node-modules: builder $(dashboard)/package.json
 
 # Hub
 
-hub-prod: hub
+hub-prod-image: hub-prod
 	$(log_start)
-	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	$(log_finish) && touch build/$@
 
 hub: hub-node-modules client contract-artifacts $(shell find $(hub)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
+	$(log_finish) && touch build/$@
+
+hub-prod: hub-prod-node-modules
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/$@
@@ -181,14 +186,19 @@ hub-node-modules: builder $(hub)/package.json $(client)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
-	$(docker_run_in_hub) "rm -rf node_modules/connext/dist"
-	$(docker_run_in_hub) "ln -s ../../../client/dist node_modules/connext/dist"
-	$(docker_run_in_hub) "rm -rf node_modules/connext/types"
-	$(docker_run_in_hub) "ln -s ../../../client/types node_modules/connext/types"
-	$(docker_run_in_hub) "rm -rf node_modules/connext/src"
-	$(docker_run_in_hub) "ln -s ../../../client/src node_modules/connext/src"
-	@touch build/hub-node-modules
-	$(log_finish) && touch build/$@
+	$(docker_run_in_hub) "rm -rf node_modules/connext/dist \
+	  && ln -s ../../../client/dist node_modules/connext/dist \
+	  && rm -rf node_modules/connext/types \
+	  && ln -s ../../../client/types node_modules/connext/types \
+	  && rm -rf node_modules/connext/src \
+	  && ln -s ../../../client/src node_modules/connext/src" 
+	$(log_finish) && touch build/$@ && rm -f build/hub-prod-node-modules
+
+hub-prod-node-modules: builder $(hub)/package.json
+	$(log_start)
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
+	$(docker_run_in_hub) "$(install)"
+	$(log_finish) && touch build/$@ && rm -f build/hub-node-modules
 
 # Contracts
 
@@ -201,10 +211,12 @@ contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
-	$(docker_run_in_contracts) "rm -rf node_modules/connext/dist"
-	$(docker_run_in_contracts) "ln -s ../../../client/dist node_modules/connext/dist"
-	$(docker_run_in_contracts) "rm -rf node_modules/connext/src"
-	$(docker_run_in_contracts) "ln -s ../../../client/src node_modules/connext/src"
+	$(docker_run_in_contracts) "rm -rf node_modules/connext/dist \
+	  && ln -s ../../../client/dist node_modules/connext/dist \
+	  && rm -rf node_modules/connext/types \
+	  && ln -s ../../../client/types node_modules/connext/types \
+	  && rm -rf node_modules/connext/src \
+	  && ln -s ../../../client/src node_modules/connext/src" 
 	@touch build/client-node-modules
 	$(log_finish) && touch build/$@
 

@@ -1,8 +1,11 @@
-node_modules
-modules/**/node_modules
+.git
+.npm
+build
+modules/**/.cache
 modules/**/.config
-modules/**/.npm
 modules/**/.git
 modules/**/.node-gyp
+modules/**/.npm
+modules/**/node_modules
 modules/database/snapshots
-build
+node_modules
