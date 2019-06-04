@@ -35,13 +35,6 @@ jobs:
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - run: make push
-
-  push-live-images:
-    machine: true
-    steps:
-      - checkout
-      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push-live
 
   deploy-staging:
@@ -59,8 +52,7 @@ jobs:
               export INDRA_DOMAINNAME="$STAGING_URL"
               export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               bash ops/restart.sh prod
-              docker container prune -f
-              docker image rm $(docker image ls -q)
+              docker container prune -f && docker image ls -q | xargs docker image rm
             EOF
 
   deploy-live:
@@ -78,8 +70,7 @@ jobs:
               export INDRA_ETH_NETWORK="rinkeby"
               export INDRA_MODE="live"
               bash ops/restart.sh prod
-              docker container prune -f
-              docker image rm $(docker image ls -q)
+              docker container prune -f && docker image ls -q | xargs docker image rm
             EOF
             ssh ubuntu@$MAINNET_URL "bash -s" <<EOF
               git clone https://github.com/ConnextProject/indra.git || true
@@ -91,8 +82,7 @@ jobs:
               export INDRA_MODE="live"
               export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               bash ops/restart.sh prod
-              docker container prune -f
-              docker image rm $(docker image ls -q)
+              docker container prune -f && docker image ls -q | xargs docker image rm
             EOF
 
 workflows:
@@ -109,7 +99,7 @@ workflows:
             - test-contracts
             - test-hub
             - test-e2e
-      - push-live-images:
+      - push-images:
           filters:
             branches:
               only: master
@@ -129,4 +119,4 @@ workflows:
             branches:
               only: master
           requires:
-            - push-live-images
+            - push-images

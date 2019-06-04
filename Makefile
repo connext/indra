@@ -105,7 +105,7 @@ reset: reset-base
 purge: reset clean
 	rm -rf modules/**/node_modules
 
-push: prod
+push-latest: prod
 	bash ops/push-images.sh latest database hub proxy dashboard
 
 push-live: prod
