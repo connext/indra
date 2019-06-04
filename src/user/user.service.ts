@@ -45,8 +45,7 @@ export class UserService {
     return await this.userRepository.findOne({ where: { ethAddress } });
   }
 
-  async addMultisig(result: CreateChannelMessage): Promise<User> {
-    const { counterpartyXpub: nodeAddress, multisigAddress } = result.data;
+  async addMultisig(nodeAddress, multisigAddress): Promise<User> {
     const user = await this.userRepository.findOneOrFail({
       where: { nodeAddress },
     });
