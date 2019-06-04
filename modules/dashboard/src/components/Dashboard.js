@@ -130,7 +130,7 @@ class Dashboard extends React.Component {
   };
 
   render() {
-    const { web3, urls, classes } = this.props;
+    const { urls, classes } = this.props;
     const {
       open,
       channelManager,
@@ -203,7 +203,6 @@ class Dashboard extends React.Component {
                     getWalletInfo={this.props.getWalletInfo}
                     hubWallet={hubWallet}
                     channelManager={channelManager}
-                    web3={web3}
                     urls={urls}
                   />
                 )}
@@ -213,7 +212,6 @@ class Dashboard extends React.Component {
                 path={`${urls.prefix}/payments`}
                 render={props => (
                   <PaymentInfoCardStyled
-                    web3={web3}
                     urls={urls}
                   />
                 )}
@@ -223,7 +221,6 @@ class Dashboard extends React.Component {
                 path={`${urls.prefix}/deposits`}
                 render={props => (
                   <DepositsStyled
-                    web3={web3}
                     urls={urls}
                   />
                 )}
@@ -233,7 +230,6 @@ class Dashboard extends React.Component {
                 path={`${urls.prefix}/withdrawals`}
                 render={props => (
                   <WithdrawalsStyled
-                    web3={web3}
                     urls={urls}
                   />
                 )}
@@ -243,7 +239,6 @@ class Dashboard extends React.Component {
                 path={`${urls.prefix}/users`}
                 render={props => (
                   <UserInfoStyled
-                    web3={web3}
                     urls={urls}
                   />
                 )}
@@ -255,7 +250,6 @@ class Dashboard extends React.Component {
                   <GasCostCardStyled
                     hubWallet={hubWallet}
                     channelManager={channelManager}
-                    web3={web3}
                     urls={urls}
                   />
                 )}
@@ -267,7 +261,6 @@ class Dashboard extends React.Component {
                   <CollateralCardStyled
                     hubWallet={hubWallet}
                     channelManager={channelManager}
-                    web3={web3}
                     urls={urls}
                   />
                 )}

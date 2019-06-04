@@ -59,6 +59,8 @@ jobs:
               export INDRA_DOMAINNAME="$STAGING_URL"
               export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               bash ops/restart.sh prod
+              docker container prune -f
+              docker image rm $(docker image ls -q)
             EOF
 
   deploy-live:
@@ -76,6 +78,8 @@ jobs:
               export INDRA_ETH_NETWORK="rinkeby"
               export INDRA_MODE="live"
               bash ops/restart.sh prod
+              docker container prune -f
+              docker image rm $(docker image ls -q)
             EOF
             ssh ubuntu@$MAINNET_URL "bash -s" <<EOF
               git clone https://github.com/ConnextProject/indra.git || true
@@ -87,6 +91,8 @@ jobs:
               export INDRA_MODE="live"
               export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               bash ops/restart.sh prod
+              docker container prune -f
+              docker image rm $(docker image ls -q)
             EOF
 
 workflows:
@@ -115,7 +121,7 @@ workflows:
       - deploy-staging:
           filters:
             branches:
-              ignore: master
+              only: staging
           requires:
             - push-images
       - deploy-live:

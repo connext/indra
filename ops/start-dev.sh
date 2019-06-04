@@ -32,11 +32,13 @@ postgres_user="$project"
 redis_url="redis://redis:6379"
 
 # docker images
-chainsaw_image=${project}_builder
-dashboard_image=${project}_builder
+builder_image=${project}_builder
+chainsaw_image=$builder_image
+dashboard_image=$builder_image
+dashboard_server_image=$builder_image
 database_image=${project}_database:dev
-ethprovider_image=${project}_builder
-hub_image=${project}_builder
+ethprovider_image=$builder_image
+hub_image=$builder_image
 proxy_image=${project}_proxy:dev
 redis_image=redis:5-alpine
 
@@ -129,8 +131,8 @@ services:
       - `pwd`/modules/dashboard:/root
 
   dashboard:
-    image: $dashboard_image
-    entrypoint: nodemon server/server.js
+    image: $dashboard_server_image
+    entrypoint: nodemon --legacy-watch src/server.js
     environment:
       NODE_ENV: development
       POSTGRES_DB: $postgres_db
@@ -144,7 +146,7 @@ services:
     secrets:
       - ${project}_database_dev
     volumes:
-      - `pwd`/modules/dashboard:/root
+      - `pwd`/modules/dashboard-server:/root
 
   hub:
     image: $hub_image

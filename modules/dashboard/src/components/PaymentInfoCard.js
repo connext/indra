@@ -1,3 +1,4 @@
+import { ethers as eth } from "ethers";
 import React, { Component } from "react";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
@@ -181,7 +182,6 @@ class PaymentInfoCard extends Component {
    */
 
   setAverage = async () => {
-    const { web3 } = this.props;
     const url = `${this.props.urls.api}/payments/average/all`
     const res = (await axios.get(url)).data || null
     if (res && res.avg_wei_payment && res.avg_token_payment) {
@@ -190,8 +190,8 @@ class PaymentInfoCard extends Component {
       this.setState(state => {
         state.averagePaymentWei.raw = res.avg_wei_payment;
         state.averagePaymentToken.raw = res.avg_token_payment;
-        state.averagePaymentWei.formatted = web3.utils.fromWei(weiDeposit);
-        state.averagePaymentToken.formatted = web3.utils.fromWei(tokenDeposit);
+        state.averagePaymentWei.formatted = eth.utils.formatEther(weiDeposit);
+        state.averagePaymentToken.formatted = eth.utils.formatEther(tokenDeposit);
         return state;
       });
     } else {
@@ -204,7 +204,6 @@ class PaymentInfoCard extends Component {
   };
 
   setAverageTrailing = async () => {
-    const { web3 } = this.props;
     const url = `${this.props.urls.api}/payments/average/trailing24`
     const res = (await axios.get(url)).data || null
     if (res && res.avg_wei_payment && res.avg_token_payment) {
@@ -213,10 +212,10 @@ class PaymentInfoCard extends Component {
       this.setState(state => {
         state.averagePaymentWeiLastDay.raw = res.avg_wei_payment;
         state.averagePaymentTokenLastDay.raw = res.avg_token_payment;
-        state.averagePaymentWeiLastDay.formatted = web3.utils.fromWei(
+        state.averagePaymentWeiLastDay.formatted = eth.utils.formatEther(
           weiPayment
         );
-        state.averagePaymentTokenLastDay.formatted = web3.utils.fromWei(
+        state.averagePaymentTokenLastDay.formatted = eth.utils.formatEther(
           tokenPayment
         );
         return state;
@@ -231,7 +230,6 @@ class PaymentInfoCard extends Component {
   };
 
   setAverageTrailingWeek = async () => {
-    const { web3 } = this.props;
     const url = `${this.props.urls.api}/payments/average/trailingweek`
     const res = (await axios.get(url)).data || null
     if (res && res.avg_wei_payment && res.avg_token_payment) {
@@ -240,10 +238,10 @@ class PaymentInfoCard extends Component {
       this.setState(state => {
         state.averagePaymentWeiLastWeek.raw = res.avg_wei_payment;
         state.averagePaymentTokenLastWeek.raw = res.avg_token_payment;
-        state.averagePaymentWeiLastWeek.formatted = web3.utils.fromWei(
+        state.averagePaymentWeiLastWeek.formatted = eth.utils.formatEther(
           weiPayment
         );
-        state.averagePaymentTokenLastWeek.formatted = web3.utils.fromWei(
+        state.averagePaymentTokenLastWeek.formatted = eth.utils.formatEther(
           tokenPayment
         );
         return state;
@@ -280,7 +278,6 @@ class PaymentInfoCard extends Component {
     let end = this.state.endDate.toISOString().split('T')[0];
 
     console.log(`Fetching date range: ${start} - ${end}`)
-    const { web3 } = this.props;
     const url = `${this.props.urls.api}/payments/daterange/${start}/${end}`
     const res = (await axios.get(url)).data || null
     if (res) {
@@ -289,7 +286,7 @@ class PaymentInfoCard extends Component {
       //let weiPayment = String(Math.trunc(res.avg_wei_payment));
       this.setState(state => {
         state.averagePaymentTokenRange.raw = res.avg_token_payment;
-        state.averagePaymentTokenRange.formatted = web3.utils.fromWei(
+        state.averagePaymentTokenRange.formatted = eth.utils.formatEther(
           tokenPayment
         );
         state.paymentCountRange= count;

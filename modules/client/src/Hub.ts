@@ -84,7 +84,7 @@ export class HubAPIClient implements IHubAPIClient {
   private nonce: string | undefined
   private signature: string | undefined
   private wallet: Wallet
-  private ws: WebSocket
+  private ws?: WebSocket
   private log: Logger
 
   public constructor(hubUrl: string, wallet: Wallet, logLevel?: number) {
@@ -97,7 +97,7 @@ export class HubAPIClient implements IHubAPIClient {
   ////////////////////////////////////////
   // Public Methods
 
-  public async subscribe(callback: any): Promise<WebSocket> {
+  public async subscribe(callback: any): Promise<void> {
     const hubWsUrl = `${this.hubUrl}/subscribe`.replace(/^http/, 'ws')
     this.log.info(`===== WS connecting to: ${hubWsUrl}`)
     this.ws = new WebSocket(hubWsUrl)

@@ -18,6 +18,7 @@ INDRA_ETH_RPC_KEY_MAINNET="${INDRA_ETH_RPC_KEY_MAINNET:-qHg6U3i7dKa4cJdMagOljenu
 INDRA_ETH_RPC_KEY_RINKEBY="${INDRA_ETH_RPC_KEY_RINKEBY:-RvyVeludt7uwmt2JEF2a1PvHhJd5c07b}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_SERVICE_KEY="${INDRA_SERVICE_KEY:-foo}"
+
 MAILGUN_API_KEY="${MAILGUN_API_KEY:-}"
 
 ####################
@@ -264,7 +265,6 @@ EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
 rm -rf /tmp/$project
-docker image prune -f
 
 echo -n "Waiting for the $project stack to wake up."
 while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]

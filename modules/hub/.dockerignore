@@ -1,6 +1,7 @@
 *.log
+*.sw[op]
 .DS_Store
+.config
 .editorconfig
+.node-gyp
 .npm
-dist
-node_modules

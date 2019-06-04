@@ -1,17 +1,26 @@
 import { ethers as eth } from 'ethers'
 import tokenAbi from 'human-standard-token-abi'
 
-import { validateTimestamp } from '../lib'
+import { ConnextInternal } from '../Connext'
+import { toBN, validateTimestamp } from '../lib'
 import { getLastThreadUpdateId, getTxCount, getUpdateRequestTimeout } from '../state'
 import {
   argNumericFields,
   ChannelState,
+  Contract,
   insertDefault,
   Payment,
   UpdateRequestTypes,
 } from '../types'
 
 import { AbstractController } from './AbstractController'
+
+const gasPriceLifespan: number = 1000 * 60 * 10 // 10 minutes
+
+export interface SuggestedGasPrice {
+  expiry: number
+  price: string
+}
 
 /*
  * Rule:
@@ -26,8 +35,17 @@ import { AbstractController } from './AbstractController'
  */
 export class DepositController extends AbstractController {
   private resolvePendingDepositPromise: any = undefined
+  private suggestedGasPrice?: SuggestedGasPrice
 
-  public async requestUserDeposit(args: Partial<Payment>): Promise<any> {
+  public async requestUserDeposit(args: Partial<Payment>, overrides?: any): Promise<any> {
+    if (overrides && overrides.gasPrice) {
+      this.suggestedGasPrice = overrides && overrides.gasPrice
+        ? {
+            expiry: Date.now() + gasPriceLifespan,
+            price: toBN(overrides.gasPrice).toHexString(),
+          }
+        : undefined
+    }
     // insert '0' strs to the obj
     const deposit = insertDefault('0', args, argNumericFields.Payment)
     const signedRequest = await this.connext.signDepositRequestProposal(deposit)
@@ -44,7 +62,7 @@ export class DepositController extends AbstractController {
       )
       this.connext.syncController.handleHubSync(sync)
     } catch (e) {
-      this.log.warn(`Error requesting deposit ${e}`)
+      this.log.warn(`Error requesting deposit ${e.message}`)
     }
 
     // There can only be one pending deposit at a time, so it's safe to return
@@ -72,8 +90,8 @@ export class DepositController extends AbstractController {
         `Error handling userAuthorizedUpdate (this update will be ` +
         `countersigned and held until it expires - at which point it ` +
         `will be invalidated - or the hub sends us a subsequent ` +
-        `ConfirmPending. (update: ${JSON.stringify(update)}; prev: ${JSON.stringify(prev)})` +
-        `Error: ${e}`)
+        `ConfirmPending. (update: ${JSON.stringify(update)}; prev: ${JSON.stringify(prev)}) ` +
+        `\n${e}`)
       check = this.resolvePendingDepositPromise && this.resolvePendingDepositPromise.rej(e)
     } finally {
       this.resolvePendingDepositPromise = undefined
@@ -132,29 +150,51 @@ export class DepositController extends AbstractController {
       throw DepositError(tsErr)
     }
 
+    this.log.debug(`Suggested gas price: ${JSON.stringify(this.suggestedGasPrice)}`)
 
-    let tx
+    const gasPrice = this.suggestedGasPrice && this.suggestedGasPrice.expiry > Date.now()
+      ? this.suggestedGasPrice.price
+      : (await this.connext.wallet.provider.getGasPrice()).toHexString()
+
+
     try {
       if (args.depositTokenUser !== '0') {
-        this.log.info(`Approving transfer of ${args.depositTokenUser} tokens`)
+
         const token = new eth.Contract(
           this.connext.opts.tokenAddress,
           tokenAbi,
           this.connext.wallet,
         )
-        const overrides: any = { }
-        const gasEstimate = (
-          await token.estimate.approve(prev.contractAddress, args.depositTokenUser)
-        ).toNumber()
-        overrides.gasLimit = eth.utils.bigNumberify(Math.ceil(
-          gasEstimate * this.connext.contract.gasMultiple))
-        overrides.gasPrice = await this.connext.wallet.provider.getGasPrice()
-        tx = await token.approve(prev.contractAddress, args.depositTokenUser, overrides)
-        await this.connext.wallet.provider.waitForTransaction(tx.hash)
+
+        const allowance = await token.allowance(
+          this.connext.wallet.address,
+          prev.contractAddress,
+        )
+
+        if (allowance.lt(toBN(args.depositTokenUser))) {
+
+          this.log.info(`Token allowance (${allowance}) is lower than ` +
+            `what's needed (${args.depositTokenUser}), approving more`)
+
+          const gasLimit = toBN(Math.ceil((
+            await token.estimate.approve(prev.contractAddress, args.depositTokenUser)
+          ).toNumber() * 1.5))
+
+          const approveTx = await token.approve(
+            prev.contractAddress, args.depositTokenUser, { gasLimit, gasPrice },
+          )
+
+          await this.connext.wallet.provider.waitForTransaction(approveTx.hash)
+
+        } else {
+          this.log.info(`Token allowance (${allowance}) is higher than ` +
+            `what's needed (${args.depositTokenUser}), not approving more`)
+        }
       }
-      tx = await this.connext.contract.userAuthorizedUpdate(state)
-      this.log.info(`Sent user authorized deposit to chain: ${(tx as any).hash}`)
+      const updateTx = await this.connext.contract.userAuthorizedUpdate(state, { gasPrice })
+      this.log.info(`Sent user authorized deposit to chain: ${(updateTx as any).hash}`)
     } catch (e) {
+      this.log.info(`Getting channel details for user: ${prev.user}`)
       const currentChannel = await this.connext.contract.getChannelDetails(prev.user)
       if (update.txCount && currentChannel.txCountGlobal >= update.txCount) {
         // Update has already been sent to chain
