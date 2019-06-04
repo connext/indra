@@ -1,13 +1,21 @@
 import { FirebaseServiceFactory } from "@counterfactual/firebase-client";
 import {
   CreateChannelMessage,
+  DepositConfirmationMessage,
   MNEMONIC_PATH,
   Node,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, Injectable, Provider } from "@nestjs/common";
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  Provider,
+} from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
+import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { FirebaseProviderId, NodeProviderId } from "../constants";
 import { UserService } from "../user/user.service";
@@ -20,6 +28,8 @@ export class NodeWrapper {
 
   constructor(
     private readonly userService: UserService,
+    @Inject(forwardRef(() => ChannelService))
+    private readonly channelService: ChannelService,
     private readonly config: ConfigService,
     @Inject(FirebaseProviderId)
     private readonly serviceFactory: FirebaseServiceFactory,
@@ -30,15 +40,16 @@ export class NodeWrapper {
       return this.node;
     }
 
-    console.log("Creating store");
+    // TODO: make this logging more dynamic?
+    Logger.log("Creating store", "NodeProvider");
     const store = this.serviceFactory.createStoreService("connextHub");
+    Logger.log("Store created", "NodeProvider");
 
-    console.log("NODE_MNEMONIC: ", this.config.get("NODE_MNEMONIC"));
     await store.set([
-      { key: MNEMONIC_PATH, value: this.config.get("NODE_MNEMONIC") },
+      { key: MNEMONIC_PATH, value: this.config.nodeMnemonic() },
     ]);
 
-    console.log("Creating Node");
+    Logger.log("Creating Node", "NodeProvider");
     const messService = this.serviceFactory.createMessagingService("messaging");
     this.node = await Node.create(
       messService,
@@ -49,12 +60,22 @@ export class NodeWrapper {
       new JsonRpcProvider("https://rinkeby.infura.io/metamask", "rinkeby"),
       "rinkeby",
     );
+    Logger.log("Node created", "NodeProvider");
 
-    // TODO
-    // this.node.on(
-    //   NodeTypes.EventName.DEPOSIT_CONFIRMED,
-    //   onDepositConfirmed.bind(this),
-    // );
+    this.node.on(
+      NodeTypes.EventName.DEPOSIT_CONFIRMED,
+      (res: DepositConfirmationMessage) => {
+        if (!res || !res.data) {
+          return;
+        }
+        Logger.log(`Deposit detected: ${res}, matching`, "NodeProvider");
+        this.channelService.deposit(
+          res.data.multisigAddress,
+          res.data.amount,
+          res.data.notifyCounterparty,
+        );
+      },
+    );
 
     this.node.on(
       NodeTypes.EventName.CREATE_CHANNEL,
@@ -65,7 +86,10 @@ export class NodeWrapper {
         ),
     );
 
-    console.log("Public Identifier", this.node.publicIdentifier);
+    Logger.log(
+      `Public Identifier ${this.node.publicIdentifier}`,
+      "NodeProvider",
+    );
 
     return this.node;
   }
@@ -75,13 +99,19 @@ export const NodeProvider: Provider = {
   provide: NodeProviderId,
   useFactory: async (
     userService: UserService,
+    channelService: ChannelService,
     config: ConfigService,
     firebase: FirebaseServiceFactory,
   ): Promise<Node> => {
-    const nodeWrapper = new NodeWrapper(userService, config, firebase);
+    const nodeWrapper = new NodeWrapper(
+      userService,
+      channelService,
+      config,
+      firebase,
+    );
     return await nodeWrapper.createSingleton();
   },
-  inject: [UserService, ConfigService, FirebaseProviderId],
+  inject: [UserService, ChannelService, ConfigService, FirebaseProviderId],
 };
 
 export const FirebaseProvider: Provider = {
