@@ -87,7 +87,7 @@ export class NodeWrapper {
     );
 
     Logger.log(
-      `Public Identifier ${this.node.publicIdentifier}`,
+      `Public Identifier ${JSON.stringify(this.node.publicIdentifier)}`,
       "NodeProvider",
     );
 
