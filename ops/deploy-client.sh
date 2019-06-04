@@ -45,7 +45,7 @@ cat .package.json \
   | sed 's/"version": ".*"/"version": "'$client_version'"/' > package.json
 rm .package.json
 
-echo "npm publish"
+npm publish
 
 # edit modules/hub/package.json to use the new version of the client
 cd ../hub
@@ -55,8 +55,8 @@ cat .package.json \
 rm .package.json
 
 cd ../..
-
-git add modules/client/package.json
+git add modules/client/package.json modules/hub/package.json
 git commit -m "Publish client: connext@$client_version"
 git tag client-$client_version
-echo git push origin client-$client_version --no-verify
+git push origin HEAD --no-verify
+git push origin client-$client_version --no-verify
