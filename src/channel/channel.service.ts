@@ -1,6 +1,6 @@
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, Logger } from "@nestjs/common";
 import { BigNumber } from "ethers/utils";
 import { v4 as generateUUID } from "uuid";
 
@@ -25,7 +25,7 @@ export class ChannelService {
         requestId: generateUUID(),
       },
     );
-
+    Logger.log(`multisigResponse.result: ${multisigResponse.result}`);
     return multisigResponse.result as NodeTypes.CreateChannelTransactionResult;
   }
 
@@ -43,7 +43,7 @@ export class ChannelService {
       type: NodeTypes.MethodName.DEPOSIT,
       requestId: generateUUID(),
     });
-
+    Logger.log(`depositResponse.result: ${depositResponse.result}`);
     return depositResponse.result as NodeTypes.DepositResult;
   }
 }
