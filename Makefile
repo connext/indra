@@ -9,6 +9,7 @@ db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
 dashboard=$(cwd)/modules/dashboard
+dashboard_server=$(cwd)/modules/dashboard-server
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 VPATH=build
@@ -28,6 +29,7 @@ docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(cont
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
 docker_run_in_dashboard=$(docker_run) --volume=$(dashboard):/root $(project)_builder $(id)
+docker_run_in_dashboard_server=$(docker_run) --volume=$(dashboard_server):/root $(project)_builder $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
@@ -141,9 +143,14 @@ proxy: $(shell find $(proxy) $(find_options))
 
 # Dashboard Server
 
-dashboard-server-prod: dashboard-prod
+dashboard-server-prod: dashboard-server-node-modules
 	$(log_start)
-	docker build --file $(dashboard)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard)
+	docker build --file $(dashboard_server)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard_server)
+	$(log_finish) && touch build/$@
+
+dashboard-server-node-modules: builder $(dashboard_server)/package.json
+	$(log_start)
+	$(docker_run_in_dashboard_server) "$(install)"
 	$(log_finish) && touch build/$@
 
 # Dashboard Client

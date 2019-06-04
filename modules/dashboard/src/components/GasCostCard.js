@@ -1,7 +1,6 @@
+import { ethers as eth } from "ethers";
 import React, { Component } from "react";
-//import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-//import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
@@ -43,7 +42,7 @@ class GasCostCard extends Component {
     const url = `${this.props.urls.api}/gascost/all/${address}`
     const res = (await axios.get(url)).data || null
     if (res && res.sum) {
-      let gas = this.props.web3.utils.fromWei(res.sum);
+      let gas = eth.utils.formatEther(res.sum);
 
       this.setState({ gasTotal: gas });
     } else {
@@ -55,7 +54,7 @@ class GasCostCard extends Component {
     const url = `${this.props.urls.api}/gascost/trailingweek/${address}`
     const res = (await axios.get(url)).data || null
     if (res && res.sum) {
-      let gas = this.props.web3.utils.fromWei(res.sum);
+      let gas = eth.utils.formatEther(res.sum);
       this.setState({ gasLastWeek: gas });
     } else {
       this.setState({ gasLastWeek: 0 });
@@ -66,7 +65,7 @@ class GasCostCard extends Component {
     const url = `${this.props.urls.api}/gascost/trailing24/${address}`
     const res = (await axios.get(url)).data || null
     if (res && res.sum) {
-      let gas = this.props.web3.utils.fromWei(res.sum);
+      let gas = eth.utils.formatEther(res.sum);
 
       this.setState({ gasLastDay: gas });
     } else {

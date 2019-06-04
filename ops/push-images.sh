@@ -11,6 +11,7 @@ function safePush {
   image=$1
   if [[ "$version" == "latest" ]]
   then
+    docker tag ${project}_$image:$version ${registry}/${project}_$image:$version
     docker push $registry/${project}_$image:$version
     return
   fi

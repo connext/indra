@@ -1,9 +1,9 @@
+import { ethers as eth } from "ethers";
 import React from "react";
 import PropTypes from "prop-types";
 import { withStyles } from "@material-ui/core/styles";
 import withRoot from "../withRoot";
 import Dashboard from "../components/Dashboard";
-import Web3 from "web3";
 const ChannelManagerAbi = require("../abi/ChannelManager.json");
 const TokenAbi = require("../abi/Token.json");
 
@@ -18,7 +18,7 @@ class Index extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      web3: new Web3(this.props.urls.eth),
+      ethProvider: new eth.providers.JsonRpcProvider(this.props.urls.eth),
       channelManager: {
         address: "0x0",
         wei: {
@@ -62,30 +62,31 @@ class Index extends React.Component {
   }
 
   getWalletInfo = async address => {
-    const { web3 } = this.state;
+    const { ethProvider } = this.state;
     this.setState({
       loadingWallet: true
     });
-    const wei = await web3.eth.getBalance(address);
+    const wei = await ethProvider.getBalance(address);
     console.log("wallet wei: ", wei);
-    const tokenContract = new web3.eth.Contract(
+    const tokenContract = new eth.Contract(
       TokenAbi.abi,
-      this.state.tokenAddress
+      this.state.tokenAddress,
+      ethProvider,
     );
-    const token = (await tokenContract.methods.balanceOf(address).call())[0];
+    const token = await tokenContract.balanceOf(address);
     console.log("wallet token: ", token);
     this.setState(state => {
       state.hubWallet.wei.raw = wei;
-      state.hubWallet.wei.formatted = web3.utils.fromWei(wei);
+      state.hubWallet.wei.formatted = eth.utils.formatEther(wei);
       state.hubWallet.token.raw = token;
-      state.hubWallet.token.formatted = web3.utils.fromWei(token);
+      state.hubWallet.token.formatted = eth.utils.formatEther(token);
       state.loadingWallet = false;
       return state;
     });
   };
 
   getContractInfo = async () => {
-    const { web3 } = this.state;
+    const { ethProvider } = this.state;
     this.setState({
       loadingContract: true
     });
@@ -93,21 +94,24 @@ class Index extends React.Component {
       "Investigating contract at:",
       this.state.channelManager.address
     );
-    const cm = new web3.eth.Contract(
+    const cm = new eth.Contract(
       ChannelManagerAbi.abi,
-      this.state.channelManager.address
+      this.state.channelManager.address,
+      ethProvider,
     );
-    const wei = await cm.methods.getHubReserveWei().call();
+    const wei = await cm.getHubReserveWei();
     console.log("contract wei: ", wei);
-    const weiFormatted = web3.utils.fromWei(wei);
+    const weiFormatted = eth.utils.formatEther(wei);
     console.log("contract wei formatted: ", weiFormatted);
-    const token = await cm.methods.getHubReserveTokens().call();
+    const token = await cm.getHubReserveTokens();
     console.log("contract token: ", token);
+    const tokenFormatted = eth.utils.formatEther(token);
+    console.log("contract token formatted: ", tokenFormatted);
     this.setState(state => {
       state.channelManager.wei.raw = wei;
       state.channelManager.wei.formatted = weiFormatted;
       state.channelManager.token.raw = token;
-      state.channelManager.token.formatted = web3.utils.fromWei(token);
+      state.channelManager.token.formatted = tokenFormatted;
       state.loadingContract = false;
       return state;
     });
@@ -115,14 +119,13 @@ class Index extends React.Component {
 
   render() {
     const { classes } = this.props;
-    const { web3, hubWallet, channelManager } = this.state;
+    const { hubWallet, channelManager } = this.state;
     console.log(hubWallet);
     return (
       <div className={classes.root}>
         <Dashboard
           hubWallet={hubWallet}
           channelManager={channelManager}
-          web3={web3}
           urls={this.props.urls}
           getContractInfo={this.getContractInfo}
           getWalletInfo={this.getWalletInfo}

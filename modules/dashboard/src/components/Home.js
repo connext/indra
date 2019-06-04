@@ -109,7 +109,7 @@ class Home extends React.Component {
   }
 
   render() {
-    const { web3, classes } = this.props;
+    const { classes } = this.props;
     const { loadingWallet, loadingContract, hubWallet, channelManager} = this.state;
 
     return (
@@ -138,7 +138,7 @@ class Home extends React.Component {
             contractAddress={channelManager.address}
           />
           <div className={classes.appBarSpacer} />
-          <ChannelInfoCardStyled web3={web3} urls={this.props.urls}/>
+          <ChannelInfoCardStyled urls={this.props.urls}/>
         </main>
     );
   }

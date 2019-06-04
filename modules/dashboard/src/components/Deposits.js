@@ -1,7 +1,6 @@
+import { ethers as eth } from "ethers";
 import React, { Component } from "react";
-//import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-//import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
@@ -47,7 +46,6 @@ class Deposits extends Component {
   }
 
   setAverage = async () => {
-    const { web3 } = this.props;
     const url = `${this.props.urls.api}/deposits/average`
     const res = (await axios.get(url)).data || null
     if (res && res.avg_deposit_wei && res.avg_deposit_token) {
@@ -55,9 +53,9 @@ class Deposits extends Component {
       let weiDeposit = String(Math.trunc(res.avg_deposit_wei))
       this.setState(state => {
         state.depositAverageToken.raw = res.avg_deposit_token
-        state.depositAverageToken.formatted = web3.utils.fromWei(tokenDeposit);
+        state.depositAverageToken.formatted = eth.utils.formatEther(tokenDeposit);
         state.depositAverageWei.raw = res.avg_deposit_wei
-        state.depositAverageWei.formatted = web3.utils.fromWei(weiDeposit);
+        state.depositAverageWei.formatted = eth.utils.formatEther(weiDeposit);
         return state
       });
     } else {
