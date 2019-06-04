@@ -14,9 +14,9 @@ if [[ "`git symbolic-ref HEAD | sed 's|.*/\(.*\)|\1|'`" != "staging" ]]
 then echo "Aborting: Make sure you've checked out the staging branch" && exit 1
 fi
 
-#if [[ -n "`git diff origin/staging`" ]]
-#then echo "Aborting: Make sure your branch is up to date with origin/staging" && exit 1
-#fi
+if [[ -n "`git diff origin/staging`" ]]
+then echo "Aborting: Make sure your branch is up to date with origin/staging" && exit 1
+fi
 
 if [[ "`pwd | sed 's|.*/\(.*\)|\1|'`" != "indra" ]]
 then echo "Aborting: Make sure you're in the indra project root" && exit 1
@@ -58,22 +58,11 @@ mv package.json .package.json
 cat .package.json | sed 's/"version": ".*"/"version": "'$indra_version'"/' > package.json
 rm .package.json
 
+# Push a new commit to master
 git add package.json
 git commit --amend --no-edit
-
-git tag indra-$indra_version
-
-echo;echo
-git log --graph --pretty=format:'%h (%cr) <%an>%d %s' --abbrev-commit --branches -10
-echo;echo
-echo "Confirm before we push: Does this git history look correct?"
-read -p "> " -r
-echo
-if [[ ! "$REPLY" =~ ^[Yy]$ ]]
-then exit 1 # abort!
-fi
-
-exit
-
-git push origin indra-$indra_version --no-verify
 git push origin master --no-verify
+
+# Push a new indra release tag
+git tag indra-$indra_version
+git push origin indra-$indra_version --no-verify
