@@ -1,13 +1,16 @@
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { BigNumber } from "ethers/utils";
 import { v4 as generateUUID } from "uuid";
 
 import { NodeProviderId } from "../constants";
 
 @Injectable()
 export class ChannelService {
-  constructor(@Inject(NodeProviderId) private readonly node: Node) {}
+  constructor(
+    @Inject(forwardRef(() => NodeProviderId)) private readonly node: Node,
+  ) {}
 
   async create(
     nodeAddress: string,
@@ -24,5 +27,23 @@ export class ChannelService {
     );
 
     return multisigResponse.result as NodeTypes.CreateChannelTransactionResult;
+  }
+
+  async deposit(
+    multisigAddress: string,
+    amount: BigNumber,
+    notifyCounterparty: boolean,
+  ): Promise<NodeTypes.DepositResult> {
+    const depositResponse = await this.node.call(NodeTypes.MethodName.DEPOSIT, {
+      params: {
+        amount,
+        multisigAddress,
+        notifyCounterparty,
+      } as NodeTypes.DepositParams,
+      type: NodeTypes.MethodName.DEPOSIT,
+      requestId: generateUUID(),
+    });
+
+    return depositResponse.result as NodeTypes.DepositResult;
   }
 }
