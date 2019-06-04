@@ -3,7 +3,6 @@ set -e
 
 registry=docker.io/connextproject
 registry_url="https://index.docker.io/v1/repositories/connextproject"
-
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 version=$1
 shift

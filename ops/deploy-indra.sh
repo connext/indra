@@ -27,7 +27,7 @@ fi
 
 current_indra_version="`git show master:package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
-echo "What version of Indra are we deploying? Crrent version: $current_indra_version"
+echo "What version of Indra are we deploying? Current version: $current_indra_version"
 read -p "> " -r
 echo
 indra_version="$REPLY" # get version from user input
