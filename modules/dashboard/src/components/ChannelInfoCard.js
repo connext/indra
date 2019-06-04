@@ -1,7 +1,7 @@
+import { ethers as eth } from "ethers";
 import React, { Component } from "react";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-//import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
@@ -12,15 +12,14 @@ import TableRow from '@material-ui/core/TableRow';
 import axios from "axios";
 
 const styles = theme => ({
-    card: {
-        minWidth: 275,
-        textAlign:"left"
-      },
-    table: {
-      maxWidth:"50%"
-    }
-    });
-
+  card: {
+    minWidth: 275,
+    textAlign:"left"
+  },
+  table: {
+    maxWidth:"50%"
+  }
+});
 
 class ChannelInfoCard extends Component{
   constructor(props) {
@@ -60,7 +59,6 @@ class ChannelInfoCard extends Component{
   }
 
   setChannelBalances = async() => {
-    const { web3 } = this.props;
     const url = `${this.props.urls.api}/channels/averages`
     const res = (await axios.get(url)).data || null
     if (res) {
@@ -70,9 +68,9 @@ class ChannelInfoCard extends Component{
       console.log(`tokens: ${tokenDeposit}, wei: ${weiDeposit}`)
       this.setState(state => {
                     state.avgTokenBalance.raw = res.avg_tokens
-                    state.avgTokenBalance.formatted = web3.utils.fromWei(tokenDeposit)
+                    state.avgTokenBalance.formatted = eth.utils.formatEther(tokenDeposit)
                     state.avgWeiBalance.raw = res.avg_wei
-                    state.avgWeiBalance.formatted = web3.utils.fromWei(weiDeposit)
+                    state.avgWeiBalance.formatted = eth.utils.formatEther(weiDeposit)
                     return state});
     } else {
       this.setState({avgTokenBalance: 0, avgWeiBalance: 0});

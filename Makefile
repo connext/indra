@@ -9,6 +9,7 @@ db=$(cwd)/modules/database
 hub=$(cwd)/modules/hub
 proxy=$(cwd)/modules/proxy
 dashboard=$(cwd)/modules/dashboard
+dashboard_server=$(cwd)/modules/dashboard-server
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 VPATH=build
@@ -28,6 +29,7 @@ docker_run_in_contracts=$(docker_run) --volume=$(client):/client --volume=$(cont
 docker_run_in_hub=$(docker_run) --volume=$(client):/client --volume=$(hub):/root $(project)_builder $(id)
 docker_run_in_db=$(docker_run) --volume=$(db):/root $(project)_builder $(id)
 docker_run_in_dashboard=$(docker_run) --volume=$(dashboard):/root $(project)_builder $(id)
+docker_run_in_dashboard_server=$(docker_run) --volume=$(dashboard_server):/root $(project)_builder $(id)
 
 # Env setup
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
@@ -39,21 +41,29 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod stop clean reset purge push push-live backup
+.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset purge push push-live backup
 
 default: dev
 all: dev prod
-dev: hooks database hub proxy client dashboard
-prod: hooks database-prod hub-prod proxy-prod dashboard-server-prod
+dev: hooks database hub proxy client dashboard dashboard-server
+prod: hooks database-prod hub-prod-image proxy-prod dashboard-server-prod
 
 start: dev
-	bash ops/deploy.dev.sh
+	bash ops/start-dev.sh
 
 start-prod: prod
-	bash ops/deploy.prod.sh
+	bash ops/start-prod.sh
 
 stop: 
 	bash ops/stop.sh
+
+restart: dev
+	bash ops/stop.sh
+	bash ops/start-dev.sh
+
+restart-prod:
+	bash ops/stop.sh
+	bash ops/start-prod.sh
 
 clean: stop
 	docker container prune -f
@@ -77,6 +87,9 @@ reset-contracts: reset-base
 reset-dashboard: reset-base
 	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules $(dashboard)/package-lock.json
 
+reset-dashboard-server: reset-base
+	rm -rf build/dashboard* $(dashboard_server)/build/* $(dashboard_server)/node_modules $(dashboard_server)/package-lock.json
+
 reset-database: reset-base
 	rm -rf build/database* $(db)/build/* $(db)/node_modules $(db)/package-lock.json
 	docker volume rm $(project)_database_dev 2> /dev/null || true
@@ -92,25 +105,11 @@ reset: reset-base
 purge: reset clean
 	rm -rf modules/**/node_modules
 
-push: prod
-	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
-	docker tag $(project)_hub:latest $(registry)/$(project)_hub:latest
-	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:latest
-	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:latest
-	docker push $(registry)/$(project)_database:latest
-	docker push $(registry)/$(project)_hub:latest
-	docker push $(registry)/$(project)_proxy:latest
-	docker push $(registry)/$(project)_dashboard:latest
+push-latest: prod
+	bash ops/push-images.sh latest database hub proxy dashboard
 
 push-live: prod
-	docker tag $(project)_database:latest $(registry)/$(project)_database:$(version)
-	docker tag $(project)_hub:latest $(registry)/$(project)_hub:$(version)
-	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:$(version)
-	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:$(version)
-	docker push $(registry)/$(project)_database:$(version)
-	docker push $(registry)/$(project)_hub:$(version)
-	docker push $(registry)/$(project)_proxy:$(version)
-	docker push $(registry)/$(project)_dashboard:$(version)
+	bash ops/push-images.sh $(version) database hub proxy dashboard
 
 backup:
 	bash $(db)/ops/run-backup.sh
@@ -155,9 +154,16 @@ proxy: $(shell find $(proxy) $(find_options))
 
 # Dashboard Server
 
-dashboard-server-prod: dashboard-prod
+dashboard-server-prod: dashboard-server-node-modules
 	$(log_start)
-	docker build --file $(dashboard)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard)
+	docker build --file $(dashboard_server)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard_server)
+	$(log_finish) && touch build/$@
+
+dashboard-server: dashboard-server-node-modules
+
+dashboard-server-node-modules: builder $(dashboard_server)/package.json
+	$(log_start)
+	$(docker_run_in_dashboard_server) "$(install)"
 	$(log_finish) && touch build/$@
 
 # Dashboard Client
@@ -181,12 +187,17 @@ dashboard-node-modules: builder $(dashboard)/package.json
 
 # Hub
 
-hub-prod: hub
+hub-prod-image: hub-prod
 	$(log_start)
-	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest .
+	docker build --file $(hub)/ops/prod.dockerfile --tag $(project)_hub:latest $(hub)
 	$(log_finish) && touch build/$@
 
 hub: hub-node-modules client contract-artifacts $(shell find $(hub)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
+	$(log_finish) && touch build/$@
+
+hub-prod: hub-prod-node-modules
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/$@
@@ -195,14 +206,19 @@ hub-node-modules: builder $(hub)/package.json $(client)/package.json
 	$(log_start)
 	$(docker_run_in_hub) "rm -rf node_modules/connext"
 	$(docker_run_in_hub) "$(install)"
-	$(docker_run_in_hub) "rm -rf node_modules/connext/dist"
-	$(docker_run_in_hub) "ln -s ../../../client/dist node_modules/connext/dist"
-	$(docker_run_in_hub) "rm -rf node_modules/connext/types"
-	$(docker_run_in_hub) "ln -s ../../../client/types node_modules/connext/types"
-	$(docker_run_in_hub) "rm -rf node_modules/connext/src"
-	$(docker_run_in_hub) "ln -s ../../../client/src node_modules/connext/src"
-	@touch build/hub-node-modules
-	$(log_finish) && touch build/$@
+	$(docker_run_in_hub) "rm -rf node_modules/connext/dist \
+	  && ln -s ../../../client/dist node_modules/connext/dist \
+	  && rm -rf node_modules/connext/types \
+	  && ln -s ../../../client/types node_modules/connext/types \
+	  && rm -rf node_modules/connext/src \
+	  && ln -s ../../../client/src node_modules/connext/src" 
+	$(log_finish) && touch build/$@ && rm -f build/hub-prod-node-modules
+
+hub-prod-node-modules: builder $(hub)/package.json
+	$(log_start)
+	$(docker_run_in_hub) "rm -rf node_modules/connext"
+	$(docker_run_in_hub) "$(install)"
+	$(log_finish) && touch build/$@ && rm -f build/hub-node-modules
 
 # Contracts
 
@@ -215,10 +231,12 @@ contract-node-modules: builder $(contracts)/package.json
 	$(log_start)
 	$(docker_run_in_contracts) "rm -rf node_modules/connext"
 	$(docker_run_in_contracts) "$(install)"
-	$(docker_run_in_contracts) "rm -rf node_modules/connext/dist"
-	$(docker_run_in_contracts) "ln -s ../../../client/dist node_modules/connext/dist"
-	$(docker_run_in_contracts) "rm -rf node_modules/connext/src"
-	$(docker_run_in_contracts) "ln -s ../../../client/src node_modules/connext/src"
+	$(docker_run_in_contracts) "rm -rf node_modules/connext/dist \
+	  && ln -s ../../../client/dist node_modules/connext/dist \
+	  && rm -rf node_modules/connext/types \
+	  && ln -s ../../../client/types node_modules/connext/types \
+	  && rm -rf node_modules/connext/src \
+	  && ln -s ../../../client/src node_modules/connext/src" 
 	@touch build/client-node-modules
 	$(log_finish) && touch build/$@
 

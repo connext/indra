@@ -1,6 +1,7 @@
 *.sw[opq]
 .config
 .env
+.node-gyp
 .npm
 .vscode
 .yalc/

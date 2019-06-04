@@ -30,12 +30,12 @@ jobs:
             cd card
             make test-prod
 
-  push-images:
+  push-latest-images:
     machine: true
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - run: make push
+      - run: make push-latest
 
   push-live-images:
     machine: true
@@ -59,6 +59,8 @@ jobs:
               export INDRA_DOMAINNAME="$STAGING_URL"
               export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               bash ops/restart.sh prod
+              docker container prune -f
+              docker image ls -q | xargs docker image rm || true
             EOF
 
   deploy-live:
@@ -76,6 +78,8 @@ jobs:
               export INDRA_ETH_NETWORK="rinkeby"
               export INDRA_MODE="live"
               bash ops/restart.sh prod
+              docker container prune -f
+              docker image ls -q | xargs docker image rm || true
             EOF
             ssh ubuntu@$MAINNET_URL "bash -s" <<EOF
               git clone https://github.com/ConnextProject/indra.git || true
@@ -87,6 +91,8 @@ jobs:
               export INDRA_MODE="live"
               export MAILGUN_API_KEY="$MAILGUN_API_KEY"
               bash ops/restart.sh prod
+              docker container prune -f
+              docker image ls -q | xargs docker image rm || true
             EOF
 
 workflows:
@@ -97,12 +103,17 @@ workflows:
       - test-contracts
       - test-hub
       - test-e2e
-      - push-images:
+
+      - push-latest-images:
+          filters:
+            branches:
+              only: staging
           requires:
             - test-client
             - test-contracts
             - test-hub
             - test-e2e
+
       - push-live-images:
           filters:
             branches:
@@ -112,12 +123,14 @@ workflows:
             - test-contracts
             - test-hub
             - test-e2e
+
       - deploy-staging:
           filters:
             branches:
-              ignore: master
+              only: staging
           requires:
-            - push-images
+            - push-latest-images
+
       - deploy-live:
           filters:
             branches:

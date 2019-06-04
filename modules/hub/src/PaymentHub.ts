@@ -61,16 +61,17 @@ export default class PaymentHub {
     this.optimisticPaymentsService = this.container.resolve('OptimisticPaymentsService')
   }
 
-  public async start() {
+  public async start(): Promise<void> {
     const services = [
       'exchangeRateService',
       'gasEstimateService',
       'apiServer',
       'onchainTransactionService',
-      'optimisticPaymentsService'
+      'optimisticPaymentsService',
     ]
-    for (let service of services) {
+    for (const service of services) {
       try {
+        this.log.info(`Starting ${service}`)
         await (this as any)[service].start()
       } catch (err) {
         this.log.error(`Failed to start ${service}: ${err}`)
@@ -80,7 +81,8 @@ export default class PaymentHub {
     return new Promise(res => {})
   }
 
-  public async startChainsaw() {
+  public async startChainsaw(): Promise<void> {
+    this.log.info(`Starting ChainsawService`)
     const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
     const channelCloser = this.container.resolve<CloseChannelService>('CloseChannelService')
     await Promise.race([

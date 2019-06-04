@@ -1,7 +1,6 @@
+import { ethers as eth } from "ethers";
 import React, { Component } from "react";
-//import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-//import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
@@ -50,7 +49,6 @@ class Withdrawals extends Component {
   }
 
   setAverage = async () => {
-    const {web3} = this.props;
     const url = `${this.props.urls.api}/withdrawals/average`
     const res = (await axios.get(url)).data || null
     if (res && res.avg_withdrawal_wei && res.avg_withdrawal_token) {
@@ -59,9 +57,9 @@ class Withdrawals extends Component {
 
       this.setState(state => {
         state.withdrawalAverageToken.raw = res.avg_withdrawal_token
-        state.withdrawalAverageToken.formatted = web3.utils.fromWei(tokenWithdrawal);
+        state.withdrawalAverageToken.formatted = eth.utils.formatEther(tokenWithdrawal);
         state.withdrawalAverageWei.raw = res.avg_withdrawal_wei
-        state.withdrawalAverageWei.formatted = web3.utils.fromWei(weiWithdrawal);
+        state.withdrawalAverageWei.formatted = eth.utils.formatEther(weiWithdrawal);
         return state
       });
     } else {
