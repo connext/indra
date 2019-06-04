@@ -47,10 +47,10 @@ dev: hooks database hub proxy client dashboard
 prod: hooks database-prod hub-prod proxy-prod dashboard-server-prod
 
 start: dev
-	bash ops/deploy.dev.sh
+	bash ops/start-dev.sh
 
 start-prod: prod
-	bash ops/deploy.prod.sh
+	bash ops/start-prod.sh
 
 stop: 
 	bash ops/stop.sh
@@ -93,24 +93,10 @@ purge: reset clean
 	rm -rf modules/**/node_modules
 
 push: prod
-	docker tag $(project)_database:latest $(registry)/$(project)_database:latest
-	docker tag $(project)_hub:latest $(registry)/$(project)_hub:latest
-	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:latest
-	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:latest
-	docker push $(registry)/$(project)_database:latest
-	docker push $(registry)/$(project)_hub:latest
-	docker push $(registry)/$(project)_proxy:latest
-	docker push $(registry)/$(project)_dashboard:latest
+	bash ops/push-images.sh latest database hub proxy dashboard
 
 push-live: prod
-	docker tag $(project)_database:latest $(registry)/$(project)_database:$(version)
-	docker tag $(project)_hub:latest $(registry)/$(project)_hub:$(version)
-	docker tag $(project)_proxy:latest $(registry)/$(project)_proxy:$(version)
-	docker tag $(project)_dashboard:latest $(registry)/$(project)_dashboard:$(version)
-	docker push $(registry)/$(project)_database:$(version)
-	docker push $(registry)/$(project)_hub:$(version)
-	docker push $(registry)/$(project)_proxy:$(version)
-	docker push $(registry)/$(project)_dashboard:$(version)
+	bash ops/push-images.sh $(version) database hub proxy dashboard
 
 backup:
 	bash $(db)/ops/run-backup.sh

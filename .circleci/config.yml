@@ -115,7 +115,7 @@ workflows:
       - deploy-staging:
           filters:
             branches:
-              ignore: master
+              only: staging
           requires:
             - push-images
       - deploy-live:
