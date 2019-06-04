@@ -69,16 +69,16 @@ class Index extends React.Component {
     const wei = await ethProvider.getBalance(address);
     console.log("wallet wei: ", wei);
     const tokenContract = new eth.Contract(
-      TokenAbi.abi,
       this.state.tokenAddress,
+      TokenAbi.abi,
       ethProvider,
     );
     const token = await tokenContract.balanceOf(address);
     console.log("wallet token: ", token);
     this.setState(state => {
-      state.hubWallet.wei.raw = wei;
+      state.hubWallet.wei.raw = wei.toString();
       state.hubWallet.wei.formatted = eth.utils.formatEther(wei);
-      state.hubWallet.token.raw = token;
+      state.hubWallet.token.raw = token.toString();
       state.hubWallet.token.formatted = eth.utils.formatEther(token);
       state.loadingWallet = false;
       return state;
@@ -95,8 +95,8 @@ class Index extends React.Component {
       this.state.channelManager.address
     );
     const cm = new eth.Contract(
-      ChannelManagerAbi.abi,
       this.state.channelManager.address,
+      ChannelManagerAbi.abi,
       ethProvider,
     );
     const wei = await cm.getHubReserveWei();
@@ -108,9 +108,9 @@ class Index extends React.Component {
     const tokenFormatted = eth.utils.formatEther(token);
     console.log("contract token formatted: ", tokenFormatted);
     this.setState(state => {
-      state.channelManager.wei.raw = wei;
+      state.channelManager.wei.raw = wei.toString();
       state.channelManager.wei.formatted = weiFormatted;
-      state.channelManager.token.raw = token;
+      state.channelManager.token.raw = token.toString();
       state.channelManager.token.formatted = tokenFormatted;
       state.loadingContract = false;
       return state;

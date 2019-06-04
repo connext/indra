@@ -1,13 +1,14 @@
-const should = require("chai");
-const HttpProvider = require("ethjs-provider-http");
-const EthRPC = require("ethjs-rpc");
-const BN = require("bn.js");
-const privKeys = require("./privKeys.json");
-const CM = artifacts.require("./ChannelManager.sol");
-const HST = artifacts.require("./HumanStandardToken.sol");
-const data = require("../ops/data.json");
-const Connext = require("connext");
-const ConnextTester = require("connext/dist/testing");
+const BN = require('bn.js');
+const should = require('chai');
+const Connext = require('connext');
+const ConnextTester = require('connext/dist/testing');
+const HttpProvider = require('ethjs-provider-http');
+const EthRPC = require('ethjs-rpc');
+
+const data = require('../ops/data.json');
+
+const CM = artifacts.require('./ChannelManager.sol');
+const HST = artifacts.require('./HumanStandardToken.sol');
 
 /* Setup Connext Client Stuff */
 const convert = Connext.convert
@@ -29,6 +30,7 @@ should
   .use(require("bn-chai")(BN))
   .should();
 
+const privKeys = data.testPrivateKeys
 const ethRPC = new EthRPC(new HttpProvider("http://localhost:8545"));
 const emptyRootHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 

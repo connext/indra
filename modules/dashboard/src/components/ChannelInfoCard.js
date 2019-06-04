@@ -12,15 +12,14 @@ import TableRow from '@material-ui/core/TableRow';
 import axios from "axios";
 
 const styles = theme => ({
-    card: {
-        minWidth: 275,
-        textAlign:"left"
-      },
-    table: {
-      maxWidth:"50%"
-    }
-    });
-
+  card: {
+    minWidth: 275,
+    textAlign:"left"
+  },
+  table: {
+    maxWidth:"50%"
+  }
+});
 
 class ChannelInfoCard extends Component{
   constructor(props) {

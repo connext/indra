@@ -41,11 +41,11 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod stop clean reset purge push push-live backup
+.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset purge push push-live backup
 
 default: dev
 all: dev prod
-dev: hooks database hub proxy client dashboard
+dev: hooks database hub proxy client dashboard dashboard-server
 prod: hooks database-prod hub-prod-image proxy-prod dashboard-server-prod
 
 start: dev
@@ -56,6 +56,14 @@ start-prod: prod
 
 stop: 
 	bash ops/stop.sh
+
+restart: dev
+	bash ops/stop.sh
+	bash ops/start-dev.sh
+
+restart-prod:
+	bash ops/stop.sh
+	bash ops/start-prod.sh
 
 clean: stop
 	docker container prune -f
@@ -78,6 +86,9 @@ reset-contracts: reset-base
 
 reset-dashboard: reset-base
 	rm -rf build/dashboard* $(dashboard)/build/* $(dashboard)/node_modules $(dashboard)/package-lock.json
+
+reset-dashboard-server: reset-base
+	rm -rf build/dashboard* $(dashboard_server)/build/* $(dashboard_server)/node_modules $(dashboard_server)/package-lock.json
 
 reset-database: reset-base
 	rm -rf build/database* $(db)/build/* $(db)/node_modules $(db)/package-lock.json
@@ -147,6 +158,8 @@ dashboard-server-prod: dashboard-server-node-modules
 	$(log_start)
 	docker build --file $(dashboard_server)/ops/prod.dockerfile --tag $(project)_dashboard:latest $(dashboard_server)
 	$(log_finish) && touch build/$@
+
+dashboard-server: dashboard-server-node-modules
 
 dashboard-server-node-modules: builder $(dashboard_server)/package.json
 	$(log_start)

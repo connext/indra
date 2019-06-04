@@ -3,17 +3,17 @@
   "version": "1.0.0",
   "dependencies": {
     "@babel/helper-regex": "^7.0.0",
-    "@material-ui/core": "latest",
+    "@material-ui/core": "^4.0.2",
     "@material-ui/icons": "^3.0.2",
     "axios": "^0.18.0",
     "classnames": "^2.2.6",
     "ethers": "^4.0.26",
-    "prop-types": "latest",
-    "react": "latest",
+    "prop-types": "^15.7.2",
+    "react": "^16.8.6",
     "react-datepicker": "^2.2.0",
-    "react-dom": "latest",
+    "react-dom": "^16.8.6",
     "react-router-dom": "^4.3.1",
-    "react-scripts": "latest",
+    "react-scripts": "^3.0.1",
     "victory": "^32.0.0"
   },
   "scripts": {

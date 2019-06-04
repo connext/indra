@@ -47,25 +47,24 @@ export default class ChainsawService {
     this.log = new Logger('ChainsawService', this.config.logLevel)
   }
 
-  async poll() {
+  public async poll(): Promise<void> {
     while (true) {
       const start = Date.now()
-
       await this.pollOnce()
-
-      const elapsed = start - Date.now()
-      if (elapsed < POLL_INTERVAL)
+      const elapsed = Date.now() - start
+      this.log.debug(`Spent ${elapsed} ms polling`)
+      if (elapsed < POLL_INTERVAL) {
         await sleep(POLL_INTERVAL - elapsed)
+      }
     }
   }
 
-  async pollOnce() {
+  public async pollOnce(): Promise<void> {
     try {
       await this.db.withTransaction(() => this.doFetchEvents())
     } catch (e) {
       this.log.error(`Fetching events failed: ${e}`)
     }
-
     try {
       await this.db.withTransaction(() => this.doProcessEvents())
     } catch (e) {
@@ -78,7 +77,11 @@ export default class ChainsawService {
    */
   async processSingleTx(txHash: string, force: boolean = false): Promise<PollType> {
     const event = await this.chainsawDao.eventByHash(txHash)
-    this.log.info(`Processing event: ${safeJson(event)}`)
+    const prettyEvent = {}
+    Object.keys(event).forEach((prop: string): void => {
+      prettyEvent[prop] = event[prop].toString()
+    })
+    this.log.info(`Processing event: ${JSON.stringify(prettyEvent, undefined, 2)}`)
 
     let res
     switch (event.TYPE) {
@@ -119,7 +122,9 @@ export default class ChainsawService {
 
     // need to check for >= here since we were previously not checking for a confirmation count
     if (lastBlock >= toBlock) {
-      this.log.debug(`lastBlock: ${lastBlock} >= toBlock: ${toBlock}`)
+      if (lastBlock > toBlock) {
+        this.log.info(`lastBlock: ${lastBlock} > toBlock: ${toBlock}`)
+      }
       return
     }
 
@@ -165,7 +170,7 @@ export default class ChainsawService {
       this.log.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
       // @ts-ignore
       await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
-      this.log.info(`Successfully inserted ${channelEvents.length} transactions.`)
+      this.log.debug(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
       this.log.debug('No new transactions found; nothing to do.')
       // @ts-ignore
@@ -303,15 +308,15 @@ export default class ChainsawService {
     }
 
     // TODO FIX AND REMOVE
-    this.log.info(`event.senderIdx: ${JSON.stringify(event.senderIdx)}`);
+    this.log.info(`event.senderIdx: ${JSON.stringify(event.senderIdx)}`)
     try {
       if ((event.senderIdx as any)._hex == "0x00") {
         this.log.info(`Hub inititated the challenge, so no need to respond; event ${prettySafeJson(event)}`)
         return
       }
     } catch (error) {
-      this.log.info('Caught error trying to compare BN to 0.')
-      this.log.info(error)
+      this.log.error('Caught error trying to compare BN to 0.')
+      this.log.error(error)
     }
 
     let data
