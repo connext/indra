@@ -40,8 +40,8 @@ project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
 if [[ "$INDRA_MODE" == "test" ]]
 then
-  public_http_port=2999
-  public_https_port=3000
+  public_http_port=3000
+  public_https_port=3001
   db_volume="${project}_database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
 else
@@ -79,7 +79,7 @@ then
   eth_network_id="4447"
   eth_rpc_url="http://ethprovider:8545"
   ethprovider_image=${project}_builder
-  number_of_services=7
+  number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
     image: ${project}_builder
