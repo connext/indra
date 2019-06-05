@@ -57,8 +57,8 @@ export class NodeWrapper {
       {
         STORE_KEY_PREFIX: "store",
       },
-      new JsonRpcProvider("https://rinkeby.infura.io/metamask", "rinkeby"),
-      "rinkeby",
+      new JsonRpcProvider("https://kovan.infura.io/metamask", "kovan"),
+      "kovan",
     );
     Logger.log("Node created", "NodeProvider");
 
@@ -68,7 +68,10 @@ export class NodeWrapper {
         if (!res || !res.data) {
           return;
         }
-        Logger.log(`Deposit detected: ${res}, matching`, "NodeProvider");
+        Logger.log(
+          `Deposit detected: ${JSON.stringify(res)}, matching`,
+          "NodeProvider",
+        );
         this.channelService.deposit(
           res.data.multisigAddress,
           res.data.amount,
