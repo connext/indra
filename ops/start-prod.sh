@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
+
 ####################
 # External Env Vars
 
@@ -73,7 +76,7 @@ elif [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
 then 
   eth_network_id="4"
   eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_RINKEBY"
-elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
+elif [[ "$INDRA_ETH_NETWORK" == "ganache" && "$INDRA_MODE" == "test" ]]
 then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   eth_network_id="4447"
@@ -95,7 +98,7 @@ then
     volumes:
       - \"`pwd`/modules/contracts:/root\""
 
-else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit 1
+else echo "Network $INDRA_ETH_NETWORK not supported for $MODE-mode deployments" && exit 1
 fi
 
 hot_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
@@ -126,9 +129,6 @@ fi
 # Deploy according to above configuration
 
 echo "Deploying images: $database_image & $hub_image & $proxy_image to $INDRA_DOMAINNAME"
-
-# turn on swarm mode if it's not already on
-docker swarm init 2> /dev/null || true
 
 # Get images that we aren't building locally
 function pull_if_unavailable {

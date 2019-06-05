@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
+
 ####################
 # External Env Vars
 
@@ -53,9 +56,6 @@ token_contract_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_
 
 ####################
 # Deploy according to above configuration
-
-# Turn on swarm mode if it's not already on
-docker swarm init 2> /dev/null || true
 
 # Get images that we aren't building locally
 function pull_if_unavailable {
