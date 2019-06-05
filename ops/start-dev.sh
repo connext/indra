@@ -231,9 +231,9 @@ services:
     environment:
       ETH_NETWORK: $eth_network
       MODE: dev
-      POSTGRES_USER: $project
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_USER: $project
     networks:
       - $project
     ports:

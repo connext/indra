@@ -29,20 +29,34 @@ number_of_services=7 # NOTE: Gotta update this manually when adding/removing ser
 channel_bei_limit=${CHANNEL_BEI_LIMIT}
 channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
-# Docker image settings
-registry="connextproject"
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-
-public_http_port=80
-public_https_port=443
-db_volume="database:"
-eth_volume=""
-db_secret="${project}_database"
-
 # hard-coded config (you probably won't ever need to change these)
 log_level="3" # set to 10 for all logs or to 30 to only print warnings/errors
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
 private_key_file="/run/secrets/$private_key_name"
+
+# Docker image settings
+registry="connextproject"
+project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+
+if [[ "$INDRA_MODE" == "test" ]]
+then
+  public_http_port=2999
+  public_https_port=3000
+  db_volume="${project}_database_test_`date +%y%m%d_%H%M%S`"
+  db_secret="${project}_database_test"
+else
+  public_http_port=80
+  public_https_port=443
+  db_volume="${project}_database"
+  db_secret="${project}_database"
+fi
+
+# database connection settings
+postgres_db="$project"
+postgres_password_file="/run/secrets/$db_secret"
+postgres_url="database:5432"
+postgres_user="$project"
+redis_url="redis://redis:6379"
 
 # ethereum settings
 # Allow contract address overrides if an address book is present in project root
@@ -61,15 +75,11 @@ then
   eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_RINKEBY"
 elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
 then
-  public_http_port=2999
-  public_https_port=3000
-  db_volume="database_dev:"
-  eth_volume="chain_dev:"
-  db_secret="${project}_database_dev"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   eth_network_id="4447"
   eth_rpc_url="http://ethprovider:8545"
   ethprovider_image=${project}_builder
+  number_of_services=7
   ethprovider_service="
   ethprovider:
     image: ${project}_builder
@@ -81,15 +91,7 @@ then
     ports:
       - \"8545:8545\"
     volumes:
-      - $eth_volume/data
       - \"`pwd`/modules/contracts:/root\""
-
-# database connection settings
-postgres_db="$project"
-postgres_password_file="/run/secrets/$db_secret"
-postgres_url="database:5432"
-postgres_user="$project"
-redis_url="redis://redis:6379"
 
 else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit 1
 fi
@@ -153,7 +155,7 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret ${project}_database
+new_secret $db_secret
 new_secret $private_key_name
 
 mkdir -p /tmp/$project modules/database/snapshots
@@ -167,8 +169,8 @@ secrets:
     external: true
 
 volumes:
-  $db_volume
-  $eth_volume
+  $db_volume:
+    external: true
   certs:
 
 services:
@@ -280,11 +282,12 @@ services:
       AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
       ETH_NETWORK: $INDRA_ETH_NETWORK
+      MODE: $INDRA_MODE
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $postgres_user
     volumes:
-      - $db_volume/var/lib/postgresql/data
+      - $db_volume:/var/lib/postgresql/data
       - `pwd`/modules/database/snapshots:/root/snapshots
 
   logdna:
@@ -296,10 +299,7 @@ services:
       TAGS: logdna
 EOF
 
-cat /tmp/$project/docker-compose.yml
-
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
-rm -rf /tmp/$project
 
 echo -n "Waiting for the $project stack to wake up."
 while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]

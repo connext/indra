@@ -25,7 +25,7 @@ jobs:
       - checkout
       - run:
           command: |
-            make start
+            make start-test
             git clone https://github.com/ConnextProject/card.git
             cd card
             make test-prod
