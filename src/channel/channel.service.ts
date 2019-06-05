@@ -25,7 +25,9 @@ export class ChannelService {
         requestId: generateUUID(),
       },
     );
-    Logger.log(`multisigResponse.result: ${multisigResponse.result}`);
+    Logger.log(
+      `multisigResponse.result: ${JSON.stringify(multisigResponse.result)}`,
+    );
     return multisigResponse.result as NodeTypes.CreateChannelTransactionResult;
   }
 
@@ -43,7 +45,9 @@ export class ChannelService {
       type: NodeTypes.MethodName.DEPOSIT,
       requestId: generateUUID(),
     });
-    Logger.log(`depositResponse.result: ${depositResponse.result}`);
+    Logger.log(
+      `depositResponse.result: ${JSON.stringify(depositResponse.result)}`,
+    );
     return depositResponse.result as NodeTypes.DepositResult;
   }
 }
