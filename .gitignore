@@ -1,4 +1,5 @@
 build
+card
 dist
 types
 ganache*.log
