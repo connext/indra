@@ -74,6 +74,7 @@ clean: stop
 	rm -rf modules/**/build
 	rm -rf modules/**/dist
 	rm -rf modules/**/types
+	rm -rf modules/**/node_modules/**/.git
 
 reset-base: stop
 	docker container prune -f
