@@ -266,13 +266,14 @@ export class StateUpdateController extends AbstractController {
     }
 
     const update = item.update
-    this.log.info(`Applying update from hub: ${update.reason} txCount=${update.txCount}: ${update}`)
+    this.log.info(`Applying update from hub: ${update.reason} txCount=${update.txCount}: `+
+      `${JSON.stringify(update, undefined, 2)}`)
 
     const connextState = this.getState()
     const prevState: ChannelState = connextState.persistent.channel
     const latestPending = connextState.persistent.latestPending
 
-    this.log.info(`prevState: ${prevState}`)
+    this.log.debug(`prevState: ${JSON.stringify(prevState, undefined, 2)}`)
 
     if (update.txCount && update.txCount <= prevState.txCountGlobal) {
       this.log.warn(

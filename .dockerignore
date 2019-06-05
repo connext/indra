@@ -1,6 +1,7 @@
 .git
 .npm
 build
+card
 modules/**/.cache
 modules/**/.config
 modules/**/.git

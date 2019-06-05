@@ -35,7 +35,7 @@ docker_run_in_dashboard_server=$(docker_run) --volume=$(dashboard_server):/root 
 $(shell mkdir -p build $(contracts)/build $(db)/build $(hub)/dist)
 version=$(shell cat package.json | grep "\"version\":" | egrep -o "[.0-9]+")
 
-install=npm install --prefer-offline --unsafe-perm
+install=npm install --prefer-offline --silent --no-progress > /dev/null 2>&1
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > build/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat build/.timestamp`)) seconds";echo "=============";echo
 
@@ -54,6 +54,9 @@ start: dev
 start-prod: prod
 	bash ops/start-prod.sh
 
+start-test: prod contract-artifacts
+	INDRA_ETH_NETWORK="ganache" INDRA_MODE="test" bash ops/start-prod.sh
+
 stop: 
 	bash ops/stop.sh
 
@@ -71,6 +74,7 @@ clean: stop
 	rm -rf modules/**/build
 	rm -rf modules/**/dist
 	rm -rf modules/**/types
+	rm -rf modules/**/node_modules/**/.git
 
 reset-base: stop
 	docker container prune -f

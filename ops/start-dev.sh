@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
+
 ####################
 # External Env Vars
 
@@ -54,9 +57,6 @@ token_contract_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_
 ####################
 # Deploy according to above configuration
 
-# Turn on swarm mode if it's not already on
-docker swarm init 2> /dev/null || true
-
 # Get images that we aren't building locally
 function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
@@ -80,20 +80,9 @@ function new_secret {
 new_secret ${project}_database_dev
 new_secret hub_key_ganache "$private_key"
 
-# Deploy with an attachable network so tests & the daicard can connect to individual components
-if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
-then
-  id="`docker network create --attachable --driver overlay $project`"
-  echo "Created ATTACHABLE network with id $id"
-fi
-
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
-
-networks:
-  $project:
-    external: true
 
 secrets:
   ${project}_database_dev:
@@ -113,8 +102,6 @@ services:
       DASHBOARD_URL: $dashboard_url
       ETH_RPC_URL: $eth_rpc_url
       MODE: dev
-    networks:
-      - $project
     ports:
       - "3000:80"
     volumes:
@@ -125,8 +112,6 @@ services:
     entrypoint: npm start
     environment:
       NODE_ENV: development
-    networks:
-      - $project
     volumes:
       - `pwd`/modules/dashboard:/root
 
@@ -139,8 +124,6 @@ services:
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $postgres_user
       POSTGRES_URL: $postgres_url
-    networks:
-      - $project
     ports:
       - "9999:9999"
     secrets:
@@ -167,8 +150,6 @@ services:
       REDIS_URL: $redis_url
       SERVICE_KEY: $service_key
       TOKEN_CONTRACT_ADDRESS: $token_contract_address
-    networks:
-      - $project
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -199,8 +180,6 @@ services:
       REDIS_URL: $redis_url
       SERVICE_KEY: $service_key
       TOKEN_CONTRACT_ADDRESS: $token_contract_address
-    networks:
-      - $project
     secrets:
       - ${project}_database_dev
       - hub_key_ganache
@@ -216,8 +195,6 @@ services:
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK: $eth_network
       ETH_PROVIDER: $eth_rpc_url
-    networks:
-      - $project
     ports:
       - "8545:8545"
     volumes:
@@ -231,11 +208,9 @@ services:
     environment:
       ETH_NETWORK: $eth_network
       MODE: dev
-      POSTGRES_USER: $project
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $postgres_password_file
-    networks:
-      - $project
+      POSTGRES_USER: $project
     ports:
       - "5432:5432"
     secrets:
@@ -246,8 +221,6 @@ services:
 
   redis:
     image: $redis_image
-    networks:
-      - $project
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

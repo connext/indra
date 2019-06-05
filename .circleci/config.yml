@@ -25,10 +25,11 @@ jobs:
       - checkout
       - run:
           command: |
-            make start
+            time make start-test
             git clone https://github.com/ConnextProject/card.git
             cd card
-            make test-prod
+            time make proxy-test
+            time make test-prod
 
   push-latest-images:
     machine: true

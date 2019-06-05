@@ -156,6 +156,7 @@ export class DepositController extends AbstractController {
       ? this.suggestedGasPrice.price
       : (await this.connext.wallet.provider.getGasPrice()).toHexString()
 
+    this.log.info(`Depositing with gas price: ${eth.utils.formatUnits(gasPrice, 'gwei')} gwei`)
 
     try {
       if (args.depositTokenUser !== '0') {

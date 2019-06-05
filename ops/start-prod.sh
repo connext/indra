@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
+
 ####################
 # External Env Vars
 
@@ -38,9 +41,22 @@ private_key_file="/run/secrets/$private_key_name"
 registry="connextproject"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
 
+if [[ "$INDRA_MODE" == "test" ]]
+then
+  public_http_port=3000
+  public_https_port=3001
+  db_volume="${project}_database_test_`date +%y%m%d_%H%M%S`"
+  db_secret="${project}_database_test"
+else
+  public_http_port=80
+  public_https_port=443
+  db_volume="${project}_database"
+  db_secret="${project}_database"
+fi
+
 # database connection settings
 postgres_db="$project"
-postgres_password_file="/run/secrets/${project}_database"
+postgres_password_file="/run/secrets/$db_secret"
 postgres_url="database:5432"
 postgres_user="$project"
 redis_url="redis://redis:6379"
@@ -60,7 +76,29 @@ elif [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
 then 
   eth_network_id="4"
   eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_ETH_RPC_KEY_RINKEBY"
-else echo "Network $INDRA_ETH_NETWORK not supported for prod-mode deployments" && exit 1
+elif [[ "$INDRA_ETH_NETWORK" == "ganache" && "$INDRA_MODE" == "test" ]]
+then
+  eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  eth_network_id="4447"
+  eth_rpc_url="http://ethprovider:8545"
+  ethprovider_image=${project}_builder
+  number_of_services=$(( $number_of_services + 1 ))
+  private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
+  echo $private_key | tr -d '\n\r' | docker secret create $private_key_name -
+  ethprovider_service="
+  ethprovider:
+    image: ${project}_builder
+    entrypoint: bash ops/entry.sh
+    environment:
+      ETH_MNEMONIC: \"$eth_mnemonic\"
+      ETH_NETWORK: $INDRA_ETH_NETWORK
+      ETH_PROVIDER: $eth_rpc_url
+    ports:
+      - \"8545:8545\"
+    volumes:
+      - \"`pwd`/modules/contracts:/root\""
+
+else echo "Network $INDRA_ETH_NETWORK not supported for $MODE-mode deployments" && exit 1
 fi
 
 hot_wallet_address="`cat $addressBook | jq .ChannelManager.networks[\\"$eth_network_id\\"].hub`"
@@ -92,9 +130,6 @@ fi
 
 echo "Deploying images: $database_image & $hub_image & $proxy_image to $INDRA_DOMAINNAME"
 
-# turn on swarm mode if it's not already on
-docker swarm init 2> /dev/null || true
-
 # Get images that we aren't building locally
 function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
@@ -122,7 +157,7 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret ${project}_database
+new_secret $db_secret
 new_secret $private_key_name
 
 mkdir -p /tmp/$project modules/database/snapshots
@@ -130,17 +165,19 @@ cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
 secrets:
-  ${project}_database:
+  $db_secret:
     external: true
   $private_key_name:
     external: true
 
 volumes:
-  ${project}_database:
+  $db_volume:
     external: true
   certs:
 
 services:
+  $ethprovider_service
+
   proxy:
     image: $proxy_image
     environment:
@@ -154,8 +191,8 @@ services:
           max-file: 10
           max-size: 10m
     ports:
-      - "80:80"
-      - "443:443"
+      - "$public_http_port:80"
+      - "$public_https_port:443"
     volumes:
       - certs:/etc/letsencrypt
 
@@ -167,7 +204,7 @@ services:
       POSTGRES_URL: $postgres_url
       POSTGRES_USER: $postgres_user
     secrets:
-      - ${project}_database
+      - $db_secret
 
   hub:
     image: $hub_image
@@ -199,7 +236,7 @@ services:
           max-file: 10
           max-size: 10m
     secrets:
-      - ${project}_database
+      - $db_secret
       - $private_key_name
 
   chainsaw:
@@ -231,7 +268,7 @@ services:
           max-file: 10
           max-size: 10m
     secrets:
-      - ${project}_database
+      - $db_secret
       - $private_key_name
 
   redis:
@@ -242,16 +279,17 @@ services:
     deploy:
       mode: global
     secrets:
-      - ${project}_database
+      - $db_secret
     environment:
       AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
       ETH_NETWORK: $INDRA_ETH_NETWORK
+      MODE: $INDRA_MODE
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $postgres_user
     volumes:
-      - ${project}_database:/var/lib/postgresql/data
+      - $db_volume:/var/lib/postgresql/data
       - `pwd`/modules/database/snapshots:/root/snapshots
 
   logdna:
@@ -264,7 +302,6 @@ services:
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
-rm -rf /tmp/$project
 
 echo -n "Waiting for the $project stack to wake up."
 while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]

@@ -195,8 +195,8 @@ export abstract class ConnextChannel extends EventEmitter {
     return this.internal.buyController.buy(purchase)
   }
 
-  public async deposit(payment: Partial<Payment>): Promise<void> {
-    await this.internal.depositController.requestUserDeposit(payment)
+  public async deposit(payment: Partial<Payment>, overrides: any): Promise<void> {
+    await this.internal.depositController.requestUserDeposit(payment, overrides)
   }
 
   public async exchange(toSell: string, currency: 'wei' | 'token'): Promise<void> {
