@@ -40,6 +40,8 @@ private_key_file="/run/secrets/$private_key_name"
 # Docker image settings
 registry="connextproject"
 project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+hub_port=8080
+hub_ws_port=8081
 
 if [[ "$INDRA_MODE" == "test" ]]
 then
@@ -222,6 +224,7 @@ services:
       LOG_LEVEL: $log_level
       MAILGUN_API_KEY: $MAILGUN_API_KEY
       NODE_ENV: production
+      PORT: $hub_port
       POSTGRES_DB: $postgres_db
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_URL: $postgres_url
@@ -230,6 +233,7 @@ services:
       REDIS_URL: $redis_url
       SERVICE_KEY: $INDRA_SERVICE_KEY
       TOKEN_CONTRACT_ADDRESS: $token_contract_address
+      WEBSOCKET_PORT: $hub_ws_port
     logging:
       driver: "json-file"
       options:

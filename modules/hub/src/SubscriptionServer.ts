@@ -11,7 +11,7 @@ export class SubscriptionServer {
   public constructor(config: Config) {
     this.log = new Logger('SubscriptionServer', config.logLevel)
 
-    this.server = new WebSocket.Server({ port: config.port + 1 })
+    this.server = new WebSocket.Server({ port: config.websocketPort })
 
     this.server.on('connection', (ws: WebSocket, req: any): void => {
       const ip: string = req.connection.remoteAddress // TODO: check x-forwarded-for header
