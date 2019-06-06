@@ -24,7 +24,7 @@ eth_rpc_url="http://ethprovider:8545"
 log_level="3" # set to 0 for no logs or to 50 for all the logs
 private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
 private_key_file="/run/secrets/hub_key_ganache"
-project="`cat package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+project="indra"
 service_key="foo"
 
 # database connection settings
@@ -133,7 +133,7 @@ services:
 
   hub:
     image: $hub_image
-    entrypoint: bash ops/dev.entry.sh hub
+    entrypoint: bash ops/entry.sh hub
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_MNEMONIC: $eth_mnemonic
@@ -163,7 +163,7 @@ services:
 
   chainsaw:
     image: $chainsaw_image
-    entrypoint: bash ops/dev.entry.sh chainsaw
+    entrypoint: bash ops/entry.sh chainsaw
     environment:
       CHANNEL_MANAGER_ADDRESS: $channel_manager_address
       ETH_MNEMONIC: $eth_mnemonic
