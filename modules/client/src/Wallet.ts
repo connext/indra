@@ -155,11 +155,11 @@ export class Wallet extends eth.Signer {
   }
 
   public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
-    if (this.signer){
-      return this.signer.sendTransaction(txReq)
-    }
     if (this.external){
       return this.signAndSendTransactionExternally(txReq)
+    }
+    if (this.signer){
+      return this.signer.sendTransaction(txReq)
     }
     const signedTx: string = await this.signTransaction(txReq)
     return this.provider.sendTransaction(signedTx)
