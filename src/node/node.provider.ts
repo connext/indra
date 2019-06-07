@@ -5,6 +5,7 @@ import {
   MNEMONIC_PATH,
   Node,
 } from "@counterfactual/node";
+import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Node as NodeTypes } from "@counterfactual/types";
 import {
   forwardRef,
@@ -15,7 +16,6 @@ import {
 } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { PostgresServiceFactory } from "../../../monorepo/packages/postgresql-node-connector/src/index";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import {
@@ -61,8 +61,7 @@ export class NodeWrapper {
     );
     this.node = await Node.create(
       messService,
-      // FIXME
-      store as any,
+      store,
       {
         STORE_KEY_PREFIX: "store",
       },
