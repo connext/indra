@@ -5,12 +5,16 @@ import { ConfigModule } from "../config/config.module";
 import { UserModule } from "../user/user.module";
 
 import { NodeController } from "./node.controller";
-import { FirebaseProvider, NodeProvider } from "./node.provider";
+import {
+  FirebaseProvider,
+  NodeProvider,
+  PostgresProvider,
+} from "./node.provider";
 
 @Module({
-  providers: [NodeProvider, FirebaseProvider],
-  imports: [ConfigModule, UserModule, forwardRef(() => ChannelModule)],
   controllers: [NodeController],
   exports: [NodeProvider, FirebaseProvider],
+  imports: [ConfigModule, UserModule, forwardRef(() => ChannelModule)],
+  providers: [FirebaseProvider, NodeProvider, PostgresProvider],
 })
 export class NodeModule {}
