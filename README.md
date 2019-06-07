@@ -34,81 +34,39 @@ npm start
 
 Beware! The first time this is run it will take a very long time (> 10 minutes usually)  but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `npm start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first build/deploy completes.
 
-Once all the pieces are awake, the app will be available at `http://localhost:3000`.
+Once all the pieces are awake, the hub will be available at `http://localhost:3000`.
 
-Useful scripts:
+### Useful scripts
  - `npm start`: Builds everything & then starts the app
+ - `npm stop`: Stop the app once it's been started
+ - `npm restart`: Stop the app & start it again, rebuilding anything that's out of date
+ - `npm run clean`: Stops the app & deletes all build artifacts. Downloaded data (eg `node_modules`) isn't removed.
+ - `npm run reset`: Stops the app & removes all persistent data (eg database & chaindata)
+ - `npm run start-prod`: Start the app in production-mode
  - `npm run dls`: Show all running services (groups of containers) plus list all running containers.
  - `npm run db`: Opens a console attached to the running app's database. You can also run `npm run db '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details) and then exit.
  - `npm run logs hub`: Monitor the hub's logs. Similar commands can be run to monitor logs for the `proxy`, `chainsaw`, `ethprovider` (for migrations output), `ganache` (for log of rpc calls to ganache), `database`, `redis`, etc.
- - `npm stop`: Stop the app once it's been started
- - `npm restart`: Stop the app & start it again, rebuilding anything that's out of date
- - `npm run reset`: Stops the app & removes all persistent data (eg database & chaindata)
- - `npm run clean`: Stops the app & deletes all build artifacts. Downloaded data (eg `node_modules`) isn't removed.
- - `npm run deep-clean`: Stops the app & deletes all build artifacts & deletes downloaded data.
- - `npm run prod`: Start the app in production-mode
 
-There are a couple watcher flags at the top of `ops/deploy.dev.sh` that are off by default. If you expect to be actively developing the hub or chainsaw, you can turn on watchers for those and they'll be dynamically rebuild/redeployed on source-code changed without needing to restart the app. Careful, turning on all the watchers will increase the start-up.
-
-Test suites:
+### Unit Tests
  - `npm run test-client`: client unit tests
  - `npm run test-contracts`: contract unit tests
  - `npm run test-hub`: hub unit tests
- - `npm run test-e2e`: starts the app in production mode and then runs cypress integration tests
  - `npm run test-all`: Run all test suites
 
-## To deploy locally
+### To run e2e tests against the daicard
+ 1. Run `make start` in Indra
+ 2. `git clone https://github.com/ConnextProject/card.git && cd card && make start`
+ 3. From the card repo, run `make start-test` to watch the tests run in a browser or just `make test` to run the e2e tests headlessly
 
-### Prerequisite
-* PostgreSQL running locally: `brew install postgres` for Mac. [See here for Linux](https://github.com/ConnextProject/indra/blob/master/docs/LINUX_POSTGRES.md).
-* Redis running locally: `brew install redis` for Mac. `sudo apt-get install redis` for Linux.
-* Yarn: `brew install yarn` for Mac. `sudo apt-get install yarn` for Linux.
+### Watching compilation/tests during development
 
-Before starting, make sure your PostgreSQL and Redis services are running:
-`brew services start redis`, `brew services start postgresql` on mac.
+`make watch-client` and `make watch-hub` will start a watcher that will recompile and test the client any time a change is detected in `modules/client/src` or `modules/hub/src` respectively. This is really useful for a quick tweak-check cycle while making module-specific changes. These watchers will persist in the terminal they're started from and can be stopped at any point with ctrl-c.
 
-Run the following steps in order. For each section, use a separate terminal window. Closing the terminal window will stop the process.
-
-### Ganache
-Run the following from `modules/hub`.
-* `yarn install` - Install dependencies.
-* `bash development/ganache-reset` - Migrates the contracts.
-* `bash development/ganache-run` - Runs Ganache (if you put a number after the `ganache-run` command you can set the blocktime).
-
-### Hub
-Run the following from `modules/hub`.
-* `createdb sc-hub` - Creates the hub's database (if it already exists, skip this step).
-* `bash development/hub-reset` - Resets the hub's database.
-* `bash development/hub-run` - Runs hub and chainsaw.
-
-### Wallet
-Run the following from `modules/wallet`. 
-
-* Add the following to a file called `.env` inside `modules/wallet`. Do not commit this file to Git:
-```
-REACT_APP_DEV=false
-REACT_APP_HUB_URL=http://localhost:8080
-REACT_APP_ETHPROVIDER_URL=http://localhost:8545
-REACT_APP_HUB_WALLET_ADDRESS=0xfb482f8f779fd96a857f1486471524808b97452d
-REACT_APP_CHANNEL_MANAGER_ADDRESS=0xa8c50098f6e144bf5bae32bdd1ed722e977a0a42
-REACT_APP_TOKEN_ADDRESS=0xd01c08c7180eae392265d8c7df311cf5a93f1b73
-REACT_APP_WITHDRAWAL_MINIMUM=10000000000000
-```
-* `npm install` - Install dependencies.
-* `npm start` - Runs the local dev server at `http://localhost:3000`.
-* Set up Metamask to use one of the following accounts:
-
-Address: 0xFB482f8f779fd96A857f1486471524808B97452D
-
-Private Key: 09cd8192c4ad4dd3b023a8ef381a24d29266ebd4af88ecdac92ec874e1c2fed8 (hub's account, contains tokens)
-
-Address: 0x2DA565caa7037Eb198393181089e92181ef5Fb53
-
-Private Key: 54dec5a04356ed96fc469803f3e45b901c69c5d5fd93a34fbf3568cd4c6efadd
+You *could* watch the client and the hub and start the app all at once but this will use lots of CPU. It's recommended that you only run a watcher for the module you're actively developing against and wait to start the app until you're done making changes and are ready to run e2e tests.
 
 ## Deploying to Production
 
-Tweak, check, tweak, check, commit. Time to deploy?
+Tweak, check, tweak, check, commit. Time to deploy!
 
 ### First, setup CircleCI Environment Variables
 
@@ -159,6 +117,8 @@ ssh -t -i ~/.ssh/connext-aws ubuntu@$SERVER_IP bash indra/ops/load-secret.sh hub
 
 ### Second, deploy the contracts
 
+**Once per smart contract**
+
 To deploy the ChannelManager contract & dependencies to Rinkeby:
 
 ```
@@ -177,33 +137,53 @@ You can upload a custom address book to your prod server's project root like thi
 
 `scp -i ~/.ssh/connext-aws address-book.json ubuntu@$SERVER_IP:~/indra/`
 
-### Third, activate the CI pipeline
+### Third, deploy a new version of the connext client
+
+(This step can be skipped if we've only made changes to the hub & not the client)
+
+To publish a new version of the client:
 
 ```
-git push
+bash ops/deploy-client.sh
 ```
 
-This will trigger the CI pipeline that will run all test suites and, if none fail, deploy this app to production.
+This script will prompt you for a new version number. Heuristics:
+ - Is this minor bug fix? Then increment the minor version eg `1.0.0` -> `1.0.1`
+ - Did you add a new, backwards-compatible feature? Then increment the middle version eg `1.0.0` -> `1.1.0`
+ - Did you add a new, backwards-incompatible feature? Then increment the major version eg `1.0.0` -> `2.0.0`
 
-Pushing to any branch other than master will trigger a deployment to the server at `$STAGING_URL` specified by CircleCI. Pushing or merging into master will deploy to the servers at `$RINKEBY_URL` and `$MAINNET_URL.
+Once you specify the version, it will automatically:
+ - update `modules/client/package.json` with the new version
+ - run npm publish
+ - update `modules/hub/package.json` to import the newly published version of the connext library
+ - create & push a new git commit
+ - create & push a new git tag
 
-If you haven't set up CircleCI yet or need to deploy a hotfix immediately, you can run the following:
+### Forth, deploy a new Indra hub
+
+There is a long-lived staging branch that is the intermediate step between Indra development and production. All merges and PRs should be made from a feature branch onto staging. The master branch is dealt with automatically so you shouldn't need to manually commit or merge to master unless you're updating the readme or something that doesn't affect any of the actual source code.
+
+Updating origin/staging will kick off the first round of CI and, if all tests pass, it will deploy the changes to the `$STAGING_URL` configured by your circle ci env.
 
 ```
-# push docker images tagged :latest to docker hub
-make push
-
-# make sure that the indra repo is available on the prod server
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash -c 'git clone https://github.com/ConnextProject/indra.git || true'
-
-# make sure that the remote repo is up-to-date with master
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash -c 'cd indra && git fetch && git reset --hard origin/master'
-
-# Having a mode != "live" will deploy :latest images rather than ones tagged w an explicit version
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash -c 'cd indra && MODE=hotfix ops/restart.sh prod'
+git checkout staging && git mege feature-branch # alternatively, do a code review & merge via a GitHub PR
 ```
 
-Beware, CircleCI manages the env vars previously mentioned. If you don't deploy via CircleCI, then you need to manage these env vars manually by adding them to the server's `~/.bashrc`. Check out the server's current env vars with: `ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP env` and make sure it looks good before doing a manual deployment.
+Once the staging branch's CI runs and deploys, check out your staging env. Does everything look good? Seem ready to deploy to production?
+
+To deploy a new Indra hub to production, run:
+
+```
+bash ops/deploy-indra.sh
+```
+
+This script will prompt you for a new version number. See the previous step for versioning heuristics. Once you specify the version, it will automatically:
+ - merge staging into master
+ - update the project root's `package.json` with the version you provided & amend this change to the merge commit
+ - push this commit to origin/master
+ - create & push a new git tag
+
+Pushing to origin/master will trigger another CI run that will deploy a new Indra hub to production if no tests fail.
 
 ### Ongoing: Dealing w stuff in production
 
@@ -227,9 +207,8 @@ A prod-mode indra hub exposes the following API ([source](https://github.com/Con
 
  - `/api/hub` is the prefix for the hub's api
  - `/api/hub/config` returns the hub's config for example
+ - `/api/hub/subscribe` connects to the hub's websocket server for real-time exchange rate & gas price updates
  - `/api/eth` connects to the hub's eth provider
- - `/api/dashboard` connects to a server that gives the admin dashboard it's info
- - `/dashboard/` serves html/css/js for the dashboard client
  - anything else, redirects the user to a daicard client
 
 ### ..from a [dai card](https://github.com/ConnextProject/card)
