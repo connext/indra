@@ -15,12 +15,15 @@ import {
 } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
+import { PostgresServiceFactory } from "../../../monorepo/packages/postgresql-node-connector/src/index";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { FirebaseProviderId, NodeProviderId } from "../constants";
+import {
+  FirebaseProviderId,
+  NodeProviderId,
+  PostgresProviderId,
+} from "../constants";
 import { UserService } from "../user/user.service";
-
-const FirebaseServer = require("firebase-server");
 
 @Injectable()
 export class NodeWrapper {
@@ -99,12 +102,13 @@ export class NodeWrapper {
 }
 
 export const NodeProvider: Provider = {
+  inject: [ChannelService, ConfigService, FirebaseProviderId, UserService],
   provide: NodeProviderId,
   useFactory: async (
-    userService: UserService,
     channelService: ChannelService,
     config: ConfigService,
     firebase: FirebaseServiceFactory,
+    userService: UserService,
   ): Promise<Node> => {
     const nodeWrapper = new NodeWrapper(
       userService,
@@ -114,10 +118,10 @@ export const NodeProvider: Provider = {
     );
     return await nodeWrapper.createSingleton();
   },
-  inject: [UserService, ChannelService, ConfigService, FirebaseProviderId],
 };
 
 export const FirebaseProvider: Provider = {
+  inject: [ConfigService],
   provide: FirebaseProviderId,
   useFactory: (config: ConfigService): FirebaseServiceFactory => {
     const firebaseServerHost = config.get("FIREBASE_SERVER_HOST");
@@ -132,10 +136,14 @@ export const FirebaseProvider: Provider = {
       apiKey: "",
       authDomain: "",
       databaseURL: `ws://${firebaseServerHost}:${firebaseServerPort}`,
+      messagingSenderId: "",
       projectId: "projectId",
       storageBucket: "",
-      messagingSenderId: "",
     });
   },
-  inject: [ConfigService],
 };
+
+// export const PostgresProvider: Provider = {
+//   provide: PostgresProviderId,
+//   useFactory: (config)
+// };
