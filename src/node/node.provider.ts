@@ -30,12 +30,14 @@ export class NodeWrapper {
   public node: Node;
 
   constructor(
-    private readonly userService: UserService,
     @Inject(forwardRef(() => ChannelService))
     private readonly channelService: ChannelService,
     private readonly config: ConfigService,
     @Inject(FirebaseProviderId)
-    private readonly serviceFactory: FirebaseServiceFactory,
+    private readonly firebaseServiceFactory: FirebaseServiceFactory,
+    @Inject(PostgresProviderId)
+    private readonly postgresServiceFactory: PostgresServiceFactory,
+    private readonly userService: UserService,
   ) {}
 
   async createSingleton(): Promise<Node> {
@@ -45,7 +47,8 @@ export class NodeWrapper {
 
     // TODO: make this logging more dynamic?
     Logger.log("Creating store", "NodeProvider");
-    const store = this.serviceFactory.createStoreService("connextHub");
+    // const store = this.firebaseServiceFactory.createStoreService("connextHub");
+    const store = this.postgresServiceFactory.createStoreService("connextHub");
     Logger.log("Store created", "NodeProvider");
 
     await store.set([
@@ -53,10 +56,13 @@ export class NodeWrapper {
     ]);
 
     Logger.log("Creating Node", "NodeProvider");
-    const messService = this.serviceFactory.createMessagingService("messaging");
+    const messService = this.firebaseServiceFactory.createMessagingService(
+      "messaging",
+    );
     this.node = await Node.create(
       messService,
-      store,
+      // FIXME
+      store as any,
       {
         STORE_KEY_PREFIX: "store",
       },
@@ -102,19 +108,27 @@ export class NodeWrapper {
 }
 
 export const NodeProvider: Provider = {
-  inject: [ChannelService, ConfigService, FirebaseProviderId, UserService],
+  inject: [
+    ChannelService,
+    ConfigService,
+    FirebaseProviderId,
+    PostgresProviderId,
+    UserService,
+  ],
   provide: NodeProviderId,
   useFactory: async (
     channelService: ChannelService,
     config: ConfigService,
     firebase: FirebaseServiceFactory,
+    postgres: PostgresServiceFactory,
     userService: UserService,
   ): Promise<Node> => {
     const nodeWrapper = new NodeWrapper(
-      userService,
       channelService,
       config,
       firebase,
+      postgres,
+      userService,
     );
     return await nodeWrapper.createSingleton();
   },
@@ -143,7 +157,17 @@ export const FirebaseProvider: Provider = {
   },
 };
 
-// export const PostgresProvider: Provider = {
-//   provide: PostgresProviderId,
-//   useFactory: (config)
-// };
+export const PostgresProvider: Provider = {
+  inject: [ConfigService],
+  provide: PostgresProviderId,
+  useFactory: async (
+    config: ConfigService,
+  ): Promise<PostgresServiceFactory> => {
+    const pg = new PostgresServiceFactory({
+      ...config.postgresConfig(),
+      type: "postgres",
+    });
+    await pg.connectDb();
+    return pg;
+  },
+};
