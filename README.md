@@ -4,12 +4,9 @@ Everything you need to set up a Connext payment channel hub.
 
 ## Contents
  - [To deploy using Docker](#to-deploy-using-docker)
- - [To deploy locally](#to-deploy-locally)
  - [Deploying to production](#deploying-to-production)
- - [How to interact with Hub](#how-to-interact-with-hub)
+ - [How to interact with the Hub](#how-to-interact-with-hub)
  - [Debugging & Troubleshooting](#debugging)
-
-For local development, you can either deploy the app in docker containers, or deploy it locally. See the next two sections for details.
 
 If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
 
@@ -32,7 +29,7 @@ cd indra
 npm start
 ```
 
-Beware! The first time this is run it will take a very long time (> 10 minutes usually)  but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `npm start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first build/deploy completes.
+Beware! The first time this is run it will take a very long time (potentially as long as 10 minutes) but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `npm start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first build/deploy completes.
 
 Once all the pieces are awake, the hub will be available at `http://localhost:3000`.
 
@@ -47,22 +44,28 @@ Once all the pieces are awake, the hub will be available at `http://localhost:30
  - `npm run db`: Opens a console attached to the running app's database. You can also run `npm run db '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details) and then exit.
  - `npm run logs hub`: Monitor the hub's logs. Similar commands can be run to monitor logs for the `proxy`, `chainsaw`, `ethprovider` (for migrations output), `ganache` (for log of rpc calls to ganache), `database`, `redis`, etc.
 
-### Unit Tests
- - `npm run test-client`: client unit tests
- - `npm run test-contracts`: contract unit tests
- - `npm run test-hub`: hub unit tests
- - `npm run test-all`: Run all test suites
+(Many `npm run` commands are also available via `make` eg you can run `make start` or `make clean` instead of the `npm run` equivalents.)
+
+### Running Unit Tests
+ - `npm run test-all`
+ - `npm run test-client`
+ - `npm run test-contracts`
+ - `npm run test-hub`
 
 ### To run e2e tests against the daicard
- 1. Run `make start` in Indra
+ 1. Run `npm start` in Indra
  2. `git clone https://github.com/ConnextProject/card.git && cd card && make start`
  3. From the card repo, run `make start-test` to watch the tests run in a browser or just `make test` to run the e2e tests headlessly
 
 ### Watching compilation/tests during development
 
-`make watch-client` and `make watch-hub` will start a watcher that will recompile and test the client any time a change is detected in `modules/client/src` or `modules/hub/src` respectively. This is really useful for a quick tweak-check cycle while making module-specific changes. These watchers will persist in the terminal they're started from and can be stopped at any point with ctrl-c.
+To activate watchers, run one of:
+ - `make watch-client`
+ - `make watch-hub`
 
-You *could* watch the client and the hub and start the app all at once but this will use lots of CPU. It's recommended that you only run a watcher for the module you're actively developing against and wait to start the app until you're done making changes and are ready to run e2e tests.
+Running one of these commands will recompile and test the client or hub any time a change is detected in `modules/client/src` or `modules/hub/src` respectively. These watchers will persist in the terminal they're started from and can be stopped at any point with ctrl-c.
+
+You *could* watch the client and the hub and start the app all at once but this will use lots of CPU. It's recommended that you only run a watcher for the module you're actively developing against and then start the app when you're done making changes and are ready to run e2e tests.
 
 ## Deploying to Production
 
@@ -115,7 +118,7 @@ And add a new private key like this:
 ssh -t -i ~/.ssh/connext-aws ubuntu@$SERVER_IP bash indra/ops/load-secret.sh hub_key_mainnet
 ```
 
-### Second, deploy the contracts
+### Third, deploy the contracts
 
 **Once per smart contract**
 
@@ -137,7 +140,7 @@ You can upload a custom address book to your prod server's project root like thi
 
 `scp -i ~/.ssh/connext-aws address-book.json ubuntu@$SERVER_IP:~/indra/`
 
-### Third, deploy a new version of the connext client
+### Fourth, deploy a new version of the connext client
 
 (This step can be skipped if we've only made changes to the hub & not the client)
 
@@ -159,7 +162,7 @@ Once you specify the version, it will automatically:
  - create & push a new git commit
  - create & push a new git tag
 
-### Forth, deploy a new Indra hub
+### Lastly, deploy a new Indra hub
 
 There is a long-lived staging branch that is the intermediate step between Indra development and production. All merges and PRs should be made from a feature branch onto staging. The master branch is dealt with automatically so you shouldn't need to manually commit or merge to master unless you're updating the readme or something that doesn't affect any of the actual source code.
 
