@@ -21,8 +21,8 @@ export class ChannelService {
         params: {
           owners: [this.node.publicIdentifier, nodeAddress],
         } as NodeTypes.CreateChannelParams,
-        type: NodeTypes.MethodName.CREATE_CHANNEL,
         requestId: generateUUID(),
+        type: NodeTypes.MethodName.CREATE_CHANNEL,
       },
     );
     Logger.log(
@@ -41,9 +41,9 @@ export class ChannelService {
         amount,
         multisigAddress,
         notifyCounterparty,
-      } as NodeTypes.DepositParams,
-      type: NodeTypes.MethodName.DEPOSIT,
+      },
       requestId: generateUUID(),
+      type: NodeTypes.MethodName.DEPOSIT,
     });
     Logger.log(
       `depositResponse.result: ${JSON.stringify(depositResponse.result)}`,
