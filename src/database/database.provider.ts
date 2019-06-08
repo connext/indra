@@ -11,7 +11,7 @@ export const databaseProvider: Provider = {
   provide: DatabaseProviderId,
   useFactory: async (config: ConfigService) =>
     await createConnection({
-      ...config.postgresConfig(),
+      ...config.getPostgresConfig(),
       entities: [User],
       synchronize: true,
       type: "postgres",
