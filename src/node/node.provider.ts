@@ -16,10 +16,12 @@ import {
 } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
+import { NatsServiceFactory } from "../../../monorepo/packages/nats-messaging-client/src/index";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import {
   FirebaseProviderId,
+  NatsProviderId,
   NodeProviderId,
   PostgresProviderId,
 } from "../constants";
@@ -35,11 +37,14 @@ export class NodeWrapper {
     private readonly config: ConfigService,
     @Inject(FirebaseProviderId)
     private readonly firebaseServiceFactory: FirebaseServiceFactory,
+    @Inject(NatsProviderId)
+    private readonly natsServiceFactory: NatsServiceFactory,
     @Inject(PostgresProviderId)
     private readonly postgresServiceFactory: PostgresServiceFactory,
     private readonly userService: UserService,
   ) {}
 
+  // TODO: refactor this to inject directly from provider
   async createSingleton(): Promise<Node> {
     if (this.node) {
       return this.node;
@@ -52,11 +57,14 @@ export class NodeWrapper {
     Logger.log("Store created", "NodeProvider");
 
     await store.set([
-      { key: MNEMONIC_PATH, value: this.config.nodeMnemonic() },
+      { key: MNEMONIC_PATH, value: this.config.getNodeMnemonic() },
     ]);
 
     Logger.log("Creating Node", "NodeProvider");
-    const messService = this.firebaseServiceFactory.createMessagingService(
+    // const messService = this.firebaseServiceFactory.createMessagingService(
+    //   "messaging",
+    // );
+    const messService = this.natsServiceFactory.createMessagingService(
       "messaging",
     );
     this.node = await Node.create(
@@ -65,7 +73,7 @@ export class NodeWrapper {
       {
         STORE_KEY_PREFIX: "store",
       },
-      new JsonRpcProvider("https://kovan.infura.io/metamask", "kovan"),
+      new JsonRpcProvider("https://kovan.infura.io/metamask") as any, // FIXME
       "kovan",
     );
     Logger.log("Node created", "NodeProvider");
@@ -82,7 +90,7 @@ export class NodeWrapper {
         );
         this.channelService.deposit(
           res.data.multisigAddress,
-          res.data.amount,
+          res.data.amount as any, // FIXME
           res.data.notifyCounterparty,
         );
       },
@@ -111,6 +119,7 @@ export const NodeProvider: Provider = {
     ChannelService,
     ConfigService,
     FirebaseProviderId,
+    NatsProviderId,
     PostgresProviderId,
     UserService,
   ],
@@ -119,6 +128,7 @@ export const NodeProvider: Provider = {
     channelService: ChannelService,
     config: ConfigService,
     firebase: FirebaseServiceFactory,
+    nats: NatsServiceFactory,
     postgres: PostgresServiceFactory,
     userService: UserService,
   ): Promise<Node> => {
@@ -126,6 +136,7 @@ export const NodeProvider: Provider = {
       channelService,
       config,
       firebase,
+      nats,
       postgres,
       userService,
     );
@@ -163,10 +174,20 @@ export const PostgresProvider: Provider = {
     config: ConfigService,
   ): Promise<PostgresServiceFactory> => {
     const pg = new PostgresServiceFactory({
-      ...config.postgresConfig(),
+      ...config.getPostgresConfig(),
       type: "postgres",
     });
     await pg.connectDb();
     return pg;
+  },
+};
+
+export const NatsProvider: Provider = {
+  inject: [ConfigService],
+  provide: NatsProviderId,
+  useFactory: async (config: ConfigService): Promise<NatsServiceFactory> => {
+    const nats = new NatsServiceFactory(config.getNatsConfig());
+    await nats.connect();
+    return nats;
   },
 };
