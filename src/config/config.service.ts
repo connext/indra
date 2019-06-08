@@ -1,5 +1,8 @@
+import { PostgresConnectionOptions } from "@counterfactual/postgresql-node-connector";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
+
+import { NatsConfig } from "../../../monorepo/packages/nats-messaging-client/src";
 
 type PostgresConfig = {
   database: string;
@@ -20,17 +23,25 @@ export class ConfigService {
     return this.envConfig[key];
   }
 
-  nodeMnemonic(): string {
+  getNodeMnemonic(): string {
     return this.get("NODE_MNEMONIC");
   }
 
-  postgresConfig(): PostgresConfig {
+  getPostgresConfig(): PostgresConnectionOptions {
     return {
       database: this.get("INDRA_PG_DATABASE"),
       host: this.get("INDRA_PG_HOST"),
       password: this.get("INDRA_PG_PASSWORD"),
       port: parseInt(this.get("INDRA_PG_PORT"), 10),
       username: this.get("INDRA_PG_USERNAME"),
+    };
+  }
+
+  getNatsConfig(): NatsConfig {
+    return {
+      clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
+      servers: this.get("INDRA_NATS_SERVERS").split(","),
+      token: this.get("INDRA_NATS_TOKEN"),
     };
   }
 }
