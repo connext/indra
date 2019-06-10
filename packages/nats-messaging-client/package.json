@@ -7,7 +7,7 @@
   "license": "MIT",
   "engines": {
     "yarn": "^1.10",
-    "node": "10.15.3"
+    "node": "10.16.0"
   },
   "scripts": {
     "build": "tsc -p . && rollup -c",
