@@ -1,4 +1,3 @@
-import { FirebaseServiceFactory } from "@counterfactual/firebase-client";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -126,7 +125,6 @@ export const NatsProvider: Provider = {
   inject: [ConfigService],
   provide: NatsProviderId,
   useFactory: (config: ConfigService): NatsServiceFactory => {
-    // @ts-ignore
-    return new NatsServiceFactory();
+    return new NatsServiceFactory({ servers: config.getNatsConfig().servers });
   },
 };
