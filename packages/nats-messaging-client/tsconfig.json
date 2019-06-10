@@ -5,7 +5,10 @@
     "declarationDir": "dist/",
     "outDir": "dist/",
     "resolveJsonModule": true,
-    "types": ["jest", "node"]
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@counterfactual/typescript-typings/types"
+    ]
   },
-  "include": ["src", "test"]
+  "include": ["src"]
 }

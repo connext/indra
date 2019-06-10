@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.1.24",
+    "@counterfactual/node": "0.1.25",
     "@counterfactual/postgresql-node-connector": "0.0.2",
     "@counterfactual/types": "0.0.10",
     "@nestjs/common": "6.3.1",
@@ -51,10 +51,6 @@
     "ts-jest": "24.0.2",
     "ts-node": "8.2.0",
     "tsconfig-paths": "3.8.0",
-    "tslint": "5.17.0",
-    "tslint-config-airbnb": "5.11.1",
-    "tslint-config-prettier": "1.18.0",
-    "tslint-plugin-prettier": "2.0.1",
     "typescript": "3.5.1",
     "wait-on": "3.2.0"
   },
