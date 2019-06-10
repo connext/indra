@@ -2,7 +2,7 @@ import { PostgresConnectionOptions } from "@counterfactual/postgresql-node-conne
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 
-import { NatsConfig } from "../../../monorepo/packages/nats-messaging-client/src";
+import { NatsConfig } from "../../../nats-messaging-client/src";
 
 type PostgresConfig = {
   database: string;
