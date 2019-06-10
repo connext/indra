@@ -2,15 +2,15 @@ import { Node } from "@counterfactual/types";
 import * as nats from "ts-nats";
 
 export interface NatsConfig {
+  clusterId?: string;
   servers: string[];
-  token: string;
-  clusterId: string;
+  token?: string;
 }
 
 export const NATS_CONFIGURATION_ENV = {
+  clusterId: "NATS_CLUSTER_ID",
   servers: "NATS_SERVERS",
   token: "NATS_TOKEN",
-  clusterId: "NATS_CLUSTER_ID"
 };
 
 export interface INatsMessaging extends Node.IMessagingService {
@@ -19,8 +19,6 @@ export interface INatsMessaging extends Node.IMessagingService {
 }
 
 export class NatsServiceFactory {
-  // TODO fix any
-
   constructor(private readonly connectionConfig: NatsConfig) {}
 
   connect() {
@@ -37,7 +35,7 @@ class NatsMessagingService implements INatsMessaging {
 
   constructor(
     private readonly configuration: NatsConfig,
-    private readonly messagingServiceKey: string
+    private readonly messagingServiceKey: string,
   ) {}
 
   async connect() {
@@ -47,21 +45,21 @@ class NatsMessagingService implements INatsMessaging {
   async send(to: string, msg: Node.NodeMessage) {
     if (!this.connection) {
       console.error(
-        "Cannot register a connection with an uninitialized nats server"
+        "Cannot register a connection with an uninitialized nats server",
       );
       return;
     }
 
     this.connection.publish(
       `${this.messagingServiceKey}.${to}.${msg.from}`,
-      JSON.stringify(msg)
+      JSON.stringify(msg),
     );
   }
 
   onReceive(address: string, callback: (msg: Node.NodeMessage) => void) {
     if (!this.connection) {
       console.error(
-        "Cannot register a connection with an uninitialized nats server"
+        "Cannot register a connection with an uninitialized nats server",
       );
       return;
     }
@@ -72,12 +70,12 @@ class NatsMessagingService implements INatsMessaging {
         if (err) {
           console.error(
             "Encountered an error while handling message callback",
-            err
+            err,
           );
         } else {
           callback(JSON.parse(msg.data) as Node.NodeMessage);
         }
-      }
+      },
     );
   }
 
@@ -98,7 +96,7 @@ export function confirmNatsConfigurationEnvVars() {
     !process.env.NATS_CLUSTER_ID
   ) {
     throw Error(
-      "Nats server name(s), token and cluster ID must be set via env vars"
+      "Nats server name(s), token and cluster ID must be set via env vars",
     );
   }
 }
