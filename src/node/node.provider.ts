@@ -10,11 +10,10 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Logger, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { NatsServiceFactory } from "../../../monorepo/packages/nats-messaging-client/src/index";
+import { NatsServiceFactory } from "../../../monorepo/packages/nats-messaging-client/";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import {
-  FirebaseProviderId,
   NatsProviderId,
   NodeProviderId,
   PostgresProviderId,
@@ -24,23 +23,18 @@ import { UserService } from "../user/user.service";
 async function createNode(
   channelService: ChannelService,
   config: ConfigService,
-  firebaseServiceFactory: FirebaseServiceFactory,
   natsServiceFactory: NatsServiceFactory,
   postgresServiceFactory: PostgresServiceFactory,
   userService: UserService,
 ): Promise<Node> {
   // TODO: make this logging more dynamic?
   Logger.log("Creating store", "NodeProvider");
-  // const store = this.firebaseServiceFactory.createStoreService("connextHub");
   const store = postgresServiceFactory.createStoreService("connextHub");
   Logger.log("Store created", "NodeProvider");
 
   await store.set([{ key: MNEMONIC_PATH, value: config.getNodeMnemonic() }]);
 
   Logger.log("Creating Node", "NodeProvider");
-  // const messService = firebaseServiceFactory.createMessagingService(
-  //   "messaging",
-  // );
   const messService = natsServiceFactory.createMessagingService("messaging");
   await messService.connect();
   const node = await Node.create(
@@ -91,7 +85,6 @@ export const NodeProvider: Provider = {
   inject: [
     ChannelService,
     ConfigService,
-    FirebaseProviderId,
     NatsProviderId,
     PostgresProviderId,
     UserService,
@@ -100,7 +93,6 @@ export const NodeProvider: Provider = {
   useFactory: async (
     channelService: ChannelService,
     config: ConfigService,
-    firebase: FirebaseServiceFactory,
     nats: NatsServiceFactory,
     postgres: PostgresServiceFactory,
     userService: UserService,
@@ -108,34 +100,10 @@ export const NodeProvider: Provider = {
     return await createNode(
       channelService,
       config,
-      firebase,
       nats,
       postgres,
       userService,
     );
-  },
-};
-
-export const FirebaseProvider: Provider = {
-  inject: [ConfigService],
-  provide: FirebaseProviderId,
-  useFactory: (config: ConfigService): FirebaseServiceFactory => {
-    const firebaseServerHost = config.get("FIREBASE_SERVER_HOST");
-    const firebaseServerPort = config.get("FIREBASE_SERVER_PORT");
-    // const firebase = new FirebaseServer(firebaseServerHost, firebaseServerPort);
-    // process.on("SIGINT", () => {
-    //   console.log("Shutting down indra hub...");
-    //   firebase.close();
-    //   process.exit(0);
-    // });
-    return new FirebaseServiceFactory({
-      apiKey: "",
-      authDomain: "",
-      databaseURL: `ws://${firebaseServerHost}:${firebaseServerPort}`,
-      messagingSenderId: "",
-      projectId: "projectId",
-      storageBucket: "",
-    });
   },
 };
 
