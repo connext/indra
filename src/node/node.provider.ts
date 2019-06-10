@@ -7,13 +7,7 @@ import {
 } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Node as NodeTypes } from "@counterfactual/types";
-import {
-  forwardRef,
-  Inject,
-  Injectable,
-  Logger,
-  Provider,
-} from "@nestjs/common";
+import { Logger, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { NatsServiceFactory } from "../../../monorepo/packages/nats-messaging-client/src/index";
@@ -48,6 +42,7 @@ async function createNode(
   //   "messaging",
   // );
   const messService = natsServiceFactory.createMessagingService("messaging");
+  await messService.connect();
   const node = await Node.create(
     messService,
     store,
@@ -162,9 +157,8 @@ export const PostgresProvider: Provider = {
 export const NatsProvider: Provider = {
   inject: [ConfigService],
   provide: NatsProviderId,
-  useFactory: async (config: ConfigService): Promise<NatsServiceFactory> => {
-    const nats = new NatsServiceFactory(config.getNatsConfig());
-    await nats.connect();
-    return nats;
+  useFactory: (config: ConfigService): NatsServiceFactory => {
+    // @ts-ignore
+    return new NatsServiceFactory();
   },
 };
