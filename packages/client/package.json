@@ -1,0 +1,19 @@
+{
+  "name": "connext",
+  "version": "4.0.3",
+  "description": "Shared code between wallet and node",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npm run clean && npm run compile",
+    "clean": "rm -rf ./dist",
+    "compile": "./node_modules/.bin/tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "typescript": "^3.5.1"
+  },
+  "dependencies": {
+    "ethers": "^4.0.29"
+  }
+}
