@@ -27,91 +27,69 @@ import {
 } from "../constants";
 import { UserService } from "../user/user.service";
 
-@Injectable()
-export class NodeWrapper {
-  public node: Node;
+async function createNode(
+  channelService: ChannelService,
+  config: ConfigService,
+  firebaseServiceFactory: FirebaseServiceFactory,
+  natsServiceFactory: NatsServiceFactory,
+  postgresServiceFactory: PostgresServiceFactory,
+  userService: UserService,
+): Promise<Node> {
+  // TODO: make this logging more dynamic?
+  Logger.log("Creating store", "NodeProvider");
+  // const store = this.firebaseServiceFactory.createStoreService("connextHub");
+  const store = postgresServiceFactory.createStoreService("connextHub");
+  Logger.log("Store created", "NodeProvider");
 
-  constructor(
-    @Inject(forwardRef(() => ChannelService))
-    private readonly channelService: ChannelService,
-    private readonly config: ConfigService,
-    @Inject(FirebaseProviderId)
-    private readonly firebaseServiceFactory: FirebaseServiceFactory,
-    @Inject(NatsProviderId)
-    private readonly natsServiceFactory: NatsServiceFactory,
-    @Inject(PostgresProviderId)
-    private readonly postgresServiceFactory: PostgresServiceFactory,
-    private readonly userService: UserService,
-  ) {}
+  await store.set([{ key: MNEMONIC_PATH, value: config.getNodeMnemonic() }]);
 
-  // TODO: refactor this to inject directly from provider
-  async createSingleton(): Promise<Node> {
-    if (this.node) {
-      return this.node;
-    }
+  Logger.log("Creating Node", "NodeProvider");
+  // const messService = firebaseServiceFactory.createMessagingService(
+  //   "messaging",
+  // );
+  const messService = natsServiceFactory.createMessagingService("messaging");
+  const node = await Node.create(
+    messService,
+    store,
+    {
+      STORE_KEY_PREFIX: "store",
+    },
+    new JsonRpcProvider("https://kovan.infura.io/metamask") as any, // FIXME
+    "kovan",
+  );
+  Logger.log("Node created", "NodeProvider");
 
-    // TODO: make this logging more dynamic?
-    Logger.log("Creating store", "NodeProvider");
-    // const store = this.firebaseServiceFactory.createStoreService("connextHub");
-    const store = this.postgresServiceFactory.createStoreService("connextHub");
-    Logger.log("Store created", "NodeProvider");
+  node.on(
+    NodeTypes.EventName.DEPOSIT_CONFIRMED,
+    (res: DepositConfirmationMessage) => {
+      if (!res || !res.data) {
+        return;
+      }
+      Logger.log(
+        `Deposit detected: ${JSON.stringify(res)}, matching`,
+        "NodeProvider",
+      );
+      channelService.deposit(
+        res.data.multisigAddress,
+        res.data.amount as any, // FIXME
+        res.data.notifyCounterparty,
+      );
+    },
+  );
 
-    await store.set([
-      { key: MNEMONIC_PATH, value: this.config.getNodeMnemonic() },
-    ]);
+  node.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) =>
+    userService.addMultisig(
+      res.data.counterpartyXpub,
+      res.data.multisigAddress,
+    ),
+  );
 
-    Logger.log("Creating Node", "NodeProvider");
-    // const messService = this.firebaseServiceFactory.createMessagingService(
-    //   "messaging",
-    // );
-    const messService = this.natsServiceFactory.createMessagingService(
-      "messaging",
-    );
-    this.node = await Node.create(
-      messService,
-      store,
-      {
-        STORE_KEY_PREFIX: "store",
-      },
-      new JsonRpcProvider("https://kovan.infura.io/metamask") as any, // FIXME
-      "kovan",
-    );
-    Logger.log("Node created", "NodeProvider");
+  Logger.log(
+    `Public Identifier ${JSON.stringify(node.publicIdentifier)}`,
+    "NodeProvider",
+  );
 
-    this.node.on(
-      NodeTypes.EventName.DEPOSIT_CONFIRMED,
-      (res: DepositConfirmationMessage) => {
-        if (!res || !res.data) {
-          return;
-        }
-        Logger.log(
-          `Deposit detected: ${JSON.stringify(res)}, matching`,
-          "NodeProvider",
-        );
-        this.channelService.deposit(
-          res.data.multisigAddress,
-          res.data.amount as any, // FIXME
-          res.data.notifyCounterparty,
-        );
-      },
-    );
-
-    this.node.on(
-      NodeTypes.EventName.CREATE_CHANNEL,
-      (res: CreateChannelMessage) =>
-        this.userService.addMultisig(
-          res.data.counterpartyXpub,
-          res.data.multisigAddress,
-        ),
-    );
-
-    Logger.log(
-      `Public Identifier ${JSON.stringify(this.node.publicIdentifier)}`,
-      "NodeProvider",
-    );
-
-    return this.node;
-  }
+  return node;
 }
 
 export const NodeProvider: Provider = {
@@ -132,7 +110,7 @@ export const NodeProvider: Provider = {
     postgres: PostgresServiceFactory,
     userService: UserService,
   ): Promise<Node> => {
-    const nodeWrapper = new NodeWrapper(
+    return await createNode(
       channelService,
       config,
       firebase,
@@ -140,7 +118,6 @@ export const NodeProvider: Provider = {
       postgres,
       userService,
     );
-    return await nodeWrapper.createSingleton();
   },
 };
 
