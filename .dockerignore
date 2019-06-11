@@ -1,0 +1,10 @@
+.git
+.makeflags
+.npm
+packages/**/.cache
+packages/**/.config
+packages/**/.git
+packages/**/.node-gyp
+packages/**/.npm
+packages/**/node_modules
+node_modules
