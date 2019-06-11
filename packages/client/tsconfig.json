@@ -1,26 +1,29 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "declaration": true,
-    "declarationDir": "types/",
+    "allowJs": false,
     "emitDecoratorMetadata": true,
-    "esModuleInterop": true,
     "experimentalDecorators": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noLib": false,
+    "removeComments": true,
+    "declaration": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "commonjs",
     "moduleResolution": "node",
-    "noImplicitAny": true,
-    "outDir": "dist/",
     "resolveJsonModule": true,
-    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "lib": ["es2017", "dom", "esnext.asynciterable"],
+    "target": "es2017",
+    "module": "esnext",
     "sourceMap": true,
-    "strict": true,
-    "target": "es6",
     "typeRoots": [
-      "node_modules/@types",
-      "src/@types"
-    ]
-  },
-  "exclude": [ "node_modules/**" ],
-  "include": [ "src/**/*.ts" ]
+      "./node_modules/@types",
+      "./node_modules/@counterfactual/typescript-typings/types"
+    ],
+    // @types/mocha has a duplicate conflict, this is the suggested temp fix.
+    "skipLibCheck": true,
+    "strict": true
+  }
 }

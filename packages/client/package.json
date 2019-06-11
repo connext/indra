@@ -14,6 +14,7 @@
     "typescript": "^3.5.1"
   },
   "dependencies": {
+    "@counterfactual/types": "0.0.10",
     "ethers": "^4.0.29"
   }
 }
