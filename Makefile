@@ -2,9 +2,9 @@ organization=connextproject
 project=indra_v2
 
 # Specify make-specific variables (VPATH = prerequisite search path)
-VPATH=build
-SHELL=/bin/bash
 flags=.makeflags
+VPATH=$(flags)
+SHELL=/bin/bash
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
@@ -36,8 +36,8 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node-modules
-prod: node-modules
+dev: node
+prod: node
 
 start: dev
 	bash ops/start-dev.sh
@@ -63,6 +63,11 @@ reset: stop
 
 ########################################
 # Begin Real Rules
+
+node: node-modules
+	$(log_start)
+	$(docker_run_in_node) "npm run build"
+	$(log_finish) && touch $(flags)/$@
 
 node-modules: builder package.json lerna.json $(node)/package.json
 	$(log_start)
