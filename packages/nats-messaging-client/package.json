@@ -30,7 +30,7 @@
     "typescript": "3.5.1"
   },
   "dependencies": {
-    "@counterfactual/node": "0.1.24",
+    "@counterfactual/node": "0.1.25",
     "@counterfactual/types": "0.0.10",
     "ts-nats": "^1.2.4"
   }
