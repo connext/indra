@@ -11,13 +11,13 @@ import { UserController } from "./user/user.controller";
 import { UserModule } from "./user/user.module";
 
 @Module({
-  imports: [ConfigModule, NodeModule, UserModule, ChannelModule],
   controllers: [
     AppController,
     NodeController,
     ChannelController,
     UserController,
   ],
+  imports: [ConfigModule, NodeModule, UserModule, ChannelModule],
   providers: [AppService],
 })
 export class AppModule {}
