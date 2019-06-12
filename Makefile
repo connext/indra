@@ -64,14 +64,19 @@ reset: stop
 ########################################
 # Begin Real Rules
 
-node: node-modules
+node: nats-client
 	$(log_start)
-	$(docker_run_in_node) "npm run build"
+	$(docker_run_in_root) "cd modules/node && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+nats-client: node-modules
+	$(log_start)
+	$(docker_run_in_root) "cd modules/nats-messaging-client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 node-modules: builder package.json lerna.json $(node)/package.json
 	$(log_start)
-	$(docker_run_in_root) "lerna bootstrap"
+	$(docker_run_in_root) "lerna bootstrap --hoist"
 	$(log_finish) && touch $(flags)/$@
 
 builder: ops/builder.dockerfile
