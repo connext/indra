@@ -1,6 +1,7 @@
 .git
 .makeflags
 .npm
+counterfactual
 modules/**/.cache
 modules/**/.config
 modules/**/.git

@@ -1,6 +1,8 @@
 # Cache
 .npm
 modules/**/.npm
+.node-gyp
+modules/**/.node-gyp
 .config
 modules/**/.config
 
@@ -38,3 +40,6 @@ coverage
 # Misc
 .env
 .rpt2_cache
+
+# Local packages
+counterfactual
