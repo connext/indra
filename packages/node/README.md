@@ -41,7 +41,7 @@ $ brew services start postgresql
 
 - Run NATS server locally
 ```bash
-$ docker pull nats:latest
+$ docker run -p 4222:4222 -ti nats:latest
 ```
 
 - Run Nest app
@@ -50,6 +50,7 @@ $ docker pull nats:latest
 $ npm run start
 
 # watch mode
+# NOTE: does not work yet
 $ npm run start:dev
 ```
 
