@@ -1,32 +1,47 @@
-import {
-  Web3Provider
-} from "ethers/providers";
-
+import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { Address } from "@counterfactual/types";
+import { Client as NatsClient } from "ts-nats"
 
 // types for the connext client package
 
 // shared with node
 
-export interface ClientOptions {
+export type ClientOptions = {
   mnemonic?: string;
   privateKey?: string;
-  web3Provider?: Web3Provider; // TODO: JsonRpcProvider ?
+  rpcProviderUrl: string; // TODO: can we keep out web3
   channelProvider?: ChannelProvider;
+
+  // if using an external wallet, include this option
+  externalWallet?: any; // TODO: better typing here?
+  // function passed in by wallets to generate ephemeral keys
+  // used when signing applications
+  keyGen: () => Promise<string>; // TODO: what wi
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
   loadState?: () => Promise<string | null>;
   saveState?: (state: ChannelState | AppState) => Promise<any>; // TODO: state: string?
+  logLevel?: number; // see logger.ts for meaning, optional
+  // nats communication config, client must provide
   nodeUrl: string;
+  natsClusterId: string;
+  natsToken: string;
   // Optional, useful for dependency injection
+  nats?: NatsClient; // TODO: should this just be a messaging service?
   node?: INodeAPIClient;
   store?: ConnextStore;
-  contract?: IMultisig; // TODO: rename? replacing IChannelManager
+  contract?: IMultisig;
 }
 
 // TODO: define properly!!
 export type ChannelProvider = {}
-export type ChannelState = {}
+
+export type ChannelState<T = string> = {
+  apps: AppState<T>[];
+  freeBalance: T;
+}
+export type ChannelStateBigNumber = ChannelState<BigNumber>
+
 export type INodeAPIClient = {}
 export type ConnextStore = {}
 export type IMultisig = {}
@@ -35,10 +50,12 @@ export type IMultisig = {}
 ////////// NODE TYPES ////////////
 /////////////////////////////////
 
+////// General API types
+
+///// Specific response types
 export type NodeConfig = {
-  channelAddress: Address // address of channel multisig
+  nodePublicIdentifier: string // x-pub of node
   chainId: string // network that your channel is on
-  nodeSigningKey: Address // signer address of the node
   nodeUrl: string
 }
 
