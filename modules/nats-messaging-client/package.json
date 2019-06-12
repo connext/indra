@@ -12,8 +12,9 @@
   "scripts": {
     "build": "tsc -p . && rollup -c",
     "build:watch": "tsc -p . && rollup -c -w",
+    "lint": "tslint -c tslint.json -p .",
     "lint:fix": "tslint -c tslint.json -p . --fix",
-    "lint": "tslint -c tslint.json -p ."
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/jest": "24.0.13",

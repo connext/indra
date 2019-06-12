@@ -9,7 +9,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Logger, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { NatsServiceFactory } from "../../../nats-messaging-client/";
+import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import {
