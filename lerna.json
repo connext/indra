@@ -1,6 +1,6 @@
 {
   "packages": [
-    "modules/*"
+    "modules/*", "counterfactual/packages/postgresql-node-connector"
   ],
   "version": "0.0.0"
 }
