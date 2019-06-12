@@ -1,10 +1,10 @@
 # Cache
-.npm
-modules/**/.npm
-.node-gyp
-modules/**/.node-gyp
 .config
+.node-gyp
+.npm
 modules/**/.config
+modules/**/.node-gyp
+modules/**/.npm
 
 # Compiled output
 dist/
@@ -14,6 +14,7 @@ node_modules/
 # Logs
 lerna-debug.log*
 npm-debug.log*
+package.json.lerna_backup
 yarn-debug.log*
 yarn-error.log*
 
