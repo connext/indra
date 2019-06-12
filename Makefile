@@ -64,7 +64,7 @@ reset: stop
 ########################################
 # Begin Real Rules
 
-node: nats-client
+node: nats-client $(shell find $(node)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@

@@ -15,8 +15,18 @@ type PostgresConfig = {
 export class ConfigService {
   private readonly envConfig: { [key: string]: string };
 
-  constructor(filePath: string) {
-    this.envConfig = dotenv.parse(fs.readFileSync(filePath));
+  constructor(filePath?: string) {
+    let fileConfig
+    try {
+      fileConfig = filePath ? dotenv.parse(fs.readFileSync(filePath)) : {}
+    } catch (e) {
+      console.error(`Error reading file: ${filePath}`)
+      fileConfig = {}
+    }
+    this.envConfig = {
+      ...fileConfig,
+      ...process.env,
+    }
   }
 
   get(key: string): string {
