@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@counterfactual/types": "0.0.10",
-    "ethers": "^4.0.29"
+    "ethers": "^4.0.29",
+    "ts-nats": "^1.2.4"
   }
 }
