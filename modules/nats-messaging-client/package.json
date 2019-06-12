@@ -1,6 +1,6 @@
 {
   "name": "@connext/nats-messaging-client",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
