@@ -1,8 +1,8 @@
 # Cache
 .npm
-packages/**/.npm
+modules/**/.npm
 .config
-packages/**/.config
+modules/**/.config
 
 # Compiled output
 dist/

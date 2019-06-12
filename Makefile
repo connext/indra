@@ -13,7 +13,7 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
-node=$(cwd)/packages/node
+node=$(cwd)/modules/node
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -52,8 +52,8 @@ restart: dev
 clean: stop
 	docker container prune -f
 	rm -rf $(flags)/*
-	rm -rf packages/**/dist
-	rm -rf packages/**/node_modules/**/.git
+	rm -rf modules/**/dist
+	rm -rf modules/**/node_modules/**/.git
 
 reset: stop
 	docker container prune -f
