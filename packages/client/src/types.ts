@@ -21,7 +21,7 @@ export type ClientOptions = {
   rpcProviderUrl: string; // TODO: can we keep out web3
 
   // node information
-  nodeUrl: string;
+  nodeUrl: string; // nats URL, nats://
 
   // signing options, include at least one of the following
   mnemonic?: string;
@@ -43,8 +43,8 @@ export type ClientOptions = {
 
   // TODO: should be used in internal options? --> only if hardcoded
   // nats communication config, client must provide
-  natsClusterId: string;
-  natsToken: string;
+  natsClusterId?: string;
+  natsToken?: string;
 }
 
 export type InternalClientOptions = ClientOptions &  {
