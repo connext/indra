@@ -60,6 +60,17 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
+########################################
+# Begin Test Rules
+
+test: test-node
+watch: watch-node
+
+test-node: node
+	bash ops/test-node.sh
+
+watch-node: node-modules
+	bash ops/test-node.sh --watch
 
 ########################################
 # Begin Real Rules

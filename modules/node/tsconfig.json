@@ -14,5 +14,5 @@
     "sourceMap": true,
     "target": "es6"
   },
-  "exclude": ["node_modules"]
+  "exclude": ["dist", "node_modules"]
 }

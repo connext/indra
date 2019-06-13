@@ -1,4 +1,3 @@
-import { PostgresConnectionOptions } from "@counterfactual/postgresql-node-connector";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 
@@ -37,7 +36,7 @@ export class ConfigService {
     return this.get("NODE_MNEMONIC");
   }
 
-  getPostgresConfig(): PostgresConnectionOptions {
+  getPostgresConfig(): PostgresConfig {
     return {
       database: this.get("INDRA_PG_DATABASE"),
       host: this.get("INDRA_PG_HOST"),

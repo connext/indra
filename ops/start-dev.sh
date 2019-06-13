@@ -16,7 +16,7 @@ docker swarm init 2> /dev/null || true
 number_of_services=3 # NOTE: Gotta update this manually when adding/removing services :(
 
 # hard-coded config (you probably won't ever need to change these)
-log_level="3" # set to 0 for no logs or to 50 for all the logs
+log_level="3" # set to 0 for no logs or to 5 for all the logs
 project="indra_v2"
 
 node_port=8080
