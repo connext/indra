@@ -2,35 +2,61 @@ import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { Address } from "@counterfactual/types";
 import { Client as NatsClient } from "ts-nats"
+import { Wallet } from "./wallet";
+import { INatsMessaging } from "../../nats-messaging-client/dist";
 
 // types for the connext client package
 
 // shared with node
 
+/**
+ * Type for instantiating the client. To properly instantiate the client, you 
+ * will need to provide one of the following: 
+ * - mnemonic
+ * - privateKey
+ * - externalWallet
+ */
 export type ClientOptions = {
+  // provider, passed through to CF node
+  rpcProviderUrl: string; // TODO: can we keep out web3
+
+  // node information
+  nodeUrl: string;
+
+  // signing options, include at least one of the following
   mnemonic?: string;
   privateKey?: string;
-  rpcProviderUrl: string; // TODO: can we keep out web3
-  channelProvider?: ChannelProvider;
-
   // if using an external wallet, include this option
   externalWallet?: any; // TODO: better typing here?
+
+  // channel provider
+  channelProvider?: ChannelProvider;
+
   // function passed in by wallets to generate ephemeral keys
   // used when signing applications
-  keyGen: () => Promise<string>; // TODO: what wi
+  keyGen: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
   loadState?: () => Promise<string | null>;
   saveState?: (state: ChannelState | AppState) => Promise<any>; // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
+
+
+  // TODO: should be used in internal options? --> only if hardcoded
   // nats communication config, client must provide
-  nodeUrl: string;
   natsClusterId: string;
   natsToken: string;
+}
+
+export type InternalClientOptions = ClientOptions &  {
   // Optional, useful for dependency injection
-  nats?: NatsClient; // TODO: should this just be a messaging service?
-  node?: INodeAPIClient;
-  store?: ConnextStore;
+  nats: INatsMessaging; // TODO: should this just be a messaging service?
+  node: INodeAPIClient;
+  // signing wallet/information
+  wallet: Wallet;
+  // store: ConnextStore; --> whats this look like
   contract?: IMultisig;
+  // counterfactual node
+  cfModule?: Node;
 }
 
 // TODO: define properly!!
