@@ -42,4 +42,10 @@ export class ChannelUpdate {
 
   @Column("text")
   freeBalancePartyB: string;
+
+  @Column("text")
+  partyASig: string;
+
+  @Column("text")
+  partyBSig: string;
 }
