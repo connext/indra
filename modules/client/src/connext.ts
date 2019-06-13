@@ -1,9 +1,10 @@
 import { ClientOptions, NodeConfig, InternalClientOptions, INodeAPIClient } from "./types";
 import { NodeApiClient } from "./node";
-import { connect as natsConnect, Client as NatsClient } from 'ts-nats';
+import { Client as NatsClient } from 'ts-nats';
 import { Wallet } from "./wallet";
-import { Node } from "@counterfactual/node";
-import { NatsServiceFactory, INatsMessaging } from "../../nats-messaging-client"
+import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFNode } from "@counterfactual/node";
+import { NatsServiceFactory, } from "../../nats-messaging-client"
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -14,7 +15,8 @@ import { NatsServiceFactory, INatsMessaging } from "../../nats-messaging-client"
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create a new wallet
   const wallet = new Wallet(opts)
-  // create a new internal hub instance
+
+  // create a new internal nats instance
   const natsConfig = {
     clusterId: opts.natsClusterId,
     servers: [opts.nodeUrl],
@@ -27,21 +29,42 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: get config from nats client?
   const nats = new NatsServiceFactory(natsConfig)
     .createMessagingService(messagingServiceKey)
-  
   await nats.connect()
+
+  // create a new node api instance
   const node: NodeApiClient = new NodeApiClient(
     opts.nodeUrl, 
     nats, // converted to nats-client in ConnextInternal constructor
     wallet,
     opts.logLevel,
   );
+
+  // create a new storage service for use by cfModule
+  const store: NodeTypes.IStoreService = {
+
+  } as NodeTypes.IStoreService
+
+  // set cfModule node config
+  const cfConfig: NodeConfig = {
+    STORE_KEY_PREFIX: "store"
+  }
+
+  // create new cfModule to inject into internal instance
+  const cfModule = await CFNode.create(
+    nats, 
+    store,
+    cfConfig,
+    wallet.provider,
+    wallet.provider.network.name,
+  )
   
   // create the new client
   return new ConnextInternal({
     node,
     wallet,
     nats,
-    ...opts,
+    cfModule,
+    ...opts, // use any provided opts by default
   })
 }
 
@@ -62,7 +85,7 @@ export abstract class ConnextChannel {
  * The true implementation of this class exists in the
  */
 export class ConnextInternal extends ConnextChannel {
-  private opts: ClientOptions;
+  private opts: InternalClientOptions;
   private cfModule: Node;
   private wallet: Wallet;
   private node: INodeAPIClient;
@@ -75,18 +98,10 @@ export class ConnextInternal extends ConnextChannel {
 
     this.wallet = opts.wallet;
     this.node = opts.node;
-    this.nats = opts.nats.getConnection();
+    this.nats = opts.nats.getConnection(); // returns natsclient
 
-    // create new nats service factory
+    this.cfModule = opts.cfModule;
 
-    // create counterfactual node
-    // TODO: proper store service and config isht
-    this.cfModule = Node.create(
-      opts.nats, 
-      {} as Node.IStoreService,
-      {} as NodeConfig,
-      opts.wallet.provider,
-      opts.wallet.provider.network.name,
-    )
+
   }
 }
