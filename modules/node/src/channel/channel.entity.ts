@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToMany, ManyToOne } from "typeorm";
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { App } from "../app/app.entity";
 
 @Entity()
 export class Channel {
@@ -14,8 +22,11 @@ export class Channel {
   @Column("text")
   multiSigAddress: string;
 
+  @OneToMany(type => App, app => app.channel)
+  apps: App[];
+
   @OneToMany(type => ChannelUpdate, channelUpdate => channelUpdate.channel)
-  updates: ChannelUpdate[]
+  updates: ChannelUpdate[];
 }
 
 @Entity()
