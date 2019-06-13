@@ -44,8 +44,8 @@ export class ChannelUpdate {
   freeBalancePartyB: string;
 
   @Column("text")
-  partyASig: string;
+  sigPartyA: string;
 
   @Column("text")
-  partyBSig: string;
+  sigPartyB: string;
 }
