@@ -2,9 +2,9 @@ import { Address } from "@counterfactual/types";
 import { Logger } from "./lib/logger";
 import { Wallet } from "./wallet"
 import { NodeConfig, } from "./types";
-// import { NatsServiceFactory, INatsMessaging } from "../../nats-messaging-client";
-import { Client as NatsClient } from "ts-nats"
-import { NatsServiceFactory, INatsMessaging } from "../../nats-messaging-client/dist";
+import { Client as NatsClient } from "ts-nats";
+// TODO: use npm package
+import { INatsMessaging } from "../../nats-messaging-client";
 
 // TODO: move to types.tx?
 const API_TIMEOUT = 30000;
@@ -16,7 +16,7 @@ export interface INodeApiClient {
 
 export class NodeApiClient implements INodeApiClient {
   private nodeUrl: string;
-  private nats: INatsMessaging // TODO: rename to messaging?
+  private nats: NatsClient // TODO: rename to messaging?
   private wallet: Wallet;
   private address: Address;
   private log: Logger;
@@ -30,7 +30,7 @@ export class NodeApiClient implements INodeApiClient {
     logLevel?: number,
   ) {
     this.nodeUrl = nodeUrl;
-    this.nats = nats;
+    this.nats = nats.getConnection();
     this.wallet = wallet;
     this.address = wallet.address;
     this.log = new Logger('NodeApiClient', logLevel);
@@ -62,7 +62,7 @@ export class NodeApiClient implements INodeApiClient {
   //////////// PRIVATE /////////////
   /////////////////////////////////
   private async send(subject: string, body?: any): Promise<any> {
-    await this.nats.send(subject, body);
+    const msg = await this.nats.request(subject, API_TIMEOUT, body);
     return msg;
   }
 }

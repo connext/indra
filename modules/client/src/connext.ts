@@ -1,9 +1,9 @@
-import { ClientOptions, NodeConfig, InternalClientOptions, INodeAPIClient } from "./types";
+import { ClientOptions, InternalClientOptions, INodeAPIClient } from "./types";
 import { NodeApiClient } from "./node";
 import { Client as NatsClient } from 'ts-nats';
 import { Wallet } from "./wallet";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Node as CFNode } from "@counterfactual/node";
+import { Node } from "@counterfactual/node";
 import { NatsServiceFactory, } from "../../nats-messaging-client"
 
 /**
@@ -44,16 +44,13 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   } as NodeTypes.IStoreService
 
-  // set cfModule node config
-  const cfConfig: NodeConfig = {
-    STORE_KEY_PREFIX: "store"
-  }
-
   // create new cfModule to inject into internal instance
-  const cfModule = await CFNode.create(
+  const cfModule = await Node.create(
     nats, 
     store,
-    cfConfig,
+    {
+      STORE_KEY_PREFIX: "store"
+    }, // TODO: proper config
     wallet.provider,
     wallet.provider.network.name,
   )

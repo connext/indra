@@ -1,6 +1,7 @@
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { Address } from "@counterfactual/types";
+import { Node } from "@counterfactual/node";
 import { Client as NatsClient } from "ts-nats"
 import { Wallet } from "./wallet";
 import { INatsMessaging } from "../../nats-messaging-client/dist";
@@ -57,7 +58,7 @@ export type InternalClientOptions = ClientOptions &  {
   // store: ConnextStore; --> whats this look like
   contract?: IMultisig;
   // counterfactual node
-  cfModule?: Node;
+  cfModule: Node;
 }
 
 // TODO: define properly!!
