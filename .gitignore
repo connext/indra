@@ -1,37 +1,48 @@
-# compiled output
+# Cache
+.cache
+.config
+.node-gyp
+.npm
+modules/**/.cache
+modules/**/.config
+modules/**/.node-gyp
+modules/**/.npm
+
+# Compiled output
 dist/
 node_modules/
+.makeflags
 
 # Logs
-logs
-*.log
+lerna-debug.log*
 npm-debug.log*
+package.json.lerna_backup
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
 # OS
 .DS_Store
 
 # Tests
-/coverage
-/.nyc_output
+.nyc_output
+coverage
 
 # IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
 *.launch
-.settings/
 *.sublime-workspace
+*.sw[opq]
+.c9/
+.classpath
+.idea
+.project
+.settings/
 
 # IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode
 
+# Misc
 .env
 .rpt2_cache
+
+# Local packages
+counterfactual

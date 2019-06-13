@@ -1,0 +1,14 @@
+.cache
+.config
+.git
+.makeflags
+.node-gyp
+.npm
+counterfactual
+modules/**/.cache
+modules/**/.config
+modules/**/.git
+modules/**/.node-gyp
+modules/**/.npm
+modules/**/node_modules
+node_modules
