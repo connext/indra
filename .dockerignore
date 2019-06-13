@@ -1,5 +1,8 @@
+.cache
+.config
 .git
 .makeflags
+.node-gyp
 .npm
 counterfactual
 modules/**/.cache

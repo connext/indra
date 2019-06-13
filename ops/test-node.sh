@@ -6,29 +6,7 @@ test_command='
 '
 
 watch_command='
-  function hash {
-    find src -type f -not -name "*.swp" -exec stat {} \; \
-     | grep "Modify:" \
-     | sha256sum
-  }
-
-  jest --config ops/jest.config.json --watch
-
-  echo "Triggering first compilation cycle..."
-  while true
-  do
-    if [[ "$srcHash" == "`hash`" ]]
-    then sleep 1 && continue
-    else srcHash="`hash`" && echo "Changes detected, compiling..."
-    fi
-
-    tsc --project tsconfig.json
-
-    echo "Waiting for changes..."
-
-  done
-
-
+  exec jest --config ops/jest.config.json --watch
 '
 
 project="indra_v2"
@@ -114,6 +92,7 @@ docker run \
   --env="NODE_MNEMONIC=$eth_mnemonic" \
   --env="PORT=$node_port" \
   --env="SIGNER_ADDRESS=$eth_address" \
+  --interactive \
   --name="$node_host" \
   --network="$network" \
   --rm \

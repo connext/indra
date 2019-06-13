@@ -1,7 +1,6 @@
+import { NatsConfig } from "@connext/nats-messaging-client";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
-
-import { NatsConfig } from "@connext/nats-messaging-client";
 
 type PostgresConfig = {
   database: string;
@@ -15,17 +14,17 @@ export class ConfigService {
   private readonly envConfig: { [key: string]: string };
 
   constructor(filePath?: string) {
-    let fileConfig
+    let fileConfig;
     try {
-      fileConfig = filePath ? dotenv.parse(fs.readFileSync(filePath)) : {}
+      fileConfig = filePath ? dotenv.parse(fs.readFileSync(filePath)) : {};
     } catch (e) {
-      console.error(`Error reading file: ${filePath}`)
-      fileConfig = {}
+      console.error(`Error reading dotenv file: ${filePath}`);
+      fileConfig = {};
     }
     this.envConfig = {
       ...fileConfig,
       ...process.env,
-    }
+    };
   }
 
   get(key: string): string {

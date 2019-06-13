@@ -9,13 +9,11 @@ import { User } from "../user/user.entity";
 export const databaseProvider: Provider = {
   inject: [ConfigService],
   provide: DatabaseProviderId,
-  useFactory: async (config: ConfigService) => {
-    console.log(`getPostgresConfig: ${JSON.stringify(config.getPostgresConfig(), null, 2)}`)
-    return await createConnection({
+  useFactory: async (config: ConfigService) =>
+    createConnection({
       ...config.getPostgresConfig(),
       entities: [User],
       synchronize: true,
       type: "postgres",
-    } as PostgresConnectionOptions)
-  }
+    } as PostgresConnectionOptions),
 };

@@ -1,7 +1,9 @@
 # Cache
+.cache
 .config
 .node-gyp
 .npm
+modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp
 modules/**/.npm
