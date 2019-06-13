@@ -37,7 +37,7 @@ then echo "Aborting: A new, unique indra version is required" && exit 1
 fi
 
 echo "Verifying..."
-if [[ -n "`curl -sflL "$registry_url/indra_hub/tags/$indra_version"`" ]]
+if [[ -n "`curl -sflL "$registry_url/indra_v2_node/tags/$indra_version"`" ]]
 then echo "Aborting: This version already exists on docker hub" && exit 1
 fi
 
