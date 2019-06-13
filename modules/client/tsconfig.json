@@ -22,6 +22,7 @@
       "./node_modules/@types",
       "./node_modules/@counterfactual/typescript-typings/types"
     ],
+    "outDir": "dist/",
     // @types/mocha has a duplicate conflict, this is the suggested temp fix.
     "skipLibCheck": true,
     "strict": true
