@@ -1,0 +1,53 @@
+version: 2
+
+jobs:
+  test-node:
+    machine: true
+    steps:
+      - checkout
+      - run: make test
+
+  push-latest-images:
+    machine: true
+    steps:
+      - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push-latest
+
+  deploy-staging:
+    machine: true
+    steps:
+      - run:
+          command: |
+            ssh ubuntu@$STAGING_URL "bash -s" <<EOF
+              git clone https://github.com/ConnextProject/indra-v2.git || true
+              cd indra-v2
+              git fetch
+              git reset --hard origin/$CIRCLE_BRANCH
+              export INDRA_V2_MODE="staging"
+              export INDRA_V2_ETH_NETWORK="kovan"
+              export INDRA_V2_DOMAINNAME="$STAGING_URL"
+              make restart-prod
+              docker container prune -f
+              docker image ls -q | xargs docker image rm || true
+            EOF
+
+workflows:
+  version: 2
+  test-and-deploy:
+    jobs:
+      - test-node
+
+      - push-latest-images:
+          filters:
+            branches:
+              only: staging
+          requires:
+            - test-node
+
+      - deploy-staging:
+          filters:
+            branches:
+              only: staging
+          requires:
+            - push-latest-images
