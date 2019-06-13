@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
-test_command='jest --env node'
+test_command='
+  jest --config ops/jest.config.json
+'
 
 watch_command='
   function hash {
@@ -10,7 +12,9 @@ watch_command='
      | sha256sum
   }
 
-  echo "Triggering first compilation/test cycle..."
+  jest --config ops/jest.config.json --watch
+
+  echo "Triggering first compilation cycle..."
   while true
   do
     if [[ "$srcHash" == "`hash`" ]]
@@ -20,16 +24,11 @@ watch_command='
 
     tsc --project tsconfig.json
 
-    if [[ "$?" != "0" ]]
-    then echo "Compilation failed, waiting for changes..." && sleep 1 && continue
-    else echo "Compiled successfully, running test suite"
-    fi
-
-    '$test_command'
-
     echo "Waiting for changes..."
 
   done
+
+
 '
 
 project="indra_v2"
