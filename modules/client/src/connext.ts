@@ -24,9 +24,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const messagingServiceKey = "messagingServiceKey";
   // connect nats service, done as part of async setup
 
-  // TODO: messaging from nats client?
-  // const nats: NatsClient = await natsConnect(natsConfig);
-
   // TODO: get config from nats client?
   const nats = new NatsServiceFactory(natsConfig)
     .createMessagingService(messagingServiceKey)
@@ -34,7 +31,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   await nats.connect()
   const node: NodeApiClient = new NodeApiClient(
     opts.nodeUrl, 
-    nats,
+    nats, // converted to nats-client in ConnextInternal constructor
     wallet,
     opts.logLevel,
   );
@@ -69,7 +66,7 @@ export class ConnextInternal extends ConnextChannel {
   private cfModule: Node;
   private wallet: Wallet;
   private node: INodeAPIClient;
-  private nats: INatsMessaging;
+  private nats: NatsClient;
 
   constructor(opts: InternalClientOptions) {
     super();
@@ -78,14 +75,14 @@ export class ConnextInternal extends ConnextChannel {
 
     this.wallet = opts.wallet;
     this.node = opts.node;
-    this.nats = opts.nats;
+    this.nats = opts.nats.getConnection();
 
     // create new nats service factory
 
     // create counterfactual node
     // TODO: proper store service and config isht
     this.cfModule = Node.create(
-      this.nats, 
+      opts.nats, 
       {} as Node.IStoreService,
       {} as NodeConfig,
       opts.wallet.provider,

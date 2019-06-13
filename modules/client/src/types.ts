@@ -49,7 +49,8 @@ export type ClientOptions = {
 
 export type InternalClientOptions = ClientOptions &  {
   // Optional, useful for dependency injection
-  nats: INatsMessaging; // TODO: should this just be a messaging service?
+  // TODO: can nats, node, wallet be optional?
+  nats: INatsMessaging; // converted to nats-client in ConnextInternal constructor
   node: INodeAPIClient;
   // signing wallet/information
   wallet: Wallet;
