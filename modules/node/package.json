@@ -28,6 +28,7 @@
     "@nestjs/common": "6.3.1",
     "@nestjs/core": "6.3.1",
     "@nestjs/platform-express": "6.3.1",
+    "class-validator": "^0.9.1",
     "dotenv": "8.0.0",
     "ethers": "4.0.28",
     "firebase-server": "1.0.2",
