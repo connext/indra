@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.1.25",
+    "@counterfactual/node": "0.1.26",
     "@counterfactual/postgresql-node-connector": "0.0.2",
     "@counterfactual/types": "0.0.11",
     "@nestjs/common": "6.3.1",
