@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-test_command='jest'
+test_command='jest --env node'
 
 watch_command='
   function hash {
@@ -25,7 +25,7 @@ watch_command='
     else echo "Compiled successfully, running test suite"
     fi
 
-    jest
+    '$test_command'
 
     echo "Waiting for changes..."
 
