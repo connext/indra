@@ -49,6 +49,13 @@ restart: dev
 	bash ops/stop.sh
 	bash ops/start-dev.sh
 
+start-prod: prod
+	bash ops/start-prod.sh
+
+restart-prod:
+	bash ops/stop.sh
+	bash ops/start-prod.sh
+
 clean: stop
 	docker container prune -f
 	rm -rf $(flags)/*

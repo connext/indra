@@ -4,7 +4,7 @@ set -e
 hostname="$1"
 network="${2:-kovan}"
 user="ubuntu"
-key_name="hub_mnemonic_$network" # name of docker secret to store private key in
+key_name="node_mnemonic_$network" # name of docker secret to store private key in
 pubkey="$HOME/.ssh/circleci.pub"
 prvkey="$HOME/.ssh/connext-aws"
 
@@ -21,7 +21,7 @@ if [[ ! -f "$pubkey" ]]
 then echo "Couldn't find the CI public key: $pubkey" && exit
 fi
 
-# Prepare to load the hub's private key into the server's secret store
+# Prepare to load the node's private key into the server's secret store
 echo "Copy the $key_name secret to your clipboard then paste it below & hit enter (no echo)"
 echo -n "> "
 read -s key

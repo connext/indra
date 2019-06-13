@@ -13,7 +13,7 @@ docker swarm init 2> /dev/null || true
 # Internal Config
 
 # meta config & hard-coded stuff you might want to change
-number_of_services=3 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=4 # NOTE: Gotta update this manually when adding/removing services :(
 
 # hard-coded config (you probably won't ever need to change these)
 log_level="3" # set to 0 for no logs or to 5 for all the logs
