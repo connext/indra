@@ -6,7 +6,7 @@
     "experimentalDecorators": true,
     "incremental": true,
     "lib": ["es2017", "dom"],
-    "module": "commonjs",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "dist",
     "removeComments": true,

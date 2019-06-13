@@ -6,11 +6,8 @@ import { v4 as generateUUID } from "uuid";
 
 import { NodeProviderId } from "../constants";
 
-@Injectable()
 export class ChannelService {
-  constructor(
-    @Inject(forwardRef(() => NodeProviderId)) private readonly node: Node,
-  ) {}
+  constructor(private readonly node: Node) {}
 
   async create(
     nodeAddress: string,
