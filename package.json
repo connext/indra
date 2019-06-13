@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.1.25",
+    "@counterfactual/node": "0.1.26",
     "@counterfactual/postgresql-node-connector": "0.0.2",
     "@counterfactual/types": "0.0.11",
     "@nestjs/common": "6.3.1",
@@ -45,7 +45,7 @@
     "prettier": "1.18.2",
     "reflect-metadata": "0.1.13",
     "rimraf": "2.6.3",
-    "rollup": "1.15.1",
+    "rollup": "1.15.3",
     "rollup-plugin-commonjs": "10.0.0",
     "rollup-plugin-node-resolve": "5.0.1",
     "rollup-plugin-typescript2": "0.21.1",
