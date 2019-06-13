@@ -8,7 +8,7 @@
     "clean": "rm -rf ./dist",
     "compile": "./node_modules/.bin/tsc -p tsconfig.json",
     "prepare": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/jest"
   },
   "devDependencies": {
     "@types/jest": "^24.0.14",
