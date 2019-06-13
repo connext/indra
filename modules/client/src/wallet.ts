@@ -7,6 +7,7 @@ import {
 import { ClientOptions } from './types';
 import { isHexString, arrayify, toUtf8Bytes, bigNumberify } from 'ethers/utils';
 import { objMapPromise } from './lib/utils';
+import { Logger } from "./lib/logger";
 
 
 // TODO: do we need this class if there's no auth yet (or JWT auth)
@@ -16,9 +17,14 @@ export class Wallet extends eth.Signer {
   private signer: eth.Wallet;
   public address: string;
   private external: boolean = false;
+  private log: Logger
 
   public constructor(opts: ClientOptions) {
     super();
+
+    ////////////////////////////////////////
+    // Setup wallet logger
+    this.log = new Logger('Wallet', opts.logLevel);
 
     ////////////////////////////////////////
     // Connect to an eth provider
