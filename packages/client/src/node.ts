@@ -1,7 +1,14 @@
 import { Address } from "@counterfactual/types";
 import { Logger } from "./lib/logger";
-import { Wallet } from "ethers"
-import { NodeConfig } from "./types";
+import { Wallet } from "./wallet"
+import { NodeConfig, } from "./types";
+// import { NatsServiceFactory, INatsMessaging } from "../../nats-messaging-client";
+import { Client as NatsClient } from "ts-nats"
+import { NatsServiceFactory, INatsMessaging } from "../../nats-messaging-client/dist";
+
+// TODO: move to types.tx?
+const API_TIMEOUT = 30000;
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export interface INodeApiClient {
   config(): Promise<NodeConfig>
@@ -9,29 +16,44 @@ export interface INodeApiClient {
 
 export class NodeApiClient implements INodeApiClient {
   private nodeUrl: string;
-  // private address: Address;
+  private nats: INatsMessaging // TODO: rename to messaging?
+  private wallet: Wallet;
+  private address: Address;
   private log: Logger;
   private nonce: string | undefined;
   private signature: string | undefined;
-  // private wallet: Wallet;
 
-
-  constructor(nodeUrl: string, /*wallet: Wallet,*/ logLevel?: number) {
+  constructor(
+    nodeUrl: string,
+    nats: INatsMessaging, // connected in `connect` of client
+    wallet: Wallet,
+    logLevel?: number,
+  ) {
     this.nodeUrl = nodeUrl;
+    this.nats = nats;
+    this.wallet = wallet;
+    this.address = wallet.address;
     this.log = new Logger('NodeApiClient', logLevel);
-    // this.address = wallet.address;
-    // this.wallet = wallet;
   }
 
   ///////////////////////////////////
   //////////// PUBLIC //////////////
   /////////////////////////////////
-  public config(): Promise<NodeConfig> {
-    // get the config from the hub
 
+  public async config(): Promise<NodeConfig> {
+    // get the config from the hub
+    try {
+      const configRes: NodeConfig = await this.send("config")
+      return configRes
+    } catch (e) {
+      return Promise.reject(e)
+    }
   }
 
-  // TODO: NATS authentication
+  // TODO: NATS authentication procedure?
+  // Use TLS based auth, eventually tied to HNS
+  // names, for 2.0-2.x will need to generate our
+  // own certs linked to their public key
   public authenticate(): void {
   }
 
@@ -39,57 +61,8 @@ export class NodeApiClient implements INodeApiClient {
   ///////////////////////////////////
   //////////// PRIVATE /////////////
   /////////////////////////////////
-  private async get(url: string): Promise<any> {
-    return this.send('GET', url)
+  private async send(subject: string, body?: any): Promise<any> {
+    await this.nats.send(subject, body);
+    return msg;
   }
-
-  private async post(url: string, body: any): Promise<any> {
-    return this.send('POST', url, body)
-  }
-
-  private async send(method: string, url: string, body?: any): Promise<any> {
-    const opts: any = {
-      headers: {
-        // 'x-address': this.address,
-        'x-nonce': this.nonce,
-        'x-signature': this.signature,
-      },
-      method,
-      mode: 'cors',
-    }
-    if (method === 'POST') {
-      opts.body = JSON.stringify(body)
-      opts.headers['Content-Type'] = 'application/json'
-    }
-
-    let res = await fetch(`${this.nodeUrl}/${url}`, opts)
-
-    if (res.status === 403 && url !== `${this.nodeUrl}/nonce`) {
-      this.log.info(`Got a 403, let's re-authenticate and try again`)
-      await this.authenticate()
-      opts.headers['x-nonce'] = this.nonce
-      opts.headers['x-signature'] = this.signature
-      res = await fetch(`${this.nodeUrl}/${url}`, opts)
-    }
-
-    if (res.status === 204) { return undefined }
-    if (res.status >= 200 && res.status <= 299) {
-      const json = await res.json()
-      return json ? json : undefined
-    }
-
-    let text
-    try {
-      text = await res.text()
-    } catch (e) {
-      text = res.statusText
-    }
-    throw({
-      body: res.body,
-      message: `Received non-200 response: ${text}`,
-      status: res.status,
-    })
-
-  }
-
 }
