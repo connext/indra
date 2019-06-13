@@ -16,6 +16,7 @@ export const NATS_CONFIGURATION_ENV = {
 export interface INatsMessaging extends Node.IMessagingService {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
+  getConnection: () => nats.Client;
 }
 
 export class NatsServiceFactory {
@@ -40,6 +41,14 @@ class NatsMessagingService implements INatsMessaging {
 
   async connect() {
     this.connection = await nats.connect(this.configuration);
+  }
+
+  getConnection() {
+    if (!this.connection) {
+      throw Error("No connection exists");
+    }
+
+    return this.connection;
   }
 
   async send(to: string, msg: Node.NodeMessage) {
