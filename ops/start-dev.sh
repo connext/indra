@@ -23,7 +23,9 @@ node_port=8080
 nats_port=4222
 
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_address="0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
+eth_network="kovan" # Fake news: it's actually ganache
+eth_network_id="42"
+eth_rpc_url="http://ethprovider:8545"
 
 # database connection settings
 postgres_db="$project"
@@ -35,6 +37,7 @@ postgres_user="$project"
 # docker images
 builder_image="${project}_builder"
 database_image="postgres:9-alpine"
+ethprovider_image="trufflesuite/ganache-cli:v6.4.3"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
 
@@ -73,6 +76,7 @@ secrets:
     external: true
 
 volumes:
+  chain_dev:
   database_dev:
   certs:
 
@@ -91,15 +95,24 @@ services:
       INDRA_PG_USERNAME: $postgres_user
       LOG_LEVEL: $log_level
       NODE_ENV: development
-      NODE_MNEMONIC: $eth_mnemonic
+      ETH_MNEMONIC: $eth_mnemonic
+      ETH_NETWORK: $eth_network
+      ETH_RPC_URL: $eth_rpc_url
       PORT: $node_port
-      SIGNER_ADDRESS: $eth_address
     ports:
       - "$node_port:$node_port"
     secrets:
       - ${project}_database_dev
     volumes:
       - `pwd`:/root
+
+  ethprovider:
+    image: $ethprovider_image
+    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=$eth_network_id" ]
+    ports:
+      - "8545:8545"
+    volumes:
+      - chain_dev:/data
 
   database:
     image: $database_image

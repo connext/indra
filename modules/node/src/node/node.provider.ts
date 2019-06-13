@@ -1,3 +1,4 @@
+import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -9,7 +10,6 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Logger, Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import {
@@ -31,19 +31,19 @@ async function createNode(
   const store = postgresServiceFactory.createStoreService("connextHub");
   Logger.log("Store created", "NodeProvider");
 
-  await store.set([{ key: MNEMONIC_PATH, value: config.getNodeMnemonic() }]);
+  // TODO: Maybe we shouldn't store the mnemonic in the db?
+  await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
   Logger.log("Creating Node", "NodeProvider");
+  const { ethUrl, ethNetwork } = config.getEthProviderConfig();
   const messService = natsServiceFactory.createMessagingService("messaging");
   await messService.connect();
   const node = await Node.create(
     messService,
     store,
-    {
-      STORE_KEY_PREFIX: "store",
-    },
-    new JsonRpcProvider("https://kovan.infura.io/metamask") as any, // FIXME
-    "kovan",
+    { STORE_KEY_PREFIX: "store" },
+    new JsonRpcProvider(ethUrl) as any, // FIXME
+    ethNetwork, // Node should probably accept a chainId instead..
   );
   Logger.log("Node created", "NodeProvider");
 

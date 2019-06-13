@@ -8,8 +8,12 @@ if [[ -d "modules/node" ]]
 then cd modules/node
 fi
 
-if [[ -z "$INDRA_PG_PASSWORD" ]]
+if [[ -z "$INDRA_PG_PASSWORD" && -n "$INDRA_PG_PASSWORD_FILE" ]]
 then export INDRA_PG_PASSWORD="`cat $INDRA_PG_PASSWORD_FILE`"
+fi
+
+if [[ -z "$NODE_MNEMONIC" && -n "$NODE_MNEMONIC_FILE" ]]
+then export NODE_MNEMONIC="`cat $NODE_MNEMONIC_FILE`"
 fi
 
 exec ./node_modules/.bin/nodemon \

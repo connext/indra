@@ -31,8 +31,15 @@ export class ConfigService {
     return this.envConfig[key];
   }
 
-  getNodeMnemonic(): string {
-    return this.get("NODE_MNEMONIC");
+  getEthProviderConfig(): { [key: string]: string } {
+    return {
+      ethNetwork: this.get("ETH_NETWORK"),
+      ethUrl: this.get("ETH_RPC_URL"),
+    };
+  }
+
+  getMnemonic(): string {
+    return this.get("ETH_MNEMONIC");
   }
 
   getPostgresConfig(): PostgresConfig {
