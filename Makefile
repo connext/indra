@@ -37,7 +37,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: node
-prod: node
+prod: node-prod
 
 start: dev
 	bash ops/start-dev.sh
@@ -60,6 +60,9 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
+push-latest: prod
+	bash ops/push-images.sh latest node
+
 ########################################
 # Begin Test Rules
 
@@ -74,6 +77,11 @@ watch-node: node-modules
 
 ########################################
 # Begin Real Rules
+
+node-prod: node
+	$(log_start)
+	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
+	$(log_finish) && touch $(flags)/$@
 
 node: nats-client $(shell find $(node)/src $(find_options))
 	$(log_start)

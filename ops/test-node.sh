@@ -2,6 +2,7 @@
 set -e
 
 test_command='
+  jest --config ops/jest.config.json --listTests
   jest --config ops/jest.config.json
 '
 
@@ -22,6 +23,9 @@ fi
 
 eth_address="0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+eth_network="kovan"
+ethprovider_host="${project}_ethprovider_$suffix"
+
 log_level="3" # set to 0 for no logs or to 5 for all the logs
 network="${project}_$suffix"
 
@@ -32,6 +36,7 @@ postgres_port="5432"
 postgres_user="$project"
 database_url="postgresql://$postgres_user:$postgres_password@$postgres_host:$postgres_port/$postgres_db"
 
+
 nats_host="${project}_nats_$suffix"
 
 node_port="8080"
@@ -40,6 +45,7 @@ node_host="${project}_$suffix"
 # Kill the dependency containers when this script exits
 function cleanup {
   echo;echo "Tests finished, stopping test containers.."
+  docker container stop $ethprovider_host 2> /dev/null || true
   docker container stop $postgres_host 2> /dev/null || true
   docker container stop $nats_host 2> /dev/null || true
   docker container stop $node_host 2> /dev/null || true
@@ -52,6 +58,18 @@ docker network create --attachable $network 2> /dev/null || true
 # Start dependencies
 
 echo "Node tester activated!";echo;
+
+echo "Starting $ethprovider_host.."
+docker run \
+  --detach \
+  --name="$ethprovider_host" \
+  --network="$network" \
+  --rm \
+  --tmpfs="/data" \
+  trufflesuite/ganache-cli:v6.4.3 \
+    --db="/data" \
+    --mnemonic="$eth_mnemonic" \
+    --networkId="$eth_network_id" \
 
 echo "Starting $postgres_host.."
 docker run \
@@ -89,9 +107,10 @@ docker run \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="LOG_LEVEL=$log_level" \
   --env="NODE_ENV=development" \
-  --env="NODE_MNEMONIC=$eth_mnemonic" \
+  --env="ETH_MNEMONIC=$eth_mnemonic" \
+  --env="ETH_NETWORK=$eth_network" \
+  --env="ETH_RPC_URL=http://$ethprovider_host:8545" \
   --env="PORT=$node_port" \
-  --env="SIGNER_ADDRESS=$eth_address" \
   --interactive \
   --name="$node_host" \
   --network="$network" \
@@ -101,6 +120,8 @@ docker run \
   ${project}_builder -c '
     echo "Node Tester Container launched!";echo
 
+    echo "Waiting for ${ETH_RPC_URL#*://}..."
+    bash ops/wait-for.sh -t 60 ${ETH_RPC_URL#*://} 2> /dev/null
     echo "Waiting for $INDRA_PG_HOST:$INDRA_PG_PORT..."
     bash ops/wait-for.sh -t 60 $INDRA_PG_HOST:$INDRA_PG_PORT 2> /dev/null
     echo "Waiting for ${INDRA_NATS_SERVERS#*://}..."

@@ -2,9 +2,9 @@
 set -e
 
 hostname="$1"
-network="${2:-rinkeby}"
+network="${2:-kovan}"
 user="ubuntu"
-key_name="hub_key_$network" # name of docker secret to store private key in
+key_name="hub_mnemonic_$network" # name of docker secret to store private key in
 pubkey="$HOME/.ssh/circleci.pub"
 prvkey="$HOME/.ssh/connext-aws"
 
