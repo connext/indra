@@ -6,19 +6,8 @@ export class User {
   id: number;
 
   @Column("text")
-  email: string;
+  xpubId: string;
 
   @Column("text")
-  ethAddress: string;
-
-  @Column("text")
-  nodeAddress: string;
-
-  @Column("text", {
-    nullable: true,
-  })
-  multisigAddress: string;
-
-  @Column("text")
-  username: string;
+  signingKey: string;
 }
