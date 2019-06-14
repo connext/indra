@@ -40,7 +40,6 @@ function respond(
 }
 
 export async function connectNode(
-  botName: string,
   node: Node,
   botPublicIdentifier: string,
   multisigAddress?: string,
@@ -92,7 +91,7 @@ export async function connectNode(
       },
     );
   }
-  console.info(`Bot ${botName} is ready to serve`);
+  console.info(`Bot is ready to serve`);
 }
 
 export async function showMainPrompt(node: Node) {

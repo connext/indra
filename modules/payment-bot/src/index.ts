@@ -98,21 +98,14 @@ export function getBot() {
     }
     const wallet = new ethers.Wallet(privateKey, provider);
     walletAddress = wallet.address;
-    const user = {
-      email: "PaymentBot",
-      ethAddress: wallet.address,
-      nodeAddress: node.publicIdentifier,
-      username: process.env.USERNAME || "PaymentBot",
-    };
 
-    bot = await getUser(BASE_URL, wallet.address);
+    bot = await getUser(BASE_URL, node.publicIdentifier);
+    console.log('bot: ', bot);
     if (bot && bot.ethAddress) {
-      console.log(
-        `Getting pre-existing user ${user.username} account: ${wallet.address}`,
-      );
+      console.log(`Getting pre-existing user ${node.publicIdentifier} account`);
       console.log(`Existing account found\n`, bot);
     } else {
-      bot = await createAccount(BASE_URL, user);
+      bot = await createAccount(BASE_URL, { xpub: node.publicIdentifier });
       console.log(`Account created\n`, bot);
     }
 
@@ -123,7 +116,7 @@ export function getBot() {
       await deposit(node, process.env.DEPOSIT_AMOUNT, multisigAddress);
     }
 
-    afterUser(user.username, node, bot.nodeAddress, multisigAddress);
+    afterUser(node, bot.nodeAddress, multisigAddress);
     logEthFreeBalance(await getFreeBalance(node, multisigAddress));
     showMainPrompt(node);
   } catch (e) {

@@ -185,27 +185,26 @@ async function post(baseURL: string, endpoint, data) {
 }
 
 export async function afterUser(
-  botName: string,
   node: Node,
   botPublicIdentifer: string,
   multisigAddress: string,
 ) {
   console.log("Setting up bot's event handlers");
 
-  await connectNode(botName, node, botPublicIdentifer, multisigAddress);
+  await connectNode(node, botPublicIdentifer, multisigAddress);
 }
 
 // TODO: don't duplicate these from PG for consistency
 
 export async function createAccount(
   baseURL: string,
-  user: UserChangeset,
+  user: { xpub: string },
 ): Promise<UserSession> {
   try {
     const userRes = await post(baseURL, "users", user);
 
     const multisigRes = (await post(baseURL, "channels", {
-      ethAddress: user.ethAddress,
+      xpub: user.xpub,
     })) as APIResponse;
 
     console.log("multisigRes: ", multisigRes);
@@ -221,14 +220,14 @@ export async function createAccount(
 
 export async function getUser(
   baseURL: string,
-  ethAddress: string,
+  xpub: string,
 ): Promise<UserSession> {
-  if (!ethAddress) {
-    throw new Error("getUser(): ethAddress is required");
+  if (!xpub) {
+    throw new Error("getUser(): xpub is required");
   }
 
   try {
-    const userJson = (await get(baseURL, `users/${ethAddress}`)) as APIResponse;
+    const userJson = await get(baseURL, `users/${xpub}`);
 
     return userJson as any;
   } catch (e) {
