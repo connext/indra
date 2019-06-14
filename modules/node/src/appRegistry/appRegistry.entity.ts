@@ -1,7 +1,10 @@
-import { Column, Entity } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class AppRegistry {
+  @PrimaryGeneratedColumn()
+  id: number;
+
   @Column("text")
   appDefinitionAddress: string;
 

@@ -25,7 +25,7 @@ export class App {
   @JoinColumn()
   appRegistry: AppRegistry;
 
-  @Column("number", { nullable: true })
+  @Column("integer", { nullable: true })
   appId: number;
 
   @Column("text")
@@ -59,7 +59,7 @@ export class App {
   @Column("json")
   initialState: object;
 
-  @Column("number")
+  @Column("integer")
   timeout: number;
 
   @OneToMany(type => AppUpdate, appUpdate => appUpdate.app)

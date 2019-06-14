@@ -30,7 +30,7 @@ export class Channel {
 
   @Column("text")
   @IsEthAddress()
-  multiSigAddress: string;
+  multisigAddress: string;
 
   @OneToMany(type => App, app => app.channel)
   apps: App[];
