@@ -11,7 +11,7 @@ export class User {
 
   @Column("text")
   @IsXpub()
-  xpubId: string;
+  xpub: string;
 
   @Column("text")
   @IsEthAddress()
