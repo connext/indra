@@ -1,4 +1,4 @@
 export class CreateUserDto {
-  readonly xpubId;
+  readonly xpub;
   readonly signingKey;
 }
