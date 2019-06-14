@@ -1,13 +1,12 @@
 {
   "name": "@connext/indra-v2",
-  "version": "2.0.0-beta-1",
+  "version": "2.0.0-alpha",
   "description": "",
-  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ConnextProject/indra-v2.git"
   },
-  "author": "",
+  "author": "Connext & Friends",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ConnextProject/indra-v2/issues"
@@ -19,45 +18,5 @@
     "tslint-config-airbnb": "5.11.1",
     "tslint-config-prettier": "1.18.0",
     "tslint-plugin-prettier": "2.0.1"
-  },
-  "dependencies": {
-    "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.1.26",
-    "@counterfactual/postgresql-node-connector": "0.0.2",
-    "@counterfactual/types": "0.0.11",
-    "@nestjs/common": "6.3.1",
-    "@nestjs/core": "6.3.1",
-    "@nestjs/platform-express": "6.3.1",
-    "@nestjs/testing": "6.3.1",
-    "@types/express": "4.17.0",
-    "@types/jest": "24.0.13",
-    "@types/node": "12.0.8",
-    "@types/pg": "7.4.14",
-    "@types/supertest": "2.0.7",
-    "concurrently": "4.1.0",
-    "dotenv": "8.0.0",
-    "dotenv-extended": "2.4.0",
-    "ethers": "4.0.28",
-    "firebase-server": "1.0.2",
-    "jest": "24.8.0",
-    "nodemon": "1.19.1",
-    "pg": "7.11.0",
-    "prettier": "1.18.2",
-    "reflect-metadata": "0.1.13",
-    "rimraf": "2.6.3",
-    "rollup": "1.15.3",
-    "rollup-plugin-commonjs": "10.0.0",
-    "rollup-plugin-node-resolve": "5.0.1",
-    "rollup-plugin-typescript2": "0.21.1",
-    "rxjs": "6.5.2",
-    "supertest": "4.0.2",
-    "ts-jest": "24.0.2",
-    "ts-nats": "1.2.4",
-    "ts-node": "8.2.0",
-    "tsconfig-paths": "3.8.0",
-    "typeorm": "0.2.18",
-    "typescript": "3.5.1",
-    "uuid": "3.3.2",
-    "wait-on": "3.2.0"
   }
 }
