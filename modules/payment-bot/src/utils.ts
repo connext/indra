@@ -18,9 +18,9 @@ export async function getFreeBalance(
   multisigAddress: string,
 ): Promise<NodeTypes.GetFreeBalanceStateResult> {
   const query = {
-    type: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
-    requestId: generateUUID(),
     params: { multisigAddress } as NodeTypes.GetFreeBalanceStateParams,
+    requestId: generateUUID(),
+    type: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
   };
 
   const { result } = await node.call(query.type, query);
@@ -39,7 +39,7 @@ export function logEthFreeBalance(
 
 export async function fetchMultisig(baseURL: string, ethAddress: string) {
   const bot = await getUser(baseURL, ethAddress);
-  if (!bot.multisigAddress) {
+  if (!(bot as any).multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet...Waiting for another ${DELAY_SECONDS} seconds`,
     );
@@ -48,7 +48,7 @@ export async function fetchMultisig(baseURL: string, ethAddress: string) {
       fetchMultisig(baseURL, ethAddress),
     );
   }
-  return (await getUser(baseURL, ethAddress)).multisigAddress;
+  return ((await getUser(baseURL, ethAddress)) as any).multisigAddress;
 }
 
 /// Deposit and wait for counterparty deposit
@@ -76,13 +76,13 @@ export async function deposit(
   console.log(`\nDepositing ${amount} ETH into ${multisigAddress}\n`);
   try {
     await node.call(NodeTypes.MethodName.DEPOSIT, {
-      type: NodeTypes.MethodName.DEPOSIT,
-      requestId: generateUUID(),
       params: {
-        multisigAddress,
         amount: parseEther(amount),
+        multisigAddress,
         notifyCounterparty: true,
       } as NodeTypes.DepositParams,
+      requestId: generateUUID(),
+      type: NodeTypes.MethodName.DEPOSIT,
     });
 
     const postDepositBalances = await getFreeBalance(node, multisigAddress);
@@ -129,7 +129,7 @@ function timeout(delay: number = API_TIMEOUT) {
   };
 }
 
-async function get(baseURL: string, endpoint: string): Promise<APIResponse> {
+async function get(baseURL: string, endpoint: string): Promise<object> {
   const requestTimeout = timeout();
 
   const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
@@ -143,7 +143,7 @@ async function get(baseURL: string, endpoint: string): Promise<APIResponse> {
 
   while (typeof response === "undefined") {
     try {
-      response = (await httpResponse.json()) as APIResponse;
+      response = await httpResponse.json();
     } catch (e) {
       retriesAvailable -= 1;
       if (e.type === "invalid-json" && retriesAvailable >= 0) {
@@ -157,7 +157,7 @@ async function get(baseURL: string, endpoint: string): Promise<APIResponse> {
   }
 
   if (response.errors) {
-    const error = response.errors[0] as APIError;
+    const error = response.errors[0];
     throw error;
   }
 
@@ -199,13 +199,13 @@ export async function afterUser(
 export async function createAccount(
   baseURL: string,
   user: { xpub: string },
-): Promise<UserSession> {
+): Promise<object> {
   try {
     const userRes = await post(baseURL, "users", user);
 
-    const multisigRes = (await post(baseURL, "channels", {
+    const multisigRes = await post(baseURL, "channels", {
       xpub: user.xpub,
-    })) as APIResponse;
+    });
 
     console.log("multisigRes: ", multisigRes);
 
@@ -218,10 +218,7 @@ export async function createAccount(
   }
 }
 
-export async function getUser(
-  baseURL: string,
-  xpub: string,
-): Promise<UserSession> {
+export async function getUser(baseURL: string, xpub: string): Promise<object> {
   if (!xpub) {
     throw new Error("getUser(): xpub is required");
   }
@@ -229,139 +226,8 @@ export async function getUser(
   try {
     const userJson = await get(baseURL, `users/${xpub}`);
 
-    return userJson as any;
+    return userJson;
   } catch (e) {
     return Promise.reject(e);
   }
 }
-
-export type AppDefinition = {
-  id: string;
-  name: string;
-  notifications?: number;
-  slug: string;
-  url: string;
-  icon: string;
-};
-
-export interface UserChangeset {
-  username: string;
-  email: string;
-  ethAddress: string;
-  nodeAddress: string;
-}
-
-export type UserSession = {
-  id: string;
-  username: string;
-  ethAddress: string;
-  nodeAddress: string;
-  email: string;
-  multisigAddress: string;
-  transactionHash: string;
-  token?: string;
-};
-
-export type ComponentEventHandler = (event: CustomEvent<any>) => void;
-
-export interface ErrorMessage {
-  primary: string;
-  secondary: string;
-}
-
-// TODO: Delete everything down below after JSONAPI-TS is implemented.
-
-export type APIError = {
-  status: HttpStatusCode;
-  code: ErrorCode;
-  title: string;
-  detail: string;
-};
-
-export type APIResource<T = APIResourceAttributes> = {
-  type: APIResourceType;
-  id?: string;
-  attributes: T;
-  relationships?: APIResourceRelationships;
-};
-
-export type APIResourceAttributes = {
-  [key: string]: string | number | boolean | undefined;
-};
-
-export type APIResourceType =
-  | "user"
-  | "matchmakingRequest"
-  | "matchedUser"
-  | "session"
-  | "app";
-
-export type APIResourceRelationships = {
-  [key in APIResourceType]?: APIDataContainer
-};
-
-export type APIDataContainer<T = APIResourceAttributes> = {
-  data: APIResource<T> | APIResourceCollection<T>;
-};
-
-export type APIResourceCollection<T = APIResourceAttributes> = APIResource<T>[];
-
-export type APIResponse<T = APIResourceAttributes> = APIDataContainer<T> & {
-  errors?: APIError[];
-  meta?: APIMetadata;
-  included?: APIResourceCollection;
-};
-
-export enum ErrorCode {
-  SignatureRequired = "signature_required",
-  InvalidSignature = "invalid_signature",
-  AddressAlreadyRegistered = "address_already_registered",
-  AppRegistryNotAvailable = "app_registry_not_available",
-  UserAddressRequired = "user_address_required",
-  NoUsersAvailable = "no_users_available",
-  UnhandledError = "unhandled_error",
-  UserNotFound = "user_not_found",
-  TokenRequired = "token_required",
-  InvalidToken = "invalid_token",
-  UsernameAlreadyExists = "username_already_exists",
-}
-
-export enum HttpStatusCode {
-  OK = 200,
-  Created = 201,
-  BadRequest = 400,
-  Unauthorized = 401,
-  Forbidden = 403,
-  InternalServerError = 500,
-}
-
-export type APIMetadata = {
-  [key: string]: string | number | boolean | APIMetadata;
-};
-
-export type APIRequest<T = APIResourceAttributes> = {
-  data?: APIResource<T> | APIResourceCollection<T>;
-  meta?: APIMetadata;
-};
-
-export type UserAttributes = {
-  id: string;
-  username: string;
-  ethAddress: string;
-  nodeAddress: string;
-  email: string;
-  multisigAddress: string;
-  transactionHash: string;
-  token?: string;
-};
-
-export type SessionAttributes = {
-  ethAddress: string;
-};
-
-export type AppAttributes = {
-  name: string;
-  slug: string;
-  icon: string;
-  url: string;
-};
