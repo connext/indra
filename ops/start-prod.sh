@@ -110,6 +110,7 @@ function new_secret {
 new_secret $db_secret
 new_secret $mnemonic_name
 
+mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
