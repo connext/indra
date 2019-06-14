@@ -5,12 +5,12 @@ import { ConfigModule } from "../config/config.module";
 import { UserModule } from "../user/user.module";
 
 import { NodeController } from "./node.controller";
-import { NatsProvider, NodeProvider, PostgresProvider } from "./node.provider";
+import { natsProvider, nodeProvider, postgresProvider } from "./node.provider";
 
 @Module({
   controllers: [NodeController],
-  exports: [NodeProvider],
+  exports: [nodeProvider],
   imports: [ConfigModule, UserModule, forwardRef(() => ChannelModule)],
-  providers: [NatsProvider, NodeProvider, PostgresProvider],
+  providers: [natsProvider, nodeProvider, postgresProvider],
 })
 export class NodeModule {}
