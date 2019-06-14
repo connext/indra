@@ -25,15 +25,13 @@ export class ChannelController {
   async create(
     @Body() createChannelDto: CreateChannelDto,
   ): Promise<{ transactionHash: string }> {
-    const user = await this.userService.findByEthAddress(
-      createChannelDto.ethAddress,
+    const user = await this.userService.findByXpub(
+      createChannelDto.counterpartyXpub,
     );
     if (!user) {
       throw new NotFoundException();
     }
-    const { transactionHash } = await this.channelService.create(
-      user.nodeAddress,
-    );
+    const { transactionHash } = await this.channelService.create(user.xpub);
     return { transactionHash };
   }
 
