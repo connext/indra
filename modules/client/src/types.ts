@@ -35,7 +35,7 @@ export type ClientOptions = {
 
   // function passed in by wallets to generate ephemeral keys
   // used when signing applications
-  keyGen: () => Promise<string>; // TODO: what will the type look like?
+  keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
   loadState?: () => Promise<string | null>;
   saveState?: (state: ChannelState | AppState) => Promise<any>; // TODO: state: string?
