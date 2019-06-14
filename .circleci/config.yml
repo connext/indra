@@ -22,6 +22,7 @@ jobs:
             ssh ubuntu@$PRODUCTION_URL "bash -s" <<EOF
               git clone https://github.com/ConnextProject/indra-v2.git || true
               cd indra-v2
+              git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard origin/$CIRCLE_BRANCH
               export INDRA_V2_MODE="staging"
