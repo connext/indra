@@ -15,12 +15,12 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export async function getFreeBalance(
   node: Node,
-  multisigAddress: string
+  multisigAddress: string,
 ): Promise<NodeTypes.GetFreeBalanceStateResult> {
   const query = {
     type: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
     requestId: generateUUID(),
-    params: { multisigAddress } as NodeTypes.GetFreeBalanceStateParams
+    params: { multisigAddress } as NodeTypes.GetFreeBalanceStateParams,
   };
 
   const { result } = await node.call(query.type, query);
@@ -29,7 +29,7 @@ export async function getFreeBalance(
 }
 
 export function logEthFreeBalance(
-  freeBalance: NodeTypes.GetFreeBalanceStateResult
+  freeBalance: NodeTypes.GetFreeBalanceStateResult,
 ) {
   console.info(`Channel's free balance`);
   for (const key in freeBalance) {
@@ -41,11 +41,11 @@ export async function fetchMultisig(baseURL: string, ethAddress: string) {
   const bot = await getUser(baseURL, ethAddress);
   if (!bot.multisigAddress) {
     console.info(
-      `The Bot doesn't have a channel with the Playground yet...Waiting for another ${DELAY_SECONDS} seconds`
+      `The Bot doesn't have a channel with the Playground yet...Waiting for another ${DELAY_SECONDS} seconds`,
     );
     // Convert to milliseconds
     await delay(DELAY_SECONDS * 1000).then(() =>
-      fetchMultisig(baseURL, ethAddress)
+      fetchMultisig(baseURL, ethAddress),
     );
   }
   return (await getUser(baseURL, ethAddress)).multisigAddress;
@@ -55,7 +55,7 @@ export async function fetchMultisig(baseURL: string, ethAddress: string) {
 export async function deposit(
   node: Node,
   amount: string,
-  multisigAddress: string
+  multisigAddress: string,
 ) {
   const myFreeBalanceAddress = node.ethFreeBalanceAddress;
 
@@ -70,7 +70,7 @@ export async function deposit(
   }
 
   const [counterpartyFreeBalanceAddress] = Object.keys(
-    preDepositBalances
+    preDepositBalances,
   ).filter(addr => addr !== myFreeBalanceAddress);
 
   console.log(`\nDepositing ${amount} ETH into ${multisigAddress}\n`);
@@ -81,15 +81,15 @@ export async function deposit(
       params: {
         multisigAddress,
         amount: parseEther(amount),
-        notifyCounterparty: true
-      } as NodeTypes.DepositParams
+        notifyCounterparty: true,
+      } as NodeTypes.DepositParams,
     });
 
     const postDepositBalances = await getFreeBalance(node, multisigAddress);
 
     if (
       !postDepositBalances[myFreeBalanceAddress].gt(
-        preDepositBalances[myFreeBalanceAddress]
+        preDepositBalances[myFreeBalanceAddress],
       )
     ) {
       throw Error("My balance was not increased.");
@@ -105,7 +105,7 @@ export async function deposit(
 
     while (await freeBalanceNotUpdated()) {
       console.info(
-        `Waiting ${DELAY_SECONDS} more seconds for counter party deposit`
+        `Waiting ${DELAY_SECONDS} more seconds for counter party deposit`,
       );
       await delay(DELAY_SECONDS * 1000);
     }
@@ -125,7 +125,7 @@ function timeout(delay: number = API_TIMEOUT) {
   return {
     cancel() {
       clearTimeout(handler);
-    }
+    },
   };
 }
 
@@ -133,7 +133,7 @@ async function get(baseURL: string, endpoint: string): Promise<APIResponse> {
   const requestTimeout = timeout();
 
   const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
-    method: "GET"
+    method: "GET",
   });
 
   requestTimeout.cancel();
@@ -149,7 +149,7 @@ async function get(baseURL: string, endpoint: string): Promise<APIResponse> {
       if (e.type === "invalid-json" && retriesAvailable >= 0) {
         console.log(
           `Call to ${baseURL}/api/${endpoint} returned invalid JSON. Retrying (attempt #${10 -
-            retriesAvailable}).`
+            retriesAvailable}).`,
         );
         await delay(3000);
       } else throw e;
@@ -169,9 +169,9 @@ async function post(baseURL: string, endpoint, data) {
   const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
     body,
     headers: {
-      "Content-Type": "application/json; charset=utf-8"
+      "Content-Type": "application/json; charset=utf-8",
     },
-    method: "POST"
+    method: "POST",
   });
 
   const response = await httpResponse.json();
@@ -188,7 +188,7 @@ export async function afterUser(
   botName: string,
   node: Node,
   botPublicIdentifer: string,
-  multisigAddress: string
+  multisigAddress: string,
 ) {
   console.log("Setting up bot's event handlers");
 
@@ -199,20 +199,20 @@ export async function afterUser(
 
 export async function createAccount(
   baseURL: string,
-  user: UserChangeset
+  user: UserChangeset,
 ): Promise<UserSession> {
   try {
     const userRes = await post(baseURL, "users", user);
 
     const multisigRes = (await post(baseURL, "channels", {
-      ethAddress: user.ethAddress
+      ethAddress: user.ethAddress,
     })) as APIResponse;
 
     console.log("multisigRes: ", multisigRes);
 
     return {
       ...userRes,
-      transactionHash: (multisigRes as any).transactionHash
+      transactionHash: (multisigRes as any).transactionHash,
     };
   } catch (e) {
     return Promise.reject(e);
@@ -221,7 +221,7 @@ export async function createAccount(
 
 export async function getUser(
   baseURL: string,
-  ethAddress: string
+  ethAddress: string,
 ): Promise<UserSession> {
   if (!ethAddress) {
     throw new Error("getUser(): ethAddress is required");
@@ -324,7 +324,7 @@ export enum ErrorCode {
   UserNotFound = "user_not_found",
   TokenRequired = "token_required",
   InvalidToken = "invalid_token",
-  UsernameAlreadyExists = "username_already_exists"
+  UsernameAlreadyExists = "username_already_exists",
 }
 
 export enum HttpStatusCode {
@@ -333,7 +333,7 @@ export enum HttpStatusCode {
   BadRequest = 400,
   Unauthorized = 401,
   Forbidden = 403,
-  InternalServerError = 500
+  InternalServerError = 500,
 }
 
 export type APIMetadata = {
