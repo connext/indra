@@ -3,7 +3,7 @@ set -e
 
 test_command='
   jest --config ops/jest.config.json --listTests
-  jest --config ops/jest.config.json
+  jest --config ops/jest.config.json # --detectOpenHandles
 '
 
 watch_command='
