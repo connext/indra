@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers/utils";
 import {
   Column,
   Entity,
@@ -10,6 +11,7 @@ import {
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { Channel } from "../channel/channel.entity";
+import { IsXpub } from "../validator/isXpub";
 
 @Entity()
 export class App {
@@ -27,18 +29,31 @@ export class App {
   appId: number;
 
   @Column("text")
+  @IsXpub()
   xpubPartyA: string;
 
   @Column("text")
+  @IsXpub()
   xpubPartyB: string;
 
-  @Column("text")
+  @Column("text", {
+    transformer: {
+      from: (value: string) => new BigNumber(value),
+      to: (value: BigNumber) => value.toString(),
+    },
+  })
   depositA: string;
 
-  @Column("text")
+  @Column("text", {
+    transformer: {
+      from: (value: string) => new BigNumber(value),
+      to: (value: BigNumber) => value.toString(),
+    },
+  })
   depositB: string;
 
   @Column("simple-array")
+  @IsXpub({ each: true })
   intermediaries: string[];
 
   @Column("json")
