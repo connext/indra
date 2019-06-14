@@ -19,7 +19,7 @@ jobs:
     steps:
       - run:
           command: |
-            ssh ubuntu@$STAGING_URL "bash -s" <<EOF
+            ssh ubuntu@$PRODUCTION_URL "bash -s" <<EOF
               git clone https://github.com/ConnextProject/indra-v2.git || true
               cd indra-v2
               git fetch
