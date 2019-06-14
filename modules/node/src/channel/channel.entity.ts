@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers/utils";
 import {
   Column,
   Entity,
@@ -7,20 +8,24 @@ import {
 } from "typeorm";
 
 import { App } from "../app/app.entity";
+import { User } from "../user/user.entity";
 import { IsEthAddress } from "../validator/isEthAddress";
 import { IsXpub } from "../validator/isXpub";
-import { BigNumber } from "ethers/utils";
 
 @Entity()
 export class Channel {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @ManyToOne(type => User, user => user.channels)
+  user: User;
+
   @Column("text")
   @IsXpub()
   xpubPartyA: string;
 
   @Column("text")
+  @IsXpub()
   xpubPartyB: string;
 
   @Column("text")
