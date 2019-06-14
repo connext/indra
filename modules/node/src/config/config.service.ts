@@ -59,4 +59,8 @@ export class ConfigService {
       token: this.get("INDRA_NATS_TOKEN"),
     };
   }
+
+  getPort(): number {
+    return parseInt(this.get("PORT"), 10);
+  }
 }
