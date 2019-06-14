@@ -6,9 +6,9 @@ import { UserService } from "./user.service";
 @Controller("users")
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  @Get(":ethAddress")
-  async findByEthAddress(@Param("ethAddress") ethAddress: string) {
-    return (await this.userService.findByEthAddress(ethAddress)) || {};
+  @Get(":xpub")
+  async findByEthAddress(@Param("xpub") xpub: string) {
+    return (await this.userService.findByXpub(xpub)) || {};
   }
 
   // TODO: validation
