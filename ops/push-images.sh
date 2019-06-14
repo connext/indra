@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-projct="indra_v2"
+project="indra_v2"
 organization="connextproject"
 
 registry=docker.io/$organization
