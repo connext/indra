@@ -1,10 +1,8 @@
-import { Wallet } from "./wallet";
-import { MockNodeClientApi, nodeUrl, MockNatsClient, MockWallet, } from "./testing/mocks";
-import { Signer } from "ethers";
+import { nodeUrl, MockNatsClient, MockWallet, } from "./testing/mocks";
 import { INodeApiClient, NodeApiClient } from "./node"
 
 describe("NodeApiClient", () => {
-  let nodeClient: INodeApiClient
+  let nodeClient: NodeApiClient
 
   beforeEach(() => {
     nodeClient = new NodeApiClient({
@@ -12,12 +10,18 @@ describe("NodeApiClient", () => {
       nats: new MockNatsClient(),
       wallet: new MockWallet()
     })
-    expect(nodeClient).toBeInstanceOf(INode)
-    expect(nodeClient.wallet).toBeInstanceOf(Signer)
+    expect(nodeClient).toBeInstanceOf(NodeApiClient)
   })
 
   test("should call the config method properly", async () => {
-    expect(nodeClient).toBeInstanceOf(Wallet)
+    jest.spyOn(nodeClient, "config")
+    const message = await nodeClient.config()
+    expect(nodeClient.config).toBeCalledTimes(1)
+    expect(message).toStrictEqual({
+      nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
+      chainId: "mocks", // network that your channel is on
+      nodeUrl,
+    })
   })
 
 
