@@ -22,11 +22,7 @@ export class Channel {
 
   @Column("text")
   @IsXpub()
-  xpubPartyA: string;
-
-  @Column("text")
-  @IsXpub()
-  xpubPartyB: string;
+  counterpartyXpub: string;
 
   @Column("text")
   @IsEthAddress()
@@ -35,7 +31,9 @@ export class Channel {
   @OneToMany(type => App, app => app.channel)
   apps: App[];
 
-  @OneToMany(type => ChannelUpdate, channelUpdate => channelUpdate.channel)
+  @OneToMany(type => ChannelUpdate, channelUpdate => channelUpdate.channel, {
+    cascade: true,
+  })
   updates: ChannelUpdate[];
 }
 
@@ -53,7 +51,7 @@ export class ChannelUpdate {
       to: (value: BigNumber) => value.toString(),
     },
   })
-  freeBalancePartyA: string;
+  freeBalancePartyA: BigNumber;
 
   @Column("text", {
     transformer: {
@@ -61,11 +59,11 @@ export class ChannelUpdate {
       to: (value: BigNumber) => value.toString(),
     },
   })
-  freeBalancePartyB: string;
+  freeBalancePartyB: BigNumber;
 
-  @Column("text")
+  @Column("text", { nullable: true })
   sigPartyA: string;
 
-  @Column("text")
+  @Column("text", { nullable: true })
   sigPartyB: string;
 }
