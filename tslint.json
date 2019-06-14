@@ -13,6 +13,7 @@
     "trailing-comma": [
       true,
       { "multiline": "always", "singleline": "never", "esSpecCompliant": true }
-    ]
+    ],
+    "object-shorthand-properties-first": false
   }
 }
