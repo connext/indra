@@ -13,7 +13,7 @@
   "dependencies": {
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/firebase-server": "0.0.1",
-    "@counterfactual/node": "0.1.25",
+    "@counterfactual/node": "0.1.26",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@counterfactual/types": "0.0.11",
     "ethers": "4.0.28",
@@ -24,6 +24,6 @@
     "env-cmd": "9.0.3",
     "nodemon": "1.19.1",
     "ts-node": "8.2.0",
-    "typescript": "3.5.1"
+    "typescript": "3.5.2"
   }
 }
