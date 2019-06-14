@@ -1,7 +1,6 @@
 import { INodeApiClient } from "../node"
 import { NodeConfig, NodeInitializationParameters, ClientOptions } from "../types"
 import { Logger } from "../lib/logger";
-import { ethers } from "ethers";
 import { Address } from "@counterfactual/types";
 import { TransactionRequest, TransactionResponse } from "ethers/providers";
 import * as nats from "ts-nats";

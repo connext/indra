@@ -1,5 +1,5 @@
 import { nodeUrl, MockNatsClient, MockWallet, } from "./testing/mocks";
-import { INodeApiClient, NodeApiClient } from "./node"
+import { NodeApiClient } from "./node"
 
 describe("NodeApiClient", () => {
   let nodeClient: NodeApiClient
@@ -23,6 +23,4 @@ describe("NodeApiClient", () => {
       nodeUrl,
     })
   })
-
-
 })
