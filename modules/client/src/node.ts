@@ -1,10 +1,8 @@
 import { Address } from "@counterfactual/types";
 import { Logger } from "./lib/logger";
 import { Wallet } from "./wallet"
-import { NodeConfig, } from "./types";
+import { NodeConfig, NodeInitializationParameters } from "./types";
 import { Client as NatsClient } from "ts-nats";
-// TODO: use npm package
-import { INatsMessaging } from "../../nats-messaging-client";
 
 // TODO: move to types.tx?
 const API_TIMEOUT = 30000;
@@ -23,17 +21,12 @@ export class NodeApiClient implements INodeApiClient {
   private nonce: string | undefined;
   private signature: string | undefined;
 
-  constructor(
-    nodeUrl: string,
-    nats: INatsMessaging, // connected in `connect` of client
-    wallet: Wallet,
-    logLevel?: number,
-  ) {
-    this.nodeUrl = nodeUrl;
-    this.nats = nats.getConnection();
-    this.wallet = wallet;
-    this.address = wallet.address;
-    this.log = new Logger('NodeApiClient', logLevel);
+  constructor(opts: NodeInitializationParameters) {
+    this.nodeUrl = opts.nodeUrl;
+    this.nats = opts.nats;
+    this.wallet = opts.wallet;
+    this.address = opts.wallet.address;
+    this.log = new Logger('NodeApiClient', opts.logLevel);
   }
 
   ///////////////////////////////////
