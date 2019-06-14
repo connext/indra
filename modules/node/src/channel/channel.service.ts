@@ -1,22 +1,29 @@
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { forwardRef, Inject, Injectable, Logger } from "@nestjs/common";
+import { forwardRef, Inject, Logger } from "@nestjs/common";
 import { BigNumber } from "ethers/utils";
+import { Repository } from "typeorm";
 import { v4 as generateUUID } from "uuid";
 
-import { NodeProviderId } from "../constants";
+import { ChannelRepoProviderId, NodeProviderId } from "../constants";
+
+import { Channel } from "./channel.entity";
 
 export class ChannelService {
-  constructor(private readonly node: Node) {}
+  constructor(
+    @Inject(forwardRef(() => NodeProviderId)) private readonly node: Node,
+    @Inject(ChannelRepoProviderId)
+    private readonly channelRepository: Repository<Channel>,
+  ) {}
 
   async create(
-    nodeAddress: string,
+    counterpartyXpub: string,
   ): Promise<NodeTypes.CreateChannelTransactionResult> {
     const multisigResponse = await this.node.call(
       NodeTypes.MethodName.CREATE_CHANNEL,
       {
         params: {
-          owners: [this.node.publicIdentifier, nodeAddress],
+          owners: [this.node.publicIdentifier, counterpartyXpub],
         } as NodeTypes.CreateChannelParams,
         requestId: generateUUID(),
         type: NodeTypes.MethodName.CREATE_CHANNEL,
@@ -46,5 +53,13 @@ export class ChannelService {
       `depositResponse.result: ${JSON.stringify(depositResponse.result)}`,
     );
     return depositResponse.result as NodeTypes.DepositResult;
+  }
+
+  async addMultisig(xpub, multisigAddress): Promise<Channel> {
+    const channel = await this.channelRepository.findOneOrFail({
+      where: [{ xpubPartyA: xpub }, { xpubPartyB: xpub }],
+    });
+    channel.multisigAddress = multisigAddress;
+    return await this.channelRepository.save(channel);
   }
 }
