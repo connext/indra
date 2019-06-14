@@ -1,10 +1,16 @@
-import { ClientOptions, InternalClientOptions, INodeAPIClient } from "./types";
+import { ClientOptions, InternalClientOptions, INodeAPIClient, DepositParameters, ChannelState, ExchangeParameters, WithdrawParameters, TransferParameters } from "./types";
 import { NodeApiClient } from "./node";
 import { Client as NatsClient } from 'ts-nats';
 import { Wallet } from "./wallet";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Node } from "@counterfactual/node";
 import { NatsServiceFactory, } from "../../nats-messaging-client"
+import { EventEmitter } from "events";
+import { DepositController } from "./controllers/DepositController";
+import { TransferController } from "./controllers/TransferController";
+import { ExchangeController } from "./controllers/ExchangeController";
+import { WithdrawalController } from "./controllers/WithdrawalController";
+import { Logger } from "./lib/logger";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -59,7 +65,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   return new ConnextInternal({
     node,
     wallet,
-    nats,
+    nats: nats.getConnection(),
     cfModule,
     ...opts, // use any provided opts by default
   })
@@ -69,36 +75,105 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
  * This abstract class contains all methods associated with managing
  * or establishing the user's channel.
  * 
- * The true implementation of this class exists in the
+ * The true implementation of this class exists in the `ConnextInternal`
+ * class
  */
-export abstract class ConnextChannel {
-  
+export abstract class ConnextChannel extends EventEmitter {
+  public opts: InternalClientOptions;
+  private internal: ConnextInternal;
+
+  public constructor(opts: InternalClientOptions) {
+    super();
+    this.opts = opts;
+    this.internal = this as any
+  }
+
+  ///////////////////////////////////
+  ///// CORE CHANNEL METHODS ///////
+  /////////////////////////////////
+
+  // TODO: do we want the inputs to be an object?
+  public deposit(params: DepositParameters): Promise<ChannelState> {
+    return this.internal.deposit(params)
+  }
+
+  public exchange(params: ExchangeParameters): Promise<ChannelState> {
+    return this.internal.exchange(params)
+  }
+
+  public transfer(params: TransferParameters): Promise<ChannelState> {
+    return this.internal.transfer(params)
+  }
+
+  public withdrawal(params: WithdrawParameters): Promise<ChannelState> {
+    return this.internal.withdraw(params)
+  }
 }
 
 /**
- * This abstract class contains all methods associated with managing
- * or establishing the user's channel.
- * 
- * The true implementation of this class exists in the
+ * True implementation of the connext client
  */
 export class ConnextInternal extends ConnextChannel {
-  private opts: InternalClientOptions;
+  public opts: InternalClientOptions;
   private cfModule: Node;
   private wallet: Wallet;
   private node: INodeAPIClient;
   private nats: NatsClient;
 
+  private logger: Logger;
+
+  ////////////////////////////////////////
+  // Setup channel controllers
+  private depositController: DepositController;
+  private transferController: TransferController;
+  private exchangeController: ExchangeController;
+  private withdrawalController: WithdrawalController;
+
   constructor(opts: InternalClientOptions) {
-    super();
+    super(opts);
 
     this.opts = opts;
 
     this.wallet = opts.wallet;
     this.node = opts.node;
-    this.nats = opts.nats.getConnection(); // returns natsclient
+    this.nats = opts.nats;
 
     this.cfModule = opts.cfModule;
 
+    this.logger = new Logger("ConnextInternal", opts.logLevel)
 
+    // instantiate controllers with logger and cf
+    this.depositController = new DepositController(opts.cfModule, opts.logLevel)
+    this.transferController = new TransferController(opts.cfModule, opts.logLevel)
+    this.exchangeController = new ExchangeController(opts.cfModule, opts.logLevel)
+    this.withdrawalController = new WithdrawalController(opts.cfModule, opts.logLevel)
   }
+
+  ///////////////////////////////////
+  ///// CORE CHANNEL METHODS ///////
+  /////////////////////////////////
+  public deposit(params: DepositParameters): Promise<ChannelState> {
+    return this.depositController.deposit(params)
+  }
+
+  public exchange(params: ExchangeParameters): Promise<ChannelState> {
+    return this.exchangeController.exchange(params)
+  }
+
+  public transfer(params: TransferParameters): Promise<ChannelState> {
+    return this.transferController.transfer(params)
+  }
+
+  public withdraw(params: WithdrawParameters): Promise<ChannelState> {
+    return this.withdrawalController.withdraw(params)
+  }
+
+  ///////////////////////////////////
+  ///////// NODE METHODS ///////////
+  /////////////////////////////////
+
+
+  ///////////////////////////////////
+  //////// LOW LEVEL METHODS ///////
+  /////////////////////////////////
 }
