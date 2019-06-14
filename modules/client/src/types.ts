@@ -78,7 +78,13 @@ export type IMultisig = {}
 ////////// NODE TYPES ////////////
 /////////////////////////////////
 
-////// General API types
+////// General typings
+export type NodeInitializationParameters = {
+  nodeUrl: string,
+  nats: NatsClient,
+  wallet: Wallet,
+  logLevel?: number,
+}
 
 ///// Specific response types
 export type NodeConfig = {
