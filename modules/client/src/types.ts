@@ -4,7 +4,6 @@ import { Address } from "@counterfactual/types";
 import { Node } from "@counterfactual/node";
 import { Client as NatsClient } from "ts-nats"
 import { Wallet } from "./wallet";
-import { INatsMessaging } from "../../nats-messaging-client/dist";
 
 // types for the connext client package
 
@@ -19,7 +18,7 @@ import { INatsMessaging } from "../../nats-messaging-client/dist";
  */
 export type ClientOptions = {
   // provider, passed through to CF node
-  rpcProviderUrl: string; // TODO: can we keep out web3
+  rpcProviderUrl?: string; // TODO: can we keep out web3
 
   // node information
   nodeUrl: string; // nats URL, nats://
@@ -51,7 +50,7 @@ export type ClientOptions = {
 export type InternalClientOptions = ClientOptions &  {
   // Optional, useful for dependency injection
   // TODO: can nats, node, wallet be optional?
-  nats: INatsMessaging; // converted to nats-client in ConnextInternal constructor
+  nats: NatsClient; // converted to nats-client in ConnextInternal constructor
   node: INodeAPIClient;
   // signing wallet/information
   wallet: Wallet;
@@ -123,9 +122,34 @@ export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTrans
 ///////// INPUT TYPES ///////////
 /////////////////////////////////
 
+////// Deposit types
 // TODO: we should have a way to deposit multiple things
 export type DepositParameters<T = string> = AssetAmount<T>
 export type DepositParametersBigNumber = DepositParameters<BigNumber>
+
+////// Transfer types
+// TODO: would we ever want to pay people in the same app with multiple currencies?
+export type TransferParameters<T = string> = AssetAmount<T> & {
+  recipient: Address;
+  meta?: any; // TODO: meta types? should this be a string
+}
+export type TransferParametersBigNumber = TransferParameters<BigNumber>
+
+////// Exchange types
+// TODO: would we ever want to pay people in the same app with multiple currencies?
+export type ExchangeParameters<T = string> = {
+  amount: T;
+  toAssetId: Address;
+  fromAssetId: Address; // TODO: do these assets have to be renamed?
+  // make sure they are consistent with CF stuffs
+}
+export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>
+
+////// Withdraw types
+export type WithdrawParameters<T = string> = AssetAmount<T> & {
+  recipient?: Address; // if not provided, will default to signer addr
+}
+export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>
 
 
 /////////////////////////////////
