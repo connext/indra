@@ -2,10 +2,8 @@ import { NestFactory } from "@nestjs/core";
 
 import { AppModule } from "./app.module";
 
-console.log(`IndraV2 Node Activated!`)
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
+  await app.listen(parseInt(process.env.PORT, 10) || 3000);
 }
 bootstrap();

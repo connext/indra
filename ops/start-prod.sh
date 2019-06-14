@@ -110,7 +110,7 @@ function new_secret {
 new_secret $db_secret
 new_secret $mnemonic_name
 
-mkdir -p /tmp/$project modules/database/snapshots
+mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -142,7 +142,7 @@ services:
       ETH_RPC_URL: $eth_rpc_url
       PORT: $node_port
     ports:
-      - "$node_port:$node_port"
+      - "80:$node_port"
     secrets:
       - ${project}_database
 
