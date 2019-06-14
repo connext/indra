@@ -7,7 +7,7 @@ import {
 } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Logger, Provider } from "@nestjs/common";
+import { Logger, Provider, forwardRef } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ChannelService } from "../channel/channel.service";
@@ -17,14 +17,12 @@ import {
   NodeProviderId,
   PostgresProviderId,
 } from "../constants";
-import { UserService } from "../user/user.service";
 
 async function createNode(
   channelService: ChannelService,
   config: ConfigService,
   natsServiceFactory: NatsServiceFactory,
   postgresServiceFactory: PostgresServiceFactory,
-  userService: UserService,
 ): Promise<Node> {
   // TODO: make this logging more dynamic?
   Logger.log("Creating store", "NodeProvider");
@@ -66,7 +64,7 @@ async function createNode(
   );
 
   node.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) =>
-    userService.addMultisig(
+    channelService.addMultisig(
       res.data.counterpartyXpub,
       res.data.multisigAddress,
     ),
@@ -80,33 +78,20 @@ async function createNode(
   return node;
 }
 
-export const NodeProvider: Provider = {
-  inject: [
-    ChannelService,
-    ConfigService,
-    NatsProviderId,
-    PostgresProviderId,
-    UserService,
-  ],
+export const nodeProvider: Provider = {
+  inject: [ChannelService, ConfigService, NatsProviderId, PostgresProviderId],
   provide: NodeProviderId,
   useFactory: async (
     channelService: ChannelService,
     config: ConfigService,
     nats: NatsServiceFactory,
     postgres: PostgresServiceFactory,
-    userService: UserService,
   ): Promise<Node> => {
-    return await createNode(
-      channelService,
-      config,
-      nats,
-      postgres,
-      userService,
-    );
+    return await createNode(channelService, config, nats, postgres);
   },
 };
 
-export const PostgresProvider: Provider = {
+export const postgresProvider: Provider = {
   inject: [ConfigService],
   provide: PostgresProviderId,
   useFactory: async (
@@ -121,7 +106,7 @@ export const PostgresProvider: Provider = {
   },
 };
 
-export const NatsProvider: Provider = {
+export const natsProvider: Provider = {
   inject: [ConfigService],
   provide: NatsProviderId,
   useFactory: (config: ConfigService): NatsServiceFactory => {
