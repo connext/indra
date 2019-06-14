@@ -32,12 +32,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   await nats.connect()
 
   // create a new node api instance
-  const node: NodeApiClient = new NodeApiClient(
-    opts.nodeUrl, 
-    nats, // converted to nats-client in ConnextInternal constructor
+  const node: NodeApiClient = new NodeApiClient({
+    nodeUrl: opts.nodeUrl, 
+    nats: nats.getConnection(),
     wallet,
-    opts.logLevel,
-  );
+    logLevel: opts.logLevel,
+  });
 
   // create a new storage service for use by cfModule
   const store: NodeTypes.IStoreService = {
