@@ -21,7 +21,6 @@
     "tslint-plugin-prettier": "2.0.1"
   },
   "dependencies": {
-    "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.1.26",
     "@counterfactual/postgresql-node-connector": "0.0.2",
     "@counterfactual/types": "0.0.11",
@@ -38,7 +37,6 @@
     "dotenv": "8.0.0",
     "dotenv-extended": "2.4.0",
     "ethers": "4.0.28",
-    "firebase-server": "1.0.2",
     "jest": "24.8.0",
     "nodemon": "1.19.1",
     "pg": "7.11.0",
