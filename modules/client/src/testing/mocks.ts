@@ -14,9 +14,11 @@ export const ethUrl: string = process.env.ETH_RPC_URL || "http://localhost:8545"
 export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs"
 
 export class MockNatsClient extends nats.Client {
+  private returnVals = MockNodeClientApi.returnValues
+
   public request(subject: string, timeout: number, body?: any) {
     console.log(`Sending request to ${subject} ${body ? `with body: ${body}` : `without body`}`)
-    return {} as any // TODO: Msg type?
+    return (this.returnVals as any)[subject]
   }
 }
 
@@ -25,7 +27,13 @@ export class MockWallet extends Wallet {
 
   public constructor(opts: Partial<ClientOptions> & { address?: string } = {}) {
     // properly assign opts
-    super();
+    const clientOpts = {
+      rpcProviderUrl: ethUrl,
+      nodeUrl,
+      privateKey,
+      ...opts,
+    }
+    super(clientOpts);
     this.address = opts.address || address
   }
 
@@ -62,18 +70,25 @@ export class MockNodeClientApi implements INodeApiClient {
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger('MockNodeClientApi', opts.logLevel)
     this.nodeUrl = opts.nodeUrl || nodeUrl;
-    this.nats = opts.nats || new MockNatsClient(); // TODO: rename to messaging?
+    this.nats = (opts.nats as any) || new MockNatsClient(); // TODO: rename to messaging?
     this.wallet = opts.wallet || new MockWallet();
     this.address = opts.wallet ? opts.wallet.address : address;
     this.nonce = undefined;
     this.signature = undefined;
   }
 
-  public async config(): Promise<NodeConfig> {
-    return {
+  // should have keys same as the message passed in to fake nats client
+  // TODO: how well will this work with dynamic paths?
+  public static returnValues = {
+    config: {
       nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       chainId: "mocks", // network that your channel is on
       nodeUrl,
-    }
+    },
+
+  }
+
+  public async config(): Promise<NodeConfig> {
+    return MockNodeClientApi.returnValues.config
   }
 }
