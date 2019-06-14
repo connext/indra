@@ -142,7 +142,7 @@ services:
       ETH_RPC_URL: $eth_rpc_url
       PORT: $node_port
     ports:
-      - "$node_port:$node_port"
+      - "80:$node_port"
     secrets:
       - ${project}_database
 
