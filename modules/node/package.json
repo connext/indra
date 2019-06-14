@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@connext/nats-messaging-client": "0.0.3",
-    "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.1.26",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@nestjs/common": "6.3.1",
@@ -30,7 +29,6 @@
     "class-validator": "^0.9.1",
     "dotenv": "8.0.0",
     "ethers": "4.0.28",
-    "firebase-server": "1.0.2",
     "pg": "7.11.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.2",
