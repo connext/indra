@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
+import { Channel } from "../channel/channel.entity";
 import { IsEthAddress } from "../validator/isEthAddress";
 import { IsXpub } from "../validator/isXpub";
 
@@ -15,4 +16,7 @@ export class User {
   @Column("text")
   @IsEthAddress()
   signingKey: string;
+
+  @OneToMany(type => Channel, channel => channel.user)
+  channels: Channel[];
 }
