@@ -5,13 +5,14 @@ import {
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Logger, OnModuleInit } from "@nestjs/common";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { Repository } from "typeorm";
 import { v4 as generateUUID } from "uuid";
 
 import { ChannelRepoProviderId, NodeProviderId } from "../constants";
 
-import { Channel } from "./channel.entity";
+import { Channel, ChannelUpdate } from "./channel.entity";
 
 export class ChannelService implements OnModuleInit {
   constructor(
@@ -60,10 +61,16 @@ export class ChannelService implements OnModuleInit {
   }
 
   async addMultisig(xpub, multisigAddress): Promise<Channel> {
-    const channel = await this.channelRepository.findOneOrFail({
-      where: [{ xpubPartyA: xpub }, { xpubPartyB: xpub }],
-    });
+    const channel = new Channel();
+    channel.counterpartyXpub = xpub;
     channel.multisigAddress = multisigAddress;
+
+    const update = new ChannelUpdate();
+    update.channel = channel;
+    update.freeBalancePartyA = Zero;
+    update.freeBalancePartyB = Zero;
+
+    channel.updates = [update];
     return await this.channelRepository.save(channel);
   }
 
