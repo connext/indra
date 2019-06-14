@@ -1,4 +1,3 @@
-import { CreateChannelMessage } from "@counterfactual/node";
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { Repository } from "typeorm";
 
@@ -16,7 +15,7 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     let existing = await this.userRepository.findOne({
-      where: { xpubId: createUserDto.xpubId },
+      where: { xpubId: createUserDto.xpub },
     });
     if (existing) {
       throw new BadRequestException("User exists.");
@@ -30,7 +29,7 @@ export class UserService {
 
     const user = this.userRepository.create({
       signingKey: createUserDto.signingKey,
-      xpubId: createUserDto.xpubId,
+      xpub: createUserDto.xpub,
     });
     return await this.userRepository.save(user);
   }
@@ -39,15 +38,7 @@ export class UserService {
     return await this.userRepository.find();
   }
 
-  async findByEthAddress(ethAddress: string): Promise<User | undefined> {
-    return await this.userRepository.findOne({ where: { ethAddress } });
-  }
-
-  async addMultisig(nodeAddress, multisigAddress): Promise<User> {
-    const user = await this.userRepository.findOneOrFail({
-      where: { nodeAddress },
-    });
-    user.multisigAddress = multisigAddress;
-    return await this.userRepository.save(user);
+  async findByXpub(xpubId: string): Promise<User | undefined> {
+    return await this.userRepository.findOne({ where: { xpubId } });
   }
 }
