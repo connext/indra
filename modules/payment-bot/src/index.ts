@@ -17,7 +17,6 @@ import {
   getFreeBalance,
   getUser,
   logEthFreeBalance,
-  UserSession,
 } from "./utils";
 
 const BASE_URL = process.env.BASE_URL!;
@@ -40,11 +39,11 @@ natsServiceFactory = new NatsServiceFactory();
 
 confirmPostgresConfigurationEnvVars();
 pgServiceFactory = new PostgresServiceFactory({
-  type: "postgres",
   database: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.database]!,
   host: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.host]!,
   password: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.password]!,
   port: parseInt(process.env[POSTGRES_CONFIGURATION_ENV_KEYS.port]!, 10),
+  type: "postgres",
   username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
 });
 
@@ -52,7 +51,7 @@ let node: Node;
 
 let multisigAddress: string;
 let walletAddress: string;
-let bot: UserSession;
+let bot;
 
 export function getMultisigAddress() {
   return multisigAddress;
@@ -101,7 +100,7 @@ export function getBot() {
 
     bot = await getUser(BASE_URL, node.publicIdentifier);
     console.log('bot: ', bot);
-    if (bot && bot.ethAddress) {
+    if (bot && bot.xpub) {
       console.log(`Getting pre-existing user ${node.publicIdentifier} account`);
       console.log(`Existing account found\n`, bot);
     } else {
