@@ -11,7 +11,7 @@ import { ChannelService } from "./channel.service";
 @Module({
   controllers: [ChannelController],
   exports: [ChannelService],
-  imports: [DatabaseModule, UserModule, forwardRef(() => NodeModule)],
+  imports: [DatabaseModule, UserModule, NodeModule],
   providers: [ChannelService, channelProvider],
 })
 export class ChannelModule {}

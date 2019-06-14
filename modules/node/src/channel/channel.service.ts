@@ -1,6 +1,10 @@
-import { Node } from "@counterfactual/node";
+import {
+  CreateChannelMessage,
+  DepositConfirmationMessage,
+  Node,
+} from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { forwardRef, Inject, Logger } from "@nestjs/common";
+import { Inject, Logger, OnModuleInit } from "@nestjs/common";
 import { BigNumber } from "ethers/utils";
 import { Repository } from "typeorm";
 import { v4 as generateUUID } from "uuid";
@@ -9,9 +13,9 @@ import { ChannelRepoProviderId, NodeProviderId } from "../constants";
 
 import { Channel } from "./channel.entity";
 
-export class ChannelService {
+export class ChannelService implements OnModuleInit {
   constructor(
-    @Inject(forwardRef(() => NodeProviderId)) private readonly node: Node,
+    @Inject(NodeProviderId) private readonly node: Node,
     @Inject(ChannelRepoProviderId)
     private readonly channelRepository: Repository<Channel>,
   ) {}
@@ -61,5 +65,34 @@ export class ChannelService {
     });
     channel.multisigAddress = multisigAddress;
     return await this.channelRepository.save(channel);
+  }
+
+  // initialize CF Node with methods from this service to avoid circular dependency
+  onModuleInit() {
+    this.node.on(
+      NodeTypes.EventName.DEPOSIT_CONFIRMED,
+      (res: DepositConfirmationMessage) => {
+        if (!res || !res.data) {
+          return;
+        }
+        Logger.log(
+          `Deposit detected: ${JSON.stringify(res)}, matching`,
+          "NodeProvider",
+        );
+        this.deposit(
+          res.data.multisigAddress,
+          res.data.amount as any, // FIXME
+          res.data.notifyCounterparty,
+        );
+      },
+    );
+
+    this.node.on(
+      NodeTypes.EventName.CREATE_CHANNEL,
+      (res: CreateChannelMessage) =>
+        this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress),
+    );
+
+    Logger.log("Node methods attached", "ChannelService");
   }
 }

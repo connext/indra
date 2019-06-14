@@ -13,7 +13,7 @@ export class User {
   @IsXpub()
   xpub: string;
 
-  @Column("text")
+  @Column("text", { nullable: true })
   @IsEthAddress()
   signingKey: string;
 

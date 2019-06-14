@@ -14,21 +14,14 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    let existing = await this.userRepository.findOne({
+    const existing = await this.userRepository.findOne({
       where: { xpubId: createUserDto.xpub },
     });
     if (existing) {
       throw new BadRequestException("User exists.");
     }
-    existing = await this.userRepository.findOne({
-      where: { signingKey: createUserDto.signingKey },
-    });
-    if (existing) {
-      throw new BadRequestException("Duplicate signing key.");
-    }
 
     const user = this.userRepository.create({
-      signingKey: createUserDto.signingKey,
       xpub: createUserDto.xpub,
     });
     return await this.userRepository.save(user);

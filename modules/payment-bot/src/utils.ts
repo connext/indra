@@ -203,9 +203,7 @@ export async function createAccount(
   try {
     const userRes = await post(baseURL, "users", user);
 
-    const multisigRes = await post(baseURL, "channels", {
-      xpub: user.xpub,
-    });
+    const multisigRes = await post(baseURL, "channels", user);
 
     console.log("multisigRes: ", multisigRes);
 
