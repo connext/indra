@@ -26,7 +26,7 @@ jobs:
               git reset --hard origin/$CIRCLE_BRANCH
               export INDRA_V2_MODE="staging"
               export INDRA_V2_ETH_NETWORK="kovan"
-              export INDRA_V2_DOMAINNAME="$STAGING_URL"
+              export INDRA_V2_DOMAINNAME="$PRODUCTION_URL"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -41,13 +41,13 @@ workflows:
       - push-latest-images:
           filters:
             branches:
-              only: staging
+              only: master
           requires:
             - test-node
 
       - deploy-staging:
           filters:
             branches:
-              only: staging
+              only: master
           requires:
             - push-latest-images
