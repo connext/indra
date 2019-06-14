@@ -28,7 +28,15 @@ export class Wallet extends eth.Signer {
 
     ////////////////////////////////////////
     // Connect to an eth provider
-    this.provider = new JsonRpcProvider(opts.rpcProviderUrl)
+    if (opts.rpcProviderUrl) {
+      // preferentially use provided rpc url
+      this.provider = new JsonRpcProvider(opts.rpcProviderUrl)
+    } else {
+      // access hubs eth url
+      // TODO: http or https? is this the right default URL?
+      const nodeEthUrl = "https://" + opts.nodeUrl.split("nats://")[1] + "/api/eth"
+      this.provider = new JsonRpcProvider(nodeEthUrl)
+    }
     // TODO: will we be able to use the hubs eth provider?
 
     ////////////////////////////////////////
