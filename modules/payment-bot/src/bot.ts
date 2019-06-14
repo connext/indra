@@ -34,7 +34,7 @@ type AppAction = {
 function respond(
   node: Node,
   nodeAddress: Address,
-  { data: { appInstanceId, newState } }
+  { data: { appInstanceId, newState } },
 ) {
   console.log("appInstanceId, newState: ", appInstanceId, newState);
 }
@@ -43,19 +43,19 @@ export async function connectNode(
   botName: string,
   node: Node,
   botPublicIdentifier: string,
-  multisigAddress?: string
+  multisigAddress?: string,
 ) {
   node.on(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, async data => {
     const appInstanceId = data.data.appInstanceId;
     const intermediaries = data.data.params.intermediaries;
 
     const request = {
-      type: NodeTypes.MethodName.INSTALL_VIRTUAL,
       params: {
         appInstanceId,
-        intermediaries
+        intermediaries,
       },
-      requestId: generateUUID()
+      requestId: generateUUID(),
+      type: NodeTypes.MethodName.INSTALL_VIRTUAL,
     };
 
     try {
@@ -89,7 +89,7 @@ export async function connectNode(
         console.info(`Uninstalled app`);
         console.info(uninstallMsg);
         myEmitter.emit("uninstallVirtualApp", node, multisigAddress);
-      }
+      },
     );
   }
   console.info(`Bot ${botName} is ready to serve`);
@@ -99,7 +99,7 @@ export async function showMainPrompt(node: Node) {
   const { result } = (await node.call(NodeTypes.MethodName.GET_APP_INSTANCES, {
     type: NodeTypes.MethodName.GET_APP_INSTANCES,
     params: {} as NodeTypes.GetAppInstancesParams,
-    requestId: generateUUID()
+    requestId: generateUUID(),
   })) as Record<string, NodeTypes.GetAppInstancesResult>;
 
   if (result.appInstances.length > 0) {
@@ -113,7 +113,7 @@ export async function showAppInstancesPrompt(node: Node) {
   const { result } = (await node.call(NodeTypes.MethodName.GET_APP_INSTANCES, {
     type: NodeTypes.MethodName.GET_APP_INSTANCES,
     params: {} as NodeTypes.GetAppInstancesParams,
-    requestId: generateUUID()
+    requestId: generateUUID(),
   })) as Record<string, NodeTypes.GetAppInstancesResult>;
 
   if (result.appInstances.length === 0) {
@@ -125,7 +125,7 @@ export async function showAppInstancesPrompt(node: Node) {
       type: "list",
       name: "viewApp",
       message: "Select a payment thread to view options",
-      choices: result.appInstances.map(app => app.id)
+      choices: result.appInstances.map(app => app.id),
     })
     .then(async answers => {
       const { viewApp } = answers as Record<string, string>;
@@ -142,7 +142,7 @@ function logThreadBalances(balances: AppState) {
     ? utils.formatEther(balances.transfers[1].amount)
     : utils.formatEther(balances.transfers[1][1]);
   console.log(
-    `Balances: Sender - ${senderBalance}, Receiver - ${receiverBalance}`
+    `Balances: Sender - ${senderBalance}, Receiver - ${receiverBalance}`,
   );
 }
 
@@ -152,10 +152,10 @@ async function showAppOptions(node: Node, appId: string) {
     {
       type: NodeTypes.MethodName.GET_APP_INSTANCES,
       params: {
-        appInstanceId: appId
+        appInstanceId: appId,
       } as NodeTypes.GetAppInstanceDetailsParams,
-      requestId: generateUUID()
-    }
+      requestId: generateUUID(),
+    },
   )) as Record<string, NodeTypes.GetAppInstanceDetailsResult>;
   const choices = ["balances", "uninstall"];
   if (
@@ -171,10 +171,10 @@ async function showAppOptions(node: Node, appId: string) {
     {
       type: NodeTypes.MethodName.GET_STATE,
       params: {
-        appInstanceId: appId
+        appInstanceId: appId,
       } as NodeTypes.GetStateParams,
-      requestId: generateUUID()
-    }
+      requestId: generateUUID(),
+    },
   )) as Record<string, NodeTypes.GetStateResult>;
 
   inquirer
@@ -182,7 +182,7 @@ async function showAppOptions(node: Node, appId: string) {
       choices,
       type: "list",
       name: "viewOptions",
-      message: "Select an action to take"
+      message: "Select an action to take",
     })
     .then(async answers => {
       const { viewOptions } = answers as Record<string, string>;
@@ -203,7 +203,7 @@ function showSendPrompt(node: Node, appId: string) {
     .prompt({
       type: "input",
       name: "sendInVirtualApp",
-      message: "Amount to send"
+      message: "Amount to send",
     })
     .then(async answers => {
       const { sendInVirtualApp } = answers as Record<string, string>;
@@ -214,9 +214,9 @@ function showSendPrompt(node: Node, appId: string) {
           appInstanceId: appId,
           action: {
             transferAmount: utils.parseEther(sendInVirtualApp),
-            finalize: false
-          } as AppAction
-        } as NodeTypes.TakeActionParams
+            finalize: false,
+          } as AppAction,
+        } as NodeTypes.TakeActionParams,
       };
 
       await node.call(request.type, request);
@@ -230,8 +230,8 @@ export function showDirectionPrompt(node: Node) {
         type: "list",
         name: "direction",
         message: "Are you sending or receiving payments?",
-        choices: ["sending", "receiving"]
-      }
+        choices: ["sending", "receiving"],
+      },
     ])
     .then(answers => {
       if ((answers as Record<string, string>).direction === "sending") {
@@ -250,13 +250,13 @@ export function showOpenVirtualChannelPrompt(node: Node) {
       {
         type: "input",
         message: "Enter counterparty public identifier:",
-        name: "counterpartyPublicId"
+        name: "counterpartyPublicId",
       },
       {
         type: "input",
         message: "Enter Party A deposit amount:",
-        name: "depositPartyA"
-      }
+        name: "depositPartyA",
+      },
     ])
     .then(async answers => {
       const { counterpartyPublicId, depositPartyA } = answers as Record<
@@ -270,7 +270,7 @@ export function showOpenVirtualChannelPrompt(node: Node) {
 async function openVirtualChannel(
   node: Node,
   depositPartyA: string,
-  counterpartyPublicId: string
+  counterpartyPublicId: string,
 ) {
   const request: NodeTypes.MethodRequest = {
     type: NodeTypes.MethodName.PROPOSE_INSTALL_VIRTUAL,
@@ -279,7 +279,7 @@ async function openVirtualChannel(
       abiEncodings: {
         stateEncoding:
           "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
-        actionEncoding: "tuple(uint256 transferAmount, bool finalize)"
+        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
       },
       asset: { assetType: 0 },
       myDeposit: utils.parseEther(depositPartyA),
@@ -289,19 +289,19 @@ async function openVirtualChannel(
         transfers: [
           {
             to: fromExtendedKey(node.publicIdentifier).derivePath("0").address,
-            amount: utils.parseEther(depositPartyA)
+            amount: utils.parseEther(depositPartyA),
           },
           {
             to: fromExtendedKey(counterpartyPublicId).derivePath("0").address,
-            amount: Zero
-          }
+            amount: Zero,
+          },
         ],
-        finalized: false
+        finalized: false,
       } as AppState,
       intermediaries: [process.env.INTERMEDIARY_IDENTIFIER],
-      proposedToIdentifier: counterpartyPublicId
+      proposedToIdentifier: counterpartyPublicId,
     } as NodeTypes.ProposeInstallVirtualParams,
-    requestId: generateUUID()
+    requestId: generateUUID(),
   };
   const result = await node.call(request.type, request);
   myEmitter.emit("proposeInstallVirtualApp", node, result);
@@ -315,9 +315,9 @@ async function uninstallVirtualApp(node: Node, appInstanceId: string) {
       appInstanceId,
       action: {
         transferAmount: Zero,
-        finalize: true
-      } as AppAction
-    } as NodeTypes.TakeActionParams
+        finalize: true,
+      } as AppAction,
+    } as NodeTypes.TakeActionParams,
   });
 
   await node.call(NodeTypes.MethodName.UNINSTALL_VIRTUAL, {
@@ -325,8 +325,8 @@ async function uninstallVirtualApp(node: Node, appInstanceId: string) {
     requestId: generateUUID(),
     params: {
       appInstanceId,
-      intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER
-    } as NodeTypes.UninstallVirtualParams
+      intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
+    } as NodeTypes.UninstallVirtualParams,
   });
   myEmitter.emit("uninstallVirtualApp", node);
 }
@@ -336,7 +336,7 @@ myEmitter.on(
   async (node: Node, multisigAddress: string) => {
     logEthFreeBalance(await getFreeBalance(node, multisigAddress));
     showMainPrompt(node);
-  }
+  },
 );
 
 myEmitter.on(
@@ -344,10 +344,10 @@ myEmitter.on(
   async (node: Node, result: NodeTypes.MethodResponse) => {
     console.log(
       "Propose virtual app install\n",
-      JSON.stringify(result, null, 2)
+      JSON.stringify(result, null, 2),
     );
     await showAppInstancesPrompt(node);
-  }
+  },
 );
 
 myEmitter.on(
@@ -355,7 +355,7 @@ myEmitter.on(
   async (node: Node, result: NodeTypes.MethodResponse) => {
     console.info(`Installed virtual app: `, JSON.stringify(result, null, 2));
     await showAppInstancesPrompt(node);
-  }
+  },
 );
 
 myEmitter.on(
@@ -363,5 +363,5 @@ myEmitter.on(
   async (node: Node, result: NodeTypes.MethodResponse) => {
     logThreadBalances((result as any).data.newState);
     await showAppInstancesPrompt(node);
-  }
+  },
 );

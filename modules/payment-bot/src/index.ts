@@ -2,7 +2,7 @@ import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import {
   confirmPostgresConfigurationEnvVars,
   POSTGRES_CONFIGURATION_ENV_KEYS,
-  PostgresServiceFactory
+  PostgresServiceFactory,
 } from "@counterfactual/postgresql-node-connector";
 import { ethers } from "ethers";
 
@@ -17,14 +17,14 @@ import {
   getFreeBalance,
   getUser,
   logEthFreeBalance,
-  UserSession
+  UserSession,
 } from "./utils";
 
 const BASE_URL = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
 
 const provider = new ethers.providers.JsonRpcProvider(
-  `https://${NETWORK}.infura.io/metamask`
+  `https://${NETWORK}.infura.io/metamask`,
 );
 
 let pgServiceFactory: PostgresServiceFactory;
@@ -45,7 +45,7 @@ pgServiceFactory = new PostgresServiceFactory({
   host: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.host]!,
   password: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.password]!,
   port: parseInt(process.env[POSTGRES_CONFIGURATION_ENV_KEYS.port]!, 10),
-  username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!
+  username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
 });
 
 let node: Node;
@@ -82,10 +82,11 @@ export function getBot() {
     messService,
     store,
     {
-      STORE_KEY_PREFIX: "store"
+      STORE_KEY_PREFIX: "store",
     },
+    // @ts-ignore
     provider,
-    NETWORK
+    NETWORK,
   );
 
   console.log("Public Identifier", node.publicIdentifier);
@@ -101,13 +102,13 @@ export function getBot() {
       email: "PaymentBot",
       ethAddress: wallet.address,
       nodeAddress: node.publicIdentifier,
-      username: process.env.USERNAME || "PaymentBot"
+      username: process.env.USERNAME || "PaymentBot",
     };
 
     bot = await getUser(BASE_URL, wallet.address);
     if (bot && bot.ethAddress) {
       console.log(
-        `Getting pre-existing user ${user.username} account: ${wallet.address}`
+        `Getting pre-existing user ${user.username} account: ${wallet.address}`,
       );
       console.log(`Existing account found\n`, bot);
     } else {
