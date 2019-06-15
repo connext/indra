@@ -13,7 +13,7 @@ export class TransferController {
   }
 
   public async transfer(params: TransferParameters): Promise<ChannelState> {
-    console.log("Transfer called, yay!")
+    this.log.info("Transfer called, yay!")
     return {} as ChannelState
   }
 }

@@ -14,7 +14,7 @@ export class ExchangeController {
   }
 
   public async exchange(params: ExchangeParameters): Promise<ChannelState> {
-    console.log("Exchange called, yay!")
+    this.log.info("Exchange called, yay!")
     return {} as ChannelState
   }
 }

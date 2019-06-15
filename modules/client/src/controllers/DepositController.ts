@@ -13,7 +13,7 @@ export class DepositController {
   }
 
   public async deposit(params: DepositParameters): Promise<ChannelState> {
-    console.log("Deposit called, yay!")
+    this.log.info("Deposit called, yay!")
     return {} as ChannelState
   }
 }

@@ -13,7 +13,7 @@ export class WithdrawalController {
   }
 
   public async withdraw(params: WithdrawParameters): Promise<ChannelState> {
-    console.log("Withdraw called, yay!")
+    this.log.info("Withdraw called, yay!")
     return {} as ChannelState
   }
 }
