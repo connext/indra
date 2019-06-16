@@ -208,6 +208,13 @@ export default class ChainsawService {
   }
 
   private async processDidUpdateChannel(chainsawId: number, event: DidUpdateChannelEvent, force: boolean = false): Promise<PollType> {
+    const prev = await this.channelsDao.getChannelOrInitialState(event.user)
+    if (prev.status == "CS_CHAINSAW_ERROR" && !force) {
+      // if there was a previous chainsaw error, return
+      // and do not process event
+      return 'SKIP_EVENTS'
+    }
+
     if (event.txCountGlobal > 1) {
       const knownEvent = await this.channelsDao.getChannelUpdateByTxCount(
         event.user,
@@ -239,12 +246,6 @@ export default class ChainsawService {
       }
     }
 
-    const prev = await this.channelsDao.getChannelOrInitialState(event.user)
-    if (prev.status == "CS_CHAINSAW_ERROR" && !force) {
-      // if there was a previous chainsaw error, return
-      // and do not process event
-      return 'SKIP_EVENTS'
-    }
     try {
       const state = await this.validator.generateConfirmPending(
         connext.convert.ChannelState('str', prev.state),
