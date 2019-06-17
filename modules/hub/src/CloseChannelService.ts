@@ -248,58 +248,27 @@ export class CloseChannelService {
 
       data = this.contract.methods.startExit(user).encodeABI()
     } else {
-      // startExitWithUpdate
-      this.log.info(`Calling contract function startExitWithUpdate: ${JSON.stringify([
+      const update: [any, any, any, any, any, any, any, any, any, any, any] = [
         [latestUpdate.state.user, latestUpdate.state.recipient],
         [
           latestUpdate.state.balanceWeiHub.toString(),
-          latestUpdate.state.balanceWeiUser.toString()
+          latestUpdate.state.balanceWeiUser.toString(),
         ],
         [
           latestUpdate.state.balanceTokenHub.toString(),
-          latestUpdate.state.balanceTokenUser.toString()
+          latestUpdate.state.balanceTokenUser.toString(),
         ],
         [
           latestUpdate.state.pendingDepositWeiHub.toString(),
           latestUpdate.state.pendingWithdrawalWeiHub.toString(),
           latestUpdate.state.pendingDepositWeiUser.toString(),
-          latestUpdate.state.pendingWithdrawalWeiUser.toString()
+          latestUpdate.state.pendingWithdrawalWeiUser.toString(),
         ],
         [
           latestUpdate.state.pendingDepositTokenHub.toString(),
           latestUpdate.state.pendingWithdrawalTokenHub.toString(),
           latestUpdate.state.pendingDepositTokenUser.toString(),
-          latestUpdate.state.pendingWithdrawalTokenUser.toString()
-        ],
-        [latestUpdate.state.txCountChain, latestUpdate.state.txCountGlobal],
-        latestUpdate.state.threadRoot,
-        latestUpdate.state.threadCount,
-        latestUpdate.state.timeout,
-        latestUpdate.state.sigHub,
-        latestUpdate.state.sigUser
-      ])}`);
-
-      data = this.contract.methods.startExitWithUpdate(
-        [latestUpdate.state.user, latestUpdate.state.recipient],
-        [
-          latestUpdate.state.balanceWeiHub.toString(),
-          latestUpdate.state.balanceWeiUser.toString()
-        ],
-        [
-          latestUpdate.state.balanceTokenHub.toString(),
-          latestUpdate.state.balanceTokenUser.toString()
-        ],
-        [
-          latestUpdate.state.pendingDepositWeiHub.toString(),
-          latestUpdate.state.pendingWithdrawalWeiHub.toString(),
-          latestUpdate.state.pendingDepositWeiUser.toString(),
-          latestUpdate.state.pendingWithdrawalWeiUser.toString()
-        ],
-        [
-          latestUpdate.state.pendingDepositTokenHub.toString(),
-          latestUpdate.state.pendingWithdrawalTokenHub.toString(),
-          latestUpdate.state.pendingDepositTokenUser.toString(),
-          latestUpdate.state.pendingWithdrawalTokenUser.toString()
+          latestUpdate.state.pendingWithdrawalTokenUser.toString(),
         ],
         [latestUpdate.state.txCountGlobal, latestUpdate.state.txCountChain],
         latestUpdate.state.threadRoot,
@@ -307,7 +276,10 @@ export class CloseChannelService {
         latestUpdate.state.timeout,
         latestUpdate.state.sigHub,
         latestUpdate.state.sigUser,
-      ).encodeABI()
+      ]
+      // startExitWithUpdate
+      this.log.info(`Calling contract function startExitWithUpdate: ${JSON.stringify(update)}`)
+      data = this.contract.methods.startExitWithUpdate(...update).encodeABI()
     }
 
     return this.db.withTransaction(async () => {
