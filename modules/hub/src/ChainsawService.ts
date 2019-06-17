@@ -297,7 +297,7 @@ export default class ChainsawService {
     let disputeRecord = await this.channelDisputesDao.getActive(event.user)
     if (!disputeRecord) {
       // dispute might not have been initiated by us, so we need to add it here
-      disputeRecord = await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', chainsawId, null, onchainChannel.channelClosingTime)
+      disputeRecord = await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', false, chainsawId, null, onchainChannel.channelClosingTime)
     } else {
       await this.channelDisputesDao.setExitEvent(disputeRecord.id, chainsawId, onchainChannel.channelClosingTime)
     }

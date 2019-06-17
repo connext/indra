@@ -9,7 +9,8 @@ import { OnchainTransactionRow } from '../domain/OnchainTransaction'
 export default interface ChannelDisputesDao {
   create(
     user: string, 
-    reason: string, 
+    reason: string,
+    originatorIsHub: boolean,
     startEventChainsawId?: number, 
     txn?: OnchainTransactionRow,
     disputeEndTime?: number
@@ -40,6 +41,7 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
   public async create(
     user: string,
     reason: string,
+    originatorIsHub: boolean,
     startEventChainsawId?: number,
     txn?: OnchainTransactionRow,
     disputeEndTime?: number,
@@ -50,6 +52,7 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
           channel_id,
           started_on,
           reason,
+          originator,
           start_event_id,
           onchain_tx_id_start,
           dispute_period_ends
@@ -63,6 +66,7 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
           ),
           NOW(),
           ${reason},
+          ${originatorIsHub ? this.config.hotWalletAddress : user},
           ${startEventChainsawId},
           ${txn ? txn.logicalId : null},
           ${disputeEndTime ? disputeEndTime : null}
@@ -101,7 +105,9 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
     return this.inflateRow(
       await this.db.queryOne(SQL`
         UPDATE _cm_channel_disputes
-        SET onchain_tx_id_start = ${txn.logicalId}
+        SET 
+          onchain_tx_id_start = ${txn.logicalId},
+          dispute_period_ends = ${}
         WHERE id = ${disputeId}
         RETURNING *
       `)
