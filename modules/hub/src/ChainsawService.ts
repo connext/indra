@@ -79,7 +79,7 @@ export default class ChainsawService {
     const event = await this.chainsawDao.eventByHash(txHash)
     const prettyEvent = {}
     Object.keys(event).forEach((prop: string): void => {
-      prettyEvent[prop] = event[prop].toString()
+      if (event[prop]) prettyEvent[prop] = event[prop].toString()
     })
     this.log.info(`Processing event: ${JSON.stringify(prettyEvent, undefined, 2)}`)
 
