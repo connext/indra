@@ -1,17 +1,23 @@
-import { forwardRef, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { DatabaseModule } from "../database/database.module";
 import { NodeModule } from "../node/node.module";
 import { UserModule } from "../user/user.module";
+import { UserRepository } from "../user/user.repository";
 
 import { ChannelController } from "./channel.controller";
-import { channelProvider } from "./channel.provider";
+import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 @Module({
   controllers: [ChannelController],
   exports: [ChannelService],
-  imports: [DatabaseModule, UserModule, NodeModule],
-  providers: [ChannelService, channelProvider],
+  imports: [
+    UserModule,
+    NodeModule,
+    TypeOrmModule.forFeature([ChannelRepository, UserRepository]),
+    TypeOrmModule.forRoot(),
+  ],
+  providers: [ChannelService],
 })
 export class ChannelModule {}
