@@ -201,9 +201,9 @@ export class CloseChannelService {
   public async startEmptyChannelCompleteCallback(txn: OnchainTransactionRow) {
     const disputeRow = await this.channelDisputesDao.getActive(txn.meta.args.user)
     if (!disputeRow) {
-      throw new Error(`Callback called for nonexistent dispute, txn: ${prettySafeJson(txn)}`)
+      throw new Error(`Callback called for nonexistent dispute, txn: ${txn.hash}`)
     }
-    this.log.info(`startEmptyChannelCompleteCallback: transaction completed with state ${txn.state}, txn: ${txn}`)
+    this.log.info(`startEmptyChannelCompleteCallback: transaction completed with state ${prettySafeJson(txn.state)}, txn: ${txn.hash}`)
 
     // if tx failed, remove id from the dispute so we can try again
     if (txn.state == 'failed') {
@@ -216,15 +216,16 @@ export class CloseChannelService {
 
     // channel checks
     if (channel.status !== 'CS_OPEN') {
-      this.log.error(`channel: ${channel}`)
+      this.log.error(`Channel: ${prettySafeJson(channel)}`)
       throw new Error('Channel is not open')
     }
 
     const onchainChannel = await this.signerService.getChannelDetails(user)
-    this.log.info(`onchainChannel: ${onchainChannel}`)
+    this.log.info(`onchainChannel: ${prettySafeJson(onchainChannel)}`)
 
     const latestUpdate = await this.channelsDao.getLatestExitableState(user)
-    this.log.info(`getLatestExitableState: ${latestUpdate}`)
+    const prettyState = prettySafeJson(connext.convert.ChannelState('str', latestUpdate.state))
+    this.log.info(`getLatestExitableState: ${prettyState}`)
 
     // for now, we wont start an exit if there have been half signed states on top of
     // our latest double signed state
@@ -235,18 +236,21 @@ export class CloseChannelService {
 
     let data: string
     if (
-      !latestUpdate.state || // do not have a valid state (i.e. channel with no updates)
-      latestUpdate.state.txCountGlobal <= onchainChannel.txCountGlobal || // our txCountGlobal must be greater
-      latestUpdate.state.txCountChain < onchainChannel.txCountChain // our txCountChain must be equal or greater
+      // do not have a valid state (i.e. channel with no updates)
+      !latestUpdate.state
+      // our txCountGlobal must be greater
+      || latestUpdate.state.txCountGlobal <= onchainChannel.txCountGlobal
+       // our txCountChain must be equal or greater
+      || latestUpdate.state.txCountChain < onchainChannel.txCountChain
     ) {
       // startExit
-      this.log.info(`Calling contract function startExit: ${user}`);
+      this.log.info(`Calling contract function startExit: ${user}`)
 
       data = this.contract.methods.startExit(user).encodeABI()
     } else {
       // startExitWithUpdate
-      this.log.info(`Calling contract function startExitWithUpdate: ${
-        [[latestUpdate.state.user, latestUpdate.state.recipient],
+      this.log.info(`Calling contract function startExitWithUpdate: ${JSON.stringify([
+        [latestUpdate.state.user, latestUpdate.state.recipient],
         [
           latestUpdate.state.balanceWeiHub.toString(),
           latestUpdate.state.balanceWeiUser.toString()
@@ -272,8 +276,8 @@ export class CloseChannelService {
         latestUpdate.state.threadCount,
         latestUpdate.state.timeout,
         latestUpdate.state.sigHub,
-        latestUpdate.state.sigUser]}
-      `);
+        latestUpdate.state.sigUser
+      ])}`);
 
       data = this.contract.methods.startExitWithUpdate(
         [latestUpdate.state.user, latestUpdate.state.recipient],
@@ -307,30 +311,31 @@ export class CloseChannelService {
     }
 
     return this.db.withTransaction(async () => {
-      const dispute = await this.channelDisputesDao.create(user, reason, null, null)
+      const dispute = await this.channelDisputesDao.create(user, reason, undefined, undefined)
       const txn = await this.onchainTxService.sendTransaction(this.db, {
-        from: this.config.hotWalletAddress,
-        to: this.config.channelManagerAddress,
         data,
+        from: this.config.hotWalletAddress,
         meta: {
-          completeCallback: 'CloseChannelService.startUnilateralExitCompleteCallback',
           args: {
+            disputeId: dispute.id,
             user,
-            disputeId: dispute.id
-          }
-        }
+          },
+          completeCallback: 'CloseChannelService.startUnilateralExitCompleteCallback',
+        },
+        to: this.config.channelManagerAddress,
       })
       await this.channelDisputesDao.addStartExitOnchainTx(dispute.id, txn)
       return txn
     })
   }
 
-  public async startUnilateralExitCompleteCallback(txn: OnchainTransactionRow) {
+  public async startUnilateralExitCompleteCallback(txn: OnchainTransactionRow): Promise<any> {
     const disputeRow = await this.channelDisputesDao.getActive(txn.meta.args.user)
     if (!disputeRow) {
       throw new Error(`Callback called for nonexistent dispute, txn: ${prettySafeJson(txn)}`)
     }
-    this.log.info(`startUnilateralExitCompleteCallback: transaction completed with state ${txn.state}, txn: ${txn}`)
+    this.log.info(`startUnilateralExitCompleteCallback: transaction completed with state ` +
+      `${prettySafeJson(txn.state)}, txn: ${txn.hash}`)
     if (txn.state === 'failed') {
       await this.channelDisputesDao.removeStartExitOnchainTx(txn.meta.args.disputeId)
       await this.channelDisputesDao.changeStatus(disputeRow.id, 'CD_FAILED')
