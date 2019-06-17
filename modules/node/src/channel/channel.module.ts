@@ -16,7 +16,6 @@ import { ChannelService } from "./channel.service";
     UserModule,
     NodeModule,
     TypeOrmModule.forFeature([ChannelRepository, UserRepository]),
-    TypeOrmModule.forRoot(),
   ],
   providers: [ChannelService],
 })
