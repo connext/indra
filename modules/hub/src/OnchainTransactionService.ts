@@ -115,40 +115,52 @@ export class OnchainTransactionService {
       // Verify that the callback exists before doing anything else
       this.lookupCallback(meta.completeCallback)
     }
-    
+
     const nonce = Math.max(
       await this.web3.eth.getTransactionCount(txnRequest.from),
       (await db.queryOne(SQL`
         select coalesce((
-          select nonce from onchain_transactions_raw 
+          select nonce from onchain_transactions_raw
           where
             "from" = ${txnRequest.from} and
             state <> 'failed'
-          order by nonce desc 
+          order by nonce desc
           limit 1
         ), 0) + 1 as nonce
       `)).nonce,
     )
 
-    const gasPrice = await this.gasEstimateDao.latest()
-    if (!gasPrice)
-      throw new Error('gasEstimateDao.latest() returned null')
-
-    const gasAmount = eth.utils.bigNumberify(
-      txnRequest.gas || await this.web3.eth.estimateGas({ ...web3TxRequest })
-    ).toNumber()
-
-    const unsignedTx: RawTransaction = {
-      from: txnRequest.from,
-      to: txnRequest.to,
-      value: txnRequest.value || '0',
-      gasPrice: eth.utils.parseUnits('' + gasPrice.fast, 'gwei').toString(),
-      gas: gasAmount,
-      data: txnRequest.data || '0x',
-      nonce: nonce,
+    const gasPriceOptions = await this.gasEstimateDao.latest()
+    let gasPrice
+    if (!gasPriceOptions) {
+      this.log.warn('gasEstimateDao.latest() returned null. Fetching from eth provider instead.')
+      gasPrice = await this.web3.eth.getGasPrice()
+    } else {
+      gasPrice = eth.utils.parseUnits(`${gasPriceOptions.fast}`, 'gwei').toString()
     }
 
-    this.log.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)
+    let gasAmount
+    try {
+      gasAmount = eth.utils.bigNumberify(
+        txnRequest.gas || await this.web3.eth.estimateGas({ ...web3TxRequest }),
+      ).toNumber()
+    } catch (e) {
+      this.log.error(`Couldn't send transaction: ${JSON.stringify(web3TxRequest, undefined, 2)}`)
+      this.log.error(e)
+      throw new Error(`Couldn't send transaction`)
+    }
+
+    const unsignedTx: RawTransaction = {
+      data: txnRequest.data || '0x',
+      from: txnRequest.from,
+      gas: gasAmount,
+      gasPrice,
+      nonce,
+      to: txnRequest.to,
+      value: txnRequest.value || '0',
+    }
+
+    this.log.debug(`Unsigned transaction to send: ${JSON.stringify(unsignedTx, undefined, 2)}`)
 
     const signedTx = await this.signerService.signTransaction(unsignedTx)
 
@@ -203,7 +215,7 @@ export class OnchainTransactionService {
    */
   private async submitToChain(txn: OnchainTransactionRow): Promise<void> {
     const error = await new Promise<string | null>(res => {
-      this.log.info(`Submitting transaction nonce=${txn.nonce} hash=${txn.hash}: ${prettySafeJson(txn)}...`)
+      this.log.info(`Submitting transaction nonce=${txn.nonce} hash=${txn.hash}: ${prettySafeJson(txn)}`)
       
       const tx = this.web3.eth.sendSignedTransaction(serializeTxn(txn))
       tx.on('transactionHash', () => res(null))

@@ -129,7 +129,7 @@ export class Config {
   public port: number = 8080
   // used in ApiServer.ts if forceSsl is true
   public httpsPort: number = 8443
-  public websocketPort: number = 8082
+  public websocketPort: number
   // used in ApiServer.ts
   public forceSsl: boolean = process.env.FORCE_SSL && process.env.FORCE_SSL.toLowerCase() === 'true'
 

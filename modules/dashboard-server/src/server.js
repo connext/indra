@@ -483,7 +483,7 @@ app.get("/collateralization/overcollateralized", async function(req, res) {
  *              Deposits               *
  * ************************************/
 
-//withdrawal averages
+//deposit averages
 app.get("/deposits/average", async function(req, res) {
   await sendResFromQuery(
     `
@@ -498,7 +498,7 @@ app.get("/deposits/average", async function(req, res) {
   );
 });
 
-// withdrawal count
+// deposit count
 app.get("/deposits/total", async function(req, res) {
   await sendResFromQuery(
     `SELECT count(*)
@@ -511,7 +511,7 @@ app.get("/deposits/total", async function(req, res) {
   );
 });
 
-// withdrawal frequency
+// deposit frequency
 app.get("/deposits/frequency", async function(req, res) {
   await sendResFromQuery(
     `

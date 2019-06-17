@@ -41,7 +41,7 @@ log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat 
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset purge push push-live backup
+.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset purge push-latest push-live backup
 
 default: dev
 all: dev prod
@@ -201,7 +201,7 @@ hub: hub-node-modules client contract-artifacts $(shell find $(hub)/src $(find_o
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/$@
 
-hub-prod: hub-prod-node-modules
+hub-prod: hub-prod-node-modules $(shell find $(hub)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_hub) "./node_modules/.bin/tsc -p tsconfig.json"
 	$(log_finish) && touch build/$@
