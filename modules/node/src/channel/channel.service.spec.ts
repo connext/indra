@@ -1,4 +1,3 @@
-import { forwardRef } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 
 import { UserModule } from "../user/user.module";
