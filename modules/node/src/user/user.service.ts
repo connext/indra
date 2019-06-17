@@ -1,17 +1,18 @@
-import { BadRequestException, Inject, Injectable } from "@nestjs/common";
-import { Repository } from "typeorm";
+import { BadRequestException, Injectable } from "@nestjs/common";
 
-import { UserRepoProviderId } from "../constants";
+import { CLogger } from "../util/logger";
 
 import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "./user.entity";
+import { UserRepository } from "./user.repository";
 
 @Injectable()
 export class UserService {
-  constructor(
-    @Inject(UserRepoProviderId)
-    private readonly userRepository: Repository<User>,
-  ) {}
+  private logger: CLogger;
+
+  constructor(private readonly userRepository: UserRepository) {
+    this.logger = new CLogger("UserService");
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existing = await this.userRepository.findOne({
@@ -25,13 +26,5 @@ export class UserService {
       xpub: createUserDto.xpub,
     });
     return await this.userRepository.save(user);
-  }
-
-  async findAll(): Promise<User[]> {
-    return await this.userRepository.find();
-  }
-
-  async findByXpub(xpubId: string): Promise<User | undefined> {
-    return await this.userRepository.findOne({ where: { xpubId } });
   }
 }
