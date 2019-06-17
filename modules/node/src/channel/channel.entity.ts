@@ -2,6 +2,7 @@ import { BigNumber } from "ethers/utils";
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -18,6 +19,7 @@ export class Channel {
   id: number;
 
   @ManyToOne(type => User, user => user.channels)
+  @JoinColumn()
   user: User;
 
   @Column("text")
@@ -31,9 +33,7 @@ export class Channel {
   @OneToMany(type => App, app => app.channel)
   apps: App[];
 
-  @OneToMany(type => ChannelUpdate, channelUpdate => channelUpdate.channel, {
-    cascade: true,
-  })
+  @OneToMany(type => ChannelUpdate, channelUpdate => channelUpdate.channel)
   updates: ChannelUpdate[];
 }
 
