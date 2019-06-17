@@ -16,16 +16,14 @@ import { CLogger } from "../util/logger";
 
 import { Channel, ChannelUpdate } from "./channel.entity";
 
-export class ChannelService implements OnModuleInit {
-  private logger: CLogger;
+const logger = new CLogger("ChannelService");
 
+export class ChannelService implements OnModuleInit {
   constructor(
     @Inject(NodeProviderId) private readonly node: Node,
     private readonly userRepository: UserRepository,
     private readonly dbConnection: Connection,
-  ) {
-    this.logger = new CLogger("ChannelService");
-  }
+  ) {}
 
   async create(
     counterpartyXpub: string,
@@ -40,7 +38,7 @@ export class ChannelService implements OnModuleInit {
         type: NodeTypes.MethodName.CREATE_CHANNEL,
       },
     );
-    this.logger.log(
+    logger.log(
       `multisigResponse.result: ${JSON.stringify(multisigResponse.result)}`,
     );
     return multisigResponse.result as NodeTypes.CreateChannelTransactionResult;
@@ -60,7 +58,7 @@ export class ChannelService implements OnModuleInit {
       requestId: generateUUID(),
       type: NodeTypes.MethodName.DEPOSIT,
     });
-    this.logger.log(
+    logger.log(
       `depositResponse.result: ${JSON.stringify(depositResponse.result)}`,
     );
     return depositResponse.result as NodeTypes.DepositResult;
@@ -68,7 +66,7 @@ export class ChannelService implements OnModuleInit {
 
   // actually creates the channel in the db right now, will change when multisig issue resolved
   async addMultisig(xpub, multisigAddress): Promise<Channel> {
-    this.logger.log(`Multisig deployed for ${xpub}, adding to channel`);
+    logger.log(`Multisig deployed for ${xpub}, adding to channel`);
     const user = await this.userRepository.findByXpub(xpub);
     if (!user) {
       throw new NotFoundException("User not found.");
@@ -109,7 +107,7 @@ export class ChannelService implements OnModuleInit {
         if (!res || !res.data) {
           return;
         }
-        this.logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
+        logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
         this.deposit(
           res.data.multisigAddress,
           res.data.amount as any, // FIXME
@@ -124,6 +122,6 @@ export class ChannelService implements OnModuleInit {
         this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress),
     );
 
-    this.logger.log("Node methods attached");
+    logger.log("Node methods attached");
   }
 }

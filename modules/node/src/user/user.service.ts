@@ -6,13 +6,11 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "./user.entity";
 import { UserRepository } from "./user.repository";
 
+const logger = new CLogger("UserService");
+
 @Injectable()
 export class UserService {
-  private logger: CLogger;
-
-  constructor(private readonly userRepository: UserRepository) {
-    this.logger = new CLogger("UserService");
-  }
+  constructor(private readonly userRepository: UserRepository) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existing = await this.userRepository.findOne({

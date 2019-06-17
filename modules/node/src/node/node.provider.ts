@@ -1,7 +1,7 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import { Logger, Provider } from "@nestjs/common";
+import { Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ConfigService } from "../config/config.service";
@@ -10,6 +10,9 @@ import {
   NodeProviderId,
   PostgresProviderId,
 } from "../constants";
+import { CLogger } from "../util/logger";
+
+const logger = new CLogger("NodeProvider");
 
 async function createNode(
   config: ConfigService,
@@ -17,14 +20,14 @@ async function createNode(
   postgresServiceFactory: PostgresServiceFactory,
 ): Promise<Node> {
   // TODO: make this logging more dynamic?
-  Logger.log("Creating store", "NodeProvider");
+  logger.log("Creating store");
   const store = postgresServiceFactory.createStoreService("connextHub");
-  Logger.log("Store created", "NodeProvider");
+  logger.log("Store created");
 
   // TODO: Maybe we shouldn't store the mnemonic in the db?
   await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
-  Logger.log("Creating Node", "NodeProvider");
+  logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
   const messService = natsServiceFactory.createMessagingService("messaging");
   await messService.connect();
@@ -35,12 +38,9 @@ async function createNode(
     new JsonRpcProvider(ethUrl) as any, // FIXME
     ethNetwork, // Node should probably accept a chainId instead..
   );
-  Logger.log("Node created", "NodeProvider");
+  logger.log("Node created");
 
-  Logger.log(
-    `Public Identifier ${JSON.stringify(node.publicIdentifier)}`,
-    "NodeProvider",
-  );
+  logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
 
   return node;
 }
