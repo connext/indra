@@ -107,6 +107,7 @@ export default class PaymentHub {
     if (!channels) {
       throw new Error(`Must specify addresses of channels to be closed as args`)
     }
+    this.log.info(`Exiting channels: ${channels}`)
     const closeChannelsService = this.container.resolve<CloseChannelService>('CloseChannelService')
     for (const channel of channels) {
       await closeChannelsService.startUnilateralExit(channel, 'Started exit from command line')

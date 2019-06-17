@@ -17,14 +17,9 @@ container_id="`docker inspect --format '{{.Status.ContainerStatus.ContainerID}}'
 ########################################
 # Load our arguments and do some sanity checks
 
-address="$1"
-
-echo "Preparing to dispute channel for user: $address"
-echo "Container id: $container_id"
-
 docker exec -i $container_id bash -c '
-  echo "disputer activated"
   export DATABASE_URL="postgresql://$POSTGRES_USER:`cat $POSTGRES_PASSWORD_FILE`@$POSTGRES_URL/$POSTGRES_DB"
-  env
-  node dist/spankchain/main.js exit-channels $address
+  export WEBSOCKET_PORT=
+  echo "Preparing to dispute channel for users: '$@'"
+  node dist/spankchain/main.js exit-channels '$@'
 '
