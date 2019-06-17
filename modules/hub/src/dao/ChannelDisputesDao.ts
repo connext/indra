@@ -105,9 +105,7 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
     return this.inflateRow(
       await this.db.queryOne(SQL`
         UPDATE _cm_channel_disputes
-        SET 
-          onchain_tx_id_start = ${txn.logicalId},
-          dispute_period_ends = ${}
+        SET onchain_tx_id_start = ${txn.logicalId}
         WHERE id = ${disputeId}
         RETURNING *
       `)
@@ -189,7 +187,10 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
       startedOn: row.started_on,
       reason: row.reason,
       onchainTxIdStart: row.onchain_tx_id_start && +row.onchain_tx_id_start,
-      onchainTxIdEmpty: row.onchain_tx_id_empty && +row.onchain_tx_id_empty
+      onchainTxIdEmpty: row.onchain_tx_id_empty && +row.onchain_tx_id_empty,
+      disputePeriodEnds: row.dispute_period_ends && +row.dispute_period_ends,
+      status: row.status,
+      originator: row.originator,
     }
   }
 }
