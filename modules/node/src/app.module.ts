@@ -39,16 +39,6 @@ export const entities = [
     NodeModule,
     UserModule,
     ChannelModule,
-    // TypeOrmModule.forRoot({
-    //   database: process.env.INDRA_PG_DATABASE,
-    //   entities,
-    //   host: process.env.INDRA_PG_HOST,
-    //   password: process.env.INDRA_PG_PASSWORD,
-    //   port: parseInt(process.env.INDRA_PG_PORT, 10),
-    //   synchronize: true,
-    //   type: "postgres",
-    //   username: process.env.INDRA_PG_USERNAME,
-    // } as PostgresConnectionOptions),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
