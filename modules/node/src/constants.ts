@@ -1,8 +1,4 @@
 export const NodeProviderId = "NODE";
-export const FirebaseProviderId = "FIREBASE";
-export const DatabaseProviderId = "DATABASE_CONNECTION";
-export const UserRepoProviderId = "USER_REPOSITORY";
-export const ChannelRepoProviderId = "CHANNEL_REPOSITORY";
 export const PostgresProviderId = "POSTGRES";
 export const NatsProviderId = "NATS";
 export const EthAddressRegex = /^0x[a-fA-F0-9]{40}$/;
