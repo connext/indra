@@ -115,37 +115,41 @@ export class OnchainTransactionService {
       // Verify that the callback exists before doing anything else
       this.lookupCallback(meta.completeCallback)
     }
-    
+
     const nonce = Math.max(
       await this.web3.eth.getTransactionCount(txnRequest.from),
       (await db.queryOne(SQL`
         select coalesce((
-          select nonce from onchain_transactions_raw 
+          select nonce from onchain_transactions_raw
           where
             "from" = ${txnRequest.from} and
             state <> 'failed'
-          order by nonce desc 
+          order by nonce desc
           limit 1
         ), 0) + 1 as nonce
       `)).nonce,
     )
 
-    const gasPrice = await this.gasEstimateDao.latest()
-    if (!gasPrice)
-      throw new Error('gasEstimateDao.latest() returned null')
+    let gasPrice = await this.gasEstimateDao.latest()
+    if (!gasPrice) {
+      this.log.warn('gasEstimateDao.latest() returned null. Fetching from eth provider instead.')
+      gasPrice = await this.web3.eth.getGasPrice()
+    } else {
+      gasPrice = eth.utils.parseUnits(`${gasPrice.fast}`, 'gwei').toString()
+    }
 
     const gasAmount = eth.utils.bigNumberify(
-      txnRequest.gas || await this.web3.eth.estimateGas({ ...web3TxRequest })
+      txnRequest.gas || await this.web3.eth.estimateGas({ ...web3TxRequest }),
     ).toNumber()
 
     const unsignedTx: RawTransaction = {
+      data: txnRequest.data || '0x',
       from: txnRequest.from,
+      gas: gasAmount,
+      gasPrice,
+      nonce,
       to: txnRequest.to,
       value: txnRequest.value || '0',
-      gasPrice: eth.utils.parseUnits('' + gasPrice.fast, 'gwei').toString(),
-      gas: gasAmount,
-      data: txnRequest.data || '0x',
-      nonce: nonce,
     }
 
     this.log.info(`Unsigned transaction to send: ${JSON.stringify(unsignedTx)}`)

@@ -144,18 +144,16 @@ export class CloseChannelService {
     }))
     this.log.info(
       `Checking for disputed channels which can be emptied ` +
-      `(dispute period: ${disputePeriod}; latest block: ${latestBlock.number})`
-    )
+      `(dispute period: ${disputePeriod}; latest block: ${latestBlock.number})`)
     const channels = await this.channelsDao.getDisputedChannelsForClose(disputePeriod)
     for (const channel of channels) {
       const details = await this.signerService.getChannelDetails(channel.user)
-      this.log.info(`channel details: ${details}`)
-      if (details.channelClosingTime == 0) {
+      this.log.info(`Channel details: ${prettySafeJson(details)}`)
+      if (details.channelClosingTime === 0) {
         this.log.info(
           `Disputed channel ${channel.user} is listed as being in ` +
           `dispute, but the dispute has been resolved on chain. Chainsaw ` +
-          `should pick this up and mark the channel as open shortly.`
-        )
+          `should pick this up and mark the channel as open shortly.`)
         continue
       }
 
