@@ -11,6 +11,8 @@ export class SubscriptionServer {
   public constructor(config: Config) {
     this.log = new Logger('SubscriptionServer', config.logLevel)
 
+    if (!config.websocketPort) return
+
     this.server = new WebSocket.Server({ port: config.websocketPort })
 
     this.server.on('connection', (ws: WebSocket, req: any): void => {
