@@ -43,7 +43,6 @@ export const entities = [
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => {
-        console.log("config.getPostgresConfig(): ", config.getPostgresConfig());
         return {
           ...config.getPostgresConfig(),
           entities,
