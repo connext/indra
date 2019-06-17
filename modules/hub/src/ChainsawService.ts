@@ -298,9 +298,9 @@ export default class ChainsawService {
     if (!disputeRecord) {
       // dispute might not have been initiated by us, so we need to add it here
       disputeRecord = await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', false, chainsawId, null, onchainChannel.channelClosingTime)
-    } else {
-      await this.channelDisputesDao.setExitEvent(disputeRecord.id, chainsawId, onchainChannel.channelClosingTime)
     }
+    // set the exit event even if the user has initiated the dispute
+    await this.channelDisputesDao.setExitEvent(disputeRecord.id, chainsawId, onchainChannel.channelClosingTime)
 
     // check if sender was user
     if (event.senderIdx == 0) {
