@@ -49,13 +49,11 @@ class Deposits extends Component {
     const url = `${this.props.urls.api}/deposits/average`
     const res = (await axios.get(url)).data || null
     if (res && res.avg_deposit_wei && res.avg_deposit_token) {
-      let tokenDeposit = String(Math.trunc(res.avg_deposit_token))
-      let weiDeposit = String(Math.trunc(res.avg_deposit_wei))
       this.setState(state => {
         state.depositAverageToken.raw = res.avg_deposit_token
-        state.depositAverageToken.formatted = eth.utils.formatEther(tokenDeposit);
+        state.depositAverageToken.formatted = eth.utils.formatEther(res.avg_deposit_token);
         state.depositAverageWei.raw = res.avg_deposit_wei
-        state.depositAverageWei.formatted = eth.utils.formatEther(weiDeposit);
+        state.depositAverageWei.formatted = eth.utils.formatEther(res.avg_deposit_wei);
         return state
       });
     } else {
