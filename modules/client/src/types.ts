@@ -3,6 +3,7 @@ import { Address } from "@counterfactual/types";
 import { Node } from "@counterfactual/node";
 import { Client as NatsClient } from "ts-nats"
 import { Wallet } from "./wallet";
+import { INodeApiClient } from "./node";
 
 // types for the connext client package
 
@@ -35,8 +36,12 @@ export type ClientOptions = {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
-  loadState?: () => Promise<string | null>;
-  saveState?: (state: ChannelState | AppState) => Promise<any>; // TODO: state: string?
+  loadState?: (key: string) => Promise<string | null>;
+  saveState?: (pairs: {
+    key: string;
+    value: any;
+  }[]) => Promise<void>; 
+  // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
 
 
@@ -50,7 +55,7 @@ export type InternalClientOptions = ClientOptions &  {
   // Optional, useful for dependency injection
   // TODO: can nats, node, wallet be optional?
   nats: NatsClient; // converted to nats-client in ConnextInternal constructor
-  node: INodeAPIClient;
+  node: INodeApiClient;
   // signing wallet/information
   wallet: Wallet;
   // store: ConnextStore; --> whats this look like

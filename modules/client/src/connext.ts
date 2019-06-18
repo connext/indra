@@ -1,5 +1,5 @@
 import { ClientOptions, InternalClientOptions, INodeAPIClient, DepositParameters, ChannelState, ExchangeParameters, WithdrawParameters, TransferParameters } from "./types";
-import { NodeApiClient } from "./node";
+import { NodeApiClient, INodeApiClient } from "./node";
 import { Client as NatsClient } from 'ts-nats';
 import { Wallet } from "./wallet";
 import { Node as NodeTypes } from "@counterfactual/types";
@@ -39,6 +39,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   await nats.connect()
 
   // create a new node api instance
+  // TODO: use local storage for default key value setting!!
   const node: NodeApiClient = new NodeApiClient({
     nodeUrl: opts.nodeUrl, 
     nats: nats.getConnection(),
@@ -46,10 +47,25 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     logLevel: opts.logLevel,
   });
 
+  const getFn = async (key: string) => {
+    return await localStorage.get(key)
+  }
+
+  const setFn = async (pairs: {
+    key: string;
+    value: any;
+  }[]) => {
+    for (const pair of pairs) {
+      await localStorage.setItem(pair.key, JSON.stringify(pair.value))
+    }
+    return
+  }
+
   // create a new storage service for use by cfModule
   const store: NodeTypes.IStoreService = {
-
-  } as NodeTypes.IStoreService
+    get: opts.loadState || getFn,
+    set: opts.saveState || setFn,
+  }
 
   // create new cfModule to inject into internal instance
   const cfModule = await Node.create(
@@ -130,10 +146,11 @@ export abstract class ConnextChannel extends EventEmitter {
  */
 export class ConnextInternal extends ConnextChannel {
   public opts: InternalClientOptions;
-  private cfModule: Node;
-  private wallet: Wallet;
-  private node: INodeAPIClient;
-  private nats: NatsClient;
+  public cfModule: Node;
+  public publicIdentifier: string;
+  public wallet: Wallet;
+  public node: INodeApiClient;
+  public nats: NatsClient;
 
   private logger: Logger;
 
@@ -154,14 +171,15 @@ export class ConnextInternal extends ConnextChannel {
     this.nats = opts.nats;
 
     this.cfModule = opts.cfModule;
+    this.publicIdentifier = this.cfModule.publicIdentifier;
 
     this.logger = new Logger("ConnextInternal", opts.logLevel)
 
     // instantiate controllers with logger and cf
-    this.depositController = new DepositController(opts.cfModule, opts.logLevel)
-    this.transferController = new TransferController(opts.cfModule, opts.logLevel)
-    this.exchangeController = new ExchangeController(opts.cfModule, opts.logLevel)
-    this.withdrawalController = new WithdrawalController(opts.cfModule, opts.logLevel)
+    this.depositController = new DepositController("DepositController", this)
+    this.transferController = new TransferController("TransferController", this)
+    this.exchangeController = new ExchangeController("ExchangeController", this)
+    this.withdrawalController = new WithdrawalController("WithdrawalController", this)
   }
 
   ///////////////////////////////////

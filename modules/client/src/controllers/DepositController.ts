@@ -6,16 +6,9 @@ import { Node } from "@counterfactual/node";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { utils as ethers } from "ethers";
 import { delay, getFreeBalance, logEthFreeBalance } from "../lib/utils";
+import { AbstractController } from "./AbstractController";
 
-export class DepositController {
-
-  private log: Logger;
-  private cfModule: Node;
-
-  public constructor(cfModule: Node, logLevel?: number) {
-    this.cfModule = cfModule;
-    this.log = new Logger("DepositController", logLevel)
-  }
+export class DepositController extends AbstractController {
 
   public async deposit(params: DepositParameters): Promise<ChannelState> {
     this.log.info("Deposit called, yay!")

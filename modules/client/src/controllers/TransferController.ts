@@ -1,17 +1,7 @@
 import { TransferParameters, ChannelState } from "../types";
-import { Logger } from "../lib/logger";
-import { Node } from "@counterfactual/node";
+import { AbstractController } from "./AbstractController";
 
-export class TransferController {
-
-  private log: Logger;
-  private cfModule: Node;
-
-  public constructor(cfModule: Node, logLevel?: number) {
-    this.cfModule = cfModule;
-    this.log = new Logger("TransferController", logLevel)
-  }
-
+export class TransferController extends AbstractController {
   public async transfer(params: TransferParameters): Promise<ChannelState> {
     this.log.info("Transfer called, yay!")
     return {} as ChannelState
