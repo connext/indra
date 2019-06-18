@@ -12,7 +12,7 @@ import { v4 as generateUUID } from "uuid";
 
 import { NodeProviderId } from "../constants";
 import { UserRepository } from "../user/user.repository";
-import { CLogger } from "../util/logger";
+import { CLogger } from "../util";
 
 import { Channel, ChannelUpdate } from "./channel.entity";
 
@@ -81,19 +81,14 @@ export class ChannelService implements OnModuleInit {
     update.freeBalancePartyA = Zero;
     update.freeBalancePartyB = Zero;
 
-    channel.updates = [update];
-
     // should probably only ever have one channel per user?
     channel.user = user;
 
     return await this.dbConnection.manager.transaction(
       async transactionalEntityManager => {
-        const u = await transactionalEntityManager.save(update);
-        console.log("u: ", u);
-        const c = await transactionalEntityManager.save(channel);
-        console.log("c: ", c);
-        const us = await transactionalEntityManager.save(user);
-        console.log("us: ", us);
+        await transactionalEntityManager.save(user);
+        await transactionalEntityManager.save(channel);
+        await transactionalEntityManager.save(update);
         return channel;
       },
     );
@@ -111,7 +106,7 @@ export class ChannelService implements OnModuleInit {
         this.deposit(
           res.data.multisigAddress,
           res.data.amount as any, // FIXME
-          res.data.notifyCounterparty,
+          !!res.data.notifyCounterparty,
         );
       },
     );
