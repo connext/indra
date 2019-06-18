@@ -50,7 +50,7 @@ export async function fetchMultisig(baseURL: string, xpub: string) {
     // Convert to milliseconds
     await delay(DELAY_SECONDS * 1000).then(() => fetchMultisig(baseURL, xpub));
   }
-  return multisigAddress;
+  return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
 }
 
 /// Deposit and wait for counterparty deposit
