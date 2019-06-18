@@ -1,4 +1,3 @@
-import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { Address } from "@counterfactual/types";
 import { Node } from "@counterfactual/node";
