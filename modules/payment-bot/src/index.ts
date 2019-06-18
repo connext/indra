@@ -18,7 +18,7 @@ import {
   getUser,
   logEthFreeBalance,
 } from "./utils";
-import { ClientOptions } from "../../client/types"
+import * as connext from "../../client"
 
 const BASE_URL = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
@@ -34,10 +34,6 @@ const nodeUrl = process.env.NODE_URL;
 if (!nodeUrl || !nodeUrl.startsWith('nats://')) {
   throw Error("No accurate node url specified in env. Exiting.");
 }
-
-// const provider = new ethers.providers.JsonRpcProvider(
-//   `https://${NETWORK}.infura.io/metamask`
-// );
 
 let pgServiceFactory: PostgresServiceFactory;
 let natsServiceFactory: NatsServiceFactory;
@@ -59,14 +55,6 @@ pgServiceFactory = new PostgresServiceFactory({
   type: "postgres",
   username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
 });
-
-const connextOpts: ClientOptions = {
-  rpcProviderUrl: ethUrl,
-  nodeUrl,
-  privateKey,
-  loadState: pgServiceFactory.loadState,
-  saveState: ,
-}
 
 let node: Node;
 
@@ -92,24 +80,27 @@ export function getBot() {
   console.log("Creating store");
   const store = pgServiceFactory.createStoreService(process.env.USERNAME!);
 
+  const connextOpts: connext.ClientOptions = {
+    rpcProviderUrl: ethUrl,
+    nodeUrl,
+    privateKey,
+    loadState: store.loadState,
+    saveState: store.saveState,
+  }
+
+  console.log("Using client options:");
+  console.log("     - rpcProviderUrl:", ethUrl);
+  console.log("     - nodeUrl:", nodeUrl);
+  console.log("     - privateKey:", privateKey);
+
   console.log("process.env.NODE_MNEMONIC: ", process.env.NODE_MNEMONIC);
   await store.set([{ key: MNEMONIC_PATH, value: process.env.NODE_MNEMONIC }]);
 
-  console.log("Creating Node");
-  const messService = natsServiceFactory.createMessagingService("messaging");
-  await messService.connect();
-  node = await Node.create(
-    messService,
-    store,
-    {
-      STORE_KEY_PREFIX: "store",
-    },
-    // @ts-ignore
-    provider,
-    NETWORK,
-  );
+  console.log("Creating connext");
+  const client = await connext.connect(connextOpts);
+  console.log("Client created successfully!");
 
-  console.log("Public Identifier", node.publicIdentifier);
+  console.log("Public Identifier", client.cfModule.publicIdentifier);
 
   try {
     const privateKey = process.env.PRIVATE_KEY;

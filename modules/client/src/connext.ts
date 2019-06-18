@@ -131,7 +131,8 @@ export abstract class ConnextChannel extends EventEmitter {
  */
 export class ConnextInternal extends ConnextChannel {
   public opts: InternalClientOptions;
-  public cfModule: Node;
+  private cfModule: Node;
+  public publicIdentifier: string;
   public wallet: Wallet;
   public node: INodeAPIClient;
   public nats: NatsClient;
@@ -155,6 +156,7 @@ export class ConnextInternal extends ConnextChannel {
     this.nats = opts.nats;
 
     this.cfModule = opts.cfModule;
+    this.publicIdentifier = this.cfModule.publicIdentifier;
 
     this.logger = new Logger("ConnextInternal", opts.logLevel)
 
