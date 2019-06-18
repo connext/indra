@@ -37,13 +37,13 @@ export type ClientOptions = {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
+  //TODO: Do we need these if we use the whole store?
   loadState?: (key: string) => Promise<string | null>;
-  saveState?: (
-    pairs: {
-      key: string;
-      value: any;
-    }[],
-  ) => Promise<void>;
+  saveState?: (pairs: {
+    key: string;
+    value: any;
+  }[]) => Promise<void>; 
+  store: any
   // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
 
@@ -51,7 +51,10 @@ export type ClientOptions = {
   // nats communication config, client must provide
   natsClusterId?: string;
   natsToken?: string;
-};
+
+  //TODO REMOVE THIS
+  delete_this_url: string;
+}
 
 export type InternalClientOptions = ClientOptions & {
   // Optional, useful for dependency injection

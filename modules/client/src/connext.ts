@@ -1,8 +1,8 @@
-import { ClientOptions, InternalClientOptions, INodeAPIClient, DepositParameters, ChannelState, ExchangeParameters, WithdrawParameters, TransferParameters } from "./types";
+import { ClientOptions, InternalClientOptions, DepositParameters, ChannelState, ExchangeParameters, WithdrawParameters, TransferParameters } from "./types";
 import { NodeApiClient, INodeApiClient } from "./node";
 import { Client as NatsClient } from 'ts-nats';
 import { Wallet } from "./wallet";
-import { Node as NodeTypes } from "@counterfactual/types";
+// import { Node as NodeTypes } from "@counterfactual/types";
 import { Node } from "@counterfactual/node";
 import { NatsServiceFactory, } from "../../nats-messaging-client"
 import { EventEmitter } from "events";
@@ -46,44 +46,45 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     wallet,
     logLevel: opts.logLevel,
   });
+  // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
+  // const getFn = async (key: string) => {
+  //   return await localStorage.get(key)
+  // }
 
-  const getFn = async (key: string) => {
-    return await localStorage.get(key)
-  }
+  // const setFn = async (pairs: {
+  //   key: string;
+  //   value: any;
+  // }[]) => {
+  //   for (const pair of pairs) {
+  //     await localStorage.setItem(pair.key, JSON.stringify(pair.value))
+  //   }
+  //   return
+  // }
 
-  const setFn = async (pairs: {
-    key: string;
-    value: any;
-  }[]) => {
-    for (const pair of pairs) {
-      await localStorage.setItem(pair.key, JSON.stringify(pair.value))
-    }
-    return
-  }
-
-  // create a new storage service for use by cfModule
-  const store: NodeTypes.IStoreService = {
-    get: opts.loadState || getFn,
-    set: opts.saveState || setFn,
-  }
+  // // create a new storage service for use by cfModule
+  // const store: NodeTypes.IStoreService = {
+  //   get: opts.loadState || getFn,
+  //   set: opts.saveState || setFn,
+  // }
 
   // create new cfModule to inject into internal instance
   const cfModule = await Node.create(
     nats, 
-    store,
+    opts.store,
     {
       STORE_KEY_PREFIX: "store"
     }, // TODO: proper config
     wallet.provider,
-    wallet.provider.network.name,
+    "kovan", //TODO: make this not hardcoded to "kovan"
   )
 
   //TODO this will disappear once we start generating multisig internally and deploying on withdraw only
   //do we need to save temp?
   const temp = await createAccount(
     'http://localhost:8080', //opts.nodeUrl
-    cfModule
+    {xpub: cfModule.publicIdentifier}
   )
+  console.log(temp)
 
   const multisigAddress = await getMultisigAddress(
     //TODO replace this with nats url once this path is built
@@ -152,7 +153,7 @@ export class ConnextInternal extends ConnextChannel {
   public node: INodeApiClient;
   public nats: NatsClient;
 
-  private logger: Logger;
+  public logger: Logger;
 
   ////////////////////////////////////////
   // Setup channel controllers

@@ -43,6 +43,7 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
 
 export const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
+//TODO Temporary - this eventually should be exposed at the top level and retrieve from store
 export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
@@ -58,6 +59,7 @@ export async function getFreeBalance(
   return result as NodeTypes.GetFreeBalanceStateResult;
 }
 
+//TODO Should we keep this? It's a nice helper to break out by key. Maybe generalize?
 export function logEthFreeBalance(
   freeBalance: NodeTypes.GetFreeBalanceStateResult,
 ) {
@@ -75,7 +77,7 @@ export async function getMultisigAddress(
 ): Promise<string> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress = bot.channels[0].multisigAddress || undefined;
+  const multisigAddress = bot.channels.length > 0? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet...Waiting for another [hardcoded] 2 seconds`,

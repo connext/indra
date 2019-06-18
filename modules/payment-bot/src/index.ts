@@ -5,10 +5,9 @@ import {
   PostgresServiceFactory,
 } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
-import { NatsServiceFactory } from "../../nats-messaging-client/src/index";
 
 import { showMainPrompt } from "./bot";
-import * as connext from "../../client"
+import * as connext from "../../client/src";
 
 const BASE_URL = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
@@ -31,10 +30,6 @@ let pgServiceFactory: PostgresServiceFactory;
 
 process.on("warning", e => console.warn(e.stack));
 
-// FIXME for non local testing
-// @ts-ignore
-natsServiceFactory = new NatsServiceFactory();
-
 confirmPostgresConfigurationEnvVars();
 pgServiceFactory = new PostgresServiceFactory({
   database: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.database]!,
@@ -45,11 +40,11 @@ pgServiceFactory = new PostgresServiceFactory({
   username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
 });
 
-let client: connext.ConnextChannel;
+let client: connext.ConnextInternal;
 let bot;
 
 export function getMultisigAddress() {
-  return client.multisigAddress;
+  return client.opts.multisigAddress;
 }
 
 export function getWalletAddress() {
@@ -71,8 +66,7 @@ export function getBot() {
     rpcProviderUrl: ethUrl,
     nodeUrl,
     privateKey,
-    loadState: store.loadState,
-    saveState: store.saveState,
+    store
   }
 
   console.log("Using client options:");
@@ -89,12 +83,11 @@ export function getBot() {
     console.log("Client created successfully!");
 
     console.log("Public Identifier", client.publicIdentifier);
-    console.log("Account multisig address:", client.multisigAddress);
+    console.log("Account multisig address:", client.opts.multisigAddress);
 
     if (process.env.DEPOSIT_AMOUNT) {
       const depositParams: connext.DepositParameters = {
         amount: eth.utils.parseEther(process.env.DEPOSIT_AMOUNT).toString(),
-        assetId: null, // deposit eth
       }
       await client.deposit(depositParams)
       console.log(`Successfully deposited ${depositParams.amount}!`)
@@ -102,8 +95,9 @@ export function getBot() {
     }
 
     // connext.afterUser(node, bot.nodeAddress, client.multisigAddress);
-    connext.logEthFreeBalance(await connext.getFreeBalance());
-    showMainPrompt(client.cfModule);
+    connext.logEthFreeBalance(await connext.getFreeBalance(client.cfModule, client.publicIdentifier));
+    //@ts-ignore
+    showMainPrompt(client.cfModule); //TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
   } catch (e) {
     console.error("\n");
     console.error(e);

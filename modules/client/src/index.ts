@@ -1,4 +1,5 @@
-import { connect, ConnextChannel } from "./connext";
+import { connect, ConnextInternal } from "./connext";
 import { ClientOptions, DepositParameters } from "./types";
+import { logEthFreeBalance, getFreeBalance } from "./lib/utils";
 
-export { connect, ClientOptions, ConnextChannel, DepositParameters };
+export { connect, ClientOptions, ConnextInternal, DepositParameters, logEthFreeBalance, getFreeBalance };
