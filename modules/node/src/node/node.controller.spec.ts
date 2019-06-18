@@ -6,7 +6,7 @@ import { ConfigModule } from "../config/config.module";
 import { UserModule } from "../user/user.module";
 
 import { NodeController } from "./node.controller";
-import { NatsProvider, NodeProvider, PostgresProvider } from "./node.provider";
+import { natsProvider, nodeProvider, postgresProvider } from "./node.provider";
 
 describe("Node Controller", () => {
   let module: TestingModule;
@@ -14,7 +14,7 @@ describe("Node Controller", () => {
     module = await Test.createTestingModule({
       controllers: [NodeController],
       imports: [ConfigModule, UserModule, forwardRef(() => ChannelModule)],
-      providers: [NatsProvider, NodeProvider, PostgresProvider],
+      providers: [natsProvider, nodeProvider, postgresProvider],
     }).compile();
   });
 

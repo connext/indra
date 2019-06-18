@@ -55,8 +55,12 @@ export class ConfigService {
   getNatsConfig(): NatsConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
-      servers: this.get("INDRA_NATS_SERVERS").split(","),
+      servers: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       token: this.get("INDRA_NATS_TOKEN"),
     };
+  }
+
+  getPort(): number {
+    return parseInt(this.get("PORT"), 10);
   }
 }

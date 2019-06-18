@@ -1,40 +1,33 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
-import {
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  MNEMONIC_PATH,
-  Node,
-} from "@counterfactual/node";
+import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import { Node as NodeTypes } from "@counterfactual/types";
-import { Logger, Provider } from "@nestjs/common";
+import { Provider } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import {
   NatsProviderId,
   NodeProviderId,
   PostgresProviderId,
 } from "../constants";
-import { UserService } from "../user/user.service";
+import { CLogger } from "../util";
+
+const logger = new CLogger("NodeProvider");
 
 async function createNode(
-  channelService: ChannelService,
   config: ConfigService,
   natsServiceFactory: NatsServiceFactory,
   postgresServiceFactory: PostgresServiceFactory,
-  userService: UserService,
 ): Promise<Node> {
   // TODO: make this logging more dynamic?
-  Logger.log("Creating store", "NodeProvider");
+  logger.log("Creating store");
   const store = postgresServiceFactory.createStoreService("connextHub");
-  Logger.log("Store created", "NodeProvider");
+  logger.log("Store created");
 
   // TODO: Maybe we shouldn't store the mnemonic in the db?
   await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
-  Logger.log("Creating Node", "NodeProvider");
+  logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
   const messService = natsServiceFactory.createMessagingService("messaging");
   await messService.connect();
@@ -45,68 +38,26 @@ async function createNode(
     new JsonRpcProvider(ethUrl) as any, // FIXME
     ethNetwork, // Node should probably accept a chainId instead..
   );
-  Logger.log("Node created", "NodeProvider");
+  logger.log("Node created");
 
-  node.on(
-    NodeTypes.EventName.DEPOSIT_CONFIRMED,
-    (res: DepositConfirmationMessage) => {
-      if (!res || !res.data) {
-        return;
-      }
-      Logger.log(
-        `Deposit detected: ${JSON.stringify(res)}, matching`,
-        "NodeProvider",
-      );
-      channelService.deposit(
-        res.data.multisigAddress,
-        res.data.amount as any, // FIXME
-        res.data.notifyCounterparty,
-      );
-    },
-  );
-
-  node.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) =>
-    userService.addMultisig(
-      res.data.counterpartyXpub,
-      res.data.multisigAddress,
-    ),
-  );
-
-  Logger.log(
-    `Public Identifier ${JSON.stringify(node.publicIdentifier)}`,
-    "NodeProvider",
-  );
+  logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
 
   return node;
 }
 
-export const NodeProvider: Provider = {
-  inject: [
-    ChannelService,
-    ConfigService,
-    NatsProviderId,
-    PostgresProviderId,
-    UserService,
-  ],
+export const nodeProvider: Provider = {
+  inject: [ConfigService, NatsProviderId, PostgresProviderId],
   provide: NodeProviderId,
   useFactory: async (
-    channelService: ChannelService,
     config: ConfigService,
     nats: NatsServiceFactory,
     postgres: PostgresServiceFactory,
-    userService: UserService,
   ): Promise<Node> => {
-    return await createNode(
-      channelService,
-      config,
-      nats,
-      postgres,
-      userService,
-    );
+    return await createNode(config, nats, postgres);
   },
 };
 
-export const PostgresProvider: Provider = {
+export const postgresProvider: Provider = {
   inject: [ConfigService],
   provide: PostgresProviderId,
   useFactory: async (
@@ -121,7 +72,7 @@ export const PostgresProvider: Provider = {
   },
 };
 
-export const NatsProvider: Provider = {
+export const natsProvider: Provider = {
   inject: [ConfigService],
   provide: NatsProviderId,
   useFactory: (config: ConfigService): NatsServiceFactory => {

@@ -1,3 +1,3 @@
 export class CreateChannelDto {
-  ethAddress: string;
+  counterpartyXpub: string;
 }

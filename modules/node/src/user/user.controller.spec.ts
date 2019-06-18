@@ -1,9 +1,13 @@
+import { PostgresConnectionOptions } from "@counterfactual/postgresql-node-connector";
 import { Test, TestingModule } from "@nestjs/testing";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { DatabaseModule } from "../database/database.module";
+import { entities } from "../app.module";
+import { ConfigModule } from "../config/config.module";
+import { ConfigService } from "../config/config.service";
 
 import { UserController } from "./user.controller";
-import { userProvider } from "./user.provider";
+import { UserModule } from "./user.module";
 import { UserService } from "./user.service";
 
 describe("User Controller", () => {
@@ -12,8 +16,22 @@ describe("User Controller", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UserController],
-      imports: [DatabaseModule],
-      providers: [userProvider, UserService],
+      imports: [
+        UserModule,
+        TypeOrmModule.forRootAsync({
+          imports: [ConfigModule],
+          inject: [ConfigService],
+          useFactory: async (config: ConfigService) => {
+            return {
+              ...config.getPostgresConfig(),
+              entities,
+              synchronize: true,
+              type: "postgres",
+            } as PostgresConnectionOptions;
+          },
+        }),
+      ],
+      providers: [UserService],
     }).compile();
 
     controller = module.get<UserController>(UserController);
