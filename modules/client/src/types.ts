@@ -62,6 +62,7 @@ export type InternalClientOptions = ClientOptions &  {
   contract?: IMultisig;
   // counterfactual node
   cfModule: Node;
+  multisigAddress: string;
 }
 
 // TODO: define properly!!
