@@ -36,11 +36,13 @@ export type ClientOptions = {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
+  //TODO: Do we need these if we use the whole store?
   loadState?: (key: string) => Promise<string | null>;
   saveState?: (pairs: {
     key: string;
     value: any;
   }[]) => Promise<void>; 
+  store: any
   // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
 
