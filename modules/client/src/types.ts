@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers/utils";
-import { Address } from "@counterfactual/types";
+import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { Node } from "@counterfactual/node";
 import { Client as NatsClient } from "ts-nats"
 import { Wallet } from "./wallet";
@@ -70,7 +70,9 @@ export type ChannelProvider = {}
 
 export type ChannelState<T = string> = {
   apps: AppState<T>[];
-  freeBalance: T;
+  // TODO: CF types should all be generic, this will be
+  // a BigNumber
+  freeBalance: NodeTypes.GetFreeBalanceStateResult;
 }
 export type ChannelStateBigNumber = ChannelState<BigNumber>
 
