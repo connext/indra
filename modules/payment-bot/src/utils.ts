@@ -37,18 +37,18 @@ export function logEthFreeBalance(
   }
 }
 
-export async function fetchMultisig(baseURL: string, ethAddress: string) {
-  const bot = await getUser(baseURL, ethAddress);
-  if (!(bot as any).multisigAddress) {
+export async function fetchMultisig(baseURL: string, xpub: string) {
+  const bot = await getUser(baseURL, xpub);
+  console.log("bot: ", bot);
+  const multisigAddress = bot.channels[0].multisigAddress || undefined;
+  if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet...Waiting for another ${DELAY_SECONDS} seconds`,
     );
     // Convert to milliseconds
-    await delay(DELAY_SECONDS * 1000).then(() =>
-      fetchMultisig(baseURL, ethAddress),
-    );
+    await delay(DELAY_SECONDS * 1000).then(() => fetchMultisig(baseURL, xpub));
   }
-  return ((await getUser(baseURL, ethAddress)) as any).multisigAddress;
+  return multisigAddress;
 }
 
 /// Deposit and wait for counterparty deposit
@@ -218,7 +218,7 @@ export async function createAccount(
   }
 }
 
-export async function getUser(baseURL: string, xpub: string): Promise<object> {
+export async function getUser(baseURL: string, xpub: string): Promise<any> {
   if (!xpub) {
     throw new Error("getUser(): xpub is required");
   }

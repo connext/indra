@@ -99,7 +99,6 @@ export function getBot() {
     walletAddress = wallet.address;
 
     bot = await getUser(BASE_URL, node.publicIdentifier);
-    console.log('bot: ', bot);
     if (bot && bot.xpub) {
       console.log(`Getting pre-existing user ${node.publicIdentifier} account`);
       console.log(`Existing account found\n`, bot);
@@ -108,7 +107,7 @@ export function getBot() {
       console.log(`Account created\n`, bot);
     }
 
-    multisigAddress = await fetchMultisig(BASE_URL, wallet.address!);
+    multisigAddress = await fetchMultisig(BASE_URL, node.publicIdentifier);
     console.log("Account multisig address:", multisigAddress);
 
     if (process.env.DEPOSIT_AMOUNT) {
