@@ -88,7 +88,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const multisigAddress = await getMultisigAddress(
     //TODO replace this with nats url once this path is built
     'http://localhost:8080', //opts.nodeUrl
-    cfModule.xpub
+    cfModule.publicIdentifier,
   )
   
   // create the new client
