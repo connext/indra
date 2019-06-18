@@ -1,13 +1,12 @@
 {
   "name": "@connext/indra-v2",
-  "version": "2.0.0-beta-1",
+  "version": "2.0.0-alpha",
   "description": "",
-  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ConnextProject/indra-v2.git"
   },
-  "author": "",
+  "author": "Connext & Friends",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ConnextProject/indra-v2/issues"
