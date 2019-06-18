@@ -77,7 +77,7 @@ export async function getMultisigAddress(
 ): Promise<string> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress = bot.channels[0].multisigAddress || undefined;
+  const multisigAddress = bot.channels.length > 0? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet...Waiting for another [hardcoded] 2 seconds`,
