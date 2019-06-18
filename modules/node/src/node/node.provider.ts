@@ -10,7 +10,7 @@ import {
   NodeProviderId,
   PostgresProviderId,
 } from "../constants";
-import { CLogger } from "../util/logger";
+import { CLogger } from "../util";
 
 const logger = new CLogger("NodeProvider");
 

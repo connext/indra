@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 
-import { CLogger } from "../util/logger";
+import { CLogger } from "../util";
 
 import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "./user.entity";
