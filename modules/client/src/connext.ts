@@ -11,6 +11,7 @@ import { TransferController } from "./controllers/TransferController";
 import { ExchangeController } from "./controllers/ExchangeController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
+import { getMultisigAddress, createAccount } from "./lib/utils";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -60,6 +61,19 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     wallet.provider,
     wallet.provider.network.name,
   )
+
+  //TODO this will disappear once we start generating multisig internally and deploying on withdraw only
+  //do we need to save temp?
+  const temp = await createAccount(
+    'http://localhost:8080', //opts.nodeUrl
+    cfModule
+  )
+
+  const multisigAddress = await getMultisigAddress(
+    //TODO replace this with nats url once this path is built
+    'http://localhost:8080', //opts.nodeUrl
+    cfModule.xpub
+  )
   
   // create the new client
   return new ConnextInternal({
@@ -67,6 +81,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     wallet,
     nats: nats.getConnection(),
     cfModule,
+    multisigAddress,
     ...opts, // use any provided opts by default
   })
 }
