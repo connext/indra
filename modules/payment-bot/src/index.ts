@@ -8,11 +8,6 @@ import * as eth from "ethers";
 import { NatsServiceFactory } from "../../nats-messaging-client/src/index";
 
 import { showMainPrompt } from "./bot";
-import {
-  afterUser,
-  getFreeBalance,
-  logEthFreeBalance,
-} from "./utils";
 import * as connext from "../../client"
 
 const BASE_URL = process.env.BASE_URL!;
@@ -106,9 +101,9 @@ export function getBot() {
       // await client.deposit(node, process.env.DEPOSIT_AMOUNT, client.multisigAddress);
     }
 
-    afterUser(node, bot.nodeAddress, client.multisigAddress);
-    logEthFreeBalance(await getFreeBalance(node, client.multisigAddress));
-    showMainPrompt(node);
+    // connext.afterUser(node, bot.nodeAddress, client.multisigAddress);
+    connext.logEthFreeBalance(await connext.getFreeBalance());
+    showMainPrompt(client.cfModule);
   } catch (e) {
     console.error("\n");
     console.error(e);
