@@ -1,8 +1,5 @@
 import { DepositParameters, ChannelState } from "../types";
-import { Logger } from "../lib/logger";
-import { ConnextInternal } from "../connext";
 import { v4 as generateUUID } from "uuid";
-import { Node } from "@counterfactual/node";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { utils as ethers } from "ethers";
 import { delay, getFreeBalance, logEthFreeBalance } from "../lib/utils";
