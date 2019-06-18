@@ -1,5 +1,5 @@
 import { ClientOptions, InternalClientOptions, INodeAPIClient, DepositParameters, ChannelState, ExchangeParameters, WithdrawParameters, TransferParameters } from "./types";
-import { NodeApiClient } from "./node";
+import { NodeApiClient, INodeApiClient } from "./node";
 import { Client as NatsClient } from 'ts-nats';
 import { Wallet } from "./wallet";
 import { Node as NodeTypes } from "@counterfactual/types";
@@ -131,10 +131,10 @@ export abstract class ConnextChannel extends EventEmitter {
  */
 export class ConnextInternal extends ConnextChannel {
   public opts: InternalClientOptions;
-  private cfModule: Node;
+  public cfModule: Node;
   public publicIdentifier: string;
   public wallet: Wallet;
-  public node: INodeAPIClient;
+  public node: INodeApiClient;
   public nats: NatsClient;
 
   private logger: Logger;
@@ -161,10 +161,10 @@ export class ConnextInternal extends ConnextChannel {
     this.logger = new Logger("ConnextInternal", opts.logLevel)
 
     // instantiate controllers with logger and cf
-    this.depositController = new DepositController(opts.cfModule, opts.logLevel)
-    this.transferController = new TransferController(opts.cfModule, opts.logLevel)
-    this.exchangeController = new ExchangeController(opts.cfModule, opts.logLevel)
-    this.withdrawalController = new WithdrawalController(opts.cfModule, opts.logLevel)
+    this.depositController = new DepositController("DepositController", this)
+    this.transferController = new TransferController("TransferController", this)
+    this.exchangeController = new ExchangeController("ExchangeController", this)
+    this.withdrawalController = new WithdrawalController("WithdrawalController", this)
   }
 
   ///////////////////////////////////
