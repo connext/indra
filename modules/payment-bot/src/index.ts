@@ -66,8 +66,7 @@ export function getBot() {
     rpcProviderUrl: ethUrl,
     nodeUrl,
     privateKey,
-    loadState: store.get,
-    saveState: store.set,
+    store
   }
 
   console.log("Using client options:");
