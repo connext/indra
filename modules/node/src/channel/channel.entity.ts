@@ -16,34 +16,34 @@ import { IsXpub } from "../validator/isXpub";
 @Entity()
 export class Channel {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(type => User, user => user.channels)
   @JoinColumn()
-  user: User;
+  user!: User;
 
   @Column("text")
   @IsXpub()
-  counterpartyXpub: string;
+  counterpartyXpub!: string;
 
   @Column("text")
   @IsEthAddress()
-  multisigAddress: string;
+  multisigAddress!: string;
 
   @OneToMany(type => App, app => app.channel)
-  apps: App[];
+  apps!: App[];
 
   @OneToMany(type => ChannelUpdate, channelUpdate => channelUpdate.channel)
-  updates: ChannelUpdate[];
+  updates!: ChannelUpdate[];
 }
 
 @Entity()
 export class ChannelUpdate {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(type => Channel, channel => channel.updates)
-  channel: Channel;
+  channel!: Channel;
 
   @Column("text", {
     transformer: {
@@ -51,7 +51,7 @@ export class ChannelUpdate {
       to: (value: BigNumber) => value.toString(),
     },
   })
-  freeBalancePartyA: BigNumber;
+  freeBalancePartyA!: BigNumber;
 
   @Column("text", {
     transformer: {
@@ -59,11 +59,11 @@ export class ChannelUpdate {
       to: (value: BigNumber) => value.toString(),
     },
   })
-  freeBalancePartyB: BigNumber;
+  freeBalancePartyB!: BigNumber;
 
   @Column("text", { nullable: true })
-  sigPartyA: string;
+  sigPartyA!: string;
 
   @Column("text", { nullable: true })
-  sigPartyB: string;
+  sigPartyB!: string;
 }

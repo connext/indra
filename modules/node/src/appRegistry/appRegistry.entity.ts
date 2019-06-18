@@ -3,14 +3,14 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 @Entity()
 export class AppRegistry {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column("text")
-  appDefinitionAddress: string;
+  appDefinitionAddress!: string;
 
   @Column("text")
-  stateEncoding: string;
+  stateEncoding!: string;
 
   @Column("text", { nullable: true })
-  actionEncoding: string;
+  actionEncoding!: string;
 }

@@ -16,25 +16,25 @@ import { IsXpub } from "../validator/isXpub";
 @Entity()
 export class App {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(type => Channel, channel => channel.apps)
-  channel: Channel;
+  channel!: Channel;
 
   @OneToOne(type => AppRegistry)
   @JoinColumn()
-  appRegistry: AppRegistry;
+  appRegistry!: AppRegistry;
 
   @Column("integer", { nullable: true })
-  appId: number;
+  appId!: number;
 
   @Column("text")
   @IsXpub()
-  xpubPartyA: string;
+  xpubPartyA!: string;
 
   @Column("text")
   @IsXpub()
-  xpubPartyB: string;
+  xpubPartyB!: string;
 
   @Column("text", {
     transformer: {
@@ -42,7 +42,7 @@ export class App {
       to: (value: BigNumber) => value.toString(),
     },
   })
-  depositA: string;
+  depositA!: string;
 
   @Column("text", {
     transformer: {
@@ -50,33 +50,33 @@ export class App {
       to: (value: BigNumber) => value.toString(),
     },
   })
-  depositB: string;
+  depositB!: string;
 
   @Column("simple-array")
   @IsXpub({ each: true })
-  intermediaries: string[];
+  intermediaries!: string[];
 
   @Column("json")
-  initialState: object;
+  initialState!: object;
 
   @Column("integer")
-  timeout: number;
+  timeout!: number;
 
   @OneToMany(type => AppUpdate, appUpdate => appUpdate.app)
-  updates: AppUpdate[];
+  updates!: AppUpdate[];
 }
 
 @Entity()
 export class AppUpdate {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(type => App, app => app.updates)
-  app: App;
+  app!: App;
 
   @Column("json")
-  action: object;
+  action!: object;
 
   @Column("simple-array")
-  sigs: string[];
+  sigs!: string[];
 }

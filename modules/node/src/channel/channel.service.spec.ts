@@ -7,6 +7,7 @@ import { entities } from "../app.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
 import { ConfigService } from "../config/config.service";
+import { NodeModule } from "../node/node.module";
 import { clearDb, mkAddress, mkXpub } from "../test";
 import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
@@ -23,8 +24,10 @@ describe("ChannelService", () => {
     module = await Test.createTestingModule({
       imports: [
         ConfigModule,
+        ChannelModule,
+        NodeModule,
         TypeOrmModule.forRootAsync({
-          imports: [ConfigModule, ChannelModule],
+          imports: [ConfigModule],
           inject: [ConfigService],
           useFactory: async (config: ConfigService) => {
             return {
