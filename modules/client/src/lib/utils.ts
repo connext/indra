@@ -43,6 +43,7 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
 
 export const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
+//TODO Temporary - this eventually should be exposed at the top level and retrieve from store
 export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
@@ -58,6 +59,7 @@ export async function getFreeBalance(
   return result as NodeTypes.GetFreeBalanceStateResult;
 }
 
+//TODO Should we keep this? It's a nice helper to break out by key. Maybe generalize?
 export function logEthFreeBalance(
   freeBalance: NodeTypes.GetFreeBalanceStateResult,
 ) {

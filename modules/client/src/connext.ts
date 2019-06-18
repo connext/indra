@@ -1,4 +1,4 @@
-import { ClientOptions, InternalClientOptions, INodeAPIClient, DepositParameters, ChannelState, ExchangeParameters, WithdrawParameters, TransferParameters } from "./types";
+import { ClientOptions, InternalClientOptions, DepositParameters, ChannelState, ExchangeParameters, WithdrawParameters, TransferParameters } from "./types";
 import { NodeApiClient, INodeApiClient } from "./node";
 import { Client as NatsClient } from 'ts-nats';
 import { Wallet } from "./wallet";
@@ -82,8 +82,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   //do we need to save temp?
   const temp = await createAccount(
     'http://localhost:8080', //opts.nodeUrl
-    cfModule
+    {xpub: cfModule.publicIdentifier}
   )
+  console.log(temp)
 
   const multisigAddress = await getMultisigAddress(
     //TODO replace this with nats url once this path is built
@@ -152,7 +153,7 @@ export class ConnextInternal extends ConnextChannel {
   public node: INodeApiClient;
   public nats: NatsClient;
 
-  private logger: Logger;
+  public logger: Logger;
 
   ////////////////////////////////////////
   // Setup channel controllers

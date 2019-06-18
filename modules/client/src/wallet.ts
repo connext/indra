@@ -17,7 +17,7 @@ export class Wallet extends eth.Signer {
   private signer: eth.Wallet;
   public address: string;
   private external: boolean = false;
-  private log: Logger
+  public log: Logger
 
   public constructor(opts: ClientOptions) {
     super();

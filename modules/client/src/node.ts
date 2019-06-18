@@ -6,20 +6,19 @@ import { Client as NatsClient } from "ts-nats";
 
 // TODO: move to types.tx?
 const API_TIMEOUT = 30000;
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export interface INodeApiClient {
   config(): Promise<NodeConfig>
 }
 
 export class NodeApiClient implements INodeApiClient {
-  private nodeUrl: string;
-  private nats: NatsClient // TODO: rename to messaging?
-  private wallet: Wallet;
-  private address: Address;
-  private log: Logger;
-  private nonce: string | undefined;
-  private signature: string | undefined;
+  public nodeUrl: string;
+  public nats: NatsClient // TODO: rename to messaging?
+  public wallet: Wallet;
+  public address: Address;
+  public log: Logger;
+  public nonce: string | undefined;
+  public signature: string | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.nodeUrl = opts.nodeUrl;

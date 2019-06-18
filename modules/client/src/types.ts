@@ -49,6 +49,9 @@ export type ClientOptions = {
   // nats communication config, client must provide
   natsClusterId?: string;
   natsToken?: string;
+
+  //TODO REMOVE THIS
+  delete_this_url: string;
 }
 
 export type InternalClientOptions = ClientOptions &  {
