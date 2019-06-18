@@ -19,13 +19,26 @@ import {
   logEthFreeBalance,
   UserSession
 } from "./utils";
+import { ClientOptions } from "../../client/types"
 
 const BASE_URL = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
 
-const provider = new ethers.providers.JsonRpcProvider(
-  `https://${NETWORK}.infura.io/metamask`
-);
+const ethUrl = process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
+
+const privateKey = process.env.PRIVATE_KEY;
+if (!privateKey) {
+  throw Error("No private key specified in env. Exiting.");
+}
+
+const nodeUrl = process.env.NODE_URL;
+if (!nodeUrl || !nodeUrl.startsWith('nats://')) {
+  throw Error("No accurate node url specified in env. Exiting.");
+}
+
+// const provider = new ethers.providers.JsonRpcProvider(
+//   `https://${NETWORK}.infura.io/metamask`
+// );
 
 let pgServiceFactory: PostgresServiceFactory;
 let natsServiceFactory: NatsServiceFactory;
@@ -47,6 +60,14 @@ pgServiceFactory = new PostgresServiceFactory({
   port: parseInt(process.env[POSTGRES_CONFIGURATION_ENV_KEYS.port]!, 10),
   username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!
 });
+
+const connextOpts: ClientOptions = {
+  rpcProviderUrl: ethUrl,
+  nodeUrl,
+  privateKey,
+  loadState: pgServiceFactory.loadState,
+  saveState: ,
+}
 
 let node: Node;
 
