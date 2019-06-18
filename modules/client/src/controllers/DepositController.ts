@@ -16,7 +16,7 @@ export class DepositController extends AbstractController {
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
 
     //TODO Generate and expose multisig address in connext internal
-    const preDepositBalances = await getFreeBalance(this.cfModule, this.connext.multisigAddress);
+    const preDepositBalances = await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress);
 
     if (Object.keys(preDepositBalances).length !== 2) {
       throw new Error("Unexpected number of entries");
@@ -30,19 +30,19 @@ export class DepositController extends AbstractController {
       preDepositBalances,
     ).filter(addr => addr !== myFreeBalanceAddress);
 
-    console.log(`\nDepositing ${params.amount} ETH into ${this.connext.multisigAddress}\n`);
+    console.log(`\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`);
     try {
       await this.cfModule.call(CFModuleTypes.MethodName.DEPOSIT, {
         params: {
           amount: ethers.parseEther(params.amount),
-          multisigAddress: this.connext.multisigAddress,
+          multisigAddress: this.connext.opts.multisigAddress,
           notifyCounterparty: true,
         } as CFModuleTypes.DepositParams,
         requestId: generateUUID(),
         type: CFModuleTypes.MethodName.DEPOSIT,
       });
 
-      const postDepositBalances = await getFreeBalance(this.cfModule, this.connext.multisigAddress);
+      const postDepositBalances = await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress);
 
       if (
         !postDepositBalances[myFreeBalanceAddress].gt(
@@ -55,7 +55,7 @@ export class DepositController extends AbstractController {
       console.info("Waiting for counter party to deposit same amount");
 
       const freeBalanceNotUpdated = async () => {
-        return !(await getFreeBalance(this.cfModule, this.connext.multisigAddress))[
+        return !(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress))[
           counterpartyFreeBalanceAddress
         ].gt(preDepositBalances[counterpartyFreeBalanceAddress]);
       };
@@ -67,7 +67,7 @@ export class DepositController extends AbstractController {
         await delay(1 * 1000);
       }
 
-      logEthFreeBalance(await getFreeBalance(this.cfModule, this.connext.multisigAddress));
+      logEthFreeBalance(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress));
     } catch (e) {
       console.error(`Failed to deposit... ${e}`);
       throw e;
