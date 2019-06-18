@@ -19,6 +19,10 @@ export class MockNatsClient extends nats.Client {
     console.log(`Sending request to ${subject} ${body ? `with body: ${body}` : `without body`}`)
     return (this.returnVals as any)[subject]
   }
+
+  public patch(subject: string, returnValue: any) {
+    (this.returnVals as any)[subject] = returnValue
+  }
 }
 
 export class MockWallet extends Wallet {
