@@ -283,7 +283,7 @@ export class CloseChannelService {
     }
 
     return this.db.withTransaction(async () => {
-      const dispute = await this.channelDisputesDao.create(user, reason, undefined, undefined)
+      const dispute = await this.channelDisputesDao.create(user, reason, true, undefined, undefined, undefined)
       const txn = await this.onchainTxService.sendTransaction(this.db, {
         data,
         from: this.config.hotWalletAddress,

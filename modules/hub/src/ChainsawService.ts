@@ -297,10 +297,11 @@ export default class ChainsawService {
     let disputeRecord = await this.channelDisputesDao.getActive(event.user)
     if (!disputeRecord) {
       // dispute might not have been initiated by us, so we need to add it here
-      disputeRecord = await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', chainsawId, null, onchainChannel.channelClosingTime)
-    } else {
-      await this.channelDisputesDao.setExitEvent(disputeRecord.id, chainsawId, onchainChannel.channelClosingTime)
+      disputeRecord = await this.channelDisputesDao.create(event.user, 'Dispute caught by chainsaw', false, chainsawId, null, onchainChannel.channelClosingTime)
     }
+
+    // set the exit event even if the user has initiated the dispute
+    await this.channelDisputesDao.setExitEvent(disputeRecord.id, chainsawId, onchainChannel.channelClosingTime)
 
     // check if sender was user
     if (event.senderIdx == 0) {
@@ -355,6 +356,14 @@ export default class ChainsawService {
       ).encodeABI()
     } else {
       this.log.info(`Channel has exited with the latest state, hub will empty with onchain state! event: ${prettySafeJson(event)}`)
+      // do not respond with empty channel if the closing time has not passed
+      // NOTE: it is okay to compare blocktime with regular time here, since
+      // this is called on a 2s loop
+      const currentTs = Math.floor(Date.now() / 1000)
+      if (currentTs < onchainChannel.channelClosingTime) {
+        // return without responding
+        return
+      }
       data = this.contract.methods.emptyChannel(event.user).encodeABI()
     }
     const txn = await this.onchainTransactionService.sendTransaction(this.db, {
@@ -369,7 +378,7 @@ export default class ChainsawService {
       }
     })
 
-    await this.channelDisputesDao.addStartExitOnchainTx(disputeRecord.id, txn)
+    await this.channelDisputesDao.addEmptyOnchainTx(disputeRecord.id, txn)
   }
 
   private async processDidEmptyChannel(chainsawId: number, event: DidEmptyChannelEvent) {

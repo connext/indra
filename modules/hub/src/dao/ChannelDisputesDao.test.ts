@@ -42,7 +42,7 @@ describe('ChannelDisputesDao', () => {
         v: 1
       }
     })
-    await dao.create(c.user, "this is a test", null, txn)
+    await dao.create(c.user, "this is a test", true, null, txn)
 
     const attempt = await dao.getActive(c.user)
     assert.containSubset(attempt, {
@@ -77,7 +77,7 @@ describe('ChannelDisputesDao', () => {
         v: 1
       }
     })
-    const row = await dao.create(c.user, "this is a test", null, txn)
+    const row = await dao.create(c.user, "this is a test", true, null, txn)
     await dao.addStartExitOnchainTx(row.id, txn)
     let attempt = await dao.getActive(c.user)
     assert.equal(attempt.onchainTxIdStart, row.id)
@@ -104,7 +104,7 @@ describe('ChannelDisputesDao', () => {
         v: 1
       }
     })
-    const row = await dao.create(c.user, "this is a test", null, txn)
+    const row = await dao.create(c.user, "this is a test", true, null, txn)
     await dao.addEmptyOnchainTx(row.id, txn)
     let attempt = await dao.getActive(c.user)
     assert.equal(attempt.onchainTxIdEmpty, row.id)

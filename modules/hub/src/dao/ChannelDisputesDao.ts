@@ -9,7 +9,8 @@ import { OnchainTransactionRow } from '../domain/OnchainTransaction'
 export default interface ChannelDisputesDao {
   create(
     user: string, 
-    reason: string, 
+    reason: string,
+    originatorIsHub: boolean,
     startEventChainsawId?: number, 
     txn?: OnchainTransactionRow,
     disputeEndTime?: number
@@ -40,6 +41,7 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
   public async create(
     user: string,
     reason: string,
+    originatorIsHub: boolean,
     startEventChainsawId?: number,
     txn?: OnchainTransactionRow,
     disputeEndTime?: number,
@@ -50,6 +52,7 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
           channel_id,
           started_on,
           reason,
+          originator,
           start_event_id,
           onchain_tx_id_start,
           dispute_period_ends
@@ -63,6 +66,7 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
           ),
           NOW(),
           ${reason},
+          ${originatorIsHub ? this.config.hotWalletAddress : user},
           ${startEventChainsawId},
           ${txn ? txn.logicalId : null},
           ${disputeEndTime ? disputeEndTime : null}
@@ -183,7 +187,10 @@ export class PostgresChannelDisputesDao implements ChannelDisputesDao {
       startedOn: row.started_on,
       reason: row.reason,
       onchainTxIdStart: row.onchain_tx_id_start && +row.onchain_tx_id_start,
-      onchainTxIdEmpty: row.onchain_tx_id_empty && +row.onchain_tx_id_empty
+      onchainTxIdEmpty: row.onchain_tx_id_empty && +row.onchain_tx_id_empty,
+      disputePeriodEnds: row.dispute_period_ends && +row.dispute_period_ends,
+      status: row.status,
+      originator: row.originator,
     }
   }
 }

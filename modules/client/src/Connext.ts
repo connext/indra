@@ -1,8 +1,6 @@
 import { ethers as eth } from 'ethers'
-import { Web3Provider } from 'ethers/providers'
 import { EventEmitter } from 'events'
 import { Action, applyMiddleware, createStore } from 'redux'
-import Web3 from 'web3'
 
 import { ChannelManager, IChannelManager } from './contract/ChannelManager'
 import {
@@ -77,7 +75,7 @@ export interface IConnextChannelOptions {
   privateKey?: string
   user?: string
   externalWallet?: any,
-  web3Provider?: Web3Provider
+  web3Provider?: eth.providers.Web3Provider
   loadState?(): any
   safeSignHook?(state: ChannelState | ThreadState): Promise<string> // NOTE: only a placeholder
   saveState?(state: any): any

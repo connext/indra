@@ -1,12 +1,11 @@
 import { ethers as eth } from 'ethers'
-import { BigNumber } from 'ethers/utils'
 
 const { Zero, MaxUint256 } = eth.constants
 const { bigNumberify, parseEther, formatEther } = eth.utils
 
-export type BN = BigNumber
+export type BN = eth.utils.BigNumber
 
-export const isBN = BigNumber.isBigNumber
+export const isBN = eth.utils.BigNumber.isBigNumber
 
 export const toBN = (n: string|number|BN): BN =>
   bigNumberify(n.toString())
