@@ -1,21 +1,16 @@
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { MNEMONIC_PATH, } from "@counterfactual/node";
 import {
   confirmPostgresConfigurationEnvVars,
   POSTGRES_CONFIGURATION_ENV_KEYS,
   PostgresServiceFactory,
 } from "@counterfactual/postgresql-node-connector";
-import { ethers } from "ethers";
 
 import { NatsServiceFactory } from "../../nats-messaging-client/src/index";
 
 import { showMainPrompt } from "./bot";
 import {
   afterUser,
-  createAccount,
-  deposit,
-  fetchMultisig,
   getFreeBalance,
-  getUser,
   logEthFreeBalance,
 } from "./utils";
 import * as connext from "../../client"
@@ -36,7 +31,6 @@ if (!nodeUrl || !nodeUrl.startsWith('nats://')) {
 }
 
 let pgServiceFactory: PostgresServiceFactory;
-let natsServiceFactory: NatsServiceFactory;
 // console.log(`Using Nats configuration for ${process.env.NODE_ENV}`);
 // console.log(`Using Firebase configuration for ${process.env.NODE_ENV}`);
 
@@ -56,18 +50,15 @@ pgServiceFactory = new PostgresServiceFactory({
   username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
 });
 
-let node: Node;
-
-let multisigAddress: string;
-let walletAddress: string;
+let client: connext.ConnextChannel;
 let bot;
 
 export function getMultisigAddress() {
-  return multisigAddress;
+  return client.multisigAddress;
 }
 
 export function getWalletAddress() {
-  return walletAddress;
+  return client.wallet.address;
 }
 
 export function getBot() {
@@ -81,6 +72,7 @@ export function getBot() {
   const store = pgServiceFactory.createStoreService(process.env.USERNAME!);
 
   const connextOpts: connext.ClientOptions = {
+    delete_this_url: BASE_URL,
     rpcProviderUrl: ethUrl,
     nodeUrl,
     privateKey,
@@ -96,38 +88,26 @@ export function getBot() {
   console.log("process.env.NODE_MNEMONIC: ", process.env.NODE_MNEMONIC);
   await store.set([{ key: MNEMONIC_PATH, value: process.env.NODE_MNEMONIC }]);
 
-  console.log("Creating connext");
-  const client = await connext.connect(connextOpts);
-  console.log("Client created successfully!");
-
-  console.log("Public Identifier", client.cfModule.publicIdentifier);
-
   try {
-    const privateKey = process.env.PRIVATE_KEY;
-    if (!privateKey) {
-      throw Error("No private key specified in env. Exiting.");
-    }
-    const wallet = new ethers.Wallet(privateKey, provider);
-    walletAddress = wallet.address;
+    console.log("Creating connext");
+    const client = await connext.connect(connextOpts);
+    console.log("Client created successfully!");
 
-    bot = await getUser(BASE_URL, node.publicIdentifier);
-    if (bot && bot.xpub) {
-      console.log(`Getting pre-existing user ${node.publicIdentifier} account`);
-      console.log(`Existing account found\n`, bot);
-    } else {
-      bot = await createAccount(BASE_URL, { xpub: node.publicIdentifier });
-      console.log(`Account created\n`, bot);
-    }
-
-    multisigAddress = await fetchMultisig(BASE_URL, node.publicIdentifier);
-    console.log("Account multisig address:", multisigAddress);
+    console.log("Public Identifier", client.publicIdentifier);
+    console.log("Account multisig address:", client.multisigAddress);
 
     if (process.env.DEPOSIT_AMOUNT) {
-      await deposit(node, process.env.DEPOSIT_AMOUNT, multisigAddress);
+      const depositParams: connext.DepositParameters = {
+        amount: process.env.DEPOSIT_AMOUNT,
+        assetId: null, // deposit eth
+      }
+      await client.depost(depositParams)
+      console.log(`Successfully deposited ${depositParams.amount}!`)
+      // await client.deposit(node, process.env.DEPOSIT_AMOUNT, client.multisigAddress);
     }
 
-    afterUser(node, bot.nodeAddress, multisigAddress);
-    logEthFreeBalance(await getFreeBalance(node, multisigAddress));
+    afterUser(node, bot.nodeAddress, client.multisigAddress);
+    logEthFreeBalance(await getFreeBalance(node, client.multisigAddress));
     showMainPrompt(node);
   } catch (e) {
     console.error("\n");
