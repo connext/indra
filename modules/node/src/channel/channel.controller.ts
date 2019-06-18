@@ -8,7 +8,7 @@ import {
 } from "@nestjs/common";
 import { parseEther } from "ethers/utils";
 
-import { UserService } from "../user/user.service";
+import { UserRepository } from "../user/user.repository";
 
 import { ChannelService } from "./channel.service";
 import { CreateChannelDto } from "./dto/create-channel.dto";
@@ -18,22 +18,20 @@ import { DepositDto } from "./dto/deposit-dto";
 export class ChannelController {
   constructor(
     private readonly channelService: ChannelService,
-    private readonly userService: UserService,
+    private readonly userRepository: UserRepository,
   ) {}
 
   @Post()
   async create(
     @Body() createChannelDto: CreateChannelDto,
   ): Promise<{ transactionHash: string }> {
-    const user = await this.userService.findByEthAddress(
-      createChannelDto.ethAddress,
+    const user = await this.userRepository.findByXpub(
+      createChannelDto.counterpartyXpub,
     );
     if (!user) {
       throw new NotFoundException();
     }
-    const { transactionHash } = await this.channelService.create(
-      user.nodeAddress,
-    );
+    const { transactionHash } = await this.channelService.create(user.xpub);
     return { transactionHash };
   }
 

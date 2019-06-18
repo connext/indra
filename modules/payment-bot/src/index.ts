@@ -2,7 +2,7 @@ import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import {
   confirmPostgresConfigurationEnvVars,
   POSTGRES_CONFIGURATION_ENV_KEYS,
-  PostgresServiceFactory
+  PostgresServiceFactory,
 } from "@counterfactual/postgresql-node-connector";
 import { ethers } from "ethers";
 
@@ -17,7 +17,6 @@ import {
   getFreeBalance,
   getUser,
   logEthFreeBalance,
-  UserSession
 } from "./utils";
 import { ClientOptions } from "../../client/types"
 
@@ -53,12 +52,12 @@ natsServiceFactory = new NatsServiceFactory();
 
 confirmPostgresConfigurationEnvVars();
 pgServiceFactory = new PostgresServiceFactory({
-  type: "postgres",
   database: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.database]!,
   host: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.host]!,
   password: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.password]!,
   port: parseInt(process.env[POSTGRES_CONFIGURATION_ENV_KEYS.port]!, 10),
-  username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!
+  type: "postgres",
+  username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
 });
 
 const connextOpts: ClientOptions = {
@@ -73,7 +72,7 @@ let node: Node;
 
 let multisigAddress: string;
 let walletAddress: string;
-let bot: UserSession;
+let bot;
 
 export function getMultisigAddress() {
   return multisigAddress;
@@ -103,10 +102,11 @@ export function getBot() {
     messService,
     store,
     {
-      STORE_KEY_PREFIX: "store"
+      STORE_KEY_PREFIX: "store",
     },
+    // @ts-ignore
     provider,
-    NETWORK
+    NETWORK,
   );
 
   console.log("Public Identifier", node.publicIdentifier);
@@ -118,32 +118,24 @@ export function getBot() {
     }
     const wallet = new ethers.Wallet(privateKey, provider);
     walletAddress = wallet.address;
-    const user = {
-      email: "PaymentBot",
-      ethAddress: wallet.address,
-      nodeAddress: node.publicIdentifier,
-      username: process.env.USERNAME || "PaymentBot"
-    };
 
-    bot = await getUser(BASE_URL, wallet.address);
-    if (bot && bot.ethAddress) {
-      console.log(
-        `Getting pre-existing user ${user.username} account: ${wallet.address}`
-      );
+    bot = await getUser(BASE_URL, node.publicIdentifier);
+    if (bot && bot.xpub) {
+      console.log(`Getting pre-existing user ${node.publicIdentifier} account`);
       console.log(`Existing account found\n`, bot);
     } else {
-      bot = await createAccount(BASE_URL, user);
+      bot = await createAccount(BASE_URL, { xpub: node.publicIdentifier });
       console.log(`Account created\n`, bot);
     }
 
-    multisigAddress = await fetchMultisig(BASE_URL, wallet.address!);
+    multisigAddress = await fetchMultisig(BASE_URL, node.publicIdentifier);
     console.log("Account multisig address:", multisigAddress);
 
     if (process.env.DEPOSIT_AMOUNT) {
       await deposit(node, process.env.DEPOSIT_AMOUNT, multisigAddress);
     }
 
-    afterUser(user.username, node, bot.nodeAddress, multisigAddress);
+    afterUser(node, bot.nodeAddress, multisigAddress);
     logEthFreeBalance(await getFreeBalance(node, multisigAddress));
     showMainPrompt(node);
   } catch (e) {

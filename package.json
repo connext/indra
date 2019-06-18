@@ -18,5 +18,8 @@
     "tslint-config-airbnb": "5.11.1",
     "tslint-config-prettier": "1.18.0",
     "tslint-plugin-prettier": "2.0.1"
+  },
+  "dependencies": {
+    "wait-on": "3.2.0"
   }
 }

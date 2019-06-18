@@ -1,24 +1,17 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+
+import { Channel } from "../channel/channel.entity";
+import { IsXpub } from "../validator/isXpub";
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column("text")
-  email: string;
+  @IsXpub()
+  xpub!: string;
 
-  @Column("text")
-  ethAddress: string;
-
-  @Column("text")
-  nodeAddress: string;
-
-  @Column("text", {
-    nullable: true,
-  })
-  multisigAddress: string;
-
-  @Column("text")
-  username: string;
+  @OneToMany(type => Channel, channel => channel.user)
+  channels!: Channel[];
 }
