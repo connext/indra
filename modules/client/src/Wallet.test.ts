@@ -1,5 +1,4 @@
 import { ethers as eth } from 'ethers'
-import { TransactionRequest, Web3Provider } from 'ethers/providers'
 import Web3 from 'web3'
 
 import { BN } from './lib'

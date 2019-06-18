@@ -1,26 +1,22 @@
 import { isArray, isNullOrUndefined } from 'util'
 
 import { BN, isBN, toBN } from './lib'
+import { ethers } from 'ethers';
 
 ////////////////////////////////////////
 // Export useful types defined in other modules
-
-export { Contract } from 'ethers/contract'
-export {
-  Block,
-  Filter,
-  Provider,
-  TransactionReceipt,
-  TransactionRequest,
-  TransactionResponse,
-} from 'ethers/providers'
-export {
-  BigNumber as BN,
-  Interface,
-  LogDescription,
-  Transaction,
-  UnsignedTransaction,
-} from 'ethers/utils'
+export type Contract = ethers.Contract
+export type Block = ethers.providers.Block
+export type Filter = ethers.providers.Filter
+export type Provider = ethers.providers.Provider
+export type TransactionReceipt = ethers.providers.TransactionReceipt
+export type TransactionRequest = ethers.providers.TransactionRequest
+export type TransactionResponse = ethers.providers.TransactionResponse
+export type BN = ethers.utils.BigNumber
+export type Interface = ethers.utils.Interface
+export type LogDescription = ethers.utils.LogDescription
+export type Transaction = ethers.utils.Transaction
+export type UnsignedTransaction = ethers.utils.UnsignedTransaction
 
 export { ChannelManager } from './contract/ChannelManager'
 
