@@ -4,7 +4,7 @@ import {
   POSTGRES_CONFIGURATION_ENV_KEYS,
   PostgresServiceFactory,
 } from "@counterfactual/postgresql-node-connector";
-
+import * as eth from "ethers";
 import { NatsServiceFactory } from "../../nats-messaging-client/src/index";
 
 import { showMainPrompt } from "./bot";
@@ -98,10 +98,10 @@ export function getBot() {
 
     if (process.env.DEPOSIT_AMOUNT) {
       const depositParams: connext.DepositParameters = {
-        amount: process.env.DEPOSIT_AMOUNT,
+        amount: eth.utils.parseEther(process.env.DEPOSIT_AMOUNT).toString(),
         assetId: null, // deposit eth
       }
-      await client.depost(depositParams)
+      await client.deposit(depositParams)
       console.log(`Successfully deposited ${depositParams.amount}!`)
       // await client.deposit(node, process.env.DEPOSIT_AMOUNT, client.multisigAddress);
     }
