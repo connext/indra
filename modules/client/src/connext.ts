@@ -38,6 +38,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   await nats.connect()
 
   // create a new node api instance
+  // TODO: use local storage for default key value setting!!
   const node: NodeApiClient = new NodeApiClient({
     nodeUrl: opts.nodeUrl, 
     nats: nats.getConnection(),
@@ -45,10 +46,25 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     logLevel: opts.logLevel,
   });
 
+  const getFn = async (key: string) => {
+    return await localStorage.get(key)
+  }
+
+  const setFn = async (pairs: {
+    key: string;
+    value: any;
+  }[]) => {
+    for (const pair of pairs) {
+      await localStorage.setItem(pair.key, JSON.stringify(pair.value))
+    }
+    return
+  }
+
   // create a new storage service for use by cfModule
   const store: NodeTypes.IStoreService = {
-
-  } as NodeTypes.IStoreService
+    get: opts.loadState || getFn,
+    set: opts.saveState || setFn,
+  }
 
   // create new cfModule to inject into internal instance
   const cfModule = await Node.create(
