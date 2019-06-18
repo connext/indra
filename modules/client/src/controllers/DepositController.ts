@@ -12,7 +12,7 @@ export class DepositController extends AbstractController {
   
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
 
-    //TODO Generate and expose multisig address in connext internal
+    // TODO:  Generate and expose multisig address in connext internal
     const preDepositBalances = await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress);
 
     if (Object.keys(preDepositBalances).length !== 2) {
@@ -70,6 +70,11 @@ export class DepositController extends AbstractController {
       throw e;
     }
         
-    return {} as ChannelState
+    return {
+      apps: [],
+      freeBalance: await getFreeBalance(
+        this.cfModule, 
+        this.connext.opts.multisigAddress),
+    } as ChannelState;
   }
 }
