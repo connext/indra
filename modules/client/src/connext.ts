@@ -74,6 +74,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     {
       STORE_KEY_PREFIX: "store"
     }, // TODO: proper config
+    // @ts-ignore WHYYYYYYYYY
     wallet.provider,
     "kovan", //TODO: make this not hardcoded to "kovan"
   )
