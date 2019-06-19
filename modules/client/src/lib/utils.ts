@@ -1,9 +1,11 @@
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { formatEther } from "ethers/utils";
+import { utils } from "ethers";
 import fetch from "node-fetch";
 import { isNullOrUndefined } from "util";
 import { v4 as generateUUID } from "uuid";
+
+const formatEther = utils.formatEther;
 
 export const objMap = <T, F extends keyof T, R>(
   obj: T,

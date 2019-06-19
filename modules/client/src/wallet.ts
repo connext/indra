@@ -1,20 +1,25 @@
-import * as eth from "ethers";
-import {
-  JsonRpcProvider,
-  TransactionRequest,
-  TransactionResponse,
-} from "ethers/providers";
-import { arrayify, bigNumberify, isHexString, toUtf8Bytes } from "ethers/utils";
+import { providers, Signer, utils, Wallet as EthersWallet } from "ethers";
 
 import { Logger } from "./lib/logger";
 import { objMapPromise } from "./lib/utils";
 import { ClientOptions } from "./types";
 
+type TransactionRequest = providers.TransactionRequest;
+type TransactionResponse = providers.TransactionResponse;
+type JsonRpcProviderType = providers.JsonRpcProvider;
+
+const JsonRpcProvider = providers.JsonRpcProvider;
+
+const arrayify = utils.arrayify;
+const bigNumberify = utils.bigNumberify;
+const isHexString = utils.isHexString;
+const toUtf8Bytes = utils.toUtf8Bytes;
+
 // TODO: do we need this class if there's no auth yet (or JWT auth)
 // and CF handles signing? should this class include the keygen fn ref somehow
-export class Wallet extends eth.Signer {
-  public provider: JsonRpcProvider;
-  private signer: eth.Wallet;
+export class Wallet extends Signer {
+  public provider: JsonRpcProviderType;
+  private signer: EthersWallet;
   public address: string;
   private external: boolean = false;
   public log: Logger;
@@ -42,12 +47,12 @@ export class Wallet extends eth.Signer {
     ////////////////////////////////////////
     // Setup a signer
     if (opts.privateKey) {
-      this.signer = new eth.Wallet(opts.privateKey);
+      this.signer = new EthersWallet(opts.privateKey);
       this.signer = this.signer.connect(this.provider);
       this.address = this.signer.address.toLowerCase();
     } else if (opts.mnemonic) {
       // Second choice: Sign w mnemonic
-      this.signer = eth.Wallet.fromMnemonic(opts.mnemonic);
+      this.signer = EthersWallet.fromMnemonic(opts.mnemonic);
       this.signer = this.signer.connect(this.provider);
       this.address = this.signer.address.toLowerCase();
     } else if (opts.externalWallet) {

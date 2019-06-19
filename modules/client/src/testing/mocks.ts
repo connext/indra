@@ -1,5 +1,5 @@
 import { Address } from "@counterfactual/types";
-import { TransactionRequest, TransactionResponse } from "ethers/providers";
+import { providers } from "ethers";
 import * as nats from "ts-nats";
 
 import { Logger } from "../lib/logger";
@@ -10,6 +10,9 @@ import {
   NodeInitializationParameters,
 } from "../types";
 import { Wallet } from "../wallet";
+
+type TransactionRequest = providers.TransactionRequest;
+type TransactionResponse = providers.TransactionResponse;
 
 export const address: string = "0x627306090abab3a6e1400e9345bc60c78a8bef57";
 export const mnemonic: string =

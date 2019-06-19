@@ -1,10 +1,12 @@
 import { Node } from "@counterfactual/node";
 import { Address, Node as NodeTypes } from "@counterfactual/types";
-import { BigNumber } from "ethers/utils";
+import { utils } from "ethers";
 import { Client as NatsClient } from "ts-nats";
 
 import { INodeApiClient } from "./node";
 import { Wallet } from "./wallet";
+
+export type BigNumber = utils.BigNumber;
 
 // types for the connext client package
 
