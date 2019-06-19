@@ -77,7 +77,7 @@ export async function getMultisigAddress(
 ): Promise<string> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress = bot.channels.length > 0? bot.channels[0].multisigAddress : undefined;
+  const multisigAddress = bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet...Waiting for another [hardcoded] 2 seconds`,
@@ -85,7 +85,7 @@ export async function getMultisigAddress(
     // Convert to milliseconds
     await delay(2 * 1000).then(() => getMultisigAddress(baseURL, xpub));
   }
-  return multisigAddress;
+  return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
 }
 
 // TODO Temporary fn which gets user details via http.
