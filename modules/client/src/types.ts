@@ -37,7 +37,7 @@ export type ClientOptions = {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
-  //TODO: Do we need these if we use the whole store?
+  // TODO: Do we need these if we use the whole store?
   loadState?: (key: string) => Promise<string | null>;
   saveState?: (
     pairs: {
@@ -54,7 +54,7 @@ export type ClientOptions = {
   natsClusterId?: string;
   natsToken?: string;
 
-  //TODO REMOVE THIS
+  // TODO: REMOVE THIS
   delete_this_url: string;
 };
 

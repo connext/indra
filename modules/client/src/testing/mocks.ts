@@ -1,13 +1,14 @@
-import { INodeApiClient } from "../node";
-import {
-  NodeConfig,
-  NodeInitializationParameters,
-  ClientOptions,
-} from "../types";
-import { Logger } from "../lib/logger";
 import { Address } from "@counterfactual/types";
 import { TransactionRequest, TransactionResponse } from "ethers/providers";
 import * as nats from "ts-nats";
+
+import { Logger } from "../lib/logger";
+import { INodeApiClient } from "../node";
+import {
+  ClientOptions,
+  NodeConfig,
+  NodeInitializationParameters,
+} from "../types";
 import { Wallet } from "../wallet";
 
 export const address: string = "0x627306090abab3a6e1400e9345bc60c78a8bef57";
@@ -42,11 +43,11 @@ export class MockWallet extends Wallet {
   public constructor(opts: Partial<ClientOptions> & { address?: string } = {}) {
     // properly assign opts
     const clientOpts = {
-      rpcProviderUrl: ethUrl,
+      delete_this_url: "",
       nodeUrl,
       privateKey,
+      rpcProviderUrl: ethUrl,
       store: "",
-      delete_this_url: "",
       ...opts,
     };
     super(clientOpts);
@@ -99,8 +100,8 @@ export class MockNodeClientApi implements INodeApiClient {
   // TODO: how well will this work with dynamic paths?
   public static returnValues = {
     config: {
-      nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       chainId: "mocks", // network that your channel is on
+      nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       nodeUrl,
     },
   };

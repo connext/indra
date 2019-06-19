@@ -1,13 +1,14 @@
 import * as eth from "ethers";
 import {
   JsonRpcProvider,
-  TransactionResponse,
   TransactionRequest,
+  TransactionResponse,
 } from "ethers/providers";
-import { ClientOptions } from "./types";
-import { isHexString, arrayify, toUtf8Bytes, bigNumberify } from "ethers/utils";
-import { objMapPromise } from "./lib/utils";
+import { arrayify, bigNumberify, isHexString, toUtf8Bytes } from "ethers/utils";
+
 import { Logger } from "./lib/logger";
+import { objMapPromise } from "./lib/utils";
+import { ClientOptions } from "./types";
 
 // TODO: do we need this class if there's no auth yet (or JWT auth)
 // and CF handles signing? should this class include the keygen fn ref somehow
@@ -33,8 +34,7 @@ export class Wallet extends eth.Signer {
     } else {
       // access hubs eth url
       // TODO: http or https? is this the right default URL?
-      const nodeEthUrl =
-        "https://" + opts.nodeUrl.split("nats://")[1] + "/api/eth";
+      const nodeEthUrl = `https://${opts.nodeUrl.split("nats://")[1]}/api/eth`;
       this.provider = new JsonRpcProvider(nodeEthUrl);
     }
     // TODO: will we be able to use the hubs eth provider?

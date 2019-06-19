@@ -1,25 +1,27 @@
-import {
-  ClientOptions,
-  InternalClientOptions,
-  DepositParameters,
-  ChannelState,
-  ExchangeParameters,
-  WithdrawParameters,
-  TransferParameters,
-} from "./types";
-import { NodeApiClient, INodeApiClient } from "./node";
-import { Client as NatsClient } from "ts-nats";
-import { Wallet } from "./wallet";
 // import { Node as NodeTypes } from "@counterfactual/types";
 import { Node } from "@counterfactual/node";
-import { NatsServiceFactory } from "../../nats-messaging-client";
 import { EventEmitter } from "events";
+import { Client as NatsClient } from "ts-nats";
+
+import { NatsServiceFactory } from "../../nats-messaging-client";
+
 import { DepositController } from "./controllers/DepositController";
-import { TransferController } from "./controllers/TransferController";
 import { ExchangeController } from "./controllers/ExchangeController";
+import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { getMultisigAddress, createAccount } from "./lib/utils";
+import { createAccount, getMultisigAddress } from "./lib/utils";
+import { INodeApiClient, NodeApiClient } from "./node";
+import {
+  ChannelState,
+  ClientOptions,
+  DepositParameters,
+  ExchangeParameters,
+  InternalClientOptions,
+  TransferParameters,
+  WithdrawParameters,
+} from "./types";
+import { Wallet } from "./wallet";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -50,10 +52,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
   const node: NodeApiClient = new NodeApiClient({
-    nodeUrl: opts.nodeUrl,
-    nats: nats.getConnection(),
-    wallet,
     logLevel: opts.logLevel,
+    nats: nats.getConnection(),
+    nodeUrl: opts.nodeUrl,
+    wallet,
   });
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // const getFn = async (key: string) => {
@@ -85,30 +87,30 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     }, // TODO: proper config
     // @ts-ignore WHYYYYYYYYY
     wallet.provider,
-    "kovan", //TODO: make this not hardcoded to "kovan"
+    "kovan", // TODO: make this not hardcoded to "kovan"
   );
 
-  //TODO this will disappear once we start generating multisig internally and deploying on withdraw only
-  //do we need to save temp?
+  // TODO this will disappear once we start generating multisig internally and deploying on withdraw only
+  // do we need to save temp?
   const temp = await createAccount(
-    "http://localhost:8080", //opts.nodeUrl
+    "http://localhost:8080", // opts.nodeUrl
     { xpub: cfModule.publicIdentifier },
   );
   console.log(temp);
 
   const multisigAddress = await getMultisigAddress(
-    //TODO replace this with nats url once this path is built
-    "http://localhost:8080", //opts.nodeUrl
+    // TODO replace this with nats url once this path is built
+    "http://localhost:8080", // opts.nodeUrl
     cfModule.publicIdentifier,
   );
 
   // create the new client
   return new ConnextInternal({
-    node,
-    wallet,
-    nats: nats.getConnection(),
     cfModule,
     multisigAddress,
+    nats: nats.getConnection(),
+    node,
+    wallet,
     ...opts, // use any provided opts by default
   });
 }

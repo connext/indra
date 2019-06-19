@@ -1,13 +1,13 @@
-import { nodeUrl, MockNatsClient, MockWallet } from "./testing/mocks";
 import { NodeApiClient } from "./node";
+import { MockNatsClient, MockWallet, nodeUrl } from "./testing/mocks";
 
 describe("NodeApiClient", () => {
   let nodeClient: NodeApiClient;
 
   beforeEach(() => {
     nodeClient = new NodeApiClient({
-      nodeUrl,
       nats: new MockNatsClient(),
+      nodeUrl,
       wallet: new MockWallet(),
     });
     expect(nodeClient).toBeInstanceOf(NodeApiClient);
@@ -18,8 +18,8 @@ describe("NodeApiClient", () => {
     const message = await nodeClient.config();
     expect(nodeClient.config).toBeCalledTimes(1);
     expect(message).toStrictEqual({
-      nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       chainId: "mocks", // network that your channel is on
+      nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       nodeUrl,
     });
   });
