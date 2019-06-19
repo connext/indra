@@ -34,6 +34,25 @@ export class DepositController extends AbstractController {
     console.log(
       `\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`,
     );
+
+    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_STARTED, (data: any) => {
+      console.log("Deposit has started. Data:", JSON.stringify(data, null, 2));
+    });
+
+    this.cfModule.once(
+      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      (data: any) => {
+        console.log(
+          "Deposit has been confirmed. Data:",
+          JSON.stringify(data, null, 2),
+        );
+      },
+    );
+
+    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_FAILED, (data: any) => {
+      console.log("Deposit has failed. Data:", JSON.stringify(data, null, 2));
+    });
+
     try {
       await this.cfModule.call(CFModuleTypes.MethodName.DEPOSIT, {
         params: {
@@ -58,6 +77,8 @@ export class DepositController extends AbstractController {
         throw Error("My balance was not increased.");
       }
 
+      // TODO: delete this, do not need to wait for the counterparty deposit
+      // within the controller
       console.info("Waiting for counter party to deposit same amount");
 
       const freeBalanceNotUpdated = async (): Promise<any> => {
