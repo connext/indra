@@ -3,43 +3,51 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { isNullOrUndefined } from "util";
 import { v4 as generateUUID } from "uuid";
 import fetch from "node-fetch";
-import {utils as ethers} from "ethers";
+import { utils as ethers } from "ethers";
 
 export const objMap = <T, F extends keyof T, R>(
-  obj: T, func: (val: T[F], field: F) => R,
+  obj: T,
+  func: (val: T[F], field: F) => R,
 ): { [key in keyof T]: R } => {
-  const res: any = {}
+  const res: any = {};
   // TODO: fix hasOwnProperty ts err? (T can be any)
   // @ts-ignore
-  for (const key in obj) { if (obj.hasOwnProperty(key)) {
-    res[key] = func(key as any, obj[key] as any)
-  }}
-  return res
-}
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      res[key] = func(key as any, obj[key] as any);
+    }
+  }
+  return res;
+};
 
 export const objMapPromise = async <T, F extends keyof T, R>(
-  obj: T, func: (val: T[F], field: F) => Promise<R>,
+  obj: T,
+  func: (val: T[F], field: F) => Promise<R>,
 ): Promise<{ [key in keyof T]: R }> => {
-  const res: any = {}
+  const res: any = {};
   // TODO: fix?
   // @ts-ignore
-  for (const key in obj) { if (obj.hasOwnProperty(key)) {
-    res[key] = await func(key as any, obj[key] as any)
-  }}
-  return res
-}
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      res[key] = await func(key as any, obj[key] as any);
+    }
+  }
+  return res;
+};
 
 export const insertDefault = (val: string, obj: any, keys: string[]): any => {
-  const adjusted = {} as any
-  keys.concat(Object.keys(obj)).map((k: any): any => {
-    // check by index and undefined
-    adjusted[k] = (isNullOrUndefined(obj[k]))
-      ? val // not supplied set as default val
-      : obj[k]
-  })
+  const adjusted = {} as any;
+  keys.concat(Object.keys(obj)).map(
+    (k: any): any => {
+      // check by index and undefined
+      adjusted[k] = isNullOrUndefined(obj[k])
+        ? val // not supplied set as default val
+        : obj[k];
+    },
+  );
 
-  return adjusted
-}
+  return adjusted;
+};
 
 export const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -77,7 +85,8 @@ export async function getMultisigAddress(
 ): Promise<string> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress = bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
+  const multisigAddress =
+    bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet...Waiting for another [hardcoded] 2 seconds`,
@@ -91,15 +100,15 @@ export async function getMultisigAddress(
 // TODO Temporary fn which gets user details via http.
 export async function getUser(baseURL: string, xpub: string): Promise<any> {
   if (!xpub) {
-      throw new Error("getUser(): xpub is required");
+    throw new Error("getUser(): xpub is required");
   }
 
   try {
-      const userJson = await get(baseURL, `users/${xpub}`);
+    const userJson = await get(baseURL, `users/${xpub}`);
 
-      return userJson;
+    return userJson;
   } catch (e) {
-      return Promise.reject(e);
+    return Promise.reject(e);
   }
 }
 

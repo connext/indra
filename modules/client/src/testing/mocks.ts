@@ -1,27 +1,38 @@
-import { INodeApiClient } from "../node"
-import { NodeConfig, NodeInitializationParameters, ClientOptions } from "../types"
+import { INodeApiClient } from "../node";
+import {
+  NodeConfig,
+  NodeInitializationParameters,
+  ClientOptions,
+} from "../types";
 import { Logger } from "../lib/logger";
 import { Address } from "@counterfactual/types";
 import { TransactionRequest, TransactionResponse } from "ethers/providers";
 import * as nats from "ts-nats";
 import { Wallet } from "../wallet";
 
-export const address: string = '0x627306090abab3a6e1400e9345bc60c78a8bef57'
-export const mnemonic: string = 'candy maple cake sugar pudding cream honey rich smooth crumble sweet treat'
-export const privateKey: string = '0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6'
-export const ethUrl: string = process.env.ETH_RPC_URL || "http://localhost:8545"
-export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs"
+export const address: string = "0x627306090abab3a6e1400e9345bc60c78a8bef57";
+export const mnemonic: string =
+  "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
+export const privateKey: string =
+  "0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6";
+export const ethUrl: string =
+  process.env.ETH_RPC_URL || "http://localhost:8545";
+export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
 export class MockNatsClient extends nats.Client {
-  private returnVals = MockNodeClientApi.returnValues
+  private returnVals = MockNodeClientApi.returnValues;
 
   public request(subject: string, timeout: number, body?: any) {
-    console.log(`Sending request to ${subject} ${body ? `with body: ${body}` : `without body`}`)
-    return (this.returnVals as any)[subject]
+    console.log(
+      `Sending request to ${subject} ${
+        body ? `with body: ${body}` : `without body`
+      }`,
+    );
+    return (this.returnVals as any)[subject];
   }
 
   public patch(subject: string, returnValue: any) {
-    (this.returnVals as any)[subject] = returnValue
+    (this.returnVals as any)[subject] = returnValue;
   }
 }
 
@@ -37,33 +48,35 @@ export class MockWallet extends Wallet {
       store: "",
       delete_this_url: "",
       ...opts,
-    }
+    };
     super(clientOpts);
-    this.address = opts.address || address
+    this.address = opts.address || address;
   }
 
   public async getAddress(): Promise<string> {
-    return this.address
+    return this.address;
   }
 
-  public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
-    console.log(`Sending transaction: ${JSON.stringify(txReq, null, 2)}`)
-    return {} as TransactionResponse
+  public async sendTransaction(
+    txReq: TransactionRequest,
+  ): Promise<TransactionResponse> {
+    console.log(`Sending transaction: ${JSON.stringify(txReq, null, 2)}`);
+    return {} as TransactionResponse;
   }
-  
+
   public async signTransaction(txReq: TransactionRequest): Promise<string> {
-    return ""
+    return "";
   }
 
   public async signMessage(message: string): Promise<string> {
-    console.log(`Signing message: ${message}`)
-    return ""
+    console.log(`Signing message: ${message}`);
+    return "";
   }
 }
 
 export class MockNodeClientApi implements INodeApiClient {
   // public receivedUpdateRequests: UpdateRequest[] = []
-  public log: Logger
+  public log: Logger;
 
   private nodeUrl: string;
   private nats: MockNatsClient; // TODO: rename to messaging?
@@ -73,7 +86,7 @@ export class MockNodeClientApi implements INodeApiClient {
   private signature: string | undefined;
 
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
-    this.log = new Logger('MockNodeClientApi', opts.logLevel)
+    this.log = new Logger("MockNodeClientApi", opts.logLevel);
     this.nodeUrl = opts.nodeUrl || nodeUrl;
     this.nats = (opts.nats as any) || new MockNatsClient(); // TODO: rename to messaging?
     this.wallet = opts.wallet || new MockWallet();
@@ -90,10 +103,9 @@ export class MockNodeClientApi implements INodeApiClient {
       chainId: "mocks", // network that your channel is on
       nodeUrl,
     },
-
-  }
+  };
 
   public async config(): Promise<NodeConfig> {
-    return MockNodeClientApi.returnValues.config
+    return MockNodeClientApi.returnValues.config;
   }
 }
