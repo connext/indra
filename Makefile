@@ -94,6 +94,8 @@ payment-bot: node-modules $(shell find $(bot)/src $(find_options))
 client: nats-client $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/client && npm run build"
+	$(docker_run_in_root) "rm -rf modules/payment-bot/node_modules/@connext/client"
+	$(docker_run_in_root) "ln -s ../../../client modules/payment-bot/node_modules/@connext/client"
 	$(log_finish) && touch $(flags)/$@
 
 node-prod: node
