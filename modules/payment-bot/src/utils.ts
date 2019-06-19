@@ -34,7 +34,9 @@ export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResu
 export async function fetchMultisig(baseURL: string, xpub: string): Promise<any> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress = bot.channels[0].multisigAddress || undefined;
+  const multisigAddress = bot.channels[0]
+    ? bot.channels[0].multisigAddress
+    : undefined;
   if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet... ` +
@@ -43,7 +45,7 @@ export async function fetchMultisig(baseURL: string, xpub: string): Promise<any>
     // Convert to milliseconds
     await delay(DELAY_SECONDS * 1000).then(() => fetchMultisig(baseURL, xpub));
   }
-  return multisigAddress;
+  return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
 }
 
 /// Deposit and wait for counterparty deposit
