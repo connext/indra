@@ -73,7 +73,7 @@ export const postgresProvider: Provider = {
   },
 };
 
-export const natsProvider: FactoryProvider<NatsServiceFactory> = {
+export const natsProvider: FactoryProvider<NatsMessagingService> = {
   inject: [ConfigService],
   provide: NatsProviderId,
   useFactory: async (config: ConfigService): Promise<NatsMessagingService> => {
