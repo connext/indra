@@ -1,9 +1,5 @@
 import * as eth from "ethers";
-import {
-  JsonRpcProvider,
-  TransactionRequest,
-  TransactionResponse,
-} from "ethers/providers";
+import { JsonRpcProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
 import { arrayify, bigNumberify, isHexString, toUtf8Bytes } from "ethers/utils";
 
 import { Logger } from "./lib/logger";
@@ -45,14 +41,13 @@ export class Wallet extends eth.Signer {
       this.signer = new eth.Wallet(opts.privateKey);
       this.signer = this.signer.connect(this.provider);
       this.address = this.signer.address.toLowerCase();
-
-      // Second choice: Sign w mnemonic
     } else if (opts.mnemonic) {
+      // Second choice: Sign w mnemonic
       this.signer = eth.Wallet.fromMnemonic(opts.mnemonic);
       this.signer = this.signer.connect(this.provider);
       this.address = this.signer.address.toLowerCase();
-      // Third choice: External wallets
     } else if (opts.externalWallet) {
+      // Third choice: External wallets
       this.signer = opts.externalWallet;
       this.external = true;
       this.address = opts.externalWallet.address.toLowerCase();
@@ -66,16 +61,11 @@ export class Wallet extends eth.Signer {
   }
 
   public async signMessage(message: string): Promise<string> {
-    const bytes: Uint8Array = isHexString(message)
-      ? arrayify(message)
-      : toUtf8Bytes(message);
-
+    const bytes: Uint8Array = isHexString(message) ? arrayify(message) : toUtf8Bytes(message);
     return this.signer.signMessage(bytes);
   }
 
-  public async sendTransaction(
-    txReq: TransactionRequest,
-  ): Promise<TransactionResponse> {
+  public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
     if (this.external) {
       return this.signAndSendTransactionExternally(txReq);
     }
@@ -86,9 +76,7 @@ export class Wallet extends eth.Signer {
     return this.signer.sign(tx);
   }
 
-  private async signAndSendTransactionExternally(
-    tx: TransactionRequest,
-  ): Promise<any> {
+  private async signAndSendTransactionExternally(tx: TransactionRequest): Promise<any> {
     const txObj: any = await this.prepareTransaction(tx);
     return this.signer.sign(txObj);
   }
@@ -103,7 +91,8 @@ export class Wallet extends eth.Signer {
     const total = value.add(gasLimit.mul(gasPrice));
     if (balance.lt(total)) {
       throw new Error(
-        `Insufficient funds: value=${value} + (gasPrice=${gasPrice} * gasLimit=${gasLimit}) = total=${total} > balance=${balance}`,
+        `Insufficient funds: value=${value} + (gasPrice=${gasPrice} * gasLimit=${gasLimit}) = ` +
+          `total=${total} > balance=${balance}`,
       );
     }
 

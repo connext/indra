@@ -55,6 +55,12 @@ cat .package.json \
   | sed 's|"'"$package"'": ".*"|"'"$package"'": "^'$target_version'"|' > package.json
 rm .package.json
 
+cd ../client
+mv package.json .package.json
+cat .package.json \
+  | sed 's|"'"$package"'": ".*"|"'"$package"'": "^'$target_version'"|' > package.json
+rm .package.json
+
 cd ../..
 git add modules/nats-messaging-client modules/node
 git commit -m "Publish package: $package@$target_version"

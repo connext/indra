@@ -66,11 +66,22 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret ${project}_database_dev
+new_secret ${project}_database_dev $project
+
+# Deploy with an attachable network so tests & the daicard can connect to individual components
+if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
+then
+  id="`docker network create --attachable --driver overlay $project`"
+  echo "Created ATTACHABLE network with id $id"
+fi
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
+
+networks:
+  $project:
+    external: true
 
 secrets:
   ${project}_database_dev:
@@ -100,6 +111,8 @@ services:
       ETH_NETWORK: $eth_network
       ETH_RPC_URL: $eth_rpc_url
       PORT: $node_port
+    networks:
+      - $project
     ports:
       - "$node_port:$node_port"
     secrets:
@@ -110,6 +123,8 @@ services:
   ethprovider:
     image: $ethprovider_image
     command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=$eth_network_id" ]
+    networks:
+      - $project
     ports:
       - "8545:8545"
     volumes:
@@ -125,6 +140,8 @@ services:
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $project
+    networks:
+      - $project
     ports:
       - "5432:5432"
     secrets:
@@ -134,6 +151,8 @@ services:
 
   nats:
     image: $nats_image
+    networks:
+      - $project
     ports:
      - "$nats_port:$nats_port"
 EOF
