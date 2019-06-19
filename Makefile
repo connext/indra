@@ -14,6 +14,8 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 node=$(cwd)/modules/node
+client=$(cwd)/modules/client
+bot=$(cwd)/modules/payment-bot
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -22,7 +24,6 @@ my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
 docker_run=docker run --name=$(project)_builder --tty --rm
 docker_run_in_root=$(docker_run) --volume=$(cwd):/root $(project)_builder $(id)
-docker_run_in_node=$(docker_run) --volume=$(node):/root $(project)_builder $(id)
 
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > $(flags)/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat $(flags)/.timestamp`)) seconds";echo "=============";echo
@@ -36,7 +37,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node
+dev: node client payment-bot
 prod: node-prod
 
 start: dev
@@ -85,6 +86,16 @@ watch-node: node-modules
 ########################################
 # Begin Real Rules
 
+payment-bot: node-modules $(shell find $(bot)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_root) "cd modules/payment-bot && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+client: nats-client $(shell find $(client)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_root) "cd modules/client && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
 node-prod: node
 	$(log_start)
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
@@ -100,7 +111,7 @@ nats-client: node-modules
 	$(docker_run_in_root) "cd modules/nats-messaging-client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node-modules: builder package.json lerna.json $(node)/package.json
+node-modules: builder package.json lerna.json $(node)/package.json $(client)/package.json $(bot)/package.json
 	$(log_start)
 	$(docker_run_in_root) "lerna bootstrap --hoist"
 	$(log_finish) && touch $(flags)/$@

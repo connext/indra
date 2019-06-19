@@ -4,19 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --project tsconfig.json",
     "start:bot1": "env-cmd -e devbot1 ts-node src/",
     "start:bot2": "env-cmd -e devbot2 ts-node src/"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@connext/client": "2.0.0-beta-1",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/firebase-server": "0.0.1",
     "@counterfactual/node": "0.2.1",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@counterfactual/types": "0.0.12",
-    "ethers": "4.0.30",
+    "ethers": "4.0.29",
     "inquirer": "6.3.1"
   },
   "devDependencies": {

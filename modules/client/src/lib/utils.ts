@@ -10,10 +10,8 @@ export const objMap = <T, F extends keyof T, R>(
   func: (val: T[F], field: F) => R,
 ): { [key in keyof T]: R } => {
   const res: any = {};
-  // TODO: fix hasOwnProperty ts err? (T can be any)
-  // @ts-ignore
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if ((obj as any).hasOwnProperty(key)) {
       res[key] = func(key as any, obj[key] as any);
     }
   }
@@ -25,10 +23,8 @@ export const objMapPromise = async <T, F extends keyof T, R>(
   func: (val: T[F], field: F) => Promise<R>,
 ): Promise<{ [key in keyof T]: R }> => {
   const res: any = {};
-  // TODO: fix?
-  // @ts-ignore
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if ((obj as any).hasOwnProperty(key)) {
       res[key] = await func(key as any, obj[key] as any);
     }
   }
@@ -126,13 +122,13 @@ export async function createAccount(baseURL: string, user: { xpub: string }): Pr
 }
 
 // TODO ???
-function timeout(delay: number = 30000): void {
+function timeout(delay: number = 30000): any {
   const handler = setTimeout(() => {
     throw new Error("Request timed out");
   }, delay);
 
   return {
-    cancel(): void {
+    cancel(): any {
       clearTimeout(handler);
     },
   };

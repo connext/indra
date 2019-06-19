@@ -1,6 +1,6 @@
 {
-  "name": "connext",
-  "version": "4.0.3",
+  "name": "@connext/client",
+  "version": "2.0.0-beta-1",
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
   "scripts": {
@@ -11,16 +11,19 @@
     "test": "./node_modules/.bin/jest"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.15",
-    "ts-jest": "^24.0.2",
-    "typescript": "^3.5.2"
+    "@types/jest": "24.0.14",
+    "@types/node-fetch": "2.3.7",
+    "@types/uuid": "3.4.4",
+    "ts-jest": "24.0.2",
+    "typescript": "3.5.2"
   },
   "dependencies": {
-    "@counterfactual/node": "^0.2.1",
+    "@connext/nats-messaging-client": "0.0.3",
+    "@counterfactual/node": "0.2.1",
     "@counterfactual/types": "0.0.12",
-    "@types/node-fetch": "^2.3.7",
-    "@types/uuid": "^3.4.4",
-    "ethers": "^4.0.30",
-    "ts-nats": "^1.2.4"
+    "ethers": "4.0.29",
+    "node-fetch": "2.6.0",
+    "ts-nats": "1.2.4",
+    "uuid": "3.3.2"
   }
 }
