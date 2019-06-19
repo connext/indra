@@ -26,10 +26,7 @@ export class ChannelNats extends BaseNatsProvider {
 export const channelProvider: FactoryProvider<Promise<Client>> = {
   inject: [NatsProviderId, UserRepository],
   provide: ChannelMessagingProviderId,
-  useFactory: async (
-    nats: NatsMessagingService,
-    userRepo: UserRepository,
-  ): Promise<Client> => {
+  useFactory: async (nats: NatsMessagingService, userRepo: UserRepository): Promise<Client> => {
     const client = nats.getConnection();
     const channel = new ChannelNats(client, userRepo);
     await channel.setupSubscriptions();

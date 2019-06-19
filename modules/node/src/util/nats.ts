@@ -2,7 +2,7 @@ import { RpcException } from "@nestjs/microservices";
 import { Client, Msg, NatsError } from "ts-nats";
 
 export class BaseNatsProvider implements INatsProvider {
-  constructor(private readonly natsClient: Client) {}
+  constructor(protected readonly natsClient: Client) {}
 
   async connectRequestReponse(
     pattern: string,
