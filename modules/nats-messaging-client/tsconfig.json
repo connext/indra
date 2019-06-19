@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declarationDir": "dist/",
+    "module": "ESNext",
     "outDir": "dist/",
     "typeRoots": [
       "./node_modules/@types",

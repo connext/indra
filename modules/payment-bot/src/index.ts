@@ -1,3 +1,4 @@
+import * as connext from "@connext/client";
 import { MNEMONIC_PATH } from "@counterfactual/node";
 import {
   confirmPostgresConfigurationEnvVars,
@@ -6,15 +7,12 @@ import {
 } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
 
-import * as connext from "../../client/src";
-
 import { showMainPrompt } from "./bot";
 
 const BASE_URL = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
 
-const ethUrl =
-  process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
+const ethUrl = process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
 
 const privateKey = process.env.PRIVATE_KEY;
 if (!privateKey) {
@@ -30,7 +28,7 @@ let pgServiceFactory: PostgresServiceFactory;
 // console.log(`Using Nats configuration for ${process.env.NODE_ENV}`);
 // console.log(`Using Firebase configuration for ${process.env.NODE_ENV}`);
 
-process.on("warning", e => console.warn(e.stack));
+process.on("warning", (e: any): any => console.warn(e.stack));
 
 confirmPostgresConfigurationEnvVars();
 pgServiceFactory = new PostgresServiceFactory({
@@ -43,21 +41,16 @@ pgServiceFactory = new PostgresServiceFactory({
 });
 
 let client: connext.ConnextInternal;
-let bot;
 
-export function getMultisigAddress() {
+export function getMultisigAddress(): string {
   return client.opts.multisigAddress;
 }
 
-export function getWalletAddress() {
+export function getWalletAddress(): string {
   return client.wallet.address;
 }
 
-export function getBot() {
-  return bot;
-}
-
-(async () => {
+(async (): Promise<void> => {
   await pgServiceFactory.connectDb();
 
   console.log("Creating store");
