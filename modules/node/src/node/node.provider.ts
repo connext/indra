@@ -1,4 +1,4 @@
-import { NatsServiceFactory } from "@connext/nats-messaging-client";
+import { NatsServiceFactory, NatsMessagingService } from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";
@@ -11,6 +11,7 @@ import {
   PostgresProviderId,
 } from "../constants";
 import { CLogger } from "../util";
+import { FactoryProvider } from "@nestjs/common/interfaces";
 
 const logger = new CLogger("NodeProvider");
 
@@ -72,10 +73,13 @@ export const postgresProvider: Provider = {
   },
 };
 
-export const natsProvider: Provider = {
+export const natsProvider: FactoryProvider<NatsServiceFactory> = {
   inject: [ConfigService],
   provide: NatsProviderId,
-  useFactory: (config: ConfigService): NatsServiceFactory => {
-    return new NatsServiceFactory({ servers: config.getNatsConfig().servers });
+  useFactory: async (config: ConfigService): Promise<NatsMessagingService> => {
+    const natsServiceFactory = new NatsServiceFactory({ servers: config.getNatsConfig().servers });
+    const messService = natsServiceFactory.createMessagingService("messaging");
+    await messService.connect();
+    return messService;
   },
 };
