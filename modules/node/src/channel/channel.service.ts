@@ -7,7 +7,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
-import { Connection } from "typeorm";
+import { Connection, EntityManager } from "typeorm";
 import { v4 as generateUUID } from "uuid";
 
 import { NodeProviderId } from "../constants";
@@ -65,7 +65,7 @@ export class ChannelService implements OnModuleInit {
   }
 
   // actually creates the channel in the db right now, will change when multisig issue resolved
-  async addMultisig(xpub, multisigAddress): Promise<Channel> {
+  async addMultisig(xpub: string, multisigAddress: string): Promise<Channel> {
     logger.log(`Multisig deployed for ${xpub}, adding to channel`);
     const user = await this.userRepository.findByXpub(xpub);
     if (!user) {
@@ -85,7 +85,7 @@ export class ChannelService implements OnModuleInit {
     channel.user = user;
 
     return await this.dbConnection.manager.transaction(
-      async transactionalEntityManager => {
+      async (transactionalEntityManager: EntityManager) => {
         await transactionalEntityManager.save(user);
         await transactionalEntityManager.save(channel);
         await transactionalEntityManager.save(update);
@@ -95,7 +95,7 @@ export class ChannelService implements OnModuleInit {
   }
 
   // initialize CF Node with methods from this service to avoid circular dependency
-  onModuleInit() {
+  onModuleInit(): void {
     this.node.on(
       NodeTypes.EventName.DEPOSIT_CONFIRMED,
       (res: DepositConfirmationMessage) => {
