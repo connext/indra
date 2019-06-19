@@ -13,7 +13,7 @@
   "dependencies": {
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/firebase-server": "0.0.1",
-    "@counterfactual/node": "0.2.1",
+    "@counterfactual/node": "0.2.2",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@counterfactual/types": "0.0.12",
     "ethers": "4.0.30",
