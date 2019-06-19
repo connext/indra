@@ -11,14 +11,14 @@
     "test": "./node_modules/.bin/jest"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.14",
+    "@types/jest": "^24.0.15",
     "ts-jest": "^24.0.2",
-    "typescript": "^3.5.1"
+    "typescript": "^3.5.2"
   },
   "dependencies": {
-    "@counterfactual/node": "^0.1.26",
-    "@counterfactual/types": "0.0.10",
-    "ethers": "^4.0.29",
+    "@counterfactual/node": "^0.2.1",
+    "@counterfactual/types": "0.0.12",
+    "ethers": "^4.0.30",
     "ts-nats": "^1.2.4"
   }
 }
