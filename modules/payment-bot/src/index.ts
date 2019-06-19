@@ -1,4 +1,4 @@
-import { MNEMONIC_PATH, } from "@counterfactual/node";
+import { MNEMONIC_PATH } from "@counterfactual/node";
 import {
   confirmPostgresConfigurationEnvVars,
   POSTGRES_CONFIGURATION_ENV_KEYS,
@@ -6,13 +6,15 @@ import {
 } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
 
-import { showMainPrompt } from "./bot";
 import * as connext from "../../client/src";
+
+import { showMainPrompt } from "./bot";
 
 const BASE_URL = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
 
-const ethUrl = process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
+const ethUrl =
+  process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
 
 const privateKey = process.env.PRIVATE_KEY;
 if (!privateKey) {
@@ -20,7 +22,7 @@ if (!privateKey) {
 }
 
 const nodeUrl = process.env.NODE_URL;
-if (!nodeUrl || !nodeUrl.startsWith('nats://')) {
+if (!nodeUrl || !nodeUrl.startsWith("nats://")) {
   throw Error("No accurate node url specified in env. Exiting.");
 }
 
@@ -63,11 +65,11 @@ export function getBot() {
 
   const connextOpts: connext.ClientOptions = {
     delete_this_url: BASE_URL,
-    rpcProviderUrl: ethUrl,
     nodeUrl,
     privateKey,
-    store
-  }
+    rpcProviderUrl: ethUrl,
+    store,
+  };
 
   console.log("Using client options:");
   console.log("     - rpcProviderUrl:", ethUrl);
@@ -79,7 +81,7 @@ export function getBot() {
 
   try {
     console.log("Creating connext");
-    const client = await connext.connect(connextOpts);
+    client = await connext.connect(connextOpts);
     console.log("Client created successfully!");
 
     const config = await client.config();
@@ -91,16 +93,18 @@ export function getBot() {
     if (process.env.DEPOSIT_AMOUNT) {
       const depositParams: connext.DepositParameters = {
         amount: eth.utils.parseEther(process.env.DEPOSIT_AMOUNT).toString(),
-      }
-      await client.deposit(depositParams)
-      console.log(`Successfully deposited ${depositParams.amount}!`)
+      };
+      await client.deposit(depositParams);
+      console.log(`Successfully deposited ${depositParams.amount}!`);
       // await client.deposit(node, process.env.DEPOSIT_AMOUNT, client.multisigAddress);
     }
 
     // connext.afterUser(node, bot.nodeAddress, client.multisigAddress);
-    connext.logEthFreeBalance(await connext.getFreeBalance(client.cfModule, client.publicIdentifier));
-    //@ts-ignore
-    showMainPrompt(client.cfModule); //TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
+    connext.logEthFreeBalance(
+      await connext.getFreeBalance(client.cfModule, client.publicIdentifier),
+    );
+    // @ts-ignore
+    showMainPrompt(client.cfModule); // TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
   } catch (e) {
     console.error("\n");
     console.error(e);
