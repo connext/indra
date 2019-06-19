@@ -18,6 +18,8 @@
   "dependencies": {
     "@counterfactual/node": "^0.2.1",
     "@counterfactual/types": "0.0.12",
+    "@types/node-fetch": "^2.3.7",
+    "@types/uuid": "^3.4.4",
     "ethers": "^4.0.30",
     "ts-nats": "^1.2.4"
   }
