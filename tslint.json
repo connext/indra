@@ -50,8 +50,7 @@
       "arrow-parameter",
       "property-declaration",
       "member-variable-declaration"
-    ],
-    "variable-name": false
+    ]
   },
   "jsRules": {
     "max-line-length": [true, 100]
