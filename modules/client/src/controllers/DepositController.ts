@@ -29,12 +29,10 @@ export class DepositController extends AbstractController {
 
     const [counterpartyFreeBalanceAddress] = Object.keys(
       preDepositBalances,
-    ).filter(addr => addr !== myFreeBalanceAddress);
+    ).filter((addr: string): boolean => addr !== myFreeBalanceAddress);
 
     console.log(
-      `\nDepositing ${params.amount} ETH into ${
-        this.connext.opts.multisigAddress
-      }\n`,
+      `\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`,
     );
     try {
       await this.cfModule.call(CFModuleTypes.MethodName.DEPOSIT, {
@@ -62,7 +60,7 @@ export class DepositController extends AbstractController {
 
       console.info("Waiting for counter party to deposit same amount");
 
-      const freeBalanceNotUpdated = async () => {
+      const freeBalanceNotUpdated = async (): Promise<any> => {
         return !(await getFreeBalance(
           this.cfModule,
           this.connext.opts.multisigAddress,

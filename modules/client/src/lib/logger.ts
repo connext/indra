@@ -1,9 +1,9 @@
 export class Logger {
   private levels: { [key: string]: number } = {
     debug: 4,
+    error: 1,
     info: 3,
     warn: 2,
-    error: 1,
   };
   private logLevel: number = 3;
   private name: string = "Logger";

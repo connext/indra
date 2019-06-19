@@ -1,8 +1,9 @@
 import { Address } from "@counterfactual/types";
-import { Logger } from "./lib/logger";
-import { Wallet } from "./wallet";
-import { NodeConfig, NodeInitializationParameters } from "./types";
 import { Client as NatsClient } from "ts-nats";
+
+import { Logger } from "./lib/logger";
+import { NodeConfig, NodeInitializationParameters } from "./types";
+import { Wallet } from "./wallet";
 
 // TODO: move to types.tx?
 const API_TIMEOUT = 30000;

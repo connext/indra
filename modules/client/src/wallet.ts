@@ -1,19 +1,25 @@
-import * as eth from "ethers";
-import {
-  JsonRpcProvider,
-  TransactionResponse,
-  TransactionRequest,
-} from "ethers/providers";
-import { ClientOptions } from "./types";
-import { isHexString, arrayify, toUtf8Bytes, bigNumberify } from "ethers/utils";
-import { objMapPromise } from "./lib/utils";
+import { providers, Signer, utils, Wallet as EthersWallet } from "ethers";
+
 import { Logger } from "./lib/logger";
+import { objMapPromise } from "./lib/utils";
+import { ClientOptions } from "./types";
+
+type TransactionRequest = providers.TransactionRequest;
+type TransactionResponse = providers.TransactionResponse;
+type JsonRpcProviderType = providers.JsonRpcProvider;
+
+const JsonRpcProvider = providers.JsonRpcProvider;
+
+const arrayify = utils.arrayify;
+const bigNumberify = utils.bigNumberify;
+const isHexString = utils.isHexString;
+const toUtf8Bytes = utils.toUtf8Bytes;
 
 // TODO: do we need this class if there's no auth yet (or JWT auth)
 // and CF handles signing? should this class include the keygen fn ref somehow
-export class Wallet extends eth.Signer {
-  public provider: JsonRpcProvider;
-  private signer: eth.Wallet;
+export class Wallet extends Signer {
+  public provider: JsonRpcProviderType;
+  private signer: EthersWallet;
   public address: string;
   private external: boolean = false;
   public log: Logger;
@@ -33,8 +39,7 @@ export class Wallet extends eth.Signer {
     } else {
       // access hubs eth url
       // TODO: http or https? is this the right default URL?
-      const nodeEthUrl =
-        "https://" + opts.nodeUrl.split("nats://")[1] + "/api/eth";
+      const nodeEthUrl = `https://${opts.nodeUrl.split("nats://")[1]}/api/eth`;
       this.provider = new JsonRpcProvider(nodeEthUrl);
     }
     // TODO: will we be able to use the hubs eth provider?
@@ -42,17 +47,16 @@ export class Wallet extends eth.Signer {
     ////////////////////////////////////////
     // Setup a signer
     if (opts.privateKey) {
-      this.signer = new eth.Wallet(opts.privateKey);
+      this.signer = new EthersWallet(opts.privateKey);
       this.signer = this.signer.connect(this.provider);
       this.address = this.signer.address.toLowerCase();
-
-      // Second choice: Sign w mnemonic
     } else if (opts.mnemonic) {
-      this.signer = eth.Wallet.fromMnemonic(opts.mnemonic);
+      // Second choice: Sign w mnemonic
+      this.signer = EthersWallet.fromMnemonic(opts.mnemonic);
       this.signer = this.signer.connect(this.provider);
       this.address = this.signer.address.toLowerCase();
-      // Third choice: External wallets
     } else if (opts.externalWallet) {
+      // Third choice: External wallets
       this.signer = opts.externalWallet;
       this.external = true;
       this.address = opts.externalWallet.address.toLowerCase();
@@ -69,7 +73,6 @@ export class Wallet extends eth.Signer {
     const bytes: Uint8Array = isHexString(message)
       ? arrayify(message)
       : toUtf8Bytes(message);
-
     return this.signer.signMessage(bytes);
   }
 
@@ -103,7 +106,8 @@ export class Wallet extends eth.Signer {
     const total = value.add(gasLimit.mul(gasPrice));
     if (balance.lt(total)) {
       throw new Error(
-        `Insufficient funds: value=${value} + (gasPrice=${gasPrice} * gasLimit=${gasLimit}) = total=${total} > balance=${balance}`,
+        `Insufficient funds: value=${value} + (gasPrice=${gasPrice} * gasLimit=${gasLimit}) = ` +
+          `total=${total} > balance=${balance}`,
       );
     }
 

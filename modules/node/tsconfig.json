@@ -1,17 +1,11 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": "./",
-    "declaration": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
     "incremental": true,
-    "lib": ["es2017", "dom"],
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "noUnusedLocals": false,
     "outDir": "dist",
-    "removeComments": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
+    "strict": false,
     "target": "es6"
   },
   "exclude": ["dist", "node_modules", "**/*spec.ts"],

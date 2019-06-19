@@ -7,11 +7,9 @@ import { v4 as generateUUID } from "uuid";
 import { connectNode } from "./bot";
 
 const API_TIMEOUT = 30000;
-const DELAY_SECONDS = process.env.DELAY_SECONDS
-  ? Number(process.env.DELAY_SECONDS)
-  : 5;
+const DELAY_SECONDS = process.env.DELAY_SECONDS ? Number(process.env.DELAY_SECONDS) : 5;
 
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+const delay = (ms: number): Promise<any> => new Promise((res: any): any => setTimeout(res, ms));
 
 export async function getFreeBalance(
   node: Node,
@@ -22,41 +20,36 @@ export async function getFreeBalance(
     requestId: generateUUID(),
     type: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
   };
-
   const { result } = await node.call(query.type, query);
-
   return result as NodeTypes.GetFreeBalanceStateResult;
 }
 
-export function logEthFreeBalance(
-  freeBalance: NodeTypes.GetFreeBalanceStateResult,
-) {
+export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
   console.info(`Channel's free balance`);
   for (const key in freeBalance) {
     console.info(key, formatEther(freeBalance[key]));
   }
 }
 
-export async function fetchMultisig(baseURL: string, xpub: string) {
+export async function fetchMultisig(baseURL: string, xpub: string): Promise<any> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress = bot.channels[0].multisigAddress || undefined;
+  const multisigAddress = bot.channels[0]
+    ? bot.channels[0].multisigAddress
+    : undefined;
   if (!multisigAddress) {
     console.info(
-      `The Bot doesn't have a channel with the Playground yet...Waiting for another ${DELAY_SECONDS} seconds`,
+      `The Bot doesn't have a channel with the Playground yet... ` +
+        `Waiting for another ${DELAY_SECONDS} seconds`,
     );
     // Convert to milliseconds
     await delay(DELAY_SECONDS * 1000).then(() => fetchMultisig(baseURL, xpub));
   }
-  return multisigAddress;
+  return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
 }
 
 /// Deposit and wait for counterparty deposit
-export async function deposit(
-  node: Node,
-  amount: string,
-  multisigAddress: string,
-) {
+export async function deposit(node: Node, amount: string, multisigAddress: string): Promise<any> {
   const myFreeBalanceAddress = node.ethFreeBalanceAddress;
 
   const preDepositBalances = await getFreeBalance(node, multisigAddress);
@@ -69,9 +62,9 @@ export async function deposit(
     throw new Error("My address not found");
   }
 
-  const [counterpartyFreeBalanceAddress] = Object.keys(
-    preDepositBalances,
-  ).filter(addr => addr !== myFreeBalanceAddress);
+  const [counterpartyFreeBalanceAddress] = Object.keys(preDepositBalances).filter(
+    (addr: string): boolean => addr !== myFreeBalanceAddress,
+  );
 
   console.log(`\nDepositing ${amount} ETH into ${multisigAddress}\n`);
   try {
@@ -87,26 +80,20 @@ export async function deposit(
 
     const postDepositBalances = await getFreeBalance(node, multisigAddress);
 
-    if (
-      !postDepositBalances[myFreeBalanceAddress].gt(
-        preDepositBalances[myFreeBalanceAddress],
-      )
-    ) {
+    if (!postDepositBalances[myFreeBalanceAddress].gt(preDepositBalances[myFreeBalanceAddress])) {
       throw Error("My balance was not increased.");
     }
 
     console.info("Waiting for counter party to deposit same amount");
 
-    const freeBalanceNotUpdated = async () => {
-      return !(await getFreeBalance(node, multisigAddress))[
-        counterpartyFreeBalanceAddress
-      ].gt(preDepositBalances[counterpartyFreeBalanceAddress]);
+    const freeBalanceNotUpdated = async (): Promise<any> => {
+      return !(await getFreeBalance(node, multisigAddress))[counterpartyFreeBalanceAddress].gt(
+        preDepositBalances[counterpartyFreeBalanceAddress],
+      );
     };
 
     while (await freeBalanceNotUpdated()) {
-      console.info(
-        `Waiting ${DELAY_SECONDS} more seconds for counter party deposit`,
-      );
+      console.info(`Waiting ${DELAY_SECONDS} more seconds for counter party deposit`);
       await delay(DELAY_SECONDS * 1000);
     }
 
@@ -117,13 +104,13 @@ export async function deposit(
   }
 }
 
-function timeout(delay: number = API_TIMEOUT) {
+function timeout(delay: number = API_TIMEOUT): any {
   const handler = setTimeout(() => {
     throw new Error("Request timed out");
   }, delay);
 
   return {
-    cancel() {
+    cancel(): any {
       clearTimeout(handler);
     },
   };
@@ -160,11 +147,10 @@ async function get(baseURL: string, endpoint: string): Promise<object> {
     const error = response.errors[0];
     throw error;
   }
-
   return response;
 }
 
-async function post(baseURL: string, endpoint, data) {
+async function post(baseURL: string, endpoint: any, data: any): Promise<any> {
   const body = JSON.stringify(data);
   const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
     body,
@@ -180,7 +166,6 @@ async function post(baseURL: string, endpoint, data) {
     const error = response.errors[0];
     throw error;
   }
-
   return response;
 }
 
@@ -188,18 +173,14 @@ export async function afterUser(
   node: Node,
   botPublicIdentifer: string,
   multisigAddress: string,
-) {
+): Promise<any> {
   console.log("Setting up bot's event handlers");
-
   await connectNode(node, botPublicIdentifer, multisigAddress);
 }
 
 // TODO: don't duplicate these from PG for consistency
 
-export async function createAccount(
-  baseURL: string,
-  user: { xpub: string },
-): Promise<object> {
+export async function createAccount(baseURL: string, user: { xpub: string }): Promise<object> {
   try {
     const userRes = await post(baseURL, "users", user);
 
