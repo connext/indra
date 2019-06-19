@@ -1,49 +1,56 @@
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
+import { formatEther } from "ethers/utils";
+import fetch from "node-fetch";
 import { isNullOrUndefined } from "util";
 import { v4 as generateUUID } from "uuid";
-import fetch from "node-fetch";
-import {utils as ethers} from "ethers";
 
 export const objMap = <T, F extends keyof T, R>(
-  obj: T, func: (val: T[F], field: F) => R,
+  obj: T,
+  func: (val: T[F], field: F) => R,
 ): { [key in keyof T]: R } => {
-  const res: any = {}
+  const res: any = {};
   // TODO: fix hasOwnProperty ts err? (T can be any)
   // @ts-ignore
-  for (const key in obj) { if (obj.hasOwnProperty(key)) {
-    res[key] = func(key as any, obj[key] as any)
-  }}
-  return res
-}
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      res[key] = func(key as any, obj[key] as any);
+    }
+  }
+  return res;
+};
 
 export const objMapPromise = async <T, F extends keyof T, R>(
-  obj: T, func: (val: T[F], field: F) => Promise<R>,
+  obj: T,
+  func: (val: T[F], field: F) => Promise<R>,
 ): Promise<{ [key in keyof T]: R }> => {
-  const res: any = {}
+  const res: any = {};
   // TODO: fix?
   // @ts-ignore
-  for (const key in obj) { if (obj.hasOwnProperty(key)) {
-    res[key] = await func(key as any, obj[key] as any)
-  }}
-  return res
-}
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      res[key] = await func(key as any, obj[key] as any);
+    }
+  }
+  return res;
+};
 
 export const insertDefault = (val: string, obj: any, keys: string[]): any => {
-  const adjusted = {} as any
+  const adjusted = {} as any;
   keys.concat(Object.keys(obj)).map((k: any): any => {
     // check by index and undefined
-    adjusted[k] = (isNullOrUndefined(obj[k]))
+    adjusted[k] = isNullOrUndefined(obj[k])
       ? val // not supplied set as default val
-      : obj[k]
-  })
+      : obj[k];
+  });
 
-  return adjusted
-}
+  return adjusted;
+};
 
-export const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+export const delay = (ms: number): Promise<void> =>
+  new Promise((res: any): any => setTimeout(res, ms));
 
-//TODO Temporary - this eventually should be exposed at the top level and retrieve from store
+// TODO Temporary - this eventually should be exposed at the top level and retrieve from store
 export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
@@ -59,28 +66,24 @@ export async function getFreeBalance(
   return result as NodeTypes.GetFreeBalanceStateResult;
 }
 
-//TODO Should we keep this? It's a nice helper to break out by key. Maybe generalize?
-export function logEthFreeBalance(
-  freeBalance: NodeTypes.GetFreeBalanceStateResult,
-) {
+// TODO Should we keep this? It's a nice helper to break out by key. Maybe generalize?
+export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
   console.info(`Channel's free balance`);
   for (const key in freeBalance) {
-    console.info(key, ethers.formatEther(freeBalance[key]));
+    console.info(key, formatEther(freeBalance[key]));
   }
 }
 
 // TODO Temporary fn which gets multisig address via http.
 // This should eventually be derived internally from user/node xpub.
-export async function getMultisigAddress(
-  baseURL: string,
-  xpub: string,
-): Promise<string> {
+export async function getMultisigAddress(baseURL: string, xpub: string): Promise<string> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
   const multisigAddress = bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
-      `The Bot doesn't have a channel with the Playground yet...Waiting for another [hardcoded] 2 seconds`,
+      `The Bot doesn't have a channel with the Playground yet... ` +
+        `Waiting for another [hardcoded] 2 seconds`,
     );
     // Convert to milliseconds
     await delay(2 * 1000).then(() => getMultisigAddress(baseURL, xpub));
@@ -91,23 +94,19 @@ export async function getMultisigAddress(
 // TODO Temporary fn which gets user details via http.
 export async function getUser(baseURL: string, xpub: string): Promise<any> {
   if (!xpub) {
-      throw new Error("getUser(): xpub is required");
+    throw new Error("getUser(): xpub is required");
   }
 
   try {
-      const userJson = await get(baseURL, `users/${xpub}`);
-
-      return userJson;
+    const userJson = await get(baseURL, `users/${xpub}`);
+    return userJson;
   } catch (e) {
-      return Promise.reject(e);
+    return Promise.reject(e);
   }
 }
 
-//TODO Temporary fn which deploys multisig and returns address/hash
-export async function createAccount(
-  baseURL: string,
-  user: { xpub: string },
-): Promise<object> {
+// TODO Temporary fn which deploys multisig and returns address/hash
+export async function createAccount(baseURL: string, user: { xpub: string }): Promise<object> {
   try {
     const userRes = await post(baseURL, "users", user);
 
@@ -126,20 +125,20 @@ export async function createAccount(
   }
 }
 
-//TODO ???
-function timeout(delay: number = 30000) {
+// TODO ???
+function timeout(delay: number = 30000): void {
   const handler = setTimeout(() => {
     throw new Error("Request timed out");
   }, delay);
 
   return {
-    cancel() {
+    cancel(): void {
       clearTimeout(handler);
     },
   };
 }
 
-//TODO Temporary!!
+// TODO Temporary!!
 async function get(baseURL: string, endpoint: string): Promise<object> {
   const requestTimeout = timeout();
 
@@ -175,8 +174,8 @@ async function get(baseURL: string, endpoint: string): Promise<object> {
   return response;
 }
 
-//TODO Temporary!!
-async function post(baseURL: string, endpoint: string, data: any) {
+// TODO Temporary!!
+async function post(baseURL: string, endpoint: string, data: any): Promise<any> {
   const body = JSON.stringify(data);
   const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
     body,
