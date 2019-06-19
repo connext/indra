@@ -34,6 +34,8 @@ export class MockWallet extends Wallet {
       rpcProviderUrl: ethUrl,
       nodeUrl,
       privateKey,
+      store: "",
+      delete_this_url: "",
       ...opts,
     }
     super(clientOpts);
