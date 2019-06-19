@@ -89,15 +89,14 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // TODO this will disappear once we start generating multisig internally and
   // deploying on withdraw only do we need to save temp?
-  const temp = await createAccount(
-    "http://localhost:8080", // opts.nodeUrl
-    { xpub: cfModule.publicIdentifier },
-  );
+  const temp = await createAccount(opts.nodeUrl || "http://localhost:8080", {
+    xpub: cfModule.publicIdentifier,
+  });
   console.log(temp);
 
+  // TODO replace this with nats url once this path is built
   const multisigAddress = await getMultisigAddress(
-    // TODO replace this with nats url once this path is built
-    "http://localhost:8080", // opts.nodeUrl
+    opts.nodeUrl || "http://localhost:8080",
     cfModule.publicIdentifier,
   );
 

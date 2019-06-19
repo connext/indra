@@ -98,7 +98,7 @@ client: nats-client $(shell find $(client)/src $(find_options))
 	$(docker_run_in_root) "ln -s ../../../client modules/payment-bot/node_modules/@connext/client"
 	$(log_finish) && touch $(flags)/$@
 
-node-prod: node
+node-prod: node $(node)/ops/prod.dockerfile
 	$(log_start)
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
 	$(log_finish) && touch $(flags)/$@
