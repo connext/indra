@@ -31,7 +31,7 @@ export class NatsServiceFactory {
   }
 }
 
-class NatsMessagingService implements INatsMessaging {
+export class NatsMessagingService implements INatsMessaging {
   private connection: nats.Client | undefined;
 
   constructor(
