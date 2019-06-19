@@ -20,7 +20,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/nats-messaging-client": "0.0.3",
+    "@connext/nats-messaging-client": "^0.0.4",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.1",
     "@counterfactual/postgresql-node-connector": "0.0.3",
