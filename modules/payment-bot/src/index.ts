@@ -82,6 +82,9 @@ export function getBot() {
     const client = await connext.connect(connextOpts);
     console.log("Client created successfully!");
 
+    const config = await client.config();
+    console.log("Config:", config);
+
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
 
