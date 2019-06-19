@@ -7,6 +7,7 @@ import { INodeApiClient } from "./node";
 import { Wallet } from "./wallet";
 
 export type BigNumber = utils.BigNumber;
+export const BigNumber = utils.BigNumber;
 
 // types for the connext client package
 
