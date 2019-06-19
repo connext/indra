@@ -1,5 +1,9 @@
 import * as eth from "ethers";
-import { JsonRpcProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
+import {
+  JsonRpcProvider,
+  TransactionRequest,
+  TransactionResponse,
+} from "ethers/providers";
 import { arrayify, bigNumberify, isHexString, toUtf8Bytes } from "ethers/utils";
 
 import { Logger } from "./lib/logger";
@@ -61,11 +65,15 @@ export class Wallet extends eth.Signer {
   }
 
   public async signMessage(message: string): Promise<string> {
-    const bytes: Uint8Array = isHexString(message) ? arrayify(message) : toUtf8Bytes(message);
+    const bytes: Uint8Array = isHexString(message)
+      ? arrayify(message)
+      : toUtf8Bytes(message);
     return this.signer.signMessage(bytes);
   }
 
-  public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
+  public async sendTransaction(
+    txReq: TransactionRequest,
+  ): Promise<TransactionResponse> {
     if (this.external) {
       return this.signAndSendTransactionExternally(txReq);
     }
@@ -76,7 +84,9 @@ export class Wallet extends eth.Signer {
     return this.signer.sign(tx);
   }
 
-  private async signAndSendTransactionExternally(tx: TransactionRequest): Promise<any> {
+  private async signAndSendTransactionExternally(
+    tx: TransactionRequest,
+  ): Promise<any> {
     const txObj: any = await this.prepareTransaction(tx);
     return this.signer.sign(txObj);
   }

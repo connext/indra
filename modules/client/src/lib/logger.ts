@@ -1,12 +1,19 @@
 export class Logger {
-  private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
+  private levels: { [key: string]: number } = {
+    debug: 4,
+    error: 1,
+    info: 3,
+    warn: 2,
+  };
   private logLevel: number = 3;
   private name: string = "Logger";
 
   public constructor(name?: string, logLevel?: number) {
     this.name = typeof name !== "undefined" ? name : this.name;
     this.logLevel =
-      typeof logLevel !== "undefined" ? parseInt(logLevel.toString(), 10) : this.logLevel;
+      typeof logLevel !== "undefined"
+        ? parseInt(logLevel.toString(), 10)
+        : this.logLevel;
   }
 
   public error(msg: string): void {

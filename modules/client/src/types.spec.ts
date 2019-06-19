@@ -69,7 +69,9 @@ describe("objMap", () => {
       num: 19,
       str: "This IS A CASIng TesT",
     };
-    args = objMap(args, (k: any, v: any): any => (typeof v === "string" ? v.toLowerCase() : v));
+    args = objMap(args, (k: any, v: any): any =>
+      typeof v === "string" ? v.toLowerCase() : v,
+    );
     expect(args).toStrictEqual({
       bignumber: ethers.utils.bigNumberify(8),
       num: 19,

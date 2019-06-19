@@ -199,7 +199,9 @@ const getType = (input: any): NumericTypeName => {
   if (typeof input === "string") return "str";
   if (BigNumber.isBigNumber(input)) return "bignumber";
   if (typeof input === "number") return "number"; // used for testing purposes
-  throw new Error(`Unknown input type: ${typeof input}, value: ${JSON.stringify(input)}`);
+  throw new Error(
+    `Unknown input type: ${typeof input}, value: ${JSON.stringify(input)}`,
+  );
 };
 
 const castFunctions: any = {
@@ -217,7 +219,9 @@ export const convertFields = (
 ): any => {
   if (fromType === toType) return input;
 
-  if (toType === "number") throw new Error("Should not convert fields to numbers");
+  if (toType === "number") {
+    throw new Error("Should not convert fields to numbers");
+  }
 
   let key;
   if (fromType === "number" && toType === "str") {
