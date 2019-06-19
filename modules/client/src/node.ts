@@ -1,6 +1,6 @@
 import { Address } from "@counterfactual/types";
 import { Logger } from "./lib/logger";
-import { Wallet } from "./wallet"
+import { Wallet } from "./wallet";
 import { NodeConfig, NodeInitializationParameters } from "./types";
 import { Client as NatsClient } from "ts-nats";
 
@@ -8,12 +8,12 @@ import { Client as NatsClient } from "ts-nats";
 const API_TIMEOUT = 30000;
 
 export interface INodeApiClient {
-  config(): Promise<NodeConfig>
+  config(): Promise<NodeConfig>;
 }
 
 export class NodeApiClient implements INodeApiClient {
   public nodeUrl: string;
-  public nats: NatsClient // TODO: rename to messaging?
+  public nats: NatsClient; // TODO: rename to messaging?
   public wallet: Wallet;
   public address: Address;
   public log: Logger;
@@ -25,7 +25,7 @@ export class NodeApiClient implements INodeApiClient {
     this.nats = opts.nats;
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;
-    this.log = new Logger('NodeApiClient', opts.logLevel);
+    this.log = new Logger("NodeApiClient", opts.logLevel);
   }
 
   ///////////////////////////////////
@@ -35,10 +35,10 @@ export class NodeApiClient implements INodeApiClient {
   public async config(): Promise<NodeConfig> {
     // get the config from the hub
     try {
-      const configRes: NodeConfig = await this.send("config")
-      return configRes
+      const configRes: NodeConfig = await this.send("config");
+      return configRes;
     } catch (e) {
-      return Promise.reject(e)
+      return Promise.reject(e);
     }
   }
 
@@ -46,9 +46,7 @@ export class NodeApiClient implements INodeApiClient {
   // Use TLS based auth, eventually tied to HNS
   // names, for 2.0-2.x will need to generate our
   // own certs linked to their public key
-  public authenticate(): void {
-  }
-
+  public authenticate(): void {}
 
   ///////////////////////////////////
   //////////// PRIVATE /////////////

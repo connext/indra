@@ -32,7 +32,9 @@ export class DepositController extends AbstractController {
     ).filter(addr => addr !== myFreeBalanceAddress);
 
     console.log(
-      `\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`,
+      `\nDepositing ${params.amount} ETH into ${
+        this.connext.opts.multisigAddress
+      }\n`,
     );
     try {
       await this.cfModule.call(CFModuleTypes.MethodName.DEPOSIT, {

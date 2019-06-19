@@ -39,11 +39,13 @@ export type ClientOptions = {
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
   //TODO: Do we need these if we use the whole store?
   loadState?: (key: string) => Promise<string | null>;
-  saveState?: (pairs: {
-    key: string;
-    value: any;
-  }[]) => Promise<void>; 
-  store: any
+  saveState?: (
+    pairs: {
+      key: string;
+      value: any;
+    }[],
+  ) => Promise<void>;
+  store: any;
   // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
 
@@ -54,7 +56,7 @@ export type ClientOptions = {
 
   //TODO REMOVE THIS
   delete_this_url: string;
-}
+};
 
 export type InternalClientOptions = ClientOptions & {
   // Optional, useful for dependency injection
@@ -101,7 +103,7 @@ export type NodeInitializationParameters = {
 export type NodeConfig = {
   nodePublicIdentifier: string; // x-pub of node
   chainId: string; // network that your channel is on
-  nodeUrl: string,
+  nodeUrl: string;
 };
 
 /////////////////////////////////
