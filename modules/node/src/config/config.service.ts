@@ -10,6 +10,11 @@ type PostgresConfig = {
   username: string;
 };
 
+type EthConfig = {
+  ethNetwork: string;
+  ethUrl: string;
+};
+
 export class ConfigService {
   private readonly envConfig: { [key: string]: string };
 
@@ -31,7 +36,7 @@ export class ConfigService {
     return this.envConfig[key];
   }
 
-  getEthProviderConfig(): { [key: string]: string } {
+  getEthProviderConfig(): EthConfig{
     return {
       ethNetwork: this.get("ETH_NETWORK"),
       ethUrl: this.get("ETH_RPC_URL"),
