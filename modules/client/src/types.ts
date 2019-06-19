@@ -17,7 +17,7 @@ import { Wallet } from "./wallet";
  * - privateKey
  * - externalWallet
  */
-export type ClientOptions = {
+export interface ClientOptions {
   // provider, passed through to CF node
   rpcProviderUrl?: string; // TODO: can we keep out web3
 
@@ -37,7 +37,7 @@ export type ClientOptions = {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
-  //TODO: Do we need these if we use the whole store?
+  // TODO: Do we need these if we use the whole store?
   loadState?: (key: string) => Promise<string | null>;
   saveState?: (
     pairs: {
@@ -54,9 +54,9 @@ export type ClientOptions = {
   natsClusterId?: string;
   natsToken?: string;
 
-  //TODO REMOVE THIS
+  // TODO REMOVE THIS
   delete_this_url: string;
-};
+}
 
 export type InternalClientOptions = ClientOptions & {
   // Optional, useful for dependency injection
@@ -73,38 +73,38 @@ export type InternalClientOptions = ClientOptions & {
 };
 
 // TODO: define properly!!
-export type ChannelProvider = {};
+export interface ChannelProvider {}
 
-export type ChannelState<T = string> = {
+export interface ChannelState<T = string> {
   apps: AppState<T>[];
   // TODO: CF types should all be generic, this will be
   // a BigNumber
   freeBalance: NodeTypes.GetFreeBalanceStateResult;
-};
+}
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 
-export type INodeAPIClient = {};
-export type ConnextStore = {};
-export type IMultisig = {};
+export interface INodeAPIClient {}
+export interface ConnextStore {}
+export interface IMultisig {}
 
 ///////////////////////////////////
 ////////// NODE TYPES ////////////
 /////////////////////////////////
 
 ////// General typings
-export type NodeInitializationParameters = {
+export interface NodeInitializationParameters {
   nodeUrl: string;
   nats: NatsClient;
   wallet: Wallet;
   logLevel?: number;
-};
+}
 
 ///// Specific response types
-export type NodeConfig = {
+export interface NodeConfig {
   nodePublicIdentifier: string; // x-pub of node
   chainId: string; // network that your channel is on
   nodeUrl: string;
-};
+}
 
 /////////////////////////////////
 ////////// APP TYPES ////////////
@@ -119,18 +119,18 @@ export type AppAction<T = string> = EthUnidirectionalTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 ////// ETHUnidirectionalTransferApp.sol typings
-export type EthUnidirectionalTransferAppState<T = string> = {
+export interface EthUnidirectionalTransferAppState<T = string> {
   transfers: [Transfer<T>, Transfer<T>];
   finalized: boolean;
-};
+}
 export type EthUnidirectionalTransferAppStateBigNumber = EthUnidirectionalTransferAppState<
   BigNumber
 >;
 
-export type EthUnidirectionalTransferAppAction<T = string> = {
+export interface EthUnidirectionalTransferAppAction<T = string> {
   transferAmount: T;
   finalize: boolean;
-};
+}
 export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTransferAppAction<
   BigNumber
 >;
@@ -154,12 +154,12 @@ export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 
 ////// Exchange types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
-export type ExchangeParameters<T = string> = {
+export interface ExchangeParameters<T = string> {
   amount: T;
   toAssetId: Address;
   fromAssetId: Address; // TODO: do these assets have to be renamed?
   // make sure they are consistent with CF stuffs
-};
+}
 export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>;
 
 ////// Withdraw types
@@ -178,20 +178,20 @@ export type Transfer<T = string> = AssetAmount<T> & {
 export type TransferBigNumber = Transfer<BigNumber>;
 
 // asset types
-export type AssetAmount<T = string> = {
+export interface AssetAmount<T = string> {
   amount: T;
   assetId?: Address; // undefined if eth
-};
+}
 export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
 /////////////////////////////////
 //////// CONVERSION FNS /////////
 /////////////////////////////////
-export type NumericTypes = {
+export interface NumericTypes {
   str: string;
   bignumber: BigNumber;
   number: number;
-};
+}
 
 export type NumericTypeName = keyof NumericTypes;
 
@@ -199,9 +199,7 @@ const getType = (input: any): NumericTypeName => {
   if (typeof input === "string") return "str";
   if (BigNumber.isBigNumber(input)) return "bignumber";
   if (typeof input === "number") return "number"; // used for testing purposes
-  throw new Error(
-    `Unknown input type: ${typeof input}, value: ${JSON.stringify(input)}`,
-  );
+  throw new Error(`Unknown input type: ${typeof input}, value: ${JSON.stringify(input)}`);
 };
 
 const castFunctions: any = {
@@ -219,9 +217,7 @@ export const convertFields = (
 ): any => {
   if (fromType === toType) return input;
 
-  if (toType === "number") {
-    throw new Error("Should not convert fields to numbers");
-  }
+  if (toType === "number") throw new Error("Should not convert fields to numbers");
 
   let key;
   if (fromType === "number" && toType === "str") {
@@ -241,7 +237,6 @@ export const convertFields = (
     if (isOptional && !(name in input)) continue;
     res[name] = cast(input[name]);
   }
-
   return res;
 };
 
@@ -261,7 +256,7 @@ export function convertAssetAmount<To extends NumericTypeName>(
 export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any> | Transfer<any>,
-) {
+): any {
   const fromType = getType(obj.amount);
   return convertFields(fromType, to, ["amount"], obj);
 }

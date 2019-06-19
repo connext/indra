@@ -1,5 +1,6 @@
-import { insertDefault, objMapPromise, objMap } from "./lib/utils";
 import { ethers } from "ethers";
+
+import { insertDefault, objMap, objMapPromise } from "./lib/utils";
 import { convertFields } from "./types";
 
 describe("insertDefault", () => {
@@ -68,10 +69,7 @@ describe("objMap", () => {
       num: 19,
       str: "This IS A CASIng TesT",
     };
-    args = objMap(
-      args,
-      (k: any, v: any): any => (typeof v === "string" ? v.toLowerCase() : v),
-    );
+    args = objMap(args, (k: any, v: any): any => (typeof v === "string" ? v.toLowerCase() : v));
     expect(args).toStrictEqual({
       bignumber: ethers.utils.bigNumberify(8),
       num: 19,

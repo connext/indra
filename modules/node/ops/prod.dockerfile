@@ -1,7 +1,7 @@
 FROM node:10-alpine
 WORKDIR /root
 ENV HOME /root
-RUN apk add --update --no-cache bash
+RUN apk add --update --no-cache bash git
 
 COPY modules/node/package.json package.json
 RUN npm install > /dev/null 2>&1

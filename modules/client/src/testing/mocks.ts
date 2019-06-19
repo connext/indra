@@ -1,13 +1,10 @@
-import { INodeApiClient } from "../node";
-import {
-  NodeConfig,
-  NodeInitializationParameters,
-  ClientOptions,
-} from "../types";
-import { Logger } from "../lib/logger";
 import { Address } from "@counterfactual/types";
 import { TransactionRequest, TransactionResponse } from "ethers/providers";
 import * as nats from "ts-nats";
+
+import { Logger } from "../lib/logger";
+import { INodeApiClient } from "../node";
+import { ClientOptions, NodeConfig, NodeInitializationParameters } from "../types";
 import { Wallet } from "../wallet";
 
 export const address: string = "0x627306090abab3a6e1400e9345bc60c78a8bef57";
@@ -15,23 +12,18 @@ export const mnemonic: string =
   "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
 export const privateKey: string =
   "0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6";
-export const ethUrl: string =
-  process.env.ETH_RPC_URL || "http://localhost:8545";
+export const ethUrl: string = process.env.ETH_RPC_URL || "http://localhost:8545";
 export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
 export class MockNatsClient extends nats.Client {
-  private returnVals = MockNodeClientApi.returnValues;
+  private returnVals: any = MockNodeClientApi.returnValues;
 
-  public request(subject: string, timeout: number, body?: any) {
-    console.log(
-      `Sending request to ${subject} ${
-        body ? `with body: ${body}` : `without body`
-      }`,
-    );
+  public request(subject: string, timeout: number, body?: any): any {
+    console.log(`Sending request to ${subject} ${body ? `with body: ${body}` : `without body`}`);
     return (this.returnVals as any)[subject];
   }
 
-  public patch(subject: string, returnValue: any) {
+  public patch(subject: string, returnValue: any): any {
     (this.returnVals as any)[subject] = returnValue;
   }
 }
@@ -42,14 +34,12 @@ export class MockWallet extends Wallet {
   public constructor(opts: Partial<ClientOptions> & { address?: string } = {}) {
     // properly assign opts
     const clientOpts = {
-      rpcProviderUrl: ethUrl,
       nodeUrl,
       privateKey,
-      store: "",
-      delete_this_url: "",
+      rpcProviderUrl: ethUrl,
       ...opts,
     };
-    super(clientOpts);
+    super(clientOpts as any);
     this.address = opts.address || address;
   }
 
@@ -57,9 +47,7 @@ export class MockWallet extends Wallet {
     return this.address;
   }
 
-  public async sendTransaction(
-    txReq: TransactionRequest,
-  ): Promise<TransactionResponse> {
+  public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
     console.log(`Sending transaction: ${JSON.stringify(txReq, null, 2)}`);
     return {} as TransactionResponse;
   }
@@ -97,10 +85,10 @@ export class MockNodeClientApi implements INodeApiClient {
 
   // should have keys same as the message passed in to fake nats client
   // TODO: how well will this work with dynamic paths?
-  public static returnValues = {
+  public static returnValues: any = {
     config: {
-      nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       chainId: "mocks", // network that your channel is on
+      nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       nodeUrl,
     },
   };

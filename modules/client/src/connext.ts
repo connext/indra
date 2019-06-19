@@ -1,30 +1,31 @@
-import {
-  ClientOptions,
-  InternalClientOptions,
-  DepositParameters,
-  ChannelState,
-  ExchangeParameters,
-  WithdrawParameters,
-  TransferParameters,
-} from "./types";
-import { NodeApiClient, INodeApiClient } from "./node";
-import { Client as NatsClient } from "ts-nats";
-import { Wallet } from "./wallet";
-// import { Node as NodeTypes } from "@counterfactual/types";
+import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import { Node } from "@counterfactual/node";
-import { NatsServiceFactory } from "../../nats-messaging-client";
 import { EventEmitter } from "events";
+import { Client as NatsClient } from "ts-nats";
+
 import { DepositController } from "./controllers/DepositController";
-import { TransferController } from "./controllers/TransferController";
 import { ExchangeController } from "./controllers/ExchangeController";
+import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { getMultisigAddress, createAccount } from "./lib/utils";
+import { createAccount, getMultisigAddress } from "./lib/utils";
+import { INodeApiClient, NodeApiClient } from "./node";
+import {
+  ChannelState,
+  ClientOptions,
+  DepositParameters,
+  ExchangeParameters,
+  InternalClientOptions,
+  TransferParameters,
+  WithdrawParameters,
+} from "./types";
+import { Wallet } from "./wallet";
 
 /**
  * Creates a new client-node connection with node at specified url
  *
- * @param opts The options to instantiate the client with. At a minimum, must contain the nodeUrl and a client signing key or mnemonic
+ * @param opts The options to instantiate the client with.
+ *        At a minimum, must contain the nodeUrl and a client signing key or mnemonic
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
@@ -42,18 +43,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // connect nats service, done as part of async setup
 
   // TODO: get config from nats client?
-  const nats = new NatsServiceFactory(natsConfig).createMessagingService(
-    messagingServiceKey,
-  );
+  const nats = new NatsServiceFactory(natsConfig).createMessagingService(messagingServiceKey);
   await nats.connect();
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
   const node: NodeApiClient = new NodeApiClient({
-    nodeUrl: opts.nodeUrl,
-    nats: nats.getConnection(),
-    wallet,
     logLevel: opts.logLevel,
+    nats: nats.getConnection(),
+    nodeUrl: opts.nodeUrl,
+    wallet,
   });
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // const getFn = async (key: string) => {
@@ -85,30 +84,29 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     }, // TODO: proper config
     // @ts-ignore WHYYYYYYYYY
     wallet.provider,
-    "kovan", //TODO: make this not hardcoded to "kovan"
+    "kovan", // TODO: make this not hardcoded to "kovan"
   );
 
-  //TODO this will disappear once we start generating multisig internally and deploying on withdraw only
-  //do we need to save temp?
-  const temp = await createAccount(
-    "http://localhost:8080", //opts.nodeUrl
-    { xpub: cfModule.publicIdentifier },
-  );
+  // TODO this will disappear once we start generating multisig internally and
+  // deploying on withdraw only do we need to save temp?
+  const temp = await createAccount(opts.nodeUrl || "http://localhost:8080", {
+    xpub: cfModule.publicIdentifier,
+  });
   console.log(temp);
 
+  // TODO replace this with nats url once this path is built
   const multisigAddress = await getMultisigAddress(
-    //TODO replace this with nats url once this path is built
-    "http://localhost:8080", //opts.nodeUrl
+    opts.nodeUrl || "http://localhost:8080",
     cfModule.publicIdentifier,
   );
 
   // create the new client
   return new ConnextInternal({
-    node,
-    wallet,
-    nats: nats.getConnection(),
     cfModule,
     multisigAddress,
+    nats: nats.getConnection(),
+    node,
+    wallet,
     ...opts, // use any provided opts by default
   });
 }
@@ -131,8 +129,7 @@ export abstract class ConnextChannel extends EventEmitter {
   }
 
   ///////////////////////////////////
-  ///// CORE CHANNEL METHODS ///////
-  /////////////////////////////////
+  // CORE CHANNEL METHODS
 
   // TODO: do we want the inputs to be an object?
   public deposit(params: DepositParameters): Promise<ChannelState> {
@@ -188,23 +185,14 @@ export class ConnextInternal extends ConnextChannel {
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
-    this.transferController = new TransferController(
-      "TransferController",
-      this,
-    );
-    this.exchangeController = new ExchangeController(
-      "ExchangeController",
-      this,
-    );
-    this.withdrawalController = new WithdrawalController(
-      "WithdrawalController",
-      this,
-    );
+    this.transferController = new TransferController("TransferController", this);
+    this.exchangeController = new ExchangeController("ExchangeController", this);
+    this.withdrawalController = new WithdrawalController("WithdrawalController", this);
   }
 
   ///////////////////////////////////
-  ///// CORE CHANNEL METHODS ///////
-  /////////////////////////////////
+  // CORE CHANNEL METHODS
+
   public deposit(params: DepositParameters): Promise<ChannelState> {
     return this.depositController.deposit(params);
   }
@@ -222,10 +210,8 @@ export class ConnextInternal extends ConnextChannel {
   }
 
   ///////////////////////////////////
-  ///////// NODE METHODS ///////////
-  /////////////////////////////////
+  // NODE METHODS
 
   ///////////////////////////////////
-  //////// LOW LEVEL METHODS ///////
-  /////////////////////////////////
+  // LOW LEVEL METHODS
 }
