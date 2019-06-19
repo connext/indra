@@ -100,8 +100,8 @@ export function getBot() {
     connext.logEthFreeBalance(
       await connext.getFreeBalance(client.cfModule, client.publicIdentifier),
     );
-
-    showMainPrompt(client.cfModule);
+    // @ts-ignore
+    showMainPrompt(client.cfModule); // TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
   } catch (e) {
     console.error("\n");
     console.error(e);
