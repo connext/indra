@@ -2,16 +2,14 @@ import * as connext from "@connext/client";
 import { MNEMONIC_PATH } from "@counterfactual/node";
 import {
   confirmPostgresConfigurationEnvVars,
-  POSTGRES_CONFIGURATION_ENV_KEYS,
   PostgresServiceFactory,
 } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
 
 import { showMainPrompt } from "./bot";
 
-const BASE_URL = process.env.BASE_URL!;
+const baseUrl = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
-
 const ethUrl = process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
 
 const privateKey = process.env.PRIVATE_KEY;
@@ -24,20 +22,16 @@ if (!nodeUrl || !nodeUrl.startsWith("nats://")) {
   throw Error("No accurate node url specified in env. Exiting.");
 }
 
-let pgServiceFactory: PostgresServiceFactory;
-// console.log(`Using Nats configuration for ${process.env.NODE_ENV}`);
-// console.log(`Using Firebase configuration for ${process.env.NODE_ENV}`);
-
 process.on("warning", (e: any): any => console.warn(e.stack));
 
 confirmPostgresConfigurationEnvVars();
-pgServiceFactory = new PostgresServiceFactory({
-  database: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.database]!,
-  host: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.host]!,
-  password: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.password]!,
-  port: parseInt(process.env[POSTGRES_CONFIGURATION_ENV_KEYS.port]!, 10),
+const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory({
+  database: process.env.POSTGRES_DATABASE!,
+  host: process.env.POSTGRES_HOST!,
+  password: process.env.POSTGRES_PASSWORD!,
+  port: parseInt(process.env.POSTGRES_PORT!, 10),
   type: "postgres",
-  username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
+  username: process.env.POSTGRES_USER!,
 });
 
 let client: connext.ConnextInternal;
@@ -57,8 +51,8 @@ export function getWalletAddress(): string {
   const store = pgServiceFactory.createStoreService(process.env.USERNAME!);
 
   const connextOpts: connext.ClientOptions = {
-    delete_this_url: BASE_URL,
-    nodeUrl,
+    delete_this_url: baseUrl,
+    nodeUrl: baseUrl,
     privateKey,
     rpcProviderUrl: ethUrl,
     store,
