@@ -12,7 +12,7 @@
     "file-name-casing": false,
     "import-name": false,
     "interface-name": false,
-    "interface-over-type-literal": true,
+    "interface-over-type-literal": false,
     "jsdoc-format": false,
     "max-classes-per-file": false,
     "max-file-line-count": false,
