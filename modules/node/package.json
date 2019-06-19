@@ -27,6 +27,7 @@
     "@counterfactual/types": "0.0.12",
     "@nestjs/common": "6.3.1",
     "@nestjs/core": "6.3.1",
+    "@nestjs/microservices": "^6.3.1",
     "@nestjs/platform-express": "6.3.1",
     "@nestjs/typeorm": "^6.1.2",
     "class-validator": "^0.9.1",
