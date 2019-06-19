@@ -1,7 +1,11 @@
-import { NatsServiceFactory, NatsMessagingService } from "@connext/nats-messaging-client";
+import {
+  NatsMessagingService,
+  NatsServiceFactory,
+} from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";
+import { FactoryProvider } from "@nestjs/common/interfaces";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ConfigService } from "../config/config.service";
@@ -11,13 +15,12 @@ import {
   PostgresProviderId,
 } from "../constants";
 import { CLogger } from "../util";
-import { FactoryProvider } from "@nestjs/common/interfaces";
 
 const logger = new CLogger("NodeProvider");
 
 async function createNode(
   config: ConfigService,
-  natsServiceFactory: NatsServiceFactory,
+  natsMessagingService: NatsMessagingService,
   postgresServiceFactory: PostgresServiceFactory,
 ): Promise<Node> {
   // TODO: make this logging more dynamic?
@@ -30,10 +33,8 @@ async function createNode(
 
   logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
-  const messService = natsServiceFactory.createMessagingService("messaging");
-  await messService.connect();
   const node = await Node.create(
-    messService,
+    natsMessagingService,
     store,
     { STORE_KEY_PREFIX: "store" },
     new JsonRpcProvider(ethUrl) as any, // FIXME
@@ -51,13 +52,14 @@ export const nodeProvider: Provider = {
   provide: NodeProviderId,
   useFactory: async (
     config: ConfigService,
-    nats: NatsServiceFactory,
+    nats: NatsMessagingService,
     postgres: PostgresServiceFactory,
   ): Promise<Node> => {
     return await createNode(config, nats, postgres);
   },
 };
 
+// TODO: bypass factory
 export const postgresProvider: Provider = {
   inject: [ConfigService],
   provide: PostgresProviderId,
@@ -73,11 +75,14 @@ export const postgresProvider: Provider = {
   },
 };
 
-export const natsProvider: FactoryProvider<NatsMessagingService> = {
+// TODO: bypass factory
+export const natsProvider: FactoryProvider<Promise<NatsMessagingService>> = {
   inject: [ConfigService],
   provide: NatsProviderId,
   useFactory: async (config: ConfigService): Promise<NatsMessagingService> => {
-    const natsServiceFactory = new NatsServiceFactory({ servers: config.getNatsConfig().servers });
+    const natsServiceFactory = new NatsServiceFactory({
+      servers: config.getNatsConfig().servers,
+    });
     const messService = natsServiceFactory.createMessagingService("messaging");
     await messService.connect();
     return messService;
