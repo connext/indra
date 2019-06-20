@@ -13,6 +13,7 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
+nats=$(cwd)/modules/nats-messaging-client
 node=$(cwd)/modules/node
 client=$(cwd)/modules/client
 bot=$(cwd)/modules/payment-bot
@@ -86,7 +87,7 @@ watch-node: node-modules
 ########################################
 # Begin Real Rules
 
-payment-bot: node-modules $(shell find $(bot)/src $(find_options))
+payment-bot: node-modules client $(shell find $(bot)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -108,7 +109,7 @@ node: nats-client $(shell find $(node)/src $(find_options))
 	$(docker_run_in_root) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-nats-client: node-modules
+nats-client: node-modules $(shell find $(nats)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/nats-messaging-client && npm run build"
 	$(log_finish) && touch $(flags)/$@
