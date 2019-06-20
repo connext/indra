@@ -13,8 +13,8 @@ Payment functionality is demonstrated by using two payment bots connected to an 
     * Bot 2: `0xA0Ae1A3d4ff42AE77154fB9eBbCa0af2B5B7F357`
 * Run the payment bots while depositing into their channels:
   * Open two terminal windows.
-  * Run `DEPOSIT_AMOUNT=0.1 npm run start:bot1` to deposit 0.1 ETH into the channel for Payment Bot 1.
-  * Run `DEPOSIT_AMOUNT=0.1 npm run start:bot2` to deposit 0.1 ETH into the channel for Payment Bot 2.
+  * Run `npm run start:bot1 deposit 0.1` to deposit 0.1 ETH into the channel for Payment Bot 1.
+  * Run `npm run start:bot2 deposit 0.1` to deposit 0.1 ETH into the channel for Payment Bot 2.
 * Bots will display the free balance after their channels are deposited into.
 
 ## Interacting with the Bots

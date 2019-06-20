@@ -11,12 +11,12 @@ project="indra_v2"
 name=${project}_payment_bot
 cwd="`pwd`"
 
-export BASE_URL="http://indra_v2_node:8080"
 export DELAY_SECONDS="2"
 export ETHEREUM_NETWORK="ganache"
 export INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
 export NODE_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-export NODE_URL="nats://indra_v2_nats:4222"
+export NATS_URL="nats://indra_v2_nats:4222"
+export NODE_URL="http://indra_v2_node:8080"
 export POSTGRES_DATABASE="$project"
 export POSTGRES_HOST="indra_v2_database"
 export POSTGRES_PASSWORD="$project"
@@ -43,10 +43,10 @@ echo "Deploying payment bot..."
 
 docker run \
   --entrypoint="bash" \
-  --env="BASE_URL=$BASE_URL" \
   --env="DELAY_SECONDS=$DELAY_SECONDS" \
   --env="ETHEREUM_NETWORK=$ETHEREUM_NETWORK" \
   --env="INTERMEDIARY_IDENTIFIER=$INTERMEDIARY_IDENTIFIER" \
+  --env="NATS_URL=$NATS_URL" \
   --env="NODE_MNEMONIC=$NODE_MNEMONIC" \
   --env="NODE_URL=$NODE_URL" \
   --env="POSTGRES_DATABASE=$POSTGRES_DATABASE" \

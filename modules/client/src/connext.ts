@@ -36,7 +36,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create a new internal nats instance
   const natsConfig = {
     clusterId: opts.natsClusterId,
-    servers: [opts.nodeUrl],
+    servers: [opts.natsUrl],
     token: opts.natsToken,
   };
   // TODO: proper key? also, proper usage?
@@ -44,10 +44,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // connect nats service, done as part of async setup
 
   // TODO: get config from nats client?
-  console.log("creating nats client from config", natsConfig);
+  console.log("creating nats client from config:", JSON.stringify(natsConfig));
   // TODO: instantiate service factory with proper config!!
   // @ts-ignore
-  const natsFactory = new NatsServiceFactory();
+  const natsFactory = new NatsServiceFactory(natsConfig);
   const messaging = natsFactory.createMessagingService(messagingServiceKey);
   await messaging.connect();
   console.log("nats is connected");
@@ -204,18 +204,9 @@ export class ConnextInternal extends ConnextChannel {
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
-    this.transferController = new TransferController(
-      "TransferController",
-      this,
-    );
-    this.exchangeController = new ExchangeController(
-      "ExchangeController",
-      this,
-    );
-    this.withdrawalController = new WithdrawalController(
-      "WithdrawalController",
-      this,
-    );
+    this.transferController = new TransferController("TransferController", this);
+    this.exchangeController = new ExchangeController("ExchangeController", this);
+    this.withdrawalController = new WithdrawalController("WithdrawalController", this);
   }
 
   ///////////////////////////////////
