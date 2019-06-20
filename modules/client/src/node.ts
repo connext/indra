@@ -66,6 +66,6 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any> {
     console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
     const msg = await this.nats.request(subject, API_TIMEOUT, JSON.stringify(data));
-    return msg;
+    return JSON.parse(msg.data);
   }
 }
