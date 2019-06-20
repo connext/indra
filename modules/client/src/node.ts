@@ -53,6 +53,16 @@ export class NodeApiClient implements INodeApiClient {
   public async getChannel(myXpub: string): Promise<any> {
     try {
       const channelRes = await this.send(`channel.get.${myXpub}`);
+      return channelRes;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  // TODO: can we abstract this try-catch thing into a separate function?
+  public async createChannel(myXpub: string): Promise<any> {
+    try {
+      const channelRes = await this.send(`channel.create.${myXpub}`);
       console.log('channelRes: ', channelRes);
       return channelRes;
     } catch (e) {
