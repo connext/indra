@@ -9,19 +9,34 @@ import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
 import { AbstractNatsProvider } from "../util/nats";
 
+import { ChannelService } from "./channel.service";
+
 export class ChannelNats extends AbstractNatsProvider {
-  constructor(natsClient: Client, private readonly userRepo: UserRepository) {
+  constructor(
+    natsClient: Client,
+    private readonly userRepo: UserRepository,
+    private readonly channelService: ChannelService,
+  ) {
     super(natsClient);
   }
 
+  // TODO: change return type to channel view entity
   // TODO: validation
   async getChannel(subject: string): Promise<User> {
     const xpub = subject.split(".").pop(); // last item of subscription is xpub
     return await this.userRepo.findByXpub(xpub);
   }
 
+  async createChannel(subject: string): Promise<User> {
+    const xpub = subject.split(".").pop(); // last item of subscription is xpub
+    console.log("xpub: ", xpub);
+    return await this.channelService.create(xpub);
+  }
+
   setupSubscriptions(): void {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
+
+    super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
   }
 }
 
@@ -59,16 +74,17 @@ export class ConfigNats extends AbstractNatsProvider {
 
 // TODO: reduce this boilerplate
 export const channelProvider: FactoryProvider<Promise<Client>> = {
-  inject: [NatsProviderId, UserRepository, ConfigService, NodeProviderId],
+  inject: [NatsProviderId, UserRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     nats: NatsMessagingService,
     userRepo: UserRepository,
     configService: ConfigService,
     node: Node,
+    channelService: ChannelService,
   ): Promise<Client> => {
     const client = nats.getConnection();
-    const channel = new ChannelNats(client, userRepo);
+    const channel = new ChannelNats(client, userRepo, channelService);
     await channel.setupSubscriptions();
     const config = new ConfigNats(client, node, configService);
     await config.setupSubscriptions();
