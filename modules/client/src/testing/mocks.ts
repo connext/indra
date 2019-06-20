@@ -4,11 +4,7 @@ import * as nats from "ts-nats";
 
 import { Logger } from "../lib/logger";
 import { INodeApiClient } from "../node";
-import {
-  ClientOptions,
-  NodeConfig,
-  NodeInitializationParameters,
-} from "../types";
+import { ClientOptions, NodeConfig, NodeInitializationParameters, User } from "../types";
 import { Wallet } from "../wallet";
 
 type TransactionRequest = providers.TransactionRequest;
@@ -19,19 +15,14 @@ export const mnemonic: string =
   "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
 export const privateKey: string =
   "0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6";
-export const ethUrl: string =
-  process.env.ETH_RPC_URL || "http://localhost:8545";
+export const ethUrl: string = process.env.ETH_RPC_URL || "http://localhost:8545";
 export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
 export class MockNatsClient extends nats.Client {
   private returnVals: any = MockNodeClientApi.returnValues;
 
   public request(subject: string, timeout: number, body?: any): any {
-    console.log(
-      `Sending request to ${subject} ${
-        body ? `with body: ${body}` : `without body`
-      }`,
-    );
+    console.log(`Sending request to ${subject} ${body ? `with body: ${body}` : `without body`}`);
     return (this.returnVals as any)[subject];
   }
 
@@ -59,9 +50,7 @@ export class MockWallet extends Wallet {
     return this.address;
   }
 
-  public async sendTransaction(
-    txReq: TransactionRequest,
-  ): Promise<TransactionResponse> {
+  public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
     console.log(`Sending transaction: ${JSON.stringify(txReq, null, 2)}`);
     return {} as TransactionResponse;
   }
@@ -105,9 +94,9 @@ export class MockNodeClientApi implements INodeApiClient {
       nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       nodeUrl,
     },
-    // TODO: mock out properly!!
-    createChannel: {},
-    getChannel: {},
+    // TODO: mock out properly!! create mocking fns!!!
+    createChannel: {} as User,
+    getChannel: {} as User,
   };
 
   public authenticate(): void {}
@@ -116,11 +105,11 @@ export class MockNodeClientApi implements INodeApiClient {
     return MockNodeClientApi.returnValues.config;
   }
 
-  public async getChannel(): Promise<any> {
+  public async getChannel(): Promise<User> {
     return MockNodeClientApi.returnValues.getChannel;
   }
 
-  public async createChannel(): Promise<any> {
+  public async createChannel(): Promise<User> {
     return MockNodeClientApi.returnValues.createChannel;
   }
 }
