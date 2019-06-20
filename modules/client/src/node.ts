@@ -10,6 +10,9 @@ const API_TIMEOUT = 2000;
 
 export interface INodeApiClient {
   config(): Promise<NodeConfig>;
+  authenticate(): void; // TODO: implement!
+  getChannel(): Promise<any>; // TODO: types!
+  createChannel(): Promise<any>; // TODO: types!
 }
 
 export class NodeApiClient implements INodeApiClient {

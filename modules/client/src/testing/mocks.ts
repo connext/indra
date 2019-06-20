@@ -105,9 +105,22 @@ export class MockNodeClientApi implements INodeApiClient {
       nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       nodeUrl,
     },
+    // TODO: mock out properly!!
+    createChannel: {},
+    getChannel: {},
   };
+
+  public authenticate(): void {}
 
   public async config(): Promise<NodeConfig> {
     return MockNodeClientApi.returnValues.config;
+  }
+
+  public async getChannel(): Promise<any> {
+    return MockNodeClientApi.returnValues.getChannel;
+  }
+
+  public async createChannel(): Promise<any> {
+    return MockNodeClientApi.returnValues.createChannel;
   }
 }
