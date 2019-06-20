@@ -36,7 +36,7 @@ export class NodeApiClient implements INodeApiClient {
   public async config(): Promise<NodeConfig> {
     // get the config from the hub
     try {
-      const configRes: NodeConfig = await this.send("config");
+      const configRes: NodeConfig = await this.send("config.get");
       return configRes;
     } catch (e) {
       return Promise.reject(e);
@@ -49,16 +49,23 @@ export class NodeApiClient implements INodeApiClient {
   // own certs linked to their public key
   public authenticate(): void {}
 
+  // TODO: @layne, should we have our xpub accessible in this class instead of passing it in?
+  public async getChannel(myXpub: string): Promise<any> {
+    try {
+      const channelRes = await this.send(`channel.get.${myXpub}`);
+      console.log('channelRes: ', channelRes);
+      return channelRes;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
   ///////////////////////////////////
   //////////// PRIVATE /////////////
   /////////////////////////////////
   private async send(subject: string, data?: any): Promise<any> {
-    console.log(
-      `Sending request to ${subject} ${
-        data ? `with body: ${data}` : `without body`
-      }`,
-    );
-    const msg = await this.nats.request(subject, API_TIMEOUT, data);
+    console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
+    const msg = await this.nats.request(subject, API_TIMEOUT, JSON.stringify(data));
     return msg;
   }
 }

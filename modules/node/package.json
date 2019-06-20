@@ -22,7 +22,7 @@
   "dependencies": {
     "@connext/nats-messaging-client": "0.0.5",
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.2.1",
+    "@counterfactual/node": "0.2.2",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@counterfactual/types": "0.0.12",
     "@nestjs/common": "6.3.1",
@@ -32,7 +32,7 @@
     "@nestjs/typeorm": "6.1.2",
     "class-validator": "0.9.1",
     "dotenv": "8.0.0",
-    "ethers": "4.0.29",
+    "ethers": "4.0.30",
     "pg": "7.11.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.2",
