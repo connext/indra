@@ -3,7 +3,7 @@ import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { utils } from "ethers";
 import { Client as NatsClient } from "ts-nats";
 
-import { INodeApiClient } from "./node";
+import { NodeApiClient } from "./node";
 import { Wallet } from "./wallet";
 
 export type BigNumber = utils.BigNumber;
@@ -65,7 +65,7 @@ export type InternalClientOptions = ClientOptions & {
   // Optional, useful for dependency injection
   // TODO: can nats, node, wallet be optional?
   nats: NatsClient; // converted to nats-client in ConnextInternal constructor
-  node: INodeApiClient;
+  node: NodeApiClient;
   // signing wallet/information
   wallet: Wallet;
   // store: ConnextStore; --> whats this look like
@@ -86,7 +86,6 @@ export interface ChannelState<T = string> {
 }
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 
-export interface INodeAPIClient {}
 export interface ConnextStore {}
 export interface IMultisig {}
 
