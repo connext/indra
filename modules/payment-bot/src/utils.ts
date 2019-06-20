@@ -5,9 +5,9 @@ import fetch from "node-fetch";
 import { v4 as generateUUID } from "uuid";
 
 import { connectNode } from "./bot";
+import { config } from "./config";
 
 const API_TIMEOUT = 30000;
-const DELAY_SECONDS = process.env.DELAY_SECONDS ? Number(process.env.DELAY_SECONDS) : 5;
 
 const delay = (ms: number): Promise<any> => new Promise((res: any): any => setTimeout(res, ms));
 
@@ -34,16 +34,14 @@ export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResu
 export async function fetchMultisig(baseURL: string, xpub: string): Promise<any> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress = bot.channels[0]
-    ? bot.channels[0].multisigAddress
-    : undefined;
+  const multisigAddress = bot.channels[0] ? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet... ` +
-        `Waiting for another ${DELAY_SECONDS} seconds`,
+        `Waiting for another ${config.delaySeconds} seconds`,
     );
     // Convert to milliseconds
-    await delay(DELAY_SECONDS * 1000).then(() => fetchMultisig(baseURL, xpub));
+    await delay(config.delaySeconds * 1000).then(() => fetchMultisig(baseURL, xpub));
   }
   return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
 }
@@ -93,8 +91,8 @@ export async function deposit(node: Node, amount: string, multisigAddress: strin
     };
 
     while (await freeBalanceNotUpdated()) {
-      console.info(`Waiting ${DELAY_SECONDS} more seconds for counter party deposit`);
-      await delay(DELAY_SECONDS * 1000);
+      console.info(`Waiting ${config.delaySeconds} more seconds for counter party deposit`);
+      await delay(config.delaySeconds * 1000);
     }
 
     logEthFreeBalance(await getFreeBalance(node, multisigAddress));

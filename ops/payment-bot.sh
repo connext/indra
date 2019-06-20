@@ -13,7 +13,7 @@ cwd="`pwd`"
 
 export BASE_URL="http://indra_v2_node:8080"
 export DELAY_SECONDS="2"
-export ETHEREUM_NETWORK="kovan"
+export ETHEREUM_NETWORK="ganache"
 export INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
 export NODE_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 export NODE_URL="nats://indra_v2_nats:4222"
@@ -25,9 +25,7 @@ export POSTGRES_USER="$project"
 export PRIVATE_KEY="0x91cce879403351edf573d7eb09f309377662ae9a7c973692d22fd7e931673a73"
 export USERNAME="PaymentBot1"
 
-if [[ "$1" == "deposit" ]]
-then export DEPOSIT_AMOUNT="$2"
-fi
+args="$@"
 
 ########################################
 ## Build everything that we need
@@ -47,7 +45,6 @@ docker run \
   --entrypoint="bash" \
   --env="BASE_URL=$BASE_URL" \
   --env="DELAY_SECONDS=$DELAY_SECONDS" \
-  --env="DEPOSIT_AMOUNT=$DEPOSIT_AMOUNT" \
   --env="ETHEREUM_NETWORK=$ETHEREUM_NETWORK" \
   --env="INTERMEDIARY_IDENTIFIER=$INTERMEDIARY_IDENTIFIER" \
   --env="NODE_MNEMONIC=$NODE_MNEMONIC" \
@@ -69,5 +66,5 @@ docker run \
   ${project}_builder -c '
     echo "payment bot container launched"
     cd modules/payment-bot
-    node dist/index.js
+    node dist/index.js '"$args"'
   '

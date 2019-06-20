@@ -1,4 +1,4 @@
-import { NatsServiceFactory } from "../../nats-messaging-client/src/index";
+import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import { Node } from "@counterfactual/node";
 import { EventEmitter } from "events";
 import { Client as NatsClient } from "ts-nats";

@@ -13,6 +13,7 @@ import EventEmitter from "events";
 import inquirer from "inquirer";
 import { v4 as generateUUID } from "uuid";
 
+import { config } from "./config";
 import { getFreeBalance, logEthFreeBalance } from "./utils";
 
 class MyEmitter extends EventEmitter {}
@@ -302,7 +303,7 @@ async function openVirtualChannel(
           },
         ],
       } as AppState,
-      intermediaries: [process.env.INTERMEDIARY_IDENTIFIER],
+      intermediaries: [config.intermediaryIdentifier],
       myDeposit: utils.parseEther(depositPartyA),
       peerDeposit: Zero,
       proposedToIdentifier: counterpartyPublicId,
@@ -331,7 +332,7 @@ async function uninstallVirtualApp(node: Node, appInstanceId: string): Promise<a
   await node.call(NodeTypes.MethodName.UNINSTALL_VIRTUAL, {
     params: {
       appInstanceId,
-      intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
+      intermediaryIdentifier: config.intermediaryIdentifier,
     } as NodeTypes.UninstallVirtualParams,
     requestId: generateUUID(),
     type: NodeTypes.MethodName.UNINSTALL_VIRTUAL,

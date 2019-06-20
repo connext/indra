@@ -1,39 +1,14 @@
 import * as connext from "@connext/client";
 import { MNEMONIC_PATH } from "@counterfactual/node";
-import {
-  confirmPostgresConfigurationEnvVars,
-  PostgresServiceFactory,
-} from "@counterfactual/postgresql-node-connector";
+import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
 
 import { showMainPrompt } from "./bot";
-
-const baseUrl = process.env.BASE_URL!;
-const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
-const ethUrl =
-  process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
-
-const privateKey = process.env.PRIVATE_KEY;
-if (!privateKey) {
-  throw Error("No private key specified in env. Exiting.");
-}
-
-const nodeUrl = process.env.NODE_URL;
-if (!nodeUrl || !nodeUrl.startsWith("nats://")) {
-  throw Error("No accurate node url specified in env. Exiting.");
-}
+import { config } from "./config";
 
 process.on("warning", (e: any): any => console.warn(e.stack));
 
-confirmPostgresConfigurationEnvVars();
-const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory({
-  database: process.env.POSTGRES_DATABASE!,
-  host: process.env.POSTGRES_HOST!,
-  password: process.env.POSTGRES_PASSWORD!,
-  port: parseInt(process.env.POSTGRES_PORT!, 10),
-  type: "postgres",
-  username: process.env.POSTGRES_USER!,
-});
+const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory(config.postgres);
 
 let client;
 
@@ -49,23 +24,23 @@ export function getWalletAddress(): string {
   await pgServiceFactory.connectDb();
 
   console.log("Creating store");
-  const store = pgServiceFactory.createStoreService(process.env.USERNAME!);
+  const store = pgServiceFactory.createStoreService(config.username);
 
   const connextOpts = {
-    delete_this_url: baseUrl,
-    nodeUrl,
-    privateKey,
-    rpcProviderUrl: ethUrl,
+    delete_this_url: config.baseUrl,
+    nodeUrl: config.nodeUrl,
+    privateKey: config.privateKey,
+    rpcProviderUrl: config.ethRpcUrl,
     store,
   };
 
   console.log("Using client options:");
-  console.log("     - rpcProviderUrl:", ethUrl);
-  console.log("     - nodeUrl:", nodeUrl);
-  console.log("     - privateKey:", privateKey);
+  console.log("     - rpcProviderUrl:", config.ethRpcUrl);
+  console.log("     - nodeUrl:", config.nodeUrl);
+  console.log("     - privateKey:", config.privateKey);
 
-  console.log("process.env.NODE_MNEMONIC: ", process.env.NODE_MNEMONIC);
-  await store.set([{ key: MNEMONIC_PATH, value: process.env.NODE_MNEMONIC }]);
+  console.log("node mnemonic;", config.nodeMnemonic);
+  await store.set([{ key: MNEMONIC_PATH, value: config.nodeMnemonic }]);
 
   try {
     console.log("Creating connext");
@@ -78,9 +53,9 @@ export function getWalletAddress(): string {
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
 
-    if (process.env.DEPOSIT_AMOUNT) {
+    if (config.action === "deposit" && config.args[0]) {
       const depositParams = {
-        amount: eth.utils.parseEther(process.env.DEPOSIT_AMOUNT).toString(),
+        amount: eth.utils.parseEther(config.args[0]).toString(),
       };
       await client.deposit(depositParams);
       console.log(`Successfully deposited ${depositParams.amount}!`);
