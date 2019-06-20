@@ -11,7 +11,7 @@
     "test": "./node_modules/.bin/jest"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.12",
+    "@counterfactual/types": "0.0.14",
     "@types/jest": "24.0.15",
     "@types/node-fetch": "2.3.7",
     "@types/uuid": "3.4.4",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@connext/nats-messaging-client": "0.0.5",
-    "@counterfactual/node": "0.2.2",
+    "@counterfactual/node": "0.2.4",
     "ethers": "4.0.29",
     "node-fetch": "2.6.0",
     "ts-nats": "1.2.4",

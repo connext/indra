@@ -1,16 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "declarationDir": "dist/",
-    "noImplicitAny": true,
+    "baseUrl": "./",
+    "incremental": true,
     "noUnusedLocals": false,
-    "outDir": "dist/",
+    "outDir": "dist",
+    "strict": false,
     "target": "es6",
-    "typeRoots": [
-      "node_modules/@types",
-      "../../node_modules/@types",
-      "src/@types"
-    ]
+    "declarationDir": "dist/",
   },
+  "exclude": ["dist", "node_modules", "**/*spec.ts"],
   "include": [ "src/**/*.ts" ]
 }
+

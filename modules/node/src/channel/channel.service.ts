@@ -1,8 +1,4 @@
-import {
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  Node,
-} from "@counterfactual/node";
+import { CreateChannelMessage, DepositConfirmationMessage, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -25,22 +21,15 @@ export class ChannelService implements OnModuleInit {
     private readonly dbConnection: Connection,
   ) {}
 
-  async create(
-    counterpartyXpub: string,
-  ): Promise<NodeTypes.CreateChannelTransactionResult> {
-    const multisigResponse = await this.node.call(
-      NodeTypes.MethodName.CREATE_CHANNEL,
-      {
-        params: {
-          owners: [this.node.publicIdentifier, counterpartyXpub],
-        } as NodeTypes.CreateChannelParams,
-        requestId: generateUUID(),
-        type: NodeTypes.MethodName.CREATE_CHANNEL,
-      },
-    );
-    logger.log(
-      `multisigResponse.result: ${JSON.stringify(multisigResponse.result)}`,
-    );
+  async create(counterpartyXpub: string): Promise<NodeTypes.CreateChannelTransactionResult> {
+    const multisigResponse = await this.node.call(NodeTypes.MethodName.CREATE_CHANNEL, {
+      params: {
+        owners: [this.node.publicIdentifier, counterpartyXpub],
+      } as NodeTypes.CreateChannelParams,
+      requestId: generateUUID(),
+      type: NodeTypes.MethodName.CREATE_CHANNEL,
+    });
+    logger.log(`multisigResponse.result: ${JSON.stringify(multisigResponse.result)}`);
     return multisigResponse.result as NodeTypes.CreateChannelTransactionResult;
   }
 
@@ -58,9 +47,7 @@ export class ChannelService implements OnModuleInit {
       requestId: generateUUID(),
       type: NodeTypes.MethodName.DEPOSIT,
     });
-    logger.log(
-      `depositResponse.result: ${JSON.stringify(depositResponse.result)}`,
-    );
+    logger.log(`depositResponse.result: ${JSON.stringify(depositResponse.result)}`);
     return depositResponse.result as NodeTypes.DepositResult;
   }
 
@@ -96,25 +83,20 @@ export class ChannelService implements OnModuleInit {
 
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
-    this.node.on(
-      NodeTypes.EventName.DEPOSIT_CONFIRMED,
-      (res: DepositConfirmationMessage) => {
-        if (!res || !res.data) {
-          return;
-        }
-        logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
-        this.deposit(
-          res.data.multisigAddress,
-          res.data.amount as any, // FIXME
-          !!res.data.notifyCounterparty,
-        );
-      },
-    );
+    this.node.on(NodeTypes.EventName.DEPOSIT_CONFIRMED, (res: DepositConfirmationMessage) => {
+      if (!res || !res.data) {
+        return;
+      }
+      logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
+      this.deposit(
+        res.data.multisigAddress,
+        res.data.amount as any, // FIXME
+        !!res.data.notifyCounterparty,
+      );
+    });
 
-    this.node.on(
-      NodeTypes.EventName.CREATE_CHANNEL,
-      (res: CreateChannelMessage) =>
-        this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress),
+    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) =>
+      this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress),
     );
 
     logger.log("Node methods attached");
