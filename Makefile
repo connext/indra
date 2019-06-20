@@ -67,6 +67,7 @@ clean: stop
 reset: stop
 	docker container prune -f
 	docker volume rm $(project)_database_dev 2> /dev/null || true
+	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
 
 push-latest: prod
