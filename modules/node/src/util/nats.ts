@@ -15,7 +15,7 @@ export abstract class AbstractNatsProvider implements INatsProvider {
           throw new RpcException(`Error subcribing to ${pattern}.`);
         } else if (msg.reply) {
           const publish = processor(msg.subject, msg.data);
-          this.natsClient.publish(msg.reply, publish);
+          this.natsClient.publish(msg.reply, JSON.stringify(publish));
         }
       },
     );
