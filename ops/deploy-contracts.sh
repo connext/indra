@@ -39,29 +39,27 @@ sleep 1 # give the user a sec to ctrl-c in case above is wrong
 # Docker swarm mode needs to be enabled to use the secret store
 docker swarm init 2> /dev/null || true
 
-PRIVATE_KEY_FILE=node_key_$ETH_NETWORK
+ETH_MNEMONIC_FILE=node_key_$ETH_NETWORK
 if [[ "$ETH_NETWORK" != "ganache" ]]
 then
-  name=$PRIVATE_KEY_FILE
-
   # Sanity check: does this secret already exist?
-  if [[ -n "`docker secret ls | grep " $PRIVATE_KEY_FILE"`" ]]
-  then echo "A secret called $PRIVATE_KEY_FILE already exists, aborting"
-       echo "Remove existing secret to reset: docker secret rm $PRIVATE_KEY_FILE"
+  if [[ -n "`docker secret ls | grep " $ETH_MNEMONIC_FILE"`" ]]
+  then echo "A secret called $ETH_MNEMONIC_FILE already exists, aborting"
+       echo "Remove existing secret to reset: docker secret rm $ETH_MNEMONIC_FILE"
        exit
   fi
 
-  echo "Copy your $PRIVATE_KEY_FILE secret to your clipboard"
+  echo "Copy your $ETH_MNEMONIC_FILE secret to your clipboard"
   echo "Paste it below & hit enter (no echo)"
   echo -n "> "
   read -s secret
   echo
 
-  id="`echo $secret | tr -d ' \n\r' | docker secret create $PRIVATE_KEY_FILE -`"
+  id="`echo $secret | tr -d ' \n\r' | docker secret create $ETH_MNEMONIC_FILE -`"
   if [[ "$?" == "0" ]]
   then echo "Successfully loaded secret into secret store"
-       echo "name=$PRIVATE_KEY_FILE id=$id"
-  else echo "Something went wrong creating secret called $PRIVATE_KEY_FILE"
+       echo "name=$ETH_MNEMONIC_FILE id=$id"
+  else echo "Something went wrong creating secret called $ETH_MNEMONIC_FILE"
   fi
 fi
 
@@ -89,7 +87,7 @@ trap cleanup EXIT
 # Deploy contracts
 
 if [[ "$ETH_NETWORK" != "ganache" ]]
-then SECRET_ENV="--env=PRIVATE_KEY_FILE=/run/secrets/$PRIVATE_KEY_FILE --secret=$PRIVATE_KEY_FILE"
+then SECRET_ENV="--env=ETH_MNEMONIC_FILE=/run/secrets/$ETH_MNEMONIC_FILE --secret=$ETH_MNEMONIC_FILE"
 fi
 
 echo
