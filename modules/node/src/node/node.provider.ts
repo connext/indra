@@ -1,15 +1,32 @@
 import { NatsMessagingService, NatsServiceFactory } from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
+import { NetworkContext } from "@counterfactual/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { JsonRpcProvider } from "ethers/providers";
 
+import * as addressBook from "../address-book.json";
 import { ConfigService } from "../config/config.service";
 import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger } from "../util";
 
 const logger = new CLogger("NodeProvider");
+
+const coreContracts = [
+  "ChallengeRegistry",
+  "ETHBalanceRefundApp",
+  "ETHBucket",
+  "ETHInterpreter",
+  "MinimumViableMultisig",
+  "MultiSend",
+  "ProxyFactory",
+  "RootNonceRegistry",
+  "StateChannelTransaction",
+  "TwoPartyEthAsLump",
+  "TwoPartyVirtualEthAsLump",
+  "UninstallKeyRegistry",
+];
 
 async function createNode(
   config: ConfigService,
@@ -24,12 +41,37 @@ async function createNode(
 
   logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
+
+  let network: object | string;
+  if (ethNetwork === "ganache") {
+    network = {};
+    const networkId = "4447";
+    coreContracts.forEach((contractName: string): void => {
+      if (
+        addressBook[contractName] &&
+        addressBook[contractName].networks[networkId]
+      ) {
+        network[contractName] =
+          addressBook[contractName].networks[networkId].address;
+      } else {
+        console.log(
+          `This contract: ${JSON.stringify(addressBook[contractName])}`,
+        );
+        throw new Error(
+          `Contract ${contractName} hasn't been deployed to network ${networkId}`,
+        );
+      }
+    });
+  } else {
+    network = ethNetwork;
+  }
+
   const node = await Node.create(
     natsMessagingService,
     store,
     { STORE_KEY_PREFIX: "store" },
-    new JsonRpcProvider(ethUrl) as any, // FIXME
-    ethNetwork, // Node should probably accept a chainId instead..
+    new JsonRpcProvider(ethUrl) as any,
+    network as string | NetworkContext,
   );
   logger.log("Node created");
 

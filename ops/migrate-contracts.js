@@ -31,6 +31,7 @@ const addressBook = JSON.parse(fs.readFileSync(addressBookPath, 'utf8'))
 // Global scope vars
 var netId
 var wallet
+var mnemonic
 
 ////////////////////////////////////////
 // Helper Functions
@@ -70,8 +71,6 @@ const contractIsDeployed = async (address) => {
 
 // Deploy contract & write resulting addressBook to our address-book file
 const deployContract = async (name, artifacts, args) => {
-
-
   const factory = eth.ContractFactory.fromSolidity(artifacts)
   console.log(`Deploying a new ${name} contract..`)
   const contract = await factory.connect(wallet).deploy(...args.map(a=>a.value))
@@ -106,7 +105,7 @@ const maybeDeployContract = async (name, artifacts, args) => {
 // First, setup signer & connect to eth provider
 
 ;(async function() {
-  let provider, signer, balance, nonce, isDeployed
+  let provider, balance, nonce, isDeployed
   let ecToolsAddress, token, tokenAddress, channelManager, channelManagerAddress
 
   if (process.env.ETH_PROVIDER) {
@@ -117,16 +116,15 @@ const maybeDeployContract = async (name, artifacts, args) => {
     provider = eth.getDefaultProvider(process.env.ETH_NETWORK)
   }
 
-  if (process.env.PRIVATE_KEY_FILE) {
-    signer = new eth.Wallet(fs.readFileSync(process.env.PRIVATE_KEY_FILE, 'utf8'))
+  if (process.env.ETH_MNEMONIC_FILE) {
+    mnemonic = fs.readFileSync(process.env.ETH_MNEMONIC_FILE, 'utf8')
   } else if (process.env.ETH_MNEMONIC) {
-    signer = eth.Wallet.fromMnemonic(process.env.ETH_MNEMONIC)
+    mnemonic = process.env.ETH_MNEMONIC
   } else {
-    console.error(`Couldn't setup signer: no private key or mnemonic found`)
+    console.error(`Couldn't setup signer: no mnemonic found`)
     process.exit(1)
   }
-
-  wallet = signer.connect(provider) // saved to global scope
+  wallet = eth.Wallet.fromMnemonic(mnemonic).connect(provider) // saved to global scope
 
   try {
     netId = (await wallet.provider.getNetwork()).chainId // saved to global scope
@@ -216,6 +214,25 @@ const maybeDeployContract = async (name, artifacts, args) => {
   const uninstallKeyRegistryAddress = await maybeDeployContract(
     'UninstallKeyRegistry', UninstallKeyRegistryArtifacts, [],
   )
+
+  ////////////////////////////////////////
+  // Setup relevant accounts
+
+  if (netId !== 1) { 
+    const ethGift = eth.utils.parseEther('3')
+    const cfAccount = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").address
+    const cfBalance = await wallet.provider.getBalance(cfAccount)
+    if (cfBalance.eq(eth.constants.Zero)) {
+      console.log(`\nGiving the cf account some ETH`)
+      const tx = await wallet.sendTransaction({ to: cfAccount, value: ethGift })
+      await wallet.provider.waitForTransaction(tx.hash)
+      console.log(`Sent 3 ETH to cf account ${cfAccount}`)
+      console.log(`Transaction hash: ${tx.hash}`)
+    } else {
+      console.log(`\nCf account already has ${eth.utils.formatEther(cfBalance)} ETH, that's enough`)
+    }
+  }
+
 
   ////////////////////////////////////////
   // Print summary

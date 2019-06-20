@@ -22,7 +22,6 @@ export POSTGRES_HOST="indra_v2_database"
 export POSTGRES_PASSWORD="$project"
 export POSTGRES_PORT="5432"
 export POSTGRES_USER="$project"
-export PRIVATE_KEY="0x91cce879403351edf573d7eb09f309377662ae9a7c973692d22fd7e931673a73"
 export USERNAME="PaymentBot1"
 
 args="$@"

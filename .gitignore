@@ -13,6 +13,9 @@ dist/
 node_modules/
 .makeflags
 
+# Just a copy, the tracked file is in project root
+modules/node/src/address-book.json
+
 # Logs
 lerna-debug.log*
 npm-debug.log*
