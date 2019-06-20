@@ -70,6 +70,8 @@ const contractIsDeployed = async (address) => {
 
 // Deploy contract & write resulting addressBook to our address-book file
 const deployContract = async (name, artifacts, args) => {
+
+
   const factory = eth.ContractFactory.fromSolidity(artifacts)
   console.log(`Deploying a new ${name} contract..`)
   const contract = await factory.connect(wallet).deploy(...args.map(a=>a.value))
@@ -86,6 +88,17 @@ const deployContract = async (name, artifacts, args) => {
   addressBook[name].networks[netId] = { address, ...saveArgs }
   saveAddressBook(addressBook)
   return contract
+}
+
+
+const maybeDeployContract = async (name, artifacts, args) => {
+  console.log(`\nChecking for valid ${name} contract...`)
+  const savedAddress = getSavedData(name, 'address')
+  if (await contractIsDeployed(savedAddress)) {
+    console.log(`${name} is up to date, no action required\nAddress: ${savedAddress}`)
+    return savedAddress
+  }
+  return (await deployContract(name, artifacts, args)).address
 }
 
 ////////////////////////////////////////
@@ -138,21 +151,71 @@ const deployContract = async (name, artifacts, args) => {
     process.exit(1)
   }
 
+  ////////////////////////////////////////
+  // Deploy lib contracts
+
+  const libStaticCallAddress = await maybeDeployContract(
+    'LibStaticCall', LibStaticCallArtifacts, [],
+  )
+
+  // Link LibStaticCall address into bytecode of other libs
+  ChallengeRegistryArtifacts.bytecode = linker.linkBytecode(
+    ChallengeRegistryArtifacts.bytecode,
+    { 'LibStaticCall': libStaticCallAddress },
+  )
+  TwoPartyVirtualEthAsLumpArtifacts.bytecode = linker.linkBytecode(
+    TwoPartyVirtualEthAsLumpArtifacts.bytecode,
+    { 'LibStaticCall': libStaticCallAddress },
+  )
+  StateChannelTransactionArtifacts.bytecode = linker.linkBytecode(
+    StateChannelTransactionArtifacts.bytecode,
+    { 'LibStaticCall': libStaticCallAddress },
+  )
+
+  // Deploy rest of the lib contracts
+  const challengeRegistryAddress = await maybeDeployContract(
+    'ChallengeRegistry', ChallengeRegistryArtifacts, [],
+  )
+  const twoPartyVirtualEthAsLumpAddress = await maybeDeployContract(
+    'TwoPartyVirtualEthAsLump', TwoPartyVirtualEthAsLumpArtifacts, [],
+  )
+  const stateChannelTransactionAddress = await maybeDeployContract(
+    'StateChannelTransaction', StateChannelTransactionArtifacts, [],
+  )
 
   ////////////////////////////////////////
-  // Deploy lib contracts if needed
+  // Deploy the rest of the core counterfactual contracts
 
-  console.log(`\nChecking for valid LibStaticCall contract...`)
-
-  const libStaticCallSavedAddress = getSavedData('LibStaticCall', 'address')
-
-  if (await contractIsDeployed(libStaticCallSavedAddress)) {
-    libStaticCallAddress = libStaticCallSavedAddress
-    console.log(`LibStaticCall is up to date, no action required\nAddress: ${libStaticCallAddress}`)
-  } else {
-    libStaticCallAddress = (await deployContract('LibStaticCall', LibStaticCallArtifacts, [])).address
-  }
-
+  const contractRegistryAddress = await maybeDeployContract(
+    'ContractRegistry', ContractRegistryArtifacts, [],
+  )
+  const ethBalanceRefundAppAddress = await maybeDeployContract(
+    'ETHBalanceRefundApp', ETHBalanceRefundAppArtifacts, [],
+  )
+  const ethBucketAddress = await maybeDeployContract(
+    'ETHBucket', ETHBucketArtifacts, [],
+  )
+  const ethInterpreterAddress = await maybeDeployContract(
+    'ETHInterpreter', ETHInterpreterArtifacts, [],
+  )
+  const minimumViableMultisigAddress = await maybeDeployContract(
+    'MinimumViableMultisig', MinimumViableMultisigArtifacts, [],
+  )
+  const multiSendAddress = await maybeDeployContract(
+    'MultiSend', MultiSendArtifacts, [],
+  )
+  const proxyFactoryAddress = await maybeDeployContract(
+    'ProxyFactory', ProxyFactoryArtifacts, [],
+  )
+  const rootNonceRegistryAddress = await maybeDeployContract(
+    'RootNonceRegistry', RootNonceRegistryArtifacts, [],
+  )
+  const twoPartyEthAsLumpAddress = await maybeDeployContract(
+    'TwoPartyEthAsLump', TwoPartyEthAsLumpArtifacts, [],
+  )
+  const uninstallKeyRegistryAddress = await maybeDeployContract(
+    'UninstallKeyRegistry', UninstallKeyRegistryArtifacts, [],
+  )
 
   ////////////////////////////////////////
   // Print summary
