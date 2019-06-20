@@ -102,32 +102,25 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   );
   console.log("created cf module successfully");
 
-  let myChannel = await node.getChannel(cfModule.publicIdentifier);
-  if (!myChannel.multisigAddress) {
-    myChannel = await node.createChannel(cfModule.publicIdentifier)
+  // TODO make these types
+  const getChannelResponse = await node.getChannel(cfModule.publicIdentifier);
+  console.log("getChannelResponse: ", getChannelResponse);
+  let myChannel = getChannelResponse.data;
+
+  if (!myChannel.xpub) {
+    // TODO make these types
+    const createChannelResponse = await node.createChannel(cfModule.publicIdentifier);
+    myChannel = createChannelResponse.data;
   }
-  console.log('myChannel: ', myChannel);
+  console.log("myChannel: ", myChannel);
   // @ts-ignore
-  return;
-
-  // TODO: this will disappear once we start generating multisig internally and
-  // deploying on withdraw only do we need to save temp?
-  const temp = await createAccount(opts.nodeUrl || "http://localhost:8080", {
-    xpub: cfModule.publicIdentifier,
-  });
-  console.log(temp);
-
-  // TODO: replace this with nats url once this path is built
-  const multisigAddress = await getMultisigAddress(
-    opts.nodeUrl || "http://localhost:8080",
-    cfModule.publicIdentifier,
-  );
 
   // create the new client
   console.log("creating new instance of connext internal");
   return new ConnextInternal({
     cfModule,
-    multisigAddress,
+    // warning myChannel response structure will change
+    multisigAddress: myChannel.channels[0].multisigAddress,
     nats: messaging.getConnection(),
     node,
     wallet,
