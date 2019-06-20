@@ -6,6 +6,8 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  ViewEntity,
+  ViewColumn,
 } from "typeorm";
 
 import { App } from "../app/app.entity";
@@ -18,7 +20,7 @@ export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(type => User, user => user.channels)
+  @ManyToOne((type: any) => User, (user: User) => user.channels)
   @JoinColumn()
   user!: User;
 
@@ -30,10 +32,10 @@ export class Channel {
   @IsEthAddress()
   multisigAddress!: string;
 
-  @OneToMany(type => App, app => app.channel)
+  @OneToMany((type: any) => App, (app: App) => app.channel)
   apps!: App[];
 
-  @OneToMany(type => ChannelUpdate, channelUpdate => channelUpdate.channel)
+  @OneToMany((type: any) => ChannelUpdate, (channelUpdate: ChannelUpdate) => channelUpdate.channel)
   updates!: ChannelUpdate[];
 }
 
@@ -42,28 +44,67 @@ export class ChannelUpdate {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(type => Channel, channel => channel.updates)
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.updates)
+  @JoinColumn()
   channel!: Channel;
 
   @Column("text", {
     transformer: {
-      from: (value: string) => new BigNumber(value),
-      to: (value: BigNumber) => value.toString(),
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
   freeBalancePartyA!: BigNumber;
 
   @Column("text", {
     transformer: {
-      from: (value: string) => new BigNumber(value),
-      to: (value: BigNumber) => value.toString(),
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
     },
   })
   freeBalancePartyB!: BigNumber;
+
+  @Column("integer")
+  nonce!: number;
 
   @Column("text", { nullable: true })
   sigPartyA!: string;
 
   @Column("text", { nullable: true })
   sigPartyB!: string;
+}
+
+@ViewEntity({
+  expression: `
+    SELECT
+      "user"."xpub" as "nodeXpub",
+      "channel"."counterpartyXpub" as "counterpartyXpub"
+      "channel"."multisigAddress" as "multisigAddress",
+      "channel"."freeBalancePartyA" as "freeBalancePartyA",
+      "channel"."freeBalancePartyB" as "freeBalancePartyB",
+      "channel"."nonce" as "nonce"
+    FROM "user" "user"
+    LEFT JOIN "channel" "channel" ON "channel"."userId" = "user"."id"
+    LEFT JOIN "channel_update" ON "channel_update"."channelId" = (
+      SELECT "id" FROM "channel_update"
+      ORDER BY "nonce" DESC
+      LIMIT 1
+    )
+  `,
+})
+export class NodeChannel {
+  @ViewColumn()
+  nodeXpub: string;
+
+  @ViewColumn()
+  counterpartyXpub: string;
+
+  @ViewColumn()
+  freeBalancePartyA: BigNumber;
+
+  @ViewColumn()
+  freeBalancePartyB: BigNumber;
+
+  @ViewColumn()
+  nonce: number;
 }
