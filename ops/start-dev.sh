@@ -89,7 +89,6 @@ secrets:
 volumes:
   chain_dev:
   database_dev:
-  certs:
 
 services:
   node:
