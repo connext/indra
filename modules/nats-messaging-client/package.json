@@ -13,7 +13,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@counterfactual/node": "0.2.2",
+    "@counterfactual/node": "0.2.3",
     "@counterfactual/types": "0.0.13",
     "ts-nats": "1.2.4"
   },
