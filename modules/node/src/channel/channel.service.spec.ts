@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getConnectionToken, TypeOrmModule } from "@nestjs/typeorm";
-import { Connection } from "typeorm";
+import { Zero } from "ethers/constants";
+import { Connection, UpdateDateColumn } from "typeorm";
 import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 
 import { entities } from "../app.module";
@@ -12,6 +13,8 @@ import { clearDb, mkAddress, mkXpub } from "../test";
 import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
 
+import { Channel, ChannelUpdate } from "./channel.entity";
+import { ChannelRepository, ChannelUpdateRepository, NodeChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 describe("ChannelService", () => {
@@ -19,6 +22,9 @@ describe("ChannelService", () => {
   let module: TestingModule;
   let connection: Connection;
   let userRepository: UserRepository;
+  let channelRepository: ChannelRepository;
+  let channelUpdateRepository: ChannelUpdateRepository;
+  let nodeChannelRepository: NodeChannelRepository;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -29,7 +35,7 @@ describe("ChannelService", () => {
         TypeOrmModule.forRootAsync({
           imports: [ConfigModule],
           inject: [ConfigService],
-          useFactory: async (config: ConfigService) => {
+          useFactory: async (config: ConfigService): Promise<any> => {
             return {
               ...config.getPostgresConfig(),
               entities,
@@ -44,6 +50,9 @@ describe("ChannelService", () => {
     service = module.get<ChannelService>(ChannelService);
     connection = module.get<Connection>(getConnectionToken());
     userRepository = connection.getCustomRepository(UserRepository);
+    channelRepository = connection.getCustomRepository(ChannelRepository);
+    channelUpdateRepository = connection.getCustomRepository(ChannelUpdateRepository);
+    nodeChannelRepository = connection.getCustomRepository(NodeChannelRepository);
   });
 
   beforeEach(async () => {
@@ -58,14 +67,41 @@ describe("ChannelService", () => {
     expect(service).toBeDefined();
   });
 
-  it("should add multisig", async () => {
+  it("should find node channels", async () => {
     const user = new User();
     user.xpub = mkXpub("xpubA");
-    await userRepository.save(user);
 
-    await service.addMultisig(mkXpub("xpubA"), mkAddress("0xa"));
-    const msAdded = await userRepository.findByXpub(mkXpub("xpubA"));
-    const channel = msAdded!.channels[0];
-    expect(channel.multisigAddress).toBe(mkAddress("0xa"));
+    const channel = new Channel();
+    channel.user = user;
+    // TODO do we need this?
+    channel.counterpartyXpub = mkXpub("xpubB");
+    channel.multisigAddress = mkAddress("0xa")
+
+    let update = new ChannelUpdate();
+    update.channel = channel;
+    update.freeBalancePartyA = Zero;
+    update.freeBalancePartyB = Zero;
+    update.nonce = 0;
+
+    await userRepository.save(user);
+    await channelRepository.save(channel);
+    await channelUpdateRepository.save(update);
+
+    update = new ChannelUpdate();
+    update.channel = channel;
+    update.freeBalancePartyA = Zero;
+    update.freeBalancePartyB = Zero;
+    update.nonce = 1;
+    await channelUpdateRepository.save(update);
+
+    update = new ChannelUpdate();
+    update.channel = channel;
+    update.freeBalancePartyA = Zero;
+    update.freeBalancePartyB = Zero;
+    update.nonce = 1;
+    await channelUpdateRepository.save(update);
+
+    const channels = await nodeChannelRepository.find();
+    console.log('channels: ', channels);
   });
 });
