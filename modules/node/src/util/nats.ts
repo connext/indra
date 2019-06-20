@@ -1,6 +1,10 @@
 import { RpcException } from "@nestjs/microservices";
 import { Client, Msg, NatsError } from "ts-nats";
 
+import { CLogger } from "./logger";
+
+const logger = new CLogger("NatsProvider");
+
 export abstract class AbstractNatsProvider implements INatsProvider {
   constructor(protected readonly natsClient: Client) {}
 
@@ -8,14 +12,30 @@ export abstract class AbstractNatsProvider implements INatsProvider {
     pattern: string,
     processor: (subject: string, data: any) => any,
   ): Promise<void> {
-    await this.natsClient.subscribe(pattern, (err: NatsError | null, msg: Msg) => {
+    await this.natsClient.subscribe(pattern, async (err: NatsError | null, msg: Msg) => {
       if (err) {
-        throw new RpcException(`Error processing message ${JSON.stringify(msg)}.`);
+        throw new RpcException(`Error processing message: ${JSON.stringify(msg)}.`);
       } else if (msg.reply) {
-        const publish = processor(msg.subject, msg.data);
-        this.natsClient.publish(msg.reply, JSON.stringify(publish));
+        try {
+          const publish = await processor(msg.subject, msg.data);
+          this.natsClient.publish(
+            msg.reply,
+            // todo make this a type
+            JSON.stringify({ data: publish, status: "success" }),
+          );
+        } catch (e) {
+          this.natsClient.publish(
+            msg.reply,
+            // todo make this a type
+            JSON.stringify({
+              message: `Error during processor function: ${processor.name}`,
+              status: "success",
+            }),
+          );
+        }
       }
     });
+    logger.log(`Connected message pattern "${pattern}" to function ${processor.name}`)
   }
 
   abstract setupSubscriptions(): void;
