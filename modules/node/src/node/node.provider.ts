@@ -6,7 +6,7 @@ import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { JsonRpcProvider } from "ethers/providers";
 
-import * as addressBook from "../address-book.json";
+// import * as addressBook from "../address-book.json";
 import { ConfigService } from "../config/config.service";
 import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger } from "../util";
@@ -42,29 +42,31 @@ async function createNode(
   logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
 
-  let network: object | string;
-  if (ethNetwork === "ganache") {
-    network = {};
-    const networkId = "4447";
-    coreContracts.forEach((contractName: string): void => {
-      if (
-        addressBook[contractName] &&
-        addressBook[contractName].networks[networkId]
-      ) {
-        network[contractName] =
-          addressBook[contractName].networks[networkId].address;
-      } else {
-        console.log(
-          `This contract: ${JSON.stringify(addressBook[contractName])}`,
-        );
-        throw new Error(
-          `Contract ${contractName} hasn't been deployed to network ${networkId}`,
-        );
-      }
-    });
-  } else {
-    network = ethNetwork;
-  }
+  // let network: object | string;
+  // if (ethNetwork === "ganache") {
+  //   network = {};
+  //   const networkId = "4447";
+  //   coreContracts.forEach((contractName: string): void => {
+  //     if (
+  //       addressBook[contractName] &&
+  //       addressBook[contractName].networks[networkId]
+  //     ) {
+  //       network[contractName] =
+  //         addressBook[contractName].networks[networkId].address;
+  //     } else {
+  //       console.log(
+  //         `This contract: ${JSON.stringify(addressBook[contractName])}`,
+  //       );
+  //       throw new Error(
+  //         `Contract ${contractName} hasn't been deployed to network ${networkId}`,
+  //       );
+  //     }
+  //   });
+  // } else {
+  //   network = ethNetwork;
+  // }
+
+  const network = ethNetwork;
 
   const node = await Node.create(
     natsMessagingService,
