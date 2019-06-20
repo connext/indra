@@ -37,9 +37,9 @@ async function createNode(
   const store = postgresServiceFactory.createStoreService("connextHub");
   logger.log("Store created");
 
+  logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
   await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
-  logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
 
   // let network: object | string;
