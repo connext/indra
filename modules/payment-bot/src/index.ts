@@ -1,5 +1,4 @@
 import * as connext from "@connext/client";
-import { MNEMONIC_PATH } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
 
@@ -39,11 +38,11 @@ export function getWalletAddress(): string {
   console.log("     - nodeUrl:", config.nodeUrl);
 
   console.log("node mnemonic;", config.mnemonic);
-  await store.set([{ key: MNEMONIC_PATH, value: config.mnemonic }]);
 
   try {
     console.log("Creating connext");
     client = await connext.connect(connextOpts);
+    process.exit();
     console.log("Client created successfully!");
 
     const config = await client.config();
