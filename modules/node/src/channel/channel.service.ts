@@ -11,6 +11,7 @@ import { UserRepository } from "../user/user.repository";
 import { CLogger } from "../util";
 
 import { Channel, ChannelUpdate } from "./channel.entity";
+import { RpcException } from "@nestjs/microservices";
 
 const logger = new CLogger("ChannelService");
 
@@ -22,6 +23,37 @@ export class ChannelService implements OnModuleInit {
   ) {}
 
   async create(counterpartyXpub: string): Promise<NodeTypes.CreateChannelTransactionResult> {
+    await this.dbConnection.manager.transaction(
+      async (transactionalEntityManager: EntityManager) => {
+        let user = await this.userRepository.findByXpub(counterpartyXpub);
+        // create user if does not exist
+        if (!user) {
+          user = await transactionalEntityManager.save(user);
+        }
+
+        const multisigResponse: NodeTypes.GetStateDepositHolderAddressResult = await this.node.call(
+          NodeTypes.MethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
+          {
+            params: {
+              owners: [this.node.publicIdentifier, counterpartyXpub],
+            } as NodeTypes.GetStateDepositHolderAddressResult,
+            requestId: generateUUID(),
+            type: NodeTypes.MethodName.CREATE_CHANNEL,
+          },
+        );
+        console.log("multisigResponse: ", multisigResponse);
+
+        if (user.channels.length > 0) {
+          throw new RpcException(`Channel already exists for user ${counterpartyXpub}`);
+        }
+
+        const channel = new Channel();
+        channel.counterpartyXpub = counterpartyXpub;
+        channel.multisigAddress = multisigResponse.address;
+        channel.user = user;
+        
+      },
+    );
     const multisigResponse = await this.node.call(NodeTypes.MethodName.CREATE_CHANNEL, {
       params: {
         owners: [this.node.publicIdentifier, counterpartyXpub],
