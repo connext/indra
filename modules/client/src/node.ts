@@ -36,8 +36,9 @@ export class NodeApiClient implements INodeApiClient {
   public async config(): Promise<NodeConfig> {
     // get the config from the hub
     try {
-      const configRes: NodeConfig = await this.send("config.get");
-      return configRes;
+      const configRes = await this.send("config.get");
+      // handle error here
+      return configRes.data as NodeConfig;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -53,7 +54,8 @@ export class NodeApiClient implements INodeApiClient {
   public async getChannel(myXpub: string): Promise<any> {
     try {
       const channelRes = await this.send(`channel.get.${myXpub}`);
-      return channelRes;
+      // handle error here
+      return channelRes.data;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -63,8 +65,8 @@ export class NodeApiClient implements INodeApiClient {
   public async createChannel(myXpub: string): Promise<any> {
     try {
       const channelRes = await this.send(`channel.create.${myXpub}`);
-      console.log('channelRes: ', channelRes);
-      return channelRes;
+      // handle error here
+      return channelRes.data;
     } catch (e) {
       return Promise.reject(e);
     }
