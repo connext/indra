@@ -1,8 +1,8 @@
 import {
   DepositConfirmationMessage,
-  Node,
   jsonRpcDeserialize,
   JsonRpcResponse,
+  Node,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
