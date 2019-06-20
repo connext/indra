@@ -107,7 +107,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("getChannelResponse: ", getChannelResponse);
   let myChannel = getChannelResponse.data;
 
-  if (!myChannel.xpub) {
+  if (!myChannel) {
     // TODO make these types
     const createChannelResponse = await node.createChannel(cfModule.publicIdentifier);
     myChannel = createChannelResponse.data;
