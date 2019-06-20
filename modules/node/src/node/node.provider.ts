@@ -1,4 +1,7 @@
-import { NatsMessagingService, NatsServiceFactory } from "@connext/nats-messaging-client";
+import {
+  NatsMessagingService,
+  NatsServiceFactory,
+} from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { NetworkContext } from "@counterfactual/types";
@@ -8,7 +11,11 @@ import { JsonRpcProvider } from "ethers/providers";
 
 // import * as addressBook from "../address-book.json";
 import { ConfigService } from "../config/config.service";
-import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
+import {
+  NatsProviderId,
+  NodeProviderId,
+  PostgresProviderId,
+} from "../constants";
 import { CLogger } from "../util";
 
 const logger = new CLogger("NodeProvider");
@@ -98,7 +105,9 @@ export const nodeProvider: Provider = {
 export const postgresProvider: Provider = {
   inject: [ConfigService],
   provide: PostgresProviderId,
-  useFactory: async (config: ConfigService): Promise<PostgresServiceFactory> => {
+  useFactory: async (
+    config: ConfigService,
+  ): Promise<PostgresServiceFactory> => {
     const pg = new PostgresServiceFactory({
       ...config.getPostgresConfig(),
       type: "postgres",
