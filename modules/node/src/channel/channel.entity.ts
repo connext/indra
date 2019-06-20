@@ -78,11 +78,11 @@ export class ChannelUpdate {
   expression: `
     SELECT
       "user"."xpub" as "nodeXpub",
-      "channel"."counterpartyXpub" as "counterpartyXpub"
+      "channel"."counterpartyXpub" as "counterpartyXpub",
       "channel"."multisigAddress" as "multisigAddress",
-      "channel"."freeBalancePartyA" as "freeBalancePartyA",
-      "channel"."freeBalancePartyB" as "freeBalancePartyB",
-      "channel"."nonce" as "nonce"
+      "channel_update"."freeBalancePartyA" as "freeBalancePartyA",
+      "channel_update"."freeBalancePartyB" as "freeBalancePartyB",
+      "channel_update"."nonce" as "nonce"
     FROM "user" "user"
     LEFT JOIN "channel" "channel" ON "channel"."userId" = "user"."id"
     LEFT JOIN "channel_update" ON "channel_update"."channelId" = (
