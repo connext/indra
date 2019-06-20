@@ -1,4 +1,9 @@
-import { DepositConfirmationMessage, Node } from "@counterfactual/node";
+import {
+  DepositConfirmationMessage,
+  Node,
+  jsonRpcDeserialize,
+  JsonRpcResponse,
+} from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
@@ -31,33 +36,34 @@ export class ChannelService implements OnModuleInit {
         if (!user) {
           user = new User();
           user.xpub = counterpartyXpub;
+          user.channels = [];
         }
-
-        const multisigResponse: NodeTypes.GetStateDepositHolderAddressResult = await this.node.call(
-          NodeTypes.MethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
-          {
-            params: {
-              owners: [this.node.publicIdentifier, counterpartyXpub],
-            } as NodeTypes.GetStateDepositHolderAddressResult,
-            requestId: generateUUID(),
-            type: NodeTypes.MethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
-          },
-        );
-        console.log("multisigResponse: ", multisigResponse);
 
         if (user.channels.length > 0) {
           throw new RpcException(`Channel already exists for user ${counterpartyXpub}`);
         }
 
+        const multisigResponse = (await this.node.router.dispatch(
+          jsonRpcDeserialize({
+            id: Date.now(),
+            jsonrpc: "2.0",
+            method: NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
+            params: { owners: [this.node.publicIdentifier, counterpartyXpub] },
+          }),
+        )) as JsonRpcResponse;
+
+        const multisigResult = multisigResponse.result as NodeTypes.GetStateDepositHolderAddressResult;
+
         const channel = new Channel();
         channel.counterpartyXpub = counterpartyXpub;
-        channel.multisigAddress = multisigResponse.address;
+        channel.multisigAddress = multisigResult.address;
         channel.user = user;
 
         const update = new ChannelUpdate();
         update.channel = channel;
         update.freeBalancePartyA = Zero;
         update.freeBalancePartyB = Zero;
+        update.nonce = 0;
 
         await transactionalEntityManager.save(user);
         await transactionalEntityManager.save(channel);
@@ -130,9 +136,9 @@ export class ChannelService implements OnModuleInit {
       );
     });
 
-    // this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) =>
-    //   this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress),
-    // );
+    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (
+      res: any, // FIXME
+    ) => this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress));
 
     logger.log("Node methods attached");
   }
