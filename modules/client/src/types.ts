@@ -69,7 +69,7 @@ export type InternalClientOptions = ClientOptions & {
   // signing wallet/information
   wallet: Wallet;
   // store: ConnextStore; --> whats this look like
-  contract?: IMultisig;
+  contract?: MultisigState;
   // counterfactual node
   cfModule: Node;
   multisigAddress: string;
@@ -87,7 +87,16 @@ export interface ChannelState<T = string> {
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 
 export interface ConnextStore {}
-export interface IMultisig {}
+export type MultisigState<T = string> = {
+  id: number;
+  xpubA: string;
+  xpubB: string;
+  multisigAddress: string;
+  freeBalanceA: T;
+  freeBalanceB: T;
+  appIds: number[]; // appIds
+};
+export type MultisigStateBigNumber = MultisigState<BigNumber>;
 
 ///////////////////////////////////
 ////////// NODE TYPES ////////////
@@ -277,6 +286,20 @@ export function convertAssetAmount<To extends NumericTypeName>(
   return convertFields(fromType, to, ["amount"], obj);
 }
 
+export function convertMultisig<To extends NumericTypeName>(
+  to: To,
+  obj: MultisigState<any>,
+): MultisigState<NumericTypes[To]> {
+  const fromType = getType(obj.freeBalanceA);
+  return convertFields(fromType, to, ["freeBalanceA", "freeBalanceB"], obj);
+}
+
+// INPUT PARAMETER CONVERSIONS
+/**
+ * Conversion function for DepositParameter to an AssetAmount. Will also add
+ * in the proper assetId if it is left blank in the supplied parameters to the
+ * empty eth address
+ */
 export function convertDepositToAsset<To extends NumericTypeName>(
   to: To,
   obj: DepositParameters<any>,
@@ -290,6 +313,7 @@ export function convertDepositToAsset<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
+// DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert: any = {
   Asset: convertAssetAmount,
   Transfer: convertAssetAmount,
