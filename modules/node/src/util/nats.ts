@@ -8,17 +8,14 @@ export abstract class AbstractNatsProvider implements INatsProvider {
     pattern: string,
     processor: (subject: string, data: any) => any,
   ): Promise<void> {
-    await this.natsClient.subscribe(
-      pattern,
-      (err: NatsError | null, msg: Msg) => {
-        if (err) {
-          throw new RpcException(`Error subcribing to ${pattern}.`);
-        } else if (msg.reply) {
-          const publish = processor(msg.subject, msg.data);
-          this.natsClient.publish(msg.reply, JSON.stringify(publish));
-        }
-      },
-    );
+    await this.natsClient.subscribe(pattern, (err: NatsError | null, msg: Msg) => {
+      if (err) {
+        throw new RpcException(`Error processing message ${JSON.stringify(msg)}.`);
+      } else if (msg.reply) {
+        const publish = processor(msg.subject, msg.data);
+        this.natsClient.publish(msg.reply, JSON.stringify(publish));
+      }
+    });
   }
 
   abstract setupSubscriptions(): void;
