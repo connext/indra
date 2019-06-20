@@ -111,7 +111,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     myChannel = await node.createChannel();
   }
   console.log("myChannel: ", myChannel);
-  // @ts-ignore
 
   // create the new client
   console.log("creating new instance of connext internal");
