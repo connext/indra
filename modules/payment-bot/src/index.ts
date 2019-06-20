@@ -34,10 +34,10 @@ export function getWalletAddress(): string {
   };
 
   console.log("Using client options:");
+  console.log("     - mnemonic:", config.mnemonic);
   console.log("     - rpcProviderUrl:", config.ethRpcUrl);
+  console.log("     - natsUrl:", config.natsUrl);
   console.log("     - nodeUrl:", config.nodeUrl);
-
-  console.log("node mnemonic;", config.mnemonic);
 
   try {
     console.log("Creating connext");
