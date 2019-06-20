@@ -40,7 +40,7 @@ export class ChannelService implements OnModuleInit {
               owners: [this.node.publicIdentifier, counterpartyXpub],
             } as NodeTypes.GetStateDepositHolderAddressResult,
             requestId: generateUUID(),
-            type: NodeTypes.MethodName.CREATE_CHANNEL,
+            type: NodeTypes.MethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
           },
         );
         console.log("multisigResponse: ", multisigResponse);
