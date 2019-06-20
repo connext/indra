@@ -26,8 +26,8 @@ export const config = {
   ethRpcUrl:
     process.env.ETHEREUM_NETWORK || `https://${ethNetwork}.infura.io/metamask`,
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
+  mnemonic: process.env.NODE_MNEMONIC,
   natsUrl: process.env.NATS_URL || "nats://localhost:4222",
-  nodeMnemonic: process.env.NODE_MNEMONIC,
   nodeUrl: process.env.NODE_URL || "http://localhost:8080",
   postgres: {
     database: process.env.POSTGRES_DATABASE!,
