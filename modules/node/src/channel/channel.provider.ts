@@ -21,7 +21,7 @@ export class ChannelNats extends AbstractNatsProvider {
   }
 
   setupSubscriptions(): void {
-    super.connectRequestReponse("channel.get.>", this.getChannel);
+    super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
   }
 }
 
@@ -53,7 +53,7 @@ export class ConfigNats extends AbstractNatsProvider {
   }
 
   setupSubscriptions(): void {
-    super.connectRequestReponse("config.get", this.getConfig);
+    super.connectRequestReponse("config.get", this.getConfig.bind(this));
   }
 }
 
