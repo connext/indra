@@ -8,7 +8,7 @@ import { natsProvider, nodeProvider, postgresProvider } from "./node.provider";
 
 @Module({
   controllers: [NodeController],
-  exports: [nodeProvider],
+  exports: [nodeProvider, natsProvider],
   imports: [ConfigModule, UserModule],
   providers: [natsProvider, nodeProvider, postgresProvider],
 })
