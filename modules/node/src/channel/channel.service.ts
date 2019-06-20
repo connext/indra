@@ -1,8 +1,8 @@
 import {
   DepositConfirmationMessage,
-  Node,
   jsonRpcDeserialize,
   JsonRpcResponse,
+  Node,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
@@ -43,6 +43,18 @@ export class ChannelService implements OnModuleInit {
           throw new RpcException(`Channel already exists for user ${counterpartyXpub}`);
         }
 
+        const createChannelResponse = (await this.node.router.dispatch(
+          jsonRpcDeserialize({
+            id: Date.now(),
+            jsonrpc: "2.0",
+            method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
+            params: { owners: [this.node.publicIdentifier, counterpartyXpub] },
+          }),
+        )) as JsonRpcResponse;
+        const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
+        console.log("createChannelResponse: ", createChannelResponse);
+
+        // TODO: remove this when the above line returns multisig
         const multisigResponse = (await this.node.router.dispatch(
           jsonRpcDeserialize({
             id: Date.now(),
