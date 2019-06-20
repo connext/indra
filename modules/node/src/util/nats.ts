@@ -1,7 +1,7 @@
 import { RpcException } from "@nestjs/microservices";
 import { Client, Msg, NatsError } from "ts-nats";
 
-export class BaseNatsProvider implements INatsProvider {
+export abstract class AbstractNatsProvider implements INatsProvider {
   constructor(protected readonly natsClient: Client) {}
 
   async connectRequestReponse(
@@ -21,9 +21,7 @@ export class BaseNatsProvider implements INatsProvider {
     );
   }
 
-  setupSubscriptions(): void {
-    throw new Error("Not implemented");
-  }
+  abstract setupSubscriptions(): void;
 }
 
 export interface INatsProvider {
