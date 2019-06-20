@@ -53,6 +53,7 @@ export class ChannelService implements OnModuleInit {
         )) as JsonRpcResponse;
         const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
         console.log("createChannelResponse: ", createChannelResponse);
+        console.log('createChannelResult: ', createChannelResult);
 
         // TODO: remove this when the above line returns multisig
         const multisigResponse = (await this.node.router.dispatch(
@@ -104,42 +105,13 @@ export class ChannelService implements OnModuleInit {
     return depositResponse.result as NodeTypes.DepositResult;
   }
 
-  // actually creates the channel in the db right now, will change when multisig issue resolved
-  async addMultisig(xpub: string, multisigAddress: string): Promise<Channel> {
-    logger.log(`Multisig deployed for ${xpub}, adding to channel`);
-    const user = await this.userRepository.findByXpub(xpub);
-    if (!user) {
-      throw new NotFoundException("User not found.");
-    }
-
-    const channel = new Channel();
-    channel.counterpartyXpub = xpub;
-    channel.multisigAddress = multisigAddress;
-
-    const update = new ChannelUpdate();
-    update.channel = channel;
-    update.freeBalancePartyA = Zero;
-    update.freeBalancePartyB = Zero;
-
-    // should probably only ever have one channel per user?
-    channel.user = user;
-
-    return await this.dbConnection.manager.transaction(
-      async (transactionalEntityManager: EntityManager) => {
-        await transactionalEntityManager.save(user);
-        await transactionalEntityManager.save(channel);
-        await transactionalEntityManager.save(update);
-        return channel;
-      },
-    );
-  }
-
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
     this.node.on(NodeTypes.EventName.DEPOSIT_CONFIRMED, (res: DepositConfirmationMessage) => {
       if (!res || !res.data) {
         return;
       }
+      logger.log("DEPOSIT_CONFIRMED event fired");
       logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
       this.deposit(
         res.data.multisigAddress,
@@ -150,7 +122,9 @@ export class ChannelService implements OnModuleInit {
 
     this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (
       res: any, // FIXME
-    ) => this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress));
+    ) => {
+      logger.log("CREATE_CHANNEL event fired");
+    });
 
     logger.log("Node methods attached");
   }
