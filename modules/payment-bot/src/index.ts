@@ -10,7 +10,8 @@ import { showMainPrompt } from "./bot";
 
 const baseUrl = process.env.BASE_URL!;
 const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
-const ethUrl = process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
+const ethUrl =
+  process.env.ETHEREUM_NETWORK || `https://${NETWORK}.infura.io/metamask`;
 
 const privateKey = process.env.PRIVATE_KEY;
 if (!privateKey) {
@@ -34,7 +35,7 @@ const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory({
   username: process.env.POSTGRES_USER!,
 });
 
-let client: connext.ConnextInternal;
+let client;
 
 export function getMultisigAddress(): string {
   return client.opts.multisigAddress;
@@ -50,9 +51,9 @@ export function getWalletAddress(): string {
   console.log("Creating store");
   const store = pgServiceFactory.createStoreService(process.env.USERNAME!);
 
-  const connextOpts: connext.ClientOptions = {
+  const connextOpts = {
     delete_this_url: baseUrl,
-    nodeUrl: baseUrl,
+    nodeUrl,
     privateKey,
     rpcProviderUrl: ethUrl,
     store,
@@ -78,7 +79,7 @@ export function getWalletAddress(): string {
     console.log("Account multisig address:", client.opts.multisigAddress);
 
     if (process.env.DEPOSIT_AMOUNT) {
-      const depositParams: connext.DepositParameters = {
+      const depositParams = {
         amount: eth.utils.parseEther(process.env.DEPOSIT_AMOUNT).toString(),
       };
       await client.deposit(depositParams);
