@@ -53,7 +53,7 @@ export class ChannelService implements OnModuleInit {
         )) as JsonRpcResponse;
         const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
         console.log("createChannelResponse: ", createChannelResponse);
-        console.log('createChannelResult: ', createChannelResult);
+        console.log("createChannelResult: ", createChannelResult);
 
         // TODO: remove this when the above line returns multisig
         const multisigResponse = (await this.node.router.dispatch(
