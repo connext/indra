@@ -23,9 +23,9 @@ node_port=8080
 nats_port=4222
 
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_network="ganache"
+eth_network="kovan"
 eth_network_id="4447"
-eth_rpc_url="http://ethprovider:8545"
+eth_rpc_url="http://kovan.infura.io/metamask"
 
 # database connection settings
 postgres_db="$project"

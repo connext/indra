@@ -12,7 +12,7 @@ name=${project}_payment_bot
 cwd="`pwd`"
 
 export DELAY_SECONDS="2"
-export ETHEREUM_NETWORK="ganache"
+export ETHEREUM_NETWORK="kovan"
 export INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
 export NODE_MNEMONIC="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 export NATS_URL="nats://indra_v2_nats:4222"
