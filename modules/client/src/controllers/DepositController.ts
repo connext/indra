@@ -56,7 +56,7 @@ export class DepositController extends AbstractController {
     try {
       await this.cfModule.call(CFModuleTypes.MethodName.DEPOSIT, {
         params: {
-          amount: ethers.parseEther(params.amount),
+          amount: ethers.parseEther(params.amount) as any, // FIXME
           multisigAddress: this.connext.opts.multisigAddress,
           notifyCounterparty: true,
         } as CFModuleTypes.DepositParams,
