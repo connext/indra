@@ -1,5 +1,5 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
-import { Node } from "@counterfactual/node";
+import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { EventEmitter } from "events";
 import { Client as NatsClient } from "ts-nats";
 
@@ -85,6 +85,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   //   set: opts.saveState || setFn,
   // }
 
+  // Note: added this to the client since this is required for the cf module to work
+  await opts.store.set([{ key: MNEMONIC_PATH, value: opts.mnemonic }]);
+
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
   const cfModule = await Node.create(
@@ -98,6 +101,14 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     "kovan", // TODO: make this not hardcoded to "kovan"
   );
   console.log("created cf module successfully");
+
+  let myChannel = await node.getChannel(cfModule.publicIdentifier);
+  if (!myChannel.multisigAddress) {
+    myChannel = await node.createChannel(cfModule.publicIdentifier)
+  }
+  console.log('myChannel: ', myChannel);
+  // @ts-ignore
+  return;
 
   // TODO: this will disappear once we start generating multisig internally and
   // deploying on withdraw only do we need to save temp?
