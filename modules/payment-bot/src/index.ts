@@ -42,7 +42,6 @@ export function getWalletAddress(): string {
   try {
     console.log("Creating connext");
     client = await connext.connect(connextOpts);
-    process.exit();
     console.log("Client created successfully!");
 
     const config = await client.config();
