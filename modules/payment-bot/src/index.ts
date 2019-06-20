@@ -54,9 +54,9 @@ export function getWalletAddress(): string {
       const depositParams = {
         amount: eth.utils.parseEther(config.args[0]).toString(),
       };
+      console.log(`Attempting to deposit ${depositParams.amount}...`);
       await client.deposit(depositParams);
-      console.log(`Successfully deposited ${depositParams.amount}!`);
-      // await client.deposit(node, process.env.DEPOSIT_AMOUNT, client.multisigAddress);
+      console.log(`Successfully deposited!`);
     }
 
     // connext.afterUser(node, bot.nodeAddress, client.multisigAddress);
