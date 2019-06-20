@@ -1,6 +1,7 @@
 import { NatsMessagingService } from "@connext/nats-messaging-client";
 import { Node } from "@counterfactual/node";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { RpcException } from "@nestjs/microservices";
 import { Client } from "ts-nats";
 
 import { ConfigService } from "../config/config.service";
@@ -10,7 +11,6 @@ import { UserRepository } from "../user/user.repository";
 import { AbstractNatsProvider } from "../util/nats";
 
 import { ChannelService } from "./channel.service";
-import { RpcException } from "@nestjs/microservices";
 
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
@@ -30,7 +30,6 @@ export class ChannelNats extends AbstractNatsProvider {
 
   async createChannel(subject: string): Promise<User> {
     const xpub = subject.split(".").pop(); // last item of subscription is xpub
-    console.log("xpub: ", xpub);
     try {
       return await this.channelService.create(xpub);
     } catch (e) {
