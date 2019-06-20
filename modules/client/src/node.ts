@@ -53,9 +53,9 @@ export class NodeApiClient implements INodeApiClient {
   public authenticate(): void {}
 
   // TODO: @layne, should we have our xpub accessible in this class instead of passing it in?
-  public async getChannel(myXpub: string): Promise<any> {
+  public async getChannel(): Promise<any> {
     try {
-      const channelRes = await this.send(`channel.get.${myXpub}`);
+      const channelRes = await this.send(`channel.get.${this.publicIdentifier}`);
       // handle error here
       return channelRes.data;
     } catch (e) {
@@ -64,9 +64,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   // TODO: can we abstract this try-catch thing into a separate function?
-  public async createChannel(myXpub: string): Promise<any> {
+  public async createChannel(): Promise<any> {
     try {
-      const channelRes = await this.send(`channel.create.${myXpub}`);
+      const channelRes = await this.send(`channel.create.${this.publicIdentifier}`);
       // handle error here
       return channelRes.data;
     } catch (e) {
