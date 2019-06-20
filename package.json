@@ -20,6 +20,7 @@
     "tslint-plugin-prettier": "2.0.1"
   },
   "dependencies": {
+    "@counterfactual/contracts": "^0.1.2",
     "wait-on": "3.2.0"
   }
 }
