@@ -118,10 +118,72 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
+export type User<T = string> = {
+  id: number;
+  xpub: string;
+  channels: Channel<T>[];
+};
+export type UserBigNumber = User<BigNumber>;
+
+// TODO: @rahul we need to be consistent with "public identifier" and
+// "xpub" nomenclature
+// TODO: @rahul is this the right type?
+export type Channel<T = string> = {
+  id: number;
+  user: User;
+  counterpartyXpub: string;
+  multisigAddress: string;
+  apps: App[];
+  updates: ChannelUpdate<T>[];
+};
+export type ChannelBigNumber = Channel<BigNumber>;
+
+export type ChannelUpdate<T = string> = {
+  id: number;
+  channel: Channel;
+  freeBalancePartyA: T;
+  freeBalancePartyB: T;
+  nonce: number;
+  sigPartyA: string;
+  sigPartyB: string;
+};
+export type ChannelUpdateBigNumber = ChannelUpdate<BigNumber>;
+
 // TODO: move to the types package IFF hub needs these
 /////////////////////////////////
 ////////// APP TYPES ////////////
 /////////////////////////////////
+
+export type App<T = string> = {
+  id: number;
+  channel: Channel<T>;
+  appRegistry: AppRegistry;
+  appId: number;
+  xpubPartyA: string;
+  xpubPartyB: string;
+  depositA: T;
+  depositB: T;
+  intermediaries: string[];
+  initialState: any; // TODO: BAD!!
+  timeout: number;
+  updates: AppUpdate[];
+};
+export type AppBigNumber = App<BigNumber>;
+
+export type AppUpdate<T = string> = {
+  id: number;
+  app: App<T>;
+  action: any; // TODO: BAD!!
+  sigs: string[];
+};
+export type AppUpdateBigNumber = AppUpdate<BigNumber>;
+
+export type AppRegistry = {
+  id: number;
+  appDefinitionAddress: string;
+  stateEncoding: string;
+  actionEncoding: string;
+};
 
 // all the types of counterfactual app states
 export type AppState<T = string> = EthUnidirectionalTransferAppState<T>;
@@ -132,18 +194,19 @@ export type AppAction<T = string> = EthUnidirectionalTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 ////// ETHUnidirectionalTransferApp.sol typings
-export interface EthUnidirectionalTransferAppState<T = string> {
+// @rahul --> does this need to be an interface or are types fine?
+export type EthUnidirectionalTransferAppState<T = string> = {
   transfers: [Transfer<T>, Transfer<T>];
   finalized: boolean;
-}
+};
 export type EthUnidirectionalTransferAppStateBigNumber = EthUnidirectionalTransferAppState<
   BigNumber
 >;
 
-export interface EthUnidirectionalTransferAppAction<T = string> {
+export type EthUnidirectionalTransferAppAction<T = string> = {
   transferAmount: T;
   finalize: boolean;
-}
+};
 export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTransferAppAction<
   BigNumber
 >;
@@ -221,9 +284,7 @@ const getType = (input: any): NumericTypeName => {
   if (typeof input === "string") return "str";
   if (BigNumber.isBigNumber(input)) return "bignumber";
   if (typeof input === "number") return "number"; // used for testing purposes
-  throw new Error(
-    `Unknown input type: ${typeof input}, value: ${JSON.stringify(input)}`,
-  );
+  throw new Error(`Unknown input type: ${typeof input}, value: ${JSON.stringify(input)}`);
 };
 
 const castFunctions: any = {
