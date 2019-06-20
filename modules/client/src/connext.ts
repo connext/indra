@@ -52,18 +52,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   await messaging.connect();
   console.log("nats is connected");
 
-  // create a new node api instance
-  // TODO: use local storage for default key value setting!!
-  const nodeConfig = {
-    logLevel: opts.logLevel,
-    nats: messaging.getConnection(),
-    nodeUrl: opts.nodeUrl,
-    wallet,
-  };
-  console.log("creating node");
-  const node: NodeApiClient = new NodeApiClient(nodeConfig);
-  console.log("created node successfully");
-
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // const getFn = async (key: string) => {
   //   return await localStorage.get(key)
@@ -101,6 +89,19 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     "kovan", // TODO: make this not hardcoded to "kovan"
   );
   console.log("created cf module successfully");
+
+  // create a new node api instance
+  // TODO: use local storage for default key value setting!!
+  const nodeConfig = {
+    logLevel: opts.logLevel,
+    nats: messaging.getConnection(),
+    nodeUrl: opts.nodeUrl,
+    publicIdentifier: cfModule.publicIdentifier,
+    wallet,
+  };
+  console.log("creating node");
+  const node: NodeApiClient = new NodeApiClient(nodeConfig);
+  console.log("created node successfully");
 
   // TODO make these types
   let myChannel = await node.getChannel(cfModule.publicIdentifier);

@@ -20,6 +20,7 @@ export class NodeApiClient implements INodeApiClient {
   public log: Logger;
   public nonce: string | undefined;
   public signature: string | undefined;
+  public publicIdentifier: string;
 
   constructor(opts: NodeInitializationParameters) {
     this.nodeUrl = opts.nodeUrl;
@@ -27,6 +28,7 @@ export class NodeApiClient implements INodeApiClient {
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;
     this.log = new Logger("NodeApiClient", opts.logLevel);
+    this.publicIdentifier = opts.publicIdentifier;
   }
 
   ///////////////////////////////////
