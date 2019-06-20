@@ -105,8 +105,11 @@ export async function getUser(baseURL: string, xpub: string): Promise<any> {
 
 // TODO Temporary fn which deploys multisig and returns address/hash
 export async function createAccount(baseURL: string, user: { xpub: string }): Promise<object> {
+  console.log("Create account activated!");
   try {
     const userRes = await post(baseURL, "users", user);
+
+    console.log("userRes: ", userRes);
 
     const multisigRes = await post(baseURL, "channels", {
       counterpartyXpub: user.xpub,

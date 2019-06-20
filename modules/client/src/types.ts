@@ -25,7 +25,10 @@ export interface ClientOptions {
   rpcProviderUrl?: string; // TODO: can we keep out web3
 
   // node information
-  nodeUrl: string; // nats URL, nats://
+  nodeUrl: string; // http URL, https?://
+
+  // nats information
+  natsUrl: string; // nats URL, nats://
 
   // signing options, include at least one of the following
   mnemonic?: string;
@@ -56,9 +59,6 @@ export interface ClientOptions {
   // nats communication config, client must provide
   natsClusterId?: string;
   natsToken?: string;
-
-  // TODO REMOVE THIS
-  delete_this_url: string;
 }
 
 export type InternalClientOptions = ClientOptions & {

@@ -27,7 +27,7 @@ export function getWalletAddress(): string {
   const store = pgServiceFactory.createStoreService(config.username);
 
   const connextOpts = {
-    delete_this_url: config.baseUrl,
+    natsUrl: config.natsUrl,
     nodeUrl: config.nodeUrl,
     privateKey: config.privateKey,
     rpcProviderUrl: config.ethRpcUrl,
