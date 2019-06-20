@@ -64,17 +64,20 @@ export async function getFreeBalance(
   return result as NodeTypes.GetFreeBalanceStateResult;
 }
 
-// TODO Should we keep this? It's a nice helper to break out by key. Maybe generalize?
+// TODO: Should we keep this? It's a nice helper to break out by key. Maybe generalize?
+// ^^^ generalized is the objMap function we have already, we can delete this
+// added an example of how to use the obj map thing - layne
 export function logEthFreeBalance(
   freeBalance: NodeTypes.GetFreeBalanceStateResult,
 ): void {
-  console.info(`Channel's free balance`);
-  for (const key in freeBalance) {
-    console.info(key, formatEther(freeBalance[key] as any));
-  }
+  console.info(`Channel's free balance:`);
+  const cb = (k: string, v: any): void => {
+    console.info(k, formatEther(v));
+  };
+  objMap(freeBalance, cb);
 }
 
-// TODO Temporary fn which gets multisig address via http.
+// TODO: Temporary fn which gets multisig address via http.
 // This should eventually be derived internally from user/node xpub.
 export async function getMultisigAddress(
   baseURL: string,
@@ -95,7 +98,7 @@ export async function getMultisigAddress(
   return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
 }
 
-// TODO Temporary fn which gets user details via http.
+// TODO: Temporary fn which gets user details via http.
 export async function getUser(baseURL: string, xpub: string): Promise<any> {
   if (!xpub) {
     throw new Error("getUser(): xpub is required");
@@ -109,7 +112,7 @@ export async function getUser(baseURL: string, xpub: string): Promise<any> {
   }
 }
 
-// TODO Temporary fn which deploys multisig and returns address/hash
+// TODO: Temporary fn which deploys multisig and returns address/hash
 export async function createAccount(
   baseURL: string,
   user: { xpub: string },
@@ -137,7 +140,7 @@ export async function createAccount(
   }
 }
 
-// TODO ???
+// TODO: ???
 function timeout(delay: number = 30000): any {
   const handler = setTimeout(() => {
     throw new Error("Request timed out");
@@ -150,7 +153,7 @@ function timeout(delay: number = 30000): any {
   };
 }
 
-// TODO Temporary!!
+// TODO: Temporary!!
 async function get(baseURL: string, endpoint: string): Promise<object> {
   const requestTimeout = timeout();
 
@@ -186,7 +189,7 @@ async function get(baseURL: string, endpoint: string): Promise<object> {
   return response;
 }
 
-// TODO Temporary!!
+// TODO: Temporary!!
 async function post(
   baseURL: string,
   endpoint: string,
