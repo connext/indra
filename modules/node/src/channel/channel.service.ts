@@ -1,17 +1,18 @@
-import { CreateChannelMessage, DepositConfirmationMessage, Node } from "@counterfactual/node";
+import { DepositConfirmationMessage, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { RpcException } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { Connection, EntityManager } from "typeorm";
 import { v4 as generateUUID } from "uuid";
 
 import { NodeProviderId } from "../constants";
+import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
 import { CLogger } from "../util";
 
 import { Channel, ChannelUpdate } from "./channel.entity";
-import { RpcException } from "@nestjs/microservices";
 
 const logger = new CLogger("ChannelService");
 
@@ -22,13 +23,14 @@ export class ChannelService implements OnModuleInit {
     private readonly dbConnection: Connection,
   ) {}
 
-  async create(counterpartyXpub: string): Promise<NodeTypes.CreateChannelTransactionResult> {
+  async create(counterpartyXpub: string): Promise<User> {
     await this.dbConnection.manager.transaction(
       async (transactionalEntityManager: EntityManager) => {
         let user = await this.userRepository.findByXpub(counterpartyXpub);
         // create user if does not exist
         if (!user) {
-          user = await transactionalEntityManager.save(user);
+          user = new User();
+          user.xpub = counterpartyXpub;
         }
 
         const multisigResponse: NodeTypes.GetStateDepositHolderAddressResult = await this.node.call(
@@ -51,18 +53,19 @@ export class ChannelService implements OnModuleInit {
         channel.counterpartyXpub = counterpartyXpub;
         channel.multisigAddress = multisigResponse.address;
         channel.user = user;
-        
+
+        const update = new ChannelUpdate();
+        update.channel = channel;
+        update.freeBalancePartyA = Zero;
+        update.freeBalancePartyB = Zero;
+
+        await transactionalEntityManager.save(user);
+        await transactionalEntityManager.save(channel);
+        await transactionalEntityManager.save(update);
       },
     );
-    const multisigResponse = await this.node.call(NodeTypes.MethodName.CREATE_CHANNEL, {
-      params: {
-        owners: [this.node.publicIdentifier, counterpartyXpub],
-      } as NodeTypes.CreateChannelParams,
-      requestId: generateUUID(),
-      type: NodeTypes.MethodName.CREATE_CHANNEL,
-    });
-    logger.log(`multisigResponse.result: ${JSON.stringify(multisigResponse.result)}`);
-    return multisigResponse.result as NodeTypes.CreateChannelTransactionResult;
+
+    return await this.userRepository.findByXpub(counterpartyXpub);
   }
 
   async deposit(
@@ -127,9 +130,9 @@ export class ChannelService implements OnModuleInit {
       );
     });
 
-    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) =>
-      this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress),
-    );
+    // this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) =>
+    //   this.addMultisig(res.data.counterpartyXpub, res.data.multisigAddress),
+    // );
 
     logger.log("Node methods attached");
   }
