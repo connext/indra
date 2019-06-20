@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@connext/nats-messaging-client": "0.0.5",
-    "@counterfactual/node": "0.2.2",
+    "@counterfactual/node": "0.2.3",
     "ethers": "4.0.29",
     "node-fetch": "2.6.0",
     "ts-nats": "1.2.4",
