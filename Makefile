@@ -104,8 +104,9 @@ node-prod: node $(node)/ops/prod.dockerfile
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
 	$(log_finish) && touch $(flags)/$@
 
-node: nats-client $(shell find $(node)/src $(find_options))
+node: nats-client address-book.json $(shell find $(node)/src $(find_options))
 	$(log_start)
+	$(docker_run_in_root) "cp -f address-book.json modules/node/src"
 	$(docker_run_in_root) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
 

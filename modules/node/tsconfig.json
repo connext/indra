@@ -5,6 +5,7 @@
     "incremental": true,
     "noUnusedLocals": false,
     "outDir": "dist",
+    "resolveJsonModule": true,
     "strict": false,
     "target": "es6"
   },
