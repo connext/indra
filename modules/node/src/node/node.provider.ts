@@ -23,13 +23,9 @@ async function createNode(
   natsMessagingService: NatsMessagingService,
   postgresServiceFactory: PostgresServiceFactory,
 ): Promise<Node> {
-  // TODO: make this logging more dynamic?
   logger.log("Creating store");
   const store = postgresServiceFactory.createStoreService("connextHub");
   logger.log("Store created");
-
-  // TODO: Maybe we shouldn't store the mnemonic in the db?
-  await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
   logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
