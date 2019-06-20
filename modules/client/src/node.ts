@@ -5,8 +5,8 @@ import { Logger } from "./lib/logger";
 import { NodeConfig, NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
 
-// TODO: move to types.tx?
-const API_TIMEOUT = 30000;
+// TODO: move to types.ts?
+const API_TIMEOUT = 2000;
 
 export interface INodeApiClient {
   config(): Promise<NodeConfig>;
@@ -52,8 +52,13 @@ export class NodeApiClient implements INodeApiClient {
   ///////////////////////////////////
   //////////// PRIVATE /////////////
   /////////////////////////////////
-  private async send(subject: string, body?: any): Promise<any> {
-    const msg = await this.nats.request(subject, API_TIMEOUT, body);
+  private async send(subject: string, data?: any): Promise<any> {
+    console.log(
+      `Sending request to ${subject} ${
+        data ? `with body: ${data}` : `without body`
+      }`,
+    );
+    const msg = await this.nats.request(subject, API_TIMEOUT, data);
     return msg;
   }
 }
