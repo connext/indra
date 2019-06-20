@@ -1,7 +1,4 @@
-import {
-  NatsMessagingService,
-  NatsServiceFactory,
-} from "@connext/nats-messaging-client";
+import { NatsMessagingService, NatsServiceFactory } from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";
@@ -9,11 +6,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ConfigService } from "../config/config.service";
-import {
-  NatsProviderId,
-  NodeProviderId,
-  PostgresProviderId,
-} from "../constants";
+import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger } from "../util";
 
 const logger = new CLogger("NodeProvider");
@@ -26,6 +19,8 @@ async function createNode(
   logger.log("Creating store");
   const store = postgresServiceFactory.createStoreService("connextHub");
   logger.log("Store created");
+
+  await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
   logger.log("Creating Node");
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
@@ -59,9 +54,7 @@ export const nodeProvider: Provider = {
 export const postgresProvider: Provider = {
   inject: [ConfigService],
   provide: PostgresProviderId,
-  useFactory: async (
-    config: ConfigService,
-  ): Promise<PostgresServiceFactory> => {
+  useFactory: async (config: ConfigService): Promise<PostgresServiceFactory> => {
     const pg = new PostgresServiceFactory({
       ...config.getPostgresConfig(),
       type: "postgres",
