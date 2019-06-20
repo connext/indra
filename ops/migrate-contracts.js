@@ -229,7 +229,7 @@ const maybeDeployContract = async (name, artifacts, args) => {
       console.log(`Sent 3 ETH to cf account ${cfAccount}`)
       console.log(`Transaction hash: ${tx.hash}`)
     } else {
-      console.log(`\nCf account already has ${eth.utils.formatEther(cfBalance)} ETH, that's enough`)
+      console.log(`\nCf account ${cfAccount} already has ${eth.utils.formatEther(cfBalance)} ETH`)
     }
   }
 
