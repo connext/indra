@@ -1,6 +1,6 @@
 import { Node } from "@counterfactual/node";
 import { Address, Node as NodeTypes } from "@counterfactual/types";
-import { utils } from "ethers";
+import { constants, utils } from "ethers";
 import { Client as NatsClient } from "ts-nats";
 
 import { NodeApiClient } from "./node";
@@ -108,6 +108,7 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
+// TODO: move to the types package IFF hub needs these
 /////////////////////////////////
 ////////// APP TYPES ////////////
 /////////////////////////////////
@@ -137,13 +138,16 @@ export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTrans
   BigNumber
 >;
 
+// TODO: move to the types package IFF hub needs these
 /////////////////////////////////
 ///////// INPUT TYPES ///////////
 /////////////////////////////////
 
 ////// Deposit types
 // TODO: we should have a way to deposit multiple things
-export type DepositParameters<T = string> = AssetAmount<T>;
+export type DepositParameters<T = string> = Omit<AssetAmount<T>, "assetId"> & {
+  assetId?: Address; // if not supplied, assume it is eth
+};
 export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
 ////// Transfer types
@@ -170,6 +174,7 @@ export type WithdrawParameters<T = string> = AssetAmount<T> & {
 };
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 
+// TODO: move to the types package (?)
 /////////////////////////////////
 /////// LOW LEVEL TYPES /////////
 /////////////////////////////////
@@ -182,13 +187,18 @@ export type TransferBigNumber = Transfer<BigNumber>;
 // asset types
 export interface AssetAmount<T = string> {
   amount: T;
-  assetId?: Address; // undefined if eth
+  assetId: Address; // empty address if eth
 }
 export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
+// TODO: move all conversion functions to the types
+// package
 /////////////////////////////////
 //////// CONVERSION FNS /////////
 /////////////////////////////////
+
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+
 export interface NumericTypes {
   str: string;
   bignumber: BigNumber;
@@ -265,6 +275,19 @@ export function convertAssetAmount<To extends NumericTypeName>(
 ): any {
   const fromType = getType(obj.amount);
   return convertFields(fromType, to, ["amount"], obj);
+}
+
+export function convertDepositToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: DepositParameters<any>,
+): AssetAmount<NumericTypes[To]> {
+  const asset: any = {
+    ...obj,
+  };
+  if (!asset.assetId) {
+    asset.assetId = constants.AddressZero;
+  }
+  return convertAssetAmount(to, asset);
 }
 
 export const convert: any = {
