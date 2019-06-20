@@ -104,11 +104,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("created node successfully");
 
   // TODO make these types
-  let myChannel = await node.getChannel(cfModule.publicIdentifier);
+  let myChannel = await node.getChannel();
 
   if (!myChannel) {
     // TODO make these types
-    myChannel = await node.createChannel(cfModule.publicIdentifier);
+    myChannel = await node.createChannel();
   }
   console.log("myChannel: ", myChannel);
   // @ts-ignore
