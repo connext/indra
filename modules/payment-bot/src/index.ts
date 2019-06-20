@@ -29,7 +29,6 @@ export function getWalletAddress(): string {
   const connextOpts = {
     natsUrl: config.natsUrl,
     nodeUrl: config.nodeUrl,
-    privateKey: config.privateKey,
     rpcProviderUrl: config.ethRpcUrl,
     store,
   };
@@ -37,7 +36,6 @@ export function getWalletAddress(): string {
   console.log("Using client options:");
   console.log("     - rpcProviderUrl:", config.ethRpcUrl);
   console.log("     - nodeUrl:", config.nodeUrl);
-  console.log("     - privateKey:", config.privateKey);
 
   console.log("node mnemonic;", config.nodeMnemonic);
   await store.set([{ key: MNEMONIC_PATH, value: config.nodeMnemonic }]);
