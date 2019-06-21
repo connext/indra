@@ -89,7 +89,7 @@ watch-node: node-modules
 ########################################
 # Begin Real Rules
 
-payment-bot: node-modules client $(shell find $(bot)/src $(find_options))
+payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
