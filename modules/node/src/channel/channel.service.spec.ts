@@ -1,10 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getConnectionToken, TypeOrmModule } from "@nestjs/typeorm";
 import { Zero } from "ethers/constants";
-import { Connection, UpdateDateColumn } from "typeorm";
+import { Connection } from "typeorm";
 import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 
-import { entities } from "../app.module";
+import { entities, viewEntites } from "../app.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
 import { ConfigService } from "../config/config.service";
@@ -14,7 +14,11 @@ import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
 
 import { Channel, ChannelUpdate } from "./channel.entity";
-import { ChannelRepository, ChannelUpdateRepository, NodeChannelRepository } from "./channel.repository";
+import {
+  ChannelRepository,
+  ChannelUpdateRepository,
+  NodeChannelRepository,
+} from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 describe("ChannelService", () => {
@@ -38,7 +42,7 @@ describe("ChannelService", () => {
           useFactory: async (config: ConfigService): Promise<any> => {
             return {
               ...config.getPostgresConfig(),
-              entities,
+              entities: [...entities, ...viewEntites],
               synchronize: true,
               type: "postgres",
             } as PostgresConnectionOptions;
@@ -75,7 +79,7 @@ describe("ChannelService", () => {
     channel.user = user;
     // TODO do we need this?
     channel.counterpartyXpub = mkXpub("xpubB");
-    channel.multisigAddress = mkAddress("0xa")
+    channel.multisigAddress = mkAddress("0xa");
 
     let update = new ChannelUpdate();
     update.channel = channel;
@@ -102,6 +106,6 @@ describe("ChannelService", () => {
     await channelUpdateRepository.save(update);
 
     const channels = await nodeChannelRepository.find();
-    console.log('channels: ', channels);
+    console.log("channels: ", channels);
   });
 });
