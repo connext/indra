@@ -24,9 +24,10 @@ export class Channel {
   @JoinColumn()
   user!: User;
 
+  // might not need this
   @Column("text")
   @IsXpub()
-  counterpartyXpub!: string;
+  nodeXpub!: string;
 
   @Column("text")
   @IsEthAddress()
