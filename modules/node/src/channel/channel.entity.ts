@@ -27,7 +27,7 @@ export class Channel {
   // might not need this
   @Column("text")
   @IsXpub()
-  nodeXpub!: string;
+  nodePublicIdentifier!: string;
 
   @Column("text")
   @IsEthAddress()
@@ -79,8 +79,8 @@ export class ChannelUpdate {
   expression: `
     WITH latest_updates AS (
       SELECT DISTINCT ON ("channelId")
-        "channelId",
         "id",
+        "channelId",
         "freeBalancePartyA",
         "freeBalancePartyB",
         "nonce"
@@ -89,8 +89,8 @@ export class ChannelUpdate {
     )
 
     SELECT
-      "user"."xpub" as "userXpub",
-      "channel"."nodeXpub" as "nodeXpub",
+      "user"."publicIdentifier" as "userPublicIdentifier",
+      "channel"."nodePublicIdentifier" as "nodePublicIdentifier",
       "channel"."multisigAddress" as "multisigAddress",
       "latest_updates"."id" as "updateId",
       "latest_updates"."freeBalancePartyA",
@@ -105,10 +105,13 @@ export class ChannelUpdate {
 })
 export class NodeChannel {
   @ViewColumn()
-  nodeXpub: string;
+  nodePublicIdentifier: string;
 
   @ViewColumn()
-  userXpub: string;
+  userPublicIdentifier: string;
+
+  @ViewColumn()
+  multisigAddress: string;
 
   @ViewColumn()
   freeBalancePartyA: BigNumber;

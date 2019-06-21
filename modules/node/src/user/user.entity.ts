@@ -10,8 +10,8 @@ export class User {
 
   @Column("text")
   @IsXpub()
-  xpub!: string;
+  publicIdentifier!: string;
 
-  @OneToMany(type => Channel, channel => channel.user)
+  @OneToMany((type: any) => Channel, (channel: Channel) => channel.user)
   channels!: Channel[];
 }

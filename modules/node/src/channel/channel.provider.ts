@@ -1,26 +1,16 @@
 import { NatsMessagingService } from "@connext/nats-messaging-client";
+import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
-import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, NatsProviderId, NodeProviderId } from "../constants";
-import { User } from "../user/user.entity";
 import { AbstractNatsProvider } from "../util/nats";
 
-import { NodeChannel } from "./channel.entity";
 import { NodeChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
-
-export type GetChannelResponse = {
-  nodeXpub: string;
-  userXpub: string;
-  freeBalancePartyA: BigNumber;
-  freeBalancePartyB: BigNumber;
-  nonce: number;
-};
 
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
@@ -33,14 +23,14 @@ export class ChannelNats extends AbstractNatsProvider {
 
   // TODO: validation
   async getChannel(subject: string): Promise<GetChannelResponse> {
-    const xpub = subject.split(".").pop(); // last item of subscription is xpub
-    return (await this.nodeChannelRepo.findByXpub(xpub)) as GetChannelResponse;
+    const pubId = subject.split(".").pop(); // last item of subscription is pubId
+    return (await this.nodeChannelRepo.findByPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
-  async createChannel(subject: string): Promise<User> {
-    const xpub = subject.split(".").pop(); // last item of subscription is xpub
+  async createChannel(subject: string): Promise<CreateChannelResponse> {
+    const pubId = subject.split(".").pop(); // last item of subscription is pubId
     try {
-      return await this.channelService.create(xpub);
+      return await this.channelService.create(pubId);
     } catch (e) {
       throw new RpcException(`Error calling createChannel RPC method `);
     }
@@ -54,15 +44,6 @@ export class ChannelNats extends AbstractNatsProvider {
 }
 
 // this should be done in the config module but i didnt want to create a circular dependency
-export type GetConfigResponse = {
-  ethNetwork: string;
-  ethUrl: string;
-  nodePublicIdentifier: string;
-  clusterId?: string;
-  servers: string[];
-  token?: string;
-};
-
 export class ConfigNats extends AbstractNatsProvider {
   constructor(
     client: Client,

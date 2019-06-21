@@ -4,13 +4,13 @@ import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connecto
 import { NetworkContext } from "@counterfactual/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { ethers } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
 // import * as addressBook from "../address-book.json";
 import { ConfigService } from "../config/config.service";
 import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger } from "../util";
-import { ethers } from "ethers";
 
 const logger = new CLogger("NodeProvider");
 

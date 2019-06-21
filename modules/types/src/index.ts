@@ -88,9 +88,15 @@ export type User<T = string> = {
 };
 export type UserBigNumber = User<BigNumber>;
 
-// TODO: @rahul we need to be consistent with "public identifier" and
-// "xpub" nomenclature
-// TODO: @rahul is this the right type?
+export type NodeChannel<T = string> = {
+  nodePublicIdentifier: string;
+  userPublicIdentifier: string;
+  multisigAddress: string;
+  freeBalancePartyA: BigNumber;
+  freeBalancePartyB: BigNumber;
+  nonce: number;
+  // TODO: add apps
+};
 export type Channel<T = string> = {
   id: number;
   user: User;
@@ -159,9 +165,18 @@ export type NatsResponse = {
   data: string;
 } & (errorResponse | successResponse);
 
-/////////////////////////////////
-///////// NATS REQUEST AND RESPONSE TYPES
+export type GetConfigResponse = {
+  ethNetwork: string;
+  ethUrl: string;
+  nodePublicIdentifier: string;
+  clusterId?: string;
+  servers: string[];
+  token?: string;
+};
 
+export type GetChannelResponse = NodeChannel;
+
+export type CreateChannelResponse = NodeChannel;
 
 /////////////////////////////////
 ///////// CLIENT INPUT TYPES

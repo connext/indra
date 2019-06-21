@@ -6,13 +6,12 @@ import { NodeModule } from "../node/node.module";
 import { UserModule } from "../user/user.module";
 import { UserRepository } from "../user/user.repository";
 
-import { ChannelController } from "./channel.controller";
 import { channelProvider } from "./channel.provider";
 import { ChannelRepository, NodeChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 @Module({
-  controllers: [ChannelController],
+  controllers: [],
   exports: [ChannelService, channelProvider],
   imports: [
     UserModule,

@@ -133,11 +133,14 @@ describe("ChannelService", () => {
     await channelUpdateRepository.save(update);
 
     let nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubA"));
+    expect(nodeChannel.multisigAddress).toBe(mkAddress("0xa"));
     expect(nodeChannel.freeBalancePartyA).toBe("1");
     expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.nonce).toBe(2);
 
     nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubC"));
+    expect(nodeChannel.multisigAddress).toBe(mkAddress("0xb"));
+    expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.freeBalancePartyA).toBe("3");
     expect(nodeChannel.freeBalancePartyB).toBe("4");
     expect(nodeChannel.nonce).toBe(1);

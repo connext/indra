@@ -17,7 +17,8 @@ import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
 import { CLogger } from "../util";
 
-import { Channel, ChannelUpdate } from "./channel.entity";
+import { Channel, ChannelUpdate, NodeChannel } from "./channel.entity";
+import { NodeChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
 
@@ -25,22 +26,23 @@ export class ChannelService implements OnModuleInit {
   constructor(
     @Inject(NodeProviderId) private readonly node: Node,
     private readonly userRepository: UserRepository,
+    private readonly nodeChannelRepository: NodeChannelRepository,
     private readonly dbConnection: Connection,
   ) {}
 
-  async create(counterpartyXpub: string): Promise<User> {
+  async create(counterpartyPublicIdentifier: string): Promise<NodeChannel> {
     await this.dbConnection.manager.transaction(
       async (transactionalEntityManager: EntityManager) => {
-        let user = await this.userRepository.findByXpub(counterpartyXpub);
+        let user = await this.userRepository.findByPublicIdentifier(counterpartyPublicIdentifier);
         // create user if does not exist
         if (!user) {
           user = new User();
-          user.xpub = counterpartyXpub;
+          user.publicIdentifier = counterpartyPublicIdentifier;
           user.channels = [];
         }
 
         if (user.channels.length > 0) {
-          throw new RpcException(`Channel already exists for user ${counterpartyXpub}`);
+          throw new RpcException(`Channel already exists for user ${counterpartyPublicIdentifier}`);
         }
 
         const createChannelResponse = (await this.node.router.dispatch(
@@ -48,7 +50,7 @@ export class ChannelService implements OnModuleInit {
             id: Date.now(),
             jsonrpc: "2.0",
             method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
-            params: { owners: [this.node.publicIdentifier, counterpartyXpub] },
+            params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
           }),
         )) as JsonRpcResponse;
         const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
@@ -61,7 +63,7 @@ export class ChannelService implements OnModuleInit {
             id: Date.now(),
             jsonrpc: "2.0",
             method: NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
-            params: { owners: [this.node.publicIdentifier, counterpartyXpub] },
+            params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
           }),
         )) as JsonRpcResponse;
 
@@ -69,7 +71,7 @@ export class ChannelService implements OnModuleInit {
           multisigResponse.result;
 
         const channel = new Channel();
-        channel.nodeXpub = this.node.publicIdentifier;
+        channel.nodePublicIdentifier = this.node.publicIdentifier;
         channel.multisigAddress = multisigResult.address;
         channel.user = user;
 
@@ -85,7 +87,7 @@ export class ChannelService implements OnModuleInit {
       },
     );
 
-    return await this.userRepository.findByXpub(counterpartyXpub);
+    return await this.nodeChannelRepository.findByPublicIdentifier(counterpartyPublicIdentifier);
   }
 
   async deposit(
