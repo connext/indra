@@ -1,6 +1,6 @@
+import { CreateChannelResponse, GetChannelResponse, NodeConfig } from "@connext/types";
 import { Address } from "@counterfactual/types";
 import { Client as NatsClient } from "ts-nats";
-import { NodeConfig, User, GetChannelResponse, CreateChannelResponse } from "@connext/types";
 
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
