@@ -116,7 +116,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   return new ConnextInternal({
     cfModule,
     // warning myChannel response structure will change
-    multisigAddress: myChannel.channels[0].multisigAddress,
+    multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     node,
     wallet,
