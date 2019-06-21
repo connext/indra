@@ -1,6 +1,7 @@
 import { NatsConfig } from "@connext/nats-messaging-client";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
+import { Payload } from "ts-nats";
 
 type PostgresConfig = {
   database: string;
@@ -60,6 +61,7 @@ export class ConfigService {
   getNatsConfig(): NatsConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
+      payload: Payload.JSON,
       servers: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       token: this.get("INDRA_NATS_TOKEN"),
     };
