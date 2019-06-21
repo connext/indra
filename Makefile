@@ -17,6 +17,7 @@ nats=$(cwd)/modules/nats-messaging-client
 node=$(cwd)/modules/node
 client=$(cwd)/modules/client
 bot=$(cwd)/modules/payment-bot
+types=$(cwd)/modules/types
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -38,7 +39,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node client payment-bot
+dev: node types client payment-bot
 prod: node-prod
 
 start: dev
@@ -93,11 +94,16 @@ payment-bot: node-modules client $(shell find $(bot)/src $(find_options))
 	$(docker_run_in_root) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-client: nats-client $(shell find $(client)/src $(find_options))
+client: types nats-client $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/client && npm run build"
 	$(docker_run_in_root) "rm -rf modules/payment-bot/node_modules/@connext/client"
 	$(docker_run_in_root) "ln -s ../../../client modules/payment-bot/node_modules/@connext/client"
+	$(log_finish) && touch $(flags)/$@
+
+types: node-modules  $(shell find $(client)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_root) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 node-prod: node $(node)/ops/prod.dockerfile
