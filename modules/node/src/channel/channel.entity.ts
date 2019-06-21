@@ -89,8 +89,8 @@ export class ChannelUpdate {
     )
 
     SELECT
-      "user"."xpub" as "nodeXpub",
-      "channel"."counterpartyXpub" as "counterpartyXpub",
+      "user"."xpub" as "userXpub",
+      "channel"."nodeXpub" as "nodeXpub",
       "channel"."multisigAddress" as "multisigAddress",
       "latest_updates"."id" as "updateId",
       "latest_updates"."freeBalancePartyA",
@@ -108,7 +108,7 @@ export class NodeChannel {
   nodeXpub: string;
 
   @ViewColumn()
-  counterpartyXpub: string;
+  userXpub: string;
 
   @ViewColumn()
   freeBalancePartyA: BigNumber;

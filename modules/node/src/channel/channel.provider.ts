@@ -2,6 +2,7 @@ import { NatsMessagingService } from "@connext/nats-messaging-client";
 import { Node } from "@counterfactual/node";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
+import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
 import { ConfigService } from "../config/config.service";
@@ -13,6 +14,14 @@ import { NodeChannel } from "./channel.entity";
 import { NodeChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
+export type GetChannelResponse = {
+  nodeXpub: string;
+  userXpub: string;
+  freeBalancePartyA: BigNumber;
+  freeBalancePartyB: BigNumber;
+  nonce: number;
+};
+
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
     natsClient: Client,
@@ -23,9 +32,9 @@ export class ChannelNats extends AbstractNatsProvider {
   }
 
   // TODO: validation
-  async getChannel(subject: string): Promise<NodeChannel> {
+  async getChannel(subject: string): Promise<GetChannelResponse> {
     const xpub = subject.split(".").pop(); // last item of subscription is xpub
-    return await this.nodeChannelRepo.findByXpub(xpub);
+    return (await this.nodeChannelRepo.findByXpub(xpub)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<User> {

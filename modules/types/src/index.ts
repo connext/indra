@@ -160,6 +160,10 @@ export type NatsResponse = {
 } & (errorResponse | successResponse);
 
 /////////////////////////////////
+///////// NATS REQUEST AND RESPONSE TYPES
+
+
+/////////////////////////////////
 ///////// CLIENT INPUT TYPES
 
 ////// Deposit types
