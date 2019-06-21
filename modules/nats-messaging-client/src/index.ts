@@ -5,6 +5,7 @@ export interface NatsConfig {
   clusterId?: string;
   servers: string[];
   token?: string;
+  payload?: nats.Payload;
 }
 
 export const NATS_CONFIGURATION_ENV = {
