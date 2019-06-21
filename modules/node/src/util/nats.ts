@@ -20,8 +20,8 @@ export abstract class AbstractNatsProvider implements INatsProvider {
           const publish = await processor(msg.subject, msg.data);
           this.natsClient.publish(
             msg.reply,
-            // todo make this a type
-            JSON.stringify({ data: publish, status: "success" }),
+            // TODO: make this a type
+            { data: publish, status: "success" },
           );
         } catch (e) {
           this.natsClient.publish(
@@ -35,7 +35,7 @@ export abstract class AbstractNatsProvider implements INatsProvider {
         }
       }
     });
-    logger.log(`Connected message pattern "${pattern}" to function ${processor.name}`)
+    logger.log(`Connected message pattern "${pattern}" to function ${processor.name}`);
   }
 
   abstract setupSubscriptions(): void;
