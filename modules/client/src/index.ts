@@ -1,12 +1,5 @@
 import { connect, ConnextInternal } from "./connext";
 import { getFreeBalance, logEthFreeBalance } from "./lib/utils";
-import { ClientOptions, DepositParameters } from "./types";
+import { ClientOptions } from "./types";
 
-export {
-  ClientOptions,
-  ConnextInternal,
-  DepositParameters,
-  connect,
-  getFreeBalance,
-  logEthFreeBalance,
-};
+export { ClientOptions, ConnextInternal, connect, getFreeBalance, logEthFreeBalance };

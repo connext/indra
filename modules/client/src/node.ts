@@ -1,15 +1,19 @@
 import { Address } from "@counterfactual/types";
 import { Client as NatsClient } from "ts-nats";
+import { NodeConfig, User } from "@connext/types";
 
 import { Logger } from "./lib/logger";
-import { NodeConfig, NodeInitializationParameters } from "./types";
+import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
 
 // TODO: move to types.ts?
-const API_TIMEOUT = 2000;
+const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
   config(): Promise<NodeConfig>;
+  authenticate(): void; // TODO: implement!
+  getChannel(): Promise<User>;
+  createChannel(): Promise<User>;
 }
 
 export class NodeApiClient implements INodeApiClient {
@@ -20,6 +24,7 @@ export class NodeApiClient implements INodeApiClient {
   public log: Logger;
   public nonce: string | undefined;
   public signature: string | undefined;
+  public publicIdentifier: string;
 
   constructor(opts: NodeInitializationParameters) {
     this.nodeUrl = opts.nodeUrl;
@@ -27,6 +32,7 @@ export class NodeApiClient implements INodeApiClient {
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;
     this.log = new Logger("NodeApiClient", opts.logLevel);
+    this.publicIdentifier = opts.publicIdentifier;
   }
 
   ///////////////////////////////////
@@ -50,10 +56,9 @@ export class NodeApiClient implements INodeApiClient {
   // own certs linked to their public key
   public authenticate(): void {}
 
-  // TODO: @layne, should we have our xpub accessible in this class instead of passing it in?
-  public async getChannel(myXpub: string): Promise<any> {
+  public async getChannel(): Promise<User> {
     try {
-      const channelRes = await this.send(`channel.get.${myXpub}`);
+      const channelRes = await this.send(`channel.get.${this.publicIdentifier}`);
       // handle error here
       return channelRes.data;
     } catch (e) {
@@ -62,9 +67,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   // TODO: can we abstract this try-catch thing into a separate function?
-  public async createChannel(myXpub: string): Promise<any> {
+  public async createChannel(): Promise<User> {
     try {
-      const channelRes = await this.send(`channel.create.${myXpub}`);
+      const channelRes = await this.send(`channel.create.${this.publicIdentifier}`);
       // handle error here
       return channelRes.data;
     } catch (e) {

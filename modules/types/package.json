@@ -12,10 +12,17 @@
     "node": "10.15.3"
   },
   "scripts": {
-    "build": "tsc -b . && rollup -c"
+    "build": "tsc -b . && rollup -c",
+    "test": "./node_modules/.bin/jest"
   },
   "devDependencies": {
+    "@types/jest": "24.0.15",
+    "ts-jest": "24.0.2",
     "rollup-plugin-typescript2": "0.21.2",
     "typescript": "3.5.2"
+  },
+  "dependencies": {
+    "@counterfactual/types": "0.0.15",
+    "ethers": "4.0.29"
   }
 }

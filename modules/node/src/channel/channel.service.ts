@@ -65,7 +65,8 @@ export class ChannelService implements OnModuleInit {
           }),
         )) as JsonRpcResponse;
 
-        const multisigResult = multisigResponse.result as NodeTypes.GetStateDepositHolderAddressResult;
+        const multisigResult: NodeTypes.GetStateDepositHolderAddressResult =
+          multisigResponse.result;
 
         const channel = new Channel();
         channel.counterpartyXpub = counterpartyXpub;

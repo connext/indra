@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@connext/nats-messaging-client": "0.0.5",
+    "@connext/types": "^0.0.1",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.5",
     "@counterfactual/postgresql-node-connector": "0.0.3",

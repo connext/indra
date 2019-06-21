@@ -1,4 +1,4 @@
-import { ChannelState, TransferParameters } from "../types";
+import { ChannelState, TransferParameters } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
 

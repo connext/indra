@@ -25,7 +25,7 @@ nats_port=4222
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 eth_network="kovan"
 eth_network_id="4447"
-eth_rpc_url="http://kovan.infura.io/metamask"
+eth_rpc_url="https://kovan.infura.io"
 
 # database connection settings
 postgres_db="$project"

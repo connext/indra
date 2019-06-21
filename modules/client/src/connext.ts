@@ -1,4 +1,12 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
+import {
+  ChannelState,
+  DepositParameters,
+  ExchangeParameters,
+  NodeConfig,
+  TransferParameters,
+  WithdrawParameters,
+} from "@connext/types";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { EventEmitter } from "events";
 import { Client as NatsClient } from "ts-nats";
@@ -10,16 +18,7 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
 import { createAccount, getMultisigAddress } from "./lib/utils";
 import { NodeApiClient } from "./node";
-import {
-  ChannelState,
-  ClientOptions,
-  DepositParameters,
-  ExchangeParameters,
-  InternalClientOptions,
-  NodeConfig,
-  TransferParameters,
-  WithdrawParameters,
-} from "./types";
+import { ClientOptions, InternalClientOptions } from "./types";
 import { Wallet } from "./wallet";
 
 /**
@@ -51,18 +50,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const messaging = natsFactory.createMessagingService(messagingServiceKey);
   await messaging.connect();
   console.log("nats is connected");
-
-  // create a new node api instance
-  // TODO: use local storage for default key value setting!!
-  const nodeConfig = {
-    logLevel: opts.logLevel,
-    nats: messaging.getConnection(),
-    nodeUrl: opts.nodeUrl,
-    wallet,
-  };
-  console.log("creating node");
-  const node: NodeApiClient = new NodeApiClient(nodeConfig);
-  console.log("created node successfully");
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // const getFn = async (key: string) => {
@@ -102,15 +89,27 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   );
   console.log("created cf module successfully");
 
+  // create a new node api instance
+  // TODO: use local storage for default key value setting!!
+  const nodeConfig = {
+    logLevel: opts.logLevel,
+    nats: messaging.getConnection(),
+    nodeUrl: opts.nodeUrl,
+    publicIdentifier: cfModule.publicIdentifier,
+    wallet,
+  };
+  console.log("creating node");
+  const node: NodeApiClient = new NodeApiClient(nodeConfig);
+  console.log("created node successfully");
+
   // TODO make these types
-  let myChannel = await node.getChannel(cfModule.publicIdentifier);
+  let myChannel = await node.getChannel();
 
   if (!myChannel) {
     // TODO make these types
-    myChannel = await node.createChannel(cfModule.publicIdentifier);
+    myChannel = await node.createChannel();
   }
   console.log("myChannel: ", myChannel);
-  // @ts-ignore
 
   // create the new client
   console.log("creating new instance of connext internal");

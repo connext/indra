@@ -1,4 +1,4 @@
-import { ChannelState, WithdrawParameters } from "../types";
+import { ChannelState, WithdrawParameters } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
 

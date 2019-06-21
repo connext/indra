@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/node";
+import { jsonRpcDeserialize, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { utils } from "ethers";
 import fetch from "node-fetch";
@@ -6,6 +6,10 @@ import { isNullOrUndefined } from "util";
 import { v4 as generateUUID } from "uuid";
 
 const formatEther = utils.formatEther;
+
+// Capitalizes first char of a string
+export const capitalize = (str: string): string =>
+  str.substring(0, 1).toUpperCase() + str.substring(1);
 
 export const objMap = <T, F extends keyof T, R>(
   obj: T,
@@ -35,14 +39,12 @@ export const objMapPromise = async <T, F extends keyof T, R>(
 
 export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   const adjusted = {} as any;
-  keys.concat(Object.keys(obj)).map(
-    (k: any): any => {
-      // check by index and undefined
-      adjusted[k] = isNullOrUndefined(obj[k])
-        ? val // not supplied set as default val
-        : obj[k];
-    },
-  );
+  keys.concat(Object.keys(obj)).map((k: any): any => {
+    // check by index and undefined
+    adjusted[k] = isNullOrUndefined(obj[k])
+      ? val // not supplied set as default val
+      : obj[k];
+  });
 
   return adjusted;
 };
@@ -50,31 +52,38 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
-// TODO Temporary - this eventually should be exposed at the top level and retrieve from store
+// TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
+// @rahul: will this eventually be a node api client method or always
+// called through the cf node?
 export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
 ): Promise<NodeTypes.GetFreeBalanceStateResult> {
-  const query = {
-    params: { multisigAddress } as NodeTypes.GetFreeBalanceStateParams,
-    requestId: generateUUID(),
-    type: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
-  };
+  // @rahul is this the right Rpc params/obj?
+  const res = await node.router.dispatch(
+    jsonRpcDeserialize({
+      id: Date.now(),
+      jsonrpc: "2.0",
+      method: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
+      params: { multisigAddress },
+    }),
+  );
 
-  const { result } = await node.call(query.type, query);
-
-  return result as NodeTypes.GetFreeBalanceStateResult;
+  return res as NodeTypes.GetFreeBalanceStateResult;
 }
 
-// TODO Should we keep this? It's a nice helper to break out by key. Maybe generalize?
+// TODO: Should we keep this? It's a nice helper to break out by key. Maybe generalize?
+// ^^^ generalized is the objMap function we have already, we can delete this
+// added an example of how to use the obj map thing - layne
 export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
-  console.info(`Channel's free balance`);
-  for (const key in freeBalance) {
-    console.info(key, formatEther(freeBalance[key] as any));
-  }
+  console.info(`Channel's free balance:`);
+  const cb = (k: string, v: any): void => {
+    console.info(k, formatEther(v));
+  };
+  objMap(freeBalance, cb);
 }
 
-// TODO Temporary fn which gets multisig address via http.
+// TODO: Temporary fn which gets multisig address via http.
 // This should eventually be derived internally from user/node xpub.
 export async function getMultisigAddress(baseURL: string, xpub: string): Promise<string> {
   const bot = await getUser(baseURL, xpub);
@@ -91,7 +100,7 @@ export async function getMultisigAddress(baseURL: string, xpub: string): Promise
   return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
 }
 
-// TODO Temporary fn which gets user details via http.
+// TODO: Temporary fn which gets user details via http.
 export async function getUser(baseURL: string, xpub: string): Promise<any> {
   if (!xpub) {
     throw new Error("getUser(): xpub is required");
@@ -105,7 +114,7 @@ export async function getUser(baseURL: string, xpub: string): Promise<any> {
   }
 }
 
-// TODO Temporary fn which deploys multisig and returns address/hash
+// TODO: Temporary fn which deploys multisig and returns address/hash
 export async function createAccount(baseURL: string, user: { xpub: string }): Promise<object> {
   console.log("Create account activated!");
   try {
@@ -130,7 +139,7 @@ export async function createAccount(baseURL: string, user: { xpub: string }): Pr
   }
 }
 
-// TODO ???
+// TODO: ???
 function timeout(delay: number = 30000): any {
   const handler = setTimeout(() => {
     throw new Error("Request timed out");
@@ -143,7 +152,7 @@ function timeout(delay: number = 30000): any {
   };
 }
 
-// TODO Temporary!!
+// TODO: Temporary!!
 async function get(baseURL: string, endpoint: string): Promise<object> {
   const requestTimeout = timeout();
 
@@ -179,7 +188,7 @@ async function get(baseURL: string, endpoint: string): Promise<object> {
   return response;
 }
 
-// TODO Temporary!!
+// TODO: Temporary!!
 async function post(baseURL: string, endpoint: string, data: any): Promise<any> {
   const body = JSON.stringify(data);
   const httpResponse = await fetch(`${baseURL}/${endpoint}`, {

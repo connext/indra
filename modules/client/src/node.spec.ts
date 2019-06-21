@@ -8,6 +8,7 @@ describe("NodeApiClient", () => {
     nodeClient = new NodeApiClient({
       nats: new MockNatsClient(),
       nodeUrl,
+      publicIdentifier: "xpubsomething",
       wallet: new MockWallet(),
     });
     expect(nodeClient).toBeInstanceOf(NodeApiClient);
