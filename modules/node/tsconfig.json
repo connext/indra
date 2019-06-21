@@ -7,6 +7,7 @@
     "outDir": "dist",
     "resolveJsonModule": true,
     "strict": false,
+    "module": "commonjs",
     "target": "es6"
   },
   "exclude": ["dist", "node_modules", "**/*spec.ts"],
