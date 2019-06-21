@@ -79,7 +79,7 @@ describe("ChannelService", () => {
 
     let channel = new Channel();
     channel.user = user;
-    channel.counterpartyXpub = mkXpub("xpubB");
+    channel.nodeXpub = mkXpub("xpubB");
     channel.multisigAddress = mkAddress("0xa");
 
     let update = new ChannelUpdate();
@@ -112,7 +112,7 @@ describe("ChannelService", () => {
 
     channel = new Channel();
     channel.user = user;
-    channel.counterpartyXpub = mkXpub("xpubD");
+    channel.nodeXpub = mkXpub("xpubD");
     channel.multisigAddress = mkAddress("0xb");
 
     update = new ChannelUpdate();
