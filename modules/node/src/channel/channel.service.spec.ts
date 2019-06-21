@@ -133,15 +133,13 @@ describe("ChannelService", () => {
     await channelUpdateRepository.save(update);
 
     let nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubA"));
-    expect(nodeChannel.freeBalancePartyA).toBe(toBig(1));
-    expect(nodeChannel.freeBalancePartyB).toBe(toBig(2));
+    expect(nodeChannel.freeBalancePartyA).toBe("1");
+    expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.nonce).toBe(2);
-    console.log("nodeChannel: ", nodeChannel);
 
-    nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubB"));
-    expect(nodeChannel.freeBalancePartyA).toBe(toBig(3));
-    expect(nodeChannel.freeBalancePartyB).toBe(toBig(4));
+    nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubC"));
+    expect(nodeChannel.freeBalancePartyA).toBe("3");
+    expect(nodeChannel.freeBalancePartyB).toBe("4");
     expect(nodeChannel.nonce).toBe(1);
-    console.log("nodeChannel: ", nodeChannel);
   });
 });
