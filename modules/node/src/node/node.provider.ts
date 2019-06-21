@@ -6,11 +6,13 @@ import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ethers } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
+import { Payload } from "ts-nats";
 
-// import * as addressBook from "../address-book.json";
 import { ConfigService } from "../config/config.service";
 import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger } from "../util";
+
+// import * as addressBook from "../address-book.json";
 
 const logger = new CLogger("NodeProvider");
 
@@ -130,7 +132,9 @@ export const natsProvider: FactoryProvider<Promise<NatsMessagingService>> = {
   inject: [ConfigService],
   provide: NatsProviderId,
   useFactory: async (config: ConfigService): Promise<NatsMessagingService> => {
+    // TODO: @rahul this isnt using the entire nats config?
     const natsServiceFactory = new NatsServiceFactory({
+      payload: Payload.JSON,
       servers: config.getNatsConfig().servers,
     });
     const messService = natsServiceFactory.createMessagingService("messaging");
