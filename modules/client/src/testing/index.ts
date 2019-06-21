@@ -1,4 +1,4 @@
-import { App, BigNumber, User } from "@connext/types";
+import { App, BigNumber, Omit, User } from "@connext/types";
 import { Address } from "@counterfactual/types";
 
 import { capitalize } from "../lib/utils";
@@ -17,7 +17,7 @@ export type SuccinctChannel<T = string | number | BigNumber> = {
   updates: SuccinctChannelUpdate<T>[];
 };
 
-export type SuccinctUser = Omit<User, "updates"> & {
+export type SuccinctUser = Omit<User, "channels"> & {
   updates: SuccinctChannelUpdate[];
 };
 
