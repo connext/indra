@@ -1,5 +1,6 @@
 import { Connection } from "typeorm";
-import { viewEntites } from "src/app.module";
+
+import { viewEntites } from "../app.module";
 
 export function mkXpub(prefix: string = "xpub"): string {
   return prefix.padEnd(111, "0");
