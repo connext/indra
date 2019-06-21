@@ -9,4 +9,8 @@ export class ChannelRepository extends Repository<Channel> {}
 export class ChannelUpdateRepository extends Repository<ChannelUpdate> {}
 
 @EntityRepository(NodeChannel)
-export class NodeChannelRepository extends Repository<NodeChannel> {}
+export class NodeChannelRepository extends Repository<NodeChannel> {
+  async findByXpub(xpub: string): Promise<NodeChannel> {
+    return await this.findOne({ where: [{ nodeXpub: xpub }, { counterpartyXpub: xpub }] });
+  }
+}

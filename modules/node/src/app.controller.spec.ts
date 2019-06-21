@@ -15,12 +15,7 @@ describe("AppController", () => {
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      controllers: [
-        AppController,
-        NodeController,
-        ChannelController,
-        UserController,
-      ],
+      controllers: [AppController, NodeController, ChannelController, UserController],
       imports: [ConfigModule, NodeModule, UserModule, ChannelModule],
       providers: [AppService],
     }).compile();
@@ -28,7 +23,7 @@ describe("AppController", () => {
     appController = await app.get<AppController>(AppController);
   });
 
-  it('should return "Hello World!"', () => {
+  it(`should return "Hello World!"`, () => {
     expect(appController.getHello()).toBe("Hello World!");
   });
 });

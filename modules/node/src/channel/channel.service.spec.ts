@@ -12,6 +12,7 @@ import { NodeModule } from "../node/node.module";
 import { clearDb, mkAddress, mkXpub } from "../test";
 import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
+import { toBig } from "../util";
 
 import { Channel, ChannelUpdate } from "./channel.entity";
 import {
@@ -72,12 +73,12 @@ describe("ChannelService", () => {
   });
 
   it("should find node channels", async () => {
-    const user = new User();
+    // channel with 3 updates
+    let user = new User();
     user.xpub = mkXpub("xpubA");
 
-    const channel = new Channel();
+    let channel = new Channel();
     channel.user = user;
-    // TODO do we need this?
     channel.counterpartyXpub = mkXpub("xpubB");
     channel.multisigAddress = mkAddress("0xa");
 
@@ -100,12 +101,47 @@ describe("ChannelService", () => {
 
     update = new ChannelUpdate();
     update.channel = channel;
+    update.freeBalancePartyA = toBig(1);
+    update.freeBalancePartyB = toBig(2);
+    update.nonce = 2;
+    await channelUpdateRepository.save(update);
+
+    // channel with 3 updates
+    user = new User();
+    user.xpub = mkXpub("xpubC");
+
+    channel = new Channel();
+    channel.user = user;
+    channel.counterpartyXpub = mkXpub("xpubD");
+    channel.multisigAddress = mkAddress("0xb");
+
+    update = new ChannelUpdate();
+    update.channel = channel;
     update.freeBalancePartyA = Zero;
     update.freeBalancePartyB = Zero;
+    update.nonce = 0;
+
+    await userRepository.save(user);
+    await channelRepository.save(channel);
+    await channelUpdateRepository.save(update);
+
+    update = new ChannelUpdate();
+    update.channel = channel;
+    update.freeBalancePartyA = toBig(3);
+    update.freeBalancePartyB = toBig(4);
     update.nonce = 1;
     await channelUpdateRepository.save(update);
 
-    const channels = await nodeChannelRepository.find();
-    console.log("channels: ", channels);
+    let nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubA"));
+    expect(nodeChannel.freeBalancePartyA).toBe(toBig(1));
+    expect(nodeChannel.freeBalancePartyB).toBe(toBig(2));
+    expect(nodeChannel.nonce).toBe(2);
+    console.log("nodeChannel: ", nodeChannel);
+
+    nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubB"));
+    expect(nodeChannel.freeBalancePartyA).toBe(toBig(3));
+    expect(nodeChannel.freeBalancePartyB).toBe(toBig(4));
+    expect(nodeChannel.nonce).toBe(1);
+    console.log("nodeChannel: ", nodeChannel);
   });
 });

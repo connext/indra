@@ -76,20 +76,30 @@ export class ChannelUpdate {
 
 @ViewEntity({
   expression: `
-SELECT
-  "user"."xpub" as "nodeXpub",
-  "channel"."counterpartyXpub" as "counterpartyXpub",
-  "channel"."multisigAddress" as "multisigAddress",
-  "channel_update"."freeBalancePartyA" as "freeBalancePartyA",
-  "channel_update"."freeBalancePartyB" as "freeBalancePartyB",
-  "channel_update"."nonce" as "nonce"
-FROM "user" "user"
-LEFT JOIN "channel" "channel" ON "channel"."userId" = "user"."id"
-LEFT JOIN "channel_update" ON "channel_update"."channelId" = (
-  SELECT "id" FROM "channel_update"
-  ORDER BY "nonce" DESC
-  LIMIT 1
-)
+    WITH latest_updates AS (
+      SELECT DISTINCT ON ("channelId")
+        "channelId",
+        "id",
+        "freeBalancePartyA",
+        "freeBalancePartyB",
+        "nonce"
+      FROM "channel_update"
+      ORDER BY "channelId", "nonce" DESC NULLS LAST
+    )
+
+    SELECT
+      "user"."xpub" as "nodeXpub",
+      "channel"."counterpartyXpub" as "counterpartyXpub",
+      "channel"."multisigAddress" as "multisigAddress",
+      "latest_updates"."id" as "updateId",
+      "latest_updates"."freeBalancePartyA",
+      "latest_updates"."freeBalancePartyB",
+      "latest_updates"."nonce"
+    FROM "channel" "channel"
+    LEFT JOIN "latest_updates" "latest_updates"
+      ON "channel"."id" = "latest_updates"."channelId"
+    LEFT JOIN "user" "user"
+      ON "user"."id" = "channel"."userId"
   `,
 })
 export class NodeChannel {
