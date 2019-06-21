@@ -12,7 +12,7 @@
     "node": "10.15.3"
   },
   "scripts": {
-    "build": "tsc -b . && rollup -c",
+    "build": "./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
     "test": "./node_modules/.bin/jest"
   },
   "devDependencies": {
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@counterfactual/types": "0.0.15",
-    "ethers": "4.0.29"
+    "ethers": "4.0.29",
+    "rollup": "^1.15.6"
   }
 }
