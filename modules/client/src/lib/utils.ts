@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/node";
+import { jsonRpcDeserialize, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { utils } from "ethers";
 import fetch from "node-fetch";
@@ -52,20 +52,21 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
-// TODO Temporary - this eventually should be exposed at the top level and retrieve from store
+// TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
 export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
 ): Promise<NodeTypes.GetFreeBalanceStateResult> {
-  const query = {
-    params: { multisigAddress } as NodeTypes.GetFreeBalanceStateParams,
-    requestId: generateUUID(),
-    type: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
-  };
+  const res = await node.router.dispatch(
+    jsonRpcDeserialize({
+      id: Date.now(),
+      jsonrpc: "2.0",
+      method: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
+      params: { multisigAddress },
+    }),
+  );
 
-  const { result } = await node.call(query.type, query);
-
-  return result as NodeTypes.GetFreeBalanceStateResult;
+  return res as NodeTypes.GetFreeBalanceStateResult;
 }
 
 // TODO: Should we keep this? It's a nice helper to break out by key. Maybe generalize?
