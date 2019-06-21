@@ -1,8 +1,4 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
-import { EventEmitter } from "events";
-import { Client as NatsClient, Payload } from "ts-nats";
-
 import {
   ChannelState,
   DepositParameters,
@@ -11,6 +7,9 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
+import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { EventEmitter } from "events";
+import { Client as NatsClient, Payload } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
 import { ExchangeController } from "./controllers/ExchangeController";
@@ -35,9 +34,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create a new internal nats instance
   const natsConfig = {
     clusterId: opts.natsClusterId,
+    payload: Payload.JSON,
     servers: [opts.natsUrl],
     token: opts.natsToken,
-    payload: Payload.JSON,
   };
   // TODO: proper key? also, proper usage?
   const messagingServiceKey = "messaging";
