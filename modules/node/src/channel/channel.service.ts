@@ -40,9 +40,7 @@ export class ChannelService implements OnModuleInit {
         }
 
         if (user.channels.length > 0) {
-          throw new RpcException(
-            `Channel already exists for user ${counterpartyXpub}`,
-          );
+          throw new RpcException(`Channel already exists for user ${counterpartyXpub}`);
         }
 
         const createChannelResponse = (await this.node.router.dispatch(
@@ -104,29 +102,24 @@ export class ChannelService implements OnModuleInit {
       requestId: generateUUID(),
       type: NodeTypes.MethodName.DEPOSIT,
     });
-    logger.log(
-      `depositResponse.result: ${JSON.stringify(depositResponse.result)}`,
-    );
+    logger.log(`depositResponse.result: ${JSON.stringify(depositResponse.result)}`);
     return depositResponse.result as NodeTypes.DepositResult;
   }
 
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
-    this.node.on(
-      NodeTypes.EventName.DEPOSIT_CONFIRMED,
-      (res: DepositConfirmationMessage) => {
-        if (!res || !res.data) {
-          return;
-        }
-        logger.log("DEPOSIT_CONFIRMED event fired");
-        logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
-        this.deposit(
-          res.data.multisigAddress,
-          res.data.amount as any, // FIXME
-          !!res.data.notifyCounterparty,
-        );
-      },
-    );
+    this.node.on(NodeTypes.EventName.DEPOSIT_CONFIRMED, (res: DepositConfirmationMessage) => {
+      if (!res || !res.data) {
+        return;
+      }
+      logger.log("DEPOSIT_CONFIRMED event fired");
+      logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
+      this.deposit(
+        res.data.multisigAddress,
+        res.data.amount as any, // FIXME
+        !!res.data.notifyCounterparty,
+      );
+    });
 
     this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (
       res: any, // FIXME
