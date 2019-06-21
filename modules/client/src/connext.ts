@@ -10,7 +10,7 @@ import {
   NodeConfig,
   TransferParameters,
   WithdrawParameters,
-} from "../../types/src";
+} from "@connext/types";
 
 import { DepositController } from "./controllers/DepositController";
 import { ExchangeController } from "./controllers/ExchangeController";
