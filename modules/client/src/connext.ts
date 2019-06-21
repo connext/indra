@@ -1,4 +1,8 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
+import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { EventEmitter } from "events";
+import { Client as NatsClient } from "ts-nats";
+
 import {
   ChannelState,
   DepositParameters,
@@ -6,17 +10,13 @@ import {
   NodeConfig,
   TransferParameters,
   WithdrawParameters,
-} from "@connext/types";
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
-import { EventEmitter } from "events";
-import { Client as NatsClient } from "ts-nats";
+} from "../../types/src";
 
 import { DepositController } from "./controllers/DepositController";
 import { ExchangeController } from "./controllers/ExchangeController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { createAccount, getMultisigAddress } from "./lib/utils";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { Wallet } from "./wallet";

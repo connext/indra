@@ -1,6 +1,7 @@
-import * as connext from "@connext/client";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
+
+import * as connext from "../../client/src";
 
 import { showMainPrompt } from "./bot";
 import { config } from "./config";
