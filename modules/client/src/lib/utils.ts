@@ -7,6 +7,10 @@ import { v4 as generateUUID } from "uuid";
 
 const formatEther = utils.formatEther;
 
+// Capitalizes first char of a string
+export const capitalize = (str: string): string =>
+  str.substring(0, 1).toUpperCase() + str.substring(1);
+
 export const objMap = <T, F extends keyof T, R>(
   obj: T,
   func: (val: T[F], field: F) => R,
@@ -67,9 +71,7 @@ export async function getFreeBalance(
 // TODO: Should we keep this? It's a nice helper to break out by key. Maybe generalize?
 // ^^^ generalized is the objMap function we have already, we can delete this
 // added an example of how to use the obj map thing - layne
-export function logEthFreeBalance(
-  freeBalance: NodeTypes.GetFreeBalanceStateResult,
-): void {
+export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
   console.info(`Channel's free balance:`);
   const cb = (k: string, v: any): void => {
     console.info(k, formatEther(v));
@@ -79,14 +81,10 @@ export function logEthFreeBalance(
 
 // TODO: Temporary fn which gets multisig address via http.
 // This should eventually be derived internally from user/node xpub.
-export async function getMultisigAddress(
-  baseURL: string,
-  xpub: string,
-): Promise<string> {
+export async function getMultisigAddress(baseURL: string, xpub: string): Promise<string> {
   const bot = await getUser(baseURL, xpub);
   console.log("bot: ", bot);
-  const multisigAddress =
-    bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
+  const multisigAddress = bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
       `The Bot doesn't have a channel with the Playground yet... ` +
@@ -113,10 +111,7 @@ export async function getUser(baseURL: string, xpub: string): Promise<any> {
 }
 
 // TODO: Temporary fn which deploys multisig and returns address/hash
-export async function createAccount(
-  baseURL: string,
-  user: { xpub: string },
-): Promise<object> {
+export async function createAccount(baseURL: string, user: { xpub: string }): Promise<object> {
   console.log("Create account activated!");
   try {
     let userRes;
@@ -190,11 +185,7 @@ async function get(baseURL: string, endpoint: string): Promise<object> {
 }
 
 // TODO: Temporary!!
-async function post(
-  baseURL: string,
-  endpoint: string,
-  data: any,
-): Promise<any> {
+async function post(baseURL: string, endpoint: string, data: any): Promise<any> {
   const body = JSON.stringify(data);
   const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
     body,
