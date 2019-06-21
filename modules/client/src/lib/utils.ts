@@ -79,6 +79,7 @@ export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResu
   const cb = (k: string, v: any): void => {
     console.info(k, formatEther(v));
   };
+  // @ts-ignore
   objMap(freeBalance, cb);
 }
 
