@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@counterfactual/node": "0.2.3",
-    "@counterfactual/types": "0.0.15",
+    "@counterfactual/types": "0.0.16",
     "ts-nats": "1.2.4"
   },
   "devDependencies": {
