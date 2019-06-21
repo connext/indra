@@ -7,25 +7,25 @@ import { Client } from "ts-nats";
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, NatsProviderId, NodeProviderId } from "../constants";
 import { User } from "../user/user.entity";
-import { UserRepository } from "../user/user.repository";
 import { AbstractNatsProvider } from "../util/nats";
 
+import { NodeChannel } from "./channel.entity";
+import { NodeChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
     natsClient: Client,
-    private readonly userRepo: UserRepository,
+    private readonly nodeChannelRepo: NodeChannelRepository,
     private readonly channelService: ChannelService,
   ) {
     super(natsClient);
   }
 
-  // TODO: change return type to channel view entity
   // TODO: validation
-  async getChannel(subject: string): Promise<User> {
+  async getChannel(subject: string): Promise<NodeChannel> {
     const xpub = subject.split(".").pop(); // last item of subscription is xpub
-    return await this.userRepo.findByXpub(xpub);
+    return await this.nodeChannelRepo.findByXpub(xpub);
   }
 
   async createChannel(subject: string): Promise<User> {
@@ -78,17 +78,17 @@ export class ConfigNats extends AbstractNatsProvider {
 
 // TODO: reduce this boilerplate
 export const channelProvider: FactoryProvider<Promise<Client>> = {
-  inject: [NatsProviderId, UserRepository, ConfigService, NodeProviderId, ChannelService],
+  inject: [NatsProviderId, NodeChannelRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     nats: NatsMessagingService,
-    userRepo: UserRepository,
+    nodeChannelRepo: NodeChannelRepository,
     configService: ConfigService,
     node: Node,
     channelService: ChannelService,
   ): Promise<Client> => {
     const client = nats.getConnection();
-    const channel = new ChannelNats(client, userRepo, channelService);
+    const channel = new ChannelNats(client, nodeChannelRepo, channelService);
     await channel.setupSubscriptions();
     const config = new ConfigNats(client, node, configService);
     await config.setupSubscriptions();

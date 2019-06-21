@@ -5,7 +5,7 @@ import {
   Node,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { Inject, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -69,7 +69,7 @@ export class ChannelService implements OnModuleInit {
           multisigResponse.result;
 
         const channel = new Channel();
-        channel.counterpartyXpub = counterpartyXpub;
+        channel.nodeXpub = this.node.publicIdentifier;
         channel.multisigAddress = multisigResult.address;
         channel.user = user;
 
