@@ -1,6 +1,6 @@
 import * as connext from "@connext/client";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-// import * as eth from "ethers";
+import * as eth from "ethers";
 
 import { showMainPrompt } from "./bot";
 import { config } from "./config";
@@ -50,14 +50,14 @@ export function getWalletAddress(): string {
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
 
-    // if (config.action === "deposit" && config.args[0]) {
-    //   const depositParams = {
-    //     amount: eth.utils.parseEther(config.args[0]).toString(),
-    //   };
-    //   console.log(`Attempting to deposit ${depositParams.amount}...`);
-    //  await client.deposit(depositParams);
-    //  console.log(`Successfully deposited!`);
-    // }
+    if (process.argv[2]) {
+      const depositParams = {
+        amount: eth.utils.parseEther(process.argv[2]).toString(),
+      };
+      console.log(`Attempting to deposit ${depositParams.amount}...`);
+      await client.deposit(depositParams);
+      console.log(`Successfully deposited!`);
+    }
 
     // connext.afterUser(node, bot.nodeAddress, client.multisigAddress);
     connext.logEthFreeBalance(
