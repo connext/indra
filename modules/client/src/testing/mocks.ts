@@ -1,10 +1,11 @@
+import { NodeConfig, User } from "@connext/types";
 import { Address } from "@counterfactual/types";
 import { providers } from "ethers";
 import * as nats from "ts-nats";
 
 import { Logger } from "../lib/logger";
 import { INodeApiClient } from "../node";
-import { ClientOptions, NodeConfig, NodeInitializationParameters, User } from "../types";
+import { ClientOptions, NodeInitializationParameters } from "../types";
 import { Wallet } from "../wallet";
 
 type TransactionRequest = providers.TransactionRequest;

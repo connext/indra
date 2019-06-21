@@ -1,4 +1,12 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
+import {
+  ChannelState,
+  DepositParameters,
+  ExchangeParameters,
+  NodeConfig,
+  TransferParameters,
+  WithdrawParameters,
+} from "@connext/types";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { EventEmitter } from "events";
 import { Client as NatsClient } from "ts-nats";
@@ -10,16 +18,7 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
 import { createAccount, getMultisigAddress } from "./lib/utils";
 import { NodeApiClient } from "./node";
-import {
-  ChannelState,
-  ClientOptions,
-  DepositParameters,
-  ExchangeParameters,
-  InternalClientOptions,
-  NodeConfig,
-  TransferParameters,
-  WithdrawParameters,
-} from "./types";
+import { ClientOptions, InternalClientOptions } from "./types";
 import { Wallet } from "./wallet";
 
 /**

@@ -1,4 +1,4 @@
-import { ChannelState, ExchangeParameters } from "../types";
+import { ChannelState, ExchangeParameters } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
 

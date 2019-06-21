@@ -1,9 +1,9 @@
+import { ChannelState, DepositParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { utils as ethers } from "ethers";
 import { v4 as generateUUID } from "uuid";
 
 import { delay, getFreeBalance, logEthFreeBalance } from "../lib/utils";
-import { ChannelState, DepositParameters } from "../types";
 
 import { AbstractController } from "./AbstractController";
 
@@ -27,27 +27,19 @@ export class DepositController extends AbstractController {
       throw new Error("My address not found");
     }
 
-    const [counterpartyFreeBalanceAddress] = Object.keys(
-      preDepositBalances,
-    ).filter((addr: string): boolean => addr !== myFreeBalanceAddress);
-
-    console.log(
-      `\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`,
+    const [counterpartyFreeBalanceAddress] = Object.keys(preDepositBalances).filter(
+      (addr: string): boolean => addr !== myFreeBalanceAddress,
     );
+
+    console.log(`\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`);
 
     this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_STARTED, (data: any) => {
       console.log("Deposit has started. Data:", JSON.stringify(data, null, 2));
     });
 
-    this.cfModule.once(
-      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
-      (data: any) => {
-        console.log(
-          "Deposit has been confirmed. Data:",
-          JSON.stringify(data, null, 2),
-        );
-      },
-    );
+    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_CONFIRMED, (data: any) => {
+      console.log("Deposit has been confirmed. Data:", JSON.stringify(data, null, 2));
+    });
 
     this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_FAILED, (data: any) => {
       console.log("Deposit has failed. Data:", JSON.stringify(data, null, 2));
@@ -69,11 +61,7 @@ export class DepositController extends AbstractController {
         this.connext.opts.multisigAddress,
       );
 
-      if (
-        !postDepositBalances[myFreeBalanceAddress].gt(
-          preDepositBalances[myFreeBalanceAddress],
-        )
-      ) {
+      if (!postDepositBalances[myFreeBalanceAddress].gt(preDepositBalances[myFreeBalanceAddress])) {
         throw Error("My balance was not increased.");
       }
 
@@ -82,12 +70,9 @@ export class DepositController extends AbstractController {
       console.info("Waiting for counter party to deposit same amount");
 
       const freeBalanceNotUpdated = async (): Promise<any> => {
-        return !(await getFreeBalance(
-          this.cfModule,
-          this.connext.opts.multisigAddress,
-        ))[counterpartyFreeBalanceAddress].gt(
-          preDepositBalances[counterpartyFreeBalanceAddress],
-        );
+        return !(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress))[
+          counterpartyFreeBalanceAddress
+        ].gt(preDepositBalances[counterpartyFreeBalanceAddress]);
       };
 
       while (await freeBalanceNotUpdated()) {
@@ -95,9 +80,7 @@ export class DepositController extends AbstractController {
         await delay(1 * 1000);
       }
 
-      logEthFreeBalance(
-        await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress),
-      );
+      logEthFreeBalance(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress));
     } catch (e) {
       console.error(`Failed to deposit... ${e}`);
       throw e;
@@ -105,10 +88,7 @@ export class DepositController extends AbstractController {
 
     return {
       apps: [],
-      freeBalance: await getFreeBalance(
-        this.cfModule,
-        this.connext.opts.multisigAddress,
-      ),
+      freeBalance: await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress),
     } as ChannelState;
   }
 }

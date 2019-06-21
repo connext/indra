@@ -1,8 +1,9 @@
 import { Address } from "@counterfactual/types";
 import { Client as NatsClient } from "ts-nats";
+import { NodeConfig, User } from "@connext/types";
 
 import { Logger } from "./lib/logger";
-import { NodeConfig, NodeInitializationParameters, User } from "./types";
+import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
 
 // TODO: move to types.ts?
