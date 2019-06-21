@@ -1,7 +1,4 @@
-import {
-  NatsMessagingService,
-  NatsServiceFactory,
-} from "@connext/nats-messaging-client";
+import { NatsMessagingService, NatsServiceFactory } from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { NetworkContext } from "@counterfactual/types";
@@ -11,12 +8,9 @@ import { JsonRpcProvider } from "ethers/providers";
 
 // import * as addressBook from "../address-book.json";
 import { ConfigService } from "../config/config.service";
-import {
-  NatsProviderId,
-  NodeProviderId,
-  PostgresProviderId,
-} from "../constants";
+import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger } from "../util";
+import { ethers } from "ethers";
 
 const logger = new CLogger("NodeProvider");
 
@@ -45,9 +39,25 @@ async function createNode(
   logger.log("Store created");
 
   logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
+  const addr = ethers.utils.HDNode.fromMnemonic(config.getMnemonic()).derivePath(
+    "m/44'/60'/0'/25446",
+  ).address;
+
   await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
   const { ethUrl, ethNetwork } = config.getEthProviderConfig();
+
+  logger.log(
+    `Creating Node with eth env: ${JSON.stringify({
+      ethNetwork,
+      ethUrl,
+    })}`,
+  );
+
+  // test that provider works
+  const provider = new JsonRpcProvider(ethUrl);
+  const balance = await provider.getBalance(addr);
+  logger.log(`Balance of address: ${balance.toString()}`);
 
   // let network: object | string;
   // if (ethNetwork === "ganache") {
@@ -79,7 +89,7 @@ async function createNode(
     natsMessagingService,
     store,
     { STORE_KEY_PREFIX: "store" },
-    new JsonRpcProvider(ethUrl) as any,
+    provider,
     network as string | NetworkContext,
   );
   logger.log("Node created");
@@ -105,9 +115,7 @@ export const nodeProvider: Provider = {
 export const postgresProvider: Provider = {
   inject: [ConfigService],
   provide: PostgresProviderId,
-  useFactory: async (
-    config: ConfigService,
-  ): Promise<PostgresServiceFactory> => {
+  useFactory: async (config: ConfigService): Promise<PostgresServiceFactory> => {
     const pg = new PostgresServiceFactory({
       ...config.getPostgresConfig(),
       type: "postgres",
