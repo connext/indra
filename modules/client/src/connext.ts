@@ -1,7 +1,7 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { EventEmitter } from "events";
-import { Client as NatsClient } from "ts-nats";
+import { Client as NatsClient, Payload } from "ts-nats";
 
 import {
   ChannelState,
@@ -37,6 +37,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     clusterId: opts.natsClusterId,
     servers: [opts.natsUrl],
     token: opts.natsToken,
+    payload: Payload.JSON,
   };
   // TODO: proper key? also, proper usage?
   const messagingServiceKey = "messaging";
