@@ -60,7 +60,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       const channelRes = await this.send(`channel.get.${this.publicIdentifier}`);
       // handle error here
-      return JSON.parse(channelRes.data);
+      return channelRes;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -71,7 +71,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       const channelRes = await this.send(`channel.create.${this.publicIdentifier}`);
       // handle error here
-      return JSON.parse(channelRes.data);
+      return channelRes;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -83,6 +83,7 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any> {
     console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
     const msg = await this.nats.request(subject, API_TIMEOUT, JSON.stringify(data));
-    return JSON.parse(msg.data);
+    console.log(`Request returns: ${JSON.stringify(msg, null, 2)}`);
+    return msg.data;
   }
 }
