@@ -6,8 +6,8 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  ViewEntity,
   ViewColumn,
+  ViewEntity,
 } from "typeorm";
 
 import { App } from "../app/app.entity";
@@ -76,20 +76,20 @@ export class ChannelUpdate {
 
 @ViewEntity({
   expression: `
-    SELECT
-      "user"."xpub" as "nodeXpub",
-      "channel"."counterpartyXpub" as "counterpartyXpub",
-      "channel"."multisigAddress" as "multisigAddress",
-      "channel_update"."freeBalancePartyA" as "freeBalancePartyA",
-      "channel_update"."freeBalancePartyB" as "freeBalancePartyB",
-      "channel_update"."nonce" as "nonce"
-    FROM "user" "user"
-    LEFT JOIN "channel" "channel" ON "channel"."userId" = "user"."id"
-    LEFT JOIN "channel_update" ON "channel_update"."channelId" = (
-      SELECT "id" FROM "channel_update"
-      ORDER BY "nonce" DESC
-      LIMIT 1
-    )
+SELECT
+  "user"."xpub" as "nodeXpub",
+  "channel"."counterpartyXpub" as "counterpartyXpub",
+  "channel"."multisigAddress" as "multisigAddress",
+  "channel_update"."freeBalancePartyA" as "freeBalancePartyA",
+  "channel_update"."freeBalancePartyB" as "freeBalancePartyB",
+  "channel_update"."nonce" as "nonce"
+FROM "user" "user"
+LEFT JOIN "channel" "channel" ON "channel"."userId" = "user"."id"
+LEFT JOIN "channel_update" ON "channel_update"."channelId" = (
+  SELECT "id" FROM "channel_update"
+  ORDER BY "nonce" DESC
+  LIMIT 1
+)
   `,
 })
 export class NodeChannel {
