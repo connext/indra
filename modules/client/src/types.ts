@@ -133,14 +133,14 @@ export type Channel<T = string> = {
   user: User;
   counterpartyXpub: string;
   multisigAddress: string;
-  apps: App[];
+  apps: App<T>[];
   updates: ChannelUpdate<T>[];
 };
 export type ChannelBigNumber = Channel<BigNumber>;
 
 export type ChannelUpdate<T = string> = {
   id: number;
-  channel: Channel;
+  channel: Channel<T>;
   freeBalancePartyA: T;
   freeBalancePartyB: T;
   nonce: number;
