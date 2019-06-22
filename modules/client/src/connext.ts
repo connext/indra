@@ -7,7 +7,8 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { MNEMONIC_PATH, Node, DepositConfirmationMessage } from "@counterfactual/node";
+import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
 import { Client as NatsClient, Payload } from "ts-nats";
 
@@ -102,21 +103,21 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
   console.log("created node successfully");
 
-  // TODO make these types
+  // TODO: make these types
   let myChannel = await node.getChannel();
 
   if (!myChannel) {
-    // TODO make these types
+    // TODO: make these types
+    console.log("no channel detected, creating channel..");
     myChannel = await node.createChannel();
   }
   console.log("myChannel: ", myChannel);
 
   // create the new client
-  console.log("creating new instance of connext internal");
   return new ConnextInternal({
     cfModule,
     // warning myChannel response structure will change
-    multisigAddress: myChannel.multisigAddress,
+    multisigAddress: myChannel.multisigAddress.toLowerCase(),
     nats: messaging.getConnection(),
     node,
     wallet,
