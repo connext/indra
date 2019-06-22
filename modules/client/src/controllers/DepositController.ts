@@ -1,9 +1,9 @@
 import { ChannelState, DepositParameters } from "@connext/types";
+import { jsonRpcDeserialize } from "@counterfactual/node";
 import { Node as CFModuleTypes } from "@counterfactual/types";
-import { utils as ethers } from "ethers";
-import { v4 as generateUUID } from "uuid";
+import { BigNumber } from "ethers/utils";
 
-import { delay, getFreeBalance, logEthFreeBalance } from "../lib/utils";
+import { getFreeBalance, logEthFreeBalance } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
 
@@ -58,16 +58,20 @@ export class DepositController extends AbstractController {
 
     try {
       console.log("Calling", CFModuleTypes.RpcMethodName.DEPOSIT);
-      await this.cfModule.call(CFModuleTypes.RpcMethodName.DEPOSIT, {
-        params: {
-          amount: ethers.parseEther(params.amount) as any, // FIXME
-          multisigAddress: this.connext.opts.multisigAddress,
-          notifyCounterparty: true,
-        } as CFModuleTypes.DepositParams,
-        requestId: generateUUID(),
-        type: CFModuleTypes.MethodName.DEPOSIT,
-      });
+      const depositResponse = await this.cfModule.router.dispatch(
+        jsonRpcDeserialize({
+          id: Date.now(),
+          jsonrpc: "2.0",
+          method: CFModuleTypes.RpcMethodName.DEPOSIT,
+          params: {
+            amount: new BigNumber(params.amount), // FIXME
+            multisigAddress: this.connext.opts.multisigAddress,
+            notifyCounterparty: true,
+          } as CFModuleTypes.DepositParams,
+        }),
+      );
       console.log("Called", CFModuleTypes.MethodName.DEPOSIT, "!");
+      console.log("depositResponse: ", depositResponse);
 
       const postDepositBalances = await getFreeBalance(
         this.cfModule,
@@ -76,7 +80,10 @@ export class DepositController extends AbstractController {
 
       console.log("postDepositBalances:", JSON.stringify(postDepositBalances, null, 2));
 
-      if (postDepositBalances && !postDepositBalances[myFreeBalanceAddress].gt(preDepositBalances[myFreeBalanceAddress])) {
+      if (
+        postDepositBalances &&
+        !postDepositBalances[myFreeBalanceAddress].gt(preDepositBalances[myFreeBalanceAddress])
+      ) {
         throw Error("My balance was not increased.");
       }
 
@@ -96,7 +103,7 @@ export class DepositController extends AbstractController {
       // }
 
       console.log("Deposited!");
-      // logEthFreeBalance(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress));
+      logEthFreeBalance(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress));
     } catch (e) {
       console.error(`Failed to deposit... ${e}`);
       throw e;
