@@ -54,6 +54,7 @@ export const delay = (ms: number): Promise<void> =>
 // TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
 // @rahul: will this eventually be a node api client method or always
 // called through the cf node?
+// @layne, anything we can get through the client's CF node we should, its more trust minimized that way
 export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
