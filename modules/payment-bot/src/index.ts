@@ -1,7 +1,6 @@
+import * as connext from "@connext/client";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
-
-import * as connext from "@connext/client";
 
 import { showMainPrompt } from "./bot";
 import { config } from "./config";
@@ -61,9 +60,7 @@ export function getWalletAddress(): string {
     }
 
     // connext.afterUser(node, bot.nodeAddress, client.multisigAddress);
-    connext.logEthFreeBalance(
-      await connext.getFreeBalance(client.cfModule, client.opts.multisigAddress),
-    );
+    client.logEthFreeBalance(await client.getFreeBalance());
     // @ts-ignore
     showMainPrompt(client.cfModule); // TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
   } catch (e) {

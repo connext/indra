@@ -123,19 +123,10 @@ export class ChannelService implements OnModuleInit {
       );
     });
 
-    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, async (
-      res: any, // FIXME
+    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (
+      res: NodeTypes.CreateMultisigEventData, // FIXME: is this the right type?
     ) => {
-      logger.log("CREATE_CHANNEL event fired");
-      const res2 = await this.node.router.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
-          params: { multisigAddress: "0x1ab3cd07ac29472571a9ee1b9c09c37e3f07705d" },
-        }),
-      );
-      logger.log(`************** hub side free balance res (after event): ${JSON.stringify(res2, null, 2)}`);
+      logger.log(`CREATE_CHANNEL event fired: ${JSON.stringify(res)}`);
     });
 
     logger.log("Node methods attached");

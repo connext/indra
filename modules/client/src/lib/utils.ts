@@ -54,6 +54,7 @@ export const delay = (ms: number): Promise<void> =>
 // TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
 // @rahul: will this eventually be a node api client method or always
 // called through the cf node?
+// @layne, anything we can get through the client's CF node we should, its more trust minimized that way
 export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
@@ -63,12 +64,12 @@ export async function getFreeBalance(
     jsonRpcDeserialize({
       id: Date.now(),
       jsonrpc: "2.0",
-      method: NodeTypes.MethodName.GET_FREE_BALANCE_STATE,
+      method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
       params: { multisigAddress },
     }),
   );
 
-  return res as NodeTypes.GetFreeBalanceStateResult;
+  return res.result as NodeTypes.GetFreeBalanceStateResult;
 }
 
 // TODO: Should we keep this? It's a nice helper to break out by key. Maybe generalize?
@@ -81,61 +82,6 @@ export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResu
   };
   // @ts-ignore
   objMap(freeBalance, cb);
-}
-
-// TODO: Temporary fn which gets multisig address via http.
-// This should eventually be derived internally from user/node xpub.
-export async function getMultisigAddress(baseURL: string, xpub: string): Promise<string> {
-  const bot = await getUser(baseURL, xpub);
-  const multisigAddress = bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
-  if (!multisigAddress) {
-    console.info(
-      `The Bot doesn't have a channel with the Playground yet... ` +
-        `Waiting for another [hardcoded] 2 seconds`,
-    );
-    // Convert to milliseconds
-    await delay(2 * 1000).then(() => getMultisigAddress(baseURL, xpub));
-  }
-  return (await getUser(baseURL, xpub)).channels[0].multisigAddress;
-}
-
-// TODO: Temporary fn which gets user details via http.
-export async function getUser(baseURL: string, xpub: string): Promise<any> {
-  if (!xpub) {
-    throw new Error("getUser(): xpub is required");
-  }
-
-  try {
-    const userJson = await get(baseURL, `users/${xpub}`);
-    return userJson;
-  } catch (e) {
-    return Promise.reject(e);
-  }
-}
-
-// TODO: Temporary fn which deploys multisig and returns address/hash
-export async function createAccount(baseURL: string, user: { xpub: string }): Promise<object> {
-  console.log("Create account activated!");
-  try {
-    let userRes;
-    userRes = await get(baseURL, `users/${user.xpub}`);
-    if (!userRes || !(userRes as any).id) {
-      userRes = await post(baseURL, "users", user);
-    }
-    console.log("userRes: ", userRes);
-
-    const multisigRes = await post(baseURL, "channels", {
-      counterpartyXpub: user.xpub,
-    });
-    console.log("multisigRes: ", multisigRes);
-
-    return {
-      ...userRes,
-      transactionHash: (multisigRes as any).transactionHash,
-    };
-  } catch (e) {
-    return Promise.reject(e);
-  }
 }
 
 // TODO: ???

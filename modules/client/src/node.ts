@@ -44,7 +44,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       const configRes = await this.send("config.get");
       // handle error here
-      return configRes.data as NodeConfig;
+      return configRes as NodeConfig;
     } catch (e) {
       return Promise.reject(e);
     }
