@@ -87,7 +87,6 @@ export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResu
 // This should eventually be derived internally from user/node xpub.
 export async function getMultisigAddress(baseURL: string, xpub: string): Promise<string> {
   const bot = await getUser(baseURL, xpub);
-  console.log("bot: ", bot);
   const multisigAddress = bot.channels.length > 0 ? bot.channels[0].multisigAddress : undefined;
   if (!multisigAddress) {
     console.info(
