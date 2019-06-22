@@ -8,6 +8,7 @@ import {
   WithdrawParameters,
 } from "@connext/types";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
 import { Client as NatsClient, Payload } from "ts-nats";
 
@@ -16,6 +17,7 @@ import { ExchangeController } from "./controllers/ExchangeController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
+import { getFreeBalance, logEthFreeBalance } from "./lib/utils";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { Wallet } from "./wallet";
@@ -163,6 +165,17 @@ export abstract class ConnextChannel extends EventEmitter {
   // NODE EASY ACCESS METHODS
   public async config(): Promise<NodeConfig> {
     return await this.internal.config();
+  }
+
+  // @layne should we keep this here?
+  ///////////////////////////////////
+  // CF MODULE EASY ACCESS METHODS
+  public async getFreeBalance(): Promise<NodeTypes.GetFreeBalanceStateResult> {
+    return await getFreeBalance(this.opts.cfModule, this.opts.multisigAddress);
+  }
+
+  public logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
+    logEthFreeBalance(freeBalance);
   }
 }
 
