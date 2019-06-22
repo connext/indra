@@ -83,12 +83,15 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any | undefined> {
     console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
     const msg = await this.nats.request(subject, API_TIMEOUT, JSON.stringify(data));
+    if (!msg.data) {
+      console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
+      return undefined;
+    }
     const { status, ...res } = msg.data;
     if (status !== "success") {
       throw new Error(`Error sending request. Res: ${JSON.stringify(msg, null, 2)}`);
     }
-    console.log(`Request returns: ${JSON.stringify(msg, null, 2)}`);
 
-    return Object.keys(res).length === 0 ? undefined : res;
+    return Object.keys(res).length === 0 ? undefined : res.data;
   }
 }
