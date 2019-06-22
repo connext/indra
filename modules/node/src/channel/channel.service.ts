@@ -124,9 +124,9 @@ export class ChannelService implements OnModuleInit {
     });
 
     this.node.on(NodeTypes.EventName.CREATE_CHANNEL, (
-      res: any, // FIXME
+      res: NodeTypes.CreateMultisigEventData, // FIXME: is this the right type?
     ) => {
-      logger.log("CREATE_CHANNEL event fired");
+      logger.log(`CREATE_CHANNEL event fired: ${JSON.stringify(res)}`);
     });
 
     logger.log("Node methods attached");
