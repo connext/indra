@@ -57,8 +57,8 @@ export class DepositController extends AbstractController {
     console.log("Registered!");
 
     try {
-      console.log("Calling", CFModuleTypes.MethodName.DEPOSIT);
-      await this.cfModule.call(CFModuleTypes.MethodName.DEPOSIT, {
+      console.log("Calling", CFModuleTypes.RpcMethodName.DEPOSIT);
+      await this.cfModule.call(CFModuleTypes.RpcMethodName.DEPOSIT, {
         params: {
           amount: ethers.parseEther(params.amount) as any, // FIXME
           multisigAddress: this.connext.opts.multisigAddress,
