@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@connext/types": "^0.0.1",
-    "@counterfactual/node": "0.2.4",
+    "@counterfactual/node": "^0.2.5",
     "ts-nats": "1.2.4"
   },
   "devDependencies": {
