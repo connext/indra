@@ -110,12 +110,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     myChannel = await node.createChannel();
   }
   console.log("myChannel: ", myChannel);
-
   // create the new client
   console.log("creating new instance of connext internal");
   return new ConnextInternal({
     cfModule,
-    // warning myChannel response structure will change
     multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     node,
