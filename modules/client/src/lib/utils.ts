@@ -56,7 +56,6 @@ export async function getFreeBalance(
   node: Node,
   multisigAddress: string,
 ): Promise<NodeTypes.GetFreeBalanceStateResult> {
-  // @rahul is this the right Rpc params/obj?
   const res = await node.router.dispatch(
     jsonRpcDeserialize({
       id: Date.now(),
