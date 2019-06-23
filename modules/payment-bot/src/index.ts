@@ -49,10 +49,9 @@ export function getWalletAddress(): string {
 
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
-
     if (process.argv[2]) {
       const depositParams = {
-        amount: eth.utils.parseEther(process.argv[2]).toString(),
+        amount: eth.utils.parseEther(process.argv[3]).toString(),
       };
       console.log(`Attempting to deposit ${depositParams.amount}...`);
       await client.deposit(depositParams);

@@ -4,9 +4,7 @@ import "dotenv";
 confirmPostgresConfigurationEnvVars();
 
 if (!process.env.NATS_URL || !process.env.NATS_URL.startsWith("nats://")) {
-  throw Error(
-    `No valid nats url specified in env: ${process.env.NATS_URL} Exiting.`,
-  );
+  throw Error(`No valid nats url specified in env: ${process.env.NATS_URL} Exiting.`);
 }
 
 if (!process.env.NODE_URL) {
@@ -19,12 +17,9 @@ const ethNetwork = process.env.ETHEREUM_NETWORK || "ganache";
 export const config = {
   action: args[0] || "none",
   args: args.length > 1 ? args.slice(1) : [],
-  delaySeconds: process.env.DELAY_SECONDS
-    ? Number(process.env.DELAY_SECONDS)
-    : 5,
+  delaySeconds: process.env.DELAY_SECONDS ? Number(process.env.DELAY_SECONDS) : 5,
   ethNetwork,
-  ethRpcUrl:
-    process.env.ETHEREUM_NETWORK || `https://${ethNetwork}.infura.io/metamask`,
+  ethRpcUrl: process.env.ETH_RPC_URL || `https://${ethNetwork}.infura.io/metamask`,
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
   mnemonic: process.env.NODE_MNEMONIC,
   natsUrl: process.env.NATS_URL || "nats://localhost:4222",
