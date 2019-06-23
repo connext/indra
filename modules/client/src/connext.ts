@@ -116,7 +116,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create the new client
   return new ConnextInternal({
     cfModule,
-    multisigAddress: myChannel.multisigAddress,
+    multisigAddress: myChannel.multisigAddress.toLowerCase(),
     nats: messaging.getConnection(),
     node,
     wallet,
