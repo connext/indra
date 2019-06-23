@@ -3,9 +3,10 @@ import {
   jsonRpcDeserialize,
   JsonRpcResponse,
   Node,
+  CreateChannelMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, OnModuleInit } from "@nestjs/common";
+import { Inject, OnModuleInit, NotFoundException } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -18,7 +19,7 @@ import { UserRepository } from "../user/user.repository";
 import { CLogger } from "../util";
 
 import { Channel, ChannelUpdate, NodeChannel } from "./channel.entity";
-import { NodeChannelRepository } from "./channel.repository";
+import { ChannelRepository, NodeChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
 
@@ -27,6 +28,7 @@ export class ChannelService implements OnModuleInit {
     @Inject(NodeProviderId) private readonly node: Node,
     private readonly userRepository: UserRepository,
     private readonly nodeChannelRepository: NodeChannelRepository,
+    private readonly channelRepository: ChannelRepository,
     private readonly dbConnection: Connection,
   ) {}
 
@@ -108,6 +110,16 @@ export class ChannelService implements OnModuleInit {
     return depositResponse.result as NodeTypes.DepositResult;
   }
 
+  async makeAvailable(multisigAddress: string): Promise<Channel> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new NotFoundException(`Channel not found for multisigAddress: ${multisigAddress}`);
+    }
+
+    channel.available = true;
+    return await this.channelRepository.save(channel);
+  }
+
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
     this.node.on(NodeTypes.EventName.DEPOSIT_CONFIRMED, (res: DepositConfirmationMessage) => {
@@ -124,19 +136,10 @@ export class ChannelService implements OnModuleInit {
     });
 
     this.node.on(NodeTypes.EventName.CREATE_CHANNEL, async (
-      res: NodeTypes.CreateMultisigEventData, // FIXME: is this the right type?
+      res: CreateChannelMessage, // FIXME: is this the right type?
     ) => {
       logger.log(`CREATE_CHANNEL event fired: ${JSON.stringify(res)}`);
-      // get the free balance
-      const fb = await this.node.router.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-          params: { multisigAddress: "0x1ab3CD07aC29472571A9eE1B9C09C37e3f07705d" },
-        }),
-      );
-      logger.log(`getFreeBalance res: ${JSON.stringify(fb, null, 2)}`);
+      await this.makeAvailable((res.data as NodeTypes.CreateChannelResult).multisigAddress);
     });
 
     logger.log("Node methods attached");

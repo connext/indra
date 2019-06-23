@@ -38,6 +38,9 @@ export class Channel {
 
   @OneToMany((type: any) => ChannelUpdate, (channelUpdate: ChannelUpdate) => channelUpdate.channel)
   updates!: ChannelUpdate[];
+
+  @Column("boolean", { default: false })
+  available!: boolean;
 }
 
 @Entity()
@@ -92,6 +95,7 @@ export class ChannelUpdate {
       "user"."publicIdentifier" as "userPublicIdentifier",
       "channel"."nodePublicIdentifier" as "nodePublicIdentifier",
       "channel"."multisigAddress" as "multisigAddress",
+      "channel"."available" as "available",
       "latest_updates"."id" as "updateId",
       "latest_updates"."freeBalancePartyA",
       "latest_updates"."freeBalancePartyB",
@@ -114,10 +118,13 @@ export class NodeChannel {
   multisigAddress: string;
 
   @ViewColumn()
-  freeBalancePartyA: BigNumber;
+  available: boolean;
 
   @ViewColumn()
-  freeBalancePartyB: BigNumber;
+  freeBalancePartyA: string; // TODO: how to make this BigNumber
+
+  @ViewColumn()
+  freeBalancePartyB: string;
 
   @ViewColumn()
   nonce: number;
