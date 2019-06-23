@@ -3,6 +3,7 @@ import {
   Address,
   AppInstanceID,
   Node as NodeTypes,
+  OutcomeType,
   SolidityABIEncoderV2Type,
 } from "@counterfactual/types";
 import { utils } from "ethers";
@@ -305,6 +306,7 @@ async function openVirtualChannel(
       } as AppState,
       intermediaries: [config.intermediaryIdentifier],
       myDeposit: utils.parseEther(depositPartyA),
+      outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO: IS THIS RIGHT???
       peerDeposit: Zero,
       proposedToIdentifier: counterpartyPublicId,
       timeout: Zero,
