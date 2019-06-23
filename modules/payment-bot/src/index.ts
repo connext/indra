@@ -44,22 +44,28 @@ export function getWalletAddress(): string {
     client = await connext.connect(connextOpts);
     console.log("Client created successfully!");
 
-    const config = await client.config();
-    console.log("Config:", config);
+    const connextConfig = await client.config();
+    console.log("connextConfig:", connextConfig);
 
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
-    if (process.argv[2]) {
+
+    const channelAvailable = async (): Promise<boolean> => (await client.getChannel()).available;
+    while (!(await channelAvailable())) {
+      console.info(`Waiting 1 more seconds for channel to be available`);
+      await new Promise((res: any): any => setTimeout(() => res(), 1 * 1000));
+    }
+    if (process.argv[4]) {
       const depositParams = {
-        amount: eth.utils.parseEther(process.argv[2]).toString(),
+        amount: eth.utils.parseEther(process.argv[4]).toString(),
       };
       console.log(`Attempting to deposit ${depositParams.amount}...`);
       await client.deposit(depositParams);
       console.log(`Successfully deposited!`);
     }
 
-    // connext.afterUser(node, bot.nodeAddress, client.multisigAddress);
     client.logEthFreeBalance(await client.getFreeBalance());
+
     // @ts-ignore
     showMainPrompt(client.cfModule); // TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
   } catch (e) {
