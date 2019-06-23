@@ -2,12 +2,14 @@ import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import {
   ChannelState,
   DepositParameters,
+  EventName,
   ExchangeParameters,
   NodeConfig,
   TransferParameters,
   WithdrawParameters,
+  NodeChannel,
 } from "@connext/types";
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { CreateChannelMessage, MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
 import { Client as NatsClient, Payload } from "ts-nats";
@@ -166,6 +168,10 @@ export abstract class ConnextChannel extends EventEmitter {
     return await this.internal.config();
   }
 
+  public async getChannel(): Promise<NodeChannel> {
+    return await this.internal.node.getChannel();
+  }
+
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
   public async getFreeBalance(): Promise<NodeTypes.GetFreeBalanceStateResult> {
@@ -217,6 +223,10 @@ export class ConnextInternal extends ConnextChannel {
     this.transferController = new TransferController("TransferController", this);
     this.exchangeController = new ExchangeController("ExchangeController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
+
+    this.cfModule.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) => {
+      this.emit(EventName.CREATE_CHANNEL, res);
+    });
   }
 
   ///////////////////////////////////
