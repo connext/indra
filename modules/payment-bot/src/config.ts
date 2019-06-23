@@ -19,7 +19,7 @@ export const config = {
   args: args.length > 1 ? args.slice(1) : [],
   delaySeconds: process.env.DELAY_SECONDS ? Number(process.env.DELAY_SECONDS) : 5,
   ethNetwork,
-  ethRpcUrl: process.env.ETH_RPC_URL || `https://${ethNetwork}.infura.io/metamask`,
+  ethRpcUrl: process.env.ETH_RPC_URL || `https://${ethNetwork}.infura.io`,
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
   mnemonic: process.env.NODE_MNEMONIC,
   natsUrl: process.env.NATS_URL || "nats://localhost:4222",
