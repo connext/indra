@@ -8,13 +8,12 @@ docker swarm init 2> /dev/null || true
 ## Setup env vars
 
 project="indra_v2"
-name=${project}_payment_bot
+name=${project}_payment_bot_$1
 cwd="`pwd`"
 
 export DELAY_SECONDS="2"
 export ETHEREUM_NETWORK="kovan"
 export INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
-export NODE_MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
 export NATS_URL="nats://indra_v2_nats:4222"
 export NODE_URL="http://indra_v2_node:8080"
 export POSTGRES_DATABASE="$project"
@@ -22,7 +21,14 @@ export POSTGRES_HOST="indra_v2_database"
 export POSTGRES_PASSWORD="$project"
 export POSTGRES_PORT="5432"
 export POSTGRES_USER="$project"
-export USERNAME="PaymentBot1"
+export USERNAME="PaymentBot$1"
+
+# different mnemonics for different bots
+if [ "$1" = "1" ]; then
+  export NODE_MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
+else
+  export NODE_MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
+fi
 
 args="$@"
 
