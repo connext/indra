@@ -59,7 +59,7 @@ async function createNode(
   // test that provider works
   const provider = new JsonRpcProvider(ethUrl);
   const balance = await provider.getBalance(addr);
-  logger.log(`Balance of address: ${balance.toString()}`);
+  logger.log(`Balance of address ${addr}: ${balance.toString()}`);
 
   // let network: object | string;
   // if (ethNetwork === "ganache") {
