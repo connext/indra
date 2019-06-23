@@ -85,7 +85,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
-    // @ts-ignore WHYYYYYYYYY
     wallet.provider,
     "kovan", // TODO: make this not hardcoded to "kovan"
   );
@@ -116,7 +115,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create the new client
   return new ConnextInternal({
     cfModule,
-    multisigAddress: myChannel.multisigAddress.toLowerCase(),
+    multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     node,
     wallet,
@@ -167,13 +166,13 @@ export abstract class ConnextChannel extends EventEmitter {
     return await this.internal.config();
   }
 
-  // @layne should we keep this here?
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
   public async getFreeBalance(): Promise<NodeTypes.GetFreeBalanceStateResult> {
     return await getFreeBalance(this.opts.cfModule, this.opts.multisigAddress);
   }
 
+  // TODO: remove this when not testing
   public logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
     logEthFreeBalance(freeBalance);
   }
