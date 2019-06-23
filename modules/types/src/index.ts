@@ -9,6 +9,12 @@ export const BigNumber = utils.BigNumber;
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 ////////////////////////////////////
+////// EMITTED EVENTS
+export enum EventName {
+  CREATE_CHANNEL = "createChannelEvent",
+}
+
+////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
 
 // transfer types
@@ -92,11 +98,13 @@ export type NodeChannel<T = string> = {
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
   multisigAddress: string;
-  freeBalancePartyA: BigNumber;
-  freeBalancePartyB: BigNumber;
+  available: boolean;
+  freeBalancePartyA: T;
+  freeBalancePartyB: T;
   nonce: number;
   // TODO: add apps
 };
+export type NodeChannelBigNumber = NodeChannel<BigNumber>;
 export type Channel<T = string> = {
   id: number;
   user: User;
