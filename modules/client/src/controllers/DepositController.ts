@@ -3,7 +3,7 @@ import { jsonRpcDeserialize } from "@counterfactual/node";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
-import { getFreeBalance, logEthFreeBalance } from "../lib/utils";
+import { logEthFreeBalance } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
 
@@ -16,10 +16,7 @@ export class DepositController extends AbstractController {
 
     // TODO:  Generate and expose multisig address in connext internal
     console.log("trying to get free balance....");
-    const preDepositBalances = await getFreeBalance(
-      this.cfModule,
-      this.connext.opts.multisigAddress,
-    );
+    const preDepositBalances = await this.connext.getFreeBalance();
     console.log("preDepositBalances:", preDepositBalances);
 
     // TODO: why isnt free balance working :(
@@ -64,7 +61,7 @@ export class DepositController extends AbstractController {
           jsonrpc: "2.0",
           method: CFModuleTypes.RpcMethodName.DEPOSIT,
           params: {
-            amount: new BigNumber(params.amount), // FIXME
+            amount: new BigNumber(params.amount), // FIXME:
             multisigAddress: this.connext.opts.multisigAddress,
             notifyCounterparty: true,
           } as CFModuleTypes.DepositParams,
@@ -73,10 +70,7 @@ export class DepositController extends AbstractController {
       console.log("Called", CFModuleTypes.MethodName.DEPOSIT, "!");
       console.log("depositResponse: ", depositResponse);
 
-      const postDepositBalances = await getFreeBalance(
-        this.cfModule,
-        this.connext.opts.multisigAddress,
-      );
+      const postDepositBalances = await this.connext.getFreeBalance();
 
       console.log("postDepositBalances:", JSON.stringify(postDepositBalances, null, 2));
 
@@ -103,7 +97,7 @@ export class DepositController extends AbstractController {
       // }
 
       console.log("Deposited!");
-      logEthFreeBalance(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress));
+      logEthFreeBalance(await this.connext.getFreeBalance());
     } catch (e) {
       console.error(`Failed to deposit... ${e}`);
       throw e;
@@ -111,7 +105,7 @@ export class DepositController extends AbstractController {
 
     return {
       apps: [],
-      freeBalance: await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress),
+      freeBalance: await this.connext.getFreeBalance(),
     } as ChannelState;
   }
 }
