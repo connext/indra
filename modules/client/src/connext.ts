@@ -4,13 +4,26 @@ import {
   DepositParameters,
   EventName,
   ExchangeParameters,
+  NodeChannel,
   NodeConfig,
+  TransferAction,
   TransferParameters,
   WithdrawParameters,
-  NodeChannel,
 } from "@connext/types";
-import { CreateChannelMessage, MNEMONIC_PATH, Node } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
+import {
+  CreateChannelMessage,
+  InstallVirtualMessage,
+  jsonRpcDeserialize,
+  MNEMONIC_PATH,
+  Node,
+  ProposeVirtualMessage,
+  UninstallVirtualMessage,
+  UpdateStateMessage,
+} from "@counterfactual/node";
+import { Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 import { EventEmitter } from "events";
 import { Client as NatsClient, Payload } from "ts-nats";
 
@@ -182,6 +195,33 @@ export abstract class ConnextChannel extends EventEmitter {
   public logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
     logEthFreeBalance(freeBalance);
   }
+
+  public async getAppInstances(): Promise<NodeTypes.GetAppInstancesResult> {
+    return await this.internal.getAppInstances();
+  }
+
+  public async getAppInstanceDetails(
+    appInstanceId: string,
+  ): Promise<NodeTypes.GetAppInstanceDetailsResult> {
+    return await this.internal.getAppInstanceDetails(appInstanceId);
+  }
+
+  public async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult> {
+    return await this.internal.getAppState(appInstanceId);
+  }
+
+  public async installTransferApp(
+    counterpartyPublicIdentifier: string,
+    initialDeposit: BigNumber,
+  ): Promise<NodeTypes.ProposeInstallVirtualResult> {
+    return await this.internal.installTransferApp(counterpartyPublicIdentifier, initialDeposit);
+  }
+
+  public async uninstallVirtualApp(
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallVirtualResult> {
+    return await this.internal.uninstallVirtualApp(appInstanceId);
+  }
 }
 
 /**
@@ -224,9 +264,7 @@ export class ConnextInternal extends ConnextChannel {
     this.exchangeController = new ExchangeController("ExchangeController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
 
-    this.cfModule.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) => {
-      this.emit(EventName.CREATE_CHANNEL, res);
-    });
+    this.connectCfModuleMethods();
   }
 
   ///////////////////////////////////
@@ -256,5 +294,214 @@ export class ConnextInternal extends ConnextChannel {
   }
 
   ///////////////////////////////////
+  // CF MODULE METHODS
+  public async getAppInstances(): Promise<NodeTypes.GetAppInstancesResult> {
+    const appInstanceResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
+        params: {} as NodeTypes.GetAppInstancesParams,
+      }),
+    );
+
+    return appInstanceResponse.result as NodeTypes.GetAppInstancesResult;
+  }
+
+  public async getAppInstanceDetails(
+    appInstanceId: string,
+  ): Promise<NodeTypes.GetAppInstanceDetailsResult> {
+    const appInstanceResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+        params: {
+          appInstanceId,
+        } as NodeTypes.GetAppInstanceDetailsParams,
+      }),
+    );
+
+    return appInstanceResponse.result as NodeTypes.GetAppInstanceDetailsResult;
+  }
+
+  public async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult> {
+    const stateResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_STATE,
+        params: {
+          appInstanceId,
+        } as NodeTypes.GetStateParams,
+      }),
+    );
+
+    return stateResponse.result as NodeTypes.GetStateResult;
+  }
+
+  // TODO: make this more generic
+  public async takeAction(
+    appInstanceId: string,
+    action: TransferAction,
+  ): Promise<NodeTypes.TakeActionResult> {
+    const actionResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.TAKE_ACTION,
+        params: {
+          action,
+          appInstanceId,
+        } as NodeTypes.TakeActionParams,
+      }),
+    );
+
+    return actionResponse.result as NodeTypes.TakeActionResult;
+  }
+
+  // TODO: make this more generic
+  public async installTransferApp(
+    counterpartyPublicIdentifier: string,
+    initialDeposit: BigNumber,
+  ): Promise<NodeTypes.ProposeInstallVirtualResult> {
+    const actionResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+        params: {
+          abiEncodings: {
+            actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+            stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+          },
+          // TODO: contract address of app
+          appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
+          asset: { assetType: 0 },
+          initialState: {
+            finalized: false,
+            transfers: [
+              {
+                amount: initialDeposit,
+                to: fromExtendedKey(this.publicIdentifier).derivePath("0").address,
+              },
+              {
+                amount: Zero,
+                to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
+              },
+            ],
+          }, // TODO: type
+          intermediaries: [this.cfModule.publicIdentifier],
+          myDeposit: initialDeposit,
+          outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO: IS THIS RIGHT???
+          peerDeposit: Zero,
+          proposedToIdentifier: counterpartyPublicIdentifier,
+          timeout: Zero,
+        } as NodeTypes.ProposeInstallVirtualParams,
+      }),
+    );
+
+    return actionResponse.result as NodeTypes.ProposeInstallVirtualResult;
+  }
+
+  public async uninstallVirtualApp(
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallVirtualResult> {
+    const uninstallResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
+        params: {
+          appInstanceId,
+        } as NodeTypes.UninstallParams,
+      }),
+    );
+
+    return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
+  }
+
+  ///////////////////////////////////
   // LOW LEVEL METHODS
+
+  // @layne is there a better place to put this?
+  // TODO: make sure types are all good
+  private connectCfModuleMethods(): void {
+    this.cfModule.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) => {
+      this.emit(EventName.CREATE_CHANNEL, res);
+    });
+
+    // connect virtual app install
+    this.opts.cfModule.on(
+      NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
+      async (data: ProposeVirtualMessage): Promise<any> => {
+        const appInstanceId = data.data.appInstanceId;
+        const intermediaries = data.data.params.intermediaries;
+        // TODO: add connext type for result
+        this.emit(EventName.PROPOSE_INSTALL_VIRTUAL, JSON.stringify(data.data, null, 2));
+
+        // install virtual app if requested to
+        // TODO: should probably validate this against the node's AppRegistry
+        try {
+          const installVirtualResponse = await this.opts.cfModule.router.dispatch(
+            jsonRpcDeserialize({
+              id: Date.now(),
+              jsonrpc: "2.0",
+              method: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
+              params: { appInstanceId, intermediaries } as NodeTypes.InstallVirtualParams,
+            }),
+          );
+          console.log(
+            "installVirtualResponse result: ",
+            installVirtualResponse.result as NodeTypes.InstallVirtualResult,
+          );
+          // TODO: probably should do something else here?
+          this.opts.cfModule.on(
+            NodeTypes.EventName.UPDATE_STATE,
+            async (updateEventData: any): Promise<void> => {
+              if (
+                (updateEventData.data as NodeTypes.UpdateStateEventData).appInstanceId ===
+                appInstanceId
+              ) {
+                console.log("updateEventData: ", JSON.stringify(updateEventData.data));
+                this.emit(EventName.UPDATE_STATE, updateEventData.data);
+              }
+            },
+          );
+        } catch (e) {
+          console.error("Node call to install virtual app failed.");
+          console.error(e);
+        }
+      },
+    );
+
+    // pass through events
+    this.opts.cfModule.on(
+      NodeTypes.EventName.INSTALL_VIRTUAL,
+      async (installVirtualData: InstallVirtualMessage): Promise<any> => {
+        console.log("installVirtualData: ", JSON.stringify(installVirtualData.data));
+        this.emit(EventName.INSTALL_VIRTUAL, installVirtualData.data);
+      },
+    );
+
+    this.opts.cfModule.on(
+      NodeTypes.EventName.UPDATE_STATE,
+      async (updateStateData: UpdateStateMessage): Promise<any> => {
+        console.log("updateStateData: ", JSON.stringify(updateStateData.data));
+        this.emit(EventName.UPDATE_STATE, updateStateData.data);
+      },
+    );
+
+    if (this.opts.multisigAddress) {
+      this.opts.cfModule.on(
+        NodeTypes.EventName.UNINSTALL_VIRTUAL,
+        async (uninstallMsg: UninstallVirtualMessage) => {
+          console.log("uninstallMsg: ", JSON.stringify(uninstallMsg.data));
+          this.emit(EventName.UNINSTALL_VIRTUAL, uninstallMsg.data);
+        },
+      );
+    }
+
+    console.info(`CF Node handlers connected`);
+  }
 }
