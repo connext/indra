@@ -19,6 +19,10 @@ export function getWalletAddress(): string {
   return client.wallet.address;
 }
 
+export function getConnextClient(): connext.ConnextInternal {
+  return client;
+}
+
 (async (): Promise<void> => {
   await pgServiceFactory.connectDb();
 
@@ -67,7 +71,7 @@ export function getWalletAddress(): string {
     client.logEthFreeBalance(await client.getFreeBalance());
 
     // @ts-ignore
-    showMainPrompt(client.cfModule); // TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
+    showMainPrompt(client); // TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
   } catch (e) {
     console.error("\n");
     console.error(e);
