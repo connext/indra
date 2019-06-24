@@ -168,14 +168,14 @@ export default class ChainsawService {
 
     if (channelEvents.length) {
       this.log.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
-      // @ts-ignore
       await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
       this.log.debug(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
       this.log.debug('No new transactions found; nothing to do.')
-      // @ts-ignore
-      await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
     }
+
+    // unconditionally record polling event
+    await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
   }
 
   private async doProcessEvents() {
@@ -309,7 +309,7 @@ export default class ChainsawService {
       return
     }
 
-    // TODO FIX AND REMOVE
+    // TODO: FIX AND REMOVE
     this.log.info(`event.senderIdx: ${JSON.stringify(event.senderIdx)}`)
     try {
       if ((event.senderIdx as any)._hex == "0x00") {
