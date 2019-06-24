@@ -1,11 +1,11 @@
+import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { utils } from "ethers";
 import { Client as NatsClient } from "ts-nats";
 
+import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { Wallet } from "./wallet";
-
-import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 
 export type BigNumber = utils.BigNumber;
 export const BigNumber = utils.BigNumber;
@@ -63,10 +63,10 @@ export interface ClientOptions {
 }
 
 export type InternalClientOptions = ClientOptions & {
-  // Optional, useful for dependency injection
   // TODO: can nats, node, wallet be optional?
   nats: NatsClient; // converted to nats-client in ConnextInternal constructor
   node: NodeApiClient;
+  listener: ConnextListener;
   // signing wallet/information
   wallet: Wallet;
   // store: ConnextStore; --> whats this look like
