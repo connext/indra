@@ -60,14 +60,14 @@ export class ChannelService implements OnModuleInit {
         console.log("createChannelResult: ", createChannelResult);
 
         // TODO: remove this when the above line returns multisig
-        const multisigResponse = (await this.node.router.dispatch(
+        const multisigResponse = await this.node.router.dispatch(
           jsonRpcDeserialize({
             id: Date.now(),
             jsonrpc: "2.0",
             method: NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
             params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
           }),
-        )) as JsonRpcResponse;
+        );
 
         const multisigResult: NodeTypes.GetStateDepositHolderAddressResult =
           multisigResponse.result;
@@ -97,15 +97,18 @@ export class ChannelService implements OnModuleInit {
     amount: BigNumber,
     notifyCounterparty: boolean,
   ): Promise<NodeTypes.DepositResult> {
-    const depositResponse = await this.node.call(NodeTypes.MethodName.DEPOSIT, {
-      params: {
-        amount,
-        multisigAddress,
-        notifyCounterparty,
-      },
-      requestId: generateUUID(),
-      type: NodeTypes.MethodName.DEPOSIT,
-    });
+    const depositResponse = await this.node.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.DEPOSIT,
+        params: {
+          amount,
+          multisigAddress,
+          notifyCounterparty,
+        } as NodeTypes.DepositParams,
+      }),
+    );
     logger.log(`depositResponse.result: ${JSON.stringify(depositResponse.result)}`);
     return depositResponse.result as NodeTypes.DepositResult;
   }
