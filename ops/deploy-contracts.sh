@@ -64,12 +64,6 @@ then
 fi
 
 ########################################
-# Make everything that we need
-
-echo
-make node-modules
-
-########################################
 # Remove this deployer service when we're done
 
 function cleanup {

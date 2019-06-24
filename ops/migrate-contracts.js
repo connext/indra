@@ -20,9 +20,16 @@ const UninstallKeyRegistryArtifacts = require('@counterfactual/contracts/build/U
 ////////////////////////////////////////
 // Environment Setup
 
+const botMnemonics = [
+  'humble sense shrug young vehicle assault destroy cook property average silent travel',
+  'roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult',
+]
+const cfPath = "m/44'/60'/0'/25446"
+const ethGift = '3' // Starting balance for node & payment bots on test nets
+
 const project = 'indra-v2'
 const cwd = process.cwd()
-let HOME = (cwd.indexOf(project) !== -1)  ?
+const HOME = (cwd.indexOf(project) !== -1)  ?
   `${cwd.substring(0,cwd.indexOf(project)+project.length)}` :
   `/root`
 const addressBookPath = `${HOME}/address-book.json`
@@ -219,17 +226,22 @@ const maybeDeployContract = async (name, artifacts, args) => {
   // Setup relevant accounts
 
   if (netId !== 1) { 
-    const ethGift = eth.utils.parseEther('3')
-    const cfAccount = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").address
-    const cfBalance = await wallet.provider.getBalance(cfAccount)
-    if (cfBalance.eq(eth.constants.Zero)) {
-      console.log(`\nGiving the cf account some ETH`)
-      const tx = await wallet.sendTransaction({ to: cfAccount, value: ethGift })
-      await wallet.provider.waitForTransaction(tx.hash)
-      console.log(`Sent 3 ETH to cf account ${cfAccount}`)
-      console.log(`Transaction hash: ${tx.hash}`)
-    } else {
-      console.log(`\nCf account ${cfAccount} already has ${eth.utils.formatEther(cfBalance)} ETH`)
+
+    const maybeSendGift = async (address) => {
+      const balance = await wallet.provider.getBalance(address)
+      if (balance.eq(eth.constants.Zero)) {
+        const tx = await wallet.sendTransaction({ to: address, value: eth.utils.parseEther(ethGift) })
+        await wallet.provider.waitForTransaction(tx.hash)
+        console.log(`\nSent ${eth.constants.EtherSymbol} ${ethGift} to ${address}`)
+        console.log(`Transaction hash: ${tx.hash}`)
+      } else {
+        console.log(`\nAccount ${address} already has ${eth.constants.EtherSymbol} ${eth.utils.formatEther(balance)}`)
+      }
+    }
+
+    await maybeSendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address)
+    for (const botMnemonic of botMnemonics) {
+      await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
     }
   }
 
@@ -240,6 +252,6 @@ const maybeDeployContract = async (name, artifacts, args) => {
   console.log(`\nAll done!`)
   const spent = balance - eth.utils.formatEther(await wallet.getBalance())
   const nTx = (await wallet.getTransactionCount()) - nonce
-  console.log(`Sent ${nTx} transaction${nTx === 1 ? '' : 's'} & spent ${spent} ETH`)
+  console.log(`Sent ${nTx} transaction${nTx === 1 ? '' : 's'} & spent ${eth.constants.EtherSymbol} ${spent}`)
 
 })();

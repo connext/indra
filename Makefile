@@ -42,7 +42,7 @@ all: dev prod
 dev: node types client payment-bot
 prod: node-prod
 
-start: dev
+start: dev deployed-contracts
 	bash ops/start-dev.sh
 
 stop:
@@ -70,9 +70,14 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
+	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
 	bash ops/push-images.sh latest node
+
+deployed-contracts: node-modules
+	bash ops/deploy-contracts.sh ganache
+	touch $(flags)/$@
 
 ########################################
 # Begin Test Rules
