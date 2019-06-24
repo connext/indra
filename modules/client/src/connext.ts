@@ -20,7 +20,7 @@ import {
   UninstallVirtualMessage,
   UpdateStateMessage,
 } from "@counterfactual/node";
-import { Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Address, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -188,7 +188,7 @@ export abstract class ConnextChannel extends EventEmitter {
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
   public async getFreeBalance(): Promise<NodeTypes.GetFreeBalanceStateResult> {
-    return await getFreeBalance(this.opts.cfModule, this.opts.multisigAddress);
+    return await this.internal.getFreeBalance();
   }
 
   // TODO: remove this when not testing
@@ -234,6 +234,7 @@ export class ConnextInternal extends ConnextChannel {
   public wallet: Wallet;
   public node: NodeApiClient;
   public nats: NatsClient;
+  public multisigAddress: Address;
 
   public logger: Logger;
 
@@ -255,6 +256,7 @@ export class ConnextInternal extends ConnextChannel {
 
     this.cfModule = opts.cfModule;
     this.publicIdentifier = this.cfModule.publicIdentifier;
+    this.multisigAddress = this.opts.multisigAddress;
 
     this.logger = new Logger("ConnextInternal", opts.logLevel);
 
@@ -306,6 +308,19 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return appInstanceResponse.result as NodeTypes.GetAppInstancesResult;
+  }
+
+  public async getFreeBalance(): Promise<NodeTypes.GetFreeBalanceStateResult> {
+    const freeBalance = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+        params: { multisigAddress: this.multisigAddress },
+      }),
+    );
+
+    return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
   }
 
   public async getAppInstanceDetails(
@@ -432,7 +447,7 @@ export class ConnextInternal extends ConnextChannel {
     });
 
     // connect virtual app install
-    this.opts.cfModule.on(
+    this.cfModule.on(
       NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
       async (data: ProposeVirtualMessage): Promise<any> => {
         const appInstanceId = data.data.appInstanceId;
@@ -443,7 +458,7 @@ export class ConnextInternal extends ConnextChannel {
         // install virtual app if requested to
         // TODO: should probably validate this against the node's AppRegistry
         try {
-          const installVirtualResponse = await this.opts.cfModule.router.dispatch(
+          const installVirtualResponse = await this.cfModule.router.dispatch(
             jsonRpcDeserialize({
               id: Date.now(),
               jsonrpc: "2.0",
@@ -476,7 +491,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     // pass through events
-    this.opts.cfModule.on(
+    this.cfModule.on(
       NodeTypes.EventName.INSTALL_VIRTUAL,
       async (installVirtualData: InstallVirtualMessage): Promise<any> => {
         console.log("installVirtualData: ", JSON.stringify(installVirtualData.data));
@@ -484,7 +499,7 @@ export class ConnextInternal extends ConnextChannel {
       },
     );
 
-    this.opts.cfModule.on(
+    this.cfModule.on(
       NodeTypes.EventName.UPDATE_STATE,
       async (updateStateData: UpdateStateMessage): Promise<any> => {
         console.log("updateStateData: ", JSON.stringify(updateStateData.data));
@@ -492,8 +507,8 @@ export class ConnextInternal extends ConnextChannel {
       },
     );
 
-    if (this.opts.multisigAddress) {
-      this.opts.cfModule.on(
+    if (this.multisigAddress) {
+      this.cfModule.on(
         NodeTypes.EventName.UNINSTALL_VIRTUAL,
         async (uninstallMsg: UninstallVirtualMessage) => {
           console.log("uninstallMsg: ", JSON.stringify(uninstallMsg.data));
