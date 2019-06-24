@@ -2,7 +2,6 @@ import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import {
   ChannelState,
   DepositParameters,
-  EventName,
   ExchangeParameters,
   NodeChannel,
   NodeConfig,
@@ -11,20 +10,14 @@ import {
   WithdrawParameters,
 } from "@connext/types";
 import {
-  CreateChannelMessage,
-  InstallVirtualMessage,
   jsonRpcDeserialize,
   MNEMONIC_PATH,
   Node,
-  ProposeVirtualMessage,
-  UninstallVirtualMessage,
-  UpdateStateMessage,
 } from "@counterfactual/node";
-import { Address, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Address, Node as NodeTypes, OutcomeType, AppInstanceInfo } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, Network } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
-import { EventEmitter } from "events";
 import { Client as NatsClient, Payload } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
@@ -32,10 +25,11 @@ import { ExchangeController } from "./controllers/ExchangeController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { getFreeBalance, logEthFreeBalance } from "./lib/utils";
+import { logEthFreeBalance } from "./lib/utils";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { Wallet } from "./wallet";
+import { ConnextListener } from "./listener";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -118,6 +112,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
   console.log("created node successfully");
 
+  console.log("creating listener");
+  const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
+  console.log("created listener");
+
   // TODO: make these types
   let myChannel = await node.getChannel();
 
@@ -130,6 +128,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create the new client
   return new ConnextInternal({
     cfModule,
+    listener,
     multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     node,
@@ -145,12 +144,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
  * The true implementation of this class exists in the `ConnextInternal`
  * class
  */
-export abstract class ConnextChannel extends EventEmitter {
+export abstract class ConnextChannel {
   public opts: InternalClientOptions;
   private internal: ConnextInternal;
 
   public constructor(opts: InternalClientOptions) {
-    super();
     this.opts = opts;
     this.internal = this as any;
   }
@@ -191,12 +189,12 @@ export abstract class ConnextChannel extends EventEmitter {
     return await this.internal.getFreeBalance();
   }
 
-  // TODO: remove this when not testing
+  // TODO: remove this when not testing (maybe?)
   public logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
     logEthFreeBalance(freeBalance);
   }
 
-  public async getAppInstances(): Promise<NodeTypes.GetAppInstancesResult> {
+  public async getAppInstances(): Promise<AppInstanceInfo[]> {
     return await this.internal.getAppInstances();
   }
 
@@ -235,8 +233,10 @@ export class ConnextInternal extends ConnextChannel {
   public node: NodeApiClient;
   public nats: NatsClient;
   public multisigAddress: Address;
+  public listener: ConnextListener;
 
   public logger: Logger;
+  public network: Network;
 
   ////////////////////////////////////////
   // Setup channel controllers
@@ -259,6 +259,7 @@ export class ConnextInternal extends ConnextChannel {
     this.multisigAddress = this.opts.multisigAddress;
 
     this.logger = new Logger("ConnextInternal", opts.logLevel);
+    this.network = this.wallet.provider.network;
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
@@ -266,6 +267,7 @@ export class ConnextInternal extends ConnextChannel {
     this.exchangeController = new ExchangeController("ExchangeController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
 
+    // establish listeners
     this.connectCfModuleMethods();
   }
 
@@ -297,7 +299,7 @@ export class ConnextInternal extends ConnextChannel {
 
   ///////////////////////////////////
   // CF MODULE METHODS
-  public async getAppInstances(): Promise<NodeTypes.GetAppInstancesResult> {
+  public async getAppInstances(): Promise<AppInstanceInfo[]> {
     const appInstanceResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -307,7 +309,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return appInstanceResponse.result as NodeTypes.GetAppInstancesResult;
+    return appInstanceResponse.result.appInstances as AppInstanceInfo[];
   }
 
   public async getFreeBalance(): Promise<NodeTypes.GetFreeBalanceStateResult> {
@@ -439,84 +441,8 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
-  // @layne is there a better place to put this?
   // TODO: make sure types are all good
   private connectCfModuleMethods(): void {
-    this.cfModule.on(NodeTypes.EventName.CREATE_CHANNEL, (res: CreateChannelMessage) => {
-      this.emit(EventName.CREATE_CHANNEL, res);
-    });
-
-    // connect virtual app install
-    this.cfModule.on(
-      NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
-      async (data: ProposeVirtualMessage): Promise<any> => {
-        const appInstanceId = data.data.appInstanceId;
-        const intermediaries = data.data.params.intermediaries;
-        // TODO: add connext type for result
-        this.emit(EventName.PROPOSE_INSTALL_VIRTUAL, JSON.stringify(data.data, null, 2));
-
-        // install virtual app if requested to
-        // TODO: should probably validate this against the node's AppRegistry
-        try {
-          const installVirtualResponse = await this.cfModule.router.dispatch(
-            jsonRpcDeserialize({
-              id: Date.now(),
-              jsonrpc: "2.0",
-              method: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
-              params: { appInstanceId, intermediaries } as NodeTypes.InstallVirtualParams,
-            }),
-          );
-          console.log(
-            "installVirtualResponse result: ",
-            installVirtualResponse.result as NodeTypes.InstallVirtualResult,
-          );
-          // TODO: probably should do something else here?
-          this.opts.cfModule.on(
-            NodeTypes.EventName.UPDATE_STATE,
-            async (updateEventData: any): Promise<void> => {
-              if (
-                (updateEventData.data as NodeTypes.UpdateStateEventData).appInstanceId ===
-                appInstanceId
-              ) {
-                console.log("updateEventData: ", JSON.stringify(updateEventData.data));
-                this.emit(EventName.UPDATE_STATE, updateEventData.data);
-              }
-            },
-          );
-        } catch (e) {
-          console.error("Node call to install virtual app failed.");
-          console.error(e);
-        }
-      },
-    );
-
-    // pass through events
-    this.cfModule.on(
-      NodeTypes.EventName.INSTALL_VIRTUAL,
-      async (installVirtualData: InstallVirtualMessage): Promise<any> => {
-        console.log("installVirtualData: ", JSON.stringify(installVirtualData.data));
-        this.emit(EventName.INSTALL_VIRTUAL, installVirtualData.data);
-      },
-    );
-
-    this.cfModule.on(
-      NodeTypes.EventName.UPDATE_STATE,
-      async (updateStateData: UpdateStateMessage): Promise<any> => {
-        console.log("updateStateData: ", JSON.stringify(updateStateData.data));
-        this.emit(EventName.UPDATE_STATE, updateStateData.data);
-      },
-    );
-
-    if (this.multisigAddress) {
-      this.cfModule.on(
-        NodeTypes.EventName.UNINSTALL_VIRTUAL,
-        async (uninstallMsg: UninstallVirtualMessage) => {
-          console.log("uninstallMsg: ", JSON.stringify(uninstallMsg.data));
-          this.emit(EventName.UNINSTALL_VIRTUAL, uninstallMsg.data);
-        },
-      );
-    }
-
-    console.info(`CF Node handlers connected`);
+    this.listener.registerCfListeners();
   }
 }
