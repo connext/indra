@@ -12,6 +12,10 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 ////// EMITTED EVENTS
 export enum EventName {
   CREATE_CHANNEL = "createChannelEvent",
+  INSTALL_VIRTUAL = "installVirtualEvent",
+  PROPOSE_INSTALL_VIRTUAL = "proposeInstallVirtualEvent",
+  UNINSTALL_VIRTUAL = "uninstallVirtualEvent",
+  UPDATE_STATE = "updateStateEvent",
 }
 
 ////////////////////////////////////
@@ -32,7 +36,7 @@ export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
 export type App<T = string> = {
   id: number;
-  channel: Channel<T>;
+  channel: NodeChannel<T>;
   appRegistry: AppRegistry;
   appId: number;
   xpubPartyA: string;
@@ -90,7 +94,7 @@ export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTrans
 export type User<T = string> = {
   id: number;
   xpub: string;
-  channels: Channel<T>[];
+  channels: NodeChannel<T>[];
 };
 export type UserBigNumber = User<BigNumber>;
 
@@ -134,11 +138,14 @@ export type ChannelState<T = string> = {
 };
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 
+export type TransferAction = {
+  finalize: boolean;
+  transferAmount: BigNumber;
+};
+
 // TODO: define properly!!
 export interface ChannelProvider {}
 
-// TODO: is this the same as the channel state?
-// @rahul are these the right types?
 export type MultisigState<T = string> = {
   id: number;
   xpubA: string;
@@ -308,7 +315,6 @@ export function convertMultisig<To extends NumericTypeName>(
   const fromType = getType(obj.freeBalanceA);
   return convertFields(fromType, to, ["freeBalanceA", "freeBalanceB"], obj);
 }
-
 ////// INPUT PARAMETER CONVERSIONS
 /**
  * Conversion function for DepositParameter to an AssetAmount. Will also add
