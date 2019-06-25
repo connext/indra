@@ -495,6 +495,6 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: make sure types are all good
   private connectCfModuleMethods(): void {
-    this.listener.registerCfListeners();
+    this.listener.registerDefaultCfListeners();
   }
 }
