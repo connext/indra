@@ -93,7 +93,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     wallet.provider,
-    opts.ethNetwork || "kovan",
+    wallet.provider.network.name,
   );
   console.log("created cf module successfully");
 
@@ -236,6 +236,10 @@ export class ConnextInternal extends ConnextChannel {
   public logger: Logger;
   public network: Network;
 
+  // placeholder for listener exposed functions
+  public on: (event: string, listener: (...args: any) => void) => any;
+  public emit: (event: string, ...args: any) => any;
+
   ////////////////////////////////////////
   // Setup channel controllers
   private depositController: DepositController;
@@ -267,6 +271,8 @@ export class ConnextInternal extends ConnextChannel {
 
     // establish listeners
     this.listener = opts.listener;
+    this.on = this.listener.on;
+    this.emit = this.listener.emit;
     this.connectCfModuleMethods();
   }
 
