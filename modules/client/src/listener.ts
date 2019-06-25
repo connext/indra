@@ -12,6 +12,7 @@ import { EventEmitter } from "events";
 
 import { Logger } from "./lib/logger";
 
+// TODO: index of connext events only?
 type CallbackStruct = {
   [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void;
 };

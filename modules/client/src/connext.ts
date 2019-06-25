@@ -93,7 +93,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     wallet.provider,
-    wallet.provider.network.name,
+    wallet.provider.network.name, // TODO: fix!
   );
   console.log("created cf module successfully");
 
