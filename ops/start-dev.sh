@@ -23,10 +23,12 @@ node_port=8080
 nats_port=4222
 
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_network="ganache"
-#eth_network="kovan"
-eth_network_id="4447"
-eth_rpc_url="http://ethprovider:8545"
+# eth_network="ganache"
+eth_network="kovan"
+# eth_network_id="4447"
+eth_network_id="42"
+# eth_rpc_url="http://ethprovider:8545"
+eth_rpc_url="https://kovan.infura.io/v3/52fbfcd6aab44b9db863600f7c24a6a0"
 eth_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 # database connection settings
