@@ -8,6 +8,8 @@ import {
   TransferAction,
   TransferParameters,
   WithdrawParameters,
+  AppRegistry,
+  SupportedApplication,
 } from "@connext/types";
 import {
   jsonRpcDeserialize,
@@ -298,7 +300,11 @@ export class ConnextInternal extends ConnextChannel {
   }
 
   ///////////////////////////////////
+  // EVENT METHODS
+
+  ///////////////////////////////////
   // CF MODULE METHODS
+
   public async getAppInstances(): Promise<AppInstanceInfo[]> {
     const appInstanceResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
@@ -375,6 +381,48 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return actionResponse.result as NodeTypes.TakeActionResult;
+  }
+
+  public async installApp(
+    appName: SupportedApplication,
+    initialDeposit: BigNumber,
+    counterpartyPublicIdentifier: string,
+  ): Promise<NodeTypes.ProposeInstallVirtualResult> {
+    const { initialStateFinalized, ...paramInfo } = AppRegistry[this.network.name][appName];
+    if (!paramInfo) {
+      throw new Error("App not found in registry for provided network");
+    }
+    const params: NodeTypes.ProposeInstallVirtualParams = {
+      ...paramInfo,
+      // TODO: best way to pass in an initial state?
+      initialState: {
+        finalized: initialStateFinalized,
+        transfers: [
+          {
+            amount: initialDeposit,
+            to: this.wallet.address,
+            // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
+          },
+          {
+            amount: Zero,
+            to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
+          },
+        ],
+      },
+      intermediaries: [this.cfModule.publicIdentifier],
+      // TODO: ^^^ should this be the node public identifier?
+      myDeposit: initialDeposit,
+      proposedToIdentifier: counterpartyPublicIdentifier,
+    };
+    const actionRes = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+        params,
+      }),
+    );
+    return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
   }
 
   // TODO: make this more generic
