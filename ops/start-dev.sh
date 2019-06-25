@@ -23,9 +23,11 @@ node_port=8080
 nats_port=4222
 
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_network="kovan"
+eth_network="ganache"
+#eth_network="kovan"
 eth_network_id="4447"
-eth_rpc_url="https://kovan.infura.io"
+eth_rpc_url="http://ethprovider:8545"
+eth_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 # database connection settings
 postgres_db="$project"
@@ -105,6 +107,7 @@ services:
       INDRA_PG_USERNAME: $postgres_user
       LOG_LEVEL: $log_level
       NODE_ENV: development
+      ETH_ADDRESSES: '$eth_addresses'
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK: $eth_network
       ETH_RPC_URL: $eth_rpc_url

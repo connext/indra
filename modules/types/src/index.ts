@@ -1,4 +1,4 @@
-import { Address, Node as NodeTypes } from "@counterfactual/types";
+import { Address, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
 import { constants, utils } from "ethers";
 
 ////////////////////////////////////
@@ -19,11 +19,70 @@ export enum EventName {
 }
 
 ////////////////////////////////////
+////// APP REGISTRY
+
+// app name : deployed address
+// TODO: use deployed addresses!!!
+// TODO: better way to use with networks...?
+// TODO: rename? cf has type ABIEncoding = string
+export type EthUnidirectionalTransferAppInitialState<T = string> = {
+  finalized: false;
+  transfers: [Transfer<T>, Transfer<T>];
+};
+export type EthUnidirectionalTransferAppInitialStateBigNumber = EthUnidirectionalTransferAppInitialState<
+  BigNumber
+>;
+
+export const SupportedApplications = {
+  EthUnidirectionalTransferApp: "EthUnidirectionalTransferApp",
+  SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
+};
+export type SupportedApplication = keyof typeof SupportedApplications;
+
+export const SupportedNetworks = {
+  kovan: "kovan",
+  mainnet: "mainnet",
+};
+export type SupportedNetwork = keyof typeof SupportedNetworks;
+
+export type IRegisteredAppDetails = {
+  [index in SupportedApplication]: Partial<
+    NodeTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
+  >;
+};
+
+export type IAppRegistry = {
+  [network in SupportedNetwork]: IRegisteredAppDetails;
+};
+
+// TODO: should probably import addresses from
+// addressBook.json @bo do you know what this will
+// look like on prod?
+export const AppRegistry: IAppRegistry = {
+  kovan: {
+    EthUnidirectionalTransferApp: {
+      abiEncodings: {
+        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+      },
+      appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
+      // @ts-ignore @rahul why is asset always a type error?
+      asset: { assetType: 0 },
+      initialStateFinalized: false,
+      outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME,
+      peerDeposit: constants.Zero, // TODO: include this?
+      timeout: constants.Zero,
+    },
+  },
+};
+
+////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
 
 // transfer types
-export type Transfer<T = string> = AssetAmount<T> & {
-  to: Address;
+export type Transfer<T = string> = {
+  amount: T;
+  to: Address; // NOTE: must be the xpub!!!
 };
 export type TransferBigNumber = Transfer<BigNumber>;
 
@@ -205,7 +264,7 @@ export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
 ////// Transfer types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
-export type TransferParameters<T = string> = AssetAmount<T> & {
+export type TransferParameters<T = string> = DepositParameters<T> & {
   recipient: Address;
   meta?: any; // TODO: meta types? should this be a string
 };
@@ -332,6 +391,22 @@ export function convertDepositToAsset<To extends NumericTypeName>(
     asset.assetId = constants.AddressZero;
   }
   return convertAssetAmount(to, asset);
+}
+
+export function convertTransferToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: TransferParameters<any>,
+): TransferParameters<NumericTypes[To]> {
+  const asset: any = {
+    ...obj,
+  };
+  if (!asset.assetId) {
+    asset.assetId = constants.AddressZero;
+  }
+  return {
+    ...asset,
+    ...convertAssetAmount(to, asset),
+  };
 }
 
 // DEFINE CONVERSION OBJECT TO BE EXPORTED

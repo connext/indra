@@ -1,4 +1,5 @@
 import { confirmPostgresConfigurationEnvVars } from "@counterfactual/postgresql-node-connector";
+import { NetworkContext } from "@counterfactual/types";
 import "dotenv";
 
 confirmPostgresConfigurationEnvVars();
@@ -12,7 +13,7 @@ if (!process.env.NODE_URL) {
 }
 
 const args = process.argv.slice(2);
-const ethNetwork = process.env.ETHEREUM_NETWORK || "ganache";
+const ethNetwork = process.env.ETH_NETWORK || "ganache";
 
 export const config = {
   action: args[0] || "none",
@@ -20,6 +21,14 @@ export const config = {
   delaySeconds: process.env.DELAY_SECONDS ? Number(process.env.DELAY_SECONDS) : 5,
   ethNetwork,
   ethRpcUrl: process.env.ETH_RPC_URL || `https://${ethNetwork}.infura.io`,
+  getEthAddresses: (chainId: string | number): NetworkContext => {
+    const ethAddressBook = JSON.parse(process.env.ETH_ADDRESSES || "{}");
+    const ethAddresses = {};
+    Object.keys(ethAddressBook).map((contract: string): void => {
+      ethAddresses[contract] = ethAddressBook[contract].networks[chainId.toString()].address;
+    });
+    return ethAddresses as any;
+  },
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
   mnemonic: process.env.NODE_MNEMONIC,
   natsUrl: process.env.NATS_URL || "nats://localhost:4222",
