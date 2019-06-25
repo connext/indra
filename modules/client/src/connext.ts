@@ -103,12 +103,17 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     logLevel: opts.logLevel,
     nats: messaging.getConnection(),
     nodeUrl: opts.nodeUrl,
+    // TODO rename
     publicIdentifier: cfModule.publicIdentifier,
     wallet,
   };
   console.log("creating node client");
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
   console.log("created node client successfully");
+
+  // TODO: make this better
+  const nodeParams = await node.config()
+  node.nodePublicIdentifier = nodeParams.nodePublicIdentifier;
 
   console.log("creating listener");
   const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
@@ -130,6 +135,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     node,
+    nodePublicIdentifier: nodeParams.nodePublicIdentifier,
     wallet,
     ...opts, // use any provided opts by default
   });
@@ -232,6 +238,7 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
+  public nodePublicIdentifier: string; // TODO: maybe move this into the NodeApiClient @layne?
 
   public logger: Logger;
   public network: Network;
@@ -255,6 +262,7 @@ export class ConnextInternal extends ConnextChannel {
     this.cfModule = opts.cfModule;
     this.publicIdentifier = this.cfModule.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
+    this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
 
     this.logger = new Logger("ConnextInternal", opts.logLevel);
     this.network = this.wallet.provider.network;
@@ -406,11 +414,13 @@ export class ConnextInternal extends ConnextChannel {
           },
         ],
       },
-      intermediaries: [this.cfModule.publicIdentifier],
-      // TODO: ^^^ should this be the node public identifier?
+      intermediaries: [this.nodePublicIdentifier],
       myDeposit: initialDeposit,
       proposedToIdentifier: counterpartyPublicIdentifier,
     };
+
+    console.log("params: ", JSON.stringify(params, null, 2));
+
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -428,39 +438,43 @@ export class ConnextInternal extends ConnextChannel {
     counterpartyPublicIdentifier: string,
     initialDeposit: BigNumber,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> {
+    const params = {
+      abiEncodings: {
+        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+      },
+      // TODO: contract address of app
+      appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
+      asset: { assetType: 0 },
+      initialState: {
+        finalized: false,
+        transfers: [
+          {
+            amount: initialDeposit,
+            to: fromExtendedKey(this.publicIdentifier).derivePath("0").address,
+          },
+          {
+            amount: Zero,
+            to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
+          },
+        ],
+      }, // TODO: type
+      intermediaries: [this.nodePublicIdentifier],
+      myDeposit: initialDeposit,
+      outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO: IS THIS RIGHT???
+      peerDeposit: Zero,
+      proposedToIdentifier: counterpartyPublicIdentifier,
+      timeout: Zero,
+    } as NodeTypes.ProposeInstallVirtualParams;
+
+    console.log("params: ", JSON.stringify(params, null, 2));
+
     const actionResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
         method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-        params: {
-          abiEncodings: {
-            actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
-            stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
-          },
-          // TODO: contract address of app
-          appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
-          asset: { assetType: 0 },
-          initialState: {
-            finalized: false,
-            transfers: [
-              {
-                amount: initialDeposit,
-                to: fromExtendedKey(this.publicIdentifier).derivePath("0").address,
-              },
-              {
-                amount: Zero,
-                to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
-              },
-            ],
-          }, // TODO: type
-          intermediaries: [this.cfModule.publicIdentifier],
-          myDeposit: initialDeposit,
-          outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO: IS THIS RIGHT???
-          peerDeposit: Zero,
-          proposedToIdentifier: counterpartyPublicIdentifier,
-          timeout: Zero,
-        } as NodeTypes.ProposeInstallVirtualParams,
+        params,
       }),
     );
 
