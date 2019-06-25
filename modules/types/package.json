@@ -1,0 +1,29 @@
+{
+  "name": "@connext/types",
+  "version": "0.0.1",
+  "description": "TypeScript typings for common Connext types",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/src/index.d.ts",
+  "iife": "dist/index-iife.js",
+  "license": "MIT",
+  "engines": {
+    "yarn": "1.12.3",
+    "node": "10.15.3"
+  },
+  "scripts": {
+    "build": "./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
+    "test": "./node_modules/.bin/jest"
+  },
+  "devDependencies": {
+    "@types/jest": "24.0.15",
+    "ts-jest": "24.0.2",
+    "rollup-plugin-typescript2": "0.21.2",
+    "typescript": "3.5.2"
+  },
+  "dependencies": {
+    "@counterfactual/types": "0.0.16",
+    "ethers": "4.0.29",
+    "rollup": "^1.16.0"
+  }
+}

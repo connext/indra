@@ -13,7 +13,11 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
+nats=$(cwd)/modules/nats-messaging-client
 node=$(cwd)/modules/node
+client=$(cwd)/modules/client
+bot=$(cwd)/modules/payment-bot
+types=$(cwd)/modules/types
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -22,7 +26,6 @@ my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
 docker_run=docker run --name=$(project)_builder --tty --rm
 docker_run_in_root=$(docker_run) --volume=$(cwd):/root $(project)_builder $(id)
-docker_run_in_node=$(docker_run) --volume=$(node):/root $(project)_builder $(id)
 
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > $(flags)/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat $(flags)/.timestamp`)) seconds";echo "=============";echo
@@ -36,10 +39,10 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node
+dev: node types client payment-bot
 prod: node-prod
 
-start: dev
+start: dev deployed-contracts
 	bash ops/start-dev.sh
 
 stop:
@@ -65,10 +68,16 @@ clean: stop
 reset: stop
 	docker container prune -f
 	docker volume rm $(project)_database_dev 2> /dev/null || true
+	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
+	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
 	bash ops/push-images.sh latest node
+
+deployed-contracts: node-modules
+	bash ops/deploy-contracts.sh ganache
+	touch $(flags)/$@
 
 ########################################
 # Begin Test Rules
@@ -85,22 +94,39 @@ watch-node: node-modules
 ########################################
 # Begin Real Rules
 
-node-prod: node
+payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_root) "cd modules/payment-bot && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+client: types nats-client $(shell find $(client)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_root) "cd modules/client && npm run build"
+	$(docker_run_in_root) "rm -rf modules/payment-bot/node_modules/@connext/client"
+	$(docker_run_in_root) "ln -s ../../../client modules/payment-bot/node_modules/@connext/client"
+	$(log_finish) && touch $(flags)/$@
+
+types: node-modules  $(shell find $(client)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_root) "cd modules/types && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+node-prod: node $(node)/ops/prod.dockerfile
 	$(log_start)
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
 	$(log_finish) && touch $(flags)/$@
 
-node: nats-client $(shell find $(node)/src $(find_options))
+node: types nats-client $(shell find $(node)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-nats-client: node-modules
+nats-client: node-modules $(shell find $(nats)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/nats-messaging-client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node-modules: builder package.json lerna.json $(node)/package.json
+node-modules: builder package.json lerna.json $(node)/package.json $(client)/package.json $(bot)/package.json
 	$(log_start)
 	$(docker_run_in_root) "lerna bootstrap --hoist"
 	$(log_finish) && touch $(flags)/$@

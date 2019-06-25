@@ -1,122 +1,86 @@
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
-import {
-  confirmPostgresConfigurationEnvVars,
-  POSTGRES_CONFIGURATION_ENV_KEYS,
-  PostgresServiceFactory,
-} from "@counterfactual/postgresql-node-connector";
-import { ethers } from "ethers";
-
-import { NatsServiceFactory } from "../../nats-messaging-client/src/index";
+import * as connext from "@connext/client";
+import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
+import { NetworkContext } from "@counterfactual/types";
+import * as eth from "ethers";
 
 import { showMainPrompt } from "./bot";
-import {
-  afterUser,
-  createAccount,
-  deposit,
-  fetchMultisig,
-  getFreeBalance,
-  getUser,
-  logEthFreeBalance,
-} from "./utils";
+import { config } from "./config";
 
-const BASE_URL = process.env.BASE_URL!;
-const NETWORK = process.env.ETHEREUM_NETWORK || "kovan";
+process.on("warning", (e: any): any => console.warn(e.stack));
 
-const provider = new ethers.providers.JsonRpcProvider(
-  `https://${NETWORK}.infura.io/metamask`,
-);
+const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory(config.postgres);
 
-let pgServiceFactory: PostgresServiceFactory;
-let natsServiceFactory: NatsServiceFactory;
-// console.log(`Using Nats configuration for ${process.env.NODE_ENV}`);
-// console.log(`Using Firebase configuration for ${process.env.NODE_ENV}`);
+let client: connext.ConnextInternal;
 
-process.on("warning", e => console.warn(e.stack));
-
-// FIXME for non local testing
-// @ts-ignore
-natsServiceFactory = new NatsServiceFactory();
-
-confirmPostgresConfigurationEnvVars();
-pgServiceFactory = new PostgresServiceFactory({
-  database: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.database]!,
-  host: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.host]!,
-  password: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.password]!,
-  port: parseInt(process.env[POSTGRES_CONFIGURATION_ENV_KEYS.port]!, 10),
-  type: "postgres",
-  username: process.env[POSTGRES_CONFIGURATION_ENV_KEYS.username]!,
-});
-
-let node: Node;
-
-let multisigAddress: string;
-let walletAddress: string;
-let bot;
-
-export function getMultisigAddress() {
-  return multisigAddress;
+export function getMultisigAddress(): string {
+  return client.opts.multisigAddress;
 }
 
-export function getWalletAddress() {
-  return walletAddress;
+export function getWalletAddress(): string {
+  return client.wallet.address;
 }
 
-export function getBot() {
-  return bot;
+export function getConnextClient(): connext.ConnextInternal {
+  return client;
 }
 
-(async () => {
+(async (): Promise<void> => {
   await pgServiceFactory.connectDb();
 
+  const provider = new eth.providers.JsonRpcProvider(config.ethRpcUrl);
+  const chainId = (await provider.getNetwork()).chainId;
+  const ethNetwork: string | NetworkContext =
+    chainId === 3 || chainId === 4 || chainId === 42
+      ? config.ethNetwork
+      : config.getEthAddresses(chainId);
+
   console.log("Creating store");
-  const store = pgServiceFactory.createStoreService(process.env.USERNAME!);
+  const store = pgServiceFactory.createStoreService(config.username);
 
-  console.log("process.env.NODE_MNEMONIC: ", process.env.NODE_MNEMONIC);
-  await store.set([{ key: MNEMONIC_PATH, value: process.env.NODE_MNEMONIC }]);
-
-  console.log("Creating Node");
-  const messService = natsServiceFactory.createMessagingService("messaging");
-  await messService.connect();
-  node = await Node.create(
-    messService,
+  const connextOpts = {
+    ethNetwork,
+    mnemonic: config.mnemonic,
+    natsUrl: config.natsUrl,
+    nodeUrl: config.nodeUrl,
+    rpcProviderUrl: config.ethRpcUrl,
     store,
-    {
-      STORE_KEY_PREFIX: "store",
-    },
-    // @ts-ignore
-    provider,
-    NETWORK,
-  );
+  };
 
-  console.log("Public Identifier", node.publicIdentifier);
+  console.log("Using client options:");
+  console.log("     - mnemonic:", config.mnemonic);
+  console.log("     - rpcProviderUrl:", config.ethRpcUrl);
+  console.log("     - natsUrl:", config.natsUrl);
+  console.log("     - nodeUrl:", config.nodeUrl);
 
   try {
-    const privateKey = process.env.PRIVATE_KEY;
-    if (!privateKey) {
-      throw Error("No private key specified in env. Exiting.");
+    console.log("Creating connext");
+    client = await connext.connect(connextOpts);
+    console.log("Client created successfully!");
+
+    const connextConfig = await client.config();
+    console.log("connextConfig:", connextConfig);
+
+    console.log("Public Identifier", client.publicIdentifier);
+    console.log("Account multisig address:", client.opts.multisigAddress);
+
+    const channelAvailable = async (): Promise<boolean> => (await client.getChannel()).available;
+    const interval = 3;
+    while (!(await channelAvailable())) {
+      console.info(`Waiting ${interval} more seconds for channel to be available`);
+      await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
     }
-    const wallet = new ethers.Wallet(privateKey, provider);
-    walletAddress = wallet.address;
-
-    bot = await getUser(BASE_URL, node.publicIdentifier);
-    if (bot && bot.xpub) {
-      console.log(`Getting pre-existing user ${node.publicIdentifier} account`);
-      console.log(`Existing account found\n`, bot);
-    } else {
-      bot = await createAccount(BASE_URL, { xpub: node.publicIdentifier });
-      console.log(`Account created\n`, bot);
+    if (config.action === "deposit") {
+      const depositParams = {
+        amount: eth.utils.parseEther(config.args[0]).toString(),
+      };
+      console.log(`Attempting to deposit ${depositParams.amount}...`);
+      await client.deposit(depositParams);
+      console.log(`Successfully deposited!`);
     }
 
-    multisigAddress = await fetchMultisig(BASE_URL, node.publicIdentifier);
-    console.log("Account multisig address:", multisigAddress);
+    client.logEthFreeBalance(await client.getFreeBalance());
 
-    if (process.env.DEPOSIT_AMOUNT) {
-      await deposit(node, process.env.DEPOSIT_AMOUNT, multisigAddress);
-    }
-
-    afterUser(node, bot.nodeAddress, multisigAddress);
-    logEthFreeBalance(await getFreeBalance(node, multisigAddress));
-    showMainPrompt(node);
+    showMainPrompt();
   } catch (e) {
     console.error("\n");
     console.error(e);

@@ -7,6 +7,7 @@ import { ConfigService } from "./config.service";
   providers: [
     {
       provide: ConfigService,
+      // TODO: need to add param here to run locally, how can this be dynamic
       useValue: new ConfigService(),
     },
   ],

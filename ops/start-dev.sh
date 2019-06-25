@@ -23,9 +23,11 @@ node_port=8080
 nats_port=4222
 
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_network="kovan" # Fake news: it's actually ganache
-eth_network_id="42"
-eth_rpc_url="https://kovan.infura.io/metamask"
+eth_network="ganache"
+#eth_network="kovan"
+eth_network_id="4447"
+eth_rpc_url="http://ethprovider:8545"
+eth_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 # database connection settings
 postgres_db="$project"
@@ -65,11 +67,22 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret ${project}_database_dev
+new_secret ${project}_database_dev $project
+
+# Deploy with an attachable network so tests & the daicard can connect to individual components
+if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
+then
+  id="`docker network create --attachable --driver overlay $project`"
+  echo "Created ATTACHABLE network with id $id"
+fi
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
+
+networks:
+  $project:
+    external: true
 
 secrets:
   ${project}_database_dev:
@@ -78,7 +91,6 @@ secrets:
 volumes:
   chain_dev:
   database_dev:
-  certs:
 
 services:
   node:
@@ -95,10 +107,13 @@ services:
       INDRA_PG_USERNAME: $postgres_user
       LOG_LEVEL: $log_level
       NODE_ENV: development
+      ETH_ADDRESSES: '$eth_addresses'
       ETH_MNEMONIC: $eth_mnemonic
       ETH_NETWORK: $eth_network
       ETH_RPC_URL: $eth_rpc_url
       PORT: $node_port
+    networks:
+      - $project
     ports:
       - "$node_port:$node_port"
     secrets:
@@ -109,6 +124,8 @@ services:
   ethprovider:
     image: $ethprovider_image
     command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=$eth_network_id" ]
+    networks:
+      - $project
     ports:
       - "8545:8545"
     volumes:
@@ -124,6 +141,8 @@ services:
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $project
+    networks:
+      - $project
     ports:
       - "5432:5432"
     secrets:
@@ -133,6 +152,8 @@ services:
 
   nats:
     image: $nats_image
+    networks:
+      - $project
     ports:
      - "$nats_port:$nats_port"
 EOF
@@ -145,3 +166,5 @@ while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number
 do echo -n "." && sleep 2
 done
 echo " Good Morning!"
+
+bash ops/logs.sh node

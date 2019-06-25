@@ -20,22 +20,25 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/nats-messaging-client": "^0.0.4",
+    "@connext/nats-messaging-client": "0.0.5",
+    "@connext/types": "^0.0.1",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.3",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@counterfactual/types": "0.0.16",
     "@nestjs/common": "6.3.2",
     "@nestjs/core": "6.3.2",
+    "@nestjs/microservices": "^6.3.2",
     "@nestjs/platform-express": "6.3.2",
     "@nestjs/typeorm": "^6.1.2",
     "class-validator": "^0.9.1",
     "dotenv": "8.0.0",
-    "ethers": "4.0.30",
+    "ethers": "4.0.29",
     "pg": "7.11.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.2",
-    "typeorm": "^0.2.18",
+    "ts-nats": "1.2.4",
+    "typeorm": "0.2.18",
     "uuid": "3.3.2"
   },
   "devDependencies": {

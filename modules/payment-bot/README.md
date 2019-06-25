@@ -9,12 +9,12 @@ Payment functionality is demonstrated by using two payment bots connected to an 
 * Configure the payment bots:
   * Get the node ID of the Indra node (starts with `xpub...`, printed on startup) and put it into `.env-cmdrc` as `INTERMEDIARY_IDENTIFIER`.
   * All other config options should be good as is, you can check these address on kovan.etherscan.io to make sure they have some KETH (please replenish if you use, the mnemonics and PKs are in source control for easy bootstrapping/testing):
-    * Bot 1: `0xA0Ae1A3d4ff42AE77154fB9eBbCa0af2B5B7F357`
-    * Bot 2: `0x24ac59b070eC2EA822249cB2A858208460305Faa`
+    * Bot 1: `0x24ac59b070eC2EA822249cB2A858208460305Faa`
+    * Bot 2: `0xA0Ae1A3d4ff42AE77154fB9eBbCa0af2B5B7F357`
 * Run the payment bots while depositing into their channels:
   * Open two terminal windows.
-  * Run `DEPOSIT_AMOUNT=0.1 npm run start:bot1` to deposit 0.1 ETH into the channel for Payment Bot 1.
-  * Run `DEPOSIT_AMOUNT=0.1 npm run start:bot2` to deposit 0.1 ETH into the channel for Payment Bot 2.
+  * Run `npm run start:bot1 deposit 0.1` to deposit 0.1 ETH into the channel for Payment Bot 1.
+  * Run `npm run start:bot2 deposit 0.1` to deposit 0.1 ETH into the channel for Payment Bot 2.
 * Bots will display the free balance after their channels are deposited into.
 
 ## Interacting with the Bots

@@ -1,0 +1,100 @@
+{
+  "LibStaticCall": {
+    "networks": {
+      "4447": {
+        "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0"
+      }
+    }
+  },
+  "ChallengeRegistry": {
+    "networks": {
+      "4447": {
+        "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da"
+      }
+    }
+  },
+  "TwoPartyVirtualEthAsLump": {
+    "networks": {
+      "4447": {
+        "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10"
+      }
+    }
+  },
+  "StateChannelTransaction": {
+    "networks": {
+      "4447": {
+        "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF"
+      }
+    }
+  },
+  "ContractRegistry": {
+    "networks": {
+      "4447": {
+        "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F"
+      }
+    }
+  },
+  "ETHBalanceRefundApp": {
+    "networks": {
+      "4447": {
+        "address": "0x9FBDa871d559710256a2502A2517b794B482Db40"
+      }
+    }
+  },
+  "ETHBucket": {
+    "networks": {
+      "4447": {
+        "address": "0x2C2B9C9a4a25e24B174f26114e8926a9f2128FE4"
+      }
+    }
+  },
+  "ETHInterpreter": {
+    "networks": {
+      "4447": {
+        "address": "0x30753E4A8aad7F8597332E813735Def5dD395028"
+      }
+    }
+  },
+  "MinimumViableMultisig": {
+    "networks": {
+      "4447": {
+        "address": "0xFB88dE099e13c3ED21F80a7a1E49f8CAEcF10df6"
+      }
+    }
+  },
+  "MultiSend": {
+    "networks": {
+      "4447": {
+        "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8"
+      }
+    }
+  },
+  "ProxyFactory": {
+    "networks": {
+      "4447": {
+        "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a"
+      }
+    }
+  },
+  "RootNonceRegistry": {
+    "networks": {
+      "4447": {
+        "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
+      }
+    }
+  },
+  "TwoPartyEthAsLump": {
+    "networks": {
+      "4447": {
+        "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254"
+      }
+    }
+  },
+  "UninstallKeyRegistry": {
+    "networks": {
+      "4447": {
+        "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1"
+      }
+    }
+  }
+}

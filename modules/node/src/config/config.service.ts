@@ -1,6 +1,8 @@
 import { NatsConfig } from "@connext/nats-messaging-client";
+import { NetworkContext } from "@counterfactual/types";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
+import { Payload } from "ts-nats";
 
 type PostgresConfig = {
   database: string;
@@ -8,6 +10,11 @@ type PostgresConfig = {
   password: string;
   port: number;
   username: string;
+};
+
+type EthConfig = {
+  ethNetwork: string;
+  ethUrl: string;
 };
 
 export class ConfigService {
@@ -31,7 +38,16 @@ export class ConfigService {
     return this.envConfig[key];
   }
 
-  getEthProviderConfig(): { [key: string]: string } {
+  getEthAddresses(chainId: string | number): NetworkContext {
+    const ethAddressBook = JSON.parse(this.get("ETH_ADDRESSES"));
+    const ethAddresses = {};
+    Object.keys(ethAddressBook).map((contract: string): void => {
+      ethAddresses[contract] = ethAddressBook[contract].networks[chainId.toString()].address;
+    });
+    return ethAddresses as any;
+  }
+
+  getEthProviderConfig(): EthConfig {
     return {
       ethNetwork: this.get("ETH_NETWORK"),
       ethUrl: this.get("ETH_RPC_URL"),
@@ -55,6 +71,7 @@ export class ConfigService {
   getNatsConfig(): NatsConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
+      payload: Payload.JSON,
       servers: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       token: this.get("INDRA_NATS_TOKEN"),
     };
