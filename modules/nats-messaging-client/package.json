@@ -15,6 +15,7 @@
   "dependencies": {
     "@connext/types": "^0.0.1",
     "@counterfactual/node": "^0.2.5",
+    "@counterfactual/types": "0.0.16",
     "ts-nats": "1.2.4"
   },
   "devDependencies": {
@@ -25,11 +26,11 @@
     "dotenv-extended": "2.4.0",
     "ethers": "4.0.29",
     "jest": "24.8.0",
-    "rollup": "1.15.6",
+    "rollup": "1.16.0",
     "rollup-plugin-commonjs": "10.0.0",
     "rollup-plugin-node-resolve": "5.0.3",
     "rollup-plugin-typescript2": "0.21.2",
-    "tslint": "5.17.0",
+    "tslint": "5.18.0",
     "typescript": "3.5.2"
   }
 }
