@@ -112,8 +112,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("created node client successfully");
 
   // TODO: make this better
-  const nodeParams = await node.config()
-  node.nodePublicIdentifier = nodeParams.nodePublicIdentifier;
+  const nodeParams = await node.config();
 
   console.log("creating listener");
   const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
