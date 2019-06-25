@@ -501,14 +501,17 @@ export class SyncController extends AbstractController {
       return { didEmit: 'unknown', latestBlock: block }
     }
 
+    const currentBlockNumber = await this.connext.wallet.provider.getBlockNumber()
     const evts = await this.connext.getContractEvents(
       'DidUpdateChannel',
       Math.max(block.number - 4000, 0), // 4000 blocks = ~16 hours
+      Math.min(block.number + 4000, currentBlockNumber),
     )
     const event: any = evts.find((e: any): any => e.values.txCount[0] === channel.txCountGlobal)
     if (event) {
       return { didEmit: 'yes', latestBlock: block, event }
     }
+
     return { didEmit: 'no', latestBlock: block }
   }
 

@@ -28,7 +28,7 @@ export interface IChannelManager {
   emptyChannelWithChallenge(state: ChannelState): Promise<Transaction>
   emptyThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction>
   getChannelDetails(user: string): Promise<ChannelManagerChannelDetails>
-  getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<LogDescription[]>
+  getPastEvents(eventName: string, args: string[], fromBlock: number, toBlock: number | string): Promise<LogDescription[]>
   nukeThreads(state: ChannelState): Promise<Transaction>
   startExit(state: ChannelState): Promise<Transaction>
   startExitThread(state: ChannelState, threadState: ThreadState, proof: any): Promise<Transaction>
@@ -65,10 +65,10 @@ export class ChannelManager implements IChannelManager {
     this.abi = new eth.utils.Interface(this.rawAbi)
   }
 
-  public async getPastEvents(eventName: string, args: string[], fromBlock: number): Promise<any> {
+  public async getPastEvents(eventName: string, args: string[], fromBlock: number, toBlock: number | string): Promise<any> {
     const filter = this.cm.filters[eventName](...args) as Filter
     filter.fromBlock = fromBlock
-    filter.toBlock = 'latest'
+    filter.toBlock = toBlock
     const logs = await this.provider.getLogs(filter)
     const events = []
     for (const log of logs) {

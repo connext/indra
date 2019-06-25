@@ -496,8 +496,8 @@ export class ConnextInternal extends ConnextChannel {
     return eth.utils.solidityKeccak256(['bytes32'], [eth.utils.randomBytes(32)])
   }
 
-  public async getContractEvents(eventName: string, fromBlock: number): Promise<any> {
-    return this.contract.getPastEvents(eventName, [this.opts.user], fromBlock)
+  public async getContractEvents(eventName: string, fromBlock: number, toBlock?: number): Promise<any> {
+    return this.contract.getPastEvents(eventName, [this.opts.user], fromBlock, toBlock || 'latest')
   }
 
   public async signChannelState(state: UnsignedChannelState): Promise<ChannelState> {
