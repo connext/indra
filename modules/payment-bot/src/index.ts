@@ -59,9 +59,9 @@ export function getConnextClient(): connext.ConnextInternal {
       console.info(`Waiting 1 more seconds for channel to be available`);
       await new Promise((res: any): any => setTimeout(() => res(), 1 * 1000));
     }
-    if (process.argv[4]) {
+    if (process.argv[3]) {
       const depositParams = {
-        amount: eth.utils.parseEther(process.argv[4]).toString(),
+        amount: eth.utils.parseEther(process.argv[3]).toString(),
       };
       console.log(`Attempting to deposit ${depositParams.amount}...`);
       await client.deposit(depositParams);
