@@ -12,6 +12,8 @@ name=${project}_payment_bot_$1
 cwd="`pwd`"
 
 export DELAY_SECONDS="2"
+#export ETH_RPC_URL="http://indra_v2_ethprovider:8545"
+#export ETHEREUM_NETWORK="ganache"
 export ETHEREUM_NETWORK="kovan"
 export INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
 export NATS_URL="nats://indra_v2_nats:4222"
@@ -49,6 +51,7 @@ echo "Deploying payment bot..."
 docker run \
   --entrypoint="bash" \
   --env="DELAY_SECONDS=$DELAY_SECONDS" \
+  --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="ETHEREUM_NETWORK=$ETHEREUM_NETWORK" \
   --env="INTERMEDIARY_IDENTIFIER=$INTERMEDIARY_IDENTIFIER" \
   --env="NATS_URL=$NATS_URL" \
