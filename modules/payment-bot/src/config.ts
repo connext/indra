@@ -12,7 +12,7 @@ if (!process.env.NODE_URL) {
   throw Error("No node url specified in env. Exiting.");
 }
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(3);
 const ethNetwork = process.env.ETH_NETWORK || "ganache";
 
 export const config = {

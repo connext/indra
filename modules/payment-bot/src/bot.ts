@@ -126,7 +126,7 @@ export function showDirectionPrompt(): void {
   inquirer
     .prompt([
       {
-        choices: ["sending", "receiving"],
+        choices: ["receiving", "sending"],
         message: "Are you sending or receiving payments?",
         name: "direction",
         type: "list",

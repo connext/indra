@@ -9,7 +9,7 @@ import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
   public async deposit(params: DepositParameters): Promise<ChannelState> {
-    this.log.info("Deposit called, yay!");
+    this.log.info(`Deposit called with params: ${JSON.stringify(params)}`);
 
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
     console.log("myFreeBalanceAddress:", myFreeBalanceAddress);
