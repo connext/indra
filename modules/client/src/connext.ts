@@ -383,7 +383,7 @@ export class ConnextInternal extends ConnextChannel {
     return actionResponse.result as NodeTypes.TakeActionResult;
   }
 
-  public async installApp(
+  public async installVirtualApp(
     appName: SupportedApplication,
     initialDeposit: BigNumber,
     counterpartyPublicIdentifier: string,
@@ -426,6 +426,7 @@ export class ConnextInternal extends ConnextChannel {
   }
 
   // TODO: make this more generic
+  // TODO: delete this when the above works!
   public async installTransferApp(
     counterpartyPublicIdentifier: string,
     initialDeposit: BigNumber,
