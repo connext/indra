@@ -1,22 +1,18 @@
 import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import {
+  AppRegistry,
   ChannelState,
   DepositParameters,
   ExchangeParameters,
   NodeChannel,
   NodeConfig,
+  SupportedApplication,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
-  AppRegistry,
-  SupportedApplication,
 } from "@connext/types";
-import {
-  jsonRpcDeserialize,
-  MNEMONIC_PATH,
-  Node,
-} from "@counterfactual/node";
-import { Address, Node as NodeTypes, OutcomeType, AppInstanceInfo } from "@counterfactual/types";
+import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { Address, AppInstanceInfo, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -28,10 +24,10 @@ import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
 import { logEthFreeBalance } from "./lib/utils";
+import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { Wallet } from "./wallet";
-import { ConnextListener } from "./listener";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -97,7 +93,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     wallet.provider,
-    "kovan", // TODO: make this not hardcoded to "kovan"
+    opts.ethNetwork || "kovan",
   );
   console.log("created cf module successfully");
 
@@ -110,9 +106,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     publicIdentifier: cfModule.publicIdentifier,
     wallet,
   };
-  console.log("creating node");
+  console.log("creating node client");
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
-  console.log("created node successfully");
+  console.log("created node client successfully");
 
   console.log("creating listener");
   const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
@@ -270,6 +266,7 @@ export class ConnextInternal extends ConnextChannel {
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
 
     // establish listeners
+    this.listener = opts.listener;
     this.connectCfModuleMethods();
   }
 

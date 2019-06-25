@@ -1,5 +1,6 @@
 import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 import { Node } from "@counterfactual/node";
+import { NetworkContext } from "@counterfactual/types";
 import { utils } from "ethers";
 import { Client as NatsClient } from "ts-nats";
 
@@ -24,6 +25,7 @@ export const BigNumber = utils.BigNumber;
 export interface ClientOptions {
   // provider, passed through to CF node
   rpcProviderUrl?: string; // TODO: can we keep out web3
+  ethNetwork: string | NetworkContext; // network name (eg kovan) or contract addresses
 
   // node information
   nodeUrl: string; // http URL, https?://

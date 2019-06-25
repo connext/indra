@@ -1,5 +1,6 @@
 import * as connext from "@connext/client";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
+import { NetworkContext } from "@counterfactual/types";
 import * as eth from "ethers";
 
 import { showMainPrompt } from "./bot";
@@ -26,10 +27,18 @@ export function getConnextClient(): connext.ConnextInternal {
 (async (): Promise<void> => {
   await pgServiceFactory.connectDb();
 
+  const provider = new eth.providers.JsonRpcProvider(config.ethRpcUrl);
+  const chainId = (await provider.getNetwork()).chainId;
+  const ethNetwork: string | NetworkContext =
+    chainId === 3 || chainId === 4 || chainId === 42
+      ? config.ethNetwork
+      : config.getEthAddresses(chainId);
+
   console.log("Creating store");
   const store = pgServiceFactory.createStoreService(config.username);
 
   const connextOpts = {
+    ethNetwork,
     mnemonic: config.mnemonic,
     natsUrl: config.natsUrl,
     nodeUrl: config.nodeUrl,
@@ -55,13 +64,14 @@ export function getConnextClient(): connext.ConnextInternal {
     console.log("Account multisig address:", client.opts.multisigAddress);
 
     const channelAvailable = async (): Promise<boolean> => (await client.getChannel()).available;
+    const interval = 3;
     while (!(await channelAvailable())) {
-      console.info(`Waiting 1 more seconds for channel to be available`);
-      await new Promise((res: any): any => setTimeout(() => res(), 1 * 1000));
+      console.info(`Waiting ${interval} more seconds for channel to be available`);
+      await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
     }
-    if (process.argv[3]) {
+    if (config.action === "deposit") {
       const depositParams = {
-        amount: eth.utils.parseEther(process.argv[3]).toString(),
+        amount: eth.utils.parseEther(config.args[0]).toString(),
       };
       console.log(`Attempting to deposit ${depositParams.amount}...`);
       await client.deposit(depositParams);

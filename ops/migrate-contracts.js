@@ -241,6 +241,7 @@ const maybeDeployContract = async (name, artifacts, args) => {
 
     await maybeSendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address)
     for (const botMnemonic of botMnemonics) {
+      await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic).address)
       await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
     }
   }

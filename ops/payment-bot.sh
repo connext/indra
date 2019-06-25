@@ -11,19 +11,19 @@ project="indra_v2"
 name=${project}_payment_bot_$1
 cwd="`pwd`"
 
-export DELAY_SECONDS="2"
-#export ETH_RPC_URL="http://indra_v2_ethprovider:8545"
-#export ETHEREUM_NETWORK="ganache"
-export ETHEREUM_NETWORK="kovan"
-export INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
-export NATS_URL="nats://indra_v2_nats:4222"
-export NODE_URL="http://indra_v2_node:8080"
-export POSTGRES_DATABASE="$project"
-export POSTGRES_HOST="indra_v2_database"
-export POSTGRES_PASSWORD="$project"
-export POSTGRES_PORT="5432"
-export POSTGRES_USER="$project"
-export USERNAME="PaymentBot$1"
+DELAY_SECONDS="2"
+ETH_ADDRESSES="`cat address-book.json | tr -d ' \n\r'`"
+ETH_NETWORK="ganache" # "kovan"
+ETH_RPC_URL="http://indra_v2_ethprovider:8545"
+INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
+NATS_URL="nats://indra_v2_nats:4222"
+NODE_URL="http://indra_v2_node:8080"
+POSTGRES_DATABASE="$project"
+POSTGRES_HOST="indra_v2_database"
+POSTGRES_PASSWORD="$project"
+POSTGRES_PORT="5432"
+POSTGRES_USER="$project"
+USERNAME="PaymentBot$1"
 
 # different mnemonics for different bots
 if [ "$1" = "1" ]; then
@@ -51,8 +51,9 @@ echo "Deploying payment bot..."
 docker run \
   --entrypoint="bash" \
   --env="DELAY_SECONDS=$DELAY_SECONDS" \
+  --env="ETH_ADDRESSES=$ETH_ADDRESSES" \
+  --env="ETH_NETWORK=$ETH_NETWORK" \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
-  --env="ETHEREUM_NETWORK=$ETHEREUM_NETWORK" \
   --env="INTERMEDIARY_IDENTIFIER=$INTERMEDIARY_IDENTIFIER" \
   --env="NATS_URL=$NATS_URL" \
   --env="NODE_MNEMONIC=$NODE_MNEMONIC" \
