@@ -24,8 +24,8 @@ type AppState = SolidityABIEncoderV2Type & {
 
 export async function showMainPrompt(): Promise<any> {
   const client = getConnextClient();
-  const apps = await client.getAppInstances();
-  if (apps.appInstances.length > 0) {
+  const appInstances = await client.getAppInstances();
+  if (appInstances.length > 0) {
     showAppInstancesPrompt();
   } else {
     showDirectionPrompt();
@@ -34,15 +34,15 @@ export async function showMainPrompt(): Promise<any> {
 
 export async function showAppInstancesPrompt(): Promise<any> {
   const client = getConnextClient();
-  const apps = await client.getAppInstances();
+  const appInstances = await client.getAppInstances();
 
-  if (apps.appInstances.length === 0) {
+  if (appInstances.length === 0) {
     return;
   }
 
   inquirer
     .prompt({
-      choices: apps.appInstances.map((app: any): any => app.id),
+      choices: appInstances.map((app: any): any => app.id),
       message: "Select a payment thread to view options",
       name: "viewApp",
       type: "list",
