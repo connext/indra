@@ -102,7 +102,11 @@ export class ConnextListener extends EventEmitter {
           );
           this.log.info(
             `installVirtualResponse result:
-            ${installVirtualResponse.result as NodeTypes.InstallVirtualResult}`,
+            ${JSON.stringify(
+              installVirtualResponse.result as NodeTypes.InstallVirtualResult,
+              null,
+              2,
+            )}`,
           );
           // TODO: probably should do something else here?
           this.cfModule.on(
