@@ -155,12 +155,10 @@ export function showOpenVirtualChannelPrompt(): void {
         type: "input",
       },
     ])
-    .then(
-      async (answers: any): Promise<any> => {
-        const { counterpartyPublicId, depositPartyA } = answers as Record<string, string>;
-        await openVirtualChannel(depositPartyA, counterpartyPublicId);
-      },
-    );
+    .then((answers: any): void => {
+      const { counterpartyPublicId, depositPartyA } = answers as Record<string, string>;
+      openVirtualChannel(depositPartyA, counterpartyPublicId);
+    });
 }
 
 async function openVirtualChannel(
