@@ -1,4 +1,5 @@
 import { NatsConfig } from "@connext/nats-messaging-client";
+import { NetworkContext } from "@counterfactual/types";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import { Payload } from "ts-nats";
@@ -37,7 +38,16 @@ export class ConfigService {
     return this.envConfig[key];
   }
 
-  getEthProviderConfig(): EthConfig{
+  getEthAddresses(chainId: string | number): NetworkContext {
+    const ethAddressBook = JSON.parse(this.get("ETH_ADDRESSES"));
+    const ethAddresses = {};
+    Object.keys(ethAddressBook).map((contract: string): void => {
+      ethAddresses[contract] = ethAddressBook[contract].networks[chainId.toString()].address;
+    });
+    return ethAddresses as any;
+  }
+
+  getEthProviderConfig(): EthConfig {
     return {
       ethNetwork: this.get("ETH_NETWORK"),
       ethUrl: this.get("ETH_RPC_URL"),

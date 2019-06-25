@@ -12,24 +12,7 @@ import { ConfigService } from "../config/config.service";
 import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger } from "../util";
 
-// import * as addressBook from "../address-book.json";
-
 const logger = new CLogger("NodeProvider");
-
-const coreContracts = [
-  "ChallengeRegistry",
-  "ETHBalanceRefundApp",
-  "ETHBucket",
-  "ETHInterpreter",
-  "MinimumViableMultisig",
-  "MultiSend",
-  "ProxyFactory",
-  "RootNonceRegistry",
-  "StateChannelTransaction",
-  "TwoPartyEthAsLump",
-  "TwoPartyVirtualEthAsLump",
-  "UninstallKeyRegistry",
-];
 
 async function createNode(
   config: ConfigService,
@@ -58,41 +41,19 @@ async function createNode(
 
   // test that provider works
   const provider = new JsonRpcProvider(ethUrl);
+  const chainId = (await provider.getNetwork()).chainId;
   const balance = await provider.getBalance(addr);
-  logger.log(`Balance of address ${addr}: ${balance.toString()}`);
+  logger.log(`Balance of address ${addr} on chain ${chainId}: ${balance.toString()}`);
 
-  // let network: object | string;
-  // if (ethNetwork === "ganache") {
-  //   network = {};
-  //   const networkId = "4447";
-  //   coreContracts.forEach((contractName: string): void => {
-  //     if (
-  //       addressBook[contractName] &&
-  //       addressBook[contractName].networks[networkId]
-  //     ) {
-  //       network[contractName] =
-  //         addressBook[contractName].networks[networkId].address;
-  //     } else {
-  //       console.log(
-  //         `This contract: ${JSON.stringify(addressBook[contractName])}`,
-  //       );
-  //       throw new Error(
-  //         `Contract ${contractName} hasn't been deployed to network ${networkId}`,
-  //       );
-  //     }
-  //   });
-  // } else {
-  //   network = ethNetwork;
-  // }
-
-  const network = ethNetwork;
+  const network: string | NetworkContext =
+    chainId === 3 || chainId === 4 || chainId === 42 ? ethNetwork : config.getEthAddresses(chainId);
 
   const node = await Node.create(
     natsMessagingService,
     store,
     { STORE_KEY_PREFIX: "store" },
     provider,
-    network as string | NetworkContext,
+    network,
   );
   logger.log("Node created");
 
