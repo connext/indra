@@ -36,9 +36,15 @@ export class TransferController extends AbstractController {
       );
     }
 
+    // TODO: register listeners with proper 
+    // callbacks for this app and reset to default
+    // when done
+
     // take action
 
     // uninstall
+
+    // reset listeners to default callbacks
 
     return {} as ChannelState;
   }
