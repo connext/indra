@@ -76,6 +76,7 @@ export type InternalClientOptions = ClientOptions & {
   // counterfactual node
   cfModule: Node;
   multisigAddress: string;
+  nodePublicIdentifier: string;
 };
 
 // TODO: define properly!!
