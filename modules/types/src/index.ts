@@ -33,7 +33,6 @@ export type EthUnidirectionalTransferAppInitialStateBigNumber = EthUnidirectiona
   BigNumber
 >;
 
-// TODO: is there a better way to do this?
 export const SupportedApplications = {
   EthUnidirectionalTransferApp: "EthUnidirectionalTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
@@ -44,10 +43,22 @@ export const SupportedNetworks = {
   kovan: "kovan",
   mainnet: "mainnet",
 };
-export type SupportedNetworks = keyof typeof SupportedNetworks;
+export type SupportedNetwork = keyof typeof SupportedNetworks;
 
-// TODO: clean type
-export const AppRegistry = {
+export type IRegisteredAppDetails = {
+  [index in SupportedApplication]: Partial<
+    NodeTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
+  >;
+};
+
+export type IAppRegistry = {
+  [network in SupportedNetwork]: IRegisteredAppDetails;
+};
+
+// TODO: should probably import addresses from
+// addressBook.json @bo do you know what this will
+// look like on prod?
+export const AppRegistry: IAppRegistry = {
   kovan: {
     EthUnidirectionalTransferApp: {
       abiEncodings: {
@@ -55,15 +66,15 @@ export const AppRegistry = {
         stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
       },
       appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
+      // @ts-ignore @rahul why is asset always a type error?
       asset: { assetType: 0 },
-      initialStateFinalized: { finalized: false },
+      initialStateFinalized: false,
       outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME,
       peerDeposit: constants.Zero, // TODO: include this?
       timeout: constants.Zero,
     },
   },
 };
-// export type AppRegistryDefinition = keyof typeof AppRegistry;
 
 ////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
