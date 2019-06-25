@@ -70,8 +70,7 @@ export function getConnextClient(): connext.ConnextInternal {
 
     client.logEthFreeBalance(await client.getFreeBalance());
 
-    // @ts-ignore
-    showMainPrompt(client); // TODO: WHYYYYYYYYYYYYYYYYYYYYYYYYYYY? (╯°□°）╯︵ ┻━┻
+    showMainPrompt();
   } catch (e) {
     console.error("\n");
     console.error(e);
