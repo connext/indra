@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+project="indra_v2"
+
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
@@ -11,25 +13,15 @@ docker swarm init 2> /dev/null || true
 
 ####################
 # Internal Config
+# config & hard-coded stuff you might want to change
 
-# meta config & hard-coded stuff you might want to change
-number_of_services=4 # NOTE: Gotta update this manually when adding/removing services :(
+# Uncomment the network you want to use while launching the node server
+eth_rpc_url="http://ethprovider:8545" # aka ganache
+#eth_rpc_url="https://rinkeby.infura.io/metamask"
+#eth_rpc_url="https://kovan.infura.io/metamask"
 
-# hard-coded config (you probably won't ever need to change these)
-log_level="3" # set to 0 for no logs or to 5 for all the logs
-project="indra_v2"
-
-node_port=8080
-nats_port=4222
-
+eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-# eth_network="ganache"
-eth_network="kovan"
-# eth_network_id="4447"
-eth_network_id="42"
-# eth_rpc_url="http://ethprovider:8545"
-eth_rpc_url="https://kovan.infura.io/v3/52fbfcd6aab44b9db863600f7c24a6a0"
-eth_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 # database connection settings
 postgres_db="$project"
@@ -44,6 +36,9 @@ database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.3"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
+
+node_port=8080
+nats_port=4222
 
 ####################
 # Deploy according to above configuration
@@ -78,6 +73,8 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
+number_of_services=4 # NOTE: Gotta update this manually when adding/removing services :(
+
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
@@ -99,6 +96,9 @@ services:
     image: $node_image
     entrypoint: bash modules/node/ops/entry.sh
     environment:
+      INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
+      INDRA_ETH_MNEMONIC: $eth_mnemonic
+      INDRA_ETH_RPC_URL: $eth_rpc_url
       INDRA_NATS_CLUSTER_ID:
       INDRA_NATS_SERVERS: nats://nats:$nats_port
       INDRA_NATS_TOKEN:
@@ -107,13 +107,8 @@ services:
       INDRA_PG_PASSWORD_FILE: $postgres_password_file
       INDRA_PG_PORT: $postgres_port
       INDRA_PG_USERNAME: $postgres_user
-      LOG_LEVEL: $log_level
+      INDRA_PORT: $node_port
       NODE_ENV: development
-      ETH_ADDRESSES: '$eth_addresses'
-      ETH_MNEMONIC: $eth_mnemonic
-      ETH_NETWORK: $eth_network
-      ETH_RPC_URL: $eth_rpc_url
-      PORT: $node_port
     networks:
       - $project
     ports:
@@ -125,7 +120,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=$eth_network_id" ]
+    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447" ]
     networks:
       - $project
     ports:
@@ -138,8 +133,6 @@ services:
     deploy:
       mode: global
     environment:
-      ETH_NETWORK: $eth_network
-      MODE: dev
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $project

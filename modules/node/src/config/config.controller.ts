@@ -7,10 +7,10 @@ export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
   @Get()
-  getConfig(): string {
+  async getConfig(): Promise<string> {
     return JSON.stringify({
-      addresses: this.configService.getEthAddresses(4447),
-      network: this.configService.getEthProviderConfig().ethNetwork,
+      addresses: await this.configService.getContractAddresses(),
+      network: await this.configService.getEthNetwork(),
     });
   }
 }

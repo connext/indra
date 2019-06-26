@@ -102,13 +102,6 @@ payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 client: types nats-client $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/client && npm run build"
-	$(docker_run_in_root) "rm -rf modules/payment-bot/node_modules/@connext/client"
-	$(docker_run_in_root) "ln -s ../../../client modules/payment-bot/node_modules/@connext/client"
-	$(log_finish) && touch $(flags)/$@
-
-types: node-modules  $(shell find $(client)/src $(find_options))
-	$(log_start)
-	$(docker_run_in_root) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 node-prod: node $(node)/ops/prod.dockerfile
@@ -119,6 +112,11 @@ node-prod: node $(node)/ops/prod.dockerfile
 node: types nats-client $(shell find $(node)/src $(find_options))
 	$(log_start)
 	$(docker_run_in_root) "cd modules/node && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+types: node-modules $(shell find $(types)/src $(find_options))
+	$(log_start)
+	$(docker_run_in_root) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 nats-client: node-modules $(shell find $(nats)/src $(find_options))
