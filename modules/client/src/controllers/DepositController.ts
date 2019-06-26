@@ -178,11 +178,11 @@ export class DepositController extends AbstractController {
             `what's needed (${args.depositTokenUser}), approving more`)
 
           const gasLimit = toBN(Math.ceil((
-            await token.estimate.approve(prev.contractAddress, args.depositTokenUser)
+            await token.estimate.approve(prev.contractAddress, eth.constants.MaxUint256)
           ).toNumber() * 1.5))
 
           const approveTx = await token.approve(
-            prev.contractAddress, args.depositTokenUser, { gasLimit, gasPrice },
+            prev.contractAddress, eth.constants.MaxUint256, { gasLimit, gasPrice },
           )
 
           await this.connext.wallet.provider.waitForTransaction(approveTx.hash)

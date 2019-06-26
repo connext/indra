@@ -12,6 +12,10 @@ const { arrayify, isHexString, toUtf8Bytes, verifyMessage } = eth.utils
 
 const nonceExpiry = 1000 * 60 * 60 * 2 // 2 hours
 
+// This module should only ever create one redis client
+// Store this instance in the global scope
+let redis
+
 const defaultAcl: RouteBasedACL = new RouteBasedACL()
     .addRoute('/branding', Role.NONE)
     .addRoute('/config', Role.NONE)
@@ -35,6 +39,10 @@ export const getAuthMiddleware = (
   const nonce = req.get('x-nonce')
   const signature = req.get('x-signature')
   const authorization = req.get('authorization')
+
+  if (!redis) {
+     redis = await getRedisClient(config.redisUrl)
+  }
 
   req.address = address
   req.roles = []
@@ -68,7 +76,6 @@ export const getAuthMiddleware = (
 
   // Check whether we should auth via signature verification headers
   } else if (isValidHex(address, 20) && isValidHex(nonce, 32) && isValidHex(signature, 65)) {
-    const redis = await getRedisClient(config.redisUrl)
 
     try {
       // TODO: Why aren't redis errors hitting the catch block?!
@@ -76,13 +83,11 @@ export const getAuthMiddleware = (
       if (!expectedNonce) {
         log.warn(`No nonce available for address ${address}`)
         res.status(403).send(`Invalid nonce`)
-        redis.quit()
         return
       }
       if (expectedNonce !== nonce) {
         log.warn(`Invalid nonce for address ${address}: Got ${nonce}, expected ${expectedNonce}`)
         res.status(403).send(`Invalid nonce`)
-        redis.quit()
         return
       }
       // check whether this nonce has expired
@@ -92,7 +97,6 @@ export const getAuthMiddleware = (
       if (nonceAge > nonceExpiry) {
         log.warn(`Invalid nonce for ${address}: expired ${nonceAge - nonceExpiry} ms ago`)
         res.status(403).send(`Invalid nonce`)
-        redis.quit()
         return
       }
     } catch (e) {
@@ -109,15 +113,12 @@ export const getAuthMiddleware = (
       if (signer !== address.toLowerCase()) {
         log.warn(`Invalid signature for nonce "${nonce}": Got "${signer}", expected "${address}"`)
         res.status(403).send('Invalid signature')
-        redis.quit()
         return
       }
       await redis.set(`signature:${address}`, signature)
-      redis.quit()
     } else if (cachedSig && cachedSig !== signature) {
       log.warn(`Invalid signature for address "${address}": Doesn't match cache: ${cachedSig}`)
       res.status(403).send('Invalid signature')
-      redis.quit()
       return
     }
 

@@ -25,6 +25,33 @@ INDRA_SERVICE_KEY="${INDRA_SERVICE_KEY:-foo}"
 MAILGUN_API_KEY="${MAILGUN_API_KEY:-}"
 
 ####################
+# Helper Functions
+
+# Get images that we aren't building locally
+function pull_if_unavailable {
+  if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
+  then
+    # But actually don't pull images if we're running locally
+    if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
+    then docker pull $1
+    fi
+  fi
+}
+
+# Initialize random new secrets
+function new_secret {
+  secret=$2
+  if [[ -z "$secret" ]]
+  then secret=`head -c 32 /dev/urandom | xxd -plain -c 32 | tr -d '\n\r'`
+  fi
+  if [[ -z "`docker secret ls -f name=$1 | grep -w $1`" ]]
+  then
+    id=`echo $secret | tr -d '\n\r' | docker secret create $1 -`
+    echo "Created secret called $1 with id $id"
+  fi
+}
+
+####################
 # Internal Config
 
 # meta config & hard-coded stuff you might want to change
@@ -86,7 +113,7 @@ then
   ethprovider_image=${project}_builder
   number_of_services=$(( $number_of_services + 1 ))
   private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
-  echo $private_key | tr -d '\n\r' | docker secret create $private_key_name -
+  new_secret $private_key_name $private_key
   ethprovider_service="
   ethprovider:
     image: ${project}_builder
@@ -132,33 +159,10 @@ fi
 
 echo "Deploying images: $database_image & $hub_image & $proxy_image to $INDRA_DOMAINNAME"
 
-# Get images that we aren't building locally
-function pull_if_unavailable {
-  if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
-  then
-    # But actually don't pull images if we're running locally
-    if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
-    then docker pull $1
-    fi
-  fi
-}
 pull_if_unavailable $dashboard_image
 pull_if_unavailable $database_image
 pull_if_unavailable $hub_image
 pull_if_unavailable $redis_image
-
-# Initialize random new secrets
-function new_secret {
-  secret=$2
-  if [[ -z "$secret" ]]
-  then secret=`head -c 32 /dev/urandom | xxd -plain -c 32 | tr -d '\n\r'`
-  fi
-  if [[ -z "`docker secret ls -f name=$1 | grep -w $1`" ]]
-  then
-    id=`echo $secret | tr -d '\n\r' | docker secret create $1 -`
-    echo "Created secret called $1 with id $id"
-  fi
-}
 new_secret $db_secret
 new_secret $private_key_name
 
