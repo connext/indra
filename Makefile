@@ -48,7 +48,7 @@ start: dev deployed-contracts
 stop:
 	bash ops/stop.sh
 
-restart: dev
+restart: dev deployed-contracts
 	bash ops/stop.sh
 	bash ops/start-dev.sh
 

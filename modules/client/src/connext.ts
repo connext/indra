@@ -113,7 +113,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     node,
-    nodePublicIdentifier: nodeParams.nodePublicIdentifier,
+    nodePublicIdentifier: config.nodePublicIdentifier,
     wallet,
     ...opts, // use any provided opts by default
   });
