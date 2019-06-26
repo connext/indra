@@ -53,7 +53,6 @@ export class ConfigNats extends AbstractNatsProvider {
     super(client);
   }
 
-  // TODO: Should this be in a config controller instead?
   async getConfig(): Promise<GetConfigResponse> {
     return {
       contractAddresses: await this.configService.getContractAddresses(),

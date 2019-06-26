@@ -31,7 +31,6 @@ async function createNode(
   const provider = config.getEthProvider();
   const balance = (await provider.getBalance(addr)).toString();
   logger.log(`Balance of address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`);
-
   const node = await Node.create(
     natsMessagingService,
     store,
@@ -40,9 +39,7 @@ async function createNode(
     await config.getContractAddresses(),
   );
   logger.log("Node created");
-
   logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
-
   return node;
 }
 

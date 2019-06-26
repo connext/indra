@@ -9,8 +9,8 @@ export class ConfigController {
   @Get()
   async getConfig(): Promise<string> {
     return JSON.stringify({
-      addresses: await this.configService.getContractAddresses(),
-      network: await this.configService.getEthNetwork(),
+      contractAddresses: await this.configService.getContractAddresses(),
+      ethNetwork: await this.configService.getEthNetwork(),
     });
   }
 }

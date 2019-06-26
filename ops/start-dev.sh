@@ -16,8 +16,8 @@ docker swarm init 2> /dev/null || true
 # config & hard-coded stuff you might want to change
 
 # Uncomment the network you want to use while launching the node server
-eth_rpc_url="http://ethprovider:8545" # aka ganache
-#eth_rpc_url="https://kovan.infura.io/metamask"
+#eth_rpc_url="http://ethprovider:8545" # aka ganache
+eth_rpc_url="https://kovan.infura.io/metamask"
 #eth_rpc_url="https://rinkeby.infura.io/metamask"
 
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
