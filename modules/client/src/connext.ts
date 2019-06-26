@@ -4,8 +4,8 @@ import {
   ChannelState,
   DepositParameters,
   ExchangeParameters,
+  GetConfigResponse,
   NodeChannel,
-  NodeConfig,
   SupportedApplication,
   TransferAction,
   TransferParameters,
@@ -61,28 +61,23 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("nats is connected");
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
-  // const getFn = async (key: string) => {
-  //   return await localStorage.get(key)
-  // }
-
-  // const setFn = async (pairs: {
-  //   key: string;
-  //   value: any;
-  // }[]) => {
-  //   for (const pair of pairs) {
-  //     await localStorage.setItem(pair.key, JSON.stringify(pair.value))
-  //   }
-  //   return
-  // }
-
-  // // create a new storage service for use by cfModule
-  // const store: NodeTypes.IStoreService = {
-  //   get: opts.loadState || getFn,
-  //   set: opts.saveState || setFn,
-  // }
-
   // Note: added this to the client since this is required for the cf module to work
   await opts.store.set([{ key: MNEMONIC_PATH, value: opts.mnemonic }]);
+
+  // create a new node api instance
+  // TODO: use local storage for default key value setting!!
+  const nodeConfig = {
+    logLevel: opts.logLevel,
+    nats: messaging.getConnection(),
+    nodeUrl: opts.nodeUrl,
+    wallet,
+  };
+  console.log("creating node client");
+  const node: NodeApiClient = new NodeApiClient(nodeConfig);
+  console.log("created node client successfully");
+
+  const config = await node.config();
+  console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
 
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
@@ -93,26 +88,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     wallet.provider,
-    opts.ethNetwork || "kovan",
+    config.contractAddresses,
   );
+  node.setPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
-
-  // create a new node api instance
-  // TODO: use local storage for default key value setting!!
-  const nodeConfig = {
-    logLevel: opts.logLevel,
-    nats: messaging.getConnection(),
-    nodeUrl: opts.nodeUrl,
-    // TODO rename
-    publicIdentifier: cfModule.publicIdentifier,
-    wallet,
-  };
-  console.log("creating node client");
-  const node: NodeApiClient = new NodeApiClient(nodeConfig);
-  console.log("created node client successfully");
-
-  // TODO: make this better
-  const nodeParams = await node.config();
 
   console.log("creating listener");
   const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
@@ -178,7 +157,7 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
-  public async config(): Promise<NodeConfig> {
+  public async config(): Promise<GetConfigResponse> {
     return await this.internal.config();
   }
 
@@ -299,7 +278,7 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // NODE METHODS
 
-  public async config(): Promise<NodeConfig> {
+  public async config(): Promise<GetConfigResponse> {
     return await this.node.config();
   }
 

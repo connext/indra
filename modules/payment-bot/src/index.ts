@@ -1,6 +1,5 @@
 import * as connext from "@connext/client";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import { NetworkContext } from "@counterfactual/types";
 import * as eth from "ethers";
 
 import { showMainPrompt } from "./bot";
@@ -27,23 +26,12 @@ export function getConnextClient(): connext.ConnextInternal {
 (async (): Promise<void> => {
   await pgServiceFactory.connectDb();
 
-  const provider = new eth.providers.JsonRpcProvider(config.ethRpcUrl);
-  const chainId = (await provider.getNetwork()).chainId;
-  const ethNetwork: string | NetworkContext =
-    chainId === 3 || chainId === 4 || chainId === 42
-      ? config.ethNetwork
-      : config.getEthAddresses(chainId);
-
-  console.log("Creating store");
-  const store = pgServiceFactory.createStoreService(config.username);
-
   const connextOpts = {
-    ethNetwork,
     mnemonic: config.mnemonic,
     natsUrl: config.natsUrl,
     nodeUrl: config.nodeUrl,
     rpcProviderUrl: config.ethRpcUrl,
-    store,
+    store: pgServiceFactory.createStoreService(config.username),
   };
 
   console.log("Using client options:");
@@ -69,6 +57,7 @@ export function getConnextClient(): connext.ConnextInternal {
       console.info(`Waiting ${interval} more seconds for channel to be available`);
       await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
     }
+    console.log(`action: ${config.action}, args: ${config.args}`);
     if (config.action === "deposit") {
       const depositParams = {
         amount: eth.utils.parseEther(config.args[0]).toString(),
