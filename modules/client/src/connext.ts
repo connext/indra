@@ -498,6 +498,26 @@ export class ConnextInternal extends ConnextChannel {
     return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
   }
 
+  public async withdrawal(
+    amount: BigNumber,
+    recipient?: string, // Address or xpub? whats the default?
+  ): Promise<NodeTypes.UninstallResult> {
+    const uninstallResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.WITHDRAW,
+        params: {
+          amount,
+          multisigAddress: this.multisigAddress,
+          recipient,
+        },
+      }),
+    );
+
+    return uninstallResponse.result;
+  }
+
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
