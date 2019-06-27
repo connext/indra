@@ -126,8 +126,8 @@ export function showDirectionPrompt(): void {
   inquirer
     .prompt([
       {
-        choices: ["receiving", "sending"],
-        message: "Are you sending or receiving payments?",
+        choices: ["receiving", "sending", "withdrawing"],
+        message: "Are you sending payments, receiving payments, or withdrawing?",
         name: "direction",
         type: "list",
       },
@@ -135,9 +135,31 @@ export function showDirectionPrompt(): void {
     .then((answers: any): any => {
       if ((answers as Record<string, string>).direction === "sending") {
         showOpenVirtualChannelPrompt();
-      } else {
+      } else if ((answers as Record<string, string>).direction === "receiving") {
         console.log("Waiting to receive virtual install request...");
+      } else {
+        showWithdrawalPrompt();
       }
+    });
+}
+
+export function showWithdrawalPrompt(): void {
+  inquirer
+    .prompt([
+      {
+        message: "Enter withdrawal amount:",
+        name: "amount",
+        type: "input",
+      },
+      {
+        message: "Enter withdrawal recipient (optional):",
+        name: "recipient",
+        type: "input",
+      },
+    ])
+    .then((answers: any): void => {
+      const { recipient, amount } = answers as Record<string, string>;
+      withdrawBalance(amount, recipient);
     });
 }
 
@@ -159,6 +181,12 @@ export function showOpenVirtualChannelPrompt(): void {
       const { counterpartyPublicId, depositPartyA } = answers as Record<string, string>;
       openVirtualChannel(depositPartyA, counterpartyPublicId);
     });
+}
+
+async function withdrawBalance(amount: string, recipient: string | undefined): Promise<any> {
+  const client = getConnextClient();
+  const result = await client.uninstall(utils.parseEther(amount), recipient);
+  myEmitter.emit("uninstall", result);
 }
 
 async function openVirtualChannel(
@@ -202,4 +230,11 @@ myEmitter.on("installVirtualApp", async (result: NodeTypes.MethodResponse) => {
 myEmitter.on("updateState", async (result: NodeTypes.MethodResponse) => {
   logThreadBalances((result as any).data.newState);
   await showAppInstancesPrompt();
+});
+
+myEmitter.on("uninstall", async (result: NodeTypes.MethodResponse) => {
+  const client = getConnextClient();
+  console.log("uninstall response:", result);
+  client.logEthFreeBalance(await client.getFreeBalance());
+  await showMainPrompt();
 });
