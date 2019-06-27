@@ -490,7 +490,8 @@ export class ConnextInternal extends ConnextChannel {
         method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
         params: {
           appInstanceId,
-        } as NodeTypes.UninstallParams,
+          intermediaryIdentifier: this.nodePublicIdentifier,
+        },
       }),
     );
 
