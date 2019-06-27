@@ -173,7 +173,7 @@ export class ChannelService implements OnModuleInit {
       "REJECT_INSTALL_VIRTUAL",
     ]) {
       this.node.on(NodeTypes.EventName[eventName], (res: any): void =>
-        logger.log(`${eventName} event fired: ${JSON.stringify(res)}`),
+        logger.log(`${eventName} event fired`),
       );
     }
 

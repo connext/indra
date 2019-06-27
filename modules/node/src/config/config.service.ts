@@ -69,8 +69,8 @@ export class ConfigService {
     if (chainId === "42") return processCfAddressBook(chain42AddressBook);
     const ethAddresses = {} as any;
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
-    Object.keys(ethAddressBook).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[contract].networks[chainId].address;
+    Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
+      ethAddresses[contract] = ethAddressBook[chainId][contract].address;
     });
     return ethAddresses as NetworkContext;
   }
