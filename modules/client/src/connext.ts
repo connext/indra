@@ -172,7 +172,7 @@ export abstract class ConnextChannel {
     return await this.internal.transfer(params);
   }
 
-  public async withdrawal(params: WithdrawParameters): Promise<ChannelState> {
+  public async withdraw(params: WithdrawParameters): Promise<ChannelState> {
     return await this.internal.withdraw(params);
   }
 
