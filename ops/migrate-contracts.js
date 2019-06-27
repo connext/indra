@@ -3,7 +3,7 @@ const eth = require('ethers')
 const linker = require('solc/linker')
 
 const ChallengeRegistryArtifacts = require('@counterfactual/contracts/build/ChallengeRegistry.json')
-const ContractRegistryArtifacts = require('@counterfactual/contracts/build/ContractRegistry.json')
+const ConditionalTransactionDelegateTargetArtifacts = require('@counterfactual/contracts/build/ConditionalTransactionDelegateTarget.json')
 const ETHBalanceRefundAppArtifacts = require('@counterfactual/contracts/build/ETHBalanceRefundApp.json')
 const ETHBucketArtifacts = require('@counterfactual/contracts/build/ETHBucket.json')
 const ETHInterpreterArtifacts = require('@counterfactual/contracts/build/ETHInterpreter.json')
@@ -12,7 +12,6 @@ const MinimumViableMultisigArtifacts = require('@counterfactual/contracts/build/
 const MultiSendArtifacts = require('@counterfactual/contracts/build/MultiSend.json')
 const ProxyFactoryArtifacts = require('@counterfactual/contracts/build/ProxyFactory.json')
 const RootNonceRegistryArtifacts = require('@counterfactual/contracts/build/RootNonceRegistry.json')
-const StateChannelTransactionArtifacts = require('@counterfactual/contracts/build/StateChannelTransaction.json')
 const TwoPartyEthAsLumpArtifacts = require('@counterfactual/contracts/build/TwoPartyEthAsLump.json')
 const TwoPartyVirtualEthAsLumpArtifacts = require('@counterfactual/contracts/build/TwoPartyVirtualEthAsLump.json')
 const UninstallKeyRegistryArtifacts = require('@counterfactual/contracts/build/UninstallKeyRegistry.json')
@@ -45,7 +44,7 @@ var mnemonic
 
 const getSavedData = (contractName, property) => {
   try {
-    return addressBook[contractName].networks[netId][property]
+    return addressBook[netId][contractName][property]
   } catch (e) {
     return undefined
   }
@@ -53,7 +52,6 @@ const getSavedData = (contractName, property) => {
 
 // Write addressBook to disk if anything has changed
 const saveAddressBook = (addressBook) => {
-  console.log(`Saving updated migration artifacts`)
   try {
     fs.unlinkSync(addressBookPath)
     fs.writeFileSync(addressBookPath, JSON.stringify(addressBook,null,2))
@@ -79,7 +77,6 @@ const contractIsDeployed = async (address) => {
 // Deploy contract & write resulting addressBook to our address-book file
 const deployContract = async (name, artifacts, args) => {
   const factory = eth.ContractFactory.fromSolidity(artifacts)
-  console.log(`Deploying a new ${name} contract..`)
   const contract = await factory.connect(wallet).deploy(...args.map(a=>a.value))
   const txHash = contract.deployTransaction.hash
   console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`)
@@ -89,9 +86,9 @@ const deployContract = async (name, artifacts, args) => {
   // Update address-book w new address + the args we deployed with
   const saveArgs = {}
   args.forEach(a=> saveArgs[a.name] = a.value)
-  if (!addressBook[name]) addressBook[name] = {}
-  if (!addressBook[name].networks) addressBook[name].networks = {}
-  addressBook[name].networks[netId] = { address, ...saveArgs }
+  if (!addressBook[netId]) addressBook[netId] = {}
+  if (!addressBook[netId][name]) addressBook[netId][name] = {}
+  addressBook[netId][name] = { address, ...saveArgs }
   saveAddressBook(addressBook)
   return contract
 }
@@ -172,8 +169,8 @@ const maybeDeployContract = async (name, artifacts, args) => {
     TwoPartyVirtualEthAsLumpArtifacts.bytecode,
     { 'LibStaticCall': libStaticCallAddress },
   )
-  StateChannelTransactionArtifacts.bytecode = linker.linkBytecode(
-    StateChannelTransactionArtifacts.bytecode,
+  ConditionalTransactionDelegateTargetArtifacts.bytecode = linker.linkBytecode(
+    ConditionalTransactionDelegateTargetArtifacts.bytecode,
     { 'LibStaticCall': libStaticCallAddress },
   )
 
@@ -184,16 +181,13 @@ const maybeDeployContract = async (name, artifacts, args) => {
   const twoPartyVirtualEthAsLumpAddress = await maybeDeployContract(
     'TwoPartyVirtualEthAsLump', TwoPartyVirtualEthAsLumpArtifacts, [],
   )
-  const stateChannelTransactionAddress = await maybeDeployContract(
-    'StateChannelTransaction', StateChannelTransactionArtifacts, [],
+  const conditionalTransactionDelegateTargetAddress = await maybeDeployContract(
+    'ConditionalTransactionDelegateTarget', ConditionalTransactionDelegateTargetArtifacts, [],
   )
 
   ////////////////////////////////////////
   // Deploy the rest of the core counterfactual contracts
 
-  const contractRegistryAddress = await maybeDeployContract(
-    'ContractRegistry', ContractRegistryArtifacts, [],
-  )
   const ethBalanceRefundAppAddress = await maybeDeployContract(
     'ETHBalanceRefundApp', ETHBalanceRefundAppArtifacts, [],
   )
