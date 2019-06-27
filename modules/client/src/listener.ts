@@ -7,6 +7,7 @@ import {
   ProposeVirtualMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
+  WithdrawMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
@@ -28,13 +29,13 @@ export class ConnextListener extends EventEmitter {
 
   // TODO: finish out these callbacks
   private defaultCallbacks: CallbackStruct = {
-    "PROPOSE_INSTALL": (data: NodeTypes.EventData): void => {
+    PROPOSE_INSTALL: (data: NodeTypes.EventData): void => {
       this.emit(EventName.PROPOSE_INSTALL_VIRTUAL, data);
     },
     // @ts-ignore
-    "CREATE_CHANNEL": (data: CreateChannelMessage): void => {
+    CREATE_CHANNEL: (data: CreateChannelMessage): void => {
       this.emit(EventName.CREATE_CHANNEL, data);
-    }
+    },
   };
 
   constructor(cfModule: Node, logLevel: number) {
@@ -148,11 +149,19 @@ export class ConnextListener extends EventEmitter {
     this.cfModule.on(
       NodeTypes.EventName.UNINSTALL_VIRTUAL,
       async (uninstallMsg: UninstallVirtualMessage) => {
-        this.log.info(`uninstallMsg: ${JSON.stringify(uninstallMsg.data)}`);
+        this.log.info(`uninstallVirtualMsg: ${JSON.stringify(uninstallMsg.data)}`);
         this.emit(EventName.UNINSTALL_VIRTUAL, uninstallMsg.data);
+      },
+    );
+
+    this.cfModule.on(
+      NodeTypes.EventName.WITHDRAWAL_STARTED,
+      async (withdrawal: WithdrawMessage) => {
+        this.log.info(`withdrawalMsg: ${JSON.stringify(withdrawal)}`);
+        this.emit(EventName.WITHDRAWAL, withdrawal);
       },
     );
 
     console.info(`CF Node handlers connected`);
   }
-};
+}
