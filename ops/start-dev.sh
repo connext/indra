@@ -9,16 +9,19 @@ docker swarm init 2> /dev/null || true
 ####################
 # External Env Vars
 
-# None used during dev-mode deployment
+ETH_NETWORK="${1:-kovan}"
 
 ####################
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-# Uncomment the network you want to use while launching the node server
-#eth_rpc_url="http://ethprovider:8545" # aka ganache
-eth_rpc_url="https://kovan.infura.io/metamask"
-#eth_rpc_url="https://rinkeby.infura.io/metamask"
+if [[ "$ETH_NETWORK" == "rinkeby" ]]
+then eth_rpc_url="https://rinkeby.infura.io/metamask"
+elif [[ "$ETH_NETWORK" == "kovan" ]]
+then eth_rpc_url="https://kovan.infura.io/metamask"
+elif [[ "$ETH_NETWORK" == "ganache" ]]
+then eth_rpc_url="http://ethprovider:8545"
+fi
 
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
