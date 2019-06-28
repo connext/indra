@@ -161,11 +161,11 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  public on(event: EventName, callback: any): ConnextListener {
+  public on(event: EventName | NodeTypes.EventName, callback: any): ConnextListener {
     return this.internal.on(event, callback);
   }
 
-  public emit(event: EventName, data: any): boolean {
+  public emit(event: EventName | NodeTypes.EventName, data: any): boolean {
     return this.internal.emit(event, data);
   }
 
@@ -255,10 +255,6 @@ export class ConnextInternal extends ConnextChannel {
   public logger: Logger;
   public network: Network;
 
-  // placeholder for listener exposed functions
-  public on: (event: string, listener: (...args: any) => void) => any;
-  public emit: (event: string, ...args: any) => any;
-
   ////////////////////////////////////////
   // Setup channel controllers
   private depositController: DepositController;
@@ -292,8 +288,6 @@ export class ConnextInternal extends ConnextChannel {
 
     // establish listeners
     this.listener = opts.listener;
-    this.on = this.listener.on;
-    this.emit = this.listener.emit;
     this.connectCfModuleMethods();
   }
 
@@ -326,12 +320,12 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on(event: EventName, callback: any): ConnextListener {
+  public on(event: EventName | NodeTypes.EventName, callback: any): ConnextListener {
     this.logger.info(`Trying to add listener to event: ${event}`);
     return this.listener.on(event, callback);
   }
 
-  public emit(event: EventName, data: any): boolean {
+  public emit(event: EventName | NodeTypes.EventName, data: any): boolean {
     this.logger.info(`Trying to emit event: ${event}`);
     return this.listener.emit(event, data);
   }
