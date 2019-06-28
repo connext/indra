@@ -333,6 +333,26 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // CF MODULE METHODS
 
+  public async cfDeposit(
+    amount: BigNumber,
+    notifyCounterparty: boolean = true,
+  ): Promise<NodeTypes.DepositResult> {
+    const depositResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.DEPOSIT,
+        params: {
+          amount,
+          multisigAddress: this.opts.multisigAddress,
+          notifyCounterparty,
+        },
+      }),
+    );
+    // @ts-ignore --> WHYY?
+    return depositResponse as NodeTypes.DepositResult;
+  }
+
   public async getAppInstances(): Promise<AppInstanceInfo[]> {
     const appInstanceResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
