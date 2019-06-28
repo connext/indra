@@ -3,7 +3,7 @@ import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connecto
 import { NetworkContext } from "@counterfactual/types";
 import * as eth from "ethers";
 
-import { showMainPrompt } from "./bot";
+import { showMainPrompt, registerClientListeners } from "./bot";
 import { config } from "./config";
 
 process.on("warning", (e: any): any => console.warn(e.stack));
@@ -77,6 +77,8 @@ export function getConnextClient(): connext.ConnextInternal {
       await client.deposit(depositParams);
       console.log(`Successfully deposited!`);
     }
+
+    registerClientListeners();
 
     client.logEthFreeBalance(await client.getFreeBalance());
 
