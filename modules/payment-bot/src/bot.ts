@@ -146,7 +146,6 @@ export async function showDirectionPrompt(): Promise<void> {
   ]);
 
   currentPrompt.then((answers: any): any => {
-    console.log("*********** answers", JSON.stringify(answers, null, 2));
     if ((answers as Record<string, string>).direction === "sending") {
       showOpenVirtualChannelPrompt();
     } else if ((answers as Record<string, string>).direction === "receiving") {
