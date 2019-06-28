@@ -29,7 +29,7 @@ export class TransferController extends AbstractController {
     } else {
       // install the transfer application
       // TODO: update if it is token unidirectional
-      await this.connext.installVirtualApp(
+      await this.connext.proposeInstallVirtualApp(
         "EthUnidirectionalTransferApp",
         new BigNumber(params.amount),
         params.recipient, // must be xpub
