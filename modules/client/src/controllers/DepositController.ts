@@ -2,11 +2,20 @@ import { ChannelState, DepositParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
+import { ConnextInternal } from "../connext";
 import { logEthFreeBalance } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
+  constructor(name: string, connext: ConnextInternal) {
+    super(name, connext);
+    // bind listener callbacks
+    this.depositStartedCallback = this.depositStartedCallback.bind(this);
+    this.depositConfirmedCallback = this.depositConfirmedCallback.bind(this);
+    this.depositFailedCallback = this.depositFailedCallback.bind(this);
+  }
+
   public async deposit(params: DepositParameters): Promise<ChannelState> {
     this.log.info(`Deposit called with params: ${JSON.stringify(params)}`);
 
@@ -16,7 +25,8 @@ export class DepositController extends AbstractController {
     // TODO:  Generate and expose multisig address in connext internal
     this.log.info("trying to get free balance....");
     const preDepositBalances = await this.connext.getFreeBalance();
-    this.log.info(`preDepositBalances: ${preDepositBalances}`);
+    this.log.info(`preDepositBalances:`);
+    this.connext.logEthFreeBalance(preDepositBalances, this.log);
 
     // TODO: why isnt free balance working :(
     if (preDepositBalances) {
@@ -43,17 +53,18 @@ export class DepositController extends AbstractController {
     try {
       this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
       const depositResponse = await this.connext.cfDeposit(new BigNumber(params.amount));
-      this.log.info(`Deposit Response: ${depositResponse}`);
+      this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, null, 2)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance();
 
-      this.log.info(`postDepositBalances: ${JSON.stringify(postDepositBalances, null, 2)}`);
+      this.log.info(`postDepositBalances:`);
+      logEthFreeBalance(postDepositBalances, this.log);
 
       if (
         postDepositBalances &&
         !postDepositBalances[myFreeBalanceAddress].gt(preDepositBalances[myFreeBalanceAddress])
       ) {
-        throw Error("My balance was not increased.");
+        throw new Error("My balance was not increased.");
       }
 
       this.log.info("Deposited!");
@@ -61,7 +72,7 @@ export class DepositController extends AbstractController {
     } catch (e) {
       this.log.error(`Failed to deposit... ${e}`);
       this.removeListeners();
-      throw e;
+      throw new Error(e);
     }
 
     return {
@@ -104,11 +115,6 @@ export class DepositController extends AbstractController {
       CFModuleTypes.EventName.DEPOSIT_FAILED,
       this.depositFailedCallback,
     );
-
-    this.listener.registerCfListener(
-      CFModuleTypes.EventName.DEPOSIT_STARTED,
-      this.depositStartedCallback,
-    );
   }
 
   private removeListeners(): void {
@@ -125,11 +131,6 @@ export class DepositController extends AbstractController {
     this.listener.removeCfListener(
       CFModuleTypes.EventName.DEPOSIT_FAILED,
       this.depositFailedCallback,
-    );
-
-    this.listener.removeCfListener(
-      CFModuleTypes.EventName.DEPOSIT_STARTED,
-      this.depositStartedCallback,
     );
   }
 }
