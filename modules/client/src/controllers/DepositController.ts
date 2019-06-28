@@ -1,5 +1,4 @@
 import { ChannelState, DepositParameters } from "@connext/types";
-import { jsonRpcDeserialize } from "@counterfactual/node";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
@@ -12,12 +11,12 @@ export class DepositController extends AbstractController {
     this.log.info(`Deposit called with params: ${JSON.stringify(params)}`);
 
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
-    console.log("myFreeBalanceAddress:", myFreeBalanceAddress);
+    this.log.info(`myFreeBalanceAddress: ${myFreeBalanceAddress}`);
 
     // TODO:  Generate and expose multisig address in connext internal
-    console.log("trying to get free balance....");
+    this.log.info("trying to get free balance....");
     const preDepositBalances = await this.connext.getFreeBalance();
-    console.log("preDepositBalances:", preDepositBalances);
+    this.log.info(`preDepositBalances: ${preDepositBalances}`);
 
     // TODO: why isnt free balance working :(
     if (preDepositBalances) {
@@ -34,45 +33,21 @@ export class DepositController extends AbstractController {
       );
     }
 
-    console.log(`\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`);
+    this.log.info(`\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`);
 
     // register listeners
-    console.log("Registering listeners........");
-    // TODO: theres probably a significantly better way to do this
-    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_STARTED, (data: any) => {
-      console.log("Deposit has started. Data:", JSON.stringify(data, null, 2));
-    });
-
-    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_CONFIRMED, (data: any) => {
-      console.log("Deposit has been confirmed. Data:", JSON.stringify(data, null, 2));
-    });
-
-    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_FAILED, (data: any) => {
-      console.log("Deposit has failed. Data:", JSON.stringify(data, null, 2));
-    });
-
-    console.log("Registered!");
+    this.log.info("Registering listeners........");
+    this.registerListeners();
+    this.log.info("Registered!");
 
     try {
-      console.log("Calling", CFModuleTypes.RpcMethodName.DEPOSIT);
-      const depositResponse = await this.cfModule.router.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: CFModuleTypes.RpcMethodName.DEPOSIT,
-          params: {
-            amount: new BigNumber(params.amount), // FIXME:
-            multisigAddress: this.connext.opts.multisigAddress,
-            notifyCounterparty: true,
-          } as CFModuleTypes.DepositParams,
-        }),
-      );
-      console.log("Called", CFModuleTypes.MethodName.DEPOSIT, "!");
-      console.log("depositResponse: ", depositResponse);
+      this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
+      const depositResponse = await this.connext.cfDeposit(new BigNumber(params.amount));
+      this.log.info(`Deposit Response: ${depositResponse}`);
 
       const postDepositBalances = await this.connext.getFreeBalance();
 
-      console.log("postDepositBalances:", JSON.stringify(postDepositBalances, null, 2));
+      this.log.info(`postDepositBalances: ${JSON.stringify(postDepositBalances, null, 2)}`);
 
       if (
         postDepositBalances &&
@@ -81,25 +56,11 @@ export class DepositController extends AbstractController {
         throw Error("My balance was not increased.");
       }
 
-      // // TODO: delete this, do not need to wait for the counterparty deposit
-      // // within the controller
-      // console.info("Waiting for counter party to deposit same amount");
-
-      // const freeBalanceNotUpdated = async (): Promise<any> => {
-      //   return !(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress))[
-      //     counterpartyFreeBalanceAddress
-      //   ].gt(preDepositBalances[counterpartyFreeBalanceAddress]);
-      // };
-
-      // while (await freeBalanceNotUpdated()) {
-      //   console.info(`Waiting 1 more seconds for counter party deposit`);
-      //   await delay(1 * 1000);
-      // }
-
-      console.log("Deposited!");
+      this.log.info("Deposited!");
       logEthFreeBalance(await this.connext.getFreeBalance());
     } catch (e) {
-      console.error(`Failed to deposit... ${e}`);
+      this.log.error(`Failed to deposit... ${e}`);
+      this.removeListeners();
       throw e;
     }
 
@@ -107,5 +68,68 @@ export class DepositController extends AbstractController {
       apps: [],
       freeBalance: await this.connext.getFreeBalance(),
     } as ChannelState;
+  }
+
+  /////////////////////////////////
+  ////// PRIVATE METHODS
+
+  ////// Listener callbacks
+  private depositStartedCallback(data: any): void {
+    this.log.info(`Deposit started. Data: ${JSON.stringify(data, null, 2)}`);
+  }
+
+  private depositConfirmedCallback(data: any): void {
+    this.log.info(`Deposit confirmed. Data: ${JSON.stringify(data, null, 2)}`);
+    this.removeListeners();
+  }
+
+  private depositFailedCallback(data: any): void {
+    this.log.info(`Deposit failed. Data: ${JSON.stringify(data, null, 2)}`);
+    this.removeListeners();
+  }
+
+  ////// Listener registration/deregistration
+  private registerListeners(): void {
+    this.listener.registerCfListener(
+      CFModuleTypes.EventName.DEPOSIT_STARTED,
+      this.depositStartedCallback,
+    );
+
+    this.listener.registerCfListener(
+      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      this.depositConfirmedCallback,
+    );
+
+    this.listener.registerCfListener(
+      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      this.depositFailedCallback,
+    );
+
+    this.listener.registerCfListener(
+      CFModuleTypes.EventName.DEPOSIT_STARTED,
+      this.depositStartedCallback,
+    );
+  }
+
+  private removeListeners(): void {
+    this.listener.removeCfListener(
+      CFModuleTypes.EventName.DEPOSIT_STARTED,
+      this.depositStartedCallback,
+    );
+
+    this.listener.removeCfListener(
+      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      this.depositConfirmedCallback,
+    );
+
+    this.listener.removeCfListener(
+      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      this.depositFailedCallback,
+    );
+
+    this.listener.removeCfListener(
+      CFModuleTypes.EventName.DEPOSIT_STARTED,
+      this.depositStartedCallback,
+    );
   }
 }
