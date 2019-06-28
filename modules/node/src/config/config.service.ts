@@ -1,6 +1,11 @@
 import { NatsConfig } from "@connext/nats-messaging-client";
+import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
+import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
+import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
 import { NetworkContext } from "@counterfactual/types";
 import * as dotenv from "dotenv";
+import { JsonRpcProvider } from "ethers/providers";
+import { Network } from "ethers/utils";
 import * as fs from "fs";
 import { Payload } from "ts-nats";
 
@@ -10,11 +15,6 @@ type PostgresConfig = {
   password: string;
   port: number;
   username: string;
-};
-
-type EthConfig = {
-  ethNetwork: string;
-  ethUrl: string;
 };
 
 export class ConfigService {
@@ -38,34 +38,45 @@ export class ConfigService {
     return this.envConfig[key];
   }
 
-  getEthAddresses(chainId: string | number): NetworkContext {
-    const ethAddressBook = JSON.parse(this.get("ETH_ADDRESSES"));
-    const ethAddresses = {};
-    Object.keys(ethAddressBook).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[contract].networks[chainId.toString()].address;
-    });
-    return ethAddresses as any;
+  getEthRpcUrl(): string {
+    return this.get("INDRA_ETH_RPC_URL");
   }
 
-  getEthProviderConfig(): EthConfig {
-    return {
-      ethNetwork: this.get("ETH_NETWORK"),
-      ethUrl: this.get("ETH_RPC_URL"),
+  getEthProvider(): JsonRpcProvider {
+    return new JsonRpcProvider(this.getEthRpcUrl());
+  }
+
+  async getEthNetwork(): Promise<Network> {
+    const ethNetwork = await this.getEthProvider().getNetwork();
+    if (ethNetwork.name === "unknown" && ethNetwork.chainId === 4447) {
+      ethNetwork.name = "ganache";
+    }
+    return ethNetwork;
+  }
+
+  async getContractAddresses(): Promise<NetworkContext> {
+    const chainId = (await this.getEthNetwork()).chainId.toString();
+    const processCfAddressBook = (addressBook: any): any => {
+      const ethAddresses = {} as any;
+      for (const contract of addressBook) {
+        ethAddresses[contract.contractName] = contract.address;
+      }
+      if (ethAddresses.Migrations) delete ethAddresses.Migrations;
+      return ethAddresses;
     };
+    if (chainId === "3") return processCfAddressBook(chain3AddressBook);
+    if (chainId === "4") return processCfAddressBook(chain4AddressBook);
+    if (chainId === "42") return processCfAddressBook(chain42AddressBook);
+    const ethAddresses = {} as any;
+    const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
+    Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
+      ethAddresses[contract] = ethAddressBook[chainId][contract].address;
+    });
+    return ethAddresses as NetworkContext;
   }
 
   getMnemonic(): string {
-    return this.get("ETH_MNEMONIC");
-  }
-
-  getPostgresConfig(): PostgresConfig {
-    return {
-      database: this.get("INDRA_PG_DATABASE"),
-      host: this.get("INDRA_PG_HOST"),
-      password: this.get("INDRA_PG_PASSWORD"),
-      port: parseInt(this.get("INDRA_PG_PORT"), 10),
-      username: this.get("INDRA_PG_USERNAME"),
-    };
+    return this.get("INDRA_ETH_MNEMONIC");
   }
 
   getNatsConfig(): NatsConfig {
@@ -78,6 +89,16 @@ export class ConfigService {
   }
 
   getPort(): number {
-    return parseInt(this.get("PORT"), 10);
+    return parseInt(this.get("INDRA_PORT"), 10);
+  }
+
+  getPostgresConfig(): PostgresConfig {
+    return {
+      database: this.get("INDRA_PG_DATABASE"),
+      host: this.get("INDRA_PG_HOST"),
+      password: this.get("INDRA_PG_PASSWORD"),
+      port: parseInt(this.get("INDRA_PG_PORT"), 10),
+      username: this.get("INDRA_PG_USERNAME"),
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { CreateChannelResponse, GetChannelResponse, NodeConfig } from "@connext/types";
+import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
 import { Address } from "@counterfactual/types";
 import { Client as NatsClient } from "ts-nats";
 
@@ -10,7 +10,7 @@ import { Wallet } from "./wallet";
 const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
-  config(): Promise<NodeConfig>;
+  config(): Promise<GetConfigResponse>;
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
@@ -24,7 +24,7 @@ export class NodeApiClient implements INodeApiClient {
   public log: Logger;
   public nonce: string | undefined;
   public signature: string | undefined;
-  public publicIdentifier: string;
+  public publicIdentifier: string | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.nodeUrl = opts.nodeUrl;
@@ -39,12 +39,16 @@ export class NodeApiClient implements INodeApiClient {
   //////////// PUBLIC //////////////
   /////////////////////////////////
 
-  public async config(): Promise<NodeConfig> {
+  public setPublicIdentifier(publicIdentifier: string): void {
+    this.publicIdentifier = publicIdentifier;
+  }
+
+  public async config(): Promise<GetConfigResponse> {
     // get the config from the hub
     try {
       const configRes = await this.send("config.get");
       // handle error here
-      return configRes as NodeConfig;
+      return configRes as GetConfigResponse;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -91,7 +95,6 @@ export class NodeApiClient implements INodeApiClient {
     if (status !== "success") {
       throw new Error(`Error sending request. Res: ${JSON.stringify(msg, null, 2)}`);
     }
-
     return Object.keys(res).length === 0 ? undefined : res.data;
   }
 }

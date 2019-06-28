@@ -25,7 +25,6 @@ export const BigNumber = utils.BigNumber;
 export interface ClientOptions {
   // provider, passed through to CF node
   rpcProviderUrl?: string; // TODO: can we keep out web3
-  ethNetwork: string | NetworkContext; // network name (eg kovan) or contract addresses
 
   // node information
   nodeUrl: string; // http URL, https?://
@@ -93,5 +92,5 @@ export interface NodeInitializationParameters {
   nats: NatsClient;
   wallet: Wallet;
   logLevel?: number;
-  publicIdentifier: string;
+  publicIdentifier?: string;
 }
