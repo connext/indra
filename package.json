@@ -17,7 +17,7 @@
     "ethers": "4.0.29",
     "ganache-cli": "6.4.4",
     "lerna": "3.15.0",
-    "solc": "0.5.9",
+    "solc": "0.5.10",
     "tslint": "5.18.0",
     "tslint-config-airbnb": "5.11.1",
     "tslint-config-prettier": "1.18.0",
