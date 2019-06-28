@@ -95,10 +95,7 @@ export class ConnextListener extends EventEmitter {
     this.log = new Logger("ConnextListener", logLevel);
   }
 
-  public registerCfListener(
-    event: NodeTypes.EventName,
-    cb: (data: any) => Promise<void> | void,
-  ): void {
+  public registerCfListener = (event: NodeTypes.EventName, cb: Function): void => {
     // replace with new fn
     // TODO: type res by obj with event as keys?
     this.cfModule.on(event, async (res: any) => {
@@ -107,12 +104,9 @@ export class ConnextListener extends EventEmitter {
     });
   }
 
-  public removeCfListener(
-    event: NodeTypes.EventName,
-    cb: (data: any) => Promise<void> | void,
-  ): boolean {
+  public removeCfListener = (event: NodeTypes.EventName, cb: Function): boolean => {
     try {
-      this.removeListener(event, cb);
+      this.removeListener(event, cb as any);
       return true;
     } catch (e) {
       this.log.error(
@@ -124,6 +118,7 @@ export class ConnextListener extends EventEmitter {
 
   public registerDefaultCfListeners(): void {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
+      this.log.info(`Registering default callback for event: ${event}`);
       this.cfModule.on(event, callback);
     });
   }
