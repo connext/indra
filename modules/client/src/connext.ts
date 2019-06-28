@@ -181,7 +181,7 @@ export abstract class ConnextChannel {
     return await this.internal.exchange(params);
   }
 
-  public async transfer(params: TransferParameters): Promise<ChannelState> {
+  public async transfer(params: TransferParameters): Promise<NodeChannel> {
     return await this.internal.transfer(params);
   }
 
@@ -302,7 +302,7 @@ export class ConnextInternal extends ConnextChannel {
     return await this.exchangeController.exchange(params);
   }
 
-  public async transfer(params: TransferParameters): Promise<ChannelState> {
+  public async transfer(params: TransferParameters): Promise<NodeChannel> {
     return await this.transferController.transfer(params);
   }
 
