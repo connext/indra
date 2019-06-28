@@ -381,7 +381,7 @@ export function convertMultisig<To extends NumericTypeName>(
  * in the proper assetId if it is left blank in the supplied parameters to the
  * empty eth address
  */
-export function convertDepositToAsset<To extends NumericTypeName>(
+export function convertDepositParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: DepositParameters<any>,
 ): AssetAmount<NumericTypes[To]> {
@@ -394,7 +394,7 @@ export function convertDepositToAsset<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
-export function convertTransferToAsset<To extends NumericTypeName>(
+export function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
 ): TransferParameters<NumericTypes[To]> {
@@ -410,8 +410,22 @@ export function convertTransferToAsset<To extends NumericTypeName>(
   };
 }
 
+export function convertAppState<To extends NumericTypeName>(
+  to: To,
+  obj: AppState<any>,
+): AppState<NumericTypes[To]> {
+  return {
+    ...obj,
+    transfers: [convertAssetAmount(to, obj.transfers[0]), convertAssetAmount(to, obj.transfers[1])],
+  };
+}
+
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert: any = {
+  AppState: convertAppState,
   Asset: convertAssetAmount,
+  Deposit: convertDepositParametersToAsset,
+  Multisig: convertMultisig,
   Transfer: convertAssetAmount,
+  TransferParameters: convertTransferParametersToAsset,
 };
