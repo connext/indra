@@ -1,5 +1,6 @@
-import { Address, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
 import { constants, utils } from "ethers";
+import { Network } from "ethers/utils";
 
 ////////////////////////////////////
 ////// BASIC TYPINGS
@@ -241,8 +242,8 @@ export type NatsResponse = {
 } & (errorResponse | successResponse);
 
 export type GetConfigResponse = {
-  ethNetwork: string;
-  ethUrl: string;
+  ethNetwork: Network;
+  contractAddresses: NetworkContext;
   nodePublicIdentifier: string;
   clusterId?: string;
   servers: string[];

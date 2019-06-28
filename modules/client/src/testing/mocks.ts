@@ -1,4 +1,4 @@
-import { CreateChannelResponse, GetChannelResponse, NodeConfig, User } from "@connext/types";
+import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, User } from "@connext/types";
 import { Address } from "@counterfactual/types";
 import { providers } from "ethers";
 import * as nats from "ts-nats";
@@ -102,7 +102,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public authenticate(): void {}
 
-  public async config(): Promise<NodeConfig> {
+  public async config(): Promise<GetConfigResponse> {
     return MockNodeClientApi.returnValues.config;
   }
 

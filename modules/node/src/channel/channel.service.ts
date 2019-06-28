@@ -1,12 +1,12 @@
 import {
+  CreateChannelMessage,
   DepositConfirmationMessage,
   jsonRpcDeserialize,
   JsonRpcResponse,
   Node,
-  CreateChannelMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, OnModuleInit, NotFoundException } from "@nestjs/common";
+import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -33,6 +33,7 @@ export class ChannelService implements OnModuleInit {
   ) {}
 
   async create(counterpartyPublicIdentifier: string): Promise<NodeChannel> {
+    logger.log(`Creating channel for ${counterpartyPublicIdentifier}`);
     await this.dbConnection.manager.transaction(
       async (transactionalEntityManager: EntityManager) => {
         let user = await this.userRepository.findByPublicIdentifier(counterpartyPublicIdentifier);
@@ -42,6 +43,7 @@ export class ChannelService implements OnModuleInit {
           user.publicIdentifier = counterpartyPublicIdentifier;
           user.channels = [];
         }
+        logger.log(`Got user: ${JSON.stringify(user, undefined, 2)}`);
 
         if (user.channels.length > 0) {
           throw new RpcException(`Channel already exists for user ${counterpartyPublicIdentifier}`);
@@ -56,8 +58,7 @@ export class ChannelService implements OnModuleInit {
           }),
         )) as JsonRpcResponse;
         const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
-        console.log("createChannelResponse: ", createChannelResponse);
-        console.log("createChannelResult: ", createChannelResult);
+        logger.log(`createChannelResponse: ${JSON.stringify(createChannelResponse, undefined, 2)}`);
 
         // TODO: remove this when the above line returns multisig
         const multisigResponse = await this.node.router.dispatch(
@@ -71,11 +72,14 @@ export class ChannelService implements OnModuleInit {
 
         const multisigResult: NodeTypes.GetStateDepositHolderAddressResult =
           multisigResponse.result;
+        logger.log(`multisigResponse: ${JSON.stringify(multisigResponse, undefined, 2)}`);
 
         const channel = new Channel();
         channel.nodePublicIdentifier = this.node.publicIdentifier;
         channel.multisigAddress = multisigResult.address;
         channel.user = user;
+
+        logger.log(`New channel: ${JSON.stringify(channel, undefined, 2)}`);
 
         const update = new ChannelUpdate();
         update.channel = channel;
@@ -83,12 +87,15 @@ export class ChannelService implements OnModuleInit {
         update.freeBalancePartyB = Zero;
         update.nonce = 0;
 
+        logger.log(`Channel update: ${JSON.stringify(update, undefined, 2)}`);
+
         await transactionalEntityManager.save(user);
         await transactionalEntityManager.save(channel);
         await transactionalEntityManager.save(update);
       },
     );
 
+    logger.log(`Channel user & channel & update saved to db`);
     return await this.nodeChannelRepository.findByPublicIdentifier(counterpartyPublicIdentifier);
   }
 
@@ -125,12 +132,17 @@ export class ChannelService implements OnModuleInit {
 
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
+    // FIXME: is this the right type?
+    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, async (res: CreateChannelMessage) => {
+      logger.log(`CREATE_CHANNEL event fired: ${JSON.stringify(res)}`);
+      await this.makeAvailable((res.data as NodeTypes.CreateChannelResult).multisigAddress);
+    });
+
     this.node.on(NodeTypes.EventName.DEPOSIT_CONFIRMED, (res: DepositConfirmationMessage) => {
+      logger.log(`DEPOSIT_CONFIRMED event fired: ${JSON.stringify(res)}`);
       if (!res || !res.data) {
         return;
       }
-      logger.log("DEPOSIT_CONFIRMED event fired");
-      logger.log(`Deposit detected: ${JSON.stringify(res)}, matching`);
       this.deposit(
         res.data.multisigAddress,
         res.data.amount as any, // FIXME
@@ -138,12 +150,32 @@ export class ChannelService implements OnModuleInit {
       );
     });
 
-    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, async (
-      res: CreateChannelMessage, // FIXME: is this the right type?
-    ) => {
-      logger.log(`CREATE_CHANNEL event fired: ${JSON.stringify(res)}`);
-      await this.makeAvailable((res.data as NodeTypes.CreateChannelResult).multisigAddress);
-    });
+    // Print a generic log whenever ANY event is fired
+    for (const eventName of [
+      "COUNTER_DEPOSIT_CONFIRMED",
+      "DEPOSIT_FAILED",
+      "DEPOSIT_STARTED",
+      "INSTALL",
+      "INSTALL_VIRTUAL",
+      "PROPOSE_STATE",
+      "REJECT_INSTALL",
+      "REJECT_STATE",
+      "UNINSTALL",
+      "UNINSTALL_VIRTUAL",
+      "UPDATE_STATE",
+      "WITHDRAWAL_CONFIRMED",
+      "WITHDRAWAL_FAILED",
+      "WITHDRAWAL_STARTED",
+      "PROPOSE_INSTALL",
+      "PROPOSE_INSTALL_VIRTUAL",
+      "PROTOCOL_MESSAGE_EVENT",
+      "WITHDRAW_EVENT",
+      "REJECT_INSTALL_VIRTUAL",
+    ]) {
+      this.node.on(NodeTypes.EventName[eventName], (res: any): void =>
+        logger.log(`${eventName} event fired`),
+      );
+    }
 
     logger.log("Node methods attached");
   }

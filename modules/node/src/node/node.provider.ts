@@ -4,8 +4,7 @@ import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connecto
 import { NetworkContext } from "@counterfactual/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { ethers } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
+import { ethers as eth } from "ethers";
 import { Payload } from "ts-nats";
 
 import { ConfigService } from "../config/config.service";
@@ -24,41 +23,23 @@ async function createNode(
   logger.log("Store created");
 
   logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
-  const addr = ethers.utils.HDNode.fromMnemonic(config.getMnemonic()).derivePath(
-    "m/44'/60'/0'/25446",
-  ).address;
-
   await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
 
-  const { ethUrl, ethNetwork } = config.getEthProviderConfig();
-
-  logger.log(
-    `Creating Node with eth env: ${JSON.stringify({
-      ethNetwork,
-      ethUrl,
-    })}`,
-  );
-
   // test that provider works
-  const provider = new JsonRpcProvider(ethUrl);
-  const chainId = (await provider.getNetwork()).chainId;
-  const balance = await provider.getBalance(addr);
-  logger.log(`Balance of address ${addr} on chain ${chainId}: ${balance.toString()}`);
-
-  const network: string | NetworkContext =
-    chainId === 3 || chainId === 4 || chainId === 42 ? ethNetwork : config.getEthAddresses(chainId);
-
+  const { chainId, name: networkName } = await config.getEthNetwork();
+  const addr = eth.Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;
+  const provider = config.getEthProvider();
+  const balance = (await provider.getBalance(addr)).toString();
+  logger.log(`Balance of address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`);
   const node = await Node.create(
     natsMessagingService,
     store,
     { STORE_KEY_PREFIX: "store" },
     provider,
-    network,
+    await config.getContractAddresses(),
   );
   logger.log("Node created");
-
   logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
-
   return node;
 }
 

@@ -1,38 +1,30 @@
 import { confirmPostgresConfigurationEnvVars } from "@counterfactual/postgresql-node-connector";
-import { NetworkContext } from "@counterfactual/types";
 import "dotenv";
 
 confirmPostgresConfigurationEnvVars();
 
-if (!process.env.NATS_URL || !process.env.NATS_URL.startsWith("nats://")) {
-  throw Error(`No valid nats url specified in env: ${process.env.NATS_URL} Exiting.`);
+if (!process.env.NATS_URL) {
+  throw Error(`No nats url specified in env. Exiting.`);
 }
 
 if (!process.env.NODE_URL) {
   throw Error("No node url specified in env. Exiting.");
 }
 
-const args = process.argv.slice(3);
-const ethNetwork = process.env.ETH_NETWORK || "ganache";
+if (!process.env.ETH_RPC_URL) {
+  throw Error("No eth rpc url specified in env. Exiting.");
+}
+
+const args = process.argv.slice(2);
 
 export const config = {
   action: args[0] || "none",
   args: args.length > 1 ? args.slice(1) : [],
-  delaySeconds: process.env.DELAY_SECONDS ? Number(process.env.DELAY_SECONDS) : 5,
-  ethNetwork,
-  ethRpcUrl: process.env.ETH_RPC_URL || `https://${ethNetwork}.infura.io`,
-  getEthAddresses: (chainId: string | number): NetworkContext => {
-    const ethAddressBook = JSON.parse(process.env.ETH_ADDRESSES || "{}");
-    const ethAddresses = {};
-    Object.keys(ethAddressBook).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[contract].networks[chainId.toString()].address;
-    });
-    return ethAddresses as any;
-  },
+  ethRpcUrl: process.env.ETH_RPC_URL,
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
   mnemonic: process.env.NODE_MNEMONIC,
-  natsUrl: process.env.NATS_URL || "nats://localhost:4222",
-  nodeUrl: process.env.NODE_URL || "http://localhost:8080",
+  natsUrl: process.env.NATS_URL,
+  nodeUrl: process.env.NODE_URL,
   postgres: {
     database: process.env.POSTGRES_DATABASE!,
     host: process.env.POSTGRES_HOST!,

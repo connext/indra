@@ -53,9 +53,10 @@ export class ConfigNats extends AbstractNatsProvider {
     super(client);
   }
 
-  getConfig(): GetConfigResponse {
+  async getConfig(): Promise<GetConfigResponse> {
     return {
-      ...this.configService.getEthProviderConfig(),
+      contractAddresses: await this.configService.getContractAddresses(),
+      ethNetwork: await this.configService.getEthNetwork(),
       nodePublicIdentifier: this.node.publicIdentifier,
       ...this.configService.getNatsConfig(),
     };
