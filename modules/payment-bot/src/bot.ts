@@ -138,8 +138,8 @@ export async function showDirectionPrompt(): Promise<void> {
   closeCurrentPrompt();
   currentPrompt = inquirer.prompt([
     {
-      choices: ["receiving", "sending", "withdrawing"],
-      message: "Are you sending payments, receiving payments, or withdrawing?",
+      choices: ["receiving", "sending", "withdrawing", "transferring"],
+      message: "Are you sending payments, receiving payments, transferring, or withdrawing?",
       name: "direction",
       type: "list",
     },
@@ -150,6 +150,8 @@ export async function showDirectionPrompt(): Promise<void> {
       showOpenVirtualChannelPrompt();
     } else if ((answers as Record<string, string>).direction === "receiving") {
       console.log("Waiting to receive virtual install request...");
+    } else if ((answers as Record<string, string>).direction === "transferring") {
+      showTransferPrompt();
     } else {
       showWithdrawalPrompt();
     }
@@ -175,6 +177,36 @@ export async function showWithdrawalPrompt(): Promise<void> {
     const { recipient, amount } = answers as Record<string, string>;
     withdrawBalance(amount, recipient);
   });
+}
+
+export async function showTransferPrompt(): Promise<void> {
+  closeCurrentPrompt();
+  currentPrompt = inquirer.prompt([
+    {
+      message: "Enter counterparty public identifier:",
+      name: "counterpartyPublicId",
+      type: "input",
+    },
+    {
+      message: "Enter Party A deposit amount:",
+      name: "depositPartyA",
+      type: "input",
+    },
+  ]);
+
+  currentPrompt.then((answers: any): void => {
+    const { counterpartyPublicId, depositPartyA } = answers as Record<string, string>;
+    clientTransfer(depositPartyA, counterpartyPublicId);
+  });
+}
+
+async function clientTransfer(deposit: string, counterparty: string): Promise<any> {
+  const client = getConnextClient();
+  const res = await client.transfer({
+    amount: utils.parseEther(deposit).toString(),
+    recipient: counterparty,
+  });
+  console.log("**************** res", JSON.stringify(res, null, 2));
 }
 
 export async function showOpenVirtualChannelPrompt(): Promise<void> {
