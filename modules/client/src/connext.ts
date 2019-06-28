@@ -206,8 +206,8 @@ export abstract class ConnextChannel {
   }
 
   // TODO: remove this when not testing (maybe?)
-  public logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
-    logEthFreeBalance(freeBalance);
+  public logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult, log?: Logger): void {
+    logEthFreeBalance(freeBalance, log);
   }
 
   public async getAppInstances(): Promise<AppInstanceInfo[]> {
