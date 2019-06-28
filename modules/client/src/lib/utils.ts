@@ -4,6 +4,8 @@ import { utils } from "ethers";
 import fetch from "node-fetch";
 import { isNullOrUndefined } from "util";
 
+import { Logger } from "./logger";
+
 const formatEther = utils.formatEther;
 
 // Capitalizes first char of a string
@@ -77,10 +79,13 @@ export async function getFreeBalance(
 // TODO: Should we keep this? It's a nice helper to break out by key. Maybe generalize?
 // ^^^ generalized is the objMap function we have already, we can delete this
 // added an example of how to use the obj map thing - layne
-export function logEthFreeBalance(freeBalance: NodeTypes.GetFreeBalanceStateResult): void {
+export function logEthFreeBalance(
+  freeBalance: NodeTypes.GetFreeBalanceStateResult,
+  log?: Logger,
+): void {
   console.info(`Channel's free balance:`);
   const cb = (k: string, v: any): void => {
-    console.info(k, formatEther(v));
+    log ? log.info(`${k} ${formatEther(v)}`) : console.info(k, formatEther(v));
   };
   // @ts-ignore
   objMap(freeBalance, cb);
