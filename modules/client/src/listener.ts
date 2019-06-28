@@ -7,6 +7,7 @@ import {
   ProposeVirtualMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
+  WithdrawMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
@@ -28,13 +29,13 @@ export class ConnextListener extends EventEmitter {
 
   // TODO: finish out these callbacks
   private defaultCallbacks: CallbackStruct = {
-    "PROPOSE_INSTALL": (data: NodeTypes.EventData): void => {
+    PROPOSE_INSTALL: (data: NodeTypes.EventData): void => {
       this.emit(EventName.PROPOSE_INSTALL_VIRTUAL, data);
     },
     // @ts-ignore
-    "CREATE_CHANNEL": (data: CreateChannelMessage): void => {
+    CREATE_CHANNEL: (data: CreateChannelMessage): void => {
       this.emit(EventName.CREATE_CHANNEL, data);
-    }
+    },
   };
 
   constructor(cfModule: Node, logLevel: number) {
@@ -78,81 +79,37 @@ export class ConnextListener extends EventEmitter {
       this.emit(EventName.CREATE_CHANNEL, res);
     });
 
-    // connect virtual app install
     this.cfModule.on(
       NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
-      async (data: ProposeVirtualMessage): Promise<any> => {
-        const appInstanceId = data.data.appInstanceId;
-        const intermediaries = data.data.params.intermediaries;
-        // TODO: add connext type for result
-        this.emit(EventName.PROPOSE_INSTALL_VIRTUAL, JSON.stringify(data.data, null, 2));
-
-        // install virtual app if requested to
-        // TODO: should probably validate this against the node's AppRegistry
-        // TODO: should not happen in the low level event listeners, happen at
-        // controller level
-        try {
-          const installVirtualResponse = await this.cfModule.router.dispatch(
-            jsonRpcDeserialize({
-              id: Date.now(),
-              jsonrpc: "2.0",
-              method: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
-              params: { appInstanceId, intermediaries } as NodeTypes.InstallVirtualParams,
-            }),
-          );
-          this.log.info(
-            `installVirtualResponse result:
-            ${JSON.stringify(
-              installVirtualResponse.result as NodeTypes.InstallVirtualResult,
-              null,
-              2,
-            )}`,
-          );
-          // TODO: probably should do something else here?
-          this.cfModule.on(
-            NodeTypes.EventName.UPDATE_STATE,
-            async (updateEventData: any): Promise<void> => {
-              if (
-                (updateEventData.data as NodeTypes.UpdateStateEventData).appInstanceId ===
-                appInstanceId
-              ) {
-                this.log.info(`updateEventData: ${JSON.stringify(updateEventData.data)}`);
-                this.emit(EventName.UPDATE_STATE, updateEventData.data);
-              }
-            },
-          );
-        } catch (e) {
-          console.error("Node call to install virtual app failed.");
-          console.error(e);
-        }
+      async (data: ProposeVirtualMessage) => {
+        this.log.info(`caught proposeInstall data: ${JSON.stringify(data.data, null, 2)}`);
+        this.emit(EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
       },
     );
 
-    // pass through events
-    this.cfModule.on(
-      NodeTypes.EventName.INSTALL_VIRTUAL,
-      async (installVirtualData: InstallVirtualMessage): Promise<any> => {
-        this.log.info(`installVirtualData: ${JSON.stringify(installVirtualData.data)}`);
-        this.emit(EventName.INSTALL_VIRTUAL, installVirtualData.data);
-      },
-    );
+    this.cfModule.on(NodeTypes.EventName.INSTALL_VIRTUAL, (data: InstallVirtualMessage) => {
+      this.log.info(`caught installVirtual data: ${JSON.stringify(data.data)}`);
+      this.emit(EventName.INSTALL_VIRTUAL, data.data);
+    });
 
-    this.cfModule.on(
-      NodeTypes.EventName.UPDATE_STATE,
-      async (updateStateData: UpdateStateMessage): Promise<any> => {
-        this.log.info(`updateStateData: ${JSON.stringify(updateStateData.data)}`);
-        this.emit(EventName.UPDATE_STATE, updateStateData.data);
-      },
-    );
+    this.cfModule.on(NodeTypes.EventName.UPDATE_STATE, (updateStateData: UpdateStateMessage) => {
+      this.log.info(`caught updateStateData: ${JSON.stringify(updateStateData.data)}`);
+      this.emit(EventName.UPDATE_STATE, updateStateData.data);
+    });
 
     this.cfModule.on(
       NodeTypes.EventName.UNINSTALL_VIRTUAL,
-      async (uninstallMsg: UninstallVirtualMessage) => {
-        this.log.info(`uninstallMsg: ${JSON.stringify(uninstallMsg.data)}`);
+      (uninstallMsg: UninstallVirtualMessage) => {
+        this.log.info(`caught uninstallVirtualMsg: ${JSON.stringify(uninstallMsg.data)}`);
         this.emit(EventName.UNINSTALL_VIRTUAL, uninstallMsg.data);
       },
     );
 
-    console.info(`CF Node handlers connected`);
+    this.cfModule.on(NodeTypes.EventName.WITHDRAWAL_STARTED, (withdrawal: WithdrawMessage) => {
+      this.log.info(`caught withdrawalMsg: ${JSON.stringify(withdrawal)}`);
+      this.emit(EventName.WITHDRAWAL, withdrawal);
+    });
+
+    this.log.info(`CF Node handlers connected`);
   }
-};
+}

@@ -76,6 +76,7 @@ export type InternalClientOptions = ClientOptions & {
   cfModule: Node;
   multisigAddress: string;
   nodePublicIdentifier: string;
+  network: utils.Network; // TODO: delete! use bos branch!
 };
 
 // TODO: define properly!!

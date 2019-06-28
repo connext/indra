@@ -17,6 +17,7 @@ export enum EventName {
   PROPOSE_INSTALL_VIRTUAL = "proposeInstallVirtualEvent",
   UNINSTALL_VIRTUAL = "uninstallVirtualEvent",
   UPDATE_STATE = "updateStateEvent",
+  WITHDRAWAL = "withdrawEvent",
 }
 
 ////////////////////////////////////
