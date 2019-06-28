@@ -280,15 +280,15 @@ export class ConnextInternal extends ConnextChannel {
     // TODO: fix with bos config!
     this.network = opts.network;
 
+    // establish listeners
+    this.listener = opts.listener;
+    this.connectCfModuleMethods();
+
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
     this.transferController = new TransferController("TransferController", this);
     this.exchangeController = new ExchangeController("ExchangeController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
-
-    // establish listeners
-    this.listener = opts.listener;
-    this.connectCfModuleMethods();
   }
 
   ///////////////////////////////////
