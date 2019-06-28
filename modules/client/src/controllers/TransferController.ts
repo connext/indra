@@ -65,6 +65,9 @@ export class TransferController extends AbstractController {
     // wait 5s for app to be installed correctly
     let retry = 0;
     while (this.status !== "FINALIZED" && retry < 5) {
+      if (this.status === "FAILED") {
+        break;
+      }
       this.log.info(
         "App not successfully installed yet, waiting 1 more second before trying to send...",
       );
@@ -110,6 +113,11 @@ export class TransferController extends AbstractController {
     );
 
     this.listener.registerCfListener(
+      NodeTypes.EventName.REJECT_INSTALL_VIRTUAL,
+      this.rejectInstallVirtualCallback,
+    );
+
+    this.listener.registerCfListener(
       NodeTypes.EventName.INSTALL_VIRTUAL,
       this.installVirtualCallback,
     );
@@ -126,6 +134,11 @@ export class TransferController extends AbstractController {
     this.listener.removeCfListener(
       NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
       this.proposeInstallVirtualCallback,
+    );
+
+    this.listener.registerCfListener(
+      NodeTypes.EventName.REJECT_INSTALL_VIRTUAL,
+      this.rejectInstallVirtualCallback,
     );
 
     this.listener.removeCfListener(
@@ -162,6 +175,19 @@ export class TransferController extends AbstractController {
       this.status = "FAILED";
       this.removeListeners();
     }
+  }
+
+  private async rejectInstallVirtualCallback(data: NodeTypes.RejectInstallResult): Promise<void> {
+    if (this.status !== "INSTALLED") {
+      return;
+    }
+
+    this.log.info(
+      `App rejected the proposed virtual install, data ${JSON.stringify(data, null, 2)}`,
+    );
+
+    this.status = "FAILED";
+    this.removeListeners();
   }
 
   private async installVirtualCallback(data: NodeTypes.InstallVirtualResult): Promise<void> {
