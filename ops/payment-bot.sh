@@ -5,6 +5,13 @@ set -e
 docker swarm init 2> /dev/null || true
 
 ########################################
+## Useful values according to Layne
+# bot 1 deposit addr on kovan:
+# 0x24ac59b070ec2ea822249cb2a858208460305faa
+# bot 2 deposit addr on kovan:
+# 0xa0ae1a3d4ff42ae77154fb9ebbca0af2b5b7f357
+
+########################################
 ## Setup env vars
 
 project="indra_v2"
@@ -13,8 +20,10 @@ cwd="`pwd`"
 
 DELAY_SECONDS="2"
 ETH_ADDRESSES="`cat address-book.json | tr -d ' \n\r'`"
-ETH_NETWORK="ganache" # "kovan"
-ETH_RPC_URL="http://indra_v2_ethprovider:8545"
+# ETH_NETWORK="ganache" # "kovan"
+ETH_NETWORK="kovan"
+# ETH_RPC_URL="http://indra_v2_ethprovider:8545"
+ETH_RPC_URL="https://kovan.infura.io/v3/52fbfcd6aab44b9db863600f7c24a6a0"
 INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
 NATS_URL="nats://indra_v2_nats:4222"
 NODE_URL="http://indra_v2_node:8080"

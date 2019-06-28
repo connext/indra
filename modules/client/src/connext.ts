@@ -3,6 +3,7 @@ import {
   AppRegistry,
   ChannelState,
   DepositParameters,
+  EventName,
   ExchangeParameters,
   NodeChannel,
   NodeConfig,
@@ -39,6 +40,7 @@ import { Wallet } from "./wallet";
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create a new wallet
   const wallet = new Wallet(opts);
+  const network = await wallet.provider.getNetwork();
 
   // create a new internal nats instance
   const natsConfig = {
@@ -103,12 +105,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     logLevel: opts.logLevel,
     nats: messaging.getConnection(),
     nodeUrl: opts.nodeUrl,
+    // TODO rename
     publicIdentifier: cfModule.publicIdentifier,
     wallet,
   };
   console.log("creating node client");
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
   console.log("created node client successfully");
+
+  // TODO: make this better
+  const nodeParams = await node.config();
 
   console.log("creating listener");
   const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
@@ -129,7 +135,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     listener,
     multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
+    network,
     node,
+    nodePublicIdentifier: nodeParams.nodePublicIdentifier,
     wallet,
     ...opts, // use any provided opts by default
   });
@@ -152,6 +160,16 @@ export abstract class ConnextChannel {
   }
 
   ///////////////////////////////////
+  // LISTENER METHODS
+  public on(event: EventName, callback: any): ConnextListener {
+    return this.internal.on(event, callback);
+  }
+
+  public emit(event: EventName, data: any): boolean {
+    return this.internal.emit(event, data);
+  }
+
+  ///////////////////////////////////
   // CORE CHANNEL METHODS
 
   // TODO: do we want the inputs to be an object?
@@ -167,7 +185,7 @@ export abstract class ConnextChannel {
     return await this.internal.transfer(params);
   }
 
-  public async withdrawal(params: WithdrawParameters): Promise<ChannelState> {
+  public async withdraw(params: WithdrawParameters): Promise<ChannelState> {
     return await this.internal.withdraw(params);
   }
 
@@ -232,6 +250,7 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
+  public nodePublicIdentifier: string; // TODO: maybe move this into the NodeApiClient @layne? --> yes
 
   public logger: Logger;
   public network: Network;
@@ -259,9 +278,11 @@ export class ConnextInternal extends ConnextChannel {
     this.cfModule = opts.cfModule;
     this.publicIdentifier = this.cfModule.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
+    this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
 
     this.logger = new Logger("ConnextInternal", opts.logLevel);
-    this.network = this.wallet.provider.network;
+    // TODO: fix with bos config!
+    this.network = opts.network;
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
@@ -304,6 +325,16 @@ export class ConnextInternal extends ConnextChannel {
 
   ///////////////////////////////////
   // EVENT METHODS
+
+  public on(event: EventName, callback: any): ConnextListener {
+    this.logger.info(`Trying to add listener to event: ${event}`);
+    return this.listener.on(event, callback);
+  }
+
+  public emit(event: EventName, data: any): boolean {
+    this.logger.info(`Trying to emit event: ${event}`);
+    return this.listener.emit(event, data);
+  }
 
   ///////////////////////////////////
   // CF MODULE METHODS
@@ -386,7 +417,7 @@ export class ConnextInternal extends ConnextChannel {
     return actionResponse.result as NodeTypes.TakeActionResult;
   }
 
-  public async installVirtualApp(
+  public async proposeInstallVirtualApp(
     appName: SupportedApplication,
     initialDeposit: BigNumber,
     counterpartyPublicIdentifier: string,
@@ -412,11 +443,13 @@ export class ConnextInternal extends ConnextChannel {
           },
         ],
       },
-      intermediaries: [this.cfModule.publicIdentifier],
-      // TODO: ^^^ should this be the node public identifier?
+      intermediaries: [this.nodePublicIdentifier],
       myDeposit: initialDeposit,
       proposedToIdentifier: counterpartyPublicIdentifier,
     };
+
+    this.logger.info(`params: ${JSON.stringify(params, null, 2)}`);
+
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -428,47 +461,69 @@ export class ConnextInternal extends ConnextChannel {
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
   }
 
+  public async installVirtualApp(appInstanceId: string): Promise<NodeTypes.InstallVirtualResult> {
+    const installVirtualResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
+        params: {
+          appInstanceId,
+          intermediaries: [this.nodePublicIdentifier],
+        } as NodeTypes.InstallVirtualParams,
+      }),
+    );
+
+    return installVirtualResponse.result;
+  }
+
   // TODO: make this more generic
   // TODO: delete this when the above works!
   public async installTransferApp(
     counterpartyPublicIdentifier: string,
     initialDeposit: BigNumber,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> {
+    const params = {
+      abiEncodings: {
+        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+      },
+      // TODO: contract address of app
+      appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
+      asset: { assetType: 0 },
+      initialState: {
+        finalized: false,
+        transfers: [
+          {
+            amount: initialDeposit,
+            to: fromExtendedKey(this.publicIdentifier).derivePath("0").address,
+          },
+          {
+            amount: Zero,
+            to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
+          },
+        ],
+      }, // TODO: type
+      intermediaries: [this.nodePublicIdentifier],
+      myDeposit: initialDeposit,
+      outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO: IS THIS RIGHT???
+      peerDeposit: Zero,
+      proposedToIdentifier: counterpartyPublicIdentifier,
+      timeout: Zero,
+    } as NodeTypes.ProposeInstallVirtualParams;
+
+    this.logger.info(`params: ${JSON.stringify(params, null, 2)}`);
+
     const actionResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
         method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-        params: {
-          abiEncodings: {
-            actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
-            stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
-          },
-          // TODO: contract address of app
-          appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
-          asset: { assetType: 0 },
-          initialState: {
-            finalized: false,
-            transfers: [
-              {
-                amount: initialDeposit,
-                to: fromExtendedKey(this.publicIdentifier).derivePath("0").address,
-              },
-              {
-                amount: Zero,
-                to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
-              },
-            ],
-          }, // TODO: type
-          intermediaries: [this.cfModule.publicIdentifier],
-          myDeposit: initialDeposit,
-          outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO: IS THIS RIGHT???
-          peerDeposit: Zero,
-          proposedToIdentifier: counterpartyPublicIdentifier,
-          timeout: Zero,
-        } as NodeTypes.ProposeInstallVirtualParams,
+        params,
       }),
     );
+
+    this.logger.info(`actionResponse: ${JSON.stringify(actionResponse, null, 2)}`);
 
     return actionResponse.result as NodeTypes.ProposeInstallVirtualResult;
   }
@@ -483,11 +538,32 @@ export class ConnextInternal extends ConnextChannel {
         method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
         params: {
           appInstanceId,
-        } as NodeTypes.UninstallParams,
+          intermediaryIdentifier: this.nodePublicIdentifier,
+        },
       }),
     );
 
     return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
+  }
+
+  public async withdrawal(
+    amount: BigNumber,
+    recipient?: string, // Address or xpub? whats the default?
+  ): Promise<NodeTypes.UninstallResult> {
+    const uninstallResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.WITHDRAW,
+        params: {
+          amount,
+          multisigAddress: this.multisigAddress,
+          recipient,
+        },
+      }),
+    );
+
+    return uninstallResponse.result;
   }
 
   ///////////////////////////////////

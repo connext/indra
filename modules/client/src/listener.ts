@@ -6,6 +6,7 @@ import {
   ProposeVirtualMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
+  WithdrawMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
@@ -127,7 +128,7 @@ export class ConnextListener extends EventEmitter {
     });
   }
 
-  private emitAndLog(event: NodeTypes.EventName, data: any): void {
+  private emitAndLog(event: NodeTypes.EventName | EventName, data: any): void {
     this.log.info(`Emitted ${event} with data: ${JSON.stringify(data, null, 2)}`);
     this.emit(event, data);
   }
