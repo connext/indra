@@ -472,6 +472,8 @@ export class ConnextInternal extends ConnextChannel {
         params,
       }),
     );
+
+    this.logger.info(`propose install res: ${JSON.stringify(actionRes, null, 2)}`);
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
   }
 
