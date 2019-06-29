@@ -7,6 +7,11 @@ import {
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawMessage,
+  DepositConfirmationMessage,
+  InstallMessage,
+  RejectInstallVirtualMessage,
+  UninstallMessage,
+  ProposeMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
@@ -39,20 +44,20 @@ export class ConnextListener extends EventEmitter {
     UPDATE_STATE: (data: UpdateStateMessage): void => {
       this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
     },
-    DEPOSIT_CONFIRMED: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
+    DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data.data);
     },
     DEPOSIT_FAILED: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_FAILED, data);
     },
-    COUNTER_DEPOSIT_CONFIRMED: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data);
+    COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data.data);
     },
     DEPOSIT_STARTED: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_STARTED, data);
     },
-    INSTALL: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.INSTALL, data);
+    INSTALL: (data: InstallMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.INSTALL, data.data);
     },
     PROPOSE_STATE: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.PROPOSE_STATE, data);
@@ -60,20 +65,20 @@ export class ConnextListener extends EventEmitter {
     REJECT_INSTALL: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.REJECT_INSTALL, data);
     },
-    REJECT_INSTALL_VIRTUAL: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, data);
+    REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, data.data);
     },
     REJECT_STATE: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.REJECT_STATE, data);
     },
-    UNINSTALL: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.UNINSTALL, data);
+    UNINSTALL: (data: UninstallMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.UNINSTALL, data.data);
     },
-    PROPOSE_INSTALL: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL, data);
+    PROPOSE_INSTALL: (data: ProposeMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL, data.data);
     },
-    WITHDRAWAL_CONFIRMED: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, data);
+    WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, data.data);
     },
     WITHDRAWAL_FAILED: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_FAILED, data);
@@ -97,6 +102,7 @@ export class ConnextListener extends EventEmitter {
 
   public registerCfListener = (event: NodeTypes.EventName, cb: Function): void => {
     // replace with new fn
+    this.log.info(`Registering listener for ${event}`);
     // TODO: type res by obj with event as keys?
     this.cfModule.on(event, async (res: any) => {
       await cb(res);
@@ -105,6 +111,7 @@ export class ConnextListener extends EventEmitter {
   }
 
   public removeCfListener = (event: NodeTypes.EventName, cb: Function): boolean => {
+    this.log.info(`Removing listener for ${event}`);
     try {
       this.removeListener(event, cb as any);
       return true;
@@ -118,14 +125,12 @@ export class ConnextListener extends EventEmitter {
 
   public registerDefaultCfListeners(): void {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
-      this.log.info(`Registering default callback for event: ${NodeTypes.EventName[event]}`);
       this.cfModule.on(NodeTypes.EventName[event], callback);
-      this.log.info(`Registered!`);
     });
   }
 
   private emitAndLog(event: NodeTypes.EventName | EventName, data: any): void {
-    this.log.info(`Emitted ${event} with data: ${JSON.stringify(data, null, 2)}`);
+    this.log.info(`Emitted ${event}`);
     this.emit(event, data);
   }
 }
