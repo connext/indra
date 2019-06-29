@@ -109,33 +109,22 @@ export default class ChainsawService {
     return res ? res : 'PROCESS_EVENTS'
   }
 
-  private async doFetchEvents() {
+  public async doFetchEventsFromRange(startingBlock: number, endingBlock: number) {
     const topBlock = await this.web3.eth.getBlockNumber()
-    // @ts-ignore
-    const last = await this.chainsawDao.lastPollFor(this.contract.address, 'FETCH_EVENTS')
-    const lastBlock = last.blockNumber
-    let toBlock = topBlock - CONFIRMATION_COUNT
-    // enforce limit of polling 10k blocks at a time
-    if (toBlock - lastBlock > 10000) {
-      toBlock = lastBlock + 10000
+    
+    if (
+      endingBlock - startingBlock < CONFIRMATION_COUNT || 
+      topBlock - endingBlock < CONFIRMATION_COUNT
+    ) {
+      this.log.error(`Cannot process blocks with fewer than ${CONFIRMATION_COUNT} confirmations. Current block: ${topBlock}, requested range: ${startingBlock} to ${endingBlock}`);
+      return;
     }
 
-    // need to check for >= here since we were previously not checking for a confirmation count
-    if (lastBlock >= toBlock) {
-      if (lastBlock > toBlock) {
-        this.log.info(`lastBlock: ${lastBlock} > toBlock: ${toBlock}`)
-      }
-      return
-    }
-
-    const fromBlock = lastBlock + 1
-
-    this.log.info(`Synchronizing chain data between blocks ${fromBlock} and ${toBlock}`)
-
-    // @ts-ignore
+    this.log.info(`Synchronizing chain data between blocks ${startingBlock} and ${endingBlock}`)
+    
     const events = await this.contract.getPastEvents('allEvents', {
-      fromBlock,
-      toBlock
+      fromBlock: startingBlock,
+      toBlock: endingBlock
     })
 
     const blockIndex = {} as any
@@ -168,14 +157,38 @@ export default class ChainsawService {
 
     if (channelEvents.length) {
       this.log.info(`Inserting new transactions: ${channelEvents.map((e: ContractEvent) => e.txHash)}`)
-      await this.chainsawDao.recordEvents(channelEvents, toBlock, this.contract.address)
+      await this.chainsawDao.recordEvents(channelEvents, endingBlock, this.contract.address)
       this.log.debug(`Successfully inserted ${channelEvents.length} transactions.`)
     } else {
       this.log.debug('No new transactions found; nothing to do.')
     }
 
     // unconditionally record polling event
-    await this.chainsawDao.recordPoll(toBlock, null, this.contract.address, 'FETCH_EVENTS')
+    await this.chainsawDao.recordPoll(endingBlock, null, this.contract.address, 'FETCH_EVENTS')
+  }
+
+  private async doFetchEvents() {
+    const topBlock = await this.web3.eth.getBlockNumber()
+    // @ts-ignore
+    const last = await this.chainsawDao.lastPollFor(this.contract.address, 'FETCH_EVENTS')
+    const lastBlock = last.blockNumber
+    let toBlock = topBlock - CONFIRMATION_COUNT
+    // enforce limit of polling 10k blocks at a time
+    if (toBlock - lastBlock > 10000) {
+      toBlock = lastBlock + 10000
+    }
+
+    // need to check for >= here since we were previously not checking for a confirmation count
+    if (lastBlock >= toBlock) {
+      if (lastBlock > toBlock) {
+        this.log.info(`lastBlock: ${lastBlock} > toBlock: ${toBlock}`)
+      }
+      return
+    }
+
+    const fromBlock = lastBlock + 1
+
+    await this.doFetchEventsFromRange(fromBlock, toBlock);
   }
 
   private async doProcessEvents() {
