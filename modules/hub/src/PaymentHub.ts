@@ -119,6 +119,12 @@ export default class PaymentHub {
     await chainsaw.processSingleTx(txHash, true)
   }
 
+  public async fetchEventsFromBlock(startingBlock: number, endingBlock: number) {
+    const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
+    this.log.info(`Fetching events from: ${startingBlock} to ${endingBlock}`);
+    await chainsaw.doFetchEventsFromRange(startingBlock, endingBlock);
+  }
+
   public async collateralizeChannel(user: string, amount: BN) {
     const context = new Context()
     const channelsService = this.container.resolve<ChannelsService>('ChannelsService', { 'Context': context })
