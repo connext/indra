@@ -75,10 +75,11 @@ export class DepositController extends AbstractController {
       throw new Error(e);
     }
 
+    // TODO: fix types!
     return {
-      apps: [],
+      apps: await this.connext.getAppInstances(),
       freeBalance: await this.connext.getFreeBalance(),
-    } as ChannelState;
+    } as any;
   }
 
   /////////////////////////////////
