@@ -112,7 +112,7 @@ export default class ChainsawService {
   public async doFetchEventsFromRange(startingBlock: number, endingBlock: number) {
     const topBlock = await this.web3.eth.getBlockNumber()
     
-    if (topBlock - endingBlock <= CONFIRMATION_COUNT) {
+    if (topBlock - endingBlock < CONFIRMATION_COUNT) {
       this.log.error(`Cannot process blocks with fewer than ${CONFIRMATION_COUNT} confirmations. Current block: ${topBlock}, requested range: ${startingBlock} to ${endingBlock}`);
       return;
     }
