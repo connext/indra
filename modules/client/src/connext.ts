@@ -261,7 +261,7 @@ export class ConnextInternal extends ConnextChannel {
 
     // establish listeners
     this.listener = opts.listener;
-    this.connectCfModuleMethods();
+    this.connectDefaultListeners();
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
@@ -565,7 +565,8 @@ export class ConnextInternal extends ConnextChannel {
   // LOW LEVEL METHODS
 
   // TODO: make sure types are all good
-  private connectCfModuleMethods(): void {
+  private connectDefaultListeners(): void {
+    // counterfactual listeners
     this.listener.registerDefaultCfListeners();
   }
 }
