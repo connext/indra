@@ -25,19 +25,19 @@ export class ConnextListener extends EventEmitter {
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
     CREATE_CHANNEL: (data: CreateChannelMessage): void => {
-      this.emitAndLog(EventName.CREATE_CHANNEL, data.data);
+      this.emitAndLog(NodeTypes.EventName.CREATE_CHANNEL, data.data);
     },
     INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
-      this.emitAndLog(EventName.INSTALL_VIRTUAL, data.data);
+      this.emitAndLog(NodeTypes.EventName.INSTALL_VIRTUAL, data.data);
     },
     PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
-      this.emitAndLog(EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
+      this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
     },
     UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
-      this.emitAndLog(EventName.UNINSTALL_VIRTUAL, data.data);
+      this.emitAndLog(NodeTypes.EventName.UNINSTALL_VIRTUAL, data.data);
     },
     UPDATE_STATE: (data: UpdateStateMessage): void => {
-      this.emitAndLog(EventName.UPDATE_STATE, data.data);
+      this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
     },
     DEPOSIT_CONFIRMED: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
@@ -118,8 +118,9 @@ export class ConnextListener extends EventEmitter {
 
   public registerDefaultCfListeners(): void {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
-      this.log.info(`Registering default callback for event: ${event}`);
-      this.cfModule.on(event, callback);
+      this.log.info(`Registering default callback for event: ${NodeTypes.EventName[event]}`);
+      this.cfModule.on(NodeTypes.EventName[event], callback);
+      this.log.info(`Registered!`);
     });
   }
 
