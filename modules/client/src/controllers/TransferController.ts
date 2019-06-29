@@ -12,6 +12,10 @@ import { ConnextInternal } from "../connext";
 import { delay } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
+import { UpdateStateMessage, UninstallVirtualMessage, InstallVirtualMessage, RejectInstallVirtualMessage, ProposeVirtualMessage } from "@counterfactual/node";
+
+const DEFAULT_DELAY = 1000;
+const RETRIES = 30;
 
 const TransferStatuses = {
   FAILED: "FAILED",
@@ -24,6 +28,7 @@ const TransferStatuses = {
 type TransferStatus = keyof typeof TransferStatuses;
 export class TransferController extends AbstractController {
   private status: TransferStatus = "INITIATED";
+  private params: TransferParametersBigNumber;
 
   constructor(name: string, connext: ConnextInternal) {
     super(name, connext);
@@ -31,12 +36,13 @@ export class TransferController extends AbstractController {
     // bind callbacks
     this.proposeInstallVirtualCallback = this.proposeInstallVirtualCallback.bind(this);
     this.rejectInstallVirtualCallback = this.rejectInstallVirtualCallback.bind(this);
+    this.installVirtualCallback = this.installVirtualCallback.bind(this);
     this.updateStateCallback = this.updateStateCallback.bind(this);
     this.uninstallVirtualCallback = this.uninstallVirtualCallback.bind(this);
   }
 
   public async transfer(params: TransferParameters): Promise<NodeChannel> {
-    this.log.info("Transfer called, yay!");
+    this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
     if (!params.recipient.startsWith("xpub")) {
       throw new Error("Recipient must be xpub");
@@ -44,6 +50,7 @@ export class TransferController extends AbstractController {
 
     // convert params
     const paramsBig: TransferParametersBigNumber = convert.TransferParameters("bignumber", params);
+    this.params = paramsBig;
 
     // check that there is sufficient free balance for amount
     const freeBalance = await this.connext.getFreeBalance();
@@ -72,7 +79,6 @@ export class TransferController extends AbstractController {
 
     // install the transfer application
     // TODO: update if it is token unidirectional
-    this.log.info("Proposing virtual install......");
     await this.connext.proposeInstallVirtualApp(
       "EthUnidirectionalTransferApp",
       paramsBig.amount,
@@ -81,7 +87,7 @@ export class TransferController extends AbstractController {
 
     // wait 5s for app to be installed correctly
     let retry = 0;
-    while (this.status !== "FINALIZED" && retry < 5) {
+    while (this.status !== "FINALIZED" && retry < RETRIES) {
       if (this.status === "FAILED") {
         break;
       }
@@ -89,20 +95,20 @@ export class TransferController extends AbstractController {
         "App not successfully installed yet, waiting 1 more second before trying to send...",
       );
       retry = retry + 1;
-      await delay(1000);
+      await delay(DEFAULT_DELAY);
     }
 
     // if the time passes and there is no app detected, remove
     // all listeners and throw an error
-    if (retry >= 5 && this.status !== "FINALIZED") {
+    if (retry >= RETRIES && this.status !== "FINALIZED") {
       // remove all listeners
       this.removeListeners();
-      throw new Error("Could not successfully install + update virtual app after waiting 5s");
+      throw new Error("Could not successfully install + update virtual app after waiting 10s");
     }
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance();
-    const diff = postTransferBal[this.connext.wallet.address].sub(preTransferBal);
+    const diff = postTransferBal[this.cfModule.ethFreeBalanceAddress].sub(preTransferBal);
     if (!diff.eq(paramsBig.amount)) {
       this.log.debug(
         "Free balance after transfer is gte free balance " +
@@ -176,7 +182,7 @@ export class TransferController extends AbstractController {
   }
 
   ////// Listener callbacks
-  private async proposeInstallVirtualCallback(data: NodeTypes.ProposeInstallResult): Promise<void> {
+  private async proposeInstallVirtualCallback(data: ProposeVirtualMessage): Promise<void> {
     this.log.info(`App proposed install successfully, data ${JSON.stringify(data, null, 2)}`);
 
     if (this.status !== "INITIATED") {
@@ -184,7 +190,7 @@ export class TransferController extends AbstractController {
     }
 
     try {
-      const installVirtualResponse = await this.connext.installVirtualApp(data.appInstanceId);
+      const installVirtualResponse = await this.connext.installVirtualApp(data.data.appInstanceId);
       this.log.info(
         `installVirtualResponse result:
         ${installVirtualResponse as NodeTypes.InstallVirtualResult}`,
@@ -198,7 +204,7 @@ export class TransferController extends AbstractController {
     }
   }
 
-  private async rejectInstallVirtualCallback(data: NodeTypes.RejectInstallResult): Promise<void> {
+  private async rejectInstallVirtualCallback(data: RejectInstallVirtualMessage): Promise<void> {
     this.log.info(
       `App rejected the proposed virtual install, data ${JSON.stringify(data, null, 2)}`,
     );
@@ -211,21 +217,22 @@ export class TransferController extends AbstractController {
     this.removeListeners();
   }
 
-  private async installVirtualCallback(data: NodeTypes.InstallVirtualResult): Promise<void> {
-    if (this.status !== "INSTALLED") {
+  private async installVirtualCallback(data: InstallVirtualMessage): Promise<void> {
+    this.log.info(`App successfully installed, data ${JSON.stringify(data, null, 2)}`);
+
+    if (this.status !== "INSTALLED" && this.status !== "INITIATED") {
       return;
     }
 
-    this.log.info(`App successfully installed, data ${JSON.stringify(data, null, 2)}`);
-
     // make transfer
+    const { appInstanceId } = data.data.params;
     try {
-      // TODO: pay all of deposit amount?
-      await this.connext.takeAction(data.appInstance.id, {
-        finalize: false,
-        transferAmount: data.appInstance.myDeposit,
-      });
+      this.log.info(`Making payment in app for ${this.params.amount.toString()} ETH`);
       this.status = "UPDATED";
+      await this.connext.takeAction(appInstanceId, {
+        finalize: false,
+        transferAmount: this.params.amount,
+      });
     } catch (e) {
       this.log.error("Node call to update app state failed.");
       this.log.error(JSON.stringify(e, null, 2));
@@ -234,27 +241,28 @@ export class TransferController extends AbstractController {
     }
   }
 
-  private async updateStateCallback(data: NodeTypes.UpdateStateResult): Promise<void> {
-    this.log.info(`App successfully updated, data: ${JSON.stringify(data, null, 2)}`);
+  private async updateStateCallback(emitted: UpdateStateMessage): Promise<void> {
+    this.log.info(`App successfully updated, data: ${JSON.stringify(emitted, null, 2)}`);
 
     if (this.status !== "UPDATED") {
+      this.log.info(`status: ${this.status}`);
       return;
     }
 
-    const { appInstanceId } = data as any;
+    const { appInstanceId, newState } = emitted.data;
 
-    if (!(data.newState as any).finalized) {
+    if (!(newState as any).finalized) {
       await this.connext.takeAction(appInstanceId, {
         finalize: true,
         transferAmount: constants.Zero,
       });
       this.status = "FINALIZED";
+      // uninstall app on update state
+      await this.connext.uninstallVirtualApp(appInstanceId);
     }
-    // uninstall app on update state
-    await this.connext.uninstallVirtualApp(appInstanceId);
   }
 
-  private uninstallVirtualCallback(data: NodeTypes.UninstallVirtualResult): void {
+  private uninstallVirtualCallback(data: UninstallVirtualMessage): void {
     this.log.info(`App successfully uninstalled, data: ${JSON.stringify(data, null, 2)}`);
 
     // should only uninstall if the status of this controller is correct
