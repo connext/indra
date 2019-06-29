@@ -1,4 +1,3 @@
-import { EventName, SupportedApplication } from "@connext/types";
 import { Node as NodeTypes, SolidityABIEncoderV2Type } from "@counterfactual/types";
 import { utils } from "ethers";
 import { Zero } from "ethers/constants";
@@ -138,22 +137,20 @@ export async function showDirectionPrompt(): Promise<void> {
   closeCurrentPrompt();
   currentPrompt = inquirer.prompt([
     {
-      choices: ["receiving", "sending", "withdrawing", "transferring"],
-      message: "Are you sending payments, receiving payments, transferring, or withdrawing?",
+      choices: ["receiving", "sending", "withdrawing"],
+      message: "Are you sending payments, receiving payments, or withdrawing?",
       name: "direction",
       type: "list",
     },
   ]);
 
-  currentPrompt.then((answers: any): any => {
+  currentPrompt.then(async (answers: any): Promise<any> => {
     if ((answers as Record<string, string>).direction === "sending") {
-      showOpenVirtualChannelPrompt();
+      await showTransferPrompt();
     } else if ((answers as Record<string, string>).direction === "receiving") {
       console.log("Waiting to receive virtual install request...");
-    } else if ((answers as Record<string, string>).direction === "transferring") {
-      showTransferPrompt();
     } else {
-      showWithdrawalPrompt();
+      await showWithdrawalPrompt();
     }
   });
 }
@@ -206,28 +203,7 @@ async function clientTransfer(deposit: string, counterparty: string): Promise<an
     amount: utils.parseEther(deposit).toString(),
     recipient: counterparty,
   });
-  console.log("**************** res", JSON.stringify(res, null, 2));
-}
-
-export async function showOpenVirtualChannelPrompt(): Promise<void> {
-  closeCurrentPrompt();
-  currentPrompt = inquirer.prompt([
-    {
-      message: "Enter counterparty public identifier:",
-      name: "counterpartyPublicId",
-      type: "input",
-    },
-    {
-      message: "Enter Party A deposit amount:",
-      name: "depositPartyA",
-      type: "input",
-    },
-  ]);
-
-  currentPrompt.then((answers: any): void => {
-    const { counterpartyPublicId, depositPartyA } = answers as Record<string, string>;
-    openVirtualChannel(depositPartyA, counterpartyPublicId);
-  });
+  console.log("client.transfer returns:", JSON.stringify(res, null, 2));
 }
 
 async function withdrawBalance(amount: string, recipient: string | undefined): Promise<any> {
@@ -238,8 +214,9 @@ async function withdrawBalance(amount: string, recipient: string | undefined): P
 export function registerClientListeners(): void {
   const client = getConnextClient();
   client.on(
-    EventName.PROPOSE_INSTALL_VIRTUAL,
+    NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
     async (data: NodeTypes.ProposeInstallVirtualResult) => {
+      console.log(`Bot event caught: ${NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL}`);
       const appInstanceId = data.appInstanceId;
       console.log("Installing appInstanceId:", appInstanceId);
       await client.installVirtualApp(appInstanceId);
@@ -253,58 +230,33 @@ export function registerClientListeners(): void {
     },
   );
 
-  client.on(EventName.INSTALL_VIRTUAL, async (data: NodeTypes.ProposeInstallVirtualResult) => {
-    console.log("Successfully installed app:", JSON.stringify(data, null, 2));
-    await showAppInstancesPrompt();
-  });
+  client.on(
+    NodeTypes.EventName.UNINSTALL_VIRTUAL,
+    async (data: NodeTypes.UninstallVirtualResult) => {
+      console.log(`Bot event caught: ${NodeTypes.EventName.UNINSTALL_VIRTUAL}`);
+      while ((await client.getAppInstances()).length > 0) {
+        console.log(
+          "app still found in client, waiting 1s to uninstall. open apps: ",
+          (await client.getAppInstances()).length,
+        );
+        await delay(1000);
+      }
+      client.logEthFreeBalance(await client.getFreeBalance());
+      await showMainPrompt();
+    },
+  );
 
-  client.on(EventName.UPDATE_STATE, async (data: NodeTypes.UpdateStateResult) => {
-    console.log("Successfully updated state:", JSON.stringify(data, null, 2));
-    logThreadBalances(data.newState as AppState);
-    if (!(data.newState as AppState).finalized) {
-      await showAppOptions((data as any).appInstanceId);
-    }
-  });
-
-  client.on(EventName.UNINSTALL_VIRTUAL, async (data: NodeTypes.UninstallVirtualResult) => {
-    console.log("Successfully uninstalled virtual app:", JSON.stringify(data, null, 2));
-    while ((await client.getAppInstances()).length > 0) {
-      console.log(
-        "app still found in client, waiting 1s to uninstall. open apps: ",
-        (await client.getAppInstances()).length,
-      );
-      await delay(1000);
-    }
-    client.logEthFreeBalance(await client.getFreeBalance());
-    await showMainPrompt();
-  });
-
-  client.on(EventName.WITHDRAWAL, async (data: any) => {
+  client.on(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, async (data: any) => {
     await showMainPrompt();
   });
 
   if (
-    client.listener.listenerCount(EventName.PROPOSE_INSTALL_VIRTUAL) === 0 ||
-    client.listener.listenerCount(EventName.INSTALL_VIRTUAL) === 0 ||
-    client.listener.listenerCount(EventName.UPDATE_STATE) === 0 ||
-    client.listener.listenerCount(EventName.UNINSTALL_VIRTUAL) === 0 ||
-    client.listener.listenerCount(EventName.WITHDRAWAL) === 0
+    client.listener.listenerCount(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL) === 0 ||
+    client.listener.listenerCount(NodeTypes.EventName.UNINSTALL_VIRTUAL) === 0 ||
+    client.listener.listenerCount(NodeTypes.EventName.WITHDRAWAL_CONFIRMED) === 0
   ) {
     throw Error("Listeners failed to register.");
   }
-}
-
-async function openVirtualChannel(
-  depositPartyA: string,
-  counterpartyPublicId: string,
-): Promise<any> {
-  const client = getConnextClient();
-
-  await client.proposeInstallVirtualApp(
-    "EthUnidirectionalTransferApp" as SupportedApplication,
-    utils.parseEther(depositPartyA),
-    counterpartyPublicId,
-  );
 }
 
 async function uninstallVirtualApp(appInstanceId: string): Promise<any> {
