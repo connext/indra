@@ -300,12 +300,10 @@ export class ConnextInternal extends ConnextChannel {
   // EVENT METHODS
 
   public on(event: EventName | NodeTypes.EventName, callback: any): ConnextListener {
-    this.logger.info(`Trying to add listener to event: ${event}`);
     return this.listener.on(event, callback);
   }
 
   public emit(event: EventName | NodeTypes.EventName, data: any): boolean {
-    this.logger.info(`Trying to emit event: ${event}`);
     return this.listener.emit(event, data);
   }
 
@@ -441,8 +439,6 @@ export class ConnextInternal extends ConnextChannel {
       proposedToIdentifier: counterpartyPublicIdentifier,
     };
 
-    this.logger.info(`params: ${JSON.stringify(params, null, 2)}`);
-
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -452,7 +448,6 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    this.logger.info(`propose install res: ${JSON.stringify(actionRes, null, 2)}`);
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
   }
 
@@ -507,8 +502,6 @@ export class ConnextInternal extends ConnextChannel {
       timeout: Zero,
     } as NodeTypes.ProposeInstallVirtualParams;
 
-    this.logger.info(`params: ${JSON.stringify(params, null, 2)}`);
-
     const actionResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -517,9 +510,6 @@ export class ConnextInternal extends ConnextChannel {
         params,
       }),
     );
-
-    this.logger.info(`actionResponse: ${JSON.stringify(actionResponse, null, 2)}`);
-
     return actionResponse.result as NodeTypes.ProposeInstallVirtualResult;
   }
 
