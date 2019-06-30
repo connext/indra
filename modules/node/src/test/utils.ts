@@ -18,10 +18,13 @@ export function mkSig(prefix: string = "0x"): string {
   return prefix.padEnd(132, "0");
 }
 
-export function getEntities(connection: Connection) {
+export function getEntities(connection: Connection): any[] {
   const entities: { name: string; tableName: string }[] = [];
-  connection.entityMetadatas.forEach(x => {
-    if (viewEntites.map(v => v.name).indexOf(x.name) !== -1) {
+  if (!connection) {
+    return [];
+  }
+  connection.entityMetadatas.forEach((x: any) => {
+    if (viewEntites.map((v: any) => v.name).indexOf(x.name) !== -1) {
       return;
     }
     entities.push({ name: x.name, tableName: x.tableName });
@@ -32,13 +35,13 @@ export function getEntities(connection: Connection) {
 export async function cleanAll(
   entities: { name: string; tableName: string }[],
   connection: Connection,
-) {
+): Promise<void> {
   for (const entity of entities) {
     await connection.query(`DELETE FROM "${entity.tableName}";`);
   }
 }
 
-export async function clearDb(connection: Connection) {
+export async function clearDb(connection: Connection): Promise<void> {
   const entities = getEntities(connection);
   await cleanAll(entities, connection);
 }
