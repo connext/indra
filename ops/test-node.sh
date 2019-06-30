@@ -21,10 +21,21 @@ else
   command="$test_command"
 fi
 
-eth_address="0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+
 eth_network="kovan"
-ethprovider_host="${project}_ethprovider_$suffix"
+
+####################
+# Internal Config
+# config & hard-coded stuff you might want to change
+
+if [[ "$eth_network" == "rinkeby" ]]
+then eth_rpc_url="https://rinkeby.infura.io/metamask"
+elif [[ "$eth_network" == "kovan" ]]
+then eth_rpc_url="https://kovan.infura.io/metamask"
+elif [[ "$eth_network" == "ganache" ]]
+then eth_rpc_url="http://ethprovider:8545"
+fi
 
 log_level="3" # set to 0 for no logs or to 5 for all the logs
 network="${project}_$suffix"
@@ -97,6 +108,9 @@ docker run \
 echo "Starting $node_host.."
 docker run \
   --entrypoint="bash" \
+  --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
+  --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
+  --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
   --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_SERVERS=nats://$nats_host:4222" \
   --env="INDRA_NATS_TOKEN" \
@@ -105,12 +119,9 @@ docker run \
   --env="INDRA_PG_PASSWORD=$postgres_password" \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
+  --env="INDRA_PORT=$node_port" \
   --env="LOG_LEVEL=$log_level" \
   --env="NODE_ENV=development" \
-  --env="ETH_MNEMONIC=$eth_mnemonic" \
-  --env="ETH_NETWORK=$eth_network" \
-  --env="ETH_RPC_URL=http://$ethprovider_host:8545" \
-  --env="PORT=$node_port" \
   --interactive \
   --name="$node_host" \
   --network="$network" \
