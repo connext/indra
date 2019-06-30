@@ -2,19 +2,14 @@ import { Test, TestingModule } from "@nestjs/testing";
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { ChannelModule } from "./channel/channel.module";
-import { ConfigModule } from "./config/config.module";
-import { NodeController } from "./node/node.controller";
-import { NodeModule } from "./node/node.module";
-import { UserModule } from "./user/user.module";
 
 describe("AppController", () => {
   let appController: AppController;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      controllers: [AppController, NodeController],
-      imports: [ConfigModule, NodeModule, UserModule, ChannelModule],
+      controllers: [AppController],
+      imports: [],
       providers: [AppService],
     }).compile();
 
