@@ -140,7 +140,10 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  public on = (event: EventName | NodeTypes.EventName, callback: any): ConnextListener => {
+  public on = (
+    event: EventName | NodeTypes.EventName,
+    callback: (...args: any[]) => void,
+  ): ConnextListener => {
     return this.internal.on(event, callback);
   };
 
@@ -303,7 +306,10 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (event: EventName | NodeTypes.EventName, callback: any): ConnextListener => {
+  public on = (
+    event: EventName | NodeTypes.EventName,
+    callback: (...args: any[]) => void,
+  ): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
