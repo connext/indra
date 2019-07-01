@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-package="`cat modules/nats-messaging-client/package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+package="`cat modules/client/package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+echo "package: $package"
+sleep 1
 
 ########################################
 ## Run some sanity checks to make sure we're really ready to deploy
@@ -40,7 +42,7 @@ fi
 echo "Let's go"
 
 # edit this package's package.json to set new version number
-cd modules/nats-messaging-client
+cd modules/client
 mv package.json .package.json
 cat .package.json \
   | sed 's/"version": ".*"/"version": "'$target_version'"/' > package.json
@@ -49,7 +51,7 @@ rm .package.json
 npm publish --access=public
 
 # edit dependencies to use the new version of this package
-for module in node client
+for module in payment-bot
 do
   cd ../$module
   mv package.json .package.json
@@ -59,8 +61,8 @@ do
 done
 
 cd ../..
-git add modules/nats-messaging-client modules/node
+git add .
 git commit -m "Publish package: $package@$target_version"
-git tag nats-client-$target_version
+git tag client-$target_version
 git push origin HEAD --no-verify
-git push origin nats-client-$target_version --no-verify
+git push origin client-$target_version --no-verify
