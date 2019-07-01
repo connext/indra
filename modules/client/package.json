@@ -10,21 +10,21 @@
     "prepare": "npm run build",
     "test": "./node_modules/.bin/jest"
   },
+  "dependencies": {
+    "@connext/nats-messaging-client": "0.0.5",
+    "@counterfactual/node": "0.2.8",
+    "ethers": "4.0.29",
+    "node-fetch": "2.6.0",
+    "ts-nats": "1.2.4",
+    "uuid": "3.3.2"
+  },
   "devDependencies": {
+    "@connext/types": "0.0.2",
     "@counterfactual/types": "0.0.16",
     "@types/jest": "24.0.15",
     "@types/node-fetch": "2.3.7",
     "@types/uuid": "3.4.4",
     "ts-jest": "24.0.2",
     "typescript": "3.5.2"
-  },
-  "dependencies": {
-    "@connext/nats-messaging-client": "0.0.5",
-    "@connext/types": "0.0.2",
-    "@counterfactual/node": "0.2.8",
-    "ethers": "4.0.29",
-    "node-fetch": "2.6.0",
-    "ts-nats": "1.2.4",
-    "uuid": "3.3.2"
   }
 }

@@ -13,12 +13,12 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@connext/types": "0.0.2",
     "@counterfactual/node": "0.2.8",
     "@counterfactual/types": "0.0.16",
     "ts-nats": "1.2.4"
   },
   "devDependencies": {
+    "@connext/types": "0.0.2",
     "@counterfactual/types": "0.0.14",
     "@types/jest": "24.0.15",
     "@types/node": "12.0.10",
