@@ -11,7 +11,6 @@ import { RpcException } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { Connection, EntityManager } from "typeorm";
-import { v4 as generateUUID } from "uuid";
 
 import { NodeProviderId } from "../constants";
 import { User } from "../user/user.entity";
@@ -58,7 +57,7 @@ export class ChannelService implements OnModuleInit {
           }),
         )) as JsonRpcResponse;
         const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
-        logger.log(`createChannelResponse: ${JSON.stringify(createChannelResponse, undefined, 2)}`);
+        logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
 
         // TODO: remove this when the above line returns multisig
         const multisigResponse = await this.node.router.dispatch(
@@ -70,8 +69,8 @@ export class ChannelService implements OnModuleInit {
           }),
         );
 
-        const multisigResult: NodeTypes.GetStateDepositHolderAddressResult =
-          multisigResponse.result;
+        const multisigResult: NodeTypes.GetStateDepositHolderAddressResult = multisigResponse!
+          .result;
         logger.log(`multisigResponse: ${JSON.stringify(multisigResponse, undefined, 2)}`);
 
         const channel = new Channel();
@@ -116,8 +115,8 @@ export class ChannelService implements OnModuleInit {
         } as NodeTypes.DepositParams,
       }),
     );
-    logger.log(`depositResponse.result: ${JSON.stringify(depositResponse.result)}`);
-    return depositResponse.result as NodeTypes.DepositResult;
+    logger.log(`depositResponse.result: ${JSON.stringify(depositResponse!.result)}`);
+    return depositResponse!.result as NodeTypes.DepositResult;
   }
 
   async makeAvailable(multisigAddress: string): Promise<Channel> {
