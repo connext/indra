@@ -58,10 +58,10 @@ do
   cat .package.json \
     | sed 's|"'"$package"'": ".*"|"'"$package"'": "'$target_version'"|' > package.json
   rm .package.json
-  git add .
 done
 
 cd ../..
+git add .
 git commit -m "Publish package: $package@$target_version"
 git tag types-$target_version
 git push origin HEAD --no-verify
