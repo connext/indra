@@ -45,7 +45,7 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
     },
     DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-      this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data.data);
+      this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
     },
     DEPOSIT_FAILED: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_FAILED, data);
@@ -123,13 +123,13 @@ export class ConnextListener extends EventEmitter {
     }
   }
 
-  public registerDefaultCfListeners(): void {
+  public registerDefaultCfListeners = (): void => {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
       this.cfModule.on(NodeTypes.EventName[event], callback);
     });
   }
 
-  private emitAndLog(event: NodeTypes.EventName | EventName, data: any): void {
+  private emitAndLog = (event: NodeTypes.EventName | EventName, data: any): void => {
     this.log.info(`Emitted ${event}`);
     this.emit(event, data);
   }
