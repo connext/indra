@@ -39,6 +39,8 @@ database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.3"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
+proxy_image="indra_v2_proxy:dev"
+daicard_devserver_image="$builder_image"
 
 node_port=8080
 nats_port=4222
@@ -91,10 +93,31 @@ secrets:
     external: true
 
 volumes:
+  certs:
   chain_dev:
   database_dev:
 
 services:
+  proxy:
+    image: $proxy_image
+    environment:
+      UPSTREAM_URL: http://daicard:3000
+      ETH_RPC_URL: $eth_rpc_url
+      MODE: dev
+    ports:
+      - "80:80"
+    volumes:
+      - certs:/etc/letsencrypt
+
+  daicard:
+    image: $daicard_devserver_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
+    volumes:
+      - `pwd`:/root
+    working_dir: /root/modules/daicard
+
   node:
     image: $node_image
     entrypoint: bash modules/node/ops/entry.sh
