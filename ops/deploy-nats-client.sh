@@ -59,8 +59,9 @@ do
 done
 
 cd ../..
+git add .
 git add modules/nats-messaging-client modules/node
-git commit -m "Publish package: $package@$target_version"
+git commit --allow-empty -m "Publish package: $package@$target_version"
 git tag nats-client-$target_version
 git push origin HEAD --no-verify
 git push origin nats-client-$target_version --no-verify

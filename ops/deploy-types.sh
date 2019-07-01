@@ -62,7 +62,7 @@ done
 
 cd ../..
 git add .
-git commit -m "Publish package: $package@$target_version"
+git commit --allow-empty -m "Publish package: $package@$target_version"
 git tag types-$target_version
 git push origin HEAD --no-verify
 git push origin types-$target_version --no-verify
