@@ -43,13 +43,13 @@ all: dev prod
 dev: node types client payment-bot proxy
 prod: node-prod
 
-start: dev deployed-contracts
+start: dev
 	bash ops/start-dev.sh
 
 stop:
 	bash ops/stop.sh
 
-restart: dev deployed-contracts
+restart: dev
 	bash ops/stop.sh
 	bash ops/start-dev.sh
 

@@ -20,7 +20,9 @@ then eth_rpc_url="https://rinkeby.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "kovan" ]]
 then eth_rpc_url="https://kovan.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "ganache" ]]
-then eth_rpc_url="http://ethprovider:8545"
+then
+  eth_rpc_url="http://ethprovider:8545"
+  make deployed-contracts
 fi
 
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
