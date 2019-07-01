@@ -21,24 +21,19 @@ else
   command="$test_command"
 fi
 
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-
-eth_network="kovan"
-
 ####################
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-if [[ "$eth_network" == "rinkeby" ]]
-then eth_rpc_url="https://rinkeby.infura.io/metamask"
-elif [[ "$eth_network" == "kovan" ]]
-then eth_rpc_url="https://kovan.infura.io/metamask"
-elif [[ "$eth_network" == "ganache" ]]
-then eth_rpc_url="http://ethprovider:8545"
-fi
-
 log_level="3" # set to 0 for no logs or to 5 for all the logs
 network="${project}_$suffix"
+
+eth_network="ganache"
+
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+eth_rpc_url="http://$ethprovider_host:8545"
+ethprovider_host="${project}_ethprovider_$suffix"
 
 postgres_db="${project}_$suffix"
 postgres_host="${project}_database_$suffix"
@@ -80,7 +75,7 @@ docker run \
   trufflesuite/ganache-cli:v6.4.3 \
     --db="/data" \
     --mnemonic="$eth_mnemonic" \
-    --networkId="$eth_network_id" \
+    --networkId="4447" \
 
 echo "Starting $postgres_host.."
 docker run \
