@@ -16,15 +16,16 @@
     "prepare": "npm run build",
     "test": "./node_modules/.bin/jest"
   },
+  "dependencies": {
+    "ethers": "=4.0.29"
+  },
   "devDependencies": {
     "@counterfactual/types": "0.0.16",
     "@types/jest": "24.0.15",
-    "ts-jest": "24.0.2",
+    "jest": "=24.7.1",
     "rollup": "1.16.3",
     "rollup-plugin-typescript2": "0.21.2",
+    "ts-jest": "24.0.2",
     "typescript": "3.5.2"
-  },
-  "dependencies": {
-    "ethers": "4.0.29"
   }
 }
