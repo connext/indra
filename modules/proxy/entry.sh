@@ -4,7 +4,7 @@
 email="${EMAIL:-noreply@gmail.com}"
 domain="${DOMAINNAME:-localhost}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
-upstream_url="${UPSTREAM_URL:-http://card_devserver:3000}"
+upstream_url="${UPSTREAM_URL:-http://daicard:3000}"
 echo "domain=$domain email=$email devserver=$upstream_url mode=$MODE"
 
 # Provide a message indicating that we're still waiting for everything to wake up
@@ -31,7 +31,7 @@ then
   echo "waiting for ${upstream_url#*://}..."
   bash wait_for.sh -t 60 ${upstream_url#*://} 2> /dev/null
   # Do a more thorough check to ensure the dashboard is online
-  while ! curl -s $dashboard_client > /dev/null
+  while ! curl -s $upstream_url > /dev/null
   do sleep 2
   done
 fi
@@ -67,8 +67,8 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$ETH_RPC_URL|'"$ETH_RPC_URL"'|' /etc/nginx/nginx.conf
-sed -i 's|$UPSTREAM_URL|'"$UPSTREAM_URL"'|' /etc/nginx/nginx.conf
+sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
+sed -i 's|$UPSTREAM_URL|'"$upstream_url"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {

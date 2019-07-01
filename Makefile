@@ -13,19 +13,20 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
+bot=$(cwd)/modules/payment-bot
+card=$(cwd)/modules/card
+client=$(cwd)/modules/client
 nats=$(cwd)/modules/nats-messaging-client
 node=$(cwd)/modules/node
-client=$(cwd)/modules/client
-bot=$(cwd)/modules/payment-bot
+proxy=$(cwd)/modules/proxy
 types=$(cwd)/modules/types
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
-# On Mac the docker-VM care of this for us so pass root's id (noop)
+# On Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
-docker_run=docker run --name=$(project)_builder --tty --rm
-docker_run_in_root=$(docker_run) --volume=$(cwd):/root $(project)_builder $(id)
+docker_run=docker run --name=$(project)_builder --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
 
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > $(flags)/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat $(flags)/.timestamp`)) seconds";echo "=============";echo
@@ -39,7 +40,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node types client payment-bot
+dev: node types client payment-bot proxy
 prod: node-prod
 
 start: dev deployed-contracts
@@ -94,14 +95,29 @@ watch-node: node-modules
 ########################################
 # Begin Real Rules
 
+proxy-prod: card-prod $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	$(log_finish) && touch $(flags)/$@
+
+proxy: $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
+	$(log_finish) && touch $(flags)/$@
+
+card-prod: node-modules
+	$(log_start)
+	$(docker_run) "cd modules/card && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
 payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/payment-bot && npm run build"
+	$(docker_run) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 client: types nats-client $(shell find $(client)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/client && npm run build"
+	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 node-prod: node $(node)/ops/prod.dockerfile
@@ -111,22 +127,22 @@ node-prod: node $(node)/ops/prod.dockerfile
 
 node: types nats-client $(shell find $(node)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/node && npm run build"
+	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/types && npm run build"
+	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 nats-client: node-modules $(shell find $(nats)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/nats-messaging-client && npm run build"
+	$(docker_run) "cd modules/nats-messaging-client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node-modules: builder package.json lerna.json $(node)/package.json $(client)/package.json $(bot)/package.json
+node-modules: builder $(shell ls modules/**/package.json)
 	$(log_start)
-	$(docker_run_in_root) "lerna bootstrap --hoist"
+	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && touch $(flags)/$@
 
 builder: ops/builder.dockerfile
