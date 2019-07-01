@@ -13,9 +13,6 @@ dist/
 node_modules/
 .makeflags
 
-# Just a copy, the tracked file is in project root
-modules/node/src/address-book.json
-
 # Logs
 lerna-debug.log*
 npm-debug.log*
@@ -40,13 +37,15 @@ coverage
 .idea
 .project
 .settings/
-
-# IDE - VSCode
 .vscode
 
 # Misc
 .env
 .rpt2_cache
+
+# Git submodules
+modules/**/.git
+modules/**/.circleci
 
 # Local packages
 counterfactual

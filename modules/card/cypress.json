@@ -1,0 +1,13 @@
+{
+  "ignoreTestFiles": "**/examples/**",
+  "integrationFolder": "tests",
+  "env": {
+    "mnemonic": "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
+    "provider": "/api/mainnet/eth",
+    "publicUrl": "http://localhost",
+    "tokenAddress": "0xf12b5dd4ead5f743c6baa640b0216200e89b60da"
+  },
+  "defaultCommandTimeout": 180000,
+  "viewportWidth": 600,
+  "viewportHeight": 800
+}

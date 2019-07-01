@@ -1,0 +1,10 @@
+node_modules
+.cache
+.config
+.git
+.npm
+.node-gyp
+
+# External repos
+connext
+indra
