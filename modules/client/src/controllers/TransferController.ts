@@ -12,7 +12,13 @@ import { ConnextInternal } from "../connext";
 import { delay } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
-import { UpdateStateMessage, UninstallVirtualMessage, InstallVirtualMessage, RejectInstallVirtualMessage, ProposeVirtualMessage } from "@counterfactual/node";
+import {
+  UpdateStateMessage,
+  UninstallVirtualMessage,
+  InstallVirtualMessage,
+  RejectInstallVirtualMessage,
+  ProposeVirtualMessage,
+} from "@counterfactual/node";
 
 const DEFAULT_DELAY = 1000;
 const RETRIES = 30;
@@ -32,16 +38,9 @@ export class TransferController extends AbstractController {
 
   constructor(name: string, connext: ConnextInternal) {
     super(name, connext);
-
-    // bind callbacks
-    this.proposeInstallVirtualCallback = this.proposeInstallVirtualCallback.bind(this);
-    this.rejectInstallVirtualCallback = this.rejectInstallVirtualCallback.bind(this);
-    this.installVirtualCallback = this.installVirtualCallback.bind(this);
-    this.updateStateCallback = this.updateStateCallback.bind(this);
-    this.uninstallVirtualCallback = this.uninstallVirtualCallback.bind(this);
   }
 
-  public async transfer(params: TransferParameters): Promise<NodeChannel> {
+  public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
     if (!params.recipient.startsWith("xpub")) {
@@ -123,13 +122,13 @@ export class TransferController extends AbstractController {
 
     // TODO: fix the state / types!!
     return newState;
-  }
+  };
 
   /////////////////////////////////
   ////// PRIVATE METHODS
 
   ////// Listener registration/deregistration
-  private registerListeners(): void {
+  private registerListeners = (): void => {
     this.log.info("Registering the listeners.....");
     this.listener.registerCfListener(
       NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
@@ -153,9 +152,9 @@ export class TransferController extends AbstractController {
       this.uninstallVirtualCallback,
     );
     this.log.info("Registered!");
-  }
+  };
 
-  private removeListeners(): void {
+  private removeListeners = (): void => {
     this.log.info("Removing listeners.....");
     this.listener.removeCfListener(
       NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
@@ -179,10 +178,10 @@ export class TransferController extends AbstractController {
       this.uninstallVirtualCallback,
     );
     this.log.info("Removed!");
-  }
+  };
 
   ////// Listener callbacks
-  private async proposeInstallVirtualCallback(data: ProposeVirtualMessage): Promise<void> {
+  private proposeInstallVirtualCallback = async (data: ProposeVirtualMessage): Promise<void> => {
     this.log.info(`App proposed install successfully, data ${JSON.stringify(data, null, 2)}`);
 
     if (this.status !== "INITIATED") {
@@ -202,9 +201,11 @@ export class TransferController extends AbstractController {
       this.status = "FAILED";
       this.removeListeners();
     }
-  }
+  };
 
-  private async rejectInstallVirtualCallback(data: RejectInstallVirtualMessage): Promise<void> {
+  private rejectInstallVirtualCallback = async (
+    data: RejectInstallVirtualMessage,
+  ): Promise<void> => {
     this.log.info(
       `App rejected the proposed virtual install, data ${JSON.stringify(data, null, 2)}`,
     );
@@ -215,9 +216,9 @@ export class TransferController extends AbstractController {
 
     this.status = "FAILED";
     this.removeListeners();
-  }
+  };
 
-  private async installVirtualCallback(data: InstallVirtualMessage): Promise<void> {
+  private installVirtualCallback = async (data: InstallVirtualMessage): Promise<void> => {
     this.log.info(`App successfully installed, data ${JSON.stringify(data, null, 2)}`);
 
     if (this.status !== "INSTALLED" && this.status !== "INITIATED") {
@@ -239,9 +240,9 @@ export class TransferController extends AbstractController {
       this.status = "FAILED";
       this.removeListeners();
     }
-  }
+  };
 
-  private async updateStateCallback(emitted: UpdateStateMessage): Promise<void> {
+  private updateStateCallback = async (emitted: UpdateStateMessage): Promise<void> => {
     this.log.info(`App successfully updated, data: ${JSON.stringify(emitted, null, 2)}`);
 
     if (this.status !== "UPDATED") {
@@ -260,9 +261,9 @@ export class TransferController extends AbstractController {
       // uninstall app on update state
       await this.connext.uninstallVirtualApp(appInstanceId);
     }
-  }
+  };
 
-  private uninstallVirtualCallback(data: UninstallVirtualMessage): void {
+  private uninstallVirtualCallback = (data: UninstallVirtualMessage): void => {
     this.log.info(`App successfully uninstalled, data: ${JSON.stringify(data, null, 2)}`);
 
     // should only uninstall if the status of this controller is correct
@@ -273,5 +274,5 @@ export class TransferController extends AbstractController {
     // make sure all listeners are unregistered
     this.status = "UNINSTALLED";
     this.removeListeners();
-  }
+  };
 }
