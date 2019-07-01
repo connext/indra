@@ -142,11 +142,11 @@ export abstract class ConnextChannel {
   // LISTENER METHODS
   public on = (event: EventName | NodeTypes.EventName, callback: any): ConnextListener => {
     return this.internal.on(event, callback);
-  }
+  };
 
   public emit = (event: EventName | NodeTypes.EventName, data: any): boolean => {
     return this.internal.emit(event, data);
-  }
+  };
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
@@ -154,67 +154,70 @@ export abstract class ConnextChannel {
   // TODO: do we want the inputs to be an object?
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     return await this.internal.deposit(params);
-  }
+  };
 
   public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
     return await this.internal.exchange(params);
-  }
+  };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
     return await this.internal.transfer(params);
-  }
+  };
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.internal.withdraw(params);
-  }
+  };
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
   public config = async (): Promise<GetConfigResponse> => {
     return await this.internal.config();
-  }
+  };
 
   public getChannel = async (): Promise<NodeChannel> => {
     return await this.internal.node.getChannel();
-  }
+  };
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
   public getFreeBalance = async (): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     return await this.internal.getFreeBalance();
-  }
+  };
 
   // TODO: remove this when not testing (maybe?)
-  public logEthFreeBalance = (freeBalance: NodeTypes.GetFreeBalanceStateResult, log?: Logger): void => {
+  public logEthFreeBalance = (
+    freeBalance: NodeTypes.GetFreeBalanceStateResult,
+    log?: Logger,
+  ): void => {
     logEthFreeBalance(freeBalance, log);
-  }
+  };
 
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
     return await this.internal.getAppInstances();
-  }
+  };
 
   public getAppInstanceDetails = async (
     appInstanceId: string,
   ): Promise<NodeTypes.GetAppInstanceDetailsResult> => {
     return await this.internal.getAppInstanceDetails(appInstanceId);
-  }
+  };
 
   public getAppState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
     return await this.internal.getAppState(appInstanceId);
-  }
+  };
 
   public installTransferApp = async (
     counterpartyPublicIdentifier: string,
     initialDeposit: BigNumber,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
     return await this.internal.installTransferApp(counterpartyPublicIdentifier, initialDeposit);
-  }
+  };
 
   public uninstallVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.UninstallVirtualResult> => {
     return await this.internal.uninstallVirtualApp(appInstanceId);
-  }
+  };
 }
 
 /**
@@ -229,7 +232,8 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
-  public nodePublicIdentifier: string; // TODO: maybe move this into the NodeApiClient @layne? --> yes
+  public nodePublicIdentifier: string; 
+  // TODO: maybe move this into the NodeApiClient @layne? --> yes
 
   public logger: Logger;
   public network: Network;
@@ -275,37 +279,37 @@ export class ConnextInternal extends ConnextChannel {
 
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     return await this.depositController.deposit(params);
-  }
+  };
 
   public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
     return await this.exchangeController.exchange(params);
-  }
+  };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
     return await this.transferController.transfer(params);
-  }
+  };
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.withdrawalController.withdraw(params);
-  }
+  };
 
   ///////////////////////////////////
   // NODE METHODS
 
   public config = async (): Promise<GetConfigResponse> => {
     return await this.node.config();
-  }
+  };
 
   ///////////////////////////////////
   // EVENT METHODS
 
   public on = (event: EventName | NodeTypes.EventName, callback: any): ConnextListener => {
     return this.listener.on(event, callback);
-  }
+  };
 
   public emit = (event: EventName | NodeTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
-  }
+  };
 
   ///////////////////////////////////
   // CF MODULE METHODS
@@ -328,7 +332,7 @@ export class ConnextInternal extends ConnextChannel {
     );
     // @ts-ignore --> WHYY?
     return depositResponse as NodeTypes.DepositResult;
-  }
+  };
 
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
     const appInstanceResponse = await this.cfModule.router.dispatch(
@@ -341,7 +345,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return appInstanceResponse.result.appInstances as AppInstanceInfo[];
-  }
+  };
 
   public getFreeBalance = async (): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     const freeBalance = await this.cfModule.router.dispatch(
@@ -354,7 +358,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
-  }
+  };
 
   public getAppInstanceDetails = async (
     appInstanceId: string,
@@ -371,7 +375,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return appInstanceResponse.result as NodeTypes.GetAppInstanceDetailsResult;
-  }
+  };
 
   public getAppState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
     const stateResponse = await this.cfModule.router.dispatch(
@@ -386,7 +390,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return stateResponse.result as NodeTypes.GetStateResult;
-  }
+  };
 
   public takeAction = async (
     appInstanceId: string,
@@ -405,7 +409,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return actionResponse.result as NodeTypes.TakeActionResult;
-  }
+  };
 
   public proposeInstallVirtualApp = async (
     appName: SupportedApplication,
@@ -448,9 +452,11 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
-  }
+  };
 
-  public installVirtualApp = async (appInstanceId: string): Promise<NodeTypes.InstallVirtualResult> => {
+  public installVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.InstallVirtualResult> => {
     const installVirtualResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -464,7 +470,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return installVirtualResponse.result;
-  }
+  };
 
   // TODO: make this more generic
   // TODO: delete this when the above works!
@@ -510,7 +516,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
     return actionResponse.result as NodeTypes.ProposeInstallVirtualResult;
-  }
+  };
 
   public uninstallVirtualApp = async (
     appInstanceId: string,
@@ -528,7 +534,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
-  }
+  };
 
   public withdrawal = async (
     amount: BigNumber,
@@ -548,7 +554,7 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return uninstallResponse.result;
-  }
+  };
 
   ///////////////////////////////////
   // LOW LEVEL METHODS
@@ -557,5 +563,5 @@ export class ConnextInternal extends ConnextChannel {
   private connectDefaultListeners = (): void => {
     // counterfactual listeners
     this.listener.registerDefaultCfListeners();
-  }
+  };
 }

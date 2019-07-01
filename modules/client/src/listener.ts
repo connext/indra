@@ -1,17 +1,17 @@
 import { EventName } from "@connext/types";
 import {
   CreateChannelMessage,
+  DepositConfirmationMessage,
+  InstallMessage,
   InstallVirtualMessage,
   Node,
+  ProposeMessage,
   ProposeVirtualMessage,
+  RejectInstallVirtualMessage,
+  UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawMessage,
-  DepositConfirmationMessage,
-  InstallMessage,
-  RejectInstallVirtualMessage,
-  UninstallMessage,
-  ProposeMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
@@ -108,7 +108,7 @@ export class ConnextListener extends EventEmitter {
       await cb(res);
       this.emit(event, res);
     });
-  }
+  };
 
   public removeCfListener = (event: NodeTypes.EventName, cb: Function): boolean => {
     this.log.info(`Removing listener for ${event}`);
@@ -121,16 +121,16 @@ export class ConnextListener extends EventEmitter {
       );
       return false;
     }
-  }
+  };
 
   public registerDefaultCfListeners = (): void => {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
       this.cfModule.on(NodeTypes.EventName[event], callback);
     });
-  }
+  };
 
   private emitAndLog = (event: NodeTypes.EventName | EventName, data: any): void => {
     this.log.info(`Emitted ${event}`);
     this.emit(event, data);
-  }
+  };
 }
