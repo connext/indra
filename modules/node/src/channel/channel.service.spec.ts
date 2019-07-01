@@ -122,7 +122,6 @@ describe("ChannelService", () => {
 
     nodeChannel = await nodeChannelRepository.findByPublicIdentifier(mkXpub("xpubC"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xb"));
-    expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.freeBalancePartyA).toBe("3");
     expect(nodeChannel.freeBalancePartyB).toBe("4");
     expect(nodeChannel.nonce).toBe(1);
