@@ -1,22 +1,20 @@
-import { ChannelState, DepositParameters } from "@connext/types";
+import { ChannelState, DepositParameters, convert } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
-import { ConnextInternal } from "../connext";
 import { logEthFreeBalance } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
+// import { Validator } from "class-validator";
 
 export class DepositController extends AbstractController {
-  constructor(name: string, connext: ConnextInternal) {
-    super(name, connext);
-    // bind listener callbacks
-    this.depositStartedCallback = this.depositStartedCallback.bind(this);
-    this.depositConfirmedCallback = this.depositConfirmedCallback.bind(this);
-    this.depositFailedCallback = this.depositFailedCallback.bind(this);
-  }
+  // TODO: implement decorator?
+  // private validator: Validator = new Validator();
 
-  public async deposit(params: DepositParameters): Promise<ChannelState> {
+  // @IsValidDepositRequest()
+  private params: DepositParameters;
+
+  public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     this.log.info(`Deposit called with params: ${JSON.stringify(params)}`);
 
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
@@ -42,6 +40,12 @@ export class DepositController extends AbstractController {
         (addr: string): boolean => addr !== myFreeBalanceAddress,
       );
     }
+
+    this.params = convert.Deposit("bignumber", params);
+    // const invalid = this.validator.validate(this);
+    // if (invalid) {
+    //   throw new Error(invalid.toString())
+    // }
 
     this.log.info(`\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`);
 
@@ -86,27 +90,16 @@ export class DepositController extends AbstractController {
   ////// PRIVATE METHODS
 
   ////// Listener callbacks
-  private depositStartedCallback(data: any): void {
-    this.log.info(`Deposit started. Data: ${JSON.stringify(data, null, 2)}`);
-  }
-
-  private depositConfirmedCallback(data: any): void {
-    this.log.info(`Deposit confirmed. Data: ${JSON.stringify(data, null, 2)}`);
+  private depositConfirmedCallback = (data: any): void => {
     this.removeListeners();
-  }
+  };
 
-  private depositFailedCallback(data: any): void {
-    this.log.info(`Deposit failed. Data: ${JSON.stringify(data, null, 2)}`);
+  private depositFailedCallback = (data: any): void => {
     this.removeListeners();
-  }
+  };
 
   ////// Listener registration/deregistration
   private registerListeners(): void {
-    this.listener.registerCfListener(
-      CFModuleTypes.EventName.DEPOSIT_STARTED,
-      this.depositStartedCallback,
-    );
-
     this.listener.registerCfListener(
       CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
       this.depositConfirmedCallback,
@@ -119,11 +112,6 @@ export class DepositController extends AbstractController {
   }
 
   private removeListeners(): void {
-    this.listener.removeCfListener(
-      CFModuleTypes.EventName.DEPOSIT_STARTED,
-      this.depositStartedCallback,
-    );
-
     this.listener.removeCfListener(
       CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
       this.depositConfirmedCallback,
