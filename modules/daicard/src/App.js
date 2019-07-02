@@ -134,8 +134,6 @@ class App extends React.Component {
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
     const wallet = eth.Wallet.fromMnemonic(mnemonic)
 
-    // TODO: create channel client & poll for state changes
-
     const store = {
       get: (key) => {
         return localStorage.getItem(`CF_NODE:${key}`);
@@ -146,6 +144,7 @@ class App extends React.Component {
         }
       }
     };
+
     const opts = { mnemonic, wsUrl, rpcProviderUrl: ethUrl, store };
 
     console.log("Using client options:");

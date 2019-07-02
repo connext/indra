@@ -49,7 +49,7 @@ export class NatsMessagingService implements INatsMessaging {
       this.wsMode = true;
       this.connection = await wsNats.connect(this.configuration.wsUrl);
       this.wrapCallback = (callback: any): any => (msg: any): void => {
-        callback(JSON.parse(msg.data) as Node.NodeMessage);
+        callback(JSON.parse(JSON.parse(msg)) as Node.NodeMessage);
       };
     } else {
       this.connection = await nats.connect(this.configuration);
@@ -57,6 +57,8 @@ export class NatsMessagingService implements INatsMessaging {
         if (err) {
           console.error("Encountered an error while handling message callback", err);
         } else {
+          console.log(`Got msg: ${msg}`);
+          console.log(`Got msg.data: ${JSON.parse(msg.data)}`);
           callback(JSON.parse(msg.data) as Node.NodeMessage);
         }
       };
@@ -82,7 +84,8 @@ export class NatsMessagingService implements INatsMessaging {
     return new Promise((resolve: any, reject: any): any => {
       if (this.wsMode) {
         this.connection.request(subject, data || "{}", { timeout }, (response: any): any => {
-          resolve({ data: JSON.parse(response) });
+          const res = { data: JSON.parse(response) };
+          resolve(res);
         });
       } else {
         resolve(this.connection.request(subject, timeout, data));
