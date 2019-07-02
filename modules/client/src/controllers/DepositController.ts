@@ -1,26 +1,18 @@
-import { ChannelState, DepositParameters, convert } from "@connext/types";
+import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
-import { BigNumber } from "ethers/utils";
 
 import { logEthFreeBalance } from "../lib/utils";
+import { invalidAddress } from "../validation/addresses";
+import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-// import { Validator } from "class-validator";
 
 export class DepositController extends AbstractController {
-  // TODO: implement decorator?
-  // private validator: Validator = new Validator();
-
-  // @IsValidDepositRequest()
-  private params: DepositParameters;
-
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    this.log.info(`Deposit called with params: ${JSON.stringify(params)}`);
-
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
     this.log.info(`myFreeBalanceAddress: ${myFreeBalanceAddress}`);
 
-    // TODO:  Generate and expose multisig address in connext internal
+    // TODO: remove free balance stuff?
     this.log.info("trying to get free balance....");
     const preDepositBalances = await this.connext.getFreeBalance();
     this.log.info(`preDepositBalances:`);
@@ -35,19 +27,18 @@ export class DepositController extends AbstractController {
       if (!preDepositBalances[myFreeBalanceAddress]) {
         throw new Error("My address not found");
       }
-
-      const [counterpartyFreeBalanceAddress] = Object.keys(preDepositBalances).filter(
-        (addr: string): boolean => addr !== myFreeBalanceAddress,
-      );
     }
 
-    this.params = convert.Deposit("bignumber", params);
-    // const invalid = this.validator.validate(this);
-    // if (invalid) {
-    //   throw new Error(invalid.toString())
-    // }
+    const { assetId, amount } = convert.Deposit("bignumber", params);
 
-    this.log.info(`\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`);
+    // TODO: we can validate amount against eth held by this address
+    // by adding eth addr of balance to the class properties
+    const invalid = await this.validateInputs(assetId, amount);
+    if (invalid) {
+      throw new Error(invalid);
+    }
+
+    this.log.info(`\nDepositing ${amount} ETH into ${this.connext.opts.multisigAddress}\n`);
 
     // register listeners
     this.log.info("Registering listeners........");
@@ -56,7 +47,7 @@ export class DepositController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
-      const depositResponse = await this.connext.cfDeposit(new BigNumber(params.amount));
+      const depositResponse = await this.connext.cfDeposit(new BigNumber(amount));
       this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, null, 2)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance();
@@ -84,10 +75,25 @@ export class DepositController extends AbstractController {
       apps: await this.connext.getAppInstances(),
       freeBalance: await this.connext.getFreeBalance(),
     } as any;
-  }
+  };
 
   /////////////////////////////////
   ////// PRIVATE METHODS
+
+  ////// Validation
+  private validateInputs = async (
+    assetId: string,
+    amount: BigNumber,
+  ): Promise<string | undefined> => {
+    // check asset balance of address
+    // TODO: fix for non-eth balances
+    // TODO: is this the right address that will be sending money to the
+    // contract?
+    const depositAddr = this.cfModule.ethFreeBalanceAddress;
+    const bal = await this.provider.getBalance(depositAddr);
+    const errs = [invalidAddress(assetId), notPositive(amount), notLessThanOrEqualTo(amount, bal)];
+    return errs ? errs.filter(falsy)[0] : undefined;
+  };
 
   ////// Listener callbacks
   private depositConfirmedCallback = (data: any): void => {
