@@ -15,11 +15,11 @@
   "dependencies": {
     "@connext/types": "0.0.1",
     "@counterfactual/node": "0.2.8",
-    "@counterfactual/types": "0.0.16",
+    "@counterfactual/types": "0.0.17",
     "ts-nats": "1.2.4"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.14",
+    "@counterfactual/types": "0.0.17",
     "@types/jest": "24.0.15",
     "@types/node": "12.0.10",
     "@types/pg": "7.4.14",
