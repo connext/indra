@@ -132,6 +132,10 @@ export class TransferController extends AbstractController {
       boundResolve = this.resolveInstallTransfer.bind(null, res);
       this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
       this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+      setTimeout(() => {
+        this.cleanupInstallListeners(boundResolve, boundReject);
+        boundReject();
+      }, 5000);
     });
 
     this.cleanupInstallListeners(boundResolve, boundReject);
