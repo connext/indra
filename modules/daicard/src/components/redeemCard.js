@@ -22,7 +22,7 @@ import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import queryString from "query-string";
 
-import { getAmountInDAI, toBN } from "../utils";
+import { getChannelBalance, toBN } from "../utils";
 import MySnackbar from "../components/snackBar";
 
 import { QRGenerate } from "./qrCode";
@@ -260,7 +260,7 @@ function RedeemPaymentDialogContent(redeemPaymentState, amount, connextState) {
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Amount: {getAmountInDAI(amount, connextState)}
+              Amount: {getChannelBalance().token}
             </DialogContentText>
           </DialogContent>
         </Grid>
@@ -504,7 +504,7 @@ class RedeemCard extends Component {
     // print amount for easy confirmation
     // TODO: display more helpful messages here
     if (copied) {
-      errs.push(`Amount: ${getAmountInDAI(amount, connextState)}`)
+      errs.push(`Amount: ${getChannelBalance().token}`)
       errs.push(`Secret: ${secret.substr(0, 10)}...`)
     }
     

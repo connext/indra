@@ -1,7 +1,5 @@
 import { Paper, withStyles, Grid } from "@material-ui/core";
-import * as Connext from "connext";
 import { ethers as eth } from "ethers";
-import humanTokenAbi from "human-standard-token-abi";
 import interval from "interval-promise";
 import React from "react";
 import { BrowserRouter as Router, Route, Redirect } from "react-router-dom";
@@ -22,12 +20,9 @@ import SetupCard from "./components/setupCard";
 import Confirmations from "./components/Confirmations";
 import MySnackbar from "./components/snackBar";
 
-import { getExchangeRates, toBN } from "./utils";
+import { Currency, getExchangeRates, toBN } from "./utils";
 
 let publicUrl;
-
-const env = process.env.NODE_ENV;
-const tokenAbi = humanTokenAbi;
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -110,8 +105,6 @@ class App extends React.Component {
       minDeposit: null,
       maxDeposit: null,
     };
-
-    this.networkHandler = this.networkHandler.bind(this);
   }
 
   // ************************************************* //
@@ -127,48 +120,20 @@ class App extends React.Component {
 
     // Get mnemonic and rpc type
     let mnemonic = localStorage.getItem("mnemonic");
-    let rpc = localStorage.getItem("rpc-prod");
 
-    // If no rpc, get from env and save to local storage
-    if (!rpc) {
-      rpc = env === "development" ? "LOCALHOST" : "MAINNET";
-      localStorage.setItem("rpc-prod", rpc);
-    }
     // If no mnemonic, create one and save to local storage
     if (!mnemonic) {
       mnemonic = eth.Wallet.createRandom().mnemonic;
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    await this.setConnext(rpc, mnemonic);
-    // await this.setTokenContract();
-    await this.pollConnextState();
-    await this.setDepositLimits();
-    await this.poller();
-  }
-
-  // ************************************************* //
-  //                State setters                      //
-  // ************************************************* //
-
-  async networkHandler(rpc) {
-    // called from settingsCard when a new RPC URL is connected
-    // will refresh the page after
-    localStorage.setItem("rpc-prod", rpc);
-    // update refunding variable on rpc switch
-    localStorage.removeItem("maxBalanceAfterRefund");
-    localStorage.removeItem("refunding");
-    window.location.reload();
-    return;
-  }
-
-  async setConnext(rpc, mnemonic) {
-    // const natsUrl = overrides.natsUrl || `nats://localhost:4222`;
-    // const hubUrl = overrides.hubUrl || `http://localhost:8080`;
+    const natsUrl = overrides.natsUrl || `nats://localhost:4222`;
+    const nodeUrl = overrides.nodeUrl || `http://localhost:8080`;
     const ethUrl = overrides.ethUrl || `${publicUrl}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
-
     const wallet = eth.Wallet.fromMnemonic(mnemonic)
+
+    // TODO: create channel client & poll for state changes
 
     this.setState({
       address: wallet.address,
@@ -176,41 +141,14 @@ class App extends React.Component {
       ethprovider,
       wallet,
     });
-  }
 
-  async setTokenContract() {
-    try {
-      let { tokenAddress, ethprovider } = this.state;
-      const tokenContract = new eth.Contract(tokenAddress, tokenAbi, ethprovider);
-      this.setState({ tokenContract });
-    } catch (e) {
-      console.log("Error setting token contract");
-      console.log(e);
-    }
+    await this.setDepositLimits();
+    await this.poller();
   }
 
   // ************************************************* //
   //                    Pollers                        //
   // ************************************************* //
-
-  async pollConnextState() {
-    let connext = this.state.connext;
-    if (connext) {
-      connext.on("onStateChange", state => {
-        this.setState({
-          channelState: state.persistent.channel,
-          connextState: state,
-          runtime: state.runtime,
-          exchangeRate: state.runtime.exchangeRate ? state.runtime.exchangeRate.rates.DAI : 0
-        });
-        console.log('Connext updated:', state)
-        this.checkStatus();
-      });
-    }
-    // start polling
-    // await connext.start();
-    this.setState({ loadingConnext: false });
-  }
 
   async poller() {
     await this.autoDeposit();
@@ -232,9 +170,9 @@ class App extends React.Component {
     // default connext multiple is 1.5, leave 2x for safety
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
 
-    const minDeposit = Connext.Currency.WEI(totalDepositGasWei, () => getExchangeRates());
+    const minDeposit = Currency.WEI(totalDepositGasWei, () => getExchangeRates());
 
-    const maxDeposit = Connext.Currency.DEI(CHANNEL_DEPOSIT_MAX, () => getExchangeRates());
+    const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, () => getExchangeRates());
 
     this.setState({ maxDeposit, minDeposit });
   }
@@ -456,7 +394,6 @@ class App extends React.Component {
               render={props => (
                 <SettingsCard
                   {...props}
-                  networkHandler={this.networkHandler}
                   connext={connext}
                   address={address}
                   exchangeRate={exchangeRate}

@@ -15,21 +15,18 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
-import * as Connext from 'connext';
 import { ethers as eth } from 'ethers';
 import interval from "interval-promise";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 import queryString from "query-string";
 
-import { getOwedBalanceInDAI, toBN } from "../utils";
+import { getChannelBalance, toBN } from "../utils";
 
 import { QRScan } from "./qrCode";
 
 const { arrayify, formatEther, isHexString, parseEther } = eth.utils
 
-const convertPayment = Connext.convert.Payment
-const convertChannelState = Connext.convert.ChannelState
 const emptyAddress = eth.constants.AddressZero
 const LINK_LIMIT = parseEther("10") // $10 capped linked payments
 const ADMIN_SECRET = process.env.REACT_APP_ADMIN_SECRET;
@@ -328,17 +325,17 @@ class PayCard extends Component {
   // returns the values it sets, to prevent async weirdness
   validatePaymentInput(paymentVal) {
     const address = paymentVal.payments[0].recipient;
-    const payment = convertPayment("bn", paymentVal.payments[0]);
+    const payment = paymentVal.payments[0];
     const { channelState } = this.props;
     this.setState({ addressError: null, balanceError: null });
 
     let balanceError = null
     let addressError = null
     // validate that the token amount is within bounds
-    if (payment.amountToken.gt(toBN(channelState.balanceTokenUser))) {
+    if (toBN(payment.amountToken).gt(toBN(channelState.balanceTokenUser))) {
       balanceError = "Insufficient balance in channel";
     }
-    if (payment.amountToken.lte(toBN(0)) ) {
+    if (toBN(payment.amountToken).lte(toBN(0)) ) {
       balanceError = "Please enter a payment amount above 0";
     }
 
@@ -353,7 +350,7 @@ class PayCard extends Component {
     }
 
     // linked payments also have a maximum enforced
-    if (isLink && payment.amountToken.gt(LINK_LIMIT)) {
+    if (isLink && toBN(payment.amountToken).gt(LINK_LIMIT)) {
       // balance error here takes lower precendence than preceding
       // balance errors, only reset if undefined
       balanceError = balanceError || "Linked payments are capped at $10.";
@@ -416,7 +413,7 @@ class PayCard extends Component {
     // check if the recipient needs collateral
     const needsCollateral = await connext.recipientNeedsCollateral(
       paymentVal.payments[0].recipient,
-      convertPayment("str", { amountWei: paymentVal.payments[0].amountWei, amountToken: paymentVal.payments[0].amountToken })
+      { amountWei: paymentVal.payments[0].amountWei, amountToken: paymentVal.payments[0].amountToken },
     );
     // do not send collateral request if it is not valid
     // check if the values are reasonable
@@ -488,7 +485,7 @@ class PayCard extends Component {
         // returns null if no collateral needed
         needsCollateral = await connext.recipientNeedsCollateral(
           paymentVal.payments[0].recipient,
-          convertPayment("str", paymentVal.payments[0].amount)
+          paymentVal.payments[0].amount,
         );
         if (!needsCollateral || iteration > 20) {
           stop();
@@ -523,16 +520,15 @@ class PayCard extends Component {
       console.warn("Error finding channelState or connext in props:", this.props)
       return
     }
-    const channel = convertChannelState("bn", channelState)
 
     // get only the amount from the payment
     const amountToken = toBN(paymentVal.payments[0].amountToken)
     // if balance < count * amountToken, err
     console.log('******* count', count)
     console.log('******* amountToken', amountToken.toString())
-    console.log('******* balanceTokenUser', channel.balanceTokenUser.toString())
+    console.log('******* balanceTokenUser', channelState.balanceTokenUser.toString())
     console.log('******* mul', toBN(count).mul(amountToken).toString())
-    if (toBN(count).mul(amountToken).gt(channel.balanceTokenUser)) {
+    if (toBN(count).mul(amountToken).gt(toBN(channelState.balanceTokenUser))) {
       console.error("Insufficient funds for count * amountToken purchase value")
       return
     }
@@ -639,7 +635,7 @@ class PayCard extends Component {
   };
 
   render() {
-    const { classes, connextState } = this.props;
+    const { classes } = this.props;
     const { paymentState, paymentVal, displayVal, balanceError, addressError, scan, showReceipt, sendError } = this.state;
     return (
       <Grid
@@ -671,7 +667,7 @@ class PayCard extends Component {
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
               <span>
-                {getOwedBalanceInDAI(connextState)}
+                {getChannelBalance().token}
               </span>
             </Typography>
           </Grid>
