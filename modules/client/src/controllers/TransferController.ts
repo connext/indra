@@ -1,10 +1,4 @@
-import {
-  AppRegistry,
-  convert,
-  NodeChannel,
-  TransferParameters,
-  TransferParametersBigNumber,
-} from "@connext/types";
+import { AppRegistry, convert, NodeChannel, TransferParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
@@ -56,7 +50,14 @@ export class TransferController extends AbstractController {
     // or if there is a route available through the node
 
     // install the transfer application
-    await this.transferAppInstalled(amount, recipient);
+    try {
+      await this.transferAppInstalled(amount, recipient);
+    } catch (e) {
+      // TODO: can add more checks in `rejectInstall` but there is no
+      // way to check if the recipient is collateralized atm, so just
+      // assume this is the reason the install was rejected
+      throw new Error("Recipient online, but does not have sufficient collateral");
+    }
 
     // update state
     // TODO: listener for reject state?
