@@ -7,16 +7,21 @@ import {
 } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { Validator } from "class-validator";
 import { constants } from "ethers";
 import { BigNumber } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
 import { delay } from "../lib/utils";
+import { IsValidTransferRequest } from "../validation/TransferParameters";
 
 import { AbstractController } from "./AbstractController";
-
 export class TransferController extends AbstractController {
+  private validator: Validator = new Validator();
+
+  @IsValidTransferRequest()
   private params: TransferParametersBigNumber;
+
   private appId: string;
 
   constructor(name: string, connext: ConnextInternal) {
@@ -26,13 +31,13 @@ export class TransferController extends AbstractController {
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
-    if (!params.recipient.startsWith("xpub")) {
-      throw new Error("Recipient must be xpub");
-    }
-
     // convert params
     const paramsBig: TransferParametersBigNumber = convert.TransferParameters("bignumber", params);
     this.params = paramsBig;
+    const invalid = await this.validator.validate(this);
+    if (invalid) {
+      throw new Error(invalid.toString());
+    }
 
     // check that there is sufficient free balance for amount
     const freeBalance = await this.connext.getFreeBalance();
@@ -109,7 +114,7 @@ export class TransferController extends AbstractController {
       return;
     }
 
-    rej();
+    rej(`Install virtual rejected. Event data: ${JSON.stringify(data, null, 2)}`);
     return data;
   };
 
