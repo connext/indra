@@ -137,8 +137,11 @@ export class ChannelService implements OnModuleInit {
       await this.makeAvailable((res.data as NodeTypes.CreateChannelResult).multisigAddress);
     });
 
+    // TODO: how many blocks until confirmed?
     this.node.on(NodeTypes.EventName.DEPOSIT_CONFIRMED, (res: DepositConfirmationMessage) => {
       logger.log(`DEPOSIT_CONFIRMED event fired: ${JSON.stringify(res)}`);
+
+      // TODO: add some spam handling
       if (!res || !res.data) {
         return;
       }
