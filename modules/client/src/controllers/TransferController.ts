@@ -14,10 +14,6 @@ import { AbstractController } from "./AbstractController";
 export class TransferController extends AbstractController {
   private appId: string;
 
-  constructor(name: string, connext: ConnextInternal) {
-    super(name, connext);
-  }
-
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
