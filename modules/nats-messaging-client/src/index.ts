@@ -42,32 +42,24 @@ export class NatsMessagingService implements INatsMessaging {
   constructor(
     private readonly configuration: NatsConfig,
     private readonly messagingServiceKey: string,
-  ) {
-    console.log(`nats update active!`);
-  }
+  ) {}
 
   async connect(): Promise<void> {
     if (this.configuration.wsUrl) {
       this.wsMode = true;
-      console.log(`Using websocket url: ${this.configuration.wsUrl}`);
       this.connection = await wsNats.connect(this.configuration.wsUrl);
       this.wrapCallback = (callback: any): any => (msg: any): void => {
-        console.log(`Calling simple callback ${typeof callback}`);
         callback(JSON.parse(msg.data) as Node.NodeMessage);
       };
-      this.wrapCallback(console.log)({ data: `{"msg":"test ws message"}` });
     } else {
-      console.log(`Using normal nats url: ${this.configuration.servers}`);
       this.connection = await nats.connect(this.configuration);
       this.wrapCallback = (callback: any): any => (err: any, msg: any): void => {
         if (err) {
           console.error("Encountered an error while handling message callback", err);
         } else {
-          console.log(`calling callback ${typeof callback}`);
           callback(JSON.parse(msg.data) as Node.NodeMessage);
         }
       };
-      this.wrapCallback(console.log)(undefined, { data: `{"msg":"test nats message"}` });
     }
   }
 
@@ -87,17 +79,12 @@ export class NatsMessagingService implements INatsMessaging {
   }
 
   async request(subject: string, timeout: number, data: string): Promise<any> {
-    console.log(`Requesting...`);
     return new Promise((resolve: any, reject: any): any => {
       if (this.wsMode) {
-        console.log(`Requesting in ws mode! ${data}`);
         this.connection.request(subject, data || "{}", { timeout }, (response: any): any => {
-          const res = { data: JSON.parse(response) };
-          console.log(`nats request complete: ${JSON.stringify(res)}`);
-          resolve(res);
+          resolve({ data: JSON.parse(response) });
         });
       } else {
-        console.log(`Requesting in normal mode!`);
         resolve(this.connection.request(subject, timeout, data));
       }
     });
