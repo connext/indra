@@ -95,8 +95,6 @@ export class TransferController extends AbstractController {
   ////// PRIVATE METHODS
   // TODO: fix type of data
   private resolveInstallTransfer = (res: any, data: any): any => {
-    this.log.info(`Resolving promise with data: ${JSON.stringify(data, null, 2)}`);
-    this.log.info(`this.appId: ${this.appId}`);
     if (this.appId !== data.params.appInstanceId) {
       return;
     }
@@ -107,7 +105,6 @@ export class TransferController extends AbstractController {
   // TODO: fix types of data
   private rejectInstallTransfer = (rej: any, data: RejectInstallVirtualMessage): any => {
     // check app id
-    this.log.info(`this.appId: ${this.appId}`);
     if (this.appId !== data.data.appInstanceId) {
       return;
     }
