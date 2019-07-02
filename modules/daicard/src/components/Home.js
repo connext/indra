@@ -1,14 +1,13 @@
+import { Button, Fab, Grid, Modal, withStyles } from "@material-ui/core";
+import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
+import QRIcon from "mdi-material-ui/QrcodeScan";
 import React from "react";
+import { Link } from "react-router-dom";
+
 import "../App.css";
+
 import ChannelCard from "./channelCard";
 import QRScan from "./qrScan";
-import QRIcon from "mdi-material-ui/QrcodeScan";
-import SendIcon from "@material-ui/icons/Send";
-import ReceiveIcon from "@material-ui/icons/SaveAlt";
-import Modal from "@material-ui/core/Modal";
-import Button from "@material-ui/core/Button";
-import { Fab, Grid, withStyles } from "@material-ui/core";
-import { Link } from "react-router-dom";
 
 const styles = {};
 
@@ -117,7 +116,7 @@ class Home extends React.Component {
         </Grid>
         <Grid
           container
-          spacing={16}
+          spacing={10}
           direction="column"
           style={{ paddingLeft: "2%", paddingRight: "2%", textAlign: "center" }}
         >

@@ -1,37 +1,37 @@
-import * as Connext from 'connext';
-import React, { Component } from "react";
-import Button from "@material-ui/core/Button";
-import SendIcon from "@material-ui/icons/Send";
-import TextField from "@material-ui/core/TextField";
-import QRIcon from "mdi-material-ui/QrcodeScan";
-import LinkIcon from "@material-ui/icons/Link";
-import InputAdornment from "@material-ui/core/InputAdornment";
-import Tooltip from "@material-ui/core/Tooltip";
-import Modal from "@material-ui/core/Modal";
-import * as eth from 'ethers';
-import QRScan from "./qrScan";
 import {
-  withStyles,
-  Grid,
-  Typography,
+  Button,
   CircularProgress,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogTitle,
+  Grid,
+  InputAdornment,
+  Modal,
+  TextField,
+  Tooltip,
+  Typography,
+  withStyles,
 } from "@material-ui/core";
+import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
+import * as Connext from 'connext';
+import { ethers as eth } from 'ethers';
 import interval from "interval-promise";
-import Web3 from "web3";
-import { getOwedBalanceInDAI } from "../utils/currencyFormatting";
+import QRIcon from "mdi-material-ui/QrcodeScan";
+import React, { Component } from "react";
+import queryString from "query-string";
 
-const Big = (n) => eth.utils.bigNumberify(n.toString())
+import { getOwedBalanceInDAI, toBN } from "../utils";
+
+import QRScan from "./qrScan";
+
+const { arrayify, formatEther, isHexString, parseEther } = eth.utils
+
 const convertPayment = Connext.convert.Payment
 const convertChannelState = Connext.convert.ChannelState
 const emptyAddress = eth.constants.AddressZero
-const queryString = require("query-string");
-// $10 capped linked payments
-const LINK_LIMIT = eth.utils.parseEther("10")
+const LINK_LIMIT = parseEther("10") // $10 capped linked payments
 const ADMIN_SECRET = process.env.REACT_APP_ADMIN_SECRET;
 
 const styles = theme => ({
@@ -227,7 +227,7 @@ class PayCard extends Component {
               ? props.scanArgs.recipient
               : "",
             amountToken: props.scanArgs.amount
-              ? Web3.utils.toWei(props.scanArgs.amount)
+              ? parseEther(props.scanArgs.amount).toString()
               : "0",
             amountWei: "0",
           }
@@ -249,9 +249,9 @@ class PayCard extends Component {
     const query = queryString.parse(location.search);
     if (query.amountToken) {
       await this.setState(oldState => {
-        oldState.paymentVal.payments[0].amountToken = Web3.utils.toWei(
+        oldState.paymentVal.payments[0].amountToken = parseEther(
           query.amountToken
-        );
+        ).toString();
         oldState.displayVal = query.amountToken;
         return oldState;
       });
@@ -280,7 +280,7 @@ class PayCard extends Component {
     }
     await this.setState(oldState => {
       oldState.paymentVal.payments[0].amountToken = value
-        ? Web3.utils.toWei(`${tokenVal}`, "ether")
+        ? parseEther(`${tokenVal}`).toString()
         : "0";
       if (balanceError) {
         oldState.balanceError = balanceError;
@@ -335,17 +335,17 @@ class PayCard extends Component {
     let balanceError = null
     let addressError = null
     // validate that the token amount is within bounds
-    if (payment.amountToken.gt(Big(channelState.balanceTokenUser))) {
+    if (payment.amountToken.gt(toBN(channelState.balanceTokenUser))) {
       balanceError = "Insufficient balance in channel";
     }
-    if (payment.amountToken.lte(Big(0)) ) {
+    if (payment.amountToken.lte(toBN(0)) ) {
       balanceError = "Please enter a payment amount above 0";
     }
 
     // validate recipient is valid address OR the empty address
     // recipient address can be empty
     const isLink = paymentVal.payments[0].type === "PT_LINK";
-    const isValidRecipient = Web3.utils.isAddress(address) &&
+    const isValidRecipient = isHexString(address) && arrayify(address).length === 20 &&
       (isLink ? address === emptyAddress : address !== emptyAddress);
 
     if (!isValidRecipient) {
@@ -526,13 +526,13 @@ class PayCard extends Component {
     const channel = convertChannelState("bn", channelState)
 
     // get only the amount from the payment
-    const amountToken = Big(paymentVal.payments[0].amountToken)
+    const amountToken = toBN(paymentVal.payments[0].amountToken)
     // if balance < count * amountToken, err
     console.log('******* count', count)
     console.log('******* amountToken', amountToken.toString())
     console.log('******* balanceTokenUser', channel.balanceTokenUser.toString())
-    console.log('******* mul', Big(count).mul(amountToken).toString())
-    if (Big(count).mul(amountToken).gt(channel.balanceTokenUser)) {
+    console.log('******* mul', toBN(count).mul(amountToken).toString())
+    if (toBN(count).mul(amountToken).gt(channel.balanceTokenUser)) {
       console.error("Insufficient funds for count * amountToken purchase value")
       return
     }
@@ -608,7 +608,7 @@ class PayCard extends Component {
           pathname: "/redeem",
           // TODO: add wei
           search: `?secret=${secret}&amountToken=${
-            Web3.utils.fromWei(amountToken, "ether")
+            formatEther(amountToken, "ether")
           }`,
           state: { isConfirm: true, secret, amountToken }
         });
@@ -644,7 +644,7 @@ class PayCard extends Component {
     return (
       <Grid
         container
-        spacing={16}
+        spacing={10}
         direction="column"
         style={{
           display: "flex",
@@ -850,8 +850,8 @@ class PayCard extends Component {
           sendError={sendError}
           amountToken={
             paymentVal.payments[0].amountToken
-              ? Web3.utils.fromWei(
-                  paymentVal.payments[0].amountToken
+              ? formatEther(
+                  toBN(paymentVal.payments[0].amountToken)
                 )
               : "0"
           }

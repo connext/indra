@@ -1,11 +1,12 @@
-import React, { Component } from "react";
+import { withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
-import { withStyles } from "@material-ui/core/styles";
+import React, { Component } from "react";
+
 import MySnackbar from './snackBar';
 
 const styles = theme => ({
   margin: {
-    margin: theme.spacing.unit
+    margin: theme.spacing(1)
   }
 });
 

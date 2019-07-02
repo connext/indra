@@ -1,18 +1,20 @@
+import {
+  Button,
+  Grid,
+  TextField,
+  Tooltip,
+  Typography,
+  withStyles,
+} from "@material-ui/core";
+import { SaveAlt as ReceiveIcon } from "@material-ui/icons";
 import { ethers as eth } from "ethers";
 import React, { Component } from "react";
-import Button from "@material-ui/core/Button";
-import ReceiveIcon from "@material-ui/icons/SaveAlt";
-import TextField from "@material-ui/core/TextField";
-import Tooltip from "@material-ui/core/Tooltip";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import Typography from "@material-ui/core/Typography";
-import QRGenerate from "./qrGenerate";
-import { withStyles, Grid } from "@material-ui/core";
-import MySnackbar from "./snackBar";
-import Web3 from "web3";
-import { getAmountInDAI } from "../utils/currencyFormatting";
 
-const Big = (n) => eth.utils.bigNumberify(n.toString())
+import { getAmountInDAI, toBN } from "../utils";
+
+import QRGenerate from "./qrGenerate";
+import MySnackbar from "./snackBar";
 
 const styles = theme => ({
   icon: {
@@ -57,15 +59,15 @@ class ReceiveCard extends Component {
       this.setState({ error })
       return error
     }
-    const tokenBig = Big(amountToken)
+    const tokentoBN = toBN(amountToken)
     const amount = {
       amountWei: '0',
       amountToken: maxTokenDeposit,
     }
-    if (tokenBig.gt(Big(amount.amountToken))) {
+    if (tokentoBN.gt(toBN(amount.amountToken))) {
       error = `Channel balances are capped at ${getAmountInDAI(amount, connextState)}`
     }
-    if (tokenBig.lte(eth.constants.Zero)) {
+    if (tokentoBN.lte(eth.constants.Zero)) {
       error = "Please enter a payment amount above 0"
     }
 
@@ -87,7 +89,7 @@ class ReceiveCard extends Component {
     }    
     this.setState({
       qrUrl: this.generateQrUrl(value),
-      amountToken: Web3.utils.toWei(tokenVal, "ether"),
+      amountToken: eth.utils.parseEther(tokenVal).toString(),
       displayValue: value,
       error,
     });
@@ -109,7 +111,7 @@ class ReceiveCard extends Component {
     return (
       <Grid
         container
-        spacing={16}
+        spacing={10}
         direction="column"
         style={{
           paddingLeft: "10%",

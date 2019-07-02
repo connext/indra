@@ -12,6 +12,5 @@
 // You can read more here:
 // https://on.cypress.io/configuration
 // ***********************************************************
-import 'cypress-failed-log'
 import './commands'
 chai.use(require('chai-bn')(require('bn.js')))

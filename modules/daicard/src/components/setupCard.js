@@ -1,6 +1,5 @@
-import React, { Component } from "react";
-import Grid from "@material-ui/core/Grid";
 import {
+  Grid,
   withStyles,
   DialogTitle,
   DialogContent,
@@ -10,10 +9,11 @@ import {
   Typography,
   DialogContentText,
   LinearProgress,
-  Tooltip
+  Tooltip,
 } from "@material-ui/core";
+import { FileCopy as CopyIcon } from "@material-ui/icons";
+import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import CopyIcon from "@material-ui/icons/FileCopy";
 
 const styles = theme => ({
   icon: {
@@ -139,7 +139,7 @@ class SetupCard extends Component {
     return (
       <Grid
         container
-        spacing={16}
+        spacing={10}
         direction="column"
         style={{
           paddingLeft: "10%",
@@ -148,6 +148,7 @@ class SetupCard extends Component {
           paddingBottom: "10%",
           textAlign: "center"
         }}
+        item={true}
         zeroMinWidth={true}
       >
         {display.length !== 0 && (

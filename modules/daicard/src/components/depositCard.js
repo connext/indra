@@ -1,13 +1,10 @@
+import { Button, Grid, Tooltip, Typography, withStyles } from "@material-ui/core";
+import { AttachMoney as DepositIcon } from "@material-ui/icons";
 import React, { Component } from "react";
-import Button from "@material-ui/core/Button";
-import DepositIcon from "@material-ui/icons/AttachMoney";
-import Tooltip from "@material-ui/core/Tooltip";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import Typography from "@material-ui/core/Typography";
-import Grid from "@material-ui/core/Grid";
+
 import QRGenerate from "./qrGenerate";
 import MySnackbar from "./snackBar";
-import { withStyles } from "@material-ui/core";
 
 const styles = theme => ({
   icon: {
@@ -43,7 +40,7 @@ class DepositCard extends Component {
     return (
       <Grid
         container
-        spacing={16}
+        spacing={10}
         direction="column"
         style={{
           paddingLeft: "10%",

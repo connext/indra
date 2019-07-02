@@ -1,17 +1,15 @@
+import { IconButton, Snackbar, SnackbarContent, withStyles } from "@material-ui/core";
+import { amber, green, red } from "@material-ui/core/colors";
+import {
+  Close as CloseIcon,
+  CheckCircle as CheckCircleIcon,
+  HourglassFull as HourglassIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon,
+} from "@material-ui/icons";
 import React from "react";
-import green from "@material-ui/core/colors/green";
-import amber from "@material-ui/core/colors/amber";
-import red from "@material-ui/core/colors/red";
-import { Snackbar, IconButton } from "@material-ui/core";
-import CloseIcon from "@material-ui/icons/Close";
-import CheckCircleIcon from "@material-ui/icons/CheckCircle";
-import { withStyles } from "@material-ui/core/styles";
 import PropTypes from "prop-types";
-import HourglassIcon from "@material-ui/icons/HourglassFull";
-import ErrorIcon from "@material-ui/icons/Error";
-import InfoIcon from "@material-ui/icons/Info";
 import classNames from "classnames";
-import SnackbarContent from "@material-ui/core/SnackbarContent";
 
 const variantIcon = {
   success: CheckCircleIcon,
@@ -35,7 +33,7 @@ const styles = theme => ({
   },
   iconVariant: {
     opacity: 0.9,
-    marginRight: theme.spacing.unit
+    marginRight: theme.spacing(1)
   },
   message: {
     display: "flex",

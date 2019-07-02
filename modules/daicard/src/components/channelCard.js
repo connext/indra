@@ -1,7 +1,7 @@
+import { Grid, Typography, withStyles } from "@material-ui/core";
 import React, { Component } from "react";
-import { Grid, Typography } from "@material-ui/core";
-import { withStyles } from "@material-ui/core";
-import { getOwedBalanceInDAI } from "../utils/currencyFormatting";
+
+import { getOwedBalanceInDAI } from "../utils";
 
 const styles = theme => ({
   row: {
@@ -27,7 +27,7 @@ class ChannelCard extends Component {
         <Grid>
           <Grid 
             container
-            spacing={16}
+            spacing={10}
             direction="row"
             style={{
               paddingLeft: "10%",
@@ -42,13 +42,13 @@ class ChannelCard extends Component {
           >
           <Grid item xs={12}>
             <span>
-              <Typography inline={true} variant="h5" className={classes.row}>
+              <Typography inline={"true"} variant="h5" className={classes.row}>
                 {"$ "}
               </Typography>
-              <Typography inline={true} variant="h1" className={classes.row}>
+              <Typography inline={"true"} variant="h1" className={classes.row}>
                 <span>{whole}</span>
               </Typography>
-              <Typography inline={true} variant="h3" className={classes.row}>
+              <Typography inline={"true"} variant="h3" className={classes.row}>
                 <span>{part}</span>
               </Typography>
             </span>

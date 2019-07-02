@@ -1,27 +1,30 @@
-import React, { Component } from "react";
 import {
   Button,
-  Grid,
-  Select,
-  MenuItem,
-  Typography,
-  Tooltip,
-  TextField,
-  InputAdornment,
-  withStyles,
   CircularProgress,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogTitle,
+  Grid,
+  InputAdornment,
+  MenuItem,
+  Select,
+  TextField,
+  Tooltip,
+  Typography,
+  withStyles,
 } from "@material-ui/core";
-import { CopyToClipboard } from "react-copy-to-clipboard";
-import CopyIcon from "@material-ui/icons/FileCopy";
-import SubmitIcon from "@material-ui/icons/ArrowRight";
-import SettingsIcon from "@material-ui/icons/Settings";
-import MySnackbar from "./snackBar";
+import {
+  ArrowRight as SubmitIcon,
+  FileCopy as CopyIcon,
+  Settings as SettingsIcon,
+} from "@material-ui/icons";
 import interval from "interval-promise";
+import React, { Component } from "react";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+
+import MySnackbar from "./snackBar";
 
 const styles = {
   card: {
@@ -118,7 +121,7 @@ class SettingsCard extends Component {
     return (
       <Grid
         container
-        spacing={16}
+        spacing={10}
         direction="column"
         style={{
           paddingLeft: 12,

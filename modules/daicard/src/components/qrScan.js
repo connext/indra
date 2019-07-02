@@ -1,6 +1,6 @@
+import { Typography } from "@material-ui/core";
 import React, { Component } from "react";
 import QrReader from "react-qr-reader";
-import {Typography} from "@material-ui/core";
 
 class QRScan extends Component {
   constructor(props) {

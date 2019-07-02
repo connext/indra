@@ -1,8 +1,5 @@
+import { Button, Grid, Typography, withStyles } from "@material-ui/core";
 import React, { Component } from "react";
-import Button from "@material-ui/core/Button";
-import Typography from "@material-ui/core/Typography";
-import Grid from "@material-ui/core/Grid";
-import { withStyles } from "@material-ui/core";
 
 const styles = theme => ({
   icon: {
@@ -39,7 +36,7 @@ class SupportCard extends Component {
     return (
       <Grid
         container
-        spacing={16}
+        spacing={10}
         direction="column"
         style={{
           paddingLeft: "5%",

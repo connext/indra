@@ -1,21 +1,33 @@
-import { withStyles, Button, CircularProgress, Dialog, DialogTitle, DialogContentText, DialogContent, DialogActions } from "@material-ui/core";
-import ReceiveIcon from "@material-ui/icons/SaveAlt";
-import DoneIcon from "@material-ui/icons/Done";
-import ErrorIcon from "@material-ui/icons/ErrorOutline";
-import React, { Component } from "react";
-import Grid from "@material-ui/core/Grid";
-import Typography from "@material-ui/core/Typography";
-import Tooltip from "@material-ui/core/Tooltip";
-import QRGenerate from "./qrGenerate";
-import { CopyToClipboard } from "react-copy-to-clipboard";
-import Web3 from "web3";
-import { getAmountInDAI } from "../utils/currencyFormatting";
-import interval from "interval-promise";
-import MySnackbar from "../components/snackBar";
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Grid,
+  Tooltip,
+  Typography,
+  withStyles,
+} from "@material-ui/core";
+import {
+  Done as DoneIcon,
+  ErrorOutline as ErrorIcon,
+  SaveAlt as ReceiveIcon,
+} from "@material-ui/icons";
 import { ethers as eth } from "ethers";
+import interval from "interval-promise";
+import React, { Component } from "react";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+import queryString from "query-string";
 
-const Big = (n) => eth.utils.bigNumberify(n.toString())
-const queryString = require("query-string");
+import { getAmountInDAI, toBN } from "../utils";
+import MySnackbar from "../components/snackBar";
+
+import QRGenerate from "./qrGenerate";
+
+const { isHexString, formatEther, parseEther } = eth.utils
 
 const styles = theme => ({
   icon: {
@@ -76,7 +88,7 @@ const RedeemConfirmationDialog = props => (
   >
     <Grid
       container
-      spacing={16}
+      spacing={10}
       direction="column"
       style={{
         textAlign: "center",
@@ -279,7 +291,7 @@ class RedeemCard extends Component {
     this.setState({
       secret: query.secret,
       amount: {
-        amountToken: Web3.utils.toWei(query.amountToken, "ether"),
+        amountToken: parseEther(query.amountToken).toString(),
         amountWei: "0" // TODO: add wei
       }
     });
@@ -320,7 +332,7 @@ class RedeemCard extends Component {
     // TODO: add wei
     const url = `${publicUrl}/redeem?secret=${
       secret ? secret : ""
-    }&amountToken=${amount ? Web3.utils.fromWei(amount.amountToken, "ether") : "0"}`;
+    }&amountToken=${amount ? formatEther(amount.amountToken) : "0"}`;
     return url;
   }
 
@@ -350,8 +362,8 @@ class RedeemCard extends Component {
           return
         }
         // eval channel collateral
-        hasCollateral = Big(channelState.balanceTokenHub).gte(
-          Big(amount.amountToken)
+        hasCollateral = toBN(channelState.balanceTokenHub).gte(
+          toBN(amount.amountToken)
         )
 
         if (hasCollateral || iteration > 30) {
@@ -439,8 +451,8 @@ class RedeemCard extends Component {
 
       // check if the channel has collateral, otherwise display loading
       if (
-        Big(channelState.balanceTokenHub).lt(
-          Big(amount.amountToken))
+        toBN(channelState.balanceTokenHub).lt(
+          toBN(amount.amountToken))
         ) {
         // channel does not have collateral
         this.setState({ redeemPaymentState: RedeemPaymentStates.Collateralizing })
@@ -476,7 +488,7 @@ class RedeemCard extends Component {
       return errs
     }
     // valid secret
-    if (!Web3.utils.isHex(secret)) {
+    if (!isHexString(secret)) {
       errs.push("Secret copied is invalid")
     }
     // valid amount
@@ -485,7 +497,7 @@ class RedeemCard extends Component {
       errs.push("Invalid amount")
       return errs
     }
-    const token = Big(amount.amountToken)
+    const token = toBN(amount.amountToken)
     if (token.lt(eth.constants.Zero)) {
       errs.push("Copied token balance is negative")
     }

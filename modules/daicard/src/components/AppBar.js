@@ -1,4 +1,3 @@
-import React from "react";
 import {
   AppBar,
   Toolbar,
@@ -7,20 +6,21 @@ import {
   Grid,
   Button
 } from "@material-ui/core";
+import { Settings as SettingIcon } from "@material-ui/icons";
 import blockies from "ethereum-blockies-png";
-import SettingIcon from "@material-ui/icons/Settings";
+import React from "react";
 import { Link } from "react-router-dom";
 
 const noAddrBlocky = require("../assets/noAddress.png");
 
 const AppBarComponent = props => (
   <Grid>
-    <Grid container spacing={16}>
+    <Grid container spacing={10}>
       <AppBar position="sticky" color="secondary" elevation={0} style={{ paddingTop: "2%"}}>
         <Toolbar>
           <Grid
             container
-            spacing={16}
+            spacing={10}
             direction="row"
             justify="space-between"
             alignItems="center"

@@ -1,23 +1,29 @@
+import {
+  Button,
+  CircularProgress,
+  Grid,
+  InputAdornment,
+  Modal,
+  TextField,
+  Tooltip,
+  Typography,
+  withStyles,
+} from "@material-ui/core";
+import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import * as Connext from "connext";
 import { ethers as eth } from "ethers";
-import React, { Component } from "react";
-import Button from "@material-ui/core/Button";
-import UnarchiveIcon from "@material-ui/icons/Unarchive";
-import TextField from "@material-ui/core/TextField";
+import interval from "interval-promise";
 import QRIcon from "mdi-material-ui/QrcodeScan";
+import React, { Component } from "react";
+
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
-import Tooltip from "@material-ui/core/Tooltip";
-import InputAdornment from "@material-ui/core/InputAdornment";
-import Modal from "@material-ui/core/Modal";
-import QRScan from "./qrScan";
-import { withStyles, Grid, Typography, CircularProgress } from "@material-ui/core";
 import { getOwedBalanceInDAI } from "../utils/currencyFormatting";
-import interval from "interval-promise";
-import { hasPendingTransaction } from '../utils/hasOnchainTransaction'
+import { hasPendingTransaction, toBN } from "../utils";
+
+import QRScan from "./qrScan";
 
 const { hasPendingOps } = new Connext.Utils();
-const Big = (n) => eth.utils.bigNumberify(n.toString())
 
 const styles = theme => ({
   icon: {
@@ -32,10 +38,10 @@ const styles = theme => ({
     position: "absolute",
     top: "-400px",
     left: "150px",
-    width: theme.spacing.unit * 50,
+    width: theme.spacing(50),
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[5],
-    padding: theme.spacing.unit * 4,
+    padding: theme.spacing(4),
     outline: "none"
   }
 });
@@ -43,7 +49,6 @@ const styles = theme => ({
 class CashOutCard extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
       withdrawalVal: {
         // withdrawalWeiUser: "0",
@@ -71,8 +76,8 @@ class CashOutCard extends Component {
 
     if (withdrawEth && channelState && connextState) {
       const { custodialBalance } = connextState.persistent
-      const amountToken = Big(channelState.balanceTokenUser).add(custodialBalance.balanceToken)
-      const amountWei = Big(channelState.balanceWeiUser).add(custodialBalance.balanceWei)
+      const amountToken = toBN(channelState.balanceTokenUser).add(custodialBalance.balanceToken)
+      const amountWei = toBN(channelState.balanceWeiUser).add(custodialBalance.balanceWei)
       // withdraw all channel balance in eth
       withdrawalVal = {
         ...withdrawalVal,

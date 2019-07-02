@@ -1,10 +1,10 @@
+import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
 import React from "react";
 import ReactDOM from "react-dom";
-import "./index.css";
+
 import App from "./App";
+import "./index.css";
 import * as serviceWorker from "./serviceWorker";
-import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles/";
-require("dotenv").config();
 
 const theme = createMuiTheme({
   palette: {

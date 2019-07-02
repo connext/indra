@@ -1,10 +1,12 @@
-import "./App.css";
 import { Paper, withStyles, Grid } from "@material-ui/core";
+import * as Connext from "connext";
 import { ethers as eth } from "ethers";
+import humanTokenAbi from "human-standard-token-abi";
 import interval from "interval-promise";
 import React from "react";
 import { BrowserRouter as Router, Route, Redirect } from "react-router-dom";
-import * as Connext from "connext";
+
+import "./App.css";
 
 // Pages
 import Home from "./components/Home";
@@ -20,9 +22,8 @@ import SetupCard from "./components/setupCard";
 import Confirmations from "./components/Confirmations";
 import MySnackbar from "./components/snackBar";
 
-const humanTokenAbi = require("./abi/humanToken.json");
+import { toBN } from "./utils";
 
-const Big = (n) => eth.utils.bigNumberify(n.toString())
 const { getExchangeRates, hasPendingOps } = new Connext.Utils();
 
 let publicUrl;
@@ -41,14 +42,14 @@ const overrides = {
 };
 
 // Constants for channel max/min - this is also enforced on the hub
-const DEPOSIT_ESTIMATED_GAS = Big("800000"); // 700k gas // TODO: estimate this dynamically
-const HUB_EXCHANGE_CEILING = eth.constants.WeiPerEther.mul(Big(69)); // 69 TST
-const CHANNEL_DEPOSIT_MAX = eth.constants.WeiPerEther.mul(Big(30)); // 30 TST
+const DEPOSIT_ESTIMATED_GAS = toBN("800000"); // 700k gas // TODO: estimate this dynamically
+const HUB_EXCHANGE_CEILING = eth.constants.WeiPerEther.mul(toBN(69)); // 69 TST
+const CHANNEL_DEPOSIT_MAX = eth.constants.WeiPerEther.mul(toBN(30)); // 30 TST
 
 const styles = theme => ({
   paper: {
     width: "100%",
-    padding: `0px ${theme.spacing.unit}px 0 ${theme.spacing.unit}px`,
+    padding: `0px ${theme.spacing(1)}px 0 ${theme.spacing(1)}px`,
     [theme.breakpoints.up("sm")]: {
       width: "450px",
       height: "650px",
@@ -179,7 +180,6 @@ class App extends React.Component {
           : new eth.providers.JsonRpcProvider("http://localhost:8545")
         break;
       case "RINKEBY":
-      // TODO: overrides so it works with hub
         hubUrl = overrides.rinkebyHub || `${publicUrl}/api/rinkeby/hub`;
         ethUrl = overrides.rinkebyEth || undefined
         ethprovider = overrides.rinkebyEth
@@ -274,12 +274,12 @@ class App extends React.Component {
     let gasPrice = await ethprovider.getGasPrice()
 
     // default connext multiple is 1.5, leave 2x for safety
-    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(Big(2)).mul(gasPrice);
+    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
 
     // Add gas required to increase token allowance if needed
     const allowance = await tokenContract.allowance(address, contractAddress)
     if (allowance.eq(eth.constants.Zero)) {
-      totalDepositGasWei = totalDepositGasWei.add(Big('50000'))
+      totalDepositGasWei = totalDepositGasWei.add(toBN('50000'))
     }
 
     const minDeposit = Connext.Currency.WEI(totalDepositGasWei, () => getExchangeRates(connextState));
@@ -342,7 +342,7 @@ class App extends React.Component {
         return;
       }
 
-      console.log(`Depositing with gas price of ${eth.utils.formatUnits(eth.utils.bigNumberify(gasPrice), 'gwei')} gwei`);
+      console.log(`Depositing with gas price of ${eth.utils.formatUnits(toBN(gasPrice), 'gwei')} gwei`);
 
       await this.state.connext.deposit({ 
         amountWei: channelDeposit.amountWei.toString(), 
@@ -356,9 +356,9 @@ class App extends React.Component {
     if (!connextState || hasPendingOps(channelState)) {
       return;
     }
-    const weiBalance = Big(channelState.balanceWeiUser);
-    const tokenBalance = Big(channelState.balanceTokenUser);
-    if (channelState && weiBalance.gt(Big("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
+    const weiBalance = toBN(channelState.balanceWeiUser);
+    const tokenBalance = toBN(channelState.balanceTokenUser);
+    if (channelState && weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
       await this.state.connext.exchange(channelState.balanceWeiUser, "wei");
     }
   }
@@ -445,7 +445,6 @@ class App extends React.Component {
       runtime,
       maxDeposit,
       minDeposit,
-      ethprovider,
       status
     } = this.state;
     const { classes } = this.props;
@@ -533,7 +532,6 @@ class App extends React.Component {
               render={props => (
                 <SendCard
                   {...props}
-                  web3={ethprovider}
                   connext={connext}
                   address={address}
                   channelState={channelState}
