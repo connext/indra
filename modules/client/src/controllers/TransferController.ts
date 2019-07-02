@@ -7,21 +7,17 @@ import {
 } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
-import { Validator } from "class-validator";
 import { constants } from "ethers";
 import { BigNumber } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
 import { delay } from "../lib/utils";
-import { IsValidTransferRequest } from "../validation/TransferParameters";
+import { invalidAddress, invalidXpub } from "../validation/addresses";
+import { falsy, notGreaterThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
+
 export class TransferController extends AbstractController {
-  private validator: Validator = new Validator();
-
-  @IsValidTransferRequest()
-  private params: TransferParametersBigNumber;
-
   private appId: string;
 
   constructor(name: string, connext: ConnextInternal) {
@@ -31,22 +27,19 @@ export class TransferController extends AbstractController {
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
-    // convert params
-    const paramsBig: TransferParametersBigNumber = convert.TransferParameters("bignumber", params);
-    this.params = paramsBig;
-    const invalid = await this.validator.validate(this);
+    // convert params + validate
+    const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
+    // TODO: we can validate amount against freebalance
+    // by adding free balance to class properties
+    const invalid = await this.validate(recipient, amount, assetId);
     if (invalid) {
       throw new Error(invalid.toString());
     }
 
     // check that there is sufficient free balance for amount
-    const freeBalance = await this.connext.getFreeBalance();
-
-    const preTransferBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
-
-    if (preTransferBal.lt(paramsBig.amount)) {
-      throw new Error("Insufficient free balance for proposed transfer.");
-    }
+    const preTransferBal = (await this.connext.getFreeBalance())[
+      this.cfModule.ethFreeBalanceAddress
+    ];
 
     // TODO: check if the recipient is the node, and if so transfer without
     // installing an app (is this possible?)
@@ -63,13 +56,13 @@ export class TransferController extends AbstractController {
     // or if there is a route available through the node
 
     // install the transfer application
-    await this.transferAppInstalled(paramsBig.amount, paramsBig.recipient);
+    await this.transferAppInstalled(amount, recipient);
 
     // update state
     // TODO: listener for reject state?
     await this.connext.takeAction(this.appId, {
       finalize: false,
-      transferAmount: paramsBig.amount,
+      transferAmount: amount,
     });
 
     // finalize state + uninstall application
@@ -78,7 +71,7 @@ export class TransferController extends AbstractController {
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance();
     const diff = preTransferBal.sub(postTransferBal[this.cfModule.ethFreeBalanceAddress]);
-    if (!diff.eq(paramsBig.amount)) {
+    if (!diff.eq(amount)) {
       this.log.info(
         "Welp it appears the difference of the free balance before and after " +
           "uninstalling is not what we expected......",
@@ -98,6 +91,22 @@ export class TransferController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
+  private validate = async (
+    recipient: string,
+    amount: BigNumber,
+    assetId: string,
+  ): Promise<undefined | string> => {
+    // check that there is sufficient free balance for amount
+    const freeBalance = await this.connext.getFreeBalance();
+    const preTransferBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
+    const errs = [
+      invalidXpub(recipient),
+      invalidAddress(assetId),
+      notGreaterThanOrEqualTo(amount, preTransferBal),
+    ];
+    return errs ? errs.filter(falsy)[0] : undefined;
+  };
+
   // TODO: fix type of data
   private resolveInstallTransfer = (res: any, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
