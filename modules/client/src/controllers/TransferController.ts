@@ -5,36 +5,19 @@ import {
   TransferParameters,
   TransferParametersBigNumber,
 } from "@connext/types";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { RejectInstallVirtualMessage } from "@counterfactual/node";
+import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
+import { BigNumber } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
 import { delay } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
-import {
-  UpdateStateMessage,
-  UninstallVirtualMessage,
-  InstallVirtualMessage,
-  RejectInstallVirtualMessage,
-  ProposeVirtualMessage,
-} from "@counterfactual/node";
 
-const DEFAULT_DELAY = 1000;
-const RETRIES = 30;
-
-const TransferStatuses = {
-  FAILED: "FAILED",
-  FINALIZED: "FINALIZED",
-  INITIATED: "INITIATED",
-  INSTALLED: "INSTALLED",
-  UNINSTALLED: "UNINSTALLED",
-  UPDATED: "UPDATED",
-};
-type TransferStatus = keyof typeof TransferStatuses;
 export class TransferController extends AbstractController {
-  private status: TransferStatus = "INITIATED";
   private params: TransferParametersBigNumber;
+  private appId: string;
 
   constructor(name: string, connext: ConnextInternal) {
     super(name, connext);
@@ -61,7 +44,7 @@ export class TransferController extends AbstractController {
     }
 
     // TODO: check if the recipient is the node, and if so transfer without
-    // installing an app
+    // installing an app (is this possible?)
 
     // get app definition from constants
     // TODO: this should come from a db on the node
@@ -71,52 +54,36 @@ export class TransferController extends AbstractController {
       throw new Error("Could not find app in registry with supported network");
     }
 
-    // register all the listeners
-    this.registerListeners();
-
     // TODO: check if recipient has a channel with the hub w/sufficient balance
+    // or if there is a route available through the node
 
     // install the transfer application
-    // TODO: update if it is token unidirectional
-    await this.connext.proposeInstallVirtualApp(
-      "EthUnidirectionalTransferApp",
-      paramsBig.amount,
-      params.recipient, // must be xpub
-    );
+    await this.transferAppInstalled(paramsBig.amount, paramsBig.recipient);
 
-    // wait 5s for app to be installed correctly
-    let retry = 0;
-    while (this.status !== "FINALIZED" && retry < RETRIES) {
-      if (this.status === "FAILED") {
-        break;
-      }
-      this.log.info(
-        "App not successfully installed yet, waiting 1 more second before trying to send...",
-      );
-      retry = retry + 1;
-      await delay(DEFAULT_DELAY);
-    }
+    // update state
+    // TODO: listener for reject state?
+    await this.connext.takeAction(this.appId, {
+      finalize: false,
+      transferAmount: paramsBig.amount,
+    });
 
-    // if the time passes and there is no app detected, remove
-    // all listeners and throw an error
-    if (retry >= RETRIES && this.status !== "FINALIZED") {
-      // remove all listeners
-      this.removeListeners();
-      throw new Error("Could not successfully install + update virtual app after waiting 10s");
-    }
+    // finalize state + uninstall application
+    await this.finalizeAndUninstallApp(this.appId);
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance();
-    const diff = postTransferBal[this.cfModule.ethFreeBalanceAddress].sub(preTransferBal);
+    const diff = preTransferBal.sub(postTransferBal[this.cfModule.ethFreeBalanceAddress]);
     if (!diff.eq(paramsBig.amount)) {
-      this.log.debug(
+      this.log.info(
+        "Welp it appears the difference of the free balance before and after " +
+          "uninstalling is not what we expected......",
+      );
+    } else if (postTransferBal[this.cfModule.ethFreeBalanceAddress].gte(preTransferBal)) {
+      this.log.info(
         "Free balance after transfer is gte free balance " +
           "before transfer..... That's not great..",
       );
     }
-
-    // remove any listeners
-    this.removeListeners();
 
     const newState = await this.connext.getChannel();
 
@@ -126,153 +93,94 @@ export class TransferController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-
-  ////// Listener registration/deregistration
-  private registerListeners = (): void => {
-    this.log.info("Registering the listeners.....");
-    this.listener.registerCfListener(
-      NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
-      this.proposeInstallVirtualCallback,
-    );
-
-    this.listener.registerCfListener(
-      NodeTypes.EventName.REJECT_INSTALL_VIRTUAL,
-      this.rejectInstallVirtualCallback,
-    );
-
-    this.listener.registerCfListener(
-      NodeTypes.EventName.INSTALL_VIRTUAL,
-      this.installVirtualCallback,
-    );
-
-    this.listener.registerCfListener(NodeTypes.EventName.UPDATE_STATE, this.updateStateCallback);
-
-    this.listener.registerCfListener(
-      NodeTypes.EventName.UNINSTALL_VIRTUAL,
-      this.uninstallVirtualCallback,
-    );
-    this.log.info("Registered!");
+  // TODO: fix type of data
+  private resolveInstallTransfer = (res: any, data: any): any => {
+    this.log.info(`Resolving promise with data: ${JSON.stringify(data, null, 2)}`);
+    this.log.info(`this.appId: ${this.appId}`);
+    if (this.appId !== data.params.appInstanceId) {
+      return;
+    }
+    res(data);
+    return data;
   };
 
-  private removeListeners = (): void => {
-    this.log.info("Removing listeners.....");
-    this.listener.removeCfListener(
-      NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
-      this.proposeInstallVirtualCallback,
-    );
-
-    this.listener.removeCfListener(
-      NodeTypes.EventName.REJECT_INSTALL_VIRTUAL,
-      this.rejectInstallVirtualCallback,
-    );
-
-    this.listener.removeCfListener(
-      NodeTypes.EventName.INSTALL_VIRTUAL,
-      this.installVirtualCallback,
-    );
-
-    this.listener.removeCfListener(NodeTypes.EventName.UPDATE_STATE, this.updateStateCallback);
-
-    this.listener.removeCfListener(
-      NodeTypes.EventName.UNINSTALL_VIRTUAL,
-      this.uninstallVirtualCallback,
-    );
-    this.log.info("Removed!");
-  };
-
-  ////// Listener callbacks
-  private proposeInstallVirtualCallback = async (data: ProposeVirtualMessage): Promise<void> => {
-    this.log.info(`App proposed install successfully, data ${JSON.stringify(data, null, 2)}`);
-
-    if (this.status !== "INITIATED") {
+  // TODO: fix types of data
+  private rejectInstallTransfer = (rej: any, data: RejectInstallVirtualMessage): any => {
+    // check app id
+    this.log.info(`this.appId: ${this.appId}`);
+    if (this.appId !== data.data.appInstanceId) {
       return;
     }
 
-    try {
-      const installVirtualResponse = await this.connext.installVirtualApp(data.data.appInstanceId);
-      this.log.info(
-        `installVirtualResponse result:
-        ${installVirtualResponse as NodeTypes.InstallVirtualResult}`,
-      );
-      this.status = "INSTALLED";
-    } catch (e) {
-      this.log.error("Node call to propose install virtual app failed.");
-      this.log.error(JSON.stringify(e, null, 2));
-      this.status = "FAILED";
-      this.removeListeners();
-    }
+    rej();
+    return data;
   };
 
-  private rejectInstallVirtualCallback = async (
-    data: RejectInstallVirtualMessage,
-  ): Promise<void> => {
-    this.log.info(
-      `App rejected the proposed virtual install, data ${JSON.stringify(data, null, 2)}`,
+  // creates a promise that is resolved once the app is installed
+  // and rejected if the virtual application is rejected
+  private transferAppInstalled = async (amount: BigNumber, recipient: string): Promise<any> => {
+    let boundResolve;
+    let boundReject;
+
+    const res = await this.connext.proposeInstallVirtualApp(
+      "EthUnidirectionalTransferApp",
+      amount,
+      recipient, // must be xpub
     );
+    // set app instance id
+    this.appId = res.appInstanceId;
 
-    if (this.status !== "INSTALLED") {
-      return;
-    }
+    await new Promise((res, rej) => {
+      boundReject = this.rejectInstallTransfer.bind(null, rej);
+      boundResolve = this.resolveInstallTransfer.bind(null, res);
+      this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+      this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    });
 
-    this.status = "FAILED";
-    this.removeListeners();
+    this.cleanupInstallListeners(boundResolve, boundReject);
+    return res.appInstanceId;
   };
 
-  private installVirtualCallback = async (data: InstallVirtualMessage): Promise<void> => {
-    this.log.info(`App successfully installed, data ${JSON.stringify(data, null, 2)}`);
-
-    if (this.status !== "INSTALLED" && this.status !== "INITIATED") {
-      return;
-    }
-
-    // make transfer
-    const { appInstanceId } = data.data.params;
-    try {
-      this.log.info(`Making payment in app for ${this.params.amount.toString()} ETH`);
-      this.status = "UPDATED";
-      await this.connext.takeAction(appInstanceId, {
-        finalize: false,
-        transferAmount: this.params.amount,
-      });
-    } catch (e) {
-      this.log.error("Node call to update app state failed.");
-      this.log.error(JSON.stringify(e, null, 2));
-      this.status = "FAILED";
-      this.removeListeners();
-    }
+  private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
+    this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
 
-  private updateStateCallback = async (emitted: UpdateStateMessage): Promise<void> => {
-    this.log.info(`App successfully updated, data: ${JSON.stringify(emitted, null, 2)}`);
+  private finalizeAndUninstallApp = async (appId: string): Promise<void> => {
+    await this.connext.takeAction(appId, {
+      finalize: true,
+      transferAmount: constants.Zero,
+    });
 
-    if (this.status !== "UPDATED") {
-      this.log.info(`status: ${this.status}`);
-      return;
-    }
+    await this.connext.uninstallVirtualApp(appId);
+    // TODO: cf does not emit uninstall virtual event on the node
+    // that has called this function but ALSO does not immediately
+    // uninstall the apps. This will be a problem when trying to
+    // display balances...
+    const openApps = await this.connext.getAppInstances();
+    this.log.info(`Open apps: ${openApps.length}`);
+    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.id))}`);
 
-    const { appInstanceId, newState } = emitted.data;
+    // adding a promise for now that polls app instances, but its not
+    // great and should be removed
+    await new Promise(async (res, rej) => {
+      const getAppIds = async (): Promise<string[]> => {
+        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.id);
+      };
+      let retries = 0;
+      while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+        this.log.info("found app id in the open apps... retrying...");
+        await delay(500);
+        retries = retries + 1;
+      }
 
-    if (!(newState as any).finalized) {
-      await this.connext.takeAction(appInstanceId, {
-        finalize: true,
-        transferAmount: constants.Zero,
-      });
-      this.status = "FINALIZED";
-      // uninstall app on update state
-      await this.connext.uninstallVirtualApp(appInstanceId);
-    }
-  };
+      const openApps = await this.connext.getAppInstances();
+      this.log.info(`Open apps: ${openApps.length}`);
+      this.log.info(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceInfo) => a.id))}`);
 
-  private uninstallVirtualCallback = (data: UninstallVirtualMessage): void => {
-    this.log.info(`App successfully uninstalled, data: ${JSON.stringify(data, null, 2)}`);
+      if (retries > 5) rej();
 
-    // should only uninstall if the status of this controller is correct
-    if (this.status !== "FINALIZED") {
-      return;
-    }
-
-    // make sure all listeners are unregistered
-    this.status = "UNINSTALLED";
-    this.removeListeners();
+      res();
+    });
   };
 }
