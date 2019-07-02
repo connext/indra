@@ -112,7 +112,6 @@ class SetupCard extends Component {
   render() {
     const {
       classes,
-      connextState,
       minDeposit,
       maxDeposit
     } = this.props;
@@ -122,8 +121,7 @@ class SetupCard extends Component {
     // max token in DEI, min in wei and DAI
     let minDai, minEth;
     let maxDai, maxEth;
-    if (connextState && minDeposit) {
-
+    if (maxDeposit && minDeposit) {
       minEth = minDeposit.toETH().format()
       minDai = minDeposit.toDAI().format();
       maxEth = maxDeposit.toETH().format()
@@ -139,7 +137,7 @@ class SetupCard extends Component {
     return (
       <Grid
         container
-        spacing={10}
+        spacing={8}
         direction="column"
         style={{
           paddingLeft: "10%",

@@ -24,7 +24,7 @@ import queryString from "query-string";
 
 import { getOwedBalanceInDAI, toBN } from "../utils";
 
-import QRScan from "./qrScan";
+import { QRScan } from "./qrCode";
 
 const { arrayify, formatEther, isHexString, parseEther } = eth.utils
 
@@ -644,7 +644,7 @@ class PayCard extends Component {
     return (
       <Grid
         container
-        spacing={10}
+        spacing={8}
         direction="column"
         style={{
           display: "flex",
@@ -802,7 +802,7 @@ class PayCard extends Component {
             direction="row"
             alignItems="center"
             justify="center"
-            spacing={16}
+            spacing={8}
           >
             <Grid item xs={6}>
               <Button

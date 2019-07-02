@@ -69,21 +69,9 @@ class SettingsCard extends Component {
 
   generateNewAddress = async () => {
     this.setState({ isBurning: true });
-    try {
-      await this.props.connext.withdraw({
-        withdrawalWeiUser: "0",
-        tokensToSell: "0",
-        withdrawalTokenUser: "0",
-        weiToSell: "0",
-        recipient: this.props.address,
-        exchangeRate: this.props.exchangeRate
-      });
-    } catch (e) {
-      console.log("Error withdrawing, creating new address anyway", e.message);
-    } finally {
-      localStorage.removeItem("mnemonic");
-      this.burnRefreshPoller();
-    }
+    // TODO: withdraw channel balance first
+    localStorage.removeItem("mnemonic");
+    this.burnRefreshPoller();
   };
 
   burnRefreshPoller = async () => {
@@ -121,7 +109,7 @@ class SettingsCard extends Component {
     return (
       <Grid
         container
-        spacing={10}
+        spacing={8}
         direction="column"
         style={{
           paddingLeft: 12,

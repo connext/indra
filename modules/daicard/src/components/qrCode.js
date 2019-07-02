@@ -1,8 +1,11 @@
 import { Typography } from "@material-ui/core";
+import QrCode from "qrcode.react";
 import React, { Component } from "react";
 import QrReader from "react-qr-reader";
 
-class QRScan extends Component {
+export const QRGenerate = props => <QrCode value={props.value} size={256} />;
+
+export class QRScan extends Component {
   constructor(props) {
     super(props);
 
@@ -34,5 +37,3 @@ class QRScan extends Component {
     );
   }
 }
-
-export default QRScan;

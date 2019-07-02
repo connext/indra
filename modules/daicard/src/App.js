@@ -22,23 +22,18 @@ import SetupCard from "./components/setupCard";
 import Confirmations from "./components/Confirmations";
 import MySnackbar from "./components/snackBar";
 
-import { toBN } from "./utils";
-
-const { getExchangeRates, hasPendingOps } = new Connext.Utils();
+import { getExchangeRates, toBN } from "./utils";
 
 let publicUrl;
 
 const env = process.env.NODE_ENV;
 const tokenAbi = humanTokenAbi;
 
-// Optional URL overrides for custom hubs
+// Optional URL overrides for custom urls
 const overrides = {
-  localHub: process.env.REACT_APP_LOCAL_HUB_OVERRIDE,
-  localEth: process.env.REACT_APP_LOCAL_ETH_OVERRIDE,
-  rinkebyHub: process.env.REACT_APP_RINKEBY_HUB_OVERRIDE,
-  rinkebyEth: process.env.REACT_APP_RINKEBY_ETH_OVERRIDE,
-  mainnetHub: process.env.REACT_APP_MAINNET_HUB_OVERRIDE,
-  mainnetEth: process.env.REACT_APP_MAINNET_ETH_OVERRIDE
+  hubUrl: process.env.REACT_APP_HUB_OVERRIDE,
+  natsUrl: process.env.REACT_APP_NATS_OVERRIDE,
+  ethUrl: process.env.REACT_APP_ETH_OVERRIDE,
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -146,7 +141,7 @@ class App extends React.Component {
     }
 
     await this.setConnext(rpc, mnemonic);
-    await this.setTokenContract();
+    // await this.setTokenContract();
     await this.pollConnextState();
     await this.setDepositLimits();
     await this.poller();
@@ -168,58 +163,18 @@ class App extends React.Component {
   }
 
   async setConnext(rpc, mnemonic) {
-    let hubUrl;
-    let ethprovider;
-    let ethUrl;
-    switch (rpc) {
-      case "LOCALHOST":
-        hubUrl = overrides.localHub || `${publicUrl}/api/local/hub`;
-        ethUrl = overrides.localEth || undefined
-        ethprovider = overrides.localEth
-          ? new eth.providers.JsonRpcProvider(overrides.localEth)
-          : new eth.providers.JsonRpcProvider("http://localhost:8545")
-        break;
-      case "RINKEBY":
-        hubUrl = overrides.rinkebyHub || `${publicUrl}/api/rinkeby/hub`;
-        ethUrl = overrides.rinkebyEth || undefined
-        ethprovider = overrides.rinkebyEth
-          ? new eth.providers.JsonRpcProvider(overrides.rinkebyEth)
-          : new eth.getDefaultProvider("rinkeby")
-        break;
-      case "MAINNET":
-        hubUrl = overrides.mainnetHub || `${publicUrl}/api/mainnet/hub`;
-        ethUrl = overrides.mainnetEth || undefined
-        ethprovider = overrides.mainnetEth
-          ? new eth.providers.JsonRpcProvider(overrides.mainnetEth)
-          : new eth.getDefaultProvider()
-        break;
-      default:
-        throw new Error(`Unrecognized rpc: ${rpc}`);
-    }
+    // const natsUrl = overrides.natsUrl || `nats://localhost:4222`;
+    // const hubUrl = overrides.hubUrl || `http://localhost:8080`;
+    const ethUrl = overrides.ethUrl || `${publicUrl}/api/ethprovider`;
+    const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
 
-    const opts = {
-      hubUrl,
-      mnemonic,
-      ethUrl,
-      logLevel: 5,
-    };
-    const connext = await Connext.createClient(opts);
-    const address = await connext.wallet.getAddress();
-    console.log(`Successfully set up connext! Connext config:`);
-    console.log(`  - tokenAddress: ${connext.opts.tokenAddress}`);
-    console.log(`  - hubAddress: ${connext.opts.hubAddress}`);
-    console.log(`  - contractAddress: ${connext.opts.contractAddress}`);
-    console.log(`  - ethChainId: ${connext.opts.ethChainId}`);
-    console.log(`  - public address: ${address}`);
+    const wallet = eth.Wallet.fromMnemonic(mnemonic)
 
     this.setState({
-      connext,
-      tokenAddress: connext.opts.tokenAddress,
-      contractAddress: connext.opts.contractAddress,
-      hubWalletAddress: connext.opts.hubAddress,
-      ethChainId: connext.opts.ethChainId,
-      address,
-      ethprovider
+      address: wallet.address,
+      ethChainId: (await ethprovider.getNetwork()).chainId,
+      ethprovider,
+      wallet,
     });
   }
 
@@ -240,19 +195,20 @@ class App extends React.Component {
 
   async pollConnextState() {
     let connext = this.state.connext;
-    // register connext listeners
-    connext.on("onStateChange", state => {
-      this.setState({
-        channelState: state.persistent.channel,
-        connextState: state,
-        runtime: state.runtime,
-        exchangeRate: state.runtime.exchangeRate ? state.runtime.exchangeRate.rates.DAI : 0
+    if (connext) {
+      connext.on("onStateChange", state => {
+        this.setState({
+          channelState: state.persistent.channel,
+          connextState: state,
+          runtime: state.runtime,
+          exchangeRate: state.runtime.exchangeRate ? state.runtime.exchangeRate.rates.DAI : 0
+        });
+        console.log('Connext updated:', state)
+        this.checkStatus();
       });
-      console.log('Connext updated:', state)
-      this.checkStatus();
-    });
+    }
     // start polling
-    await connext.start();
+    // await connext.start();
     this.setState({ loadingConnext: false });
   }
 
@@ -270,21 +226,15 @@ class App extends React.Component {
   }
 
   async setDepositLimits() {
-    const { address, connextState, contractAddress, ethprovider, tokenContract } = this.state;
+    const { ethprovider } = this.state;
     let gasPrice = await ethprovider.getGasPrice()
 
     // default connext multiple is 1.5, leave 2x for safety
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
 
-    // Add gas required to increase token allowance if needed
-    const allowance = await tokenContract.allowance(address, contractAddress)
-    if (allowance.eq(eth.constants.Zero)) {
-      totalDepositGasWei = totalDepositGasWei.add(toBN('50000'))
-    }
+    const minDeposit = Connext.Currency.WEI(totalDepositGasWei, () => getExchangeRates());
 
-    const minDeposit = Connext.Currency.WEI(totalDepositGasWei, () => getExchangeRates(connextState));
-
-    const maxDeposit = Connext.Currency.DEI(CHANNEL_DEPOSIT_MAX, () => getExchangeRates(connextState));
+    const maxDeposit = Connext.Currency.DEI(CHANNEL_DEPOSIT_MAX, () => getExchangeRates());
 
     this.setState({ maxDeposit, minDeposit });
   }
@@ -353,7 +303,7 @@ class App extends React.Component {
 
   async autoSwap() {
     const { channelState, connextState } = this.state;
-    if (!connextState || hasPendingOps(channelState)) {
+    if (!connextState) {
       return;
     }
     const weiBalance = toBN(channelState.balanceWeiUser);

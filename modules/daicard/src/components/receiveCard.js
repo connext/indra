@@ -11,9 +11,9 @@ import { ethers as eth } from "ethers";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
-import { getAmountInDAI, toBN } from "../utils";
+import { toBN } from "../utils";
 
-import QRGenerate from "./qrGenerate";
+import { QRGenerate } from "./qrCode";
 import MySnackbar from "./snackBar";
 
 const styles = theme => ({
@@ -51,7 +51,7 @@ class ReceiveCard extends Component {
 
   validatePayment = () => {
     const { amountToken, } = this.state
-    const { connextState, maxTokenDeposit, } = this.props
+    const { maxTokenDeposit, } = this.props
     let error = null
     this.setState({ error: null })
     if (!amountToken) {
@@ -65,7 +65,7 @@ class ReceiveCard extends Component {
       amountToken: maxTokenDeposit,
     }
     if (tokentoBN.gt(toBN(amount.amountToken))) {
-      error = `Channel balances are capped at ${getAmountInDAI(amount, connextState)}`
+      error = `Channel balances are capped at ${maxTokenDeposit}`
     }
     if (tokentoBN.lte(eth.constants.Zero)) {
       error = "Please enter a payment amount above 0"
@@ -111,7 +111,7 @@ class ReceiveCard extends Component {
     return (
       <Grid
         container
-        spacing={10}
+        spacing={8}
         direction="column"
         style={{
           paddingLeft: "10%",

@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import "../App.css";
 
 import ChannelCard from "./channelCard";
-import QRScan from "./qrScan";
+import { QRScan } from "./qrCode";
 
 const styles = {};
 
@@ -62,14 +62,14 @@ class Home extends React.Component {
 
   render() {
     const { modals } = this.state;
-    const { address, channelState, connextState } = this.props;
+    const { address, channelState } = this.props;
     return (
       <>
         <Grid container direction="row" style={{ marginBottom: "-7.5%" }}>
           <Grid item xs={12}
             style={{ flexGrow: 1 }}
           >
-            <ChannelCard channelState={channelState} address={address} connextState = {connextState}/>
+            <ChannelCard channelState={channelState} address={address} />
           </Grid>
         </Grid>
         <Grid container direction="column">
@@ -116,7 +116,7 @@ class Home extends React.Component {
         </Grid>
         <Grid
           container
-          spacing={10}
+          spacing={8}
           direction="column"
           style={{ paddingLeft: "2%", paddingRight: "2%", textAlign: "center" }}
         >

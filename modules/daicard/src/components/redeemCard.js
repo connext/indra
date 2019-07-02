@@ -25,7 +25,7 @@ import queryString from "query-string";
 import { getAmountInDAI, toBN } from "../utils";
 import MySnackbar from "../components/snackBar";
 
-import QRGenerate from "./qrGenerate";
+import { QRGenerate } from "./qrCode";
 
 const { isHexString, formatEther, parseEther } = eth.utils
 
@@ -88,7 +88,7 @@ const RedeemConfirmationDialog = props => (
   >
     <Grid
       container
-      spacing={10}
+      spacing={8}
       direction="column"
       style={{
         textAlign: "center",
@@ -531,7 +531,7 @@ class RedeemCard extends Component {
       <Grid>
       <Grid
         container
-        spacing={16}
+        spacing={8}
         direction="column"
         style={{
           paddingLeft: "10%",

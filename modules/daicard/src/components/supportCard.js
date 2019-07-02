@@ -36,7 +36,7 @@ class SupportCard extends Component {
     return (
       <Grid
         container
-        spacing={10}
+        spacing={8}
         direction="column"
         style={{
           paddingLeft: "5%",

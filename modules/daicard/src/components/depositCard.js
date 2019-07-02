@@ -3,7 +3,7 @@ import { AttachMoney as DepositIcon } from "@material-ui/icons";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
-import QRGenerate from "./qrGenerate";
+import { QRGenerate } from "./qrCode";
 import MySnackbar from "./snackBar";
 
 const styles = theme => ({
@@ -31,7 +31,6 @@ class DepositCard extends Component {
   render() {
     const { classes, address, minDeposit, maxDeposit } = this.props;
     const { copied } = this.state;
-
     
     const minEth = minDeposit ? minDeposit.toETH().format() : '?.??'
     const maxEth = maxDeposit ? maxDeposit.toETH().format() : '?.??'
@@ -40,7 +39,7 @@ class DepositCard extends Component {
     return (
       <Grid
         container
-        spacing={10}
+        spacing={8}
         direction="column"
         style={{
           paddingLeft: "10%",

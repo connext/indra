@@ -10,7 +10,6 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import * as Connext from "connext";
 import { ethers as eth } from "ethers";
 import interval from "interval-promise";
 import QRIcon from "mdi-material-ui/QrcodeScan";
@@ -18,12 +17,9 @@ import React, { Component } from "react";
 
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
-import { getOwedBalanceInDAI } from "../utils/currencyFormatting";
-import { hasPendingTransaction, toBN } from "../utils";
+import { getChannelBalance, hasPendingTransaction, toBN } from "../utils";
 
-import QRScan from "./qrScan";
-
-const { hasPendingOps } = new Connext.Utils();
+import { QRScan } from "./qrCode";
 
 const styles = theme => ({
   icon: {
@@ -71,13 +67,12 @@ class CashOutCard extends Component {
 
     // set the state to contain the proper withdrawal args for
     // eth or dai withdrawal
-    const { channelState, connextState, exchangeRate } = this.props
+    const { channelState, exchangeRate } = this.props
     let { withdrawalVal } = this.state;
 
-    if (withdrawEth && channelState && connextState) {
-      const { custodialBalance } = connextState.persistent
-      const amountToken = toBN(channelState.balanceTokenUser).add(custodialBalance.balanceToken)
-      const amountWei = toBN(channelState.balanceWeiUser).add(custodialBalance.balanceWei)
+    if (withdrawEth && channelState) {
+      const amountToken = toBN(channelState.balanceTokenUser)
+      const amountWei = toBN(channelState.balanceWeiUser)
       // withdraw all channel balance in eth
       withdrawalVal = {
         ...withdrawalVal,
@@ -102,14 +97,13 @@ class CashOutCard extends Component {
   // NOTE: the amount to cashout != channel card amount if there is 
   // wei in the channel
   async updateDisplayValue() {
-    const { channelState, connextState } = this.props;
+    const { channelState } = this.props;
     if (!channelState) {
       this.setState({ aggregateBalance: "$0.00" });
       return;
     }
-
     this.setState({
-      aggregateBalance: getOwedBalanceInDAI(connextState, false)
+      aggregateBalance: getChannelBalance(channelState).token
     });
   }
 
@@ -153,7 +147,6 @@ class CashOutCard extends Component {
   };
 
   async withdrawalHandler(withdrawEth) {
-    const { connext } = this.props;
     const withdrawalVal = await this.updateWithdrawalVals(withdrawEth);
     const recipient = withdrawalVal.recipient.toLowerCase()
     this.setState({ addressError: null });
@@ -175,13 +168,13 @@ class CashOutCard extends Component {
     this.setState({ withdrawing: true });
 
     console.log(`Withdrawing: ${JSON.stringify(withdrawalVal, null, 2)}`);
-    await connext.withdraw(withdrawalVal);
+    // TODO: actually withdraw here
 
     this.poller();
   }
 
   render() {
-    const { classes, exchangeRate, connextState, channelState } = this.props;
+    const { classes, exchangeRate } = this.props;
     const {
       recipientDisplayVal,
       addressError,
@@ -191,7 +184,7 @@ class CashOutCard extends Component {
     return (
       <Grid
         container
-        spacing={16}
+        spacing={8}
         direction="column"
         style={{
           paddingLeft: 12,
@@ -296,7 +289,7 @@ class CashOutCard extends Component {
                 className={classes.button}
                 fullWidth
                 onClick={() => this.withdrawalHandler(true)}
-                disabled={!connextState || hasPendingOps(channelState)}
+                disabled={true/* TODO: enable when withdraw is ready */}
               >
                 Cash Out Eth
                 <img

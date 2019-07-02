@@ -1,7 +1,7 @@
 import { Grid, Typography, withStyles } from "@material-ui/core";
 import React, { Component } from "react";
 
-import { getOwedBalanceInDAI } from "../utils";
+import { getChainBalance } from "../utils";
 
 const styles = theme => ({
   row: {
@@ -18,16 +18,16 @@ const styles = theme => ({
 
 class ChannelCard extends Component {
   render() {
-    const { classes, connextState } = this.props;
+    const { classes } = this.props;
     // only displays token value by default
-    const balance = getOwedBalanceInDAI(connextState)
+    const balance = getChainBalance().token
     const whole = balance.substring(0, balance.indexOf('.'))
     const part = balance.substring(balance.indexOf('.'))
     return (
         <Grid>
           <Grid 
             container
-            spacing={10}
+            spacing={8}
             direction="row"
             style={{
               paddingLeft: "10%",
