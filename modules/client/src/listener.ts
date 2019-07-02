@@ -32,6 +32,7 @@ export class ConnextListener extends EventEmitter {
     CREATE_CHANNEL: (data: CreateChannelMessage): void => {
       this.emitAndLog(NodeTypes.EventName.CREATE_CHANNEL, data.data);
     },
+    // TODO: make cf return app instance id and app def?
     INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
       this.emitAndLog(NodeTypes.EventName.INSTALL_VIRTUAL, data.data);
     },
