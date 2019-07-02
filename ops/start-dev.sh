@@ -43,6 +43,7 @@ node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
 proxy_image="indra_v2_proxy:dev"
 daicard_devserver_image="$builder_image"
+relay_image="indra_v2_relay"
 
 node_port=8080
 nats_port=4222
@@ -80,7 +81,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=6 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -124,6 +125,14 @@ services:
       - `pwd`:/root
     working_dir: /root/modules/daicard
 
+  relay:
+    image: $relay_image
+    command: ["nats:$nats_port"]
+    networks:
+      - $project
+    ports:
+      - "4223:4223"
+
   node:
     image: $node_image
     entrypoint: bash modules/node/ops/entry.sh
@@ -152,7 +161,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447" ]
+    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447"]
     networks:
       - $project
     ports:

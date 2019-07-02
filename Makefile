@@ -40,7 +40,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node types client payment-bot proxy
+dev: node types client payment-bot proxy ws-tcp-relay
 prod: node-prod
 
 start: dev
@@ -94,6 +94,11 @@ watch-node: node-modules
 
 ########################################
 # Begin Real Rules
+
+ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+	$(log_start)
+	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
+	$(log_finish) && touch $(flags)/$@
 
 proxy-prod: card-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
