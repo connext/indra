@@ -106,6 +106,8 @@ services:
       UPSTREAM_URL: http://daicard:3000
       ETH_RPC_URL: $eth_rpc_url
       MODE: dev
+    networks:
+      - $project
     ports:
       - "80:80"
     volumes:
@@ -116,6 +118,8 @@ services:
     entrypoint: npm start
     environment:
       NODE_ENV: development
+    networks:
+      - $project
     volumes:
       - `pwd`:/root
     working_dir: /root/modules/daicard
@@ -189,5 +193,3 @@ while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number
 do echo -n "." && sleep 2
 done
 echo " Good Morning!"
-
-bash ops/logs.sh node

@@ -7,6 +7,7 @@ modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp
 modules/**/.npm
+modules/daicard/src/react-app-env.d.ts
 
 # Compiled output
 dist/
@@ -22,6 +23,7 @@ yarn-error.log*
 ops/*.log
 
 # OS
+.bash_history
 .DS_Store
 
 # Tests
