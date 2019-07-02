@@ -15,7 +15,8 @@
   "dependencies": {
     "@counterfactual/node": "0.2.8",
     "@counterfactual/types": "0.0.16",
-    "ts-nats": "1.2.4"
+    "ts-nats": "1.2.4",
+    "websocket-nats": "^0.3.3"
   },
   "devDependencies": {
     "@connext/types": "0.0.2",

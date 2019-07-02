@@ -32,6 +32,9 @@ export interface ClientOptions {
   // nats information
   natsUrl: string; // nats URL, nats://
 
+  // replaces nats url in browser
+  wsUrl?: string; // ws://
+
   // signing options, include at least one of the following
   mnemonic?: string;
   privateKey?: string;
@@ -89,7 +92,7 @@ export interface ConnextStore {}
 ////// General typings
 export interface NodeInitializationParameters {
   nodeUrl: string;
-  nats: NatsClient;
+  nats: NatsClient | any;
   wallet: Wallet;
   logLevel?: number;
   publicIdentifier?: string;

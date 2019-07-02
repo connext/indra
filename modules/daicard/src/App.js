@@ -1,4 +1,5 @@
 import { Paper, withStyles, Grid } from "@material-ui/core";
+import * as connext from "@connext/client";
 import { ethers as eth } from "ethers";
 import interval from "interval-promise";
 import React from "react";
@@ -127,13 +128,39 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const natsUrl = overrides.natsUrl || `nats://localhost:4222`;
-    const nodeUrl = overrides.nodeUrl || `http://localhost:8080`;
+    const wsUrl = overrides.natsUrl || `ws://localhost:4223`;
+    // const nodeUrl = overrides.nodeUrl || `http://localhost:8080`;
     const ethUrl = overrides.ethUrl || `${publicUrl}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
     const wallet = eth.Wallet.fromMnemonic(mnemonic)
 
     // TODO: create channel client & poll for state changes
+
+    const store = {
+      get: (key) => {
+        return localStorage.getItem(`CF_NODE:${key}`);
+      },
+      set: (pairs, allowDelete) => {
+        for (const pair of pairs) {
+          localStorage.setItem(`CF_NODE:${pair.key}`, pair.value);
+        }
+      }
+    };
+    const opts = { mnemonic, wsUrl, rpcProviderUrl: ethUrl, store };
+
+    console.log("Using client options:");
+    console.log("  - mnemonic:", opts.mnemonic);
+    console.log("  - wsUrl:", opts.wsUrl);
+    console.log("  - rpcProviderUrl:", opts.rpcProviderUrl);
+
+    console.log("Creating connext");
+    const client = await connext.connect(opts);
+    console.log("Client created successfully!");
+    const connextConfig = await client.config();
+
+    console.log("connextConfig:", connextConfig);
+    console.log("Public Identifier", client.publicIdentifier);
+    console.log("Account multisig address:", client.opts.multisigAddress);
 
     this.setState({
       address: wallet.address,

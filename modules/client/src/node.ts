@@ -18,7 +18,7 @@ export interface INodeApiClient {
 
 export class NodeApiClient implements INodeApiClient {
   public nodeUrl: string;
-  public nats: NatsClient; // TODO: rename to messaging?
+  public nats: any; // NatsClient; // TODO: rename to messaging?
   public wallet: Wallet;
   public address: Address;
   public log: Logger;
@@ -87,11 +87,16 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any | undefined> {
     console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
     const msg = await this.nats.request(subject, API_TIMEOUT, JSON.stringify(data));
+    console.log("Got message:", JSON.stringify(msg));
     if (!msg.data) {
-      console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
+      console.log("could this message be malformed?", JSON.stringify(msg));
       return undefined;
     }
     const { status, ...res } = msg.data;
+    console.log(`msg.data is a ${typeof msg.data}`);
+    console.log(`res: ${JSON.stringify(res)}`);
+    console.log(`res keys: ${Object.keys(res)}`);
+    console.log(`status is a ${typeof msg.data.status}`);
     if (status !== "success") {
       throw new Error(`Error sending request. Res: ${JSON.stringify(msg, null, 2)}`);
     }

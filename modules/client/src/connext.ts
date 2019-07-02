@@ -48,6 +48,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     payload: Payload.JSON,
     servers: [opts.natsUrl],
     token: opts.natsToken,
+    wsUrl: opts.wsUrl,
   };
   // TODO: proper key? also, proper usage?
   const messagingServiceKey = "messaging";
@@ -58,7 +59,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: instantiate service factory with proper config!!
   // @ts-ignore
   const natsFactory = new NatsServiceFactory(natsConfig);
+  console.log("creating nats messaging service...");
   const messaging = natsFactory.createMessagingService(messagingServiceKey);
+  console.log("connecting to nats service...");
   await messaging.connect();
   console.log("nats is connected");
 
@@ -70,7 +73,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: use local storage for default key value setting!!
   const nodeConfig = {
     logLevel: opts.logLevel,
-    nats: messaging.getConnection(),
+    nats: messaging,
     nodeUrl: opts.nodeUrl,
     wallet,
   };
@@ -79,7 +82,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("created node client successfully");
 
   const config = await node.config();
-  console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
+  console.log(`node config: ${JSON.stringify(config)}`);
+
+  // console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
 
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
@@ -229,7 +234,8 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
-  public nodePublicIdentifier: string; // TODO: maybe move this into the NodeApiClient @layne? --> yes
+  // TODO: maybe move this into the NodeApiClient @layne? --> yes
+  public nodePublicIdentifier: string;
 
   public logger: Logger;
   public network: Network;
