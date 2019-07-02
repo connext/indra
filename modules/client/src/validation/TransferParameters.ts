@@ -67,6 +67,9 @@ export class IsValidTransferRequestConstraint implements ValidatorConstraintInte
   }
 
   // TODO: why isnt this working???
+  // TODO: invalidation message should return something more specific
+  // TODO: do we need to break down this invalidation further? (instead of
+  // programatically defining more helpful messages)
   defaultMessage(args: ValidationArguments): string {
     return `Invalid transfer arguments given. Args: ${JSON.stringify(
       convert.Transfer("str", args.value),
