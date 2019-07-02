@@ -174,10 +174,6 @@ export class TransferController extends AbstractController {
         retries = retries + 1;
       }
 
-      const openApps = await this.connext.getAppInstances();
-      this.log.info(`Open apps: ${openApps.length}`);
-      this.log.info(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceInfo) => a.id))}`);
-
       if (retries > 5) rej();
 
       res();
