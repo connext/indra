@@ -1,5 +1,6 @@
 import { EntityRepository, Repository } from "typeorm";
 
+import { defaultPaymentProfile } from "../constants";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 
 import { Channel, ChannelUpdate, NodeChannel } from "./channel.entity";
@@ -18,6 +19,10 @@ export class ChannelRepository extends Repository<Channel> {
       .leftJoinAndSelect("channel.paymentProfile", "paymentProfile")
       .where("user.publicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .getOne();
+
+    if (!channel.paymentProfile) {
+      return defaultPaymentProfile;
+    }
     return channel.paymentProfile;
   }
 }

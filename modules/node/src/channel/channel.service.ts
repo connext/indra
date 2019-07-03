@@ -137,10 +137,6 @@ export class ChannelService implements OnModuleInit {
   async requestCollateral(userPubId: string) {
     const channel = await this.nodeChannelRepository.findByUserPublicIdentifier(userPubId);
     const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
-
-    if (toBig(channel.freeBalanceWeiNode).lt(profile.minimumMaintainedCollateralWei)) {
-      
-    }
   }
 
   // initialize CF Node with methods from this service to avoid circular dependency
