@@ -20,7 +20,12 @@ export default function App() {
     <Grid container>
       <Grid item xs={12}>
         <Paper className={classes.paper}>
-          <AppSelector />
+          <Grid container>
+            <Grid item xs={6}>
+              <AppSelector />
+            </Grid>
+            <Grid item xs={6} />
+          </Grid>
         </Paper>
       </Grid>
     </Grid>

@@ -29,6 +29,7 @@ export default function AppSelector() {
           name: "app-select",
           id: "app-select",
         }}
+        fullWidth
       >
         {apps.map(app => (
           <MenuItem value={app.appName} key={app.id}>
