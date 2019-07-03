@@ -45,26 +45,26 @@ export const ChannelCard = withStyles(styles)(props => {
         <Grid item xs={12}>
           <Typography style={{ color: 'white' }}> Channel </Typography>
           <span>
-            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              {"$ "}
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
-              <span>{split(formatEther(balance.channel.ether)).whole}</span>
-            </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(formatEther(balance.channel.ether)).part}</span>
-            </Typography>
-          </span>
-          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
-          <span>
-            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              {`${eth.constants.EtherSymbol} `}
+              {"$ "}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
               <span>{split(formatEther(balance.channel.token)).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               <span>{split(formatEther(balance.channel.token)).part}</span>
+            </Typography>
+          </span>
+          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
+          <span>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+              {`${eth.constants.EtherSymbol} `}
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
+              <span>{split(formatEther(balance.channel.ether)).whole}</span>
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+              <span>{split(formatEther(balance.channel.ether)).part}</span>
             </Typography>
           </span>
         </Grid>
@@ -74,26 +74,26 @@ export const ChannelCard = withStyles(styles)(props => {
         <Grid item xs={12}>
           <Typography style={{ color: 'white' }}> On-Chain </Typography>
           <span>
-            <Typography style={{display: 'inline-block'}} variant="body1" className={classes.row}>
-              {"$ "}
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(formatEther(balance.onChain.ether)).whole}</span>
-            </Typography>
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              <span>{split(formatEther(balance.onChain.ether)).part}</span>
-            </Typography>
-          </span>
-          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
-          <span>
-            <Typography style={{display: 'inline-block'}} variant="body1" className={classes.row}>
-              {`${eth.constants.EtherSymbol} `}
+              {"$ "}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               <span>{split(formatEther(balance.onChain.token)).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
               <span>{split(formatEther(balance.onChain.token)).part}</span>
+            </Typography>
+          </span>
+          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
+          <span>
+            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
+              {`${eth.constants.EtherSymbol} `}
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+              <span>{split(formatEther(balance.onChain.ether)).whole}</span>
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
+              <span>{split(formatEther(balance.onChain.ether)).part}</span>
             </Typography>
           </span>
         </Grid>

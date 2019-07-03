@@ -94,6 +94,7 @@ class App extends React.Component {
         send: false,
         settings: false,
       },
+      pending: { deposit: false },
       publicUrl: window.location.origin.toLowerCase(),
       runtime: null,
       sendScanArgs: { amount: null, recipient: null },
@@ -146,10 +147,7 @@ class App extends React.Component {
       wallet,
     });
 
-    await this.setDepositLimits();
-    await this.refreshBalances();
-    await this.poller();
-
+    await this.startPoller();
     this.setState({ loadingConnext: false })
   }
 
@@ -157,24 +155,24 @@ class App extends React.Component {
   //                    Pollers                        //
   // ************************************************* //
 
-  async poller() {
+  async startPoller() {
+    await this.refreshBalances();
+    await this.setDepositLimits();
     await this.autoDeposit();
     await this.autoSwap();
-
     interval(async (iteration, stop) => {
+      await this.refreshBalances();
+      await this.setDepositLimits();
       await this.autoDeposit();
-    }, 5000);
-
-    interval(async (iteration, stop) => {
       await this.autoSwap();
-    }, 1000);
+    }, 2000);
   }
 
   async refreshBalances() {
     const { address, balance, client, ethprovider } = this.state;
     balance.onChain.ether = (await ethprovider.getBalance(address)).toString();
     balance.channel.ether = (await client.getChannel()).freeBalancePartyA.toString();
-    console.log(`balances: ${JSON.stringify(balance)}`)
+    // console.log(`balances: ${JSON.stringify(balance)}`)
     this.setState({ balance })
   }
 
@@ -190,9 +188,15 @@ class App extends React.Component {
 
   async autoDeposit() {
     await this.setDepositLimits()
-    const { balance, connextState, connext, minDeposit, ethprovider } = this.state;
-    const gasPrice = (await ethprovider.getGasPrice()).toHexString()
-    if (!connext || !minDeposit) return;
+    const { balance, client, minDeposit, pending } = this.state;
+    if (!client || pending.deposit) return;
+    if (!(await client.getChannel()).available) {
+      console.warn(`Channel not available yet.`);
+      return;
+    }
+
+    const channel = await client.getChannel()
+    console.log(`channel: ${JSON.stringify(channel, null, 2)}`);
 
     const bnBalance = {
       ether: toBN(balance.onChain.ether),
@@ -205,42 +209,18 @@ class App extends React.Component {
     ) {
       const minWei = minDeposit.toWEI().floor()
       if (bnBalance.ether.lt(minWei)) {
-        // don't autodeposit anything under the threshold
-        // update the refunding variable before returning
-        // We hit this repeatedly after first deposit & we have dust left over
-        // No need to clutter logs w the below
-        // console.log(`Current balance is ${balance.toString()}, less than minBalance of ${minWei.toString()}`);
-        return;
-      }
-      // only proceed with deposit request if you can deposit
-      if (!connextState) {
-        return;
-      }
-      if (
-        // something was submitted
-        connextState.runtime.deposit.submitted ||
-        connextState.runtime.withdrawal.submitted ||
-        connextState.runtime.collateral.submitted
-      ) {
-        console.log(`Deposit or withdrawal transaction in progress, will not auto-deposit`);
+        console.log(`Balance ${bnBalance} is below minimum ${minWei}`);
         return;
       }
 
-      let channelDeposit = {
-        amountWei: bnBalance.ether.sub(minWei),
-        amountToken: bnBalance.token
-      };
+      const depositParams = { amount: bnBalance.ether.sub(minWei).toString() };
+      console.log(`Attempting to deposit ${depositParams.amount} wei...`);
 
-      if (channelDeposit.amountWei.eq(eth.constants.Zero) && channelDeposit.amountToken.eq(eth.constants.Zero)) {
-        return;
-      }
+      this.setState({ pending: { deposit: true } })
+      await client.deposit(depositParams);
+      this.setState({ pending: { deposit: false } })
 
-      console.log(`Depositing with gas price of ${eth.utils.formatUnits(toBN(gasPrice), 'gwei')} gwei`);
-
-      await this.state.connext.deposit({ 
-        amountWei: channelDeposit.amountWei.toString(), 
-        amountToken: channelDeposit.amountToken.toString() 
-      }, { gasPrice });
+      console.log(`Successfully deposited!`);
     }
   }
 
