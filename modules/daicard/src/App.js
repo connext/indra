@@ -170,6 +170,8 @@ class App extends React.Component {
 
     await this.setDepositLimits();
     await this.poller();
+
+    this.setState({ loadingConnext: false })
   }
 
   // ************************************************* //
