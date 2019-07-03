@@ -3,7 +3,6 @@ import {
   AppRegistry,
   ChannelState,
   DepositParameters,
-  EventName,
   ExchangeParameters,
   GetConfigResponse,
   NodeChannel,
@@ -34,7 +33,7 @@ import { Wallet } from "./wallet";
  * Creates a new client-node connection with node at specified url
  *
  * @param opts The options to instantiate the client with.
- *        At a minimum, must contain the nodeUrl and a client signing key or mnemonic
+ * At a minimum, must contain the nodeUrl and a client signing key or mnemonic
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
@@ -140,14 +139,11 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  public on = (
-    event: EventName | NodeTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
+  public on = (event: NodeTypes.EventName, callback: (...args: any[]) => void): ConnextListener => {
     return this.internal.on(event, callback);
   };
 
-  public emit = (event: EventName | NodeTypes.EventName, data: any): boolean => {
+  public emit = (event: NodeTypes.EventName, data: any): boolean => {
     return this.internal.emit(event, data);
   };
 
@@ -235,7 +231,7 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
-  public nodePublicIdentifier: string; 
+  public nodePublicIdentifier: string;
   // TODO: maybe move this into the NodeApiClient @layne? --> yes
 
   public logger: Logger;
@@ -306,14 +302,11 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (
-    event: EventName | NodeTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
+  public on = (event: NodeTypes.EventName, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public emit = (event: EventName | NodeTypes.EventName, data: any): boolean => {
+  public emit = (event: NodeTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
