@@ -22,7 +22,7 @@
     "typescript": "3.5.2"
   },
   "dependencies": {
-    "@counterfactual/types": "0.0.17",
+    "@counterfactual/types": "0.0.18",
     "ethers": "4.0.32",
     "rollup": "^1.16.0"
   }
