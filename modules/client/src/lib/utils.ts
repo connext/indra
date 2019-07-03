@@ -54,9 +54,9 @@ export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
 export const publicIdentifierToAddress = (publicIdentifier: string, path?: string): string => {
-  return utils.HDNode.fromExtendedKey(publicIdentifier).derivePath(
-    path ? path : "m/44'/60'/0'/25446",
-  ).address;
+  // TODO: why is this throwing an error?
+  const derivationPath = path || "m/44'/60'/0'/25446";
+  return utils.HDNode.fromExtendedKey(publicIdentifier).derivePath(derivationPath).publicKey;
 };
 
 // TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
