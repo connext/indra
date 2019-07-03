@@ -1,5 +1,7 @@
 import { BigNumber } from "ethers/utils";
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+
+import { Channel } from "../channel/channel.entity";
 
 @Entity()
 export class PaymentProfile {
@@ -13,7 +15,7 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  minimumMaintainedCollateralWei: string;
+  minimumMaintainedCollateralWei: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -22,7 +24,7 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  minimumMaintainedCollateralToken: string;
+  minimumMaintainedCollateralToken: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -31,7 +33,7 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  amountToCollateralizeWei: string;
+  amountToCollateralizeWei: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -40,5 +42,8 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  amountToCollateralizeToken: string;
+  amountToCollateralizeToken: BigNumber;
+
+  @OneToMany((type: any) => Channel, (channel: Channel) => channel.paymentProfile)
+  channels: Channel[];
 }
