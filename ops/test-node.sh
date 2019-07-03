@@ -3,11 +3,11 @@ set -e
 
 test_command='
   jest --config ops/jest.config.json --listTests
-  jest --config ops/jest.config.json --forceExit # --detectOpenHandles
+  jest --config ops/jest.config.json '"$@"'
 '
 
 watch_command='
-  exec jest --config ops/jest.config.json --watch
+  exec jest --config ops/jest.config.json --watch '"$@"'
 '
 
 project="indra_v2"
@@ -16,6 +16,7 @@ if [[ "$1" == "--watch" ]]
 then
   suffix="node_watcher"
   command="$watch_command"
+  shift # forget $1 and replace it w $2, etc
 else
   suffix="node_tester"
   command="$test_command"

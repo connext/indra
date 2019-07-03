@@ -87,7 +87,7 @@ test: test-node
 watch: watch-node
 
 test-node: node
-	bash ops/test-node.sh
+	bash ops/test-node.sh --forceExit
 
 watch-node: node-modules
 	bash ops/test-node.sh --watch
