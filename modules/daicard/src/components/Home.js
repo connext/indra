@@ -6,94 +6,49 @@ import { Link } from "react-router-dom";
 
 import "../App.css";
 
-import ChannelCard from "./channelCard";
+import { ChannelCard } from "./channelCard";
 import { QRScan } from "./qrCode";
 
 const styles = {};
 
 class Home extends React.Component {
   state = {
-    modals: {
-      scan: false
-    },
-    sendScanArgs: null
+    scanModal: false,
+    history: [],
   };
 
-  scanQRCode = async data => {
-    const { publicUrl } = this.props;
-    // potential URLs to scan and their params
-    const urls = {
-      "/send?": ["recipient", "amount"],
-      "/redeem?": ["secret", "amountToken"]
-    };
-    let args = {};
-    let path = null;
-    for (let [url, fields] of Object.entries(urls)) {
-      const strArr = data.split(url);
-      if (strArr.length === 1) {
-        // incorrect entry
-        continue;
-      }
-
-      if (strArr[0] !== publicUrl) {
-        throw new Error("incorrect site");
-      }
-
-      // add the chosen url to the path scanned
-      path = url + strArr[1];
-
-      // get the args
-      const params = strArr[1].split("&");
-      fields.forEach((field, i) => {
-        args[field] = params[i].split("=")[1];
-      });
-    }
-
-    if (args === {}) {
-      console.log("could not detect params");
-    }
-
-    await this.props.scanURL(path, args);
-    this.props.history.push(path);
-    this.setState({
-      modals: { scan: false }
-    });
+  async scanQRCode(data) {
+    const path = await this.props.scanQRCode(data);
+    this.setState(oldState => ({
+      scanModal: false,
+      history: oldState.history.push(path),
+    }));
   };
 
   render() {
-    const { modals } = this.state;
-    const { address, channelState } = this.props;
     return (
       <>
         <Grid container direction="row" style={{ marginBottom: "-7.5%" }}>
-          <Grid item xs={12}
-            style={{ flexGrow: 1 }}
-          >
-            <ChannelCard channelState={channelState} address={address} />
+          <Grid item xs={12} style={{ flexGrow: 1 }} >
+            <ChannelCard balance={this.props.balance} />
           </Grid>
         </Grid>
         <Grid container direction="column">
-          <Grid item xs={12}
-            style={{ marginRight: "5%", marginLeft: "80%" }}
-          >
+          <Grid item xs={12} style={{ marginRight: "5%", marginLeft: "80%" }} >
             <Fab
               style={{
                 color: "#FFF",
                 backgroundColor: "#fca311",
                 size: "large"
               }}
-              onClick={() =>
-                this.setState({ modals: { ...modals, scan: true } })
-              }
+              onClick={() => this.setState({ scanModal: true })}
             >
               <QRIcon />
             </Fab>
             <Modal
               id="qrscan"
-              open={this.state.modals.scan}
-              onClose={() =>
-                this.setState({ modals: { ...modals, scan: false } })
-              }
+              open={this.state.scanModal}
+              onClose={() => this.setState({ scanModal: false })}
               style={{
                 justifyContent: "center",
                 alignItems: "center",
@@ -108,15 +63,15 @@ class Home extends React.Component {
               }}
             >
               <QRScan
-                handleResult={this.scanQRCode}
-                history={this.props.history}
+                handleResult={this.props.scanQRCode}
+                history={this.state.history}
               />
             </Modal>
           </Grid>
         </Grid>
         <Grid
           container
-          spacing={8}
+          spacing={4}
           direction="column"
           style={{ paddingLeft: "2%", paddingRight: "2%", textAlign: "center" }}
         >

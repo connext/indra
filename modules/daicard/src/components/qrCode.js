@@ -8,13 +8,13 @@ export const QRGenerate = props => <QrCode value={props.value} size={256} />;
 export class QRScan extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
       delay: 300,
       result: "No result",
       error: null
     };
   }
+
   handleScan = data => {
     if (data) {
       this.props.handleResult(data);

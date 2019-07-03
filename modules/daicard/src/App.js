@@ -8,27 +8,24 @@ import { BrowserRouter as Router, Route, Redirect } from "react-router-dom";
 import "./App.css";
 
 // Pages
-import Home from "./components/Home";
-import DepositCard from "./components/depositCard";
 import AppBarComponent from "./components/AppBar";
-import SettingsCard from "./components/settingsCard";
-import ReceiveCard from "./components/receiveCard";
-import SendCard from "./components/sendCard";
 import CashOutCard from "./components/cashOutCard";
-import SupportCard from "./components/supportCard";
-import RedeemCard from "./components/redeemCard";
-import SetupCard from "./components/setupCard";
 import Confirmations from "./components/Confirmations";
+import DepositCard from "./components/depositCard";
+import Home from "./components/Home";
 import MySnackbar from "./components/snackBar";
+import ReceiveCard from "./components/receiveCard";
+import RedeemCard from "./components/redeemCard";
+import SendCard from "./components/sendCard";
+import SettingsCard from "./components/settingsCard";
+import SetupCard from "./components/setupCard";
+import SupportCard from "./components/supportCard";
 
 import { Currency, getExchangeRates, toBN } from "./utils";
 
-let publicUrl;
-
 // Optional URL overrides for custom urls
 const overrides = {
-  hubUrl: process.env.REACT_APP_HUB_OVERRIDE,
-  natsUrl: process.env.REACT_APP_NATS_OVERRIDE,
+  wsUrl: process.env.REACT_APP_WS_OVERRIDE,
   ethUrl: process.env.REACT_APP_ETH_OVERRIDE,
 };
 
@@ -69,42 +66,40 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      loadingConnext: true,
-      hubUrl: null,
-      tokenAddress: null,
-      contractAddress: null,
-      hubWalletAddress: null,
-      ethprovider: null,
-      tokenContract: null,
-      connext: null,
-      modals: {
-        settings: false,
-        keyGen: false,
-        receive: false,
-        send: false,
-        cashOut: false,
-        scan: false,
-        deposit: false
+      address: "",
+      approvalWeiUser: "10000",
+      balance: {
+        channel: { token: "0", ether: "0" },
+        onChain: { token: "0", ether: "0" },
       },
       authorized: "false",
-      approvalWeiUser: "10000",
       channelState: null,
-      exchangeRate: "0.00",
-      interval: null,
+      connext: null,
       connextState: null,
-      runtime: null,
-      sendScanArgs: {
-        amount: null,
-        recipient: null
-      },
-      address: "",
-      status: {
-        txHash: "",
-        type: "",
-        reset: false
-      },
-      minDeposit: null,
+      contractAddress: null,
+      ethprovider: null,
+      exchangeRate: "0.00",
+      hubUrl: null,
+      hubWalletAddress: null,
+      interval: null,
+      loadingConnext: true,
       maxDeposit: null,
+      minDeposit: null,
+      modals: {
+        cashOut: false,
+        deposit: false,
+        keyGen: false,
+        receive: false,
+        scan: false,
+        send: false,
+        settings: false,
+      },
+      publicUrl: window.location.origin.toLowerCase(),
+      runtime: null,
+      sendScanArgs: { amount: null, recipient: null },
+      status: { txHash: "", type: "", reset: false },
+      tokenAddress: null,
+      tokenContract: null,
     };
   }
 
@@ -113,24 +108,15 @@ class App extends React.Component {
   // ************************************************* //
 
   async componentDidMount() {
-    // on mount, check if you need to refund by removing maxBalance
-    localStorage.removeItem("refunding");
-
-    // set public url
-    publicUrl = window.location.origin.toLowerCase();
-
-    // Get mnemonic and rpc type
-    let mnemonic = localStorage.getItem("mnemonic");
-
     // If no mnemonic, create one and save to local storage
+    let mnemonic = localStorage.getItem("mnemonic");
     if (!mnemonic) {
       mnemonic = eth.Wallet.createRandom().mnemonic;
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const wsUrl = overrides.natsUrl || `ws://localhost:4223`;
-    // const nodeUrl = overrides.nodeUrl || `http://localhost:8080`;
-    const ethUrl = overrides.ethUrl || `${publicUrl}/api/ethprovider`;
+    const wsUrl = overrides.wsUrl || `ws://localhost:4223`;
+    const ethUrl = overrides.ethUrl || `${this.state.publicUrl}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
     const wallet = eth.Wallet.fromMnemonic(mnemonic)
 
@@ -145,30 +131,23 @@ class App extends React.Component {
       }
     };
 
-    const opts = { mnemonic, wsUrl, rpcProviderUrl: ethUrl, store };
-
-    console.log("Using client options:");
-    console.log("  - mnemonic:", opts.mnemonic);
-    console.log("  - wsUrl:", opts.wsUrl);
-    console.log("  - rpcProviderUrl:", opts.rpcProviderUrl);
-
-    console.log("Creating connext");
-    const client = await connext.connect(opts);
+    const client = await connext.connect({ mnemonic, wsUrl, rpcProviderUrl: ethUrl, store });
     console.log("Client created successfully!");
-    const connextConfig = await client.config();
-
-    console.log("connextConfig:", connextConfig);
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
 
+    const connextConfig = await client.config();
+    console.log("connextConfig:", connextConfig);
+
     this.setState({
       address: wallet.address,
-      ethChainId: (await ethprovider.getNetwork()).chainId,
+      client,
       ethprovider,
       wallet,
     });
 
     await this.setDepositLimits();
+    await this.refreshBalances();
     await this.poller();
 
     this.setState({ loadingConnext: false })
@@ -191,43 +170,41 @@ class App extends React.Component {
     }, 1000);
   }
 
+  async refreshBalances() {
+    const { address, balance, client, ethprovider } = this.state;
+    balance.onChain.ether = (await ethprovider.getBalance(address)).toString();
+    balance.channel.ether = (await client.getChannel()).freeBalancePartyA.toString();
+    console.log(`balances: ${JSON.stringify(balance)}`)
+    this.setState({ balance })
+  }
+
   async setDepositLimits() {
     const { ethprovider } = this.state;
     let gasPrice = await ethprovider.getGasPrice()
-
     // default connext multiple is 1.5, leave 2x for safety
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-
     const minDeposit = Currency.WEI(totalDepositGasWei, () => getExchangeRates());
-
     const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, () => getExchangeRates());
-
     this.setState({ maxDeposit, minDeposit });
   }
 
   async autoDeposit() {
     await this.setDepositLimits()
-    const { address, tokenContract, connextState, tokenAddress, connext, minDeposit, ethprovider } = this.state;
+    const { balance, connextState, connext, minDeposit, ethprovider } = this.state;
     const gasPrice = (await ethprovider.getGasPrice()).toHexString()
     if (!connext || !minDeposit) return;
 
-    const balance = await ethprovider.getBalance(address);
+    const bnBalance = {
+      ether: toBN(balance.onChain.ether),
+      token: toBN(balance.onChain.token),
+    };
 
-    let tokenBalance = "0";
-    try {
-      tokenBalance = await tokenContract.balanceOf(address);
-    } catch (e) {
-      console.warn(
-        `Error fetching token balance, are you sure the token address (addr: ${tokenAddress}) is correct for the selected network (id: ${JSON.stringify(
-          await ethprovider.getNetwork()
-        )}))? Error: ${e.message}`
-      );
-      return;
-    }
-
-    if (balance.gt(eth.constants.Zero) || tokenBalance.gt(eth.constants.Zero)) {
+    if (
+      bnBalance.ether.gt(eth.constants.Zero) ||
+      bnBalance.token.gt(eth.constants.Zero)
+    ) {
       const minWei = minDeposit.toWEI().floor()
-      if (balance.lt(minWei)) {
+      if (bnBalance.ether.lt(minWei)) {
         // don't autodeposit anything under the threshold
         // update the refunding variable before returning
         // We hit this repeatedly after first deposit & we have dust left over
@@ -250,8 +227,8 @@ class App extends React.Component {
       }
 
       let channelDeposit = {
-        amountWei: balance.sub(minWei),
-        amountToken: tokenBalance
+        amountWei: bnBalance.ether.sub(minWei),
+        amountToken: bnBalance.token
       };
 
       if (channelDeposit.amountWei.eq(eth.constants.Zero) && channelDeposit.amountToken.eq(eth.constants.Zero)) {
@@ -268,14 +245,11 @@ class App extends React.Component {
   }
 
   async autoSwap() {
-    const { channelState, connextState } = this.state;
-    if (!connextState) {
-      return;
-    }
-    const weiBalance = toBN(channelState.balanceWeiUser);
-    const tokenBalance = toBN(channelState.balanceTokenUser);
-    if (channelState && weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
-      await this.state.connext.exchange(channelState.balanceWeiUser, "wei");
+    const { balance } = this.state;
+    const weiBalance = toBN(balance.channel.ether);
+    const tokenBalance = toBN(balance.channel.token);
+    if (weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
+      await this.state.connext.exchange(weiBalance, "wei");
     }
   }
 
@@ -329,7 +303,34 @@ class App extends React.Component {
     });
   }
 
-  async scanURL(path, args) {
+  async scanQRCode(data) {
+    // potential URLs to scan and their params
+    const urls = {
+      "/send?": ["recipient", "amount"],
+      "/redeem?": ["secret", "amountToken"]
+    };
+    let args = {};
+    let path = null;
+    for (let [url, fields] of Object.entries(urls)) {
+      const strArr = data.split(url);
+      if (strArr.length === 1) {
+        // incorrect entry
+        continue;
+      }
+      if (strArr[0] !== this.state.publicUrl) {
+        throw new Error("incorrect site");
+      }
+      // add the chosen url to the path scanned
+      path = url + strArr[1];
+      // get the args
+      const params = strArr[1].split("&");
+      fields.forEach((field, i) => {
+        args[field] = params[i].split("=")[1];
+      });
+    }
+    if (args === {}) {
+      console.log("could not detect params");
+    }
     switch (path) {
       case "/send":
         this.setState({
@@ -342,8 +343,9 @@ class App extends React.Component {
         });
         break;
       default:
-        return;
+        break;
     }
+    return path;
   }
 
   async closeModal() {
@@ -353,6 +355,7 @@ class App extends React.Component {
   render() {
     const {
       address,
+      balance,
       channelState,
       sendScanArgs,
       exchangeRate,
@@ -387,11 +390,8 @@ class App extends React.Component {
                   <Grid>
                     <Home
                       {...props}
-                      address={address}
-                      connextState={connextState}
-                      channelState={channelState}
-                      publicUrl={publicUrl}
-                      scanURL={this.scanURL.bind(this)}
+                      balance={balance}
+                      scanQRCodee={this.scanQRCode.bind(this)}
                     />
 
                     <SetupCard
@@ -438,7 +438,7 @@ class App extends React.Component {
                   connextState={connextState}
                   maxDeposit={maxDeposit}
                   channelState={channelState}
-                  publicUrl={publicUrl}
+                  publicUrl={this.state.publicUrl}
                 />
               )}
             />
@@ -450,7 +450,7 @@ class App extends React.Component {
                   connext={connext}
                   address={address}
                   channelState={channelState}
-                  publicUrl={publicUrl}
+                  publicUrl={this.state.publicUrl}
                   scanArgs={sendScanArgs}
                   connextState={connextState}
                 />
@@ -459,7 +459,13 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard {...props} publicUrl={publicUrl} connext={connext} channelState={channelState} connextState={connextState} />
+                <RedeemCard
+                  {...props}
+                  publicUrl={this.state.publicUrl}
+                  connext={connext}
+                  channelState={channelState}
+                  connextState={connextState}
+                />
               )}
             />
             <Route
@@ -469,7 +475,7 @@ class App extends React.Component {
                   {...props}
                   address={address}
                   channelState={channelState}
-                  publicUrl={publicUrl}
+                  publicUrl={this.state.publicUrl}
                   exchangeRate={exchangeRate}
                   connext={connext}
                   connextState={connextState}

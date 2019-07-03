@@ -640,7 +640,7 @@ class PayCard extends Component {
     return (
       <Grid
         container
-        spacing={8}
+        spacing={2}
         direction="column"
         style={{
           display: "flex",

@@ -1,7 +1,8 @@
 import { Grid, Typography, withStyles } from "@material-ui/core";
-import React, { Component } from "react";
+import { ethers as eth } from "ethers";
+import React from "react";
 
-import { getChainBalance } from "../utils";
+const { formatEther } = eth.utils;
 
 const styles = theme => ({
   row: {
@@ -16,47 +17,88 @@ const styles = theme => ({
   }
 });
 
-class ChannelCard extends Component {
-  render() {
-    const { classes } = this.props;
-    // only displays token value by default
-    const balance = getChainBalance().token
-    const whole = balance.substring(0, balance.indexOf('.'))
-    const part = balance.substring(balance.indexOf('.'))
-    return (
-        <Grid>
-          <Grid 
-            container
-            spacing={8}
-            direction="row"
-            style={{
-              paddingLeft: "10%",
-              paddingRight: "10%",
-              paddingTop: "10%",
-              paddingBottom: "20%",
-              backgroundColor: "#282b2e",
-              textAlign: "center"
-            }}
-            alignItems="center"
-            justify="center"
-          >
-          <Grid item xs={12}>
-            <span>
-              <Typography inline={"true"} variant="h5" className={classes.row}>
-                {"$ "}
-              </Typography>
-              <Typography inline={"true"} variant="h1" className={classes.row}>
-                <span>{whole}</span>
-              </Typography>
-              <Typography inline={"true"} variant="h3" className={classes.row}>
-                <span>{part}</span>
-              </Typography>
-            </span>
-          </Grid>
-        </Grid>
-      </Grid>
-    );
+export const ChannelCard = withStyles(styles)(props => {
+  const { balance, classes } = props;
+  const split = (bal) => {
+    const whole = bal.substring(0, bal.indexOf('.'));
+    const part = bal.substring(bal.indexOf('.'));
+    return { whole, part: part.length === 2 ? `${part}0` : part };
   }
-}
+  return (
+      <Grid>
+        <Grid 
+          container
+          spacing={2}
+          direction="column"
+          style={{
+            paddingLeft: "10%",
+            paddingRight: "10%",
+            paddingTop: "10%",
+            paddingBottom: "20%",
+            backgroundColor: "#282b2e",
+            textAlign: "center"
+          }}
+          alignItems="center"
+          justify="center"
+        >
 
-export default withStyles(styles)(ChannelCard);
+        <Grid item xs={12}>
+          <Typography style={{ color: 'white' }}> Channel </Typography>
+          <span>
+            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
+              {"$ "}
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
+              <span>{split(formatEther(balance.channel.ether)).whole}</span>
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+              <span>{split(formatEther(balance.channel.ether)).part}</span>
+            </Typography>
+          </span>
+          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
+          <span>
+            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
+              {`${eth.constants.EtherSymbol} `}
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
+              <span>{split(formatEther(balance.channel.token)).whole}</span>
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+              <span>{split(formatEther(balance.channel.token)).part}</span>
+            </Typography>
+          </span>
+        </Grid>
+
+        <br/>
+
+        <Grid item xs={12}>
+          <Typography style={{ color: 'white' }}> On-Chain </Typography>
+          <span>
+            <Typography style={{display: 'inline-block'}} variant="body1" className={classes.row}>
+              {"$ "}
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+              <span>{split(formatEther(balance.onChain.ether)).whole}</span>
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
+              <span>{split(formatEther(balance.onChain.ether)).part}</span>
+            </Typography>
+          </span>
+          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
+          <span>
+            <Typography style={{display: 'inline-block'}} variant="body1" className={classes.row}>
+              {`${eth.constants.EtherSymbol} `}
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+              <span>{split(formatEther(balance.onChain.token)).whole}</span>
+            </Typography>
+            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
+              <span>{split(formatEther(balance.onChain.token)).part}</span>
+            </Typography>
+          </span>
+        </Grid>
+
+      </Grid>
+    </Grid>
+  );
+});
