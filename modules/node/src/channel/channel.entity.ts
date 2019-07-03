@@ -11,6 +11,7 @@ import {
 } from "typeorm";
 
 import { App } from "../app/app.entity";
+import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { User } from "../user/user.entity";
 import { IsEthAddress } from "../validator/isEthAddress";
 import { IsXpub } from "../validator/isXpub";
@@ -41,6 +42,10 @@ export class Channel {
 
   @Column("boolean", { default: false })
   available!: boolean;
+
+  @ManyToOne((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
+  @JoinColumn()
+  paymentProfile: PaymentProfile;
 }
 
 @Entity()
@@ -92,6 +97,7 @@ export class ChannelUpdate {
     )
 
     SELECT
+      "channel"."id" as "channelId",
       "user"."publicIdentifier" as "userPublicIdentifier",
       "channel"."nodePublicIdentifier" as "nodePublicIdentifier",
       "channel"."multisigAddress" as "multisigAddress",
@@ -108,6 +114,9 @@ export class ChannelUpdate {
   `,
 })
 export class NodeChannel {
+  @ViewColumn()
+  channelId: number;
+
   @ViewColumn()
   nodePublicIdentifier: string;
 
