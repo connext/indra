@@ -81,8 +81,10 @@ describe("ChannelService", () => {
 
     let update = new ChannelUpdate();
     update.channel = channel;
-    update.freeBalancePartyA = Zero;
-    update.freeBalancePartyB = Zero;
+    update.freeBalanceWeiNode = Zero;
+    update.freeBalanceWeiUser = Zero;
+    update.freeBalanceTokenNode = Zero;
+    update.freeBalanceTokenUser = Zero;
     update.nonce = 0;
 
     await userRepository.save(user);
@@ -91,19 +93,23 @@ describe("ChannelService", () => {
 
     update = new ChannelUpdate();
     update.channel = channel;
-    update.freeBalancePartyA = Zero;
-    update.freeBalancePartyB = Zero;
+    update.freeBalanceWeiNode = Zero;
+    update.freeBalanceWeiUser = Zero;
+    update.freeBalanceTokenNode = Zero;
+    update.freeBalanceTokenUser = Zero;
     update.nonce = 1;
     await channelUpdateRepository.save(update);
 
     update = new ChannelUpdate();
     update.channel = channel;
-    update.freeBalancePartyA = toBig(1);
-    update.freeBalancePartyB = toBig(2);
+    update.freeBalanceWeiNode = toBig(1);
+    update.freeBalanceWeiUser = toBig(2);
+    update.freeBalanceTokenNode = toBig(3);
+    update.freeBalanceTokenUser = toBig(4);
     update.nonce = 2;
     await channelUpdateRepository.save(update);
 
-    // channel with 3 updates
+    // channel with 2 updates
     user = new User();
     user.publicIdentifier = mkXpub("xpubC");
 
@@ -114,8 +120,10 @@ describe("ChannelService", () => {
 
     update = new ChannelUpdate();
     update.channel = channel;
-    update.freeBalancePartyA = Zero;
-    update.freeBalancePartyB = Zero;
+    update.freeBalanceWeiNode = Zero;
+    update.freeBalanceWeiUser = Zero;
+    update.freeBalanceTokenNode = Zero;
+    update.freeBalanceTokenUser = Zero;
     update.nonce = 0;
 
     await userRepository.save(user);
@@ -124,21 +132,27 @@ describe("ChannelService", () => {
 
     update = new ChannelUpdate();
     update.channel = channel;
-    update.freeBalancePartyA = toBig(3);
-    update.freeBalancePartyB = toBig(4);
+    update.freeBalanceWeiNode = toBig(3);
+    update.freeBalanceWeiUser = toBig(4);
+    update.freeBalanceTokenNode = toBig(5);
+    update.freeBalanceTokenUser = toBig(6);
     update.nonce = 1;
     await channelUpdateRepository.save(update);
 
     let nodeChannel = await nodeChannelRepository.findByUserPublicIdentifier(mkXpub("xpubA"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xa"));
-    expect(nodeChannel.freeBalancePartyA).toBe("1");
-    expect(nodeChannel.freeBalancePartyB).toBe("2");
+    expect(nodeChannel.freeBalanceWeiNode).toBe("1");
+    expect(nodeChannel.freeBalanceWeiUser).toBe("2");
+    expect(nodeChannel.freeBalanceTokenNode).toBe("3");
+    expect(nodeChannel.freeBalanceTokenUser).toBe("4");
     expect(nodeChannel.nonce).toBe(2);
 
     nodeChannel = await nodeChannelRepository.findByUserPublicIdentifier(mkXpub("xpubC"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xb"));
-    expect(nodeChannel.freeBalancePartyA).toBe("3");
-    expect(nodeChannel.freeBalancePartyB).toBe("4");
+    expect(nodeChannel.freeBalanceWeiNode).toBe("3");
+    expect(nodeChannel.freeBalanceWeiUser).toBe("4");
+    expect(nodeChannel.freeBalanceTokenNode).toBe("5");
+    expect(nodeChannel.freeBalanceTokenUser).toBe("6");
     expect(nodeChannel.nonce).toBe(1);
   });
 
@@ -149,8 +163,10 @@ describe("ChannelService", () => {
     expect(nodeChannel.multisigAddress).toBe(mockStateDepositHolderAddress);
     expect(nodeChannel.nodePublicIdentifier).toBe(mockNodePublicIdentifier);
     expect(nodeChannel.userPublicIdentifier).toBe(userXpub);
-    expect(nodeChannel.freeBalancePartyA).toBe(Zero.toString());
-    expect(nodeChannel.freeBalancePartyB).toBe(Zero.toString());
+    expect(nodeChannel.freeBalanceWeiNode).toBe(Zero.toString());
+    expect(nodeChannel.freeBalanceWeiUser).toBe(Zero.toString());
+    expect(nodeChannel.freeBalanceTokenNode).toBe(Zero.toString());
+    expect(nodeChannel.freeBalanceTokenUser).toBe(Zero.toString());
     expect(nodeChannel.nonce).toBe(0);
     expect(nodeChannel.available).toBe(false);
 
