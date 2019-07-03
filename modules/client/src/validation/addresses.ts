@@ -20,19 +20,20 @@ export function invalidXpub(value: string): string | undefined {
     return `Value must start with "xpub". Value: ${value}`;
   }
 
-  let addr;
-  try {
-    addr = publicIdentifierToAddress(value);
-  } catch (e) {
-    return `Could not public identifier to address. Value: ${value}`;
-  }
+  // TODO: why isnt xpub to pub key working?
+  // let addr;
+  // try {
+  //   addr = publicIdentifierToAddress(value);
+  // } catch (e) {
+  //   return `Could not convert public identifier to address. Value: ${value}`;
+  // }
 
-  if (!isValidAddress(addr)) {
-    return (
-      `Invalid address derived from provided public identifier.` +
-      `Value: ${value}, derivce address: ${addr}`
-    );
-  }
+  // if (!isValidAddress(addr)) {
+  //   return (
+  //     `Invalid address derived from provided public identifier.` +
+  //     `Value: ${value}, derivce address: ${addr}`
+  //   );
+  // }
 
   return undefined;
 }
