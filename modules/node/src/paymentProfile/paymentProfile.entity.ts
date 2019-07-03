@@ -6,7 +6,7 @@ import { Channel } from "../channel/channel.entity";
 @Entity()
 export class PaymentProfile {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column("text", {
     default: "0",
@@ -15,7 +15,7 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  minimumMaintainedCollateralWei: BigNumber;
+  minimumMaintainedCollateralWei!: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -24,7 +24,7 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  minimumMaintainedCollateralToken: BigNumber;
+  minimumMaintainedCollateralToken!: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -33,7 +33,7 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  amountToCollateralizeWei: BigNumber;
+  amountToCollateralizeWei!: BigNumber;
 
   @Column("text", {
     default: "0",
@@ -42,8 +42,8 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  amountToCollateralizeToken: BigNumber;
+  amountToCollateralizeToken!: BigNumber;
 
   @OneToMany((type: any) => Channel, (channel: Channel) => channel.paymentProfile)
-  channels: Channel[];
+  channels!: Channel[];
 }
