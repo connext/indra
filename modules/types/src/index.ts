@@ -11,15 +11,10 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 ////////////////////////////////////
 ////// EMITTED EVENTS
-// TODO: extend CF types?
-export enum EventName {
-  CREATE_CHANNEL = "createChannelEvent",
-  INSTALL_VIRTUAL = "installVirtualEvent",
-  PROPOSE_INSTALL_VIRTUAL = "proposeInstallVirtualEvent",
-  UNINSTALL_VIRTUAL = "uninstallVirtualEvent",
-  UPDATE_STATE = "updateStateEvent",
-  WITHDRAWAL = "withdrawEvent",
-}
+// TODO: extend CF types, export their import, rename?
+// NOTE: you cannot extend enum types in typescript.
+// to "extend" the cf types with our own events, make it a
+// const, or use a union type if needed
 
 ////////////////////////////////////
 ////// APP REGISTRY
@@ -284,7 +279,7 @@ export interface ExchangeParameters<T = string> {
 export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>;
 
 ////// Withdraw types
-export type WithdrawParameters<T = string> = AssetAmount<T> & {
+export type WithdrawParameters<T = string> = DepositParameters<T> & {
   recipient?: Address; // if not provided, will default to signer addr
 };
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
@@ -412,6 +407,19 @@ export function convertTransferParametersToAsset<To extends NumericTypeName>(
   };
 }
 
+export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: DepositParameters<any>,
+): AssetAmount<NumericTypes[To]> {
+  const asset: any = {
+    ...obj,
+  };
+  if (!asset.assetId) {
+    asset.assetId = constants.AddressZero;
+  }
+  return convertAssetAmount(to, asset);
+}
+
 export function convertAppState<To extends NumericTypeName>(
   to: To,
   obj: AppState<any>,
@@ -430,4 +438,5 @@ export const convert: any = {
   Multisig: convertMultisig,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
+  Withdraw: convertWithdrawParametersToAsset,
 };
