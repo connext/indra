@@ -24,7 +24,7 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.18",
+    "@counterfactual/types": "0.0.19",
     "@types/inquirer": "6.0.3",
     "@types/node-fetch": "2.3.7",
     "env-cmd": "9.0.3",
