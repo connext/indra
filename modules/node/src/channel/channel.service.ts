@@ -15,7 +15,7 @@ import { Connection, EntityManager } from "typeorm";
 import { NodeProviderId } from "../constants";
 import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
-import { CLogger } from "../util";
+import { CLogger, toBig } from "../util";
 
 import { Channel, ChannelUpdate, NodeChannel } from "./channel.entity";
 import { ChannelRepository, NodeChannelRepository } from "./channel.repository";
@@ -83,8 +83,10 @@ export class ChannelService implements OnModuleInit {
 
         const update = new ChannelUpdate();
         update.channel = channel;
-        update.freeBalancePartyA = Zero;
-        update.freeBalancePartyB = Zero;
+        update.freeBalanceWeiNode = Zero;
+        update.freeBalanceWeiUser = Zero;
+        update.freeBalanceTokenNode = Zero;
+        update.freeBalanceTokenUser = Zero;
         update.nonce = 0;
 
         logger.log(`Channel update: ${JSON.stringify(update, undefined, 2)}`);
@@ -132,7 +134,14 @@ export class ChannelService implements OnModuleInit {
     return await this.channelRepository.save(channel);
   }
 
-  async requestCollateral() {}
+  async requestCollateral(userPubId: string) {
+    const channel = await this.nodeChannelRepository.findByUserPublicIdentifier(userPubId);
+    const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
+
+    if (toBig(channel.freeBalanceWeiNode).lt(profile.minimumMaintainedCollateralWei)) {
+      
+    }
+  }
 
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
