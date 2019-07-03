@@ -12,6 +12,7 @@ export abstract class AbstractNatsProvider implements INatsProvider {
     pattern: string,
     processor: (subject: string, data: any) => any,
   ): Promise<void> {
+    // TODO: timeout
     await this.natsClient.subscribe(pattern, async (err: NatsError | null, msg: Msg) => {
       if (err) {
         console.error(msg, "-----", err);

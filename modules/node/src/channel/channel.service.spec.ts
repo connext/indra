@@ -5,9 +5,17 @@ import { Connection } from "typeorm";
 
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
+import { NodeProviderId } from "../constants";
 import { DatabaseModule } from "../database/database.module";
 import { NodeModule } from "../node/node.module";
-import { clearDb, mkAddress, mkXpub } from "../test";
+import {
+  clearDb,
+  mkAddress,
+  mkXpub,
+  mockNodeProvider,
+  mockNodePublicIdentifier,
+  mockStateDepositHolderAddress,
+} from "../test";
 import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
 import { toBig } from "../util";
@@ -32,7 +40,10 @@ describe("ChannelService", () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [ConfigModule, ChannelModule, NodeModule, DatabaseModule],
-    }).compile();
+    })
+      .overrideProvider(NodeProviderId)
+      .useValue(mockNodeProvider)
+      .compile();
 
     service = module.get<ChannelService>(ChannelService);
     connection = module.get<Connection>(getConnectionToken());
@@ -122,9 +133,25 @@ describe("ChannelService", () => {
 
     nodeChannel = await nodeChannelRepository.findByPublicIdentifier(mkXpub("xpubC"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xb"));
-    expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.freeBalancePartyA).toBe("3");
     expect(nodeChannel.freeBalancePartyB).toBe("4");
     expect(nodeChannel.nonce).toBe(1);
+  });
+
+  it("should create a channel and make it available", async () => {
+    const userXpub = mkXpub("xpubA");
+    const nodeChannel = await service.create(userXpub);
+    console.log("res: ", nodeChannel);
+
+    expect(nodeChannel.multisigAddress).toBe(mockStateDepositHolderAddress);
+    expect(nodeChannel.nodePublicIdentifier).toBe(mockNodePublicIdentifier);
+    expect(nodeChannel.userPublicIdentifier).toBe(userXpub);
+    expect(nodeChannel.freeBalancePartyA).toBe(Zero.toString());
+    expect(nodeChannel.freeBalancePartyB).toBe(Zero.toString());
+    expect(nodeChannel.nonce).toBe(0);
+    expect(nodeChannel.available).toBe(false);
+
+    const channel = await service.makeAvailable(mockStateDepositHolderAddress);
+    expect(channel.available).toBe(true);
   });
 });

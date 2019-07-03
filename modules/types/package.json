@@ -20,7 +20,7 @@
     "ethers": "=4.0.29"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.16",
+    "@counterfactual/types": "0.0.17",
     "@types/jest": "24.0.15",
     "jest": "=24.7.1",
     "rollup": "1.16.3",
