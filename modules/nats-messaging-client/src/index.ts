@@ -57,9 +57,9 @@ export class NatsMessagingService implements INatsMessaging {
         if (err) {
           console.error("Encountered an error while handling message callback", err);
         } else {
-          console.log(`Got msg: ${msg}`);
-          console.log(`Got msg.data: ${JSON.parse(msg.data)}`);
-          callback(JSON.parse(msg.data) as Node.NodeMessage);
+          const data =
+            msg && msg.data && typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+          callback(data as Node.NodeMessage);
         }
       };
     }
@@ -80,12 +80,11 @@ export class NatsMessagingService implements INatsMessaging {
     this.connection.publish(`${this.messagingServiceKey}.${to}.${msg.from}`, JSON.stringify(msg));
   }
 
-  async request(subject: string, timeout: number, data: string): Promise<any> {
+  async request(subject: string, timeout: number, data: string = "{}"): Promise<any> {
     return new Promise((resolve: any, reject: any): any => {
       if (this.wsMode) {
-        this.connection.request(subject, data || "{}", { timeout }, (response: any): any => {
-          const res = { data: JSON.parse(response) };
-          resolve(res);
+        this.connection.request(subject, data, { max: 1, timeout }, (response: any): any => {
+          resolve({ data: JSON.parse(response) });
         });
       } else {
         resolve(this.connection.request(subject, timeout, data));

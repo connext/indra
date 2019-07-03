@@ -15,7 +15,6 @@ export abstract class AbstractNatsProvider implements INatsProvider {
     // TODO: timeout
     await this.natsClient.subscribe(pattern, async (err: NatsError | null, msg: Msg) => {
       if (err) {
-        console.error(msg, "-----", err);
         throw new RpcException(`Error processing message: ${JSON.stringify(msg)}.`);
       } else if (msg.reply) {
         try {
