@@ -8,6 +8,8 @@ import { ConfigModule } from "../config/config.module";
 import { NodeProviderId } from "../constants";
 import { DatabaseModule } from "../database/database.module";
 import { NodeModule } from "../node/node.module";
+import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
 import {
   clearDb,
   mkAddress,
@@ -36,6 +38,7 @@ describe("ChannelService", () => {
   let channelRepository: ChannelRepository;
   let channelUpdateRepository: ChannelUpdateRepository;
   let nodeChannelRepository: NodeChannelRepository;
+  let paymentProfileRepository: PaymentProfileRepository;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -51,6 +54,7 @@ describe("ChannelService", () => {
     channelRepository = connection.getCustomRepository(ChannelRepository);
     channelUpdateRepository = connection.getCustomRepository(ChannelUpdateRepository);
     nodeChannelRepository = connection.getCustomRepository(NodeChannelRepository);
+    paymentProfileRepository = connection.getCustomRepository(PaymentProfileRepository);
   });
 
   beforeEach(async () => {
@@ -125,13 +129,13 @@ describe("ChannelService", () => {
     update.nonce = 1;
     await channelUpdateRepository.save(update);
 
-    let nodeChannel = await nodeChannelRepository.findByPublicIdentifier(mkXpub("xpubA"));
+    let nodeChannel = await nodeChannelRepository.findByUserPublicIdentifier(mkXpub("xpubA"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xa"));
     expect(nodeChannel.freeBalancePartyA).toBe("1");
     expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.nonce).toBe(2);
 
-    nodeChannel = await nodeChannelRepository.findByPublicIdentifier(mkXpub("xpubC"));
+    nodeChannel = await nodeChannelRepository.findByUserPublicIdentifier(mkXpub("xpubC"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xb"));
     expect(nodeChannel.freeBalancePartyA).toBe("3");
     expect(nodeChannel.freeBalancePartyB).toBe("4");
@@ -141,7 +145,6 @@ describe("ChannelService", () => {
   it("should create a channel and make it available", async () => {
     const userXpub = mkXpub("xpubA");
     const nodeChannel = await service.create(userXpub);
-    console.log("res: ", nodeChannel);
 
     expect(nodeChannel.multisigAddress).toBe(mockStateDepositHolderAddress);
     expect(nodeChannel.nodePublicIdentifier).toBe(mockNodePublicIdentifier);
@@ -153,5 +156,26 @@ describe("ChannelService", () => {
 
     const channel = await service.makeAvailable(mockStateDepositHolderAddress);
     expect(channel.available).toBe(true);
+  });
+
+  it("should find a payment profile for a channel", async () => {
+    const userXpub = mkXpub("xpubA");
+    const nodeChannel = await service.create(userXpub);
+    const channel = await channelRepository.findOne(nodeChannel.channelId);
+
+    let profile = new PaymentProfile();
+    profile.amountToCollateralizeWei = toBig(2000);
+    profile.amountToCollateralizeToken = toBig(1000);
+    profile.minimumMaintainedCollateralWei = toBig(600);
+    profile.minimumMaintainedCollateralToken = toBig(500);
+    profile.channels = [channel!];
+    await paymentProfileRepository.save(profile);
+
+    profile = await channelRepository.getPaymentProfileForChannel(userXpub);
+
+    expect(profile.amountToCollateralizeWei).toStrictEqual(toBig(2000));
+    expect(profile.amountToCollateralizeToken).toStrictEqual(toBig(1000));
+    expect(profile.minimumMaintainedCollateralWei).toStrictEqual(toBig(600));
+    expect(profile.minimumMaintainedCollateralToken).toStrictEqual(toBig(500));
   });
 });
