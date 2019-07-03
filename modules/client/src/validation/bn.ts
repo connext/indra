@@ -3,6 +3,10 @@ import { utils } from "ethers";
 // this contains all of the bn related validation
 // all functions in this library will return `undefined` if the conditions are
 // met, or a descriptive string if they are not
+// naming is designed to:
+// if (notLessThanOrEqualTo) {
+//   throw new Error(notLessThanOrEqualTo)
+// }
 
 export const falsy = (x: string | undefined): boolean => !!x;
 
@@ -21,24 +25,26 @@ export function notBigNumberish(value: any): string | undefined {
   return undefined;
 }
 
-export function notGreaterThan(value: any, floor: utils.BigNumberish): string | undefined {
+// return string when value is not greater than ceiling
+export function notGreaterThan(value: any, ceil: utils.BigNumberish): string | undefined {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return utils.bigNumberify(value).gt(floor)
+  return utils.bigNumberify(value).gt(utils.bigNumberify(ceil))
     ? undefined
-    : `Value (${value.toString()}) is not greater than ${floor.toString()}`;
+    : `Value (${value.toString()}) is not greater than ${ceil.toString()}`;
 }
 
-export function notGreaterThanOrEqualTo(value: any, floor: utils.BigNumberish): string | undefined {
+export function notGreaterThanOrEqualTo(value: any, ceil: utils.BigNumberish): string | undefined {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return utils.bigNumberify(value).gte(floor)
+  return utils.bigNumberify(value).gte(ceil)
     ? undefined
-    : `Value (${value.toString()}) is not greater than or equal to ${floor.toString()}`;
+    : `Value (${value.toString()}) is not greater than or equal to ${ceil.toString()}`;
 }
 
+// return string when value is not less than floor
 export function notLessThan(value: any, floor: utils.BigNumberish): string | undefined {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
@@ -58,9 +64,9 @@ export function notLessThanOrEqualTo(value: any, floor: utils.BigNumberish): str
 }
 
 export function notPositive(value: any): string | undefined {
-  return notLessThanOrEqualTo(value, 0);
+  return notGreaterThanOrEqualTo(value, 0);
 }
 
 export function notNegative(value: any): string | undefined {
-  return notGreaterThan(value, 0);
+  return notLessThan(value, 0);
 }
