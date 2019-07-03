@@ -3,7 +3,7 @@ import { Node as CFModuleTypes } from "@counterfactual/types";
 
 import { logEthFreeBalance } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
-import { falsy, notGreaterThan, notLessThanOrEqualTo } from "../validation/bn";
+import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
