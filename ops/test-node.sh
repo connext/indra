@@ -21,13 +21,19 @@ else
   command="$test_command"
 fi
 
-eth_address="0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_network="kovan"
-ethprovider_host="${project}_ethprovider_$suffix"
+####################
+# Internal Config
+# config & hard-coded stuff you might want to change
 
 log_level="3" # set to 0 for no logs or to 5 for all the logs
 network="${project}_$suffix"
+
+eth_network="ganache"
+
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+eth_rpc_url="http://$ethprovider_host:8545"
+ethprovider_host="${project}_ethprovider_$suffix"
 
 postgres_db="${project}_$suffix"
 postgres_host="${project}_database_$suffix"
@@ -69,7 +75,7 @@ docker run \
   trufflesuite/ganache-cli:v6.4.3 \
     --db="/data" \
     --mnemonic="$eth_mnemonic" \
-    --networkId="$eth_network_id" \
+    --networkId="4447" \
 
 echo "Starting $postgres_host.."
 docker run \
@@ -97,6 +103,9 @@ docker run \
 echo "Starting $node_host.."
 docker run \
   --entrypoint="bash" \
+  --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
+  --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
+  --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
   --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_SERVERS=nats://$nats_host:4222" \
   --env="INDRA_NATS_TOKEN" \
@@ -105,12 +114,9 @@ docker run \
   --env="INDRA_PG_PASSWORD=$postgres_password" \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
+  --env="INDRA_PORT=$node_port" \
   --env="LOG_LEVEL=$log_level" \
   --env="NODE_ENV=development" \
-  --env="ETH_MNEMONIC=$eth_mnemonic" \
-  --env="ETH_NETWORK=$eth_network" \
-  --env="ETH_RPC_URL=http://$ethprovider_host:8545" \
-  --env="PORT=$node_port" \
   --interactive \
   --name="$node_host" \
   --network="$network" \

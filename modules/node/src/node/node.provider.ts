@@ -1,7 +1,6 @@
 import { NatsMessagingService, NatsServiceFactory } from "@connext/nats-messaging-client";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import { NetworkContext } from "@counterfactual/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ethers as eth } from "ethers";

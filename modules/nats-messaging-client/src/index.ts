@@ -54,39 +54,26 @@ export class NatsMessagingService implements INatsMessaging {
 
   async send(to: string, msg: Node.NodeMessage) {
     if (!this.connection) {
-      console.error(
-        "Cannot register a connection with an uninitialized nats server",
-      );
+      console.error("Cannot register a connection with an uninitialized nats server");
       return;
     }
 
-    this.connection.publish(
-      `${this.messagingServiceKey}.${to}.${msg.from}`,
-      JSON.stringify(msg),
-    );
+    this.connection.publish(`${this.messagingServiceKey}.${to}.${msg.from}`, JSON.stringify(msg));
   }
 
   onReceive(address: string, callback: (msg: Node.NodeMessage) => void) {
     if (!this.connection) {
-      console.error(
-        "Cannot register a connection with an uninitialized nats server",
-      );
+      console.error("Cannot register a connection with an uninitialized nats server");
       return;
     }
 
-    this.connection.subscribe(
-      `${this.messagingServiceKey}.${address}.>`,
-      (err, msg) => {
-        if (err) {
-          console.error(
-            "Encountered an error while handling message callback",
-            err,
-          );
-        } else {
-          callback(JSON.parse(msg.data) as Node.NodeMessage);
-        }
-      },
-    );
+    this.connection.subscribe(`${this.messagingServiceKey}.${address}.>`, (err, msg) => {
+      if (err) {
+        console.error("Encountered an error while handling message callback", err);
+      } else {
+        callback(JSON.parse(msg.data) as Node.NodeMessage);
+      }
+    });
   }
 
   async disconnect() {
@@ -100,13 +87,7 @@ export class NatsMessagingService implements INatsMessaging {
 }
 
 export function confirmNatsConfigurationEnvVars() {
-  if (
-    !process.env.NATS_SERVERS ||
-    !process.env.NATS_TOKEN ||
-    !process.env.NATS_CLUSTER_ID
-  ) {
-    throw Error(
-      "Nats server name(s), token and cluster ID must be set via env vars",
-    );
+  if (!process.env.NATS_SERVERS || !process.env.NATS_TOKEN || !process.env.NATS_CLUSTER_ID) {
+    throw Error("Nats server name(s), token and cluster ID must be set via env vars");
   }
 }

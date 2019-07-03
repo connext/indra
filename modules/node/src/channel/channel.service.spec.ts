@@ -1,15 +1,21 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { getConnectionToken, TypeOrmModule } from "@nestjs/typeorm";
+import { getConnectionToken } from "@nestjs/typeorm";
 import { Zero } from "ethers/constants";
 import { Connection } from "typeorm";
-import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 
-import { entities, viewEntites } from "../app.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
-import { ConfigService } from "../config/config.service";
+import { NodeProviderId } from "../constants";
+import { DatabaseModule } from "../database/database.module";
 import { NodeModule } from "../node/node.module";
-import { clearDb, mkAddress, mkXpub } from "../test";
+import {
+  clearDb,
+  mkAddress,
+  mkXpub,
+  mockNodeProvider,
+  mockNodePublicIdentifier,
+  mockStateDepositHolderAddress,
+} from "../test";
 import { User } from "../user/user.entity";
 import { UserRepository } from "../user/user.repository";
 import { toBig } from "../util";
@@ -33,24 +39,11 @@ describe("ChannelService", () => {
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
-      imports: [
-        ConfigModule,
-        ChannelModule,
-        NodeModule,
-        TypeOrmModule.forRootAsync({
-          imports: [ConfigModule],
-          inject: [ConfigService],
-          useFactory: async (config: ConfigService): Promise<any> => {
-            return {
-              ...config.getPostgresConfig(),
-              entities: [...entities, ...viewEntites],
-              synchronize: true,
-              type: "postgres",
-            } as PostgresConnectionOptions;
-          },
-        }),
-      ],
-    }).compile();
+      imports: [ConfigModule, ChannelModule, NodeModule, DatabaseModule],
+    })
+      .overrideProvider(NodeProviderId)
+      .useValue(mockNodeProvider)
+      .compile();
 
     service = module.get<ChannelService>(ChannelService);
     connection = module.get<Connection>(getConnectionToken());
@@ -75,11 +68,11 @@ describe("ChannelService", () => {
   it("should find node channels", async () => {
     // channel with 3 updates
     let user = new User();
-    user.xpub = mkXpub("xpubA");
+    user.publicIdentifier = mkXpub("xpubA");
 
     let channel = new Channel();
     channel.user = user;
-    channel.nodeXpub = mkXpub("xpubB");
+    channel.nodePublicIdentifier = mkXpub("xpubB");
     channel.multisigAddress = mkAddress("0xa");
 
     let update = new ChannelUpdate();
@@ -108,11 +101,11 @@ describe("ChannelService", () => {
 
     // channel with 3 updates
     user = new User();
-    user.xpub = mkXpub("xpubC");
+    user.publicIdentifier = mkXpub("xpubC");
 
     channel = new Channel();
     channel.user = user;
-    channel.nodeXpub = mkXpub("xpubD");
+    channel.nodePublicIdentifier = mkXpub("xpubD");
     channel.multisigAddress = mkAddress("0xb");
 
     update = new ChannelUpdate();
@@ -132,17 +125,33 @@ describe("ChannelService", () => {
     update.nonce = 1;
     await channelUpdateRepository.save(update);
 
-    let nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubA"));
+    let nodeChannel = await nodeChannelRepository.findByPublicIdentifier(mkXpub("xpubA"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xa"));
     expect(nodeChannel.freeBalancePartyA).toBe("1");
     expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.nonce).toBe(2);
 
-    nodeChannel = await nodeChannelRepository.findByXpub(mkXpub("xpubC"));
+    nodeChannel = await nodeChannelRepository.findByPublicIdentifier(mkXpub("xpubC"));
     expect(nodeChannel.multisigAddress).toBe(mkAddress("0xb"));
-    expect(nodeChannel.freeBalancePartyB).toBe("2");
     expect(nodeChannel.freeBalancePartyA).toBe("3");
     expect(nodeChannel.freeBalancePartyB).toBe("4");
     expect(nodeChannel.nonce).toBe(1);
+  });
+
+  it("should create a channel and make it available", async () => {
+    const userXpub = mkXpub("xpubA");
+    const nodeChannel = await service.create(userXpub);
+    console.log("res: ", nodeChannel);
+
+    expect(nodeChannel.multisigAddress).toBe(mockStateDepositHolderAddress);
+    expect(nodeChannel.nodePublicIdentifier).toBe(mockNodePublicIdentifier);
+    expect(nodeChannel.userPublicIdentifier).toBe(userXpub);
+    expect(nodeChannel.freeBalancePartyA).toBe(Zero.toString());
+    expect(nodeChannel.freeBalancePartyB).toBe(Zero.toString());
+    expect(nodeChannel.nonce).toBe(0);
+    expect(nodeChannel.available).toBe(false);
+
+    const channel = await service.makeAvailable(mockStateDepositHolderAddress);
+    expect(channel.available).toBe(true);
   });
 });

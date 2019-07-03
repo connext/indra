@@ -22,8 +22,8 @@
     "typescript": "3.5.2"
   },
   "dependencies": {
-    "@counterfactual/types": "0.0.16",
-    "ethers": "4.0.29",
+    "@counterfactual/types": "0.0.19",
+    "ethers": "4.0.32",
     "rollup": "^1.16.0"
   }
 }

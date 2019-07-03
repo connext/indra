@@ -12,6 +12,7 @@ export abstract class AbstractNatsProvider implements INatsProvider {
     pattern: string,
     processor: (subject: string, data: any) => any,
   ): Promise<void> {
+    // TODO: timeout
     await this.natsClient.subscribe(pattern, async (err: NatsError | null, msg: Msg) => {
       if (err) {
         throw new RpcException(`Error processing message: ${JSON.stringify(msg)}.`);
