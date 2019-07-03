@@ -1,4 +1,3 @@
-import { EventName } from "@connext/types";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -22,6 +21,7 @@ import { Logger } from "./lib/logger";
 type CallbackStruct = {
   [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void;
 };
+
 export class ConnextListener extends EventEmitter {
   private log: Logger;
   private cfModule: Node;
@@ -130,7 +130,7 @@ export class ConnextListener extends EventEmitter {
     });
   };
 
-  private emitAndLog = (event: NodeTypes.EventName | EventName, data: any): void => {
+  private emitAndLog = (event: NodeTypes.EventName, data: any): void => {
     this.log.info(`Emitted ${event}`);
     this.emit(event, data);
   };
