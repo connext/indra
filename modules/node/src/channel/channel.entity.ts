@@ -45,7 +45,7 @@ export class Channel {
 
   @ManyToOne((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
   @JoinColumn()
-  paymentProfile: PaymentProfile;
+  paymentProfile!: PaymentProfile;
 }
 
 @Entity()
@@ -58,20 +58,40 @@ export class ChannelUpdate {
   channel!: Channel;
 
   @Column("text", {
+    default: "0",
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  freeBalancePartyA!: BigNumber;
+  freeBalanceWeiNode!: BigNumber;
 
   @Column("text", {
+    default: "0",
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  freeBalancePartyB!: BigNumber;
+  freeBalanceWeiUser!: BigNumber;
+
+  @Column("text", {
+    default: "0",
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  freeBalanceTokenNode!: BigNumber;
+
+  @Column("text", {
+    default: "0",
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  freeBalanceTokenUser!: BigNumber;
 
   @Column("integer")
   nonce!: number;
@@ -89,8 +109,10 @@ export class ChannelUpdate {
       SELECT DISTINCT ON ("channelId")
         "id",
         "channelId",
-        "freeBalancePartyA",
-        "freeBalancePartyB",
+        "freeBalanceWeiUser",
+        "freeBalanceWeiNode",
+        "freeBalanceTokenUser",
+        "freeBalanceTokenNode",
         "nonce"
       FROM "channel_update"
       ORDER BY "channelId", "nonce" DESC NULLS LAST
@@ -103,8 +125,10 @@ export class ChannelUpdate {
       "channel"."multisigAddress" as "multisigAddress",
       "channel"."available" as "available",
       "latest_updates"."id" as "updateId",
-      "latest_updates"."freeBalancePartyA",
-      "latest_updates"."freeBalancePartyB",
+      "latest_updates"."freeBalanceWeiUser",
+      "latest_updates"."freeBalanceWeiNode",
+      "latest_updates"."freeBalanceTokenUser",
+      "latest_updates"."freeBalanceTokenNode",
       "latest_updates"."nonce"
     FROM "channel" "channel"
     LEFT JOIN "latest_updates" "latest_updates"
@@ -115,26 +139,32 @@ export class ChannelUpdate {
 })
 export class NodeChannel {
   @ViewColumn()
-  channelId: number;
+  channelId!: number;
 
   @ViewColumn()
-  nodePublicIdentifier: string;
+  nodePublicIdentifier!: string;
 
   @ViewColumn()
-  userPublicIdentifier: string;
+  userPublicIdentifier!: string;
 
   @ViewColumn()
-  multisigAddress: string;
+  multisigAddress!: string;
 
   @ViewColumn()
-  available: boolean;
+  available!: boolean;
 
   @ViewColumn()
-  freeBalancePartyA: string; // TODO: how to make this BigNumber
+  freeBalanceWeiNode!: string;
 
   @ViewColumn()
-  freeBalancePartyB: string;
+  freeBalanceWeiUser!: string; // TODO: how to make this BigNumber
 
   @ViewColumn()
-  nonce: number;
+  freeBalanceTokenNode!: string;
+
+  @ViewColumn()
+  freeBalanceTokenUser!: string; // TODO: how to make this BigNumber
+
+  @ViewColumn()
+  nonce!: number;
 }
