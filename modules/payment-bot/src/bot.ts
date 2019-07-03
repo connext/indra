@@ -208,7 +208,11 @@ async function clientTransfer(deposit: string, counterparty: string): Promise<an
 
 async function withdrawBalance(amount: string, recipient: string | undefined): Promise<any> {
   const client = getConnextClient();
-  await client.withdrawal(utils.parseEther(amount), recipient);
+  const channel = await client.withdraw({
+    amount: utils.parseEther(amount).toString(),
+    recipient,
+  });
+  console.log(`withdraw returns: ${JSON.stringify(channel, null, 2)}`);
 }
 
 export function registerClientListeners(): void {
