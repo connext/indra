@@ -4,23 +4,22 @@ import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
 import { BigNumber } from "ethers/utils";
 
-import { ConnextInternal } from "../connext";
 import { delay } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
-import { falsy, notGreaterThanOrEqualTo } from "../validation/bn";
+import { falsy, notGreaterThan, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
 export class TransferController extends AbstractController {
   private appId: string;
 
+  private timeout: NodeJS.Timeout;
+
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
-    // TODO: we can validate amount against freebalance
-    // by adding free balance to class properties
     const invalid = await this.validate(recipient, amount, assetId);
     if (invalid) {
       throw new Error(invalid.toString());
@@ -99,7 +98,7 @@ export class TransferController extends AbstractController {
     const errs = [
       invalidXpub(recipient),
       invalidAddress(assetId),
-      notGreaterThanOrEqualTo(amount, preTransferBal),
+      notLessThanOrEqualTo(amount, preTransferBal),
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
@@ -108,6 +107,9 @@ export class TransferController extends AbstractController {
   private resolveInstallTransfer = (res: any, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
       return;
+    }
+    if (this.timeout) {
+      clearTimeout(this.timeout);
     }
     res(data);
     return data;
@@ -143,9 +145,9 @@ export class TransferController extends AbstractController {
       boundResolve = this.resolveInstallTransfer.bind(null, res);
       this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
       this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-      setTimeout(() => {
+      this.timeout = setTimeout(() => {
         this.cleanupInstallListeners(boundResolve, boundReject);
-        boundReject();
+        boundReject({ data: { data: this.appId } });
       }, 5000);
     });
 
