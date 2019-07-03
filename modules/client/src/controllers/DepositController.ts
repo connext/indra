@@ -30,9 +30,6 @@ export class DepositController extends AbstractController {
     }
 
     const { assetId, amount } = convert.Deposit("bignumber", params);
-
-    // TODO: we can validate amount against eth held by this address
-    // by adding eth addr of balance to the class properties
     const invalid = await this.validateInputs(assetId, amount);
     if (invalid) {
       throw new Error(invalid);
@@ -87,11 +84,18 @@ export class DepositController extends AbstractController {
   ): Promise<string | undefined> => {
     // check asset balance of address
     // TODO: fix for non-eth balances
-    // TODO: is this the right address that will be sending money to the
-    // contract?
-    const depositAddr = this.cfModule.ethFreeBalanceAddress;
+
+    // TODO: wtf --> fix this!
+    // const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
+    // TODO: whats the path for this address?
+    const depositAddr = "0x24ac59b070eC2EA822249cB2A858208460305Faa";
     const bal = await this.provider.getBalance(depositAddr);
-    const errs = [invalidAddress(assetId), notPositive(amount), notLessThanOrEqualTo(amount, bal)];
+    this.log.info(`${bal.toString()}, ${notLessThanOrEqualTo(amount, bal)}`)
+    const errs = [
+      invalidAddress(assetId),
+      notPositive(amount),
+      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
+    ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
 
