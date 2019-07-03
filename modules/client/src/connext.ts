@@ -539,7 +539,7 @@ export class ConnextInternal extends ConnextChannel {
     amount: BigNumber,
     recipient?: string, // Address or xpub? whats the default?
   ): Promise<NodeTypes.UninstallResult> => {
-    const uninstallResponse = await this.cfModule.router.dispatch(
+    const withdrawalResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -552,7 +552,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return uninstallResponse.result;
+    return withdrawalResponse.result;
   };
 
   ///////////////////////////////////
