@@ -160,12 +160,15 @@ export type User<T = string> = {
 export type UserBigNumber = User<BigNumber>;
 
 export type NodeChannel<T = string> = {
+  channelId: number;
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
   multisigAddress: string;
   available: boolean;
-  freeBalancePartyA: T;
-  freeBalancePartyB: T;
+  freeBalanceWeiNode: T;
+  freeBalanceWeiUser: T;
+  freeBalanceTokenNode: T;
+  freeBalanceTokenUser: T;
   nonce: number;
   // TODO: add apps
 };
