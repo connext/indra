@@ -6,7 +6,7 @@ import {
   Node,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -22,6 +22,7 @@ import { ChannelRepository, NodeChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
 
+@Injectable()
 export class ChannelService implements OnModuleInit {
   constructor(
     @Inject(NodeProviderId) private readonly node: Node,
@@ -95,7 +96,9 @@ export class ChannelService implements OnModuleInit {
     );
 
     logger.log(`Channel user & channel & update saved to db`);
-    return await this.nodeChannelRepository.findByPublicIdentifier(counterpartyPublicIdentifier);
+    return await this.nodeChannelRepository.findByUserPublicIdentifier(
+      counterpartyPublicIdentifier,
+    );
   }
 
   async deposit(
@@ -128,6 +131,8 @@ export class ChannelService implements OnModuleInit {
     channel.available = true;
     return await this.channelRepository.save(channel);
   }
+
+  async requestCollateral() {}
 
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
