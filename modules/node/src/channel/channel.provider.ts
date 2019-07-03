@@ -8,6 +8,7 @@ import { Client } from "ts-nats";
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, NatsProviderId, NodeProviderId } from "../constants";
 import { AbstractNatsProvider } from "../util/nats";
+import { isXpub } from "../validator/isXpub";
 
 import { NodeChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
@@ -24,11 +25,19 @@ export class ChannelNats extends AbstractNatsProvider {
   // TODO: validation
   async getChannel(subject: string): Promise<GetChannelResponse> {
     const pubId = subject.split(".").pop(); // last item of subscription is pubId
+    if (!pubId || !isXpub(pubId)) {
+      throw new RpcException("Invalid public identifier in message subject");
+    }
+
     return (await this.nodeChannelRepo.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<CreateChannelResponse> {
     const pubId = subject.split(".").pop(); // last item of subscription is pubId
+    if (!pubId || !isXpub(pubId)) {
+      throw new RpcException("Invalid public identifier in message subject");
+    }
+
     try {
       return await this.channelService.create(pubId);
     } catch (e) {
