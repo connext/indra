@@ -13,7 +13,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@counterfactual/node": "0.2.8",
+    "@counterfactual/node": "0.2.9",
     "ts-nats": "1.2.4",
     "websocket-nats": "0.3.3"
   },
