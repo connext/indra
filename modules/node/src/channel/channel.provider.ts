@@ -24,7 +24,7 @@ export class ChannelNats extends AbstractNatsProvider {
   // TODO: validation
   async getChannel(subject: string): Promise<GetChannelResponse> {
     const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    return (await this.nodeChannelRepo.findByPublicIdentifier(pubId)) as GetChannelResponse;
+    return (await this.nodeChannelRepo.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<CreateChannelResponse> {
