@@ -13,7 +13,7 @@
   "dependencies": {
     "@connext/nats-messaging-client": "0.0.5",
     "@counterfactual/node": "0.2.8",
-    "ethers": "=4.0.29",
+    "ethers": "4.0.32",
     "node-fetch": "2.6.0",
     "ts-nats": "1.2.4",
     "uuid": "3.3.2"
