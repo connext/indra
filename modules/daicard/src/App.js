@@ -228,10 +228,10 @@ class App extends React.Component {
       console.log(`Attempting to deposit ${depositParams.amount} wei into channel: ${JSON.stringify(channel, null, 2)}...`);
 
       this.setState({ pending: { deposit: true } })
-      await client.deposit(depositParams);
+      const result = await client.deposit(depositParams);
       // this.setState({ pending: { deposit: false } })
 
-      console.log(`Successfully deposited!`);
+      console.log(`Successfully deposited! Result: ${JSON.stringify(result,null,2)}`);
     }
   }
 
