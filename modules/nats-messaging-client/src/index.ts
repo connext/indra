@@ -2,6 +2,9 @@ import { Node } from "@counterfactual/types";
 import * as nats from "ts-nats";
 import * as wsNats from "websocket-nats";
 
+////////////////////////////////////////
+// Types
+
 export interface NatsConfig {
   wsUrl?: string;
   clusterId?: string;
@@ -16,11 +19,20 @@ export const NATS_CONFIGURATION_ENV = {
   token: "NATS_TOKEN",
 };
 
-export interface INatsMessaging extends Node.IMessagingService {
+export interface IMessaging extends Node.IMessagingService {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   getConnection: () => nats.Client;
+  request: (
+    subject: string,
+    timeout: number,
+    data: string,
+    callback?: (response: any) => any,
+  ) => Promise<any>;
 }
+
+////////////////////////////////////////
+// Factory
 
 export class NatsServiceFactory {
   constructor(private readonly connectionConfig: NatsConfig) {}
@@ -38,7 +50,10 @@ export class NatsServiceFactory {
   }
 }
 
-export class WsMessagingService implements INatsMessaging {
+////////////////////////////////////////
+// Websockets -> Nats Messaging
+
+export class WsMessagingService implements IMessaging {
   private connection: any; // wsNats is vanilla JS :(
 
   constructor(
@@ -50,39 +65,6 @@ export class WsMessagingService implements INatsMessaging {
     this.connection = await wsNats.connect(this.configuration.wsUrl);
   }
 
-  getConnection(): any {
-    if (!this.connection) {
-      throw Error("No connection exists");
-    }
-    return this.connection;
-  }
-
-  async send(to: string, msg: Node.NodeMessage): Promise<void> {
-    if (!this.connection) {
-      console.error("Cannot register a connection with an uninitialized nats server");
-      return;
-    }
-    this.connection.publish(`${this.messagingServiceKey}.${to}.${msg.from}`, JSON.stringify(msg));
-  }
-
-  async request(subject: string, timeout: number, data: string = "{}"): Promise<any> {
-    return new Promise((resolve: any, reject: any): any => {
-      this.connection.request(subject, data, { max: 1, timeout }, (response: any): any => {
-        resolve({ data: JSON.parse(response) });
-      });
-    });
-  }
-
-  onReceive(address: string, callback: (msg: Node.NodeMessage) => void): void {
-    if (!this.connection) {
-      console.error("Cannot register a connection with an uninitialized nats server");
-      return;
-    }
-    this.connection.subscribe(`${this.messagingServiceKey}.${address}.>`, (msg: string): void => {
-      callback(JSON.parse(JSON.parse(msg)) as Node.NodeMessage);
-    });
-  }
-
   async disconnect(): Promise<void> {
     if (!this.connection) {
       console.error("No connection exists");
@@ -90,9 +72,50 @@ export class WsMessagingService implements INatsMessaging {
     }
     this.connection.close();
   }
+
+  getConnection(): any {
+    if (!this.connection) {
+      console.error("No connection exists");
+      return;
+    }
+    return this.connection;
+  }
+
+  async send(to: string, msg: Node.NodeMessage): Promise<void> {
+    if (!this.connection) {
+      console.error("Cannot register a connection with an uninitialized ws messaging service");
+      return;
+    }
+    this.connection.publish(`${this.messagingServiceKey}.${to}.${msg.from}`, JSON.stringify(msg));
+  }
+
+  onReceive(address: string, callback: (msg: Node.NodeMessage) => void): void {
+    if (!this.connection) {
+      console.error("Cannot register a connection with an uninitialized ws messaging service");
+      return;
+    }
+    this.connection.subscribe(`${this.messagingServiceKey}.${address}.>`, (msg: string): void => {
+      callback(JSON.parse(JSON.parse(msg)) as Node.NodeMessage);
+    });
+  }
+
+  async request(subject: string, timeout: number, data: string = "{}"): Promise<any> {
+    if (!this.connection) {
+      console.error("Cannot register a connection with an uninitialized ws messaging service");
+      return;
+    }
+    return new Promise((resolve: any, reject: any): any => {
+      this.connection.request(subject, data, { max: 1, timeout }, (response: any): any => {
+        resolve({ data: JSON.parse(response) });
+      });
+    });
+  }
 }
 
-export class NatsMessagingService implements INatsMessaging {
+////////////////////////////////////////
+// Pure Nats Messaging
+
+export class NatsMessagingService implements IMessaging {
   private connection: nats.Client | undefined;
 
   constructor(
@@ -104,16 +127,25 @@ export class NatsMessagingService implements INatsMessaging {
     this.connection = await nats.connect(this.configuration);
   }
 
+  async disconnect(): Promise<void> {
+    if (!this.connection) {
+      console.error("No connection exists");
+      return;
+    }
+    this.connection.close();
+  }
+
   getConnection(): any {
     if (!this.connection) {
-      throw Error("No connection exists");
+      console.error("No connection exists");
+      return;
     }
     return this.connection;
   }
 
   async send(to: string, msg: Node.NodeMessage): Promise<void> {
     if (!this.connection) {
-      console.error("Cannot register a connection with an uninitialized nats server");
+      console.error("Cannot register a connection with an uninitialized nats messaging service");
       return;
     }
     this.connection.publish(`${this.messagingServiceKey}.${to}.${msg.from}`, JSON.stringify(msg));
@@ -121,26 +153,29 @@ export class NatsMessagingService implements INatsMessaging {
 
   onReceive(address: string, callback: (msg: Node.NodeMessage) => void): void {
     if (!this.connection) {
-      console.error("Cannot register a connection with an uninitialized nats server");
+      console.error("Cannot register a connection with an uninitialized nats messaging service");
       return;
     }
-    this.connection.subscribe(`${this.messagingServiceKey}.${address}.>`, (err, msg) => {
-      if (err) {
-        console.error("Encountered an error while handling message callback", err);
-      } else {
-        const data =
-          msg && msg.data && typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
-        callback(data as Node.NodeMessage);
-      }
-    });
+    this.connection.subscribe(
+      `${this.messagingServiceKey}.${address}.>`,
+      (err: any, msg: any): void => {
+        if (err) {
+          console.error("Encountered an error while handling message callback", err);
+        } else {
+          const data =
+            msg && msg.data && typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+          callback(data as Node.NodeMessage);
+        }
+      },
+    );
   }
 
-  async disconnect(): Promise<void> {
+  async request(subject: string, timeout: number, data: string = "{}"): Promise<any> {
     if (!this.connection) {
-      console.error("No connection exists");
+      console.error("Cannot register a connection with an uninitialized nats messaging service");
       return;
     }
-    this.connection.close();
+    return await this.connection.request(subject, timeout, data);
   }
 }
 

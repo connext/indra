@@ -73,7 +73,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: use local storage for default key value setting!!
   const nodeConfig = {
     logLevel: opts.logLevel,
-    nats: messaging,
+    messaging,
     nodeUrl: opts.nodeUrl,
     wallet,
   };

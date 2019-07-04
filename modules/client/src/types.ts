@@ -1,3 +1,4 @@
+import { NatsMessagingService, WsMessagingService } from "@connext/nats-messaging-client";
 import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { NetworkContext } from "@counterfactual/types";
@@ -92,7 +93,7 @@ export interface ConnextStore {}
 ////// General typings
 export interface NodeInitializationParameters {
   nodeUrl: string;
-  nats: NatsClient | any;
+  messaging: WsMessagingService | NatsMessagingService;
   wallet: Wallet;
   logLevel?: number;
   publicIdentifier?: string;

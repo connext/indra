@@ -1,6 +1,6 @@
+import { NatsMessagingService, WsMessagingService } from "@connext/nats-messaging-client";
 import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
 import { Address } from "@counterfactual/types";
-import { Client as NatsClient } from "ts-nats";
 
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
@@ -18,7 +18,7 @@ export interface INodeApiClient {
 
 export class NodeApiClient implements INodeApiClient {
   public nodeUrl: string;
-  public nats: NatsClient | any; // TODO: rename to messaging?
+  public messaging: WsMessagingService | NatsMessagingService; // TODO: rename to messaging?
   public wallet: Wallet;
   public address: Address;
   public log: Logger;
@@ -28,7 +28,7 @@ export class NodeApiClient implements INodeApiClient {
 
   constructor(opts: NodeInitializationParameters) {
     this.nodeUrl = opts.nodeUrl;
-    this.nats = opts.nats;
+    this.messaging = opts.messaging;
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;
     this.log = new Logger("NodeApiClient", opts.logLevel);
@@ -86,7 +86,7 @@ export class NodeApiClient implements INodeApiClient {
   /////////////////////////////////
   private async send(subject: string, data?: any): Promise<any | undefined> {
     console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
-    const msg = await this.nats.request(subject, API_TIMEOUT, JSON.stringify(data));
+    const msg = await this.messaging.request(subject, API_TIMEOUT, JSON.stringify(data));
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;
