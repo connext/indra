@@ -5,15 +5,12 @@ ARG VERSION=6e254ec204b3b45df7c1492bdd3bff30edcfd0e8
 
 # install build tools, download source code, and build
 RUN apk add --no-cache --virtual build-tools \
-    gcc git go linux-headers make musl-dev openssl
-
-RUN git clone --progress https://github.com/isobit/ws-tcp-relay.git /ws-tcp-relay \
+    gcc git go linux-headers make musl-dev openssl \
+ && git clone --progress https://github.com/isobit/ws-tcp-relay.git /ws-tcp-relay \
  && cd /ws-tcp-relay \
- && git checkout $VERSION
-
-RUN  go get -v golang.org/x/net/websocket
-
-RUN cd /ws-tcp-relay && make \
+ && git checkout $VERSION \
+ && go get -v golang.org/x/net/websocket \
+ && make \
  && cp /ws-tcp-relay/ws-tcp-relay /usr/local/bin/ \
  && cd $HOME \
  && rm -rf /ws-tcp-relay \

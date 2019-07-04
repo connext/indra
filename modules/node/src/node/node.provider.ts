@@ -78,7 +78,7 @@ export const natsProvider: FactoryProvider<Promise<NatsMessagingService>> = {
       payload: Payload.JSON,
       servers: config.getNatsConfig().servers,
     });
-    const messService = natsServiceFactory.createMessagingService("messaging");
+    const messService = natsServiceFactory.createNatsMessagingService("messaging");
     await messService.connect();
     return messService;
   },

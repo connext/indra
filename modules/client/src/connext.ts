@@ -59,7 +59,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: instantiate service factory with proper config!!
   // @ts-ignore
   const natsFactory = new NatsServiceFactory(natsConfig);
-  const messaging = natsFactory.createMessagingService(messagingServiceKey);
+  const messaging = natsConfig.wsUrl
+    ? natsFactory.createWsMessagingService(messagingServiceKey)
+    : natsFactory.createNatsMessagingService(messagingServiceKey);
   await messaging.connect();
   console.log("nats is connected");
 
