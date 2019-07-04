@@ -39,6 +39,11 @@ async function createNode(
   );
   logger.log("Node created");
   logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
+  logger.log(
+    `Address 0 ${JSON.stringify(
+      eth.utils.HDNode.fromExtendedKey(node.publicIdentifier).derivePath("0").address,
+    )}`,
+  );
   return node;
 }
 

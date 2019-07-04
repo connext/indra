@@ -97,7 +97,7 @@ export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
 export type App<T = string> = {
   id: number;
-  channel: NodeChannel<T>;
+  channel: NodeChannel;
   appRegistry: AppRegistry;
   appId: number;
   xpubPartyA: string;
@@ -155,24 +155,17 @@ export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTrans
 export type User<T = string> = {
   id: number;
   xpub: string;
-  channels: NodeChannel<T>[];
+  channels: NodeChannel[];
 };
 export type UserBigNumber = User<BigNumber>;
 
-export type NodeChannel<T = string> = {
-  channelId: number;
+export type NodeChannel = {
+  id: number;
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
   multisigAddress: string;
   available: boolean;
-  freeBalanceWeiNode: T;
-  freeBalanceWeiUser: T;
-  freeBalanceTokenNode: T;
-  freeBalanceTokenUser: T;
-  nonce: number;
-  // TODO: add apps
 };
-export type NodeChannelBigNumber = NodeChannel<BigNumber>;
 export type Channel<T = string> = {
   id: number;
   user: User;

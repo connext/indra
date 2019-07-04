@@ -10,13 +10,13 @@ import { ChannelMessagingProviderId, NatsProviderId, NodeProviderId } from "../c
 import { AbstractNatsProvider } from "../util/nats";
 import { isXpub } from "../validator/isXpub";
 
-import { NodeChannelRepository } from "./channel.repository";
+import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
     natsClient: Client,
-    private readonly nodeChannelRepo: NodeChannelRepository,
+    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
   ) {
     super(natsClient);
@@ -29,7 +29,7 @@ export class ChannelNats extends AbstractNatsProvider {
       throw new RpcException("Invalid public identifier in message subject");
     }
 
-    return (await this.nodeChannelRepo.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
+    return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<CreateChannelResponse> {
@@ -78,17 +78,17 @@ export class ConfigNats extends AbstractNatsProvider {
 
 // TODO: reduce this boilerplate
 export const channelProvider: FactoryProvider<Promise<Client>> = {
-  inject: [NatsProviderId, NodeChannelRepository, ConfigService, NodeProviderId, ChannelService],
+  inject: [NatsProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     nats: NatsMessagingService,
-    nodeChannelRepo: NodeChannelRepository,
+    channelRepo: ChannelRepository,
     configService: ConfigService,
     node: Node,
     channelService: ChannelService,
   ): Promise<Client> => {
     const client = nats.getConnection();
-    const channel = new ChannelNats(client, nodeChannelRepo, channelService);
+    const channel = new ChannelNats(client, channelRepo, channelService);
     await channel.setupSubscriptions();
     const config = new ConfigNats(client, node, configService);
     await config.setupSubscriptions();

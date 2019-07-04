@@ -24,25 +24,7 @@ export class PaymentProfile {
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  minimumMaintainedCollateralToken!: BigNumber;
-
-  @Column("text", {
-    default: "0",
-    transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
   amountToCollateralizeWei!: BigNumber;
-
-  @Column("text", {
-    default: "0",
-    transformer: {
-      from: (value: string): BigNumber => new BigNumber(value),
-      to: (value: BigNumber): string => value.toString(),
-    },
-  })
-  amountToCollateralizeToken!: BigNumber;
 
   @OneToMany((type: any) => Channel, (channel: Channel) => channel.paymentProfile)
   channels!: Channel[];

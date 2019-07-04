@@ -1,15 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
 
-import { App, AppUpdate } from "../app/app.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
-import { Channel, ChannelUpdate, NodeChannel } from "../channel/channel.entity";
+import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { User } from "../user/user.entity";
 
-export const entities = [App, AppRegistry, AppUpdate, Channel, ChannelUpdate, PaymentProfile, User];
-export const viewEntites = [NodeChannel];
+export const entities = [AppRegistry, Channel, PaymentProfile, User];
+export const viewEntites = [];
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {

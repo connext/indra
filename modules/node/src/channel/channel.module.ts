@@ -8,7 +8,7 @@ import { UserModule } from "../user/user.module";
 import { UserRepository } from "../user/user.repository";
 
 import { channelProvider } from "./channel.provider";
-import { ChannelRepository, NodeChannelRepository } from "./channel.repository";
+import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 @Module({
@@ -17,12 +17,7 @@ import { ChannelService } from "./channel.service";
   imports: [
     UserModule,
     NodeModule,
-    TypeOrmModule.forFeature([
-      ChannelRepository,
-      UserRepository,
-      NodeChannelRepository,
-      PaymentProfileRepository,
-    ]),
+    TypeOrmModule.forFeature([ChannelRepository, UserRepository, PaymentProfileRepository]),
     ConfigModule,
   ],
   providers: [ChannelService, channelProvider],
