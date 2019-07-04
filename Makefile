@@ -56,6 +56,9 @@ restart: dev
 start-prod: prod
 	bash ops/start-prod.sh
 
+start-test: prod
+	INDRA_V2_MODE=test bash ops/start-prod.sh
+
 restart-prod:
 	bash ops/stop.sh
 	bash ops/start-prod.sh
@@ -85,6 +88,14 @@ deployed-contracts: node-modules
 
 test: test-node
 watch: watch-node
+
+test-e2e: start-test
+	./node_modules/.bin/cypress install > /dev/null
+	./node_modules/.bin/cypress run --spec cypress/tests/index.js --env publicUrl=https://localhost
+
+watch-e2e: node-modules
+	./node_modules/.bin/cypress install > /dev/null
+	./node_modules/.bin/cypress open
 
 test-node: node
 	bash ops/test-node.sh --forceExit

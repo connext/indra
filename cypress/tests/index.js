@@ -11,7 +11,7 @@ describe('Daicard', () => {
     my.closeIntroModal()
   })
 
-  describe('Deposit', () => {
+  describe.only('Deposit', () => {
     it(`Should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth)
     })
