@@ -123,11 +123,18 @@ class App extends React.Component {
 
     const store = {
       get: (key) => {
-        return localStorage.getItem(`CF_NODE:${key}`);
+        try {
+          return JSON.parse(localStorage.getItem(`CF_NODE:${key}`));
+        } catch {
+          return localStorage.getItem(`CF_NODE:${key}`);
+        }
       },
       set: (pairs, allowDelete) => {
         for (const pair of pairs) {
-          localStorage.setItem(`CF_NODE:${pair.key}`, pair.value);
+          localStorage.setItem(
+            `CF_NODE:${pair.key}`,
+            typeof pair.value === 'string' ? pair.value : JSON.stringify(pair.value),
+          );
         }
       }
     };
@@ -187,16 +194,12 @@ class App extends React.Component {
   }
 
   async autoDeposit() {
-    await this.setDepositLimits()
     const { balance, client, minDeposit, pending } = this.state;
     if (!client || pending.deposit) return;
     if (!(await client.getChannel()).available) {
       console.warn(`Channel not available yet.`);
       return;
     }
-
-    const channel = await client.getChannel()
-    console.log(`channel: ${JSON.stringify(channel, null, 2)}`);
 
     const bnBalance = {
       ether: toBN(balance.onChain.ether),
@@ -213,8 +216,9 @@ class App extends React.Component {
         return;
       }
 
+      const channel = await client.getChannel()
       const depositParams = { amount: bnBalance.ether.sub(minWei).toString() };
-      console.log(`Attempting to deposit ${depositParams.amount} wei...`);
+      console.log(`Attempting to deposit ${depositParams.amount} wei into channel: ${JSON.stringify(channel, null, 2)}...`);
 
       this.setState({ pending: { deposit: true } })
       await client.deposit(depositParams);
