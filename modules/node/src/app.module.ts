@@ -19,7 +19,7 @@ export const viewEntites = [NodeChannel];
 @Module({
   controllers: [AppController, NodeController],
   exports: [ConfigModule],
-  imports: [ConfigModule, NodeModule, UserModule, ChannelModule, DatabaseModule],
+  imports: [ConfigModule, NodeModule, UserModule, ChannelModule,DatabaseModule],
   providers: [AppService],
 })
 export class AppModule {}
