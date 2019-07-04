@@ -24,11 +24,11 @@ export class Currency {
   }
 
   defaultOptions = {
-    'DAI': { commas: false, decimals: 2, withSymbol: true },
-    'DEI': { commas: false, decimals: 0, withSymbol: false },
-    'ETH': { commas: false, decimals: 3, withSymbol: true },
-    'FIN': { commas: false, decimals: 3, withSymbol: false },
-    'WEI': { commas: false, decimals: 0, withSymbol: false },
+    'DAI': { commas: false, decimals: 2, symbol: true },
+    'DEI': { commas: false, decimals: 0, symbol: false },
+    'ETH': { commas: false, decimals: 3, symbol: true },
+    'FIN': { commas: false, decimals: 3, symbol: false },
+    'WEI': { commas: false, decimals: 0, symbol: false },
   }
 
   ////////////////////////////////////////
@@ -40,14 +40,23 @@ export class Currency {
   precision = 18
   _amount
   _type
-  exchangeRates
+  daiRateGiven = false
+  daiRate = '100'
+  exchangeRates = {
+    DAI: this.daiRate,
+    DEI: parseUnits(this.daiRate, 18).toString(),
+    ETH: '1',
+    FIN: parseUnits('1', 3).toString(),
+    WEI: parseUnits('1', 18).toString(),
+  }
 
   ////////////////////////////////////////
   // Constructor
 
-  constructor (type, amount, exchangeRates) {
+  constructor (type, amount, daiRate) {
     this._type = type
-    this.exchangeRates = exchangeRates
+    this.daiRate = daiRate
+    this.daiRateGiven = !!daiRate
     try {
       this._amount = this.toWad(amount)
     } catch (e) {
@@ -86,6 +95,14 @@ export class Currency {
   ////////////////////////////////////////
   // Public Methods
 
+  isEthType(type) {
+    return ['ETH', 'FIN', 'WEI'].includes(type || this._type)
+  }
+
+  isTokenType(type) {
+    return ['DAI', 'DEI'].includes(type || this._type)
+  }
+
   floor() {
     return this.amount.slice(0, this.amount.indexOf('.'))
   }
@@ -95,7 +112,7 @@ export class Currency {
       ...this.defaultOptions[this._type],
       ..._options || {},
     }
-    const symbol = options.withSymbol ? `${this.symbol}` : ``
+    const symbol = options.symbol ? `${this.symbol}` : ``
     const amount = options.commas
       ? commify(this.round(options.decimals))
       : this.round(options.decimals)
@@ -126,14 +143,17 @@ export class Currency {
   }
 
   getExchangeRate = (currency) => {
-    if (!this.exchangeRates) {
-      throw new Error(`Pass exchange rates into the constructor to enable conversions`)
+    if (
+      (this.isEthType() && this.isEthType(currency)) ||
+      (this.isTokenType() && this.isTokenType(currency))
+    ) {
+      return this.exchangeRates[currency]
     }
-    const rates = this.exchangeRates()
-    if (rates && rates[currency]) {
-      return (rates[currency] || '0').toString()
+    if (!this.daiRateGiven) {
+      console.warn(`Provide DAI:ETH rate for accurate conversions between currency types`)
+      console.warn(`Using default eth price of $${this.daiRate}`)
     }
-    throw new Error(`No exchange rate for ${currency}! Rates: ${JSON.stringify(rates)}`)
+    return this.exchangeRates[currency]
   }
 
   to = (toType) => this._convert(toType)

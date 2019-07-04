@@ -2,8 +2,6 @@ import { Grid, Typography, withStyles } from "@material-ui/core";
 import { ethers as eth } from "ethers";
 import React from "react";
 
-const { formatEther } = eth.utils;
-
 const styles = theme => ({
   row: {
     color: "white"
@@ -19,10 +17,11 @@ const styles = theme => ({
 
 export const ChannelCard = withStyles(styles)(props => {
   const { balance, classes } = props;
-  const split = (bal) => {
+  const split = (balance) => {
+    const bal = balance.format({ decimals: 2, symbol: false });
     const whole = bal.substring(0, bal.indexOf('.'));
     const part = bal.substring(bal.indexOf('.'));
-    return { whole, part: part.length === 2 ? `${part}0` : part };
+    return { whole, part: part.length === 2 ? `${part}0` : part.substring(0,3) };
   }
   return (
       <Grid>
@@ -49,10 +48,10 @@ export const ChannelCard = withStyles(styles)(props => {
               {"$ "}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
-              <span>{split(formatEther(balance.channel.token)).whole}</span>
+              <span>{split(balance.channel.token.toDAI()).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(formatEther(balance.channel.token)).part}</span>
+              <span>{split(balance.channel.token.toDAI()).part}</span>
             </Typography>
           </span>
           <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
@@ -61,10 +60,10 @@ export const ChannelCard = withStyles(styles)(props => {
               {`${eth.constants.EtherSymbol} `}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
-              <span>{split(formatEther(balance.channel.ether)).whole}</span>
+              <span>{split(balance.channel.ether.toETH()).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(formatEther(balance.channel.ether)).part}</span>
+              <span>{split(balance.channel.ether.toETH()).part}</span>
             </Typography>
           </span>
         </Grid>
@@ -78,10 +77,10 @@ export const ChannelCard = withStyles(styles)(props => {
               {"$ "}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(formatEther(balance.onChain.token)).whole}</span>
+              <span>{split(balance.onChain.token.toDAI()).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              <span>{split(formatEther(balance.onChain.token)).part}</span>
+              <span>{split(balance.onChain.token.toDAI()).part}</span>
             </Typography>
           </span>
           <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
@@ -90,10 +89,10 @@ export const ChannelCard = withStyles(styles)(props => {
               {`${eth.constants.EtherSymbol} `}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(formatEther(balance.onChain.ether)).whole}</span>
+              <span>{split(balance.onChain.ether.toETH()).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              <span>{split(formatEther(balance.onChain.ether)).part}</span>
+              <span>{split(balance.onChain.ether.toETH()).part}</span>
             </Typography>
           </span>
         </Grid>

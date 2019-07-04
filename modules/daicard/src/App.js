@@ -69,8 +69,8 @@ class App extends React.Component {
       address: "",
       approvalWeiUser: "10000",
       balance: {
-        channel: { token: "0", ether: "0" },
-        onChain: { token: "0", ether: "0" },
+        channel: { token: Currency.DEI("0"), ether: Currency.WEI("0") },
+        onChain: { token: Currency.DEI("0"), ether: Currency.WEI("0") },
       },
       authorized: "false",
       channelState: null,
@@ -120,6 +120,11 @@ class App extends React.Component {
     const ethUrl = overrides.ethUrl || `${this.state.publicUrl}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
     const wallet = eth.Wallet.fromMnemonic(mnemonic)
+    const cfPath = "m/44'/60'/0'/25446"
+    const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath)
+
+    console.log(`Account address: ${wallet.address}`)
+    console.log(`CF Account address: ${cfWallet.address}`)
 
     const store = {
       get: (key) => {
@@ -143,15 +148,17 @@ class App extends React.Component {
     console.log("Client created successfully!");
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
+    console.log("Free balance address:", client.myFreeBalanceAddress);
 
     const connextConfig = await client.config();
     console.log("connextConfig:", connextConfig);
 
     this.setState({
-      address: wallet.address,
+      address: cfWallet.address,
+      freeBalanceAddress: client.myFreeBalanceAddress,
       client,
       ethprovider,
-      wallet,
+      wallet: cfWallet,
     });
 
     await this.startPoller();
@@ -177,9 +184,9 @@ class App extends React.Component {
 
   async refreshBalances() {
     const { address, balance, client, ethprovider } = this.state;
-    balance.onChain.ether = (await ethprovider.getBalance(address)).toString();
-    balance.channel.ether = (await client.getChannel()).freeBalancePartyA.toString();
-    // console.log(`balances: ${JSON.stringify(balance)}`)
+    const freeBalance = await client.getFreeBalance();
+    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address));
+    balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress]);
     this.setState({ balance })
   }
 
@@ -222,7 +229,7 @@ class App extends React.Component {
 
       this.setState({ pending: { deposit: true } })
       await client.deposit(depositParams);
-      this.setState({ pending: { deposit: false } })
+      // this.setState({ pending: { deposit: false } })
 
       console.log(`Successfully deposited!`);
     }
@@ -232,7 +239,7 @@ class App extends React.Component {
     const { balance } = this.state;
     const weiBalance = toBN(balance.channel.ether);
     const tokenBalance = toBN(balance.channel.token);
-    if (weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
+    if (false && weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
       await this.state.connext.exchange(weiBalance, "wei");
     }
   }
