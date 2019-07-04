@@ -7,11 +7,9 @@ const ConditionalTransactionDelegateTargetArtifacts = require('@counterfactual/c
 const ETHBalanceRefundAppArtifacts = require('@counterfactual/contracts/build/ETHBalanceRefundApp.json')
 const ETHBucketArtifacts = require('@counterfactual/contracts/build/ETHBucket.json')
 const ETHInterpreterArtifacts = require('@counterfactual/contracts/build/ETHInterpreter.json')
-const LibStaticCallArtifacts = require('@counterfactual/contracts/build/LibStaticCall.json')
 const MinimumViableMultisigArtifacts = require('@counterfactual/contracts/build/MinimumViableMultisig.json')
 const MultiSendArtifacts = require('@counterfactual/contracts/build/MultiSend.json')
 const ProxyFactoryArtifacts = require('@counterfactual/contracts/build/ProxyFactory.json')
-const RootNonceRegistryArtifacts = require('@counterfactual/contracts/build/RootNonceRegistry.json')
 const TwoPartyEthAsLumpArtifacts = require('@counterfactual/contracts/build/TwoPartyEthAsLump.json')
 const TwoPartyVirtualEthAsLumpArtifacts = require('@counterfactual/contracts/build/TwoPartyVirtualEthAsLump.json')
 const UninstallKeyRegistryArtifacts = require('@counterfactual/contracts/build/UninstallKeyRegistry.json')
@@ -154,27 +152,8 @@ const maybeDeployContract = async (name, artifacts, args) => {
   }
 
   ////////////////////////////////////////
-  // Deploy lib contracts
+  // Deploy core counterfactual contracts
 
-  const libStaticCallAddress = await maybeDeployContract(
-    'LibStaticCall', LibStaticCallArtifacts, [],
-  )
-
-  // Link LibStaticCall address into bytecode of other libs
-  ChallengeRegistryArtifacts.bytecode = linker.linkBytecode(
-    ChallengeRegistryArtifacts.bytecode,
-    { 'LibStaticCall': libStaticCallAddress },
-  )
-  TwoPartyVirtualEthAsLumpArtifacts.bytecode = linker.linkBytecode(
-    TwoPartyVirtualEthAsLumpArtifacts.bytecode,
-    { 'LibStaticCall': libStaticCallAddress },
-  )
-  ConditionalTransactionDelegateTargetArtifacts.bytecode = linker.linkBytecode(
-    ConditionalTransactionDelegateTargetArtifacts.bytecode,
-    { 'LibStaticCall': libStaticCallAddress },
-  )
-
-  // Deploy rest of the lib contracts
   const challengeRegistryAddress = await maybeDeployContract(
     'ChallengeRegistry', ChallengeRegistryArtifacts, [],
   )
@@ -184,10 +163,6 @@ const maybeDeployContract = async (name, artifacts, args) => {
   const conditionalTransactionDelegateTargetAddress = await maybeDeployContract(
     'ConditionalTransactionDelegateTarget', ConditionalTransactionDelegateTargetArtifacts, [],
   )
-
-  ////////////////////////////////////////
-  // Deploy the rest of the core counterfactual contracts
-
   const ethBalanceRefundAppAddress = await maybeDeployContract(
     'ETHBalanceRefundApp', ETHBalanceRefundAppArtifacts, [],
   )
@@ -206,9 +181,6 @@ const maybeDeployContract = async (name, artifacts, args) => {
   const proxyFactoryAddress = await maybeDeployContract(
     'ProxyFactory', ProxyFactoryArtifacts, [],
   )
-  const rootNonceRegistryAddress = await maybeDeployContract(
-    'RootNonceRegistry', RootNonceRegistryArtifacts, [],
-  )
   const twoPartyEthAsLumpAddress = await maybeDeployContract(
     'TwoPartyEthAsLump', TwoPartyEthAsLumpArtifacts, [],
   )
@@ -220,11 +192,13 @@ const maybeDeployContract = async (name, artifacts, args) => {
   // Setup relevant accounts
 
   if (netId !== 1) { 
-
     const maybeSendGift = async (address) => {
       const balance = await wallet.provider.getBalance(address)
       if (balance.eq(eth.constants.Zero)) {
-        const tx = await wallet.sendTransaction({ to: address, value: eth.utils.parseEther(ethGift) })
+        const tx = await wallet.sendTransaction({
+          to: address,
+          value: eth.utils.parseEther(ethGift)
+        })
         await wallet.provider.waitForTransaction(tx.hash)
         console.log(`\nSent ${eth.constants.EtherSymbol} ${ethGift} to ${address}`)
         console.log(`Transaction hash: ${tx.hash}`)
@@ -239,7 +213,6 @@ const maybeDeployContract = async (name, artifacts, args) => {
       await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
     }
   }
-
 
   ////////////////////////////////////////
   // Print summary
