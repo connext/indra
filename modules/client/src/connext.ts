@@ -230,6 +230,7 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
+  public myFreeBalanceAddress: Address;
   // TODO: maybe move this into the NodeApiClient @layne? --> yes
   public nodePublicIdentifier: string;
 
@@ -253,6 +254,7 @@ export class ConnextInternal extends ConnextChannel {
     this.nats = opts.nats;
 
     this.cfModule = opts.cfModule;
+    this.myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
     this.publicIdentifier = this.cfModule.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
