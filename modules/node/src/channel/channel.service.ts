@@ -13,6 +13,7 @@ import { Connection } from "typeorm";
 
 import { NodeProviderId } from "../constants";
 import { CLogger } from "../util";
+import { freeBalanceAddressFromXpub } from "../util/cfNode";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -68,10 +69,15 @@ export class ChannelService implements OnModuleInit {
   }
 
   async deposit(
-    multisigAddress: string,
+    userPublicIdentifier: string,
     amount: BigNumber,
     notifyCounterparty: boolean,
   ): Promise<NodeTypes.DepositResult> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new RpcException(`No channel exists for user ${userPublicIdentifier}`);
+    }
+
     const depositResponse = await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -79,7 +85,7 @@ export class ChannelService implements OnModuleInit {
         method: NodeTypes.RpcMethodName.DEPOSIT,
         params: {
           amount,
-          multisigAddress,
+          multisigAddress: channel.multisigAddress,
           notifyCounterparty,
         } as NodeTypes.DepositParams,
       }),
@@ -98,7 +104,7 @@ export class ChannelService implements OnModuleInit {
     return await this.channelRepository.save(channel);
   }
 
-  async requestCollateral(userPubId: string) {
+  async requestCollateral(userPubId: string): Promise<NodeTypes.DepositResult | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
 
@@ -112,6 +118,14 @@ export class ChannelService implements OnModuleInit {
     );
 
     const freeBalance = freeBalanceResponse.result as NodeTypes.GetFreeBalanceStateResult;
+    const freeBalanceAddress = freeBalanceAddressFromXpub(this.node.publicIdentifier);
+    const nodeFreeBalance = freeBalance[freeBalanceAddress];
+
+    if (nodeFreeBalance.lt(profile.minimumMaintainedCollateralWei)) {
+      const amountDeposit = profile.amountToCollateralizeWei.sub(nodeFreeBalance);
+      return await this.deposit(userPubId, amountDeposit, true);
+    }
+    return undefined;
   }
 
   // initialize CF Node with methods from this service to avoid circular dependency
