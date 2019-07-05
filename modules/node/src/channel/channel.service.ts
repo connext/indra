@@ -69,13 +69,13 @@ export class ChannelService implements OnModuleInit {
   }
 
   async deposit(
-    userPublicIdentifier: string,
+    multisigAddress: string,
     amount: BigNumber,
     notifyCounterparty: boolean,
   ): Promise<NodeTypes.DepositResult> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
-      throw new RpcException(`No channel exists for user ${userPublicIdentifier}`);
+      throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
     const depositResponse = await this.node.router.dispatch(
@@ -85,7 +85,7 @@ export class ChannelService implements OnModuleInit {
         method: NodeTypes.RpcMethodName.DEPOSIT,
         params: {
           amount,
-          multisigAddress: channel.multisigAddress,
+          multisigAddress,
           notifyCounterparty,
         } as NodeTypes.DepositParams,
       }),
@@ -144,6 +144,12 @@ export class ChannelService implements OnModuleInit {
       if (!res || !res.data) {
         return;
       }
+
+      if (res.from === this.node.publicIdentifier) {
+        logger.log(`Deposit received from node address, do not counter deposit`);
+        return;
+      }
+
       this.deposit(
         res.data.multisigAddress,
         res.data.amount as any, // FIXME
