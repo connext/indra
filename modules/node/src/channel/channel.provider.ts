@@ -1,5 +1,10 @@
 import { NatsMessagingService } from "@connext/nats-messaging-client";
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
+import {
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  RequestCollateralResponse,
+} from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -22,33 +27,35 @@ export class ChannelNats extends AbstractNatsProvider {
     super(natsClient);
   }
 
-  // TODO: validation
   async getChannel(subject: string): Promise<GetChannelResponse> {
-    const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    if (!pubId || !isXpub(pubId)) {
-      throw new RpcException("Invalid public identifier in message subject");
-    }
-
+    const pubId = this.getPublicIdentifierFromSubject(subject);
     return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<CreateChannelResponse> {
-    const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    if (!pubId || !isXpub(pubId)) {
-      throw new RpcException("Invalid public identifier in message subject");
-    }
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+    return await this.channelService.create(pubId);
+  }
 
-    try {
-      return await this.channelService.create(pubId);
-    } catch (e) {
-      throw new RpcException(`Error calling createChannel RPC method `);
-    }
+  async requestCollateral(subject: string): Promise<RequestCollateralResponse> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+    return await this.channelService.requestCollateral(pubId);
   }
 
   setupSubscriptions(): void {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
 
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
+
+    super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
+  }
+
+  private getPublicIdentifierFromSubject(subject: string): string {
+    const pubId = subject.split(".").pop(); // last item of subscription is pubId
+    if (!pubId || !isXpub(pubId)) {
+      throw new RpcException("Invalid public identifier in message subject");
+    }
+    return pubId;
   }
 }
 
