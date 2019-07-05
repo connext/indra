@@ -1,27 +1,27 @@
 {
-  "name": "@connext/indra-v2",
-  "version": "2.0.0-alpha",
-  "description": "",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ConnextProject/indra-v2.git"
-  },
-  "author": "Connext & Friends",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/ConnextProject/indra-v2/issues"
-  },
-  "homepage": "https://github.com/ConnextProject/indra-v2#readme",
-  "devDependencies": {
-    "@counterfactual/contracts": "0.1.4",
-    "ethers": "4.0.29",
-    "ganache-cli": "6.4.4",
-    "lerna": "3.15.0",
-    "solc": "0.5.10",
-    "tslint": "5.18.0",
-    "tslint-config-airbnb": "5.11.1",
-    "tslint-config-prettier": "1.18.0",
-    "tslint-plugin-prettier": "2.0.1"
-  },
-  "dependencies": {}
+	"name": "@connext/indra-v2",
+	"version": "2.0.0-alpha",
+	"description": "",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ConnextProject/indra-v2.git"
+	},
+	"author": "Connext & Friends",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/ConnextProject/indra-v2/issues"
+	},
+	"homepage": "https://github.com/ConnextProject/indra-v2#readme",
+	"dependencies": {},
+	"devDependencies": {
+		"@counterfactual/contracts": "0.1.4",
+		"ethers": "4.0.32",
+		"ganache-cli": "6.4.4",
+		"lerna": "3.15.0",
+		"solc": "0.5.10",
+		"tslint": "5.18.0",
+		"tslint-config-airbnb": "5.11.1",
+		"tslint-config-prettier": "1.18.0",
+		"tslint-plugin-prettier": "2.0.1"
+	}
 }
