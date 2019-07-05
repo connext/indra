@@ -1,4 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
+import { MessagePattern } from "@nestjs/microservices";
 
 import { AppService } from "./app.service";
 
@@ -11,4 +12,8 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @MessagePattern("hello")
+  getHelloNats(): string {
+    return this.appService.getHello();
+  }
 }
