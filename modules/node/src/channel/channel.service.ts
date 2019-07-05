@@ -6,103 +6,78 @@ import {
   Node,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
-import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
-import { Connection, EntityManager } from "typeorm";
+import { Connection } from "typeorm";
 
 import { NodeProviderId } from "../constants";
-import { User } from "../user/user.entity";
-import { UserRepository } from "../user/user.repository";
 import { CLogger } from "../util";
+import { freeBalanceAddressFromXpub } from "../util/cfNode";
 
-import { Channel, ChannelUpdate, NodeChannel } from "./channel.entity";
-import { ChannelRepository, NodeChannelRepository } from "./channel.repository";
+import { Channel } from "./channel.entity";
+import { ChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
 
+@Injectable()
 export class ChannelService implements OnModuleInit {
   constructor(
     @Inject(NodeProviderId) private readonly node: Node,
-    private readonly userRepository: UserRepository,
-    private readonly nodeChannelRepository: NodeChannelRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly dbConnection: Connection,
   ) {}
 
-  async create(counterpartyPublicIdentifier: string): Promise<NodeChannel> {
+  async create(counterpartyPublicIdentifier: string): Promise<Channel> {
     logger.log(`Creating channel for ${counterpartyPublicIdentifier}`);
-    await this.dbConnection.manager.transaction(
-      async (transactionalEntityManager: EntityManager) => {
-        let user = await this.userRepository.findByPublicIdentifier(counterpartyPublicIdentifier);
-        // create user if does not exist
-        if (!user) {
-          user = new User();
-          user.publicIdentifier = counterpartyPublicIdentifier;
-          user.channels = [];
-        }
-        logger.log(`Got user: ${JSON.stringify(user, undefined, 2)}`);
+    const existing = await this.channelRepository.findByUserPublicIdentifier(
+      counterpartyPublicIdentifier,
+    );
+    if (existing) {
+      throw new RpcException(`Channel already exists for ${counterpartyPublicIdentifier}`);
+    }
 
-        if (user.channels.length > 0) {
-          throw new RpcException(`Channel already exists for user ${counterpartyPublicIdentifier}`);
-        }
+    const createChannelResponse = (await this.node.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
+        params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
+      }),
+    )) as JsonRpcResponse;
+    const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
+    logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
 
-        const createChannelResponse = (await this.node.router.dispatch(
-          jsonRpcDeserialize({
-            id: Date.now(),
-            jsonrpc: "2.0",
-            method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
-            params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
-          }),
-        )) as JsonRpcResponse;
-        const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
-        logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
-
-        // TODO: remove this when the above line returns multisig
-        const multisigResponse = await this.node.router.dispatch(
-          jsonRpcDeserialize({
-            id: Date.now(),
-            jsonrpc: "2.0",
-            method: NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
-            params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
-          }),
-        );
-
-        const multisigResult: NodeTypes.GetStateDepositHolderAddressResult = multisigResponse!
-          .result;
-        logger.log(`multisigResponse: ${JSON.stringify(multisigResponse, undefined, 2)}`);
-
-        const channel = new Channel();
-        channel.nodePublicIdentifier = this.node.publicIdentifier;
-        channel.multisigAddress = multisigResult.address;
-        channel.user = user;
-
-        logger.log(`New channel: ${JSON.stringify(channel, undefined, 2)}`);
-
-        const update = new ChannelUpdate();
-        update.channel = channel;
-        update.freeBalancePartyA = Zero;
-        update.freeBalancePartyB = Zero;
-        update.nonce = 0;
-
-        logger.log(`Channel update: ${JSON.stringify(update, undefined, 2)}`);
-
-        await transactionalEntityManager.save(user);
-        await transactionalEntityManager.save(channel);
-        await transactionalEntityManager.save(update);
-      },
+    // TODO: remove this when the above line returns multisig
+    const multisigResponse = await this.node.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
+        params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
+      }),
     );
 
-    logger.log(`Channel user & channel & update saved to db`);
-    return await this.nodeChannelRepository.findByPublicIdentifier(counterpartyPublicIdentifier);
+    const multisigResult: NodeTypes.GetStateDepositHolderAddressResult = multisigResponse!.result;
+    logger.log(`multisigResponse: ${JSON.stringify(multisigResponse, undefined, 2)}`);
+
+    const channel = new Channel();
+    channel.userPublicIdentifier = counterpartyPublicIdentifier;
+    channel.nodePublicIdentifier = this.node.publicIdentifier;
+    channel.multisigAddress = multisigResult.address;
+    return await this.channelRepository.save(channel);
   }
 
   async deposit(
-    multisigAddress: string,
+    userPublicIdentifier: string,
     amount: BigNumber,
     notifyCounterparty: boolean,
   ): Promise<NodeTypes.DepositResult> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new RpcException(`No channel exists for user ${userPublicIdentifier}`);
+    }
+
     const depositResponse = await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -110,7 +85,7 @@ export class ChannelService implements OnModuleInit {
         method: NodeTypes.RpcMethodName.DEPOSIT,
         params: {
           amount,
-          multisigAddress,
+          multisigAddress: channel.multisigAddress,
           notifyCounterparty,
         } as NodeTypes.DepositParams,
       }),
@@ -127,6 +102,30 @@ export class ChannelService implements OnModuleInit {
 
     channel.available = true;
     return await this.channelRepository.save(channel);
+  }
+
+  async requestCollateral(userPubId: string): Promise<NodeTypes.DepositResult | undefined> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
+    const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
+
+    const freeBalanceResponse = await this.node.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+        params: { multisigAddress: channel.multisigAddress } as NodeTypes.GetFreeBalanceStateParams,
+      }),
+    );
+
+    const freeBalance = freeBalanceResponse.result as NodeTypes.GetFreeBalanceStateResult;
+    const freeBalanceAddress = freeBalanceAddressFromXpub(this.node.publicIdentifier);
+    const nodeFreeBalance = freeBalance[freeBalanceAddress];
+
+    if (nodeFreeBalance.lt(profile.minimumMaintainedCollateralWei)) {
+      const amountDeposit = profile.amountToCollateralizeWei.sub(nodeFreeBalance);
+      return await this.deposit(userPubId, amountDeposit, true);
+    }
+    return undefined;
   }
 
   // initialize CF Node with methods from this service to avoid circular dependency
