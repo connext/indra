@@ -39,7 +39,7 @@
     "prefer-function-over-method": [false, "allow-public"],
     "prettier": true,
     "quotemark": [true, "double", "backtick"],
-    "semicolon": [true, "always"],
+    "semicolon": [true, "always", "strict-bound-class-methods"],
     "strict-boolean-expressions": false,
     "trailing-comma": [ true, { "multiline": "always", "singleline": "never", "esSpecCompliant": true } ],
     "variable-name": [true, "allow-pascal-case"],

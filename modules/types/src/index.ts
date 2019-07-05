@@ -11,14 +11,10 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 ////////////////////////////////////
 ////// EMITTED EVENTS
-export enum EventName {
-  CREATE_CHANNEL = "createChannelEvent",
-  INSTALL_VIRTUAL = "installVirtualEvent",
-  PROPOSE_INSTALL_VIRTUAL = "proposeInstallVirtualEvent",
-  UNINSTALL_VIRTUAL = "uninstallVirtualEvent",
-  UPDATE_STATE = "updateStateEvent",
-  WITHDRAWAL = "withdrawEvent",
-}
+// TODO: extend CF types, export their import, rename?
+// NOTE: you cannot extend enum types in typescript.
+// to "extend" the cf types with our own events, make it a
+// const, or use a union type if needed
 
 ////////////////////////////////////
 ////// APP REGISTRY
@@ -281,7 +277,7 @@ export interface ExchangeParameters<T = string> {
 export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>;
 
 ////// Withdraw types
-export type WithdrawParameters<T = string> = AssetAmount<T> & {
+export type WithdrawParameters<T = string> = DepositParameters<T> & {
   recipient?: Address; // if not provided, will default to signer addr
 };
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
@@ -380,7 +376,7 @@ export function convertMultisig<To extends NumericTypeName>(
  * in the proper assetId if it is left blank in the supplied parameters to the
  * empty eth address
  */
-export function convertDepositToAsset<To extends NumericTypeName>(
+export function convertDepositParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: DepositParameters<any>,
 ): AssetAmount<NumericTypes[To]> {
@@ -393,7 +389,7 @@ export function convertDepositToAsset<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
-export function convertTransferToAsset<To extends NumericTypeName>(
+export function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
 ): TransferParameters<NumericTypes[To]> {
@@ -409,8 +405,36 @@ export function convertTransferToAsset<To extends NumericTypeName>(
   };
 }
 
+export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: WithdrawParameters<any>,
+): AssetAmount<NumericTypes[To]> {
+  const asset: any = {
+    ...obj,
+  };
+  if (!asset.assetId) {
+    asset.assetId = constants.AddressZero;
+  }
+  return convertAssetAmount(to, asset);
+}
+
+export function convertAppState<To extends NumericTypeName>(
+  to: To,
+  obj: AppState<any>,
+): AppState<NumericTypes[To]> {
+  return {
+    ...obj,
+    transfers: [convertAssetAmount(to, obj.transfers[0]), convertAssetAmount(to, obj.transfers[1])],
+  };
+}
+
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert: any = {
+  AppState: convertAppState,
   Asset: convertAssetAmount,
+  Deposit: convertDepositParametersToAsset,
+  Multisig: convertMultisig,
   Transfer: convertAssetAmount,
+  TransferParameters: convertTransferParametersToAsset,
+  Withdraw: convertWithdrawParametersToAsset,
 };
