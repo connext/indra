@@ -53,10 +53,10 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
-export const publicIdentifierToAddress = (publicIdentifier: string, path?: string): string => {
-  // TODO: why is this throwing an error?
-  const derivationPath = path || "m/44'/60'/0'/25446";
-  return utils.HDNode.fromExtendedKey(publicIdentifier).derivePath(derivationPath).publicKey;
+// TODO: why doesnt deriving a path work as expected? sync w/rahul about
+// differences in hub.
+export const publicIdentifierToAddress = (publicIdentifier: string): string => {
+  return utils.HDNode.fromExtendedKey(publicIdentifier).address;
 };
 
 // TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
