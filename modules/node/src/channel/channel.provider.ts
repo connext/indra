@@ -1,5 +1,10 @@
 import { NatsMessagingService } from "@connext/nats-messaging-client";
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
+import {
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  RequestCollateralResponse,
+} from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -8,38 +13,49 @@ import { Client } from "ts-nats";
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, NatsProviderId, NodeProviderId } from "../constants";
 import { AbstractNatsProvider } from "../util/nats";
+import { isXpub } from "../validator/isXpub";
 
-import { NodeChannelRepository } from "./channel.repository";
+import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
     natsClient: Client,
-    private readonly nodeChannelRepo: NodeChannelRepository,
+    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
   ) {
     super(natsClient);
   }
 
-  // TODO: validation
   async getChannel(subject: string): Promise<GetChannelResponse> {
-    const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    return (await this.nodeChannelRepo.findByPublicIdentifier(pubId)) as GetChannelResponse;
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+    return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<CreateChannelResponse> {
-    const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    try {
-      return await this.channelService.create(pubId);
-    } catch (e) {
-      throw new RpcException(`Error calling createChannel RPC method `);
-    }
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+    return await this.channelService.create(pubId);
+  }
+
+  async requestCollateral(subject: string): Promise<RequestCollateralResponse> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+    return await this.channelService.requestCollateral(pubId);
   }
 
   setupSubscriptions(): void {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
 
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
+
+    super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
+  }
+
+  private getPublicIdentifierFromSubject(subject: string): string {
+    const pubId = subject.split(".").pop(); // last item of subscription is pubId
+    if (!pubId || !isXpub(pubId)) {
+      throw new RpcException("Invalid public identifier in message subject");
+    }
+    return pubId;
   }
 }
 
@@ -69,17 +85,17 @@ export class ConfigNats extends AbstractNatsProvider {
 
 // TODO: reduce this boilerplate
 export const channelProvider: FactoryProvider<Promise<Client>> = {
-  inject: [NatsProviderId, NodeChannelRepository, ConfigService, NodeProviderId, ChannelService],
+  inject: [NatsProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     nats: NatsMessagingService,
-    nodeChannelRepo: NodeChannelRepository,
+    channelRepo: ChannelRepository,
     configService: ConfigService,
     node: Node,
     channelService: ChannelService,
   ): Promise<Client> => {
     const client = nats.getConnection();
-    const channel = new ChannelNats(client, nodeChannelRepo, channelService);
+    const channel = new ChannelNats(client, channelRepo, channelService);
     await channel.setupSubscriptions();
     const config = new ConfigNats(client, node, configService);
     await config.setupSubscriptions();

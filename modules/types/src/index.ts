@@ -97,7 +97,7 @@ export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
 export type App<T = string> = {
   id: number;
-  channel: NodeChannel<T>;
+  channel: NodeChannel;
   appRegistry: AppRegistry;
   appId: number;
   xpubPartyA: string;
@@ -155,21 +155,17 @@ export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTrans
 export type User<T = string> = {
   id: number;
   xpub: string;
-  channels: NodeChannel<T>[];
+  channels: NodeChannel[];
 };
 export type UserBigNumber = User<BigNumber>;
 
-export type NodeChannel<T = string> = {
+export type NodeChannel = {
+  id: number;
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
   multisigAddress: string;
   available: boolean;
-  freeBalancePartyA: T;
-  freeBalancePartyB: T;
-  nonce: number;
-  // TODO: add apps
 };
-export type NodeChannelBigNumber = NodeChannel<BigNumber>;
 export type Channel<T = string> = {
   id: number;
   user: User;
@@ -253,6 +249,8 @@ export type GetConfigResponse = {
 export type GetChannelResponse = NodeChannel;
 
 export type CreateChannelResponse = NodeChannel;
+
+export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
 
 /////////////////////////////////
 ///////// CLIENT INPUT TYPES

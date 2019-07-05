@@ -29,7 +29,9 @@ async function createNode(
   const addr = eth.Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;
   const provider = config.getEthProvider();
   const balance = (await provider.getBalance(addr)).toString();
-  logger.log(`Balance of address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`);
+  logger.log(
+    `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
+  );
   const node = await Node.create(
     natsMessagingService,
     store,
@@ -39,6 +41,11 @@ async function createNode(
   );
   logger.log("Node created");
   logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
+  logger.log(
+    `Free balance address ${JSON.stringify(
+      eth.utils.HDNode.fromExtendedKey(node.publicIdentifier).derivePath("0").address,
+    )}`,
+  );
   return node;
 }
 

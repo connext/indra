@@ -3,6 +3,7 @@ import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
 import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
 import { NetworkContext } from "@counterfactual/types";
+import { Injectable } from "@nestjs/common";
 import * as dotenv from "dotenv";
 import { JsonRpcProvider } from "ethers/providers";
 import { Network } from "ethers/utils";
@@ -17,6 +18,7 @@ type PostgresConfig = {
   username: string;
 };
 
+@Injectable()
 export class ConfigService {
   private readonly envConfig: { [key: string]: string };
 
