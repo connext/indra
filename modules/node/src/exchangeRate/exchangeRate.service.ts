@@ -5,12 +5,10 @@ import { BigNumber } from "ethers/utils";
 
 import { medianizerAbi } from "../abi/medianizer.abi";
 import { NatsClientProviderId } from "../constants";
-import { CLogger } from "../util";
 
 // mainnet
 const MEDIANIZER_ADDRESS = "0x729D19f657BD0614b4985Cf1D82531c67569197B";
-
-const logger = new CLogger("ExchangeRateService");
+// TODO: ganache
 
 @Injectable()
 export class ExchangeRateService {
@@ -27,8 +25,6 @@ export class ExchangeRateService {
 
   async publishRate(): Promise<void> {
     const rate = await this.getExchangeRate();
-    logger.log(`Got new rate ${rate}`);
-    this.natsClient.send("exchange-rate", rate);
-    this.natsClient.emit("exchange-rate", rate);
+    this.natsClient.emit("exchange-rate", rate).toPromise();
   }
 }
