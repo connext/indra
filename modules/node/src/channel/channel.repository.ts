@@ -21,9 +21,8 @@ export class ChannelRepository extends Repository<Channel> {
 
   async getPaymentProfileForChannel(userPublicIdentifier: string): Promise<PaymentProfile> {
     const channel = await this.createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.user", "user")
       .leftJoinAndSelect("channel.paymentProfile", "paymentProfile")
-      .where("user.publicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
+      .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .getOne();
 
     if (!channel.paymentProfile) {
