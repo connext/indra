@@ -1,7 +1,7 @@
 import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 
-import { logEthFreeBalance } from "../lib/utils";
+import { logEthFreeBalance, publicIdentifierToAddress } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -84,13 +84,9 @@ export class DepositController extends AbstractController {
   ): Promise<string | undefined> => {
     // check asset balance of address
     // TODO: fix for non-eth balances
-
-    // TODO: wtf --> fix this!
-    // const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
-    // TODO: whats the path for this address?
-    const depositAddr = "0x24ac59b070eC2EA822249cB2A858208460305Faa";
+    const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
     const bal = await this.provider.getBalance(depositAddr);
-    this.log.info(`${bal.toString()}, ${notLessThanOrEqualTo(amount, bal)}`)
+    this.log.info(`${bal.toString()}, ${notLessThanOrEqualTo(amount, bal)}`);
     const errs = [
       invalidAddress(assetId),
       notPositive(amount),
