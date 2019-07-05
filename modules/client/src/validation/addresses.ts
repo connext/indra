@@ -1,7 +1,5 @@
 import { utils } from "ethers";
 
-import { publicIdentifierToAddress } from "../lib/utils";
-
 // contains all of the address-based verification functions
 function isValidAddress(value: any): boolean {
   if (typeof value !== "string") {
