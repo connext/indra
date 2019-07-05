@@ -250,6 +250,8 @@ export type GetChannelResponse = NodeChannel;
 
 export type CreateChannelResponse = NodeChannel;
 
+export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
+
 /////////////////////////////////
 ///////// CLIENT INPUT TYPES
 
