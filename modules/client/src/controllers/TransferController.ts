@@ -6,7 +6,7 @@ import { BigNumber } from "ethers/utils";
 
 import { delay } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
-import { falsy, notGreaterThan, notLessThanOrEqualTo } from "../validation/bn";
+import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
