@@ -52,11 +52,12 @@ export class DepositController extends AbstractController {
       this.log.info(`postDepositBalances:`);
       logEthFreeBalance(postDepositBalances, this.log);
 
-      if (
-        postDepositBalances &&
-        !postDepositBalances[myFreeBalanceAddress].gt(preDepositBalances[myFreeBalanceAddress])
-      ) {
-        throw new Error("My balance was not increased.");
+      const diff = postDepositBalances[myFreeBalanceAddress].sub(
+        preDepositBalances[myFreeBalanceAddress],
+      );
+
+      if (!diff.eq(amount)) {
+        throw new Error("My balance was not increased by the deposit amount.");
       }
 
       this.log.info("Deposited!");
