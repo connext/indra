@@ -44,14 +44,14 @@ dev: node types client payment-bot proxy ws-tcp-relay
 prod: node-prod
 
 start: dev
-	bash ops/start-dev.sh ganache
+	bash ops/start-dev.sh
 
 stop:
 	bash ops/stop.sh
 
 restart: dev
 	bash ops/stop.sh
-	bash ops/start-dev.sh ganache
+	bash ops/start-dev.sh
 
 start-prod: prod
 	bash ops/start-prod.sh
