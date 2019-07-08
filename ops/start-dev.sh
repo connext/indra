@@ -191,7 +191,8 @@ services:
     networks:
       - $project
     ports:
-     - "$nats_port:$nats_port"
+      - "$nats_port:$nats_port"
+    command: -V
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

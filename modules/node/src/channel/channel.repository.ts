@@ -1,30 +1,33 @@
 import { EntityRepository, Repository } from "typeorm";
 
-import { Channel, ChannelUpdate, NodeChannel } from "./channel.entity";
+import { defaultPaymentProfile } from "../constants";
+import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+
+import { Channel } from "./channel.entity";
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
-  async findByMultisigAddress(multisigAddress: string): Promise<Channel> {
+  async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
     return await this.findOne({
       where: { multisigAddress },
     });
   }
-}
 
-@EntityRepository(ChannelUpdate)
-export class ChannelUpdateRepository extends Repository<ChannelUpdate> {}
-
-@EntityRepository(NodeChannel)
-export class NodeChannelRepository extends Repository<NodeChannel> {
-  async findByPublicIdentifier(pubId: string): Promise<NodeChannel> {
+  async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
     return await this.findOne({
-      where: [{ nodePublicIdentifier: pubId }, { userPublicIdentifier: pubId }],
+      where: { userPublicIdentifier },
     });
   }
 
-  async findByMultisigAddress(multisigAddress: string): Promise<NodeChannel> {
-    return await this.findOne({
-      where: { multisigAddress },
-    });
+  async getPaymentProfileForChannel(userPublicIdentifier: string): Promise<PaymentProfile> {
+    const channel = await this.createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.paymentProfile", "paymentProfile")
+      .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
+      .getOne();
+
+    if (!channel.paymentProfile) {
+      return defaultPaymentProfile;
+    }
+    return channel.paymentProfile;
   }
 }

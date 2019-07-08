@@ -1,23 +1,22 @@
-import { ChannelState, DepositParameters } from "@connext/types";
-import { jsonRpcDeserialize } from "@counterfactual/node";
+import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
-import { BigNumber } from "ethers/utils";
 
-import { logEthFreeBalance } from "../lib/utils";
+import { logEthFreeBalance, publicIdentifierToAddress } from "../lib/utils";
+import { invalidAddress } from "../validation/addresses";
+import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
-  public async deposit(params: DepositParameters): Promise<ChannelState> {
-    this.log.info(`Deposit called with params: ${JSON.stringify(params)}`);
-
+  public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
-    console.log("myFreeBalanceAddress:", myFreeBalanceAddress);
+    this.log.info(`myFreeBalanceAddress: ${myFreeBalanceAddress}`);
 
-    // TODO:  Generate and expose multisig address in connext internal
-    console.log("trying to get free balance....");
+    // TODO: remove free balance stuff?
+    this.log.info("trying to get free balance....");
     const preDepositBalances = await this.connext.getFreeBalance();
-    console.log("preDepositBalances:", preDepositBalances);
+    this.log.info(`preDepositBalances:`);
+    this.connext.logEthFreeBalance(preDepositBalances, this.log);
 
     // TODO: why isnt free balance working :(
     if (preDepositBalances) {
@@ -28,84 +27,105 @@ export class DepositController extends AbstractController {
       if (!preDepositBalances[myFreeBalanceAddress]) {
         throw new Error("My address not found");
       }
-
-      const [counterpartyFreeBalanceAddress] = Object.keys(preDepositBalances).filter(
-        (addr: string): boolean => addr !== myFreeBalanceAddress,
-      );
     }
 
-    console.log(`\nDepositing ${params.amount} ETH into ${this.connext.opts.multisigAddress}\n`);
+    const { assetId, amount } = convert.Deposit("bignumber", params);
+    const invalid = await this.validateInputs(assetId, amount);
+    if (invalid) {
+      throw new Error(invalid);
+    }
+
+    this.log.info(`\nDepositing ${amount} ETH into ${this.connext.opts.multisigAddress}\n`);
 
     // register listeners
-    console.log("Registering listeners........");
-    // TODO: theres probably a significantly better way to do this
-    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_STARTED, (data: any) => {
-      console.log("Deposit has started. Data:", JSON.stringify(data, null, 2));
-    });
-
-    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_CONFIRMED, (data: any) => {
-      console.log("Deposit has been confirmed. Data:", JSON.stringify(data, null, 2));
-    });
-
-    this.cfModule.once(CFModuleTypes.EventName.DEPOSIT_FAILED, (data: any) => {
-      console.log("Deposit has failed. Data:", JSON.stringify(data, null, 2));
-    });
-
-    console.log("Registered!");
+    this.log.info("Registering listeners........");
+    this.registerListeners();
+    this.log.info("Registered!");
 
     try {
-      console.log("Calling", CFModuleTypes.RpcMethodName.DEPOSIT);
-      const depositResponse = await this.cfModule.router.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: CFModuleTypes.RpcMethodName.DEPOSIT,
-          params: {
-            amount: new BigNumber(params.amount), // FIXME:
-            multisigAddress: this.connext.opts.multisigAddress,
-            notifyCounterparty: true,
-          } as CFModuleTypes.DepositParams,
-        }),
-      );
-      console.log("Called", CFModuleTypes.MethodName.DEPOSIT, "!");
-      console.log("depositResponse: ", depositResponse);
+      this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
+      const depositResponse = await this.connext.cfDeposit(new BigNumber(amount));
+      this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, null, 2)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance();
 
-      console.log("postDepositBalances:", JSON.stringify(postDepositBalances, null, 2));
+      this.log.info(`postDepositBalances:`);
+      logEthFreeBalance(postDepositBalances, this.log);
 
       if (
         postDepositBalances &&
         !postDepositBalances[myFreeBalanceAddress].gt(preDepositBalances[myFreeBalanceAddress])
       ) {
-        throw Error("My balance was not increased.");
+        throw new Error("My balance was not increased.");
       }
 
-      // // TODO: delete this, do not need to wait for the counterparty deposit
-      // // within the controller
-      // console.info("Waiting for counter party to deposit same amount");
-
-      // const freeBalanceNotUpdated = async (): Promise<any> => {
-      //   return !(await getFreeBalance(this.cfModule, this.connext.opts.multisigAddress))[
-      //     counterpartyFreeBalanceAddress
-      //   ].gt(preDepositBalances[counterpartyFreeBalanceAddress]);
-      // };
-
-      // while (await freeBalanceNotUpdated()) {
-      //   console.info(`Waiting 1 more seconds for counter party deposit`);
-      //   await delay(1 * 1000);
-      // }
-
-      console.log("Deposited!");
+      this.log.info("Deposited!");
       logEthFreeBalance(await this.connext.getFreeBalance());
     } catch (e) {
-      console.error(`Failed to deposit... ${e}`);
-      throw e;
+      this.log.error(`Failed to deposit... ${e}`);
+      this.removeListeners();
+      throw new Error(e);
     }
 
+    // TODO: fix types!
     return {
-      apps: [],
+      apps: await this.connext.getAppInstances(),
       freeBalance: await this.connext.getFreeBalance(),
-    } as ChannelState;
+    } as any;
+  };
+
+  /////////////////////////////////
+  ////// PRIVATE METHODS
+
+  ////// Validation
+  private validateInputs = async (
+    assetId: string,
+    amount: BigNumber,
+  ): Promise<string | undefined> => {
+    // check asset balance of address
+    // TODO: fix for non-eth balances
+    const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
+    const bal = await this.provider.getBalance(depositAddr);
+    this.log.info(`${bal.toString()}, ${notLessThanOrEqualTo(amount, bal)}`);
+    const errs = [
+      invalidAddress(assetId),
+      notPositive(amount),
+      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
+    ];
+    return errs ? errs.filter(falsy)[0] : undefined;
+  };
+
+  ////// Listener callbacks
+  private depositConfirmedCallback = (data: any): void => {
+    this.removeListeners();
+  };
+
+  private depositFailedCallback = (data: any): void => {
+    this.removeListeners();
+  };
+
+  ////// Listener registration/deregistration
+  private registerListeners(): void {
+    this.listener.registerCfListener(
+      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      this.depositConfirmedCallback,
+    );
+
+    this.listener.registerCfListener(
+      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      this.depositFailedCallback,
+    );
+  }
+
+  private removeListeners(): void {
+    this.listener.removeCfListener(
+      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      this.depositConfirmedCallback,
+    );
+
+    this.listener.removeCfListener(
+      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      this.depositFailedCallback,
+    );
   }
 }
