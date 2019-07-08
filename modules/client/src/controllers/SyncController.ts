@@ -507,7 +507,7 @@ export class SyncController extends AbstractController {
       Math.max(block.number - 4000, 0), // 4000 blocks = ~16 hours
       Math.min(block.number + 4000, currentBlockNumber),
     )
-    const event: any = evts.find((e: any): any => e.values.txCount[0] === channel.txCountGlobal)
+    const event: any = evts.find((e: any): any => e.values.txCount[0].eq(eth.utils.bigNumberify(channel.txCountGlobal)))
     if (event) {
       return { didEmit: 'yes', latestBlock: block, event }
     }
