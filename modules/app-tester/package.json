@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@material-ui/core": "latest",
-    "@material-ui/styles": "4.1.2",
+    "@material-ui/styles": "4.2.0",
     "clsx": "latest",
     "react": "latest",
     "react-dom": "latest",
