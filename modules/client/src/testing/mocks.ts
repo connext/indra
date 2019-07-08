@@ -79,7 +79,6 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger("MockNodeClientApi", opts.logLevel);
-    this.nodeUrl = opts.nodeUrl || nodeUrl;
     this.messaging = (opts.messaging as any) || new MockNatsClient(); // TODO: rename to messaging?
     this.wallet = opts.wallet || new MockWallet();
     this.address = opts.wallet ? opts.wallet.address : address;

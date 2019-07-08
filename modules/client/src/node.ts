@@ -17,7 +17,6 @@ export interface INodeApiClient {
 }
 
 export class NodeApiClient implements INodeApiClient {
-  public nodeUrl: string;
   public messaging: WsMessagingService | NatsMessagingService;
   public wallet: Wallet;
   public address: Address;
@@ -27,7 +26,6 @@ export class NodeApiClient implements INodeApiClient {
   public publicIdentifier: string | undefined;
 
   constructor(opts: NodeInitializationParameters) {
-    this.nodeUrl = opts.nodeUrl;
     this.messaging = opts.messaging;
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;

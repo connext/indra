@@ -28,10 +28,7 @@ export interface ClientOptions {
   rpcProviderUrl?: string; // TODO: can we keep out web3
 
   // node information
-  nodeUrl: string; // http URL, https?://
-
-  // nats information
-  natsUrl: string; // nats URL, nats://
+  nodeUrl: string; // ws:// or nats:// urls are supported
 
   // replaces nats url in browser
   wsUrl?: string; // ws://
@@ -92,7 +89,6 @@ export interface ConnextStore {}
 
 ////// General typings
 export interface NodeInitializationParameters {
-  nodeUrl: string;
   messaging: WsMessagingService | NatsMessagingService;
   wallet: Wallet;
   logLevel?: number;

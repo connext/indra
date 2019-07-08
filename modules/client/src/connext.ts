@@ -45,7 +45,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const natsConfig = {
     clusterId: opts.natsClusterId,
     payload: Payload.JSON,
-    servers: [opts.natsUrl],
+    servers: [opts.nodeUrl],
     token: opts.natsToken,
     wsUrl: opts.wsUrl,
   };
@@ -73,7 +73,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const nodeConfig = {
     logLevel: opts.logLevel,
     messaging,
-    nodeUrl: opts.nodeUrl,
     wallet,
   };
   console.log("creating node client");
