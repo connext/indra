@@ -18,7 +18,7 @@ export interface INodeApiClient {
 
 export class NodeApiClient implements INodeApiClient {
   public nodeUrl: string;
-  public messaging: WsMessagingService | NatsMessagingService; // TODO: rename to messaging?
+  public messaging: WsMessagingService | NatsMessagingService;
   public wallet: Wallet;
   public address: Address;
   public log: Logger;
