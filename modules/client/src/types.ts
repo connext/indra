@@ -11,17 +11,6 @@ import { Wallet } from "./wallet";
 export type BigNumber = utils.BigNumber;
 export const BigNumber = utils.BigNumber;
 
-// types for the connext client package
-
-// shared with node
-
-/**
- * Type for instantiating the client. To properly instantiate the client, you
- * will need to provide one of the following:
- * - mnemonic
- * - privateKey
- * - externalWallet
- */
 export interface ClientOptions {
   // provider, passed through to CF node
   rpcProviderUrl?: string; // TODO: can we keep out web3
@@ -34,9 +23,9 @@ export interface ClientOptions {
 
   // signing options, include at least one of the following
   mnemonic?: string;
-  privateKey?: string;
   // if using an external wallet, include this option
   externalWallet?: any; // TODO: better typing here?
+  // FIXME: remove ^^?
 
   // channel provider
   channelProvider?: ChannelProvider;
