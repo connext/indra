@@ -98,7 +98,7 @@ watch-e2e: node-modules
 	./node_modules/.bin/cypress open
 
 test-node: node
-	bash ops/test-node.sh --forceExit
+	bash ops/test-node.sh --runInBand --forceExit
 
 watch-node: node-modules
 	bash ops/test-node.sh --watch
