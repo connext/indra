@@ -184,6 +184,7 @@ export abstract class ConnextChannel {
   };
 
   // TODO: remove this when not testing (maybe?)
+  // FIXME: remove
   public logEthFreeBalance = (
     freeBalance: NodeTypes.GetFreeBalanceStateResult,
     log?: Logger,
@@ -232,6 +233,7 @@ export class ConnextInternal extends ConnextChannel {
   public multisigAddress: Address;
   public listener: ConnextListener;
   public nodePublicIdentifier: string;
+  public freeBalanceAddress: string;
   // TODO: maybe move this into the NodeApiClient @layne? --> yes
 
   public logger: Logger;
@@ -254,6 +256,7 @@ export class ConnextInternal extends ConnextChannel {
     this.nats = opts.nats;
 
     this.cfModule = opts.cfModule;
+    this.freeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
     this.publicIdentifier = this.cfModule.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
@@ -313,6 +316,8 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // CF MODULE METHODS
 
+  // FIXME: add normal installation methods
+  // and other wrappers for all cf node methods
   public cfDeposit = async (
     amount: BigNumber,
     notifyCounterparty: boolean = true,
@@ -469,52 +474,6 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return installVirtualResponse.result;
-  };
-
-  // TODO: make this more generic
-  // TODO: delete this when the above works!
-  public installTransferApp = async (
-    counterpartyPublicIdentifier: string,
-    initialDeposit: BigNumber,
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    const params = {
-      abiEncodings: {
-        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
-        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
-      },
-      // TODO: contract address of app
-      appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
-      asset: { assetType: 0 },
-      initialState: {
-        finalized: false,
-        transfers: [
-          {
-            amount: initialDeposit,
-            to: fromExtendedKey(this.publicIdentifier).derivePath("0").address,
-          },
-          {
-            amount: Zero,
-            to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
-          },
-        ],
-      }, // TODO: type
-      intermediaries: [this.nodePublicIdentifier],
-      myDeposit: initialDeposit,
-      outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO: IS THIS RIGHT???
-      peerDeposit: Zero,
-      proposedToIdentifier: counterpartyPublicIdentifier,
-      timeout: Zero,
-    } as NodeTypes.ProposeInstallVirtualParams;
-
-    const actionResponse = await this.cfModule.router.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-        params,
-      }),
-    );
-    return actionResponse.result as NodeTypes.ProposeInstallVirtualResult;
   };
 
   public uninstallVirtualApp = async (
