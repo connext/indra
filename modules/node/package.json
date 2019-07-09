@@ -24,7 +24,7 @@
     "@connext/types": "0.0.1",
     "@counterfactual/contracts": "0.1.6",
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.2.14",
+    "@counterfactual/node": "0.2.17",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@counterfactual/types": "0.0.21",
     "@nestjs/common": "6.5.0",
