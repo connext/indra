@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { AppRegistryModule } from "./appRegistry/appRegistry.module";
 import { ChannelModule } from "./channel/channel.module";
 import { ConfigModule } from "./config/config.module";
 import { DatabaseModule } from "./database/database.module";
@@ -22,6 +23,7 @@ import { UserModule } from "./user/user.module";
     DatabaseModule,
     NatsModule,
     ExchangeRateModule,
+    AppRegistryModule,
   ],
   providers: [AppService],
 })
