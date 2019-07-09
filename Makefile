@@ -57,7 +57,7 @@ start-prod: prod
 	bash ops/start-prod.sh
 
 start-test: prod
-	INDRA_V2_MODE=test bash ops/start-prod.sh
+	INDRA_V2_MODE=test bash ops/start-dev.sh
 
 restart-prod:
 	bash ops/stop.sh

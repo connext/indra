@@ -5,7 +5,13 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: make test
+      - run: make test-node
+
+  test-e2e:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-e2e
 
   push-latest-images:
     machine: true
@@ -38,6 +44,7 @@ workflows:
   test-and-deploy:
     jobs:
       - test-node
+      - test-e2e
 
       - push-latest-images:
           filters:
@@ -45,10 +52,8 @@ workflows:
               only: master
           requires:
             - test-node
+            - test-e2e
 
       - deploy-staging:
-          filters:
-            branches:
-              only: master
           requires:
             - push-latest-images
