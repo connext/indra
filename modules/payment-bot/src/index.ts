@@ -2,7 +2,7 @@ import * as connext from "@connext/client";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import * as eth from "ethers";
 
-import { showMainPrompt, registerClientListeners } from "./bot";
+import { registerClientListeners, showMainPrompt } from "./bot";
 import { config } from "./config";
 
 process.on("warning", (e: any): any => console.warn(e.stack));
@@ -28,7 +28,6 @@ export function getConnextClient(): connext.ConnextInternal {
 
   const connextOpts = {
     mnemonic: config.mnemonic,
-    natsUrl: config.natsUrl,
     nodeUrl: config.nodeUrl,
     rpcProviderUrl: config.ethRpcUrl,
     store: pgServiceFactory.createStoreService(config.username),

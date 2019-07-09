@@ -1,4 +1,4 @@
-import { NatsMessagingService } from "@connext/nats-messaging-client";
+import { IMessagingService } from "@connext/nats-messaging-client";
 import {
   CreateChannelResponse,
   GetChannelResponse,
@@ -88,7 +88,7 @@ export const channelProvider: FactoryProvider<Promise<Client>> = {
   inject: [NatsProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
-    nats: NatsMessagingService,
+    nats: IMessagingService,
     channelRepo: ChannelRepository,
     configService: ConfigService,
     node: Node,

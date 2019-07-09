@@ -21,12 +21,12 @@ import SettingsCard from "./components/settingsCard";
 import SetupCard from "./components/setupCard";
 import SupportCard from "./components/supportCard";
 
-import { Currency, toBN } from "./utils";
+import { Currency, store, toBN } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
-  wsUrl: process.env.REACT_APP_WS_OVERRIDE,
-  ethUrl: process.env.REACT_APP_ETH_OVERRIDE,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
+  ethUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -117,54 +117,18 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const wsUrl = overrides.wsUrl || `ws://localhost:4223`;
+    const nodeUrl = overrides.nodeUrl || `ws://localhost:4223`;
     const ethUrl = overrides.ethUrl || `${this.state.publicUrl}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
-    const wallet = eth.Wallet.fromMnemonic(mnemonic)
     const cfPath = "m/44'/60'/0'/25446"
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath)
 
-    console.log(`Account address: ${wallet.address}`)
-    console.log(`CF Account address: ${cfWallet.address}`)
+    const client = await connext.connect({ mnemonic, nodeUrl, rpcProviderUrl: ethUrl, store });
 
-    const store = {
-      get: (key) => {
-        const raw = localStorage.getItem(`CF_NODE:${key}`)
-        if (raw) {
-          try {
-            return JSON.parse(raw);
-          } catch {
-            return raw;
-          }
-        }
-        // Handle partial matches so the following line works -.-
-        // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
-        const partialMatches = {}
-        for (const k of Object.keys(localStorage)) {
-          if (k.includes(`${key}/`)) {
-            try {
-              partialMatches[k.replace('CF_NODE:', '').replace(`${key}/`, '')] = JSON.parse(localStorage.getItem(k))
-            } catch {
-              partialMatches[k.replace('CF_NODE:', '').replace(`${key}/`, '')] = localStorage.getItem(k)
-            }
-          }
-        }
-        return partialMatches;
-      },
-      set: (pairs, allowDelete) => {
-        for (const pair of pairs) {
-          localStorage.setItem(
-            `CF_NODE:${pair.key}`,
-            typeof pair.value === 'string' ? pair.value : JSON.stringify(pair.value),
-          );
-        }
-      }
-    };
-
-    const client = await connext.connect({ mnemonic, wsUrl, rpcProviderUrl: ethUrl, store });
     console.log("Client created successfully!");
     console.log("Public Identifier", client.publicIdentifier);
     console.log("Account multisig address:", client.opts.multisigAddress);
+    console.log(`CF Account address: ${cfWallet.address}`)
     console.log("Free balance address:", client.myFreeBalanceAddress);
 
     const connextConfig = await client.config();

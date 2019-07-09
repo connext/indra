@@ -1,4 +1,4 @@
-import { NatsServiceFactory } from "@connext/nats-messaging-client";
+import { MessagingServiceFactory } from "@connext/nats-messaging-client";
 import {
   AppRegistry,
   ChannelState,
@@ -41,28 +41,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const wallet = new Wallet(opts);
   const network = await wallet.provider.getNetwork();
 
-  // create a new internal nats instance
-  const natsConfig = {
-    clusterId: opts.natsClusterId,
-    payload: Payload.JSON,
-    servers: [opts.nodeUrl],
-    token: opts.natsToken,
-    wsUrl: opts.wsUrl,
-  };
-  // TODO: proper key? also, proper usage?
-  const messagingServiceKey = "messaging";
-  // connect nats service, done as part of async setup
-
-  // TODO: get config from nats client?
-  console.log("creating nats client from config:", JSON.stringify(natsConfig));
-  // TODO: instantiate service factory with proper config!!
-  // @ts-ignore
-  const natsFactory = new NatsServiceFactory(natsConfig);
-  const messaging = natsConfig.wsUrl
-    ? natsFactory.createWsMessagingService(messagingServiceKey)
-    : natsFactory.createNatsMessagingService(messagingServiceKey);
+  console.log("Creating messaging service client");
+  const messaging = new MessagingServiceFactory(opts).createService("messaging");
   await messaging.connect();
-  console.log("nats is connected");
+  console.log("Messaging service is connected");
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work

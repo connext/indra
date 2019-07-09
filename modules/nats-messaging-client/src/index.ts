@@ -6,22 +6,23 @@ import * as wsNats from "websocket-nats";
 // Types
 
 export interface NatsConfig {
-  wsUrl?: string;
   clusterId?: string;
+  payload?: nats.Payload;
   servers: string[];
   token?: string;
-  payload?: nats.Payload;
 }
 
-export const NATS_CONFIGURATION_ENV = {
-  clusterId: "NATS_CLUSTER_ID",
-  servers: "NATS_SERVERS",
-  token: "NATS_TOKEN",
-};
+export interface WsConfig {
+  clusterId?: string;
+  nodeUrl: string;
+  payload?: nats.Payload;
+  token?: string;
+}
 
-export interface IMessaging extends Node.IMessagingService {
+export interface IMessagingService extends Node.IMessagingService {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
+  // TODO: rm ability to expose underlying connection once everything uses IMessagingService
   getConnection: () => nats.Client;
   request: (
     subject: string,
@@ -34,35 +35,55 @@ export interface IMessaging extends Node.IMessagingService {
 ////////////////////////////////////////
 // Factory
 
-export class NatsServiceFactory {
-  constructor(private readonly connectionConfig: NatsConfig) {}
+export class MessagingServiceFactory {
+  private serviceType: string;
+  private config: NatsConfig | WsConfig;
+
+  constructor(config: NatsConfig | WsConfig) {
+    const { nodeUrl, clusterId, servers, token } = config as any;
+    if (typeof nodeUrl === "string" && nodeUrl.substring(0, 5) === "ws://") {
+      this.serviceType = "ws";
+      this.config = {
+        clusterId,
+        nodeUrl,
+        payload: nats.Payload.JSON,
+        token,
+      };
+    } else {
+      this.serviceType = "nats";
+      this.config = {
+        clusterId,
+        payload: nats.Payload.JSON,
+        servers: servers ? servers : [nodeUrl],
+        token,
+      };
+    }
+  }
 
   connect(): void {
     throw Error("Connect service using NatsMessagingService.connect()");
   }
 
-  createWsMessagingService(messagingServiceKey: string): WsMessagingService {
-    return new WsMessagingService(this.connectionConfig, messagingServiceKey);
-  }
-
-  createNatsMessagingService(messagingServiceKey: string): NatsMessagingService {
-    return new NatsMessagingService(this.connectionConfig, messagingServiceKey);
+  createService(messagingServiceKey: string): IMessagingService {
+    return this.serviceType === "ws"
+      ? new WsMessagingService(this.config as WsConfig, messagingServiceKey)
+      : new NatsMessagingService(this.config as NatsConfig, messagingServiceKey);
   }
 }
 
 ////////////////////////////////////////
 // Websockets -> Nats Messaging
 
-export class WsMessagingService implements IMessaging {
+class WsMessagingService implements IMessagingService {
   private connection: any; // wsNats is vanilla JS :(
 
   constructor(
-    private readonly configuration: NatsConfig,
+    private readonly configuration: WsConfig,
     private readonly messagingServiceKey: string,
   ) {}
 
   async connect(): Promise<void> {
-    this.connection = await wsNats.connect(this.configuration.wsUrl);
+    this.connection = await wsNats.connect(this.configuration.nodeUrl);
   }
 
   async disconnect(): Promise<void> {
@@ -115,7 +136,7 @@ export class WsMessagingService implements IMessaging {
 ////////////////////////////////////////
 // Pure Nats Messaging
 
-export class NatsMessagingService implements IMessaging {
+class NatsMessagingService implements IMessagingService {
   private connection: nats.Client | undefined;
 
   constructor(
@@ -176,11 +197,5 @@ export class NatsMessagingService implements IMessaging {
       return;
     }
     return await this.connection.request(subject, timeout, data);
-  }
-}
-
-export function confirmNatsConfigurationEnvVars(): void {
-  if (!process.env.NATS_SERVERS || !process.env.NATS_TOKEN || !process.env.NATS_CLUSTER_ID) {
-    throw Error("Nats server name(s), token and cluster ID must be set via env vars");
   }
 }

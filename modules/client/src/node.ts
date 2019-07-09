@@ -1,4 +1,4 @@
-import { NatsMessagingService, WsMessagingService } from "@connext/nats-messaging-client";
+import { IMessagingService } from "@connext/nats-messaging-client";
 import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
 import { Address } from "@counterfactual/types";
 
@@ -17,7 +17,7 @@ export interface INodeApiClient {
 }
 
 export class NodeApiClient implements INodeApiClient {
-  public messaging: WsMessagingService | NatsMessagingService;
+  public messaging: IMessagingService;
   public wallet: Wallet;
   public address: Address;
   public log: Logger;
