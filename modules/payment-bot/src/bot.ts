@@ -35,7 +35,7 @@ export const delay = (ms: number): Promise<void> =>
 export async function showMainPrompt(): Promise<any> {
   const client = getConnextClient();
   const appInstances = await client.getAppInstances();
-  if (appInstances.length > 0) {
+  if (appInstances && appInstances.length > 0) {
     showAppInstancesPrompt();
   } else {
     showDirectionPrompt();
@@ -52,7 +52,7 @@ export async function showAppInstancesPrompt(): Promise<any> {
   }
 
   currentPrompt = inquirer.prompt({
-    choices: appInstances.map((app: any): any => app.id),
+    choices: appInstances.map((app: any): any => app.identityHash),
     message: "Select a payment thread to view options",
     name: "viewApp",
     type: "list",
@@ -265,10 +265,13 @@ export function registerClientListeners(): void {
 
 async function uninstallVirtualApp(appInstanceId: string): Promise<any> {
   const client = getConnextClient();
-  await client.takeAction(appInstanceId, {
-    finalize: true,
-    transferAmount: Zero,
-  });
+  const appState = await client.getAppState(appInstanceId);
+  if (!appState.state.finalized) {
+    await client.takeAction(appInstanceId, {
+      finalize: true,
+      transferAmount: Zero,
+    });
+  }
   await client.uninstallVirtualApp(appInstanceId);
 
   while ((await client.getAppInstances()).length > 0) {
