@@ -43,7 +43,7 @@ export const ChannelCard = withStyles(styles)(props => {
 
         <Grid item xs={12}>
           <Typography style={{ color: 'white' }}> Channel </Typography>
-          <span>
+          <span id="balance-channel-token">
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               {"$ "}
             </Typography>
@@ -55,7 +55,7 @@ export const ChannelCard = withStyles(styles)(props => {
             </Typography>
           </span>
           <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
-          <span>
+          <span id="balance-channel-ether">
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               {`${eth.constants.EtherSymbol} `}
             </Typography>
@@ -72,7 +72,7 @@ export const ChannelCard = withStyles(styles)(props => {
 
         <Grid item xs={12}>
           <Typography style={{ color: 'white' }}> On-Chain </Typography>
-          <span>
+          <span id="balance-onchain-token">
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
               {"$ "}
             </Typography>
@@ -84,7 +84,7 @@ export const ChannelCard = withStyles(styles)(props => {
             </Typography>
           </span>
           <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
-          <span>
+          <span id="balance-onchain-ether">
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
               {`${eth.constants.EtherSymbol} `}
             </Typography>

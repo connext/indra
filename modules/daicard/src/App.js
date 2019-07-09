@@ -21,7 +21,7 @@ import SettingsCard from "./components/settingsCard";
 import SetupCard from "./components/setupCard";
 import SupportCard from "./components/supportCard";
 
-import { Currency, getExchangeRates, toBN } from "./utils";
+import { Currency, toBN } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -30,9 +30,9 @@ const overrides = {
 };
 
 // Constants for channel max/min - this is also enforced on the hub
-const DEPOSIT_ESTIMATED_GAS = toBN("800000"); // 700k gas // TODO: estimate this dynamically
-const HUB_EXCHANGE_CEILING = eth.constants.WeiPerEther.mul(toBN(69)); // 69 TST
-const CHANNEL_DEPOSIT_MAX = eth.constants.WeiPerEther.mul(toBN(30)); // 30 TST
+const DEPOSIT_ESTIMATED_GAS = toBN("25000"); // TODO: estimate this dynamically
+const HUB_EXCHANGE_CEILING = eth.utils.parseEther('69'); // 69 token
+const CHANNEL_DEPOSIT_MAX = eth.utils.parseEther('30'); // 30 token
 
 const styles = theme => ({
   paper: {
@@ -65,18 +65,20 @@ const styles = theme => ({
 class App extends React.Component {
   constructor(props) {
     super(props);
+    const daiRate = "314.08"
     this.state = {
       address: "",
       approvalWeiUser: "10000",
       balance: {
-        channel: { token: Currency.DEI("0"), ether: Currency.WEI("0") },
-        onChain: { token: Currency.DEI("0"), ether: Currency.WEI("0") },
+        channel: { token: Currency.DEI("0", daiRate), ether: Currency.WEI("0", daiRate) },
+        onChain: { token: Currency.DEI("0", daiRate), ether: Currency.WEI("0", daiRate) },
       },
       authorized: "false",
       channelState: null,
       connext: null,
       connextState: null,
       contractAddress: null,
+      daiRate: daiRate,
       ethprovider: null,
       exchangeRate: "0.00",
       hubUrl: null,
@@ -94,11 +96,10 @@ class App extends React.Component {
         send: false,
         settings: false,
       },
-      pending: { deposit: false },
+      pending: { type: "", complete: false, closed: false },
       publicUrl: window.location.origin.toLowerCase(),
       runtime: null,
       sendScanArgs: { amount: null, recipient: null },
-      status: { txHash: "", type: "", reset: false },
       tokenAddress: null,
       tokenContract: null,
     };
@@ -199,26 +200,26 @@ class App extends React.Component {
   }
 
   async refreshBalances() {
-    const { address, balance, client, ethprovider } = this.state;
+    const { address, balance, client, daiRate, ethprovider } = this.state;
     const freeBalance = await client.getFreeBalance();
-    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address));
-    balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress]);
+    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), daiRate);
+    balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress], daiRate);
     this.setState({ balance })
   }
 
   async setDepositLimits() {
-    const { ethprovider } = this.state;
+    const { daiRate, ethprovider } = this.state;
     let gasPrice = await ethprovider.getGasPrice()
     // default connext multiple is 1.5, leave 2x for safety
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-    const minDeposit = Currency.WEI(totalDepositGasWei, () => getExchangeRates());
-    const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, () => getExchangeRates());
+    const minDeposit = Currency.WEI(totalDepositGasWei, daiRate);
+    const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, daiRate);
     this.setState({ maxDeposit, minDeposit });
   }
 
   async autoDeposit() {
-    const { balance, client, minDeposit, pending } = this.state;
-    if (!client || pending.deposit) return;
+    const { balance, client, minDeposit, maxDeposit, pending } = this.state;
+    if (!client || (pending.type === "deposit" && !pending.complete)) return;
     if (!(await client.getChannel()).available) {
       console.warn(`Channel not available yet.`);
       return;
@@ -229,13 +230,16 @@ class App extends React.Component {
       token: toBN(balance.onChain.token),
     };
 
+    const minWei = minDeposit.toWEI().floor()
+    const maxWei = maxDeposit.toWEI().floor()
+
     if (
-      bnBalance.ether.gt(eth.constants.Zero) ||
+      bnBalance.ether.gt(minWei) ||
       bnBalance.token.gt(eth.constants.Zero)
     ) {
-      const minWei = minDeposit.toWEI().floor()
-      if (bnBalance.ether.lt(minWei)) {
-        console.log(`Balance ${bnBalance} is below minimum ${minWei}`);
+      if (bnBalance.ether.gt(maxWei)) {
+        console.log(`Attempting to deposit more than the limit: ` +
+          `${eth.utils.formatEther(bnBalance.ether)} > ${maxDeposit.toETH()}`);
         return;
       }
 
@@ -243,9 +247,9 @@ class App extends React.Component {
       const depositParams = { amount: bnBalance.ether.sub(minWei).toString() };
       console.log(`Attempting to deposit ${depositParams.amount} wei into channel: ${JSON.stringify(channel, null, 2)}...`);
 
-      this.setState({ pending: { deposit: true } })
+      this.setState({ pending: { type: "deposit", complete: false, closed: false  } })
       const result = await client.deposit(depositParams);
-      // this.setState({ pending: { deposit: false } })
+      this.setState({ pending: { type: "deposit", complete: true, closed: false  } })
 
       console.log(`Successfully deposited! Result: ${JSON.stringify(result,null,2)}`);
     }
@@ -260,44 +264,9 @@ class App extends React.Component {
     }
   }
 
-  async checkStatus() {
-    const { runtime, status } = this.state;
-    let log = () => {};
-    let newStatus = {
-      reset: status.reset
-    };
-
-    if (runtime) {
-      log(`Hub Sync results: ${JSON.stringify(runtime.syncResultsFromHub[0], null, 2)}`);
-      if (runtime.deposit.submitted) {
-        if (!runtime.deposit.detected) {
-          newStatus.type = "DEPOSIT_PENDING";
-        } else {
-          newStatus.type = "DEPOSIT_SUCCESS";
-          newStatus.txHash = runtime.deposit.transactionHash;
-        }
-      }
-      if (runtime.withdrawal.submitted) {
-        if (!runtime.withdrawal.detected) {
-          newStatus.type = "WITHDRAWAL_PENDING";
-        } else {
-          newStatus.type = "WITHDRAWAL_SUCCESS";
-          newStatus.txHash = runtime.withdrawal.transactionHash;
-        }
-      }
-    }
-
-    if (newStatus.type !== status.type) {
-      newStatus.reset = true;
-      console.log(`New channel status! ${JSON.stringify(newStatus)}`);
-    }
-
-    this.setState({ status: newStatus });
-  }
-
   closeConfirmations() {
-    const { status } = this.state;
-    this.setState({ status: { ...status, reset: false }})
+    const { pending } = this.state;
+    this.setState({ pending: { ...pending, closed: true }})
   }
 
   // ************************************************* //
@@ -371,7 +340,7 @@ class App extends React.Component {
       runtime,
       maxDeposit,
       minDeposit,
-      status
+      pending
     } = this.state;
     const { classes } = this.props;
     return (
@@ -385,7 +354,7 @@ class App extends React.Component {
               message="Starting Channel Controllers.."
               duration={30000}
             />
-            <Confirmations status={status} closeConfirmations={this.closeConfirmations.bind(this)} />
+            <Confirmations pending={pending} closeConfirmations={this.closeConfirmations.bind(this)} />
             <AppBarComponent address={address} />
             <Route
               exact
@@ -454,8 +423,9 @@ class App extends React.Component {
               render={props => (
                 <SendCard
                   {...props}
-                  connext={connext}
                   address={address}
+                  balance={balance}
+                  connext={connext}
                   channelState={channelState}
                   publicUrl={this.state.publicUrl}
                   scanArgs={sendScanArgs}
@@ -468,10 +438,11 @@ class App extends React.Component {
               render={props => (
                 <RedeemCard
                   {...props}
-                  publicUrl={this.state.publicUrl}
-                  connext={connext}
+                  balance={balance}
                   channelState={channelState}
+                  connext={connext}
                   connextState={connextState}
+                  publicUrl={this.state.publicUrl}
                 />
               )}
             />
@@ -481,6 +452,7 @@ class App extends React.Component {
                 <CashOutCard
                   {...props}
                   address={address}
+                  balance={balance}
                   channelState={channelState}
                   publicUrl={this.state.publicUrl}
                   exchangeRate={exchangeRate}

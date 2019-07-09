@@ -137,11 +137,9 @@ my.getOnchainBalance = () => {
 
 my.getChannelBalance = () => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
-    cy.get('h1').children('span').invoke('text').then(whole => {
-      cy.get('h3').children('span').invoke('text').then(fraction => {
-        cy.log(`Got balance: ${whole}${fraction}`)
-        resolve(`${whole}${fraction}`)
-      })
+    cy.get('span#balance-channel-ether').invoke('text').then(balance => {
+      cy.log(`Got balance: ${balance}`)
+      resolve(balance.substring(1))
     })
   }))
 }

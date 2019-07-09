@@ -21,7 +21,7 @@ import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 import queryString from "query-string";
 
-import { getChannelBalance, toBN } from "../utils";
+import { toBN } from "../utils";
 
 import { QRScan } from "./qrCode";
 
@@ -667,7 +667,7 @@ class PayCard extends Component {
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
               <span>
-                {getChannelBalance().token}
+                {this.props.balance.channel.ether.toETH().toString()}
               </span>
             </Typography>
           </Grid>

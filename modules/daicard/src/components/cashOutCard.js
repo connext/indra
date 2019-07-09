@@ -17,7 +17,7 @@ import React, { Component } from "react";
 
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
-import { getChannelBalance, hasPendingTransaction, toBN } from "../utils";
+import { hasPendingTransaction, toBN } from "../utils";
 
 import { QRScan } from "./qrCode";
 
@@ -57,7 +57,6 @@ class CashOutCard extends Component {
       balanceError: null,
       scan: false,
       withdrawEth: true,
-      aggregateBalance: "0.00",
       withdrawing: false
     };
   }
@@ -93,19 +92,6 @@ class CashOutCard extends Component {
 
   // examines if the display value should be updated
   // when the component is mounting, or when the props change
-
-  // NOTE: the amount to cashout != channel card amount if there is 
-  // wei in the channel
-  async updateDisplayValue() {
-    const { channelState } = this.props;
-    if (!channelState) {
-      this.setState({ aggregateBalance: "$0.00" });
-      return;
-    }
-    this.setState({
-      aggregateBalance: getChannelBalance(channelState).token
-    });
-  }
 
   // update display value with the exchange rate/
   // channel balance changes
@@ -179,7 +165,6 @@ class CashOutCard extends Component {
       recipientDisplayVal,
       addressError,
       scan,
-      aggregateBalance /*, withdrawing*/
     } = this.state;
     return (
       <Grid
@@ -210,7 +195,9 @@ class CashOutCard extends Component {
         <Grid item xs={12}>
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
-              <span>{aggregateBalance}</span>
+              <span>
+                {this.props.balance.channel.ether.toETH().toString()}
+              </span>
             </Typography>
           </Grid>
         </Grid>

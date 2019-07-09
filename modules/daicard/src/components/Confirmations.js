@@ -12,13 +12,13 @@ const styles = theme => ({
 
 class Confirmations extends Component {
   render() {
-    const { type, reset } = this.props.status;
+    const { type, complete, closed } = this.props.pending;
     return (
       <div>
 
         <MySnackbar
           variant="warning"
-          openWhen={type === "DEPOSIT_PENDING" && reset}
+          openWhen={type === "deposit" && !complete && !closed}
           onClose={() => this.props.closeConfirmations("deposit")}
           message="Processing deposit, we'll let you know when it's done."
           duration={30000}
@@ -26,7 +26,7 @@ class Confirmations extends Component {
 
         <MySnackbar
           variant="warning"
-          openWhen={type === "WITHDRAWAL_PENDING" && reset}
+          openWhen={type === "withdrawal" && !complete && !closed}
           onClose={() => this.props.closeConfirmations("withdraw")}
           message="Processing withdrawal, we'll let you know when it's done."
           duration={30000}
@@ -34,14 +34,14 @@ class Confirmations extends Component {
 
         <MySnackbar
           variant="success"
-          openWhen={type === "DEPOSIT_SUCCESS" && reset}
+          openWhen={type === "deposit" && complete && !closed}
           onClose={() => this.props.closeConfirmations()}
           message="Pending deposit confirmed!"
         />
 
         <MySnackbar
           variant="success"
-          openWhen={type === "WITHDRAWAL_SUCCESS" && reset}
+          openWhen={type === "withdrawal" && complete && !closed}
           onClose={() => this.props.closeConfirmations()}
           message="Pending withdraw confirmed!"
         />

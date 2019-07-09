@@ -1,5 +1,4 @@
 import { Button, Grid, Tooltip, Typography, withStyles } from "@material-ui/core";
-import { AttachMoney as DepositIcon } from "@material-ui/icons";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
@@ -29,9 +28,9 @@ class DepositCard extends Component {
   };
 
   render() {
-    const { classes, address, minDeposit, maxDeposit } = this.props;
+    const { address, minDeposit, maxDeposit } = this.props;
     const { copied } = this.state;
-    
+
     const minEth = minDeposit ? minDeposit.toETH().format() : '?.??'
     const maxEth = maxDeposit ? maxDeposit.toETH().format() : '?.??'
     const maxDai = maxDeposit ? maxDeposit.toDAI().format() : '?.??'
@@ -56,28 +55,6 @@ class DepositCard extends Component {
           onClose={() => this.closeModal()}
           message="Copied!"
         />
-        <Grid
-          container
-          wrap="nowrap"
-          direction="row"
-          justify="center"
-          alignItems="center"
-        >
-          <Grid item xs={12}>
-            <DepositIcon className={classes.icon} />
-          </Grid>
-        </Grid>
-        <Grid item xs={12}>
-          <Typography variant="body2">
-            <Tooltip
-              disableFocusListener
-              disableTouchListener
-              title="Because gas"
-            >
-              <span>{`Deposit minimum of: ${minEth || "?.??"}.`}</span>
-            </Tooltip>
-          </Typography>
-        </Grid>
         <Grid item xs={12} margin="1em">
           <QRGenerate value={address} />
         </Grid>
@@ -100,6 +77,18 @@ class DepositCard extends Component {
           </CopyToClipboard>
         </Grid>
         <Grid item xs={12}>
+          <Typography variant="body2">
+            <span> Send funds to this address to deposit. </span>
+          </Typography>
+          <Typography variant="body2">
+            <Tooltip
+              disableFocusListener
+              disableTouchListener
+              title="Because gas"
+            >
+              <span>{`Deposit minimum of: ${minEth || "?.??"}.`}</span>
+            </Tooltip>
+          </Typography>
           <Typography variant="body2">
             <span>{`Deposits over ${maxEth || "?.??"} Eth 
                       or ${maxDai || "?.??"} Dai will be refunded`}</span>

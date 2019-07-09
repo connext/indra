@@ -9,11 +9,11 @@ export class Currency {
   ////////////////////////////////////////
   // Static Properties/Methods
 
-  static DAI = (amount, getRates) => new Currency('DAI', amount, getRates)
-  static DEI = (amount, getRates) => new Currency('DEI', amount, getRates)
-  static ETH = (amount, getRates) => new Currency('ETH', amount, getRates)
-  static FIN = (amount, getRates) => new Currency('FIN', amount, getRates)
-  static WEI = (amount, getRates) => new Currency('WEI', amount, getRates)
+  static DAI = (amount, daiRate) => new Currency('DAI', amount, daiRate)
+  static DEI = (amount, daiRate) => new Currency('DEI', amount, daiRate)
+  static ETH = (amount, daiRate) => new Currency('ETH', amount, daiRate)
+  static FIN = (amount, daiRate) => new Currency('FIN', amount, daiRate)
+  static WEI = (amount, daiRate) => new Currency('WEI', amount, daiRate)
 
   typeToSymbol = {
     'DAI': '$',
@@ -40,22 +40,13 @@ export class Currency {
   precision = 18
   _amount
   _type
-  daiRateGiven = false
-  daiRate = '100'
-  exchangeRates = {
-    DAI: this.daiRate,
-    DEI: parseUnits(this.daiRate, 18).toString(),
-    ETH: '1',
-    FIN: parseUnits('1', 3).toString(),
-    WEI: parseUnits('1', 18).toString(),
-  }
 
   ////////////////////////////////////////
   // Constructor
 
   constructor (type, amount, daiRate) {
     this._type = type
-    this.daiRate = daiRate
+    this.daiRate = typeof daiRate !== 'undefined' ? daiRate : '1'
     this.daiRateGiven = !!daiRate
     try {
       this._amount = this.toWad(amount)
@@ -143,17 +134,24 @@ export class Currency {
   }
 
   getExchangeRate = (currency) => {
+    const exchangeRates = {
+      DAI: this.daiRate,
+      DEI: parseUnits(this.daiRate, 18).toString(),
+      ETH: '1',
+      FIN: parseUnits('1', 3).toString(),
+      WEI: parseUnits('1', 18).toString(),
+    }
     if (
       (this.isEthType() && this.isEthType(currency)) ||
       (this.isTokenType() && this.isTokenType(currency))
     ) {
-      return this.exchangeRates[currency]
+      return exchangeRates[currency]
     }
     if (!this.daiRateGiven) {
       console.warn(`Provide DAI:ETH rate for accurate conversions between currency types`)
       console.warn(`Using default eth price of $${this.daiRate}`)
     }
-    return this.exchangeRates[currency]
+    return exchangeRates[currency]
   }
 
   to = (toType) => this._convert(toType)
@@ -167,12 +165,12 @@ export class Currency {
   // Private Methods
 
   _convert = (targetType) => {
-    const amountInEth = tokenToWei(this.amountWad, this.getExchangeRate(this.type))
-    const targetAmount = fromWei(weiToToken(amountInEth, this.getExchangeRate(targetType)))
+    const amountInWei = tokenToWei(this.amountWad, this.getExchangeRate(this.type))
+    const targetAmount = fromWei(weiToToken(amountInWei, this.getExchangeRate(targetType)))
     return new Currency(
       targetType,
       targetAmount.toString(),
-      this.exchangeRates,
+      this.daiRateGiven ? this.daiRate : undefined,
     )
   }
 
