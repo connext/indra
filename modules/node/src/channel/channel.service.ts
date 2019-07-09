@@ -143,6 +143,7 @@ export class ChannelService implements OnModuleInit {
         return;
       }
 
+      // FIXME: casting is poor form, but why does it cause type issues?
       if ((res as any).from === this.node.publicIdentifier) {
         logger.log(`Deposit received from node address, do not counter deposit`);
         return;
