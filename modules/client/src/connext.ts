@@ -595,16 +595,16 @@ export class ConnextInternal extends ConnextChannel {
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.id === appInstanceId);
+    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}.` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }
-    if (app.length > 0) {
+    if (app.length > 1) {
       return (
-        `CRITICAL ERROR: found multiple apps with the same id.` +
+        `CRITICAL ERROR: found multiple apps with the same id. ` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }
