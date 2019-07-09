@@ -507,7 +507,7 @@ export class ConnextInternal extends ConnextChannel {
     // FIXME: make this helper?
     // check the app isnt actually installed
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.id === appInstanceId);
+    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
     if (app.length !== 0) {
       throw new Error(
         `Found already installed app with id: ${appInstanceId}. ` +
