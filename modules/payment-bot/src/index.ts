@@ -61,8 +61,9 @@ export function getConnextClient(): connext.ConnextInternal {
     if (config.action === "deposit") {
       const depositParams = {
         amount: eth.utils.parseEther(config.args[0]).toString(),
+        assetId: config.args[1] || eth.constants.AddressZero,
       };
-      console.log(`Attempting to deposit ${depositParams.amount}...`);
+      console.log(`Attempting to deposit ${depositParams.amount} of: ${depositParams.assetId}...`);
       await client.deposit(depositParams);
       console.log(`Successfully deposited!`);
     }
