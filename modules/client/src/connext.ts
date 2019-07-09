@@ -23,10 +23,12 @@ import { ExchangeController } from "./controllers/ExchangeController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { logEthFreeBalance } from "./lib/utils";
+import { logEthFreeBalance, publicIdentifierToAddress } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
+import { invalidAddress } from "./validation/addresses";
+import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { Wallet } from "./wallet";
 
 /**
@@ -318,10 +320,23 @@ export class ConnextInternal extends ConnextChannel {
 
   // FIXME: add normal installation methods
   // and other wrappers for all cf node methods
+
+  // TODO: erc20 support?
   public cfDeposit = async (
     amount: BigNumber,
     notifyCounterparty: boolean = true,
   ): Promise<NodeTypes.DepositResult> => {
+    const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
+    const bal = await this.wallet.provider.getBalance(depositAddr);
+    const err = [
+      notPositive(amount),
+      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
+    ].filter(falsy)[0];
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+
     const depositResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -338,6 +353,7 @@ export class ConnextInternal extends ConnextChannel {
     return depositResponse as NodeTypes.DepositResult;
   };
 
+  // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
     const appInstanceResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
@@ -351,6 +367,7 @@ export class ConnextInternal extends ConnextChannel {
     return appInstanceResponse.result.appInstances as AppInstanceInfo[];
   };
 
+  // TODO: under what conditions will this fail?
   public getFreeBalance = async (): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     const freeBalance = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
@@ -366,7 +383,12 @@ export class ConnextInternal extends ConnextChannel {
 
   public getAppInstanceDetails = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetAppInstanceDetailsResult> => {
+  ): Promise<NodeTypes.GetAppInstanceDetailsResult | undefined> => {
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.warn(err);
+      return undefined;
+    }
     const appInstanceResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -381,7 +403,15 @@ export class ConnextInternal extends ConnextChannel {
     return appInstanceResponse.result as NodeTypes.GetAppInstanceDetailsResult;
   };
 
-  public getAppState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
+  public getAppState = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.GetStateResult | undefined> => {
+    // check the app is actually installed, or returned undefined
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.warn(err);
+      return undefined;
+    }
     const stateResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -400,6 +430,18 @@ export class ConnextInternal extends ConnextChannel {
     appInstanceId: string,
     action: TransferAction,
   ): Promise<NodeTypes.TakeActionResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    // check state is not finalized
+    const state: NodeTypes.GetStateResult = await this.getAppState(appInstanceId);
+    // FIXME: casting?
+    if ((state.state as any).finalized) {
+      throw new Error("Cannot take action on an app with a finalized state.");
+    }
     const actionResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -415,6 +457,7 @@ export class ConnextInternal extends ConnextChannel {
     return actionResponse.result as NodeTypes.TakeActionResult;
   };
 
+  // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
     appName: SupportedApplication,
     initialDeposit: BigNumber,
@@ -461,6 +504,16 @@ export class ConnextInternal extends ConnextChannel {
   public installVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.InstallVirtualResult> => {
+    // FIXME: make this helper?
+    // check the app isnt actually installed
+    const apps = await this.getAppInstances();
+    const app = apps.filter((app: AppInstanceInfo) => app.id === appInstanceId);
+    if (app.length !== 0) {
+      throw new Error(
+        `Found already installed app with id: ${appInstanceId}. ` +
+          `Installed apps: ${JSON.stringify(apps, null, 2)}`,
+      );
+    }
     const installVirtualResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -479,6 +532,12 @@ export class ConnextInternal extends ConnextChannel {
   public uninstallVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.UninstallVirtualResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
     const uninstallResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -494,10 +553,21 @@ export class ConnextInternal extends ConnextChannel {
     return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
   };
 
+  // TODO: erc20 support?
   public withdrawal = async (
     amount: BigNumber,
     recipient?: string, // Address or xpub? whats the default?
   ): Promise<NodeTypes.UninstallResult> => {
+    const freeBalance = await this.getFreeBalance();
+    const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
+    const err = [
+      notLessThanOrEqualTo(amount, preWithdrawalBal),
+      recipient ? invalidAddress(recipient) : null, // check address of asset
+    ].filter(falsy)[0];
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
     const withdrawalResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -521,5 +591,23 @@ export class ConnextInternal extends ConnextChannel {
   private connectDefaultListeners = (): void => {
     // counterfactual listeners
     this.listener.registerDefaultCfListeners();
+  };
+
+  private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
+    const apps = await this.getAppInstances();
+    const app = apps.filter((app: AppInstanceInfo) => app.id === appInstanceId);
+    if (!app || app.length === 0) {
+      return (
+        `Could not find installed app with id: ${appInstanceId}.` +
+        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+      );
+    }
+    if (app.length > 0) {
+      return (
+        `CRITICAL ERROR: found multiple apps with the same id.` +
+        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+      );
+    }
+    return undefined;
   };
 }
