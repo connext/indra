@@ -119,7 +119,7 @@ proxy: $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch $(flags)/$@
 
-daicard-prod: node-modules $(shell find $(daicard)/src $(find_options))
+daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && touch $(flags)/$@
