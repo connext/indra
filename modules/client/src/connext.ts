@@ -3,7 +3,7 @@ import {
   AppRegistry,
   ChannelState,
   DepositParameters,
-  ExchangeParameters,
+  SwapParameters,
   GetConfigResponse,
   NodeChannel,
   SupportedApplication,
@@ -19,7 +19,7 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 import { Client as NatsClient, Payload } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
-import { ExchangeController } from "./controllers/ExchangeController";
+import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
@@ -157,8 +157,8 @@ export abstract class ConnextChannel {
     return await this.internal.deposit(params);
   };
 
-  public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
-    return await this.internal.exchange(params);
+  public swap = async (params: SwapParameters): Promise<ChannelState> => {
+    return await this.internal.swap(params);
   };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
@@ -245,7 +245,7 @@ export class ConnextInternal extends ConnextChannel {
   // Setup channel controllers
   private depositController: DepositController;
   private transferController: TransferController;
-  private exchangeController: ExchangeController;
+  private swapController: SwapController;
   private withdrawalController: WithdrawalController;
 
   constructor(opts: InternalClientOptions) {
@@ -274,7 +274,7 @@ export class ConnextInternal extends ConnextChannel {
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
     this.transferController = new TransferController("TransferController", this);
-    this.exchangeController = new ExchangeController("ExchangeController", this);
+    this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
   }
 
@@ -285,8 +285,8 @@ export class ConnextInternal extends ConnextChannel {
     return await this.depositController.deposit(params);
   };
 
-  public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
-    return await this.exchangeController.exchange(params);
+  public swap = async (params: SwapParameters): Promise<ChannelState> => {
+    return await this.swapController.swap(params);
   };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {

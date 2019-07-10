@@ -11,7 +11,7 @@ const MEDIANIZER_ADDRESS = "0x729D19f657BD0614b4985Cf1D82531c67569197B";
 // TODO: ganache
 
 @Injectable()
-export class ExchangeRateService {
+export class SwapRateService {
   private medianizer: Contract;
 
   constructor(@Inject(NatsClientProviderId) private readonly natsClient: ClientProxy) {
@@ -19,12 +19,12 @@ export class ExchangeRateService {
     this.medianizer = new ethers.Contract(MEDIANIZER_ADDRESS, medianizerAbi, provider);
   }
 
-  async getExchangeRate(): Promise<BigNumber> {
+  async getSwapRate(): Promise<BigNumber> {
     return (await this.medianizer.compute())[0];
   }
 
   async publishRate(): Promise<void> {
-    const rate = await this.getExchangeRate();
-    this.natsClient.emit("exchange-rate", rate).toPromise();
+    const rate = await this.getSwapRate();
+    this.natsClient.emit("swap-rate", rate).toPromise();
   }
 }

@@ -268,15 +268,15 @@ export type TransferParameters<T = string> = DepositParameters<T> & {
 };
 export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 
-////// Exchange types
+////// Swap types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
-export interface ExchangeParameters<T = string> {
+export interface SwapParameters<T = string> {
   amount: T;
   toAssetId: Address;
   fromAssetId: Address; // TODO: do these assets have to be renamed?
   // make sure they are consistent with CF stuffs
 }
-export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>;
+export type SwapParametersBigNumber = SwapParameters<BigNumber>;
 
 ////// Withdraw types
 export type WithdrawParameters<T = string> = DepositParameters<T> & {
