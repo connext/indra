@@ -1,4 +1,4 @@
-import { MessagingServiceFactory } from "@connext/nats-messaging-client";
+import { MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,

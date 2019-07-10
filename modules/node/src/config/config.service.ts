@@ -1,4 +1,4 @@
-import { NatsConfig } from "@connext/nats-messaging-client";
+import { NatsConfig } from "@connext/messaging";
 import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
 import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";

@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/nats-messaging-client";
+import { IMessagingService } from "@connext/messaging";
 import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
 import { Address } from "@counterfactual/types";
 

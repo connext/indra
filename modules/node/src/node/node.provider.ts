@@ -1,4 +1,4 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/nats-messaging-client";
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";

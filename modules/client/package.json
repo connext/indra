@@ -11,7 +11,7 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/nats-messaging-client": "0.0.5",
+    "@connext/messaging": "0.0.5",
     "@counterfactual/node": "0.2.13",
     "ethers": "4.0.32",
     "node-fetch": "2.6.0",

@@ -16,7 +16,7 @@ cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
 card=$(cwd)/modules/card
 client=$(cwd)/modules/client
-nats=$(cwd)/modules/nats-messaging-client
+messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
 types=$(cwd)/modules/types
@@ -131,7 +131,7 @@ payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(docker_run) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-client: types nats-client $(shell find $(client)/src $(find_options))
+client: types messaging $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -141,7 +141,7 @@ node-prod: node $(node)/ops/prod.dockerfile
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
 	$(log_finish) && touch $(flags)/$@
 
-node: types nats-client $(shell find $(node)/src $(find_options))
+node: types messaging $(shell find $(node)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -151,9 +151,9 @@ types: node-modules $(shell find $(types)/src $(find_options))
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-nats-client: node-modules $(shell find $(nats)/src $(find_options))
+messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/nats-messaging-client && npm run build"
+	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 node-modules: builder $(shell ls modules/**/package.json)

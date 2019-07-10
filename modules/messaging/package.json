@@ -1,5 +1,5 @@
 {
-  "name": "@connext/nats-messaging-client",
+  "name": "@connext/messaging",
   "version": "0.0.5",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",

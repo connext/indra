@@ -13,10 +13,7 @@ export interface NatsConfig {
 }
 
 export interface WsConfig {
-  clusterId?: string;
   nodeUrl: string;
-  payload?: nats.Payload;
-  token?: string;
 }
 
 export interface IMessagingService extends Node.IMessagingService {

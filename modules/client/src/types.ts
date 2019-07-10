@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/nats-messaging-client";
+import { IMessagingService } from "@connext/messaging";
 import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { NetworkContext } from "@counterfactual/types";
