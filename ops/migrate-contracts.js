@@ -2,17 +2,23 @@ const fs = require('fs')
 const eth = require('ethers')
 const linker = require('solc/linker')
 
-const ChallengeRegistryArtifacts = require('@counterfactual/contracts/build/ChallengeRegistry.json')
-const ConditionalTransactionDelegateTargetArtifacts = require('@counterfactual/contracts/build/ConditionalTransactionDelegateTarget.json')
-const ETHBalanceRefundAppArtifacts = require('@counterfactual/contracts/build/ETHBalanceRefundApp.json')
-const ETHBucketArtifacts = require('@counterfactual/contracts/build/ETHBucket.json')
-const ETHInterpreterArtifacts = require('@counterfactual/contracts/build/ETHInterpreter.json')
-const MinimumViableMultisigArtifacts = require('@counterfactual/contracts/build/MinimumViableMultisig.json')
-const MultiSendArtifacts = require('@counterfactual/contracts/build/MultiSend.json')
-const ProxyFactoryArtifacts = require('@counterfactual/contracts/build/ProxyFactory.json')
-const TwoPartyEthAsLumpArtifacts = require('@counterfactual/contracts/build/TwoPartyEthAsLump.json')
-const TwoPartyVirtualEthAsLumpArtifacts = require('@counterfactual/contracts/build/TwoPartyVirtualEthAsLump.json')
-const UninstallKeyRegistryArtifacts = require('@counterfactual/contracts/build/UninstallKeyRegistry.json')
+const contracts = [
+  "ChallengeRegistry",
+  "CoinBalanceRefundApp",
+  "CoinTransferETHInterpreter",
+  "ConditionalTransactionDelegateTarget",
+  "FreeBalanceApp",
+  "IdentityApp",
+  "MinimumViableMultisig",
+  "ProxyFactory",
+  "TwoPartyFixedOutcomeETHInterpreter",
+  "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter",
+]
+
+const artifacts = {}
+for (const contract of contracts) {
+  artifacts[contract] = require(`@counterfactual/contracts/build/${contract}.json`)
+}
 
 ////////////////////////////////////////
 // Environment Setup
@@ -154,39 +160,9 @@ const maybeDeployContract = async (name, artifacts, args) => {
   ////////////////////////////////////////
   // Deploy core counterfactual contracts
 
-  const challengeRegistryAddress = await maybeDeployContract(
-    'ChallengeRegistry', ChallengeRegistryArtifacts, [],
-  )
-  const twoPartyVirtualEthAsLumpAddress = await maybeDeployContract(
-    'TwoPartyVirtualEthAsLump', TwoPartyVirtualEthAsLumpArtifacts, [],
-  )
-  const conditionalTransactionDelegateTargetAddress = await maybeDeployContract(
-    'ConditionalTransactionDelegateTarget', ConditionalTransactionDelegateTargetArtifacts, [],
-  )
-  const ethBalanceRefundAppAddress = await maybeDeployContract(
-    'ETHBalanceRefundApp', ETHBalanceRefundAppArtifacts, [],
-  )
-  const ethBucketAddress = await maybeDeployContract(
-    'ETHBucket', ETHBucketArtifacts, [],
-  )
-  const ethInterpreterAddress = await maybeDeployContract(
-    'ETHInterpreter', ETHInterpreterArtifacts, [],
-  )
-  const minimumViableMultisigAddress = await maybeDeployContract(
-    'MinimumViableMultisig', MinimumViableMultisigArtifacts, [],
-  )
-  const multiSendAddress = await maybeDeployContract(
-    'MultiSend', MultiSendArtifacts, [],
-  )
-  const proxyFactoryAddress = await maybeDeployContract(
-    'ProxyFactory', ProxyFactoryArtifacts, [],
-  )
-  const twoPartyEthAsLumpAddress = await maybeDeployContract(
-    'TwoPartyEthAsLump', TwoPartyEthAsLumpArtifacts, [],
-  )
-  const uninstallKeyRegistryAddress = await maybeDeployContract(
-    'UninstallKeyRegistry', UninstallKeyRegistryArtifacts, [],
-  )
+  for (const contract of contracts) {
+    await maybeDeployContract(contract, artifacts[contract], [])
+  }
 
   ////////////////////////////////////////
   // Setup relevant accounts
@@ -213,6 +189,21 @@ const maybeDeployContract = async (name, artifacts, args) => {
       await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
     }
   }
+
+  ////////////////////////////////////////
+  // Update other network addresses
+
+  console.log(`\nUpdating addresses for other networks..\n`)
+  for (const chainId of ["3", "4", "42"]) {
+    const artifacts = require(`@counterfactual/contracts/networks/${chainId}.json`)
+    for (const contract of contracts) {
+      const address = artifacts.filter(c => c.contractName === contract)[0].address
+      if (!addressBook[chainId]) addressBook[chainId] = {}
+      if (!addressBook[chainId][contract]) addressBook[chainId][contract] = {}
+      addressBook[chainId][contract] = { address }
+    }
+  }
+  saveAddressBook(addressBook)
 
   ////////////////////////////////////////
   // Print summary

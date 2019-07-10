@@ -124,19 +124,20 @@ class App extends React.Component {
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath)
 
     const client = await connext.connect({ mnemonic, nodeUrl, rpcProviderUrl: ethUrl, store });
+    const freeBalanceAddress = client.freeBalanceAddress || client.myFreeBalanceAddress;
 
     console.log(`Client created successfully!`);
     console.log(`Public Identifier: ${client.publicIdentifier}`);
     console.log(`Account multisig address: ${client.opts.multisigAddress}`);
     console.log(`CF Account address: ${cfWallet.address}`)
-    console.log(`Free balance address: ${client.freeBalanceAddress}`);
+    console.log(`Free balance address: ${freeBalanceAddress}`);
 
     const connextConfig = await client.config();
     console.log(`connextConfig: ${JSON.stringify(connextConfig, null, 2)}`);
 
     this.setState({
       address: cfWallet.address,
-      freeBalanceAddress: client.myFreeBalanceAddress,
+      freeBalanceAddress,
       client,
       ethprovider,
       wallet: cfWallet,
