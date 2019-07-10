@@ -12,8 +12,8 @@ import {
   WithdrawParameters,
 } from "@connext/types";
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
-import { Address, AppInstanceInfo, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
+import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { Client as NatsClient, Payload } from "ts-nats";
@@ -23,7 +23,7 @@ import { ExchangeController } from "./controllers/ExchangeController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { logEthFreeBalance, publicIdentifierToAddress } from "./lib/utils";
+import { freeBalanceAddressFromXpub, logEthFreeBalance, publicIdentifierToAddress } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -93,7 +93,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     wallet.provider,
     config.contractAddresses,
   );
-  node.setPublicIdentifier(cfModule.publicIdentifier);
+  node.setUserPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
 
   console.log("creating listener");
@@ -108,6 +108,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     console.log("no channel detected, creating channel..");
     myChannel = await node.createChannel();
   }
+  node.setNodePublicIdentifier(myChannel.nodePublicIdentifier);
   console.log("myChannel: ", myChannel);
   // create the new client
   return new ConnextInternal({
@@ -181,8 +182,12 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  public getFreeBalance = async (): Promise<NodeTypes.GetFreeBalanceStateResult> => {
-    return await this.internal.getFreeBalance();
+  // FIXME: add in rest of methods!
+
+  public getFreeBalance = async (
+    assetId: string = AddressZero,
+  ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+    return await this.internal.getFreeBalance(assetId);
   };
 
   // TODO: remove this when not testing (maybe?)
@@ -236,7 +241,6 @@ export class ConnextInternal extends ConnextChannel {
   public listener: ConnextListener;
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
-  // TODO: maybe move this into the NodeApiClient @layne? --> yes
 
   public logger: Logger;
   public network: Network;
@@ -324,12 +328,14 @@ export class ConnextInternal extends ConnextChannel {
   // TODO: erc20 support?
   public cfDeposit = async (
     amount: BigNumber,
+    assetId: string,
     notifyCounterparty: boolean = true,
   ): Promise<NodeTypes.DepositResult> => {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
     const bal = await this.wallet.provider.getBalance(depositAddr);
     const err = [
       notPositive(amount),
+      invalidAddress(assetId),
       notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
     ].filter(falsy)[0];
     if (err) {
@@ -346,10 +352,11 @@ export class ConnextInternal extends ConnextChannel {
           amount,
           multisigAddress: this.opts.multisigAddress,
           notifyCounterparty,
+          tokenAddress: assetId,
         },
       }),
     );
-    // @ts-ignore --> WHYY?
+    // @ts-ignore
     return depositResponse as NodeTypes.DepositResult;
   };
 
@@ -368,17 +375,37 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   // TODO: under what conditions will this fail?
-  public getFreeBalance = async (): Promise<NodeTypes.GetFreeBalanceStateResult> => {
-    const freeBalance = await this.cfModule.router.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-        params: { multisigAddress: this.multisigAddress },
-      }),
-    );
+  public getFreeBalance = async (
+    assetId: string = AddressZero,
+  ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+    try {
+      const freeBalance = await this.cfModule.router.dispatch(
+        jsonRpcDeserialize({
+          id: Date.now(),
+          jsonrpc: "2.0",
+          method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+          params: {
+            multisigAddress: this.multisigAddress,
+            tokenAddress: assetId,
+          },
+        }),
+      );
+      return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
+    } catch (e) {
+      const error = `No free balance exists for the specified token: ${assetId}`;
+      if (e.message.startsWith(error)) {
+        // if there is no balance, return undefined
+        // NOTE: can return free balance obj with 0s,
+        // but need the nodes free balance
+        // address in the multisig
+        const obj = {};
+        obj[freeBalanceAddressFromXpub(this.nodePublicIdentifier)] = new BigNumber(0);
+        obj[this.freeBalanceAddress] = new BigNumber(0);
+        return obj;
+      }
 
-    return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
+      throw new Error(e);
+    }
   };
 
   public getAppInstanceDetails = async (
