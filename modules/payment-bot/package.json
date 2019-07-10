@@ -23,7 +23,7 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
-    "@connext/types": "0.0.2",
+    "@connext/types": "0.0.4",
     "@counterfactual/types": "0.0.19",
     "@types/inquirer": "6.0.3",
     "@types/node-fetch": "2.3.7",
