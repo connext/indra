@@ -486,35 +486,9 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
-    appName: SupportedApplication,
-    initialDeposit: BigNumber,
-    counterpartyPublicIdentifier: string,
+    params: NodeTypes.ProposeInstallVirtualParams
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    const { initialStateFinalized, ...paramInfo } = AppRegistry[this.network.name][appName];
-    if (!paramInfo) {
-      throw new Error("App not found in registry for provided network");
-    }
-    const params: NodeTypes.ProposeInstallVirtualParams = {
-      ...paramInfo,
-      // TODO: best way to pass in an initial state?
-      initialState: {
-        finalized: initialStateFinalized,
-        transfers: [
-          {
-            amount: initialDeposit,
-            to: this.wallet.address,
-            // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
-          },
-          {
-            amount: Zero,
-            to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
-          },
-        ],
-      },
-      intermediaries: [this.nodePublicIdentifier],
-      myDeposit: initialDeposit,
-      proposedToIdentifier: counterpartyPublicIdentifier,
-    };
+    params.intermediaries = [this.nodePublicIdentifier]
 
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
