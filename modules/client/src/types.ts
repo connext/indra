@@ -30,9 +30,6 @@ export interface ClientOptions {
   // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
 
-  // replaces nats url in browser
-  wsUrl?: string; // ws://
-
   // signing options, include at least one of the following
   mnemonic?: string;
   privateKey?: string;

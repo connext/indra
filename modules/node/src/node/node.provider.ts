@@ -80,10 +80,8 @@ export const natsProvider: FactoryProvider<Promise<IMessagingService>> = {
   inject: [ConfigService],
   provide: NatsProviderId,
   useFactory: async (config: ConfigService): Promise<IMessagingService> => {
-    const messagingService = new MessagingServiceFactory({
-      payload: Payload.JSON,
-      ...config.getNatsConfig(),
-    }).createService("messaging");
+    const messagingFactory = new MessagingServiceFactory(config.getMessagingConfig());
+    const messagingService = messagingFactory.createService("messaging");
     await messagingService.connect();
     return messagingService;
   },

@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # Set default email & domain name
-email="${EMAIL:-noreply@gmail.com}"
 domain="${DOMAINNAME:-localhost}"
+email="${EMAIL:-noreply@gmail.com}"
+daicard_url="${DAICARD_URL:-http://daicard:3000}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
-upstream_url="${UPSTREAM_URL:-http://daicard:3000}"
-echo "domain=$domain email=$email devserver=$upstream_url mode=$MODE"
+messaging_url="${MESSAGING_URL:-http://relay:4223}"
+mode="${MODE:-dev}"
+echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url daicard=$daicard_url mode=$mode"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -26,12 +28,18 @@ while ! curl -s $eth_rpc_url > /dev/null
 do sleep 2
 done
 
+echo "waiting for ${messaging_url#*://}..."
+bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
+while ! curl -s $messaging_url > /dev/null
+do sleep 2
+done
+
 if [[ "$MODE" == "dev" ]]
 then
-  echo "waiting for ${upstream_url#*://}..."
-  bash wait_for.sh -t 60 ${upstream_url#*://} 2> /dev/null
+  echo "waiting for ${daicard_url#*://}..."
+  bash wait_for.sh -t 60 ${daicard_url#*://} 2> /dev/null
   # Do a more thorough check to ensure the dashboard is online
-  while ! curl -s $upstream_url > /dev/null
+  while ! curl -s $daicard_url > /dev/null
   do sleep 2
   done
 fi
@@ -68,7 +76,7 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
 sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$UPSTREAM_URL|'"$upstream_url"'|' /etc/nginx/nginx.conf
+sed -i 's|$DAICARD_URL|'"$daicard_url"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {

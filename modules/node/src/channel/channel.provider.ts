@@ -73,8 +73,8 @@ export class ConfigNats extends AbstractNatsProvider {
     return {
       contractAddresses: await this.configService.getContractAddresses(),
       ethNetwork: await this.configService.getEthNetwork(),
+      messaging: this.configService.getMessagingConfig(),
       nodePublicIdentifier: this.node.publicIdentifier,
-      ...this.configService.getNatsConfig(),
     };
   }
 

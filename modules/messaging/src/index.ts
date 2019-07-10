@@ -3,23 +3,19 @@ import * as nats from "ts-nats";
 import * as wsNats from "websocket-nats";
 
 ////////////////////////////////////////
-// Types
+// Interfaces
 
-export interface NatsConfig {
+export interface MessagingConfig {
   clusterId?: string;
   payload?: nats.Payload;
-  servers: string[];
+  messagingUrl: string | string[];
   token?: string;
-}
-
-export interface WsConfig {
-  nodeUrl: string;
 }
 
 export interface IMessagingService extends Node.IMessagingService {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
-  // TODO: rm ability to expose underlying connection once everything uses IMessagingService
+  // TODO: rm raw connection exposure once everything uses proper IMessagingService interface
   getConnection: () => nats.Client;
   request: (
     subject: string,
@@ -34,26 +30,16 @@ export interface IMessagingService extends Node.IMessagingService {
 
 export class MessagingServiceFactory {
   private serviceType: string;
-  private config: NatsConfig | WsConfig;
 
-  constructor(config: NatsConfig | WsConfig) {
-    const { nodeUrl, clusterId, servers, token } = config as any;
-    if (typeof nodeUrl === "string" && nodeUrl.substring(0, 5) === "ws://") {
-      this.serviceType = "ws";
-      this.config = {
-        clusterId,
-        nodeUrl,
-        payload: nats.Payload.JSON,
-        token,
-      };
-    } else {
+  constructor(private config: MessagingConfig) {
+    const { messagingUrl } = config as any;
+    this.config.payload = nats.Payload.JSON;
+    if (typeof messagingUrl === "string") {
+      this.serviceType = messagingUrl.startsWith("nats://") ? "nats" : "ws";
+    } else if (messagingUrl[0] && messagingUrl[0].startsWith("nats://")) {
       this.serviceType = "nats";
-      this.config = {
-        clusterId,
-        payload: nats.Payload.JSON,
-        servers: servers ? servers : [nodeUrl],
-        token,
-      };
+    } else {
+      throw new Error(`Invalid Messaging Url: ${JSON.stringify(messagingUrl)}`);
     }
   }
 
@@ -63,8 +49,8 @@ export class MessagingServiceFactory {
 
   createService(messagingServiceKey: string): IMessagingService {
     return this.serviceType === "ws"
-      ? new WsMessagingService(this.config as WsConfig, messagingServiceKey)
-      : new NatsMessagingService(this.config as NatsConfig, messagingServiceKey);
+      ? new WsMessagingService(this.config, messagingServiceKey)
+      : new NatsMessagingService(this.config, messagingServiceKey);
   }
 }
 
@@ -75,12 +61,12 @@ class WsMessagingService implements IMessagingService {
   private connection: any; // wsNats is vanilla JS :(
 
   constructor(
-    private readonly configuration: WsConfig,
+    private readonly configuration: MessagingConfig,
     private readonly messagingServiceKey: string,
   ) {}
 
   async connect(): Promise<void> {
-    this.connection = await wsNats.connect(this.configuration.nodeUrl);
+    this.connection = await wsNats.connect(this.configuration.messagingUrl);
   }
 
   async disconnect(): Promise<void> {
@@ -137,12 +123,15 @@ class NatsMessagingService implements IMessagingService {
   private connection: nats.Client | undefined;
 
   constructor(
-    private readonly configuration: NatsConfig,
+    private readonly configuration: MessagingConfig,
     private readonly messagingServiceKey: string,
   ) {}
 
   async connect(): Promise<void> {
-    this.connection = await nats.connect(this.configuration);
+    const messagingUrl = this.configuration.messagingUrl;
+    const config = this.configuration as nats.NatsConnectionOptions;
+    config.servers = typeof messagingUrl === "string" ? [messagingUrl] : messagingUrl;
+    this.connection = await nats.connect(config);
   }
 
   async disconnect(): Promise<void> {

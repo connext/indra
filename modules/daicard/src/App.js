@@ -117,7 +117,8 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const nodeUrl = overrides.nodeUrl || `ws://localhost:4223`;
+    // const nodeUrl = overrides.nodeUrl || `ws://localhost:4223`;
+    const nodeUrl = overrides.nodeUrl || `${this.state.publicUrl}/api/messaging`;
     const ethUrl = overrides.ethUrl || `${this.state.publicUrl}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
     const cfPath = "m/44'/60'/0'/25446"

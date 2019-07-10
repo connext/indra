@@ -42,7 +42,13 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const network = await wallet.provider.getNetwork();
 
   console.log("Creating messaging service client");
-  const messaging = new MessagingServiceFactory(opts).createService("messaging");
+  const { natsClusterId, nodeUrl, natsToken } = opts;
+  const messagingFactory = new MessagingServiceFactory({
+    clusterId: natsClusterId,
+    messagingUrl: nodeUrl,
+    token: natsToken,
+  });
+  const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
   console.log("Messaging service is connected");
 

@@ -1,4 +1,4 @@
-import { NatsConfig } from "@connext/messaging";
+import { MessagingConfig } from "@connext/messaging";
 import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
 import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
@@ -81,11 +81,11 @@ export class ConfigService {
     return this.get("INDRA_ETH_MNEMONIC");
   }
 
-  getNatsConfig(): NatsConfig {
+  getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
+      messagingUrl: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       payload: Payload.JSON,
-      servers: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       token: this.get("INDRA_NATS_TOKEN"),
     };
   }
