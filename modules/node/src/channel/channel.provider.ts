@@ -17,7 +17,6 @@ import { isXpub } from "../validator/isXpub";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
@@ -83,7 +82,6 @@ export class ConfigNats extends AbstractNatsProvider {
     super.connectRequestReponse("config.get", this.getConfig.bind(this));
   }
 }
-
 
 // TODO: reduce this boilerplate
 export const channelProvider: FactoryProvider<Promise<Client>> = {
