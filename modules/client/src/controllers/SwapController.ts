@@ -26,6 +26,10 @@ export class SwapController extends AbstractController {
       throw new Error(invalid.toString());
     }
 
+    // For below sanity check
+    const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
+    const preSwapToBal = await this.connext.getFreeBalance(toAssetId)
+
     // get app definition from constants
     // TODO: this should come from a db on the node
     const appInfo = AppRegistry[this.connext.network.name].SimpleTwoPartySwapApp;
@@ -45,12 +49,21 @@ export class SwapController extends AbstractController {
     // now uninstall
     try {
       await this.swapAppUninstall(this.appId)
+    } catch (e) {
+      // TODO: under what conditions will this fail?
+      throw new Error("Swap uninstall failed. Is the node online?")
     }
 
-    // Sanity check to see if swap was executed correctly
-    const postSwapBal = await this.connext.getFreeBalance();
-    // TODO (after freebalance change)
-
+    // Sanity check to ensure swap was executed correctly
+    const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
+    const postSwapToBal = await this.connext.getFreeBalance(toAssetId)
+    // TODO is this the right syntax? Waiting on ERC20 merge
+    const diffFrom = preSwapFromBal.sub(postSwapFromBal[this.cfModule.ethFreeBalanceAddress]);
+    const diffTo = preSwapToBal.sub(postSwapToBal[this.cfModule.ethFreeBalanceAddress]);
+    if(diffFrom != amount || diffTo != amount.mul(swapRate)) {
+      throw new Error("Invalid final swap amounts - this shouldn't happen!!")
+    }
+    
     const newState = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
@@ -65,12 +78,12 @@ export class SwapController extends AbstractController {
     fromAssetId: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
-    const freeBalance = await this.connext.getFreeBalance();
-    const preTransferFromBal = freeBalance[this.cfModule.ethFreeBalanceAddress]; // TODO will this work? Check
+    const freeBalance = await this.connext.getFreeBalance(fromAssetId);
+    const preSwapFromBal = freeBalance[this.cfModule.ethFreeBalanceAddress]; // TODO will this work? Check
     const errs = [
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
-      notLessThanOrEqualTo(amount, preTransferFromBal),
+      notLessThanOrEqualTo(amount, preSwapFromBal),
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
