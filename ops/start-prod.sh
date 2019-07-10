@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+project="indra_v2"
+registry="connextproject"
+
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
@@ -22,24 +25,22 @@ INDRA_V2_ETH_RPC_KEY_KOVAN="${INDRA_V2_ETH_RPC_KEY_KOVAN:-abc123}"
 ####################
 # Internal Config
 
-# meta config & hard-coded stuff you might want to change
-number_of_services=3 # NOTE: Gotta update this manually when adding/removing services :(
-
-# hard-coded config (you probably won't ever need to change these)
-log_level="3" # set to 10 for all logs or to 30 to only print warnings/errors
+log_level="3" # set to 5 for all logs or to 0 for none
 mnemonic_name="node_mnemonic_$INDRA_V2_ETH_NETWORK"
 mnemonic_file="/run/secrets/$mnemonic_name"
 
 # Docker image settings
-registry="connextproject"
-project="indra_v2"
 node_port=8080
 nats_port=4222
 
-public_http_port=80
-public_https_port=443
-db_volume="${project}_database"
-db_secret="${project}_database"
+if [[ "$INDRA_MODE" == "test" ]]
+then
+  db_volume="database_test_`date +%y%m%d_%H%M%S`"
+  db_secret="${project}_database_test"
+else
+  db_volume="database"
+  db_secret="${project}_database"
+fi
 
 # database connection settings
 postgres_db="$project"
@@ -48,16 +49,42 @@ postgres_password_file="/run/secrets/$db_secret"
 postgres_port="5432"
 postgres_user="$project"
 
-if [[ "$INDRA_V2_ETH_NETWORK" == "rinkeby" ]]
-then 
+
+if [[ "$INDRA_V2_ETH_NETWORK" == "mainnet" ]]
+then
+  eth_network_id="1"
+  eth_rpc_url="https://eth-mainnet.alchemyapi.io/jsonrpc/$INDRA_V2_ETH_RPC_KEY_MAINNET"
+elif [[ "$INDRA_V2_ETH_NETWORK" == "rinkeby" ]]
+then
   eth_network_id="4"
   eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_V2_ETH_RPC_KEY_RINKEBY"
 elif [[ "$INDRA_V2_ETH_NETWORK" == "kovan" ]]
 then 
   eth_network_id="42"
   eth_rpc_url="https://eth-kovan.alchemyapi.io/jsonrpc/$INDRA_V2_ETH_RPC_KEY_KOVAN"
-else
-  echo "Network $INDRA_V2_ETH_NETWORK not supported for $MODE-mode deployments" && exit 1
+elif [[ "$INDRA_V2_ETH_NETWORK" == "ganache" && "$INDRA_V2_MODE" == "test" ]]
+then
+  eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  eth_network_id="4447"
+  eth_rpc_url="http://ethprovider:8545"
+  ethprovider_image=${project}_builder
+  number_of_services=$(( $number_of_services + 1 ))
+  private_key="c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
+  new_secret $private_key_name $private_key
+  ethprovider_service="
+  ethprovider:
+    image: ${project}_builder
+    entrypoint: bash ops/entry.sh
+    environment:
+      ETH_MNEMONIC: \"$eth_mnemonic\"
+      ETH_NETWORK: $INDRA_ETH_NETWORK
+      ETH_PROVIDER: $eth_rpc_url
+    ports:
+      - \"8545:8545\"
+    volumes:
+      - \"`pwd`/modules/contracts:/root\""
+
+else echo "Network $INDRA_ETH_NETWORK not supported for $MODE-mode deployments" && exit 1
 fi
 
 # Figure out which images we should use
@@ -70,10 +97,14 @@ then
   database_image="postgres:9-alpine"
   nats_image="nats:2.0.0-linux"
   node_image="$registry/indra_v2_node:$version"
+  proxy_image="$registry/indra_v2_proxy:$version"
+  relay_image="$registry/indra_v2_relay:$version"
 else # local mode, don't use images from registry
   database_image="postgres:9-alpine"
   nats_image="nats:2.0.0-linux"
   node_image="indra_v2_node:latest"
+  proxy_image="indra_v2_proxy:latest"
+  relay_image="indra_v2_relay:latest"
 fi
 
 ####################
@@ -110,19 +141,39 @@ function new_secret {
 new_secret $db_secret
 new_secret $mnemonic_name
 
+number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
+
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
 secrets:
-  ${project}_database:
+  $db_secret:
     external: true
 
 volumes:
-  database:
+  $db_volume:
   certs:
 
 services:
+  $ethprovider_service
+
+  proxy:
+    image: $proxy_image
+    environment:
+      ETH_RPC_URL: $eth_rpc_url
+      MESSAGING_URL: http://relay:4223
+      MODE: prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/letsencrypt
+
+  relay:
+    image: $relay_image
+    command: ["nats:$nats_port"]
+
   node:
     image: $node_image
     entrypoint: bash ops/entry.sh
@@ -144,7 +195,7 @@ services:
     ports:
       - "80:$node_port"
     secrets:
-      - ${project}_database
+      - $db_secret
 
   database:
     image: $database_image
@@ -157,9 +208,9 @@ services:
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $project
     secrets:
-      - ${project}_database
+      - $db_secret
     volumes:
-      - database:/var/lib/postgresql/data
+      - $db_volume:/var/lib/postgresql/data
 
   nats:
     image: $nats_image
