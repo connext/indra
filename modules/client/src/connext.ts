@@ -193,10 +193,11 @@ export abstract class ConnextChannel {
   // TODO: remove this when not testing (maybe?)
   // FIXME: remove
   public logEthFreeBalance = (
+    assetId: string,
     freeBalance: NodeTypes.GetFreeBalanceStateResult,
     log?: Logger,
   ): void => {
-    logEthFreeBalance(freeBalance, log);
+    logEthFreeBalance(assetId, freeBalance, log);
   };
 
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
@@ -580,9 +581,9 @@ export class ConnextInternal extends ConnextChannel {
     return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
   };
 
-  // TODO: erc20 support?
-  public withdrawal = async (
+  public cfWithdraw = async (
     amount: BigNumber,
+    assetId: string,
     recipient?: string, // Address or xpub? whats the default?
   ): Promise<NodeTypes.UninstallResult> => {
     const freeBalance = await this.getFreeBalance();
@@ -603,6 +604,7 @@ export class ConnextInternal extends ConnextChannel {
         params: {
           amount,
           multisigAddress: this.multisigAddress,
+          tokenAddress: assetId,
           recipient,
         },
       }),
