@@ -10,7 +10,6 @@ import { UserRepository } from "../user/user.repository";
 import { channelProvider } from "./channel.provider";
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 
 @Module({
   controllers: [],
@@ -18,7 +17,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
   imports: [
     UserModule,
     NodeModule,
-    TypeOrmModule.forFeature([ChannelRepository, UserRepository, PaymentProfileRepository, AppRegistryRepository]),
+    TypeOrmModule.forFeature([ChannelRepository, UserRepository, PaymentProfileRepository]),
     ConfigModule,
   ],
   providers: [ChannelService, channelProvider],
