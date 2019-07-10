@@ -50,31 +50,17 @@ export type IRegisteredAppDetails = {
   >;
 };
 
-export type IAppRegistry = {
-  [network in SupportedNetwork]: IRegisteredAppDetails;
+export type RegisteredAppDetails = {
+  id: number;
+  name: SupportedApplication;
+  network: SupportedNetwork;
+  outcomeType: number;
+  appDefinitionAddress: string;
+  stateEncoding: string;
+  actionEncoding: string;
 };
 
-// TODO: should probably import addresses from
-// addressBook.json @bo do you know what this will
-// look like on prod?
-// TODO: @layne make this mirror the NATS response
-export const AppRegistry: any = {
-  kovan: {
-    EthUnidirectionalTransferApp: {
-      abiEncodings: {
-        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
-        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
-      },
-      appDefinition: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
-      // @ts-ignore @rahul why is asset always a type error?
-      asset: { assetType: 0 },
-      initialStateFinalized: false,
-      outcomeType: "TWO_PARTY_FIXED_OUTCOME", // TODO WTF TYPES
-      peerDeposit: constants.Zero, // TODO: include this?
-      timeout: constants.Zero,
-    },
-  },
-};
+export type AppRegistry = RegisteredAppDetails[];
 
 ////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
@@ -96,7 +82,7 @@ export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 export type App<T = string> = {
   id: number;
   channel: NodeChannel;
-  appRegistry: AppRegistry;
+  appRegistry: RegisteredAppDetails; // TODO: is this right?
   appId: number;
   xpubPartyA: string;
   xpubPartyB: string;
@@ -116,13 +102,6 @@ export type AppUpdate<T = string> = {
   sigs: string[];
 };
 export type AppUpdateBigNumber = AppUpdate<BigNumber>;
-
-export type AppRegistry = {
-  id: number;
-  appDefinitionAddress: string;
-  stateEncoding: string;
-  actionEncoding: string;
-};
 
 // all the types of counterfactual app states
 export type AppState<T = string> = EthUnidirectionalTransferAppState<T>;
