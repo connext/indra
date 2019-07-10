@@ -85,10 +85,11 @@ export async function getFreeBalance(
 // ^^^ generalized is the objMap function we have already, we can delete this
 // added an example of how to use the obj map thing - layne
 export function logEthFreeBalance(
+  assetId: string,
   freeBalance: NodeTypes.GetFreeBalanceStateResult,
   log?: Logger,
 ): void {
-  const msg = `Channel's free balance:`;
+  const msg = `Channel's free balance of ${assetId}:`;
   log ? log.info(msg) : console.info(msg);
   const cb = (k: string, v: any): void => {
     log ? log.info(`${k} ${formatEther(v)}`) : console.info(k, formatEther(v));
