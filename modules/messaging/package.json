@@ -17,10 +17,9 @@
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.19",
-    "@types/node": "12.0.12",
-    "rollup": "1.16.6",
+    "@counterfactual/types": "0.0.22",
+    "rollup": "1.16.7",
     "rollup-plugin-typescript2": "0.21.2",
-    "typescript": "3.5.2"
+    "typescript": "3.5.3"
   }
 }

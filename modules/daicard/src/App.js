@@ -129,7 +129,7 @@ class App extends React.Component {
     console.log(`Public Identifier: ${client.publicIdentifier}`);
     console.log(`Account multisig address: ${client.opts.multisigAddress}`);
     console.log(`CF Account address: ${cfWallet.address}`)
-    console.log(`Free balance address: ${client.myFreeBalanceAddress}`);
+    console.log(`Free balance address: ${client.freeBalanceAddress}`);
 
     const connextConfig = await client.config();
     console.log(`connextConfig: ${JSON.stringify(connextConfig, null, 2)}`);

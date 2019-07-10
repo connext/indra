@@ -9,7 +9,6 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { BigNumber } from "ethers/utils";
-import { Connection } from "typeorm";
 
 import { NodeProviderId } from "../constants";
 import { CLogger } from "../util";
@@ -25,7 +24,6 @@ export class ChannelService implements OnModuleInit {
   constructor(
     @Inject(NodeProviderId) private readonly node: Node,
     private readonly channelRepository: ChannelRepository,
-    private readonly dbConnection: Connection,
   ) {}
 
   async create(counterpartyPublicIdentifier: string): Promise<Channel> {
@@ -145,7 +143,8 @@ export class ChannelService implements OnModuleInit {
         return;
       }
 
-      if (res.from === this.node.publicIdentifier) {
+      // FIXME: casting is poor form, but why does it cause type issues?
+      if ((res as any).from === this.node.publicIdentifier) {
         logger.log(`Deposit received from node address, do not counter deposit`);
         return;
       }

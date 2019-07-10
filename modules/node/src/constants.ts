@@ -11,6 +11,7 @@ export const ConfigMessagingProviderId = "CONFIG_MESSAGING";
 export const NatsClientProviderId = "NATS_CLIENT";
 export const ExchangeRateProviderId = "EXCHANGE_RATE";
 export const MedianizerProviderId = "MEDIANIZER";
+export const AppRegistryProviderId = "APP_REGISTRY";
 
 // REGEX
 export const EthAddressRegex = /^0x[a-fA-F0-9]{40}$/;

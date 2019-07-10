@@ -38,7 +38,7 @@ postgres_user="$project"
 # docker images
 builder_image="${project}_builder"
 database_image="postgres:9-alpine"
-ethprovider_image="trufflesuite/ganache-cli:v6.4.3"
+ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
 proxy_image="indra_v2_proxy:dev"
@@ -57,8 +57,9 @@ function pull_if_unavailable {
   then docker pull $1
   fi
 }
-pull_if_unavailable $database_image
-pull_if_unavailable $nats_image
+pull_if_unavailable "$database_image"
+pull_if_unavailable "$nats_image"
+pull_if_unavailable "$ethprovider_image"
 
 # Initialize random new secrets
 function new_secret {
@@ -72,7 +73,7 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret ${project}_database_dev $project
+new_secret "${project}_database_dev" "$project"
 
 # Deploy with an attachable network so tests & the daicard can connect to individual components
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]

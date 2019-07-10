@@ -93,7 +93,7 @@ elif [[ "$INDRA_V2_ETH_NETWORK" == "ganache" && "$INDRA_V2_MODE" == "test" ]]
 then
   eth_rpc_url="http://ethprovider:8545"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  ethprovider_image="trufflesuite/ganache-cli:v6.4.3"
+  ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
   number_of_services=$(( $number_of_services + 1 ))
   eth_volume="chain_dev:"
   ethprovider_service="
@@ -105,6 +105,7 @@ then
   "
   make deployed-contracts
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
+  pull_if_unavailable "$ethprovider_image"
 else echo "Network $INDRA_ETH_NETWORK not supported for $INDRA_V2_MODE-mode deployments" && exit 1
 fi
 

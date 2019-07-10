@@ -173,13 +173,13 @@ export class TransferController extends AbstractController {
     // display balances...
     const openApps = await this.connext.getAppInstances();
     this.log.info(`Open apps: ${openApps.length}`);
-    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.id))}`);
+    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.identityHash))}`);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
     await new Promise(async (res, rej) => {
       const getAppIds = async (): Promise<string[]> => {
-        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.id);
+        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
       };
       let retries = 0;
       while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {

@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Address, NetworkContext, Node as NodeTypes } from "@counterfactual/types";
 import { constants, utils } from "ethers";
 import { Network } from "ethers/utils";
 
@@ -57,7 +57,8 @@ export type IAppRegistry = {
 // TODO: should probably import addresses from
 // addressBook.json @bo do you know what this will
 // look like on prod?
-export const AppRegistry: IAppRegistry = {
+// TODO: @layne make this mirror the NATS response
+export const AppRegistry: any = {
   kovan: {
     EthUnidirectionalTransferApp: {
       abiEncodings: {
@@ -68,7 +69,7 @@ export const AppRegistry: IAppRegistry = {
       // @ts-ignore @rahul why is asset always a type error?
       asset: { assetType: 0 },
       initialStateFinalized: false,
-      outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME,
+      outcomeType: "TWO_PARTY_FIXED_OUTCOME", // TODO WTF TYPES
       peerDeposit: constants.Zero, // TODO: include this?
       timeout: constants.Zero,
     },
