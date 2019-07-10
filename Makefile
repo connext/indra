@@ -41,7 +41,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: node types client payment-bot proxy ws-tcp-relay
-prod: node-prod proxy-prod
+prod: node-prod proxy-prod ws-tcp-relay
 
 start: dev
 	bash ops/start-dev.sh ganache
