@@ -12,9 +12,15 @@ export class DepositController extends AbstractController {
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
     this.log.info(`myFreeBalanceAddress: ${myFreeBalanceAddress}`);
 
+    const { assetId, amount } = convert.Deposit("bignumber", params);
+    const invalid = await this.validateInputs(assetId, amount);
+    if (invalid) {
+      throw new Error(invalid);
+    }
+
     // TODO: remove free balance stuff?
     this.log.info("trying to get free balance....");
-    const preDepositBalances = await this.connext.getFreeBalance();
+    const preDepositBalances = await this.connext.getFreeBalance(assetId);
     this.log.info(`preDepositBalances:`);
     this.connext.logEthFreeBalance(preDepositBalances, this.log);
 
@@ -29,12 +35,6 @@ export class DepositController extends AbstractController {
       }
     }
 
-    const { assetId, amount } = convert.Deposit("bignumber", params);
-    const invalid = await this.validateInputs(assetId, amount);
-    if (invalid) {
-      throw new Error(invalid);
-    }
-
     this.log.info(`\nDepositing ${amount} ETH into ${this.connext.opts.multisigAddress}\n`);
 
     // register listeners
@@ -44,10 +44,10 @@ export class DepositController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
-      const depositResponse = await this.connext.cfDeposit(new BigNumber(amount));
+      const depositResponse = await this.connext.cfDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, null, 2)}`);
 
-      const postDepositBalances = await this.connext.getFreeBalance();
+      const postDepositBalances = await this.connext.getFreeBalance(assetId);
 
       this.log.info(`postDepositBalances:`);
       logEthFreeBalance(postDepositBalances, this.log);
@@ -61,9 +61,9 @@ export class DepositController extends AbstractController {
       }
 
       this.log.info("Deposited!");
-      logEthFreeBalance(await this.connext.getFreeBalance());
+      logEthFreeBalance(await this.connext.getFreeBalance(assetId));
     } catch (e) {
-      this.log.error(`Failed to deposit... ${e}`);
+      this.log.error(`Failed to deposit...`);
       this.removeListeners();
       throw new Error(e);
     }
@@ -71,7 +71,7 @@ export class DepositController extends AbstractController {
     // TODO: fix types!
     return {
       apps: await this.connext.getAppInstances(),
-      freeBalance: await this.connext.getFreeBalance(),
+      freeBalance: await this.connext.getFreeBalance(assetId),
     } as any;
   };
 
