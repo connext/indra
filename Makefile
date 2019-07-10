@@ -74,7 +74,7 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
-	bash ops/push-images.sh latest node
+	bash ops/push-images.sh latest node proxy relay
 
 deployed-contracts: node-modules
 	bash ops/deploy-contracts.sh ganache
