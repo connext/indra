@@ -17,6 +17,7 @@ import { isXpub } from "../validator/isXpub";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 
 export class ChannelNats extends AbstractNatsProvider {
   constructor(
@@ -83,14 +84,32 @@ export class ConfigNats extends AbstractNatsProvider {
   }
 }
 
+export class AppRegistryNats extends AbstractNatsProvider {
+  constructor(client: Client, private readonly appRegistryRepository: AppRegistryRepository) {
+    super(client);
+  }
+
+  async getApps(): Promise<any> {
+    console.log("gotem!!! querying......");
+    const apps = await this.appRegistryRepository.find();
+    console.log("should be returning", apps);
+    return apps;
+  }
+
+  setupSubscriptions(): void {
+    super.connectRequestReponse("app-registry", this.getApps.bind(this));
+  }
+}
+
 // TODO: reduce this boilerplate
 export const channelProvider: FactoryProvider<Promise<Client>> = {
-  inject: [NatsProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
+  inject: [NatsProviderId, ChannelRepository, ConfigService, AppRegistryRepository, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     nats: NatsMessagingService,
     channelRepo: ChannelRepository,
     configService: ConfigService,
+    appRepo: AppRegistryRepository,
     node: Node,
     channelService: ChannelService,
   ): Promise<Client> => {
@@ -99,6 +118,8 @@ export const channelProvider: FactoryProvider<Promise<Client>> = {
     await channel.setupSubscriptions();
     const config = new ConfigNats(client, node, configService);
     await config.setupSubscriptions();
+    const registry = new AppRegistryNats(client, appRepo);
+    await registry.setupSubscriptions();
     return client;
   },
 };
