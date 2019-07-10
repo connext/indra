@@ -1,4 +1,4 @@
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
+import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, SupportedApplication, SupportedNetwork } from "@connext/types";
 import { Address } from "@counterfactual/types";
 import { Client as NatsClient } from "ts-nats";
 
@@ -7,10 +7,11 @@ import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
 
 // TODO: move to types.ts?
-const API_TIMEOUT = 5000;
+const API_TIMEOUT = 50000;
 
 export interface INodeApiClient {
   config(): Promise<GetConfigResponse>;
+  appRegistry(name: SupportedApplication, network: SupportedNetwork): Promise<string>;
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
@@ -39,16 +40,31 @@ export class NodeApiClient implements INodeApiClient {
   //////////// PUBLIC //////////////
   /////////////////////////////////
 
+  ///// Setters
   public setPublicIdentifier(publicIdentifier: string): void {
     this.publicIdentifier = publicIdentifier;
   }
 
+  ///// Endpoints
   public async config(): Promise<GetConfigResponse> {
     // get the config from the hub
     try {
       const configRes = await this.send("config.get");
       // handle error here
       return configRes as GetConfigResponse;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  public async appRegistry(name: SupportedApplication, network: SupportedNetwork): Promise<string> {
+    try {
+      const registryRes = await this.send("app-registry", {
+        name,
+        network,
+      });
+      JSON.stringify(registryRes, null, 2);
+      return registryRes as string;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -85,14 +101,15 @@ export class NodeApiClient implements INodeApiClient {
   //////////// PRIVATE /////////////
   /////////////////////////////////
   private async send(subject: string, data?: any): Promise<any | undefined> {
-    console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
-    const msg = await this.nats.request(subject, API_TIMEOUT, JSON.stringify(data));
+    console.log(`Sending request to ${subject} ${data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`}`);
+    const msg = await this.nats.request(subject, 10000, data);
+    console.log("********* msg", msg);
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;
     }
     const { status, ...res } = msg.data;
-    if (status !== "success") {
+    if (!status || status !== "success") {
       throw new Error(`Error sending request. Res: ${JSON.stringify(msg, null, 2)}`);
     }
     return Object.keys(res).length === 0 ? undefined : res.data;
