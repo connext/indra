@@ -11,6 +11,9 @@ const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory(conf
 
 let client: connext.ConnextInternal;
 
+// TODO: fix for multiple deposited assets
+let assetId: string;
+
 export function getMultisigAddress(): string {
   return client.opts.multisigAddress;
 }
@@ -21,6 +24,14 @@ export function getWalletAddress(): string {
 
 export function getConnextClient(): connext.ConnextInternal {
   return client;
+}
+
+export function getAssetId(): string {
+  return assetId;
+}
+
+export function setAssetId(assetId: string): void {
+  assetId = assetId;
 }
 
 (async (): Promise<void> => {
@@ -63,6 +74,7 @@ export function getConnextClient(): connext.ConnextInternal {
         amount: eth.utils.parseEther(config.args[0]).toString(),
         assetId: config.args[1] || eth.constants.AddressZero,
       };
+      setAssetId(depositParams.assetId);
       console.log(`Attempting to deposit ${depositParams.amount} of: ${depositParams.assetId}...`);
       await client.deposit(depositParams);
       console.log(`Successfully deposited!`);
@@ -70,7 +82,10 @@ export function getConnextClient(): connext.ConnextInternal {
 
     registerClientListeners();
 
-    client.logEthFreeBalance(await client.getFreeBalance());
+    client.logEthFreeBalance(
+      config.args[1] || eth.constants.AddressZero,
+      await client.getFreeBalance(),
+    );
 
     showMainPrompt();
   } catch (e) {
