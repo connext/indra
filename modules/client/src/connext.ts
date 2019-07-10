@@ -571,6 +571,29 @@ export class ConnextInternal extends ConnextChannel {
     return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
   };
 
+  public uninstallApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    const uninstallResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.UNINSTALL,
+        params: {
+          appInstanceId,
+        },
+      }),
+    );
+
+    return uninstallResponse.result as NodeTypes.UninstallResult;
+  };
+
   // TODO: erc20 support?
   public withdrawal = async (
     amount: BigNumber,
