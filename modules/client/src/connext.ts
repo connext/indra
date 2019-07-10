@@ -475,6 +475,23 @@ export class ConnextInternal extends ConnextChannel {
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
   };
 
+  // TODO: add validation after arjuns refactor merged
+  public proposeInstallApp = async (
+    params: NodeTypes.ProposeInstallParams
+  ): Promise<NodeTypes.ProposeInstallResult> => {
+
+    const actionRes = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+        params,
+      }),
+    );
+
+    return actionRes.result as NodeTypes.ProposeInstallResult;
+  };
+
   public installVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.InstallVirtualResult> => {
