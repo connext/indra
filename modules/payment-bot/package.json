@@ -11,7 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "0.0.2",
+    "@connext/client": "0.0.3",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/firebase-server": "0.0.1",
     "@counterfactual/node": "0.2.13",
