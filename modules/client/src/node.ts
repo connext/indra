@@ -1,13 +1,20 @@
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, SupportedApplication, SupportedNetwork } from "@connext/types";
+import {
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  SupportedApplication,
+  SupportedNetwork,
+} from "@connext/types";
 import { Address } from "@counterfactual/types";
 import { Client as NatsClient } from "ts-nats";
+import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
 
 // TODO: move to types.ts?
-const API_TIMEOUT = 50000;
+const API_TIMEOUT = 1000;
 
 export interface INodeApiClient {
   config(): Promise<GetConfigResponse>;
@@ -63,7 +70,7 @@ export class NodeApiClient implements INodeApiClient {
         name,
         network,
       });
-      JSON.stringify(registryRes, null, 2);
+      console.log("\n\n******** registry res", registryRes, "\n\n");
       return registryRes as string;
     } catch (e) {
       return Promise.reject(e);
@@ -101,17 +108,24 @@ export class NodeApiClient implements INodeApiClient {
   //////////// PRIVATE /////////////
   /////////////////////////////////
   private async send(subject: string, data?: any): Promise<any | undefined> {
-    console.log(`Sending request to ${subject} ${data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`}`);
-    const msg = await this.nats.request(subject, 10000, data);
-    console.log("********* msg", msg);
+    this.log.info(
+      `Sending request to ${subject} ${
+        data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
+      }`,
+    );
+    const msg = await this.nats.request(subject, API_TIMEOUT, {
+      data,
+      id: uuid.v4(),
+    });
+    this.log.info(`\n\n msg: ${JSON.stringify(msg, null, 2)}`);
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;
     }
-    const { status, ...res } = msg.data;
-    if (!status || status !== "success") {
-      throw new Error(`Error sending request. Res: ${JSON.stringify(msg, null, 2)}`);
+    const { err, response, ...rest } = msg.data;
+    if (err) {
+      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
-    return Object.keys(res).length === 0 ? undefined : res.data;
+    return Object.keys(response).length === 0 ? undefined : response;
   }
 }
