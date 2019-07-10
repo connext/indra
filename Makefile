@@ -146,7 +146,7 @@ node: types messaging $(shell find $(node)/src $(find_options))
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-types: node-modules $(shell find $(types)/src $(find_options))
+types: node-modules messaging $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@

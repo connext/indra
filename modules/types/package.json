@@ -20,7 +20,7 @@
     "ethers": "4.0.32"
   },
   "devDependencies": {
-    "@connext/messaging": "0.0.5",
+    "@connext/messaging": "0.0.1",
     "@counterfactual/types": "0.0.19",
     "@types/jest": "24.0.15",
     "jest": "24.8.0",
