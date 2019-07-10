@@ -22,15 +22,17 @@ export abstract class AbstractNatsProvider implements INatsProvider {
           this.natsClient.publish(
             msg.reply,
             // TODO: make this a type
-            { data: publish, status: "success" },
+            { response: publish, err: null },
           );
         } catch (e) {
           this.natsClient.publish(
             msg.reply,
-            // todo make this a type
+            // TODO: make this a type
             JSON.stringify({
               message: `Error during processor function: ${processor.name}`,
-              status: "success",
+              response: {
+                err: `Error during processor function: ${processor.name}`,
+              },
             }),
           );
         }
