@@ -153,4 +153,34 @@ export class SwapController extends AbstractController {
     this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
     this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
+
+  private swapAppUninstall = async (appId: string): Promise<void> => {
+
+    await this.connext.uninstallVirtualApp(appId);
+    // TODO: cf does not emit uninstall virtual event on the node
+    // that has called this function but ALSO does not immediately
+    // uninstall the apps. This will be a problem when trying to
+    // display balances...
+    const openApps = await this.connext.getAppInstances();
+    this.log.info(`Open apps: ${openApps.length}`);
+    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.identityHash))}`);
+
+    // adding a promise for now that polls app instances, but its not
+    // great and should be removed
+    await new Promise(async (res, rej) => {
+      const getAppIds = async (): Promise<string[]> => {
+        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+      };
+      let retries = 0;
+      while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+        this.log.info("found app id in the open apps... retrying...");
+        await delay(500);
+        retries = retries + 1;
+      }
+
+      if (retries > 5) rej();
+
+      res();
+    });
+  };
 }
