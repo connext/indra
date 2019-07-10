@@ -1,3 +1,4 @@
+import "@babel/polyfill";
 import { MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,

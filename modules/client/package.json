@@ -19,6 +19,7 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
+    "@babel/polyfill": "7.4.4",
     "@connext/types": "0.0.2",
     "@counterfactual/types": "0.0.19",
     "@types/jest": "24.0.15",

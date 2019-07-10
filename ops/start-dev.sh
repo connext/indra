@@ -104,8 +104,9 @@ services:
   proxy:
     image: $proxy_image
     environment:
-      UPSTREAM_URL: http://daicard:3000
+      DAICARD_URL: http://daicard:3000
       ETH_RPC_URL: $eth_rpc_url
+      MESSAGING_URL: http://relay:4223
       MODE: dev
     networks:
       - $project

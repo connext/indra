@@ -7,8 +7,8 @@ import * as wsNats from "websocket-nats";
 
 export interface MessagingConfig {
   clusterId?: string;
-  payload?: nats.Payload;
   messagingUrl: string | string[];
+  payload?: nats.Payload;
   token?: string;
 }
 

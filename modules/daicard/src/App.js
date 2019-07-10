@@ -117,8 +117,7 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    // const nodeUrl = overrides.nodeUrl || `ws://localhost:4223`;
-    const nodeUrl = overrides.nodeUrl || `${this.state.publicUrl}/api/messaging`;
+    const nodeUrl = overrides.nodeUrl || `ws://${window.location.host}/api/messaging`;
     const ethUrl = overrides.ethUrl || `${this.state.publicUrl}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
     const cfPath = "m/44'/60'/0'/25446"
@@ -126,14 +125,14 @@ class App extends React.Component {
 
     const client = await connext.connect({ mnemonic, nodeUrl, rpcProviderUrl: ethUrl, store });
 
-    console.log("Client created successfully!");
-    console.log("Public Identifier", client.publicIdentifier);
-    console.log("Account multisig address:", client.opts.multisigAddress);
+    console.log(`Client created successfully!`);
+    console.log(`Public Identifier: ${client.publicIdentifier}`);
+    console.log(`Account multisig address: ${client.opts.multisigAddress}`);
     console.log(`CF Account address: ${cfWallet.address}`)
-    console.log("Free balance address:", client.myFreeBalanceAddress);
+    console.log(`Free balance address: ${client.myFreeBalanceAddress}`);
 
     const connextConfig = await client.config();
-    console.log("connextConfig:", connextConfig);
+    console.log(`connextConfig: ${JSON.stringify(connextConfig, null, 2)}`);
 
     this.setState({
       address: cfWallet.address,
