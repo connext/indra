@@ -82,6 +82,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const config = await node.config();
   console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
 
+  const appRegistry = await node.appRegistry("EthUnidirectionalTransferApp", "kovan");
+
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
   const cfModule = await Node.create(
