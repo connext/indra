@@ -484,7 +484,7 @@ export class ConnextInternal extends ConnextChannel {
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
         params,
       }),
     );
@@ -518,6 +518,33 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return installVirtualResponse.result;
+  };
+
+  public installApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.InstallResult> => {
+    // FIXME: make this helper?
+    // check the app isnt actually installed
+    const apps = await this.getAppInstances();
+    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
+    if (app.length !== 0) {
+      throw new Error(
+        `Found already installed app with id: ${appInstanceId}. ` +
+          `Installed apps: ${JSON.stringify(apps, null, 2)}`,
+      );
+    }
+    const installResponse = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.INSTALL,
+        params: {
+          appInstanceId,
+        } as NodeTypes.InstallParams,
+      }),
+    );
+
+    return installResponse.result;
   };
 
   public uninstallVirtualApp = async (
