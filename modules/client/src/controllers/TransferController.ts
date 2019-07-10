@@ -151,7 +151,7 @@ export class TransferController extends AbstractController {
       intermediaries: [this.connext.nodePublicIdentifier],
       myDeposit: amount,
       proposedToIdentifier: recipient,
-};
+    };
 
     const res = await this.connext.proposeInstallVirtualApp(params);
     // set app instance id
