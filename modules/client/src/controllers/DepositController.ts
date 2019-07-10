@@ -1,5 +1,8 @@
 import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
+import { Contract } from "ethers";
+import { AddressZero } from "ethers/constants";
+import tokenAbi from "human-standard-token-abi";
 
 import { logEthFreeBalance, publicIdentifierToAddress } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
@@ -12,11 +15,17 @@ export class DepositController extends AbstractController {
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
     this.log.info(`myFreeBalanceAddress: ${myFreeBalanceAddress}`);
 
+    const { assetId, amount } = convert.Deposit("bignumber", params);
+    const invalid = await this.validateInputs(assetId, amount);
+    if (invalid) {
+      throw new Error(invalid);
+    }
+
     // TODO: remove free balance stuff?
     this.log.info("trying to get free balance....");
-    const preDepositBalances = await this.connext.getFreeBalance();
+    const preDepositBalances = await this.connext.getFreeBalance(assetId);
     this.log.info(`preDepositBalances:`);
-    this.connext.logEthFreeBalance(preDepositBalances, this.log);
+    this.connext.logEthFreeBalance(assetId, preDepositBalances, this.log);
 
     // TODO: why isnt free balance working :(
     if (preDepositBalances) {
@@ -29,13 +38,9 @@ export class DepositController extends AbstractController {
       }
     }
 
-    const { assetId, amount } = convert.Deposit("bignumber", params);
-    const invalid = await this.validateInputs(assetId, amount);
-    if (invalid) {
-      throw new Error(invalid);
-    }
-
-    this.log.info(`\nDepositing ${amount} ETH into ${this.connext.opts.multisigAddress}\n`);
+    this.log.info(
+      `\nDepositing ${amount} of ${assetId} into ${this.connext.opts.multisigAddress}\n`,
+    );
 
     // register listeners
     this.log.info("Registering listeners........");
@@ -44,13 +49,13 @@ export class DepositController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
-      const depositResponse = await this.connext.cfDeposit(new BigNumber(amount));
+      const depositResponse = await this.connext.cfDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, null, 2)}`);
 
-      const postDepositBalances = await this.connext.getFreeBalance();
+      const postDepositBalances = await this.connext.getFreeBalance(assetId);
 
       this.log.info(`postDepositBalances:`);
-      logEthFreeBalance(postDepositBalances, this.log);
+      logEthFreeBalance(assetId, postDepositBalances, this.log);
 
       const diff = postDepositBalances[myFreeBalanceAddress].sub(
         preDepositBalances[myFreeBalanceAddress],
@@ -61,9 +66,9 @@ export class DepositController extends AbstractController {
       }
 
       this.log.info("Deposited!");
-      logEthFreeBalance(await this.connext.getFreeBalance());
+      logEthFreeBalance(assetId, await this.connext.getFreeBalance(assetId), this.log);
     } catch (e) {
-      this.log.error(`Failed to deposit... ${e}`);
+      this.log.error(`Failed to deposit...`);
       this.removeListeners();
       throw new Error(e);
     }
@@ -71,7 +76,7 @@ export class DepositController extends AbstractController {
     // TODO: fix types!
     return {
       apps: await this.connext.getAppInstances(),
-      freeBalance: await this.connext.getFreeBalance(),
+      freeBalance: await this.connext.getFreeBalance(assetId),
     } as any;
   };
 
@@ -86,7 +91,15 @@ export class DepositController extends AbstractController {
     // check asset balance of address
     // TODO: fix for non-eth balances
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
-    const bal = await this.provider.getBalance(depositAddr);
+    let bal: BigNumber;
+    if (assetId === AddressZero) {
+      bal = await this.provider.getBalance(depositAddr);
+    } else {
+      // get token balance
+      const token = new Contract(assetId, tokenAbi, this.provider);
+      // TODO: correct? how can i use allowance?
+      bal = await token.balanceOf(depositAddr);
+    }
     this.log.info(`${bal.toString()}, ${notLessThanOrEqualTo(amount, bal)}`);
     const errs = [
       invalidAddress(assetId),

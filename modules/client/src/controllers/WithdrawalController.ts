@@ -22,7 +22,7 @@ export class WithdrawalController extends AbstractController {
     this.log.info("trying to get free balance....");
     const preWithdrawBalances = await this.connext.getFreeBalance();
     this.log.info(`preWithdrawBalances:`);
-    this.connext.logEthFreeBalance(preWithdrawBalances, this.log);
+    this.connext.logEthFreeBalance(assetId, preWithdrawBalances, this.log);
 
     // TODO: why isnt free balance working :(
     if (preWithdrawBalances) {
@@ -44,13 +44,13 @@ export class WithdrawalController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW}`);
-      const withdrawResponse = await this.connext.withdrawal(amount, recipient);
+      const withdrawResponse = await this.connext.cfWithdraw(amount, assetId, recipient);
       this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, null, 2)}`);
 
       const postWithdrawBalances = await this.connext.getFreeBalance();
 
       this.log.info(`postWithdrawBalances:`);
-      logEthFreeBalance(postWithdrawBalances, this.log);
+      logEthFreeBalance(assetId, postWithdrawBalances, this.log);
 
       if (
         postWithdrawBalances &&
@@ -60,7 +60,6 @@ export class WithdrawalController extends AbstractController {
       }
 
       this.log.info("Withdrawn!");
-      logEthFreeBalance(await this.connext.getFreeBalance());
     } catch (e) {
       this.log.error(`Failed to withdraw... ${e}`);
       this.removeListeners();
@@ -99,8 +98,7 @@ export class WithdrawalController extends AbstractController {
 
   ////// Listener callbacks
   private withdrawConfirmedCallback = async (data: any): Promise<void> => {
-    this.log.info(`Withdrawal confimed. New free balances:`);
-    logEthFreeBalance(await this.connext.getFreeBalance(), this.log);
+    this.log.info(`Withdrawal confimed.`);
     this.removeListeners();
   };
 

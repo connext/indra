@@ -1,10 +1,10 @@
 import { Node as NodeTypes, SolidityABIEncoderV2Type } from "@counterfactual/types";
 import { utils } from "ethers";
-import { Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import inquirer from "inquirer";
 
-import { getConnextClient } from "./";
+import { getAssetId, getConnextClient, setAssetId } from "./";
 
 interface Transfers {
   to: string;
@@ -144,15 +144,17 @@ export async function showDirectionPrompt(): Promise<void> {
     },
   ]);
 
-  currentPrompt.then(async (answers: any): Promise<any> => {
-    if ((answers as Record<string, string>).direction === "sending") {
-      await showTransferPrompt();
-    } else if ((answers as Record<string, string>).direction === "receiving") {
-      console.log("Waiting to receive virtual install request...");
-    } else {
-      await showWithdrawalPrompt();
-    }
-  });
+  currentPrompt.then(
+    async (answers: any): Promise<any> => {
+      if ((answers as Record<string, string>).direction === "sending") {
+        await showTransferPrompt();
+      } else if ((answers as Record<string, string>).direction === "receiving") {
+        console.log("Waiting to receive virtual install request...");
+      } else {
+        await showWithdrawalPrompt();
+      }
+    },
+  );
 }
 
 export async function showWithdrawalPrompt(): Promise<void> {
@@ -164,6 +166,11 @@ export async function showWithdrawalPrompt(): Promise<void> {
       type: "input",
     },
     {
+      message: "Enter withdrawal assetId (optional):",
+      name: "assetId",
+      type: "input",
+    },
+    {
       message: "Enter withdrawal recipient (optional):",
       name: "recipient",
       type: "input",
@@ -171,8 +178,9 @@ export async function showWithdrawalPrompt(): Promise<void> {
   ]);
 
   currentPrompt.then((answers: any): void => {
-    const { recipient, amount } = answers as Record<string, string>;
-    withdrawBalance(amount, recipient);
+    const { recipient, amount, assetId } = answers as Record<string, string>;
+    setAssetId(assetId || AddressZero);
+    withdrawBalance(amount, assetId, recipient);
   });
 }
 
@@ -206,10 +214,15 @@ async function clientTransfer(deposit: string, counterparty: string): Promise<an
   console.log("client.transfer returns:", JSON.stringify(res, null, 2));
 }
 
-async function withdrawBalance(amount: string, recipient: string | undefined): Promise<any> {
+async function withdrawBalance(
+  amount: string,
+  assetId: string | undefined,
+  recipient: string | undefined,
+): Promise<any> {
   const client = getConnextClient();
   const channel = await client.withdraw({
     amount: utils.parseEther(amount).toString(),
+    assetId,
     recipient,
   });
   console.log(`withdraw returns: ${JSON.stringify(channel, null, 2)}`);
@@ -245,7 +258,7 @@ export function registerClientListeners(): void {
         );
         await delay(1000);
       }
-      client.logEthFreeBalance(await client.getFreeBalance());
+      client.logEthFreeBalance(getAssetId(), await client.getFreeBalance());
       await showMainPrompt();
     },
   );
@@ -266,7 +279,8 @@ export function registerClientListeners(): void {
 async function uninstallVirtualApp(appInstanceId: string): Promise<any> {
   const client = getConnextClient();
   const appState = await client.getAppState(appInstanceId);
-  if (!appState.state.finalized) {
+  // FIXME: fix the types here!!
+  if (!(appState.state as any).finalized) {
     await client.takeAction(appInstanceId, {
       finalize: true,
       transferAmount: Zero,

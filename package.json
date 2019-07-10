@@ -45,6 +45,7 @@
 		"eslint-plugin-import": "2.18.0",
 		"eslint-plugin-jsx-a11y": "6.2.3",
 		"eslint-plugin-react": "7.14.2",
+		"human-standard-token-abi": "2.0.0",
 		"inquirer": "6.4.1",
 		"interval-promise": "1.3.0",
 		"jest": "24.8.0",

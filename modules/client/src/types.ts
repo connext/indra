@@ -81,5 +81,6 @@ export interface NodeInitializationParameters {
   nats: NatsClient;
   wallet: Wallet;
   logLevel?: number;
-  publicIdentifier?: string;
+  userPublicIdentifier?: string;
+  nodePublicIdentifier?: string;
 }
