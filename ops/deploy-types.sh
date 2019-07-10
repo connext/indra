@@ -51,7 +51,7 @@ rm .package.json
 npm publish --access=public
 
 # edit dependencies to use the new version of this package
-for module in client nats-messaging-client node payment-bot
+for module in client messaging node payment-bot
 do
   cd ../$module
   mv package.json .package.json
