@@ -1,4 +1,3 @@
-import "@babel/polyfill";
 import { MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
@@ -14,9 +13,11 @@ import {
 } from "@connext/types";
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import "core-js/stable";
 import { Zero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import "regenerator-runtime/runtime";
 import { Client as NatsClient, Payload } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
