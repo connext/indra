@@ -75,6 +75,29 @@ export class SwapController extends AbstractController {
     return errs ? errs.filter(falsy)[0] : undefined;
   };
 
+  // TODO: fix type of data
+  private resolveInstallSwap = (res: any, data: any): any => {
+    if (this.appId !== data.params.appInstanceId) {
+      return;
+    }
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
+    res(data);
+    return data;
+  };
+
+  // TODO: fix types of data
+  private rejectInstallSwap = (rej: any, data: RejectInstallVirtualMessage): any => {
+    // check app id
+    if (this.appId !== data.data.appInstanceId) {
+      return;
+    }
+
+    rej(`Install virtual rejected. Event data: ${JSON.stringify(data, null, 2)}`);
+    return data;
+  };
+
   private swapAppInstall = async (
     amount: BigNumber, 
     toAssetId: string, 
@@ -112,8 +135,8 @@ export class SwapController extends AbstractController {
     this.appId = res.appInstanceId;
 
     await new Promise((res, rej) => {
-      boundReject = this.rejectInstallTransfer.bind(null, rej);
-      boundResolve = this.resolveInstallTransfer.bind(null, res);
+      boundReject = this.rejectInstallSwap.bind(null, rej);
+      boundResolve = this.resolveInstallSwap.bind(null, res);
       this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
       this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
       this.timeout = setTimeout(() => {
@@ -125,4 +148,9 @@ export class SwapController extends AbstractController {
     this.cleanupInstallListeners(boundResolve, boundReject);
     return res.appInstanceId;
   }
+
+  private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
+    this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+  };
 }
