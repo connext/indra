@@ -10,4 +10,4 @@ import { SwapRateService } from "./swapRate.service";
   imports: [NatsModule],
   providers: [swapRateProvider, SwapRateService],
 })
-export class swapRateModule {}
+export class SwapRateModule {}

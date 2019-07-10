@@ -34,6 +34,9 @@ export class SwapController extends AbstractController {
     // TODO: this should come from a db on the node
     const appInfo = AppRegistry[this.connext.network.name].SimpleTwoPartySwapApp;
 
+    // TODO temp
+    const swapRate = Zero
+
     // install the swap app
     try {
       await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo); // TODO need to listen for swap rate
@@ -58,8 +61,8 @@ export class SwapController extends AbstractController {
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const postSwapToBal = await this.connext.getFreeBalance(toAssetId)
     // TODO is this the right syntax? Waiting on ERC20 merge
-    const diffFrom = preSwapFromBal.sub(postSwapFromBal[this.cfModule.ethFreeBalanceAddress]);
-    const diffTo = preSwapToBal.sub(postSwapToBal[this.cfModule.ethFreeBalanceAddress]);
+    const diffFrom = preSwapFromBal[this.cfModule.ethFreeBalanceAddress].sub(postSwapFromBal[this.cfModule.ethFreeBalanceAddress]);
+    const diffTo = preSwapToBal[this.cfModule.ethFreeBalanceAddress].sub(postSwapToBal[this.cfModule.ethFreeBalanceAddress]);
     if(diffFrom != amount || diffTo != amount.mul(swapRate)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!")
     }

@@ -158,7 +158,7 @@ export abstract class ConnextChannel {
     return await this.internal.deposit(params);
   };
 
-  public swap = async (params: SwapParameters): Promise<ChannelState> => {
+  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
     return await this.internal.swap(params);
   };
 
@@ -289,7 +289,7 @@ export class ConnextInternal extends ConnextChannel {
     return await this.depositController.deposit(params);
   };
 
-  public swap = async (params: SwapParameters): Promise<ChannelState> => {
+  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
     return await this.swapController.swap(params);
   };
 
