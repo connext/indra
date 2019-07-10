@@ -14,7 +14,7 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
-card=$(cwd)/modules/card
+daicard=$(cwd)/modules/daicard
 client=$(cwd)/modules/client
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
@@ -41,7 +41,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: node types client payment-bot proxy ws-tcp-relay
-prod: node-prod
+prod: node-prod proxy-prod
 
 start: dev
 	bash ops/start-dev.sh ganache
@@ -55,9 +55,6 @@ restart: dev
 
 start-prod: prod
 	bash ops/start-prod.sh
-
-start-test: prod
-	INDRA_V2_MODE=test bash ops/start-dev.sh
 
 restart-prod:
 	bash ops/stop.sh
@@ -89,7 +86,8 @@ deployed-contracts: node-modules
 test: test-node
 watch: watch-node
 
-test-e2e: start-test
+test-e2e: prod
+	 INDRA_V2_ETH_NETWORK=ganache INDRA_V2_MODE=test bash ops/start-prod.sh
 	./node_modules/.bin/cypress install > /dev/null
 	./node_modules/.bin/cypress run --spec cypress/tests/index.js --env publicUrl=https://localhost
 
@@ -111,7 +109,7 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
 	$(log_finish) && touch $(flags)/$@
 
-proxy-prod: card-prod $(shell find $(proxy) $(find_options))
+proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
@@ -121,9 +119,9 @@ proxy: $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch $(flags)/$@
 
-card-prod: node-modules
+daicard-prod: node-modules $(shell find $(daicard)/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/card && npm run build"
+	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
@@ -136,7 +134,7 @@ client: types messaging $(shell find $(client)/src $(find_options))
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node-prod: node $(node)/ops/prod.dockerfile
+node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
 	$(log_finish) && touch $(flags)/$@
