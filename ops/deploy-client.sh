@@ -51,7 +51,7 @@ rm .package.json
 npm publish --access=public
 
 # edit dependencies to use the new version of this package
-for module in payment-bot
+for module in payment-bot daicard
 do
   cd ../$module
   mv package.json .package.json
