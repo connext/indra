@@ -407,6 +407,25 @@ export function convertTransferParametersToAsset<To extends NumericTypeName>(
   };
 }
 
+export function convertSwapParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: SwapParameters<any>,
+): SwapParameters<NumericTypes[To]> {
+  const asset: any = {
+    ...obj,
+  };
+  if (!asset.toAssetId) {
+    asset.toAssetId = constants.AddressZero;
+  }
+  if (!asset.fromAssetId) {
+    asset.fromAssetId = constants.AddressZero;
+  }
+  return {
+    ...asset,
+    ...convertAssetAmount(to, asset),
+  };
+}
+
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
@@ -438,5 +457,6 @@ export const convert: any = {
   Multisig: convertMultisig,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
+  SwapParameters: convertSwapParametersToAsset,
   Withdraw: convertWithdrawParametersToAsset,
 };
