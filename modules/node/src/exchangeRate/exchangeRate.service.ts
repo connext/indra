@@ -25,6 +25,6 @@ export class ExchangeRateService {
 
   async publishRate(): Promise<void> {
     const rate = await this.getExchangeRate();
-    this.natsClient.emit("exchange-rate", rate).toPromise();
+    this.natsClient.emit("exchange-rate.eth.dai", rate).toPromise();
   }
 }
