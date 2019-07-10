@@ -1,4 +1,4 @@
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, SupportedApplication, SupportedNetwork } from "@connext/types";
+import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, AppRegistry, SupportedApplication, SupportedNetwork } from "@connext/types";
 import { Address } from "@counterfactual/types";
 import { providers } from "ethers";
 import * as nats from "ts-nats";
@@ -90,7 +90,7 @@ export class MockNodeClientApi implements INodeApiClient {
   // should have keys same as the message passed in to fake nats client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {
-    appRegistry: "some-address",
+    appRegistry: {} as AppRegistry,
     config: {
       chainId: "mocks", // network that your channel is on
       nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
@@ -103,7 +103,10 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public authenticate(): void {}
 
-  public async appRegistry(name: SupportedApplication, network: SupportedNetwork): Promise<string> {
+  public async appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> {
     return MockNodeClientApi.returnValues.appRegistry;
   }
 
