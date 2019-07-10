@@ -11,9 +11,12 @@ if [[ -z "$INDRA_PG_PASSWORD" && -n "$INDRA_PG_PASSWORD_FILE" ]]
 then export INDRA_PG_PASSWORD="`cat $INDRA_PG_PASSWORD_FILE`"
 fi
 
-if [[ -z "$NODE_MNEMONIC" && -n "$NODE_MNEMONIC_FILE" ]]
-then export NODE_MNEMONIC="`cat $NODE_MNEMONIC_FILE`"
+if [[ -z "$INDRA_ETH_MNEMONIC" && -n "$INDRA_ETH_MNEMONIC_FILE" ]]
+then
+  echo "catting $INDRA_ETH_MNEMONIC_FILE -> `cat $INDRA_ETH_MNEMONIC_FILE`"
+  export INDRA_ETH_MNEMONIC="`cat $INDRA_ETH_MNEMONIC_FILE`"
 fi
+echo "mnemonic: $INDRA_ETH_MNEMONIC"
 
 database="$INDRA_PG_HOST:$INDRA_PG_PORT"
 echo "Waiting for database ($database) to wake up..."
@@ -22,6 +25,10 @@ bash ops/wait-for.sh -t 60 $database 2> /dev/null
 nats="${INDRA_NATS_SERVERS#*://}"
 echo "Waiting for nats (${nats%,*}) to wake up..."
 bash ops/wait-for.sh -t 60 ${nats%,*} 2> /dev/null
+
+ethprovider="${INDRA_ETH_RPC_URL#*://}"
+echo "Waiting for ethprovider ($ethprovider) to wake up..."
+bash ops/wait-for.sh -t 60 $ethprovider 2> /dev/null
 
 if [[ "$NODE_ENV" == "development" ]]
 then

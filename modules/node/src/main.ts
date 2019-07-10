@@ -9,9 +9,10 @@ console.log(`IndraV2 Node Activated!`);
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
+  const messagingUrl = config.getMessagingConfig().messagingUrl;
   app.connectMicroservice({
     options: {
-      servers: config.getNatsConfig().servers,
+      servers: typeof messagingUrl === "string" ? [messagingUrl] : messagingUrl,
     },
     transport: Transport.NATS,
   });

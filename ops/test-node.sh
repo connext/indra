@@ -3,11 +3,11 @@ set -e
 
 test_command='
   jest --config ops/jest.config.json --listTests
-  jest --config ops/jest.config.json --forceExit # --detectOpenHandles
+  jest --config ops/jest.config.json '"$@"'
 '
 
 watch_command='
-  exec jest --config ops/jest.config.json --watch
+  exec jest --config ops/jest.config.json --watch '"$@"'
 '
 
 project="indra_v2"
@@ -16,6 +16,7 @@ if [[ "$1" == "--watch" ]]
 then
   suffix="node_watcher"
   command="$watch_command"
+  shift # forget $1 and replace it w $2, etc
 else
   suffix="node_tester"
   command="$test_command"
@@ -30,10 +31,10 @@ network="${project}_$suffix"
 
 eth_network="ganache"
 
+ethprovider_host="${project}_ethprovider_$suffix"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 eth_rpc_url="http://$ethprovider_host:8545"
-ethprovider_host="${project}_ethprovider_$suffix"
 
 postgres_db="${project}_$suffix"
 postgres_host="${project}_database_$suffix"
@@ -41,7 +42,6 @@ postgres_password="$project"
 postgres_port="5432"
 postgres_user="$project"
 database_url="postgresql://$postgres_user:$postgres_password@$postgres_host:$postgres_port/$postgres_db"
-
 
 nats_host="${project}_nats_$suffix"
 
@@ -126,8 +126,8 @@ docker run \
   ${project}_builder -c '
     echo "Node Tester Container launched!";echo
 
-    echo "Waiting for ${ETH_RPC_URL#*://}..."
-    bash ops/wait-for.sh -t 60 ${ETH_RPC_URL#*://} 2> /dev/null
+    echo "Waiting for ${INDRA_ETH_RPC_URL#*://}..."
+    bash ops/wait-for.sh -t 60 ${INDRA_ETH_RPC_URL#*://} 2> /dev/null
     echo "Waiting for $INDRA_PG_HOST:$INDRA_PG_PORT..."
     bash ops/wait-for.sh -t 60 $INDRA_PG_HOST:$INDRA_PG_PORT 2> /dev/null
     echo "Waiting for ${INDRA_NATS_SERVERS#*://}..."
