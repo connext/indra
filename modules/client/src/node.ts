@@ -1,4 +1,5 @@
 import {
+  AppRegistry,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
@@ -14,11 +15,14 @@ import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
 
 // TODO: move to types.ts?
-const API_TIMEOUT = 1000;
+const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
   config(): Promise<GetConfigResponse>;
-  appRegistry(name: SupportedApplication, network: SupportedNetwork): Promise<string>;
+  appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry>;
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
@@ -64,14 +68,13 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  public async appRegistry(name: SupportedApplication, network: SupportedNetwork): Promise<string> {
+  public async appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> {
     try {
-      const registryRes = await this.send("app-registry", {
-        name,
-        network,
-      });
-      console.log("\n\n******** registry res", registryRes, "\n\n");
-      return registryRes as string;
+      const registryRes = await this.send("app-registry", appDetails);
+      return registryRes as AppRegistry;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -117,7 +120,6 @@ export class NodeApiClient implements INodeApiClient {
       data,
       id: uuid.v4(),
     });
-    this.log.info(`\n\n msg: ${JSON.stringify(msg, null, 2)}`);
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;
