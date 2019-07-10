@@ -160,6 +160,8 @@ services:
   proxy:
     image: $proxy_image
     environment:
+      DOMAINNAME: $INDRA_V2_DOMAINNAME
+      EMAIL: $INDRA_V2_EMAIL
       ETH_RPC_URL: $eth_rpc_url
       MESSAGING_URL: http://relay:4223
       MODE: prod
