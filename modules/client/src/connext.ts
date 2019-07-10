@@ -190,7 +190,6 @@ export abstract class ConnextChannel {
     return await this.internal.getFreeBalance(assetId);
   };
 
-  // TODO: remove this when not testing (maybe?)
   // FIXME: remove
   public logEthFreeBalance = (
     assetId: string,
