@@ -473,18 +473,6 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
-};
-
-    const actionRes = await this.cfModule.router.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-        params,
-      }),
-    );
-
-    return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
   };
 
   public installVirtualApp = async (
