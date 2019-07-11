@@ -29,6 +29,7 @@ export interface INodeApiClient {
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
+  unsubscribeFromExchangeRates(from: string, to: string): Promise<void>;
 }
 
 type ExchangeSubscription = {
