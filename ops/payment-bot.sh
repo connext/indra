@@ -8,8 +8,15 @@ docker swarm init 2> /dev/null || true
 ## Useful values according to Layne
 # bot 1 deposit addr on kovan:
 # 0x24ac59b070ec2ea822249cb2a858208460305faa
+
 # bot 2 deposit addr on kovan:
 # 0xa0ae1a3d4ff42ae77154fb9ebbca0af2b5b7f357
+
+# kovan token addr:
+# 0xaDcf80839987fABD4BEEacbe7eD93Fff5D3a0761
+
+# faucent link:
+# https://erc20faucet.com/
 
 ########################################
 ## Setup env vars

@@ -9,6 +9,8 @@ import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
+import { fromExtendedKey } from "ethers/utils/hdnode";
+import { Zero } from "ethers/constants";
 
 export class TransferController extends AbstractController {
   private appId: string;
@@ -26,7 +28,7 @@ export class TransferController extends AbstractController {
     }
 
     // check that there is sufficient free balance for amount
-    const preTransferBal = (await this.connext.getFreeBalance())[
+    const preTransferBal = (await this.connext.getFreeBalance(assetId))[
       this.cfModule.ethFreeBalanceAddress
     ];
 
@@ -38,7 +40,7 @@ export class TransferController extends AbstractController {
 
     // install the transfer application
     try {
-      await this.transferAppInstalled(amount, recipient);
+      await this.transferAppInstalled(amount, recipient, assetId, appInfo);
     } catch (e) {
       // TODO: can add more checks in `rejectInstall` but there is no
       // way to check if the recipient is collateralized atm, so just
@@ -120,14 +122,32 @@ export class TransferController extends AbstractController {
 
   // creates a promise that is resolved once the app is installed
   // and rejected if the virtual application is rejected
-  private transferAppInstalled = async (amount: BigNumber, recipient: string): Promise<any> => {
+  private transferAppInstalled = async (amount: BigNumber, recipient: string, assetId: string, appInfo: any): Promise<any> => {
     let boundResolve;
     let boundReject;
 
+    const params: NodeTypes.ProposeInstallVirtualParams = {
+      ...appInfo,
+      initialState: {
+        transfers: [
+          {
+            amount,
+            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address
+          },
+          {
+            amount: Zero,
+            to: fromExtendedKey(recipient).derivePath("0").address,
+          },
+        ],
+        finalized: false,
+      },
+      intermediaries: [this.connext.nodePublicIdentifier],
+      myDeposit: amount,
+      proposedToIdentifier: recipient,
+    };
+
     const res = await this.connext.proposeInstallVirtualApp(
-      "EthUnidirectionalTransferApp",
-      amount,
-      recipient, // must be xpub
+      params,
     );
     // set app instance id
     this.appId = res.appInstanceId;

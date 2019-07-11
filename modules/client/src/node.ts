@@ -14,6 +14,7 @@ import uuid = require("uuid");
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
+import { freeBalanceAddressFromXpub } from "./lib/utils";
 
 // TODO: move to types.ts?
 const API_TIMEOUT = 5000;
@@ -43,7 +44,8 @@ export class NodeApiClient implements INodeApiClient {
   public log: Logger;
   public nonce: string | undefined;
   public signature: string | undefined;
-  public publicIdentifier: string | undefined;
+  public userPublicIdentifier: string | undefined;
+  public nodePublicIdentifier: string | undefined;
 
   // subscription references
   public exchangeSubscriptions: ExchangeSubscription[] | undefined;
@@ -53,16 +55,20 @@ export class NodeApiClient implements INodeApiClient {
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;
     this.log = new Logger("NodeApiClient", opts.logLevel);
-    this.publicIdentifier = opts.publicIdentifier;
+    this.userPublicIdentifier = opts.userPublicIdentifier;
+    this.nodePublicIdentifier = opts.nodePublicIdentifier;
   }
 
   ///////////////////////////////////
   //////////// PUBLIC //////////////
   /////////////////////////////////
 
-  ///// Setters
-  public setPublicIdentifier(publicIdentifier: string): void {
-    this.publicIdentifier = publicIdentifier;
+  public setUserPublicIdentifier(publicIdentifier: string): void {
+    this.userPublicIdentifier = publicIdentifier;
+  }
+
+  public setNodePublicIdentifier(publicIdentifier: string): void {
+    this.nodePublicIdentifier = publicIdentifier;
   }
 
   ///// Endpoints
@@ -97,7 +103,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getChannel(): Promise<GetChannelResponse> {
     try {
-      const channelRes = await this.send(`channel.get.${this.publicIdentifier}`);
+      const channelRes = await this.send(`channel.get.${this.userPublicIdentifier}`);
       // handle error here
       return channelRes;
     } catch (e) {
@@ -108,7 +114,7 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: can we abstract this try-catch thing into a separate function?
   public async createChannel(): Promise<CreateChannelResponse> {
     try {
-      const channelRes = await this.send(`channel.create.${this.publicIdentifier}`);
+      const channelRes = await this.send(`channel.create.${this.userPublicIdentifier}`);
       // handle error here
       return channelRes;
     } catch (e) {

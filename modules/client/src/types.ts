@@ -78,5 +78,6 @@ export interface NodeInitializationParameters {
   messaging: IMessagingService;
   wallet: Wallet;
   logLevel?: number;
-  publicIdentifier?: string;
+  userPublicIdentifier?: string;
+  nodePublicIdentifier?: string;
 }

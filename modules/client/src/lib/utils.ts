@@ -54,9 +54,14 @@ export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
 // TODO: why doesnt deriving a path work as expected? sync w/rahul about
-// differences in hub.
+// differences in hub. (eg. only freeBalanceAddressFromXpub derives correct
+// fb address but only below works for deposit bal checking)
 export const publicIdentifierToAddress = (publicIdentifier: string): string => {
   return utils.HDNode.fromExtendedKey(publicIdentifier).address;
+};
+
+export const freeBalanceAddressFromXpub = (xpub: string): string => {
+  return utils.HDNode.fromExtendedKey(xpub).derivePath("0").address;
 };
 
 // TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
@@ -80,10 +85,12 @@ export async function getFreeBalance(
 // ^^^ generalized is the objMap function we have already, we can delete this
 // added an example of how to use the obj map thing - layne
 export function logEthFreeBalance(
+  assetId: string,
   freeBalance: NodeTypes.GetFreeBalanceStateResult,
   log?: Logger,
 ): void {
-  console.info(`Channel's free balance:`);
+  const msg = `Channel's free balance of ${assetId}:`;
+  log ? log.info(msg) : console.info(msg);
   const cb = (k: string, v: any): void => {
     log ? log.info(`${k} ${formatEther(v)}`) : console.info(k, formatEther(v));
   };
@@ -102,61 +109,4 @@ function timeout(delay: number = 30000): any {
       clearTimeout(handler);
     },
   };
-}
-
-// TODO: Temporary!!
-async function get(baseURL: string, endpoint: string): Promise<object> {
-  const requestTimeout = timeout();
-
-  const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
-    method: "GET",
-  });
-
-  requestTimeout.cancel();
-
-  let response;
-  let retriesAvailable = 10;
-
-  while (typeof response === "undefined") {
-    try {
-      response = await httpResponse.json();
-    } catch (e) {
-      retriesAvailable -= 1;
-      if (e.type === "invalid-json" && retriesAvailable >= 0) {
-        console.log(
-          `Call to ${baseURL}/api/${endpoint} returned invalid JSON. Retrying (attempt #${10 -
-            retriesAvailable}).`,
-        );
-        await delay(3000);
-      } else throw e;
-    }
-  }
-
-  if (response.errors) {
-    const error = response.errors[0];
-    throw error;
-  }
-
-  return response;
-}
-
-// TODO: Temporary!!
-async function post(baseURL: string, endpoint: string, data: any): Promise<any> {
-  const body = JSON.stringify(data);
-  const httpResponse = await fetch(`${baseURL}/${endpoint}`, {
-    body,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-    },
-    method: "POST",
-  });
-
-  const response = await httpResponse.json();
-
-  if (response.errors) {
-    const error = response.errors[0];
-    throw error;
-  }
-
-  return response;
 }
