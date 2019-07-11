@@ -218,6 +218,9 @@
     },
     "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter": {
       "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8"
+    },
+    "DolphinCoin": {
+      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
     }
   }
 }
