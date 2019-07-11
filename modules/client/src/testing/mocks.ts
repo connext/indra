@@ -135,4 +135,6 @@ export class MockNodeClientApi implements INodeApiClient {
   ): Promise<void> {}
 
   public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {}
+
+  public async requestCollateral(): Promise<void> {}
 }
