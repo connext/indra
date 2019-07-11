@@ -6,8 +6,8 @@ import {
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
-import { Address } from "@counterfactual/types";
-import { Client as NatsClient } from "ts-nats";
+import { Address, Node as NodeTypes } from "@counterfactual/types";
+import { Client as NatsClient, Subscription } from "ts-nats";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
@@ -37,6 +37,9 @@ export class NodeApiClient implements INodeApiClient {
   public nonce: string | undefined;
   public signature: string | undefined;
   public publicIdentifier: string | undefined;
+
+  // subscription references
+  public exchangeSubscription: Subscription | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.nodeUrl = opts.nodeUrl;
@@ -105,6 +108,26 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       return Promise.reject(e);
     }
+  }
+
+  // TODO: types for exchange rates and store?
+  // TODO: is this the best way to set the store for diff types
+  // of tokens
+  public async subscribeToExchangeRates(store: NodeTypes.IStoreService): Promise<any> {
+    this.exchangeSubscription = await this.nats.subscribe("exchange-rate", (err: any, msg: any) => {
+      if (err) {
+        this.log.error(JSON.stringify(err, null, 2));
+      } else {
+        this.log.info(JSON.stringify(msg.data, null, 2));
+        store.set([
+          {
+            key: `${msg.pattern}-${Date.now().toString()}`,
+            value: msg.data,
+          },
+        ]);
+        return msg.data;
+      }
+    });
   }
 
   ///////////////////////////////////
