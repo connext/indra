@@ -1,4 +1,4 @@
-import { AppRegistry, convert, NodeChannel, TransferParameters } from "@connext/types";
+import { convert, NodeChannel, TransferParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
@@ -32,14 +32,6 @@ export class TransferController extends AbstractController {
 
     // TODO: check if the recipient is the node, and if so transfer without
     // installing an app (is this possible?)
-
-    // get app definition from constants
-    // TODO: this should come from a db on the node
-    const appInfo = AppRegistry[this.connext.network.name].EthUnidirectionalTransferApp;
-
-    if (!appInfo) {
-      throw new Error("Could not find app in registry with supported network");
-    }
 
     // TODO: check if recipient has a channel with the hub w/sufficient balance
     // or if there is a route available through the node

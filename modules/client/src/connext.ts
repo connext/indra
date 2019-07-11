@@ -2,11 +2,15 @@ import { MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,
+  CreateChannelResponse,
   DepositParameters,
   ExchangeParameters,
+  GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
+  RegisteredAppDetails,
   SupportedApplication,
+  SupportedNetwork,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
@@ -32,6 +36,7 @@ import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { Wallet } from "./wallet";
+import { constants } from "ethers";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -74,6 +79,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const config = await node.config();
   console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
 
+  const appRegistry = await node.appRegistry();
+  console.log(`appRegistry: ${JSON.stringify(appRegistry, null, 2)}`);
+
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
   const cfModule = await Node.create(
@@ -103,6 +111,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("myChannel: ", myChannel);
   // create the new client
   return new ConnextInternal({
+    appRegistry,
     cfModule,
     listener,
     multisigAddress: myChannel.multisigAddress,
@@ -164,11 +173,35 @@ export abstract class ConnextChannel {
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
   public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.config();
+    return await this.internal.node.config();
   };
 
-  public getChannel = async (): Promise<NodeChannel> => {
+  public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
+  };
+
+  // TODO: do we need to expose here?
+  public authenticate = (): void => {}
+
+  // TODO: do we need to expose here?
+  public getAppRegistry = async (appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> => {
+    return await this.internal.node.appRegistry(appDetails);
+  };
+
+  // TODO: do we need to expose here?
+  public createChannel = async (): Promise<CreateChannelResponse> => {
+    return await this.internal.node.createChannel();
+  };
+
+  public subscribeToExchangeRates = async (): Promise<any> => {
+    return await this.internal.node.subscribeToExchangeRates(this.opts.store);
+  };
+
+  public unsubscribeToExchangeRates = async (): Promise<void> => {
+    return await this.internal.node.exchangeSubscription.unsubscribe();
   };
 
   ///////////////////////////////////
@@ -229,7 +262,7 @@ export class ConnextInternal extends ConnextChannel {
   public myFreeBalanceAddress: Address;
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
-  // TODO: maybe move this into the NodeApiClient @layne? --> yes
+  public appRegistry: AppRegistry;
 
   public logger: Logger;
   public network: Network;
@@ -249,6 +282,8 @@ export class ConnextInternal extends ConnextChannel {
     this.wallet = opts.wallet;
     this.node = opts.node;
     this.nats = opts.nats;
+
+    this.appRegistry = opts.appRegistry;
 
     this.cfModule = opts.cfModule;
     this.freeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
@@ -288,13 +323,6 @@ export class ConnextInternal extends ConnextChannel {
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.withdrawalController.withdraw(params);
-  };
-
-  ///////////////////////////////////
-  // NODE METHODS
-
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.node.config();
   };
 
   ///////////////////////////////////
@@ -456,15 +484,15 @@ export class ConnextInternal extends ConnextChannel {
     initialDeposit: BigNumber,
     counterpartyPublicIdentifier: string,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    const { initialStateFinalized, ...paramInfo } = AppRegistry[this.network.name][appName];
-    if (!paramInfo) {
-      throw new Error("App not found in registry for provided network");
-    }
+    const appInfo = this.getRegisteredAppDetails(appName);
     const params: NodeTypes.ProposeInstallVirtualParams = {
-      ...paramInfo,
-      // TODO: best way to pass in an initial state?
+      abiEncodings: {
+        actionEncoding: appInfo.actionEncoding,
+        stateEncoding: appInfo.stateEncoding,
+      },
+      appDefinition: appInfo.appDefinitionAddress,
       initialState: {
-        finalized: initialStateFinalized,
+        finalized: false,
         transfers: [
           {
             amount: initialDeposit,
@@ -479,7 +507,10 @@ export class ConnextInternal extends ConnextChannel {
       },
       intermediaries: [this.nodePublicIdentifier],
       myDeposit: initialDeposit,
+      outcomeType: appInfo.outcomeType,
+      peerDeposit: constants.Zero,
       proposedToIdentifier: counterpartyPublicIdentifier,
+      timeout: constants.Zero, // TODO: fix, add to app info?
     };
 
     const actionRes = await this.cfModule.router.dispatch(
@@ -579,6 +610,21 @@ export class ConnextInternal extends ConnextChannel {
 
   ///////////////////////////////////
   // LOW LEVEL METHODS
+
+  public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
+    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails) => {
+      return app.name === appName && app.network === this.network.name;
+    });
+
+    if (!appInfo || appInfo.length === 0) {
+      throw new Error(`Could not find ${appName} app details on ${this.network.name} network`);
+    }
+
+    if (appInfo.length > 1) {
+      throw new Error(`Found multiple ${appName} app details on ${this.network.name} network`);
+    }
+    return appInfo[0];
+  };
 
   // TODO: make sure types are all good
   private connectDefaultListeners = (): void => {

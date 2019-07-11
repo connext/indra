@@ -36,13 +36,16 @@ export function getConnextClient(): connext.ConnextInternal {
   console.log("Using client options:");
   console.log("     - mnemonic:", config.mnemonic);
   console.log("     - rpcProviderUrl:", config.ethRpcUrl);
-  console.log("     - natsUrl:", config.natsUrl);
   console.log("     - nodeUrl:", config.nodeUrl);
 
   try {
     console.log("Creating connext");
     client = await connext.connect(connextOpts);
     console.log("Client created successfully!");
+
+    console.log("subscribing to exchange rates...");
+    await client.subscribeToExchangeRates();
+    console.log("subscribed!");
 
     const connextConfig = await client.config();
     console.log("connextConfig:", connextConfig);
@@ -75,6 +78,10 @@ export function getConnextClient(): connext.ConnextInternal {
     console.error("\n");
     console.error(e);
     console.error("\n");
+    const client = getConnextClient();
+    if (client) {
+      await client.unsubscribeToExchangeRates();
+    }
     process.exit(1);
   }
 })();

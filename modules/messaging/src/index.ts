@@ -20,8 +20,12 @@ export interface IMessagingService extends Node.IMessagingService {
   request: (
     subject: string,
     timeout: number,
-    data: string,
+    data: string | Object,
     callback?: (response: any) => any,
+  ) => Promise<any>;
+  subscribe: (// should return subscription
+    topic: string,
+    callback: (err: any, message: any) => Promise<void>,
   ) => Promise<any>;
 }
 
@@ -103,7 +107,7 @@ class WsMessagingService implements IMessagingService {
     });
   }
 
-  async request(subject: string, timeout: number, data: string = "{}"): Promise<any> {
+  async request(subject: string, timeout: number, data: string | Object = "{}"): Promise<any> {
     if (!this.connection) {
       console.error("Cannot register a connection with an uninitialized ws messaging service");
       return;
@@ -114,6 +118,11 @@ class WsMessagingService implements IMessagingService {
       });
     });
   }
+
+  subscribe = async (topic: string, callback: (err: any, message: any) => void): Promise<any> => {
+    // returns subscription
+    return await this.connection.subscribe(topic, callback);
+  };
 }
 
 ////////////////////////////////////////
@@ -177,11 +186,22 @@ class NatsMessagingService implements IMessagingService {
     );
   }
 
-  async request(subject: string, timeout: number, data: string = "{}"): Promise<any> {
+  async request(subject: string, timeout: number, data: string | Object = "{}"): Promise<any> {
     if (!this.connection) {
       console.error("Cannot register a connection with an uninitialized nats messaging service");
       return;
     }
     return await this.connection.request(subject, timeout, data);
   }
+
+  subscribe = async (
+    topic: string,
+    callback: (err: any, message: any) => void,
+  ): Promise<nats.Subscription | void> => {
+    if (!this.connection) {
+      console.error("Cannot register a connection with an uninitialized nats messaging service");
+      return;
+    }
+    return await this.connection.subscribe(topic, callback);
+  };
 }

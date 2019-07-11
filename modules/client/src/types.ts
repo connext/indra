@@ -1,7 +1,6 @@
 import { IMessagingService } from "@connext/messaging";
-import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
+import { AppRegistry, AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 import { Node } from "@counterfactual/node";
-import { NetworkContext } from "@counterfactual/types";
 import { utils } from "ethers";
 import { Client as NatsClient } from "ts-nats";
 
@@ -64,6 +63,7 @@ export type InternalClientOptions = ClientOptions & {
   multisigAddress: string;
   nodePublicIdentifier: string;
   network: utils.Network; // TODO: delete! use bos branch!
+  appRegistry: AppRegistry;
 };
 
 // TODO: define properly!!

@@ -1,6 +1,15 @@
 import { IMessagingService } from "@connext/messaging";
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
-import { Address } from "@counterfactual/types";
+import {
+  AppRegistry,
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  SupportedApplication,
+  SupportedNetwork,
+} from "@connext/types";
+import { Address, Node as NodeTypes } from "@counterfactual/types";
+import { Subscription } from "ts-nats";
+import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
@@ -11,6 +20,10 @@ const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
   config(): Promise<GetConfigResponse>;
+  appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry>;
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
@@ -25,6 +38,9 @@ export class NodeApiClient implements INodeApiClient {
   public signature: string | undefined;
   public publicIdentifier: string | undefined;
 
+  // subscription references
+  public exchangeSubscription: Subscription | undefined;
+
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.wallet = opts.wallet;
@@ -37,16 +53,30 @@ export class NodeApiClient implements INodeApiClient {
   //////////// PUBLIC //////////////
   /////////////////////////////////
 
+  ///// Setters
   public setPublicIdentifier(publicIdentifier: string): void {
     this.publicIdentifier = publicIdentifier;
   }
 
+  ///// Endpoints
   public async config(): Promise<GetConfigResponse> {
     // get the config from the hub
     try {
       const configRes = await this.send("config.get");
       // handle error here
       return configRes as GetConfigResponse;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  public async appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> {
+    try {
+      const registryRes = await this.send("app-registry", appDetails);
+      return registryRes as AppRegistry;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -79,20 +109,49 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
+  // TODO: types for exchange rates and store?
+  // TODO: is this the best way to set the store for diff types
+  // of tokens
+  public async subscribeToExchangeRates(store: NodeTypes.IStoreService): Promise<any> {
+    this.exchangeSubscription = await this.messaging.subscribe(
+      "exchange-rate",
+      (err: any, msg: any) => {
+        if (err) {
+          this.log.error(JSON.stringify(err, null, 2));
+        } else {
+          store.set([
+            {
+              key: `${msg.pattern}-${Date.now().toString()}`,
+              value: msg.data,
+            },
+          ]);
+          return msg.data;
+        }
+      },
+    );
+  }
+
   ///////////////////////////////////
   //////////// PRIVATE /////////////
   /////////////////////////////////
   private async send(subject: string, data?: any): Promise<any | undefined> {
-    console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
-    const msg = await this.messaging.request(subject, API_TIMEOUT, JSON.stringify(data));
+    this.log.info(
+      `Sending request to ${subject} ${
+        data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
+      }`,
+    );
+    const msg = await this.messaging.request(subject, API_TIMEOUT, {
+      data,
+      id: uuid.v4(),
+    });
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;
     }
-    const { status, ...res } = msg.data;
-    if (status !== "success") {
-      throw new Error(`Error sending request. Res: ${JSON.stringify(msg, null, 2)}`);
+    const { err, response, ...rest } = msg.data;
+    if (err) {
+      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
-    return Object.keys(res).length === 0 ? undefined : res.data;
+    return Object.keys(response).length === 0 ? undefined : response;
   }
 }
