@@ -1,4 +1,5 @@
 import * as connext from "@connext/client";
+import { DepositParameters } from "@connext/types";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import commander from "commander";
 import { ethers } from "ethers";
@@ -12,7 +13,7 @@ program.version("0.0.1");
 program
   .option("-x, --debug", "output extra debugging")
   .option("-d, --deposit <amount>", "Deposit amount in Ether units")
-  .option("-a, --asset-id", "Asset ID/Token Address of deposited asset")
+  .option("-a, --asset-id <address>", "Asset ID/Token Address of deposited asset")
   .option("-t, --transfer <amount>", "Transfer amount in Ether units")
   .option("-c, --counterparty <id>", "Counterparty public identifier")
   .option("-i, --identifier <id>", "Bot identifier");
@@ -41,10 +42,13 @@ async function run(): Promise<void> {
   await getOrCreateChannel();
 
   if (program.deposit) {
-    const depositParams = {
+    const depositParams: DepositParameters = {
       amount: ethers.utils.parseEther(program.deposit).toString(),
     };
-    console.log(`Attempting to deposit ${depositParams.amount}...`);
+    if (program.assetId) {
+      depositParams.assetId = program.assetId;
+    }
+    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
   }
@@ -56,7 +60,7 @@ async function run(): Promise<void> {
     });
   }
   client.logEthFreeBalance(await client.getFreeBalance());
-  console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`)
+  console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
 
 async function getOrCreateChannel(): Promise<void> {
