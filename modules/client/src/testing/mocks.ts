@@ -98,6 +98,7 @@ export class MockNodeClientApi implements INodeApiClient {
     // TODO: mock out properly!! create mocking fns!!!
     createChannel: {} as CreateChannelResponse,
     getChannel: {} as GetChannelResponse,
+    subscribeToExchangeRates: {},
   };
 
   public authenticate(): void {}
@@ -120,4 +121,6 @@ export class MockNodeClientApi implements INodeApiClient {
   public async createChannel(): Promise<CreateChannelResponse> {
     return MockNodeClientApi.returnValues.createChannel;
   }
+
+  public async subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void> {}
 }
