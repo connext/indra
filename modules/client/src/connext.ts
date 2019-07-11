@@ -1,5 +1,6 @@
 import { MessagingServiceFactory } from "@connext/messaging";
 import {
+  AppRegistry,
   ChannelState,
   CreateChannelResponse,
   DepositParameters,
@@ -34,7 +35,6 @@ import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { Wallet } from "./wallet";
-import { constants } from "ethers";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -234,13 +234,6 @@ export abstract class ConnextChannel {
 
   public getAppState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
     return await this.internal.getAppState(appInstanceId);
-  };
-
-  public installTransferApp = async (
-    counterpartyPublicIdentifier: string,
-    initialDeposit: BigNumber,
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    return await this.internal.installTransferApp(counterpartyPublicIdentifier, initialDeposit);
   };
 
   public uninstallVirtualApp = async (
@@ -508,7 +501,7 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    params.intermediaries = [this.nodePublicIdentifier]
+    params.intermediaries = [this.nodePublicIdentifier];
 
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
