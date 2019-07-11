@@ -6,7 +6,7 @@ Payment functionality is demonstrated by using two payment bots connected to an 
 
 ## Initial Setup
 All setup is from root of repository.
-* `make start` to run Indra node locally.
+* `make start` or `bash ops/start-dev kovan` to run Indra node locally on Ganache or Kovan.
 
 ## Bot Functionality
 The bot can be run with the following optional command line arguments:
@@ -26,3 +26,5 @@ The bot can be run with the following optional command line arguments:
 
 ### Transfer ETH to Other Bot
 `bash ops/payment-bot.sh -i 2 -t 0.01 -c xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYzmRaKf7Gd2MV9qDvWwwN7VpBPNXQCZCbfyoK`
+
+TODO: Add ERC20 stuff
