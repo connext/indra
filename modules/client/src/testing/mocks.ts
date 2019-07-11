@@ -1,5 +1,12 @@
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, AppRegistry, SupportedApplication, SupportedNetwork } from "@connext/types";
-import { Address } from "@counterfactual/types";
+import {
+  AppRegistry,
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  SupportedApplication,
+  SupportedNetwork,
+} from "@connext/types";
+import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { providers } from "ethers";
 import * as nats from "ts-nats";
 
@@ -121,7 +128,11 @@ export class MockNodeClientApi implements INodeApiClient {
     return MockNodeClientApi.returnValues.createChannel;
   }
 
-  public async subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void> {}
+  public async subscribeToExchangeRates(
+    from: string,
+    to: string,
+    store: NodeTypes.IStoreService,
+  ): Promise<void> {}
 
   public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {}
 }
