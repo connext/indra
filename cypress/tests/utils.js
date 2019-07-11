@@ -22,7 +22,7 @@ my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
 my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click() && my.doneStarting()
 my.goToSettings = () => cy.get(`a[href="/settings"]`).click() && my.doneStarting()
-my.goToReceive = () => cy.get(`a[href="/receive"]`).click() && my.doneStarting()
+my.goToRequest = () => cy.get(`a[href="/request"]`).click() && my.doneStarting()
 my.goToSend = () => cy.get(`a[href="/send"]`).click() && my.doneStarting()
 my.goToCashout = () => cy.get(`a[href="/cashout"]`).click() && my.doneStarting()
 my.goHome = () => cy.contains('button', /^home$/i).click() && my.doneStarting()
@@ -46,8 +46,8 @@ my.burnCard = () => {
   my.goToSettings()
   cy.contains('button', /burn card/i).click()
   cy.contains('button', /burn$/i).click()
-  cy.contains('p', /burning/i).should('exist')
-  cy.contains('p', /burning/i).should('not.exist')
+  // cy.contains('p', /burning/i).should('exist')
+  // cy.contains('p', /burning/i).should('not.exist')
   cy.reload()
 }
 
@@ -74,10 +74,10 @@ my.cashout = () => {
   cy.log(`cashing out to ${wallet.address}`)
   cy.get('input[type="text"]').clear().type(wallet.address)
   cy.contains('button', /cash out eth/i).click()
-  cy.contains('span', /processing withdrawal/i).should('exist')
-  cy.contains('span', /processing withdrawal/i).should('not.exist')
+  // cy.contains('span', /processing withdrawal/i).should('exist')
+  // cy.contains('span', /processing withdrawal/i).should('not.exist')
   cy.contains('span', /withdraw confirmed/i).should('exist')
-  my.getChannelBalance().should('contain', '0.00')
+  cy.resolve(my.getChannelBalance).should('contain', '0.00')
 }
 
 ////////////////////////////////////////
