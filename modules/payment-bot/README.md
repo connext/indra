@@ -5,20 +5,24 @@ Functionality of installing, updating, and uninstalling payment threads from sta
 Payment functionality is demonstrated by using two payment bots connected to an intermediary (in this demo, the `indra-v2`).
 
 ## Initial Setup
-* Run the [Indra V2 Node](https://github.com/ConnextProject/indra-v2) by referring to its readme.
-* Configure the payment bots:
-  * Get the node ID of the Indra node (starts with `xpub...`, printed on startup) and put it into `.env-cmdrc` as `INTERMEDIARY_IDENTIFIER`.
-  * All other config options should be good as is, you can check these address on kovan.etherscan.io to make sure they have some KETH (please replenish if you use, the mnemonics and PKs are in source control for easy bootstrapping/testing):
-    * Bot 1: `0x24ac59b070eC2EA822249cB2A858208460305Faa`
-    * Bot 2: `0xA0Ae1A3d4ff42AE77154fB9eBbCa0af2B5B7F357`
-* Run the payment bots while depositing into their channels:
-  * Open two terminal windows.
-  * Run `npm run start:bot1 deposit 0.1` to deposit 0.1 ETH into the channel for Payment Bot 1.
-  * Run `npm run start:bot2 deposit 0.1` to deposit 0.1 ETH into the channel for Payment Bot 2.
-* Bots will display the free balance after their channels are deposited into.
+All setup is from root of repository.
+* `make start` to run Indra node locally.
 
-## Interacting with the Bots
-* Select one bot as "sender" and one bot as "receiver".
-* Copy the node identifier from the "receiver" to the "sender" when prompted (starts with `xpub...`).
-* Enter the amount to deposit into your payment thread (must be less than channel's free balance).
-* Follow the prompts to send payments from sender to receiver, view balances, and uninstall to recover balance into channel.
+## Bot Functionality
+The bot can be run with the following optional command line arguments:
+`-x, --debug`: output extra debugging
+`-d, --deposit <amount>`: Deposit amount in Ether units
+`-a, --asset-id`: Asset ID/Token Address of deposited asset
+`-t, --transfer <amount>`: Transfer amount in Ether units
+`-c, --counterparty <id>`: Counterparty public identifier (xpub)
+`-i, --identifier <id>`: Bot identifier, use 1 or 2
+
+## Usage Examples
+### Create Channel (If Not Exists)
+`bash ops/payment-bot.sh -i 1`
+
+### Deposit ETH Into Channel
+`bash ops/payment-bot.sh -i 2 -d 0.1`
+
+### Transfer ETH to Other Bot
+`bash ops/payment-bot.sh -i 2 -t 0.01 -c xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYzmRaKf7Gd2MV9qDvWwwN7VpBPNXQCZCbfyoK`
