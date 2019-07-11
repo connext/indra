@@ -187,7 +187,7 @@ class NatsMessagingService implements IMessagingService {
     );
   }
 
-  async request(subject: string, timeout: number, data: string | Object = "{}"): Promise<nats.Msg> {
+  async request(subject: string, timeout: number, data: string | Object = "{}"): Promise<nats.Msg | void> {
     if (!this.connection) {
       console.error("Cannot register a connection with an uninitialized nats messaging service");
       return;
