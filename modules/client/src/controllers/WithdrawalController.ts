@@ -21,7 +21,7 @@ export class WithdrawalController extends AbstractController {
     // TODO: remove free balance stuff?
     this.log.info("trying to get free balance....");
     const preWithdrawBalances = await this.connext.getFreeBalance();
-    this.log.info(`preWithdrawBalances:`);
+    this.log.info(`preWithdrawBalances: ${preWithdrawBalances}`);
     this.connext.logEthFreeBalance(preWithdrawBalances, this.log);
 
     // TODO: why isnt free balance working :(
@@ -35,7 +35,7 @@ export class WithdrawalController extends AbstractController {
       }
     }
 
-    this.log.info(`\nWithdrawing ${amount} ETH from ${this.connext.opts.multisigAddress}\n`);
+    this.log.info(`\nWithdrawing ${amount} wei from ${this.connext.opts.multisigAddress}\n`);
 
     // register listeners
     this.log.info("Registering listeners........");

@@ -111,7 +111,7 @@ describe('Daicard', () => {
   })
 
   describe('Withdraw', () => {
-    it.skip(`Should withdraw to a valid address`, () => {
+    it(`Should withdraw to a valid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainBalance().then(balanceBefore => {
           my.cashout()
@@ -122,11 +122,10 @@ describe('Daicard', () => {
       })
     })
 
-    it.skip(`Should not withdraw to an invalid address`, () => {
+    it(`Should not withdraw to an invalid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToCashout()
         cy.get('input[type="text"]').clear().type('0xabc123')
-        cy.contains('button', /cash out eth/i).click()
         cy.contains('p', /invalid/i).should('exist')
       })
     })

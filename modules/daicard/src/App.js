@@ -23,6 +23,8 @@ import SupportCard from "./components/supportCard";
 
 import { Currency, store, toBN } from "./utils";
 
+const { formatEther, parseEther } = eth.utils;
+
 // Optional URL overrides for custom urls
 const overrides = {
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
@@ -30,9 +32,10 @@ const overrides = {
 };
 
 // Constants for channel max/min - this is also enforced on the hub
-const DEPOSIT_ESTIMATED_GAS = toBN("25000"); // TODO: estimate this dynamically
-const HUB_EXCHANGE_CEILING = eth.utils.parseEther('69'); // 69 token
-const CHANNEL_DEPOSIT_MAX = eth.utils.parseEther('30'); // 30 token
+const WITHDRAW_ESTIMATED_GAS = toBN("300000");
+const DEPOSIT_ESTIMATED_GAS = toBN("25000");
+const HUB_EXCHANGE_CEILING = parseEther('69'); // 69 token
+const CHANNEL_DEPOSIT_MAX = parseEther('30'); // 30 token
 
 const styles = theme => ({
   paper: {
@@ -65,19 +68,18 @@ const styles = theme => ({
 class App extends React.Component {
   constructor(props) {
     super(props);
-    const daiRate = "314.08"
+    const exchangeRate = "314.08"
     this.state = {
       address: "",
       balance: {
-        channel: { token: Currency.DEI("0", daiRate), ether: Currency.WEI("0", daiRate) },
-        onChain: { token: Currency.DEI("0", daiRate), ether: Currency.WEI("0", daiRate) },
+        channel: { token: Currency.DEI("0", exchangeRate), ether: Currency.WEI("0", exchangeRate) },
+        onChain: { token: Currency.DEI("0", exchangeRate), ether: Currency.WEI("0", exchangeRate) },
       },
       channelState: null,
       connextState: null,
       contractAddress: null,
-      daiRate: daiRate,
       ethprovider: null,
-      exchangeRate: "0.00",
+      exchangeRate,
       hubUrl: null,
       hubWalletAddress: null,
       interval: null,
@@ -153,20 +155,21 @@ class App extends React.Component {
   }
 
   async refreshBalances() {
-    const { address, balance, channel, daiRate, ethprovider } = this.state;
+    const { address, balance, channel, exchangeRate, ethprovider } = this.state;
     const freeBalance = await channel.getFreeBalance();
-    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), daiRate);
-    balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress], daiRate);
+    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), exchangeRate);
+    balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress], exchangeRate);
     this.setState({ balance })
   }
 
   async setDepositLimits() {
-    const { daiRate, ethprovider } = this.state;
+    const { exchangeRate, ethprovider } = this.state;
     let gasPrice = await ethprovider.getGasPrice()
     // default multiple is 1.5, leave 2x for safety
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-    const minDeposit = Currency.WEI(totalDepositGasWei, daiRate);
-    const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, daiRate);
+    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
+    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), exchangeRate);
+    const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, exchangeRate);
     this.setState({ maxDeposit, minDeposit });
   }
 
@@ -192,7 +195,7 @@ class App extends React.Component {
     ) {
       if (bnBalance.ether.gt(maxWei)) {
         console.log(`Attempting to deposit more than the limit: ` +
-          `${eth.utils.formatEther(bnBalance.ether)} > ${maxDeposit.toETH()}`);
+          `${formatEther(bnBalance.ether)} > ${maxDeposit.toETH()}`);
         return;
       }
 
@@ -201,9 +204,9 @@ class App extends React.Component {
       const channelState = await channel.getChannel()
       console.log(`Attempting to deposit ${depositParams.amount} wei into channel: ${JSON.stringify(channelState, null, 2)}...`);
 
-      this.setState({ pending: { type: "deposit", complete: false, closed: false  } })
+      this.setPending({ type: "deposit", complete: false, closed: false })
       const result = await channel.deposit(depositParams);
-      this.setState({ pending: { type: "deposit", complete: true, closed: false  } })
+      this.setPending({ type: "deposit", complete: true, closed: false  })
 
       console.log(`Successfully deposited! Result: ${JSON.stringify(result,null,2)}`);
     }
@@ -216,6 +219,10 @@ class App extends React.Component {
     if (false && weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
       await channel.exchange(weiBalance, "wei");
     }
+  }
+
+  setPending(pending) {
+    this.setState({ pending })
   }
 
   closeConfirmations() {
@@ -389,14 +396,10 @@ class App extends React.Component {
               render={props => (
                 <CashOutCard
                   {...props}
-                  address={address}
                   balance={balance}
-                  channelState={channelState}
-                  publicUrl={this.state.publicUrl}
-                  exchangeRate={exchangeRate}
                   channel={channel}
-                  connextState={connextState}
-                  runtime={runtime}
+                  exchangeRate={exchangeRate}
+                  setPending={this.setPending.bind(this)}
                 />
               )}
             />

@@ -74,10 +74,10 @@ my.cashout = () => {
   cy.log(`cashing out to ${wallet.address}`)
   cy.get('input[type="text"]').clear().type(wallet.address)
   cy.contains('button', /cash out eth/i).click()
-  cy.contains('span', /processing withdrawal/i).should('exist')
-  cy.contains('span', /processing withdrawal/i).should('not.exist')
+  // cy.contains('span', /processing withdrawal/i).should('exist')
+  // cy.contains('span', /processing withdrawal/i).should('not.exist')
   cy.contains('span', /withdraw confirmed/i).should('exist')
-  my.getChannelBalance().should('contain', '0.00')
+  cy.resolve(my.getChannelBalance).should('contain', '0.00')
 }
 
 ////////////////////////////////////////
