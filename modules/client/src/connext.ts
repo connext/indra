@@ -2,12 +2,15 @@ import { NatsServiceFactory } from "@connext/nats-messaging-client";
 import {
   AppRegistry,
   ChannelState,
+  CreateChannelResponse,
   DepositParameters,
   ExchangeParameters,
+  GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
   RegisteredAppDetails,
   SupportedApplication,
+  SupportedNetwork,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
@@ -178,11 +181,35 @@ export abstract class ConnextChannel {
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
   public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.config();
+    return await this.internal.node.config();
   };
 
-  public getChannel = async (): Promise<NodeChannel> => {
+  public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
+  };
+
+  // TODO: do we need to expose here?
+  public authenticate = (): void => {}
+
+  // TODO: do we need to expose here?
+  public getAppRegistry = async (appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> => {
+    return await this.internal.node.appRegistry(appDetails);
+  };
+
+  // TODO: do we need to expose here?
+  public createChannel = async (): Promise<CreateChannelResponse> => {
+    return await this.internal.node.createChannel();
+  };
+
+  public subscribeToExchangeRates = async (): Promise<any> => {
+    return await this.internal.node.subscribeToExchangeRates(this.opts.store);
+  };
+
+  public unsubscribeToExchangeRates = async (): Promise<void> => {
+    return await this.internal.node.exchangeSubscription.unsubscribe();
   };
 
   ///////////////////////////////////
@@ -303,13 +330,6 @@ export class ConnextInternal extends ConnextChannel {
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.withdrawalController.withdraw(params);
-  };
-
-  ///////////////////////////////////
-  // NODE METHODS
-
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.node.config();
   };
 
   ///////////////////////////////////
