@@ -192,6 +192,6 @@ export class NodeApiClient implements INodeApiClient {
     if (err) {
       throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
-    return Object.keys(response).length === 0 ? undefined : response;
+    return !response || Object.keys(response).length === 0 ? undefined : response;
   }
 }
