@@ -19,14 +19,12 @@ name=${project}_payment_bot_$1
 cwd="`pwd`"
 
 INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
-NATS_URL="nats://indra_v2_nats:4222"
-NODE_URL="http://indra_v2_node:8080"
+NODE_URL="nats://indra_v2_nats:4222"
 POSTGRES_DATABASE="$project"
 POSTGRES_HOST="indra_v2_database"
 POSTGRES_PASSWORD="$project"
 POSTGRES_PORT="5432"
 POSTGRES_USER="$project"
-USERNAME="PaymentBot$1"
 
 # Set the eth rpc url to use the same network as the node server is using
 ETH_RPC_URL="http://indra_v2_ethprovider:8545"
@@ -45,6 +43,7 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+USERNAME="PaymentBot$identifier"
 
 # Use different mnemonics for different bots
 if [ "$identifier" = "1" ]; then
@@ -72,7 +71,6 @@ docker run \
   --entrypoint="bash" \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INTERMEDIARY_IDENTIFIER=$INTERMEDIARY_IDENTIFIER" \
-  --env="NATS_URL=$NATS_URL" \
   --env="NODE_MNEMONIC=$NODE_MNEMONIC" \
   --env="NODE_URL=$NODE_URL" \
   --env="POSTGRES_DATABASE=$POSTGRES_DATABASE" \
@@ -92,5 +90,5 @@ docker run \
   ${project}_builder -c '
     echo "payment bot container launched"
     cd modules/payment-bot
-    ts-node src/main.ts '"$args"'
+    ts-node src/index.ts '"$args"'
   '
