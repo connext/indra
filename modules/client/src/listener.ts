@@ -1,3 +1,4 @@
+import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -12,10 +13,12 @@ import {
   UpdateStateMessage,
   WithdrawMessage,
 } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { EventEmitter } from "events";
 
+import { ConnextInternal } from "./connext";
 import { Logger } from "./lib/logger";
+import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
 type CallbackStruct = {
@@ -25,6 +28,7 @@ type CallbackStruct = {
 export class ConnextListener extends EventEmitter {
   private log: Logger;
   private cfModule: Node;
+  private connext: ConnextInternal;
 
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
@@ -36,7 +40,7 @@ export class ConnextListener extends EventEmitter {
     INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
       this.emitAndLog(NodeTypes.EventName.INSTALL_VIRTUAL, data.data);
     },
-    PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
+    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
       // if the from is us, ignore
@@ -45,6 +49,34 @@ export class ConnextListener extends EventEmitter {
         return;
       }
       // check based on supported applications
+      const appInfo = (await this.connext.getAppInstanceDetails(data.data.appInstanceId))
+        .appInstance;
+      const filtered = this.connext.appRegistry
+        .map((app: RegisteredAppDetails) => {
+          return this.matchAppInstance(appInfo, app);
+        })
+        // TODO: improve typing?
+        .filter((a: any) => a !== undefined);
+      if (!filtered || filtered.length === 0) {
+        this.log.info(
+          `Proposed app not in registered applications. App: ${JSON.stringify(appInfo, null, 2)}`,
+        );
+        return;
+      }
+      if (filtered.length > 1) {// TODO: throw error here?
+        this.log.error(
+          `Proposed app matched multiple registered applications. App: ${JSON.stringify(
+            appInfo,
+            null,
+            2,
+          )}`,
+        );
+        return;
+      }
+      // matched app, take appropriate default actions
+      await this.verifyAndInstallKnownApp(appInfo, filtered[0]);
+      // FIXME: request additional collateral
+      // await this.connext.requestCollateral();
     },
     UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
       this.emitAndLog(NodeTypes.EventName.UNINSTALL_VIRTUAL, data.data);
@@ -109,10 +141,11 @@ export class ConnextListener extends EventEmitter {
     },
   };
 
-  constructor(cfModule: Node, logLevel: number) {
+  constructor(cfModule: Node, connext: ConnextInternal) {
     super();
     this.cfModule = cfModule;
-    this.log = new Logger("ConnextListener", logLevel);
+    this.connext = connext;
+    this.log = new Logger("ConnextListener", connext.opts.logLevel);
   }
 
   public registerCfListener = (event: NodeTypes.EventName, cb: Function): void => {
@@ -147,5 +180,41 @@ export class ConnextListener extends EventEmitter {
   private emitAndLog = (event: NodeTypes.EventName, data: any): void => {
     this.log.info(`Emitted ${event}`);
     this.emit(event, data);
+  };
+
+  private matchAppInstance = (
+    appInstance: AppInstanceInfo,
+    app: RegisteredAppDetails,
+  ): RegisteredAppDetails | undefined => {
+    let foundMatch = true;
+    Object.entries(appInstance).forEach(([key, value]) => {
+      if (foundMatch && app[key]) {
+        // NOTE: will not work if there are big number
+        // types in RegisteredAppDetails fields
+        foundMatch = app[key] === value;
+      }
+    });
+    return foundMatch ? app : undefined;
+  };
+
+  private verifyAndInstallKnownApp = async (
+    appInstance: AppInstanceInfo,
+    matchedApp: RegisteredAppDetails,
+  ): Promise<void> => {
+    // sanity check that the matched app actually matches
+    const isThisChill = this.matchAppInstance(appInstance, matchedApp);
+    if (!isThisChill) {
+      throw new Error("Matched app instance doesnt actually match. This should never happen.");
+    }
+
+    const invalidProposal = appProposalValidation[matchedApp.name];
+    if (invalidProposal) {
+      // reject app installation
+      return;
+    }
+
+    // proposal is valid, automatically install known app
+    await this.connext.installVirtualApp(appInstance.identityHash);
+    return;
   };
 }
