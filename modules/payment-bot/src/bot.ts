@@ -1,6 +1,6 @@
 import { Node as NodeTypes } from "@counterfactual/types";
 
-import { getConnextClient } from "./";
+import { getAssetId, getConnextClient, setAssetId } from "./";
 
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
@@ -35,7 +35,7 @@ export function registerClientListeners(): void {
         );
         await delay(1000);
       }
-      client.logEthFreeBalance(await client.getFreeBalance());
+      client.logEthFreeBalance(getAssetId(), await client.getFreeBalance());
     },
   );
 

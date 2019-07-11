@@ -26,6 +26,17 @@ const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory(conf
 
 let client: connext.ConnextInternal;
 
+// TODO: fix for multiple deposited assets
+let assetId: string;
+
+export function getAssetId(): string {
+  return assetId;
+}
+
+export function setAssetId(aid: string): void {
+  assetId = aid;
+}
+
 export function getMultisigAddress(): string {
   return client.opts.multisigAddress;
 }
