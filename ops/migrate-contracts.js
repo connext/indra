@@ -7,6 +7,7 @@ const contracts = [
   "CoinBalanceRefundApp",
   "CoinTransferETHInterpreter",
   "ConditionalTransactionDelegateTarget",
+  "DolphinCoin",
   "FreeBalanceApp",
   "IdentityApp",
   "MinimumViableMultisig",

@@ -45,6 +45,7 @@ export class MessagingServiceFactory {
     } else {
       throw new Error(`Invalid Messaging Url: ${JSON.stringify(messagingUrl)}`);
     }
+    console.log(`Messaging service type: ${this.serviceType}`);
   }
 
   connect(): void {
