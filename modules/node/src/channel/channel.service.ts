@@ -123,8 +123,11 @@ export class ChannelService implements OnModuleInit {
 
     if (nodeFreeBalance.lt(profile.minimumMaintainedCollateralWei)) {
       const amountDeposit = profile.amountToCollateralizeWei.sub(nodeFreeBalance);
-      return await this.deposit(userPubId, amountDeposit, true);
+      logger.log(`Collateralizing ${userPubId} with ${amountDeposit.toString()}`);
+      // TODO: takes a long time to resolve and times out on client
+      return await this.deposit(channel.multisigAddress, amountDeposit, true);
     }
+    logger.log(`User ${userPubId} does not need additional collateral`);
     return undefined;
   }
 
@@ -136,33 +139,12 @@ export class ChannelService implements OnModuleInit {
       await this.makeAvailable((res.data as NodeTypes.CreateChannelResult).multisigAddress);
     });
 
-    // TODO: how many blocks until confirmed?
-    this.node.on(NodeTypes.EventName.DEPOSIT_CONFIRMED, (res: DepositConfirmationMessage) => {
-      logger.log(`DEPOSIT_CONFIRMED event fired: ${JSON.stringify(res)}`);
-
-      // TODO: add some spam handling
-      if (!res || !res.data) {
-        return;
-      }
-
-      // FIXME: casting is poor form, but why does it cause type issues?
-      if ((res as any).from === this.node.publicIdentifier) {
-        logger.log(`Deposit received from node address, do not counter deposit`);
-        return;
-      }
-
-      this.deposit(
-        res.data.multisigAddress,
-        res.data.amount as any, // FIXME
-        !!res.data.notifyCounterparty,
-      );
-    });
-
     // Print a generic log whenever ANY event is fired
     for (const eventName of [
       "COUNTER_DEPOSIT_CONFIRMED",
       "DEPOSIT_FAILED",
       "DEPOSIT_STARTED",
+      "DEPOSIT_CONFIRMED", // TODO: how many blocks until confirmed?
       "INSTALL",
       "INSTALL_VIRTUAL",
       "PROPOSE_STATE",
@@ -171,7 +153,7 @@ export class ChannelService implements OnModuleInit {
       "UNINSTALL",
       "UNINSTALL_VIRTUAL",
       "UPDATE_STATE",
-      "WITHDRAWAL_CONFIRMED",
+      "WITHDRAWAL_CONFIRMED", // TODO: how many blocks until confirmed?
       "WITHDRAWAL_FAILED",
       "WITHDRAWAL_STARTED",
       "PROPOSE_INSTALL",
@@ -181,7 +163,7 @@ export class ChannelService implements OnModuleInit {
       "REJECT_INSTALL_VIRTUAL",
     ]) {
       this.node.on(NodeTypes.EventName[eventName], (res: NodeTypes.NodeMessage): void =>
-        logger.log(`${eventName} event fired from ${res.from}`),
+        logger.log(`${eventName} event fired from ${res && res.from ? res.from : null}`),
       );
     }
 
