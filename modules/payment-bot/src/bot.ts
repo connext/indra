@@ -1,6 +1,7 @@
 import { Node as NodeTypes } from "@counterfactual/types";
+import { AddressZero } from "ethers/constants";
 
-import { getAssetId, getConnextClient, setAssetId } from "./";
+import { getAssetId, getConnextClient } from "./";
 
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
@@ -20,7 +21,10 @@ export function registerClientListeners(): void {
         console.log("no new apps found for client, waiting one second and trying again...");
         await delay(1000);
       }
-      client.logEthFreeBalance(await client.getFreeBalance());
+      client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+      if (getAssetId()) {
+        client.logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
+      }
     },
   );
 
@@ -35,12 +39,18 @@ export function registerClientListeners(): void {
         );
         await delay(1000);
       }
-      client.logEthFreeBalance(getAssetId(), await client.getFreeBalance());
+      client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+      if (getAssetId()) {
+        client.logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
+      }
     },
   );
 
   client.on(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, async (data: any) => {
-    client.logEthFreeBalance(await client.getFreeBalance());
+    client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+    if (getAssetId()) {
+      client.logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
+    }
   });
 
   if (

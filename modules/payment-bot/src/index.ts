@@ -6,6 +6,7 @@ import { ethers } from "ethers";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
+import { AddressZero } from "ethers/constants";
 
 const program = new commander.Command();
 program.version("0.0.1");
@@ -51,6 +52,9 @@ export function getConnextClient(): connext.ConnextInternal {
 
 async function run(): Promise<void> {
   await getOrCreateChannel();
+  if (program.assetId) {
+    assetId = program.assetId;
+  }
 
   if (program.deposit) {
     const depositParams: DepositParameters = {
@@ -70,7 +74,10 @@ async function run(): Promise<void> {
       recipient: program.counterparty,
     });
   }
-  client.logEthFreeBalance(await client.getFreeBalance());
+  client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+  if (assetId) {
+    client.logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
+  }
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
 
