@@ -118,7 +118,6 @@ export class NodeApiClient implements INodeApiClient {
       if (err) {
         this.log.error(JSON.stringify(err, null, 2));
       } else {
-        this.log.info(JSON.stringify(msg.data, null, 2));
         store.set([
           {
             key: `${msg.pattern}-${Date.now().toString()}`,
