@@ -180,8 +180,8 @@ export class ChannelService implements OnModuleInit {
       "WITHDRAW_EVENT",
       "REJECT_INSTALL_VIRTUAL",
     ]) {
-      this.node.on(NodeTypes.EventName[eventName], (res: any): void =>
-        logger.log(`${eventName} event fired`),
+      this.node.on(NodeTypes.EventName[eventName], (res: NodeTypes.NodeMessage): void =>
+        logger.log(`${eventName} event fired from ${res.from}`),
       );
     }
 
