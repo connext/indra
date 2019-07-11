@@ -53,7 +53,6 @@ export type InternalClientOptions = ClientOptions & {
   // TODO: can nats, node, wallet be optional?
   nats: NatsClient; // converted to nats-client in ConnextInternal constructor
   node: NodeApiClient;
-  listener: ConnextListener;
   // signing wallet/information
   wallet: Wallet;
   // store: ConnextStore; --> whats this look like
