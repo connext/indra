@@ -209,6 +209,10 @@ export abstract class ConnextChannel {
     return await this.internal.node.unsubscribeFromExchangeRates(from, to);
   };
 
+  public requestCollateral = async (): Promise<void> => {
+    return await this.internal.node.requestCollateral();
+  };
+
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
   // FIXME: add in rest of methods!
