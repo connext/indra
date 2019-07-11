@@ -70,7 +70,8 @@ async function run(): Promise<void> {
     }
     console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
     await client.deposit(depositParams);
-    console.log(`Successfully deposited!`);
+    console.log(`Successfully deposited! Requesting collateral...`);
+    await client.requestCollateral();
   }
 
   if (program.transfer) {
