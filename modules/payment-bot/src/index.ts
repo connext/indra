@@ -1,12 +1,12 @@
 import * as connext from "@connext/client";
-import { DepositParameters } from "@connext/types";
+import { DepositParameters, WithdrawParameters } from "@connext/types";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import commander from "commander";
 import { ethers } from "ethers";
+import { AddressZero } from "ethers/constants";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { AddressZero } from "ethers/constants";
 
 const program = new commander.Command();
 program.version("0.0.1");
@@ -14,10 +14,15 @@ program.version("0.0.1");
 program
   .option("-x, --debug", "output extra debugging")
   .option("-d, --deposit <amount>", "Deposit amount in Ether units")
-  .option("-a, --asset-id <address>", "Asset ID/Token Address of deposited asset")
+  .option(
+    "-a, --asset-id <address>",
+    "Asset ID/Token Address of deposited, withdrawn, or transferred asset",
+  )
   .option("-t, --transfer <amount>", "Transfer amount in Ether units")
   .option("-c, --counterparty <id>", "Counterparty public identifier")
-  .option("-i, --identifier <id>", "Bot identifier");
+  .option("-i, --identifier <id>", "Bot identifier")
+  .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
+  .option("-r, --recipient <address>", "Withdrawal recipient address");
 
 program.parse(process.argv);
 
@@ -64,16 +69,49 @@ async function run(): Promise<void> {
       depositParams.assetId = program.assetId;
     }
     console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
-    await client.deposit(depositParams);
-    console.log(`Successfully deposited!`);
+    // try {
+      await client.deposit(depositParams);
+      console.log(`Successfully deposited!`);
+    // } catch (e) {
+    //   console.log("Failed to deposit:", JSON.stringify(e, null, 2));
+    //   process.exit(1);
+    // }
   }
 
   if (program.transfer) {
-    await client.transfer({
-      amount: ethers.utils.parseEther(program.transfer).toString(),
-      recipient: program.counterparty,
-    });
+    // try {
+      await client.transfer({
+        amount: ethers.utils.parseEther(program.transfer).toString(),
+        recipient: program.counterparty,
+      });
+    // } catch (e) {
+    //   console.log("Failed to transfer:", JSON.stringify(e, null, 2));
+    //   process.exit(1);
+    // }
   }
+
+  if (program.withdraw) {
+    const withdrawParams: WithdrawParameters = {
+      amount: ethers.utils.parseEther(program.withdrawal).toString(),
+    };
+    if (program.assetId) {
+      withdrawParams.assetId = program.assetId;
+    }
+    if (program.recipient) {
+      withdrawParams.recipient = program.recipient;
+    }
+    console.log(
+      `Attempting to deposit ${withdrawParams.amount} with assetId ` +
+        `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,
+    );
+    // try {
+      await client.withdraw(withdrawParams);
+    // } catch (e) {
+    //   console.log("Failed to withdraw:", JSON.stringify(e, null, 2));
+    //   process.exit(1);
+    // }
+  }
+
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
   if (assetId) {
     client.logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
