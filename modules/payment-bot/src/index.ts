@@ -56,6 +56,7 @@ async function run(): Promise<void> {
     });
   }
   client.logEthFreeBalance(await client.getFreeBalance());
+  console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`)
 }
 
 async function getOrCreateChannel(): Promise<void> {
@@ -91,8 +92,6 @@ async function getOrCreateChannel(): Promise<void> {
   }
 
   registerClientListeners();
-
-  client.logEthFreeBalance(await client.getFreeBalance());
 }
 
 run();
