@@ -11,7 +11,7 @@ describe('Daicard', () => {
     my.closeIntroModal()
   })
 
-  describe.only('Deposit', () => {
+  describe('Deposit', () => {
     it(`Should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth)
     })
@@ -35,7 +35,7 @@ describe('Daicard', () => {
       })
     })
 
-    it(`Should not generate a payment link if the amount provided is invalid`, () => {
+    it.skip(`Should not generate a payment link if the amount provided is invalid`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToSend()
         // No negative payments
@@ -53,7 +53,7 @@ describe('Daicard', () => {
       })
     })
 
-    it(`Should not send a payment when input invalid`, () => {
+    it.skip(`Should not send a payment when input invalid`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToSend()
         cy.get('input[type="number"]').should('exist')
@@ -83,7 +83,7 @@ describe('Daicard', () => {
   describe('Request', () => {
     it(`Should properly populate the send page when opening a request link`, () => {
       my.getAddress().then(address => {
-        my.goToReceive()
+        my.goToRequest()
         cy.get('input[type="number"]').clear().type(payTokens)
         cy.contains('button', `recipient=${address}`).should('exist')
         cy.contains('button', `amountToken=${payTokens}`).invoke('text').then(requestLink => {
@@ -111,7 +111,7 @@ describe('Daicard', () => {
   })
 
   describe('Withdraw', () => {
-    it.skip(`Should withdraw to a valid address`, () => {
+    it(`Should withdraw to a valid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainBalance().then(balanceBefore => {
           my.cashout()
@@ -126,7 +126,6 @@ describe('Daicard', () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToCashout()
         cy.get('input[type="text"]').clear().type('0xabc123')
-        cy.contains('button', /cash out eth/i).click()
         cy.contains('p', /invalid/i).should('exist')
       })
     })
