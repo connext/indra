@@ -15,7 +15,6 @@ docker swarm init 2> /dev/null || true
 ## Setup env vars
 
 project="indra_v2"
-name=${project}_payment_bot_$1
 cwd="`pwd`"
 
 INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
@@ -35,6 +34,7 @@ fi
 
 args="$@"
 identifier=1
+
 while [ "$1" != "" ]; do
     case $1 in
         -i | --identifier )     shift
@@ -43,7 +43,9 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
 USERNAME="PaymentBot$identifier"
+name=${project}_payment_bot_$identifier
 
 # Use different mnemonics for different bots
 if [ "$identifier" = "1" ]; then
