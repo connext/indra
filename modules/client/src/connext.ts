@@ -196,12 +196,12 @@ export abstract class ConnextChannel {
     return await this.internal.node.createChannel();
   };
 
-  public subscribeToExchangeRates = async (): Promise<any> => {
-    return await this.internal.node.subscribeToExchangeRates(this.opts.store);
+  public subscribeToExchangeRates = async (from: string, to: string): Promise<any> => {
+    return await this.internal.node.subscribeToExchangeRates(from, to, this.opts.store);
   };
 
-  public unsubscribeToExchangeRates = async (): Promise<void> => {
-    return await this.internal.node.exchangeSubscription.unsubscribe();
+  public unsubscribeToExchangeRates = async (from: string, to: string): Promise<void> => {
+    return await this.internal.node.unsubscribeFromExchangeRates(from, to);
   };
 
   ///////////////////////////////////
