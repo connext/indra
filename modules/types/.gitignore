@@ -1,0 +1,4 @@
+*.sw[op]
+.DS_Store
+.env
+.rpt2_cache

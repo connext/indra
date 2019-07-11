@@ -44,6 +44,11 @@ export class Wallet extends Signer {
     }
     // TODO: will we be able to use the hubs eth provider?
 
+    // Enforce using provided signer, not via RPC
+    this.provider.getSigner = (addressOrIndex?: string | number): any => {
+      throw { code: "UNSUPPORTED_OPERATION" };
+    };
+
     ////////////////////////////////////////
     // Setup a signer
     if (opts.mnemonic) {
@@ -68,16 +73,12 @@ export class Wallet extends Signer {
 
   // FIXME: remove?
   public async signMessage(message: string): Promise<string> {
-    const bytes: Uint8Array = isHexString(message)
-      ? arrayify(message)
-      : toUtf8Bytes(message);
+    const bytes: Uint8Array = isHexString(message) ? arrayify(message) : toUtf8Bytes(message);
     return this.signer.signMessage(bytes);
   }
 
   // FIXME: remove?
-  public async sendTransaction(
-    txReq: TransactionRequest,
-  ): Promise<TransactionResponse> {
+  public async sendTransaction(txReq: TransactionRequest): Promise<TransactionResponse> {
     if (this.external) {
       return this.signAndSendTransactionExternally(txReq);
     }
@@ -90,9 +91,7 @@ export class Wallet extends Signer {
   }
 
   // FIXME: remove?
-  private async signAndSendTransactionExternally(
-    tx: TransactionRequest,
-  ): Promise<any> {
+  private async signAndSendTransactionExternally(tx: TransactionRequest): Promise<any> {
     const txObj: any = await this.prepareTransaction(tx);
     return this.signer.sign(txObj);
   }

@@ -28,7 +28,6 @@ export function getConnextClient(): connext.ConnextInternal {
 
   const connextOpts = {
     mnemonic: config.mnemonic,
-    natsUrl: config.natsUrl,
     nodeUrl: config.nodeUrl,
     rpcProviderUrl: config.ethRpcUrl,
     store: pgServiceFactory.createStoreService(config.username),

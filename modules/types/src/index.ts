@@ -1,4 +1,4 @@
-// import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { MessagingConfig } from "@connext/messaging";
 import { Address, NetworkContext, Node as NodeTypes } from "@counterfactual/types";
 import { constants, utils } from "ethers";
 import { Network } from "ethers/utils";
@@ -218,9 +218,7 @@ export type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: NetworkContext;
   nodePublicIdentifier: string;
-  clusterId?: string;
-  servers: string[];
-  token?: string;
+  messaging: MessagingConfig;
 };
 
 export type GetChannelResponse = NodeChannel;

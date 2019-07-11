@@ -266,7 +266,7 @@ export function registerClientListeners(): void {
 async function uninstallVirtualApp(appInstanceId: string): Promise<any> {
   const client = getConnextClient();
   const appState = await client.getAppState(appInstanceId);
-  if (!(appState.state as any).finalized) {
+  if (!(appState.state as AppState).finalized) {
     await client.takeAction(appInstanceId, {
       finalize: true,
       transferAmount: Zero,

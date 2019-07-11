@@ -9,7 +9,16 @@ import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistry, Network } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
 
-const defaultApps = [
+type DefaultApp = {
+  actionEncoding?: string;
+  appDefinitionAddress: string;
+  name: string;
+  network: Network;
+  outcomeType: OutcomeType;
+  stateEncoding: string;
+};
+
+const defaultApps: DefaultApp[] = [
   {
     actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
     appDefinitionAddress: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
@@ -17,6 +26,14 @@ const defaultApps = [
     network: Network.KOVAN,
     outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME,
     stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+  },
+  {
+    appDefinitionAddress: "0x92E0bC808f7549c7f8f37b45960D6dCFd343d909",
+    name: "SimpleTwoPartySwapApp",
+    network: Network.KOVAN,
+    outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO?
+    stateEncoding:
+      "tuple(tuple(address to, address[] coinAddress, uint256[] balance)[] coinBalances)",
   },
 ];
 
@@ -27,12 +44,11 @@ export const appRegistryProvider: Provider = {
   provide: AppRegistryProviderId,
   useFactory: async (appRegistryRepository: AppRegistryRepository): Promise<void> => {
     for (const app of defaultApps) {
-      if (await appRegistryRepository.findByNameAndNetwork(app.name, app.network)) {
-        logger.log(`Default app ${app.name} on ${app.network} already exists in database.`);
-        continue;
+      let appRegistry = await appRegistryRepository.findByNameAndNetwork(app.name, app.network);
+      if (!appRegistry) {
+        appRegistry = new AppRegistry();
       }
-      logger.log(`Creating new default app ${app.name} on ${app.network}`);
-      const appRegistry = new AppRegistry();
+      logger.log(`Creating default app ${app.name} on ${app.network}`);
       appRegistry.actionEncoding = app.actionEncoding;
       appRegistry.appDefinitionAddress = app.appDefinitionAddress;
       appRegistry.name = app.name;

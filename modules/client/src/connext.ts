@@ -1,4 +1,4 @@
-import { NatsServiceFactory } from "@connext/nats-messaging-client";
+import { MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,
@@ -17,9 +17,11 @@ import {
 } from "@connext/types";
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import "core-js/stable";
 import { Zero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import "regenerator-runtime/runtime";
 import { Client as NatsClient, Payload } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
@@ -48,25 +50,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const wallet = new Wallet(opts);
   const network = await wallet.provider.getNetwork();
 
-  // create a new internal nats instance
-  const natsConfig = {
-    clusterId: opts.natsClusterId,
-    payload: Payload.JSON,
-    servers: [opts.natsUrl],
-    token: opts.natsToken,
-  };
-  // TODO: proper key? also, proper usage?
-  const messagingServiceKey = "messaging";
-  // connect nats service, done as part of async setup
-
-  // TODO: get config from nats client?
-  console.log("creating nats client from config:", JSON.stringify(natsConfig));
-  // TODO: instantiate service factory with proper config!!
-  // @ts-ignore
-  const natsFactory = new NatsServiceFactory(natsConfig);
-  const messaging = natsFactory.createMessagingService(messagingServiceKey);
+  console.log("Creating messaging service client");
+  const { natsClusterId, nodeUrl, natsToken } = opts;
+  const messagingFactory = new MessagingServiceFactory({
+    clusterId: natsClusterId,
+    messagingUrl: nodeUrl,
+    token: natsToken,
+  });
+  const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
-  console.log("nats is connected");
+  console.log("Messaging service is connected");
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
@@ -76,8 +69,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: use local storage for default key value setting!!
   const nodeConfig = {
     logLevel: opts.logLevel,
-    nats: messaging.getConnection(),
-    nodeUrl: opts.nodeUrl,
+    messaging,
     wallet,
   };
   console.log("creating node client");
@@ -267,6 +259,7 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
+  public myFreeBalanceAddress: Address;
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
   public appRegistry: AppRegistry;

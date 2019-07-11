@@ -1,3 +1,4 @@
+import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   CreateChannelResponse,
@@ -7,7 +8,7 @@ import {
   SupportedNetwork,
 } from "@connext/types";
 import { Address, Node as NodeTypes } from "@counterfactual/types";
-import { Client as NatsClient, Subscription } from "ts-nats";
+import { Subscription } from "ts-nats";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
@@ -29,8 +30,7 @@ export interface INodeApiClient {
 }
 
 export class NodeApiClient implements INodeApiClient {
-  public nodeUrl: string;
-  public nats: NatsClient; // TODO: rename to messaging?
+  public messaging: IMessagingService;
   public wallet: Wallet;
   public address: Address;
   public log: Logger;
@@ -42,8 +42,7 @@ export class NodeApiClient implements INodeApiClient {
   public exchangeSubscription: Subscription | undefined;
 
   constructor(opts: NodeInitializationParameters) {
-    this.nodeUrl = opts.nodeUrl;
-    this.nats = opts.nats;
+    this.messaging = opts.messaging;
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;
     this.log = new Logger("NodeApiClient", opts.logLevel);
@@ -114,19 +113,22 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: is this the best way to set the store for diff types
   // of tokens
   public async subscribeToExchangeRates(store: NodeTypes.IStoreService): Promise<any> {
-    this.exchangeSubscription = await this.nats.subscribe("exchange-rate", (err: any, msg: any) => {
-      if (err) {
-        this.log.error(JSON.stringify(err, null, 2));
-      } else {
-        store.set([
-          {
-            key: `${msg.pattern}-${Date.now().toString()}`,
-            value: msg.data,
-          },
-        ]);
-        return msg.data;
-      }
-    });
+    this.exchangeSubscription = await this.messaging.subscribe(
+      "exchange-rate",
+      (err: any, msg: any) => {
+        if (err) {
+          this.log.error(JSON.stringify(err, null, 2));
+        } else {
+          store.set([
+            {
+              key: `${msg.pattern}-${Date.now().toString()}`,
+              value: msg.data,
+            },
+          ]);
+          return msg.data;
+        }
+      },
+    );
   }
 
   ///////////////////////////////////
@@ -138,7 +140,7 @@ export class NodeApiClient implements INodeApiClient {
         data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
       }`,
     );
-    const msg = await this.nats.request(subject, API_TIMEOUT, {
+    const msg = await this.messaging.request(subject, API_TIMEOUT, {
       data,
       id: uuid.v4(),
     });
