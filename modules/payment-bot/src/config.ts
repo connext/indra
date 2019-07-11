@@ -3,10 +3,6 @@ import "dotenv";
 
 confirmPostgresConfigurationEnvVars();
 
-if (!process.env.NATS_URL) {
-  throw Error(`No nats url specified in env. Exiting.`);
-}
-
 if (!process.env.NODE_URL) {
   throw Error("No node url specified in env. Exiting.");
 }
@@ -23,7 +19,6 @@ export const config = {
   ethRpcUrl: process.env.ETH_RPC_URL,
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
   mnemonic: process.env.NODE_MNEMONIC,
-  natsUrl: process.env.NATS_URL,
   nodeUrl: process.env.NODE_URL,
   postgres: {
     database: process.env.POSTGRES_DATABASE!,

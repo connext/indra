@@ -11,9 +11,11 @@ import {
 } from "@connext/types";
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
-import { AddressZero } from "ethers/constants";
 import "core-js/stable";
+import { Contract } from "ethers";
+import { AddressZero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
+import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 import { Client as NatsClient } from "ts-nats";
 
@@ -22,7 +24,11 @@ import { ExchangeController } from "./controllers/ExchangeController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, logEthFreeBalance, publicIdentifierToAddress } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  logEthFreeBalance,
+  publicIdentifierToAddress,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -322,7 +328,17 @@ export class ConnextInternal extends ConnextChannel {
     notifyCounterparty: boolean = true,
   ): Promise<NodeTypes.DepositResult> => {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
-    const bal = await this.wallet.provider.getBalance(depositAddr);
+    let bal: BigNumber;
+
+    if (assetId === AddressZero) {
+      bal = await this.wallet.provider.getBalance(depositAddr);
+    } else {
+      // get token balance
+      const token = new Contract(assetId, tokenAbi, this.wallet.provider);
+      // TODO: correct? how can i use allowance?
+      bal = await token.balanceOf(depositAddr);
+    }
+
     const err = [
       notPositive(amount),
       invalidAddress(assetId),
@@ -476,9 +492,9 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
-    params: NodeTypes.ProposeInstallVirtualParams
+    params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    params.intermediaries = [this.nodePublicIdentifier]
+    params.intermediaries = [this.nodePublicIdentifier];
 
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({

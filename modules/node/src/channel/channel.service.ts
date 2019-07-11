@@ -69,7 +69,8 @@ export class ChannelService implements OnModuleInit {
   async deposit(
     multisigAddress: string,
     amount: BigNumber,
-    notifyCounterparty: boolean,
+    notifyCounterparty: boolean = false,
+    tokenAddress?: string,
   ): Promise<NodeTypes.DepositResult> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
@@ -85,6 +86,7 @@ export class ChannelService implements OnModuleInit {
           amount,
           multisigAddress,
           notifyCounterparty,
+          tokenAddress,
         } as NodeTypes.DepositParams,
       }),
     );
