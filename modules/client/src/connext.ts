@@ -296,7 +296,7 @@ export class ConnextInternal extends ConnextChannel {
     this.network = opts.network;
 
     // establish listeners
-    this.listener = opts.listener;
+    this.listener = new ConnextListener(opts.cfModule, this);
     this.connectDefaultListeners();
 
     // instantiate controllers with logger and cf
