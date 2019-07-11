@@ -1,21 +1,42 @@
 import { IMessagingService } from "@connext/messaging";
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse } from "@connext/types";
-import { Address } from "@counterfactual/types";
+import {
+  AppRegistry,
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  SupportedApplication,
+  SupportedNetwork,
+} from "@connext/types";
+import { Address, Node as NodeTypes } from "@counterfactual/types";
+import { Subscription } from "ts-nats";
+import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
-import { freeBalanceAddressFromXpub } from "./lib/utils";
 
 // TODO: move to types.ts?
 const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
   config(): Promise<GetConfigResponse>;
+  appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry>;
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
+  subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
+  unsubscribeFromExchangeRates(from: string, to: string): Promise<void>;
+  requestCollateral(): Promise<void>;
 }
+
+type ExchangeSubscription = {
+  from: string;
+  to: string;
+  subscription: Subscription;
+};
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
@@ -26,6 +47,9 @@ export class NodeApiClient implements INodeApiClient {
   public signature: string | undefined;
   public userPublicIdentifier: string | undefined;
   public nodePublicIdentifier: string | undefined;
+
+  // subscription references
+  public exchangeSubscriptions: ExchangeSubscription[] | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -48,12 +72,25 @@ export class NodeApiClient implements INodeApiClient {
     this.nodePublicIdentifier = publicIdentifier;
   }
 
+  ///// Endpoints
   public async config(): Promise<GetConfigResponse> {
     // get the config from the hub
     try {
       const configRes = await this.send("config.get");
       // handle error here
       return configRes as GetConfigResponse;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  public async appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> {
+    try {
+      const registryRes = await this.send("app-registry", appDetails);
+      return registryRes as AppRegistry;
     } catch (e) {
       return Promise.reject(e);
     }
@@ -86,20 +123,91 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
+  // TODO: types for exchange rates and store?
+  // TODO: is this the best way to set the store for diff types
+  // of tokens
+  public async subscribeToExchangeRates(
+    from: string,
+    to: string,
+    store: NodeTypes.IStoreService,
+  ): Promise<void> {
+    const subscription = await this.messaging.subscribe(
+      `exchange-rate.${from}.${to}`,
+      (err: any, msg: any) => {
+        if (err) {
+          this.log.error(JSON.stringify(err, null, 2));
+        } else {
+          store.set([
+            {
+              key: `${msg.pattern}-${Date.now().toString()}`,
+              value: msg.data,
+            },
+          ]);
+          return msg.data;
+        }
+      },
+    );
+    this.exchangeSubscriptions.push({
+      from,
+      subscription,
+      to,
+    });
+  }
+
+  public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {
+    if (!this.exchangeSubscriptions || this.exchangeSubscriptions.length === 0) {
+      return;
+    }
+
+    const matchedSubs = this.exchangeSubscriptions.filter((sub: ExchangeSubscription) => {
+      return sub.from === from && sub.to === to;
+    });
+
+    if (matchedSubs.length === 0) {
+      this.log.warn(`Could not find subscription for ${from}:${to} pair`);
+      return;
+    }
+
+    matchedSubs.forEach((sub: ExchangeSubscription) => sub.subscription.unsubscribe());
+  }
+
+  // FIXME: right now node doesnt return until the deposit has completed
+  // which exceeds the timeout.....
+  public async requestCollateral(): Promise<void> {
+    try {
+      const channelRes = await this.send(`channel.request-collateral.${this.userPublicIdentifier}`);
+      return channelRes;
+    } catch (e) {
+      // FIXME: node should return once deposit starts
+      if (e.message.startsWith("Request timed out")) {
+        this.log.info(`request collateral message timed out`);
+        return;
+      }
+      return Promise.reject(e);
+    }
+  }
+
   ///////////////////////////////////
   //////////// PRIVATE /////////////
   /////////////////////////////////
   private async send(subject: string, data?: any): Promise<any | undefined> {
-    console.log(`Sending request to ${subject} ${data ? `with body: ${data}` : `without body`}`);
-    const msg = await this.messaging.request(subject, API_TIMEOUT, JSON.stringify(data));
+    this.log.info(
+      `Sending request to ${subject} ${
+        data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
+      }`,
+    );
+    const msg = await this.messaging.request(subject, API_TIMEOUT, {
+      data,
+      id: uuid.v4(),
+    });
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;
     }
-    const { status, ...res } = msg.data;
-    if (status !== "success") {
-      throw new Error(`Error sending request. Res: ${JSON.stringify(msg, null, 2)}`);
+    const { err, response, ...rest } = msg.data;
+    if (err) {
+      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
-    return Object.keys(res).length === 0 ? undefined : res.data;
+    return !response || Object.keys(response).length === 0 ? undefined : response;
   }
 }

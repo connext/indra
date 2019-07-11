@@ -1,10 +1,16 @@
 import { MessagingServiceFactory } from "@connext/messaging";
 import {
+  AppRegistry,
   ChannelState,
+  CreateChannelResponse,
   DepositParameters,
   ExchangeParameters,
+  GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
+  RegisteredAppDetails,
+  SupportedApplication,
+  SupportedNetwork,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
@@ -77,6 +83,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const config = await node.config();
   console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
 
+  const appRegistry = await node.appRegistry();
+  console.log(`appRegistry: ${JSON.stringify(appRegistry, null, 2)}`);
+
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
   const cfModule = await Node.create(
@@ -107,6 +116,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("myChannel: ", myChannel);
   // create the new client
   return new ConnextInternal({
+    appRegistry,
     cfModule,
     listener,
     multisigAddress: myChannel.multisigAddress,
@@ -168,11 +178,39 @@ export abstract class ConnextChannel {
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
   public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.config();
+    return await this.internal.node.config();
   };
 
-  public getChannel = async (): Promise<NodeChannel> => {
+  public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
+  };
+
+  // TODO: do we need to expose here?
+  public authenticate = (): void => {}
+
+  // TODO: do we need to expose here?
+  public getAppRegistry = async (appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> => {
+    return await this.internal.node.appRegistry(appDetails);
+  };
+
+  // TODO: do we need to expose here?
+  public createChannel = async (): Promise<CreateChannelResponse> => {
+    return await this.internal.node.createChannel();
+  };
+
+  public subscribeToExchangeRates = async (from: string, to: string): Promise<any> => {
+    return await this.internal.node.subscribeToExchangeRates(from, to, this.opts.store);
+  };
+
+  public unsubscribeToExchangeRates = async (from: string, to: string): Promise<void> => {
+    return await this.internal.node.unsubscribeFromExchangeRates(from, to);
+  };
+
+  public requestCollateral = async (): Promise<void> => {
+    return await this.internal.node.requestCollateral();
   };
 
   ///////////////////////////////////
@@ -208,13 +246,6 @@ export abstract class ConnextChannel {
     return await this.internal.getAppState(appInstanceId);
   };
 
-  public installTransferApp = async (
-    counterpartyPublicIdentifier: string,
-    initialDeposit: BigNumber,
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    return await this.internal.installTransferApp(counterpartyPublicIdentifier, initialDeposit);
-  };
-
   public uninstallVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.UninstallVirtualResult> => {
@@ -237,6 +268,7 @@ export class ConnextInternal extends ConnextChannel {
   public myFreeBalanceAddress: Address;
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
+  public appRegistry: AppRegistry;
 
   public logger: Logger;
   public network: Network;
@@ -256,6 +288,8 @@ export class ConnextInternal extends ConnextChannel {
     this.wallet = opts.wallet;
     this.node = opts.node;
     this.nats = opts.nats;
+
+    this.appRegistry = opts.appRegistry;
 
     this.cfModule = opts.cfModule;
     this.freeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
@@ -295,13 +329,6 @@ export class ConnextInternal extends ConnextChannel {
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.withdrawalController.withdraw(params);
-  };
-
-  ///////////////////////////////////
-  // NODE METHODS
-
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.node.config();
   };
 
   ///////////////////////////////////
@@ -594,6 +621,21 @@ export class ConnextInternal extends ConnextChannel {
 
   ///////////////////////////////////
   // LOW LEVEL METHODS
+
+  public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
+    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails) => {
+      return app.name === appName && app.network === this.network.name;
+    });
+
+    if (!appInfo || appInfo.length === 0) {
+      throw new Error(`Could not find ${appName} app details on ${this.network.name} network`);
+    }
+
+    if (appInfo.length > 1) {
+      throw new Error(`Found multiple ${appName} app details on ${this.network.name} network`);
+    }
+    return appInfo[0];
+  };
 
   // TODO: make sure types are all good
   private connectDefaultListeners = (): void => {

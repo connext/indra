@@ -5,6 +5,7 @@ import { ConnextInternal } from "../connext";
 import { Logger } from "../lib/logger";
 import { ConnextListener } from "../listener";
 import { INodeApiClient } from "../node";
+import { Wallet } from "../wallet";
 
 export abstract class AbstractController {
   public name: string;
@@ -14,6 +15,7 @@ export abstract class AbstractController {
   public cfModule: Node;
   public listener: ConnextListener;
   public provider: providers.JsonRpcProvider;
+  public wallet: Wallet;
 
   public constructor(name: string, connext: ConnextInternal) {
     this.connext = connext;
@@ -23,5 +25,6 @@ export abstract class AbstractController {
     this.listener = connext.listener;
     this.log = new Logger(name, connext.opts.logLevel);
     this.provider = connext.wallet.provider;
+    this.wallet = connext.wallet;
   }
 }
