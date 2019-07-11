@@ -176,11 +176,11 @@ export class NodeApiClient implements INodeApiClient {
   public async requestCollateral(): Promise<void> {
     try {
       const channelRes = await this.send(`channel.request-collateral.${this.userPublicIdentifier}`);
-      // handle error here
       return channelRes;
     } catch (e) {
       // FIXME: node should return once deposit starts
-      if (e.message === "Request timed out") {
+      if (e.message.startsWith("Request timed out")) {
+        this.log.info(`request collateral message timed out`);
         return;
       }
       return Promise.reject(e);
