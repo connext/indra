@@ -1,3 +1,4 @@
+import { IMessagingService } from "@connext/messaging";
 import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { NetworkContext } from "@counterfactual/types";
@@ -16,10 +17,7 @@ export interface ClientOptions {
   rpcProviderUrl?: string; // TODO: can we keep out web3
 
   // node information
-  nodeUrl: string; // http URL, https?://
-
-  // nats information
-  natsUrl: string; // nats URL, nats://
+  nodeUrl: string; // ws:// or nats:// urls are supported
 
   // signing options, include at least one of the following
   mnemonic?: string;
@@ -77,8 +75,7 @@ export interface ConnextStore {}
 
 ////// General typings
 export interface NodeInitializationParameters {
-  nodeUrl: string;
-  nats: NatsClient;
+  messaging: IMessagingService;
   wallet: Wallet;
   logLevel?: number;
   userPublicIdentifier?: string;

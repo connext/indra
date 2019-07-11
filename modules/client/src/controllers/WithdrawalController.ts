@@ -35,7 +35,7 @@ export class WithdrawalController extends AbstractController {
       }
     }
 
-    this.log.info(`\nWithdrawing ${amount} ETH from ${this.connext.opts.multisigAddress}\n`);
+    this.log.info(`\nWithdrawing ${amount} wei from ${this.connext.opts.multisigAddress}\n`);
 
     // register listeners
     this.log.info("Registering listeners........");

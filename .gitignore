@@ -7,14 +7,12 @@ modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp
 modules/**/.npm
+modules/daicard/src/react-app-env.d.ts
 
 # Compiled output
 dist/
 node_modules/
 .makeflags
-
-# Just a copy, the tracked file is in project root
-modules/node/src/address-book.json
 
 # Logs
 lerna-debug.log*
@@ -25,11 +23,14 @@ yarn-error.log*
 ops/*.log
 
 # OS
+.bash_history
 .DS_Store
 
 # Tests
 .nyc_output
 coverage
+cypress/screenshots
+cypress/videos
 
 # IDEs and editors
 *.launch
@@ -40,13 +41,15 @@ coverage
 .idea
 .project
 .settings/
-
-# IDE - VSCode
 .vscode
 
 # Misc
 .env
 .rpt2_cache
+
+# Git submodules
+modules/**/.git
+modules/**/.circleci
 
 # Local packages
 counterfactual

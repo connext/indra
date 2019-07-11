@@ -13,19 +13,20 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
-nats=$(cwd)/modules/nats-messaging-client
-node=$(cwd)/modules/node
-client=$(cwd)/modules/client
 bot=$(cwd)/modules/payment-bot
+daicard=$(cwd)/modules/daicard
+client=$(cwd)/modules/client
+messaging=$(cwd)/modules/messaging
+node=$(cwd)/modules/node
+proxy=$(cwd)/modules/proxy
 types=$(cwd)/modules/types
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
-# On Mac the docker-VM care of this for us so pass root's id (noop)
+# On Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
-docker_run=docker run --name=$(project)_builder --tty --rm
-docker_run_in_root=$(docker_run) --volume=$(cwd):/root $(project)_builder $(id)
+docker_run=docker run --name=$(project)_builder --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
 
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > $(flags)/.timestamp
 log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat $(flags)/.timestamp`)) seconds";echo "=============";echo
@@ -39,18 +40,18 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node types client payment-bot
-prod: node-prod
+dev: node types client payment-bot proxy ws-tcp-relay
+prod: node-prod proxy-prod ws-tcp-relay
 
-start: dev deployed-contracts
-	bash ops/start-dev.sh
+start: dev
+	bash ops/start-dev.sh ganache
 
 stop:
 	bash ops/stop.sh
 
-restart: dev deployed-contracts
+restart: dev
 	bash ops/stop.sh
-	bash ops/start-dev.sh
+	bash ops/start-dev.sh ganache
 
 start-prod: prod
 	bash ops/start-prod.sh
@@ -73,7 +74,7 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
-	bash ops/push-images.sh latest node
+	bash ops/push-images.sh latest node proxy relay
 
 deployed-contracts: node-modules
 	bash ops/deploy-contracts.sh ganache
@@ -85,8 +86,17 @@ deployed-contracts: node-modules
 test: test-node
 watch: watch-node
 
+test-e2e: prod
+	 INDRA_V2_ETH_NETWORK=ganache INDRA_V2_MODE=test bash ops/start-prod.sh
+	./node_modules/.bin/cypress install > /dev/null
+	./node_modules/.bin/cypress run --spec cypress/tests/index.js --env publicUrl=https://localhost
+
+watch-e2e: node-modules
+	./node_modules/.bin/cypress install > /dev/null
+	./node_modules/.bin/cypress open
+
 test-node: node
-	bash ops/test-node.sh
+	bash ops/test-node.sh --runInBand --forceExit
 
 watch-node: node-modules
 	bash ops/test-node.sh --watch
@@ -94,39 +104,59 @@ watch-node: node-modules
 ########################################
 # Begin Real Rules
 
+ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+	$(log_start)
+	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
+	$(log_finish) && touch $(flags)/$@
+
+proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	$(log_finish) && touch $(flags)/$@
+
+proxy: $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
+	$(log_finish) && touch $(flags)/$@
+
+daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/daicard && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
 payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/payment-bot && npm run build"
+	$(docker_run) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-client: types nats-client $(shell find $(client)/src $(find_options))
+client: types messaging $(shell find $(client)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/client && npm run build"
+	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node-prod: node $(node)/ops/prod.dockerfile
+node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
 	$(log_finish) && touch $(flags)/$@
 
-node: types nats-client $(shell find $(node)/src $(find_options))
+node: types messaging $(shell find $(node)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/node && npm run build"
+	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-types: node-modules $(shell find $(types)/src $(find_options))
+types: node-modules messaging $(shell find $(types)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/types && npm run build"
+	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-nats-client: node-modules $(shell find $(nats)/src $(find_options))
+messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(log_start)
-	$(docker_run_in_root) "cd modules/nats-messaging-client && npm run build"
+	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node-modules: builder package.json lerna.json $(node)/package.json $(client)/package.json $(bot)/package.json
+node-modules: builder $(shell ls modules/**/package.json)
 	$(log_start)
-	$(docker_run_in_root) "lerna bootstrap --hoist"
+	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && touch $(flags)/$@
 
 builder: ops/builder.dockerfile

@@ -1,4 +1,4 @@
-import { NatsMessagingService, NatsServiceFactory } from "@connext/nats-messaging-client";
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";
@@ -14,7 +14,7 @@ const logger = new CLogger("NodeProvider");
 
 async function createNode(
   config: ConfigService,
-  natsMessagingService: NatsMessagingService,
+  natsMessagingService: IMessagingService,
   postgresServiceFactory: PostgresServiceFactory,
 ): Promise<Node> {
   logger.log("Creating store");
@@ -54,7 +54,7 @@ export const nodeProvider: Provider = {
   provide: NodeProviderId,
   useFactory: async (
     config: ConfigService,
-    nats: NatsMessagingService,
+    nats: IMessagingService,
     postgres: PostgresServiceFactory,
   ): Promise<Node> => {
     return await createNode(config, nats, postgres);
@@ -76,17 +76,13 @@ export const postgresProvider: Provider = {
 };
 
 // TODO: bypass factory
-export const natsProvider: FactoryProvider<Promise<NatsMessagingService>> = {
+export const natsProvider: FactoryProvider<Promise<IMessagingService>> = {
   inject: [ConfigService],
   provide: NatsProviderId,
-  useFactory: async (config: ConfigService): Promise<NatsMessagingService> => {
-    // TODO: @rahul this isnt using the entire nats config?
-    const natsServiceFactory = new NatsServiceFactory({
-      payload: Payload.JSON,
-      servers: config.getNatsConfig().servers,
-    });
-    const messService = natsServiceFactory.createMessagingService("messaging");
-    await messService.connect();
-    return messService;
+  useFactory: async (config: ConfigService): Promise<IMessagingService> => {
+    const messagingFactory = new MessagingServiceFactory(config.getMessagingConfig());
+    const messagingService = messagingFactory.createService("messaging");
+    await messagingService.connect();
+    return messagingService;
   },
 };

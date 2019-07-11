@@ -1,6 +1,6 @@
 {
-  "name": "@connext/nats-messaging-client",
-  "version": "0.0.5",
+  "name": "@connext/messaging",
+  "version": "0.0.1",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -13,24 +13,13 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@connext/types": "0.0.1",
-    "@counterfactual/node": "0.2.17",
-    "@counterfactual/types": "0.0.22",
-    "ts-nats": "1.2.4"
+    "ts-nats": "1.2.4",
+    "websocket-nats": "0.3.3"
   },
   "devDependencies": {
     "@counterfactual/types": "0.0.22",
-    "@types/jest": "24.0.15",
-    "@types/node": "12.6.1",
-    "@types/pg": "7.4.14",
-    "dotenv-extended": "2.4.0",
-    "ethers": "4.0.32",
-    "jest": "24.8.0",
     "rollup": "1.16.7",
-    "rollup-plugin-commonjs": "10.0.1",
-    "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-typescript2": "0.21.2",
-    "tslint": "5.18.0",
     "typescript": "3.5.3"
   }
 }
