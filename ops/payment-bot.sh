@@ -19,8 +19,7 @@ name=${project}_payment_bot_$1
 cwd="`pwd`"
 
 INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
-NATS_URL="nats://indra_v2_nats:4222"
-NODE_URL="http://indra_v2_node:8080"
+NODE_URL="nats://indra_v2_nats:4222"
 POSTGRES_DATABASE="$project"
 POSTGRES_HOST="indra_v2_database"
 POSTGRES_PASSWORD="$project"

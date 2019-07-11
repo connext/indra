@@ -36,7 +36,6 @@ export function getConnextClient(): connext.ConnextInternal {
   console.log("Using client options:");
   console.log("     - mnemonic:", config.mnemonic);
   console.log("     - rpcProviderUrl:", config.ethRpcUrl);
-  console.log("     - natsUrl:", config.natsUrl);
   console.log("     - nodeUrl:", config.nodeUrl);
 
   try {
