@@ -1,4 +1,4 @@
-import { convert, NodeChannel, TransferParameters } from "@connext/types";
+import { convert, NodeChannel, SupportedApplications, TransferParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
@@ -122,33 +122,47 @@ export class TransferController extends AbstractController {
 
   // creates a promise that is resolved once the app is installed
   // and rejected if the virtual application is rejected
-  private transferAppInstalled = async (amount: BigNumber, recipient: string, assetId: string, appInfo: any): Promise<any> => {
+  private transferAppInstalled = async (
+    amount: BigNumber,
+    recipient: string,
+    assetId: string,
+  ): Promise<any> => {
     let boundResolve;
     let boundReject;
 
-    const params: NodeTypes.ProposeInstallVirtualParams = {
-      ...appInfo,
+    const appInfo = this.connext.getRegisteredAppDetails(
+      SupportedApplications.EthUnidirectionalTransferApp,
+    );
+    // note: intermediary is added in connext.ts as well
+    const params = {
+      abiEncodings: {
+        actionEncoding: appInfo.actionEncoding,
+        stateEncoding: appInfo.stateEncoding,
+      },
+      appDefinition: appInfo.appDefinitionAddress,
       initialState: {
+        finalized: false,
         transfers: [
           {
             amount,
-            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address
+            to: this.wallet.address,
+            // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
           },
           {
             amount: Zero,
             to: fromExtendedKey(recipient).derivePath("0").address,
           },
         ],
-        finalized: false,
       },
       intermediaries: [this.connext.nodePublicIdentifier],
       myDeposit: amount,
+      outcomeType: appInfo.outcomeType,
+      peerDeposit: constants.Zero,
       proposedToIdentifier: recipient,
+      timeout: constants.Zero, // TODO: fix, add to app info?
     };
 
-    const res = await this.connext.proposeInstallVirtualApp(
-      params,
-    );
+    const res = await this.connext.proposeInstallVirtualApp(params);
     // set app instance id
     this.appId = res.appInstanceId;
 
