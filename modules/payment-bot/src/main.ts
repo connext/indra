@@ -1,10 +1,10 @@
 import * as connext from "@connext/client";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import commander from "commander";
-
-import { config } from "./config";
 import { ethers } from "ethers";
+
 import { registerClientListeners } from "./bot";
+import { config } from "./config";
 
 const program = new commander.Command();
 program.version("0.0.1");
@@ -13,7 +13,9 @@ program
   .option("-x, --debug", "output extra debugging")
   .option("-d, --deposit <amount>", "Deposit amount in Ether units")
   .option("-a, --asset-id", "Asset ID/Token Address of deposited asset")
-  .option("-m, --mode <mode>", "Mode must be 'sender' or 'receiver'");
+  .option("-t, --transfer <amount>", "Transfer amount in Ether units")
+  .option("-c, --counterparty <id>", "Counterparty public identifier")
+  .option("-i, --identifier <id>", "Bot identifier");
 
 program.parse(process.argv);
 
@@ -35,15 +37,9 @@ export function getConnextClient(): connext.ConnextInternal {
   return client;
 }
 
-if (program.debug) console.log(program.opts());
-
-if (program.deposit) {
-  console.log("program.deposit: ", program.deposit);
-}
-
-async function run() {
+async function run(): Promise<void> {
   await getOrCreateChannel();
-  
+
   console.log(`action: ${config.action}, args: ${config.args}`);
   if (program.deposit) {
     const depositParams = {
@@ -53,9 +49,17 @@ async function run() {
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
   }
+
+  if (program.transfer) {
+    await client.transfer({
+      amount: ethers.utils.parseEther(program.transfer).toString(),
+      recipient: program.counterparty,
+    });
+  }
+  client.logEthFreeBalance(await client.getFreeBalance());
 }
 
-async function getOrCreateChannel() {
+async function getOrCreateChannel(): Promise<void> {
   await pgServiceFactory.connectDb();
 
   const connextOpts = {
@@ -92,3 +96,5 @@ async function getOrCreateChannel() {
 
   client.logEthFreeBalance(await client.getFreeBalance());
 }
+
+run();

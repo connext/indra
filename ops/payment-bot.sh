@@ -35,16 +35,25 @@ if [[ "$ethNetwork" != "ganache" ]]
 then ETH_RPC_URL="https://$ethNetwork.infura.io/metamask"
 fi
 
+args="$@"
+identifier=1
+while [ "$1" != "" ]; do
+    case $1 in
+        -i | --identifier )     shift
+                                identifier=$1
+                                ;;
+    esac
+    shift
+done
+
 # Use different mnemonics for different bots
-if [ "$1" = "1" ]; then
+if [ "$identifier" = "1" ]; then
   export NODE_MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
 else
   export NODE_MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 fi
 
-shift
-args="$@"
-
+echo $args
 ########################################
 ## Build everything that we need
 
@@ -83,5 +92,5 @@ docker run \
   ${project}_builder -c '
     echo "payment bot container launched"
     cd modules/payment-bot
-    node dist/index.js '"$args"'
+    ts-node src/main.ts '"$args"'
   '

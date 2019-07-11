@@ -144,15 +144,17 @@ export async function showDirectionPrompt(): Promise<void> {
     },
   ]);
 
-  currentPrompt.then(async (answers: any): Promise<any> => {
-    if ((answers as Record<string, string>).direction === "sending") {
-      await showTransferPrompt();
-    } else if ((answers as Record<string, string>).direction === "receiving") {
-      console.log("Waiting to receive virtual install request...");
-    } else {
-      await showWithdrawalPrompt();
-    }
-  });
+  currentPrompt.then(
+    async (answers: any): Promise<any> => {
+      if ((answers as Record<string, string>).direction === "sending") {
+        await showTransferPrompt();
+      } else if ((answers as Record<string, string>).direction === "receiving") {
+        console.log("Waiting to receive virtual install request...");
+      } else {
+        await showWithdrawalPrompt();
+      }
+    },
+  );
 }
 
 export async function showWithdrawalPrompt(): Promise<void> {
