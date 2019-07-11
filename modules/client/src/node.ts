@@ -27,7 +27,14 @@ export interface INodeApiClient {
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
+  subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
 }
+
+type ExchangeSubscription = {
+  from: string;
+  to: string;
+  subscription: Subscription;
+};
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
@@ -39,7 +46,7 @@ export class NodeApiClient implements INodeApiClient {
   public publicIdentifier: string | undefined;
 
   // subscription references
-  public exchangeSubscription: Subscription | undefined;
+  public exchangeSubscriptions: ExchangeSubscription[] | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -112,9 +119,13 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: types for exchange rates and store?
   // TODO: is this the best way to set the store for diff types
   // of tokens
-  public async subscribeToExchangeRates(store: NodeTypes.IStoreService): Promise<any> {
-    this.exchangeSubscription = await this.messaging.subscribe(
-      "exchange-rate",
+  public async subscribeToExchangeRates(
+    from: string,
+    to: string,
+    store: NodeTypes.IStoreService,
+  ): Promise<void> {
+    const subscription = await this.messaging.subscribe(
+      `exchange-rate.${from}.${to}`,
       (err: any, msg: any) => {
         if (err) {
           this.log.error(JSON.stringify(err, null, 2));
@@ -129,6 +140,28 @@ export class NodeApiClient implements INodeApiClient {
         }
       },
     );
+    this.exchangeSubscriptions.push({
+      from,
+      subscription,
+      to,
+    });
+  }
+
+  public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {
+    if (!this.exchangeSubscriptions || this.exchangeSubscriptions.length === 0) {
+      return;
+    }
+
+    const matchedSubs = this.exchangeSubscriptions.filter((sub: ExchangeSubscription) => {
+      return sub.from === from && sub.to === to;
+    });
+
+    if (matchedSubs.length === 0) {
+      this.log.warn(`Could not find subscription for ${from}:${to} pair`);
+      return;
+    }
+
+    matchedSubs.forEach((sub: ExchangeSubscription) => sub.subscription.unsubscribe());
   }
 
   ///////////////////////////////////
