@@ -40,7 +40,7 @@ export class TransferController extends AbstractController {
 
     // install the transfer application
     try {
-      await this.transferAppInstalled(amount, recipient, assetId, appInfo);
+      await this.transferAppInstalled(amount, recipient, assetId);
     } catch (e) {
       // TODO: can add more checks in `rejectInstall` but there is no
       // way to check if the recipient is collateralized atm, so just
@@ -130,9 +130,7 @@ export class TransferController extends AbstractController {
     let boundResolve;
     let boundReject;
 
-    const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.EthUnidirectionalTransferApp,
-    );
+    const appInfo = this.connext.getRegisteredAppDetails("EthUnidirectionalTransferApp");
     // note: intermediary is added in connext.ts as well
     const params = {
       abiEncodings: {
