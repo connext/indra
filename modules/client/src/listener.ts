@@ -37,7 +37,14 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.INSTALL_VIRTUAL, data.data);
     },
     PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
+      // validate and automatically install for the known and supported
+      // applications
+      // if the from is us, ignore
       this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
+      if (data.from === this.cfModule.publicIdentifier) {
+        return;
+      }
+      // check based on supported applications
     },
     UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
       this.emitAndLog(NodeTypes.EventName.UNINSTALL_VIRTUAL, data.data);
@@ -55,12 +62,16 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data.data);
     },
     DEPOSIT_STARTED: (data: any): void => {
+      this.log.info(
+        `deposit for ${data.data.value.toString()} started. hash: ${data.data.transactionHash}`,
+      );
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_STARTED, data);
     },
     INSTALL: (data: InstallMessage): void => {
       this.emitAndLog(NodeTypes.EventName.INSTALL, data.data);
     },
     PROPOSE_STATE: (data: any): void => {
+      // TODO: need to validate all apps here as well?
       this.emitAndLog(NodeTypes.EventName.PROPOSE_STATE, data);
     },
     REJECT_INSTALL: (data: any): void => {
@@ -85,6 +96,9 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_FAILED, data);
     },
     WITHDRAWAL_STARTED: (data: any): void => {
+      this.log.info(
+        `withdrawal for ${data.data.value.toString()} started. hash: ${data.data.transactionHash}`,
+      );
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_STARTED, data);
     },
     WITHDRAW_EVENT: (data: any): void => {
