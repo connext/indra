@@ -14,7 +14,6 @@ import uuid = require("uuid");
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
 import { Wallet } from "./wallet";
-import { freeBalanceAddressFromXpub } from "./lib/utils";
 
 // TODO: move to types.ts?
 const API_TIMEOUT = 5000;
@@ -30,6 +29,7 @@ export interface INodeApiClient {
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
   unsubscribeFromExchangeRates(from: string, to: string): Promise<void>;
+  requestCollateral(): Promise<void>;
 }
 
 type ExchangeSubscription = {
@@ -169,6 +169,22 @@ export class NodeApiClient implements INodeApiClient {
     }
 
     matchedSubs.forEach((sub: ExchangeSubscription) => sub.subscription.unsubscribe());
+  }
+
+  // FIXME: right now node doesnt return until the deposit has completed
+  // which exceeds the timeout.....
+  public async requestCollateral(): Promise<void> {
+    try {
+      const channelRes = await this.send(`channel.request-collateral.${this.userPublicIdentifier}`);
+      // handle error here
+      return channelRes;
+    } catch (e) {
+      // FIXME: node should return once deposit starts
+      if (e.message === "Request timed out") {
+        return;
+      }
+      return Promise.reject(e);
+    }
   }
 
   ///////////////////////////////////
