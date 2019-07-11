@@ -69,25 +69,15 @@ async function run(): Promise<void> {
       depositParams.assetId = program.assetId;
     }
     console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
-    // try {
-      await client.deposit(depositParams);
-      console.log(`Successfully deposited!`);
-    // } catch (e) {
-    //   console.log("Failed to deposit:", JSON.stringify(e, null, 2));
-    //   process.exit(1);
-    // }
+    await client.deposit(depositParams);
+    console.log(`Successfully deposited!`);
   }
 
   if (program.transfer) {
-    // try {
-      await client.transfer({
-        amount: ethers.utils.parseEther(program.transfer).toString(),
-        recipient: program.counterparty,
-      });
-    // } catch (e) {
-    //   console.log("Failed to transfer:", JSON.stringify(e, null, 2));
-    //   process.exit(1);
-    // }
+    await client.transfer({
+      amount: ethers.utils.parseEther(program.transfer).toString(),
+      recipient: program.counterparty,
+    });
   }
 
   if (program.withdraw) {
@@ -104,12 +94,7 @@ async function run(): Promise<void> {
       `Attempting to deposit ${withdrawParams.amount} with assetId ` +
         `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,
     );
-    // try {
-      await client.withdraw(withdrawParams);
-    // } catch (e) {
-    //   console.log("Failed to withdraw:", JSON.stringify(e, null, 2));
-    //   process.exit(1);
-    // }
+    await client.withdraw(withdrawParams);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
