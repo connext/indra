@@ -34,8 +34,8 @@ const overrides = {
 // Constants for channel max/min - this is also enforced on the hub
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
-const HUB_EXCHANGE_CEILING = parseEther('69'); // 69 token
-const CHANNEL_DEPOSIT_MAX = parseEther('30'); // 30 token
+const HUB_EXCHANGE_CEILING = parseEther("69"); // 69 token
+const CHANNEL_DEPOSIT_MAX = parseEther("30"); // 30 token
 
 const styles = theme => ({
   paper: {
@@ -45,11 +45,11 @@ const styles = theme => ({
       width: "450px",
       height: "650px",
       marginTop: "5%",
-      borderRadius: "4px"
+      borderRadius: "4px",
     },
     [theme.breakpoints.down(600)]: {
-      "box-shadow": "0px 0px"
-    }
+      "box-shadow": "0px 0px",
+    },
   },
   app: {
     display: "flex",
@@ -59,16 +59,16 @@ const styles = theme => ({
     fontFamily: ["proxima-nova", "sans-serif"],
     backgroundColor: "#FFF",
     width: "100%",
-    margin: "0px"
+    margin: "0px",
   },
   zIndex: 1000,
-  grid: {}
+  grid: {},
 });
 
 class App extends React.Component {
   constructor(props) {
     super(props);
-    const exchangeRate = "314.08"
+    const exchangeRate = "314.08";
     this.state = {
       address: "",
       balance: {
@@ -107,11 +107,12 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const nodeUrl = overrides.nodeUrl || `${window.location.origin.replace(/^http/, 'ws')}/api/messaging`;
+    const nodeUrl =
+      overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
     const ethUrl = overrides.ethUrl || `${this.state.publicUrl}/api/ethprovider`;
-    const ethprovider = new eth.providers.JsonRpcProvider(ethUrl)
-    const cfPath = "m/44'/60'/0'/25446"
-    const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath)
+    const ethprovider = new eth.providers.JsonRpcProvider(ethUrl);
+    const cfPath = "m/44'/60'/0'/25446";
+    const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath);
 
     const channel = await connext.connect({ mnemonic, nodeUrl, rpcProviderUrl: ethUrl, store });
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
@@ -119,7 +120,7 @@ class App extends React.Component {
     console.log(`Client created successfully!`);
     console.log(`Public Identifier: ${channel.publicIdentifier}`);
     console.log(`Account multisig address: ${channel.opts.multisigAddress}`);
-    console.log(`CF Account address: ${cfWallet.address}`)
+    console.log(`CF Account address: ${cfWallet.address}`);
     console.log(`Free balance address: ${freeBalanceAddress}`);
 
     const connextConfig = await channel.config();
@@ -134,7 +135,7 @@ class App extends React.Component {
     });
 
     await this.startPoller();
-    this.setState({ loadingConnext: false })
+    this.setState({ loadingConnext: false });
   }
 
   // ************************************************* //
@@ -159,12 +160,12 @@ class App extends React.Component {
     const freeBalance = await channel.getFreeBalance();
     balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), exchangeRate);
     balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress], exchangeRate);
-    this.setState({ balance })
+    this.setState({ balance });
   }
 
   async setDepositLimits() {
     const { exchangeRate, ethprovider } = this.state;
-    let gasPrice = await ethprovider.getGasPrice()
+    let gasPrice = await ethprovider.getGasPrice();
     // default multiple is 1.5, leave 2x for safety
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
@@ -186,29 +187,56 @@ class App extends React.Component {
       token: toBN(balance.onChain.token),
     };
 
-    const minWei = minDeposit.toWEI().floor()
-    const maxWei = maxDeposit.toWEI().floor()
+    const minWei = minDeposit.toWEI().floor();
+    const maxWei = maxDeposit.toWEI().floor();
 
-    if (
-      bnBalance.ether.gt(minWei) ||
-      bnBalance.token.gt(eth.constants.Zero)
-    ) {
+    if (bnBalance.ether.gt(minWei)) {
       if (bnBalance.ether.gt(maxWei)) {
-        console.log(`Attempting to deposit more than the limit: ` +
-          `${formatEther(bnBalance.ether)} > ${maxDeposit.toETH()}`);
+        console.log(
+          `Attempting to deposit more than the limit: ` +
+            `${formatEther(bnBalance.ether)} > ${maxDeposit.toETH()}`,
+        );
         return;
       }
 
-      const depositParams = { amount: bnBalance.ether.sub(minWei).toString() };
+      const ethDepositParams = { amount: bnBalance.ether.sub(minWei).toString() };
 
-      const channelState = await channel.getChannel()
-      console.log(`Attempting to deposit ${depositParams.amount} wei into channel: ${JSON.stringify(channelState, null, 2)}...`);
+      const channelState = await channel.getChannel();
+      console.log(
+        `Attempting to deposit ${ethDepositParams.amount} wei into channel: ${JSON.stringify(
+          channelState,
+          null,
+          2,
+        )}...`,
+      );
 
-      this.setPending({ type: "deposit", complete: false, closed: false })
-      const result = await channel.deposit(depositParams);
-      this.setPending({ type: "deposit", complete: true, closed: false  })
+      this.setPending({ type: "deposit", complete: false, closed: false });
+      const result = await channel.deposit(ethDepositParams);
+      this.setPending({ type: "deposit", complete: true, closed: false });
 
-      console.log(`Successfully deposited! Result: ${JSON.stringify(result,null,2)}`);
+      console.log(`Successfully deposited! Result: ${JSON.stringify(result, null, 2)}`);
+    }
+
+    if (bnBalance.token.gt(eth.constants.Zero)) {
+      const tokenDepositParams = {
+        amount: bnBalance.token.toString(),
+        assetId: process.env.REACT_APP_TOKEN_ADDRESS,
+      };
+
+      const channelState = await channel.getChannel();
+      console.log(
+        `Attempting to deposit ${tokenDepositParams.amount} tokens into channel: ${JSON.stringify(
+          channelState,
+          null,
+          2,
+        )}...`,
+      );
+
+      this.setPending({ type: "deposit", complete: false, closed: false });
+      const result = await channel.deposit(tokenDepositParams);
+      this.setPending({ type: "deposit", complete: true, closed: false });
+
+      console.log(`Successfully deposited! Result: ${JSON.stringify(result, null, 2)}`);
     }
   }
 
@@ -222,12 +250,12 @@ class App extends React.Component {
   }
 
   setPending(pending) {
-    this.setState({ pending })
+    this.setState({ pending });
   }
 
   closeConfirmations() {
     const { pending } = this.state;
-    this.setState({ pending: { ...pending, closed: true }})
+    this.setState({ pending: { ...pending, closed: true } });
   }
 
   // ************************************************* //
@@ -238,7 +266,7 @@ class App extends React.Component {
     // potential URLs to scan and their params
     const urls = {
       "/send?": ["recipient", "amount"],
-      "/redeem?": ["secret", "amountToken"]
+      "/redeem?": ["secret", "amountToken"],
     };
     let args = {};
     let path = null;
@@ -265,12 +293,12 @@ class App extends React.Component {
     switch (path) {
       case "/send":
         this.setState({
-          sendScanArgs: { ...args }
+          sendScanArgs: { ...args },
         });
         break;
       case "/redeem":
         this.setState({
-          redeemScanArgs: { ...args }
+          redeemScanArgs: { ...args },
         });
         break;
       default:
@@ -318,11 +346,7 @@ class App extends React.Component {
                   <Redirect to="/support" />
                 ) : (
                   <Grid>
-                    <Home
-                      {...props}
-                      balance={balance}
-                      scanQRCodee={this.scanQRCode.bind(this)}
-                    />
+                    <Home {...props} balance={balance} scanQRCodee={this.scanQRCode.bind(this)} />
 
                     <SetupCard
                       {...props}
@@ -345,23 +369,10 @@ class App extends React.Component {
                 />
               )}
             />
-            <Route
-              path="/settings"
-              render={props => (
-                <SettingsCard
-                  {...props}
-                />
-              )}
-            />
+            <Route path="/settings" render={props => <SettingsCard {...props} />} />
             <Route
               path="/request"
-              render={props => (
-                <RequestCard
-                  {...props}
-                  address={address}
-                  maxDeposit={maxDeposit}
-                />
-              )}
+              render={props => <RequestCard {...props} address={address} maxDeposit={maxDeposit} />}
             />
             <Route
               path="/send"
@@ -403,8 +414,14 @@ class App extends React.Component {
                 />
               )}
             />
-            <Route path="/support" render={props => <SupportCard {...props} channelState={channelState} />} />
-            <Confirmations pending={pending} closeConfirmations={this.closeConfirmations.bind(this)} />
+            <Route
+              path="/support"
+              render={props => <SupportCard {...props} channelState={channelState} />}
+            />
+            <Confirmations
+              pending={pending}
+              closeConfirmations={this.closeConfirmations.bind(this)}
+            />
           </Paper>
         </Grid>
       </Router>
