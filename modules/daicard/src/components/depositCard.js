@@ -15,10 +15,7 @@ const styles = theme => ({
 class DepositCard extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
-      value: "0",
-      error: null,
       copied: false
     };
   }
@@ -28,7 +25,7 @@ class DepositCard extends Component {
   };
 
   render() {
-    const { address, minDeposit, maxDeposit } = this.props;
+    const { address, history, maxDeposit, minDeposit } = this.props;
     const { copied } = this.state;
 
     const minEth = minDeposit ? minDeposit.toETH().format() : '?.??'
@@ -104,7 +101,7 @@ class DepositCard extends Component {
               width: "15%"
             }}
             size="medium"
-            onClick={() => this.props.history.push("/")}
+            onClick={() => history.push("/")}
           >
             Back
           </Button>

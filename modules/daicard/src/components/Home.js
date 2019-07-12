@@ -93,7 +93,7 @@ class Home extends React.Component {
                   variant="contained"
                   size="large"
                   component={Link}
-                  to="/receive"
+                  to="/request"
                 >
                   Request
                   <ReceiveIcon style={{ marginLeft: "5px" }} />

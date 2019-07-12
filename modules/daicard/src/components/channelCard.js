@@ -18,10 +18,10 @@ const styles = theme => ({
 export const ChannelCard = withStyles(styles)(props => {
   const { balance, classes } = props;
   const split = (balance) => {
-    const bal = balance.format({ decimals: 2, symbol: false });
+    const bal = balance.format({ decimals: 3, symbol: false });
     const whole = bal.substring(0, bal.indexOf('.'));
     const part = bal.substring(bal.indexOf('.'));
-    return { whole, part: part.length === 2 ? `${part}0` : part.substring(0,3) };
+    return { whole, part: part.substring(0,4) };
   }
   return (
       <Grid>
@@ -30,8 +30,8 @@ export const ChannelCard = withStyles(styles)(props => {
           spacing={2}
           direction="column"
           style={{
-            paddingLeft: "10%",
-            paddingRight: "10%",
+            paddingLeft: "5%",
+            paddingRight: "5%",
             paddingTop: "10%",
             paddingBottom: "20%",
             backgroundColor: "#282b2e",
@@ -44,25 +44,25 @@ export const ChannelCard = withStyles(styles)(props => {
         <Grid item xs={12}>
           <Typography style={{ color: 'white' }}> Channel </Typography>
           <span id="balance-channel-token">
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
               {"$ "}
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h2" className={classes.row}>
               <span>{split(balance.channel.token.toDAI()).whole}</span>
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
               <span>{split(balance.channel.token.toDAI()).part}</span>
             </Typography>
           </span>
           <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
           <span id="balance-channel-ether">
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
               {`${eth.constants.EtherSymbol} `}
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h2" className={classes.row}>
               <span>{split(balance.channel.ether.toETH()).whole}</span>
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
               <span>{split(balance.channel.ether.toETH()).part}</span>
             </Typography>
           </span>

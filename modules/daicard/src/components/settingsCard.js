@@ -18,7 +18,6 @@ import {
   FileCopy as CopyIcon,
   Settings as SettingsIcon,
 } from "@material-ui/icons";
-import interval from "interval-promise";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
@@ -51,42 +50,27 @@ class SettingsCard extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      showRecovery: false,
-      inputRecovery: false,
-      mnemonic: '',
       copied: false,
+      inputRecovery: false,
+      isBurning: false,
+      mnemonic: '',
+      showRecovery: false,
       showWarning: false
     };
   }
 
-  async closeModal() {
-    await this.setState({ copied: false });
+  closeModal() {
+    this.setState({ copied: false });
   };
 
-  async generateNewAddress() {
+  generateNewAddress() {
     this.setState({ isBurning: true });
     // TODO: withdraw channel balance first?
     localStorage.removeItem("mnemonic");
-    this.burnRefreshPoller();
-  };
-
-  async burnRefreshPoller() {
-    await interval(
-      async (iteration, stop) => {
-        const { runtime } = this.props
-          if (!runtime.awaitingOnchainTransaction) {
-            stop()
-          }
-      },
-      1000,
-      { iterations: 50 }
-    );
-    // Then refresh the page
-    this.props.history.push("/");
     window.location.reload();
   };
 
-  async recoverAddressFromMnemonic() {
+  recoverAddressFromMnemonic() {
     localStorage.setItem("mnemonic", this.state.mnemonic);
     window.location.reload();
   }

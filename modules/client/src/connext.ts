@@ -16,27 +16,31 @@ import {
   WithdrawParameters,
 } from "@connext/types";
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
-import { Address, AppInstanceInfo, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Zero } from "ethers/constants";
+import { Contract } from "ethers";
+import { AddressZero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
+import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
-import { Client as NatsClient, Payload } from "ts-nats";
+import { Client as NatsClient } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
 import { ExchangeController } from "./controllers/ExchangeController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { logEthFreeBalance, publicIdentifierToAddress } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  logEthFreeBalance,
+  publicIdentifierToAddress,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { Wallet } from "./wallet";
-import { constants } from "ethers";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -93,7 +97,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     wallet.provider,
     config.contractAddresses,
   );
-  node.setPublicIdentifier(cfModule.publicIdentifier);
+  node.setUserPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
 
   console.log("creating listener");
@@ -108,6 +112,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     console.log("no channel detected, creating channel..");
     myChannel = await node.createChannel();
   }
+  node.setNodePublicIdentifier(myChannel.nodePublicIdentifier);
   console.log("myChannel: ", myChannel);
   // create the new client
   return new ConnextInternal({
@@ -196,27 +201,35 @@ export abstract class ConnextChannel {
     return await this.internal.node.createChannel();
   };
 
-  public subscribeToExchangeRates = async (): Promise<any> => {
-    return await this.internal.node.subscribeToExchangeRates(this.opts.store);
+  public subscribeToExchangeRates = async (from: string, to: string): Promise<any> => {
+    return await this.internal.node.subscribeToExchangeRates(from, to, this.opts.store);
   };
 
-  public unsubscribeToExchangeRates = async (): Promise<void> => {
-    return await this.internal.node.exchangeSubscription.unsubscribe();
+  public unsubscribeToExchangeRates = async (from: string, to: string): Promise<void> => {
+    return await this.internal.node.unsubscribeFromExchangeRates(from, to);
+  };
+
+  public requestCollateral = async (): Promise<void> => {
+    return await this.internal.node.requestCollateral();
   };
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  public getFreeBalance = async (): Promise<NodeTypes.GetFreeBalanceStateResult> => {
-    return await this.internal.getFreeBalance();
+  // FIXME: add in rest of methods!
+
+  public getFreeBalance = async (
+    assetId: string = AddressZero,
+  ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+    return await this.internal.getFreeBalance(assetId);
   };
 
-  // TODO: remove this when not testing (maybe?)
   // FIXME: remove
   public logEthFreeBalance = (
+    assetId: string,
     freeBalance: NodeTypes.GetFreeBalanceStateResult,
     log?: Logger,
   ): void => {
-    logEthFreeBalance(freeBalance, log);
+    logEthFreeBalance(assetId, freeBalance, log);
   };
 
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
@@ -231,13 +244,6 @@ export abstract class ConnextChannel {
 
   public getAppState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
     return await this.internal.getAppState(appInstanceId);
-  };
-
-  public installTransferApp = async (
-    counterpartyPublicIdentifier: string,
-    initialDeposit: BigNumber,
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    return await this.internal.installTransferApp(counterpartyPublicIdentifier, initialDeposit);
   };
 
   public uninstallVirtualApp = async (
@@ -345,12 +351,24 @@ export class ConnextInternal extends ConnextChannel {
   // TODO: erc20 support?
   public cfDeposit = async (
     amount: BigNumber,
+    assetId: string,
     notifyCounterparty: boolean = true,
   ): Promise<NodeTypes.DepositResult> => {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
-    const bal = await this.wallet.provider.getBalance(depositAddr);
+    let bal: BigNumber;
+
+    if (assetId === AddressZero) {
+      bal = await this.wallet.provider.getBalance(depositAddr);
+    } else {
+      // get token balance
+      const token = new Contract(assetId, tokenAbi, this.wallet.provider);
+      // TODO: correct? how can i use allowance?
+      bal = await token.balanceOf(depositAddr);
+    }
+
     const err = [
       notPositive(amount),
+      invalidAddress(assetId),
       notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
     ].filter(falsy)[0];
     if (err) {
@@ -367,10 +385,11 @@ export class ConnextInternal extends ConnextChannel {
           amount,
           multisigAddress: this.opts.multisigAddress,
           notifyCounterparty,
+          tokenAddress: assetId,
         },
       }),
     );
-    // @ts-ignore --> WHYY?
+    // @ts-ignore
     return depositResponse as NodeTypes.DepositResult;
   };
 
@@ -389,17 +408,37 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   // TODO: under what conditions will this fail?
-  public getFreeBalance = async (): Promise<NodeTypes.GetFreeBalanceStateResult> => {
-    const freeBalance = await this.cfModule.router.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-        params: { multisigAddress: this.multisigAddress },
-      }),
-    );
+  public getFreeBalance = async (
+    assetId: string = AddressZero,
+  ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+    try {
+      const freeBalance = await this.cfModule.router.dispatch(
+        jsonRpcDeserialize({
+          id: Date.now(),
+          jsonrpc: "2.0",
+          method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+          params: {
+            multisigAddress: this.multisigAddress,
+            tokenAddress: assetId,
+          },
+        }),
+      );
+      return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
+    } catch (e) {
+      const error = `No free balance exists for the specified token: ${assetId}`;
+      if (e.message.startsWith(error)) {
+        // if there is no balance, return undefined
+        // NOTE: can return free balance obj with 0s,
+        // but need the nodes free balance
+        // address in the multisig
+        const obj = {};
+        obj[freeBalanceAddressFromXpub(this.nodePublicIdentifier)] = new BigNumber(0);
+        obj[this.freeBalanceAddress] = new BigNumber(0);
+        return obj;
+      }
 
-    return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
+      throw new Error(e);
+    }
   };
 
   public getAppInstanceDetails = async (
@@ -480,38 +519,9 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
-    appName: SupportedApplication,
-    initialDeposit: BigNumber,
-    counterpartyPublicIdentifier: string,
+    params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    const appInfo = this.getRegisteredAppDetails(appName);
-    const params: NodeTypes.ProposeInstallVirtualParams = {
-      abiEncodings: {
-        actionEncoding: appInfo.actionEncoding,
-        stateEncoding: appInfo.stateEncoding,
-      },
-      appDefinition: appInfo.appDefinitionAddress,
-      initialState: {
-        finalized: false,
-        transfers: [
-          {
-            amount: initialDeposit,
-            to: this.wallet.address,
-            // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
-          },
-          {
-            amount: Zero,
-            to: fromExtendedKey(counterpartyPublicIdentifier).derivePath("0").address,
-          },
-        ],
-      },
-      intermediaries: [this.nodePublicIdentifier],
-      myDeposit: initialDeposit,
-      outcomeType: appInfo.outcomeType,
-      peerDeposit: constants.Zero,
-      proposedToIdentifier: counterpartyPublicIdentifier,
-      timeout: constants.Zero, // TODO: fix, add to app info?
-    };
+    params.intermediaries = [this.nodePublicIdentifier];
 
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
@@ -577,9 +587,9 @@ export class ConnextInternal extends ConnextChannel {
     return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
   };
 
-  // TODO: erc20 support?
-  public withdrawal = async (
+  public cfWithdraw = async (
     amount: BigNumber,
+    assetId: string,
     recipient?: string, // Address or xpub? whats the default?
   ): Promise<NodeTypes.UninstallResult> => {
     const freeBalance = await this.getFreeBalance();
@@ -600,6 +610,7 @@ export class ConnextInternal extends ConnextChannel {
         params: {
           amount,
           multisigAddress: this.multisigAddress,
+          tokenAddress: assetId,
           recipient,
         },
       }),

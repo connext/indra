@@ -27,7 +27,16 @@ export interface INodeApiClient {
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
+  subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
+  unsubscribeFromExchangeRates(from: string, to: string): Promise<void>;
+  requestCollateral(): Promise<void>;
 }
+
+type ExchangeSubscription = {
+  from: string;
+  to: string;
+  subscription: Subscription;
+};
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
@@ -36,26 +45,31 @@ export class NodeApiClient implements INodeApiClient {
   public log: Logger;
   public nonce: string | undefined;
   public signature: string | undefined;
-  public publicIdentifier: string | undefined;
+  public userPublicIdentifier: string | undefined;
+  public nodePublicIdentifier: string | undefined;
 
   // subscription references
-  public exchangeSubscription: Subscription | undefined;
+  public exchangeSubscriptions: ExchangeSubscription[] | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.wallet = opts.wallet;
     this.address = opts.wallet.address;
     this.log = new Logger("NodeApiClient", opts.logLevel);
-    this.publicIdentifier = opts.publicIdentifier;
+    this.userPublicIdentifier = opts.userPublicIdentifier;
+    this.nodePublicIdentifier = opts.nodePublicIdentifier;
   }
 
   ///////////////////////////////////
   //////////// PUBLIC //////////////
   /////////////////////////////////
 
-  ///// Setters
-  public setPublicIdentifier(publicIdentifier: string): void {
-    this.publicIdentifier = publicIdentifier;
+  public setUserPublicIdentifier(publicIdentifier: string): void {
+    this.userPublicIdentifier = publicIdentifier;
+  }
+
+  public setNodePublicIdentifier(publicIdentifier: string): void {
+    this.nodePublicIdentifier = publicIdentifier;
   }
 
   ///// Endpoints
@@ -90,7 +104,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getChannel(): Promise<GetChannelResponse> {
     try {
-      const channelRes = await this.send(`channel.get.${this.publicIdentifier}`);
+      const channelRes = await this.send(`channel.get.${this.userPublicIdentifier}`);
       // handle error here
       return channelRes;
     } catch (e) {
@@ -101,7 +115,7 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: can we abstract this try-catch thing into a separate function?
   public async createChannel(): Promise<CreateChannelResponse> {
     try {
-      const channelRes = await this.send(`channel.create.${this.publicIdentifier}`);
+      const channelRes = await this.send(`channel.create.${this.userPublicIdentifier}`);
       // handle error here
       return channelRes;
     } catch (e) {
@@ -112,9 +126,13 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: types for exchange rates and store?
   // TODO: is this the best way to set the store for diff types
   // of tokens
-  public async subscribeToExchangeRates(store: NodeTypes.IStoreService): Promise<any> {
-    this.exchangeSubscription = await this.messaging.subscribe(
-      "exchange-rate",
+  public async subscribeToExchangeRates(
+    from: string,
+    to: string,
+    store: NodeTypes.IStoreService,
+  ): Promise<void> {
+    const subscription = await this.messaging.subscribe(
+      `exchange-rate.${from}.${to}`,
       (err: any, msg: any) => {
         if (err) {
           this.log.error(JSON.stringify(err, null, 2));
@@ -129,6 +147,44 @@ export class NodeApiClient implements INodeApiClient {
         }
       },
     );
+    this.exchangeSubscriptions.push({
+      from,
+      subscription,
+      to,
+    });
+  }
+
+  public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {
+    if (!this.exchangeSubscriptions || this.exchangeSubscriptions.length === 0) {
+      return;
+    }
+
+    const matchedSubs = this.exchangeSubscriptions.filter((sub: ExchangeSubscription) => {
+      return sub.from === from && sub.to === to;
+    });
+
+    if (matchedSubs.length === 0) {
+      this.log.warn(`Could not find subscription for ${from}:${to} pair`);
+      return;
+    }
+
+    matchedSubs.forEach((sub: ExchangeSubscription) => sub.subscription.unsubscribe());
+  }
+
+  // FIXME: right now node doesnt return until the deposit has completed
+  // which exceeds the timeout.....
+  public async requestCollateral(): Promise<void> {
+    try {
+      const channelRes = await this.send(`channel.request-collateral.${this.userPublicIdentifier}`);
+      return channelRes;
+    } catch (e) {
+      // FIXME: node should return once deposit starts
+      if (e.message.startsWith("Request timed out")) {
+        this.log.info(`request collateral message timed out`);
+        return;
+      }
+      return Promise.reject(e);
+    }
   }
 
   ///////////////////////////////////
@@ -152,6 +208,6 @@ export class NodeApiClient implements INodeApiClient {
     if (err) {
       throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
-    return Object.keys(response).length === 0 ? undefined : response;
+    return !response || Object.keys(response).length === 0 ? undefined : response;
   }
 }
