@@ -39,7 +39,7 @@ export class ChannelNats extends AbstractNatsProvider {
 
   async requestCollateral(subject: string): Promise<RequestCollateralResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-    return await this.channelService.requestCollateral(pubId);
+    return this.channelService.requestCollateral(pubId);
   }
 
   setupSubscriptions(): void {
