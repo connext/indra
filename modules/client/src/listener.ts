@@ -63,7 +63,8 @@ export class ConnextListener extends EventEmitter {
         );
         return;
       }
-      if (filtered.length > 1) {// TODO: throw error here?
+      if (filtered.length > 1) {
+        // TODO: throw error here?
         this.log.error(
           `Proposed app matched multiple registered applications. App: ${JSON.stringify(
             appInfo,
@@ -207,7 +208,11 @@ export class ConnextListener extends EventEmitter {
       throw new Error("Matched app instance doesnt actually match. This should never happen.");
     }
 
-    const invalidProposal = appProposalValidation[matchedApp.name];
+    const invalidProposal = await appProposalValidation[matchedApp.name](
+      appInstance,
+      matchedApp,
+      this.connext,
+    );
     if (invalidProposal) {
       // reject app installation
       return;
