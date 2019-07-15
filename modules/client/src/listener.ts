@@ -76,8 +76,10 @@ export class ConnextListener extends EventEmitter {
       }
       // matched app, take appropriate default actions
       await this.verifyAndInstallKnownApp(appInfo, filtered[0]);
-      // FIXME: request additional collateral
-      // await this.connext.requestCollateral();
+      if (!appInfo.peerDeposit.isZero()) {
+        await this.connext.requestCollateral();
+      }
+      return;
     },
     UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
       this.emitAndLog(NodeTypes.EventName.UNINSTALL_VIRTUAL, data.data);
