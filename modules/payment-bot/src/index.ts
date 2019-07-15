@@ -129,6 +129,8 @@ async function getOrCreateChannel(): Promise<void> {
 
   console.log("Public Identifier", client.publicIdentifier);
   console.log("Account multisig address:", client.opts.multisigAddress);
+  console.log("User free balance address:", client.freeBalanceAddress);
+  console.log("Node free balance address:", connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier));
 
   const channelAvailable = async (): Promise<boolean> => (await client.getChannel()).available;
   const interval = 3;
