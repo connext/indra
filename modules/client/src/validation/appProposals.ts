@@ -6,8 +6,6 @@ import { AddressZero } from "ethers/constants";
 import { freeBalanceAddressFromXpub } from "..//lib/utils";
 import { ConnextInternal } from "../connext";
 
-const MIN_TIMEOUT = utils.bigNumberify(60000);
-
 type ProposalValidator = {
   [index in SupportedApplication]: (
     app: AppInstanceInfo,
@@ -60,6 +58,9 @@ export const validateTransferApp = async (
     )}`;
   }
 
+  // check the initial state is consistent
+  // FIXME: why isnt this in the cf types?
+
   // TODO: ordering restrictions (i.e who has to propose it)
 
   return undefined;
@@ -84,10 +85,6 @@ const baseAppValidation = async (
   registeredInfo: RegisteredAppDetails,
   connext: ConnextInternal,
 ): Promise<string | undefined> => {
-  // check timeout above minimum (TODO: remove?)
-  if (app.timeout.lte(MIN_TIMEOUT)) {
-    return `Timeout too short. Proposed app: ${prettyLog(app)}`;
-  }
 
   // check that identity hash isnt used by another app
   const sharedId = (await connext.getAppInstances()).filter(
