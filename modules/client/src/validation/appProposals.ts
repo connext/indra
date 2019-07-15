@@ -1,10 +1,9 @@
 import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { AppInstanceInfo } from "@counterfactual/types";
-import { utils } from "ethers";
 import { AddressZero } from "ethers/constants";
 
-import { freeBalanceAddressFromXpub } from "..//lib/utils";
 import { ConnextInternal } from "../connext";
+import { freeBalanceAddressFromXpub } from "../lib/utils";
 
 type ProposalValidator = {
   [index in SupportedApplication]: (
@@ -85,7 +84,8 @@ const baseAppValidation = async (
   registeredInfo: RegisteredAppDetails,
   connext: ConnextInternal,
 ): Promise<string | undefined> => {
-
+  console.log("******** app", JSON.stringify(app, null, 2));
+  console.log("******** has initial state??", (app as any).initialState);
   // check that identity hash isnt used by another app
   const sharedId = (await connext.getAppInstances()).filter(
     (a: AppInstanceInfo) => a.identityHash === app.identityHash,
@@ -123,12 +123,32 @@ const baseAppValidation = async (
     return `Insufficient free balance for requested asset. Proposed app: ${prettyLog(app)}`;
   }
 
-  // check that the intermediary includes your node
-  const node = app.intermediaries.filter((intermediary: string) => {
-    return intermediary === connext.nodePublicIdentifier;
-  });
-  if (node.length !== 1) {
-    return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
+  // check that the intermediary includes your node if it is not an app with
+  // your node
+  const appWithNode =
+    app.proposedByIdentifier === connext.nodePublicIdentifier ||
+    app.proposedToIdentifier === connext.nodePublicIdentifier;
+  const hasIntermediaries = app.intermediaries && app.intermediaries.length > 0;
+  if (!hasIntermediaries && !appWithNode) {
+    return `Apps with connected node should have no intermediaries. Proposed app: ${prettyLog(
+      app,
+    )}`;
+  }
+
+  if (!appWithNode && !app.intermediaries) {
+    return (
+      `Apps that are not with connected node should have ` +
+      `intermediaries. Proposed app: ${prettyLog(app)}`
+    );
+  }
+
+  if (!appWithNode) {
+    const node = app.intermediaries.filter((intermediary: string) => {
+      return intermediary === connext.nodePublicIdentifier;
+    });
+    if (node.length !== 1) {
+      return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
+    }
   }
 
   return undefined;
