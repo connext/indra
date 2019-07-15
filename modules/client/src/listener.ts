@@ -49,14 +49,21 @@ export class ConnextListener extends EventEmitter {
         return;
       }
       // check based on supported applications
-      const appInfo = (await this.connext.getAppInstanceDetails(data.data.appInstanceId))
-        .appInstance;
-      const filtered = this.connext.appRegistry
-        .map((app: RegisteredAppDetails) => {
-          return this.matchAppInstance(appInfo, app);
-        })
-        // TODO: improve typing?
-        .filter((a: any) => a !== undefined);
+      const proposedApps = await this.connext.getProposedAppInstanceDetails();
+      const appInfo = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
+        return app.identityHash === data.data.appInstanceId;
+      });
+      if (appInfo.length !== 1) {
+        this.log.error(
+          `Proposed application could not be found, or multiple instances found. Caught id: ${
+            data.data.appInstanceId
+          }. Proposed apps: ${JSON.stringify(proposedApps.appInstances, null, 2)}`,
+        );
+      }
+      const filtered = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
+        return app.appDefinitionAddress === appInfo[0].appDefinition;
+      });
+
       if (!filtered || filtered.length === 0) {
         this.log.info(
           `Proposed app not in registered applications. App: ${JSON.stringify(appInfo, null, 2)}`,
@@ -66,7 +73,9 @@ export class ConnextListener extends EventEmitter {
       if (filtered.length > 1) {
         // TODO: throw error here?
         this.log.error(
-          `Proposed app matched multiple registered applications. App: ${JSON.stringify(
+          `Proposed app matched ${
+            filtered.length
+          } registered applications by definition address. App: ${JSON.stringify(
             appInfo,
             null,
             2,
@@ -75,8 +84,8 @@ export class ConnextListener extends EventEmitter {
         return;
       }
       // matched app, take appropriate default actions
-      await this.verifyAndInstallKnownApp(appInfo, filtered[0]);
-      if (!appInfo.peerDeposit.isZero()) {
+      await this.verifyAndInstallKnownApp(appInfo[0], filtered[0]);
+      if (!appInfo[0].peerDeposit.isZero()) {
         await this.connext.requestCollateral();
       }
       return;
@@ -97,9 +106,7 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data.data);
     },
     DEPOSIT_STARTED: (data: any): void => {
-      this.log.info(
-        `deposit for ${data.data.value.toString()} started. hash: ${data.data.transactionHash}`,
-      );
+      this.log.info(`deposit for ${data.value.toString()} started. hash: ${data.txHash}`);
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_STARTED, data);
     },
     INSTALL: (data: InstallMessage): void => {
@@ -217,6 +224,7 @@ export class ConnextListener extends EventEmitter {
     );
     if (invalidProposal) {
       // reject app installation
+      this.log.error(`Proposed app is invalid. ` + invalidProposal);
       return;
     }
 
