@@ -436,6 +436,21 @@ export class ConnextInternal extends ConnextChannel {
     }
   };
 
+  public getProposedAppInstanceDetails = async (): Promise<
+    NodeTypes.GetProposedAppInstancesResult | undefined
+  > => {
+    const proposedRes = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+        params: {} as NodeTypes.GetProposedAppInstancesParams,
+      }),
+    );
+
+    return proposedRes.result as NodeTypes.GetProposedAppInstancesResult;
+  };
+
   public getAppInstanceDetails = async (
     appInstanceId: string,
   ): Promise<NodeTypes.GetAppInstanceDetailsResult | undefined> => {
