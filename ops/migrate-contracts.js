@@ -1,6 +1,7 @@
 const fs = require('fs')
 const eth = require('ethers')
 const linker = require('solc/linker')
+const tokenAbi = require("./erc20-abi.json")
 
 const contracts = [
   "ChallengeRegistry",
@@ -184,10 +185,32 @@ const maybeDeployContract = async (name, artifacts, args) => {
       }
     }
 
+    const maybeSendTokenGift = async (address) => {
+      const tokenAddress = addressBook[4447].DolphinCoin.address
+      const dolphinCoin = new eth.Contract(tokenAddress, tokenAbi, wallet)
+      const balance = await dolphinCoin.balanceOf(address)
+      if (balance.eq(eth.constants.Zero)) {
+        const tx = await dolphinCoin.transfer(address, eth.utils.parseEther(ethGift))
+        await wallet.provider.waitForTransaction(tx.hash)
+        console.log(`\nSent ${ethGift} DolphinCoin to ${address}`)
+        console.log(`Transaction hash: ${tx.hash}`)
+      } else {
+        console.log(`\nAccount ${address} already has ${eth.utils.formatEther(balance)} DolphinCoin`)
+      }
+    }
+
     await maybeSendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address)
     for (const botMnemonic of botMnemonics) {
       await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic).address)
       await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
+    }
+
+    if (netId === 4447) {
+      await maybeSendTokenGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address)
+      for (const botMnemonic of botMnemonics) {
+        await maybeSendTokenGift(eth.Wallet.fromMnemonic(botMnemonic).address)
+        await maybeSendTokenGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
+      }
     }
   }
 
@@ -198,7 +221,12 @@ const maybeDeployContract = async (name, artifacts, args) => {
   for (const chainId of ["3", "4", "42"]) {
     const artifacts = require(`@counterfactual/contracts/networks/${chainId}.json`)
     for (const contract of contracts) {
-      const address = artifacts.filter(c => c.contractName === contract)[0].address
+      const artifact = artifacts.filter(c => c.contractName === contract)[0]
+      if (!artifact || !artifact.address) {
+        console.log(`Contract ${contract} not found in network ${chainId}`);
+        continue;
+      }
+      address = artifact.address;
       if (!addressBook[chainId]) addressBook[chainId] = {}
       if (!addressBook[chainId][contract]) addressBook[chainId][contract] = {}
       addressBook[chainId][contract] = { address }
