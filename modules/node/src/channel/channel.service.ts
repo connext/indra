@@ -1,9 +1,18 @@
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  InstallMessage,
+  InstallVirtualMessage,
   jsonRpcDeserialize,
   JsonRpcResponse,
   Node,
+  ProposeMessage,
+  ProposeVirtualMessage,
+  RejectInstallVirtualMessage,
+  UninstallMessage,
+  UninstallVirtualMessage,
+  UpdateStateMessage,
+  WithdrawMessage,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
@@ -18,6 +27,10 @@ import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
+
+type CallbackStruct = {
+  [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void;
+};
 
 @Injectable()
 export class ChannelService implements OnModuleInit {
@@ -133,40 +146,92 @@ export class ChannelService implements OnModuleInit {
 
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
-    // FIXME: is this the right type?
-    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, async (res: CreateChannelMessage) => {
-      logger.log(`CREATE_CHANNEL event fired: ${JSON.stringify(res)}`);
-      await this.makeAvailable((res.data as NodeTypes.CreateChannelResult).multisigAddress);
-    });
-
-    // Print a generic log whenever ANY event is fired
-    for (const eventName of [
-      "COUNTER_DEPOSIT_CONFIRMED",
-      "DEPOSIT_FAILED",
-      "DEPOSIT_STARTED",
-      "DEPOSIT_CONFIRMED", // TODO: how many blocks until confirmed?
-      "INSTALL",
-      "INSTALL_VIRTUAL",
-      "PROPOSE_STATE",
-      "REJECT_INSTALL",
-      "REJECT_STATE",
-      "UNINSTALL",
-      "UNINSTALL_VIRTUAL",
-      "UPDATE_STATE",
-      "WITHDRAWAL_CONFIRMED", // TODO: how many blocks until confirmed?
-      "WITHDRAWAL_FAILED",
-      "WITHDRAWAL_STARTED",
-      "PROPOSE_INSTALL",
-      "PROPOSE_INSTALL_VIRTUAL",
-      "PROTOCOL_MESSAGE_EVENT",
-      "WITHDRAW_EVENT",
-      "REJECT_INSTALL_VIRTUAL",
-    ]) {
-      this.node.on(NodeTypes.EventName[eventName], (res: NodeTypes.NodeMessage): void =>
-        logger.log(`${eventName} event fired from ${res && res.from ? res.from : null}`),
-      );
-    }
-
-    logger.log("Node methods attached");
+    this.registerDefaultCfListeners();
   }
+
+  private logEvent(event: NodeTypes.EventName, res: NodeTypes.NodeMessage & { data: any }): void {
+    logger.log(
+      `${event} event fired from ${res && res.from ? res.from : null}, data: ${JSON.stringify(
+        res.data,
+      )}`,
+    );
+  }
+
+  private registerDefaultCfListeners = (): void => {
+    Object.entries(this.defaultCallbacks).forEach(
+      ([event, callback]: [NodeTypes.EventName, () => any]): void => {
+        logger.log(`Registering default listener for event ${event}`);
+        this.node.on(NodeTypes.EventName[event], callback);
+      },
+    );
+  };
+
+  private defaultCallbacks: CallbackStruct = {
+    COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
+      this.logEvent(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data);
+    },
+    CREATE_CHANNEL: async (data: CreateChannelMessage): Promise<void> => {
+      await this.makeAvailable((data.data as NodeTypes.CreateChannelResult).multisigAddress);
+      this.logEvent(NodeTypes.EventName.CREATE_CHANNEL, data);
+    },
+    DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
+      this.logEvent(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
+    },
+    DEPOSIT_FAILED: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.DEPOSIT_FAILED, data);
+    },
+    DEPOSIT_STARTED: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.DEPOSIT_STARTED, data);
+    },
+    INSTALL: (data: InstallMessage): void => {
+      this.logEvent(NodeTypes.EventName.INSTALL, data);
+    },
+    // TODO: make cf return app instance id and app def?
+    INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
+      this.logEvent(NodeTypes.EventName.INSTALL_VIRTUAL, data);
+    },
+    PROPOSE_INSTALL: (data: ProposeMessage): void => {
+      this.logEvent(NodeTypes.EventName.PROPOSE_INSTALL, data);
+    },
+    PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
+      this.logEvent(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
+    },
+    PROPOSE_STATE: (data: any): void => {
+      // TODO: need to validate all apps here as well?
+      this.logEvent(NodeTypes.EventName.PROPOSE_STATE, data);
+    },
+    PROTOCOL_MESSAGE_EVENT: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
+    },
+    REJECT_INSTALL: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.REJECT_INSTALL, data);
+    },
+    REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
+      this.logEvent(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, data);
+    },
+    REJECT_STATE: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.REJECT_STATE, data);
+    },
+    UNINSTALL: (data: UninstallMessage): void => {
+      this.logEvent(NodeTypes.EventName.UNINSTALL, data);
+    },
+    UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
+      this.logEvent(NodeTypes.EventName.UNINSTALL_VIRTUAL, data);
+    },
+    UPDATE_STATE: (data: UpdateStateMessage): void => {
+      this.logEvent(NodeTypes.EventName.UPDATE_STATE, data);
+    },
+    WITHDRAW_EVENT: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.WITHDRAW_EVENT, data);
+    },
+    WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
+      this.logEvent(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, data);
+    },
+    WITHDRAWAL_FAILED: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.WITHDRAWAL_FAILED, data);
+    },
+    WITHDRAWAL_STARTED: (data: any): void => {
+      this.logEvent(NodeTypes.EventName.WITHDRAWAL_STARTED, data);
+    },
+  };
 }
