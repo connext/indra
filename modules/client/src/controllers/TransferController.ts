@@ -1,16 +1,16 @@
-import { convert, NodeChannel, SupportedApplications, TransferParameters, RegisteredAppDetails } from "@connext/types";
+import { convert, NodeChannel, RegisteredAppDetails, TransferParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { Zero } from "ethers/constants";
 
 export class TransferController extends AbstractController {
   private appId: string;
