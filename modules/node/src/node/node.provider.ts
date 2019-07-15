@@ -22,7 +22,7 @@ import { ethers as eth } from "ethers";
 
 import { ConfigService } from "../config/config.service";
 import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
-import { CLogger } from "../util";
+import { CLogger, registerCfNodeListener } from "../util";
 
 const logger = new CLogger("NodeProvider");
 
@@ -81,8 +81,7 @@ function logEvent(event: NodeTypes.EventName, res: NodeTypes.NodeMessage & { dat
 function registerDefaultCfListeners(node: Node): void {
   Object.entries(defaultCallbacks).forEach(
     ([event, callback]: [NodeTypes.EventName, () => any]): void => {
-      logger.log(`Registering default listener for event ${event}`);
-      node.on(NodeTypes.EventName[event], callback);
+      registerCfNodeListener(node, event, callback, "DefaultListener");
     },
   );
 }

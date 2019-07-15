@@ -10,8 +10,7 @@ import { RpcException } from "@nestjs/microservices";
 import { BigNumber } from "ethers/utils";
 
 import { NodeProviderId } from "../constants";
-import { CLogger } from "../util";
-import { freeBalanceAddressFromXpub } from "../util/cfNode";
+import { CLogger, freeBalanceAddressFromXpub, registerCfNodeListener } from "../util";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -131,9 +130,14 @@ export class ChannelService implements OnModuleInit {
   }
 
   private registerNodeListeners(): void {
-    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, async (data: CreateChannelMessage) => {
-      await this.makeAvailable((data.data as NodeTypes.CreateChannelResult).multisigAddress);
-    });
+    registerCfNodeListener(
+      this.node,
+      NodeTypes.EventName.CREATE_CHANNEL,
+      async (data: CreateChannelMessage) => {
+        await this.makeAvailable((data.data as NodeTypes.CreateChannelResult).multisigAddress);
+      },
+      logger.cxt,
+    );
   }
 
   // initialize CF Node with methods from this service to avoid circular dependency
