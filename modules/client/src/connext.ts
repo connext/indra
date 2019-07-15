@@ -100,10 +100,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
 
-  console.log("creating listener");
-  const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
-  console.log("created listener");
-
   // TODO: make these types
   let myChannel = await node.getChannel();
 
@@ -118,7 +114,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   return new ConnextInternal({
     appRegistry,
     cfModule,
-    listener,
     multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     network,
