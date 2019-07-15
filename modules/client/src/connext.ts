@@ -84,7 +84,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
 
   const appRegistry = await node.appRegistry();
-  console.log(`appRegistry: ${JSON.stringify(appRegistry, null, 2)}`);
 
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
@@ -260,7 +259,6 @@ export class ConnextInternal extends ConnextChannel {
   public nats: NatsClient;
   public multisigAddress: Address;
   public listener: ConnextListener;
-  public myFreeBalanceAddress: Address;
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
   public appRegistry: AppRegistry;
