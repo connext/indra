@@ -2,8 +2,9 @@ import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { AppInstanceInfo } from "@counterfactual/types";
 import { utils } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { ConnextInternal } from "src";
-import { freeBalanceAddressFromXpub } from "src/lib/utils";
+
+import { freeBalanceAddressFromXpub } from "..//lib/utils";
+import { ConnextInternal } from "../connext";
 
 const MIN_TIMEOUT = utils.bigNumberify(60000);
 
@@ -76,7 +77,7 @@ const prettyLog = (app: AppInstanceInfo) => {
     asStr[name] = value.toString();
   });
   return JSON.stringify(asStr, null, 2);
-}
+};
 
 const baseAppValidation = async (
   app: AppInstanceInfo,
