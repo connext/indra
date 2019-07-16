@@ -11,6 +11,7 @@ import { AppRegistryRepository } from "./appRegistry.repository";
 
 type DefaultApp = {
   actionEncoding?: string;
+  allowNodeInstall: boolean;
   appDefinitionAddress: string;
   name: string;
   network: Network;
@@ -18,9 +19,14 @@ type DefaultApp = {
   stateEncoding: string;
 };
 
+export enum KnownNodeAppNames {
+  SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
+}
+
 const defaultApps: DefaultApp[] = [
   {
     actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+    allowNodeInstall: false,
     appDefinitionAddress: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
     name: "EthUnidirectionalTransferApp",
     network: Network.KOVAN,
@@ -28,8 +34,9 @@ const defaultApps: DefaultApp[] = [
     stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
   },
   {
+    allowNodeInstall: true,
     appDefinitionAddress: "0x92E0bC808f7549c7f8f37b45960D6dCFd343d909",
-    name: "SimpleTwoPartySwapApp",
+    name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
     network: Network.KOVAN,
     outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO?
     stateEncoding:
