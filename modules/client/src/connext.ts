@@ -36,7 +36,7 @@ import {
   publicIdentifierToAddress,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
-import { NodeApiClient, ExchangeSubscription } from "./node";
+import { NodeApiClient, SwapSubscription } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
@@ -195,16 +195,16 @@ export abstract class ConnextChannel {
     return await this.internal.node.createChannel();
   };
 
-  public subscribeToExchangeRates = async (from: string, to: string): Promise<any> => {
-    return await this.internal.node.subscribeToExchangeRates(from, to, this.opts.store);
+  public subscribeToSwapRates = async (from: string, to: string): Promise<any> => {
+    return await this.internal.node.subscribeToSwapRates(from, to, this.opts.store);
   };
 
-  public getLatestExchangeRate = (from: string, to: string): BigNumber => {
-    return this.internal.getLatestExchangeRate(from, to);
+  public getLatestSwapRate = (from: string, to: string): BigNumber => {
+    return this.internal.getLatestSwapRate(from, to);
   };
 
-  public unsubscribeToExchangeRates = async (from: string, to: string): Promise<void> => {
-    return await this.internal.node.unsubscribeFromExchangeRates(from, to);
+  public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
+    return await this.internal.node.unsubscribeFromSwapRates(from, to);
   };
 
   public requestCollateral = async (): Promise<void> => {
@@ -328,13 +328,13 @@ export class ConnextInternal extends ConnextChannel {
     return await this.withdrawalController.withdraw(params);
   };
 
-  public getLatestExchangeRate = (from: string, to: string): BigNumber => {
+  public getLatestSwapRate = (from: string, to: string): BigNumber => {
     if (!this.node.exchangeSubscriptions) {
       throw new Error(
         `Not currently subscribed to any exchange rates, cannot retrieve latest from store.`,
       );
     }
-    const subscriptions = this.node.exchangeSubscriptions.filter((sub: ExchangeSubscription) => {
+    const subscriptions = this.node.exchangeSubscriptions.filter((sub: SwapSubscription) => {
       sub.to === to && sub.from === from;
     });
     if (subscriptions.length === 0) {

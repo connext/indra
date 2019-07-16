@@ -27,12 +27,12 @@ export interface INodeApiClient {
   authenticate(): void; // TODO: implement!
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
-  subscribeToExchangeRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
-  unsubscribeFromExchangeRates(from: string, to: string): Promise<void>;
+  subscribeToSwapRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
+  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
   requestCollateral(): Promise<void>;
 }
 
-export type ExchangeSubscription = {
+export type SwapSubscription = {
   from: string;
   to: string;
   subscription: Subscription;
@@ -49,7 +49,7 @@ export class NodeApiClient implements INodeApiClient {
   public nodePublicIdentifier: string | undefined;
 
   // subscription references
-  public exchangeSubscriptions: ExchangeSubscription[] | undefined;
+  public exchangeSubscriptions: SwapSubscription[] | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -126,7 +126,7 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: types for exchange rates and store?
   // TODO: is this the best way to set the store for diff types
   // of tokens
-  public async subscribeToExchangeRates(
+  public async subscribeToSwapRates(
     from: string,
     to: string,
     store: NodeTypes.IStoreService,
@@ -154,12 +154,12 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {
+  public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {
     if (!this.exchangeSubscriptions || this.exchangeSubscriptions.length === 0) {
       return;
     }
 
-    const matchedSubs = this.exchangeSubscriptions.filter((sub: ExchangeSubscription) => {
+    const matchedSubs = this.exchangeSubscriptions.filter((sub: SwapSubscription) => {
       return sub.from === from && sub.to === to;
     });
 
@@ -168,7 +168,7 @@ export class NodeApiClient implements INodeApiClient {
       return;
     }
 
-    matchedSubs.forEach((sub: ExchangeSubscription) => sub.subscription.unsubscribe());
+    matchedSubs.forEach((sub: SwapSubscription) => sub.subscription.unsubscribe());
   }
 
   // FIXME: right now node doesnt return until the deposit has completed
