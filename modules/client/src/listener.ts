@@ -43,49 +43,23 @@ export class ConnextListener extends EventEmitter {
     PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
-      // if the from is us, ignore
       this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
-      if (data.data.proposedByIdentifier === this.cfModule.publicIdentifier) {
+      // if the from is us, ignore
+      // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
+      // which has a from field, but ProposeVirtualMessage does not
+      if ((data as any).from === this.cfModule.publicIdentifier) {
         return;
       }
       // check based on supported applications
-      const proposedApps = await this.connext.getProposedAppInstanceDetails();
-      const appInfo = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
-        return app.identityHash === data.data.appInstanceId;
-      });
-      if (appInfo.length !== 1) {
-        this.log.error(
-          `Proposed application could not be found, or multiple instances found. Caught id: ${
-            data.data.appInstanceId
-          }. Proposed apps: ${JSON.stringify(proposedApps.appInstances, null, 2)}`,
-        );
-      }
-      const filtered = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
-        return app.appDefinitionAddress === appInfo[0].appDefinition;
-      });
-
-      if (!filtered || filtered.length === 0) {
-        this.log.info(
-          `Proposed app not in registered applications. App: ${JSON.stringify(appInfo, null, 2)}`,
-        );
-        return;
-      }
-      if (filtered.length > 1) {
-        // TODO: throw error here?
-        this.log.error(
-          `Proposed app matched ${
-            filtered.length
-          } registered applications by definition address. App: ${JSON.stringify(
-            appInfo,
-            null,
-            2,
-          )}`,
-        );
+      // matched app, take appropriate default actions
+      const matchedResult = await this.matchAppInstance(data);
+      if (matchedResult) {
         return;
       }
       // matched app, take appropriate default actions
-      await this.verifyAndInstallKnownApp(appInfo[0], filtered[0]);
-      if (!appInfo[0].peerDeposit.isZero()) {
+      const { appInfo, matchedApp } = matchedResult;
+      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
+      if (!appInfo.peerDeposit.isZero()) {
         await this.connext.requestCollateral();
       }
       return;
@@ -113,7 +87,9 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.INSTALL, data.data);
     },
     PROPOSE_STATE: (data: any): void => {
-      // TODO: need to validate all apps here as well?
+      // TODO: validate the proposed state
+      // TODO: are we using this flow in any of the known/supported
+      // applications
       this.emitAndLog(NodeTypes.EventName.PROPOSE_STATE, data);
     },
     REJECT_INSTALL: (data: any): void => {
@@ -128,8 +104,26 @@ export class ConnextListener extends EventEmitter {
     UNINSTALL: (data: UninstallMessage): void => {
       this.emitAndLog(NodeTypes.EventName.UNINSTALL, data.data);
     },
-    PROPOSE_INSTALL: (data: ProposeMessage): void => {
+    PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
+      // validate and automatically install for the known and supported
+      // applications
       this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL, data.data);
+      // check if message is from us, return if so
+      // FIXME: type of ProposeMessage should extend Node.NodeMessage, which
+      // has a from field, but ProposeMessage does not
+      if ((data as any).from === this.cfModule.publicIdentifier) {
+        return;
+      }
+      // check based on supported applications
+      // matched app, take appropriate default actions
+      const matchedResult = await this.matchAppInstance(data);
+      if (matchedResult) {
+        return;
+      }
+      // matched app, take appropriate default actions
+      const { appInfo, matchedApp } = matchedResult;
+      await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
+      return;
     },
     WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, data.data);
@@ -192,31 +186,51 @@ export class ConnextListener extends EventEmitter {
     this.emit(event, data);
   };
 
-  private matchAppInstance = (
-    appInstance: AppInstanceInfo,
-    app: RegisteredAppDetails,
-  ): RegisteredAppDetails | undefined => {
-    let foundMatch = true;
-    Object.entries(appInstance).forEach(([key, value]) => {
-      if (foundMatch && app[key]) {
-        // NOTE: will not work if there are big number
-        // types in RegisteredAppDetails fields
-        foundMatch = app[key] === value;
-      }
+  private matchAppInstance = async (
+    data: ProposeVirtualMessage | ProposeMessage,
+  ): Promise<{ matchedApp: RegisteredAppDetails, appInfo: AppInstanceInfo } | undefined> => {
+    const proposedApps = await this.connext.getProposedAppInstanceDetails();
+    const appInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
+      return app.identityHash === data.data.appInstanceId;
     });
-    return foundMatch ? app : undefined;
+    if (appInfos.length !== 1) {
+      this.log.error(
+        `Proposed application could not be found, or multiple instances found. Caught id: ${
+          data.data.appInstanceId
+        }. Proposed apps: ${JSON.stringify(proposedApps.appInstances, null, 2)}`,
+      );
+      return undefined;
+    }
+    const appInfo = appInfos[0];
+    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
+      return app.appDefinitionAddress === appInfo.appDefinition;
+    });
+
+    if (!filteredApps || filteredApps.length === 0) {
+      this.log.info(
+        `Proposed app not in registered applications. App: ${JSON.stringify(appInfo, null, 2)}`,
+      );
+      return undefined;
+    }
+
+    if (filteredApps.length > 1) {
+      // TODO: throw error here?
+      this.log.error(
+        `Proposed app matched ${
+          filteredApps.length
+        } registered applications by definition address. App: ${JSON.stringify(appInfo, null, 2)}`,
+      );
+      return undefined;
+    }
+    // matched app, take appropriate default actions
+    return { matchedApp: filteredApps[0], appInfo };
   };
 
   private verifyAndInstallKnownApp = async (
     appInstance: AppInstanceInfo,
     matchedApp: RegisteredAppDetails,
+    isVirtual: boolean = true,
   ): Promise<void> => {
-    // sanity check that the matched app actually matches
-    const isThisChill = this.matchAppInstance(appInstance, matchedApp);
-    if (!isThisChill) {
-      throw new Error("Matched app instance doesnt actually match. This should never happen.");
-    }
-
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,
@@ -229,7 +243,11 @@ export class ConnextListener extends EventEmitter {
     }
 
     // proposal is valid, automatically install known app
-    await this.connext.installVirtualApp(appInstance.identityHash);
+    if (isVirtual) {
+      await this.connext.installVirtualApp(appInstance.identityHash);
+    } else {
+      await this.connext.installApp(appInstance.identityHash);
+    }
     return;
   };
 }
