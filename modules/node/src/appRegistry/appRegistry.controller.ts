@@ -11,11 +11,11 @@ export class AppRegistryController {
   async get(
     data: { name?: string; network?: Network; appDefinitionAddress?: string } | undefined,
   ): Promise<AppRegistry[]> {
-    if (data.network && data.name) {
+    if (data && data.network && data.name) {
       return [await this.appRegistryRepository.findByNameAndNetwork(data.name, data.network)];
     }
 
-    if (data.appDefinitionAddress) {
+    if (data && data.appDefinitionAddress) {
       return [
         await this.appRegistryRepository.findByAppDefinitionAddress(data.appDefinitionAddress),
       ];
