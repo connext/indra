@@ -154,6 +154,25 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
+  // FIXME: return value?
+  public async getLatestExchangeRate(from: string, to: string): Promise<any> {
+    return new Promise(
+      async (resolve, reject): Promise<void> => {
+        const tempSubscription = await this.messaging.subscribe(
+          `exchange-rate.${from}.${to}`,
+          async (err: any, msg: any) => {
+            if (err) {
+              reject(err);
+            } else {
+              tempSubscription.subscription.unsubscribe();
+              resolve(msg);
+            }
+          },
+        );
+      },
+    );
+  }
+
   public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {
     if (!this.exchangeSubscriptions || this.exchangeSubscriptions.length === 0) {
       return;
