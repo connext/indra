@@ -1,14 +1,13 @@
 const fs = require('fs')
 const eth = require('ethers')
 const linker = require('solc/linker')
-const tokenAbi = require("./erc20-abi.json")
+const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
 
 const contracts = [
   "ChallengeRegistry",
   "CoinBalanceRefundApp",
   "CoinTransferETHInterpreter",
   "ConditionalTransactionDelegateTarget",
-  "DolphinCoin",
   "FreeBalanceApp",
   "IdentityApp",
   "MinimumViableMultisig",
@@ -22,6 +21,9 @@ for (const contract of contracts) {
   artifacts[contract] = require(`@counterfactual/contracts/build/${contract}.json`)
 }
 
+const { EtherSymbol, Zero } = eth.constants
+const { formatEther, parseEther } = eth.utils
+
 ////////////////////////////////////////
 // Environment Setup
 
@@ -30,7 +32,7 @@ const botMnemonics = [
   'roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult',
 ]
 const cfPath = "m/44'/60'/0'/25446"
-const ethGift = '3' // Starting balance for node & payment bots on test nets
+const ganacheId = 4447
 
 const project = 'indra-v2'
 const cwd = process.cwd()
@@ -41,7 +43,7 @@ const addressBookPath = `${HOME}/address-book.json`
 const addressBook = JSON.parse(fs.readFileSync(addressBookPath, 'utf8'))
 
 // Global scope vars
-var netId
+var chainId
 var wallet
 var mnemonic
 
@@ -50,7 +52,7 @@ var mnemonic
 
 const getSavedData = (contractName, property) => {
   try {
-    return addressBook[netId][contractName][property]
+    return addressBook[chainId][contractName][property]
   } catch (e) {
     return undefined
   }
@@ -92,13 +94,12 @@ const deployContract = async (name, artifacts, args) => {
   // Update address-book w new address + the args we deployed with
   const saveArgs = {}
   args.forEach(a=> saveArgs[a.name] = a.value)
-  if (!addressBook[netId]) addressBook[netId] = {}
-  if (!addressBook[netId][name]) addressBook[netId][name] = {}
-  addressBook[netId][name] = { address, ...saveArgs }
+  if (!addressBook[chainId]) addressBook[chainId] = {}
+  if (!addressBook[chainId][name]) addressBook[chainId][name] = {}
+  addressBook[chainId][name] = { address, ...saveArgs }
   saveAddressBook(addressBook)
   return contract
 }
-
 
 const maybeDeployContract = async (name, artifacts, args) => {
   console.log(`\nChecking for valid ${name} contract...`)
@@ -107,7 +108,35 @@ const maybeDeployContract = async (name, artifacts, args) => {
     console.log(`${name} is up to date, no action required\nAddress: ${savedAddress}`)
     return savedAddress
   }
-  return (await deployContract(name, artifacts, args)).address
+  return deployContract(name, artifacts, args)
+}
+
+const maybeSendGift = async (address, token) => {
+  const ethGift = '3'
+  const tokenGift = '1000'
+  const ethBalance = await wallet.provider.getBalance(address)
+  if (ethBalance.eq(Zero)) {
+    console.log(`\nSending ${EtherSymbol} ${ethGift} to ${address}`)
+    const tx = await wallet.sendTransaction({
+      to: address,
+      value: parseEther(ethGift)
+    })
+    await wallet.provider.waitForTransaction(tx.hash)
+    console.log(`Transaction mined! Hash: ${tx.hash}`)
+  } else {
+    console.log(`\nAccount ${address} already has ${EtherSymbol} ${formatEther(ethBalance)}`)
+  }
+  if (token) {
+    const tokenBalance = await token.balanceOf(address)
+    if (tokenBalance.eq(Zero)) {
+      console.log(`Minting ${tokenGift} tokens for ${address}`)
+      const tx = await token.mint(address, parseEther(tokenGift))
+      await wallet.provider.waitForTransaction(tx.hash)
+      console.log(`Transaction mined! Hash: ${tx.hash}`)
+    } else {
+      console.log(`\nAccount ${address} already has ${formatEther(tokenBalance)} tokens`)
+    }
+  }
 }
 
 ////////////////////////////////////////
@@ -115,8 +144,7 @@ const maybeDeployContract = async (name, artifacts, args) => {
 // First, setup signer & connect to eth provider
 
 ;(async function() {
-  let provider, balance, nonce, isDeployed
-  let ecToolsAddress, token, tokenAddress, channelManager, channelManagerAddress
+  let provider, balance, nonce, isDeployed, token
 
   if (process.env.ETH_PROVIDER) {
     provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER)
@@ -137,8 +165,8 @@ const maybeDeployContract = async (name, artifacts, args) => {
   wallet = eth.Wallet.fromMnemonic(mnemonic).connect(provider) // saved to global scope
 
   try {
-    netId = (await wallet.provider.getNetwork()).chainId // saved to global scope
-    balance = eth.utils.formatEther(await wallet.getBalance())
+    chainId = (await wallet.provider.getNetwork()).chainId // saved to global scope
+    balance = formatEther(await wallet.getBalance())
     nonce = await wallet.getTransactionCount()
   } catch (e) {
     console.error(`Couldn't connect to eth provider: ${JSON.stringify(provider,null,2)}`)
@@ -147,77 +175,45 @@ const maybeDeployContract = async (name, artifacts, args) => {
 
   // Sanity check: Is our eth provider serving us the correct network?
   const net = process.env.ETH_NETWORK
-  if (((net === "mainnet" || net === "live") && netId == 1) ||
-      (net === "ropsten" && netId == 3) ||
-      ((net === "rinkeby" || net === "staging") && netId == 4) ||
-      (net === "kovan" && netId == 42) ||
-      (net === "ganache" && netId == 4447)) {
-    console.log(`\nPreparing to migrate contracts to ${net} network (${netId})`)
+  if (((net === "mainnet" || net === "live") && chainId == 1) ||
+      (net === "ropsten" && chainId == 3) ||
+      ((net === "rinkeby" || net === "staging") && chainId == 4) ||
+      (net === "kovan" && chainId == 42) ||
+      (net === "ganache" && chainId == ganacheId)) {
+    console.log(`\nPreparing to migrate contracts to ${net} network (${chainId})`)
     console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`)
   } else {
-    console.error(`Given network (${net}) doesn't match the network ID from provider: ${netId}`)
+    console.error(`Given network (${net}) doesn't match the network ID from provider: ${chainId}`)
     process.exit(1)
   }
 
   ////////////////////////////////////////
-  // Deploy core counterfactual contracts
+  // Deploy contracts
 
   for (const contract of contracts) {
     await maybeDeployContract(contract, artifacts[contract], [])
   }
 
+  // If on testnet, deploy a token contract too
+  if (chainId === ganacheId) {
+    token = await maybeDeployContract('DolphinCoin', tokenArtifacts, [])
+  }
+
   ////////////////////////////////////////
-  // Setup relevant accounts
+  // On testnet, give relevant accounts a healthy starting balance
 
-  if (netId !== 1) { 
-    const maybeSendGift = async (address) => {
-      const balance = await wallet.provider.getBalance(address)
-      if (balance.eq(eth.constants.Zero)) {
-        const tx = await wallet.sendTransaction({
-          to: address,
-          value: eth.utils.parseEther(ethGift)
-        })
-        await wallet.provider.waitForTransaction(tx.hash)
-        console.log(`\nSent ${eth.constants.EtherSymbol} ${ethGift} to ${address}`)
-        console.log(`Transaction hash: ${tx.hash}`)
-      } else {
-        console.log(`\nAccount ${address} already has ${eth.constants.EtherSymbol} ${eth.utils.formatEther(balance)}`)
-      }
-    }
-
-    const maybeSendTokenGift = async (address) => {
-      const tokenAddress = addressBook[4447].DolphinCoin.address
-      const dolphinCoin = new eth.Contract(tokenAddress, tokenAbi, wallet)
-      const balance = await dolphinCoin.balanceOf(address)
-      if (balance.eq(eth.constants.Zero)) {
-        const tx = await dolphinCoin.transfer(address, eth.utils.parseEther(ethGift))
-        await wallet.provider.waitForTransaction(tx.hash)
-        console.log(`\nSent ${ethGift} DolphinCoin to ${address}`)
-        console.log(`Transaction hash: ${tx.hash}`)
-      } else {
-        console.log(`\nAccount ${address} already has ${eth.utils.formatEther(balance)} DolphinCoin`)
-      }
-    }
-
-    await maybeSendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address)
+  if (chainId === ganacheId) {
+    await maybeSendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address, token)
     for (const botMnemonic of botMnemonics) {
-      await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic).address)
-      await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
-    }
-
-    if (netId === 4447) {
-      await maybeSendTokenGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address)
-      for (const botMnemonic of botMnemonics) {
-        await maybeSendTokenGift(eth.Wallet.fromMnemonic(botMnemonic).address)
-        await maybeSendTokenGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address)
-      }
+      await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token)
+      await maybeSendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address, token)
     }
   }
 
   ////////////////////////////////////////
   // Update other network addresses
 
-  console.log(`\nUpdating addresses for other networks..\n`)
+  console.log(`\nUpdating addresses for other networks..`)
   for (const chainId of ["3", "4", "42"]) {
     const artifacts = require(`@counterfactual/contracts/networks/${chainId}.json`)
     for (const contract of contracts) {
@@ -238,8 +234,8 @@ const maybeDeployContract = async (name, artifacts, args) => {
   // Print summary
 
   console.log(`\nAll done!`)
-  const spent = balance - eth.utils.formatEther(await wallet.getBalance())
+  const spent = balance - formatEther(await wallet.getBalance())
   const nTx = (await wallet.getTransactionCount()) - nonce
-  console.log(`Sent ${nTx} transaction${nTx === 1 ? '' : 's'} & spent ${eth.constants.EtherSymbol} ${spent}`)
+  console.log(`Sent ${nTx} transaction${nTx === 1 ? '' : 's'} & spent ${EtherSymbol} ${spent}`)
 
 })();

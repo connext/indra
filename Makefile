@@ -154,7 +154,7 @@ messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node-modules: builder $(shell ls modules/**/package.json)
+node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && touch $(flags)/$@
