@@ -9,7 +9,7 @@ export const NatsProviderId = "NATS";
 export const ChannelMessagingProviderId = "CHANNEL_MESSAGING";
 export const ConfigMessagingProviderId = "CONFIG_MESSAGING";
 export const NatsClientProviderId = "NATS_CLIENT";
-export const ExchangeRateProviderId = "EXCHANGE_RATE";
+export const SwapRateProviderId = "SWAP_RATE";
 export const MedianizerProviderId = "MEDIANIZER";
 export const AppRegistryProviderId = "APP_REGISTRY";
 

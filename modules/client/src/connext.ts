@@ -4,7 +4,7 @@ import {
   ChannelState,
   CreateChannelResponse,
   DepositParameters,
-  ExchangeParameters,
+  SwapParameters,
   GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
@@ -26,7 +26,7 @@ import "regenerator-runtime/runtime";
 import { Client as NatsClient } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
-import { ExchangeController } from "./controllers/ExchangeController";
+import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
@@ -157,8 +157,8 @@ export abstract class ConnextChannel {
     return await this.internal.deposit(params);
   };
 
-  public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
-    return await this.internal.exchange(params);
+  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
+    return await this.internal.swap(params);
   };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
@@ -270,7 +270,7 @@ export class ConnextInternal extends ConnextChannel {
   // Setup channel controllers
   private depositController: DepositController;
   private transferController: TransferController;
-  private exchangeController: ExchangeController;
+  private swapController: SwapController;
   private withdrawalController: WithdrawalController;
 
   constructor(opts: InternalClientOptions) {
@@ -301,7 +301,7 @@ export class ConnextInternal extends ConnextChannel {
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
     this.transferController = new TransferController("TransferController", this);
-    this.exchangeController = new ExchangeController("ExchangeController", this);
+    this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
   }
 
@@ -312,8 +312,8 @@ export class ConnextInternal extends ConnextChannel {
     return await this.depositController.deposit(params);
   };
 
-  public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
-    return await this.exchangeController.exchange(params);
+  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
+    return await this.swapController.swap(params);
   };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
@@ -529,7 +529,13 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    params.intermediaries = [this.nodePublicIdentifier];
+    if (
+      params.intermediaries[0] !== this.nodePublicIdentifier ||
+      params.intermediaries.length !== 1
+    ) {
+      throw new Error(`Incorrect intermediaries. Expected: ${this.nodePublicIdentifier},
+         got ${JSON.stringify(params.intermediaries)}`);
+    }
 
     const actionRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
@@ -541,6 +547,22 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
+  };
+
+  // TODO: add validation after arjuns refactor merged
+  public proposeInstallApp = async (
+    params: NodeTypes.ProposeInstallParams,
+  ): Promise<NodeTypes.ProposeInstallResult> => {
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+        params,
+      }),
+    );
+
+    return actionRes.result as NodeTypes.ProposeInstallResult;
   };
 
   public installVirtualApp = async (
@@ -586,9 +608,7 @@ export class ConnextInternal extends ConnextChannel {
     return installResponse.result;
   };
 
-  public uninstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<NodeTypes.UninstallVirtualResult> => {
+  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
@@ -599,21 +619,44 @@ export class ConnextInternal extends ConnextChannel {
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
+        method: NodeTypes.RpcMethodName.UNINSTALL,
         params: {
           appInstanceId,
-          intermediaryIdentifier: this.nodePublicIdentifier,
         },
       }),
     );
 
-    return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
+    return uninstallResponse.result as NodeTypes.UninstallResult;
   };
 
+  public uninstallVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallVirtualResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
+        params: {
+          appInstanceId,
+        },
+      }),
+    );
+
+    return uninstallVirtualResponse.result as NodeTypes.UninstallVirtualResult;
+  };
+
+  // TODO: erc20 support?
   public cfWithdraw = async (
-    amount: BigNumber,
     assetId: string,
-    recipient?: string, // Address or xpub? whats the default?
+    amount: BigNumber,
+    recipient: string,
   ): Promise<NodeTypes.UninstallResult> => {
     const freeBalance = await this.getFreeBalance();
     const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
@@ -633,8 +676,8 @@ export class ConnextInternal extends ConnextChannel {
         params: {
           amount,
           multisigAddress: this.multisigAddress,
-          tokenAddress: assetId,
           recipient,
+          tokenAddress: assetId,
         },
       }),
     );

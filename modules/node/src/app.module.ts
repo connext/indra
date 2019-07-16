@@ -6,7 +6,7 @@ import { AppRegistryModule } from "./appRegistry/appRegistry.module";
 import { ChannelModule } from "./channel/channel.module";
 import { ConfigModule } from "./config/config.module";
 import { DatabaseModule } from "./database/database.module";
-import { ExchangeRateModule } from "./exchangeRate/exchangeRate.module";
+import { SwapRateModule } from "./swapRate/swapRate.module";
 import { NatsModule } from "./nats/nats.module";
 import { NodeController } from "./node/node.controller";
 import { NodeModule } from "./node/node.module";
@@ -22,7 +22,7 @@ import { UserModule } from "./user/user.module";
     ChannelModule,
     DatabaseModule,
     NatsModule,
-    ExchangeRateModule,
+    SwapRateModule,
     AppRegistryModule,
   ],
   providers: [AppService],

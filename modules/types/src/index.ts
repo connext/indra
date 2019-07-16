@@ -258,15 +258,16 @@ export type TransferParameters<T = string> = DepositParameters<T> & {
 };
 export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 
-////// Exchange types
+////// Swap types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
-export interface ExchangeParameters<T = string> {
+export interface SwapParameters<T = string> {
   amount: T;
+  swapRate: T;
   toAssetId: Address;
   fromAssetId: Address; // TODO: do these assets have to be renamed?
   // make sure they are consistent with CF stuffs
 }
-export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>;
+export type SwapParametersBigNumber = SwapParameters<BigNumber>;
 
 ////// Withdraw types
 export type WithdrawParameters<T = string> = DepositParameters<T> & {
@@ -397,6 +398,25 @@ export function convertTransferParametersToAsset<To extends NumericTypeName>(
   };
 }
 
+export function convertSwapParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: SwapParameters<any>,
+): SwapParameters<NumericTypes[To]> {
+  const asset: any = {
+    ...obj,
+  };
+  if (!asset.toAssetId) {
+    asset.toAssetId = constants.AddressZero;
+  }
+  if (!asset.fromAssetId) {
+    asset.fromAssetId = constants.AddressZero;
+  }
+  return {
+    ...asset,
+    ...convertAssetAmount(to, asset),
+  };
+}
+
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
@@ -428,5 +448,6 @@ export const convert: any = {
   Multisig: convertMultisig,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
+  SwapParameters: convertSwapParametersToAsset,
   Withdraw: convertWithdrawParametersToAsset,
 };
