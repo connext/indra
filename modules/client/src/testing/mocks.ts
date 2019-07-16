@@ -128,13 +128,13 @@ export class MockNodeClientApi implements INodeApiClient {
     return MockNodeClientApi.returnValues.createChannel;
   }
 
-  public async subscribeToExchangeRates(
+  public async subscribeToSwapRates(
     from: string,
     to: string,
     store: NodeTypes.IStoreService,
   ): Promise<void> {}
 
-  public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {}
+  public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 
   public async requestCollateral(): Promise<void> {}
 }
