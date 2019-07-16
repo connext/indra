@@ -32,7 +32,7 @@ const defaultApps: DefaultApp[] = [
     appDefinitionAddress: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
     name: "EthUnidirectionalTransferApp",
     network: Network.KOVAN,
-    outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME,
+    outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
   },
   {
@@ -40,7 +40,7 @@ const defaultApps: DefaultApp[] = [
     appDefinitionAddress: "0x92E0bC808f7549c7f8f37b45960D6dCFd343d909",
     name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
     network: Network.KOVAN,
-    outcomeType: OutcomeType.TWO_PARTY_DYNAMIC_OUTCOME, // TODO?
+    outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME, // TODO?
     stateEncoding:
       "tuple(tuple(address to, address[] coinAddress, uint256[] balance)[] coinBalances)",
   },

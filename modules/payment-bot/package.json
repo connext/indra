@@ -18,7 +18,7 @@
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "commander": "^2.20.0",
     "dotenv": "8.0.0",
-    "ethers": "4.0.32",
+    "ethers": "4.0.33",
     "node-fetch": "2.6.0",
     "uuid": "3.3.2"
   },

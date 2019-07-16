@@ -180,7 +180,7 @@ export abstract class ConnextChannel {
   };
 
   // TODO: do we need to expose here?
-  public authenticate = (): void => {}
+  public authenticate = (): void => {};
 
   // TODO: do we need to expose here?
   public getAppRegistry = async (appDetails?: {
@@ -369,7 +369,7 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfModule.router.dispatch(
+    const depositResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -388,7 +388,7 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -405,7 +405,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     try {
-      const freeBalance = await this.cfModule.router.dispatch(
+      const freeBalance = await this.cfModule.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -437,7 +437,7 @@ export class ConnextInternal extends ConnextChannel {
   public getProposedAppInstanceDetails = async (): Promise<
     NodeTypes.GetProposedAppInstancesResult | undefined
   > => {
-    const proposedRes = await this.cfModule.router.dispatch(
+    const proposedRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -457,7 +457,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -480,7 +480,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfModule.router.dispatch(
+    const stateResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -510,7 +510,7 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfModule.router.dispatch(
+    const actionResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -527,15 +527,17 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
-    params: NodeTypes.ProposeInstallVirtualParams
+    params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    if(params.intermediaries[0] != this.nodePublicIdentifier ||
-       params.intermediaries.length != 1) {
-         throw new Error(`Incorrect intermediaries. Expected: ${this.nodePublicIdentifier},
-         got ${JSON.stringify(params.intermediaries)}`)
-       }
+    if (
+      params.intermediaries[0] !== this.nodePublicIdentifier ||
+      params.intermediaries.length !== 1
+    ) {
+      throw new Error(`Incorrect intermediaries. Expected: ${this.nodePublicIdentifier},
+         got ${JSON.stringify(params.intermediaries)}`);
+    }
 
-    const actionRes = await this.cfModule.router.dispatch(
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -551,8 +553,7 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallApp = async (
     params: NodeTypes.ProposeInstallParams,
   ): Promise<NodeTypes.ProposeInstallResult> => {
-
-    const actionRes = await this.cfModule.router.dispatch(
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -567,17 +568,12 @@ export class ConnextInternal extends ConnextChannel {
   public installVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.InstallVirtualResult> => {
-    // FIXME: make this helper?
     // check the app isnt actually installed
-    const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
-    if (app.length !== 0) {
-      throw new Error(
-        `Found already installed app with id: ${appInstanceId}. ` +
-          `Installed apps: ${JSON.stringify(apps, null, 2)}`,
-      );
+    const alreadyInstalled = await this.appInstalled(appInstanceId);
+    if (alreadyInstalled) {
+      throw new Error(alreadyInstalled);
     }
-    const installVirtualResponse = await this.cfModule.router.dispatch(
+    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -592,20 +588,13 @@ export class ConnextInternal extends ConnextChannel {
     return installVirtualResponse.result;
   };
 
-  public installApp = async (
-    appInstanceId: string,
-  ): Promise<NodeTypes.InstallResult> => {
-    // FIXME: make this helper?
+  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
     // check the app isnt actually installed
-    const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
-    if (app.length !== 0) {
-      throw new Error(
-        `Found already installed app with id: ${appInstanceId}. ` +
-          `Installed apps: ${JSON.stringify(apps, null, 2)}`,
-      );
+    const alreadyInstalled = await this.appInstalled(appInstanceId);
+    if (alreadyInstalled) {
+      throw new Error(alreadyInstalled);
     }
-    const installResponse = await this.cfModule.router.dispatch(
+    const installResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -619,16 +608,14 @@ export class ConnextInternal extends ConnextChannel {
     return installResponse.result;
   };
 
-  public uninstallApp = async (
-     appInstanceId: string,
-  ): Promise<NodeTypes.UninstallResult> => {
+  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfModule.router.dispatch(
+    const uninstallResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -644,27 +631,26 @@ export class ConnextInternal extends ConnextChannel {
 
   public uninstallVirtualApp = async (
     appInstanceId: string,
- ): Promise<NodeTypes.UninstallVirtualResult> => {
-   // check the app is actually installed
-   const err = await this.appNotInstalled(appInstanceId);
-   if (err) {
-     this.logger.error(err);
-     throw new Error(err);
-   }
-   const uninstallVirtualResponse = await this.cfModule.router.dispatch(
-     jsonRpcDeserialize({
-       id: Date.now(),
-       jsonrpc: "2.0",
-       method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
-       params: {
-         appInstanceId,
-       },
-     }),
-   );
+  ): Promise<NodeTypes.UninstallVirtualResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
+        params: {
+          appInstanceId,
+        },
+      }),
+    );
 
-   return uninstallVirtualResponse.result as NodeTypes.UninstallVirtualResult;
- };
-
+    return uninstallVirtualResponse.result as NodeTypes.UninstallVirtualResult;
+  };
 
   // TODO: erc20 support?
   public cfWithdraw = async (
@@ -682,7 +668,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.router.dispatch(
+    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -690,8 +676,8 @@ export class ConnextInternal extends ConnextChannel {
         params: {
           amount,
           multisigAddress: this.multisigAddress,
-          tokenAddress: assetId,
           recipient,
+          tokenAddress: assetId,
         },
       }),
     );
@@ -735,6 +721,18 @@ export class ConnextInternal extends ConnextChannel {
     if (app.length > 1) {
       return (
         `CRITICAL ERROR: found multiple apps with the same id. ` +
+        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+      );
+    }
+    return undefined;
+  };
+
+  private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
+    const apps = await this.getAppInstances();
+    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
+    if (app.length > 0) {
+      return (
+        `App with id ${appInstanceId} is already installed.` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }
