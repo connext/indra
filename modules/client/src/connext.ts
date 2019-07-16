@@ -36,7 +36,7 @@ import {
   publicIdentifierToAddress,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
-import { NodeApiClient } from "./node";
+import { NodeApiClient, ExchangeSubscription } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
@@ -199,6 +199,10 @@ export abstract class ConnextChannel {
     return await this.internal.node.subscribeToExchangeRates(from, to, this.opts.store);
   };
 
+  public getLatestExchangeRate = (from: string, to: string): BigNumber => {
+    return this.internal.getLatestExchangeRate(from, to);
+  };
+
   public unsubscribeToExchangeRates = async (from: string, to: string): Promise<void> => {
     return await this.internal.node.unsubscribeFromExchangeRates(from, to);
   };
@@ -322,6 +326,24 @@ export class ConnextInternal extends ConnextChannel {
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.withdrawalController.withdraw(params);
+  };
+
+  public getLatestExchangeRate = (from: string, to: string): BigNumber => {
+    if (!this.node.exchangeSubscriptions) {
+      throw new Error(
+        `Not currently subscribed to any exchange rates, cannot retrieve latest from store.`,
+      );
+    }
+    const subscriptions = this.node.exchangeSubscriptions.filter((sub: ExchangeSubscription) => {
+      sub.to === to && sub.from === from;
+    });
+    if (subscriptions.length === 0) {
+      throw new Error(
+        `Not currently subscribed to exchange rate for ${from}-${to},` +
+          ` cannot retrieve latest from store.`,
+      );
+    }
+    return new BigNumber(this.opts.store.get(`swap-rate.${from}.${to}`));
   };
 
   ///////////////////////////////////
