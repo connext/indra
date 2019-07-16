@@ -8,7 +8,7 @@
   "iife": "dist/index-iife.js",
   "license": "MIT",
   "engines": {
-    "yarn": "1.16.0",
+    "yarn": "1.17.3",
     "node": "10.16.0"
   },
   "scripts": {
@@ -24,7 +24,7 @@
     "@counterfactual/types": "0.0.22",
     "@types/jest": "24.0.15",
     "jest": "24.8.0",
-    "rollup": "1.16.7",
+    "rollup": "1.17.0",
     "rollup-plugin-typescript2": "0.22.0",
     "ts-jest": "24.0.2",
     "typescript": "3.5.3"
