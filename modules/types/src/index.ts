@@ -63,6 +63,19 @@ export type RegisteredAppDetails = {
 export type AppRegistry = RegisteredAppDetails[];
 
 ////////////////////////////////////
+////// APP INTERFACES
+
+export type MultiCoinTransfer = {
+  to: string;
+  tokenAddresses: string[];
+  amounts: BigNumber[];
+};
+
+export type SwapAppState = {
+  multiCoinTransfers: MultiCoinTransfer[];
+};
+
+////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
 
 // transfer types

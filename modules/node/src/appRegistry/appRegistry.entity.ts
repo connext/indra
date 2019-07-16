@@ -36,4 +36,7 @@ export class AppRegistry {
 
   @Column("text", { nullable: true })
   actionEncoding!: string;
+
+  @Column("boolean", { default: false })
+  allowNodeInstall!: boolean;
 }
