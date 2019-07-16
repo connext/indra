@@ -10,12 +10,11 @@ async function start(): Promise<void> {
   console.log("helloMsg: ", helloMsg);
   const appMsg = await nc.request("app-registry", 1000, JSON.stringify({ id: "myid2" }));
   console.log("appMsg: ", appMsg);
-  await nc.subscribe("swap-rate", (err: any, msg: any) => {
+  await nc.subscribe("swap-rate.>", (err: any, msg: any) => {
     if (err) {
       console.log(err);
     } else {
       console.log(msg);
-      console.log(msg.data);
     }
   });
 }

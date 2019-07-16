@@ -20,7 +20,9 @@ then eth_rpc_url="https://rinkeby.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "kovan" ]]
 then eth_rpc_url="https://kovan.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "ganache" ]]
-then eth_rpc_url="http://ethprovider:8545"
+then
+  eth_rpc_url="http://ethprovider:8545"
+  make deployed-contracts
 fi
 
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
@@ -36,9 +38,12 @@ postgres_user="$project"
 # docker images
 builder_image="${project}_builder"
 database_image="postgres:9-alpine"
-ethprovider_image="trufflesuite/ganache-cli:v6.4.3"
+ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
+proxy_image="indra_v2_proxy:dev"
+daicard_devserver_image="$builder_image"
+relay_image="indra_v2_relay"
 
 node_port=8080
 nats_port=4222
@@ -52,8 +57,9 @@ function pull_if_unavailable {
   then docker pull $1
   fi
 }
-pull_if_unavailable $database_image
-pull_if_unavailable $nats_image
+pull_if_unavailable "$database_image"
+pull_if_unavailable "$nats_image"
+pull_if_unavailable "$ethprovider_image"
 
 # Initialize random new secrets
 function new_secret {
@@ -67,7 +73,7 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret ${project}_database_dev $project
+new_secret "${project}_database_dev" "$project"
 
 # Deploy with an attachable network so tests & the daicard can connect to individual components
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
@@ -76,7 +82,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=4 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -91,10 +97,44 @@ secrets:
     external: true
 
 volumes:
+  certs:
   chain_dev:
   database_dev:
 
 services:
+  proxy:
+    image: $proxy_image
+    environment:
+      DAICARD_URL: http://daicard:3000
+      ETH_RPC_URL: $eth_rpc_url
+      MESSAGING_URL: http://relay:4223
+      MODE: dev
+    networks:
+      - $project
+    ports:
+      - "80:80"
+    volumes:
+      - certs:/etc/letsencrypt
+
+  daicard:
+    image: $daicard_devserver_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
+    networks:
+      - $project
+    volumes:
+      - `pwd`:/root
+    working_dir: /root/modules/daicard
+
+  relay:
+    image: $relay_image
+    command: ["nats:$nats_port"]
+    networks:
+      - $project
+    ports:
+      - "4223:4223"
+
   node:
     image: $node_image
     entrypoint: bash modules/node/ops/entry.sh
@@ -123,7 +163,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447" ]
+    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447"]
     networks:
       - $project
     ports:
@@ -165,5 +205,3 @@ while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number
 do echo -n "." && sleep 2
 done
 echo " Good Morning!"
-
-bash ops/logs.sh node

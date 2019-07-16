@@ -1,6 +1,6 @@
-import { AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
+import { IMessagingService } from "@connext/messaging";
+import { AppRegistry, AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
 import { Node } from "@counterfactual/node";
-import { NetworkContext } from "@counterfactual/types";
 import { utils } from "ethers";
 import { Client as NatsClient } from "ts-nats";
 
@@ -16,10 +16,7 @@ export interface ClientOptions {
   rpcProviderUrl?: string; // TODO: can we keep out web3
 
   // node information
-  nodeUrl: string; // http URL, https?://
-
-  // nats information
-  natsUrl: string; // nats URL, nats://
+  nodeUrl: string; // ws:// or nats:// urls are supported
 
   // signing options, include at least one of the following
   mnemonic?: string;
@@ -56,7 +53,6 @@ export type InternalClientOptions = ClientOptions & {
   // TODO: can nats, node, wallet be optional?
   nats: NatsClient; // converted to nats-client in ConnextInternal constructor
   node: NodeApiClient;
-  listener: ConnextListener;
   // signing wallet/information
   wallet: Wallet;
   // store: ConnextStore; --> whats this look like
@@ -66,6 +62,7 @@ export type InternalClientOptions = ClientOptions & {
   multisigAddress: string;
   nodePublicIdentifier: string;
   network: utils.Network; // TODO: delete! use bos branch!
+  appRegistry: AppRegistry;
 };
 
 // TODO: define properly!!
@@ -77,8 +74,7 @@ export interface ConnextStore {}
 
 ////// General typings
 export interface NodeInitializationParameters {
-  nodeUrl: string;
-  nats: NatsClient;
+  messaging: IMessagingService;
   wallet: Wallet;
   logLevel?: number;
   userPublicIdentifier?: string;

@@ -8,9 +8,10 @@ export const natsClient: FactoryProvider = {
   inject: [ConfigService],
   provide: NatsClientProviderId,
   useFactory: (config: ConfigService): ClientProxy => {
+    const messagingUrl = config.getMessagingConfig().messagingUrl;
     return ClientProxyFactory.create({
       options: {
-        servers: config.getNatsConfig().servers,
+        servers: typeof messagingUrl === "string" ? [messagingUrl] : messagingUrl,
       },
       transport: Transport.NATS,
     });

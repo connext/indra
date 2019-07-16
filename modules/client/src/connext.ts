@@ -1,29 +1,40 @@
-import { NatsServiceFactory } from "@connext/nats-messaging-client";
+import { MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,
+  CreateChannelResponse,
   DepositParameters,
   SwapParameters,
+  GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
+  RegisteredAppDetails,
   SupportedApplication,
+  SupportedNetwork,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
-import { AddressZero, Zero } from "ethers/constants";
+import "core-js/stable";
+import { Contract } from "ethers";
+import { AddressZero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { Client as NatsClient, Payload } from "ts-nats";
+import tokenAbi from "human-standard-token-abi";
+import "regenerator-runtime/runtime";
+import { Client as NatsClient } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, logEthFreeBalance, publicIdentifierToAddress } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  logEthFreeBalance,
+  publicIdentifierToAddress,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -43,25 +54,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const wallet = new Wallet(opts);
   const network = await wallet.provider.getNetwork();
 
-  // create a new internal nats instance
-  const natsConfig = {
-    clusterId: opts.natsClusterId,
-    payload: Payload.JSON,
-    servers: [opts.natsUrl],
-    token: opts.natsToken,
-  };
-  // TODO: proper key? also, proper usage?
-  const messagingServiceKey = "messaging";
-  // connect nats service, done as part of async setup
-
-  // TODO: get config from nats client?
-  console.log("creating nats client from config:", JSON.stringify(natsConfig));
-  // TODO: instantiate service factory with proper config!!
-  // @ts-ignore
-  const natsFactory = new NatsServiceFactory(natsConfig);
-  const messaging = natsFactory.createMessagingService(messagingServiceKey);
+  console.log("Creating messaging service client");
+  const { natsClusterId, nodeUrl, natsToken } = opts;
+  const messagingFactory = new MessagingServiceFactory({
+    clusterId: natsClusterId,
+    messagingUrl: nodeUrl,
+    token: natsToken,
+  });
+  const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
-  console.log("nats is connected");
+  console.log("Messaging service is connected");
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
@@ -71,8 +73,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: use local storage for default key value setting!!
   const nodeConfig = {
     logLevel: opts.logLevel,
-    nats: messaging.getConnection(),
-    nodeUrl: opts.nodeUrl,
+    messaging,
     wallet,
   };
   console.log("creating node client");
@@ -81,6 +82,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   const config = await node.config();
   console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
+
+  const appRegistry = await node.appRegistry();
 
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
@@ -96,10 +99,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
 
-  console.log("creating listener");
-  const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
-  console.log("created listener");
-
   // TODO: make these types
   let myChannel = await node.getChannel();
 
@@ -112,8 +111,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("myChannel: ", myChannel);
   // create the new client
   return new ConnextInternal({
+    appRegistry,
     cfModule,
-    listener,
     multisigAddress: myChannel.multisigAddress,
     nats: messaging.getConnection(),
     network,
@@ -173,11 +172,39 @@ export abstract class ConnextChannel {
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
   public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.config();
+    return await this.internal.node.config();
   };
 
-  public getChannel = async (): Promise<NodeChannel> => {
+  public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
+  };
+
+  // TODO: do we need to expose here?
+  public authenticate = (): void => {}
+
+  // TODO: do we need to expose here?
+  public getAppRegistry = async (appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> => {
+    return await this.internal.node.appRegistry(appDetails);
+  };
+
+  // TODO: do we need to expose here?
+  public createChannel = async (): Promise<CreateChannelResponse> => {
+    return await this.internal.node.createChannel();
+  };
+
+  public subscribeToExchangeRates = async (from: string, to: string): Promise<any> => {
+    return await this.internal.node.subscribeToExchangeRates(from, to, this.opts.store);
+  };
+
+  public unsubscribeToExchangeRates = async (from: string, to: string): Promise<void> => {
+    return await this.internal.node.unsubscribeFromExchangeRates(from, to);
+  };
+
+  public requestCollateral = async (): Promise<void> => {
+    return await this.internal.node.requestCollateral();
   };
 
   ///////////////////////////////////
@@ -213,13 +240,6 @@ export abstract class ConnextChannel {
     return await this.internal.getAppState(appInstanceId);
   };
 
-  public installTransferApp = async (
-    counterpartyPublicIdentifier: string,
-    initialDeposit: BigNumber,
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    return await this.internal.installTransferApp(counterpartyPublicIdentifier, initialDeposit);
-  };
-
   public uninstallVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.UninstallVirtualResult> => {
@@ -241,6 +261,7 @@ export class ConnextInternal extends ConnextChannel {
   public listener: ConnextListener;
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
+  public appRegistry: AppRegistry;
 
   public logger: Logger;
   public network: Network;
@@ -261,6 +282,8 @@ export class ConnextInternal extends ConnextChannel {
     this.node = opts.node;
     this.nats = opts.nats;
 
+    this.appRegistry = opts.appRegistry;
+
     this.cfModule = opts.cfModule;
     this.freeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
     this.publicIdentifier = this.cfModule.publicIdentifier;
@@ -272,7 +295,7 @@ export class ConnextInternal extends ConnextChannel {
     this.network = opts.network;
 
     // establish listeners
-    this.listener = opts.listener;
+    this.listener = new ConnextListener(opts.cfModule, this);
     this.connectDefaultListeners();
 
     // instantiate controllers with logger and cf
@@ -302,13 +325,6 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   ///////////////////////////////////
-  // NODE METHODS
-
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.node.config();
-  };
-
-  ///////////////////////////////////
   // EVENT METHODS
 
   public on = (event: NodeTypes.EventName, callback: (...args: any[]) => void): ConnextListener => {
@@ -332,7 +348,17 @@ export class ConnextInternal extends ConnextChannel {
     notifyCounterparty: boolean = true,
   ): Promise<NodeTypes.DepositResult> => {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
-    const bal = await this.wallet.provider.getBalance(depositAddr);
+    let bal: BigNumber;
+
+    if (assetId === AddressZero) {
+      bal = await this.wallet.provider.getBalance(depositAddr);
+    } else {
+      // get token balance
+      const token = new Contract(assetId, tokenAbi, this.wallet.provider);
+      // TODO: correct? how can i use allowance?
+      bal = await token.balanceOf(depositAddr);
+    }
+
     const err = [
       notPositive(amount),
       invalidAddress(assetId),
@@ -406,6 +432,21 @@ export class ConnextInternal extends ConnextChannel {
 
       throw new Error(e);
     }
+  };
+
+  public getProposedAppInstanceDetails = async (): Promise<
+    NodeTypes.GetProposedAppInstancesResult | undefined
+  > => {
+    const proposedRes = await this.cfModule.router.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+        params: {} as NodeTypes.GetProposedAppInstancesParams,
+      }),
+    );
+
+    return proposedRes.result as NodeTypes.GetProposedAppInstancesResult;
   };
 
   public getAppInstanceDetails = async (
@@ -632,6 +673,21 @@ export class ConnextInternal extends ConnextChannel {
 
   ///////////////////////////////////
   // LOW LEVEL METHODS
+
+  public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
+    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails) => {
+      return app.name === appName && app.network === this.network.name;
+    });
+
+    if (!appInfo || appInfo.length === 0) {
+      throw new Error(`Could not find ${appName} app details on ${this.network.name} network`);
+    }
+
+    if (appInfo.length > 1) {
+      throw new Error(`Found multiple ${appName} app details on ${this.network.name} network`);
+    }
+    return appInfo[0];
+  };
 
   // TODO: make sure types are all good
   private connectDefaultListeners = (): void => {

@@ -1,4 +1,4 @@
-import { NatsMessagingService } from "@connext/nats-messaging-client";
+import { IMessagingService } from "@connext/messaging";
 import {
   CreateChannelResponse,
   GetChannelResponse,
@@ -73,8 +73,8 @@ export class ConfigNats extends AbstractNatsProvider {
     return {
       contractAddresses: await this.configService.getContractAddresses(),
       ethNetwork: await this.configService.getEthNetwork(),
+      messaging: this.configService.getMessagingConfig(),
       nodePublicIdentifier: this.node.publicIdentifier,
-      ...this.configService.getNatsConfig(),
     };
   }
 
@@ -88,7 +88,7 @@ export const channelProvider: FactoryProvider<Promise<Client>> = {
   inject: [NatsProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
-    nats: NatsMessagingService,
+    nats: IMessagingService,
     channelRepo: ChannelRepository,
     configService: ConfigService,
     node: Node,

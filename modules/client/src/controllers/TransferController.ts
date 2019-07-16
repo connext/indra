@@ -1,8 +1,10 @@
-import { AppRegistry, convert, NodeChannel, TransferParameters } from "@connext/types";
+import { convert, NodeChannel, RegisteredAppDetails, TransferParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
@@ -28,33 +30,21 @@ export class TransferController extends AbstractController {
     }
 
     // check that there is sufficient free balance for amount
-    const preTransferBal = (await this.connext.getFreeBalance())[
+    const preTransferBal = (await this.connext.getFreeBalance(assetId))[
       this.cfModule.ethFreeBalanceAddress
     ];
 
     // TODO: check if the recipient is the node, and if so transfer without
     // installing an app (is this possible?)
 
-    // get app definition from constants
-    // TODO: this should come from a db on the node
-    const appInfo = AppRegistry[this.connext.network.name].EthUnidirectionalTransferApp;
-
-    if (!appInfo) {
-      throw new Error("Could not find app in registry with supported network");
-    }
-
     // TODO: check if recipient has a channel with the hub w/sufficient balance
     // or if there is a route available through the node
 
+    // verify app is supported without swallowing errors
+    const appInfo = this.connext.getRegisteredAppDetails("EthUnidirectionalTransferApp");
+
     // install the transfer application
-    try {
-      await this.transferAppInstalled(amount, recipient, appInfo);
-    } catch (e) {
-      // TODO: can add more checks in `rejectInstall` but there is no
-      // way to check if the recipient is collateralized atm, so just
-      // assume this is the reason the install was rejected
-      throw new Error("Recipient online, but does not have sufficient collateral");
-    }
+    await this.transferAppInstalled(amount, recipient, assetId, appInfo);
 
     // update state
     // TODO: listener for reject state?
@@ -106,7 +96,7 @@ export class TransferController extends AbstractController {
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: any, data: any): any => {
+  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
       return;
     }
@@ -118,29 +108,43 @@ export class TransferController extends AbstractController {
   };
 
   // TODO: fix types of data
-  private rejectInstallTransfer = (rej: any, data: RejectInstallVirtualMessage): any => {
+  private rejectInstallTransfer = (
+    rej: (reason?: any) => void,
+    msg: RejectInstallVirtualMessage,
+  ): any => {
     // check app id
-    if (this.appId !== data.data.appInstanceId) {
+    if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
-    rej(`Install virtual rejected. Event data: ${JSON.stringify(data, null, 2)}`);
-    return data;
+    return rej(`Install virtual failed. Event data: ${JSON.stringify(msg, null, 2)}`);
   };
 
   // creates a promise that is resolved once the app is installed
   // and rejected if the virtual application is rejected
-  private transferAppInstalled = async (amount: BigNumber, recipient: string, appInfo: any): Promise<any> => {
+  private transferAppInstalled = async (
+    amount: BigNumber,
+    recipient: string,
+    assetId: string,
+    appInfo: RegisteredAppDetails,
+  ): Promise<any> => {
     let boundResolve;
     let boundReject;
 
-    const params: NodeTypes.ProposeInstallVirtualParams = {
-      ...appInfo,
+    // note: intermediary is added in connext.ts as well
+    const params = {
+      abiEncodings: {
+        actionEncoding: appInfo.actionEncoding,
+        stateEncoding: appInfo.stateEncoding,
+      },
+      appDefinition: appInfo.appDefinitionAddress,
       initialState: {
+        finalized: false,
         transfers: [
           {
             amount,
-            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address
+            to: this.wallet.address,
+            // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
           },
           {
             amount: Zero,
@@ -150,7 +154,10 @@ export class TransferController extends AbstractController {
       },
       intermediaries: [this.connext.nodePublicIdentifier],
       myDeposit: amount,
+      outcomeType: appInfo.outcomeType,
+      peerDeposit: constants.Zero,
       proposedToIdentifier: recipient,
+      timeout: constants.Zero, // TODO: fix, add to app info?
     };
 
     const res = await this.connext.proposeInstallVirtualApp(params);
@@ -164,7 +171,7 @@ export class TransferController extends AbstractController {
       this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
       this.timeout = setTimeout(() => {
         this.cleanupInstallListeners(boundResolve, boundReject);
-        boundReject({ data: { data: this.appId } });
+        boundReject({ data: { appInstanceId: this.appId } });
       }, 5000);
     });
 

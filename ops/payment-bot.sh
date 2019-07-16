@@ -22,18 +22,15 @@ docker swarm init 2> /dev/null || true
 ## Setup env vars
 
 project="indra_v2"
-name=${project}_payment_bot_$1
 cwd="`pwd`"
 
 INTERMEDIARY_IDENTIFIER="xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6"
-NATS_URL="nats://indra_v2_nats:4222"
-NODE_URL="http://indra_v2_node:8080"
+NODE_URL="nats://indra_v2_nats:4222"
 POSTGRES_DATABASE="$project"
 POSTGRES_HOST="indra_v2_database"
 POSTGRES_PASSWORD="$project"
 POSTGRES_PORT="5432"
 POSTGRES_USER="$project"
-USERNAME="PaymentBot$1"
 
 # Set the eth rpc url to use the same network as the node server is using
 ETH_RPC_URL="http://indra_v2_ethprovider:8545"
@@ -42,16 +39,29 @@ if [[ "$ethNetwork" != "ganache" ]]
 then ETH_RPC_URL="https://$ethNetwork.infura.io/metamask"
 fi
 
+args="$@"
+identifier=1
+
+while [ "$1" != "" ]; do
+    case $1 in
+        -i | --identifier )     shift
+                                identifier=$1
+                                ;;
+    esac
+    shift
+done
+
+USERNAME="PaymentBot$identifier"
+name=${project}_payment_bot_$identifier
+
 # Use different mnemonics for different bots
-if [ "$1" = "1" ]; then
+if [ "$identifier" = "1" ]; then
   export NODE_MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
 else
   export NODE_MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 fi
 
-shift
-args="$@"
-
+echo $args
 ########################################
 ## Build everything that we need
 
@@ -70,7 +80,6 @@ docker run \
   --entrypoint="bash" \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INTERMEDIARY_IDENTIFIER=$INTERMEDIARY_IDENTIFIER" \
-  --env="NATS_URL=$NATS_URL" \
   --env="NODE_MNEMONIC=$NODE_MNEMONIC" \
   --env="NODE_URL=$NODE_URL" \
   --env="POSTGRES_DATABASE=$POSTGRES_DATABASE" \
@@ -90,5 +99,5 @@ docker run \
   ${project}_builder -c '
     echo "payment bot container launched"
     cd modules/payment-bot
-    node dist/index.js '"$args"'
+    ts-node src/index.ts '"$args"'
   '

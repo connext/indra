@@ -5,7 +5,13 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: make test
+      - run: make test-node
+
+  test-e2e:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-e2e
 
   push-latest-images:
     machine: true
@@ -27,6 +33,7 @@ jobs:
               git reset --hard origin/$CIRCLE_BRANCH
               export INDRA_V2_MODE="staging"
               export INDRA_V2_ETH_NETWORK="kovan"
+              export INDRA_V2_ETH_RPC_KEY_KOVAN=$INDRA_V2_ETH_RPC_KEY_KOVAN
               export INDRA_V2_DOMAINNAME="$PRODUCTION_URL"
               make restart-prod
               docker container prune -f
@@ -38,6 +45,7 @@ workflows:
   test-and-deploy:
     jobs:
       - test-node
+      - test-e2e
 
       - push-latest-images:
           filters:
@@ -45,10 +53,8 @@ workflows:
               only: master
           requires:
             - test-node
+            - test-e2e
 
       - deploy-staging:
-          filters:
-            branches:
-              only: master
           requires:
             - push-latest-images

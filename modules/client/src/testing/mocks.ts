@@ -1,5 +1,12 @@
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, User } from "@connext/types";
-import { Address } from "@counterfactual/types";
+import {
+  AppRegistry,
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  SupportedApplication,
+  SupportedNetwork,
+} from "@connext/types";
+import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { providers } from "ethers";
 import * as nats from "ts-nats";
 
@@ -71,7 +78,7 @@ export class MockNodeClientApi implements INodeApiClient {
   public log: Logger;
 
   private nodeUrl: string;
-  private nats: MockNatsClient; // TODO: rename to messaging?
+  private messaging: MockNatsClient; // TODO: rename to messaging?
   public wallet: MockWallet;
   private address: Address;
   private nonce: string | undefined;
@@ -79,8 +86,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger("MockNodeClientApi", opts.logLevel);
-    this.nodeUrl = opts.nodeUrl || nodeUrl;
-    this.nats = (opts.nats as any) || new MockNatsClient(); // TODO: rename to messaging?
+    this.messaging = (opts.messaging as any) || new MockNatsClient(); // TODO: rename to messaging?
     this.wallet = opts.wallet || new MockWallet();
     this.address = opts.wallet ? opts.wallet.address : address;
     this.nonce = undefined;
@@ -90,17 +96,25 @@ export class MockNodeClientApi implements INodeApiClient {
   // should have keys same as the message passed in to fake nats client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {
+    appRegistry: {} as AppRegistry,
     config: {
       chainId: "mocks", // network that your channel is on
       nodePublicIdentifier: "x-pubcooolstuffs", // x-pub of node
       nodeUrl,
     },
     // TODO: mock out properly!! create mocking fns!!!
-    createChannel: {} as User,
-    getChannel: {} as User,
+    createChannel: {} as CreateChannelResponse,
+    getChannel: {} as GetChannelResponse,
   };
 
   public authenticate(): void {}
+
+  public async appRegistry(appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> {
+    return MockNodeClientApi.returnValues.appRegistry;
+  }
 
   public async config(): Promise<GetConfigResponse> {
     return MockNodeClientApi.returnValues.config;
@@ -113,4 +127,14 @@ export class MockNodeClientApi implements INodeApiClient {
   public async createChannel(): Promise<CreateChannelResponse> {
     return MockNodeClientApi.returnValues.createChannel;
   }
+
+  public async subscribeToExchangeRates(
+    from: string,
+    to: string,
+    store: NodeTypes.IStoreService,
+  ): Promise<void> {}
+
+  public async unsubscribeFromExchangeRates(from: string, to: string): Promise<void> {}
+
+  public async requestCollateral(): Promise<void> {}
 }

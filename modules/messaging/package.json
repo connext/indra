@@ -1,0 +1,25 @@
+{
+  "name": "@connext/messaging",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "iife": "dist/index.iife.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p . && rollup -c",
+    "build:watch": "tsc -p . && rollup -c -w",
+    "lint": "tslint -c tslint.json -p .",
+    "lint:fix": "tslint -c tslint.json -p . --fix",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "ts-nats": "1.2.4",
+    "websocket-nats": "0.3.3"
+  },
+  "devDependencies": {
+    "@counterfactual/types": "0.0.23",
+    "rollup": "1.17.0",
+    "rollup-plugin-typescript2": "0.22.0",
+    "typescript": "3.5.3"
+  }
+}

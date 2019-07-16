@@ -25,6 +25,7 @@ export class SwapRateService {
 
   async publishRate(): Promise<void> {
     const rate = await this.getSwapRate();
-    this.natsClient.emit("swap-rate", rate).toPromise();
+    // TODO this will have to be changed to actual addresses
+    this.natsClient.emit("swap-rate.eth.dai", rate).toPromise();
   }
 }
