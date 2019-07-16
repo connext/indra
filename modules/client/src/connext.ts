@@ -369,7 +369,7 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfModule.router.dispatch(
+    const depositResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -388,7 +388,7 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -405,7 +405,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     try {
-      const freeBalance = await this.cfModule.router.dispatch(
+      const freeBalance = await this.cfModule.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -437,7 +437,7 @@ export class ConnextInternal extends ConnextChannel {
   public getProposedAppInstanceDetails = async (): Promise<
     NodeTypes.GetProposedAppInstancesResult | undefined
   > => {
-    const proposedRes = await this.cfModule.router.dispatch(
+    const proposedRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -457,7 +457,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -480,7 +480,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfModule.router.dispatch(
+    const stateResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -510,7 +510,7 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfModule.router.dispatch(
+    const actionResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -531,7 +531,7 @@ export class ConnextInternal extends ConnextChannel {
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
     params.intermediaries = [this.nodePublicIdentifier];
 
-    const actionRes = await this.cfModule.router.dispatch(
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -556,7 +556,7 @@ export class ConnextInternal extends ConnextChannel {
           `Installed apps: ${JSON.stringify(apps, null, 2)}`,
       );
     }
-    const installVirtualResponse = await this.cfModule.router.dispatch(
+    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -580,7 +580,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfModule.router.dispatch(
+    const uninstallResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -610,7 +610,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.router.dispatch(
+    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
