@@ -196,10 +196,14 @@ export class NodeApiClient implements INodeApiClient {
         data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
       }`,
     );
-    const msg = await this.messaging.request(subject, API_TIMEOUT, {
-      data,
-      id: uuid.v4(),
-    });
+    const msg = await this.messaging.request(
+      subject,
+      API_TIMEOUT,
+      JSON.stringify({
+        data,
+        id: uuid.v4(),
+      }),
+    );
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;
