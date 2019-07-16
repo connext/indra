@@ -264,7 +264,7 @@ export interface SwapParameters<T = string> {
   amount: T;
   swapRate: T;
   toAssetId: Address;
-  fromAssetId: Address; // TODO: do these assets have to be renamed?
+  fromAssetId: Address;
   // make sure they are consistent with CF stuffs
 }
 export type SwapParametersBigNumber = SwapParameters<BigNumber>;
@@ -382,6 +382,14 @@ export function convertDepositParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
+export function convertSwapParameters<To extends NumericTypeName>(
+  to: To,
+  obj: SwapParameters<any>,
+): SwapParameters<NumericTypes[To]> {
+  const fromType = getType(obj.swapRate);
+  return convertFields(fromType, to, ["swapRate", "amount"], obj);
+}
+
 export function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
@@ -391,25 +399,6 @@ export function convertTransferParametersToAsset<To extends NumericTypeName>(
   };
   if (!asset.assetId) {
     asset.assetId = constants.AddressZero;
-  }
-  return {
-    ...asset,
-    ...convertAssetAmount(to, asset),
-  };
-}
-
-export function convertSwapParametersToAsset<To extends NumericTypeName>(
-  to: To,
-  obj: SwapParameters<any>,
-): SwapParameters<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-  };
-  if (!asset.toAssetId) {
-    asset.toAssetId = constants.AddressZero;
-  }
-  if (!asset.fromAssetId) {
-    asset.fromAssetId = constants.AddressZero;
   }
   return {
     ...asset,
@@ -448,6 +437,6 @@ export const convert: any = {
   Multisig: convertMultisig,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
-  SwapParameters: convertSwapParametersToAsset,
+  SwapParameters: convertSwapParameters,
   Withdraw: convertWithdrawParametersToAsset,
 };
