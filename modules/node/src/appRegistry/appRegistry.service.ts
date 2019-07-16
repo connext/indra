@@ -26,7 +26,7 @@ export class AppRegistryService implements OnModuleInit {
     );
   }
 
-  private validateSwap() {}
+  private validateSwap(initialState: any) {}
 
   private async verifyAppProposal(proposedAppParams: {
     params: NodeTypes.ProposeInstallParams;
@@ -80,7 +80,7 @@ export class AppRegistryService implements OnModuleInit {
 
     switch (registryAppInfo.name) {
       case KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP:
-        await this.validateSwap();
+        await this.validateSwap(proposedAppParams.params.initialState);
         break;
       default:
         break;
