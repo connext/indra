@@ -32,7 +32,7 @@ export interface INodeApiClient {
   requestCollateral(): Promise<void>;
 }
 
-type ExchangeSubscription = {
+export type ExchangeSubscription = {
   from: string;
   to: string;
   subscription: Subscription;
