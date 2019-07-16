@@ -3,11 +3,13 @@ import { Module, Provider } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AppRegistryProviderId } from "../constants";
+import { NodeModule } from "../node/node.module";
 import { CLogger } from "../util";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistry, Network } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+import { AppRegistryService } from "./appRegistry.service";
 
 type DefaultApp = {
   actionEncoding?: string;
@@ -70,7 +72,7 @@ export const appRegistryProvider: Provider = {
 @Module({
   controllers: [AppRegistryController],
   exports: [appRegistryProvider],
-  imports: [TypeOrmModule.forFeature([AppRegistryRepository])],
-  providers: [appRegistryProvider],
+  imports: [TypeOrmModule.forFeature([AppRegistryRepository]), NodeModule],
+  providers: [appRegistryProvider, AppRegistryService],
 })
 export class AppRegistryModule {}

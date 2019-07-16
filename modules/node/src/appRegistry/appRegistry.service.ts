@@ -1,5 +1,9 @@
 import { jsonRpcDeserialize, Node, ProposeMessage } from "@counterfactual/node";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import {
+  AppInstanceInfo,
+  Node as NodeTypes,
+  SolidityABIEncoderV2Type,
+} from "@counterfactual/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 
 import { NodeProviderId } from "../constants";
@@ -26,7 +30,8 @@ export class AppRegistryService implements OnModuleInit {
     );
   }
 
-  private validateSwap(initialState: any) {}
+  // TODO: how to match this with type
+  private validateSwap(initialState: SolidityABIEncoderV2Type): void {}
 
   private async verifyAppProposal(proposedAppParams: {
     params: NodeTypes.ProposeInstallParams;
