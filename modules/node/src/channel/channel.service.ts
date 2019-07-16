@@ -47,6 +47,7 @@ export class ChannelService implements OnModuleInit {
     logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
 
     // TODO: remove this when the above line returns multisig
+    // https://github.com/counterfactual/monorepo/issues/1894
     const multisigResponse = await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
