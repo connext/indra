@@ -1,4 +1,4 @@
-import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
+import { RegisteredAppDetails } from "@connext/types";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
