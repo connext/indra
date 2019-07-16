@@ -11,8 +11,6 @@ import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { Zero } from "ethers/constants";
 
 export class TransferController extends AbstractController {
   private appId: string;
