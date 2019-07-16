@@ -1,4 +1,4 @@
-import { RegisteredAppDetails } from "@connext/types";
+import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -242,7 +242,13 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    // proposal is valid, automatically install known app
+    // proposal is valid, automatically install known app, but
+    // do not ever automatically install swap app since theres no
+    // way to validate the exchange in app against the rate input
+    // to controller
+    if (matchedApp.name === SupportedApplications.SimpleTwoPartySwapApp) {
+      return;
+    }
     if (isVirtual) {
       await this.connext.installVirtualApp(appInstance.identityHash);
     } else {
