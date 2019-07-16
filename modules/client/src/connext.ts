@@ -529,7 +529,11 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    params.intermediaries = [this.nodePublicIdentifier]
+    if(params.intermediaries[0] != this.nodePublicIdentifier ||
+       params.intermediaries.length != 1) {
+         throw new Error(`Incorrect intermediaries. Expected: ${this.nodePublicIdentifier},
+         got ${JSON.stringify(params.intermediaries)}`)
+       }
 
     const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
@@ -545,7 +549,7 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallApp = async (
-    params: NodeTypes.ProposeInstallParams
+    params: NodeTypes.ProposeInstallParams,
   ): Promise<NodeTypes.ProposeInstallResult> => {
 
     const actionRes = await this.cfModule.router.dispatch(
@@ -615,7 +619,7 @@ export class ConnextInternal extends ConnextChannel {
     return installResponse.result;
   };
 
-  public uninstallVirtualApp = async (
+  public uninstallApp = async (
      appInstanceId: string,
   ): Promise<NodeTypes.UninstallResult> => {
     // check the app is actually installed
@@ -637,6 +641,30 @@ export class ConnextInternal extends ConnextChannel {
 
     return uninstallResponse.result as NodeTypes.UninstallResult;
   };
+
+  public uninstallVirtualApp = async (
+    appInstanceId: string,
+ ): Promise<NodeTypes.UninstallVirtualResult> => {
+   // check the app is actually installed
+   const err = await this.appNotInstalled(appInstanceId);
+   if (err) {
+     this.logger.error(err);
+     throw new Error(err);
+   }
+   const uninstallVirtualResponse = await this.cfModule.router.dispatch(
+     jsonRpcDeserialize({
+       id: Date.now(),
+       jsonrpc: "2.0",
+       method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
+       params: {
+         appInstanceId,
+       },
+     }),
+   );
+
+   return uninstallVirtualResponse.result as NodeTypes.UninstallVirtualResult;
+ };
+
 
   // TODO: erc20 support?
   public cfWithdraw = async (
