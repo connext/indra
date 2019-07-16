@@ -180,7 +180,7 @@ export abstract class ConnextChannel {
   };
 
   // TODO: do we need to expose here?
-  public authenticate = (): void => {}
+  public authenticate = (): void => {};
 
   // TODO: do we need to expose here?
   public getAppRegistry = async (appDetails?: {
@@ -546,15 +546,10 @@ export class ConnextInternal extends ConnextChannel {
   public installVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.InstallVirtualResult> => {
-    // FIXME: make this helper?
     // check the app isnt actually installed
-    const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
-    if (app.length !== 0) {
-      throw new Error(
-        `Found already installed app with id: ${appInstanceId}. ` +
-          `Installed apps: ${JSON.stringify(apps, null, 2)}`,
-      );
+    const alreadyInstalled = await this.appInstalled(appInstanceId);
+    if (alreadyInstalled) {
+      throw new Error(alreadyInstalled);
     }
     const installVirtualResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
@@ -569,6 +564,26 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     return installVirtualResponse.result;
+  };
+
+  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
+    // check the app isnt actually installed
+    const alreadyInstalled = await this.appInstalled(appInstanceId);
+    if (alreadyInstalled) {
+      throw new Error(alreadyInstalled);
+    }
+    const installResponse = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.INSTALL,
+        params: {
+          appInstanceId,
+        } as NodeTypes.InstallParams,
+      }),
+    );
+
+    return installResponse.result;
   };
 
   public uninstallVirtualApp = async (
@@ -663,6 +678,18 @@ export class ConnextInternal extends ConnextChannel {
     if (app.length > 1) {
       return (
         `CRITICAL ERROR: found multiple apps with the same id. ` +
+        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+      );
+    }
+    return undefined;
+  };
+
+  private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
+    const apps = await this.getAppInstances();
+    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
+    if (app.length > 0) {
+      return (
+        `App with id ${appInstanceId} is already installed.` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }
