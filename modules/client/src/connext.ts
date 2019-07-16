@@ -203,6 +203,10 @@ export abstract class ConnextChannel {
     return await this.internal.node.unsubscribeFromExchangeRates(from, to);
   };
 
+  public getLatestExchangeRate = async (from: string, to: string): Promise<any> => {
+    return await this.internal.node.getLatestExchangeRate(from, to);
+  };
+
   public requestCollateral = async (): Promise<void> => {
     return await this.internal.node.requestCollateral();
   };
