@@ -16,13 +16,14 @@ program
   .option("-d, --deposit <amount>", "Deposit amount in Ether units")
   .option(
     "-a, --asset-id <address>",
-    "Asset ID/Token Address of deposited, withdrawn, or transferred asset",
+    "Asset ID/Token Address of deposited, withdrawn, swapped, or transferred asset",
   )
   .option("-t, --transfer <amount>", "Transfer amount in Ether units")
   .option("-c, --counterparty <id>", "Counterparty public identifier")
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
-  .option("-r, --recipient <address>", "Withdrawal recipient address");
+  .option("-r, --recipient <address>", "Withdrawal recipient address")
+  .option("-s, --swap <amount>", "Swap amount in Ether units");
 
 program.parse(process.argv);
 
@@ -56,6 +57,7 @@ export function getConnextClient(): connext.ConnextInternal {
 }
 
 async function run(): Promise<void> {
+  await client.subscribeToSwapRates("eth", "dai");
   await getOrCreateChannel();
   if (program.assetId) {
     assetId = program.assetId;
@@ -78,6 +80,16 @@ async function run(): Promise<void> {
     await client.transfer({
       amount: ethers.utils.parseEther(program.transfer).toString(),
       recipient: program.counterparty,
+    });
+  }
+
+  if (program.swap) {
+    const swapRate = client.getLatestSwapRate("eth", "dai");
+    await client.swap({
+      amount: ethers.utils.parseEther(program.swap).toString(),
+      fromAssetId: AddressZero,
+      swapRate: swapRate.toString(),
+      toAssetId: assetId,
     });
   }
 
