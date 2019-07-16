@@ -45,7 +45,7 @@ export class ConnextListener extends EventEmitter {
       // applications
       // if the from is us, ignore
       this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
-      if (data.from === this.cfModule.publicIdentifier) {
+      if (data.data.proposedByIdentifier === this.cfModule.publicIdentifier) {
         return;
       }
       // check based on supported applications
