@@ -1,25 +1,26 @@
-import { convert, SwapParameters, NodeChannel } from "@connext/types";
+import { convert, NodeChannel, SwapParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
-import { constants } from "ethers";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
-import { invalidAddress, invalidXpub } from "../validation/addresses";
-import { falsy, notLessThanOrEqualTo } from "../validation/bn";
+import { invalidAddress } from "../validation/addresses";
+import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { Zero } from "ethers/constants";
 
 export class SwapController extends AbstractController {
   private appId: string;
   private timeout: NodeJS.Timeout;
 
   public async swap(params: SwapParameters): Promise<NodeChannel> {
-
     // convert params + validate
-    const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters("bignumber", params);
+    const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters(
+      "bignumber",
+      params,
+    );
     const invalid = await this.validate(amount, toAssetId, fromAssetId, swapRate);
     if (invalid) {
       throw new Error(invalid.toString());
@@ -27,7 +28,7 @@ export class SwapController extends AbstractController {
 
     // For below sanity check
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const preSwapToBal = await this.connext.getFreeBalance(toAssetId)
+    const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
 
     // get app definition from constants
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
@@ -41,14 +42,16 @@ export class SwapController extends AbstractController {
 
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const postSwapToBal = await this.connext.getFreeBalance(toAssetId)
+    const postSwapToBal = await this.connext.getFreeBalance(toAssetId);
     // TODO is this the right syntax? Waiting on ERC20 merge
-    const diffFrom = preSwapFromBal[this.cfModule.ethFreeBalanceAddress]
-                      .sub(postSwapFromBal[this.cfModule.ethFreeBalanceAddress]);
-    const diffTo = preSwapToBal[this.cfModule.ethFreeBalanceAddress]
-                      .sub(postSwapToBal[this.cfModule.ethFreeBalanceAddress]);
-    if(diffFrom != amount || diffTo != amount.mul(swapRate)) {
-      throw new Error("Invalid final swap amounts - this shouldn't happen!!")
+    const diffFrom = preSwapFromBal[this.cfModule.ethFreeBalanceAddress].sub(
+      postSwapFromBal[this.cfModule.ethFreeBalanceAddress],
+    );
+    const diffTo = preSwapToBal[this.cfModule.ethFreeBalanceAddress].sub(
+      postSwapToBal[this.cfModule.ethFreeBalanceAddress],
+    );
+    if (!diffFrom.eq(amount) || !diffTo.eq(amount.mul(swapRate))) {
+      throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }
     const newState = await this.connext.getChannel();
 
@@ -62,19 +65,19 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
-    swapRate: string,
+    swapRate: BigNumber,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
-    const freeBalance = await this.connext.getFreeBalance(fromAssetId);
-    const preSwapFromBal = freeBalance[this.cfModule.ethFreeBalanceAddress]; // TODO will this work? Check
-    const preSwapToBal = (await this.connext.getFreeBalance(toAssetId))[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)]
-    const isSwapRateValid = (+swapRate <= 0) ? `Swap rate is less than or equal to zero: ${swapRate}` : undefined;
+    const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
+    const userBal = preSwapFromBal[this.cfModule.ethFreeBalanceAddress];
+    const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const nodeBal = preSwapToBal[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
     const errs = [
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
-      notLessThanOrEqualTo(amount, preSwapFromBal),
-      notLessThanOrEqualTo(amount.mul(swapRate), preSwapToBal)
-      isSwapRateValid,
+      notLessThanOrEqualTo(amount, userBal),
+      notLessThanOrEqualTo(amount.mul(swapRate), nodeBal),
+      notPositive(swapRate),
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
@@ -103,9 +106,9 @@ export class SwapController extends AbstractController {
   };
 
   private swapAppInstall = async (
-    amount: BigNumber, 
-    toAssetId: string, 
-    fromAssetId: string, 
+    amount: BigNumber,
+    toAssetId: string,
+    fromAssetId: string,
     swapRate: BigNumber,
     appInfo: any,
   ): Promise<any> => {
@@ -121,14 +124,14 @@ export class SwapController extends AbstractController {
       initialState: {
         coinBalances: [
           {
-            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
-            coinAddress: [fromAssetId, toAssetId],
             balance: [amount, Zero],
+            coinAddress: [fromAssetId, toAssetId],
+            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
           },
           {
-            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+            balance: [Zero, amount.mul(swapRate)],
             coinAddress: [fromAssetId, toAssetId],
-            balance: [Zero, amount.mul(swapRate)]
+            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
           },
         ],
         finalized: false,
@@ -157,7 +160,7 @@ export class SwapController extends AbstractController {
 
     this.cleanupInstallListeners(boundResolve, boundReject);
     return res.appInstanceId;
-  }
+  };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
     this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
@@ -165,7 +168,6 @@ export class SwapController extends AbstractController {
   };
 
   private swapAppUninstall = async (appId: string): Promise<void> => {
-
     await this.connext.uninstallVirtualApp(appId);
     // TODO: cf does not emit uninstall virtual event on the node
     // that has called this function but ALSO does not immediately
