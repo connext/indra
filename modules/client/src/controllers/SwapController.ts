@@ -1,10 +1,10 @@
-import { AppRegistry, convert, SwapParameters, NodeChannel } from "@connext/types";
+import { convert, SwapParameters, NodeChannel } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
 import { BigNumber } from "ethers/utils";
 
-import { delay } from "../lib/utils";
+import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -17,11 +17,10 @@ export class SwapController extends AbstractController {
   private timeout: NodeJS.Timeout;
 
   public async swap(params: SwapParameters): Promise<NodeChannel> {
-    this.log.info("Swap called, yay!");
 
     // convert params + validate
-    const { amount, toAssetId, fromAssetId } = convert.SwapParameters("bignumber", params);
-    const invalid = await this.validate(amount, toAssetId, fromAssetId);
+    const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters("bignumber", params);
+    const invalid = await this.validate(amount, toAssetId, fromAssetId, swapRate);
     if (invalid) {
       throw new Error(invalid.toString());
     }
@@ -31,42 +30,26 @@ export class SwapController extends AbstractController {
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId)
 
     // get app definition from constants
-    // TODO: this should come from a db on the node
-    const appInfo = AppRegistry[this.connext.network.name].SimpleTwoPartySwapApp;
-
-    // TODO temp
-    const swapRate = Zero
+    const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
 
     // install the swap app
-    try {
-      await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo); // TODO need to listen for swap rate
-    } catch (e) {
-      // TODO: can add more checks in `rejectInstall`. Could be any of:
-      // 1) Incorrect assetIds (or assetIds are just not supported by node)
-      // 2) Not enough balance on node to enact swap
-      // 3) Swap rate not accepted by node
-      throw new Error("Swap rejected by node");
-    }
+    await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
     // if app installed, that means swap was accepted
     // now uninstall
-    try {
-      await this.swapAppUninstall(this.appId)
-    } catch (e) {
-      // TODO: under what conditions will this fail?
-      throw new Error("Swap uninstall failed. Is the node online?")
-    }
+    await this.swapAppUninstall(this.appId);
 
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const postSwapToBal = await this.connext.getFreeBalance(toAssetId)
     // TODO is this the right syntax? Waiting on ERC20 merge
-    const diffFrom = preSwapFromBal[this.cfModule.ethFreeBalanceAddress].sub(postSwapFromBal[this.cfModule.ethFreeBalanceAddress]);
-    const diffTo = preSwapToBal[this.cfModule.ethFreeBalanceAddress].sub(postSwapToBal[this.cfModule.ethFreeBalanceAddress]);
+    const diffFrom = preSwapFromBal[this.cfModule.ethFreeBalanceAddress]
+                      .sub(postSwapFromBal[this.cfModule.ethFreeBalanceAddress]);
+    const diffTo = preSwapToBal[this.cfModule.ethFreeBalanceAddress]
+                      .sub(postSwapToBal[this.cfModule.ethFreeBalanceAddress]);
     if(diffFrom != amount || diffTo != amount.mul(swapRate)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!")
     }
-    
     const newState = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
@@ -79,14 +62,19 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
+    swapRate: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const freeBalance = await this.connext.getFreeBalance(fromAssetId);
     const preSwapFromBal = freeBalance[this.cfModule.ethFreeBalanceAddress]; // TODO will this work? Check
+    const preSwapToBal = (await this.connext.getFreeBalance(toAssetId))[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)]
+    const isSwapRateValid = (+swapRate <= 0) ? `Swap rate is less than or equal to zero: ${swapRate}` : undefined;
     const errs = [
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, preSwapFromBal),
+      notLessThanOrEqualTo(amount.mul(swapRate), preSwapToBal)
+      isSwapRateValid,
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
@@ -104,14 +92,14 @@ export class SwapController extends AbstractController {
   };
 
   // TODO: fix types of data
-  private rejectInstallSwap = (rej: any, data: RejectInstallVirtualMessage): any => {
+  private rejectInstallSwap = (rej: any, msg: RejectInstallVirtualMessage): any => {
     // check app id
-    if (this.appId !== data.data.appInstanceId) {
+    if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
-    rej(`Install virtual rejected. Event data: ${JSON.stringify(data, null, 2)}`);
-    return data;
+    rej(`Install virtual rejected. Event data: ${JSON.stringify(msg.data, null, 2)}`);
+    return msg.data;
   };
 
   private swapAppInstall = async (
@@ -125,7 +113,11 @@ export class SwapController extends AbstractController {
     let boundReject;
 
     const params: NodeTypes.ProposeInstallParams = {
-      ...appInfo,
+      abiEncodings: {
+        actionEncoding: appInfo.actionEncoding,
+        stateEncoding: appInfo.stateEncoding,
+      },
+      appDefinition: appInfo.appDefinitionAddress,
       initialState: {
         coinBalances: [
           {
@@ -139,8 +131,10 @@ export class SwapController extends AbstractController {
             balance: [Zero, amount.mul(swapRate)]
           },
         ],
+        finalized: false,
       },
       myDeposit: amount, // TODO will this work?
+      outcomeType: appInfo.outcomeType,
       peerDeposit: amount.mul(swapRate), // TODO will this work? ERC20 context?
       proposedToIdentifier: this.connext.nodePublicIdentifier,
     };
@@ -157,7 +151,7 @@ export class SwapController extends AbstractController {
       this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
       this.timeout = setTimeout(() => {
         this.cleanupInstallListeners(boundResolve, boundReject);
-        boundReject({ data: { data: this.appId } });
+        boundReject({ data: { appInstanceId: this.appId } });
       }, 5000);
     });
 
