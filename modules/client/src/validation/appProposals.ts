@@ -24,10 +24,19 @@ export const validateSwapApp = async (
     return baseValidation;
   }
 
+  // TODO: how to get the to and from?
+
+  // get the in app exchange rate
+
+  // get the latest exchange rate
+  const latestRate = await connext.getLatestExchangeRate("", "")
+
   // validate the exchange rate is within expected
   // TODO: whats the best way to validate the exchange rate
   // here? how will it get stored in the connext object when
   // input into the controller?
+
+  // validate the timeout is above the minimum (?)
 
   // This is called as a default to the propose app install event
   // which may not have context into what *your* exchange rate is?
