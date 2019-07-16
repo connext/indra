@@ -262,6 +262,7 @@ export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export interface SwapParameters<T = string> {
   amount: T;
+  swapRate: T;
   toAssetId: Address;
   fromAssetId: Address; // TODO: do these assets have to be renamed?
   // make sure they are consistent with CF stuffs
