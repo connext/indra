@@ -121,16 +121,16 @@ async function getOrCreateChannel(): Promise<void> {
   await pgServiceFactory.connectDb();
 
   const connextOpts = {
+    ethProviderUrl: config.ethProviderUrl,
+    logLevel: 5,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
-    rpcProviderUrl: config.ethRpcUrl,
     store: pgServiceFactory.createStoreService(config.username),
-    logLevel: 5,
   };
 
   console.log("Using client options:");
   console.log("     - mnemonic:", connextOpts.mnemonic);
-  console.log("     - rpcProviderUrl:", connextOpts.rpcProviderUrl);
+  console.log("     - rpcProviderUrl:", connextOpts.ethProviderUrl);
   console.log("     - nodeUrl:", connextOpts.nodeUrl);
 
   console.log("Creating connext");

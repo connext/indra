@@ -1,4 +1,4 @@
-import { MessagingServiceFactory } from "@connext/messaging";
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,
@@ -18,12 +18,11 @@ import {
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
-import { Client as NatsClient } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
 import { SwapController } from "./controllers/SwapController";
@@ -40,7 +39,6 @@ import { NodeApiClient, SwapSubscription } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
-import { Wallet } from "./wallet";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -51,8 +49,9 @@ import { Wallet } from "./wallet";
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create a new wallet
-  const wallet = new Wallet(opts);
-  const network = await wallet.provider.getNetwork();
+  const ethProvider = new providers.JsonRpcProvider(opts.ethProviderUrl);
+  const wallet = Wallet.fromMnemonic(opts.mnemonic).connect(ethProvider);
+  const network = await ethProvider.getNetwork();
 
   console.log("Creating messaging service client");
   const { logLevel, natsClusterId, nodeUrl, natsToken } = opts;
@@ -75,7 +74,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const nodeConfig = {
     logLevel: opts.logLevel,
     messaging,
-    wallet,
   };
   console.log("creating node client");
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
@@ -94,7 +92,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
-    wallet.provider,
+    ethProvider,
     config.contractAddresses,
   );
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
@@ -114,8 +112,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   return new ConnextInternal({
     appRegistry,
     cfModule,
+    ethProvider,
+    messaging,
     multisigAddress: myChannel.multisigAddress,
-    nats: messaging.getConnection(),
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
@@ -260,8 +259,9 @@ export class ConnextInternal extends ConnextChannel {
   public cfModule: Node;
   public publicIdentifier: string;
   public wallet: Wallet;
+  public ethProvider: providers.JsonRpcProvider;
   public node: NodeApiClient;
-  public nats: NatsClient;
+  public messaging: IMessagingService;
   public multisigAddress: Address;
   public listener: ConnextListener;
   public nodePublicIdentifier: string;
@@ -283,9 +283,10 @@ export class ConnextInternal extends ConnextChannel {
 
     this.opts = opts;
 
+    this.ethProvider = opts.ethProvider;
     this.wallet = opts.wallet;
     this.node = opts.node;
-    this.nats = opts.nats;
+    this.messaging = opts.messaging;
 
     this.appRegistry = opts.appRegistry;
 
@@ -374,10 +375,10 @@ export class ConnextInternal extends ConnextChannel {
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
-      bal = await this.wallet.provider.getBalance(depositAddr);
+      bal = await this.ethProvider.getBalance(depositAddr);
     } else {
       // get token balance
-      const token = new Contract(assetId, tokenAbi, this.wallet.provider);
+      const token = new Contract(assetId, tokenAbi, this.ethProvider);
       // TODO: correct? how can i use allowance?
       bal = await token.balanceOf(depositAddr);
     }

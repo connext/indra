@@ -7,13 +7,12 @@ import {
   SupportedNetwork,
 } from "@connext/types";
 import { Address, Node as NodeTypes } from "@counterfactual/types";
-import { providers } from "ethers";
+import { providers, Wallet } from "ethers";
 import * as nats from "ts-nats";
 
 import { Logger } from "../lib/logger";
 import { INodeApiClient } from "../node";
 import { ClientOptions, NodeInitializationParameters } from "../types";
-import { Wallet } from "../wallet";
 
 type TransactionRequest = providers.TransactionRequest;
 type TransactionResponse = providers.TransactionResponse;
@@ -63,10 +62,6 @@ export class MockWallet extends Wallet {
     return {} as TransactionResponse;
   }
 
-  public async signTransaction(txReq: TransactionRequest): Promise<string> {
-    return "";
-  }
-
   public async signMessage(message: string): Promise<string> {
     console.log(`Signing message: ${message}`);
     return "";
@@ -79,16 +74,12 @@ export class MockNodeClientApi implements INodeApiClient {
 
   private nodeUrl: string;
   private messaging: MockNatsClient; // TODO: rename to messaging?
-  public wallet: MockWallet;
-  private address: Address;
   private nonce: string | undefined;
   private signature: string | undefined;
 
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger("MockNodeClientApi", opts.logLevel);
     this.messaging = (opts.messaging as any) || new MockNatsClient(); // TODO: rename to messaging?
-    this.wallet = opts.wallet || new MockWallet();
-    this.address = opts.wallet ? opts.wallet.address : address;
     this.nonce = undefined;
     this.signature = undefined;
   }

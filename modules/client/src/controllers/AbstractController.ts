@@ -1,11 +1,10 @@
 import { Node } from "@counterfactual/node";
-import { providers } from "ethers";
+import { providers, Wallet } from "ethers";
 
 import { ConnextInternal } from "../connext";
 import { Logger } from "../lib/logger";
 import { ConnextListener } from "../listener";
 import { INodeApiClient } from "../node";
-import { Wallet } from "../wallet";
 
 export abstract class AbstractController {
   public name: string;
@@ -14,7 +13,7 @@ export abstract class AbstractController {
   public node: INodeApiClient;
   public cfModule: Node;
   public listener: ConnextListener;
-  public provider: providers.JsonRpcProvider;
+  public ethProvider: providers.JsonRpcProvider;
   public wallet: Wallet;
 
   public constructor(name: string, connext: ConnextInternal) {
@@ -24,7 +23,7 @@ export abstract class AbstractController {
     this.cfModule = connext.cfModule;
     this.listener = connext.listener;
     this.log = new Logger(name, connext.opts.logLevel);
-    this.provider = connext.wallet.provider;
+    this.ethProvider = connext.ethProvider;
     this.wallet = connext.wallet;
   }
 }

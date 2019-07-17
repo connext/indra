@@ -19,7 +19,6 @@
     "human-standard-token-abi": "2.0.0",
     "node-fetch": "2.6.0",
     "regenerator-runtime": "0.13.2",
-    "ts-nats": "1.2.4",
     "uuid": "3.3.2"
   },
   "devDependencies": {

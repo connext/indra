@@ -8,12 +8,12 @@ import {
   SupportedNetwork,
 } from "@connext/types";
 import { Address, Node as NodeTypes } from "@counterfactual/types";
+import { Wallet } from "ethers";
 import { Subscription } from "ts-nats";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
-import { Wallet } from "./wallet";
 
 // TODO: move to types.ts?
 const API_TIMEOUT = 5000;
@@ -40,8 +40,6 @@ export type SwapSubscription = {
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
-  public wallet: Wallet;
-  public address: Address;
   public log: Logger;
   public nonce: string | undefined;
   public signature: string | undefined;
@@ -53,8 +51,6 @@ export class NodeApiClient implements INodeApiClient {
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
-    this.wallet = opts.wallet;
-    this.address = opts.wallet.address;
     this.log = new Logger("NodeApiClient", opts.logLevel);
     this.userPublicIdentifier = opts.userPublicIdentifier;
     this.nodePublicIdentifier = opts.nodePublicIdentifier;
