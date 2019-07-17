@@ -2,7 +2,7 @@ import { convert, NodeChannel, RegisteredAppDetails, TransferParameters } from "
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
-import { Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -130,7 +130,7 @@ export class TransferController extends AbstractController {
     let boundReject;
 
     // note: intermediary is added in connext.ts as well
-    const params = {
+    const params: NodeTypes.ProposeInstallVirtualParams = {
       abiEncodings: {
         actionEncoding: appInfo.actionEncoding,
         stateEncoding: appInfo.stateEncoding,
@@ -150,11 +150,13 @@ export class TransferController extends AbstractController {
           },
         ],
       },
+      initiatorDeposit: amount,
+      initiatorDepositTokenAddress: AddressZero,
       intermediaries: [this.connext.nodePublicIdentifier],
-      myDeposit: amount,
       outcomeType: appInfo.outcomeType,
-      peerDeposit: constants.Zero,
       proposedToIdentifier: recipient,
+      responderDeposit: constants.Zero,
+      responderDepositTokenAddress: AddressZero,
       timeout: constants.Zero, // TODO: fix, add to app info?
     };
 

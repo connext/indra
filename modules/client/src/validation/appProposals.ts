@@ -48,7 +48,7 @@ export const validateTransferApp = async (
 
   // check that the receivers deposit is 0
   // FIXME: how to check for the receiver?
-  if (!app.peerDeposit.isZero() && !app.myDeposit.isZero()) {
+  if (!app.responderDeposit.isZero() && !app.initiatorDeposit.isZero()) {
     return `There must be at least one zero deposit in the application. Proposed app: ${prettyLog(
       app,
     )}`;
@@ -107,7 +107,7 @@ const baseAppValidation = async (
 
   // check that the outcome type is the same
   // TODO: what checks needed for the interpreter params?
-  if (app.peerDeposit.isZero() && app.myDeposit.isZero()) {
+  if (app.initiatorDeposit.isZero() && app.responderDeposit.isZero()) {
     return `Refusing to install app with two zero value deposits. Proposed app: ${prettyLog(app)}`;
   }
 
@@ -116,7 +116,9 @@ const baseAppValidation = async (
   // FIXME: how to get assetId
   const assetId = AddressZero;
   const ethFreeBalance = await connext.getFreeBalance(assetId);
-  if (ethFreeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)].lt(app.myDeposit)) {
+  if (
+    ethFreeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)].lt(app.initiatorDeposit)
+  ) {
     return `Insufficient free balance for requested asset. Proposed app: ${prettyLog(app)}`;
   }
 

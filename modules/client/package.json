@@ -13,7 +13,7 @@
   "dependencies": {
     "@connext/messaging": "0.0.1",
     "@connext/types": "0.0.4",
-    "@counterfactual/node": "0.2.18",
+    "@counterfactual/node": "0.2.19",
     "core-js": "3.1.4",
     "ethers": "4.0.33",
     "human-standard-token-abi": "2.0.0",
