@@ -35,7 +35,7 @@ import {
   publicIdentifierToAddress,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
-import { NodeApiClient, SwapSubscription } from "./node";
+import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
@@ -180,9 +180,6 @@ export abstract class ConnextChannel {
   };
 
   // TODO: do we need to expose here?
-  public authenticate = (): void => {};
-
-  // TODO: do we need to expose here?
   public getAppRegistry = async (appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
@@ -200,7 +197,7 @@ export abstract class ConnextChannel {
   };
 
   public getLatestSwapRate = (from: string, to: string): BigNumber => {
-    return this.internal.getLatestSwapRate(from, to);
+    return this.internal.node.getLatestSwapRate(from, to);
   };
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
@@ -328,24 +325,6 @@ export class ConnextInternal extends ConnextChannel {
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.withdrawalController.withdraw(params);
-  };
-
-  public getLatestSwapRate = (from: string, to: string): BigNumber => {
-    if (!this.node.exchangeSubscriptions) {
-      throw new Error(
-        `Not currently subscribed to any exchange rates, cannot retrieve latest from store.`,
-      );
-    }
-    const subscriptions = this.node.exchangeSubscriptions.filter((sub: SwapSubscription) => {
-      sub.to === to && sub.from === from;
-    });
-    if (subscriptions.length === 0) {
-      throw new Error(
-        `Not currently subscribed to exchange rate for ${from}-${to},` +
-          ` cannot retrieve latest from store.`,
-      );
-    }
-    return new BigNumber(this.opts.store.get(`swap-rate.${from}.${to}`));
   };
 
   ///////////////////////////////////

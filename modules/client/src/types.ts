@@ -54,7 +54,7 @@ export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
   cfModule: Node; // counterfactual node
   contract?: MultisigState;
-  messaging: IMessagingService; // converted to nats-client in ConnextInternal constructor
+  messaging: IMessagingService;
   multisigAddress: string;
   network: utils.Network; // TODO: delete! use bos branch!
   node: NodeApiClient;

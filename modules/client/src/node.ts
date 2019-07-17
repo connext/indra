@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { Wallet } from "ethers";
-import { Subscription } from "ts-nats";
+import { BigNumber } from "ethers/utils";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
@@ -19,35 +19,25 @@ import { NodeInitializationParameters } from "./types";
 const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
-  config(): Promise<GetConfigResponse>;
   appRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
   }): Promise<AppRegistry>;
-  authenticate(): void; // TODO: implement!
-  getChannel(): Promise<GetChannelResponse>;
+  config(): Promise<GetConfigResponse>;
   createChannel(): Promise<CreateChannelResponse>;
+  getChannel(): Promise<GetChannelResponse>;
+  getLatestSwapRate(from: string, to: string): BigNumber;
+  requestCollateral(): Promise<void>;
   subscribeToSwapRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
   unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
-  requestCollateral(): Promise<void>;
 }
-
-export type SwapSubscription = {
-  from: string;
-  to: string;
-  subscription: Subscription;
-};
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
+  public latestSwapRates: { [key: string]: BigNumber };
   public log: Logger;
-  public nonce: string | undefined;
-  public signature: string | undefined;
   public userPublicIdentifier: string | undefined;
   public nodePublicIdentifier: string | undefined;
-
-  // subscription references
-  public exchangeSubscriptions: SwapSubscription[] | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -56,29 +46,8 @@ export class NodeApiClient implements INodeApiClient {
     this.nodePublicIdentifier = opts.nodePublicIdentifier;
   }
 
-  ///////////////////////////////////
-  //////////// PUBLIC //////////////
-  /////////////////////////////////
-
-  public setUserPublicIdentifier(publicIdentifier: string): void {
-    this.userPublicIdentifier = publicIdentifier;
-  }
-
-  public setNodePublicIdentifier(publicIdentifier: string): void {
-    this.nodePublicIdentifier = publicIdentifier;
-  }
-
-  ///// Endpoints
-  public async config(): Promise<GetConfigResponse> {
-    // get the config from the hub
-    try {
-      const configRes = await this.send("config.get");
-      // handle error here
-      return configRes as GetConfigResponse;
-    } catch (e) {
-      return Promise.reject(e);
-    }
-  }
+  ////////////////////////////////////////
+  // PUBLIC
 
   public async appRegistry(appDetails?: {
     name: SupportedApplication;
@@ -92,11 +61,16 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  // TODO: NATS authentication procedure?
-  // Use TLS based auth, eventually tied to HNS
-  // names, for 2.0-2.x will need to generate our
-  // own certs linked to their public key
-  public authenticate(): void {}
+  public async config(): Promise<GetConfigResponse> {
+    // get the config from the hub
+    try {
+      const configRes = await this.send("config.get");
+      // handle error here
+      return configRes as GetConfigResponse;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
 
   public async getChannel(): Promise<GetChannelResponse> {
     try {
@@ -119,53 +93,13 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  // TODO: types for exchange rates and store?
-  // TODO: is this the best way to set the store for diff types
-  // of tokens
-  public async subscribeToSwapRates(
-    from: string,
-    to: string,
-    store: NodeTypes.IStoreService,
-  ): Promise<void> {
-    const subscription = await this.messaging.subscribe(
-      `exchange-rate.${from}.${to}`,
-      (err: any, msg: any) => {
-        if (err) {
-          this.log.error(JSON.stringify(err, null, 2));
-        } else {
-          store.set([
-            {
-              key: `${msg.pattern}-${Date.now().toString()}`,
-              value: msg.data,
-            },
-          ]);
-          return msg.data;
-        }
-      },
-    );
-    this.exchangeSubscriptions.push({
-      from,
-      subscription,
-      to,
-    });
-  }
-
-  public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {
-    if (!this.exchangeSubscriptions || this.exchangeSubscriptions.length === 0) {
-      return;
+  public getLatestSwapRate = (from: string, to: string): BigNumber => {
+    const latestRate = this.latestSwapRates[`exchange-rate.${from}.${to}`];
+    if (!latestRate) {
+      throw new Error(`No exchange rate from ${from} to ${to} has been recieved yet`);
     }
-
-    const matchedSubs = this.exchangeSubscriptions.filter((sub: SwapSubscription) => {
-      return sub.from === from && sub.to === to;
-    });
-
-    if (matchedSubs.length === 0) {
-      this.log.warn(`Could not find subscription for ${from}:${to} pair`);
-      return;
-    }
-
-    matchedSubs.forEach((sub: SwapSubscription) => sub.subscription.unsubscribe());
-  }
+    return latestRate;
+  };
 
   // FIXME: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
@@ -183,23 +117,50 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  ///////////////////////////////////
-  //////////// PRIVATE /////////////
-  /////////////////////////////////
+  public setUserPublicIdentifier(publicIdentifier: string): void {
+    this.userPublicIdentifier = publicIdentifier;
+  }
+
+  public setNodePublicIdentifier(publicIdentifier: string): void {
+    this.nodePublicIdentifier = publicIdentifier;
+  }
+
+  // TODO: types for exchange rates and store?
+  // TODO: is this the best way to set the store for diff types
+  // of tokens
+  public async subscribeToSwapRates(
+    from: string,
+    to: string,
+    store: NodeTypes.IStoreService,
+  ): Promise<void> {
+    await this.messaging.subscribe(`exchange-rate.${from}.${to}`, (msg: any) => {
+      store.set([
+        {
+          key: `${msg.pattern}-${Date.now().toString()}`,
+          value: msg.data,
+        },
+      ]);
+      this.latestSwapRates[`exchange-rate.${from}.${to}`] = new BigNumber(msg.data);
+    });
+  }
+
+  public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {
+    return this.messaging.unsubscribe(`exchange-rate.${from}.${to}`);
+  }
+
+  ////////////////////////////////////////
+  // PRIVATE
+
   private async send(subject: string, data?: any): Promise<any | undefined> {
     this.log.info(
       `Sending request to ${subject} ${
         data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
       }`,
     );
-    const msg = await this.messaging.request(
-      subject,
-      API_TIMEOUT,
-      JSON.stringify({
-        data,
-        id: uuid.v4(),
-      }),
-    );
+    const msg = await this.messaging.request(subject, API_TIMEOUT, {
+      data,
+      id: uuid.v4(),
+    });
     if (!msg.data) {
       console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
       return undefined;

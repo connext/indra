@@ -36,7 +36,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset purge push-latest backup
+.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset push-latest backup
 
 default: dev
 all: dev prod

@@ -22,7 +22,7 @@ export const config = {
   args: args.length > 1 ? args.slice(1) : [],
   ethProviderUrl: process.env.ETH_RPC_URL!,
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
-  mnemonic: process.env.NODE_MNEMONIC!,
+  mnemonic: process.env.MNEMONIC!,
   nodeUrl: process.env.NODE_URL!,
   postgres: {
     database: process.env.POSTGRES_DATABASE!,

@@ -17,26 +17,21 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
     processor: (subject: string, data: any) => any,
   ): Promise<void> {
     // TODO: timeout
-    await this.messaging.subscribe(pattern, async (err: any, msg: any) => {
-      if (err) {
-        throw new RpcException(`Error processing message: ${JSON.stringify(msg)}.`);
-      } else if (msg.reply) {
-        logger.log(`msg.reply: ${msg.reply}`);
+    await this.messaging.subscribe(pattern, async (msg: any) => {
+      console.log(`Got message from ${pattern} subscription: ${JSON.stringify(msg)}`);
+      if (msg.reply) {
         try {
-          this.messaging.send(
-            msg.reply,
-            JSON.stringify({ response: await processor(msg.subject, msg.data), err: null }),
-          );
+          this.messaging.publish(msg.reply, {
+            err: null,
+            response: await processor(msg.subject, msg.data),
+          });
         } catch (e) {
-          this.messaging.send(
-            msg.reply,
-            JSON.stringify({
-              message: `Error during processor function: ${processor.name}`,
-              response: {
-                err: `Error during processor function: ${processor.name}`,
-              },
-            }),
-          );
+          this.messaging.publish(msg.reply, {
+            message: `Error during processor function: ${processor.name}`,
+            response: {
+              err: `Error during processor function: ${processor.name}`,
+            },
+          });
         }
       }
     });
