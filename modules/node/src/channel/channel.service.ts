@@ -33,7 +33,7 @@ export class ChannelService implements OnModuleInit {
       throw new RpcException(`Channel already exists for ${counterpartyPublicIdentifier}`);
     }
 
-    const createChannelResponse = (await this.node.rpcRouter.dispatch(
+    const createChannelResponse = (await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -45,7 +45,7 @@ export class ChannelService implements OnModuleInit {
     logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
 
     // TODO: remove this when the above line returns multisig
-    const multisigResponse = await this.node.rpcRouter.dispatch(
+    const multisigResponse = await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -75,7 +75,7 @@ export class ChannelService implements OnModuleInit {
       throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
-    const depositResponse = await this.node.rpcRouter.dispatch(
+    const depositResponse = await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -106,7 +106,7 @@ export class ChannelService implements OnModuleInit {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
 
-    const freeBalanceResponse = await this.node.rpcRouter.dispatch(
+    const freeBalanceResponse = await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",

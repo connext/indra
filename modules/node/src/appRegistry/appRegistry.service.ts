@@ -37,7 +37,7 @@ export class AppRegistryService implements OnModuleInit {
     params: NodeTypes.ProposeInstallParams;
     appInstanceId: string;
   }): Promise<void> {
-    const proposedRes = await this.node.rpcRouter.dispatch(
+    const proposedRes = await this.node.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -98,7 +98,7 @@ export class AppRegistryService implements OnModuleInit {
   ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> {
     try {
       await this.verifyAppProposal(data.data);
-      const installResponse = await this.node.rpcRouter.dispatch(
+      const installResponse = await this.node.router.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -112,7 +112,7 @@ export class AppRegistryService implements OnModuleInit {
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
       logger.error(e);
-      const installResponse = await this.node.rpcRouter.dispatch(
+      const installResponse = await this.node.router.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",

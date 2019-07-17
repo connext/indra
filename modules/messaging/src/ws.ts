@@ -14,7 +14,7 @@ export class WsMessagingService implements IMessagingService {
     private readonly messagingServiceKey: string,
   ) {
     this.log = new Logger("WsMessagingService", config.logLevel);
-    this.log.info(`Created with config: ${JSON.stringify(config, null, 2)}`);
+    this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
 
   async connect(): Promise<void> {
@@ -34,7 +34,7 @@ export class WsMessagingService implements IMessagingService {
     this.subscriptions[subject] = this.connection.subscribe(
       this.prependKey(subject),
       (msg: any): void => {
-        this.log.info(`Received message for ${subject}: ${JSON.stringify(msg)}`);
+        this.log.debug(`Received message for ${subject}: ${JSON.stringify(msg)}`);
         const data = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
         callback(JSON.parse(data) as Node.NodeMessage);
       },
@@ -43,7 +43,7 @@ export class WsMessagingService implements IMessagingService {
 
   async send(to: string, msg: Node.NodeMessage): Promise<void> {
     this.assertConnected();
-    this.log.info(`Sending message to ${to}: ${JSON.stringify(msg)}`);
+    this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     this.connection.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
 
@@ -52,20 +52,20 @@ export class WsMessagingService implements IMessagingService {
 
   async publish(subject: string, data: any): Promise<void> {
     this.assertConnected();
-    this.log.info(`Publishing ${subject}: ${JSON.stringify(data)}`);
+    this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
     this.connection!.publish(subject, data);
   }
 
   async request(subject: string, timeout: number, data: object = {}): Promise<any> {
     this.assertConnected();
-    this.log.info(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
+    this.log.debug(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
     return new Promise((resolve: any, reject: any): any => {
       this.connection.request(
         subject,
         JSON.stringify(data),
         { max: 1, timeout },
         (response: any): any => {
-          this.log.info(`Request for ${subject} returned: ${response}`);
+          this.log.debug(`Request for ${subject} returned: ${response}`);
           resolve({ data: JSON.parse(response) });
         },
       );
@@ -74,13 +74,10 @@ export class WsMessagingService implements IMessagingService {
 
   async subscribe(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
     this.assertConnected();
-    this.subscriptions[subject] = this.connection.subscribe(
-      subject,
-      (msg: any): void => {
-        this.log.info(`Received message for ${subject}: ${JSON.stringify(msg)}`);
-        callback(JSON.parse(JSON.parse(msg)) as Node.NodeMessage);
-      },
-    );
+    this.subscriptions[subject] = this.connection.subscribe(subject, (msg: any): void => {
+      this.log.debug(`Received message for ${subject}: ${JSON.stringify(msg)}`);
+      callback(JSON.parse(JSON.parse(msg)) as Node.NodeMessage);
+    });
   }
 
   async unsubscribe(subject: string): Promise<void> {

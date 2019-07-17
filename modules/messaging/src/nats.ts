@@ -14,7 +14,7 @@ export class NatsMessagingService implements IMessagingService {
     private readonly messagingServiceKey: string,
   ) {
     this.log = new Logger("NatsMessagingService", config.logLevel);
-    this.log.info(`Created with config: ${JSON.stringify(config, null, 2)}`);
+    this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
 
   async connect(): Promise<void> {
@@ -23,7 +23,7 @@ export class NatsMessagingService implements IMessagingService {
     config.servers = typeof messagingUrl === "string" ? [messagingUrl] : messagingUrl;
     config.payload = nats.Payload.JSON;
     this.connection = await nats.connect(config);
-    this.log.info(`Connected!`);
+    this.log.debug(`Connected!`);
   }
 
   async disconnect(): Promise<void> {
@@ -42,7 +42,7 @@ export class NatsMessagingService implements IMessagingService {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          this.log.info(`Received message for ${subject}: ${JSON.stringify(msg)}`);
+          this.log.debug(`Received message for ${subject}: ${JSON.stringify(msg)}`);
           const data = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
           callback(data as Node.NodeMessage);
         }
@@ -52,7 +52,7 @@ export class NatsMessagingService implements IMessagingService {
 
   async send(to: string, msg: Node.NodeMessage): Promise<void> {
     this.assertConnected();
-    this.log.info(`Sending message to ${to}: ${JSON.stringify(msg)}`);
+    this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
   }
 
@@ -61,15 +61,15 @@ export class NatsMessagingService implements IMessagingService {
 
   async publish(subject: string, data: any): Promise<void> {
     this.assertConnected();
-    this.log.info(`Publishing ${subject}: ${JSON.stringify(data)}`);
+    this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
     this.connection!.publish(subject, data);
   }
 
   async request(subject: string, timeout: number, data: object = {}): Promise<nats.Msg | void> {
     this.assertConnected();
-    this.log.info(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
+    this.log.debug(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
     const response = await this.connection!.request(subject, timeout, data);
-    this.log.info(`Request for ${subject} returned: ${JSON.stringify(response)}`);
+    this.log.debug(`Request for ${subject} returned: ${JSON.stringify(response)}`);
     return response;
   }
 
@@ -81,7 +81,7 @@ export class NatsMessagingService implements IMessagingService {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          this.log.info(`Received message for ${subject}: ${JSON.stringify(msg)}`);
+          this.log.debug(`Received message for ${subject}: ${JSON.stringify(msg)}`);
           callback(msg as Node.NodeMessage);
         }
       },
@@ -92,7 +92,7 @@ export class NatsMessagingService implements IMessagingService {
     this.assertConnected();
     if (this.subscriptions[subject]) {
       await this.subscriptions[subject].unsubscribe();
-      this.log.info(`Unsubscribed from ${subject}`);
+      this.log.debug(`Unsubscribed from ${subject}`);
     } else {
       this.log.warn(`Not subscribed to ${subject}, doing nothing`);
     }

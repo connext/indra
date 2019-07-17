@@ -16,7 +16,7 @@
 		"@counterfactual/contracts": "0.1.7",
 		"chai-bn": "0.1.1",
 		"cypress": "3.4.0",
-		"ethers": "4.0.33",
+		"ethers": "4.0.32",
 		"ganache-cli": "6.4.5",
 		"lerna": "3.15.0",
 		"openzeppelin-solidity": "2.3.0",

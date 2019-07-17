@@ -48,16 +48,17 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
+  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
+
   // create a new wallet
-  const ethProvider = new providers.JsonRpcProvider(opts.ethProviderUrl);
-  const wallet = Wallet.fromMnemonic(opts.mnemonic).connect(ethProvider);
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+  const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
   const network = await ethProvider.getNetwork();
 
   console.log("Creating messaging service client");
-  const { natsClusterId, nodeUrl, natsToken } = opts;
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
-    logLevel: 2,
+    logLevel,
     messagingUrl: nodeUrl,
     token: natsToken,
   });
@@ -67,12 +68,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
-  await opts.store.set([{ key: MNEMONIC_PATH, value: opts.mnemonic }]);
+  await store.set([{ key: MNEMONIC_PATH, value: mnemonic }]);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
   const nodeConfig = {
-    logLevel: opts.logLevel,
+    logLevel,
     messaging,
   };
   console.log("creating node client");
@@ -88,7 +89,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("creating new cf module");
   const cfModule = await Node.create(
     messaging,
-    opts.store,
+    store,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
@@ -372,7 +373,7 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfModule.rpcRouter.dispatch(
+    const depositResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -391,7 +392,7 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
+    const appInstanceResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -408,7 +409,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     try {
-      const freeBalance = await this.cfModule.rpcRouter.dispatch(
+      const freeBalance = await this.cfModule.router.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -440,7 +441,7 @@ export class ConnextInternal extends ConnextChannel {
   public getProposedAppInstanceDetails = async (): Promise<
     NodeTypes.GetProposedAppInstancesResult | undefined
   > => {
-    const proposedRes = await this.cfModule.rpcRouter.dispatch(
+    const proposedRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -460,7 +461,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
+    const appInstanceResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -483,7 +484,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfModule.rpcRouter.dispatch(
+    const stateResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -513,7 +514,7 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfModule.rpcRouter.dispatch(
+    const actionResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -540,7 +541,7 @@ export class ConnextInternal extends ConnextChannel {
          got ${JSON.stringify(params.intermediaries)}`);
     }
 
-    const actionRes = await this.cfModule.rpcRouter.dispatch(
+    const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -556,7 +557,7 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallApp = async (
     params: NodeTypes.ProposeInstallParams,
   ): Promise<NodeTypes.ProposeInstallResult> => {
-    const actionRes = await this.cfModule.rpcRouter.dispatch(
+    const actionRes = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -576,7 +577,7 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch(
+    const installVirtualResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -597,7 +598,7 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installResponse = await this.cfModule.rpcRouter.dispatch(
+    const installResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -618,7 +619,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfModule.rpcRouter.dispatch(
+    const uninstallResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -641,7 +642,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch(
+    const uninstallVirtualResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -671,7 +672,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch(
+    const withdrawalResponse = await this.cfModule.router.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
