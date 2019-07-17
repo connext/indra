@@ -250,6 +250,8 @@ export default class ChainsawService {
           `This should never happen! Event body: ${JSON.stringify(event)}`
         )
         this.log.error(msg)
+        // put channel into error state
+        await this.channelsDao.addChainsawErrorId(event.user, event.chainsawId!)
         if (this.config.isProduction)
           throw new Error(msg)
         return
