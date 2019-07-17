@@ -14,7 +14,7 @@
     "@connext/client": "0.0.4",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/firebase-server": "0.0.1",
-    "@counterfactual/node": "0.2.18",
+    "@counterfactual/node": "0.2.19",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "commander": "^2.20.0",
     "dotenv": "8.0.0",
