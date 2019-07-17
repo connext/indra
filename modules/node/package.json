@@ -22,7 +22,7 @@
   "dependencies": {
     "@connext/messaging": "0.0.1",
     "@connext/types": "0.0.4",
-    "@counterfactual/contracts": "0.1.7",
+    "@counterfactual/contracts": "0.1.8",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.18",
     "@counterfactual/postgresql-node-connector": "0.0.3",
