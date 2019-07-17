@@ -1,6 +1,5 @@
 import {
   CreateChannelMessage,
-  DepositConfirmationMessage,
   jsonRpcDeserialize,
   JsonRpcResponse,
   Node,
@@ -11,8 +10,7 @@ import { RpcException } from "@nestjs/microservices";
 import { BigNumber } from "ethers/utils";
 
 import { NodeProviderId } from "../constants";
-import { CLogger } from "../util";
-import { freeBalanceAddressFromXpub } from "../util/cfNode";
+import { CLogger, freeBalanceAddressFromXpub, registerCfNodeListener } from "../util";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -35,7 +33,7 @@ export class ChannelService implements OnModuleInit {
       throw new RpcException(`Channel already exists for ${counterpartyPublicIdentifier}`);
     }
 
-    const createChannelResponse = (await this.node.router.dispatch(
+    const createChannelResponse = (await this.node.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -47,8 +45,7 @@ export class ChannelService implements OnModuleInit {
     logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
 
     // TODO: remove this when the above line returns multisig
-    // https://github.com/counterfactual/monorepo/issues/1894
-    const multisigResponse = await this.node.router.dispatch(
+    const multisigResponse = await this.node.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -78,7 +75,7 @@ export class ChannelService implements OnModuleInit {
       throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
-    const depositResponse = await this.node.router.dispatch(
+    const depositResponse = await this.node.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -109,7 +106,7 @@ export class ChannelService implements OnModuleInit {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
 
-    const freeBalanceResponse = await this.node.router.dispatch(
+    const freeBalanceResponse = await this.node.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -132,42 +129,19 @@ export class ChannelService implements OnModuleInit {
     return undefined;
   }
 
+  private registerNodeListeners(): void {
+    registerCfNodeListener(
+      this.node,
+      NodeTypes.EventName.CREATE_CHANNEL,
+      async (data: CreateChannelMessage) => {
+        await this.makeAvailable((data.data as NodeTypes.CreateChannelResult).multisigAddress);
+      },
+      logger.cxt,
+    );
+  }
+
   // initialize CF Node with methods from this service to avoid circular dependency
   onModuleInit(): void {
-    // FIXME: is this the right type?
-    this.node.on(NodeTypes.EventName.CREATE_CHANNEL, async (res: CreateChannelMessage) => {
-      logger.log(`CREATE_CHANNEL event fired: ${JSON.stringify(res)}`);
-      await this.makeAvailable((res.data as NodeTypes.CreateChannelResult).multisigAddress);
-    });
-
-    // Print a generic log whenever ANY event is fired
-    for (const eventName of [
-      "COUNTER_DEPOSIT_CONFIRMED",
-      "DEPOSIT_FAILED",
-      "DEPOSIT_STARTED",
-      "DEPOSIT_CONFIRMED", // TODO: how many blocks until confirmed?
-      "INSTALL",
-      "INSTALL_VIRTUAL",
-      "PROPOSE_STATE",
-      "REJECT_INSTALL",
-      "REJECT_STATE",
-      "UNINSTALL",
-      "UNINSTALL_VIRTUAL",
-      "UPDATE_STATE",
-      "WITHDRAWAL_CONFIRMED", // TODO: how many blocks until confirmed?
-      "WITHDRAWAL_FAILED",
-      "WITHDRAWAL_STARTED",
-      "PROPOSE_INSTALL",
-      "PROPOSE_INSTALL_VIRTUAL",
-      "PROTOCOL_MESSAGE_EVENT",
-      "WITHDRAW_EVENT",
-      "REJECT_INSTALL_VIRTUAL",
-    ]) {
-      this.node.on(NodeTypes.EventName[eventName], (res: NodeTypes.NodeMessage): void =>
-        logger.log(`${eventName} event fired from ${res && res.from ? res.from : null}`),
-      );
-    }
-
-    logger.log("Node methods attached");
+    this.registerNodeListeners();
   }
 }

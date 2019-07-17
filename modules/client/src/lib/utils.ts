@@ -1,7 +1,6 @@
 import { jsonRpcDeserialize, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { utils } from "ethers";
-import fetch from "node-fetch";
 import { isNullOrUndefined } from "util";
 
 import { Logger } from "./logger";
@@ -64,26 +63,7 @@ export const freeBalanceAddressFromXpub = (xpub: string): string => {
   return utils.HDNode.fromExtendedKey(xpub).derivePath("0").address;
 };
 
-// TODO: Temporary - this eventually should be exposed at the top level and retrieve from store
-export async function getFreeBalance(
-  node: Node,
-  multisigAddress: string,
-): Promise<NodeTypes.GetFreeBalanceStateResult> {
-  const res = await node.router.dispatch(
-    jsonRpcDeserialize({
-      id: Date.now(),
-      jsonrpc: "2.0",
-      method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-      params: { multisigAddress },
-    }),
-  );
-
-  return res.result as NodeTypes.GetFreeBalanceStateResult;
-}
-
-// TODO: Should we keep this? It's a nice helper to break out by key. Maybe generalize?
-// ^^^ generalized is the objMap function we have already, we can delete this
-// added an example of how to use the obj map thing - layne
+// TODO: remove
 export function logEthFreeBalance(
   assetId: string,
   freeBalance: NodeTypes.GetFreeBalanceStateResult,

@@ -1,17 +1,25 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller } from "@nestjs/common";
 import { MessagePattern } from "@nestjs/microservices";
 
-import { Network } from "./appRegistry.entity";
+import { AppRegistry, Network } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
 
 @Controller()
 export class AppRegistryController {
   constructor(private readonly appRegistryRepository: AppRegistryRepository) {}
   @MessagePattern("app-registry")
-  async get(data: { name: string; network: Network } | undefined): Promise<any> {
-    if (!data || !data.network || !data.name) {
-      return await this.appRegistryRepository.find();
+  async get(
+    data: { name?: string; network?: Network; appDefinitionAddress?: string } | undefined,
+  ): Promise<AppRegistry[]> {
+    if (data && data.network && data.name) {
+      return [await this.appRegistryRepository.findByNameAndNetwork(data.name, data.network)];
     }
-    return [await this.appRegistryRepository.findByNameAndNetwork(data.name, data.network)];
+
+    if (data && data.appDefinitionAddress) {
+      return [
+        await this.appRegistryRepository.findByAppDefinitionAddress(data.appDefinitionAddress),
+      ];
+    }
+    return await this.appRegistryRepository.find();
   }
 }

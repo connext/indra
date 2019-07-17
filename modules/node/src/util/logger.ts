@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 
 export class CLogger extends Logger {
-  private cxt: string;
+  public cxt: string;
   constructor(context: string) {
     super();
     this.cxt = context;

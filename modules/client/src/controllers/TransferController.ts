@@ -1,16 +1,16 @@
-import { convert, NodeChannel, SupportedApplications, TransferParameters, RegisteredAppDetails } from "@connext/types";
+import { convert, NodeChannel, RegisteredAppDetails, TransferParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { constants } from "ethers";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { Zero } from "ethers/constants";
 
 export class TransferController extends AbstractController {
   private appId: string;
@@ -42,15 +42,7 @@ export class TransferController extends AbstractController {
     const appInfo = this.connext.getRegisteredAppDetails("EthUnidirectionalTransferApp");
 
     // install the transfer application
-    try {
-      await this.transferAppInstalled(amount, recipient, assetId, appInfo);
-    } catch (e) {
-      // TODO: can add more checks in `rejectInstall` but there is no
-      // way to check if the recipient is collateralized atm, so just
-      // assume this is the reason the install was rejected
-      this.log.error(e.message);
-      throw new Error("Recipient online, but does not have sufficient collateral");
-    }
+    await this.transferAppInstalled(amount, recipient, assetId, appInfo);
 
     // update state
     // TODO: listener for reject state?
@@ -102,7 +94,7 @@ export class TransferController extends AbstractController {
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: any, data: any): any => {
+  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
       return;
     }
@@ -114,14 +106,16 @@ export class TransferController extends AbstractController {
   };
 
   // TODO: fix types of data
-  private rejectInstallTransfer = (rej: any, data: RejectInstallVirtualMessage): any => {
+  private rejectInstallTransfer = (
+    rej: (reason?: any) => void,
+    msg: RejectInstallVirtualMessage,
+  ): any => {
     // check app id
-    if (this.appId !== data.data.appInstanceId) {
+    if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
-    rej(`Install virtual rejected. Event data: ${JSON.stringify(data, null, 2)}`);
-    return data;
+    return rej(`Install virtual failed. Event data: ${JSON.stringify(msg, null, 2)}`);
   };
 
   // creates a promise that is resolved once the app is installed
@@ -175,7 +169,7 @@ export class TransferController extends AbstractController {
       this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
       this.timeout = setTimeout(() => {
         this.cleanupInstallListeners(boundResolve, boundReject);
-        boundReject({ data: { data: this.appId } });
+        boundReject({ data: { appInstanceId: this.appId } });
       }, 5000);
     });
 

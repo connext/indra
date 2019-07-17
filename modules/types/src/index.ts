@@ -63,6 +63,19 @@ export type RegisteredAppDetails = {
 export type AppRegistry = RegisteredAppDetails[];
 
 ////////////////////////////////////
+////// APP INTERFACES
+
+export type MultiCoinTransfer = {
+  to: string;
+  tokenAddresses: string[];
+  amounts: BigNumber[];
+};
+
+export type SwapAppState = {
+  multiCoinTransfers: MultiCoinTransfer[];
+};
+
+////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
 
 // transfer types
@@ -245,15 +258,16 @@ export type TransferParameters<T = string> = DepositParameters<T> & {
 };
 export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 
-////// Exchange types
+////// Swap types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
-export interface ExchangeParameters<T = string> {
+export interface SwapParameters<T = string> {
   amount: T;
+  swapRate: T;
   toAssetId: Address;
-  fromAssetId: Address; // TODO: do these assets have to be renamed?
+  fromAssetId: Address;
   // make sure they are consistent with CF stuffs
 }
-export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>;
+export type SwapParametersBigNumber = SwapParameters<BigNumber>;
 
 ////// Withdraw types
 export type WithdrawParameters<T = string> = DepositParameters<T> & {
@@ -368,6 +382,14 @@ export function convertDepositParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
+export function convertSwapParameters<To extends NumericTypeName>(
+  to: To,
+  obj: SwapParameters<any>,
+): SwapParameters<NumericTypes[To]> {
+  const fromType = getType(obj.swapRate);
+  return convertFields(fromType, to, ["swapRate", "amount"], obj);
+}
+
 export function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
@@ -415,5 +437,6 @@ export const convert: any = {
   Multisig: convertMultisig,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
+  SwapParameters: convertSwapParameters,
   Withdraw: convertWithdrawParametersToAsset,
 };
