@@ -1,16 +1,16 @@
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 
-import { NatsClientProviderId } from "./constants";
+import { MessagingClientProviderId } from "./constants";
 
 @Injectable()
 export class AppService implements OnModuleInit {
-  constructor(@Inject(NatsClientProviderId) private readonly natsClient: ClientProxy) {}
+  constructor(@Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy) {}
   getHello(): string {
     return "Hello World!";
   }
 
   onModuleInit(): void {
-    this.natsClient.connect();
+    this.messagingClient.connect();
   }
 }

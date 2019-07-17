@@ -1,33 +1,35 @@
+import { IMessagingService } from "@connext/messaging";
 import { RpcException } from "@nestjs/microservices";
-import { Client, Msg, NatsError } from "ts-nats";
 
 import { CLogger } from "./logger";
 
-const logger = new CLogger("NatsProvider");
+const logger = new CLogger("MessagingProvider");
 
-export abstract class AbstractNatsProvider implements INatsProvider {
-  constructor(protected readonly natsClient: Client) {}
+export interface IMessagingProvider {
+  setupSubscriptions(): void;
+}
+
+export abstract class AbstractMessagingProvider implements IMessagingProvider {
+  constructor(protected readonly messaging: IMessagingService) {}
 
   async connectRequestReponse(
     pattern: string,
     processor: (subject: string, data: any) => any,
   ): Promise<void> {
     // TODO: timeout
-    await this.natsClient.subscribe(pattern, async (err: NatsError | null, msg: Msg) => {
+    await this.messaging.subscribe(pattern, async (err: any, msg: any) => {
       if (err) {
         throw new RpcException(`Error processing message: ${JSON.stringify(msg)}.`);
       } else if (msg.reply) {
+        logger.log(`msg.reply: ${msg.reply}`);
         try {
-          const publish = await processor(msg.subject, msg.data);
-          this.natsClient.publish(
+          this.messaging.send(
             msg.reply,
-            // TODO: make this a type
-            { response: publish, err: null },
+            JSON.stringify({ response: await processor(msg.subject, msg.data), err: null }),
           );
         } catch (e) {
-          this.natsClient.publish(
+          this.messaging.send(
             msg.reply,
-            // TODO: make this a type
             JSON.stringify({
               message: `Error during processor function: ${processor.name}`,
               response: {
@@ -42,8 +44,4 @@ export abstract class AbstractNatsProvider implements INatsProvider {
   }
 
   abstract setupSubscriptions(): void;
-}
-
-export interface INatsProvider {
-  setupSubscriptions(): void;
 }

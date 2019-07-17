@@ -8,7 +8,6 @@ import * as dotenv from "dotenv";
 import { JsonRpcProvider } from "ethers/providers";
 import { Network } from "ethers/utils";
 import * as fs from "fs";
-import { Payload } from "ts-nats";
 
 type PostgresConfig = {
   database: string;
@@ -90,7 +89,6 @@ export class ConfigService {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
       logLevel: this.getLogLevel(),
       messagingUrl: (this.get("INDRA_NATS_SERVERS") || "").split(","),
-      payload: Payload.JSON,
       token: this.get("INDRA_NATS_TOKEN"),
     };
   }
