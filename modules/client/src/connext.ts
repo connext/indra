@@ -1,4 +1,4 @@
-import { MessagingServiceFactory } from "@connext/messaging";
+import { MessagingServiceFactory, NatsMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,
@@ -61,7 +61,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     messagingUrl: nodeUrl,
     token: natsToken,
   });
-  const messaging = messagingFactory.createService("messaging");
+  const messaging = messagingFactory.createService("messaging") as NatsMessagingService;
   await messaging.connect();
   console.log("Messaging service is connected");
 

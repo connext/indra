@@ -23,7 +23,8 @@ export interface IMessagingService extends Node.IMessagingService {
     data: string | Object,
     callback?: (response: any) => any,
   ) => Promise<any>;
-  subscribe: (// should return subscription
+  subscribe: (
+    // should return subscription
     topic: string,
     callback: (err: any, message: any) => Promise<void>,
   ) => Promise<any>;
@@ -129,7 +130,7 @@ class WsMessagingService implements IMessagingService {
 ////////////////////////////////////////
 // Pure Nats Messaging
 
-class NatsMessagingService implements IMessagingService {
+export class NatsMessagingService implements IMessagingService {
   private connection: nats.Client | undefined;
 
   constructor(
@@ -187,7 +188,11 @@ class NatsMessagingService implements IMessagingService {
     );
   }
 
-  async request(subject: string, timeout: number, data: string | Object = "{}"): Promise<nats.Msg | void> {
+  async request(
+    subject: string,
+    timeout: number,
+    data: string | Object = "{}",
+  ): Promise<nats.Msg | void> {
     if (!this.connection) {
       console.error("Cannot register a connection with an uninitialized nats messaging service");
       return;

@@ -1,4 +1,4 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { MessagingServiceFactory, NatsMessagingService } from "@connext/messaging";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -32,7 +32,7 @@ type CallbackStruct = {
 
 async function createNode(
   config: ConfigService,
-  natsMessagingService: IMessagingService,
+  natsMessagingService: NatsMessagingService,
   postgresServiceFactory: PostgresServiceFactory,
 ): Promise<Node> {
   logger.log("Creating store");
@@ -159,7 +159,7 @@ export const nodeProvider: Provider = {
   provide: NodeProviderId,
   useFactory: async (
     config: ConfigService,
-    nats: IMessagingService,
+    nats: NatsMessagingService,
     postgres: PostgresServiceFactory,
   ): Promise<Node> => {
     return await createNode(config, nats, postgres);
@@ -181,12 +181,12 @@ export const postgresProvider: Provider = {
 };
 
 // TODO: bypass factory
-export const natsProvider: FactoryProvider<Promise<IMessagingService>> = {
+export const natsProvider: FactoryProvider<Promise<NatsMessagingService>> = {
   inject: [ConfigService],
   provide: NatsProviderId,
-  useFactory: async (config: ConfigService): Promise<IMessagingService> => {
+  useFactory: async (config: ConfigService): Promise<NatsMessagingService> => {
     const messagingFactory = new MessagingServiceFactory(config.getMessagingConfig());
-    const messagingService = messagingFactory.createService("messaging");
+    const messagingService = messagingFactory.createService("messaging") as NatsMessagingService;
     await messagingService.connect();
     return messagingService;
   },
