@@ -84,11 +84,7 @@ export default class PaymentHub {
   public async startChainsaw(): Promise<void> {
     this.log.info(`Starting ChainsawService`)
     const chainsaw = this.container.resolve<ChainsawService>('ChainsawService')
-    const channelCloser = this.container.resolve<CloseChannelService>('CloseChannelService')
-    await Promise.race([
-      chainsaw.poll(),
-      channelCloser.poll(),
-    ])
+    await chainsaw.poll()
     return new Promise(res => {})
   }
 
