@@ -115,6 +115,7 @@ docker service create \
          > ops/ganache.log &
       bash /ops/wait-for.sh localhost:8545 2> /dev/null
     fi
+    touch address-book.json
     node ops/migrate-contracts.js
   ' 2> /dev/null
 `"
