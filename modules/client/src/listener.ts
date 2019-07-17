@@ -59,7 +59,7 @@ export class ConnextListener extends EventEmitter {
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
-      if (!appInfo.peerDeposit.isZero()) {
+      if (!appInfo.responderDeposit.isZero()) {
         await this.connext.requestCollateral();
       }
       return;
