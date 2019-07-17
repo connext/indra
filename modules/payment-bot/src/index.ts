@@ -125,6 +125,7 @@ async function getOrCreateChannel(): Promise<void> {
     nodeUrl: config.nodeUrl,
     rpcProviderUrl: config.ethRpcUrl,
     store: pgServiceFactory.createStoreService(config.username),
+    logLevel: 5,
   };
 
   console.log("Using client options:");

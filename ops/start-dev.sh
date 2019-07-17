@@ -15,6 +15,8 @@ ETH_NETWORK="${1:-kovan}"
 # Internal Config
 # config & hard-coded stuff you might want to change
 
+log_level=5
+
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
 then eth_rpc_url="https://rinkeby.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "kovan" ]]
@@ -142,6 +144,7 @@ services:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: $eth_mnemonic
       INDRA_ETH_RPC_URL: $eth_rpc_url
+      INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID:
       INDRA_NATS_SERVERS: nats://nats:$nats_port
       INDRA_NATS_TOKEN:

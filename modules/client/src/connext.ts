@@ -4,13 +4,13 @@ import {
   ChannelState,
   CreateChannelResponse,
   DepositParameters,
-  SwapParameters,
   GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
   RegisteredAppDetails,
   SupportedApplication,
   SupportedNetwork,
+  SwapParameters,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
@@ -55,9 +55,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const network = await wallet.provider.getNetwork();
 
   console.log("Creating messaging service client");
-  const { natsClusterId, nodeUrl, natsToken } = opts;
+  const { logLevel, natsClusterId, nodeUrl, natsToken } = opts;
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
+    logLevel,
     messagingUrl: nodeUrl,
     token: natsToken,
   });

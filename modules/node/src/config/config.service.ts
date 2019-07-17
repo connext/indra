@@ -77,6 +77,10 @@ export class ConfigService {
     return ethAddresses as NetworkContext;
   }
 
+  getLogLevel(): number {
+    return parseInt(this.get("INDRA_LOG_LEVEL"), 10);
+  }
+
   getMnemonic(): string {
     return this.get("INDRA_ETH_MNEMONIC");
   }
@@ -84,6 +88,7 @@ export class ConfigService {
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
+      logLevel: this.getLogLevel(),
       messagingUrl: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       payload: Payload.JSON,
       token: this.get("INDRA_NATS_TOKEN"),
