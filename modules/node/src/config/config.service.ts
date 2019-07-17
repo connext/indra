@@ -87,7 +87,7 @@ export class ConfigService {
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
-      logLevel: this.getLogLevel(),
+      logLevel: 2, // this.getLogLevel(), // <- this is very verbose just fyi
       messagingUrl: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       token: this.get("INDRA_NATS_TOKEN"),
     };

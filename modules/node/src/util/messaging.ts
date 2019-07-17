@@ -18,7 +18,6 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
   ): Promise<void> {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {
-      console.log(`Got message from ${pattern} subscription: ${JSON.stringify(msg)}`);
       if (msg.reply) {
         try {
           this.messaging.publish(msg.reply, {

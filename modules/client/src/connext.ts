@@ -54,10 +54,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const network = await ethProvider.getNetwork();
 
   console.log("Creating messaging service client");
-  const { logLevel, natsClusterId, nodeUrl, natsToken } = opts;
+  const { natsClusterId, nodeUrl, natsToken } = opts;
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
-    logLevel,
+    logLevel: 2,
     messagingUrl: nodeUrl,
     token: natsToken,
   });

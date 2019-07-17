@@ -58,20 +58,24 @@ export class WsMessagingService implements IMessagingService {
 
   async request(subject: string, timeout: number, data: object = {}): Promise<any> {
     this.assertConnected();
-    this.log.info(`Requesting ${this.prependKey(subject)} with data: ${JSON.stringify(data)}`);
-    const options = { max: 1, timeout };
+    this.log.info(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
     return new Promise((resolve: any, reject: any): any => {
-      this.connection.request(this.prependKey(subject), data, options, (response: any): any => {
-        this.log.info(`Request for ${this.prependKey(subject)} returned: ${response}`);
-        resolve({ data: JSON.parse(response) });
-      });
+      this.connection.request(
+        subject,
+        JSON.stringify(data),
+        { max: 1, timeout },
+        (response: any): any => {
+          this.log.info(`Request for ${subject} returned: ${response}`);
+          resolve({ data: JSON.parse(response) });
+        },
+      );
     });
   }
 
   async subscribe(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(
-      this.prependKey(subject),
+      subject,
       (msg: any): void => {
         this.log.info(`Received message for ${subject}: ${JSON.stringify(msg)}`);
         callback(JSON.parse(JSON.parse(msg)) as Node.NodeMessage);
