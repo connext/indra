@@ -6,7 +6,7 @@ const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Minta
 const contracts = [
   "ChallengeRegistry",
   "CoinBalanceRefundApp",
-  "CoinTransferETHInterpreter",
+  "CoinTransferInterpreter",
   "ConditionalTransactionDelegateTarget",
   "FreeBalanceApp",
   "IdentityApp",
@@ -18,7 +18,7 @@ const contracts = [
 
 const artifacts = {}
 for (const contract of contracts) {
-  artifacts[contract] = require(`@counterfactual/contracts/build/${contract}.json`)
+  artifacts[contract] = require(`@counterfactual/contracts/build/contracts/${contract}.json`)
 }
 
 const { EtherSymbol, Zero } = eth.constants
