@@ -60,7 +60,7 @@ export class ChannelService implements OnModuleInit {
     const channel = new Channel();
     channel.userPublicIdentifier = counterpartyPublicIdentifier;
     channel.nodePublicIdentifier = this.node.publicIdentifier;
-    channel.multisigAddress = multisigResult.address;
+    channel.multisigAddress = (multisigResult as any).result.address;
     return await this.channelRepository.save(channel);
   }
 
