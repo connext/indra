@@ -81,7 +81,7 @@ function logEvent(event: NodeTypes.EventName, res: NodeTypes.NodeMessage & { dat
 function registerDefaultCfListeners(node: Node): void {
   Object.entries(defaultCallbacks).forEach(
     ([event, callback]: [NodeTypes.EventName, () => any]): void => {
-      registerCfNodeListener(node, event, callback, "DefaultListener");
+      registerCfNodeListener(node, NodeTypes.EventName[event], callback, "DefaultListener");
     },
   );
 }
