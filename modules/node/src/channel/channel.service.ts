@@ -54,7 +54,8 @@ export class ChannelService implements OnModuleInit {
       }),
     );
 
-    const multisigResult: NodeTypes.GetStateDepositHolderAddressResult = multisigResponse!.result;
+    const multisigResult: NodeTypes.GetStateDepositHolderAddressResult = multisigResponse!.result
+      .result;
     logger.log(`multisigResponse: ${JSON.stringify(multisigResponse, undefined, 2)}`);
 
     const channel = new Channel();
