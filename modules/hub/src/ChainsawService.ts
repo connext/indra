@@ -51,25 +51,31 @@ export default class ChainsawService {
     while (true) {
       const start = Date.now()
       await this.pollOnce()
-      const elapsed = Date.now() - start
-      this.log.debug(`Spent ${elapsed} ms polling`)
+      const elapsed = start - Date.now()
+      this.log.info(`Spent ${elapsed} ms polling`)
       if (elapsed < POLL_INTERVAL) {
-        await sleep(POLL_INTERVAL - elapsed)
+        this.log.info(`IM SLEEPING NOW ${POLL_INTERVAL - elapsed}`)
+        await sleep(POLL_INTERVAL)
       }
+      this.log.info(`POLL COMPLETED, BEGIN LOGGING AGAIN`)
     }
   }
 
   public async pollOnce(): Promise<void> {
     try {
+      this.log.info(`I AM FETCHING EVENTS NOW`)
       await this.db.withTransaction(() => this.doFetchEvents())
     } catch (e) {
       this.log.error(`Fetching events failed: ${e}`)
     }
+    this.log.info(`NAILED IT`)
     try {
+      this.log.info(`I AM PROCESSING EVENTS NOW`)
       await this.db.withTransaction(() => this.doProcessEvents())
     } catch (e) {
       this.log.error(`Processing events failed: ${e}`)
     }
+    this.log.info(`NAILED IT AGAIN`)
   }
 
   /**
@@ -165,6 +171,7 @@ export default class ChainsawService {
   }
 
   private async doFetchEvents() {
+    this.log.info(`FETCHING EVENTS NOW`)
     const topBlock = await this.web3.eth.getBlockNumber()
     // @ts-ignore
     const last = await this.chainsawDao.lastPollFor(this.contract.address, 'FETCH_EVENTS')
@@ -174,6 +181,7 @@ export default class ChainsawService {
     if (toBlock - lastBlock > 10000) {
       toBlock = lastBlock + 10000
     }
+    this.log.info(`FETCHING EVENTS, LIMITS ENFORCED`)
 
     // need to check for >= here since we were previously not checking for a confirmation count
     if (lastBlock >= toBlock) {
@@ -182,9 +190,11 @@ export default class ChainsawService {
       }
       return
     }
+    this.log.info(`FETCHING EVENTS, CONFIRMATION COUNT ENFORCED`)
 
     const fromBlock = lastBlock + 1
 
+    this.log.info(`FETCHING EVENTS, doFetchEventsFromRange(${fromBlock}, ${toBlock})`)
     await this.doFetchEventsFromRange(fromBlock, toBlock);
   }
 
