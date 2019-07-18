@@ -221,6 +221,9 @@
     },
     "DolphinCoin": {
       "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F"
+    },
+    "CoinTransferInterpreter": {
+      "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10"
     }
   }
 }
