@@ -60,7 +60,7 @@ channel_bei_limit=${CHANNEL_BEI_LIMIT}
 channel_bei_deposit=${CHANNEL_BEI_DEPOSIT}
 
 # hard-coded config (you probably won't ever need to change these)
-log_level="1" # set to 10 for all logs or to 30 to only print warnings/errors
+log_level="4" # set to 10 for all logs or to 30 to only print warnings/errors
 private_key_name="hub_key_$INDRA_ETH_NETWORK"
 private_key_file="/run/secrets/$private_key_name"
 
