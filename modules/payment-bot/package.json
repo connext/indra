@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@connext/types": "0.0.4",
-    "@counterfactual/types": "0.0.23",
+    "@counterfactual/types": "0.0.24",
     "@types/inquirer": "6.0.3",
     "@types/node-fetch": "2.3.7",
     "env-cmd": "9.0.3",
