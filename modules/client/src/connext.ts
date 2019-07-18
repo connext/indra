@@ -107,6 +107,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     console.log("no channel detected, creating channel..");
     myChannel = await node.createChannel();
   }
+  if (!myChannel) {
+    throw new Error(`Ruh roh! still could not create channel.... Please contact maintainers.`);
+  }
   node.setNodePublicIdentifier(myChannel.nodePublicIdentifier);
   console.log("myChannel: ", myChannel);
   // create the new client
@@ -329,12 +332,12 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public getLatestSwapRate = (from: string, to: string): BigNumber => {
-    if (!this.node.exchangeSubscriptions) {
+    if (this.node.swapSubscriptions.length === 0) {
       throw new Error(
         `Not currently subscribed to any exchange rates, cannot retrieve latest from store.`,
       );
     }
-    const subscriptions = this.node.exchangeSubscriptions.filter((sub: SwapSubscription) => {
+    const subscriptions = this.node.swapSubscriptions.filter((sub: SwapSubscription) => {
       sub.to === to && sub.from === from;
     });
     if (subscriptions.length === 0) {
@@ -401,7 +404,7 @@ export class ConnextInternal extends ConnextChannel {
           multisigAddress: this.opts.multisigAddress,
           notifyCounterparty,
           tokenAddress: assetId,
-        },
+        } as NodeTypes.DepositParams,
       }),
     );
     // @ts-ignore
@@ -438,7 +441,7 @@ export class ConnextInternal extends ConnextChannel {
           },
         }),
       );
-      return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
+      return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
       if (e.message.startsWith(error)) {

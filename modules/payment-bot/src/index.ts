@@ -62,6 +62,7 @@ async function run(): Promise<void> {
   if (program.assetId) {
     assetId = program.assetId;
   }
+  await client.subscribeToSwapRates("eth", "dai");
 
   if (program.deposit) {
     const depositParams: DepositParameters = {
@@ -77,20 +78,28 @@ async function run(): Promise<void> {
   }
 
   if (program.transfer) {
+    console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
     await client.transfer({
       amount: ethers.utils.parseEther(program.transfer).toString(),
       recipient: program.counterparty,
     });
+    console.log(`Successfully transferred!`);
   }
 
   if (program.swap) {
     const swapRate = client.getLatestSwapRate("eth", "dai");
+    console.log(
+      `Attempting to swap ${program.swap} of eth for ${
+        program.assetId
+      } at rate ${swapRate.toString()}...`,
+    );
     await client.swap({
       amount: ethers.utils.parseEther(program.swap).toString(),
       fromAssetId: AddressZero,
       swapRate: swapRate.toString(),
       toAssetId: assetId,
     });
+    console.log(`Successfully swapped!`);
   }
 
   if (program.withdraw) {
@@ -104,10 +113,11 @@ async function run(): Promise<void> {
       withdrawParams.recipient = program.recipient;
     }
     console.log(
-      `Attempting to deposit ${withdrawParams.amount} with assetId ` +
+      `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
         `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,
     );
     await client.withdraw(withdrawParams);
+    console.log(`Successfully withdrawn!`);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
@@ -142,7 +152,10 @@ async function getOrCreateChannel(): Promise<void> {
   console.log("Public Identifier", client.publicIdentifier);
   console.log("Account multisig address:", client.opts.multisigAddress);
   console.log("User free balance address:", client.freeBalanceAddress);
-  console.log("Node free balance address:", connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier));
+  console.log(
+    "Node free balance address:",
+    connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier),
+  );
 
   const channelAvailable = async (): Promise<boolean> => (await client.getChannel()).available;
   const interval = 3;

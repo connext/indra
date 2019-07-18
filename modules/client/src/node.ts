@@ -28,7 +28,7 @@ export interface INodeApiClient {
   getChannel(): Promise<GetChannelResponse>;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
-  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
+  unsubscribeFromSwapRates(from: string, to: string): void;
   requestCollateral(): Promise<void>;
 }
 
@@ -49,7 +49,7 @@ export class NodeApiClient implements INodeApiClient {
   public nodePublicIdentifier: string | undefined;
 
   // subscription references
-  public exchangeSubscriptions: SwapSubscription[] | undefined;
+  public swapSubscriptions: SwapSubscription[] = [];
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -132,7 +132,7 @@ export class NodeApiClient implements INodeApiClient {
     store: NodeTypes.IStoreService,
   ): Promise<void> {
     const subscription = await this.messaging.subscribe(
-      `exchange-rate.${from}.${to}`,
+      `swap-rate.${from}.${to}`,
       (err: any, msg: any) => {
         if (err) {
           this.log.error(JSON.stringify(err, null, 2));
@@ -147,19 +147,19 @@ export class NodeApiClient implements INodeApiClient {
         }
       },
     );
-    this.exchangeSubscriptions.push({
+    this.swapSubscriptions.push({
       from,
       subscription,
       to,
     });
   }
 
-  public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {
-    if (!this.exchangeSubscriptions || this.exchangeSubscriptions.length === 0) {
+  public unsubscribeFromSwapRates(from: string, to: string): void {
+    if (this.swapSubscriptions.length === 0) {
       return;
     }
 
-    const matchedSubs = this.exchangeSubscriptions.filter((sub: SwapSubscription) => {
+    const matchedSubs = this.swapSubscriptions.filter((sub: SwapSubscription) => {
       return sub.from === from && sub.to === to;
     });
 
@@ -168,7 +168,15 @@ export class NodeApiClient implements INodeApiClient {
       return;
     }
 
-    matchedSubs.forEach((sub: SwapSubscription) => sub.subscription.unsubscribe());
+    this.swapSubscriptions = this.swapSubscriptions
+      .map((sub: SwapSubscription) => {
+        if (sub.from === from && sub.to === to) {
+          sub.subscription.unsubscribe();
+          return undefined;
+        }
+        return sub;
+      })
+      .filter((s: SwapSubscription) => !!s);
   }
 
   // FIXME: right now node doesnt return until the deposit has completed
