@@ -99,6 +99,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
 
+  const signer = await cfModule.signerAddress();
+  console.log("cf module signer address: ", signer);
+
   // TODO: make these types
   let myChannel = await node.getChannel();
 
@@ -422,7 +425,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return appInstanceResponse.result.appInstances as AppInstanceInfo[];
+    return appInstanceResponse.result.result.appInstances as AppInstanceInfo[];
   };
 
   // TODO: under what conditions will this fail?
