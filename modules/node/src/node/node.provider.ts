@@ -72,9 +72,9 @@ async function createNode(
 
 function logEvent(event: NodeTypes.EventName, res: NodeTypes.NodeMessage & { data: any }): void {
   logger.log(
-    `${event} event fired from ${res && res.from ? res.from : null}, data: ${JSON.stringify(
-      res.data,
-    )}`,
+    `${event} event fired from ${res && res.from ? res.from : null}, data: ${
+      res ? JSON.stringify(res.data) : "event did not have a result"
+    }`,
   );
 }
 
