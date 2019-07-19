@@ -108,7 +108,7 @@ export class ChannelService {
       }),
     );
 
-    const freeBalance = freeBalanceResponse.result as NodeTypes.GetFreeBalanceStateResult;
+    const freeBalance = freeBalanceResponse.result.result as NodeTypes.GetFreeBalanceStateResult;
     const freeBalanceAddress = freeBalanceAddressFromXpub(this.node.publicIdentifier);
     const nodeFreeBalance = freeBalance[freeBalanceAddress];
 
