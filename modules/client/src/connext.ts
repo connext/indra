@@ -370,7 +370,7 @@ export class ConnextInternal extends ConnextChannel {
   public cfDeposit = async (
     amount: BigNumber,
     assetId: string,
-    notifyCounterparty: boolean = true,
+    notifyCounterparty: boolean = false,
   ): Promise<NodeTypes.DepositResult> => {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
     let bal: BigNumber;
@@ -471,7 +471,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return proposedRes.result as NodeTypes.GetProposedAppInstancesResult;
+    return proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
   };
 
   public getAppInstanceDetails = async (
