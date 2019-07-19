@@ -84,11 +84,14 @@ const baseAppValidation = async (
   console.log("******** app", JSON.stringify(app, null, 2));
   console.log("******** has initial state??", (app as any).initialState);
   // check that identity hash isnt used by another app
-  const sharedId = (await connext.getAppInstances()).filter(
-    (a: AppInstanceInfo) => a.identityHash === app.identityHash,
-  );
-  if (sharedId.length !== 0) {
-    return `Duplicate app id detected. Proposed app: ${prettyLog(app)}`;
+  const apps = await connext.getAppInstances();
+  if (apps) {
+    const sharedIds = (await connext.getAppInstances()).filter(
+      (a: AppInstanceInfo) => a.identityHash === app.identityHash,
+    );
+    if (sharedIds.length !== 0) {
+      return `Duplicate app id detected. Proposed app: ${prettyLog(app)}`;
+    }
   }
 
   // check that the app definition is the same
