@@ -18,7 +18,7 @@ import { ChannelRepository } from "./channel.repository";
 const logger = new CLogger("ChannelService");
 
 @Injectable()
-export class ChannelService implements OnModuleInit {
+export class ChannelService {
   constructor(
     @Inject(NodeProviderId) private readonly node: Node,
     private readonly channelRepository: ChannelRepository,
@@ -58,10 +58,12 @@ export class ChannelService implements OnModuleInit {
       .result;
     logger.log(`multisigResponse: ${JSON.stringify(multisigResponse, undefined, 2)}`);
 
+    const creationData = await this.createChannelEventFired();
     const channel = new Channel();
-    channel.userPublicIdentifier = counterpartyPublicIdentifier;
+    channel.userPublicIdentifier = creationData.data.counterpartyXpub;
     channel.nodePublicIdentifier = this.node.publicIdentifier;
-    channel.multisigAddress = (multisigResult as any).result.address;
+    channel.multisigAddress = creationData.data.multisigAddress;
+    channel.available = true;
     return await this.channelRepository.save(channel);
   }
 
@@ -93,16 +95,6 @@ export class ChannelService implements OnModuleInit {
     return depositResponse!.result as NodeTypes.DepositResult;
   }
 
-  async makeAvailable(multisigAddress: string): Promise<Channel> {
-    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-    if (!channel) {
-      throw new NotFoundException(`Channel not found for multisigAddress: ${multisigAddress}`);
-    }
-
-    channel.available = true;
-    return await this.channelRepository.save(channel);
-  }
-
   async requestCollateral(userPubId: string): Promise<NodeTypes.DepositResult | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
@@ -130,19 +122,17 @@ export class ChannelService implements OnModuleInit {
     return undefined;
   }
 
-  private registerNodeListeners(): void {
-    registerCfNodeListener(
-      this.node,
-      NodeTypes.EventName.CREATE_CHANNEL,
-      async (data: CreateChannelMessage) => {
-        await this.makeAvailable((data.data as NodeTypes.CreateChannelResult).multisigAddress);
-      },
-      logger.cxt,
-    );
-  }
-
-  // initialize CF Node with methods from this service to avoid circular dependency
-  onModuleInit(): void {
-    this.registerNodeListeners();
+  // TODO: reject after some time
+  private createChannelEventFired(): any {
+    return new Promise((res, rej) => {
+      registerCfNodeListener(
+        this.node,
+        NodeTypes.EventName.CREATE_CHANNEL,
+        (data: CreateChannelMessage) => {
+          res(data);
+        },
+        logger.cxt,
+      );
+    });
   }
 }
