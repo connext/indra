@@ -23,7 +23,8 @@ program
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
   .option("-r, --recipient <address>", "Withdrawal recipient address")
-  .option("-s, --swap <amount>", "Swap amount in Ether units");
+  .option("-s, --swap <amount>", "Swap amount in Ether units")
+  .option("-q, --request-collateral", "Request channel collateral from the node");
 
 program.parse(process.argv);
 
@@ -64,6 +65,8 @@ async function run(): Promise<void> {
   }
   await client.subscribeToSwapRates("eth", "dai");
 
+  const apps = await client.getAppInstances();
+  console.log('apps: ', apps);
   if (program.deposit) {
     const depositParams: DepositParameters = {
       amount: ethers.utils.parseEther(program.deposit).toString(),
@@ -74,6 +77,11 @@ async function run(): Promise<void> {
     console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited! Requesting collateral...`);
+    await client.requestCollateral();
+  }
+
+  if (program.requestCollateral) {
+    console.log(`Requesting collateral...`);
     await client.requestCollateral();
   }
 
