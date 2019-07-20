@@ -10,6 +10,7 @@ modules/**/.npm
 modules/daicard/src/react-app-env.d.ts
 
 # Compiled output
+build/
 dist/
 node_modules/
 .makeflags

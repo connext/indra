@@ -14,6 +14,7 @@ version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
+contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 client=$(cwd)/modules/client
 messaging=$(cwd)/modules/messaging
@@ -104,19 +105,19 @@ watch-node: node-modules
 ########################################
 # Begin Real Rules
 
-ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+builder: ops/builder.dockerfile
 	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
+	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
+client: contracts types messaging $(shell find $(client)/src $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-proxy: $(shell find $(proxy) $(find_options))
+contracts: node-modules $(shell find $(contracts)/contracts $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
+	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
@@ -124,34 +125,14 @@ daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build"
-	$(log_finish) && touch $(flags)/$@
-
-client: types messaging $(shell find $(client)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/client && npm run build"
-	$(log_finish) && touch $(flags)/$@
-
-node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
-	$(log_start)
-	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
-	$(log_finish) && touch $(flags)/$@
-
-node: types messaging $(shell find $(node)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build"
-	$(log_finish) && touch $(flags)/$@
-
-types: node-modules messaging $(shell find $(types)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/types && npm run build"
-	$(log_finish) && touch $(flags)/$@
-
 messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/messaging && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+node: contracts types messaging $(shell find $(node)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
@@ -159,8 +140,32 @@ node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && touch $(flags)/$@
 
-builder: ops/builder.dockerfile
+node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
+	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
 	$(log_finish) && touch $(flags)/$@
 
+payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/payment-bot && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+proxy: $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
+	$(log_finish) && touch $(flags)/$@
+
+proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	$(log_finish) && touch $(flags)/$@
+
+types: node-modules messaging $(shell find $(types)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/types && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+	$(log_start)
+	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
+	$(log_finish) && touch $(flags)/$@
