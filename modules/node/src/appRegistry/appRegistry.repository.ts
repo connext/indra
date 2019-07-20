@@ -1,6 +1,8 @@
 import { EntityRepository, Repository } from "typeorm";
 
-import { AppRegistry, Network } from "./appRegistry.entity";
+import { Network } from "../constants";
+
+import { AppRegistry } from "./appRegistry.entity";
 
 @EntityRepository(AppRegistry)
 export class AppRegistryRepository extends Repository<AppRegistry> {

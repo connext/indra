@@ -115,7 +115,7 @@ export class SwapController extends AbstractController {
     let boundResolve;
     let boundReject;
 
-    const params: NodeTypes.ProposeInstallParams = {
+    const params: any /*NodeTypes.ProposeInstallParams*/ = {
       abiEncodings: {
         actionEncoding: appInfo.actionEncoding,
         stateEncoding: appInfo.stateEncoding,

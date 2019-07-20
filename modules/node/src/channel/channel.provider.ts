@@ -8,23 +8,22 @@ import {
 import { Node } from "@counterfactual/node";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
-import { Client } from "ts-nats";
 
 import { ConfigService } from "../config/config.service";
-import { ChannelMessagingProviderId, NatsProviderId, NodeProviderId } from "../constants";
-import { AbstractNatsProvider } from "../util/nats";
+import { ChannelMessagingProviderId, MessagingProviderId, NodeProviderId } from "../constants";
+import { AbstractMessagingProvider } from "../util/messaging";
 import { isXpub } from "../validator/isXpub";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
-export class ChannelNats extends AbstractNatsProvider {
+export class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
-    natsClient: Client,
+    messaging: IMessagingService,
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
   ) {
-    super(natsClient);
+    super(messaging);
   }
 
   async getChannel(subject: string): Promise<GetChannelResponse> {
@@ -60,13 +59,13 @@ export class ChannelNats extends AbstractNatsProvider {
 }
 
 // this should be done in the config module but i didnt want to create a circular dependency
-export class ConfigNats extends AbstractNatsProvider {
+export class ConfigMessaging extends AbstractMessagingProvider {
   constructor(
-    client: Client,
+    messaging: IMessagingService,
     private readonly node: Node,
     private readonly configService: ConfigService,
   ) {
-    super(client);
+    super(messaging);
   }
 
   async getConfig(): Promise<GetConfigResponse> {
@@ -84,21 +83,20 @@ export class ConfigNats extends AbstractNatsProvider {
 }
 
 // TODO: reduce this boilerplate
-export const channelProvider: FactoryProvider<Promise<Client>> = {
-  inject: [NatsProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
+export const channelProvider: FactoryProvider<Promise<IMessagingService>> = {
+  inject: [MessagingProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
-    nats: IMessagingService,
+    messaging: IMessagingService,
     channelRepo: ChannelRepository,
     configService: ConfigService,
     node: Node,
     channelService: ChannelService,
-  ): Promise<Client> => {
-    const client = nats.getConnection();
-    const channel = new ChannelNats(client, channelRepo, channelService);
+  ): Promise<IMessagingService> => {
+    const channel = new ChannelMessaging(messaging, channelRepo, channelService);
     await channel.setupSubscriptions();
-    const config = new ConfigNats(client, node, configService);
+    const config = new ConfigMessaging(messaging, node, configService);
     await config.setupSubscriptions();
-    return client;
+    return messaging;
   },
 };

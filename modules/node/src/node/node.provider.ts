@@ -1,4 +1,4 @@
-import { MessagingServiceFactory, NatsMessagingService } from "@connext/messaging";
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -21,7 +21,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ethers as eth } from "ethers";
 
 import { ConfigService } from "../config/config.service";
-import { NatsProviderId, NodeProviderId, PostgresProviderId } from "../constants";
+import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger, registerCfNodeListener } from "../util";
 
 const logger = new CLogger("NodeProvider");
@@ -32,7 +32,7 @@ type CallbackStruct = {
 
 async function createNode(
   config: ConfigService,
-  natsMessagingService: NatsMessagingService,
+  messagingService: IMessagingService,
   postgresServiceFactory: PostgresServiceFactory,
 ): Promise<Node> {
   logger.log("Creating store");
@@ -51,7 +51,7 @@ async function createNode(
     `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
   );
   const node = await Node.create(
-    natsMessagingService,
+    messagingService,
     store,
     { STORE_KEY_PREFIX: "store" },
     provider,
@@ -155,14 +155,14 @@ const defaultCallbacks: CallbackStruct = {
 };
 
 export const nodeProvider: Provider = {
-  inject: [ConfigService, NatsProviderId, PostgresProviderId],
+  inject: [ConfigService, MessagingProviderId, PostgresProviderId],
   provide: NodeProviderId,
   useFactory: async (
     config: ConfigService,
-    nats: NatsMessagingService,
+    messaging: IMessagingService,
     postgres: PostgresServiceFactory,
   ): Promise<Node> => {
-    return await createNode(config, nats, postgres);
+    return await createNode(config, messaging, postgres);
   },
 };
 
@@ -181,12 +181,12 @@ export const postgresProvider: Provider = {
 };
 
 // TODO: bypass factory
-export const natsProvider: FactoryProvider<Promise<NatsMessagingService>> = {
+export const messagingProvider: FactoryProvider<Promise<IMessagingService>> = {
   inject: [ConfigService],
-  provide: NatsProviderId,
-  useFactory: async (config: ConfigService): Promise<NatsMessagingService> => {
+  provide: MessagingProviderId,
+  useFactory: async (config: ConfigService): Promise<IMessagingService> => {
     const messagingFactory = new MessagingServiceFactory(config.getMessagingConfig());
-    const messagingService = messagingFactory.createService("messaging") as NatsMessagingService;
+    const messagingService = messagingFactory.createService("messaging");
     await messagingService.connect();
     return messagingService;
   },

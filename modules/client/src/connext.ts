@@ -1,16 +1,16 @@
-import { MessagingServiceFactory, NatsMessagingService } from "@connext/messaging";
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,
   CreateChannelResponse,
   DepositParameters,
-  SwapParameters,
   GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
   RegisteredAppDetails,
   SupportedApplication,
   SupportedNetwork,
+  SwapParameters,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
@@ -18,12 +18,11 @@ import {
 import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
-import { Client as NatsClient } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
 import { SwapController } from "./controllers/SwapController";
@@ -36,11 +35,10 @@ import {
   publicIdentifierToAddress,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
-import { NodeApiClient, SwapSubscription } from "./node";
+import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
-import { Wallet } from "./wallet";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -50,31 +48,33 @@ import { Wallet } from "./wallet";
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
+  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
+
   // create a new wallet
-  const wallet = new Wallet(opts);
-  const network = await wallet.provider.getNetwork();
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+  const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
+  const network = await ethProvider.getNetwork();
 
   console.log("Creating messaging service client");
-  const { natsClusterId, nodeUrl, natsToken } = opts;
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
+    logLevel,
     messagingUrl: nodeUrl,
     token: natsToken,
   });
-  const messaging = messagingFactory.createService("messaging") as NatsMessagingService;
+  const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
   console.log("Messaging service is connected");
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
-  await opts.store.set([{ key: MNEMONIC_PATH, value: opts.mnemonic }]);
+  await store.set([{ key: MNEMONIC_PATH, value: mnemonic }]);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
   const nodeConfig = {
-    logLevel: opts.logLevel,
+    logLevel,
     messaging,
-    wallet,
   };
   console.log("creating node client");
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
@@ -89,11 +89,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("creating new cf module");
   const cfModule = await Node.create(
     messaging,
-    opts.store,
+    store,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
-    wallet.provider,
+    ethProvider,
     config.contractAddresses,
   );
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
@@ -119,8 +119,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   return new ConnextInternal({
     appRegistry,
     cfModule,
+    ethProvider,
+    messaging,
     multisigAddress: myChannel.multisigAddress,
-    nats: messaging.getConnection(),
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
@@ -186,9 +187,6 @@ export abstract class ConnextChannel {
   };
 
   // TODO: do we need to expose here?
-  public authenticate = (): void => {};
-
-  // TODO: do we need to expose here?
   public getAppRegistry = async (appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
@@ -206,7 +204,7 @@ export abstract class ConnextChannel {
   };
 
   public getLatestSwapRate = (from: string, to: string): BigNumber => {
-    return this.internal.getLatestSwapRate(from, to);
+    return this.internal.node.getLatestSwapRate(from, to);
   };
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
@@ -265,8 +263,9 @@ export class ConnextInternal extends ConnextChannel {
   public cfModule: Node;
   public publicIdentifier: string;
   public wallet: Wallet;
+  public ethProvider: providers.JsonRpcProvider;
   public node: NodeApiClient;
-  public nats: NatsClient;
+  public messaging: IMessagingService;
   public multisigAddress: Address;
   public listener: ConnextListener;
   public nodePublicIdentifier: string;
@@ -288,9 +287,10 @@ export class ConnextInternal extends ConnextChannel {
 
     this.opts = opts;
 
+    this.ethProvider = opts.ethProvider;
     this.wallet = opts.wallet;
     this.node = opts.node;
-    this.nats = opts.nats;
+    this.messaging = opts.messaging;
 
     this.appRegistry = opts.appRegistry;
 
@@ -334,24 +334,6 @@ export class ConnextInternal extends ConnextChannel {
     return await this.withdrawalController.withdraw(params);
   };
 
-  public getLatestSwapRate = (from: string, to: string): BigNumber => {
-    if (this.node.swapSubscriptions.length === 0) {
-      throw new Error(
-        `Not currently subscribed to any exchange rates, cannot retrieve latest from store.`,
-      );
-    }
-    const subscriptions = this.node.swapSubscriptions.filter((sub: SwapSubscription) => {
-      sub.to === to && sub.from === from;
-    });
-    if (subscriptions.length === 0) {
-      throw new Error(
-        `Not currently subscribed to exchange rate for ${from}-${to},` +
-          ` cannot retrieve latest from store.`,
-      );
-    }
-    return new BigNumber(this.opts.store.get(`swap-rate.${from}.${to}`));
-  };
-
   ///////////////////////////////////
   // EVENT METHODS
 
@@ -379,10 +361,10 @@ export class ConnextInternal extends ConnextChannel {
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
-      bal = await this.wallet.provider.getBalance(depositAddr);
+      bal = await this.ethProvider.getBalance(depositAddr);
     } else {
       // get token balance
-      const token = new Contract(assetId, tokenAbi, this.wallet.provider);
+      const token = new Contract(assetId, tokenAbi, this.ethProvider);
       // TODO: correct? how can i use allowance?
       bal = await token.balanceOf(depositAddr);
     }

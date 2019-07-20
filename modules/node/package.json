@@ -21,12 +21,10 @@
   },
   "dependencies": {
     "@connext/messaging": "0.0.1",
-    "@connext/types": "0.0.4",
     "@counterfactual/contracts": "0.1.8",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.20",
     "@counterfactual/postgresql-node-connector": "0.0.3",
-    "@counterfactual/types": "0.0.24",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",
@@ -40,11 +38,11 @@
     "pg": "7.11.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.2",
-    "ts-nats": "1.2.4",
     "typeorm": "0.2.18",
     "uuid": "3.3.2"
   },
   "devDependencies": {
+    "@connext/types": "0.0.4",
     "@counterfactual/types": "0.0.24",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.0",

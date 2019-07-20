@@ -4,22 +4,20 @@
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npm run clean && npm run compile",
+    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
-    "compile": "./node_modules/.bin/tsc -p tsconfig.json",
     "prepare": "npm run build",
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
     "@connext/messaging": "0.0.1",
-    "@connext/types": "0.0.4",
     "@counterfactual/node": "0.2.20",
     "core-js": "3.1.4",
     "ethers": "4.0.33",
     "human-standard-token-abi": "2.0.0",
     "node-fetch": "2.6.0",
-    "regenerator-runtime": "0.13.2",
-    "ts-nats": "1.2.4",
+    "regenerator-runtime": "0.13.3",
     "uuid": "3.3.2"
   },
   "devDependencies": {

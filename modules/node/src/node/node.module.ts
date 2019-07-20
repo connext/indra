@@ -4,12 +4,12 @@ import { ConfigModule } from "../config/config.module";
 import { UserModule } from "../user/user.module";
 
 import { NodeController } from "./node.controller";
-import { natsProvider, nodeProvider, postgresProvider } from "./node.provider";
+import { messagingProvider, nodeProvider, postgresProvider } from "./node.provider";
 
 @Module({
   controllers: [NodeController],
-  exports: [nodeProvider, natsProvider],
+  exports: [nodeProvider, messagingProvider],
   imports: [ConfigModule, UserModule],
-  providers: [natsProvider, nodeProvider, postgresProvider],
+  providers: [messagingProvider, nodeProvider, postgresProvider],
 })
 export class NodeModule {}
