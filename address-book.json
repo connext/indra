@@ -111,7 +111,7 @@
     "CoinBalanceRefundApp": {
       "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da"
     },
-    "CoinTransferETHInterpreter": {
+    "CoinTransferInterpreter": {
       "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10"
     },
     "ConditionalTransactionDelegateTarget": {
@@ -135,17 +135,14 @@
     "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter": {
       "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8"
     },
-    "DolphinCoin": {
+    "SimpleTwoPartySwapApp": {
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a"
     },
-    "CoinTransferInterpreter": {
-      "address": "0xA4392264a2d8c998901D10C154C91725b1BF0158"
-    },
-    "SimpleTwoPartySwapApp": {
-      "address": "0xB529f14AA8096f943177c09Ca294Ad66d2E08b1f"
-    },
     "UnidirectionalTransferApp": {
-      "address": "0x3d49d1eF2adE060a33c6E6Aa213513A7EE9a6241"
+      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
+    },
+    "DolphinCoin": {
+      "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254"
     }
   }
 }
