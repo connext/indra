@@ -3,6 +3,11 @@ const eth = require('ethers')
 const linker = require('solc/linker')
 const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
 
+const appContracts = [
+  "SimpleTwoPartySwapApp",
+  "UnidirectionalTransferApp",
+]
+
 const coreContracts = [
   "ChallengeRegistry",
   "CoinBalanceRefundApp",
@@ -18,7 +23,10 @@ const coreContracts = [
 
 const artifacts = {}
 for (const contract of coreContracts) {
-  artifacts[contract] = require(`@counterfactual/contracts/build/${contract}.json`)
+  artifacts[contract] = require(`@counterfactual/contracts/build/contracts/${contract}.json`)
+}
+for (const contract of appContracts) {
+  artifacts[contract] = require(`../modules/contracts/build/contracts/${contract}.json`)
 }
 
 const { EtherSymbol, Zero } = eth.constants
@@ -186,6 +194,10 @@ const sendGift = async (address, token) => {
   // Deploy contracts
 
   for (const contract of coreContracts) {
+    await deployContract(contract, artifacts[contract], [])
+  }
+
+  for (const contract of appContracts) {
     await deployContract(contract, artifacts[contract], [])
   }
 
