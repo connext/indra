@@ -2,12 +2,14 @@ import { MessagingConfig } from "@connext/messaging";
 import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
 import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
-import { NetworkContext } from "@counterfactual/types";
+import { NetworkContext, OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import * as dotenv from "dotenv";
 import { JsonRpcProvider } from "ethers/providers";
-import { Network } from "ethers/utils";
+import { Network as EthNetwork } from "ethers/utils";
 import * as fs from "fs";
+
+import { KnownNodeAppNames, Network } from "../constants";
 
 type PostgresConfig = {
   database: string;
@@ -15,6 +17,16 @@ type PostgresConfig = {
   password: string;
   port: number;
   username: string;
+};
+
+type DefaultApp = {
+  actionEncoding?: string;
+  allowNodeInstall: boolean;
+  appDefinitionAddress: string;
+  name: string;
+  network: Network;
+  outcomeType: OutcomeType;
+  stateEncoding: string;
 };
 
 @Injectable()
@@ -47,7 +59,7 @@ export class ConfigService {
     return new JsonRpcProvider(this.getEthRpcUrl());
   }
 
-  async getEthNetwork(): Promise<Network> {
+  async getEthNetwork(): Promise<EthNetwork> {
     const ethNetwork = await this.getEthProvider().getNetwork();
     if (ethNetwork.name === "unknown" && ethNetwork.chainId === 4447) {
       ethNetwork.name = "ganache";
@@ -74,6 +86,29 @@ export class ConfigService {
       ethAddresses[contract] = ethAddressBook[chainId][contract].address;
     });
     return ethAddresses as NetworkContext;
+  }
+
+  getDefaultApps(): DefaultApp[] {
+    return [
+      {
+        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+        allowNodeInstall: false,
+        appDefinitionAddress: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
+        name: KnownNodeAppNames.ETH_UNIDIRECTIONAL_TRANSFER,
+        network: Network.KOVAN,
+        outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+      },
+      {
+        allowNodeInstall: true,
+        appDefinitionAddress: "0x92E0bC808f7549c7f8f37b45960D6dCFd343d909",
+        name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
+        network: Network.KOVAN,
+        outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME, // TODO?
+        stateEncoding:
+          "tuple(tuple(address to, address[] coinAddress, uint256[] balance)[] coinBalances)",
+      },
+    ];
   }
 
   getLogLevel(): number {

@@ -6,11 +6,10 @@ import {
 } from "@counterfactual/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 
-import { NodeProviderId } from "../constants";
+import { KnownNodeAppNames, NodeProviderId } from "../constants";
 import { CLogger, registerCfNodeListener } from "../util";
 
 import { AppRegistry } from "./appRegistry.entity";
-import { KnownNodeAppNames } from "./appRegistry.module";
 import { AppRegistryRepository } from "./appRegistry.repository";
 
 const logger = new CLogger("AppRegistryService");

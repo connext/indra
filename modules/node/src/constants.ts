@@ -2,6 +2,20 @@ import { parseEther } from "ethers/utils";
 
 import { PaymentProfile } from "./paymentProfile/paymentProfile.entity";
 
+export enum Network {
+  GANACHE = "ganache",
+  KOVAN = "kovan",
+  RINKEBY = "rinkeby",
+  ROPSTEN = "ropsten",
+  GOERLI = "goerli",
+  MAINNET = "mainnet",
+}
+
+export enum KnownNodeAppNames {
+  SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
+  ETH_UNIDIRECTIONAL_TRANSFER = "EthUnidirectionalTransferApp",
+}
+
 // PROVIDERS
 export const NodeProviderId = "NODE";
 export const PostgresProviderId = "POSTGRES";

@@ -1,7 +1,9 @@
 import { Controller } from "@nestjs/common";
 import { MessagePattern } from "@nestjs/microservices";
 
-import { AppRegistry, Network } from "./appRegistry.entity";
+import { Network } from "../constants";
+
+import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
 
 @Controller()
