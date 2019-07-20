@@ -22,12 +22,12 @@ export const appRegistryProvider: Provider = {
     appRegistryRepository: AppRegistryRepository,
     configService: ConfigService,
   ): Promise<void> => {
-    for (const app of configService.getDefaultApps()) {
+    for (const app of await configService.getDefaultApps()) {
       let appRegistry = await appRegistryRepository.findByNameAndNetwork(app.name, app.network);
       if (!appRegistry) {
         appRegistry = new AppRegistry();
       }
-      logger.log(`Creating default app ${app.name} on ${app.network}`);
+      logger.log(`Creating app ${app.name} on ${app.network} at: ${app.appDefinitionAddress}`);
       appRegistry.actionEncoding = app.actionEncoding;
       appRegistry.appDefinitionAddress = app.appDefinitionAddress;
       appRegistry.name = app.name;

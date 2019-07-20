@@ -13,7 +13,7 @@ export enum Network {
 
 export enum KnownNodeAppNames {
   SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
-  ETH_UNIDIRECTIONAL_TRANSFER = "EthUnidirectionalTransferApp",
+  UNIDIRECTIONAL_TRANSFER = "UnidirectionalTransferApp",
 }
 
 // PROVIDERS

@@ -88,22 +88,24 @@ export class ConfigService {
     return ethAddresses as NetworkContext;
   }
 
-  getDefaultApps(): DefaultApp[] {
+  async getDefaultApps(): Promise<DefaultApp[]> {
+    const ethNetwork = await this.getEthNetwork();
+    const addressBook = await this.getContractAddresses();
     return [
       {
         actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
         allowNodeInstall: false,
-        appDefinitionAddress: "0xfDd8b7c07960214C025B74e28733D30cF67A652d",
-        name: KnownNodeAppNames.ETH_UNIDIRECTIONAL_TRANSFER,
-        network: Network.KOVAN,
+        appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER],
+        name: KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER,
+        network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
         stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
       },
       {
         allowNodeInstall: true,
-        appDefinitionAddress: "0x92E0bC808f7549c7f8f37b45960D6dCFd343d909",
+        appDefinitionAddress: addressBook[KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP],
         name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
-        network: Network.KOVAN,
+        network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME, // TODO?
         stateEncoding:
           "tuple(tuple(address to, address[] coinAddress, uint256[] balance)[] coinBalances)",
