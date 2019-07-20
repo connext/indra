@@ -72,16 +72,16 @@ async function createNode(
 
 function logEvent(event: NodeTypes.EventName, res: NodeTypes.NodeMessage & { data: any }): void {
   logger.log(
-    `${event} event fired from ${res && res.from ? res.from : null}, data: ${JSON.stringify(
-      res.data,
-    )}`,
+    `${event} event fired from ${res && res.from ? res.from : null}, data: ${
+      res ? JSON.stringify(res.data) : "event did not have a result"
+    }`,
   );
 }
 
 function registerDefaultCfListeners(node: Node): void {
   Object.entries(defaultCallbacks).forEach(
     ([event, callback]: [NodeTypes.EventName, () => any]): void => {
-      registerCfNodeListener(node, event, callback, "DefaultListener");
+      registerCfNodeListener(node, NodeTypes.EventName[event], callback, "DefaultListener");
     },
   );
 }

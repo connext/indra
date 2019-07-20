@@ -23,7 +23,8 @@ program
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
   .option("-r, --recipient <address>", "Withdrawal recipient address")
-  .option("-s, --swap <amount>", "Swap amount in Ether units");
+  .option("-s, --swap <amount>", "Swap amount in Ether units")
+  .option("-q, --request-collateral", "Request channel collateral from the node");
 
 program.parse(process.argv);
 
@@ -62,7 +63,10 @@ async function run(): Promise<void> {
   if (program.assetId) {
     assetId = program.assetId;
   }
+  await client.subscribeToSwapRates("eth", "dai");
 
+  const apps = await client.getAppInstances();
+  console.log('apps: ', apps);
   if (program.deposit) {
     const depositParams: DepositParameters = {
       amount: ethers.utils.parseEther(program.deposit).toString(),
@@ -76,21 +80,34 @@ async function run(): Promise<void> {
     await client.requestCollateral();
   }
 
+  if (program.requestCollateral) {
+    console.log(`Requesting collateral...`);
+    await client.requestCollateral();
+  }
+
   if (program.transfer) {
+    console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
     await client.transfer({
       amount: ethers.utils.parseEther(program.transfer).toString(),
       recipient: program.counterparty,
     });
+    console.log(`Successfully transferred!`);
   }
 
   if (program.swap) {
     const swapRate = client.getLatestSwapRate("eth", "dai");
+    console.log(
+      `Attempting to swap ${program.swap} of eth for ${
+        program.assetId
+      } at rate ${swapRate.toString()}...`,
+    );
     await client.swap({
       amount: ethers.utils.parseEther(program.swap).toString(),
       fromAssetId: AddressZero,
       swapRate: swapRate.toString(),
       toAssetId: assetId,
     });
+    console.log(`Successfully swapped!`);
   }
 
   if (program.withdraw) {
@@ -104,10 +121,11 @@ async function run(): Promise<void> {
       withdrawParams.recipient = program.recipient;
     }
     console.log(
-      `Attempting to deposit ${withdrawParams.amount} with assetId ` +
+      `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
         `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,
     );
     await client.withdraw(withdrawParams);
+    console.log(`Successfully withdrawn!`);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());

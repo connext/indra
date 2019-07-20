@@ -6,7 +6,7 @@ const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Minta
 const coreContracts = [
   "ChallengeRegistry",
   "CoinBalanceRefundApp",
-  "CoinTransferETHInterpreter",
+  "CoinTransferInterpreter",
   "ConditionalTransactionDelegateTarget",
   "FreeBalanceApp",
   "IdentityApp",

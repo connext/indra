@@ -99,6 +99,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
 
+  const signer = await cfModule.signerAddress();
+  console.log("cf module signer address: ", signer);
+
   // TODO: make these types
   let myChannel = await node.getChannel();
 
@@ -106,6 +109,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     // TODO: make these types
     console.log("no channel detected, creating channel..");
     myChannel = await node.createChannel();
+  }
+  if (!myChannel) {
+    throw new Error(`Ruh roh! still could not create channel.... Please contact maintainers.`);
   }
   node.setNodePublicIdentifier(myChannel.nodePublicIdentifier);
   console.log("myChannel: ", myChannel);
@@ -349,7 +355,7 @@ export class ConnextInternal extends ConnextChannel {
   public cfDeposit = async (
     amount: BigNumber,
     assetId: string,
-    notifyCounterparty: boolean = true,
+    notifyCounterparty: boolean = false,
   ): Promise<NodeTypes.DepositResult> => {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
     let bal: BigNumber;
@@ -373,7 +379,7 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfModule.router.dispatch(
+    const depositResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -383,7 +389,7 @@ export class ConnextInternal extends ConnextChannel {
           multisigAddress: this.opts.multisigAddress,
           notifyCounterparty,
           tokenAddress: assetId,
-        },
+        } as NodeTypes.DepositParams,
       }),
     );
     // @ts-ignore
@@ -392,7 +398,7 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -401,7 +407,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return appInstanceResponse.result.appInstances as AppInstanceInfo[];
+    return appInstanceResponse.result.result.appInstances as AppInstanceInfo[];
   };
 
   // TODO: under what conditions will this fail?
@@ -409,7 +415,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     try {
-      const freeBalance = await this.cfModule.router.dispatch(
+      const freeBalance = await this.cfModule.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -420,7 +426,7 @@ export class ConnextInternal extends ConnextChannel {
           },
         }),
       );
-      return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
+      return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
       if (e.message.startsWith(error)) {
@@ -441,7 +447,7 @@ export class ConnextInternal extends ConnextChannel {
   public getProposedAppInstanceDetails = async (): Promise<
     NodeTypes.GetProposedAppInstancesResult | undefined
   > => {
-    const proposedRes = await this.cfModule.router.dispatch(
+    const proposedRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -450,7 +456,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return proposedRes.result as NodeTypes.GetProposedAppInstancesResult;
+    return proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
   };
 
   public getAppInstanceDetails = async (
@@ -461,7 +467,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -484,7 +490,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfModule.router.dispatch(
+    const stateResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -514,7 +520,7 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfModule.router.dispatch(
+    const actionResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -541,7 +547,7 @@ export class ConnextInternal extends ConnextChannel {
          got ${JSON.stringify(params.intermediaries)}`);
     }
 
-    const actionRes = await this.cfModule.router.dispatch(
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -557,7 +563,7 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallApp = async (
     params: NodeTypes.ProposeInstallParams,
   ): Promise<NodeTypes.ProposeInstallResult> => {
-    const actionRes = await this.cfModule.router.dispatch(
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -577,7 +583,7 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installVirtualResponse = await this.cfModule.router.dispatch(
+    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -598,7 +604,7 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installResponse = await this.cfModule.router.dispatch(
+    const installResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -619,7 +625,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfModule.router.dispatch(
+    const uninstallResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -642,7 +648,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallVirtualResponse = await this.cfModule.router.dispatch(
+    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -672,7 +678,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.router.dispatch(
+    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",

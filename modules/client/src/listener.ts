@@ -53,13 +53,13 @@ export class ConnextListener extends EventEmitter {
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
-      if (matchedResult) {
+      if (!matchedResult) {
         return;
       }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
-      if (!appInfo.peerDeposit.isZero()) {
+      if (!appInfo.responderDeposit.isZero()) {
         await this.connext.requestCollateral();
       }
       return;
@@ -70,7 +70,8 @@ export class ConnextListener extends EventEmitter {
     UPDATE_STATE: (data: UpdateStateMessage): void => {
       this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
     },
-    DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
+    DEPOSIT_CONFIRMED: async (data: DepositConfirmationMessage): Promise<void> => {
+      await this.connext.requestCollateral();
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
     },
     DEPOSIT_FAILED: (data: any): void => {
@@ -190,6 +191,10 @@ export class ConnextListener extends EventEmitter {
     data: ProposeVirtualMessage | ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails, appInfo: AppInstanceInfo } | undefined> => {
     const proposedApps = await this.connext.getProposedAppInstanceDetails();
+    if (!proposedApps) {
+      this.log.error(`Could not find any proposed apps after catching a 'PROPOSE_*' event...`);
+      return undefined;
+    }
     const appInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
       return app.identityHash === data.data.appInstanceId;
     });

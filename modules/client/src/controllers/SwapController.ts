@@ -135,11 +135,14 @@ export class SwapController extends AbstractController {
           },
         ],
         finalized: false,
-      },
-      myDeposit: amount, // TODO will this work?
+      } as any,
+      initiatorDeposit: amount, // TODO will this work?
+      initiatorDepositTokenAddress: fromAssetId,
       outcomeType: appInfo.outcomeType,
-      peerDeposit: amount.mul(swapRate), // TODO will this work? ERC20 context?
       proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderDeposit: amount.mul(swapRate), // TODO will this work? ERC20 context?
+      responderDepositTokenAddress: toAssetId,
+      timeout: Zero,
     };
 
     const res = await this.connext.proposeInstallApp(params);
