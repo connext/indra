@@ -18,13 +18,13 @@ import { ChannelRepository } from "./channel.repository";
 const logger = new CLogger("ChannelService");
 
 @Injectable()
-export class ChannelService {
+export class ChannelService implements OnModuleInit {
   constructor(
     @Inject(NodeProviderId) private readonly node: Node,
     private readonly channelRepository: ChannelRepository,
   ) {}
 
-  async create(counterpartyPublicIdentifier: string): Promise<Channel> {
+  async create(counterpartyPublicIdentifier: string): Promise<NodeTypes.CreateChannelResult> {
     logger.log(`Creating channel for ${counterpartyPublicIdentifier}`);
     const existing = await this.channelRepository.findByUserPublicIdentifier(
       counterpartyPublicIdentifier,
@@ -44,27 +44,7 @@ export class ChannelService {
     const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
     logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
 
-    // TODO: remove this when the above line returns multisig
-    const multisigResponse = await this.node.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
-        params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
-      }),
-    );
-
-    const multisigResult: NodeTypes.GetStateDepositHolderAddressResult = multisigResponse!.result
-      .result;
-    logger.log(`multisigResponse: ${JSON.stringify(multisigResponse, undefined, 2)}`);
-
-    const creationData = await this.createChannelEventFired();
-    const channel = new Channel();
-    channel.userPublicIdentifier = creationData.data.counterpartyXpub;
-    channel.nodePublicIdentifier = this.node.publicIdentifier;
-    channel.multisigAddress = creationData.data.multisigAddress;
-    channel.available = true;
-    return await this.channelRepository.save(channel);
+    return createChannelResult;
   }
 
   async deposit(
@@ -122,17 +102,20 @@ export class ChannelService {
     return undefined;
   }
 
-  // TODO: reject after some time
-  private createChannelEventFired(): any {
-    return new Promise((res, rej) => {
-      registerCfNodeListener(
-        this.node,
-        NodeTypes.EventName.CREATE_CHANNEL,
-        (data: CreateChannelMessage) => {
-          res(data);
-        },
-        logger.cxt,
-      );
-    });
+  onModuleInit(): void {
+    registerCfNodeListener(
+      this.node,
+      NodeTypes.EventName.CREATE_CHANNEL,
+      async (creationData: CreateChannelMessage) => {
+        console.log("creationData: ", creationData);
+        const channel = new Channel();
+        channel.userPublicIdentifier = creationData.data.counterpartyXpub;
+        channel.nodePublicIdentifier = this.node.publicIdentifier;
+        channel.multisigAddress = creationData.data.multisigAddress;
+        channel.available = true;
+        await this.channelRepository.save(channel);
+      },
+      logger.cxt,
+    );
   }
 }
