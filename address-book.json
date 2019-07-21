@@ -94,11 +94,17 @@
     "ProxyFactory": {
       "address": "0x918E5Fd746D31F029F1e5B8e2DEfD2277315c40E"
     },
+    "SimpleTwoPartySwapApp": {
+      "address": "0x92E0bC808f7549c7f8f37b45960D6dCFd343d909"
+    },
     "TwoPartyFixedOutcomeETHInterpreter": {
       "address": "0x34B06fcBFFA9d9f66410D913a04afa3c051C3BcA"
     },
     "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter": {
       "address": "0xecf990618Ed8ED3F297AD47b09284B7137D4A447"
+    },
+    "UnidirectionalTransferApp": {
+      "address": "0xfDd8b7c07960214C025B74e28733D30cF67A652d"
     },
     "CoinTransferInterpreter": {
       "address": "0xE7516F016A217b304b7aDDd5E2b100C1117D2ba5"
