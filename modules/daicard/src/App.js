@@ -115,7 +115,7 @@ class App extends React.Component {
 
     const channel = await connext.connect({
       ethProviderUrl: ethUrl,
-      logLevel: 5,
+      logLevel: 3,
       mnemonic,
       nodeUrl,
       store,

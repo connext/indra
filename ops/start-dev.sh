@@ -15,7 +15,7 @@ ETH_NETWORK="${1:-kovan}"
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-log_level=5
+log_level=3
 
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
 then eth_rpc_url="https://rinkeby.infura.io/metamask"

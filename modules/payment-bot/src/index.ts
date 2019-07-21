@@ -140,7 +140,7 @@ async function getOrCreateChannel(): Promise<void> {
 
   const connextOpts = {
     ethProviderUrl: config.ethProviderUrl,
-    logLevel: 5,
+    logLevel: 3,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
     store: pgServiceFactory.createStoreService(config.username),
