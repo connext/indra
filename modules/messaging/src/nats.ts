@@ -37,13 +37,13 @@ export class NatsMessagingService implements IMessagingService {
   async onReceive(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
-      this.prependKey(subject),
+      this.prependKey(`${subject}.>`),
       (err: any, msg: any): void => {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          this.log.debug(`Received message for ${subject}: ${JSON.stringify(msg)}`);
-          const data = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+          const data = typeof msg.data === "string" ? JSON.parse(msg).data : msg.data;
+          this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
           callback(data as Node.NodeMessage);
         }
       },
