@@ -77,10 +77,10 @@ export class ConfigService {
       if (ethAddresses.Migrations) delete ethAddresses.Migrations;
       return ethAddresses;
     };
-    if (chainId === "3") return processCfAddressBook(chain3AddressBook);
-    if (chainId === "4") return processCfAddressBook(chain4AddressBook);
-    if (chainId === "42") return processCfAddressBook(chain42AddressBook);
-    const ethAddresses = {} as any;
+    let ethAddresses = {} as any;
+    if (chainId === "3") ethAddresses = processCfAddressBook(chain3AddressBook);
+    if (chainId === "4") ethAddresses = processCfAddressBook(chain4AddressBook);
+    if (chainId === "42") ethAddresses = processCfAddressBook(chain42AddressBook);
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
       ethAddresses[contract] = ethAddressBook[chainId][contract].address;
@@ -124,7 +124,7 @@ export class ConfigService {
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
-      logLevel: 2, // this.getLogLevel(), // <- this is very verbose just fyi
+      logLevel: this.getLogLevel(), // <- this is very verbose just fyi
       messagingUrl: (this.get("INDRA_NATS_SERVERS") || "").split(","),
       token: this.get("INDRA_NATS_TOKEN"),
     };

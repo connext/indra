@@ -55,7 +55,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
   const network = await ethProvider.getNetwork();
 
-  console.log("Creating messaging service client");
+  console.log(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
     logLevel,
