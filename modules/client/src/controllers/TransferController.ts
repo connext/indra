@@ -42,7 +42,11 @@ export class TransferController extends AbstractController {
     const appInfo = this.connext.getRegisteredAppDetails("EthUnidirectionalTransferApp");
 
     // install the transfer application
-    await this.transferAppInstalled(amount, recipient, assetId, appInfo);
+    const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo);
+    if (!appId) {
+      this.log.error(`App was not installed`);
+      return await this.connext.getChannel();
+    }
 
     // update state
     // TODO: listener for reject state?
@@ -125,9 +129,9 @@ export class TransferController extends AbstractController {
     recipient: string,
     assetId: string,
     appInfo: RegisteredAppDetails,
-  ): Promise<any> => {
-    let boundResolve;
-    let boundReject;
+  ): Promise<string | undefined> => {
+    let boundResolve: (value?: any) => void;
+    let boundReject: (reason?: any) => void;
 
     // note: intermediary is added in connext.ts as well
     const params: NodeTypes.ProposeInstallVirtualParams = {
@@ -164,19 +168,24 @@ export class TransferController extends AbstractController {
     // set app instance id
     this.appId = res.appInstanceId;
 
-    await new Promise((res, rej) => {
-      boundReject = this.rejectInstallTransfer.bind(null, rej);
-      boundResolve = this.resolveInstallTransfer.bind(null, res);
-      this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-      this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-      this.timeout = setTimeout(() => {
-        this.cleanupInstallListeners(boundResolve, boundReject);
-        boundReject({ data: { appInstanceId: this.appId } });
-      }, 5000);
-    });
-
-    this.cleanupInstallListeners(boundResolve, boundReject);
-    return res.appInstanceId;
+    try {
+      await new Promise((res, rej) => {
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        boundResolve = this.resolveInstallTransfer.bind(null, res);
+        this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+        this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+        this.timeout = setTimeout(() => {
+          this.cleanupInstallListeners(boundResolve, boundReject);
+          boundReject({ data: { appInstanceId: this.appId } });
+        }, 5000);
+      });
+      return res.appInstanceId;
+    } catch (e) {
+      this.log.error(`Error installing app: ${e.toString()}`);
+      return undefined;
+    } finally {
+      this.cleanupInstallListeners(boundResolve, boundReject);
+    }
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
