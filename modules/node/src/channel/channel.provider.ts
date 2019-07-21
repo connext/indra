@@ -6,6 +6,7 @@ import {
   RequestCollateralResponse,
 } from "@connext/types";
 import { Node } from "@counterfactual/node";
+import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -31,7 +32,7 @@ export class ChannelMessaging extends AbstractMessagingProvider {
     return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
-  async createChannel(subject: string): Promise<CreateChannelResponse> {
+  async createChannel(subject: string): Promise<NodeTypes.CreateChannelResult> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
     return await this.channelService.create(pubId);
   }
