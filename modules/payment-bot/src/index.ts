@@ -166,7 +166,10 @@ async function getOrCreateChannel(): Promise<void> {
     connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier),
   );
 
-  const channelAvailable = async (): Promise<boolean> => (await client.getChannel()).available;
+  const channelAvailable = async (): Promise<boolean> => {
+    const channel = await client.getChannel();
+    return channel && channel.available;
+  };
   const interval = 3;
   while (!(await channelAvailable())) {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
