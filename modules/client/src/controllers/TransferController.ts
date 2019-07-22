@@ -44,8 +44,7 @@ export class TransferController extends AbstractController {
     // install the transfer application
     const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo);
     if (!appId) {
-      this.log.error(`App was not installed`);
-      return await this.connext.getChannel();
+      throw new Error(`App was not installed`);
     }
 
     // update state
@@ -100,6 +99,13 @@ export class TransferController extends AbstractController {
   // TODO: fix type of data
   private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
+      this.log.info(
+        `Caught INSTALL_VIRTUAL event for different app ${JSON.stringify(data)}, expected ${
+          this.appId
+        }`,
+      );
+      // TODO: do we need to recreate the handler here?
+      res();
       return;
     }
     if (this.timeout) {
@@ -174,11 +180,12 @@ export class TransferController extends AbstractController {
         boundResolve = this.resolveInstallTransfer.bind(null, res);
         this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
         this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-        this.timeout = setTimeout(() => {
-          this.cleanupInstallListeners(boundResolve, boundReject);
-          boundReject({ data: { appInstanceId: this.appId } });
-        }, 5000);
+        // this.timeout = setTimeout(() => {
+        //   this.cleanupInstallListeners(boundResolve, boundReject);
+        //   boundReject({ data: { appInstanceId: this.appId } });
+        // }, 5000);
       });
+      this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
       return res.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
