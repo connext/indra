@@ -61,6 +61,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
   const network = await ethProvider.getNetwork();
 
+  // special case for gaanache
+  if (network.chainId === 4447) {
+    network.name = "ganache";
+  }
+
   console.log(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
@@ -319,6 +324,7 @@ export class ConnextInternal extends ConnextChannel {
 
     this.logger = new Logger("ConnextInternal", opts.logLevel);
     // TODO: fix with bos config!
+    console.log("******* setting network context: ", opts.network);
     this.network = opts.network;
 
     // establish listeners
