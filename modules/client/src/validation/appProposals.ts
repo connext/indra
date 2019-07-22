@@ -63,7 +63,7 @@ export const validateTransferApp = async (
 };
 
 export const appProposalValidation: ProposalValidator = {
-  EthUnidirectionalTransferApp: validateTransferApp,
+  UnidirectionalTransferApp: validateTransferApp,
   SimpleTwoPartySwapApp: validateSwapApp,
 };
 
