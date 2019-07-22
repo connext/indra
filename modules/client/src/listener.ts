@@ -71,7 +71,8 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
     },
     DEPOSIT_CONFIRMED: async (data: DepositConfirmationMessage): Promise<void> => {
-      if (data.from === this.cfModule.publicIdentifier) {
+      // TODO: fix when event submission is symmetric
+      if (!data || data.from === this.cfModule.publicIdentifier) {
         await this.connext.requestCollateral();
       }
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
@@ -135,9 +136,7 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_FAILED, data);
     },
     WITHDRAWAL_STARTED: (data: any): void => {
-      this.log.info(
-        `withdrawal for ${data.data.value.toString()} started. hash: ${data.data.transactionHash}`,
-      );
+      this.log.info(`withdrawal for ${data.value.toString()} started. hash: ${data.txHash}`);
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_STARTED, data);
     },
     WITHDRAW_EVENT: (data: any): void => {
@@ -191,7 +190,7 @@ export class ConnextListener extends EventEmitter {
 
   private matchAppInstance = async (
     data: ProposeVirtualMessage | ProposeMessage,
-  ): Promise<{ matchedApp: RegisteredAppDetails, appInfo: AppInstanceInfo } | undefined> => {
+  ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
     const proposedApps = await this.connext.getProposedAppInstanceDetails();
     if (!proposedApps) {
       this.log.error(`Could not find any proposed apps after catching a 'PROPOSE_*' event...`);
