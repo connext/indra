@@ -236,7 +236,11 @@ export type GetConfigResponse = {
 
 export type GetChannelResponse = NodeChannel;
 
-export type CreateChannelResponse = NodeChannel;
+// returns the transaction hash of the multisig deployment
+// TODO: this will likely change
+export type CreateChannelResponse = {
+  transactionHash: string;
+};
 
 export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
 
