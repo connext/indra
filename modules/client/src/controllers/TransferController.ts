@@ -39,7 +39,7 @@ export class TransferController extends AbstractController {
     // or if there is a route available through the node
 
     // verify app is supported without swallowing errors
-    const appInfo = this.connext.getRegisteredAppDetails("EthUnidirectionalTransferApp");
+    const appInfo = this.connext.getRegisteredAppDetails("UnidirectionalTransferApp");
 
     // install the transfer application
     const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo);
