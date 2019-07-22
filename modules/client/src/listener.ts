@@ -60,7 +60,7 @@ export class ConnextListener extends EventEmitter {
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       if (!appInfo.responderDeposit.isZero()) {
-        await this.connext.requestCollateral();
+        // await this.connext.requestCollateral();
       }
       return;
     },
@@ -244,6 +244,8 @@ export class ConnextListener extends EventEmitter {
     if (invalidProposal) {
       // reject app installation
       this.log.error(`Proposed app is invalid. ` + invalidProposal);
+      // TODO: IS THIS RIGHT
+      await this.connext.rejectInstallVirtualApp(appInstance.identityHash);
       return;
     }
 

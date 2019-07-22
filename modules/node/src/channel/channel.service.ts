@@ -5,7 +5,7 @@ import {
   Node,
 } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Inject, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { BigNumber } from "ethers/utils";
 
@@ -107,7 +107,23 @@ export class ChannelService implements OnModuleInit {
       this.node,
       NodeTypes.EventName.CREATE_CHANNEL,
       async (creationData: CreateChannelMessage) => {
-        console.log("creationData: ", creationData);
+        const existing = await this.channelRepository.findByMultisigAddress(
+          creationData.data.multisigAddress,
+        );
+        if (existing) {
+          if (
+            !creationData.data.owners.includes(existing.nodePublicIdentifier) ||
+            !creationData.data.owners.includes(existing.userPublicIdentifier)
+          ) {
+            throw new Error(
+              `Channel has already been created with different owners! ${JSON.stringify(
+                existing,
+              )}. Event data: ${creationData}`,
+            );
+          }
+          logger.log(`Channel already exists in database`);
+        }
+        logger.log(`Creating new channel from data ${creationData}`);
         const channel = new Channel();
         channel.userPublicIdentifier = creationData.data.counterpartyXpub;
         channel.nodePublicIdentifier = this.node.publicIdentifier;
