@@ -111,7 +111,7 @@ async function run(): Promise<void> {
 
   if (program.withdraw) {
     const withdrawParams: WithdrawParameters = {
-      amount: ethers.utils.parseEther(program.withdrawal).toString(),
+      amount: ethers.utils.parseEther(program.withdraw).toString(),
     };
     if (program.assetId) {
       withdrawParams.assetId = program.assetId;
