@@ -13,7 +13,7 @@ docker swarm init 2> /dev/null || true
 # 0xa0ae1a3d4ff42ae77154fb9ebbca0af2b5b7f357
 
 # kovan token addr:
-# 0xaDcf80839987fABD4BEEacbe7eD93Fff5D3a0761
+# 0xFab46E002BbF0b4509813474841E0716E6730136
 
 # faucent link:
 # https://erc20faucet.com/
