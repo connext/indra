@@ -15,7 +15,13 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
+import {
+  CreateChannelMessage,
+  jsonRpcDeserialize,
+  MNEMONIC_PATH,
+  Node,
+  NODE_EVENTS,
+} from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import "core-js/stable";
 import { Contract, providers, Wallet } from "ethers";
@@ -82,6 +88,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   const config = await node.config();
   console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
+  node.setNodePublicIdentifier(config.nodePublicIdentifier);
 
   const appRegistry = await node.appRegistry();
 
@@ -103,25 +110,35 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   console.log("cf module signer address: ", signer);
 
   // TODO: make these types
-  let myChannel = await node.getChannel();
+  const myChannel = await node.getChannel();
 
+  let multisigAddress;
   if (!myChannel) {
     // TODO: make these types
     console.log("no channel detected, creating channel..");
-    myChannel = await node.createChannel();
+    const creationData = await node.createChannel();
+    console.log("created channel, transaction:", creationData.transactionHash);
+    const creationEventData: NodeTypes.CreateChannelResult = await new Promise((res, rej) => {
+      const timer = setTimeout(() => rej("Create channel event not fired within 5s"), 5000);
+      cfModule.once(NODE_EVENTS.CREATE_CHANNEL, (data: CreateChannelMessage) => {
+        clearTimeout(timer);
+        res(data.data);
+      });
+    });
+    console.log("create channel event data:", JSON.stringify(creationEventData, null, 2));
+    multisigAddress = creationEventData.multisigAddress;
+  } else {
+    multisigAddress = myChannel.multisigAddress;
   }
-  if (!myChannel) {
-    throw new Error(`Ruh roh! still could not create channel.... Please contact maintainers.`);
-  }
-  node.setNodePublicIdentifier(myChannel.nodePublicIdentifier);
-  console.log("myChannel: ", myChannel);
+
+  console.log("multisigAddress: ", multisigAddress);
   // create the new client
   return new ConnextInternal({
     appRegistry,
     cfModule,
     ethProvider,
     messaging,
-    multisigAddress: myChannel.multisigAddress,
+    multisigAddress,
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
@@ -440,7 +457,7 @@ export class ConnextInternal extends ConnextChannel {
         return obj;
       }
 
-      throw new Error(e);
+      throw e;
     }
   };
 
