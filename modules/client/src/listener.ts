@@ -71,10 +71,6 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
     },
     DEPOSIT_CONFIRMED: async (data: DepositConfirmationMessage): Promise<void> => {
-      // TODO: fix when event submission is symmetric
-      if (!data || data.from === this.cfModule.publicIdentifier) {
-        await this.connext.requestCollateral();
-      }
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
     },
     DEPOSIT_FAILED: (data: any): void => {
