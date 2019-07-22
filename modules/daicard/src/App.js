@@ -114,7 +114,13 @@ class App extends React.Component {
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath);
 
-    const channel = await connext.connect({ mnemonic, nodeUrl, rpcProviderUrl: ethUrl, store });
+    const channel = await connext.connect({
+      ethProviderUrl: ethUrl,
+      logLevel: 3,
+      mnemonic,
+      nodeUrl,
+      store,
+    });
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
 
     console.log(`Client created successfully!`);

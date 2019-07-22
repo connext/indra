@@ -1,32 +1,37 @@
-import { MessagingServiceFactory } from "@connext/messaging";
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   AppRegistry,
   ChannelState,
   CreateChannelResponse,
   DepositParameters,
-  ExchangeParameters,
   GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
   RegisteredAppDetails,
   SupportedApplication,
   SupportedNetwork,
+  SwapParameters,
   TransferAction,
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { jsonRpcDeserialize, MNEMONIC_PATH, Node } from "@counterfactual/node";
+import {
+  CreateChannelMessage,
+  jsonRpcDeserialize,
+  MNEMONIC_PATH,
+  Node,
+  NODE_EVENTS,
+} from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
-import { Client as NatsClient } from "ts-nats";
 
 import { DepositController } from "./controllers/DepositController";
-import { ExchangeController } from "./controllers/ExchangeController";
+import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
@@ -40,7 +45,6 @@ import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
-import { Wallet } from "./wallet";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -50,14 +54,22 @@ import { Wallet } from "./wallet";
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  // create a new wallet
-  const wallet = new Wallet(opts);
-  const network = await wallet.provider.getNetwork();
+  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
 
-  console.log("Creating messaging service client");
-  const { natsClusterId, nodeUrl, natsToken } = opts;
+  // create a new wallet
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+  const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
+  const network = await ethProvider.getNetwork();
+
+  // special case for gaanache
+  if (network.chainId === 4447) {
+    network.name = "ganache";
+  }
+
+  console.log(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
+    logLevel,
     messagingUrl: nodeUrl,
     token: natsToken,
   });
@@ -67,14 +79,13 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
-  await opts.store.set([{ key: MNEMONIC_PATH, value: opts.mnemonic }]);
+  await store.set([{ key: MNEMONIC_PATH, value: mnemonic }]);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
   const nodeConfig = {
-    logLevel: opts.logLevel,
+    logLevel,
     messaging,
-    wallet,
   };
   console.log("creating node client");
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
@@ -82,45 +93,57 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   const config = await node.config();
   console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
+  node.setNodePublicIdentifier(config.nodePublicIdentifier);
 
   const appRegistry = await node.appRegistry();
-  console.log(`appRegistry: ${JSON.stringify(appRegistry, null, 2)}`);
 
   // create new cfModule to inject into internal instance
   console.log("creating new cf module");
   const cfModule = await Node.create(
     messaging,
-    opts.store,
+    store,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
-    wallet.provider,
+    ethProvider,
     config.contractAddresses,
   );
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
   console.log("created cf module successfully");
 
-  console.log("creating listener");
-  const listener: ConnextListener = new ConnextListener(cfModule, opts.logLevel);
-  console.log("created listener");
+  const signer = await cfModule.signerAddress();
+  console.log("cf module signer address: ", signer);
 
   // TODO: make these types
-  let myChannel = await node.getChannel();
+  const myChannel = await node.getChannel();
 
+  let multisigAddress;
   if (!myChannel) {
     // TODO: make these types
     console.log("no channel detected, creating channel..");
-    myChannel = await node.createChannel();
+    const creationData = await node.createChannel();
+    console.log("created channel, transaction:", creationData.transactionHash);
+    const creationEventData: NodeTypes.CreateChannelResult = await new Promise((res, rej) => {
+      const timer = setTimeout(() => rej("Create channel event not fired within 5s"), 5000);
+      cfModule.once(NODE_EVENTS.CREATE_CHANNEL, (data: CreateChannelMessage) => {
+        clearTimeout(timer);
+        res(data.data);
+      });
+    });
+    console.log("create channel event data:", JSON.stringify(creationEventData, null, 2));
+    multisigAddress = creationEventData.multisigAddress;
+  } else {
+    multisigAddress = myChannel.multisigAddress;
   }
-  node.setNodePublicIdentifier(myChannel.nodePublicIdentifier);
-  console.log("myChannel: ", myChannel);
+
+  console.log("multisigAddress: ", multisigAddress);
   // create the new client
   return new ConnextInternal({
     appRegistry,
     cfModule,
-    listener,
-    multisigAddress: myChannel.multisigAddress,
-    nats: messaging.getConnection(),
+    ethProvider,
+    messaging,
+    multisigAddress,
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
@@ -163,8 +186,8 @@ export abstract class ConnextChannel {
     return await this.internal.deposit(params);
   };
 
-  public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
-    return await this.internal.exchange(params);
+  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
+    return await this.internal.swap(params);
   };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
@@ -186,9 +209,6 @@ export abstract class ConnextChannel {
   };
 
   // TODO: do we need to expose here?
-  public authenticate = (): void => {}
-
-  // TODO: do we need to expose here?
   public getAppRegistry = async (appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
@@ -201,12 +221,16 @@ export abstract class ConnextChannel {
     return await this.internal.node.createChannel();
   };
 
-  public subscribeToExchangeRates = async (from: string, to: string): Promise<any> => {
-    return await this.internal.node.subscribeToExchangeRates(from, to, this.opts.store);
+  public subscribeToSwapRates = async (from: string, to: string): Promise<any> => {
+    return await this.internal.node.subscribeToSwapRates(from, to, this.opts.store);
   };
 
-  public unsubscribeToExchangeRates = async (from: string, to: string): Promise<void> => {
-    return await this.internal.node.unsubscribeFromExchangeRates(from, to);
+  public getLatestSwapRate = (from: string, to: string): BigNumber => {
+    return this.internal.node.getLatestSwapRate(from, to);
+  };
+
+  public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
+    return await this.internal.node.unsubscribeFromSwapRates(from, to);
   };
 
   public requestCollateral = async (): Promise<void> => {
@@ -261,11 +285,11 @@ export class ConnextInternal extends ConnextChannel {
   public cfModule: Node;
   public publicIdentifier: string;
   public wallet: Wallet;
+  public ethProvider: providers.JsonRpcProvider;
   public node: NodeApiClient;
-  public nats: NatsClient;
+  public messaging: IMessagingService;
   public multisigAddress: Address;
   public listener: ConnextListener;
-  public myFreeBalanceAddress: Address;
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
   public appRegistry: AppRegistry;
@@ -277,7 +301,7 @@ export class ConnextInternal extends ConnextChannel {
   // Setup channel controllers
   private depositController: DepositController;
   private transferController: TransferController;
-  private exchangeController: ExchangeController;
+  private swapController: SwapController;
   private withdrawalController: WithdrawalController;
 
   constructor(opts: InternalClientOptions) {
@@ -285,9 +309,10 @@ export class ConnextInternal extends ConnextChannel {
 
     this.opts = opts;
 
+    this.ethProvider = opts.ethProvider;
     this.wallet = opts.wallet;
     this.node = opts.node;
-    this.nats = opts.nats;
+    this.messaging = opts.messaging;
 
     this.appRegistry = opts.appRegistry;
 
@@ -299,16 +324,17 @@ export class ConnextInternal extends ConnextChannel {
 
     this.logger = new Logger("ConnextInternal", opts.logLevel);
     // TODO: fix with bos config!
+    console.log("******* setting network context: ", opts.network);
     this.network = opts.network;
 
     // establish listeners
-    this.listener = opts.listener;
+    this.listener = new ConnextListener(opts.cfModule, this);
     this.connectDefaultListeners();
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
     this.transferController = new TransferController("TransferController", this);
-    this.exchangeController = new ExchangeController("ExchangeController", this);
+    this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
   }
 
@@ -319,8 +345,8 @@ export class ConnextInternal extends ConnextChannel {
     return await this.depositController.deposit(params);
   };
 
-  public exchange = async (params: ExchangeParameters): Promise<ChannelState> => {
-    return await this.exchangeController.exchange(params);
+  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
+    return await this.swapController.swap(params);
   };
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
@@ -352,16 +378,16 @@ export class ConnextInternal extends ConnextChannel {
   public cfDeposit = async (
     amount: BigNumber,
     assetId: string,
-    notifyCounterparty: boolean = true,
+    notifyCounterparty: boolean = false,
   ): Promise<NodeTypes.DepositResult> => {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
-      bal = await this.wallet.provider.getBalance(depositAddr);
+      bal = await this.ethProvider.getBalance(depositAddr);
     } else {
       // get token balance
-      const token = new Contract(assetId, tokenAbi, this.wallet.provider);
+      const token = new Contract(assetId, tokenAbi, this.ethProvider);
       // TODO: correct? how can i use allowance?
       bal = await token.balanceOf(depositAddr);
     }
@@ -376,7 +402,7 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfModule.router.dispatch(
+    const depositResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -386,7 +412,7 @@ export class ConnextInternal extends ConnextChannel {
           multisigAddress: this.opts.multisigAddress,
           notifyCounterparty,
           tokenAddress: assetId,
-        },
+        } as NodeTypes.DepositParams,
       }),
     );
     // @ts-ignore
@@ -395,7 +421,7 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -404,7 +430,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return appInstanceResponse.result.appInstances as AppInstanceInfo[];
+    return appInstanceResponse.result.result.appInstances as AppInstanceInfo[];
   };
 
   // TODO: under what conditions will this fail?
@@ -412,7 +438,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     try {
-      const freeBalance = await this.cfModule.router.dispatch(
+      const freeBalance = await this.cfModule.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -423,7 +449,7 @@ export class ConnextInternal extends ConnextChannel {
           },
         }),
       );
-      return freeBalance.result as NodeTypes.GetFreeBalanceStateResult;
+      return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
       if (e.message.startsWith(error)) {
@@ -437,8 +463,23 @@ export class ConnextInternal extends ConnextChannel {
         return obj;
       }
 
-      throw new Error(e);
+      throw e;
     }
+  };
+
+  public getProposedAppInstanceDetails = async (): Promise<
+    NodeTypes.GetProposedAppInstancesResult | undefined
+  > => {
+    const proposedRes = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+        params: {} as NodeTypes.GetProposedAppInstancesParams,
+      }),
+    );
+
+    return proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
   };
 
   public getAppInstanceDetails = async (
@@ -449,7 +490,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfModule.router.dispatch(
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -472,7 +513,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfModule.router.dispatch(
+    const stateResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -502,7 +543,7 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfModule.router.dispatch(
+    const actionResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -521,9 +562,15 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    params.intermediaries = [this.nodePublicIdentifier];
+    if (
+      params.intermediaries[0] !== this.nodePublicIdentifier ||
+      params.intermediaries.length !== 1
+    ) {
+      throw new Error(`Incorrect intermediaries. Expected: ${this.nodePublicIdentifier},
+         got ${JSON.stringify(params.intermediaries)}`);
+    }
 
-    const actionRes = await this.cfModule.router.dispatch(
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -535,20 +582,31 @@ export class ConnextInternal extends ConnextChannel {
     return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
   };
 
+  // TODO: add validation after arjuns refactor merged
+  public proposeInstallApp = async (
+    params: NodeTypes.ProposeInstallParams,
+  ): Promise<NodeTypes.ProposeInstallResult> => {
+    const actionRes = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+        params,
+      }),
+    );
+
+    return actionRes.result as NodeTypes.ProposeInstallResult;
+  };
+
   public installVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.InstallVirtualResult> => {
-    // FIXME: make this helper?
     // check the app isnt actually installed
-    const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
-    if (app.length !== 0) {
-      throw new Error(
-        `Found already installed app with id: ${appInstanceId}. ` +
-          `Installed apps: ${JSON.stringify(apps, null, 2)}`,
-      );
+    const alreadyInstalled = await this.appInstalled(appInstanceId);
+    if (alreadyInstalled) {
+      throw new Error(alreadyInstalled);
     }
-    const installVirtualResponse = await this.cfModule.router.dispatch(
+    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -563,6 +621,47 @@ export class ConnextInternal extends ConnextChannel {
     return installVirtualResponse.result;
   };
 
+  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
+    // check the app isnt actually installed
+    const alreadyInstalled = await this.appInstalled(appInstanceId);
+    if (alreadyInstalled) {
+      throw new Error(alreadyInstalled);
+    }
+    const installResponse = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.INSTALL,
+        params: {
+          appInstanceId,
+        } as NodeTypes.InstallParams,
+      }),
+    );
+
+    return installResponse.result;
+  };
+
+  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    const uninstallResponse = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.UNINSTALL,
+        params: {
+          appInstanceId,
+        },
+      }),
+    );
+
+    return uninstallResponse.result as NodeTypes.UninstallResult;
+  };
+
   public uninstallVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.UninstallVirtualResult> => {
@@ -572,25 +671,57 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfModule.router.dispatch(
+    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
         method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
         params: {
           appInstanceId,
-          intermediaryIdentifier: this.nodePublicIdentifier,
         },
       }),
     );
 
-    return uninstallResponse.result as NodeTypes.UninstallVirtualResult;
+    return uninstallVirtualResponse.result as NodeTypes.UninstallVirtualResult;
   };
 
+  public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+    const rejectResponse = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.REJECT_INSTALL,
+        params: {
+          appInstanceId,
+        } as NodeTypes.RejectInstallParams,
+      }),
+    );
+
+    return rejectResponse.result as NodeTypes.RejectInstallResult;
+  };
+
+  public rejectInstallVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallVirtualResult> => {
+    const rejectResponse = await this.cfModule.rpcRouter.dispatch(
+      jsonRpcDeserialize({
+        id: Date.now(),
+        jsonrpc: "2.0",
+        method: NodeTypes.RpcMethodName.REJECT_INSTALL,
+        params: {
+          appInstanceId,
+        } as NodeTypes.RejectInstallParams,
+      }),
+    );
+
+    return rejectResponse.result as NodeTypes.RejectInstallResult;
+  };
+
+  // TODO: erc20 support?
   public cfWithdraw = async (
-    amount: BigNumber,
     assetId: string,
-    recipient?: string, // Address or xpub? whats the default?
+    amount: BigNumber,
+    recipient: string,
   ): Promise<NodeTypes.UninstallResult> => {
     const freeBalance = await this.getFreeBalance();
     const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
@@ -602,7 +733,7 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.router.dispatch(
+    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -610,8 +741,8 @@ export class ConnextInternal extends ConnextChannel {
         params: {
           amount,
           multisigAddress: this.multisigAddress,
-          tokenAddress: assetId,
           recipient,
+          tokenAddress: assetId,
         },
       }),
     );
@@ -655,6 +786,18 @@ export class ConnextInternal extends ConnextChannel {
     if (app.length > 1) {
       return (
         `CRITICAL ERROR: found multiple apps with the same id. ` +
+        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+      );
+    }
+    return undefined;
+  };
+
+  private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
+    const apps = await this.getAppInstances();
+    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
+    if (app.length > 0) {
+      return (
+        `App with id ${appInstanceId} is already installed.` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }

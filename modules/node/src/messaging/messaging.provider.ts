@@ -2,11 +2,11 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ClientProxy, ClientProxyFactory, Transport } from "@nestjs/microservices";
 
 import { ConfigService } from "../config/config.service";
-import { NatsClientProviderId } from "../constants";
+import { MessagingClientProviderId } from "../constants";
 
-export const natsClient: FactoryProvider = {
+export const messagingClient: FactoryProvider = {
   inject: [ConfigService],
-  provide: NatsClientProviderId,
+  provide: MessagingClientProviderId,
   useFactory: (config: ConfigService): ClientProxy => {
     const messagingUrl = config.getMessagingConfig().messagingUrl;
     return ClientProxyFactory.create({

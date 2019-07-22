@@ -10,13 +10,15 @@ function createMockJsonRpcResponse(result: any): JsonRpcResponse {
   return {
     id: 42,
     jsonrpc: "2.0",
-    result,
+    result: {
+      result,
+    },
   };
 }
 
 export const mockNodeProvider = {
   publicIdentifier: mockNodePublicIdentifier,
-  router: {
+  rpcRouter: {
     dispatch: (param: any): JsonRpcResponse | undefined => {
       console.log(`Called mocked router.dispatch with params: ${JSON.stringify(param)}`);
       switch (param.methodName) {

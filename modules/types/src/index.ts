@@ -24,17 +24,17 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 // TODO: use deployed addresses!!!
 // TODO: better way to use with networks...?
 // TODO: rename? cf has type ABIEncoding = string
-export type EthUnidirectionalTransferAppInitialState<T = string> = {
+export type UnidirectionalTransferAppInitialState<T = string> = {
   finalized: false;
   transfers: [Transfer<T>, Transfer<T>];
 };
-export type EthUnidirectionalTransferAppInitialStateBigNumber = EthUnidirectionalTransferAppInitialState<
+export type UnidirectionalTransferAppInitialStateBigNumber = UnidirectionalTransferAppInitialState<
   BigNumber
 >;
 
 export const SupportedApplications = {
-  EthUnidirectionalTransferApp: "EthUnidirectionalTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
+  UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -61,6 +61,19 @@ export type RegisteredAppDetails = {
 };
 
 export type AppRegistry = RegisteredAppDetails[];
+
+////////////////////////////////////
+////// APP INTERFACES
+
+export type MultiCoinTransfer = {
+  to: string;
+  tokenAddresses: string[];
+  amounts: BigNumber[];
+};
+
+export type SwapAppState = {
+  multiCoinTransfers: MultiCoinTransfer[];
+};
 
 ////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
@@ -104,30 +117,26 @@ export type AppUpdate<T = string> = {
 export type AppUpdateBigNumber = AppUpdate<BigNumber>;
 
 // all the types of counterfactual app states
-export type AppState<T = string> = EthUnidirectionalTransferAppState<T>;
+export type AppState<T = string> = UnidirectionalTransferAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
-export type AppAction<T = string> = EthUnidirectionalTransferAppAction<T>;
+export type AppAction<T = string> = UnidirectionalTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
-////// ETHUnidirectionalTransferApp.sol typings
+////// UnidirectionalTransferApp.sol typings
 // @rahul --> does this need to be an interface or are types fine?
-export type EthUnidirectionalTransferAppState<T = string> = {
+export type UnidirectionalTransferAppState<T = string> = {
   transfers: [Transfer<T>, Transfer<T>];
   finalized: boolean;
 };
-export type EthUnidirectionalTransferAppStateBigNumber = EthUnidirectionalTransferAppState<
-  BigNumber
->;
+export type UnidirectionalTransferAppStateBigNumber = UnidirectionalTransferAppState<BigNumber>;
 
-export type EthUnidirectionalTransferAppAction<T = string> = {
+export type UnidirectionalTransferAppAction<T = string> = {
   transferAmount: T;
   finalize: boolean;
 };
-export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTransferAppAction<
-  BigNumber
->;
+export type UnidirectionalTransferAppActionBigNumber = UnidirectionalTransferAppAction<BigNumber>;
 
 export type User<T = string> = {
   id: number;
@@ -223,7 +232,11 @@ export type GetConfigResponse = {
 
 export type GetChannelResponse = NodeChannel;
 
-export type CreateChannelResponse = NodeChannel;
+// returns the transaction hash of the multisig deployment
+// TODO: this will likely change
+export type CreateChannelResponse = {
+  transactionHash: string;
+};
 
 export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
 
@@ -245,15 +258,16 @@ export type TransferParameters<T = string> = DepositParameters<T> & {
 };
 export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 
-////// Exchange types
+////// Swap types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
-export interface ExchangeParameters<T = string> {
+export interface SwapParameters<T = string> {
   amount: T;
+  swapRate: T;
   toAssetId: Address;
-  fromAssetId: Address; // TODO: do these assets have to be renamed?
+  fromAssetId: Address;
   // make sure they are consistent with CF stuffs
 }
-export type ExchangeParametersBigNumber = ExchangeParameters<BigNumber>;
+export type SwapParametersBigNumber = SwapParameters<BigNumber>;
 
 ////// Withdraw types
 export type WithdrawParameters<T = string> = DepositParameters<T> & {
@@ -368,6 +382,14 @@ export function convertDepositParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
+export function convertSwapParameters<To extends NumericTypeName>(
+  to: To,
+  obj: SwapParameters<any>,
+): SwapParameters<NumericTypes[To]> {
+  const fromType = getType(obj.swapRate);
+  return convertFields(fromType, to, ["swapRate", "amount"], obj);
+}
+
 export function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
@@ -415,5 +437,6 @@ export const convert: any = {
   Multisig: convertMultisig,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
+  SwapParameters: convertSwapParameters,
   Withdraw: convertWithdrawParametersToAsset,
 };

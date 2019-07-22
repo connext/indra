@@ -2,13 +2,14 @@ import { MessagingConfig } from "@connext/messaging";
 import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
 import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
-import { NetworkContext } from "@counterfactual/types";
+import { NetworkContext, OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import * as dotenv from "dotenv";
 import { JsonRpcProvider } from "ethers/providers";
-import { Network } from "ethers/utils";
+import { Network as EthNetwork } from "ethers/utils";
 import * as fs from "fs";
-import { Payload } from "ts-nats";
+
+import { KnownNodeAppNames, Network } from "../constants";
 
 type PostgresConfig = {
   database: string;
@@ -16,6 +17,16 @@ type PostgresConfig = {
   password: string;
   port: number;
   username: string;
+};
+
+type DefaultApp = {
+  actionEncoding?: string;
+  allowNodeInstall: boolean;
+  appDefinitionAddress: string;
+  name: string;
+  network: Network;
+  outcomeType: OutcomeType;
+  stateEncoding: string;
 };
 
 @Injectable()
@@ -48,7 +59,7 @@ export class ConfigService {
     return new JsonRpcProvider(this.getEthRpcUrl());
   }
 
-  async getEthNetwork(): Promise<Network> {
+  async getEthNetwork(): Promise<EthNetwork> {
     const ethNetwork = await this.getEthProvider().getNetwork();
     if (ethNetwork.name === "unknown" && ethNetwork.chainId === 4447) {
       ethNetwork.name = "ganache";
@@ -66,15 +77,44 @@ export class ConfigService {
       if (ethAddresses.Migrations) delete ethAddresses.Migrations;
       return ethAddresses;
     };
-    if (chainId === "3") return processCfAddressBook(chain3AddressBook);
-    if (chainId === "4") return processCfAddressBook(chain4AddressBook);
-    if (chainId === "42") return processCfAddressBook(chain42AddressBook);
-    const ethAddresses = {} as any;
+    let ethAddresses = {} as any;
+    if (chainId === "3") ethAddresses = processCfAddressBook(chain3AddressBook);
+    if (chainId === "4") ethAddresses = processCfAddressBook(chain4AddressBook);
+    if (chainId === "42") ethAddresses = processCfAddressBook(chain42AddressBook);
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
       ethAddresses[contract] = ethAddressBook[chainId][contract].address;
     });
     return ethAddresses as NetworkContext;
+  }
+
+  async getDefaultApps(): Promise<DefaultApp[]> {
+    const ethNetwork = await this.getEthNetwork();
+    const addressBook = await this.getContractAddresses();
+    return [
+      {
+        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+        allowNodeInstall: false,
+        appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER],
+        name: KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER,
+        network: Network[ethNetwork.name.toUpperCase()],
+        outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+      },
+      {
+        allowNodeInstall: true,
+        appDefinitionAddress: addressBook[KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP],
+        name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
+        network: Network[ethNetwork.name.toUpperCase()],
+        outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME, // TODO?
+        stateEncoding:
+          "tuple(tuple(address to, address[] coinAddress, uint256[] balance)[] coinBalances)",
+      },
+    ];
+  }
+
+  getLogLevel(): number {
+    return parseInt(this.get("INDRA_LOG_LEVEL"), 10);
   }
 
   getMnemonic(): string {
@@ -84,8 +124,8 @@ export class ConfigService {
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get("INDRA_NATS_CLUSTER_ID"),
+      logLevel: this.getLogLevel(), // <- this is very verbose just fyi
       messagingUrl: (this.get("INDRA_NATS_SERVERS") || "").split(","),
-      payload: Payload.JSON,
       token: this.get("INDRA_NATS_TOKEN"),
     };
   }

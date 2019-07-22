@@ -1,14 +1,7 @@
 import { OutcomeType } from "@counterfactual/types";
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-export enum Network {
-  GANACHE = "ganache",
-  KOVAN = "kovan",
-  RINKEBY = "rinkeby",
-  ROPSTEN = "ropsten",
-  GOERLI = "goerli",
-  MAINNET = "mainnet",
-}
+import { Network } from "../constants";
 
 @Entity()
 export class AppRegistry {
@@ -36,4 +29,7 @@ export class AppRegistry {
 
   @Column("text", { nullable: true })
   actionEncoding!: string;
+
+  @Column("boolean", { default: false })
+  allowNodeInstall!: boolean;
 }

@@ -16,8 +16,8 @@ export class AppController {
   }
 
   @MessagePattern("hello")
-  getHelloNats(data: any): string {
-    logger.log(`Got Hello NATS message, data: ${JSON.stringify(data)}`);
+  getHelloMessage(data: any): string {
+    logger.log(`Got Hello message, data: ${JSON.stringify(data)}`);
     return this.appService.getHello();
   }
 }

@@ -1,0 +1,303 @@
+{
+  "contractName": "LibOutcome",
+  "abi": [],
+  "bytecode": "0x60636023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea365627a7a72305820a94e57bcc7c0ea09f56286d2c1238e724f8953775ce30261e19729483509620e6c6578706572696d656e74616cf564736f6c634300050a0040",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea365627a7a72305820a94e57bcc7c0ea09f56286d2c1238e724f8953775ce30261e19729483509620e6c6578706572696d656e74616cf564736f6c634300050a0040",
+  "sourceMap": "62:200:3:-;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
+  "deployedSourceMap": "62:200:3:-;;;;;;;;",
+  "source": "pragma solidity 0.5.10;\npragma experimental \"ABIEncoderV2\";\n\n\nlibrary LibOutcome {\n\n  struct CoinTransfer {\n    address to;\n    uint256 amount;\n  }\n\n  enum TwoPartyFixedOutcome {\n    SEND_TO_ADDR_ONE,\n    SEND_TO_ADDR_TWO,\n    SPLIT_AND_SEND_TO_BOTH_ADDRS\n  }\n\n}\n",
+  "sourcePath": "@counterfactual/contracts/contracts/libs/LibOutcome.sol",
+  "ast": {
+    "absolutePath": "@counterfactual/contracts/contracts/libs/LibOutcome.sol",
+    "exportedSymbols": {
+      "LibOutcome": [
+        313
+      ]
+    },
+    "id": 314,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 302,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".10"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:3"
+      },
+      {
+        "id": 303,
+        "literals": [
+          "experimental",
+          "ABIEncoderV2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "24:35:3"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 313,
+        "linearizedBaseContracts": [
+          313
+        ],
+        "name": "LibOutcome",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "canonicalName": "LibOutcome.CoinTransfer",
+            "id": 308,
+            "members": [
+              {
+                "constant": false,
+                "id": 305,
+                "name": "to",
+                "nodeType": "VariableDeclaration",
+                "scope": 308,
+                "src": "112:10:3",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 304,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "112:7:3",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 307,
+                "name": "amount",
+                "nodeType": "VariableDeclaration",
+                "scope": 308,
+                "src": "128:14:3",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 306,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "128:7:3",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "CoinTransfer",
+            "nodeType": "StructDefinition",
+            "scope": 313,
+            "src": "86:61:3",
+            "visibility": "public"
+          },
+          {
+            "canonicalName": "LibOutcome.TwoPartyFixedOutcome",
+            "id": 312,
+            "members": [
+              {
+                "id": 309,
+                "name": "SEND_TO_ADDR_ONE",
+                "nodeType": "EnumValue",
+                "src": "183:16:3"
+              },
+              {
+                "id": 310,
+                "name": "SEND_TO_ADDR_TWO",
+                "nodeType": "EnumValue",
+                "src": "205:16:3"
+              },
+              {
+                "id": 311,
+                "name": "SPLIT_AND_SEND_TO_BOTH_ADDRS",
+                "nodeType": "EnumValue",
+                "src": "227:28:3"
+              }
+            ],
+            "name": "TwoPartyFixedOutcome",
+            "nodeType": "EnumDefinition",
+            "src": "151:108:3"
+          }
+        ],
+        "scope": 314,
+        "src": "62:200:3"
+      }
+    ],
+    "src": "0:263:3"
+  },
+  "legacyAST": {
+    "absolutePath": "@counterfactual/contracts/contracts/libs/LibOutcome.sol",
+    "exportedSymbols": {
+      "LibOutcome": [
+        313
+      ]
+    },
+    "id": 314,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 302,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".10"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:3"
+      },
+      {
+        "id": 303,
+        "literals": [
+          "experimental",
+          "ABIEncoderV2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "24:35:3"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 313,
+        "linearizedBaseContracts": [
+          313
+        ],
+        "name": "LibOutcome",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "canonicalName": "LibOutcome.CoinTransfer",
+            "id": 308,
+            "members": [
+              {
+                "constant": false,
+                "id": 305,
+                "name": "to",
+                "nodeType": "VariableDeclaration",
+                "scope": 308,
+                "src": "112:10:3",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 304,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "112:7:3",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 307,
+                "name": "amount",
+                "nodeType": "VariableDeclaration",
+                "scope": 308,
+                "src": "128:14:3",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 306,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "128:7:3",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "CoinTransfer",
+            "nodeType": "StructDefinition",
+            "scope": 313,
+            "src": "86:61:3",
+            "visibility": "public"
+          },
+          {
+            "canonicalName": "LibOutcome.TwoPartyFixedOutcome",
+            "id": 312,
+            "members": [
+              {
+                "id": 309,
+                "name": "SEND_TO_ADDR_ONE",
+                "nodeType": "EnumValue",
+                "src": "183:16:3"
+              },
+              {
+                "id": 310,
+                "name": "SEND_TO_ADDR_TWO",
+                "nodeType": "EnumValue",
+                "src": "205:16:3"
+              },
+              {
+                "id": 311,
+                "name": "SPLIT_AND_SEND_TO_BOTH_ADDRS",
+                "nodeType": "EnumValue",
+                "src": "227:28:3"
+              }
+            ],
+            "name": "TwoPartyFixedOutcome",
+            "nodeType": "EnumDefinition",
+            "src": "151:108:3"
+          }
+        ],
+        "scope": 314,
+        "src": "62:200:3"
+      }
+    ],
+    "src": "0:263:3"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.10+commit.5a6ea5b1.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-07-18T10:40:23.180Z",
+  "devdoc": {
+    "methods": {}
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

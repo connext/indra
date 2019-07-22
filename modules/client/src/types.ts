@@ -1,28 +1,29 @@
 import { IMessagingService } from "@connext/messaging";
-import { AppRegistry, AppState, ChannelProvider, ChannelState, MultisigState } from "@connext/types";
+import {
+  AppRegistry,
+  AppState,
+  ChannelProvider,
+  ChannelState,
+  MultisigState,
+} from "@connext/types";
 import { Node } from "@counterfactual/node";
-import { utils } from "ethers";
-import { Client as NatsClient } from "ts-nats";
+import { providers, utils, Wallet } from "ethers";
 
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
-import { Wallet } from "./wallet";
 
 export type BigNumber = utils.BigNumber;
 export const BigNumber = utils.BigNumber;
 
 export interface ClientOptions {
   // provider, passed through to CF node
-  rpcProviderUrl?: string; // TODO: can we keep out web3
+  ethProviderUrl: string;
 
   // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
 
   // signing options, include at least one of the following
-  mnemonic?: string;
-  // if using an external wallet, include this option
-  externalWallet?: any; // TODO: better typing here?
-  // FIXME: remove ^^?
+  mnemonic: string;
 
   // channel provider
   channelProvider?: ChannelProvider;
@@ -50,20 +51,16 @@ export interface ClientOptions {
 }
 
 export type InternalClientOptions = ClientOptions & {
-  // TODO: can nats, node, wallet be optional?
-  nats: NatsClient; // converted to nats-client in ConnextInternal constructor
-  node: NodeApiClient;
-  listener: ConnextListener;
-  // signing wallet/information
-  wallet: Wallet;
-  // store: ConnextStore; --> whats this look like
-  contract?: MultisigState;
-  // counterfactual node
-  cfModule: Node;
-  multisigAddress: string;
-  nodePublicIdentifier: string;
-  network: utils.Network; // TODO: delete! use bos branch!
   appRegistry: AppRegistry;
+  cfModule: Node; // counterfactual node
+  contract?: MultisigState;
+  messaging: IMessagingService;
+  multisigAddress: string;
+  network: utils.Network; // TODO: delete! use bos branch!
+  node: NodeApiClient;
+  nodePublicIdentifier: string;
+  ethProvider: providers.JsonRpcProvider;
+  wallet: Wallet; // signing wallet/information
 };
 
 // TODO: define properly!!
@@ -76,7 +73,6 @@ export interface ConnextStore {}
 ////// General typings
 export interface NodeInitializationParameters {
   messaging: IMessagingService;
-  wallet: Wallet;
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;

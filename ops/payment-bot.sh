@@ -56,9 +56,9 @@ name=${project}_payment_bot_$identifier
 
 # Use different mnemonics for different bots
 if [ "$identifier" = "1" ]; then
-  export NODE_MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
+  export MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
 else
-  export NODE_MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
+  export MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 fi
 
 echo $args
@@ -80,7 +80,7 @@ docker run \
   --entrypoint="bash" \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INTERMEDIARY_IDENTIFIER=$INTERMEDIARY_IDENTIFIER" \
-  --env="NODE_MNEMONIC=$NODE_MNEMONIC" \
+  --env="MNEMONIC=$MNEMONIC" \
   --env="NODE_URL=$NODE_URL" \
   --env="POSTGRES_DATABASE=$POSTGRES_DATABASE" \
   --env="POSTGRES_HOST=$POSTGRES_HOST" \

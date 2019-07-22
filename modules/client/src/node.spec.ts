@@ -1,15 +1,14 @@
 import { NodeApiClient } from "./node";
-import { MockNatsClient, MockWallet, nodeUrl } from "./testing/mocks";
+import { MockMessagingService, MockWallet, nodeUrl } from "./testing/mocks";
 
 describe("NodeApiClient", () => {
   let nodeClient: NodeApiClient;
 
   beforeEach(() => {
     nodeClient = new NodeApiClient({
-      nats: new MockNatsClient(),
+      messaging: new MockMessagingService(),
       nodeUrl,
       publicIdentifier: "xpubsomething",
-      wallet: new MockWallet(),
     });
     expect(nodeClient).toBeInstanceOf(NodeApiClient);
   });

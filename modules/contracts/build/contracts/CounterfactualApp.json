@@ -1,0 +1,1526 @@
+{
+  "contractName": "CounterfactualApp",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "isStateTerminal",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes"
+        },
+        {
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "name": "getTurnTaker",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "applyAction",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "computeOutcome",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5061079e806100206000396000f3fe608060405234801561001057600080fd5b5060043610610069576000357c01000000000000000000000000000000000000000000000000000000009004806351c2e5411461006e57806359e537c11461009e57806367c40cc4146100ce578063ce963afd146100fe575b600080fd5b61008860048036036100839190810190610370565b61012e565b604051610095919061060a565b60405180910390f35b6100b860048036036100b391908101906102b6565b61016b565b6040516100c591906105ef565b60405180910390f35b6100e860048036036100e391908101906102b6565b6101a8565b6040516100f5919061060a565b60405180910390f35b610118600480360361011391908101906102fb565b6101e5565b60405161012591906105d4565b60405180910390f35b60606040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016101629061068c565b60405180910390fd5b60006040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161019f9061066c565b60405180910390fd5b60606040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016101dc9061064c565b60405180910390fd5b60006040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016102199061062c565b60405180910390fd5b60008083601f84011261023457600080fd5b8235905067ffffffffffffffff81111561024d57600080fd5b60208301915083602082028301111561026557600080fd5b9250929050565b60008083601f84011261027e57600080fd5b8235905067ffffffffffffffff81111561029757600080fd5b6020830191508360018202830111156102af57600080fd5b9250929050565b600080602083850312156102c957600080fd5b600083013567ffffffffffffffff8111156102e357600080fd5b6102ef8582860161026c565b92509250509250929050565b6000806000806040858703121561031157600080fd5b600085013567ffffffffffffffff81111561032b57600080fd5b6103378782880161026c565b9450945050602085013567ffffffffffffffff81111561035657600080fd5b61036287828801610222565b925092505092959194509250565b6000806000806040858703121561038657600080fd5b600085013567ffffffffffffffff8111156103a057600080fd5b6103ac8782880161026c565b9450945050602085013567ffffffffffffffff8111156103cb57600080fd5b6103d78782880161026c565b925092505092959194509250565b6103ee816106d9565b82525050565b6103fd816106eb565b82525050565b600061040e826106ac565b61041881856106b7565b9350610428818560208601610717565b6104318161074a565b840191505092915050565b6000610449603a836106c8565b91507f546865206765745475726e54616b6572206d6574686f6420686173206e6f206960008301527f6d706c656d656e746174696f6e20666f722074686973204170700000000000006020830152604082019050919050565b60006104af603c836106c8565b91507f54686520636f6d707574654f7574636f6d65206d6574686f6420686173206e6f60008301527f20696d706c656d656e746174696f6e20666f72207468697320417070000000006020830152604082019050919050565b6000610515603d836106c8565b91507f54686520697353746174655465726d696e616c206d6574686f6420686173206e60008301527f6f20696d706c656d656e746174696f6e20666f722074686973204170700000006020830152604082019050919050565b600061057b6039836106c8565b91507f546865206170706c79416374696f6e206d6574686f6420686173206e6f20696d60008301527f706c656d656e746174696f6e20666f72207468697320417070000000000000006020830152604082019050919050565b60006020820190506105e960008301846103e5565b92915050565b600060208201905061060460008301846103f4565b92915050565b600060208201905081810360008301526106248184610403565b905092915050565b600060208201905081810360008301526106458161043c565b9050919050565b60006020820190508181036000830152610665816104a2565b9050919050565b6000602082019050818103600083015261068581610508565b9050919050565b600060208201905081810360008301526106a58161056e565b9050919050565b600081519050919050565b600082825260208201905092915050565b600082825260208201905092915050565b60006106e4826106f7565b9050919050565b60008115159050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60005b8381101561073557808201518184015260208101905061071a565b83811115610744576000848401525b50505050565b6000601f19601f830116905091905056fea365627a7a72305820210d7524aa6f9ffc75d1e2a647787e7708122d39a4b3a466d1fdfefdf5db53566c6578706572696d656e74616cf564736f6c634300050a0040",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b5060043610610069576000357c01000000000000000000000000000000000000000000000000000000009004806351c2e5411461006e57806359e537c11461009e57806367c40cc4146100ce578063ce963afd146100fe575b600080fd5b61008860048036036100839190810190610370565b61012e565b604051610095919061060a565b60405180910390f35b6100b860048036036100b391908101906102b6565b61016b565b6040516100c591906105ef565b60405180910390f35b6100e860048036036100e391908101906102b6565b6101a8565b6040516100f5919061060a565b60405180910390f35b610118600480360361011391908101906102fb565b6101e5565b60405161012591906105d4565b60405180910390f35b60606040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016101629061068c565b60405180910390fd5b60006040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161019f9061066c565b60405180910390fd5b60606040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016101dc9061064c565b60405180910390fd5b60006040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016102199061062c565b60405180910390fd5b60008083601f84011261023457600080fd5b8235905067ffffffffffffffff81111561024d57600080fd5b60208301915083602082028301111561026557600080fd5b9250929050565b60008083601f84011261027e57600080fd5b8235905067ffffffffffffffff81111561029757600080fd5b6020830191508360018202830111156102af57600080fd5b9250929050565b600080602083850312156102c957600080fd5b600083013567ffffffffffffffff8111156102e357600080fd5b6102ef8582860161026c565b92509250509250929050565b6000806000806040858703121561031157600080fd5b600085013567ffffffffffffffff81111561032b57600080fd5b6103378782880161026c565b9450945050602085013567ffffffffffffffff81111561035657600080fd5b61036287828801610222565b925092505092959194509250565b6000806000806040858703121561038657600080fd5b600085013567ffffffffffffffff8111156103a057600080fd5b6103ac8782880161026c565b9450945050602085013567ffffffffffffffff8111156103cb57600080fd5b6103d78782880161026c565b925092505092959194509250565b6103ee816106d9565b82525050565b6103fd816106eb565b82525050565b600061040e826106ac565b61041881856106b7565b9350610428818560208601610717565b6104318161074a565b840191505092915050565b6000610449603a836106c8565b91507f546865206765745475726e54616b6572206d6574686f6420686173206e6f206960008301527f6d706c656d656e746174696f6e20666f722074686973204170700000000000006020830152604082019050919050565b60006104af603c836106c8565b91507f54686520636f6d707574654f7574636f6d65206d6574686f6420686173206e6f60008301527f20696d706c656d656e746174696f6e20666f72207468697320417070000000006020830152604082019050919050565b6000610515603d836106c8565b91507f54686520697353746174655465726d696e616c206d6574686f6420686173206e60008301527f6f20696d706c656d656e746174696f6e20666f722074686973204170700000006020830152604082019050919050565b600061057b6039836106c8565b91507f546865206170706c79416374696f6e206d6574686f6420686173206e6f20696d60008301527f706c656d656e746174696f6e20666f72207468697320417070000000000000006020830152604082019050919050565b60006020820190506105e960008301846103e5565b92915050565b600060208201905061060460008301846103f4565b92915050565b600060208201905081810360008301526106248184610403565b905092915050565b600060208201905081810360008301526106458161043c565b9050919050565b60006020820190508181036000830152610665816104a2565b9050919050565b6000602082019050818103600083015261068581610508565b9050919050565b600060208201905081810360008301526106a58161056e565b9050919050565b600081519050919050565b600082825260208201905092915050565b600082825260208201905092915050565b60006106e4826106f7565b9050919050565b60008115159050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60005b8381101561073557808201518184015260208101905061071a565b83811115610744576000848401525b50505050565b6000601f19601f830116905091905056fea365627a7a72305820210d7524aa6f9ffc75d1e2a647787e7708122d39a4b3a466d1fdfefdf5db53566c6578706572696d656e74616cf564736f6c634300050a0040",
+  "sourceMap": "62:750:2:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;62:750:2;;;;;;;",
+  "deployedSourceMap": "62:750:2:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;62:750:2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;451:182;;;;;;;;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;94:166;;;;;;;;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;637:172;;;;;;;;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;264:183;;;;;;;;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;451:182;539:12;561:67;;;;;;;;;;;;;;;;;;;94:166;170:4;184:71;;;;;;;;;;;;;;;;;;;637:172;712:12;734:70;;;;;;;;;;;;;;;;;;;264:183;357:7;374:68;;;;;;;;;;;;;;;;;;;23:352:-1;;;153:3;146:4;138:6;134:17;130:27;120:2;;171:1;168;161:12;120:2;204:6;191:20;181:30;;231:18;223:6;220:30;217:2;;;263:1;260;253:12;217:2;297:4;289:6;285:17;273:29;;348:3;340:4;332:6;328:17;318:8;314:32;311:41;308:2;;;365:1;362;355:12;308:2;113:262;;;;;;397:335;;;511:3;504:4;496:6;492:17;488:27;478:2;;529:1;526;519:12;478:2;562:6;549:20;539:30;;589:18;581:6;578:30;575:2;;;621:1;618;611:12;575:2;655:4;647:6;643:17;631:29;;705:3;698;690:6;686:16;676:8;672:31;669:40;666:2;;;722:1;719;712:12;666:2;471:261;;;;;;740:365;;;863:2;851:9;842:7;838:23;834:32;831:2;;;879:1;876;869:12;831:2;942:1;931:9;927:17;914:31;965:18;957:6;954:30;951:2;;;997:1;994;987:12;951:2;1025:64;1081:7;1072:6;1061:9;1057:22;1025:64;;;1015:74;;;;893:202;825:280;;;;;;1112:646;;;;;1287:2;1275:9;1266:7;1262:23;1258:32;1255:2;;;1303:1;1300;1293:12;1255:2;1366:1;1355:9;1351:17;1338:31;1389:18;1381:6;1378:30;1375:2;;;1421:1;1418;1411:12;1375:2;1449:64;1505:7;1496:6;1485:9;1481:22;1449:64;;;1439:74;;;;1317:202;1578:2;1567:9;1563:18;1550:32;1602:18;1594:6;1591:30;1588:2;;;1634:1;1631;1624:12;1588:2;1662:80;1734:7;1725:6;1714:9;1710:22;1662:80;;;1652:90;;;;1529:219;1249:509;;;;;;;;1765:614;;;;;1924:2;1912:9;1903:7;1899:23;1895:32;1892:2;;;1940:1;1937;1930:12;1892:2;2003:1;1992:9;1988:17;1975:31;2026:18;2018:6;2015:30;2012:2;;;2058:1;2055;2048:12;2012:2;2086:64;2142:7;2133:6;2122:9;2118:22;2086:64;;;2076:74;;;;1954:202;2215:2;2204:9;2200:18;2187:32;2239:18;2231:6;2228:30;2225:2;;;2271:1;2268;2261:12;2225:2;2299:64;2355:7;2346:6;2335:9;2331:22;2299:64;;;2289:74;;;;2166:203;1886:493;;;;;;;;2386:113;2469:24;2487:5;2469:24;;;2464:3;2457:37;2451:48;;;2506:104;2583:21;2598:5;2583:21;;;2578:3;2571:34;2565:45;;;2617:343;;2727:38;2759:5;2727:38;;;2777:70;2840:6;2835:3;2777:70;;;2770:77;;2852:52;2897:6;2892:3;2885:4;2878:5;2874:16;2852:52;;;2925:29;2947:6;2925:29;;;2920:3;2916:39;2909:46;;2707:253;;;;;;2968:465;;3128:67;3192:2;3187:3;3128:67;;;3121:74;;3228:66;3224:1;3219:3;3215:11;3208:87;3329:66;3324:2;3319:3;3315:12;3308:88;3424:2;3419:3;3415:12;3408:19;;3114:319;;;;3442:465;;3602:67;3666:2;3661:3;3602:67;;;3595:74;;3702:66;3698:1;3693:3;3689:11;3682:87;3803:66;3798:2;3793:3;3789:12;3782:88;3898:2;3893:3;3889:12;3882:19;;3588:319;;;;3916:465;;4076:67;4140:2;4135:3;4076:67;;;4069:74;;4176:66;4172:1;4167:3;4163:11;4156:87;4277:66;4272:2;4267:3;4263:12;4256:88;4372:2;4367:3;4363:12;4356:19;;4062:319;;;;4390:465;;4550:67;4614:2;4609:3;4550:67;;;4543:74;;4650:66;4646:1;4641:3;4637:11;4630:87;4751:66;4746:2;4741:3;4737:12;4730:88;4846:2;4841:3;4837:12;4830:19;;4536:319;;;;4863:213;;4981:2;4970:9;4966:18;4958:26;;4995:71;5063:1;5052:9;5048:17;5039:6;4995:71;;;4952:124;;;;;5083:201;;5195:2;5184:9;5180:18;5172:26;;5209:65;5271:1;5260:9;5256:17;5247:6;5209:65;;;5166:118;;;;;5291:297;;5427:2;5416:9;5412:18;5404:26;;5477:9;5471:4;5467:20;5463:1;5452:9;5448:17;5441:47;5502:76;5573:4;5564:6;5502:76;;;5494:84;;5398:190;;;;;5595:407;;5786:2;5775:9;5771:18;5763:26;;5836:9;5830:4;5826:20;5822:1;5811:9;5807:17;5800:47;5861:131;5987:4;5861:131;;;5853:139;;5757:245;;;;6009:407;;6200:2;6189:9;6185:18;6177:26;;6250:9;6244:4;6240:20;6236:1;6225:9;6221:17;6214:47;6275:131;6401:4;6275:131;;;6267:139;;6171:245;;;;6423:407;;6614:2;6603:9;6599:18;6591:26;;6664:9;6658:4;6654:20;6650:1;6639:9;6635:17;6628:47;6689:131;6815:4;6689:131;;;6681:139;;6585:245;;;;6837:407;;7028:2;7017:9;7013:18;7005:26;;7078:9;7072:4;7068:20;7064:1;7053:9;7049:17;7042:47;7103:131;7229:4;7103:131;;;7095:139;;6999:245;;;;7251:121;;7344:5;7338:12;7328:22;;7309:63;;;;7380:162;;7494:6;7489:3;7482:19;7531:4;7526:3;7522:14;7507:29;;7475:67;;;;;7551:163;;7666:6;7661:3;7654:19;7703:4;7698:3;7694:14;7679:29;;7647:67;;;;;7722:91;;7784:24;7802:5;7784:24;;;7773:35;;7767:46;;;;7820:85;;7893:5;7886:13;7879:21;7868:32;;7862:43;;;;7912:121;;7985:42;7978:5;7974:54;7963:65;;7957:76;;;;8041:268;8106:1;8113:101;8127:6;8124:1;8121:13;8113:101;;;8203:1;8198:3;8194:11;8188:18;8184:1;8179:3;8175:11;8168:39;8149:2;8146:1;8142:10;8137:15;;8113:101;;;8229:6;8226:1;8223:13;8220:2;;;8294:1;8285:6;8280:3;8276:16;8269:27;8220:2;8090:219;;;;;8317:97;;8405:2;8401:7;8396:2;8389:5;8385:14;8381:28;8371:38;;8365:49;;;",
+  "source": "pragma solidity 0.5.10;\npragma experimental \"ABIEncoderV2\";\n\n\ncontract CounterfactualApp {\n\n  function isStateTerminal(bytes calldata)\n    external\n    pure\n    returns (bool)\n  {\n    revert(\"The isStateTerminal method has no implementation for this App\");\n  }\n\n  function getTurnTaker(bytes calldata, address[] calldata)\n    external\n    pure\n    returns (address)\n  {\n    revert(\"The getTurnTaker method has no implementation for this App\");\n  }\n\n  function applyAction(bytes calldata, bytes calldata)\n    external\n    pure\n    returns (bytes memory)\n  {\n    revert(\"The applyAction method has no implementation for this App\");\n  }\n\n  function computeOutcome(bytes calldata)\n    external\n    pure\n    returns (bytes memory)\n  {\n    revert(\"The computeOutcome method has no implementation for this App\");\n  }\n\n}\n",
+  "sourcePath": "@counterfactual/contracts/contracts/interfaces/CounterfactualApp.sol",
+  "ast": {
+    "absolutePath": "@counterfactual/contracts/contracts/interfaces/CounterfactualApp.sol",
+    "exportedSymbols": {
+      "CounterfactualApp": [
+        300
+      ]
+    },
+    "id": 301,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 245,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".10"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:2"
+      },
+      {
+        "id": 246,
+        "literals": [
+          "experimental",
+          "ABIEncoderV2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "24:35:2"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 300,
+        "linearizedBaseContracts": [
+          300
+        ],
+        "name": "CounterfactualApp",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "body": {
+              "id": 257,
+              "nodeType": "Block",
+              "src": "178:82:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "54686520697353746174655465726d696e616c206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 254,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "191:63:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_f3fe288c3ee4aaaf29e9ce1736bf47e5fc2730550b13b730168e32cbf840c773",
+                          "typeString": "literal_string \"The isStateTerminal method has no implementation for this App\""
+                        },
+                        "value": "The isStateTerminal method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_f3fe288c3ee4aaaf29e9ce1736bf47e5fc2730550b13b730168e32cbf840c773",
+                          "typeString": "literal_string \"The isStateTerminal method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 253,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "184:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 255,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "184:71:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 256,
+                  "nodeType": "ExpressionStatement",
+                  "src": "184:71:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 258,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "isStateTerminal",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 249,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 248,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 258,
+                  "src": "119:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 247,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "119:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "118:16:2"
+            },
+            "returnParameters": {
+              "id": 252,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 251,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 258,
+                  "src": "170:4:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 250,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "170:4:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "169:6:2"
+            },
+            "scope": 300,
+            "src": "94:166:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 272,
+              "nodeType": "Block",
+              "src": "368:79:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "546865206765745475726e54616b6572206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 269,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "381:60:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_29a3740a5d838c83b3ef34f58a6389063d91edb9a6731d8307aa13cc9ffc90a0",
+                          "typeString": "literal_string \"The getTurnTaker method has no implementation for this App\""
+                        },
+                        "value": "The getTurnTaker method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_29a3740a5d838c83b3ef34f58a6389063d91edb9a6731d8307aa13cc9ffc90a0",
+                          "typeString": "literal_string \"The getTurnTaker method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 268,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "374:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 270,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "374:68:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 271,
+                  "nodeType": "ExpressionStatement",
+                  "src": "374:68:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 273,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getTurnTaker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 264,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 260,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 273,
+                  "src": "286:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 259,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "286:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 263,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 273,
+                  "src": "302:18:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_calldata_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 261,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "302:7:2",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 262,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "302:9:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "285:36:2"
+            },
+            "returnParameters": {
+              "id": 267,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 266,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 273,
+                  "src": "357:7:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 265,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "357:7:2",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "356:9:2"
+            },
+            "scope": 300,
+            "src": "264:183:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 286,
+              "nodeType": "Block",
+              "src": "555:78:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "546865206170706c79416374696f6e206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 283,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "568:59:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_f494ae532bfd6da38d1cb6781dc8a4723ebafd89072a24f7035cff4dd0238e04",
+                          "typeString": "literal_string \"The applyAction method has no implementation for this App\""
+                        },
+                        "value": "The applyAction method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_f494ae532bfd6da38d1cb6781dc8a4723ebafd89072a24f7035cff4dd0238e04",
+                          "typeString": "literal_string \"The applyAction method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 282,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "561:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 284,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "561:67:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 285,
+                  "nodeType": "ExpressionStatement",
+                  "src": "561:67:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 287,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "applyAction",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 278,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 275,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 287,
+                  "src": "472:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 274,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "472:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 277,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 287,
+                  "src": "488:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 276,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "488:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "471:32:2"
+            },
+            "returnParameters": {
+              "id": 281,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 280,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 287,
+                  "src": "539:12:2",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 279,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "539:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "538:14:2"
+            },
+            "scope": 300,
+            "src": "451:182:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 298,
+              "nodeType": "Block",
+              "src": "728:81:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "54686520636f6d707574654f7574636f6d65206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 295,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "741:62:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_9c691a262f537a6fcc7e3ea01a6532df800c02eaf7fbb2a5eedef631b3321d7f",
+                          "typeString": "literal_string \"The computeOutcome method has no implementation for this App\""
+                        },
+                        "value": "The computeOutcome method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_9c691a262f537a6fcc7e3ea01a6532df800c02eaf7fbb2a5eedef631b3321d7f",
+                          "typeString": "literal_string \"The computeOutcome method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 294,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "734:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 296,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "734:70:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 297,
+                  "nodeType": "ExpressionStatement",
+                  "src": "734:70:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 299,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "computeOutcome",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 290,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 289,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 299,
+                  "src": "661:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 288,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "661:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "660:16:2"
+            },
+            "returnParameters": {
+              "id": 293,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 292,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 299,
+                  "src": "712:12:2",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 291,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "712:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "711:14:2"
+            },
+            "scope": 300,
+            "src": "637:172:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 301,
+        "src": "62:750:2"
+      }
+    ],
+    "src": "0:813:2"
+  },
+  "legacyAST": {
+    "absolutePath": "@counterfactual/contracts/contracts/interfaces/CounterfactualApp.sol",
+    "exportedSymbols": {
+      "CounterfactualApp": [
+        300
+      ]
+    },
+    "id": 301,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 245,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".10"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:2"
+      },
+      {
+        "id": 246,
+        "literals": [
+          "experimental",
+          "ABIEncoderV2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "24:35:2"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 300,
+        "linearizedBaseContracts": [
+          300
+        ],
+        "name": "CounterfactualApp",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "body": {
+              "id": 257,
+              "nodeType": "Block",
+              "src": "178:82:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "54686520697353746174655465726d696e616c206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 254,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "191:63:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_f3fe288c3ee4aaaf29e9ce1736bf47e5fc2730550b13b730168e32cbf840c773",
+                          "typeString": "literal_string \"The isStateTerminal method has no implementation for this App\""
+                        },
+                        "value": "The isStateTerminal method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_f3fe288c3ee4aaaf29e9ce1736bf47e5fc2730550b13b730168e32cbf840c773",
+                          "typeString": "literal_string \"The isStateTerminal method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 253,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "184:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 255,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "184:71:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 256,
+                  "nodeType": "ExpressionStatement",
+                  "src": "184:71:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 258,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "isStateTerminal",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 249,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 248,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 258,
+                  "src": "119:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 247,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "119:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "118:16:2"
+            },
+            "returnParameters": {
+              "id": 252,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 251,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 258,
+                  "src": "170:4:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 250,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "170:4:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "169:6:2"
+            },
+            "scope": 300,
+            "src": "94:166:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 272,
+              "nodeType": "Block",
+              "src": "368:79:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "546865206765745475726e54616b6572206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 269,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "381:60:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_29a3740a5d838c83b3ef34f58a6389063d91edb9a6731d8307aa13cc9ffc90a0",
+                          "typeString": "literal_string \"The getTurnTaker method has no implementation for this App\""
+                        },
+                        "value": "The getTurnTaker method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_29a3740a5d838c83b3ef34f58a6389063d91edb9a6731d8307aa13cc9ffc90a0",
+                          "typeString": "literal_string \"The getTurnTaker method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 268,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "374:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 270,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "374:68:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 271,
+                  "nodeType": "ExpressionStatement",
+                  "src": "374:68:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 273,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getTurnTaker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 264,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 260,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 273,
+                  "src": "286:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 259,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "286:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 263,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 273,
+                  "src": "302:18:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_calldata_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 261,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "302:7:2",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 262,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "302:9:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "285:36:2"
+            },
+            "returnParameters": {
+              "id": 267,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 266,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 273,
+                  "src": "357:7:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 265,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "357:7:2",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "356:9:2"
+            },
+            "scope": 300,
+            "src": "264:183:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 286,
+              "nodeType": "Block",
+              "src": "555:78:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "546865206170706c79416374696f6e206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 283,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "568:59:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_f494ae532bfd6da38d1cb6781dc8a4723ebafd89072a24f7035cff4dd0238e04",
+                          "typeString": "literal_string \"The applyAction method has no implementation for this App\""
+                        },
+                        "value": "The applyAction method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_f494ae532bfd6da38d1cb6781dc8a4723ebafd89072a24f7035cff4dd0238e04",
+                          "typeString": "literal_string \"The applyAction method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 282,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "561:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 284,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "561:67:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 285,
+                  "nodeType": "ExpressionStatement",
+                  "src": "561:67:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 287,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "applyAction",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 278,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 275,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 287,
+                  "src": "472:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 274,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "472:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 277,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 287,
+                  "src": "488:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 276,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "488:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "471:32:2"
+            },
+            "returnParameters": {
+              "id": 281,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 280,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 287,
+                  "src": "539:12:2",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 279,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "539:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "538:14:2"
+            },
+            "scope": 300,
+            "src": "451:182:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 298,
+              "nodeType": "Block",
+              "src": "728:81:2",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "54686520636f6d707574654f7574636f6d65206d6574686f6420686173206e6f20696d706c656d656e746174696f6e20666f72207468697320417070",
+                        "id": 295,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "string",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "741:62:2",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_stringliteral_9c691a262f537a6fcc7e3ea01a6532df800c02eaf7fbb2a5eedef631b3321d7f",
+                          "typeString": "literal_string \"The computeOutcome method has no implementation for this App\""
+                        },
+                        "value": "The computeOutcome method has no implementation for this App"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_stringliteral_9c691a262f537a6fcc7e3ea01a6532df800c02eaf7fbb2a5eedef631b3321d7f",
+                          "typeString": "literal_string \"The computeOutcome method has no implementation for this App\""
+                        }
+                      ],
+                      "id": 294,
+                      "name": "revert",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [
+                        466,
+                        467
+                      ],
+                      "referencedDeclaration": 467,
+                      "src": "734:6:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (string memory) pure"
+                      }
+                    },
+                    "id": 296,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "734:70:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 297,
+                  "nodeType": "ExpressionStatement",
+                  "src": "734:70:2"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 299,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "computeOutcome",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 290,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 289,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 299,
+                  "src": "661:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 288,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "661:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "660:16:2"
+            },
+            "returnParameters": {
+              "id": 293,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 292,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 299,
+                  "src": "712:12:2",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 291,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "712:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "711:14:2"
+            },
+            "scope": 300,
+            "src": "637:172:2",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 301,
+        "src": "62:750:2"
+      }
+    ],
+    "src": "0:813:2"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.10+commit.5a6ea5b1.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-07-18T10:40:23.179Z",
+  "devdoc": {
+    "methods": {}
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

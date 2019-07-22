@@ -93,10 +93,10 @@ export class DepositController extends AbstractController {
     const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
-      bal = await this.provider.getBalance(depositAddr);
+      bal = await this.ethProvider.getBalance(depositAddr);
     } else {
       // get token balance
-      const token = new Contract(assetId, tokenAbi, this.provider);
+      const token = new Contract(assetId, tokenAbi, this.ethProvider);
       // TODO: correct? how can i use allowance?
       bal = await token.balanceOf(depositAddr);
     }

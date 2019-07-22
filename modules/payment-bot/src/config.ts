@@ -11,15 +11,19 @@ if (!process.env.ETH_RPC_URL) {
   throw Error("No eth rpc url specified in env. Exiting.");
 }
 
+if (!process.env.MNEMONIC) {
+  throw Error("No mnemonic specified in env. Exiting.");
+}
+
 const args = process.argv.slice(2);
 
 export const config = {
   action: args[0] || "none",
   args: args.length > 1 ? args.slice(1) : [],
-  ethRpcUrl: process.env.ETH_RPC_URL,
+  ethProviderUrl: process.env.ETH_RPC_URL!,
   intermediaryIdentifier: process.env.INTERMEDIARY_IDENTIFIER,
-  mnemonic: process.env.NODE_MNEMONIC,
-  nodeUrl: process.env.NODE_URL,
+  mnemonic: process.env.MNEMONIC!,
+  nodeUrl: process.env.NODE_URL!,
   postgres: {
     database: process.env.POSTGRES_DATABASE!,
     host: process.env.POSTGRES_HOST!,
