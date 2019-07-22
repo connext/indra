@@ -579,7 +579,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return actionRes.result as NodeTypes.ProposeInstallVirtualResult;
+    return actionRes.result.result as NodeTypes.ProposeInstallVirtualResult;
   };
 
   // TODO: add validation after arjuns refactor merged
