@@ -20,7 +20,7 @@ export class WithdrawalController extends AbstractController {
 
     // TODO: remove free balance stuff?
     this.log.info("trying to get free balance....");
-    const preWithdrawBalances = await this.connext.getFreeBalance();
+    const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
     this.log.info(`preWithdrawBalances:`);
     this.connext.logEthFreeBalance(assetId, preWithdrawBalances, this.log);
 
@@ -44,19 +44,19 @@ export class WithdrawalController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW}`);
-      const withdrawResponse = await this.connext.cfWithdraw(amount, assetId, recipient);
+      const withdrawResponse = await this.connext.cfWithdraw(assetId, amount, recipient);
       this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, null, 2)}`);
 
-      const postWithdrawBalances = await this.connext.getFreeBalance();
+      const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
       this.log.info(`postWithdrawBalances:`);
       logEthFreeBalance(assetId, postWithdrawBalances, this.log);
 
-      if (
-        postWithdrawBalances &&
-        !postWithdrawBalances[myFreeBalanceAddress].lt(preWithdrawBalances[myFreeBalanceAddress])
-      ) {
-        throw new Error("My balance was not decreased.");
+      const expectedFreeBal = preWithdrawBalances[myFreeBalanceAddress].sub(amount);
+
+      // sanity check the free balance decrease
+      if (postWithdrawBalances && !postWithdrawBalances[myFreeBalanceAddress].eq(expectedFreeBal)) {
+        this.log.error(`My free balance was not decreased by the expected amount.`);
       }
 
       this.log.info("Withdrawn!");
@@ -84,7 +84,7 @@ export class WithdrawalController extends AbstractController {
   ): Promise<string | undefined> => {
     // TODO: fix for non-eth withdrawals
     // check the free balance can handle requested amnt
-    const freeBalance = await this.connext.getFreeBalance();
+    const freeBalance = await this.connext.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
     const errs = [
       notLessThanOrEqualTo(amount, preWithdrawalBal),
