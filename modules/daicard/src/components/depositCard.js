@@ -27,11 +27,9 @@ class DepositCard extends Component {
   render() {
     const { address, history, maxDeposit, minDeposit } = this.props;
     const { copied } = this.state;
-
     const minEth = minDeposit ? minDeposit.toETH().format() : '?.??'
     const maxEth = maxDeposit ? maxDeposit.toETH().format() : '?.??'
     const maxDai = maxDeposit ? maxDeposit.toDAI().format() : '?.??'
-
     return (
       <Grid
         container

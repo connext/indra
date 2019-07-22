@@ -3,7 +3,7 @@ import * as connext from "@connext/client";
 import { ethers as eth } from "ethers";
 import interval from "interval-promise";
 import React from "react";
-import { BrowserRouter as Router, Route, Redirect } from "react-router-dom";
+import { BrowserRouter as Router, Route } from "react-router-dom";
 
 import "./App.css";
 
@@ -75,23 +75,14 @@ class App extends React.Component {
         channel: { token: Currency.DEI("0", exchangeRate), ether: Currency.WEI("0", exchangeRate) },
         onChain: { token: Currency.DEI("0", exchangeRate), ether: Currency.WEI("0", exchangeRate) },
       },
-      channelState: null,
-      connextState: null,
-      contractAddress: null,
       ethprovider: null,
       exchangeRate,
-      hubUrl: null,
-      hubWalletAddress: null,
-      interval: null,
+      freeBalanceAddress: null,
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
       pending: { type: "", complete: false, closed: false },
-      publicUrl: window.location.origin.toLowerCase(),
-      runtime: null,
       sendScanArgs: { amount: null, recipient: null },
-      tokenAddress: null,
-      tokenContract: null,
     };
   }
 
@@ -109,7 +100,7 @@ class App extends React.Component {
 
     const nodeUrl =
       overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
-    const ethUrl = overrides.ethUrl || `${this.state.publicUrl}/api/ethprovider`;
+    const ethUrl = overrides.ethUrl || `${window.location.origin}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl);
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath);
@@ -282,7 +273,7 @@ class App extends React.Component {
         // incorrect entry
         continue;
       }
-      if (strArr[0] !== this.state.publicUrl) {
+      if (strArr[0] !== window.location.origin) {
         throw new Error("incorrect site");
       }
       // add the chosen url to the path scanned
@@ -322,13 +313,10 @@ class App extends React.Component {
       address,
       balance,
       channel,
-      channelState,
-      connextState,
       exchangeRate,
       maxDeposit,
       minDeposit,
       pending,
-      runtime,
       sendScanArgs,
     } = this.state;
     const { classes } = this.props;
@@ -347,22 +335,20 @@ class App extends React.Component {
             <Route
               exact
               path="/"
-              render={props =>
-                runtime && runtime.channelStatus !== "CS_OPEN" ? (
-                  <Redirect to="/support" />
-                ) : (
-                  <Grid>
-                    <Home {...props} balance={balance} scanQRCodee={this.scanQRCode.bind(this)} />
-
-                    <SetupCard
-                      {...props}
-                      minDeposit={minDeposit}
-                      maxDeposit={maxDeposit}
-                      connextState={connextState}
-                    />
-                  </Grid>
-                )
-              }
+              render={props => (
+                <Grid>
+                  <Home
+                    {...props}
+                    balance={balance}
+                    scanQRCodee={this.scanQRCode.bind(this)}
+                  />
+                  <SetupCard
+                    {...props}
+                    minDeposit={minDeposit}
+                    maxDeposit={maxDeposit}
+                  />
+                </Grid>
+              )}
             />
             <Route
               path="/deposit"
@@ -385,13 +371,9 @@ class App extends React.Component {
               render={props => (
                 <SendCard
                   {...props}
-                  address={address}
                   balance={balance}
                   channel={channel}
-                  channelState={channelState}
-                  publicUrl={this.state.publicUrl}
                   scanArgs={sendScanArgs}
-                  connextState={connextState}
                 />
               )}
             />
@@ -401,10 +383,8 @@ class App extends React.Component {
                 <RedeemCard
                   {...props}
                   balance={balance}
-                  channelState={channelState}
                   channel={channel}
-                  connextState={connextState}
-                  publicUrl={this.state.publicUrl}
+                  pending={pending}
                 />
               )}
             />
@@ -422,7 +402,12 @@ class App extends React.Component {
             />
             <Route
               path="/support"
-              render={props => <SupportCard {...props} channelState={channelState} />}
+              render={props => (
+                <SupportCard
+                  {...props}
+                  channel={channel}
+                />
+              )}
             />
             <Confirmations
               pending={pending}
