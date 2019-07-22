@@ -24,17 +24,17 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 // TODO: use deployed addresses!!!
 // TODO: better way to use with networks...?
 // TODO: rename? cf has type ABIEncoding = string
-export type EthUnidirectionalTransferAppInitialState<T = string> = {
+export type UnidirectionalTransferAppInitialState<T = string> = {
   finalized: false;
   transfers: [Transfer<T>, Transfer<T>];
 };
-export type EthUnidirectionalTransferAppInitialStateBigNumber = EthUnidirectionalTransferAppInitialState<
+export type UnidirectionalTransferAppInitialStateBigNumber = UnidirectionalTransferAppInitialState<
   BigNumber
 >;
 
 export const SupportedApplications = {
-  EthUnidirectionalTransferApp: "EthUnidirectionalTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
+  UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -117,30 +117,26 @@ export type AppUpdate<T = string> = {
 export type AppUpdateBigNumber = AppUpdate<BigNumber>;
 
 // all the types of counterfactual app states
-export type AppState<T = string> = EthUnidirectionalTransferAppState<T>;
+export type AppState<T = string> = UnidirectionalTransferAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
-export type AppAction<T = string> = EthUnidirectionalTransferAppAction<T>;
+export type AppAction<T = string> = UnidirectionalTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
-////// ETHUnidirectionalTransferApp.sol typings
+////// UnidirectionalTransferApp.sol typings
 // @rahul --> does this need to be an interface or are types fine?
-export type EthUnidirectionalTransferAppState<T = string> = {
+export type UnidirectionalTransferAppState<T = string> = {
   transfers: [Transfer<T>, Transfer<T>];
   finalized: boolean;
 };
-export type EthUnidirectionalTransferAppStateBigNumber = EthUnidirectionalTransferAppState<
-  BigNumber
->;
+export type UnidirectionalTransferAppStateBigNumber = UnidirectionalTransferAppState<BigNumber>;
 
-export type EthUnidirectionalTransferAppAction<T = string> = {
+export type UnidirectionalTransferAppAction<T = string> = {
   transferAmount: T;
   finalize: boolean;
 };
-export type EthUnidirectionalTransferAppActionBigNumber = EthUnidirectionalTransferAppAction<
-  BigNumber
->;
+export type UnidirectionalTransferAppActionBigNumber = UnidirectionalTransferAppAction<BigNumber>;
 
 export type User<T = string> = {
   id: number;
