@@ -41,7 +41,8 @@ export class ChannelService implements OnModuleInit {
         params: { owners: [this.node.publicIdentifier, counterpartyPublicIdentifier] },
       }),
     )) as JsonRpcResponse;
-    const createChannelResult = createChannelResponse.result as NodeTypes.CreateChannelResult;
+    const createChannelResult = createChannelResponse.result
+      .result as NodeTypes.CreateChannelResult;
     logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
 
     return createChannelResult;
