@@ -501,7 +501,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return appInstanceResponse.result as NodeTypes.GetAppInstanceDetailsResult;
+    return appInstanceResponse.result.result as NodeTypes.GetAppInstanceDetailsResult;
   };
 
   public getAppState = async (
@@ -524,7 +524,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return stateResponse.result as NodeTypes.GetStateResult;
+    return stateResponse.result.result as NodeTypes.GetStateResult;
   };
 
   public takeAction = async (
@@ -555,7 +555,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return actionResponse.result as NodeTypes.TakeActionResult;
+    return actionResponse.result.result as NodeTypes.TakeActionResult;
   };
 
   // TODO: add validation after arjuns refactor merged
@@ -595,7 +595,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return actionRes.result as NodeTypes.ProposeInstallResult;
+    return actionRes.result.result as NodeTypes.ProposeInstallResult;
   };
 
   public installVirtualApp = async (
@@ -618,7 +618,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return installVirtualResponse.result;
+    return installVirtualResponse.result.result;
   };
 
   public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
@@ -638,7 +638,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return installResponse.result;
+    return installResponse.result.result;
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
@@ -659,7 +659,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return uninstallResponse.result as NodeTypes.UninstallResult;
+    return uninstallResponse.result.result as NodeTypes.UninstallResult;
   };
 
   public uninstallVirtualApp = async (
@@ -682,7 +682,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return uninstallVirtualResponse.result as NodeTypes.UninstallVirtualResult;
+    return uninstallVirtualResponse.result.result as NodeTypes.UninstallVirtualResult;
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
@@ -697,7 +697,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return rejectResponse.result as NodeTypes.RejectInstallResult;
+    return rejectResponse.result.result as NodeTypes.RejectInstallResult;
   };
 
   public rejectInstallVirtualApp = async (
@@ -714,7 +714,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return rejectResponse.result as NodeTypes.RejectInstallResult;
+    return rejectResponse.result.result as NodeTypes.RejectInstallResult;
   };
 
   // TODO: erc20 support?
@@ -747,7 +747,7 @@ export class ConnextInternal extends ConnextChannel {
       }),
     );
 
-    return withdrawalResponse.result;
+    return withdrawalResponse.result.result;
   };
 
   ///////////////////////////////////
