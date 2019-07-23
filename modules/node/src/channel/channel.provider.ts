@@ -37,9 +37,13 @@ export class ChannelMessaging extends AbstractMessagingProvider {
     return await this.channelService.create(pubId);
   }
 
-  async requestCollateral(subject: string): Promise<RequestCollateralResponse> {
+  async requestCollateral(
+    subject: string,
+    data: { tokenAddress?: string },
+  ): Promise<RequestCollateralResponse> {
+    // TODO: add validation
     const pubId = this.getPublicIdentifierFromSubject(subject);
-    return this.channelService.requestCollateral(pubId);
+    return this.channelService.requestCollateral(pubId, data.tokenAddress);
   }
 
   setupSubscriptions(): void {
