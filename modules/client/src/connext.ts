@@ -61,9 +61,13 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
   const network = await ethProvider.getNetwork();
 
-  // special case for gaanache
+  // special case for ganache
   if (network.chainId === 4447) {
     network.name = "ganache";
+    // Enforce using provided signer, not via RPC
+    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
+      throw { code: "UNSUPPORTED_OPERATION" };
+    };
   }
 
   console.log(`Creating messaging service client (logLevel: ${logLevel})`);
