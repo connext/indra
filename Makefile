@@ -64,6 +64,7 @@ restart-prod:
 clean: stop
 	docker container prune -f
 	rm -rf $(flags)/*
+	rm -rf modules/**/node_modules/@counterfactual
 	rm -rf modules/**/build
 	rm -rf modules/**/dist
 	rm -rf modules/**/node_modules/**/.git
