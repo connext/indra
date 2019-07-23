@@ -1,6 +1,8 @@
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { ethers as eth } from "ethers";
+import { AddressZero, One } from "ethers/constants";
+import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
@@ -22,8 +24,6 @@ import SetupCard from "./components/setupCard";
 import SupportCard from "./components/supportCard";
 
 import { Currency, store, toBN } from "./utils";
-
-const { formatEther, parseEther } = eth.utils;
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -68,15 +68,15 @@ const styles = theme => ({
 class App extends React.Component {
   constructor(props) {
     super(props);
-    const exchangeRate = "314.08";
+    const swapRate = "314.08";
     this.state = {
       address: "",
       balance: {
-        channel: { token: Currency.DEI("0", exchangeRate), ether: Currency.WEI("0", exchangeRate) },
-        onChain: { token: Currency.DEI("0", exchangeRate), ether: Currency.WEI("0", exchangeRate) },
+        channel: { token: Currency.DEI("0", swapRate), ether: Currency.WEI("0", swapRate) },
+        onChain: { token: Currency.DEI("0", swapRate), ether: Currency.WEI("0", swapRate) },
       },
       ethprovider: null,
-      exchangeRate,
+      swapRate,
       freeBalanceAddress: null,
       loadingConnext: true,
       maxDeposit: null,
@@ -107,30 +107,33 @@ class App extends React.Component {
 
     const channel = await connext.connect({
       ethProviderUrl: ethUrl,
-      logLevel: 3,
+      logLevel: 5,
       mnemonic,
       nodeUrl,
       store,
     });
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
+    const connextConfig = await channel.config();
+    const tokenAddress = connextConfig.contractAddresses.Token
 
     console.log(`Client created successfully!`);
     console.log(`Public Identifier: ${channel.publicIdentifier}`);
     console.log(`Account multisig address: ${channel.opts.multisigAddress}`);
     console.log(`CF Account address: ${cfWallet.address}`);
     console.log(`Free balance address: ${freeBalanceAddress}`);
-
-    const connextConfig = await channel.config();
-    console.log(`connextConfig: ${JSON.stringify(connextConfig, null, 2)}`);
+    console.log(`Token address: ${tokenAddress}`);
+    // console.log(`connextConfig: ${JSON.stringify(connextConfig, null, 2)}`);
 
     this.setState({
       address: cfWallet.address,
-      freeBalanceAddress,
       channel,
       ethprovider,
+      freeBalanceAddress,
+      tokenAddress,
       wallet: cfWallet,
     });
 
+    await channel.subscribeToSwapRates(AddressZero, tokenAddress);
     await this.startPoller();
     this.setState({ loadingConnext: false });
   }
@@ -149,25 +152,31 @@ class App extends React.Component {
       await this.setDepositLimits();
       await this.autoDeposit();
       await this.autoSwap();
-    }, 2000);
+    }, 3000);
   }
 
   async refreshBalances() {
-    const { address, balance, channel, exchangeRate, ethprovider } = this.state;
+    const { address, balance, channel, ethprovider, tokenAddress } = this.state;
+    let swapRate = One.toString();
+    try {
+      swapRate = await channel.getLatestSwapRate(AddressZero, tokenAddress).toString();
+    } catch (e) {
+      console.warn(e.message)
+    }
     const freeBalance = await channel.getFreeBalance();
-    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), exchangeRate);
-    balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress], exchangeRate);
-    this.setState({ balance });
+    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), swapRate);
+    balance.channel.ether = Currency.WEI(freeBalance[this.state.freeBalanceAddress], swapRate);
+    this.setState({ balance, swapRate });
   }
 
   async setDepositLimits() {
-    const { exchangeRate, ethprovider } = this.state;
+    const { swapRate, ethprovider } = this.state;
     let gasPrice = await ethprovider.getGasPrice();
     // default multiple is 1.5, leave 2x for safety
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), exchangeRate);
-    const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, exchangeRate);
+    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate);
+    const maxDeposit = Currency.DEI(CHANNEL_DEPOSIT_MAX, swapRate);
     this.setState({ maxDeposit, minDeposit });
   }
 
@@ -240,7 +249,7 @@ class App extends React.Component {
     const weiBalance = toBN(balance.channel.ether);
     const tokenBalance = toBN(balance.channel.token);
     if (false && weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
-      await channel.exchange(weiBalance, "wei");
+      await channel.swap(weiBalance, "wei");
     }
   }
 
@@ -311,7 +320,7 @@ class App extends React.Component {
       address,
       balance,
       channel,
-      exchangeRate,
+      swapRate,
       maxDeposit,
       minDeposit,
       pending,
@@ -393,7 +402,7 @@ class App extends React.Component {
                   {...props}
                   balance={balance}
                   channel={channel}
-                  exchangeRate={exchangeRate}
+                  swapRate={swapRate}
                   setPending={this.setPending.bind(this)}
                 />
               )}

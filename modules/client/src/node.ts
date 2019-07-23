@@ -34,7 +34,7 @@ export interface INodeApiClient {
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
-  public latestSwapRates: { [key: string]: BigNumber };
+  public latestSwapRates: { [key: string]: BigNumber } = {};
   public log: Logger;
   public userPublicIdentifier: string | undefined;
   public nodePublicIdentifier: string | undefined;
@@ -94,9 +94,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public getLatestSwapRate = (from: string, to: string): BigNumber => {
-    const latestRate = this.latestSwapRates[`exchange-rate.${from}.${to}`];
+    const latestRate = this.latestSwapRates[`swap-rate.${from}.${to}`];
     if (!latestRate) {
-      throw new Error(`No exchange rate from ${from} to ${to} has been recieved yet`);
+      throw new Error(`No swap rate from ${from} to ${to} has been recieved yet`);
     }
     return latestRate;
   };
@@ -125,27 +125,29 @@ export class NodeApiClient implements INodeApiClient {
     this.nodePublicIdentifier = publicIdentifier;
   }
 
-  // TODO: types for exchange rates and store?
-  // TODO: is this the best way to set the store for diff types
-  // of tokens
+  // TODO: types for swap rates and store?
+  // TODO: is this the best way to set the store for diff types of tokens
   public async subscribeToSwapRates(
     from: string,
     to: string,
     store: NodeTypes.IStoreService,
   ): Promise<void> {
-    await this.messaging.subscribe(`exchange-rate.${from}.${to}`, (msg: any) => {
+    console.log(`Subscribing to swap rate for ${to}`);
+    const latestSwapRates = this.latestSwapRates;
+    await this.messaging.subscribe(`swap-rate.${from}.${to}`, (msg: any) => {
       store.set([
         {
           key: `${msg.pattern}-${Date.now().toString()}`,
           value: msg.data,
         },
       ]);
-      this.latestSwapRates[`exchange-rate.${from}.${to}`] = new BigNumber(msg.data);
+      console.log(`Got new swap rate: ${msg.data}`);
+      latestSwapRates[`swap-rate.${from}.${to}`] = new BigNumber(msg.data);
     });
   }
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {
-    return this.messaging.unsubscribe(`exchange-rate.${from}.${to}`);
+    return this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
   ////////////////////////////////////////
