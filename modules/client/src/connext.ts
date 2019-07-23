@@ -728,7 +728,7 @@ export class ConnextInternal extends ConnextChannel {
     amount: BigNumber,
     recipient: string,
   ): Promise<NodeTypes.UninstallResult> => {
-    const freeBalance = await this.getFreeBalance();
+    const freeBalance = await this.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
     const err = [
       notLessThanOrEqualTo(amount, preWithdrawalBal),

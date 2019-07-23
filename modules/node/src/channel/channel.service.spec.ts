@@ -11,13 +11,14 @@ import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
 import {
   clearDb,
+  mkAddress,
   mkXpub,
   mockNodeProvider,
-  mockNodePublicIdentifier,
   mockStateDepositHolderAddress,
 } from "../test";
 import { toBig } from "../util";
 
+import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
@@ -56,20 +57,18 @@ describe("ChannelService", () => {
 
   it("should create a channel and make it available", async () => {
     const userXpub = mkXpub("xpubA");
-    let channel = await service.create(userXpub);
+    const result = await service.create(userXpub);
 
-    expect(channel.multisigAddress).toBe(mockStateDepositHolderAddress);
-    expect(channel.nodePublicIdentifier).toBe(mockNodePublicIdentifier);
-    expect(channel.userPublicIdentifier).toBe(userXpub);
-    expect(channel.available).toBe(false);
-
-    channel = await service.makeAvailable(mockStateDepositHolderAddress);
-    expect(channel.available).toBe(true);
+    expect(result.multisigAddress).toBe(mockStateDepositHolderAddress);
   });
 
   it("should find a payment profile for a channel", async () => {
     const userXpub = mkXpub("xpubA");
-    const channel = await service.create(userXpub);
+    let channel = new Channel();
+    channel.multisigAddress = mkAddress("0xa");
+    channel.nodePublicIdentifier = mkXpub("xpubB");
+    channel.userPublicIdentifier = userXpub;
+    channel = await channelRepository.save(channel);
 
     let profile = new PaymentProfile();
     profile.amountToCollateralizeWei = toBig(2000);
