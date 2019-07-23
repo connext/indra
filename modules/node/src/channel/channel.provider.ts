@@ -12,8 +12,9 @@ import { RpcException } from "@nestjs/microservices";
 
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId, NodeProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util/messaging";
-import { isXpub } from "../validator/isXpub";
+import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { AbstractMessagingProvider } from "../util";
+import { isXpub } from "../validator";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
@@ -29,11 +30,13 @@ export class ChannelMessaging extends AbstractMessagingProvider {
 
   async getChannel(subject: string): Promise<GetChannelResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
+
     return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<NodeTypes.CreateChannelResult> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
+
     return await this.channelService.create(pubId);
   }
 
@@ -41,9 +44,27 @@ export class ChannelMessaging extends AbstractMessagingProvider {
     subject: string,
     data: { tokenAddress?: string },
   ): Promise<RequestCollateralResponse> {
-    // TODO: add validation
     const pubId = this.getPublicIdentifierFromSubject(subject);
+
     return this.channelService.requestCollateral(pubId, data.tokenAddress);
+  }
+
+  async addPaymentProfile(
+    subject: string,
+    data: {
+      tokenAddress: string;
+      minimumMaintainedCollateral: string;
+      amountToCollateralize: string;
+    },
+  ): Promise<PaymentProfile> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+
+    return await this.channelService.addPaymentProfileToChannel(
+      pubId,
+      data.tokenAddress,
+      data.minimumMaintainedCollateral,
+      data.amountToCollateralize,
+    );
   }
 
   setupSubscriptions(): void {
@@ -52,6 +73,8 @@ export class ChannelMessaging extends AbstractMessagingProvider {
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
 
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
+
+    super.connectRequestReponse("channel.add-profile.>", this.requestCollateral.bind(this));
   }
 
   private getPublicIdentifierFromSubject(subject: string): string {

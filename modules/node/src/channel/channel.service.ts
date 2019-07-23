@@ -11,7 +11,8 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { NodeProviderId } from "../constants";
-import { CLogger, freeBalanceAddressFromXpub, registerCfNodeListener } from "../util";
+import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { CLogger, freeBalanceAddressFromXpub, registerCfNodeListener, toBig } from "../util";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -112,6 +113,19 @@ export class ChannelService implements OnModuleInit {
     }
     logger.log(`User ${userPubId} does not need additional collateral for token ${tokenAddress}`);
     return undefined;
+  }
+
+  async addPaymentProfileToChannel(
+    userPubId: string,
+    tokenAddress: string,
+    minimumMaintainedCollateral: string,
+    amountToCollateralize: string,
+  ): Promise<PaymentProfile> {
+    const profile = new PaymentProfile();
+    profile.tokenAddress = tokenAddress;
+    profile.minimumMaintainedCollateral = toBig(minimumMaintainedCollateral);
+    profile.amountToCollateralize = toBig(amountToCollateralize);
+    return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
   }
 
   onModuleInit(): void {

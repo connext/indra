@@ -22,3 +22,9 @@ export function IsXpub(validationOptions?: ValidationOptions): Function {
 export function isXpub(xpub: string): boolean {
   return XpubRegex.test(xpub);
 }
+
+export function assertXpub(xpub: string): void {
+  if (!isXpub(xpub)) {
+    throw new Error(`${xpub} is not a valid xpub`);
+  }
+}

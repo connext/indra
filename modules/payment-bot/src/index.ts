@@ -81,7 +81,7 @@ async function run(): Promise<void> {
 
   if (program.requestCollateral) {
     console.log(`Requesting collateral...`);
-    await client.requestCollateral();
+    await client.requestCollateral(program.assetId);
   }
 
   if (program.transfer) {
