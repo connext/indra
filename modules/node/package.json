@@ -21,9 +21,9 @@
   },
   "dependencies": {
     "@connext/messaging": "0.0.1",
-    "@counterfactual/contracts": "0.1.8",
+    "@counterfactual/contracts": "0.1.9",
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.2.21",
+    "@counterfactual/node": "0.2.24",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@connext/types": "0.0.4",
-    "@counterfactual/types": "0.0.24",
+    "@counterfactual/types": "0.0.25",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.0",
     "@types/jest": "24.0.15",

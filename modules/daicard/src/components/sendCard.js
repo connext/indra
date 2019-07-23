@@ -15,7 +15,8 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
-import { ethers as eth } from 'ethers';
+import { AddressZero } from 'ethers/constants';
+import { arrayify, formatEther, isHexString, parseEther } from 'ethers/utils';
 import interval from "interval-promise";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
@@ -25,11 +26,7 @@ import { toBN } from "../utils";
 
 import { QRScan } from "./qrCode";
 
-const { arrayify, formatEther, isHexString, parseEther } = eth.utils
-
-const emptyAddress = eth.constants.AddressZero
 const LINK_LIMIT = parseEther("10") // $10 capped linked payments
-const ADMIN_SECRET = process.env.REACT_APP_ADMIN_SECRET;
 
 const styles = theme => ({
   icon: {
@@ -211,7 +208,6 @@ const PaymentConfirmationDialog = props => (
 class PayCard extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
       paymentVal: {
         meta: {
@@ -236,7 +232,6 @@ class PayCard extends Component {
       scan: false,
       displayVal: props.scanArgs.amount ? props.scanArgs.amount : "0",
       showReceipt: false,
-      multipleLinks: false, // TODO: remove
       count: null,
     };
   }
@@ -269,7 +264,6 @@ class PayCard extends Component {
     const decimal = (
       value.startsWith('.') ? value.substr(1) : value.split('.')[1]
     )
-
     let tokenVal = value
     if (decimal && decimal.length > 18) {
       tokenVal = value.startsWith('.') ? value.substr(0, 19) : value.split('.')[0] + '.' + decimal.substr(0, 18)
@@ -284,20 +278,12 @@ class PayCard extends Component {
       }
       return oldState;
     });
-
     this.setState({ displayVal: value, });
   }
 
-  // TODO: remove
-  updateCount = (count) => {
-    this.setState({ count })
-  }
-
   handleQRData = async scanResult => {
-    const { publicUrl } = this.props;
-
     let data = scanResult.split("/send?");
-    if (data[0] === publicUrl) {
+    if (data[0] === window.location.origin) {
       let temp = data[1].split("&");
       let amount = temp[0].split("=")[1];
       let recipient = temp[1].split("=")[1];
@@ -315,7 +301,6 @@ class PayCard extends Component {
   async updateRecipientHandler(value) {
     this.setState(async oldState => {
       oldState.paymentVal.payments[0].recipient = value;
-
       return oldState;
     });
   }
@@ -324,31 +309,27 @@ class PayCard extends Component {
   // also sets the variables of these values in the state
   // returns the values it sets, to prevent async weirdness
   validatePaymentInput(paymentVal) {
+    const { balance } = this.props;
     const address = paymentVal.payments[0].recipient;
     const payment = paymentVal.payments[0];
-    const { channelState } = this.props;
     this.setState({ addressError: null, balanceError: null });
-
     let balanceError = null
     let addressError = null
     // validate that the token amount is within bounds
-    if (toBN(payment.amountToken).gt(toBN(channelState.balanceTokenUser))) {
+    if (toBN(payment.amountToken).gt(toBN(balance.channel.token.amount))) {
       balanceError = "Insufficient balance in channel";
     }
     if (toBN(payment.amountToken).lte(toBN(0)) ) {
       balanceError = "Please enter a payment amount above 0";
     }
-
     // validate recipient is valid address OR the empty address
     // recipient address can be empty
     const isLink = paymentVal.payments[0].type === "PT_LINK";
     const isValidRecipient = isHexString(address) && arrayify(address).length === 20 &&
-      (isLink ? address === emptyAddress : address !== emptyAddress);
-
+      (isLink ? address === AddressZero : address !== AddressZero);
     if (!isValidRecipient) {
       addressError = address + " is an invalid address";
     }
-
     // linked payments also have a maximum enforced
     if (isLink && toBN(payment.amountToken).gt(LINK_LIMIT)) {
       // balance error here takes lower precendence than preceding
@@ -356,62 +337,46 @@ class PayCard extends Component {
       balanceError = balanceError || "Linked payments are capped at $10.";
     }
     this.setState({ balanceError, addressError });
-
     return { balanceError, addressError };
   }
 
   async linkHandler() {
-    const { connext } = this.props;
+    const { channel } = this.props;
     const { paymentVal } = this.state;
-
-    // TODO: remove!
-    const address = paymentVal.payments[0].recipient;
-    if (address && ADMIN_SECRET && address === ADMIN_SECRET) {
-      this.setState({ multipleLinks: true })
-      return
-    } else {
-      this.setState({ multipleLinks: false })
-    }
-
     // generate secret, set type, and set
     // recipient to empty address
     const payment = {
       ...paymentVal.payments[0],
       type: "PT_LINK",
-      recipient: emptyAddress,
+      recipient: AddressZero,
       meta: {
-        secret: connext.generateSecret()
+        secret: channel.generateSecret()
       }
     };
-
     const updatedPaymentVal = {
       ...paymentVal,
       payments: [payment]
     };
-
     // unconditionally set state
     this.setState({
       paymentVal: updatedPaymentVal
     });
-
     // check for validity of input fields
     const { balanceError, addressError } = this.validatePaymentInput(
       updatedPaymentVal
     );
-
     if (addressError || balanceError) {
       return;
     }
-
     // send payment
     await this._sendPayment(updatedPaymentVal);
   }
 
   async paymentHandler() {
-    const { connext } = this.props;
+    const { channel } = this.props;
     const { paymentVal } = this.state;
     // check if the recipient needs collateral
-    const needsCollateral = await connext.recipientNeedsCollateral(
+    const needsCollateral = await channel.recipientNeedsCollateral(
       paymentVal.payments[0].recipient,
       { amountWei: paymentVal.payments[0].amountWei, amountToken: paymentVal.payments[0].amountToken },
     );
@@ -424,7 +389,6 @@ class PayCard extends Component {
     if (addressError || balanceError) {
       return;
     }
-
     // needs collateral can indicate that the recipient does
     // not have a channel, or that it does not have current funds
     // in either case, you need to send a failed payment
@@ -447,24 +411,21 @@ class PayCard extends Component {
         // send payment via fall through
       }
     }
-
     // send payment
     await this._sendPayment(paymentVal);
   }
 
   async collateralizeRecipient(paymentVal) {
-    const { connext } = this.props;
+    const { channel } = this.props;
     // do not collateralize on pt link payments
     if (paymentVal.payments[0].type === "PT_LINK") {
       return;
     }
-
     // collateralize otherwise
     this.setState({
       paymentState: PaymentStates.Collateralizing,
       showReceipt: true
     });
-
     // collateralize by sending payment
     const err = await this._sendPayment(paymentVal, true);
     // somehow it worked???
@@ -475,7 +436,6 @@ class PayCard extends Component {
       });
       return CollateralStates.PaymentMade;
     }
-
     // call to send payment failed, monitor collateral
     // watch for confirmation on the recipients side
     // of the channel for 20s
@@ -483,7 +443,7 @@ class PayCard extends Component {
     await interval(
       async (iteration, stop) => {
         // returns null if no collateral needed
-        needsCollateral = await connext.recipientNeedsCollateral(
+        needsCollateral = await channel.recipientNeedsCollateral(
           paymentVal.payments[0].recipient,
           paymentVal.payments[0].amount,
         );
@@ -494,7 +454,6 @@ class PayCard extends Component {
       5000,
       { iterations: 20 }
     );
-
     if (needsCollateral) {
       this.setState({
         showReceipt: true,
@@ -502,84 +461,13 @@ class PayCard extends Component {
       });
       return CollateralStates.Timeout;
     }
-
     return CollateralStates.Success;
-  }
-
-  // TODO: remove from admin modal
-  // TODO: logging... lol
-  async generateMultipleLinks() {
-    const { channelState, connext } = this.props;
-    const { paymentVal, count } = this.state;
-    if (!paymentVal || !count) {
-      console.warn("Error finding count or paymentVal in state:", this.state)
-      return
-    }
-
-    if (!channelState || !connext) {
-      console.warn("Error finding channelState or connext in props:", this.props)
-      return
-    }
-
-    // get only the amount from the payment
-    const amountToken = toBN(paymentVal.payments[0].amountToken)
-    // if balance < count * amountToken, err
-    console.log('******* count', count)
-    console.log('******* amountToken', amountToken.toString())
-    console.log('******* balanceTokenUser', channelState.balanceTokenUser.toString())
-    console.log('******* mul', toBN(count).mul(amountToken).toString())
-    if (toBN(count).mul(amountToken).gt(toBN(channelState.balanceTokenUser))) {
-      console.error("Insufficient funds for count * amountToken purchase value")
-      return
-    }
-    // generate payments in loop for buy
-    // all payments will have unique secrets, but the same
-    // denominated value
-    let payments = []
-    let i = 0
-    while (i < count) {
-      payments.push({
-        recipient: emptyAddress,
-        amountToken: amountToken.toString(),
-        amountWei: "0",
-        type: "PT_LINK",
-        meta: { secret: connext.generateSecret() }
-      })
-      i++
-    }
-    const purchase = {
-      meta: { reason: `Multiple link generation by ${channelState.user}`},
-      payments,
-    }
-
-    // try to purchase
-    try {
-      const { purchaseId } = await connext.buy(purchase)
-      console.log('************************************')
-      console.log(`Successful creation of multiple linked payments! Prepare for logging......`)
-      console.log(`********* purchaseId: ${purchaseId}`)
-      console.log(`********* link overview:`)
-      console.log(`amountToken in wei on link:`, amountToken.toString())
-      console.log(`total links in purchase:`, purchase.payments.length)
-      console.log('************************************')
-      console.log('************************************')
-      console.log('Here are your secrets:')
-      console.log(payments.map(p => p.meta.secret).toString())
-      console.log('************************************')
-      console.log('************************************')
-      console.log('Here is the submitted purchase:')
-      console.log(JSON.stringify(purchase, null, 2))
-    } catch (e) {
-      console.error("Not successful at making linked payments, please try again, or bug Layne on discord :)")
-      return
-    }
   }
 
   // returns a string if there was an error, null
   // if successful
   async _sendPayment(paymentVal, isCollateralizing = false) {
-    const { connext } = this.props;
-
+    const { channel } = this.props;
     const { balanceError, addressError } = this.validatePaymentInput(
       paymentVal
     );
@@ -590,12 +478,11 @@ class PayCard extends Component {
     if (balanceError || addressError) {
       return;
     }
-
     // collateralizing is handled before calling this send payment fn
     // by either payment or link handler
     // you can call the appropriate type here
     try {
-      await connext.buy(paymentVal);
+      await channel.buy(paymentVal);
       if (paymentVal.payments[0].type === "PT_LINK") {
         // automatically route to redeem card
         const secret = paymentVal.payments[0].meta.secret;
@@ -698,7 +585,7 @@ class PayCard extends Component {
             label="Recipient Address"
             type="string"
             value={
-              paymentVal.payments[0].recipient === emptyAddress
+              paymentVal.payments[0].recipient === AddressZero
                 ? ""
                 : paymentVal.payments[0].recipient
             }
@@ -755,43 +642,6 @@ class PayCard extends Component {
             history={this.props.history}
           />
         </Modal>
-        {/* TODO: remove modal */}
-        <Dialog
-          id="multipleLinks"
-          open={this.state.multipleLinks}
-          onClose={() => this.setState({ multipleLinks: false })}
-        >
-          <DialogContent>
-            <TextField
-              id="outlined-number"
-              label="Number of Links"
-              value={this.state.count || 0}
-              type="number"
-              margin="normal"
-              variant="outlined"
-              onChange={evt => this.updateCount(evt.target.value)}
-            />
-            <TextField
-              id="outlined-number"
-              label="Amount Dai in Link"
-              value={displayVal}
-              type="number"
-              margin="normal"
-              variant="outlined"
-              onChange={evt => this.updatePaymentHandler(evt.target.value)}
-            />
-            <DialogActions>
-              <Button
-                className={classes.button}
-                variant="contained"
-                onClick={() => this.generateMultipleLinks()}
-              >
-                Send
-                <SendIcon style={{ marginLeft: "5px" }} />
-              </Button>
-            </DialogActions>
-          </DialogContent>
-        </Dialog>
         <Grid item xs={12}>
           <Grid
             container

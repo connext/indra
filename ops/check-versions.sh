@@ -2,7 +2,7 @@
 set -e
 
 echo "module: project root"
-npm outdated | awk '$3 != $4'
+npm outdated -D | tail -n +2 | awk '$3 != $4'
 echo
 
 cd modules

@@ -11,8 +11,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@counterfactual/contracts": "0.1.8",
-    "@counterfactual/types": "0.0.24",
+    "@counterfactual/contracts": "0.1.9",
+    "@counterfactual/types": "0.0.25",
     "chai": "4.2.0",
     "dotenv": "8.0.0",
     "eth-gas-reporter": "0.2.6",
