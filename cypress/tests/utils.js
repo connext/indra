@@ -1,10 +1,12 @@
 const eth = require('ethers')
-// const tokenAbi = require('human-standard-token-abi')
+const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
+const addressBook = require('../../address-book.json')
 
 const provider = new eth.providers.JsonRpcProvider(Cypress.env('provider'))
 const wallet = eth.Wallet.fromMnemonic(Cypress.env('mnemonic')).connect(provider)
-const origin = Cypress.env('publicUrl').substring(Cypress.env('publicUrl').indexOf('://')+3)
-// const token = new eth.Contract(Cypress.env('tokenAddress'), tokenAbi, wallet)
+const origin = Cypress.env('publicUrl').substring(Cypress.env('publicUrl').indexOf('://')+3);
+const tokenAddress = addressBook['4447'].DolphinCoin.address.toLowerCase();
+const token = new eth.Contract(tokenAddress, tokenArtifacts.abi, wallet);
 
 const gasMoney = '0.025'
 
@@ -163,7 +165,6 @@ my.deposit = (value) => {
   }))
 }
 
-/*
 my.depositToken = (value) => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     my.getAddress().then(address => {
@@ -181,7 +182,6 @@ my.depositToken = (value) => {
     })
   }))
 }
-*/
 
 my.linkPay = (value) => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {

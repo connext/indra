@@ -15,6 +15,9 @@ describe('Daicard', () => {
     it(`Should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth)
     })
+    it.skip(`Should accept a token deposit to displayed address`, () => {
+      my.depositToken(depositToken)
+    })
   })
 
   describe('Send', (done) => {
