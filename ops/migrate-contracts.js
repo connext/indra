@@ -204,7 +204,7 @@ const sendGift = async (address, token) => {
 
   // If on testnet, deploy a token contract too
   if (chainId === ganacheId) {
-    token = await deployContract('DolphinCoin', tokenArtifacts, [])
+    token = await deployContract('Token', tokenArtifacts, [])
   }
 
   ////////////////////////////////////////

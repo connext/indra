@@ -72,7 +72,7 @@ export class ConfigService {
     const processCfAddressBook = (addressBook: any): any => {
       const ethAddresses = {} as any;
       for (const contract of addressBook) {
-        ethAddresses[contract.contractName] = contract.address;
+        ethAddresses[contract.contractName] = contract.address.toLowerCase();
       }
       if (ethAddresses.Migrations) delete ethAddresses.Migrations;
       return ethAddresses;
@@ -83,9 +83,15 @@ export class ConfigService {
     if (chainId === "42") ethAddresses = processCfAddressBook(chain42AddressBook);
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[chainId][contract].address;
+      ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
     });
     return ethAddresses as NetworkContext;
+  }
+
+  async getTokenAddress(): Promise<string> {
+    const chainId = (await this.getEthNetwork()).chainId.toString();
+    const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
+    return ethAddressBook[chainId].Token.address.toLowerCase();
   }
 
   async getDefaultApps(): Promise<DefaultApp[]> {

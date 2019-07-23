@@ -187,6 +187,25 @@ class App extends React.Component {
     const minWei = minDeposit.toWEI().floor();
     const maxWei = maxDeposit.toWEI().floor();
 
+    if (bnBalance.token.gt(eth.constants.Zero)) {
+      const tokenDepositParams = {
+        amount: bnBalance.token.toString(),
+        assetId: process.env.REACT_APP_TOKEN_ADDRESS,
+      };
+      const channelState = await channel.getChannel();
+      console.log(
+        `Attempting to deposit ${tokenDepositParams.amount} tokens into channel: ${JSON.stringify(
+          channelState,
+          null,
+          2,
+        )}...`,
+      );
+      this.setPending({ type: "deposit", complete: false, closed: false });
+      const result = await channel.deposit(tokenDepositParams);
+      this.setPending({ type: "deposit", complete: true, closed: false });
+      console.log(`Successfully deposited! Result: ${JSON.stringify(result, null, 2)}`);
+    }
+
     if (bnBalance.ether.gt(minWei)) {
       if (bnBalance.ether.gt(maxWei)) {
         console.log(
@@ -214,27 +233,6 @@ class App extends React.Component {
       console.log(`Successfully deposited! Result: ${JSON.stringify(result, null, 2)}`);
     }
 
-    if (bnBalance.token.gt(eth.constants.Zero)) {
-      const tokenDepositParams = {
-        amount: bnBalance.token.toString(),
-        assetId: process.env.REACT_APP_TOKEN_ADDRESS,
-      };
-
-      const channelState = await channel.getChannel();
-      console.log(
-        `Attempting to deposit ${tokenDepositParams.amount} tokens into channel: ${JSON.stringify(
-          channelState,
-          null,
-          2,
-        )}...`,
-      );
-
-      this.setPending({ type: "deposit", complete: false, closed: false });
-      const result = await channel.deposit(tokenDepositParams);
-      this.setPending({ type: "deposit", complete: true, closed: false });
-
-      console.log(`Successfully deposited! Result: ${JSON.stringify(result, null, 2)}`);
-    }
   }
 
   async autoSwap() {
