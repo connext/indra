@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { IsEthAddress } from "../validator/isEthAddress";
@@ -25,7 +25,7 @@ export class Channel {
   @Column("boolean", { default: false })
   available!: boolean;
 
-  @ManyToOne((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
-  @JoinColumn()
-  paymentProfile!: PaymentProfile;
+  @ManyToMany((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
+  @JoinTable()
+  paymentProfiles!: PaymentProfile[];
 }

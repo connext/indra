@@ -7,6 +7,7 @@ import {
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
+import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { NodeProviderId } from "../constants";
@@ -76,16 +77,25 @@ export class ChannelService implements OnModuleInit {
     return depositResponse!.result as NodeTypes.DepositResult;
   }
 
-  async requestCollateral(userPubId: string): Promise<NodeTypes.DepositResult | undefined> {
+  async requestCollateral(
+    userPubId: string,
+    tokenAddress: string = AddressZero,
+  ): Promise<NodeTypes.DepositResult | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
-    const profile = await this.channelRepository.getPaymentProfileForChannel(userPubId);
+    const profile = await this.channelRepository.getPaymentProfileForChannelAndToken(
+      userPubId,
+      tokenAddress,
+    );
 
     const freeBalanceResponse = await this.node.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
         method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-        params: { multisigAddress: channel.multisigAddress } as NodeTypes.GetFreeBalanceStateParams,
+        params: {
+          multisigAddress: channel.multisigAddress,
+          tokenAddress,
+        } as NodeTypes.GetFreeBalanceStateParams,
       }),
     );
 
@@ -93,12 +103,14 @@ export class ChannelService implements OnModuleInit {
     const freeBalanceAddress = freeBalanceAddressFromXpub(this.node.publicIdentifier);
     const nodeFreeBalance = freeBalance[freeBalanceAddress];
 
-    if (nodeFreeBalance.lt(profile.minimumMaintainedCollateralWei)) {
-      const amountDeposit = profile.amountToCollateralizeWei.sub(nodeFreeBalance);
-      logger.log(`Collateralizing ${userPubId} with ${amountDeposit.toString()}`);
+    if (nodeFreeBalance.lt(profile.minimumMaintainedCollateral)) {
+      const amountDeposit = profile.amountToCollateralize.sub(nodeFreeBalance);
+      logger.log(
+        `Collateralizing ${userPubId} with ${amountDeposit.toString()}, token ${tokenAddress}`,
+      );
       return this.deposit(channel.multisigAddress, amountDeposit, true);
     }
-    logger.log(`User ${userPubId} does not need additional collateral`);
+    logger.log(`User ${userPubId} does not need additional collateral for token ${tokenAddress}`);
     return undefined;
   }
 
