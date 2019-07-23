@@ -74,14 +74,12 @@ describe("ChannelService", () => {
     let profile = new PaymentProfile();
     profile.amountToCollateralize = toBig(2000);
     profile.minimumMaintainedCollateral = toBig(600);
-    profile.channels = [channel!];
     profile.tokenAddress = AddressZero;
     await channelRepository.addPaymentProfileToChannel(userXpub, profile);
 
     profile = new PaymentProfile();
     profile.amountToCollateralize = toBig(3000);
     profile.minimumMaintainedCollateral = toBig(1000);
-    profile.channels = [channel!];
     profile.tokenAddress = tokenAddress;
     await channelRepository.addPaymentProfileToChannel(userXpub, profile);
 
