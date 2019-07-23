@@ -1,3 +1,4 @@
+import { NotFoundException } from "@nestjs/common";
 import { EntityRepository, Repository } from "typeorm";
 
 import { defaultPaymentProfile } from "../constants";
@@ -24,6 +25,12 @@ export class ChannelRepository extends Repository<Channel> {
       .leftJoinAndSelect("channel.paymentProfile", "paymentProfile")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .getOne();
+
+    if (!channel) {
+      throw new NotFoundException(
+        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
+      );
+    }
 
     if (!channel.paymentProfile) {
       return defaultPaymentProfile;
