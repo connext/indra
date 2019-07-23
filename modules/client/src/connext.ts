@@ -237,8 +237,8 @@ export abstract class ConnextChannel {
     return await this.internal.node.unsubscribeFromSwapRates(from, to);
   };
 
-  public requestCollateral = async (): Promise<void> => {
-    return await this.internal.node.requestCollateral();
+  public requestCollateral = async (tokenAddress: string): Promise<void> => {
+    return await this.internal.node.requestCollateral(tokenAddress);
   };
 
   ///////////////////////////////////

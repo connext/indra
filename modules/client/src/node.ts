@@ -27,7 +27,7 @@ export interface INodeApiClient {
   createChannel(): Promise<CreateChannelResponse>;
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): BigNumber;
-  requestCollateral(): Promise<void>;
+  requestCollateral(tokenAddress: string): Promise<void>;
   subscribeToSwapRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
   unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
 }
@@ -103,9 +103,12 @@ export class NodeApiClient implements INodeApiClient {
 
   // FIXME: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(): Promise<void> {
+  public async requestCollateral(tokenAddress: string): Promise<void> {
     try {
-      const channelRes = await this.send(`channel.request-collateral.${this.userPublicIdentifier}`);
+      const channelRes = await this.send(
+        `channel.request-collateral.${this.userPublicIdentifier}`,
+        tokenAddress,
+      );
       return channelRes;
     } catch (e) {
       // FIXME: node should return once deposit starts
