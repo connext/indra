@@ -96,8 +96,7 @@ export class ChannelService implements OnModuleInit {
     if (nodeFreeBalance.lt(profile.minimumMaintainedCollateralWei)) {
       const amountDeposit = profile.amountToCollateralizeWei.sub(nodeFreeBalance);
       logger.log(`Collateralizing ${userPubId} with ${amountDeposit.toString()}`);
-      // TODO: takes a long time to resolve and times out on client
-      return await this.deposit(channel.multisigAddress, amountDeposit, true);
+      return this.deposit(channel.multisigAddress, amountDeposit, true);
     }
     logger.log(`User ${userPubId} does not need additional collateral`);
     return undefined;

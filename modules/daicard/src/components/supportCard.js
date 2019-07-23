@@ -8,13 +8,33 @@ const styles = theme => ({
   }
 });
 
+function channelRender(channelState) {
+  return Object.entries(channelState).map(([key, value], i) => {
+    return (
+      <div>
+        <span>
+          {key}: {value}{" "}
+        </span>
+      </div>
+    );
+  });
+}
+
 class SupportCard extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      error: null
+      error: null,
+      channelState: null,
     };
+  }
+
+
+  async componentDidMount() {
+    this.setState({
+      channelState: await this.props.channel.getChannel(),
+    });
   }
 
   openDiscord = () => {
@@ -24,7 +44,7 @@ class SupportCard extends Component {
   };
 
   render() {
-    const { channelState } = this.props;
+    const { channelState } = this.state;
 
     const exitableState =
       channelState &&
@@ -97,15 +117,3 @@ class SupportCard extends Component {
 }
 
 export default withStyles(styles)(SupportCard);
-
-function channelRender(channelState) {
-  return Object.entries(channelState).map(([key, value], i) => {
-    return (
-      <div>
-        <span>
-          {key}: {value}{" "}
-        </span>
-      </div>
-    );
-  });
-}

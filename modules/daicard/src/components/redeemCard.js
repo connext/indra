@@ -16,18 +16,17 @@ import {
   ErrorOutline as ErrorIcon,
   SaveAlt as ReceiveIcon,
 } from "@material-ui/icons";
-import { ethers as eth } from "ethers";
+import { Zero } from "ethers/constants";
+import { isHexString, formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import queryString from "query-string";
 
-import { toBN } from "../utils";
+import { Currency, toBN } from "../utils";
 import MySnackbar from "../components/snackBar";
 
 import { QRGenerate } from "./qrCode";
-
-const { isHexString, formatEther, parseEther } = eth.utils
 
 const styles = theme => ({
   icon: {
@@ -47,7 +46,7 @@ const RedeemPaymentStates = {
   Success: 7,
 }
 
-function getTitle (redeemPaymentState) {
+const getTitle = (redeemPaymentState) => {
   let title
   switch (redeemPaymentState) {
     case RedeemPaymentStates.IsSender:
@@ -97,11 +96,7 @@ const RedeemConfirmationDialog = props => (
       }}
       justify="center"
     >
-      {RedeemPaymentDialogContent(
-        props.redeemPaymentState,
-        props.amount,
-        props.connextState,
-      )}
+      {RedeemPaymentDialogContent(props.redeemPaymentState, props.amount)}
       {props.redeemPaymentState === RedeemPaymentStates.Collateralizing ? (
         <></>
       ) : (
@@ -159,8 +154,7 @@ const RedeemCardContent = (props) => {
           </Grid>
         </Grid>
       )
-      const urlErrs = validateUrl()
-      warnings = ["Make sure to copy this link!"].concat(urlErrs)
+      warnings = ["Make sure to copy this link!"].concat(validateUrl())
       break
     case RedeemPaymentStates.PaymentAlreadyRedeemed:
       icon = (<ErrorIcon className={classes.icon} />)
@@ -190,7 +184,6 @@ const RedeemCardContent = (props) => {
       icon = (<CircularProgress className={classes.icon} />)
       break
   }
-
   const finalWarnings = warnings ? warnings.map((w, index) => {
     return (
       <Typography key={index} variant="body1" style={{margin: "1em"}}>
@@ -198,7 +191,6 @@ const RedeemCardContent = (props) => {
       </Typography>
     )
   }) : warnings
-
   return (
     <div>
     <Grid container>
@@ -214,7 +206,7 @@ const RedeemCardContent = (props) => {
   )
 }
 
-function RedeemPaymentDialogContent(redeemPaymentState, amount, connextState) {
+const RedeemPaymentDialogContent = (redeemPaymentState, amount) => {
   switch (redeemPaymentState) {
     case RedeemPaymentStates.Timeout:
       return (
@@ -260,7 +252,7 @@ function RedeemPaymentDialogContent(redeemPaymentState, amount, connextState) {
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Amount: {this.props.balance.channel.ether.toETH().toString()}
+              Amount: {Currency.DAI(amount).toETH().toString()}
             </DialogContentText>
           </DialogContent>
         </Grid>
@@ -273,7 +265,6 @@ function RedeemPaymentDialogContent(redeemPaymentState, amount, connextState) {
 class RedeemCard extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
       secret: null,
       redeemPaymentState: RedeemPaymentStates.Redeeming,
@@ -292,10 +283,9 @@ class RedeemCard extends Component {
       secret: query.secret,
       amount: {
         amountToken: parseEther(query.amountToken).toString(),
-        amountWei: "0" // TODO: add wei
+        amountWei: "0"
       }
     });
-
     // set state vars if they exist
     if (location.state && location.state.isConfirm) {
       // TODO: test what happens if not routed with isConfirm
@@ -305,14 +295,8 @@ class RedeemCard extends Component {
       });
       return;
     }
-
     // set status to redeeming on mount if not sender
     this.setState({ redeemPaymentState: RedeemPaymentStates.Redeeming });
-
-    this.redeemPoller()
-  }
-
-  async redeemPoller() {
     let { redeemPaymentState } = this.state
     await interval(
       async (iteration, stop) => {
@@ -327,79 +311,12 @@ class RedeemCard extends Component {
     )
   }
 
-  generateQrUrl(secret, amount) {
-    const { publicUrl } = this.props;
-    // TODO: add wei
-    const url = `${publicUrl}/redeem?secret=${
-      secret ? secret : ""
-    }&amountToken=${amount ? formatEther(amount.amountToken) : "0"}`;
-    return url;
-  }
-
-  async collateralizeChannel() {
-    const {
-      amount,
-      redeemPaymentState,
-    } = this.state;
-    const { connext, channelState, connextState } = this.props;
-    if (!connext || !channelState || !connextState) {
-      return;
-    }
-
-    // only proceed if status is collateralizing
-    if (redeemPaymentState !== RedeemPaymentStates.Collateralizing) {
-      console.log("Incorrect payment state, expected Collateralizing, got", RedeemPaymentStates[redeemPaymentState]);
-      this.setState({ redeemPaymentState: RedeemPaymentStates.OtherError })
-      return;
-    }
-
-    let hasCollateral = false
-    await interval(
-      async (iteration, stop) => {
-        // check if the channel has sufficient collateral
-        // if you are awaiting a collateral request, return
-        if (connextState.runtime.awaitingOnchainTransaction) {
-          return
-        }
-        // eval channel collateral
-        hasCollateral = toBN(channelState.balanceTokenHub).gte(
-          toBN(amount.amountToken)
-        )
-
-        if (hasCollateral || iteration > 30) {
-          stop();
-        }
-      },
-      5000,
-      { iterations: 30 }
-    );
-
-    // still needs collateral to facilitate payment, exit
-    if (!hasCollateral) {
-      this.setState({
-        showReceipt: true,
-        redeemPaymentStates: RedeemPaymentStates.Timeout,
-      });
-    }
-
-    this.setState({
-      showReceipt: true,
-      redeemPaymentStates: RedeemPaymentStates.Redeeming,
-    });
-  }
-
   async redeemPayment() {
-    const {
-      secret,
-      purchaseId,
-      amount,
-      redeemPaymentState,
-    } = this.state;
-    const { connext, channelState, connextState } = this.props;
-    if (!connext || !channelState || !connextState) {
+    const { secret, purchaseId, redeemPaymentState } = this.state;
+    const { channel } = this.props;
+    if (!channel) {
       return;
     }
-
     // only proceed if status is redeeming
     if (redeemPaymentState !== RedeemPaymentStates.Redeeming) {
       console.log("Incorrect payment state, expected Redeeming, got", Object.keys(RedeemPaymentStates)[redeemPaymentState]);
@@ -408,7 +325,6 @@ class RedeemCard extends Component {
       })
       return;
     }
-
     if (!secret) {
       console.log("No secret detected, cannot redeem payment.");
       this.setState({ 
@@ -417,11 +333,9 @@ class RedeemCard extends Component {
       })
       return;
     }
-
-    // user is not payor, channel has collateral, can try to redeem payment
     try {
       if (!purchaseId) {
-        const updated = await connext.redeem(secret);
+        const updated = await channel.redeem(secret);
         // make sure hub isnt silently failing by returning null purchase id
         // as it processes collateral
         if (!updated.purchaseId || !updated.amount) {
@@ -429,7 +343,6 @@ class RedeemCard extends Component {
           this.setState({ redeemPaymentState: RedeemPaymentStates.Redeeming })
           return;
         }
-
         this.setState({
           purchaseId: updated.purchaseId,
           amount: updated.amount,
@@ -438,8 +351,7 @@ class RedeemCard extends Component {
         });
       }
     } catch (e) {
-      // known potential failures: not collateralized, or
-      // already redeemed
+      // known potential failure: already redeemed or channel not available
       if (e.message.indexOf("Payment has been redeemed") !== -1) {
         this.setState({ 
           // red: true, 
@@ -448,18 +360,10 @@ class RedeemCard extends Component {
         });
         return;
       }
-
-      // check if the channel has collateral, otherwise display loading
-      if (
-        toBN(channelState.balanceTokenHub).lt(
-          toBN(amount.amountToken))
-        ) {
-        // channel does not have collateral
-        this.setState({ redeemPaymentState: RedeemPaymentStates.Collateralizing })
-        await this.collateralizeChannel();
+      if (!(await channel.getChannel()).available) {
+        console.warn(`Channel not available yet.`);
         return;
       }
-
       this.setState({ 
         redeemPaymentState: RedeemPaymentStates.OtherError,
         showReceipt: true,
@@ -467,24 +371,34 @@ class RedeemCard extends Component {
     }
   }
 
-  closeModal = () => {
+  generateQrUrl(secret, amount) {
+    const url = `${window.location.origin}/redeem?secret=${
+      secret ? secret : ""
+    }&amountToken=${amount ? formatEther(amount.amountToken) : "0"}`;
+    return url;
+  }
+
+  closeModal() {
     this.setState({ showReceipt: false })
   }
 
-  closeSnackBar = () => {
+  closeSnackBar() {
     this.setState({ copied: false })
   }
 
-  validateUrl = () => {
+  handleCopy() {
+    this.setState({ copied: true })
+  }
+
+  validateUrl() {
     // called by the sender of the redeemed payment as
     // they click to copy. should display a warning text
     // if the secret or if the amount token is not valid
     // or does not correspond to the generated URL
     const { secret, amount, copied } = this.state
-    const { connextState } = this.props
     let errs = []
     // state not yet set
-    if (!connextState || !secret || !amount) {
+    if (!secret || !amount) {
       return errs
     }
     // valid secret
@@ -498,35 +412,22 @@ class RedeemCard extends Component {
       return errs
     }
     const token = toBN(amount.amountToken)
-    if (token.lt(eth.constants.Zero)) {
+    if (token.lt(Zero)) {
       errs.push("Copied token balance is negative")
     }
     // print amount for easy confirmation
     // TODO: display more helpful messages here
     if (copied) {
-      errs.push(`Amount: ${this.props.balance.channel.ether.toETH().toString()}`)
+      errs.push(`Amount: ${amount}`)
       errs.push(`Secret: ${secret.substr(0, 10)}...`)
     }
     
     return errs
   }
 
-  handleCopy = () => {
-    this.setState({ copied: true })
-  }
-
   render() {
-    const {
-      secret,
-      showReceipt,
-      amount,
-      redeemPaymentState,
-      copied,
-    } = this.state;
-
-    const { classes, connextState, history } = this.props;
-    const url = this.generateQrUrl(secret, amount);
-
+    const { classes, history } = this.props;
+    const { secret, showReceipt, amount, redeemPaymentState, copied } = this.state;
     return (
       <Grid>
       <Grid
@@ -547,6 +448,7 @@ class RedeemCard extends Component {
         onClose={this.closeSnackBar}
         message="Copied!"
       />
+
       <Grid container>
         <Grid item xs={12}>
           <RedeemConfirmationDialog
@@ -554,11 +456,10 @@ class RedeemCard extends Component {
             amount={amount}
             redeemPaymentState={redeemPaymentState}
             history={history}
-            connextState={connextState}
             closeModal={this.closeModal}
           />
         </Grid>
-      
+
         <Grid item xs={12}>
           <ReceiveIcon className={classes.icon} />
         </Grid>
@@ -571,7 +472,7 @@ class RedeemCard extends Component {
 
         <Grid item xs={12} style={{marginTop: "10%"}}>
           <RedeemCardContent
-            url={url}
+            url={this.generateQrUrl(secret, amount)}
             onCopy={this.handleCopy}
             classes={classes}
             validateUrl={this.validateUrl}

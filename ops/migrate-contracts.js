@@ -17,16 +17,17 @@ const coreContracts = [
   "IdentityApp",
   "MinimumViableMultisig",
   "ProxyFactory",
+  "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeETHInterpreter",
   "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter",
 ]
 
 const artifacts = {}
 for (const contract of coreContracts) {
-  artifacts[contract] = require(`@counterfactual/contracts/build/contracts/${contract}.json`)
+  artifacts[contract] = require(`@counterfactual/contracts/build/${contract}.json`)
 }
 for (const contract of appContracts) {
-  artifacts[contract] = require(`../modules/contracts/build/contracts/${contract}.json`)
+  artifacts[contract] = require(`../modules/contracts/build/${contract}.json`)
 }
 
 const { EtherSymbol, Zero } = eth.constants
