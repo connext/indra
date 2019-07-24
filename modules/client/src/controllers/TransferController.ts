@@ -161,12 +161,12 @@ export class TransferController extends AbstractController {
         ],
       },
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: AddressZero,
+      initiatorDepositTokenAddress: assetId,
       intermediaries: [this.connext.nodePublicIdentifier],
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: constants.Zero,
-      responderDepositTokenAddress: AddressZero,
+      responderDepositTokenAddress: assetId,
       timeout: constants.Zero, // TODO: fix, add to app info?
     };
 
