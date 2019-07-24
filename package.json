@@ -55,7 +55,7 @@
 		"class-validator": "0.9.1",
 		"classnames": "2.2.6",
 		"clsx": "1.0.4",
-		"commander": "^2.20.0",
+		"commander": "2.20.0",
 		"concurrently": "4.1.1",
 		"core-js": "3.1.4",
 		"dotenv": "8.0.0",
