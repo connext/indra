@@ -7,6 +7,7 @@ import { AddressZero } from "ethers/constants";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
+import { parseEther } from "ethers/utils";
 
 const program = new commander.Command();
 program.version("0.0.1");
@@ -58,7 +59,7 @@ export function getConnextClient(): connext.ConnextInternal {
 }
 
 async function run(): Promise<void> {
-  await getOrCreateChannel();
+  await getOrCreateChannel(program.assetId);
   await client.subscribeToSwapRates("eth", "dai");
   if (program.assetId) {
     assetId = program.assetId;
@@ -81,7 +82,7 @@ async function run(): Promise<void> {
 
   if (program.requestCollateral) {
     console.log(`Requesting collateral...`);
-    await client.requestCollateral(program.assetId);
+    await client.requestCollateral(program.assetId || AddressZero);
   }
 
   if (program.transfer) {
@@ -134,7 +135,7 @@ async function run(): Promise<void> {
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
 
-async function getOrCreateChannel(): Promise<void> {
+async function getOrCreateChannel(assetId?: string): Promise<void> {
   await pgServiceFactory.connectDb();
 
   const connextOpts = {
@@ -175,6 +176,19 @@ async function getOrCreateChannel(): Promise<void> {
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
   }
 
+  await client.addPaymentProfile({
+    amountToCollateralize: parseEther("0.1").toString(),
+    minimumMaintainedCollateral: parseEther("0.01").toString(),
+    tokenAddress: AddressZero,
+  });
+
+  if (assetId) {
+    await client.addPaymentProfile({
+      amountToCollateralize: parseEther("0.1").toString(),
+      minimumMaintainedCollateral: parseEther("0.01").toString(),
+      tokenAddress: assetId,
+    });
+  }
   registerClientListeners();
 }
 
