@@ -212,6 +212,7 @@ const sendGift = async (address, token) => {
 
   if (chainId === ganacheId) {
     await sendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address, token)
+    await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token)
     for (const botMnemonic of botMnemonics) {
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token)
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address, token)
