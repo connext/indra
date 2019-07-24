@@ -53,8 +53,7 @@ export class ChannelService implements OnModuleInit {
   async deposit(
     multisigAddress: string,
     amount: BigNumber,
-    notifyCounterparty: boolean = false,
-    tokenAddress?: string,
+    tokenAddress: string = AddressZero,
   ): Promise<NodeTypes.DepositResult> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
@@ -69,13 +68,12 @@ export class ChannelService implements OnModuleInit {
         params: {
           amount,
           multisigAddress,
-          notifyCounterparty,
           tokenAddress,
         } as NodeTypes.DepositParams,
       }),
     );
-    logger.log(`depositResponse.result: ${JSON.stringify(depositResponse!.result)}`);
-    return depositResponse!.result as NodeTypes.DepositResult;
+    logger.log(`depositResponse.result: ${JSON.stringify(depositResponse!.result.result)}`);
+    return depositResponse!.result.result as NodeTypes.DepositResult;
   }
 
   async requestCollateral(
@@ -88,19 +86,7 @@ export class ChannelService implements OnModuleInit {
       tokenAddress,
     );
 
-    const freeBalanceResponse = await this.node.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-        params: {
-          multisigAddress: channel.multisigAddress,
-          tokenAddress,
-        } as NodeTypes.GetFreeBalanceStateParams,
-      }),
-    );
-
-    const freeBalance = freeBalanceResponse.result.result as NodeTypes.GetFreeBalanceStateResult;
+    const freeBalance = await this.getFreeBalance(userPubId, channel.multisigAddress, tokenAddress);
     const freeBalanceAddress = freeBalanceAddressFromXpub(this.node.publicIdentifier);
     const nodeFreeBalance = freeBalance[freeBalanceAddress];
 
@@ -109,7 +95,7 @@ export class ChannelService implements OnModuleInit {
       logger.log(
         `Collateralizing ${userPubId} with ${amountDeposit.toString()}, token ${tokenAddress}`,
       );
-      return this.deposit(channel.multisigAddress, amountDeposit, true);
+      return this.deposit(channel.multisigAddress, amountDeposit, tokenAddress);
     }
     logger.log(`User ${userPubId} does not need additional collateral for token ${tokenAddress}`);
     return undefined;
@@ -126,6 +112,41 @@ export class ChannelService implements OnModuleInit {
     profile.minimumMaintainedCollateral = toBig(minimumMaintainedCollateral);
     profile.amountToCollateralize = toBig(amountToCollateralize);
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
+  }
+
+  async getFreeBalance(
+    userPubId: string,
+    multisigAddress: string,
+    tokenAddress: string = AddressZero,
+  ): Promise<NodeTypes.GetFreeBalanceStateResult> {
+    try {
+      const freeBalance = await this.node.rpcRouter.dispatch(
+        jsonRpcDeserialize({
+          id: Date.now(),
+          jsonrpc: "2.0",
+          method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+          params: {
+            multisigAddress,
+            tokenAddress,
+          },
+        }),
+      );
+      return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
+    } catch (e) {
+      const error = `No free balance exists for the specified token: ${tokenAddress}`;
+      if (e.message.startsWith(error)) {
+        // if there is no balance, return undefined
+        // NOTE: can return free balance obj with 0s,
+        // but need the nodes free balance
+        // address in the multisig
+        const obj = {};
+        obj[freeBalanceAddressFromXpub(this.node.publicIdentifier)] = new BigNumber(0);
+        obj[freeBalanceAddressFromXpub(userPubId)] = new BigNumber(0);
+        return obj;
+      }
+
+      throw e;
+    }
   }
 
   onModuleInit(): void {
