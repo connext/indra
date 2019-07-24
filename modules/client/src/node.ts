@@ -87,6 +87,7 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
+  // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     try {
       return await this.send(`swap-rate.${from}.${to}`);
