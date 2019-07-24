@@ -117,7 +117,7 @@ const deployContract = async (name, artifacts, args) => {
 
 const sendGift = async (address, token) => {
   const ethGift = '3'
-  const tokenGift = '1000'
+  const tokenGift = '1000000'
   const ethBalance = await wallet.provider.getBalance(address)
   if (ethBalance.eq(Zero)) {
     console.log(`\nSending ${EtherSymbol} ${ethGift} to ${address}`)
@@ -204,13 +204,14 @@ const sendGift = async (address, token) => {
 
   // If on testnet, deploy a token contract too
   if (chainId === ganacheId) {
-    token = await deployContract('DolphinCoin', tokenArtifacts, [])
+    token = await deployContract('Token', tokenArtifacts, [])
   }
 
   ////////////////////////////////////////
   // On testnet, give relevant accounts a healthy starting balance
 
   if (chainId === ganacheId) {
+    await sendGift(wallet.address, token)
     await sendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address, token)
     await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token)
     for (const botMnemonic of botMnemonics) {

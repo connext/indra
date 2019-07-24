@@ -1,15 +1,15 @@
 import { MessagingConfig } from "@connext/messaging";
+import { ContractAddresses, KnownNodeAppNames } from "@connext/types";
 import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
 import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
-import { NetworkContext, OutcomeType } from "@counterfactual/types";
+import { OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
-import * as dotenv from "dotenv";
 import { JsonRpcProvider } from "ethers/providers";
 import { Network as EthNetwork } from "ethers/utils";
 import * as fs from "fs";
 
-import { KnownNodeAppNames, Network } from "../constants";
+import { Network } from "../constants";
 
 type PostgresConfig = {
   database: string;
@@ -33,18 +33,8 @@ type DefaultApp = {
 export class ConfigService {
   private readonly envConfig: { [key: string]: string };
 
-  constructor(filePath?: string) {
-    let fileConfig;
-    try {
-      fileConfig = filePath ? dotenv.parse(fs.readFileSync(filePath)) : {};
-    } catch (e) {
-      console.error(`Error reading dotenv file: ${filePath}`);
-      fileConfig = {};
-    }
-    this.envConfig = {
-      ...fileConfig,
-      ...process.env,
-    };
+  constructor() {
+    this.envConfig = process.env;
   }
 
   get(key: string): string {
@@ -67,12 +57,12 @@ export class ConfigService {
     return ethNetwork;
   }
 
-  async getContractAddresses(): Promise<NetworkContext> {
+  async getContractAddresses(): Promise<ContractAddresses> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
     const processCfAddressBook = (addressBook: any): any => {
       const ethAddresses = {} as any;
       for (const contract of addressBook) {
-        ethAddresses[contract.contractName] = contract.address;
+        ethAddresses[contract.contractName] = contract.address.toLowerCase();
       }
       if (ethAddresses.Migrations) delete ethAddresses.Migrations;
       return ethAddresses;
@@ -83,9 +73,15 @@ export class ConfigService {
     if (chainId === "42") ethAddresses = processCfAddressBook(chain42AddressBook);
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[chainId][contract].address;
+      ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
     });
-    return ethAddresses as NetworkContext;
+    return ethAddresses as ContractAddresses;
+  }
+
+  async getTokenAddress(): Promise<string> {
+    const chainId = (await this.getEthNetwork()).chainId.toString();
+    const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
+    return ethAddressBook[chainId].Token.address.toLowerCase();
   }
 
   async getDefaultApps(): Promise<DefaultApp[]> {

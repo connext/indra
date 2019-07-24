@@ -128,13 +128,15 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     console.log("no channel detected, creating channel..");
     const creationData = await node.createChannel();
     console.log("created channel, transaction:", creationData.transactionHash);
-    const creationEventData: NodeTypes.CreateChannelResult = await new Promise((res, rej) => {
-      const timer = setTimeout(() => rej("Create channel event not fired within 5s"), 5000);
-      cfModule.once(NODE_EVENTS.CREATE_CHANNEL, (data: CreateChannelMessage) => {
-        clearTimeout(timer);
-        res(data.data);
-      });
-    });
+    const creationEventData: NodeTypes.CreateChannelResult = await new Promise(
+      (res: any, rej: any): any => {
+        const timer = setTimeout(() => rej("Create channel event not fired within 5s"), 5000);
+        cfModule.once(NODE_EVENTS.CREATE_CHANNEL, (data: CreateChannelMessage) => {
+          clearTimeout(timer);
+          res(data.data);
+        });
+      },
+    );
     console.log("create channel event data:", JSON.stringify(creationEventData, null, 2));
     multisigAddress = creationEventData.multisigAddress;
   } else {
@@ -226,11 +228,11 @@ export abstract class ConnextChannel {
     return await this.internal.node.createChannel();
   };
 
-  public subscribeToSwapRates = async (from: string, to: string): Promise<any> => {
-    return await this.internal.node.subscribeToSwapRates(from, to, this.opts.store);
+  public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
+    return await this.internal.node.subscribeToSwapRates(from, to, callback);
   };
 
-  public getLatestSwapRate = (from: string, to: string): BigNumber => {
+  public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
     return this.internal.node.getLatestSwapRate(from, to);
   };
 

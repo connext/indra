@@ -1,3 +1,4 @@
+import { KnownNodeAppNames } from "@connext/types";
 import { jsonRpcDeserialize, Node, ProposeMessage } from "@counterfactual/node";
 import {
   AppInstanceInfo,
@@ -6,7 +7,7 @@ import {
 } from "@counterfactual/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 
-import { KnownNodeAppNames, NodeProviderId } from "../constants";
+import { NodeProviderId } from "../constants";
 import { CLogger, registerCfNodeListener } from "../util";
 
 import { AppRegistry } from "./appRegistry.entity";

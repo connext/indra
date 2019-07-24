@@ -12,21 +12,16 @@ export enum Network {
   MAINNET = "mainnet",
 }
 
-export enum KnownNodeAppNames {
-  SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_TRANSFER = "UnidirectionalTransferApp",
-}
-
 // PROVIDERS
-export const NodeProviderId = "NODE";
-export const PostgresProviderId = "POSTGRES";
-export const MessagingProviderId = "MESSAGING";
+export const AppRegistryProviderId = "APP_REGISTRY";
 export const ChannelMessagingProviderId = "CHANNEL_MESSAGING";
 export const ConfigMessagingProviderId = "CONFIG_MESSAGING";
-export const MessagingClientProviderId = "MESSAGING_CLIENT";
-export const SwapRateProviderId = "SWAP_RATE";
 export const MedianizerProviderId = "MEDIANIZER";
-export const AppRegistryProviderId = "APP_REGISTRY";
+export const MessagingClientProviderId = "MESSAGING_CLIENT";
+export const MessagingProviderId = "MESSAGING";
+export const NodeProviderId = "NODE";
+export const PostgresProviderId = "POSTGRES";
+export const SwapRateProviderId = "SWAP_RATE";
 
 // REGEX
 export const EthAddressRegex = /^0x[a-fA-F0-9]{40}$/;

@@ -1,15 +1,16 @@
 import { Module } from "@nestjs/common";
 
 import { ConfigModule } from "../config/config.module";
+import { MessagingModule } from "../messaging/messaging.module";
 import { UserModule } from "../user/user.module";
 
 import { NodeController } from "./node.controller";
-import { messagingProvider, nodeProvider, postgresProvider } from "./node.provider";
+import { nodeProviderFactory, postgresProviderFactory } from "./node.provider";
 
 @Module({
   controllers: [NodeController],
-  exports: [nodeProvider, messagingProvider],
-  imports: [ConfigModule, UserModule],
-  providers: [messagingProvider, nodeProvider, postgresProvider],
+  exports: [nodeProviderFactory],
+  imports: [ConfigModule, MessagingModule, UserModule],
+  providers: [nodeProviderFactory, postgresProviderFactory],
 })
 export class NodeModule {}
