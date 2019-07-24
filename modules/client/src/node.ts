@@ -130,7 +130,7 @@ export class NodeApiClient implements INodeApiClient {
   // PRIVATE
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
-    this.log.info(
+    this.log.debug(
       `Sending request to ${subject} ${
         data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
       }`,
