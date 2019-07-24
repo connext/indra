@@ -15,7 +15,7 @@ describe('Daicard', () => {
     it(`Should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth)
     })
-    it.skip(`Should accept a token deposit to displayed address`, () => {
+    it(`Should accept a token deposit to displayed address`, () => {
       my.depositToken(depositToken)
     })
   })
@@ -32,7 +32,7 @@ describe('Daicard', () => {
             cy.contains('h5', /redeemed successfully/i).should('exist')
             cy.contains('p', payTokens).should('exist')
             my.goHome()
-            cy.resolve(my.getChannelBalance).should('contain', payTokens)
+            cy.resolve(my.getEtherChannelBalance).should('contain', payTokens)
           })
         })
       })
@@ -105,7 +105,7 @@ describe('Daicard', () => {
         my.deposit(depositEth).then(tokensDeposited => {
           my.burnCard()
           my.restoreMnemonic(account.mnemonic)
-          cy.resolve(my.getChannelBalance).should('contain', tokensDeposited)
+          cy.resolve(my.getEtherChannelBalance).should('contain', tokensDeposited)
           my.goToDeposit()
           cy.contains('button', my.addressRegex).invoke('text').should('eql', account.address)
         })
