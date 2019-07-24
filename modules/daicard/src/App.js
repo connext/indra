@@ -125,9 +125,9 @@ class App extends React.Component {
     console.log(` - Token address: ${tokenAddress}`);
     console.log(` - Swap rate: ${swapRate}`)
 
-    channel.subscribeToSwapRates(AddressZero, tokenAddress, (swapRate) => {
-      console.log(`Got swap rate upate: ${this.state.swapRate} -> ${swapRate}`);
-      this.setState({ swapRate });
+    channel.subscribeToSwapRates(AddressZero, tokenAddress, (res) => {
+      console.log(`Got swap rate upate: ${this.state.swapRate} -> ${res.swapRate}`);
+      this.setState({ swapRate: res.swapRate });
     })
 
     this.setState({

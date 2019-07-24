@@ -37,10 +37,9 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
         logger.log(`Dev-mode: using hard coded swap rate: ${this.latestSwapRate}`);
       }
     }
-    // TODO: once the ws subscription is fixed, only broadcast on changes
-    // if (oldRate !== this.latestSwapRate) {
-    this.broadcastRate(); // Only broadcast the rate if it's changed
-    // }
+    if (oldRate !== this.latestSwapRate) {
+      this.broadcastRate(); // Only broadcast the rate if it's changed
+    }
     return this.latestSwapRate;
   }
 
