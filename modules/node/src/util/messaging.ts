@@ -30,7 +30,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
             err: `Error during processor function: ${processor.name}`,
             message: `Error during processor function: ${processor.name}`,
           });
-          logger.error(e);
+          logger.error(JSON.stringify(e, null, 2));
         }
       }
     });
