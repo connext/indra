@@ -1,3 +1,4 @@
+import { KnownNodeAppNames } from "@connext/types";
 import { parseEther } from "ethers/utils";
 
 import { PaymentProfile } from "./paymentProfile/paymentProfile.entity";
@@ -9,11 +10,6 @@ export enum Network {
   ROPSTEN = "ropsten",
   GOERLI = "goerli",
   MAINNET = "mainnet",
-}
-
-export enum KnownNodeAppNames {
-  SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_TRANSFER = "UnidirectionalTransferApp",
 }
 
 // PROVIDERS

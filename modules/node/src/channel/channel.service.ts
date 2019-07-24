@@ -123,7 +123,7 @@ export class ChannelService implements OnModuleInit {
           }
           logger.log(`Channel already exists in database`);
         }
-        logger.log(`Creating new channel from data ${creationData}`);
+        logger.log(`Creating new channel from data ${JSON.stringify(creationData)}`);
         const channel = new Channel();
         channel.userPublicIdentifier = creationData.data.counterpartyXpub;
         channel.nodePublicIdentifier = this.node.publicIdentifier;

@@ -1,15 +1,16 @@
 import { MessagingConfig } from "@connext/messaging";
+import { ContractAddresses, KnownNodeAppNames } from "@connext/types";
 import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
 import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
-import { NetworkContext, OutcomeType } from "@counterfactual/types";
+import { OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import * as dotenv from "dotenv";
 import { JsonRpcProvider } from "ethers/providers";
 import { Network as EthNetwork } from "ethers/utils";
 import * as fs from "fs";
 
-import { KnownNodeAppNames, Network } from "../constants";
+import { Network } from "../constants";
 
 type PostgresConfig = {
   database: string;
@@ -67,7 +68,7 @@ export class ConfigService {
     return ethNetwork;
   }
 
-  async getContractAddresses(): Promise<NetworkContext> {
+  async getContractAddresses(): Promise<ContractAddresses> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
     const processCfAddressBook = (addressBook: any): any => {
       const ethAddresses = {} as any;
@@ -85,7 +86,7 @@ export class ConfigService {
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
       ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
     });
-    return ethAddresses as NetworkContext;
+    return ethAddresses as ContractAddresses;
   }
 
   async getTokenAddress(): Promise<string> {
