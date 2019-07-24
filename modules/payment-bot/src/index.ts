@@ -89,6 +89,7 @@ async function run(): Promise<void> {
     console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
     await client.transfer({
       amount: ethers.utils.parseEther(program.transfer).toString(),
+      assetId: program.assetId || AddressZero,
       recipient: program.counterparty,
     });
     console.log(`Successfully transferred!`);
