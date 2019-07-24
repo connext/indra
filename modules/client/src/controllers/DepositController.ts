@@ -12,7 +12,7 @@ import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
+    const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { assetId, amount } = convert.Deposit("bignumber", params);
     const invalid = await this.validateInputs(assetId, amount);

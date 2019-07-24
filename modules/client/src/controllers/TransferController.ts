@@ -28,9 +28,8 @@ export class TransferController extends AbstractController {
     }
 
     // check that there is sufficient free balance for amount
-    const preTransferBal = (await this.connext.getFreeBalance(assetId))[
-      this.cfModule.ethFreeBalanceAddress
-    ];
+    const freeBal = await this.connext.getFreeBalance(assetId);
+    const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
     // TODO: check if the recipient is the node, and if so transfer without
     // installing an app (is this possible?)
@@ -59,13 +58,13 @@ export class TransferController extends AbstractController {
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
-    const diff = preTransferBal.sub(postTransferBal[this.cfModule.ethFreeBalanceAddress]);
+    const diff = preTransferBal.sub(postTransferBal[this.connext.freeBalanceAddress]);
     if (!diff.eq(amount)) {
       this.log.info(
         "Welp it appears the difference of the free balance before and after " +
           "uninstalling is not what we expected......",
       );
-    } else if (postTransferBal[this.cfModule.ethFreeBalanceAddress].gte(preTransferBal)) {
+    } else if (postTransferBal[this.connext.freeBalanceAddress].gte(preTransferBal)) {
       this.log.info(
         "Free balance after transfer is gte free balance " +
           "before transfer..... That's not great..",
@@ -87,7 +86,7 @@ export class TransferController extends AbstractController {
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
+    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
     const errs = [
       invalidXpub(recipient),
       invalidAddress(assetId),

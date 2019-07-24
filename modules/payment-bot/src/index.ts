@@ -60,7 +60,14 @@ export function getConnextClient(): connext.ConnextInternal {
 
 async function run(): Promise<void> {
   await getOrCreateChannel(program.assetId);
-  await client.subscribeToSwapRates("eth", "dai");
+  await client.subscribeToSwapRates("eth", "dai", (msg: any) => {
+    client.opts.store.set([
+      {
+        key: `${msg.pattern}`,
+        value: msg.data,
+      },
+    ]);
+  });
   await getOrCreateChannel();
   if (program.assetId) {
     assetId = program.assetId;

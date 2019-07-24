@@ -26,7 +26,7 @@ export interface INodeApiClient {
   createChannel(): Promise<CreateChannelResponse>;
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
-  requestCollateral(): Promise<void>;
+  requestCollateral(tokenAddress: string): Promise<void>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
 }

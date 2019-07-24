@@ -44,11 +44,11 @@ export class SwapController extends AbstractController {
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const postSwapToBal = await this.connext.getFreeBalance(toAssetId);
     // TODO is this the right syntax? Waiting on ERC20 merge
-    const diffFrom = preSwapFromBal[this.cfModule.ethFreeBalanceAddress].sub(
-      postSwapFromBal[this.cfModule.ethFreeBalanceAddress],
+    const diffFrom = preSwapFromBal[this.connext.freeBalanceAddress].sub(
+      postSwapFromBal[this.connext.freeBalanceAddress],
     );
-    const diffTo = preSwapToBal[this.cfModule.ethFreeBalanceAddress].sub(
-      postSwapToBal[this.cfModule.ethFreeBalanceAddress],
+    const diffTo = preSwapToBal[this.connext.freeBalanceAddress].sub(
+      postSwapToBal[this.connext.freeBalanceAddress],
     );
     if (!diffFrom.eq(amount) || !diffTo.eq(amount.mul(swapRate))) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
@@ -69,7 +69,7 @@ export class SwapController extends AbstractController {
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const userBal = preSwapFromBal[this.cfModule.ethFreeBalanceAddress];
+    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
     const nodeBal = preSwapToBal[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
     const errs = [

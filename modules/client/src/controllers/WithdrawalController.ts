@@ -9,7 +9,7 @@ import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: WithdrawParameters): Promise<ChannelState> {
-    const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
+    const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { amount, recipient, assetId } = convert.Withdraw("bignumber", params);
 
@@ -85,7 +85,7 @@ export class WithdrawalController extends AbstractController {
     // TODO: fix for non-eth withdrawals
     // check the free balance can handle requested amnt
     const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
+    const preWithdrawalBal = freeBalance[this.connext.freeBalanceAddress];
     const errs = [
       notLessThanOrEqualTo(amount, preWithdrawalBal),
       invalidAddress(assetId), // check address of asset

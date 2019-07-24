@@ -328,7 +328,7 @@ export class ConnextInternal extends ConnextChannel {
     this.appRegistry = opts.appRegistry;
 
     this.cfModule = opts.cfModule;
-    this.freeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
+    this.freeBalanceAddress = this.cfModule.freeBalanceAddress;
     this.publicIdentifier = this.cfModule.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
@@ -735,7 +735,7 @@ export class ConnextInternal extends ConnextChannel {
     recipient: string,
   ): Promise<NodeTypes.UninstallResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
+    const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
     const err = [
       notLessThanOrEqualTo(amount, preWithdrawalBal),
       recipient ? invalidAddress(recipient) : null, // check address of asset
