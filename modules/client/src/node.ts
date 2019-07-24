@@ -9,7 +9,6 @@ import {
 } from "@connext/types";
 import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { Wallet } from "ethers";
-import { BigNumber } from "ethers/utils";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
@@ -26,15 +25,19 @@ export interface INodeApiClient {
   config(): Promise<GetConfigResponse>;
   createChannel(): Promise<CreateChannelResponse>;
   getChannel(): Promise<GetChannelResponse>;
-  getLatestSwapRate(from: string, to: string): BigNumber;
+  getLatestSwapRate(from: string, to: string): Promise<string>;
   requestCollateral(): Promise<void>;
-  subscribeToSwapRates(from: string, to: string, store: NodeTypes.IStoreService): Promise<void>;
-  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
+  subscribeToSwapRates(from: string, to: string, callback: any): void;
+  unsubscribeFromSwapRates(from: string, to: string): void;
 }
+
+// NOTE: swap rates are given as a decimal string describing:
+// Given 1 unit of `from`, how many units `to` are recieved.
+// eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
-  public latestSwapRates: { [key: string]: BigNumber } = {};
+  public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
   public userPublicIdentifier: string | undefined;
   public nodePublicIdentifier: string | undefined;
@@ -54,19 +57,23 @@ export class NodeApiClient implements INodeApiClient {
     network: SupportedNetwork;
   }): Promise<AppRegistry> {
     try {
-      const registryRes = await this.send("app-registry", appDetails);
-      return registryRes as AppRegistry;
+      return (await this.send("app-registry", appDetails)) as AppRegistry;
     } catch (e) {
       return Promise.reject(e);
     }
   }
 
   public async config(): Promise<GetConfigResponse> {
-    // get the config from the hub
     try {
-      const configRes = await this.send("config.get");
-      // handle error here
-      return configRes as GetConfigResponse;
+      return (await this.send("config.get")) as GetConfigResponse;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  public async createChannel(): Promise<CreateChannelResponse> {
+    try {
+      return await this.send(`channel.create.${this.userPublicIdentifier}`);
     } catch (e) {
       return Promise.reject(e);
     }
@@ -74,35 +81,21 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getChannel(): Promise<GetChannelResponse> {
     try {
-      const channelRes = await this.send(`channel.get.${this.userPublicIdentifier}`);
-      // handle error here
-      return channelRes;
+      return await this.send(`channel.get.${this.userPublicIdentifier}`);
     } catch (e) {
       return Promise.reject(e);
     }
   }
 
-  // TODO: can we abstract this try-catch thing into a separate function?
-  public async createChannel(): Promise<CreateChannelResponse> {
+  public async getLatestSwapRate(from: string, to: string): Promise<string> {
     try {
-      const channelRes = await this.send(`channel.create.${this.userPublicIdentifier}`);
-      // handle error here
-      return channelRes;
+      return await this.send(`swap-rate.${from}.${to}`);
     } catch (e) {
       return Promise.reject(e);
     }
   }
 
-  public getLatestSwapRate = (from: string, to: string): BigNumber => {
-    const latestRate = this.latestSwapRates[`swap-rate.${from}.${to}`];
-    if (!latestRate) {
-      throw new Error(`No swap rate from ${from} to ${to} has been recieved yet`);
-    }
-    return latestRate;
-  };
-
-  // FIXME: right now node doesnt return until the deposit has completed
-  // which exceeds the timeout.....
+  // FIXME: right now node doesnt return until the deposit has completed which exceeds the timeout
   public async requestCollateral(): Promise<void> {
     try {
       const channelRes = await this.send(`channel.request-collateral.${this.userPublicIdentifier}`);
@@ -125,29 +118,12 @@ export class NodeApiClient implements INodeApiClient {
     this.nodePublicIdentifier = publicIdentifier;
   }
 
-  // TODO: types for swap rates and store?
-  // TODO: is this the best way to set the store for diff types of tokens
-  public async subscribeToSwapRates(
-    from: string,
-    to: string,
-    store: NodeTypes.IStoreService,
-  ): Promise<void> {
-    console.log(`Subscribing to swap rate for ${to}`);
-    const latestSwapRates = this.latestSwapRates;
-    await this.messaging.subscribe(`swap-rate.${from}.${to}`, (msg: any) => {
-      store.set([
-        {
-          key: `${msg.pattern}-${Date.now().toString()}`,
-          value: msg.data,
-        },
-      ]);
-      console.log(`Got new swap rate: ${msg.data}`);
-      latestSwapRates[`swap-rate.${from}.${to}`] = new BigNumber(msg.data);
-    });
+  public subscribeToSwapRates(from: string, to: string, callback: any): void {
+    this.messaging.subscribe(`swap-rate.${from}.${to}`, callback);
   }
 
-  public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {
-    return this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
+  public unsubscribeFromSwapRates(from: string, to: string): void {
+    this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
   ////////////////////////////////////////

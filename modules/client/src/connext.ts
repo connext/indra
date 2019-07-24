@@ -229,7 +229,7 @@ export abstract class ConnextChannel {
     return await this.internal.node.subscribeToSwapRates(from, to, this.opts.store);
   };
 
-  public getLatestSwapRate = (from: string, to: string): BigNumber => {
+  public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
     return this.internal.node.getLatestSwapRate(from, to);
   };
 
