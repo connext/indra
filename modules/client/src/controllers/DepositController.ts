@@ -13,7 +13,6 @@ import { AbstractController } from "./AbstractController";
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     const myFreeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
-    this.log.info(`myFreeBalanceAddress: ${myFreeBalanceAddress}`);
 
     const { assetId, amount } = convert.Deposit("bignumber", params);
     const invalid = await this.validateInputs(assetId, amount);
@@ -100,7 +99,6 @@ export class DepositController extends AbstractController {
       // TODO: correct? how can i use allowance?
       bal = await token.balanceOf(depositAddr);
     }
-    this.log.info(`${bal.toString()}, ${notLessThanOrEqualTo(amount, bal)}`);
     const errs = [
       invalidAddress(assetId),
       notPositive(amount),
