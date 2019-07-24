@@ -5,7 +5,7 @@ const addressBook = require('../../address-book.json')
 const provider = new eth.providers.JsonRpcProvider(Cypress.env('provider'))
 const wallet = eth.Wallet.fromMnemonic(Cypress.env('mnemonic')).connect(provider)
 const origin = Cypress.env('publicUrl').substring(Cypress.env('publicUrl').indexOf('://')+3);
-const tokenAddress = addressBook['4447'].DolphinCoin.address.toLowerCase();
+const tokenAddress = addressBook['4447'].Token.address.toLowerCase();
 const token = new eth.Contract(tokenAddress, tokenArtifacts.abi, wallet);
 
 const gasMoney = '0.025'
