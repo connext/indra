@@ -18,7 +18,31 @@ import { isXpub } from "../validator/isXpub";
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
-export class ChannelMessaging extends AbstractMessagingProvider {
+// This should be done in the config module but i didnt want to create a circular dependency
+class ConfigMessaging extends AbstractMessagingProvider {
+  constructor(
+    messaging: IMessagingService,
+    private readonly node: Node,
+    private readonly configService: ConfigService,
+  ) {
+    super(messaging);
+  }
+
+  async getConfig(): Promise<GetConfigResponse> {
+    return {
+      contractAddresses: await this.configService.getContractAddresses(),
+      ethNetwork: await this.configService.getEthNetwork(),
+      messaging: this.configService.getMessagingConfig(),
+      nodePublicIdentifier: this.node.publicIdentifier,
+    };
+  }
+
+  setupSubscriptions(): void {
+    super.connectRequestReponse("config.get", this.getConfig.bind(this));
+  }
+}
+
+class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     messaging: IMessagingService,
     private readonly channelRepository: ChannelRepository,
@@ -44,9 +68,7 @@ export class ChannelMessaging extends AbstractMessagingProvider {
 
   setupSubscriptions(): void {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
-
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
-
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
   }
 
@@ -59,32 +81,7 @@ export class ChannelMessaging extends AbstractMessagingProvider {
   }
 }
 
-// this should be done in the config module but i didnt want to create a circular dependency
-export class ConfigMessaging extends AbstractMessagingProvider {
-  constructor(
-    messaging: IMessagingService,
-    private readonly node: Node,
-    private readonly configService: ConfigService,
-  ) {
-    super(messaging);
-  }
-
-  async getConfig(): Promise<GetConfigResponse> {
-    return {
-      contractAddresses: await this.configService.getContractAddresses(),
-      ethNetwork: await this.configService.getEthNetwork(),
-      messaging: this.configService.getMessagingConfig(),
-      nodePublicIdentifier: this.node.publicIdentifier,
-    };
-  }
-
-  setupSubscriptions(): void {
-    super.connectRequestReponse("config.get", this.getConfig.bind(this));
-  }
-}
-
-// TODO: reduce this boilerplate
-export const channelProvider: FactoryProvider<Promise<IMessagingService>> = {
+export const channelProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [MessagingProviderId, ChannelRepository, ConfigService, NodeProviderId, ChannelService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
@@ -93,11 +90,10 @@ export const channelProvider: FactoryProvider<Promise<IMessagingService>> = {
     configService: ConfigService,
     node: Node,
     channelService: ChannelService,
-  ): Promise<IMessagingService> => {
+  ): Promise<void> => {
     const channel = new ChannelMessaging(messaging, channelRepo, channelService);
     await channel.setupSubscriptions();
     const config = new ConfigMessaging(messaging, node, configService);
     await config.setupSubscriptions();
-    return messaging;
   },
 };

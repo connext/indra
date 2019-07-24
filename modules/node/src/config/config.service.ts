@@ -5,7 +5,6 @@ import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
 import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
 import { OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
-import * as dotenv from "dotenv";
 import { JsonRpcProvider } from "ethers/providers";
 import { Network as EthNetwork } from "ethers/utils";
 import * as fs from "fs";
@@ -34,18 +33,8 @@ type DefaultApp = {
 export class ConfigService {
   private readonly envConfig: { [key: string]: string };
 
-  constructor(filePath?: string) {
-    let fileConfig;
-    try {
-      fileConfig = filePath ? dotenv.parse(fs.readFileSync(filePath)) : {};
-    } catch (e) {
-      console.error(`Error reading dotenv file: ${filePath}`);
-      fileConfig = {};
-    }
-    this.envConfig = {
-      ...fileConfig,
-      ...process.env,
-    };
+  constructor() {
+    this.envConfig = process.env;
   }
 
   get(key: string): string {

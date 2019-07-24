@@ -30,59 +30,11 @@ type CallbackStruct = {
   [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void;
 };
 
-async function createNode(
-  config: ConfigService,
-  messagingService: IMessagingService,
-  postgresServiceFactory: PostgresServiceFactory,
-): Promise<Node> {
-  logger.log("Creating store");
-  const store = postgresServiceFactory.createStoreService("connextHub");
-  logger.log("Store created");
-
-  logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
-  await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
-
-  // test that provider works
-  const { chainId, name: networkName } = await config.getEthNetwork();
-  const addr = eth.Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;
-  const provider = config.getEthProvider();
-  const balance = (await provider.getBalance(addr)).toString();
-  logger.log(
-    `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
-  );
-  const node = await Node.create(
-    messagingService,
-    store,
-    { STORE_KEY_PREFIX: "store" },
-    provider,
-    await config.getContractAddresses(),
-  );
-  logger.log("Node created");
-  logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
-  logger.log(
-    `Free balance address ${JSON.stringify(
-      eth.utils.HDNode.fromExtendedKey(node.publicIdentifier).derivePath("0").address,
-    )}`,
-  );
-
-  registerDefaultCfListeners(node);
-
-  return node;
-}
-
 function logEvent(event: NodeTypes.EventName, res: NodeTypes.NodeMessage & { data: any }): void {
   logger.log(
     `${event} event fired from ${res && res.from ? res.from : null}, data: ${
       res ? JSON.stringify(res.data) : "event did not have a result"
     }`,
-  );
-}
-
-function registerDefaultCfListeners(node: Node): void {
-  Object.entries(defaultCallbacks).forEach(
-    ([event, callback]: [NodeTypes.EventName, () => any]): void => {
-      registerCfNodeListener(node, NodeTypes.EventName[event], callback, "DefaultListener");
-    },
   );
 }
 
@@ -154,7 +106,7 @@ const defaultCallbacks: CallbackStruct = {
   },
 };
 
-export const nodeProvider: Provider = {
+export const nodeProviderFactory: Provider = {
   inject: [ConfigService, MessagingProviderId, PostgresProviderId],
   provide: NodeProviderId,
   useFactory: async (
@@ -162,12 +114,44 @@ export const nodeProvider: Provider = {
     messaging: IMessagingService,
     postgres: PostgresServiceFactory,
   ): Promise<Node> => {
-    return await createNode(config, messaging, postgres);
+    logger.log("Creating store");
+    const store = postgres.createStoreService("connextHub");
+    logger.log("Store created");
+    logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
+    await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
+    // test that provider works
+    const { chainId, name: networkName } = await config.getEthNetwork();
+    const addr = eth.Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;
+    const provider = config.getEthProvider();
+    const balance = (await provider.getBalance(addr)).toString();
+    logger.log(
+      `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
+    );
+    const node = await Node.create(
+      messaging,
+      store,
+      { STORE_KEY_PREFIX: "store" },
+      provider,
+      await config.getContractAddresses(),
+    );
+    logger.log("Node created");
+    logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
+    logger.log(
+      `Free balance address ${JSON.stringify(
+        eth.utils.HDNode.fromExtendedKey(node.publicIdentifier).derivePath("0").address,
+      )}`,
+    );
+    Object.entries(defaultCallbacks).forEach(
+      ([event, callback]: [NodeTypes.EventName, () => any]): void => {
+        registerCfNodeListener(node, NodeTypes.EventName[event], callback, "DefaultListener");
+      },
+    );
+    return node;
   },
 };
 
 // TODO: bypass factory
-export const postgresProvider: Provider = {
+export const postgresProviderFactory: Provider = {
   inject: [ConfigService],
   provide: PostgresProviderId,
   useFactory: async (config: ConfigService): Promise<PostgresServiceFactory> => {
@@ -181,7 +165,7 @@ export const postgresProvider: Provider = {
 };
 
 // TODO: bypass factory
-export const messagingProvider: FactoryProvider<Promise<IMessagingService>> = {
+export const messagingProviderFactory: FactoryProvider<Promise<IMessagingService>> = {
   inject: [ConfigService],
   provide: MessagingProviderId,
   useFactory: async (config: ConfigService): Promise<IMessagingService> => {

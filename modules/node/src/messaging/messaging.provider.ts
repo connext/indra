@@ -1,10 +1,22 @@
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ClientProxy, ClientProxyFactory, Transport } from "@nestjs/microservices";
 
 import { ConfigService } from "../config/config.service";
-import { MessagingClientProviderId } from "../constants";
+import { MessagingClientProviderId, MessagingProviderId } from "../constants";
 
-export const messagingClient: FactoryProvider = {
+export const messagingProviderFactory: FactoryProvider<Promise<IMessagingService>> = {
+  inject: [ConfigService],
+  provide: MessagingProviderId,
+  useFactory: async (config: ConfigService): Promise<IMessagingService> => {
+    const messagingFactory = new MessagingServiceFactory(config.getMessagingConfig());
+    const messagingService = messagingFactory.createService("messaging");
+    await messagingService.connect();
+    return messagingService;
+  },
+};
+
+export const messagingClientFactory: FactoryProvider = {
   inject: [ConfigService],
   provide: MessagingClientProviderId,
   useFactory: (config: ConfigService): ClientProxy => {

@@ -2,24 +2,26 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ConfigModule } from "../config/config.module";
+import { MessagingModule } from "../messaging/messaging.module";
 import { NodeModule } from "../node/node.module";
 import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
 import { UserModule } from "../user/user.module";
 import { UserRepository } from "../user/user.repository";
 
-import { channelProvider } from "./channel.provider";
+import { channelProviderFactory } from "./channel.provider";
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
 @Module({
   controllers: [],
-  exports: [ChannelService, channelProvider],
+  exports: [ChannelService],
   imports: [
-    UserModule,
+    ConfigModule,
+    MessagingModule,
     NodeModule,
     TypeOrmModule.forFeature([ChannelRepository, UserRepository, PaymentProfileRepository]),
-    ConfigModule,
+    UserModule,
   ],
-  providers: [ChannelService, channelProvider],
+  providers: [ChannelService, channelProviderFactory],
 })
 export class ChannelModule {}
