@@ -15,7 +15,7 @@
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/firebase-server": "0.0.1",
     "@counterfactual/postgresql-node-connector": "0.0.3",
-    "commander": "^2.20.0",
+    "commander": "2.20.0",
     "dotenv": "8.0.0",
     "ethers": "4.0.33",
     "node-fetch": "2.6.0",
