@@ -59,11 +59,9 @@ export function getConnextClient(): connext.ConnextInternal {
 
 async function run(): Promise<void> {
   await getOrCreateChannel();
-  await client.subscribeToSwapRates("eth", "dai");
   if (program.assetId) {
     assetId = program.assetId;
   }
-  await client.subscribeToSwapRates("eth", "dai");
 
   const apps = await client.getAppInstances();
   console.log("apps: ", apps);

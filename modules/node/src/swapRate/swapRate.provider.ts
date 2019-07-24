@@ -37,14 +37,14 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
         logger.log(`Dev-mode: using hard coded swap rate: ${this.latestSwapRate}`);
       }
     }
-    if (oldRate !== this.latestSwapRate) {
-      this.broadcastRate(); // Only broadcast the rate if it's changed
-    }
+    // TODO: once the ws subscription is fixed, only broadcast on changes
+    // if (oldRate !== this.latestSwapRate) {
+    this.broadcastRate(); // Only broadcast the rate if it's changed
+    // }
     return this.latestSwapRate;
   }
 
   async getLatestSwapRate(from: string, to: string): Promise<any> {
-    console.log(`getting latest swap rate: ${this.latestSwapRate}`);
     return this.latestSwapRate || (await this.getSwapRate());
   }
 
