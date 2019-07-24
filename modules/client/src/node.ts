@@ -4,11 +4,11 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  PaymentProfile,
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
-import { Address, Node as NodeTypes } from "@counterfactual/types";
-import { Wallet } from "ethers";
+import { Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 import uuid = require("uuid");
 
@@ -19,6 +19,7 @@ import { NodeInitializationParameters } from "./types";
 const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
+  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   appRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
@@ -107,7 +108,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       const channelRes = await this.send(
         `channel.request-collateral.${this.userPublicIdentifier}`,
-        tokenAddress,
+        { tokenAddress },
       );
       return channelRes;
     } catch (e) {
@@ -116,6 +117,21 @@ export class NodeApiClient implements INodeApiClient {
         this.log.info(`request collateral message timed out`);
         return;
       }
+      return Promise.reject(e);
+    }
+  }
+
+  // TODO: best way to check hub side for limitations?
+  // otherwise could be a security flaw
+  // FIXME: return type
+  public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
+    try {
+      const profileRes = await this.send(
+        `channel.add-profile.${this.userPublicIdentifier}`,
+        profile,
+      );
+      return profileRes;
+    } catch (e) {
       return Promise.reject(e);
     }
   }
@@ -161,7 +177,7 @@ export class NodeApiClient implements INodeApiClient {
       }`,
     );
     const msg = await this.messaging.request(subject, API_TIMEOUT, {
-      data,
+      ...data,
       id: uuid.v4(),
     });
     if (!msg.data) {
@@ -169,7 +185,8 @@ export class NodeApiClient implements INodeApiClient {
       return undefined;
     }
     const { err, response, ...rest } = msg.data;
-    if (err) {
+    const responseErr = response && response.err;
+    if (err || responseErr) {
       throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
     return !response || Object.keys(response).length === 0 ? undefined : response;
