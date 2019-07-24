@@ -75,8 +75,9 @@ export class WsMessagingService implements IMessagingService {
   async subscribe(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(subject, (msg: any): void => {
-      this.log.debug(`Received message for ${subject}: ${JSON.stringify(msg)}`);
-      callback(JSON.parse(JSON.parse(msg)) as Node.NodeMessage);
+      const data = typeof msg === "string" ? JSON.parse(msg) : msg;
+      this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
+      callback(data as Node.NodeMessage);
     });
   }
 
