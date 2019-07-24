@@ -424,8 +424,7 @@ export class ConnextInternal extends ConnextChannel {
         } as NodeTypes.DepositParams,
       }),
     );
-    // @ts-ignore
-    return depositResponse as NodeTypes.DepositResult;
+    return depositResponse.result.result as NodeTypes.DepositResult;
   };
 
   // TODO: under what conditions will this fail?
