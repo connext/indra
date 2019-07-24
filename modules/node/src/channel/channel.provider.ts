@@ -1,10 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
-import {
-  CreateChannelResponse,
-  GetChannelResponse,
-  GetConfigResponse,
-  RequestCollateralResponse,
-} from "@connext/types";
+import { GetChannelResponse, GetConfigResponse, RequestCollateralResponse } from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -74,7 +69,7 @@ export class ChannelMessaging extends AbstractMessagingProvider {
 
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
 
-    super.connectRequestReponse("channel.add-profile.>", this.requestCollateral.bind(this));
+    super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
   }
 
   private getPublicIdentifierFromSubject(subject: string): string {
