@@ -59,20 +59,18 @@ export class ChannelService implements OnModuleInit {
     if (!channel) {
       throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
     }
-    const params: NodeTypes.DepositParams = {
-      amount,
-      multisigAddress,
-      tokenAddress,
-    };
-
-    console.log('params: ', params);
 
     const depositResponse = await this.node.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
         method: NodeTypes.RpcMethodName.DEPOSIT,
-        params,
+        params: {
+          amount,
+          multisigAddress,
+          notifyCounterparty: false,
+          tokenAddress,
+        } as NodeTypes.DepositParams,
       }),
     );
     logger.log(`depositResponse.result: ${JSON.stringify(depositResponse!.result.result)}`);
