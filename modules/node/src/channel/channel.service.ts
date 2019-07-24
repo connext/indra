@@ -68,7 +68,6 @@ export class ChannelService implements OnModuleInit {
         params: {
           amount,
           multisigAddress,
-          notifyCounterparty: false,
           tokenAddress,
         } as NodeTypes.DepositParams,
       }),
