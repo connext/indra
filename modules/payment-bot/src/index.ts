@@ -185,8 +185,8 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
 
   if (assetId) {
     await client.addPaymentProfile({
-      amountToCollateralize: parseEther("0.1").toString(),
-      minimumMaintainedCollateral: parseEther("0.01").toString(),
+      amountToCollateralize: parseEther("10").toString(),
+      minimumMaintainedCollateral: parseEther("5").toString(),
       tokenAddress: assetId,
     });
   }
