@@ -1,5 +1,4 @@
 import { IMessagingService } from "@connext/messaging";
-import { RpcException } from "@nestjs/microservices";
 
 import { CLogger } from "./logger";
 
@@ -19,19 +18,19 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {
       if (msg.reply) {
-        try {
+        // try {
           const response = await processor(msg.subject, msg.data);
           this.messaging.publish(msg.reply, {
             err: null,
             response,
           });
-        } catch (e) {
-          this.messaging.publish(msg.reply, {
-            err: `Error during processor function: ${processor.name}`,
-            message: `Error during processor function: ${processor.name}`,
-          });
-          logger.error(JSON.stringify(e, null, 2));
-        }
+        // } catch (e) {
+        //   this.messaging.publish(msg.reply, {
+        //     err: `Error during processor function: ${processor.name}`,
+        //     message: `Error during processor function: ${processor.name}`,
+        //   });
+        //   logger.error(e);
+        // }
       }
     });
     logger.log(`Connected message pattern "${pattern}" to function ${processor.name}`);
