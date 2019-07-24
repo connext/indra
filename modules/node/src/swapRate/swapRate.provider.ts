@@ -25,11 +25,11 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
     provider.on("block", this.getSwapRate.bind(this)); // Check rate at each new block
   }
 
-  async getSwapRate(): Promise<string> {
+  async getSwapRate(blockNumber?: number): Promise<string> {
     const oldRate = this.latestSwapRate;
     try {
       this.latestSwapRate = formatEther((await this.medianizer.peek())[0]);
-      logger.debug(`Got swap rate from medianizer: ${this.latestSwapRate}`);
+      logger.debug(`Got swap rate from medianizer at block ${blockNumber}: ${this.latestSwapRate}`);
     } catch (e) {
       logger.warn(`Failed to fetch swap rate from medianizer`);
       if (process.env.NODE_ENV === "development" && !this.latestSwapRate) {
@@ -44,13 +44,15 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestSwapRate(from: string, to: string): Promise<any> {
+    console.log(`getting latest swap rate: ${this.latestSwapRate}`);
     return this.latestSwapRate || (await this.getSwapRate());
   }
 
   async broadcastRate(): Promise<void> {
-    const swapRate = await this.getSwapRate();
     const tokenAddress = await this.config.getTokenAddress();
-    this.messaging.publish(`swap-rate.${AddressZero}.${tokenAddress}`, { swapRate });
+    this.messaging.publish(`swap-rate.${AddressZero}.${tokenAddress}`, {
+      swapRate: this.latestSwapRate,
+    });
   }
 
   async setupSubscriptions(): Promise<void> {
