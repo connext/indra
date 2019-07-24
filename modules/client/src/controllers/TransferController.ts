@@ -58,7 +58,7 @@ export class TransferController extends AbstractController {
     await this.finalizeAndUninstallApp(this.appId);
 
     // sanity check, free balance decreased by payment amount
-    const postTransferBal = await this.connext.getFreeBalance();
+    const postTransferBal = await this.connext.getFreeBalance(assetId);
     const diff = preTransferBal.sub(postTransferBal[this.cfModule.ethFreeBalanceAddress]);
     if (!diff.eq(amount)) {
       this.log.info(
@@ -86,7 +86,7 @@ export class TransferController extends AbstractController {
     assetId: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
-    const freeBalance = await this.connext.getFreeBalance();
+    const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
     const errs = [
       invalidXpub(recipient),
