@@ -20,7 +20,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/messaging": "0.0.1",
+    "@connext/messaging": "0.0.2",
     "@counterfactual/contracts": "0.1.9",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.24",
@@ -42,7 +42,7 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
-    "@connext/types": "0.0.4",
+    "@connext/types": "0.0.5",
     "@counterfactual/types": "0.0.25",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.0",

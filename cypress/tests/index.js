@@ -15,13 +15,16 @@ describe('Daicard', () => {
     it(`Should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth)
     })
+    it(`Should accept a token deposit to displayed address`, () => {
+      my.depositToken(depositToken)
+    })
   })
 
   describe('Send', (done) => {
     it.skip(`Should send a payment when a link payment is opened in another card`, () => {
       my.getMnemonic().then(recipientMnemonic => {
         my.burnCard() // also decollateralizes the channel
-        my.deposit(depositEth).then(tokensDeposited => {
+        my.deposit(depositEth).then(ethDeposited => {
           my.linkPay(payTokens).then(redeemLink => {
             my.restoreMnemonic(recipientMnemonic)
             cy.visit(redeemLink)
@@ -29,14 +32,14 @@ describe('Daicard', () => {
             cy.contains('h5', /redeemed successfully/i).should('exist')
             cy.contains('p', payTokens).should('exist')
             my.goHome()
-            cy.resolve(my.getChannelBalance).should('contain', payTokens)
+            cy.resolve(my.getChannelEtherBalance).should('contain', payTokens)
           })
         })
       })
     })
 
     it.skip(`Should not generate a payment link if the amount provided is invalid`, () => {
-      my.deposit(depositEth).then(tokensDeposited => {
+      my.deposit(depositEth).then(ethDeposited => {
         my.goToSend()
         // No negative payments
         cy.get('input[type="number"]').clear().type('-1')
@@ -47,14 +50,14 @@ describe('Daicard', () => {
         cy.contains('button', /link/i).click()
         cy.contains('p', /above 0/i).should('exist')
         // No payments greater than the card's balance
-        cy.get('input[type="number"]').clear().type('1' + tokensDeposited)
+        cy.get('input[type="number"]').clear().type('1' + ethDeposited)
         cy.contains('button', /link/i).click()
         cy.contains('p', /insufficient balance/i).should('exist')
       })
     })
 
     it.skip(`Should not send a payment when input invalid`, () => {
-      my.deposit(depositEth).then(tokensDeposited => {
+      my.deposit(depositEth).then(ethDeposited => {
         my.goToSend()
         cy.get('input[type="number"]').should('exist')
         // No negative numbers
@@ -66,7 +69,7 @@ describe('Daicard', () => {
         cy.contains('button', /send/i).click()
         cy.contains('p', /above 0/i).should('exist')
         // No payments above card's balance
-        cy.get('input[type="number"]').clear().type('1' + tokensDeposited)
+        cy.get('input[type="number"]').clear().type('1' + ethDeposited)
         cy.contains('button', /send/i).click()
         cy.contains('p', /insufficient balance/i).should('exist')
         // No invalid addresses
@@ -99,10 +102,10 @@ describe('Daicard', () => {
   describe('Settings', () => {
     it(`Should restore the same address & balance after importing a mnemoic`, () => {
       my.getAccount().then(account => {
-        my.deposit(depositEth).then(tokensDeposited => {
+        my.deposit(depositEth).then(ethDeposited => {
           my.burnCard()
           my.restoreMnemonic(account.mnemonic)
-          cy.resolve(my.getChannelBalance).should('contain', tokensDeposited)
+          cy.resolve(my.getChannelEtherBalance).should('contain', ethDeposited)
           my.goToDeposit()
           cy.contains('button', my.addressRegex).invoke('text').should('eql', account.address)
         })
@@ -112,7 +115,7 @@ describe('Daicard', () => {
 
   describe('Withdraw', () => {
     it(`Should withdraw to a valid address`, () => {
-      my.deposit(depositEth).then(tokensDeposited => {
+      my.deposit(depositEth).then(ethDeposited => {
         my.getOnchainBalance().then(balanceBefore => {
           my.cashout()
           cy.resolve(my.getOnchainBalance).should(balanceAfter => {
@@ -123,7 +126,7 @@ describe('Daicard', () => {
     })
 
     it(`Should not withdraw to an invalid address`, () => {
-      my.deposit(depositEth).then(tokensDeposited => {
+      my.deposit(depositEth).then(ethDeposited => {
         my.goToCashout()
         cy.get('input[type="text"]').clear().type('0xabc123')
         cy.contains('p', /invalid/i).should('exist')

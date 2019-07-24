@@ -95,7 +95,7 @@ class CashOutCard extends Component {
   }
 
   render() {
-    const { balance, classes, exchangeRate, history } = this.props;
+    const { balance, classes, swapRate, history } = this.props;
     const { recipient, scan, withdrawing } = this.state;
     return (
       <Grid
@@ -133,7 +133,7 @@ class CashOutCard extends Component {
         </Grid>
         <Grid item xs={12}>
           <Typography variant="caption">
-            <span>{"ETH price: $" + exchangeRate}</span>
+            <span>{"ETH price: $" + swapRate}</span>
           </Typography>
         </Grid>
         <Grid item xs={12}>

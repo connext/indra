@@ -112,8 +112,8 @@ export class MockNodeClientApi implements INodeApiClient {
     return MockNodeClientApi.returnValues.getChannel;
   }
 
-  public getLatestSwapRate(from: string, to: string): BigNumber {
-    return new BigNumber("100");
+  public async getLatestSwapRate(from: string, to: string): Promise<string> {
+    return "100";
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {

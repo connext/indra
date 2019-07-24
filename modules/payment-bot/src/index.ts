@@ -59,14 +59,12 @@ export function getConnextClient(): connext.ConnextInternal {
 
 async function run(): Promise<void> {
   await getOrCreateChannel();
-  await client.subscribeToSwapRates("eth", "dai");
   if (program.assetId) {
     assetId = program.assetId;
   }
-  await client.subscribeToSwapRates("eth", "dai");
 
   const apps = await client.getAppInstances();
-  console.log('apps: ', apps);
+  console.log("apps: ", apps);
   if (program.deposit) {
     const depositParams: DepositParameters = {
       amount: ethers.utils.parseEther(program.deposit).toString(),
@@ -94,7 +92,8 @@ async function run(): Promise<void> {
   }
 
   if (program.swap) {
-    const swapRate = client.getLatestSwapRate("eth", "dai");
+    const tokenAddress = (await client.config()).contractAddresses.Token;
+    const swapRate = client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(
       `Attempting to swap ${program.swap} of eth for ${
         program.assetId

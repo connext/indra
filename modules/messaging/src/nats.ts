@@ -81,8 +81,9 @@ export class NatsMessagingService implements IMessagingService {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          this.log.debug(`Received message for ${subject}: ${JSON.stringify(msg)}`);
-          callback(msg as Node.NodeMessage);
+          const data = typeof msg === "string" ? JSON.parse(msg) : msg;
+          this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
+          callback(data as Node.NodeMessage);
         }
       },
     );

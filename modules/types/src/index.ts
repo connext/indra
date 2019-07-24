@@ -203,6 +203,16 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
 
+export enum KnownNodeAppNames {
+  SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
+  UNIDIRECTIONAL_TRANSFER = "UnidirectionalTransferApp",
+}
+
+export type ContractAddresses = NetworkContext & {
+  Token: string;
+  [KnownNodeAppNames: string]: string;
+};
+
 export interface NodeConfig {
   nodePublicIdentifier: string; // x-pub of node
   chainId: string; // network that your channel is on
@@ -225,7 +235,7 @@ export type NatsResponse = {
 
 export type GetConfigResponse = {
   ethNetwork: Network;
-  contractAddresses: NetworkContext;
+  contractAddresses: ContractAddresses;
   nodePublicIdentifier: string;
   messaging: MessagingConfig;
 };
@@ -435,8 +445,8 @@ export const convert: any = {
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
   Multisig: convertMultisig,
+  SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
-  SwapParameters: convertSwapParameters,
   Withdraw: convertWithdrawParametersToAsset,
 };
