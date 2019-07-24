@@ -7,6 +7,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
+  PaymentProfile,
   RegisteredAppDetails,
   SupportedApplication,
   SupportedNetwork,
@@ -239,6 +240,10 @@ export abstract class ConnextChannel {
 
   public requestCollateral = async (tokenAddress: string): Promise<void> => {
     return await this.internal.node.requestCollateral(tokenAddress);
+  };
+
+  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
+    return await this.internal.node.addPaymentProfile(profile);
   };
 
   ///////////////////////////////////
