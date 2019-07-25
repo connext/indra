@@ -1,16 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getConnectionToken } from "@nestjs/typeorm";
+import { AddressZero } from "ethers/constants";
 import { Connection } from "typeorm";
 
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
-import { NodeProviderId } from "../constants";
+import { defaultPaymentProfileEth, NodeProviderId } from "../constants";
 import { DatabaseModule } from "../database/database.module";
 import { NodeModule } from "../node/node.module";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
 import {
   clearDb,
+  createTestChannel,
   mkAddress,
   mkXpub,
   mockNodeProvider,
@@ -18,7 +19,6 @@ import {
 } from "../test";
 import { toBig } from "../util";
 
-import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
 
@@ -27,7 +27,6 @@ describe("ChannelService", () => {
   let module: TestingModule;
   let connection: Connection;
   let channelRepository: ChannelRepository;
-  let paymentProfileRepository: PaymentProfileRepository;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -40,7 +39,6 @@ describe("ChannelService", () => {
     service = module.get<ChannelService>(ChannelService);
     connection = module.get<Connection>(getConnectionToken());
     channelRepository = connection.getCustomRepository(ChannelRepository);
-    paymentProfileRepository = connection.getCustomRepository(PaymentProfileRepository);
   });
 
   beforeEach(async () => {
@@ -62,23 +60,83 @@ describe("ChannelService", () => {
     expect(result.multisigAddress).toBe(mockStateDepositHolderAddress);
   });
 
-  it("should find a payment profile for a channel", async () => {
-    const userXpub = mkXpub("xpubA");
-    let channel = new Channel();
-    channel.multisigAddress = mkAddress("0xa");
-    channel.nodePublicIdentifier = mkXpub("xpubB");
-    channel.userPublicIdentifier = userXpub;
-    channel = await channelRepository.save(channel);
+  it("should find payment profiles for a channel", async () => {
+    const tokenAddress = mkAddress("0xeee");
+
+    const channel = await createTestChannel(channelRepository);
 
     let profile = new PaymentProfile();
-    profile.amountToCollateralizeWei = toBig(2000);
-    profile.minimumMaintainedCollateralWei = toBig(600);
-    profile.channels = [channel!];
-    await paymentProfileRepository.save(profile);
+    profile.amountToCollateralize = toBig(2000);
+    profile.minimumMaintainedCollateral = toBig(600);
+    profile.tokenAddress = AddressZero;
+    await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
-    profile = await channelRepository.getPaymentProfileForChannel(userXpub);
+    profile = new PaymentProfile();
+    profile.amountToCollateralize = toBig(3000);
+    profile.minimumMaintainedCollateral = toBig(1000);
+    profile.tokenAddress = tokenAddress;
+    await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
-    expect(profile.amountToCollateralizeWei).toStrictEqual(toBig(2000));
-    expect(profile.minimumMaintainedCollateralWei).toStrictEqual(toBig(600));
+    profile = await channelRepository.getPaymentProfileForChannelAndToken(
+      channel.userPublicIdentifier,
+    );
+
+    expect(profile.amountToCollateralize).toStrictEqual(toBig(2000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(600));
+
+    profile = await channelRepository.getPaymentProfileForChannelAndToken(
+      channel.userPublicIdentifier,
+      tokenAddress,
+    );
+
+    expect(profile.amountToCollateralize).toStrictEqual(toBig(3000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(1000));
+  });
+
+  it("should get a default payment profile", async () => {
+    const channel = await createTestChannel(channelRepository);
+
+    const profile = await channelRepository.getPaymentProfileForChannelAndToken(
+      channel.userPublicIdentifier,
+    );
+
+    expect(profile.amountToCollateralize).toStrictEqual(
+      toBig(defaultPaymentProfileEth.amountToCollateralize),
+    );
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(
+      toBig(defaultPaymentProfileEth.minimumMaintainedCollateral),
+    );
+  });
+
+  it("should overwrite a payment profile", async () => {
+    const tokenAddress = mkAddress("0xeee");
+    const channel = await createTestChannel(channelRepository);
+    let profile = new PaymentProfile();
+    profile.amountToCollateralize = toBig(2000);
+    profile.minimumMaintainedCollateral = toBig(600);
+    profile.tokenAddress = tokenAddress;
+    await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
+
+    profile = await channelRepository.getPaymentProfileForChannelAndToken(
+      channel.userPublicIdentifier,
+      tokenAddress,
+    );
+
+    expect(profile.amountToCollateralize).toStrictEqual(toBig(2000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(600));
+
+    profile = new PaymentProfile();
+    profile.amountToCollateralize = toBig(4000);
+    profile.minimumMaintainedCollateral = toBig(1200);
+    profile.tokenAddress = tokenAddress;
+    await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
+
+    profile = await channelRepository.getPaymentProfileForChannelAndToken(
+      channel.userPublicIdentifier,
+      tokenAddress,
+    );
+
+    expect(profile.amountToCollateralize).toStrictEqual(toBig(4000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(1200));
   });
 });

@@ -7,6 +7,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   NodeChannel,
+  PaymentProfile,
   RegisteredAppDetails,
   SupportedApplication,
   SupportedNetwork,
@@ -239,8 +240,12 @@ export abstract class ConnextChannel {
     return await this.internal.node.unsubscribeFromSwapRates(from, to);
   };
 
-  public requestCollateral = async (): Promise<void> => {
-    return await this.internal.node.requestCollateral();
+  public requestCollateral = async (tokenAddress: string): Promise<void> => {
+    return await this.internal.node.requestCollateral(tokenAddress);
+  };
+
+  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
+    return await this.internal.node.addPaymentProfile(profile);
   };
 
   ///////////////////////////////////
@@ -323,7 +328,7 @@ export class ConnextInternal extends ConnextChannel {
     this.appRegistry = opts.appRegistry;
 
     this.cfModule = opts.cfModule;
-    this.freeBalanceAddress = this.cfModule.ethFreeBalanceAddress;
+    this.freeBalanceAddress = this.cfModule.freeBalanceAddress;
     this.publicIdentifier = this.cfModule.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
@@ -421,8 +426,7 @@ export class ConnextInternal extends ConnextChannel {
         } as NodeTypes.DepositParams,
       }),
     );
-    // @ts-ignore
-    return depositResponse as NodeTypes.DepositResult;
+    return depositResponse.result.result as NodeTypes.DepositResult;
   };
 
   // TODO: under what conditions will this fail?
@@ -731,7 +735,7 @@ export class ConnextInternal extends ConnextChannel {
     recipient: string,
   ): Promise<NodeTypes.UninstallResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.cfModule.ethFreeBalanceAddress];
+    const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
     const err = [
       notLessThanOrEqualTo(amount, preWithdrawalBal),
       recipient ? invalidAddress(recipient) : null, // check address of asset

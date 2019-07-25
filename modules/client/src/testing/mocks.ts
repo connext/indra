@@ -4,16 +4,17 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  PaymentProfile,
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
-import { Address, Node as NodeTypes } from "@counterfactual/types";
-import { providers, Wallet } from "ethers";
+import { Node as NodeTypes } from "@counterfactual/types";
+import { providers } from "ethers";
 import { BigNumber } from "ethers/utils";
 
 import { Logger } from "../lib/logger";
 import { INodeApiClient } from "../node";
-import { ClientOptions, NodeInitializationParameters } from "../types";
+import { NodeInitializationParameters } from "../types";
 
 type TransactionRequest = providers.TransactionRequest;
 type TransactionResponse = providers.TransactionResponse;
@@ -86,6 +87,7 @@ export class MockNodeClientApi implements INodeApiClient {
   // should have keys same as the message passed in to fake messaging client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {
+    addPaymentProfile: {} as PaymentProfile,
     appRegistry: {} as AppRegistry,
     config: {
       chainId: "mocks", // network that your channel is on
@@ -129,4 +131,8 @@ export class MockNodeClientApi implements INodeApiClient {
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 
   public async requestCollateral(): Promise<void> {}
+
+  public async addPaymentProfile(): Promise<any> {
+    return MockNodeClientApi.returnValues.addPaymentProfile;
+  }
 }

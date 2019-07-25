@@ -4,11 +4,10 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  PaymentProfile,
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
-import { Address, Node as NodeTypes } from "@counterfactual/types";
-import { Wallet } from "ethers";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
@@ -18,6 +17,7 @@ import { NodeInitializationParameters } from "./types";
 const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
+  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   appRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
@@ -26,7 +26,7 @@ export interface INodeApiClient {
   createChannel(): Promise<CreateChannelResponse>;
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
-  requestCollateral(): Promise<void>;
+  requestCollateral(tokenAddress: string): Promise<void>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
 }
@@ -87,6 +87,7 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
+  // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     try {
       return await this.send(`swap-rate.${from}.${to}`);
@@ -95,10 +96,14 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  // FIXME: right now node doesnt return until the deposit has completed which exceeds the timeout
-  public async requestCollateral(): Promise<void> {
+  // FIXME: right now node doesnt return until the deposit has completed
+  // which exceeds the timeout.....
+  public async requestCollateral(tokenAddress: string): Promise<void> {
     try {
-      const channelRes = await this.send(`channel.request-collateral.${this.userPublicIdentifier}`);
+      const channelRes = await this.send(
+        `channel.request-collateral.${this.userPublicIdentifier}`,
+        { tokenAddress },
+      );
       return channelRes;
     } catch (e) {
       // FIXME: node should return once deposit starts
@@ -106,6 +111,21 @@ export class NodeApiClient implements INodeApiClient {
         this.log.info(`request collateral message timed out`);
         return;
       }
+      return Promise.reject(e);
+    }
+  }
+
+  // TODO: best way to check hub side for limitations?
+  // otherwise could be a security flaw
+  // FIXME: return type
+  public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
+    try {
+      const profileRes = await this.send(
+        `channel.add-profile.${this.userPublicIdentifier}`,
+        profile,
+      );
+      return profileRes;
+    } catch (e) {
       return Promise.reject(e);
     }
   }
@@ -136,7 +156,7 @@ export class NodeApiClient implements INodeApiClient {
       }`,
     );
     const msg = await this.messaging.request(subject, API_TIMEOUT, {
-      data,
+      ...data,
       id: uuid.v4(),
     });
     if (!msg.data) {
@@ -144,7 +164,8 @@ export class NodeApiClient implements INodeApiClient {
       return undefined;
     }
     const { err, response, ...rest } = msg.data;
-    if (err) {
+    const responseErr = response && response.err;
+    if (err || responseErr) {
       throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
     return !response || Object.keys(response).length === 0 ? undefined : response;

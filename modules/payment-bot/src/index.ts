@@ -7,6 +7,7 @@ import { AddressZero } from "ethers/constants";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
+import { parseEther } from "ethers/utils";
 
 const program = new commander.Command();
 program.version("0.0.1");
@@ -58,7 +59,15 @@ export function getConnextClient(): connext.ConnextInternal {
 }
 
 async function run(): Promise<void> {
-  await getOrCreateChannel();
+  await getOrCreateChannel(program.assetId);
+  await client.subscribeToSwapRates("eth", "dai", (msg: any) => {
+    client.opts.store.set([
+      {
+        key: `${msg.pattern}`,
+        value: msg.data,
+      },
+    ]);
+  });
   if (program.assetId) {
     assetId = program.assetId;
   }
@@ -79,13 +88,14 @@ async function run(): Promise<void> {
 
   if (program.requestCollateral) {
     console.log(`Requesting collateral...`);
-    await client.requestCollateral();
+    await client.requestCollateral(program.assetId || AddressZero);
   }
 
   if (program.transfer) {
     console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
     await client.transfer({
       amount: ethers.utils.parseEther(program.transfer).toString(),
+      assetId: program.assetId || AddressZero,
       recipient: program.counterparty,
     });
     console.log(`Successfully transferred!`);
@@ -133,7 +143,7 @@ async function run(): Promise<void> {
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
 
-async function getOrCreateChannel(): Promise<void> {
+async function getOrCreateChannel(assetId?: string): Promise<void> {
   await pgServiceFactory.connectDb();
 
   const connextOpts = {
@@ -174,6 +184,19 @@ async function getOrCreateChannel(): Promise<void> {
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
   }
 
+  await client.addPaymentProfile({
+    amountToCollateralize: parseEther("0.1").toString(),
+    minimumMaintainedCollateral: parseEther("0.01").toString(),
+    tokenAddress: AddressZero,
+  });
+
+  if (assetId) {
+    await client.addPaymentProfile({
+      amountToCollateralize: parseEther("10").toString(),
+      minimumMaintainedCollateral: parseEther("5").toString(),
+      tokenAddress: assetId,
+    });
+  }
   registerClientListeners();
 }
 

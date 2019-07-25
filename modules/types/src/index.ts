@@ -78,6 +78,14 @@ export type SwapAppState = {
 ////////////////////////////////////
 ////// LOW LEVEL CHANNEL TYPES
 
+// payment setups
+export type PaymentProfile<T = string> = {
+  tokenAddress: string;
+  minimumMaintainedCollateral: T;
+  amountToCollateralize: T;
+};
+export type PaymentProfileBigNumber = PaymentProfile<BigNumber>;
+
 // transfer types
 export type Transfer<T = string> = {
   amount: T;
