@@ -68,7 +68,6 @@ async function run(): Promise<void> {
       },
     ]);
   });
-  await getOrCreateChannel();
   if (program.assetId) {
     assetId = program.assetId;
   }
