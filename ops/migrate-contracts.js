@@ -18,7 +18,7 @@ const coreContracts = [
   "MinimumViableMultisig",
   "ProxyFactory",
   "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeETHInterpreter",
+  "TwoPartyFixedOutcomeInterpreter",
   "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter",
 ]
 
