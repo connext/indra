@@ -2,12 +2,11 @@ import * as connext from "@connext/client";
 import { DepositParameters, WithdrawParameters } from "@connext/types";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import commander from "commander";
-import { ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
+import { parseEther } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { parseEther } from "ethers/utils";
 
 const program = new commander.Command();
 program.version("0.0.1");
@@ -76,7 +75,7 @@ async function run(): Promise<void> {
   console.log("apps: ", apps);
   if (program.deposit) {
     const depositParams: DepositParameters = {
-      amount: ethers.utils.parseEther(program.deposit).toString(),
+      amount: parseEther(program.deposit).toString(),
     };
     if (program.assetId) {
       depositParams.assetId = program.assetId;
@@ -94,7 +93,7 @@ async function run(): Promise<void> {
   if (program.transfer) {
     console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
     await client.transfer({
-      amount: ethers.utils.parseEther(program.transfer).toString(),
+      amount: parseEther(program.transfer).toString(),
       assetId: program.assetId || AddressZero,
       recipient: program.counterparty,
     });
@@ -110,7 +109,7 @@ async function run(): Promise<void> {
       } at rate ${swapRate.toString()}...`,
     );
     await client.swap({
-      amount: ethers.utils.parseEther(program.swap).toString(),
+      amount: parseEther(program.swap).toString(),
       fromAssetId: AddressZero,
       swapRate: swapRate.toString(),
       toAssetId: assetId,
@@ -120,7 +119,7 @@ async function run(): Promise<void> {
 
   if (program.withdraw) {
     const withdrawParams: WithdrawParameters = {
-      amount: ethers.utils.parseEther(program.withdraw).toString(),
+      amount: parseEther(program.withdraw).toString(),
     };
     if (program.assetId) {
       withdrawParams.assetId = program.assetId;
