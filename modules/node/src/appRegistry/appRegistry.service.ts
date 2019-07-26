@@ -31,7 +31,10 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   // TODO: how to match this with type
-  private validateSwap(initialState: SolidityABIEncoderV2Type): void {}
+  private validateSwap(initialState: SolidityABIEncoderV2Type): void {
+    console.log("TODO: VALIDATE THIS INITIAL STATE:")
+    console.log("initialState: ", JSON.stringify(initialState));
+  }
 
   private async verifyAppProposal(proposedAppParams: {
     params: NodeTypes.ProposeInstallParams;
@@ -111,7 +114,8 @@ export class AppRegistryService implements OnModuleInit {
       return installResponse.result as NodeTypes.InstallResult;
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
-      logger.error(e);
+      // TODO: why doesn't logger.error log this?
+      console.error(e);
       const installResponse = await this.node.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
