@@ -1,8 +1,8 @@
-import { convert, NodeChannel, SwapParameters } from "@connext/types";
+import { convert, NodeChannel, SwapParameters, RegisteredAppDetails } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, formatEther, bigNumberify } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
@@ -11,6 +11,9 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
+export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): any => {
+  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, "")).toString();
+};
 export class SwapController extends AbstractController {
   private appId: string;
   private timeout: NodeJS.Timeout;
@@ -65,18 +68,19 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
-    swapRate: BigNumber,
+    swapRate: BigNumber, // (wei tokens) / eth
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
     const nodeBal = preSwapToBal[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
+    const swappedAmount = calculateExchange(amount, swapRate);
     const errs = [
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
-      notLessThanOrEqualTo(amount.mul(swapRate), nodeBal),
+      notLessThanOrEqualTo(swappedAmount, nodeBal),
       notPositive(swapRate),
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
@@ -110,10 +114,12 @@ export class SwapController extends AbstractController {
     toAssetId: string,
     fromAssetId: string,
     swapRate: BigNumber,
-    appInfo: any,
+    appInfo: RegisteredAppDetails,
   ): Promise<any> => {
     let boundResolve;
     let boundReject;
+
+    const swappedAmount = calculateExchange(amount, swapRate);
 
     const params: any /*NodeTypes.ProposeInstallParams*/ = {
       abiEncodings: {
@@ -129,7 +135,7 @@ export class SwapController extends AbstractController {
             to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
           },
           {
-            balance: [Zero, amount.mul(swapRate)],
+            balance: [Zero, swappedAmount],
             coinAddress: [fromAssetId, toAssetId],
             to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
           },
@@ -140,7 +146,7 @@ export class SwapController extends AbstractController {
       initiatorDepositTokenAddress: fromAssetId,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: amount.mul(swapRate), // TODO will this work? ERC20 context?
+      responderDeposit: swappedAmount, // TODO will this work? ERC20 context?
       responderDepositTokenAddress: toAssetId,
       timeout: Zero,
     };
