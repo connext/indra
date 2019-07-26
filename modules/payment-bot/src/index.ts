@@ -103,7 +103,7 @@ async function run(): Promise<void> {
 
   if (program.swap) {
     const tokenAddress = (await client.config()).contractAddresses.Token;
-    const swapRate = client.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(
       `Attempting to swap ${program.swap} of eth for ${
         program.assetId
