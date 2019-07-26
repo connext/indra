@@ -2,26 +2,9 @@ const fs = require('fs')
 const eth = require('ethers')
 const linker = require('solc/linker')
 const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
+const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
 
-const appContracts = [
-  "SimpleTwoPartySwapApp",
-  "UnidirectionalTransferApp",
-]
-
-// const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
-const coreContracts = [
-  "ChallengeRegistry",
-  "CoinBalanceRefundApp",
-  "CoinTransferInterpreter",
-  "ConditionalTransactionDelegateTarget",
-  "FreeBalanceApp",
-  "IdentityApp",
-  "MinimumViableMultisig",
-  "ProxyFactory",
-  "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeInterpreter",
-  "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter",
-]
+const appContracts = [ "SimpleTwoPartySwapApp", "UnidirectionalTransferApp" ]
 
 const artifacts = {}
 for (const contract of coreContracts) {
@@ -212,9 +195,8 @@ const sendGift = async (address, token) => {
   // On testnet, give relevant accounts a healthy starting balance
 
   if (chainId === ganacheId) {
-    await sendGift(wallet.address, token)
-    await sendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address, token)
     await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token)
+    await sendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address, token)
     for (const botMnemonic of botMnemonics) {
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token)
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address, token)
