@@ -2,7 +2,7 @@ import { IMessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Contract, ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { bigNumberify, formatEther, parseEther, BigNumber, formatUnits } from "ethers/utils";
+import { bigNumberify, formatEther, parseEther } from "ethers/utils";
 
 import { medianizerAbi } from "../abi/medianizer.abi";
 import { ConfigService } from "../config/config.service";
@@ -46,7 +46,23 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
     return this.latestSwapRate;
   }
 
-  async getLatestSwapRate(from: string, to: string): Promise<any> {
+  async getLatestSwapRate(subject: string): Promise<any> {
+    const tokenAddress = await this.config.getTokenAddress();
+    console.log('tokenAddress: ', tokenAddress);
+    console.log('subject: ', subject);
+    const pieces = subject.split(".")
+    console.log('pieces: ', pieces);
+    const [subj, from, to] = pieces;
+    console.log('to: ', to);
+    console.log('from: ', from);
+    console.log('subj: ', subj);
+
+    if (from === AddressZero && to === tokenAddress) {
+      console.log(`return rate for ${from}.${to}`);
+    } else {
+      logger.log(`No rate exists for ${from}.${to}`);
+    }
+
     return this.latestSwapRate || (await this.getSwapRate());
   }
 
@@ -59,10 +75,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     const tokenAddress = await this.config.getTokenAddress();
-    super.connectRequestReponse(
-      `swap-rate.${AddressZero}.${tokenAddress}`,
-      this.getLatestSwapRate.bind(this),
-    );
+    super.connectRequestReponse(`swap-rate.>`, this.getLatestSwapRate.bind(this));
   }
 }
 
