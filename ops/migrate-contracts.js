@@ -8,6 +8,7 @@ const appContracts = [
   "UnidirectionalTransferApp",
 ]
 
+// const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
 const coreContracts = [
   "ChallengeRegistry",
   "CoinBalanceRefundApp",
