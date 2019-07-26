@@ -57,18 +57,21 @@ export function getConnextClient(): connext.ConnextInternal {
   return client;
 }
 
+let latestSwapRate;
+
 async function run(): Promise<void> {
   await getOrCreateChannel(program.assetId);
-  await client.subscribeToSwapRates("eth", "dai", (msg: any) => {
-    client.opts.store.set([
-      {
-        key: `${msg.pattern}`,
-        value: msg.data,
-      },
-    ]);
-  });
   if (program.assetId) {
-    assetId = program.assetId;
+    await client.subscribeToSwapRates(AddressZero, program.assetId, (msg: any) => {
+      latestSwapRate = msg.data;
+      console.log("latestSwapRate: ", latestSwapRate);
+      client.opts.store.set([
+        {
+          key: `${msg.pattern}`,
+          value: msg.data,
+        },
+      ]);
+    });
   }
 
   const apps = await client.getAppInstances();
@@ -101,7 +104,7 @@ async function run(): Promise<void> {
   }
 
   if (program.swap) {
-    const tokenAddress = (await client.config()).contractAddresses.Token;
+    const tokenAddress = program.assetId;
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(
       `Attempting to swap ${program.swap} of eth for ${
@@ -112,7 +115,7 @@ async function run(): Promise<void> {
       amount: parseEther(program.swap).toString(),
       fromAssetId: AddressZero,
       swapRate: swapRate.toString(),
-      toAssetId: assetId,
+      toAssetId: program.assetId,
     });
     console.log(`Successfully swapped!`);
   }
@@ -136,8 +139,8 @@ async function run(): Promise<void> {
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
-  if (assetId) {
-    client.logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
+  if (program.assetId) {
+    client.logEthFreeBalance(program.assetId, await client.getFreeBalance(program.assetId));
   }
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
