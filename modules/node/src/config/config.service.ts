@@ -102,7 +102,7 @@ export class ConfigService {
         appDefinitionAddress: addressBook[KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP],
         name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
         network: Network[ethNetwork.name.toUpperCase()],
-        outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME, // TODO?
+        outcomeType: OutcomeType.COIN_TRANSFER_DO_NOT_USE,
         stateEncoding:
           "tuple(tuple(address to, address[] coinAddress, uint256[] balance)[] coinBalances)",
       },
