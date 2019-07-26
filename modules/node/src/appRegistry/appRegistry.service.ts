@@ -33,7 +33,7 @@ export class AppRegistryService implements OnModuleInit {
   // TODO: how to match this with type
   private validateSwap(initialState: SolidityABIEncoderV2Type): void {
     console.log("TODO: VALIDATE THIS INITIAL STATE:")
-    console.log("initialState: ", initialState);
+    console.log("initialState: ", JSON.stringify(initialState));
   }
 
   private async verifyAppProposal(proposedAppParams: {
