@@ -29,9 +29,6 @@
     },
     "TwoPartyFixedOutcomeInterpreter": {
       "address": "0x43A9A00Ba48fFe0Fc09840FB4B1F047d71f8A546"
-    },
-    "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter": {
-      "address": "0x29ed7F1f4A863B468dE1Fe6dC33F2A08AE530f5B"
     }
   },
   "4": {
@@ -64,9 +61,6 @@
     },
     "TwoPartyFixedOutcomeInterpreter": {
       "address": "0x5AC29B1D3607fcE8216cC95F9E009A61c0048e6D"
-    },
-    "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter": {
-      "address": "0xab39f5aA1Bc1cB5442268b075f535c296aAee980"
     }
   },
   "42": {
@@ -99,9 +93,6 @@
     },
     "TwoPartyFixedOutcomeInterpreter": {
       "address": "0x0C8D6B0EF29f242ced6c52001aF3B15d488A2A63"
-    },
-    "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter": {
-      "address": "0x15b7EE87083e340B1F1e3d534Ad445B5c832c25C"
     }
   },
   "4447": {
@@ -135,7 +126,7 @@
     "TwoPartyFixedOutcomeInterpreter": {
       "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8"
     },
-    "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter": {
+    "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a"
     },
     "SimpleTwoPartySwapApp": {
