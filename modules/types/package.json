@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@connext/messaging": "0.0.2",
-    "@counterfactual/types": "0.0.26",
+    "@counterfactual/types": "0.0.27",
     "@types/jest": "24.0.15",
     "jest": "24.8.0",
     "rollup": "1.17.0",
