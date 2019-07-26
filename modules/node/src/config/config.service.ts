@@ -7,7 +7,6 @@ import { OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
 import { Network as EthNetwork } from "ethers/utils";
-import * as fs from "fs";
 
 import { Network } from "../constants";
 
@@ -28,6 +27,10 @@ type DefaultApp = {
   outcomeType: OutcomeType;
   stateEncoding: string;
 };
+
+const singleAssetTwoPartyCoinTransferEncoding = `
+  tuple(address to, uint256 amount)[2]
+`;
 
 @Injectable()
 export class ConfigService {
@@ -89,13 +92,23 @@ export class ConfigService {
     const addressBook = await this.getContractAddresses();
     return [
       {
-        actionEncoding: "tuple(uint256 transferAmount, bool finalize)",
+        actionEncoding: `
+          tuple(
+            uint8 actionType,
+            uint256 amount
+          )`,
         allowNodeInstall: false,
         appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER],
         name: KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: "tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)",
+        stateEncoding: `
+          tuple(
+            uint8 stage,
+            ${singleAssetTwoPartyCoinTransferEncoding} transfers,
+            uint256 turnNum,
+            bool finalized
+          )`,
       },
       {
         allowNodeInstall: true,
