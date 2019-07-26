@@ -46,7 +46,7 @@ export class AppRegistryService implements OnModuleInit {
       }),
     );
 
-    const proposedApps = proposedRes.result as NodeTypes.GetProposedAppInstancesResult;
+    const proposedApps = proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
     const proposedAppInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
       return app.identityHash === proposedAppParams.appInstanceId;
     });
@@ -93,9 +93,9 @@ export class AppRegistryService implements OnModuleInit {
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
   }
 
-  private async installOrReject(
+  private installOrReject = async (
     data: ProposeMessage,
-  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> {
+  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> => {
     try {
       await this.verifyAppProposal(data.data);
       const installResponse = await this.node.rpcRouter.dispatch(
@@ -124,7 +124,7 @@ export class AppRegistryService implements OnModuleInit {
       );
       return installResponse.result as NodeTypes.RejectInstallResult;
     }
-  }
+  };
 
   private registerNodeListeners(): void {
     registerCfNodeListener(
