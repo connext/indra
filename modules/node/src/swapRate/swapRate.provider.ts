@@ -2,8 +2,7 @@ import { IMessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Contract, ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { bigNumberify, formatEther, parseEther } from "ethers/utils";
-import interval from "interval-promise";
+import { bigNumberify, formatEther, parseEther, BigNumber, formatUnits } from "ethers/utils";
 
 import { medianizerAbi } from "../abi/medianizer.abi";
 import { ConfigService } from "../config/config.service";
@@ -28,12 +27,16 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   async getSwapRate(blockNumber?: number): Promise<string> {
     const oldRate = this.latestSwapRate;
     try {
-      this.latestSwapRate = formatEther((await this.medianizer.peek())[0]);
-      logger.debug(`Got swap rate from medianizer at block ${blockNumber}: ${this.latestSwapRate}`);
+      this.latestSwapRate = bigNumberify((await this.medianizer.peek())[0]).toString();
+      logger.debug(
+        `Got swap rate from medianizer at block ${blockNumber}: ${formatEther(
+          this.latestSwapRate,
+        )}`,
+      );
     } catch (e) {
       logger.warn(`Failed to fetch swap rate from medianizer`);
       if (process.env.NODE_ENV === "development" && !this.latestSwapRate) {
-        this.latestSwapRate = "1";
+        this.latestSwapRate = parseEther("200").toString();
         logger.log(`Dev-mode: using hard coded swap rate: ${this.latestSwapRate}`);
       }
     }
