@@ -8,7 +8,12 @@ const appContracts = [ "SimpleTwoPartySwapApp", "UnidirectionalTransferApp" ]
 
 const artifacts = {}
 for (const contract of coreContracts) {
-  artifacts[contract] = require(`@counterfactual/contracts/build/${contract}.json`)
+  // TODO REMOVE THIS
+  const contractToUse =
+    contract === "TwoPartyFixedOutcomeFromVirtualAppInterpreter"
+      ? "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter"
+      : contract
+  artifacts[contract] = require(`@counterfactual/contracts/build/${contractToUse}.json`)
 }
 for (const contract of appContracts) {
   artifacts[contract] = require(`../modules/contracts/build/${contract}.json`)
