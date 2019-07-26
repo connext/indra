@@ -48,22 +48,14 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
 
   async getLatestSwapRate(subject: string): Promise<any> {
     const tokenAddress = await this.config.getTokenAddress();
-    console.log('tokenAddress: ', tokenAddress);
-    console.log('subject: ', subject);
     const pieces = subject.split(".")
-    console.log('pieces: ', pieces);
     const [subj, from, to] = pieces;
-    console.log('to: ', to);
-    console.log('from: ', from);
-    console.log('subj: ', subj);
 
-    if (from === AddressZero && to === tokenAddress) {
-      console.log(`return rate for ${from}.${to}`);
-    } else {
-      logger.log(`No rate exists for ${from}.${to}`);
+    if (from === AddressZero && to.toLowerCase() === tokenAddress) {
+      return this.latestSwapRate || (await this.getSwapRate());
     }
-
-    return this.latestSwapRate || (await this.getSwapRate());
+    logger.log(`No rate exists for ${from}.${to}`);
+    return "none";
   }
 
   async broadcastRate(): Promise<void> {
@@ -74,7 +66,6 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    const tokenAddress = await this.config.getTokenAddress();
     super.connectRequestReponse(`swap-rate.>`, this.getLatestSwapRate.bind(this));
   }
 }
