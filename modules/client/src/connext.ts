@@ -1,5 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
+  AppActionBigNumber,
   AppRegistry,
   ChannelState,
   CreateChannelResponse,
@@ -12,7 +13,6 @@ import {
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
-  TransferAction,
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
@@ -539,7 +539,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public takeAction = async (
     appInstanceId: string,
-    action: TransferAction,
+    action: AppActionBigNumber,
   ): Promise<NodeTypes.TakeActionResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
