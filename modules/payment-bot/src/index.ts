@@ -129,7 +129,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
         storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
       }
       const raw = storeObj[key];
-      console.log(`Store got single match for ${key}: ${JSON.stringify(raw)}`);
+      //console.log(`Store got single match for ${key}: ${JSON.stringify(raw)}`);
       if (raw) {
         try {
           return JSON.parse(raw);
@@ -149,7 +149,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
           }
         }
       }
-      console.log(`Store got partial matches for key ${key}: ${JSON.stringify(partialMatches)}`);
+      //console.log(`Store got partial matches for key ${key}: ${JSON.stringify(partialMatches)}`);
       return partialMatches;
     },
     set: (pairs: any, allowDelete: boolean): void => {
@@ -157,7 +157,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
         storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
       }
       for (const pair of pairs) {
-        console.log(`Store saved: ${JSON.stringify(pair)}`);
+        //console.log(`Store saved: ${JSON.stringify(pair)}`);
         storeObj[pair.key] =
           typeof pair.value === "string" ? pair.value : JSON.stringify(pair.value);
       }
