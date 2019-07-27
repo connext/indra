@@ -19,7 +19,7 @@
   "devDependencies": {
     "@counterfactual/types": "0.0.27",
     "rollup": "1.17.0",
-    "rollup-plugin-typescript2": "0.22.0",
+    "rollup-plugin-typescript2": "0.22.1",
     "typescript": "3.5.3"
   }
 }
