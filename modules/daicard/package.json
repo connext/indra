@@ -23,7 +23,7 @@
 		"openzeppelin-solidity": "2.3.0",
 		"prop-types": "15.7.2",
 		"qrcode.react": "0.9.3",
-		"query-string": "6.8.1",
+		"query-string": "6.8.2",
 		"react": "16.8.6",
 		"react-copy-to-clipboard": "5.0.1",
 		"react-dom": "16.8.6",
