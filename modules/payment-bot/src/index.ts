@@ -1,16 +1,14 @@
 import * as connext from "@connext/client";
 import { DepositParameters, WithdrawParameters } from "@connext/types";
-import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
+import fs from "fs";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
 
 process.on("warning", (e: any): any => console.warn(e.stack));
-
-const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory(config.postgres);
 
 let client: connext.ConnextInternal;
 
@@ -63,6 +61,7 @@ async function run(): Promise<void> {
     console.log(`Attempting to deposit ${depositParams.amount} with assetId ${config.assetId}...`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
+    process.exit(0);
   }
 
   if (config.requestCollateral) {
@@ -123,19 +122,61 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
-  await pgServiceFactory.connectDb();
+  let storeObj;
+  const store = {
+    get: (key: string): any => {
+      if (!storeObj) {
+        storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
+      }
+      const raw = storeObj[key];
+      console.log(`Store got single match for ${key}: ${JSON.stringify(raw)}`);
+      if (raw) {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return raw;
+        }
+      }
+      // Handle partial matches so the following line works -.-
+      // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
+      const partialMatches = {};
+      for (const k of Object.keys(storeObj)) {
+        if (k.includes(`${key}/`)) {
+          try {
+            partialMatches[k.replace(`${key}/`, "")] = JSON.parse(storeObj[k]);
+          } catch {
+            partialMatches[k.replace(`${key}/`, "")] = storeObj[k];
+          }
+        }
+      }
+      console.log(`Store got partial matches for key ${key}: ${JSON.stringify(partialMatches)}`);
+      return partialMatches;
+    },
+    set: (pairs: any, allowDelete: boolean): void => {
+      if (!storeObj) {
+        storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
+      }
+      for (const pair of pairs) {
+        console.log(`Store saved: ${JSON.stringify(pair)}`);
+        storeObj[pair.key] =
+          typeof pair.value === "string" ? pair.value : JSON.stringify(pair.value);
+      }
+      fs.unlinkSync(config.dbFile);
+      fs.writeFileSync(config.dbFile, JSON.stringify(storeObj, null, 2));
+    },
+  };
 
   const connextOpts = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: 3,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
-    store: pgServiceFactory.createStoreService(config.username),
+    store,
   };
 
   console.log("Using client options:");
   console.log("     - mnemonic:", connextOpts.mnemonic);
-  console.log("     - rpcProviderUrl:", connextOpts.ethProviderUrl);
+  console.log("     - ethProviderUrl:", connextOpts.ethProviderUrl);
   console.log("     - nodeUrl:", connextOpts.nodeUrl);
 
   console.log("Creating connext");

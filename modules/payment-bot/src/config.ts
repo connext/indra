@@ -13,6 +13,10 @@ if (!process.env.MNEMONIC) {
   throw Error("No mnemonic specified in env. Exiting.");
 }
 
+if (!process.env.DB_FILENAME) {
+  throw Error("No dbFile specified in env. Exiting.");
+}
+
 const program = new commander.Command();
 program.version("0.0.1");
 
@@ -34,17 +38,9 @@ program
 program.parse(process.argv);
 
 export const config: any = {
+  dbFile: process.env.DB_FILENAME!,
   ethProviderUrl: process.env.ETH_RPC_URL!,
   mnemonic: process.env.MNEMONIC!,
   nodeUrl: process.env.NODE_URL!,
-  postgres: {
-    database: process.env.POSTGRES_DATABASE!,
-    host: process.env.POSTGRES_HOST!,
-    password: process.env.POSTGRES_PASSWORD!,
-    port: parseInt(process.env.POSTGRES_PORT!, 10),
-    type: "postgres" as any, // supposed to be an "expo" type, not a string? wtf mate?
-    username: process.env.POSTGRES_USER!,
-  },
-  username: process.env.USERNAME || "unknown",
   ...program,
 };
