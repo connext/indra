@@ -75,6 +75,7 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
+	rm -rf $(bot)/.payment-bot-db/*
 	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
@@ -90,10 +91,15 @@ deployed-contracts: node-modules
 test: test-node
 watch: watch-node
 
-test-e2e: prod
+start-e2e: prod
 	 INDRA_V2_ETH_NETWORK=ganache INDRA_V2_MODE=test bash ops/start-prod.sh
+
+test-e2e-ui: start-e2e
 	./node_modules/.bin/cypress install > /dev/null
 	./node_modules/.bin/cypress run --spec cypress/tests/index.js --env publicUrl=https://localhost
+
+test-e2e-bot: start-e2e
+	bash ops/test-bot.sh
 
 watch-e2e: node-modules
 	./node_modules/.bin/cypress install > /dev/null

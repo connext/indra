@@ -8,6 +8,7 @@ modules/**/.config
 modules/**/.node-gyp
 modules/**/.npm
 modules/daicard/src/react-app-env.d.ts
+.payment-bot-db
 
 # Compiled output
 build/
