@@ -1,33 +1,12 @@
 import * as connext from "@connext/client";
 import { DepositParameters, WithdrawParameters } from "@connext/types";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import commander from "commander";
 import { ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
+import { parseEther } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { parseEther } from "ethers/utils";
-
-const program = new commander.Command();
-program.version("0.0.1");
-
-program
-  .option("-x, --debug", "output extra debugging")
-  .option("-d, --deposit <amount>", "Deposit amount in Ether units")
-  .option(
-    "-a, --asset-id <address>",
-    "Asset ID/Token Address of deposited, withdrawn, swapped, or transferred asset",
-  )
-  .option("-t, --transfer <amount>", "Transfer amount in Ether units")
-  .option("-c, --counterparty <id>", "Counterparty public identifier")
-  .option("-i, --identifier <id>", "Bot identifier")
-  .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
-  .option("-r, --recipient <address>", "Withdrawal recipient address")
-  .option("-s, --swap <amount>", "Swap amount in Ether units")
-  .option("-q, --request-collateral", "Request channel collateral from the node");
-
-program.parse(process.argv);
 
 process.on("warning", (e: any): any => console.warn(e.stack));
 
@@ -59,7 +38,7 @@ export function getConnextClient(): connext.ConnextInternal {
 }
 
 async function run(): Promise<void> {
-  await getOrCreateChannel(program.assetId);
+  await getOrCreateChannel(config.assetId);
   await client.subscribeToSwapRates("eth", "dai", (msg: any) => {
     client.opts.store.set([
       {
@@ -68,49 +47,49 @@ async function run(): Promise<void> {
       },
     ]);
   });
-  if (program.assetId) {
-    assetId = program.assetId;
+  if (config.assetId) {
+    assetId = config.assetId;
   }
 
   const apps = await client.getAppInstances();
   console.log("apps: ", apps);
-  if (program.deposit) {
+  if (config.deposit) {
     const depositParams: DepositParameters = {
-      amount: ethers.utils.parseEther(program.deposit).toString(),
+      amount: ethers.utils.parseEther(config.deposit).toString(),
     };
-    if (program.assetId) {
-      depositParams.assetId = program.assetId;
+    if (config.assetId) {
+      depositParams.assetId = config.assetId;
     }
-    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
+    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${config.assetId}...`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
   }
 
-  if (program.requestCollateral) {
+  if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
-    await client.requestCollateral(program.assetId || AddressZero);
+    await client.requestCollateral(config.assetId || AddressZero);
   }
 
-  if (program.transfer) {
-    console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
+  if (config.transfer) {
+    console.log(`Attempting to transfer ${config.transfer} with assetId ${config.assetId}...`);
     await client.transfer({
-      amount: ethers.utils.parseEther(program.transfer).toString(),
-      assetId: program.assetId || AddressZero,
-      recipient: program.counterparty,
+      amount: ethers.utils.parseEther(config.transfer).toString(),
+      assetId: config.assetId || AddressZero,
+      recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
   }
 
-  if (program.swap) {
+  if (config.swap) {
     const tokenAddress = (await client.config()).contractAddresses.Token;
     const swapRate = client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(
-      `Attempting to swap ${program.swap} of eth for ${
-        program.assetId
+      `Attempting to swap ${config.swap} of eth for ${
+        config.assetId
       } at rate ${swapRate.toString()}...`,
     );
     await client.swap({
-      amount: ethers.utils.parseEther(program.swap).toString(),
+      amount: ethers.utils.parseEther(config.swap).toString(),
       fromAssetId: AddressZero,
       swapRate: swapRate.toString(),
       toAssetId: assetId,
@@ -118,15 +97,15 @@ async function run(): Promise<void> {
     console.log(`Successfully swapped!`);
   }
 
-  if (program.withdraw) {
+  if (config.withdraw) {
     const withdrawParams: WithdrawParameters = {
-      amount: ethers.utils.parseEther(program.withdraw).toString(),
+      amount: ethers.utils.parseEther(config.withdraw).toString(),
     };
-    if (program.assetId) {
-      withdrawParams.assetId = program.assetId;
+    if (config.assetId) {
+      withdrawParams.assetId = config.assetId;
     }
-    if (program.recipient) {
-      withdrawParams.recipient = program.recipient;
+    if (config.recipient) {
+      withdrawParams.recipient = config.recipient;
     }
     console.log(
       `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
