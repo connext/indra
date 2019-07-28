@@ -421,7 +421,6 @@ export class ConnextInternal extends ConnextChannel {
         params: {
           amount,
           multisigAddress: this.opts.multisigAddress,
-          notifyCounterparty,
           tokenAddress: assetId,
         } as NodeTypes.DepositParams,
       }),
