@@ -789,7 +789,7 @@ export class ConnextInternal extends ConnextChannel {
     const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
-        `Could not find installed app with id: ${appInstanceId}.` +
+        `Could not find installed app with id: ${appInstanceId}. ` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }
@@ -807,7 +807,7 @@ export class ConnextInternal extends ConnextChannel {
     const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (
-        `App with id ${appInstanceId} is already installed.` +
+        `App with id ${appInstanceId} is already installed. ` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }
