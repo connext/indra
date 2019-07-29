@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.0.2",
-    "@counterfactual/node": "0.2.31",
+    "@counterfactual/node": "0.2.32",
     "core-js": "3.1.4",
     "ethers": "4.0.33",
     "human-standard-token-abi": "2.0.0",
