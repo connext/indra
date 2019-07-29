@@ -8,7 +8,7 @@ import {
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, formatEther, bigNumberify } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
