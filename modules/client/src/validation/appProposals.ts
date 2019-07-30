@@ -62,9 +62,19 @@ export const validateTransferApp = async (
   return undefined;
 };
 
+// FIXME: implement
+export const validateLinkedTransferApp = async (
+  app: AppInstanceInfo,
+  registeredInfo: RegisteredAppDetails,
+  connext: ConnextInternal,
+): Promise<string | undefined> => {
+  return undefined;
+};
+
 export const appProposalValidation: ProposalValidator = {
-  UnidirectionalTransferApp: validateTransferApp,
   SimpleTwoPartySwapApp: validateSwapApp,
+  UnidirectionalLinkedTransferApp: validateLinkedTransferApp,
+  UnidirectionalTransferApp: validateTransferApp,
 };
 
 const prettyLog = (app: AppInstanceInfo) => {
