@@ -7,7 +7,7 @@ import "@counterfactual/contracts/contracts/interfaces/CounterfactualApp.sol";
 import "@counterfactual/contracts/contracts/libs/LibOutcome.sol";
 
 
-/// @title Unidirectional Transfer App
+/// @title Unidirectional Linked Transfer App
 /// @notice This contract allows users to claim a payment locked in 
 ///         the application if they provide the correct preimage
 
@@ -33,7 +33,7 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
   struct AppState {
     AppStage stage;
     LibOutcome.CoinTransfer[2] transfers;
-    hash linkHash;
+    bytes32 linkedHash;
 
     // NOTE: These following parameters are soon
     //       to be built in as framework-level
@@ -63,7 +63,10 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
   // }
 
   struct Action {
-    bytes preImage;
+    uint256 amount;
+    address assetId;
+    string paymentId;
+    string preImage;
   }
 
   function computeOutcome(bytes calldata encodedState)
@@ -92,8 +95,13 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
       (Action)
     );
 
-    hash memory generatedHash = keccak256(action.preImage);
-    if (generatedHash == state.linkHash) {
+    bytes32 generatedHash = keccak256(abi.encodePacked(
+      action.amount,
+      action.assetId,
+      action.paymentId,
+      action.preImage
+    ));
+    if (generatedHash == state.linkedHash) {
       /**
        * If the hash is correct, finalize the state with provided transfers.
        */
@@ -114,6 +122,8 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
               state.transfers[1].amount
             )
           ]),
+          /* link hash */
+          state.linkedHash,
           /* turnNum */
           state.turnNum + 1,
           /* finalized */
@@ -139,6 +149,8 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
               state.transfers[0].amount
             )
           ]),
+          /* link hash */
+          state.linkedHash,
           /* turnNum */
           state.turnNum + 1,
           /* finalized */
