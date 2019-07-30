@@ -10,7 +10,7 @@ import {
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, getAddress } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay } from "../lib/utils";
@@ -157,12 +157,12 @@ export class TransferController extends AbstractController {
       transfers: [
         {
           amount,
-          to: this.wallet.address,
+          to: getAddress(this.wallet.address),
           // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
         },
         {
           amount: Zero,
-          to: fromExtendedKey(recipient).derivePath("0").address,
+          to: getAddress(fromExtendedKey(recipient).derivePath("0").address),
         },
       ],
       turnNum: Zero,
@@ -179,12 +179,12 @@ export class TransferController extends AbstractController {
       // TODO: make initial state types for all apps
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDepositTokenAddress: getAddress(assetId),
       intermediaries: [this.connext.nodePublicIdentifier],
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositTokenAddress: getAddress(assetId),
       timeout: Zero, // TODO: fix, add to app info?
     };
 
