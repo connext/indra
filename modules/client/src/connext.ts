@@ -4,6 +4,7 @@ import {
   AppRegistry,
   ChannelState,
   ConditionalTransferParameters,
+  ConditionalTransferResponse,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -213,7 +214,9 @@ export abstract class ConnextChannel {
     return await this.internal.resolveCondition(params);
   };
 
-  public conditionalTransfer = async (params: ConditionalTransferParameters): Promise<ChannelState> => {
+  public conditionalTransfer = async (
+    params: ConditionalTransferParameters,
+  ): Promise<ConditionalTransferResponse> => {
     return await this.internal.conditionalTransfer(params);
   };
 
@@ -392,7 +395,9 @@ export class ConnextInternal extends ConnextChannel {
     return await this.resolveConditionController.resolve(params);
   };
 
-  public conditionalTransfer = async (params: ConditionalTransferParameters): Promise<ChannelState> => {
+  public conditionalTransfer = async (
+    params: ConditionalTransferParameters,
+  ): Promise<ConditionalTransferResponse> => {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
