@@ -300,6 +300,14 @@ export type WithdrawParameters<T = string> = DepositParameters<T> & {
 };
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 
+///// Resolve condition types
+// FIXME: should be union type of all supported resolutions
+export type ResolveConditionParameters = any;
+
+///// Conditional transfer types
+// FIXME: should be union type of all supported conditions
+export type ConditionalTransferParameters = any;
+
 /////////////////////////////////
 ///////// CONVERSION FNS
 
