@@ -29,6 +29,7 @@ export class TransferController extends AbstractController {
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
+    this.log.info(`********** assetId: ${assetId}`);
     const invalid = await this.validate(recipient, amount, assetId);
     if (invalid) {
       throw new Error(invalid.toString());
@@ -52,6 +53,12 @@ export class TransferController extends AbstractController {
     if (!appId) {
       throw new Error(`App was not installed`);
     }
+
+    // display state of app
+    const appState = await this.connext.getAppState(appId);
+    (appState.state as any).transfers[0].amount = (appState.state as any).transfers[0].amount.toString();
+    (appState.state as any).transfers[1].amount = (appState.state as any).transfers[1].amount.toString();
+    this.log.info(`******** app state installed: ${JSON.stringify(appState, null, 2)}`);
 
     // update state
     await this.connext.takeAction(this.appId, {
@@ -216,6 +223,12 @@ export class TransferController extends AbstractController {
       actionType: UnidirectionalTransferAppActionType.END_CHANNEL,
       amount: Zero,
     });
+
+    // display final state of app
+    const appInfo = await this.connext.getAppState(appId);
+    (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
+    (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
+    this.log.info(`******** app state finalized: ${JSON.stringify(appInfo, null, 2)}`);
 
     await this.connext.uninstallVirtualApp(appId);
     // TODO: cf does not emit uninstall virtual event on the node
