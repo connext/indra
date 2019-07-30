@@ -53,6 +53,7 @@ const unidirectionalLinkedTransferAppStateEncoding = `
 
 // TODO: does this need to be a tuple if ya know... its just
 // one thing....
+// RS: yes it does, tuple is a struct which the action is
 const unidirectionalLinkedTransferAppActionEncoding = `
   tuple(
     uint256 amount,
