@@ -3,6 +3,7 @@ import {
   AppActionBigNumber,
   AppRegistry,
   ChannelState,
+  ConditionalTransferParameters,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -10,6 +11,7 @@ import {
   NodeChannel,
   PaymentProfile,
   RegisteredAppDetails,
+  ResolveConditionParameters,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
@@ -31,7 +33,9 @@ import { BigNumber, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
+import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
+import { ResolveConditionController } from "./controllers/ResolveContitionController";
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
@@ -205,6 +209,14 @@ export abstract class ConnextChannel {
     return await this.internal.withdraw(params);
   };
 
+  public resolveCondition = async (params: ResolveConditionParameters): Promise<ChannelState> => {
+    return await this.internal.resolveCondition(params);
+  };
+
+  public conditionalTransfer = async (params: ConditionalTransferParameters): Promise<ChannelState> => {
+    return await this.internal.conditionalTransfer(params);
+  };
+
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
   public config = async (): Promise<GetConfigResponse> => {
@@ -314,6 +326,8 @@ export class ConnextInternal extends ConnextChannel {
   private transferController: TransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
+  private conditionalTransferController: ConditionalTransferController;
+  private resolveConditionController: ResolveConditionController;
 
   constructor(opts: InternalClientOptions) {
     super(opts);
@@ -334,8 +348,6 @@ export class ConnextInternal extends ConnextChannel {
     this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
 
     this.logger = new Logger("ConnextInternal", opts.logLevel);
-    // TODO: fix with bos config!
-    console.log("******* setting network context: ", opts.network);
     this.network = opts.network;
 
     // establish listeners
@@ -347,6 +359,14 @@ export class ConnextInternal extends ConnextChannel {
     this.transferController = new TransferController("TransferController", this);
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
+    this.resolveConditionController = new ResolveConditionController(
+      "ResolveConditionController",
+      this,
+    );
+    this.conditionalTransferController = new ConditionalTransferController(
+      "ConditionalTransferController",
+      this,
+    );
   }
 
   ///////////////////////////////////
@@ -366,6 +386,14 @@ export class ConnextInternal extends ConnextChannel {
 
   public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
     return await this.withdrawalController.withdraw(params);
+  };
+
+  public redeem = async (params: ResolveConditionParameters): Promise<ChannelState> => {
+    return await this.resolveConditionController.resolve(params);
+  };
+
+  public conditionalTransfer = async (params: ConditionalTransferParameters): Promise<ChannelState> => {
+    return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
   ///////////////////////////////////
