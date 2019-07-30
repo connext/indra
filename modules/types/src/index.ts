@@ -20,18 +20,6 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 ////////////////////////////////////
 ////// APP REGISTRY
 
-// app name : deployed address
-// TODO: use deployed addresses!!!
-// TODO: better way to use with networks...?
-// TODO: rename? cf has type ABIEncoding = string
-export type UnidirectionalTransferAppInitialState<T = string> = {
-  finalized: false;
-  transfers: [Transfer<T>, Transfer<T>];
-};
-export type UnidirectionalTransferAppInitialStateBigNumber = UnidirectionalTransferAppInitialState<
-  BigNumber
->;
-
 export const SupportedApplications = {
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
   UnidirectionalTransferApp: "UnidirectionalTransferApp",
@@ -63,43 +51,9 @@ export type RegisteredAppDetails = {
 export type AppRegistry = RegisteredAppDetails[];
 
 ////////////////////////////////////
-////// APP INTERFACES
+////// APP TYPES
 
-export type MultiCoinTransfer = {
-  to: string;
-  tokenAddresses: string[];
-  amounts: BigNumber[];
-};
-
-export type SwapAppState = {
-  multiCoinTransfers: MultiCoinTransfer[];
-};
-
-////////////////////////////////////
-////// LOW LEVEL CHANNEL TYPES
-
-// payment setups
-export type PaymentProfile<T = string> = {
-  tokenAddress: string;
-  minimumMaintainedCollateral: T;
-  amountToCollateralize: T;
-};
-export type PaymentProfileBigNumber = PaymentProfile<BigNumber>;
-
-// transfer types
-export type Transfer<T = string> = {
-  amount: T;
-  to: Address; // NOTE: must be the xpub!!!
-};
-export type TransferBigNumber = Transfer<BigNumber>;
-
-// asset types
-export interface AssetAmount<T = string> {
-  amount: T;
-  assetId: Address; // empty address if eth
-}
-export type AssetAmountBigNumber = AssetAmount<BigNumber>;
-
+//////// General
 export type App<T = string> = {
   id: number;
   channel: NodeChannel;
@@ -124,34 +78,87 @@ export type AppUpdate<T = string> = {
 };
 export type AppUpdateBigNumber = AppUpdate<BigNumber>;
 
+export type CoinTransfer<T = string> = {
+  amount: T;
+  to: Address; // NOTE: must be the xpub!!!
+};
+export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
+
 // all the types of counterfactual app states
+// TODO: add swap app
 export type AppState<T = string> = UnidirectionalTransferAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
+// TODO: add swap app
 export type AppAction<T = string> = UnidirectionalTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
-////// UnidirectionalTransferApp.sol typings
-// @rahul --> does this need to be an interface or are types fine?
+//////// Swap apps
+export type MultiCoinTransfer<T = string> = {
+  to: string;
+  coinAddress: string[];
+  balance: T[];
+};
+export type MultiCoinTransferBigNumber = MultiCoinTransfer<BigNumber>;
+
+// export type SimpleSwapAppState<T = string> = {
+//   coinBalances: CoinTransfer<T>[];
+// };
+// export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
+export type SimpleSwapAppState<T = string> = {
+  coinBalances: MultiCoinTransfer<T>[];
+};
+export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
+
+////// Unidirectional transfer app
 export type UnidirectionalTransferAppState<T = string> = {
-  transfers: [Transfer<T>, Transfer<T>];
-  finalized: boolean;
+  finalized: false;
+  transfers: [CoinTransfer<T>, CoinTransfer<T>];
+  stage: UnidirectionalTransferAppStage;
+  turnNum: T;
 };
 export type UnidirectionalTransferAppStateBigNumber = UnidirectionalTransferAppState<BigNumber>;
 
-export type UnidirectionalTransferAppAction<T = string> = {
-  transferAmount: T;
-  finalize: boolean;
-};
-export type UnidirectionalTransferAppActionBigNumber = UnidirectionalTransferAppAction<BigNumber>;
+export enum UnidirectionalTransferAppActionType {
+  SEND_MONEY,
+  END_CHANNEL,
+}
 
-export type User<T = string> = {
+export type UnidirectionalTransferAppAction<T = string> = {
+  actionType: UnidirectionalTransferAppActionType;
+  amount: T;
+};
+
+export enum UnidirectionalTransferAppStage {
+  POST_FUND,
+  MONEY_SENT,
+  CHANNEL_CLOSED,
+}
+
+////////////////////////////////////
+////// CHANNEL TYPES
+
+// payment setups
+export type PaymentProfile<T = string> = {
+  tokenAddress: string;
+  minimumMaintainedCollateral: T;
+  amountToCollateralize: T;
+};
+export type PaymentProfileBigNumber = PaymentProfile<BigNumber>;
+
+// asset types
+export interface AssetAmount<T = string> {
+  amount: T;
+  assetId: Address; // empty address if eth
+}
+export type AssetAmountBigNumber = AssetAmount<BigNumber>;
+
+export type User = {
   id: number;
   xpub: string;
   channels: NodeChannel[];
 };
-export type UserBigNumber = User<BigNumber>;
 
 export type NodeChannel = {
   id: number;
@@ -195,7 +202,7 @@ export type TransferAction = {
 };
 
 // TODO: define properly!!
-export interface ChannelProvider {}
+export type ChannelProvider = any;
 
 export type MultisigState<T = string> = {
   id: number;
@@ -364,11 +371,11 @@ export function convertAssetAmount<To extends NumericTypeName>(
 ): AssetAmount<NumericTypes[To]>;
 export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
-  obj: Transfer<any>,
-): Transfer<NumericTypes[To]>;
+  obj: CoinTransfer<any>,
+): CoinTransfer<NumericTypes[To]>;
 export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
-  obj: AssetAmount<any> | Transfer<any>,
+  obj: AssetAmount<any> | CoinTransfer<any>,
 ): any {
   const fromType = getType(obj.amount);
   return convertFields(fromType, to, ["amount"], obj);

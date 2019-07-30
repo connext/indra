@@ -1,8 +1,14 @@
-import { convert, NodeChannel, SwapParameters } from "@connext/types";
+import {
+  convert,
+  NodeChannel,
+  RegisteredAppDetails,
+  SimpleSwapAppStateBigNumber,
+  SwapParameters,
+} from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
@@ -11,6 +17,9 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
+export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): any => {
+  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, "")).toString();
+};
 export class SwapController extends AbstractController {
   private appId: string;
   private timeout: NodeJS.Timeout;
@@ -33,8 +42,23 @@ export class SwapController extends AbstractController {
     // get app definition from constants
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
 
+    // FIXME: when you dont have the looping, you try to uninstall before the
+    // app is returned from `getAppInstances` (even though it is already
+    // installed?) so thats not that tight
+    const preInstallApps = (await this.connext.getAppInstances()).length;
+
     // install the swap app
     await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
+
+    this.log.info(`Swap app successfully installed! Uninstalling without updating state.`);
+
+    while ((await this.connext.getAppInstances()).length <= preInstallApps) {
+      this.log.info(
+        `still could not pick up any newly installed apps after ` +
+          `installing swap. waiting 1s and trying again...`,
+      );
+      await delay(1000);
+    }
 
     // if app installed, that means swap was accepted
     // now uninstall
@@ -65,25 +89,26 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
-    swapRate: BigNumber,
+    swapRate: BigNumber, // (wei tokens) / eth
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
     const nodeBal = preSwapToBal[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
+    const swappedAmount = calculateExchange(amount, swapRate);
     const errs = [
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
-      notLessThanOrEqualTo(amount.mul(swapRate), nodeBal),
+      notLessThanOrEqualTo(swappedAmount, nodeBal),
       notPositive(swapRate),
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
 
   // TODO: fix type of data
-  private resolveInstallSwap = (res: any, data: any): any => {
+  private resolveInstallSwap = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
       return;
     }
@@ -105,42 +130,61 @@ export class SwapController extends AbstractController {
     return msg.data;
   };
 
+  // TODO: fix for virtual exchanges!
   private swapAppInstall = async (
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
     swapRate: BigNumber,
-    appInfo: any,
+    appInfo: RegisteredAppDetails,
   ): Promise<any> => {
     let boundResolve;
     let boundReject;
 
-    const params: any /*NodeTypes.ProposeInstallParams*/ = {
+    const swappedAmount = calculateExchange(amount, swapRate);
+
+    this.log.info(
+      `Installing swap app. Swapping ${amount.toString()} of ${fromAssetId} for ${swappedAmount.toString()} of ${toAssetId}`,
+    );
+
+    // TODO: is this the right state and typing?? In contract tests, uses
+    // something completely different
+
+    // FIXME: using this encoding (corresponds to MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
+    // outcome type) will currently lead to an unimplemented error after install
+
+    // ALSO, this is *NOT* the right initial state and encoding for the eventual
+    // correct outcome. check the notion doc. typescript defs won't work for the
+    // outcome type either
+    const initialState: SimpleSwapAppStateBigNumber = {
+      coinBalances: [
+        {
+          balance: [amount],
+          coinAddress: [fromAssetId],
+          to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+        },
+        {
+          balance: [swappedAmount],
+          coinAddress: [toAssetId],
+          to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
+        },
+      ],
+    };
+
+    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
+
+    const params: NodeTypes.ProposeInstallParams = {
       abiEncodings: {
-        actionEncoding: appInfo.actionEncoding,
-        stateEncoding: appInfo.stateEncoding,
+        actionEncoding,
+        stateEncoding,
       },
-      appDefinition: appInfo.appDefinitionAddress,
-      initialState: {
-        coinBalances: [
-          {
-            balance: [amount, Zero],
-            coinAddress: [fromAssetId, toAssetId],
-            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
-          },
-          {
-            balance: [Zero, amount.mul(swapRate)],
-            coinAddress: [fromAssetId, toAssetId],
-            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
-          },
-        ],
-        finalized: false,
-      } as any,
+      appDefinition,
+      initialState,
       initiatorDeposit: amount, // TODO will this work?
       initiatorDepositTokenAddress: fromAssetId,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: amount.mul(swapRate), // TODO will this work? ERC20 context?
+      responderDeposit: swappedAmount, // TODO will this work? ERC20 context?
       responderDepositTokenAddress: toAssetId,
       timeout: Zero,
     };
@@ -153,12 +197,13 @@ export class SwapController extends AbstractController {
     await new Promise((res, rej) => {
       boundReject = this.rejectInstallSwap.bind(null, rej);
       boundResolve = this.resolveInstallSwap.bind(null, res);
-      this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-      this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-      this.timeout = setTimeout(() => {
-        this.cleanupInstallListeners(boundResolve, boundReject);
-        boundReject({ data: { appInstanceId: this.appId } });
-      }, 5000);
+      this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
+      this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+      // this.timeout = setTimeout(() => {
+      //   this.log.info("Install swap app timed out, rejecting install.")
+      //   this.cleanupInstallListeners(boundResolve, boundReject);
+      //   boundReject({ data: { appInstanceId: this.appId } });
+      // }, 5000);
     });
 
     this.cleanupInstallListeners(boundResolve, boundReject);
@@ -166,13 +211,13 @@ export class SwapController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(NodeTypes.EventName.INSTALL, boundResolve);
+    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
   };
 
   private swapAppUninstall = async (appId: string): Promise<void> => {
-    await this.connext.uninstallVirtualApp(appId);
-    // TODO: cf does not emit uninstall virtual event on the node
+    await this.connext.uninstallApp(appId);
+    // TODO: cf does not emit uninstall event on the node
     // that has called this function but ALSO does not immediately
     // uninstall the apps. This will be a problem when trying to
     // display balances...
