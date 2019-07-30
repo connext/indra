@@ -115,9 +115,14 @@ export class ConfigService {
         appDefinitionAddress: addressBook[KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP],
         name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
         network: Network[ethNetwork.name.toUpperCase()],
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateEncoding:
-          "tuple(tuple(address to, address[] coinAddress, uint256[] balance)[] coinBalances)",
+          `tuple(
+            tuple(
+              address to,
+              uint256 amount
+            )[] coinTransfers
+          )`,
       },
     ];
   }
