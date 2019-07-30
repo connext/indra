@@ -3,7 +3,7 @@ import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 
 import UnidirectionalLinkedTransferApp from "../build/UnidirectionalLinkedTransferApp.json";
 
@@ -58,8 +58,8 @@ const unidirectionalLinkedTransferAppActionEncoding = `
   tuple(
     uint256 amount,
     address assetId,
-    string paymentId,
-    string preImage
+    bytes32 paymentId,
+    bytes32 preImage
   )
 `;
 
@@ -81,7 +81,7 @@ function encodeAppAction(state: SolidityABIEncoderV2Type): string {
 
 function createLinkedHash(action: UnidirectionalLinkedTransferAppAction): string {
   return solidityKeccak256(
-    ["uint256", "address", "string", "string"],
+    ["uint256", "address", "bytes32", "bytes32"],
     [action.amount, action.assetId, action.paymentId, action.preImage],
   );
 }
@@ -152,8 +152,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = "payment-id";
-    const preImage = "super-secret-preimage";
+    const paymentId = hexlify(randomBytes(32));
+    const preImage = hexlify(randomBytes(32));
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -207,8 +207,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = "payment-id";
-    const preImage = "super-secret-preimage";
+    const paymentId = hexlify(randomBytes(32));
+    const preImage = hexlify(randomBytes(32));
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -220,7 +220,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
     const linkedHash = createLinkedHash(action);
     const suppliedAction: UnidirectionalLinkedTransferAppAction = {
       ...action,
-      preImage: "this-is-wrong",
+      preImage: hexlify(randomBytes(32)),
     };
 
     /**
