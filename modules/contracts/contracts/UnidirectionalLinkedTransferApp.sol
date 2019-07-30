@@ -65,8 +65,8 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
   struct Action {
     uint256 amount;
     address assetId;
-    string paymentId;
-    string preImage;
+    bytes32 paymentId;
+    bytes32 preImage;
   }
 
   function computeOutcome(bytes calldata encodedState)
