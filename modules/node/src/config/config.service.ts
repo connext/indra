@@ -117,12 +117,8 @@ export class ConfigService {
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateEncoding:
-          `tuple(
-            tuple(
-              address to,
-              uint256 amount
-            )[] coinTransfers
-          )`,
+          `tuple(address to, uint256 amount)[][]
+          `,
       },
     ];
   }
