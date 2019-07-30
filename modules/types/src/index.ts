@@ -335,19 +335,37 @@ export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 export type ResolveConditionParameters = any;
 
 ///// Conditional transfer types
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferParameters<T = string> = {
+
+// TODO: maybe not an enum?
+export const TransferConditions = {
+  LINKED_TRANSFER: "LINKED_TRANSFER",
+};
+export type TransferCondition = keyof typeof TransferConditions;
+
+// linked transfer types
+export type LinkedTransferParameters<T = string> = {
+  conditionType: "LINKED_TRANSFER";
   amount: T;
   assetId: Address;
-  recipient: Address;
 };
-export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
+export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
-export type ConditionalTransferResponse = {
+export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
   freeBalance: NodeTypes.GetFreeBalanceStateResult;
 };
+
+// FIXME: should be union type of all supported conditions
+export type ConditionalTransferParameters<T = string> = LinkedTransferParameters<T>;
+export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
+
+// FIXME: should be union type of all supported conditions
+export type ConditionalTransferResponse = LinkedTransferResponse;
+
+export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
+
+export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
 
 /////////////////////////////////
 ///////// CONVERSION FNS
@@ -503,11 +521,20 @@ export function convertAppState<To extends NumericTypeName>(
   };
 }
 
+export function convertLinkedTransferParameters<To extends NumericTypeName>(
+  to: To,
+  obj: LinkedTransferParameters<any>,
+): LinkedTransferParameters<NumericTypes[To]> {
+  const fromType = getType(obj.amount);
+  return convertFields(fromType, to, ["amount"], obj);
+}
+
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert: any = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
+  LinkedTransfer: convertLinkedTransferParameters,
   Multisig: convertMultisig,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
