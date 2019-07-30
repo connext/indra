@@ -85,7 +85,7 @@ function createLinkedHash(action: UnidirectionalLinkedTransferAppAction): string
   );
 }
 
-async function assertRedeemed(
+function assertRedeemed(
   state: UnidirectionalLinkedTransferAppState,
   params: {
     senderAddr: string;
@@ -95,7 +95,7 @@ async function assertRedeemed(
     turnNum: BigNumber;
   },
   valid: boolean = true,
-): Promise<void> {
+): void {
   const { senderAddr, redeemerAddr, linkedHash, amount, turnNum } = params;
   // assert transfer addresses
   expect(state.transfers[0].to.toLowerCase()).to.eq(senderAddr.toLowerCase());
