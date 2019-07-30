@@ -22,6 +22,7 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 export const SupportedApplications = {
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
+  UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
   UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
@@ -133,6 +134,35 @@ export type UnidirectionalTransferAppAction<T = string> = {
 export enum UnidirectionalTransferAppStage {
   POST_FUND,
   MONEY_SENT,
+  CHANNEL_CLOSED,
+}
+
+////// Unidirectional linked transfer app
+export type UnidirectionalLinkedTransferAppState<T = string> = {
+  stage: UnidirectionalLinkedTransferAppStage;
+  transfers: [CoinTransfer<T>, CoinTransfer<T>];
+  linkedHash: string;
+  turnNum: T;
+  finalized: false;
+};
+export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<
+  BigNumber
+>;
+
+export type UnidirectionalLinkedTransferAppAction<T = string> = {
+  amount: T;
+  assetId: Address;
+  paymentId: string;
+  preImage: string;
+};
+
+export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<
+  BigNumber
+>;
+
+export enum UnidirectionalLinkedTransferAppStage {
+  POST_FUND,
+  PAYMENT_CLAIMED,
   CHANNEL_CLOSED,
 }
 
@@ -306,7 +336,18 @@ export type ResolveConditionParameters = any;
 
 ///// Conditional transfer types
 // FIXME: should be union type of all supported conditions
-export type ConditionalTransferParameters = any;
+export type ConditionalTransferParameters<T = string> = {
+  amount: T;
+  assetId: Address;
+  recipient: Address;
+};
+export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
+
+export type ConditionalTransferResponse = {
+  paymentId: string;
+  preImage: string;
+  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+};
 
 /////////////////////////////////
 ///////// CONVERSION FNS
