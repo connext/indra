@@ -157,15 +157,13 @@ export class SwapController extends AbstractController {
     // correct outcome. check the notion doc. typescript defs won't work for the
     // outcome type either
     const initialState: SimpleSwapAppStateBigNumber = {
-      coinBalances: [
+      coinTransfers: [
         {
-          balance: [amount],
-          coinAddress: [fromAssetId],
+          amount: swappedAmount,
           to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
         },
         {
-          balance: [swappedAmount],
-          coinAddress: [toAssetId],
+          amount,
           to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
         },
       ],
