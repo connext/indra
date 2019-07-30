@@ -1,8 +1,4 @@
-import {
-  ChannelState,
-  RegisteredAppDetails,
-  ResolveConditionParameters,
-} from "@connext/types";
+import { ChannelState, RegisteredAppDetails, ResolveConditionParameters } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
 
