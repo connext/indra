@@ -60,6 +60,9 @@ export class SwapController extends AbstractController {
       await delay(1000);
     }
 
+    // TODO: should we check if its the right app?
+    this.log.info(`Found installed app in app instances`);
+
     // if app installed, that means swap was accepted
     // now uninstall
     await this.swapAppUninstall(this.appId);
