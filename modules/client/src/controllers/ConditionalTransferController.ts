@@ -23,7 +23,7 @@ import { falsy, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
-type ConditionalExecution = {
+type ConditionalExecutors = {
   [index in TransferCondition]: (
     params: ConditionalTransferParameters,
   ) => Promise<ConditionalTransferResponse>;
@@ -208,7 +208,8 @@ export class ConditionalTransferController extends AbstractController {
     this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
   };
 
-  private conditionalExecutors: ConditionalExecution = {
+  // add all executors/handlers here
+  private conditionalExecutors: ConditionalExecutors = {
     LINKED_TRANSFER: this.handleLinkedTransfers,
   };
 }
