@@ -75,11 +75,9 @@ export class ConfigService {
     if (chainId === "4") ethAddresses = processCfAddressBook(chain4AddressBook);
     if (chainId === "42") ethAddresses = processCfAddressBook(chain42AddressBook);
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
-    Object.keys(ethAddressBook[chainId]).map(
-      (contract: string): void => {
-        ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
-      },
-    );
+    Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
+      ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
+    });
     return ethAddresses as ContractAddresses;
   }
 
