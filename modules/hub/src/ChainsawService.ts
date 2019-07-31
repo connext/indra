@@ -195,7 +195,15 @@ export default class ChainsawService {
     const fromBlock = lastBlock + 1
 
     this.log.info(`FETCHING EVENTS, doFetchEventsFromRange(${fromBlock}, ${toBlock})`)
+
+    const timeout = setTimeout(() => {
+      console.log(`web3.eth.getBlockNumber() is taking too long (> 30s), restarting..`);
+      process.exit(1)
+    }, 30 * 1000);
+
     await this.doFetchEventsFromRange(fromBlock, toBlock);
+
+    clearTimeout(timeout);
   }
 
   private async doProcessEvents() {
