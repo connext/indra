@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
   "scripts": {
