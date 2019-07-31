@@ -33,13 +33,15 @@ program
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
   .option("-r, --recipient <address>", "Withdrawal recipient address")
   .option("-s, --swap <amount>", "Swap amount in Ether units")
-  .option("-q, --request-collateral", "Request channel collateral from the node");
+  .option("-q, --request-collateral", "Request channel collateral from the node")
+  .option("-l, --log-level", "0: no logs, 1: errors, 2: warnings, 3: info, 4: debug, 5: all logs");
 
 program.parse(process.argv);
 
 export const config: any = {
   dbFile: process.env.DB_FILENAME!,
   ethProviderUrl: process.env.ETH_RPC_URL!,
+  logLevel: 3,
   mnemonic: process.env.MNEMONIC!,
   nodeUrl: process.env.NODE_URL!,
   ...program,

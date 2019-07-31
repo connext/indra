@@ -51,6 +51,8 @@ fi
 echo
 echo "Deploying payment bot..."
 
+my_id="`id -u`:`id -g`"
+
 docker run \
   --entrypoint="bash" \
   --env="DB_FILENAME=$DB_FILENAME" \
@@ -61,6 +63,7 @@ docker run \
   --name="${project}_payment_bot_$identifier" \
   --rm \
   --tty \
+  --user="$my_id" \
   --volume="`pwd`:/root" \
   --workdir="/root" \
   ${project}_builder -c '

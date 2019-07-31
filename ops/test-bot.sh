@@ -10,7 +10,7 @@ id="xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYz
 
 echo;echo "Starting recipient payment bot";echo;sleep 1
 
-bash ops/payment-bot.sh -i 1 &
+bash ops/payment-bot.sh -i 1 -q &
 
 sleep 3;echo;echo "Depositing eth into sender bot";echo;sleep 1
 
@@ -20,11 +20,11 @@ sleep 1;echo;echo "Depositing tokens into sender bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -d 0.1 -a $tokenAddress
 
-exit # transfers are broken atm..
-
 sleep 1;echo;echo "Sending eth to recipient bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id
+
+exit # token transfers are broken right now..
 
 sleep 1;echo;echo "Sending tokens to recipient bot";echo;sleep 1
 

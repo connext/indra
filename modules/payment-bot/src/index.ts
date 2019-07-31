@@ -3,12 +3,12 @@ import { DepositParameters, WithdrawParameters } from "@connext/types";
 import { ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
-import fs from "fs";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
+import { store } from "./store";
 
-process.on("warning", (e: any): any => console.warn(e.stack));
+process.on("warning", (e: any): any => process.exit(1));
 
 let client: connext.ConnextInternal;
 
@@ -77,6 +77,7 @@ async function run(): Promise<void> {
       recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
+    process.exit(0);
   }
 
   if (config.swap) {
@@ -94,6 +95,7 @@ async function run(): Promise<void> {
       toAssetId: assetId,
     });
     console.log(`Successfully swapped!`);
+    process.exit(0);
   }
 
   if (config.withdraw) {
@@ -112,6 +114,7 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
+    process.exit(0);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
@@ -122,53 +125,9 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
-  let storeObj;
-  const store = {
-    get: (key: string): any => {
-      if (!storeObj) {
-        storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
-      }
-      const raw = storeObj[key];
-      //console.log(`Store got single match for ${key}: ${JSON.stringify(raw)}`);
-      if (raw) {
-        try {
-          return JSON.parse(raw);
-        } catch {
-          return raw;
-        }
-      }
-      // Handle partial matches so the following line works -.-
-      // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
-      const partialMatches = {};
-      for (const k of Object.keys(storeObj)) {
-        if (k.includes(`${key}/`)) {
-          try {
-            partialMatches[k.replace(`${key}/`, "")] = JSON.parse(storeObj[k]);
-          } catch {
-            partialMatches[k.replace(`${key}/`, "")] = storeObj[k];
-          }
-        }
-      }
-      //console.log(`Store got partial matches for key ${key}: ${JSON.stringify(partialMatches)}`);
-      return partialMatches;
-    },
-    set: (pairs: any, allowDelete: boolean): void => {
-      if (!storeObj) {
-        storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
-      }
-      for (const pair of pairs) {
-        //console.log(`Store saved: ${JSON.stringify(pair)}`);
-        storeObj[pair.key] =
-          typeof pair.value === "string" ? pair.value : JSON.stringify(pair.value);
-      }
-      fs.unlinkSync(config.dbFile);
-      fs.writeFileSync(config.dbFile, JSON.stringify(storeObj, null, 2));
-    },
-  };
-
   const connextOpts = {
     ethProviderUrl: config.ethProviderUrl,
-    logLevel: 3,
+    logLevel: config.logLevel,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
     store,
