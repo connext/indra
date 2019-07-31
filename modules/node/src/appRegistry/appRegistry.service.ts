@@ -1,14 +1,11 @@
 import { KnownNodeAppNames } from "@connext/types";
-import { jsonRpcDeserialize, Node, ProposeMessage } from "@counterfactual/node";
-import {
-  AppInstanceInfo,
-  Node as NodeTypes,
-  SolidityABIEncoderV2Type,
-} from "@counterfactual/types";
-import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
+import { jsonRpcDeserialize, ProposeMessage } from "@counterfactual/node";
+import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Zero } from "ethers/constants";
 
-import { NodeProviderId } from "../constants";
-import { CLogger, registerCfNodeListener } from "../util";
+import { NodeService } from "../node/node.service";
+import { CLogger } from "../util";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -18,7 +15,7 @@ const logger = new CLogger("AppRegistryService");
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
-    @Inject(NodeProviderId) private readonly node: Node,
+    private readonly nodeService: NodeService,
     private readonly appRegistryRepository: AppRegistryRepository,
   ) {}
 
@@ -30,17 +27,27 @@ export class AppRegistryService implements OnModuleInit {
     );
   }
 
-  // TODO: how to match this with type
-  private validateSwap(initialState: SolidityABIEncoderV2Type): void {
-    console.log("TODO: VALIDATE THIS INITIAL STATE:")
-    console.log("initialState: ", JSON.stringify(initialState));
+  private validateSwap(params: NodeTypes.ProposeInstallParams): void {
+    console.log("TODO: VALIDATE THIS INITIAL STATE:");
+    console.log("params: ", JSON.stringify(params));
+  }
+
+  private validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): void {
+    console.log("params: ", JSON.stringify(params, null, 2));
+    if (params.responderDeposit.gt(Zero)) {
+      throw new Error(
+        `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
+          params,
+        )}`,
+      );
+    }
   }
 
   private async verifyAppProposal(proposedAppParams: {
     params: NodeTypes.ProposeInstallParams;
     appInstanceId: string;
   }): Promise<void> {
-    const proposedRes = await this.node.rpcRouter.dispatch(
+    const proposedRes = await this.nodeService.cfNode.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -53,6 +60,16 @@ export class AppRegistryService implements OnModuleInit {
     const proposedAppInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
       return app.identityHash === proposedAppParams.appInstanceId;
     });
+
+    if (
+      proposedAppParams.params.proposedToIdentifier !== this.nodeService.cfNode.publicIdentifier
+    ) {
+      throw new Error(
+        `proposedToIdentifier is not node publicIdentifier: ${JSON.stringify(
+          proposedAppParams.params,
+        )}`,
+      );
+    }
 
     if (proposedAppInfos.length !== 1) {
       throw new Error(
@@ -88,7 +105,10 @@ export class AppRegistryService implements OnModuleInit {
 
     switch (registryAppInfo.name) {
       case KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP:
-        await this.validateSwap(proposedAppParams.params.initialState);
+        await this.validateSwap(proposedAppParams.params);
+        break;
+      case KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER:
+        await this.validateLinkedTransfer(proposedAppParams.params);
         break;
       default:
         break;
@@ -101,7 +121,7 @@ export class AppRegistryService implements OnModuleInit {
   ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> => {
     try {
       await this.verifyAppProposal(data.data);
-      const installResponse = await this.node.rpcRouter.dispatch(
+      const installResponse = await this.nodeService.cfNode.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -116,7 +136,7 @@ export class AppRegistryService implements OnModuleInit {
       logger.error(`Caught error during proposed app validation, rejecting install`);
       // TODO: why doesn't logger.error log this?
       console.error(e);
-      const installResponse = await this.node.rpcRouter.dispatch(
+      const installResponse = await this.nodeService.cfNode.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
           jsonrpc: "2.0",
@@ -131,8 +151,7 @@ export class AppRegistryService implements OnModuleInit {
   };
 
   private registerNodeListeners(): void {
-    registerCfNodeListener(
-      this.node,
+    this.nodeService.registerCfNodeListener(
       NodeTypes.EventName.PROPOSE_INSTALL,
       this.installOrReject,
       logger.cxt,
