@@ -5,6 +5,7 @@ import { ConfigModule } from "../config/config.module";
 import { NodeModule } from "../node/node.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
+import { AppRegistry } from "./appRegistry.entity";
 import { appRegistryProviderFactory } from "./appRegistry.provider";
 import { AppRegistryRepository } from "./appRegistry.repository";
 import { AppRegistryService } from "./appRegistry.service";

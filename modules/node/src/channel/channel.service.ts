@@ -134,7 +134,7 @@ export class ChannelService implements OnModuleInit {
       return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${tokenAddress}`;
-      if (e.message.includes(error)) {
+      if (e.message.startsWith(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,
         // but need the nodes free balance

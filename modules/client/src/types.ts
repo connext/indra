@@ -7,9 +7,9 @@ import {
   MultisigState,
 } from "@connext/types";
 import { Node } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
 import { providers, utils, Wallet } from "ethers";
 
+import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 
 export type BigNumber = utils.BigNumber;
@@ -32,7 +32,15 @@ export interface ClientOptions {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
-  store: NodeTypes.IStoreService;
+  // TODO: Do we need these if we use the whole store?
+  loadState?: (key: string) => Promise<string | null>;
+  saveState?: (
+    pairs: {
+      key: string;
+      value: any;
+    }[],
+  ) => Promise<void>;
+  store: any;
   // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
 

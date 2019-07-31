@@ -3,142 +3,144 @@ import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
-import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
+import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import UnidirectionalTransferApp from "../build/UnidirectionalTransferApp.json";
+import ETHUnidirectionalTransferApp from "../build/contracts/UnidirectionalTransferApp.json";
 
-const { expect } = chai.use(waffle.solidity);
+chai.use(waffle.solidity);
 
 type CoinTransfer = {
   to: string;
   amount: BigNumber;
 };
 
-enum AppStage {
-  POST_FUND,
-  MONEY_SENT,
-  CHANNEL_CLOSED,
-}
-
-type UnidirectionalTransferAppState = {
-  stage: AppStage;
+type CoinTransferAppState = {
   transfers: CoinTransfer[];
-  turnNum: BigNumberish;
   finalized: boolean;
 };
 
-enum ActionType {
-  SEND_MONEY,
-  END_CHANNEL,
-}
-
-type UnidirectionalTransferAppAction = {
-  actionType: ActionType;
-  amount: BigNumber;
+type ETHUnidirectionalTransferAppAction = {
+  transferAmount: BigNumber;
+  finalize: boolean;
 };
+
+const { expect } = chai;
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
 }
 
-const singleAssetTwoPartyCoinTransferEncoding = `
-  tuple(address to, uint256 amount)[2]
-`;
+function decodeBytesToAppState(encodedAppState: string): CoinTransferAppState {
+  return defaultAbiCoder.decode(
+    [`tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)`],
+    encodedAppState,
+  )[0];
+}
 
-const unidirectionalTransferAppStateEncoding = `
-  tuple(
-    uint8 stage,
-    ${singleAssetTwoPartyCoinTransferEncoding} transfers,
-    uint256 turnNum,
-    bool finalized
-  )`;
+describe("ETHUnidirectionalTransferApp", () => {
+  let coinTransferApp: Contract;
 
-const unidirectionalTransferAppActionEncoding = `
-  tuple(
-    uint8 actionType,
-    uint256 amount
-  )`;
+  function encodeState(state: SolidityABIEncoderV2Type) {
+    return defaultAbiCoder.encode(
+      [`tuple(tuple(address to, uint256 amount)[] transfers, bool finalized)`],
+      [state],
+    );
+  }
 
-const decodeAppState = (encodedAppState: string): UnidirectionalTransferAppState =>
-  defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
+  function encodeAction(state: SolidityABIEncoderV2Type) {
+    return defaultAbiCoder.encode([`tuple(uint256 transferAmount, bool finalize)`], [state]);
+  }
 
-const encodeAppState = (state: SolidityABIEncoderV2Type): string =>
-  defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
+  async function applyAction(state: SolidityABIEncoderV2Type, action: SolidityABIEncoderV2Type) {
+    return await coinTransferApp.functions.applyAction(encodeState(state), encodeAction(action));
+  }
 
-const encodeAppAction = (state: SolidityABIEncoderV2Type): string =>
-  defaultAbiCoder.encode([unidirectionalTransferAppActionEncoding], [state]);
-
-describe("UnidirectionalTransferApp", () => {
-  let unidirectionalTransferApp: Contract;
-
-  const applyAction = (state: SolidityABIEncoderV2Type, action: SolidityABIEncoderV2Type): any =>
-    unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
-
-  const computeOutcome = (state: SolidityABIEncoderV2Type): any =>
-    unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
+  async function computeOutcome(state: SolidityABIEncoderV2Type) {
+    return await coinTransferApp.functions.computeOutcome(encodeState(state));
+  }
 
   before(async () => {
     const provider = waffle.createMockProvider();
     const wallet = (await waffle.getWallets(provider))[0];
-    unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
+    coinTransferApp = await waffle.deployContract(wallet, ETHUnidirectionalTransferApp);
   });
 
-  it("can make transfers", async () => {
-    const senderAddr = mkAddress("0xa");
-    const receiverAddr = mkAddress("0xb");
+  describe("applyAction", () => {
+    it("can make transfers", async () => {
+      const senderAddr = mkAddress("0xa");
+      const receiverAddr = mkAddress("0xb");
+      const senderAmt = new BigNumber(10000);
+      const transferAmt1 = new BigNumber(10);
+      const transferAmt2 = new BigNumber(20);
+      const preState: CoinTransferAppState = {
+        transfers: [
+          {
+            to: senderAddr,
+            amount: senderAmt,
+          },
+          {
+            to: receiverAddr,
+            amount: Zero,
+          },
+        ],
+        finalized: false,
+      };
 
-    const senderAmt = new BigNumber(10000);
-    const amount = new BigNumber(10);
+      let action: ETHUnidirectionalTransferAppAction = {
+        transferAmount: transferAmt1,
+        finalize: false,
+      };
 
-    const preState: UnidirectionalTransferAppState = {
-      finalized: false,
-      stage: AppStage.POST_FUND,
-      transfers: [{ to: senderAddr, amount: senderAmt }, { to: receiverAddr, amount: Zero }],
-      turnNum: 0,
-    };
+      let ret = await applyAction(preState, action);
 
-    const action: UnidirectionalTransferAppAction = {
-      actionType: ActionType.SEND_MONEY,
-      amount,
-    };
+      let state = decodeBytesToAppState(ret);
+      expect(state.transfers[0].amount).to.eq(senderAmt.sub(transferAmt1));
+      expect(state.transfers[1].amount).to.eq(transferAmt1);
 
-    const ret = await applyAction(preState, action);
+      action = {
+        transferAmount: transferAmt2,
+        finalize: false,
+      };
+      ret = await applyAction(state, action);
 
-    const state = decodeAppState(ret);
-
-    expect(state.transfers[0].amount).to.eq(senderAmt.sub(amount));
-    expect(state.transfers[1].amount).to.eq(amount);
+      state = decodeBytesToAppState(ret);
+      expect(state.transfers[0].amount).to.eq(senderAmt.sub(transferAmt1).sub(transferAmt2));
+      expect(state.transfers[1].amount).to.eq(transferAmt1.add(transferAmt2));
+    });
   });
 
-  it("can finalize the state by calling END_CHANNEL", async () => {
+  it("can finalize the state with a 0 transfer", async () => {
     const senderAddr = mkAddress("0xa");
     const receiverAddr = mkAddress("0xb");
-
     const senderAmt = new BigNumber(10000);
-
-    const preState: UnidirectionalTransferAppState = {
+    const preState: CoinTransferAppState = {
+      transfers: [
+        {
+          to: senderAddr,
+          amount: senderAmt,
+        },
+        {
+          to: receiverAddr,
+          amount: Zero,
+        },
+      ],
       finalized: false,
-      stage: AppStage.POST_FUND,
-      transfers: [{ to: senderAddr, amount: senderAmt }, { to: receiverAddr, amount: Zero }],
-      turnNum: 0,
     };
 
-    const action: UnidirectionalTransferAppAction = {
-      actionType: ActionType.END_CHANNEL,
-      amount: Zero,
+    const action: ETHUnidirectionalTransferAppAction = {
+      transferAmount: Zero,
+      finalize: true,
     };
 
     let ret = await applyAction(preState, action);
-
-    const state = decodeAppState(ret);
-
+    const state = decodeBytesToAppState(ret);
     expect(state.finalized).to.be.true;
 
     ret = await computeOutcome(state);
 
     expect(ret).to.eq(
       defaultAbiCoder.encode(
-        [singleAssetTwoPartyCoinTransferEncoding],
+        ["tuple(address,uint256)[]"],
         [[[senderAddr, senderAmt], [receiverAddr, Zero]]],
       ),
     );

@@ -21,11 +21,11 @@
   },
   "devDependencies": {
     "@connext/messaging": "0.0.2",
-    "@counterfactual/types": "0.0.29",
+    "@counterfactual/types": "0.0.26",
     "@types/jest": "24.0.15",
     "jest": "24.8.0",
     "rollup": "1.17.0",
-    "rollup-plugin-typescript2": "0.22.1",
+    "rollup-plugin-typescript2": "0.22.0",
     "ts-jest": "24.0.2",
     "typescript": "3.5.3"
   }

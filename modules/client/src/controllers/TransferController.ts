@@ -1,16 +1,9 @@
-import {
-  convert,
-  NodeChannel,
-  RegisteredAppDetails,
-  TransferParameters,
-  UnidirectionalTransferAppActionType,
-  UnidirectionalTransferAppStage,
-  UnidirectionalTransferAppStateBigNumber,
-} from "@connext/types";
+import { convert, NodeChannel, RegisteredAppDetails, TransferParameters } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
-import { BigNumber, getAddress } from "ethers/utils";
+import { constants } from "ethers";
+import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay } from "../lib/utils";
@@ -29,7 +22,6 @@ export class TransferController extends AbstractController {
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
-    this.log.info(`********** assetId: ${assetId}`);
     const invalid = await this.validate(recipient, amount, assetId);
     if (invalid) {
       throw new Error(invalid.toString());
@@ -54,16 +46,11 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    // display state of app
-    const appState = await this.connext.getAppState(appId);
-    (appState.state as any).transfers[0].amount = (appState.state as any).transfers[0].amount.toString();
-    (appState.state as any).transfers[1].amount = (appState.state as any).transfers[1].amount.toString();
-    this.log.info(`******** app state installed: ${JSON.stringify(appState, null, 2)}`);
-
     // update state
+    // TODO: listener for reject state?
     await this.connext.takeAction(this.appId, {
-      actionType: UnidirectionalTransferAppActionType.SEND_MONEY,
-      amount,
+      finalize: false,
+      transferAmount: amount,
     });
 
     // finalize state + uninstall application
@@ -151,41 +138,35 @@ export class TransferController extends AbstractController {
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
-    const initialState: UnidirectionalTransferAppStateBigNumber = {
-      finalized: false,
-      stage: UnidirectionalTransferAppStage.POST_FUND,
-      transfers: [
-        {
-          amount,
-          to: getAddress(this.wallet.address),
-          // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
-        },
-        {
-          amount: Zero,
-          to: getAddress(fromExtendedKey(recipient).derivePath("0").address),
-        },
-      ],
-      turnNum: Zero,
-    };
-
     // note: intermediary is added in connext.ts as well
-    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
     const params: NodeTypes.ProposeInstallVirtualParams = {
       abiEncodings: {
-        actionEncoding,
-        stateEncoding,
+        actionEncoding: appInfo.actionEncoding,
+        stateEncoding: appInfo.stateEncoding,
       },
-      appDefinition,
-      // TODO: make initial state types for all apps
-      initialState,
+      appDefinition: appInfo.appDefinitionAddress,
+      initialState: {
+        finalized: false,
+        transfers: [
+          {
+            amount,
+            to: this.wallet.address,
+            // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
+          },
+          {
+            amount: Zero,
+            to: fromExtendedKey(recipient).derivePath("0").address,
+          },
+        ],
+      },
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: getAddress(assetId),
+      initiatorDepositTokenAddress: assetId,
       intermediaries: [this.connext.nodePublicIdentifier],
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
-      responderDeposit: Zero,
-      responderDepositTokenAddress: getAddress(assetId),
-      timeout: Zero, // TODO: fix, add to app info?
+      responderDeposit: constants.Zero,
+      responderDepositTokenAddress: assetId,
+      timeout: constants.Zero, // TODO: fix, add to app info?
     };
 
     const res = await this.connext.proposeInstallVirtualApp(params);
@@ -220,15 +201,9 @@ export class TransferController extends AbstractController {
 
   private finalizeAndUninstallApp = async (appId: string): Promise<void> => {
     await this.connext.takeAction(appId, {
-      actionType: UnidirectionalTransferAppActionType.END_CHANNEL,
-      amount: Zero,
+      finalize: true,
+      transferAmount: constants.Zero,
     });
-
-    // display final state of app
-    const appInfo = await this.connext.getAppState(appId);
-    (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
-    (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
-    this.log.info(`******** app state finalized: ${JSON.stringify(appInfo, null, 2)}`);
 
     await this.connext.uninstallVirtualApp(appId);
     // TODO: cf does not emit uninstall virtual event on the node

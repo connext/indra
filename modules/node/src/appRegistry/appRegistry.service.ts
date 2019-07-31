@@ -31,10 +31,7 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   // TODO: how to match this with type
-  private validateSwap(initialState: SolidityABIEncoderV2Type): void {
-    console.log("TODO: VALIDATE THIS INITIAL STATE:")
-    console.log("initialState: ", JSON.stringify(initialState));
-  }
+  private validateSwap(initialState: SolidityABIEncoderV2Type): void {}
 
   private async verifyAppProposal(proposedAppParams: {
     params: NodeTypes.ProposeInstallParams;
@@ -49,7 +46,7 @@ export class AppRegistryService implements OnModuleInit {
       }),
     );
 
-    const proposedApps = proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
+    const proposedApps = proposedRes.result as NodeTypes.GetProposedAppInstancesResult;
     const proposedAppInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
       return app.identityHash === proposedAppParams.appInstanceId;
     });
@@ -96,9 +93,9 @@ export class AppRegistryService implements OnModuleInit {
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
   }
 
-  private installOrReject = async (
+  private async installOrReject(
     data: ProposeMessage,
-  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> => {
+  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> {
     try {
       await this.verifyAppProposal(data.data);
       const installResponse = await this.node.rpcRouter.dispatch(
@@ -114,8 +111,7 @@ export class AppRegistryService implements OnModuleInit {
       return installResponse.result as NodeTypes.InstallResult;
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
-      // TODO: why doesn't logger.error log this?
-      console.error(e);
+      logger.error(e);
       const installResponse = await this.node.rpcRouter.dispatch(
         jsonRpcDeserialize({
           id: Date.now(),
@@ -128,7 +124,7 @@ export class AppRegistryService implements OnModuleInit {
       );
       return installResponse.result as NodeTypes.RejectInstallResult;
     }
-  };
+  }
 
   private registerNodeListeners(): void {
     registerCfNodeListener(

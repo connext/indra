@@ -30,7 +30,6 @@ export const appRegistryProviderFactory: Provider = {
       appRegistry.network = app.network;
       appRegistry.outcomeType = app.outcomeType;
       appRegistry.stateEncoding = app.stateEncoding;
-      appRegistry.allowNodeInstall = app.allowNodeInstall;
       await appRegistryRepository.save(appRegistry);
     }
   },
