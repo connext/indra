@@ -60,6 +60,9 @@ export class SwapController extends AbstractController {
       await delay(1000);
     }
 
+    // TODO: should we check if its the right app?
+    this.log.info(`Found installed app in app instances`);
+
     // if app installed, that means swap was accepted
     // now uninstall
     await this.swapAppUninstall(this.appId);
@@ -156,20 +159,16 @@ export class SwapController extends AbstractController {
     // ALSO, this is *NOT* the right initial state and encoding for the eventual
     // correct outcome. check the notion doc. typescript defs won't work for the
     // outcome type either
-    const initialState: SimpleSwapAppStateBigNumber = {
-      coinBalances: [
-        {
-          balance: [amount],
-          coinAddress: [fromAssetId],
-          to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
-        },
-        {
-          balance: [swappedAmount],
-          coinAddress: [toAssetId],
-          to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
-        },
-      ],
-    };
+    const initialState: any = [[
+      {
+        amount: swappedAmount,
+        to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+      },
+      {
+        amount,
+        to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
+      },
+    ]];
 
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
 

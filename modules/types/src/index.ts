@@ -96,19 +96,8 @@ export type AppAction<T = string> = UnidirectionalTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 //////// Swap apps
-export type MultiCoinTransfer<T = string> = {
-  to: string;
-  coinAddress: string[];
-  balance: T[];
-};
-export type MultiCoinTransferBigNumber = MultiCoinTransfer<BigNumber>;
-
-// export type SimpleSwapAppState<T = string> = {
-//   coinBalances: CoinTransfer<T>[];
-// };
-// export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
 export type SimpleSwapAppState<T = string> = {
-  coinBalances: MultiCoinTransfer<T>[];
+  coinTransfers: CoinTransfer<T>[];
 };
 export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
 

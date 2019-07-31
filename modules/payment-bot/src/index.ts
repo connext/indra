@@ -24,7 +24,9 @@ program
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
   .option("-r, --recipient <address>", "Withdrawal recipient address")
   .option("-s, --swap <amount>", "Swap amount in Ether units")
-  .option("-q, --request-collateral", "Request channel collateral from the node");
+  .option("-q, --request-collateral", "Request channel collateral from the node")
+  .option("-u, --uninstall <appDefinitionId>", "Uninstall app")
+  .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app");
 
 program.parse(process.argv);
 
@@ -136,6 +138,20 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
+  }
+
+  if (program.uninstall) {
+    console.log(`Attempting to uninstall app ${program.uninstall}`);
+    await client.uninstallApp(program.uninstall);
+    console.log(`Successfully uninstalled ${program.uninstall}`);
+    console.log(`Installed apps: ${await client.getAppInstances()}`);
+  }
+
+  if (program.uninstallVirtual) {
+    console.log(`Attempting to uninstall virtual app ${program.uninstallVirtual}`);
+    await client.uninstallVirtualApp(program.uninstallVirtual);
+    console.log(`Successfully uninstalled ${program.uninstallVirtual}`);
+    console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
