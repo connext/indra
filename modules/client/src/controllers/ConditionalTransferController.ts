@@ -28,6 +28,15 @@ type ConditionalExecutors = {
     params: ConditionalTransferParameters,
   ) => Promise<ConditionalTransferResponse>;
 };
+
+export const createLinkedHash = (
+  action: UnidirectionalLinkedTransferAppActionBigNumber,
+): string => {
+  return solidityKeccak256(
+    ["uint256", "address", "bytes32", "bytes32"],
+    [action.amount, action.assetId, action.paymentId, action.preImage],
+  );
+};
 export class ConditionalTransferController extends AbstractController {
   private appId: string;
 
@@ -65,7 +74,7 @@ export class ConditionalTransferController extends AbstractController {
     // generate random preimage
     const preImage = hexlify(randomBytes(32));
     // install the transfer application
-    const linkedHash = this.createLinkedHash({ amount, assetId, paymentId, preImage });
+    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
 
     const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
       finalized: false,
@@ -111,13 +120,6 @@ export class ConditionalTransferController extends AbstractController {
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
     const errs = [invalidAddress(assetId), notLessThanOrEqualTo(amount, preTransferBal)];
     return errs ? errs.filter(falsy)[0] : undefined;
-  };
-
-  private createLinkedHash = (action: UnidirectionalLinkedTransferAppActionBigNumber): string => {
-    return solidityKeccak256(
-      ["uint256", "address", "bytes32", "bytes32"],
-      [action.amount, action.assetId, action.paymentId, action.preImage],
-    );
   };
 
   // creates a promise that is resolved once the app is installed
