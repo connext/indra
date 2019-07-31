@@ -13,6 +13,7 @@ import {
   PaymentProfile,
   RegisteredAppDetails,
   ResolveConditionParameters,
+  ResolveConditionResponse,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
@@ -36,7 +37,7 @@ import "regenerator-runtime/runtime";
 
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
-import { ResolveConditionController } from "./controllers/ResolveContitionController";
+import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
@@ -210,7 +211,7 @@ export abstract class ConnextChannel {
     return await this.internal.withdraw(params);
   };
 
-  public resolveCondition = async (params: ResolveConditionParameters): Promise<ChannelState> => {
+  public resolveCondition = async (params: ResolveConditionParameters): Promise<ResolveConditionResponse> => {
     return await this.internal.resolveCondition(params);
   };
 
@@ -391,7 +392,7 @@ export class ConnextInternal extends ConnextChannel {
     return await this.withdrawalController.withdraw(params);
   };
 
-  public redeem = async (params: ResolveConditionParameters): Promise<ChannelState> => {
+  public resolveCondition = async (params: ResolveConditionParameters): Promise<ResolveConditionResponse> => {
     return await this.resolveConditionController.resolve(params);
   };
 
