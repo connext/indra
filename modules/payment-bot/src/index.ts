@@ -1,37 +1,21 @@
 import * as connext from "@connext/client";
 import { DepositParameters, WithdrawParameters } from "@connext/types";
-import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import commander from "commander";
-import { ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
+import { parseEther } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { parseEther } from "ethers/utils";
+import { store } from "./store";
 
-const program = new commander.Command();
-program.version("0.0.1");
+process.on("warning", (e: any): any => {
+  console.warn(e);
+  process.exit(1);
+});
 
-program
-  .option("-x, --debug", "output extra debugging")
-  .option("-d, --deposit <amount>", "Deposit amount in Ether units")
-  .option(
-    "-a, --asset-id <address>",
-    "Asset ID/Token Address of deposited, withdrawn, swapped, or transferred asset",
-  )
-  .option("-t, --transfer <amount>", "Transfer amount in Ether units")
-  .option("-c, --counterparty <id>", "Counterparty public identifier")
-  .option("-i, --identifier <id>", "Bot identifier")
-  .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
-  .option("-r, --recipient <address>", "Withdrawal recipient address")
-  .option("-s, --swap <amount>", "Swap amount in Ether units")
-  .option("-q, --request-collateral", "Request channel collateral from the node");
-
-program.parse(process.argv);
-
-process.on("warning", (e: any): any => console.warn(e.stack));
-
-const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory(config.postgres);
+process.on("unhandledRejection", (e: any): any => {
+  console.error(e);
+  process.exit(1);
+});
 
 let client: connext.ConnextInternal;
 
@@ -58,75 +42,82 @@ export function getConnextClient(): connext.ConnextInternal {
   return client;
 }
 
+let latestSwapRate;
+
 async function run(): Promise<void> {
-  await getOrCreateChannel(program.assetId);
-  await client.subscribeToSwapRates("eth", "dai", (msg: any) => {
-    client.opts.store.set([
-      {
-        key: `${msg.pattern}`,
-        value: msg.data,
-      },
-    ]);
-  });
-  if (program.assetId) {
-    assetId = program.assetId;
+  await getOrCreateChannel(config.assetId);
+  if (config.assetId) {
+    await client.subscribeToSwapRates(AddressZero, config.assetId, (msg: any) => {
+      latestSwapRate = msg.data;
+      console.log("latestSwapRate: ", latestSwapRate);
+      client.opts.store.set([
+        {
+          key: `${msg.pattern}`,
+          value: msg.data,
+        },
+      ]);
+    });
   }
 
   const apps = await client.getAppInstances();
   console.log("apps: ", apps);
-  if (program.deposit) {
+  if (config.deposit) {
     const depositParams: DepositParameters = {
-      amount: ethers.utils.parseEther(program.deposit).toString(),
+      amount: parseEther(config.deposit).toString(),
     };
-    if (program.assetId) {
-      depositParams.assetId = program.assetId;
+    if (config.assetId) {
+      depositParams.assetId = config.assetId;
     }
-    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
+    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${config.assetId}...`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
+    process.exit(0);
   }
 
-  if (program.requestCollateral) {
+  if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
-    await client.requestCollateral(program.assetId || AddressZero);
+    await client.requestCollateral(config.assetId || AddressZero);
+    console.log(`Successfully received collateral!`);
   }
 
-  if (program.transfer) {
-    console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
+  if (config.transfer) {
+    console.log(`Attempting to transfer ${config.transfer} with assetId ${config.assetId}...`);
     await client.transfer({
-      amount: ethers.utils.parseEther(program.transfer).toString(),
-      assetId: program.assetId || AddressZero,
-      recipient: program.counterparty,
+      amount: parseEther(config.transfer).toString(),
+      assetId: config.assetId || AddressZero,
+      recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
+    process.exit(0);
   }
 
-  if (program.swap) {
+  if (config.swap) {
     const tokenAddress = (await client.config()).contractAddresses.Token;
     const swapRate = client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(
-      `Attempting to swap ${program.swap} of eth for ${
-        program.assetId
+      `Attempting to swap ${config.swap} of eth for ${
+        config.assetId
       } at rate ${swapRate.toString()}...`,
     );
     await client.swap({
-      amount: ethers.utils.parseEther(program.swap).toString(),
+      amount: parseEther(config.swap).toString(),
       fromAssetId: AddressZero,
       swapRate: swapRate.toString(),
-      toAssetId: assetId,
+      toAssetId: config.assetId,
     });
     console.log(`Successfully swapped!`);
+    process.exit(0);
   }
 
-  if (program.withdraw) {
+  if (config.withdraw) {
     const withdrawParams: WithdrawParameters = {
-      amount: ethers.utils.parseEther(program.withdraw).toString(),
+      amount: parseEther(config.withdraw).toString(),
     };
-    if (program.assetId) {
-      withdrawParams.assetId = program.assetId;
+    if (config.assetId) {
+      withdrawParams.assetId = config.assetId;
     }
-    if (program.recipient) {
-      withdrawParams.recipient = program.recipient;
+    if (config.recipient) {
+      withdrawParams.recipient = config.recipient;
     }
     console.log(
       `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
@@ -134,29 +125,42 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
+    process.exit(0);
+  }
+
+  if (config.uninstall) {
+    console.log(`Attempting to uninstall app ${config.uninstall}`);
+    await client.uninstallApp(config.uninstall);
+    console.log(`Successfully uninstalled ${config.uninstall}`);
+    console.log(`Installed apps: ${await client.getAppInstances()}`);
+  }
+
+  if (config.uninstallVirtual) {
+    console.log(`Attempting to uninstall virtual app ${config.uninstallVirtual}`);
+    await client.uninstallVirtualApp(config.uninstallVirtual);
+    console.log(`Successfully uninstalled ${config.uninstallVirtual}`);
+    console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
-  if (assetId) {
-    client.logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
+  if (config.assetId) {
+    client.logEthFreeBalance(config.assetId, await client.getFreeBalance(config.assetId));
   }
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
-  await pgServiceFactory.connectDb();
-
   const connextOpts = {
     ethProviderUrl: config.ethProviderUrl,
-    logLevel: 3,
+    logLevel: config.logLevel,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
-    store: pgServiceFactory.createStoreService(config.username),
+    store,
   };
 
   console.log("Using client options:");
   console.log("     - mnemonic:", connextOpts.mnemonic);
-  console.log("     - rpcProviderUrl:", connextOpts.ethProviderUrl);
+  console.log("     - ethProviderUrl:", connextOpts.ethProviderUrl);
   console.log("     - nodeUrl:", connextOpts.nodeUrl);
 
   console.log("Creating connext");

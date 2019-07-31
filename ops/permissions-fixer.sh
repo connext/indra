@@ -11,9 +11,6 @@ finish() {
     else
       echo "Fixing permissions for $user"
       chown -R ${user} /root
-      if [[ -d /client ]]
-      then chown -R ${user} /client
-      fi
     fi
 }
 trap finish EXIT
