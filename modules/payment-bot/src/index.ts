@@ -34,7 +34,7 @@ program
   .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app")
   .option("-l, --linked <amount>", "Create linked payment")
   .option("-p, --payment-id <paymentId>", "Redeem a linked payment with paymentId")
-  .option("-pr, --pre-image <preImage>", "Redeem a linked payment with preImage");
+  .option("-e, --pre-image <preImage>", "Redeem a linked payment with preImage");
 
 program.parse(process.argv);
 
