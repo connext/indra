@@ -26,7 +26,10 @@ program
   .option("-s, --swap <amount>", "Swap amount in Ether units")
   .option("-q, --request-collateral", "Request channel collateral from the node")
   .option("-u, --uninstall <appDefinitionId>", "Uninstall app")
-  .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app");
+  .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app")
+  .option("-l, --linked <amount>", "Create linked payment")
+  .option("-p, --payment-id <paymentId>", "Redeem a linked payment with paymentId")
+  .option("-pr, --pre-image <preImage>", "Redeem a linked payment with preImage");
 
 program.parse(process.argv);
 
@@ -120,6 +123,41 @@ async function run(): Promise<void> {
       toAssetId: program.assetId,
     });
     console.log(`Successfully swapped!`);
+  }
+
+  if (program.linked && !program.paymentId) {
+    const linkedParams: LinkedTransferParameters = {
+      conditionType: "LINKED_TRANSFER",
+      amount: parseEther(program.linked).toString(),
+      assetId: program.assetId || AddressZero,
+    }
+    console.log(
+      `Attempting to create link with ${program.linked} of ${
+        linkedParams.assetId,
+      }...`,
+    );
+    const res = await client.conditionalTransfer(linkedParams)
+    console.log(`Successfully created! Linked response: ${JSON.stringify(res, null, 2)}`);
+  }
+
+  if (program.paymentId) {
+    if (!program.preImage) {
+      throw new Error(`Cannot redeem a linked payment without an associated preImage.`)
+    }
+    if (!program.linked) {
+      throw new Error(`Cannot redeem a linked payment without an associated amount`)
+    }
+    const resolveParams: ResolveLinkedTransferParameters = {
+      conditionType: "LINKED_TRANSFER",
+      amount: parseEther(program.linked).toString(),
+      assetId: program.assetId || AddressZero,
+      paymentId: program.paymentId,
+    }
+    console.log(
+      `Attempting to redeem link with parameters: ${JSON.stringify(resolveParams, null, 2)}...`,
+    );
+    const res = await client.resolveCondition(resolveParams);
+    console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, null, 2)}`);
   }
 
   if (program.withdraw) {
