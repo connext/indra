@@ -69,14 +69,16 @@ export class SwapController extends AbstractController {
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const postSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    // TODO is this the right syntax? Waiting on ERC20 merge
+    // balance decreases
     const diffFrom = preSwapFromBal[this.connext.freeBalanceAddress].sub(
       postSwapFromBal[this.connext.freeBalanceAddress],
     );
-    const diffTo = preSwapToBal[this.connext.freeBalanceAddress].sub(
-      postSwapToBal[this.connext.freeBalanceAddress],
+    // balance increases
+    const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(
+      preSwapToBal[this.connext.freeBalanceAddress],
     );
-    if (!diffFrom.eq(amount) || !diffTo.eq(amount.mul(swapRate))) {
+    const swappedAmount = calculateExchange(amount, swapRate);
+    if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }
     const newState = await this.connext.getChannel();
@@ -152,24 +154,23 @@ export class SwapController extends AbstractController {
     // TODO: is this the right state and typing?? In contract tests, uses
     // something completely different
 
-    // FIXME: using this encoding (corresponds to MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
-    // outcome type) will currently lead to an unimplemented error after install
-
-    // ALSO, this is *NOT* the right initial state and encoding for the eventual
-    // correct outcome. check the notion doc. typescript defs won't work for the
-    // outcome type either
+    // NOTE: always put the initiators swap information FIRST
+    // followed by responders. If this is not included, the swap will
+    // fail, causing the balances to be indexed on the wrong token
+    // address key in `get-outcome-increments.ts` in cf code base
+    // ideally this would be fixed at some point
     const initialState: SimpleSwapAppStateBigNumber = {
       coinTransfers: [
         [
           {
-            amount: swappedAmount,
-            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+            amount,
+            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
           },
         ],
         [
           {
-            amount,
-            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
+            amount: swappedAmount,
+            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
           },
         ],
       ],
