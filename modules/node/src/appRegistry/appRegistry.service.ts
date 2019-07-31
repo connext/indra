@@ -5,7 +5,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 
 import { NodeService } from "../node/node.service";
-import { CLogger } from "../util";
+import { CLogger, toBig } from "../util";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -33,8 +33,7 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   private validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): void {
-    console.log("params: ", JSON.stringify(params, null, 2));
-    if (params.responderDeposit.gt(Zero)) {
+    if (toBig(params.responderDeposit).gt(Zero)) {
       throw new Error(
         `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
           params,
