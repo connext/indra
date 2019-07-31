@@ -331,8 +331,23 @@ export type WithdrawParameters<T = string> = DepositParameters<T> & {
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 
 ///// Resolve condition types
-// FIXME: should be union type of all supported resolutions
-export type ResolveConditionParameters = any;
+
+// linked transfer
+export type ResolveLinkedTransferParameters<T = string> = LinkedTransferParameters<T> & {
+  paymentId: string;
+  preImage: string;
+};
+export type ResolveLinkedTransferResponse = {
+  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  paymentId: string;
+};
+
+// resolver union types
+// FIXME: should be union type of all supported conditions
+export type ResolveConditionParameters<T = string> = ResolveLinkedTransferParameters;
+
+// FIXME: should be union type of all supported conditions
+export type ResolveConditionResponse<T = string> = ResolveLinkedTransferResponse;
 
 ///// Conditional transfer types
 
@@ -363,8 +378,10 @@ export type ConditionalTransferParametersBigNumber = ConditionalTransferParamete
 // FIXME: should be union type of all supported conditions
 export type ConditionalTransferResponse = LinkedTransferResponse;
 
+// condition initial states
+// FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
-
+// FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
 
 /////////////////////////////////
@@ -432,6 +449,18 @@ export const convertFields = (
  * work for any types with only the numeric field "amount" with properly added
  * overloading definitions
  */
+
+type GenericAmountObject<T> = any & {
+  amount: T;
+};
+export function convertAmountField<To extends NumericTypeName>(
+  to: To,
+  obj: GenericAmountObject<any>,
+): GenericAmountObject<NumericTypes[To]> {
+  const fromType = getType(obj.amount);
+  return convertFields(fromType, to, ["amount"], obj);
+}
+
 export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any>,
@@ -444,8 +473,7 @@ export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any> | CoinTransfer<any>,
 ): any {
-  const fromType = getType(obj.amount);
-  return convertFields(fromType, to, ["amount"], obj);
+  return convertAmountField(to, obj);
 }
 
 export function convertMultisig<To extends NumericTypeName>(
@@ -492,10 +520,7 @@ export function convertTransferParametersToAsset<To extends NumericTypeName>(
   if (!asset.assetId) {
     asset.assetId = constants.AddressZero;
   }
-  return {
-    ...asset,
-    ...convertAssetAmount(to, asset),
-  };
+  return convertAmountField(to, asset);
 }
 
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
@@ -508,7 +533,7 @@ export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   if (!asset.assetId) {
     asset.assetId = constants.AddressZero;
   }
-  return convertAssetAmount(to, asset);
+  return convertAmountField(to, asset);
 }
 
 export function convertAppState<To extends NumericTypeName>(
@@ -517,16 +542,8 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    transfers: [convertAssetAmount(to, obj.transfers[0]), convertAssetAmount(to, obj.transfers[1])],
+    transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
   };
-}
-
-export function convertLinkedTransferParameters<To extends NumericTypeName>(
-  to: To,
-  obj: LinkedTransferParameters<any>,
-): LinkedTransferParameters<NumericTypes[To]> {
-  const fromType = getType(obj.amount);
-  return convertFields(fromType, to, ["amount"], obj);
 }
 
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
@@ -534,8 +551,9 @@ export const convert: any = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
-  LinkedTransfer: convertLinkedTransferParameters,
+  LinkedTransfer: convertAmountField,
   Multisig: convertMultisig,
+  ResolveLinkedTransfer: convertAmountField,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
