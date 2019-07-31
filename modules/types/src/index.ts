@@ -537,7 +537,7 @@ export function convertAppState<To extends NumericTypeName>(
 }
 
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
-export const convert: any = {
+export const convert = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
