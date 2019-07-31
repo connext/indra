@@ -19,8 +19,8 @@ trap cleanup EXIT
 
 echo;echo "Starting recipient payment bot";echo;sleep 1
 
-# output's gets weird, idk why. Fixed by sprinkling in some extra \r
-bash ops/payment-bot.sh -i 1 -q | tr '\n' '\r\n' &
+# output gets weird, idk why. mostly fixed by sprinkling in some extra \r
+bash ops/payment-bot.sh -i 1 -q 2>&1 | tr '\n' '\r\n' &
 
 sleep 10;echo;echo "Depositing eth into sender bot";echo;sleep 1
 
@@ -34,9 +34,10 @@ sleep 1;echo;echo "Sending eth to recipient bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id
 
-exit # token transfers are broken right now..
+sleep 3;echo;echo "Tests finished successfully";echo
+
+exit # doing more than one transfer throws an error
 
 sleep 1;echo;echo "Sending tokens to recipient bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress
-

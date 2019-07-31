@@ -7,7 +7,15 @@ import { registerClientListeners } from "./bot";
 import { config } from "./config";
 import { store } from "./store";
 
-process.on("warning", (e: any): any => process.exit(1));
+process.on("warning", (e: any): any => {
+  console.warn(e);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (e: any): any => {
+  console.error(e);
+  process.exit(1);
+});
 
 let client: connext.ConnextInternal;
 
