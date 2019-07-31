@@ -350,7 +350,7 @@ export type TransferCondition = keyof typeof TransferConditions;
 export type LinkedTransferParameters<T = string> = {
   conditionType: "LINKED_TRANSFER";
   amount: T;
-  assetId: Address;
+  assetId: Address; // make optional?
 };
 export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
