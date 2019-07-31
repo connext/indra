@@ -87,12 +87,16 @@ export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
 // all the types of counterfactual app states
 // TODO: add swap app
-export type AppState<T = string> = UnidirectionalTransferAppState<T>;
+export type AppState<T = string> =
+  | UnidirectionalTransferAppState<T>
+  | UnidirectionalLinkedTransferAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
 // TODO: add swap app
-export type AppAction<T = string> = UnidirectionalTransferAppAction<T>;
+export type AppAction<T = string> =
+  | UnidirectionalTransferAppAction<T>
+  | UnidirectionalLinkedTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 //////// Swap apps
