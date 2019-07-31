@@ -67,6 +67,7 @@ async function run(): Promise<void> {
   if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
     await client.requestCollateral(config.assetId || AddressZero);
+    console.log(`Successfully received collateral!`);
   }
 
   if (config.transfer) {

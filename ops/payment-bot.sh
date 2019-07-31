@@ -45,13 +45,14 @@ else
   export MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 fi
 
+test -t 0 -a -t 1 -a -t 2 && tty="--tty"
+my_id="`id -u`:`id -g`"
+
 ########################################
 ## Launch payment bot
 
 echo
 echo "Deploying payment bot..."
-
-my_id="`id -u`:`id -g`"
 
 docker run \
   --entrypoint="bash" \
@@ -62,7 +63,7 @@ docker run \
   --interactive \
   --name="${project}_payment_bot_$identifier" \
   --rm \
-  --tty \
+  $tty \
   --user="$my_id" \
   --volume="`pwd`:/root" \
   --workdir="/root" \
