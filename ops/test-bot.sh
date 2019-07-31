@@ -19,8 +19,7 @@ trap cleanup EXIT
 
 echo;echo "Starting recipient payment bot";echo;sleep 1
 
-# output gets weird, idk why. mostly fixed by sprinkling in some extra \r
-bash ops/payment-bot.sh -i 1 -q 2>&1 | tr '\n' '\r\n' &
+bash ops/payment-bot.sh -i 1 -q &
 
 sleep 10;echo;echo "Depositing eth into sender bot";echo;sleep 1
 
