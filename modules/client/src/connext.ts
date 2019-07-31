@@ -1,5 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
+  AppActionBigNumber,
   AppRegistry,
   ChannelState,
   CreateChannelResponse,
@@ -12,7 +13,6 @@ import {
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
-  TransferAction,
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
@@ -233,7 +233,7 @@ export abstract class ConnextChannel {
   };
 
   public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
-    return this.internal.node.getLatestSwapRate(from, to);
+    return await this.internal.node.getLatestSwapRate(from, to);
   };
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
@@ -421,7 +421,6 @@ export class ConnextInternal extends ConnextChannel {
         params: {
           amount,
           multisigAddress: this.opts.multisigAddress,
-          notifyCounterparty,
           tokenAddress: assetId,
         } as NodeTypes.DepositParams,
       }),
@@ -462,7 +461,7 @@ export class ConnextInternal extends ConnextChannel {
       return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
-      if (e.message.startsWith(error)) {
+      if (e.message.includes(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,
         // but need the nodes free balance
@@ -539,7 +538,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public takeAction = async (
     appInstanceId: string,
-    action: TransferAction,
+    action: AppActionBigNumber,
   ): Promise<NodeTypes.TakeActionResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
@@ -572,6 +571,7 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
+    this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`)
     if (
       params.intermediaries[0] !== this.nodePublicIdentifier ||
       params.intermediaries.length !== 1
@@ -790,7 +790,7 @@ export class ConnextInternal extends ConnextChannel {
     const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
-        `Could not find installed app with id: ${appInstanceId}.` +
+        `Could not find installed app with id: ${appInstanceId}. ` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }
@@ -808,7 +808,7 @@ export class ConnextInternal extends ConnextChannel {
     const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (
-        `App with id ${appInstanceId} is already installed.` +
+        `App with id ${appInstanceId} is already installed. ` +
         `Installed apps: ${JSON.stringify(apps, null, 2)}.`
       );
     }

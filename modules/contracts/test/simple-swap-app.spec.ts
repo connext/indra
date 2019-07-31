@@ -1,10 +1,9 @@
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import SimpleTwoPartySwapApp from "../build/contracts/SimpleTwoPartySwapApp.json";
+import SimpleTwoPartySwapApp from "../build/SimpleTwoPartySwapApp.json";
 
 chai.use(waffle.solidity);
 
