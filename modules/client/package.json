@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@babel/polyfill": "7.4.4",
-    "@connext/types": "0.0.5",
+    "@connext/types": "0.0.6",
     "@counterfactual/types": "0.0.29",
     "@types/jest": "24.0.16",
     "@types/node-fetch": "2.5.0",

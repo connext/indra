@@ -42,7 +42,7 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
-    "@connext/types": "0.0.5",
+    "@connext/types": "0.0.6",
     "@counterfactual/types": "0.0.29",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.0",
