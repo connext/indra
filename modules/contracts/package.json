@@ -11,17 +11,18 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@counterfactual/contracts": "0.1.11",
-    "@counterfactual/types": "0.0.26",
+    "@counterfactual/contracts": "0.1.14",
+    "@counterfactual/types": "0.0.29",
+    "@types/chai": "^4.1.7",
     "chai": "4.2.0",
     "dotenv": "8.0.0",
-    "eth-gas-reporter": "0.2.6",
+    "eth-gas-reporter": "0.2.8",
     "ethereum-waffle": "2.0.15",
     "ethers": "4.0.33",
     "openzeppelin-solidity": "2.3.0",
     "solc": "0.5.10",
-    "truffle": "5.0.28",
-    "truffle-hdwallet-provider": "1.0.14",
+    "truffle": "5.0.29",
+    "truffle-hdwallet-provider": "1.0.15",
     "ts-mocha": "6.0.0",
     "ts-node": "8.3.0"
   }
