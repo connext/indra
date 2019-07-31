@@ -37,6 +37,7 @@ export const createLinkedHash = (
     [action.amount, action.assetId, action.paymentId, action.preImage],
   );
 };
+
 export class ConditionalTransferController extends AbstractController {
   private appId: string;
 
@@ -84,7 +85,6 @@ export class ConditionalTransferController extends AbstractController {
         {
           amount: Zero,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
-          // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
         },
         {
           amount,

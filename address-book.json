@@ -170,6 +170,9 @@
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
       "address": "0x30753E4A8aad7F8597332E813735Def5dD395028"
+    },
+    "UnidirectionalLinkedTransferApp": {
+      "address": "0x2EcA6FCFef74E2c8D03fBAf0ff6712314c9BD58B"
     }
   }
 }

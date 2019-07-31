@@ -1,8 +1,5 @@
 import {
-  ChannelState,
   ConditionalTransferInitialStateBigNumber,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
   convert,
   RegisteredAppDetails,
   ResolveConditionParameters,
@@ -13,7 +10,6 @@ import {
   SupportedApplications,
   TransferCondition,
   UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppState,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { RejectProposalMessage } from "@counterfactual/node";
@@ -39,9 +35,7 @@ export class ResolveConditionController extends AbstractController {
   public resolve = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
-    this.log.info(
-      `Conditional transfer called with parameters: ${JSON.stringify(params, null, 2)}`,
-    );
+    this.log.info(`Resolve condition called with parameters: ${JSON.stringify(params, null, 2)}`);
 
     const res = await this.conditionResolvers[params.conditionType](params);
     return res;
