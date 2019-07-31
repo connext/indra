@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { ConfigModule } from "../config/config.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { NodeModule } from "../node/node.module";
 import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
@@ -19,6 +20,7 @@ import { ChannelService } from "./channel.service";
     NodeModule,
     TypeOrmModule.forFeature([ChannelRepository, UserRepository, PaymentProfileRepository]),
     UserModule,
+    ConfigModule,
   ],
   providers: [ChannelService, channelProviderFactory],
 })
