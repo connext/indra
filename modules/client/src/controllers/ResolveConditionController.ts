@@ -125,7 +125,7 @@ export class ResolveConditionController extends AbstractController {
   // creates a promise that is resolved once the app is installed
   // and rejected if the virtual application is rejected
   private conditionalTransferAppInstalled = async (
-    initiatorDeposit: BigNumber,
+    responderDeposit: BigNumber,
     assetId: string,
     initialState: ConditionalTransferInitialStateBigNumber,
     appInfo: RegisteredAppDetails,
@@ -147,11 +147,11 @@ export class ResolveConditionController extends AbstractController {
       },
       appDefinition,
       initialState,
-      initiatorDeposit,
+      initiatorDeposit: Zero,
       initiatorDepositTokenAddress: assetId,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: Zero,
+      responderDeposit,
       responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
