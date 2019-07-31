@@ -211,7 +211,9 @@ export abstract class ConnextChannel {
     return await this.internal.withdraw(params);
   };
 
-  public resolveCondition = async (params: ResolveConditionParameters): Promise<ResolveConditionResponse> => {
+  public resolveCondition = async (
+    params: ResolveConditionParameters,
+  ): Promise<ResolveConditionResponse> => {
     return await this.internal.resolveCondition(params);
   };
 
@@ -392,7 +394,9 @@ export class ConnextInternal extends ConnextChannel {
     return await this.withdrawalController.withdraw(params);
   };
 
-  public resolveCondition = async (params: ResolveConditionParameters): Promise<ResolveConditionResponse> => {
+  public resolveCondition = async (
+    params: ResolveConditionParameters,
+  ): Promise<ResolveConditionResponse> => {
     return await this.resolveConditionController.resolve(params);
   };
 
