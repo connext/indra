@@ -121,6 +121,13 @@ export class ConfigService {
         stateEncoding: `tuple(address to, uint256 amount)[][]`,
       },
       {
+        actionEncoding: `
+          tuple(
+            uint256 amount,
+            address assetId,
+            bytes32 paymentId,
+            bytes32 preImage
+          )`,
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER],
         name: KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER,
