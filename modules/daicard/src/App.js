@@ -117,7 +117,7 @@ class App extends React.Component {
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
     const connextConfig = await channel.config();
     const token = new Contract(connextConfig.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
-    const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
+    const swapRate = formatEther(await channel.getLatestSwapRate(AddressZero, token.address));
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
@@ -129,7 +129,7 @@ class App extends React.Component {
 
     channel.subscribeToSwapRates(AddressZero, token.address, (res) => {
       console.log(`Got swap rate upate: ${this.state.swapRate} -> ${res.swapRate}`);
-      if (res && res.swapRate) this.setState({ swapRate: res.swapRate });
+      if (res && res.swapRate) this.setState({ swapRate: formatEther(res.swapRate) });
     })
 
     this.setState({
