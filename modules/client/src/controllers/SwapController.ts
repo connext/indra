@@ -5,7 +5,6 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "@connext/types";
-import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
@@ -17,8 +16,8 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
-export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): any => {
-  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, "")).toString();
+export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): BigNumber => {
+  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, ""));
 };
 export class SwapController extends AbstractController {
   private appId: string;
@@ -50,7 +49,7 @@ export class SwapController extends AbstractController {
     // install the swap app
     await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
-    this.log.info(`Swap app successfully installed! Uninstalling without updating state.`);
+    this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     while ((await this.connext.getAppInstances()).length <= preInstallApps) {
       this.log.info(
@@ -61,7 +60,7 @@ export class SwapController extends AbstractController {
     }
 
     // TODO: should we check if its the right app?
-    this.log.info(`Found installed app in app instances`);
+    this.log.info(`Found installed app in app instances, attempting to uninstall..`);
 
     // if app installed, that means swap was accepted
     // now uninstall
@@ -123,13 +122,13 @@ export class SwapController extends AbstractController {
   };
 
   // TODO: fix types of data
-  private rejectInstallSwap = (rej: any, msg: RejectInstallVirtualMessage): any => {
+  private rejectInstallSwap = (rej: any, msg: any): any => {
     // check app id
     if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
-    rej(`Install virtual rejected. Event data: ${JSON.stringify(msg.data, null, 2)}`);
+    rej(`Install rejected. Event data: ${JSON.stringify(msg.data, null, 2)}`);
     return msg.data;
   };
 
@@ -159,16 +158,22 @@ export class SwapController extends AbstractController {
     // ALSO, this is *NOT* the right initial state and encoding for the eventual
     // correct outcome. check the notion doc. typescript defs won't work for the
     // outcome type either
-    const initialState: any = [[
-      {
-        amount: swappedAmount,
-        to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
-      },
-      {
-        amount,
-        to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
-      },
-    ]];
+    const initialState: SimpleSwapAppStateBigNumber = {
+      coinTransfers: [
+        [
+          {
+            amount: swappedAmount,
+            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+          },
+        ],
+        [
+          {
+            amount,
+            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
+          },
+        ],
+      ],
+    };
 
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
 
