@@ -9,15 +9,16 @@ import {
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
+  UnidirectionalLinkedTransferAppActionBigNumber,
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { RejectProposalMessage } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { freeBalanceAddressFromXpub } from "../lib/utils";
+import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
 import { createLinkedHash } from "./ConditionalTransferController";
@@ -25,7 +26,7 @@ import { createLinkedHash } from "./ConditionalTransferController";
 type ConditionResolvers = {
   [index in TransferCondition]: (
     params: ResolveConditionParameters,
-  ) => Promise<ResolveConditionResponse>;
+  ) => Promise<ResolveConditionResponse>
 };
 export class ResolveConditionController extends AbstractController {
   private appId: string;
@@ -56,6 +57,9 @@ export class ResolveConditionController extends AbstractController {
     if (invalid) {
       throw new Error(invalid);
     }
+
+    const freeBal = await this.connext.getFreeBalance(assetId);
+    const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
     // get appInfo
     const appInfo = this.connext.getRegisteredAppDetails(
@@ -92,6 +96,24 @@ export class ResolveConditionController extends AbstractController {
     );
     if (!appId) {
       throw new Error(`App was not installed`);
+    }
+
+    // finalize
+    await this.finalizeAndUninstallApp(amount, assetId, paymentId, preImage);
+
+    // sanity check, free balance decreased by payment amount
+    const postTransferBal = await this.connext.getFreeBalance(assetId);
+    const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
+    if (!diff.eq(amount)) {
+      this.log.info(
+        "Welp it appears the difference of the free balance before and after " +
+          "uninstalling is not what we expected......",
+      );
+    } else if (postTransferBal[this.connext.freeBalanceAddress].lte(preTransferBal)) {
+      this.log.info(
+        "Free balance after transfer is lte free balance " +
+          "before transfer..... That's not great..",
+      );
     }
 
     return {
@@ -139,12 +161,14 @@ export class ResolveConditionController extends AbstractController {
     this.appId = res.appInstanceId;
 
     try {
-      await new Promise((res: () => any, rej: () => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-        this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
-      });
+      await new Promise(
+        (res: () => any, rej: () => any): void => {
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          boundResolve = this.resolveInstallTransfer.bind(null, res);
+          this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
+          this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+        },
+      );
       this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
       return res.appInstanceId;
     } catch (e) {
@@ -153,6 +177,56 @@ export class ResolveConditionController extends AbstractController {
     } finally {
       this.cleanupInstallListeners(boundResolve, boundReject);
     }
+  };
+
+  private finalizeAndUninstallApp = async (
+    amount: BigNumber,
+    assetId: string,
+    paymentId: string,
+    preImage: string,
+  ): Promise<void> => {
+    const action: UnidirectionalLinkedTransferAppActionBigNumber = {
+      amount,
+      assetId,
+      paymentId,
+      preImage,
+    };
+    await this.connext.takeAction(this.appId, action);
+
+    // display final state of app
+    const appInfo = await this.connext.getAppState(this.appId);
+    (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
+    (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
+    this.log.info(`******** app state finalized: ${JSON.stringify(appInfo, null, 2)}`);
+
+    await this.connext.uninstallApp(this.appId);
+    // TODO: cf does not emit uninstall virtual event on the node
+    // that has called this function but ALSO does not immediately
+    // uninstall the apps. This will be a problem when trying to
+    // display balances...
+    const openApps = await this.connext.getAppInstances();
+    this.log.info(`Open apps: ${openApps.length}`);
+    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.identityHash))}`);
+
+    // adding a promise for now that polls app instances, but its not
+    // great and should be removed
+    await new Promise(
+      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+        };
+        let retries = 0;
+        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+          this.log.info("found app id in the open apps... retrying...");
+          await delay(500);
+          retries = retries + 1;
+        }
+
+        if (retries > 5) rej();
+
+        res();
+      },
+    );
   };
 
   // TODO: fix type of data
