@@ -4,7 +4,7 @@ const linker = require('solc/linker')
 const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
 const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
 
-const appContracts = [ "SimpleTwoPartySwapApp", "UnidirectionalTransferApp" ]
+const appContracts = [ "SimpleTwoPartySwapApp", "UnidirectionalTransferApp", "UnidirectionalLinkedTransferApp" ]
 
 const artifacts = {}
 for (const contract of coreContracts) {

@@ -240,6 +240,7 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 export enum KnownNodeAppNames {
   SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
   UNIDIRECTIONAL_TRANSFER = "UnidirectionalTransferApp",
+  UNIDIRECTIONAL_LINKED_TRANSFER = "UnidirectionalLinkedTransferApp",
 }
 
 export type ContractAddresses = NetworkContext & {

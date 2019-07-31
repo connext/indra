@@ -75,9 +75,11 @@ export class ConfigService {
     if (chainId === "4") ethAddresses = processCfAddressBook(chain4AddressBook);
     if (chainId === "42") ethAddresses = processCfAddressBook(chain42AddressBook);
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
-    Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
-    });
+    Object.keys(ethAddressBook[chainId]).map(
+      (contract: string): void => {
+        ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
+      },
+    );
     return ethAddresses as ContractAddresses;
   }
 
@@ -116,9 +118,22 @@ export class ConfigService {
         name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-        stateEncoding:
-          `tuple(address to, uint256 amount)[][]
-          `,
+        stateEncoding: `tuple(address to, uint256 amount)[][]`,
+      },
+      {
+        allowNodeInstall: true,
+        appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER],
+        name: KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER,
+        network: Network[ethNetwork.name.toUpperCase()],
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        stateEncoding: `
+          tuple(
+            uint8 stage,
+            ${singleAssetTwoPartyCoinTransferEncoding} transfers,
+            bytes32 linkedHash,
+            uint256 turnNum,
+            bool finalized
+          )`,
       },
     ];
   }
