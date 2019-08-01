@@ -132,6 +132,8 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async requestCollateral(): Promise<void> {}
 
+  public async resolveLinkedTransfer(): Promise<void> {}
+
   public async addPaymentProfile(): Promise<any> {
     return MockNodeClientApi.returnValues.addPaymentProfile;
   }
