@@ -1,13 +1,11 @@
 import { IMessagingService } from "@connext/messaging";
 import { ResolveLinkedTransferResponse } from "@connext/types";
-import { Logger } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 import { bigNumberify } from "ethers/utils";
 
 import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider, CLogger } from "../util";
-import { isXpub } from "../validator";
 
 import { TransferService } from "./transfer.service";
 
@@ -30,9 +28,8 @@ export class TransferMessaging extends AbstractMessagingProvider {
     logger.log(`Got resolve link request with data: ${JSON.stringify(data, null, 2)}`);
     const userPubId = this.getPublicIdentifierFromSubject(subject);
     const { paymentId, preImage, amount, assetId } = data;
-    // TODO: is this the right way to throw an error here?
     if (!paymentId || !preImage || !amount || !assetId) {
-      throw new Error(`Incorrect data received. Data: ${data}`);
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
     return await this.transferService.resolveLinkedTransfer(
       userPubId,
@@ -41,14 +38,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
       bigNumberify(amount),
       assetId,
     );
-  }
-
-  private getPublicIdentifierFromSubject(subject: string): string {
-    const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    if (!pubId || !isXpub(pubId)) {
-      throw new RpcException("Invalid public identifier in message subject");
-    }
-    return pubId;
   }
 
   setupSubscriptions(): void {
