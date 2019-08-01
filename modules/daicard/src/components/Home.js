@@ -63,7 +63,7 @@ class Home extends React.Component {
               }}
             >
               <QRScan
-                handleResult={this.props.scanQRCode}
+                handleResult={this.scanQRCode}
                 history={this.state.history}
               />
             </Modal>

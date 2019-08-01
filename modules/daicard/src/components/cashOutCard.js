@@ -10,7 +10,8 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import { ethers as eth } from "ethers";
+import { Zero } from "ethers/constants";
+import { arrayify, isHexString, parseEther } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 
@@ -18,8 +19,6 @@ import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
 
 import { QRScan } from "./qrCode";
-
-const { arrayify, isHexString, parseEther } = eth.utils
 
 const styles = theme => ({
   icon: {
@@ -84,7 +83,7 @@ class CashOutCard extends Component {
     const recipient = this.state.recipient.value
     if (!recipient) return
     const amount = parseEther(balance.channel.ether.toETH().amount)
-    if (amount.lte(eth.constants.Zero)) return
+    if (amount.lte(Zero)) return
     setPending({ type: "withdrawal", complete: false, closed: false })
     this.setState({ withdrawing: true });
     const result = await channel.withdraw({ amount: amount.toString(), recipient });
