@@ -68,13 +68,13 @@ describe("ChannelService", () => {
     let profile = new PaymentProfile();
     profile.amountToCollateralize = toBig(2000);
     profile.minimumMaintainedCollateral = toBig(600);
-    profile.tokenAddress = AddressZero;
+    profile.assetId = AddressZero;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
     profile = new PaymentProfile();
     profile.amountToCollateralize = toBig(3000);
     profile.minimumMaintainedCollateral = toBig(1000);
-    profile.tokenAddress = tokenAddress;
+    profile.assetId = tokenAddress;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
     profile = await channelRepository.getPaymentProfileForChannelAndToken(
@@ -114,7 +114,7 @@ describe("ChannelService", () => {
     let profile = new PaymentProfile();
     profile.amountToCollateralize = toBig(2000);
     profile.minimumMaintainedCollateral = toBig(600);
-    profile.tokenAddress = tokenAddress;
+    profile.assetId = tokenAddress;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
     profile = await channelRepository.getPaymentProfileForChannelAndToken(
@@ -128,7 +128,7 @@ describe("ChannelService", () => {
     profile = new PaymentProfile();
     profile.amountToCollateralize = toBig(4000);
     profile.minimumMaintainedCollateral = toBig(1200);
-    profile.tokenAddress = tokenAddress;
+    profile.assetId = tokenAddress;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
     profile = await channelRepository.getPaymentProfileForChannelAndToken(

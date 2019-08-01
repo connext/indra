@@ -1,7 +1,7 @@
 {
   "3": {
     "ChallengeRegistry": {
-      "address": "0x89A5BB2b22222f108117e44eCde50596369C8D43"
+      "address": "0x100Db874AC77dc8ddad7421b6464e188A2F533D6"
     },
     "ConditionalTransactionDelegateTarget": {
       "address": "0xd3196a73BD8153b8624cdB3652B9a5ba38f471Db"
@@ -16,7 +16,7 @@
       "address": "0x7DDC4e499fbFafb8F573eeBf2c1BbDA141c5cE29"
     },
     "MinimumViableMultisig": {
-      "address": "0xFd336d6d90c75eC4a8917e895ffBff8EFCC8c913"
+      "address": "0xC246CC977ee6DcE225E5708AaE2bEC3ba501b96a"
     },
     "ProxyFactory": {
       "address": "0xD891F41c4ba30b1FF4f604e30F64ae387DD85b4F"
@@ -39,7 +39,7 @@
   },
   "4": {
     "ChallengeRegistry": {
-      "address": "0x89A5BB2b22222f108117e44eCde50596369C8D43"
+      "address": "0xfF532Ae788D2309ad436dc7edD1647CA5fd573ef"
     },
     "ConditionalTransactionDelegateTarget": {
       "address": "0xd3196a73BD8153b8624cdB3652B9a5ba38f471Db"
@@ -54,7 +54,7 @@
       "address": "0x7DDC4e499fbFafb8F573eeBf2c1BbDA141c5cE29"
     },
     "MinimumViableMultisig": {
-      "address": "0xFd336d6d90c75eC4a8917e895ffBff8EFCC8c913"
+      "address": "0x0e3CA38e42CF5469A17Ad8f473e45521bEE930Ae"
     },
     "ProxyFactory": {
       "address": "0xD891F41c4ba30b1FF4f604e30F64ae387DD85b4F"
@@ -77,7 +77,7 @@
   },
   "42": {
     "ChallengeRegistry": {
-      "address": "0x3f9514f8e05E91a0D43520E6Cc36d5706F437B6b"
+      "address": "0xBa9194E76AA2eF962BF56ab019B3A97A7164Bc5A"
     },
     "ConditionalTransactionDelegateTarget": {
       "address": "0xf3507c26cfDFDFB8A28233F0876cc0a496453222"
@@ -92,7 +92,7 @@
       "address": "0xCac7b9C56E9E49E25731453046E179A6dD4BB684"
     },
     "MinimumViableMultisig": {
-      "address": "0xABbA54697e537C7b0d3f3b74D685648b10C0EC99"
+      "address": "0x6425A191557834eA24e13398D096724098Cb7629"
     },
     "ProxyFactory": {
       "address": "0xee47fd8A937b563fba3F6360281Af44d3D5b6438"

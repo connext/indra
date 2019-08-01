@@ -66,7 +66,7 @@ export class ChannelRepository extends Repository<Channel> {
 
   async getPaymentProfileForChannelAndToken(
     userPublicIdentifier: string,
-    tokenAddress: string = AddressZero,
+    assetId: string = AddressZero,
   ): Promise<PaymentProfile> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
@@ -80,17 +80,17 @@ export class ChannelRepository extends Repository<Channel> {
     }
 
     const profile = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.assetId === tokenAddress,
+      (prof: PaymentProfile) => prof.assetId === assetId,
     );
 
     if (!profile) {
-      if (tokenAddress === AddressZero) {
+      if (assetId === AddressZero) {
         return defaultPaymentProfileEth;
       }
       // TODO: add default token profiles?
       throw new Error(
-        `Payment profile does not exists for user ${userPublicIdentifier} 
-        and token ${tokenAddress}`,
+        `Payment profile does not exists for user ${userPublicIdentifier}
+        and token ${assetId}`,
       );
     }
     return profile;
