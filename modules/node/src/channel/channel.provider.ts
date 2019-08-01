@@ -61,11 +61,11 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async requestCollateral(
     subject: string,
-    data: { tokenAddress?: string },
+    data: { assetId?: string },
   ): Promise<RequestCollateralResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
 
-    return this.channelService.requestCollateral(pubId, data.tokenAddress);
+    return this.channelService.requestCollateral(pubId, data.assetId);
   }
 
   async addPaymentProfile(
@@ -92,14 +92,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
 
     super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
-  }
-
-  private getPublicIdentifierFromSubject(subject: string): string {
-    const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    if (!pubId || !isXpub(pubId)) {
-      throw new RpcException("Invalid public identifier in message subject");
-    }
-    return pubId;
   }
 }
 
