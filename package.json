@@ -13,11 +13,11 @@
 	},
 	"homepage": "https://github.com/ConnextProject/indra-v2#readme",
 	"devDependencies": {
-		"@counterfactual/contracts": "0.1.14",
+		"@counterfactual/contracts": "0.1.15",
 		"chai-bn": "0.1.1",
 		"cypress": "3.4.1",
 		"ethers": "4.0.33",
-		"ganache-cli": "6.5.0",
+		"ganache-cli": "6.5.1",
 		"lerna": "3.16.4",
 		"openzeppelin-solidity": "2.3.0",
 		"solc": "0.5.10",
