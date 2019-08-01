@@ -26,7 +26,7 @@ import { createLinkedHash } from "./ConditionalTransferController";
 type ConditionResolvers = {
   [index in TransferCondition]: (
     params: ResolveConditionParameters,
-  ) => Promise<ResolveConditionResponse>
+  ) => Promise<ResolveConditionResponse>;
 };
 export class ResolveConditionController extends AbstractController {
   private appId: string;
@@ -161,14 +161,12 @@ export class ResolveConditionController extends AbstractController {
     this.appId = res.appInstanceId;
 
     try {
-      await new Promise(
-        (res: () => any, rej: () => any): void => {
-          boundReject = this.rejectInstallTransfer.bind(null, rej);
-          boundResolve = this.resolveInstallTransfer.bind(null, res);
-          this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-          this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
-        },
-      );
+      await new Promise((res: () => any, rej: () => any): void => {
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        boundResolve = this.resolveInstallTransfer.bind(null, res);
+        this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
+        this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+      });
       this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
       return res.appInstanceId;
     } catch (e) {
