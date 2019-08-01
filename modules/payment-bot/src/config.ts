@@ -34,7 +34,11 @@ program
   .option("-r, --recipient <address>", "Withdrawal recipient address")
   .option("-s, --swap <amount>", "Swap amount in Ether units")
   .option("-q, --request-collateral", "Request channel collateral from the node")
-  .option("-l, --log-level", "0: no logs, 1: errors, 2: warnings, 3: info, 4: debug, 5: all logs");
+  .option("-u, --uninstall <appDefinitionId>", "Uninstall app")
+  .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app")
+  .option("-l, --linked <amount>", "Create linked payment")
+  .option("-p, --payment-id <paymentId>", "Redeem a linked payment with paymentId")
+  .option("-e, --pre-image <preImage>", "Redeem a linked payment with preImage");
 
 program.parse(process.argv);
 
