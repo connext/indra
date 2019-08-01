@@ -128,6 +128,10 @@ export class TransferService {
       logger.warn("Free balance after transfer is lte free balance before transfer..");
     }
 
+    // uninstall sender app
+    // dont await so caller isnt blocked by this
+    this.nodeService.uninstallApp(senderApp.identityHash);
+
     return {
       freeBalance: await this.nodeService.getFreeBalance(
         userPubId,
