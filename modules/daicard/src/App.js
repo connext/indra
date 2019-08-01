@@ -85,6 +85,7 @@ class App extends React.Component {
       pending: { type: "", complete: false, closed: false },
       sendScanArgs: { amount: null, recipient: null },
       token: null,
+      xpub: "",
     };
   }
 
@@ -141,6 +142,7 @@ class App extends React.Component {
       swapRate,
       token,
       wallet: cfWallet,
+      xpub: channel.publicIdentifier,
     });
 
     await this.startPoller();
@@ -331,6 +333,7 @@ class App extends React.Component {
       minDeposit,
       pending,
       sendScanArgs,
+      xpub,
     } = this.state;
     const { classes } = this.props;
     return (
@@ -377,7 +380,11 @@ class App extends React.Component {
             <Route path="/settings" render={props => <SettingsCard {...props} />} />
             <Route
               path="/request"
-              render={props => <RequestCard {...props} address={address} maxDeposit={maxDeposit} />}
+              render={props => <RequestCard
+                {...props}
+                xpub={xpub}
+                maxDeposit={maxDeposit}
+              />}
             />
             <Route
               path="/send"

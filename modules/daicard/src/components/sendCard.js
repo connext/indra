@@ -88,29 +88,30 @@ class SendCard extends Component {
     } catch (e) {
       error = e.message
     }
-    if (value && value.amountWad.gt(balance.channel.token.amountWad)) {
-      error = "Please enter an amount less than your balance"
+    if (value && value.amountWad.gt(balance.channel.ether.toETH().amountWad)) {
+      error = `Invalid amount: must be less than your balance`
     }
     if (value && value.amountWad.lte(Zero)) {
-      error = "Please enter an amount greater than 0"
+      error = "Invalid amount: must be greater than 0"
     }
     this.setState({
       amount: {
         display: rawValue,
         error,
-        value: error ? null : value.toDEI().toString(),
+        value: error ? null : value,
       }
     })
   }
 
   async updateRecipientHandler(rawValue) {
+    const xpubLen = 111
     let value = null, error = null
-    value = rawValue.toLowerCase()
-    if (!isHexString(value)) {
-      error = "Invalid address: expected a hex string"
+    value = rawValue
+    if (!value.startsWith('xpub')) {
+      error = "Invalid recipient: should start with xpub"
     }
-    if (!error && arrayify(value).length !== 20) {
-      error = "Invalid address: expected 40 hex characters"
+    if (!error && value.length !== xpubLen) {
+      error = `Invalid recipient: expected ${xpubLen} characters, got ${value.length}`
     }
     this.setState({
       recipient: {
@@ -119,6 +120,26 @@ class SendCard extends Component {
         value: error ? null : value,
       }
     })
+  }
+
+  async paymentHandler() {
+    const { channel } = this.props;
+    const { amount, recipient } = this.state;
+    if (amount.error || recipient.error) return;
+    // TODO: check if recipient needs collateral & tell server to collateralize if more is needed
+    try {
+      console.log(`Sending ${amount.value} to ${recipient.value}`);
+      await channel.transfer({
+        assetId: AddressZero, // TODO: token address
+        amount: amount.value.toDEI().floor(),
+        recipient: recipient.value,
+      });
+      this.setState({ showReceipt: true, paymentState: PaymentStates.Success });
+    } catch (e) {
+      console.error(`Unexpected error sending payment: ${e.message}`);
+      console.error(e)
+      this.setState({ paymentState: PaymentStates.OtherError, showReceipt: true });
+    }
   }
 
   async linkHandler() {
@@ -145,26 +166,6 @@ class SendCard extends Component {
         pathname: "/redeem",
         search: `?secret=${secret}&amountToken=${amount.value.amount}`,
       });
-    } catch (e) {
-      console.log("Unexpected error sending payment:", e);
-      this.setState({ paymentState: PaymentStates.OtherError, showReceipt: true });
-    }
-  }
-
-  async paymentHandler() {
-    const { channel } = this.props;
-    const { amount, recipient } = this.state;
-    if (amount.error || recipient.error) return;
-    // TODO: check if recipient needs collateral & tell server to collateralize if more is needed
-    try {
-      console.log(`Sending payment!`);
-      await channel.transfer({
-        assetId: AddressZero,
-        amount: amount.value.toDEI().floor(),
-        meta: { type: 'payment' },
-        recipient: recipient.value,
-      });
-      this.setState({ showReceipt: true, paymentState: PaymentStates.Success });
     } catch (e) {
       console.log("Unexpected error sending payment:", e);
       this.setState({ paymentState: PaymentStates.OtherError, showReceipt: true });
@@ -299,7 +300,7 @@ class SendCard extends Component {
             <Grid item xs={6}>
               <Button
                 className={classes.button}
-                disabled={!amount.error && !recipient.error}
+                disabled={!!amount.error || !!recipient.error}
                 fullWidth
                 onClick={() => {this.linkHandler()}}
                 size="large"
@@ -312,7 +313,7 @@ class SendCard extends Component {
             <Grid item xs={6}>
               <Button
                 className={classes.button}
-                disabled={!amount.error && !recipient.error}
+                disabled={!!amount.error || !!recipient.error}
                 fullWidth
                 onClick={() => {this.paymentHandler()}}
                 size="large"

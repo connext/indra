@@ -41,7 +41,7 @@ class RequestCard extends Component {
   generateQrUrl(value) {
     return `${window.location.origin}/send?` +
       `amountToken=${value || "0"}&` +
-      `recipient=${this.props.address || AddressZero}`;
+      `recipient=${this.props.xpub}`;
   }
 
   handleCopy() {
@@ -70,7 +70,7 @@ class RequestCard extends Component {
   };
 
   render() {
-    const { classes } = this.props;
+    const { classes, xpub } = this.props;
     const { qrUrl, error, displayValue, copied } = this.state;
     return (
       <Grid
@@ -89,22 +89,29 @@ class RequestCard extends Component {
         <MySnackbar
           variant="success"
           openWhen={copied}
-          onClose={this.closeModal}
+          onClose={this.closeModal.bind(this)}
           message="Copied!"
         />
-        <Grid
-          container
-          wrap="nowrap"
-          direction="row"
-          justify="center"
-          alignItems="center"
-        >
-          <Grid item xs={12}>
-            <RequestIcon className={classes.icon} />
-          </Grid>
-        </Grid>
         <Grid item xs={12}>
           <QRGenerate value={qrUrl} />
+        </Grid>
+        <Grid item xs={12}>
+          <CopyToClipboard
+            onCopy={this.handleCopy.bind(this)}
+            text={xpub}
+          >
+            <Button variant="outlined" fullWidth>
+              <Typography noWrap variant="body1">
+                <Tooltip
+                  disableFocusListener
+                  disableTouchListener
+                  title={"Click to Copy"}
+                >
+                  <span>{xpub}</span>
+                </Tooltip>
+              </Typography>
+            </Button>
+          </CopyToClipboard>
         </Grid>
         <Grid item xs={12}>
           <CopyToClipboard
@@ -131,7 +138,7 @@ class RequestCard extends Component {
             label="Amount"
             value={displayValue}
             type="number"
-            margin="normal"
+            margin="dense"
             variant="outlined"
             onChange={evt => this.updatePaymentHandler(evt.target.value)}
             error={!!error}
