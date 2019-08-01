@@ -22,7 +22,7 @@ import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
 type CallbackStruct = {
-  [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void;
+  [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void
 };
 
 export class ConnextListener extends EventEmitter {
@@ -112,12 +112,16 @@ export class ConnextListener extends EventEmitter {
       // FIXME: type of ProposeMessage should extend Node.NodeMessage, which
       // has a from field, but ProposeMessage does not
       if ((data as any).from === this.cfModule.publicIdentifier) {
+        this.log.warn(
+          `Received proposal from our own node, this shouldn't happen, ${JSON.stringify(data)}`,
+        );
         return;
       }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
-      if (matchedResult) {
+      if (!matchedResult) {
+        this.log.warn(`No matched app, doing nothing, ${JSON.stringify(data)}`);
         return;
       }
       // matched app, take appropriate default actions
@@ -240,7 +244,7 @@ export class ConnextListener extends EventEmitter {
     );
     if (invalidProposal) {
       // reject app installation
-      this.log.error(`Proposed app is invalid. ` + invalidProposal);
+      this.log.error(`Proposed app is invalid. ${invalidProposal}`);
       // TODO: IS THIS RIGHT
       await this.connext.rejectInstallVirtualApp(appInstance.identityHash);
       return;
@@ -253,11 +257,14 @@ export class ConnextListener extends EventEmitter {
     if (matchedApp.name === SupportedApplications.SimpleTwoPartySwapApp) {
       return;
     }
+    this.log.info(`Proposal for app install successful, attempting install now...`);
+    let res;
     if (isVirtual) {
-      await this.connext.installVirtualApp(appInstance.identityHash);
+      res = await this.connext.installVirtualApp(appInstance.identityHash);
     } else {
-      await this.connext.installApp(appInstance.identityHash);
+      res = await this.connext.installApp(appInstance.identityHash);
     }
+    this.log.info(`App installed, res: ${JSON.stringify(res, null, 2)}`);
     return;
   };
 }
