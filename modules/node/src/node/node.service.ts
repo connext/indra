@@ -14,7 +14,7 @@ import {
   UpdateStateMessage,
   WithdrawMessage,
 } from "@counterfactual/node";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 
@@ -149,7 +149,7 @@ export class NodeService implements OnModuleInit {
   async proposeInstallApp(
     params: NodeTypes.ProposeInstallParams,
   ): Promise<NodeTypes.ProposeInstallResult> {
-    const actionRes = await this.cfNode.rpcRouter.dispatch(
+    const proposeRes = await this.cfNode.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         jsonrpc: "2.0",
@@ -157,8 +157,8 @@ export class NodeService implements OnModuleInit {
         params,
       }),
     );
-
-    return actionRes.result.result as NodeTypes.ProposeInstallResult;
+    logger.log(`proposeInstallApp called with result ${JSON.stringify(proposeRes.result.result)}`);
+    return proposeRes.result.result as NodeTypes.ProposeInstallResult;
   }
 
   async takeAction(
@@ -185,6 +185,7 @@ export class NodeService implements OnModuleInit {
       }),
     );
 
+    logger.log(`takeAction called with result ${JSON.stringify(actionResponse.result.result)}`);
     return actionResponse.result.result as NodeTypes.TakeActionResult;
   }
 
@@ -206,10 +207,13 @@ export class NodeService implements OnModuleInit {
       }),
     );
 
+    logger.log(
+      `uninstallApp called with result ${JSON.stringify(uninstallResponse.result.result)}`,
+    );
     return uninstallResponse.result.result as NodeTypes.UninstallResult;
   }
 
-  async getAppInstances(): Promise<AppInstanceInfo[]> {
+  async getAppInstances(): Promise<AppInstanceJson[]> {
     const appInstanceResponse = await this.cfNode.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
@@ -219,7 +223,7 @@ export class NodeService implements OnModuleInit {
       }),
     );
 
-    return appInstanceResponse.result.result.appInstances as AppInstanceInfo[];
+    return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
   async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult | undefined> {
@@ -245,7 +249,7 @@ export class NodeService implements OnModuleInit {
 
   private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
+    const app = apps.filter((app: AppInstanceJson) => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +
