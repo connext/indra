@@ -7,9 +7,8 @@ import {
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { RejectProposalMessage } from "@counterfactual/node";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
-import { RpcException } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -41,9 +40,25 @@ export class TransferService {
     amount: BigNumber,
     assetId: string,
   ): Promise<ResolveLinkedTransferResponse> {
+    logger.log(
+      `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, 
+      preImage: ${preImage}, amount: ${amount}, assetId: ${assetId}`,
+    );
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
-      throw new RpcException(`No channel exists for userPubId ${userPubId}`);
+      throw new Error(`No channel exists for userPubId ${userPubId}`);
+    }
+
+    // check that linked transfer app has been installed from sender
+    const installedApps = await this.nodeService.getAppInstances();
+    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const senderApp = installedApps.find(
+      (app: AppInstanceJson) =>
+        (app.latestState as UnidirectionalLinkedTransferAppStateBigNumber).linkedHash ===
+        linkedHash,
+    );
+    if (!senderApp) {
+      throw new Error(`App with provided hash has not been installed.`);
     }
 
     const freeBal = await this.nodeService.getFreeBalance(
@@ -59,8 +74,6 @@ export class TransferService {
       SupportedApplications.UnidirectionalLinkedTransferApp,
       network.name as Network,
     );
-
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
 
     const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
       finalized: false,
@@ -79,13 +92,10 @@ export class TransferService {
       turnNum: Zero,
     };
 
-    this.appId = await this.conditionalTransferAppInstalled(
-      userPubId,
-      amount,
-      assetId,
-      initialState,
-      appInfo,
-    );
+    await this.conditionalTransferAppInstalled(userPubId, amount, assetId, initialState, appInfo);
+
+    // TODO: why do we have to do this?
+    await this.waitForAppInstall();
 
     // finalize
     await this.finalizeAndUninstallApp(amount, assetId, paymentId, preImage);
@@ -127,7 +137,7 @@ export class TransferService {
   // and rejected if the virtual application is rejected
   private conditionalTransferAppInstalled = async (
     userPubId: string,
-    responderDeposit: BigNumber,
+    amount: BigNumber,
     assetId: string,
     initialState: ConditionalTransferInitialStateBigNumber,
     appInfo: AppRegistry,
@@ -149,26 +159,27 @@ export class TransferService {
       },
       appDefinition,
       initialState,
-      initiatorDeposit: Zero,
+      initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
       outcomeType,
       proposedToIdentifier: userPubId,
-      responderDeposit,
+      responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
 
     const res = await this.nodeService.proposeInstallApp(params);
+    this.appId = res.appInstanceId;
     // set app instance id
 
-    await new Promise((res: () => any, rej: () => any): void => {
+    const installRes = await new Promise((res: () => any, rej: () => any): void => {
       boundReject = this.rejectInstallTransfer.bind(null, rej);
       boundResolve = this.resolveInstallTransfer.bind(null, res);
       this.nodeService.registerCfNodeListener(NodeTypes.EventName.INSTALL, boundResolve);
       this.nodeService.registerCfNodeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
     });
-    logger.log(`App was installed successfully!: ${JSON.stringify(res)}`);
-    return res.appInstanceId;
+    logger.log(`App was installed successfully!: ${JSON.stringify(installRes)}`);
+    return (installRes as any).data.params.appInstanceId;
   };
 
   private finalizeAndUninstallApp = async (
@@ -189,7 +200,6 @@ export class TransferService {
     const appInfo = await this.nodeService.getAppState(this.appId);
     (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
     (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
-    logger.log(`******** app state finalized: ${JSON.stringify(appInfo, null, 2)}`);
 
     await this.nodeService.uninstallApp(this.appId);
     // TODO: cf does not emit uninstall virtual event on the node
@@ -198,34 +208,16 @@ export class TransferService {
     // display balances...
     const openApps = await this.nodeService.getAppInstances();
     logger.log(`Open apps: ${openApps.length}`);
-    logger.log(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceInfo) => a.identityHash))}`);
+    logger.log(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceJson) => a.identityHash))}`);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await new Promise(
-      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.nodeService.getAppInstances()).map(
-            (a: AppInstanceInfo) => a.identityHash,
-          );
-        };
-        let retries = 0;
-        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-          logger.log("found app id in the open apps... retrying...");
-          await delay(500);
-          retries = retries + 1;
-        }
-
-        if (retries > 5) rej();
-
-        res();
-      },
-    );
+    await this.waitForAppUninstall();
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
-    if (this.appId !== data.params.appInstanceId) {
+  private resolveInstallTransfer = (res: (value?: any) => void, data: any): any => {
+    if (this.appId && this.appId !== data.data.params.appInstanceId) {
       logger.log(
         `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
       );
@@ -247,4 +239,54 @@ export class TransferService {
 
     return rej(`Install failed. Event data: ${JSON.stringify(msg, null, 2)}`);
   };
+
+  private waitForAppInstall(): Promise<unknown> {
+    if (!this.appId) {
+      throw new Error(`appId not set, cannot wait for install`);
+    }
+    return new Promise(
+      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.nodeService.getAppInstances()).map(
+            (a: AppInstanceJson) => a.identityHash,
+          );
+        };
+        let retries = 0;
+        while (!(await getAppIds()).includes(this.appId) && retries <= 30) {
+          logger.log(`did not find app id ${this.appId} in the open apps... retrying...`);
+          await delay(500);
+          retries = retries + 1;
+        }
+
+        if (retries > 30) rej();
+
+        res();
+      },
+    );
+  }
+
+  private waitForAppUninstall(): Promise<unknown> {
+    if (!this.appId) {
+      throw new Error(`appId not set, cannot wait for uninstall`);
+    }
+    return new Promise(
+      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.nodeService.getAppInstances()).map(
+            (a: AppInstanceJson) => a.identityHash,
+          );
+        };
+        let retries = 0;
+        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+          logger.log("found app id in the open apps... retrying...");
+          await delay(500);
+          retries = retries + 1;
+        }
+
+        if (retries > 5) rej();
+
+        res();
+      },
+    );
+  }
 }
