@@ -3,11 +3,11 @@ import { MNEMONIC_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { ethers as eth } from "ethers";
+import { Wallet } from "ethers";
 
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
-import { CLogger } from "../util";
+import { CLogger, freeBalanceAddressFromXpub } from "../util";
 
 const logger = new CLogger("NodeProvider");
 
@@ -26,7 +26,7 @@ export const nodeProviderFactory: Provider = {
     await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
-    const addr = eth.Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;
+    const addr = Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;
     const provider = config.getEthProvider();
     const balance = (await provider.getBalance(addr)).toString();
     logger.log(
@@ -42,9 +42,7 @@ export const nodeProviderFactory: Provider = {
     logger.log("Node created");
     logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
     logger.log(
-      `Free balance address ${JSON.stringify(
-        eth.utils.HDNode.fromExtendedKey(node.publicIdentifier).derivePath("0").address,
-      )}`,
+      `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(node.publicIdentifier))}`,
     );
     return node;
   },
