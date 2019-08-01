@@ -75,7 +75,7 @@ docker run \
   trufflesuite/ganache-cli:v6.4.3 \
     --db="/data" \
     --mnemonic="$eth_mnemonic" \
-    --networkId="4447" \
+    --networkId="4447"
 
 echo "Starting $postgres_host.."
 docker run \

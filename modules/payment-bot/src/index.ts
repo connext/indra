@@ -5,42 +5,28 @@ import {
   ResolveLinkedTransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import commander from "commander";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
+import { store } from "./store";
 
-const program = new commander.Command();
-program.version("0.0.1");
+process.on(
+  "warning",
+  (e: any): any => {
+    console.warn(e);
+    process.exit(1);
+  },
+);
 
-program
-  .option("-x, --debug", "output extra debugging")
-  .option("-d, --deposit <amount>", "Deposit amount in Ether units")
-  .option(
-    "-a, --asset-id <address>",
-    "Asset ID/Token Address of deposited, withdrawn, swapped, or transferred asset",
-  )
-  .option("-t, --transfer <amount>", "Transfer amount in Ether units")
-  .option("-c, --counterparty <id>", "Counterparty public identifier")
-  .option("-i, --identifier <id>", "Bot identifier")
-  .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
-  .option("-r, --recipient <address>", "Withdrawal recipient address")
-  .option("-s, --swap <amount>", "Swap amount in Ether units")
-  .option("-q, --request-collateral", "Request channel collateral from the node")
-  .option("-u, --uninstall <appDefinitionId>", "Uninstall app")
-  .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app")
-  .option("-l, --linked <amount>", "Create linked payment")
-  .option("-p, --payment-id <paymentId>", "Redeem a linked payment with paymentId")
-  .option("-e, --pre-image <preImage>", "Redeem a linked payment with preImage");
-
-program.parse(process.argv);
-
-process.on("warning", (e: any): any => console.warn(e.stack));
-
-const pgServiceFactory: PostgresServiceFactory = new PostgresServiceFactory(config.postgres);
+process.on(
+  "unhandledRejection",
+  (e: any): any => {
+    console.error(e);
+    process.exit(1);
+  },
+);
 
 let client: connext.ConnextInternal;
 
@@ -70,9 +56,9 @@ export function getConnextClient(): connext.ConnextInternal {
 let latestSwapRate;
 
 async function run(): Promise<void> {
-  await getOrCreateChannel(program.assetId);
-  if (program.assetId) {
-    await client.subscribeToSwapRates(AddressZero, program.assetId, (msg: any) => {
+  await getOrCreateChannel(config.assetId);
+  if (config.assetId) {
+    await client.subscribeToSwapRates(AddressZero, config.assetId, (msg: any) => {
       latestSwapRate = msg.data;
       console.log("latestSwapRate: ", latestSwapRate);
       client.opts.store.set([
@@ -86,74 +72,78 @@ async function run(): Promise<void> {
 
   const apps = await client.getAppInstances();
   console.log("apps: ", apps);
-  if (program.deposit) {
+  if (config.deposit) {
     const depositParams: DepositParameters = {
-      amount: parseEther(program.deposit).toString(),
+      amount: parseEther(config.deposit).toString(),
     };
-    if (program.assetId) {
-      depositParams.assetId = program.assetId;
+    if (config.assetId) {
+      depositParams.assetId = config.assetId;
     }
-    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${program.assetId}...`);
+    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${config.assetId}...`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
+    process.exit(0);
   }
 
-  if (program.requestCollateral) {
+  if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
-    await client.requestCollateral(program.assetId || AddressZero);
+    await client.requestCollateral(config.assetId || AddressZero);
+    console.log(`Successfully received collateral!`);
   }
 
-  if (program.transfer) {
-    console.log(`Attempting to transfer ${program.transfer} with assetId ${program.assetId}...`);
+  if (config.transfer) {
+    console.log(`Attempting to transfer ${config.transfer} with assetId ${config.assetId}...`);
     await client.transfer({
-      amount: parseEther(program.transfer).toString(),
-      assetId: program.assetId || AddressZero,
-      recipient: program.counterparty,
+      amount: parseEther(config.transfer).toString(),
+      assetId: config.assetId || AddressZero,
+      recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
+    process.exit(0);
   }
 
-  if (program.swap) {
-    const tokenAddress = program.assetId;
-    const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
+  if (config.swap) {
+    const tokenAddress = (await client.config()).contractAddresses.Token;
+    const swapRate = client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(
-      `Attempting to swap ${program.swap} of eth for ${
-        program.assetId
+      `Attempting to swap ${config.swap} of eth for ${
+        config.assetId
       } at rate ${swapRate.toString()}...`,
     );
     await client.swap({
-      amount: parseEther(program.swap).toString(),
+      amount: parseEther(config.swap).toString(),
       fromAssetId: AddressZero,
       swapRate: swapRate.toString(),
-      toAssetId: program.assetId,
+      toAssetId: config.assetId,
     });
     console.log(`Successfully swapped!`);
+    process.exit(0);
   }
 
-  if (program.linked && !program.paymentId) {
+  if (config.linked && !config.paymentId) {
     const linkedParams: LinkedTransferParameters = {
-      amount: parseEther(program.linked).toString(),
-      assetId: program.assetId || AddressZero,
+      amount: parseEther(config.linked).toString(),
+      assetId: config.assetId || AddressZero,
       conditionType: "LINKED_TRANSFER",
     };
-    console.log(`Attempting to create link with ${program.linked} of ${linkedParams.assetId}...`);
+    console.log(`Attempting to create link with ${config.linked} of ${linkedParams.assetId}...`);
     const res = await client.conditionalTransfer(linkedParams);
     console.log(`Successfully created! Linked response: ${JSON.stringify(res, null, 2)}`);
   }
 
-  if (program.paymentId) {
-    if (!program.preImage) {
+  if (config.paymentId) {
+    if (!config.preImage) {
       throw new Error(`Cannot redeem a linked payment without an associated preImage.`);
     }
-    if (!program.linked) {
+    if (!config.linked) {
       throw new Error(`Cannot redeem a linked payment without an associated amount`);
     }
     const resolveParams: ResolveLinkedTransferParameters = {
-      amount: parseEther(program.linked).toString(),
-      assetId: program.assetId || AddressZero,
+      amount: parseEther(config.linked).toString(),
+      assetId: config.assetId || AddressZero,
       conditionType: "LINKED_TRANSFER",
-      paymentId: program.paymentId,
-      preImage: program.preImage,
+      paymentId: config.paymentId,
+      preImage: config.preImage,
     };
     console.log(
       `Attempting to redeem link with parameters: ${JSON.stringify(resolveParams, null, 2)}...`,
@@ -162,15 +152,15 @@ async function run(): Promise<void> {
     console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, null, 2)}`);
   }
 
-  if (program.withdraw) {
+  if (config.withdraw) {
     const withdrawParams: WithdrawParameters = {
-      amount: parseEther(program.withdraw).toString(),
+      amount: parseEther(config.withdraw).toString(),
     };
-    if (program.assetId) {
-      withdrawParams.assetId = program.assetId;
+    if (config.assetId) {
+      withdrawParams.assetId = config.assetId;
     }
-    if (program.recipient) {
-      withdrawParams.recipient = program.recipient;
+    if (config.recipient) {
+      withdrawParams.recipient = config.recipient;
     }
     console.log(
       `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
@@ -178,43 +168,42 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
+    process.exit(0);
   }
 
-  if (program.uninstall) {
-    console.log(`Attempting to uninstall app ${program.uninstall}`);
-    await client.uninstallApp(program.uninstall);
-    console.log(`Successfully uninstalled ${program.uninstall}`);
+  if (config.uninstall) {
+    console.log(`Attempting to uninstall app ${config.uninstall}`);
+    await client.uninstallApp(config.uninstall);
+    console.log(`Successfully uninstalled ${config.uninstall}`);
     console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
-  if (program.uninstallVirtual) {
-    console.log(`Attempting to uninstall virtual app ${program.uninstallVirtual}`);
-    await client.uninstallVirtualApp(program.uninstallVirtual);
-    console.log(`Successfully uninstalled ${program.uninstallVirtual}`);
+  if (config.uninstallVirtual) {
+    console.log(`Attempting to uninstall virtual app ${config.uninstallVirtual}`);
+    await client.uninstallVirtualApp(config.uninstallVirtual);
+    console.log(`Successfully uninstalled ${config.uninstallVirtual}`);
     console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
-  if (program.assetId) {
-    client.logEthFreeBalance(program.assetId, await client.getFreeBalance(program.assetId));
+  if (config.assetId) {
+    client.logEthFreeBalance(config.assetId, await client.getFreeBalance(config.assetId));
   }
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
-  await pgServiceFactory.connectDb();
-
   const connextOpts = {
     ethProviderUrl: config.ethProviderUrl,
-    logLevel: 3,
+    logLevel: config.logLevel,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
-    store: pgServiceFactory.createStoreService(config.username),
+    store,
   };
 
   console.log("Using client options:");
   console.log("     - mnemonic:", connextOpts.mnemonic);
-  console.log("     - rpcProviderUrl:", connextOpts.ethProviderUrl);
+  console.log("     - ethProviderUrl:", connextOpts.ethProviderUrl);
   console.log("     - nodeUrl:", connextOpts.nodeUrl);
 
   console.log("Creating connext");

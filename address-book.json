@@ -32,6 +32,9 @@
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x23D7737A7262f5ED5980b0342449E70eE5010B9F"
+    },
+    "Token": {
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
     }
   },
   "4": {
@@ -67,6 +70,9 @@
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x23D7737A7262f5ED5980b0342449E70eE5010B9F"
+    },
+    "Token": {
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
     }
   },
   "42": {
@@ -102,6 +108,9 @@
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x8F0867C5E7B179BcFA9eeE22679731861eE6A5A7"
+    },
+    "Token": {
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
     }
   },
   "4447": {

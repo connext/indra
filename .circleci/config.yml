@@ -7,11 +7,17 @@ jobs:
       - checkout
       - run: make test-node
 
-  test-e2e:
+  test-e2e-ui:
     machine: true
     steps:
       - checkout
-      - run: make test-e2e
+      - run: make test-e2e-ui
+
+  test-e2e-bot:
+    machine: true
+    steps:
+      - checkout
+      - run: make test-e2e-bot
 
   push-latest-images:
     machine: true
@@ -45,7 +51,8 @@ workflows:
   test-and-deploy:
     jobs:
       - test-node
-      - test-e2e
+      - test-e2e-ui
+      - test-e2e-bot
 
       - push-latest-images:
           filters:
@@ -53,7 +60,8 @@ workflows:
               only: master
           requires:
             - test-node
-            - test-e2e
+            - test-e2e-ui
+            - test-e2e-bot
 
       - deploy-staging:
           requires:
