@@ -22,6 +22,7 @@ export const MessagingProviderId = "MESSAGING";
 export const NodeProviderId = "NODE";
 export const PostgresProviderId = "POSTGRES";
 export const SwapRateProviderId = "SWAP_RATE";
+export const TransferProviderId = "TRANSFER";
 
 // REGEX
 export const EthAddressRegex = /^0x[a-fA-F0-9]{40}$/;
