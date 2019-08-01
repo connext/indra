@@ -115,6 +115,11 @@ export class TransferService {
         `Welp it appears the difference of the free balance before and after
         uninstalling is not what we expected......`,
       );
+      logger.warn(
+        `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
+          freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
+        ].toString()}, expected ${amount.toString()}`,
+      );
     } else if (
       postTransferBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)].lte(
         preTransferBal,

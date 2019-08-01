@@ -4,7 +4,6 @@ import {
   DepositConfirmationMessage,
   InstallMessage,
   InstallVirtualMessage,
-  jsonRpcDeserialize,
   Node,
   ProposeMessage,
   ProposeVirtualMessage,
@@ -14,9 +13,10 @@ import {
   UpdateStateMessage,
   WithdrawMessage,
 } from "@counterfactual/node";
-import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceJson, AppInstanceProposal, Node as NodeTypes } from "@counterfactual/types";
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 import { NodeProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
@@ -117,17 +117,14 @@ export class NodeService implements OnModuleInit {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> {
     try {
-      const freeBalance = await this.node.rpcRouter.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-          params: {
-            multisigAddress,
-            tokenAddress: assetId,
-          },
-        }),
-      );
+      const freeBalance = await this.node.rpcRouter.dispatch({
+        id: Date.now(),
+        methodName: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+        parameters: {
+          multisigAddress,
+          tokenAddress: assetId,
+        },
+      });
       return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
@@ -146,19 +143,72 @@ export class NodeService implements OnModuleInit {
     }
   }
 
+  async createChannel(
+    counterpartyPublicIdentifier: string,
+  ): Promise<NodeTypes.CreateChannelResult> {
+    const createRes = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.CREATE_CHANNEL,
+      parameters: {
+        owners: [this.cfNode.publicIdentifier, counterpartyPublicIdentifier],
+      } as NodeTypes.CreateChannelParams,
+    });
+    logger.log(`createChannel called with result ${JSON.stringify(createRes.result.result)}`);
+    return createRes.result.result as NodeTypes.CreateChannelResult;
+  }
+
+  async deposit(
+    multisigAddress: string,
+    amount: BigNumber,
+    assetId: string = AddressZero,
+  ): Promise<NodeTypes.DepositResult> {
+    const depositRes = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.DEPOSIT,
+      parameters: {
+        amount,
+        multisigAddress,
+        tokenAddress: assetId,
+      } as NodeTypes.DepositParams,
+    });
+    logger.log(`createChannel called with result ${JSON.stringify(depositRes.result.result)}`);
+    return depositRes.result.result as NodeTypes.DepositResult;
+  }
+
   async proposeInstallApp(
     params: NodeTypes.ProposeInstallParams,
   ): Promise<NodeTypes.ProposeInstallResult> {
-    const proposeRes = await this.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
-        params,
-      }),
-    );
+    const proposeRes = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+      parameters: params,
+    });
     logger.log(`proposeInstallApp called with result ${JSON.stringify(proposeRes.result.result)}`);
     return proposeRes.result.result as NodeTypes.ProposeInstallResult;
+  }
+
+  async installApp(appInstanceId: string): Promise<NodeTypes.InstallResult> {
+    const installRes = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.INSTALL,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.InstallParams,
+    });
+    logger.log(`installApp called with result ${JSON.stringify(installRes.result.result)}`);
+    return installRes.result.result as NodeTypes.InstallResult;
+  }
+
+  async rejectInstallApp(appInstanceId: string): Promise<NodeTypes.InstallResult> {
+    const rejectRes = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.RejectInstallParams,
+    });
+    logger.log(`rejectInstallApp called with result ${JSON.stringify(rejectRes.result.result)}`);
+    return rejectRes.result.result as NodeTypes.InstallResult;
   }
 
   async takeAction(
@@ -173,17 +223,14 @@ export class NodeService implements OnModuleInit {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.TAKE_ACTION,
-        params: {
-          action,
-          appInstanceId,
-        } as NodeTypes.TakeActionParams,
-      }),
-    );
+    const actionResponse = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.TAKE_ACTION,
+      parameters: {
+        action,
+        appInstanceId,
+      } as NodeTypes.TakeActionParams,
+    });
 
     logger.log(`takeAction called with result ${JSON.stringify(actionResponse.result.result)}`);
     return actionResponse.result.result as NodeTypes.TakeActionResult;
@@ -196,16 +243,13 @@ export class NodeService implements OnModuleInit {
       logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.UNINSTALL,
-        params: {
-          appInstanceId,
-        },
-      }),
-    );
+    const uninstallResponse = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.UNINSTALL,
+      parameters: {
+        appInstanceId,
+      },
+    });
 
     logger.log(
       `uninstallApp called with result ${JSON.stringify(uninstallResponse.result.result)}`,
@@ -214,16 +258,31 @@ export class NodeService implements OnModuleInit {
   }
 
   async getAppInstances(): Promise<AppInstanceJson[]> {
-    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
-        params: {} as NodeTypes.GetAppInstancesParams,
-      }),
-    );
+    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
+      parameters: {} as NodeTypes.GetAppInstancesParams,
+    });
 
+    logger.log(
+      `getAppInstances called with result ${JSON.stringify(appInstanceResponse.result.result)}`,
+    );
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
+  }
+
+  async getProposedAppInstances(): Promise<AppInstanceProposal[]> {
+    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      parameters: {} as NodeTypes.GetAppInstancesParams,
+    });
+
+    logger.log(
+      `getProposedAppInstances called with result ${JSON.stringify(
+        appInstanceResponse.result.result,
+      )}`,
+    );
+    return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
 
   async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult | undefined> {
@@ -233,16 +292,13 @@ export class NodeService implements OnModuleInit {
       Logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_STATE,
-        params: {
-          appInstanceId,
-        } as NodeTypes.GetStateParams,
-      }),
-    );
+    const stateResponse = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_STATE,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.GetStateParams,
+    });
 
     return stateResponse.result.result as NodeTypes.GetStateResult;
   }

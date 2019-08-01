@@ -1,5 +1,5 @@
 import { KnownNodeAppNames } from "@connext/types";
-import { jsonRpcDeserialize, ProposeMessage } from "@counterfactual/node";
+import { ProposeMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -46,17 +46,8 @@ export class AppRegistryService implements OnModuleInit {
     params: NodeTypes.ProposeInstallParams;
     appInstanceId: string;
   }): Promise<void> {
-    const proposedRes = await this.nodeService.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-        params: {} as NodeTypes.GetProposedAppInstancesParams,
-      }),
-    );
-
-    const proposedApps = proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
-    const proposedAppInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
+    const proposedApps = await this.nodeService.getProposedAppInstances();
+    const proposedAppInfos = proposedApps.filter((app: AppInstanceInfo) => {
       return app.identityHash === proposedAppParams.appInstanceId;
     });
 
@@ -74,7 +65,7 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(
         `Proposed application could not be found, or multiple instances found. Caught id: ${
           proposedAppParams.appInstanceId
-        }. Proposed apps: ${JSON.stringify(proposedApps.appInstances, null, 2)}`,
+        }. Proposed apps: ${JSON.stringify(proposedApps, null, 2)}`,
       );
     }
 
@@ -120,32 +111,12 @@ export class AppRegistryService implements OnModuleInit {
   ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> => {
     try {
       await this.verifyAppProposal(data.data);
-      const installResponse = await this.nodeService.cfNode.rpcRouter.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: NodeTypes.RpcMethodName.INSTALL,
-          params: {
-            appInstanceId: data.data.appInstanceId,
-          } as NodeTypes.InstallParams,
-        }),
-      );
-      return installResponse.result as NodeTypes.InstallResult;
+      return await this.nodeService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
       // TODO: why doesn't logger.error log this?
       console.error(e);
-      const installResponse = await this.nodeService.cfNode.rpcRouter.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: NodeTypes.RpcMethodName.REJECT_INSTALL,
-          params: {
-            appInstanceId: data.data.appInstanceId,
-          } as NodeTypes.RejectInstallParams,
-        }),
-      );
-      return installResponse.result as NodeTypes.RejectInstallResult;
+      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
     }
   };
 

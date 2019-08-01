@@ -1,4 +1,4 @@
-import { CreateChannelMessage, jsonRpcDeserialize, JsonRpcResponse } from "@counterfactual/node";
+import { CreateChannelMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
@@ -30,21 +30,7 @@ export class ChannelService implements OnModuleInit {
       throw new RpcException(`Channel already exists for ${counterpartyPublicIdentifier}`);
     }
 
-    const createChannelResponse = (await this.nodeService.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
-        params: {
-          owners: [this.nodeService.cfNode.publicIdentifier, counterpartyPublicIdentifier],
-        },
-      }),
-    )) as JsonRpcResponse;
-    const createChannelResult = createChannelResponse.result
-      .result as NodeTypes.CreateChannelResult;
-    logger.log(`createChannelResult: ${JSON.stringify(createChannelResult, undefined, 2)}`);
-
-    return createChannelResult;
+    return await this.nodeService.createChannel(counterpartyPublicIdentifier);
   }
 
   async deposit(
@@ -57,20 +43,7 @@ export class ChannelService implements OnModuleInit {
       throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
-    const depositResponse = await this.nodeService.cfNode.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.DEPOSIT,
-        params: {
-          amount,
-          multisigAddress,
-          tokenAddress: assetId,
-        } as NodeTypes.DepositParams,
-      }),
-    );
-    logger.log(`depositResponse.result: ${JSON.stringify(depositResponse!.result.result)}`);
-    return depositResponse!.result.result as NodeTypes.DepositResult;
+    return await this.nodeService.deposit(multisigAddress, amount, assetId);
   }
 
   async requestCollateral(
