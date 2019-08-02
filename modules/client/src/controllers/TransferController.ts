@@ -37,18 +37,8 @@ export class TransferController extends AbstractController {
       throw new Error(invalid.toString());
     }
 
-    // @layne, is this comment wrong? i think this gets checked by validate
-    // check that there is sufficient free balance for amount
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
-
-    // TODO: check if the recipient is the node, and if so transfer without
-    // installing an app (is this possible?)
-    // RS: no we wouldnt transfer without installing, what we would do is
-    // install the app non-virtual and transfer
-
-    // TODO: check if recipient has a channel with the hub w/sufficient balance
-    // or if there is a route available through the node
 
     // verify app is supported without swallowing errors
     const appInfo = this.connext.getRegisteredAppDetails(
