@@ -571,7 +571,7 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`)
+    this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`);
     if (
       params.intermediaries[0] !== this.nodePublicIdentifier ||
       params.intermediaries.length !== 1
@@ -733,7 +733,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string,
     amount: BigNumber,
     recipient: string,
-  ): Promise<NodeTypes.UninstallResult> => {
+  ): Promise<NodeTypes.WithdrawResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
     const err = [
