@@ -56,7 +56,7 @@ describe('Daicard', () => {
       })
     })
 
-    it.skp(`Should send a payment to a card that has already been collateralized`, () => {
+    it.skip(`Should send a payment to a card that has already been collateralized`, () => {
       my.deposit(depositEth).then(ethDeposited => {
         my.pay(externalRecipient, '0.01')
       })
