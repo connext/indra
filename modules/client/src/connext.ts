@@ -18,8 +18,8 @@ import {
 } from "@connext/types";
 import {
   CreateChannelMessage,
+  EXTENDED_PRIVATE_KEY_PATH,
   jsonRpcDeserialize,
-  MNEMONIC_PATH,
   Node,
   NODE_EVENTS,
 } from "@counterfactual/node";
@@ -27,7 +27,7 @@ import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/typ
 import "core-js/stable";
 import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, Network } from "ethers/utils";
+import { BigNumber, HDNode, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -84,7 +84,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
-  await store.set([{ key: MNEMONIC_PATH, value: mnemonic }]);
+  // generate extended private key from mnemonic
+  const extendedXpriv = HDNode.fromMnemonic(mnemonic).extendedKey;
+  await store.set([{ key: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
