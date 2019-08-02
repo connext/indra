@@ -62,6 +62,10 @@ export default class ChainsawService {
   }
 
   public async pollOnce(): Promise<void> {
+    const timeout = setTimeout(() => {
+      console.log(`doFetchEvents() is taking too long (> 30s), restarting..`);
+      process.exit(1)
+    }, 30 * 1000);
     try {
       this.log.info(`I AM FETCHING EVENTS NOW`)
       await this.db.withTransaction(() => this.doFetchEvents())
@@ -69,6 +73,7 @@ export default class ChainsawService {
       this.log.error(`Fetching events failed: ${e}`)
     }
     this.log.info(`NAILED IT`)
+    clearTimeout(timeout);
     try {
       this.log.info(`I AM PROCESSING EVENTS NOW`)
       await this.db.withTransaction(() => this.doProcessEvents())
@@ -196,14 +201,7 @@ export default class ChainsawService {
 
     this.log.info(`FETCHING EVENTS, doFetchEventsFromRange(${fromBlock}, ${toBlock})`)
 
-    const timeout = setTimeout(() => {
-      console.log(`web3.eth.getBlockNumber() is taking too long (> 30s), restarting..`);
-      process.exit(1)
-    }, 30 * 1000);
-
     await this.doFetchEventsFromRange(fromBlock, toBlock);
-
-    clearTimeout(timeout);
   }
 
   private async doProcessEvents() {
