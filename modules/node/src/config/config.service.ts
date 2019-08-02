@@ -1,8 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
 import { ContractAddresses, KnownNodeAppNames } from "@connext/types";
-import chain3AddressBook from "@counterfactual/contracts/networks/3.json";
-import chain4AddressBook from "@counterfactual/contracts/networks/4.json";
-import chain42AddressBook from "@counterfactual/contracts/networks/42.json";
 import { OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
@@ -75,9 +72,6 @@ export class ConfigService {
       return ethAddresses;
     };
     let ethAddresses = {} as any;
-    if (chainId === "3") ethAddresses = processCfAddressBook(chain3AddressBook);
-    if (chainId === "4") ethAddresses = processCfAddressBook(chain4AddressBook);
-    if (chainId === "42") ethAddresses = processCfAddressBook(chain42AddressBook);
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
       ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
