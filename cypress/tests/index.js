@@ -82,10 +82,10 @@ describe('Daicard', () => {
   describe('Settings', () => {
     it(`Should restore the same address & balance after importing a mnemoic`, () => {
       my.getAccount().then(account => {
-        my.deposit(depositEth).then(ethDeposited => {
+        my.deposit(depositEth).then(tokenDeposited => {
           my.burnCard()
           my.restoreMnemonic(account.mnemonic)
-          cy.resolve(my.getChannelEtherBalance).should('contain', ethDeposited)
+          cy.resolve(my.getChannelTokenBalance).should('contain', tokenDeposited)
           my.goToDeposit()
           cy.contains('button', my.addressRegex).invoke('text').should('eql', account.address)
         })
