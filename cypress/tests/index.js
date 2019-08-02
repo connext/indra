@@ -65,15 +65,15 @@ describe('Daicard', () => {
 
   describe('Request', () => {
     it(`Should properly populate the send page when opening a request link`, () => {
-      my.getAddress().then(address => {
+      my.getXpub().then(xpub => {
         my.goToRequest()
         cy.get('input[type="number"]').clear().type(payTokens)
-        cy.contains('button', `recipient=${address}`).should('exist')
+        cy.contains('button', `recipient=${xpub}`).should('exist')
         cy.contains('button', `amountToken=${payTokens}`).invoke('text').then(requestLink => {
           my.burnCard()
           cy.visit(requestLink)
           cy.get(`input[value="${payTokens}"]`).should('exist')
-          cy.get(`input[value="${address}"]`).should('exist')
+          cy.get(`input[value="${xpub}"]`).should('exist')
         })
       })
     })
