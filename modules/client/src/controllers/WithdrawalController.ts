@@ -43,10 +43,12 @@ export class WithdrawalController extends AbstractController {
     this.registerListeners();
     this.log.info("Registered!");
 
+    let transactionHash: string | undefined = undefined;
     try {
       this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW}`);
       const withdrawResponse = await this.connext.cfWithdraw(assetId, amount, recipient);
       this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, null, 2)}`);
+      transactionHash = withdrawResponse.txHash;
 
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
@@ -71,6 +73,7 @@ export class WithdrawalController extends AbstractController {
     return {
       apps: await this.connext.getAppInstances(),
       freeBalance: await this.connext.getFreeBalance(),
+      transactionHash,
     } as any;
   }
 

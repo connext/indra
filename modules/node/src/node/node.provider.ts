@@ -1,9 +1,10 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { MNEMONIC_PATH, Node } from "@counterfactual/node";
+import { EXTENDED_PRIVATE_KEY_PATH, Node } from "@counterfactual/node";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
+import { HDNode } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
@@ -23,7 +24,12 @@ export const nodeProviderFactory: Provider = {
     const store = postgres.createStoreService("connextHub");
     logger.log("Store created");
     logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
-    await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
+    await store.set([
+      {
+        key: EXTENDED_PRIVATE_KEY_PATH,
+        value: HDNode.fromMnemonic(config.getMnemonic()).extendedKey,
+      },
+    ]);
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
     const addr = Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;

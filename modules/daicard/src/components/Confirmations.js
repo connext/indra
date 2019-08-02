@@ -10,6 +10,7 @@ const styles = theme => ({
   }
 });
 
+// TODO: close confirmations based on emitted events
 class Confirmations extends Component {
   render() {
     const { type, complete, closed } = this.props.pending;
