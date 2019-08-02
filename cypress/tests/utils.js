@@ -15,6 +15,7 @@ const my = {}
 
 my.mnemonicRegex = /([A-Za-z]{3,}\s?){12}/
 my.addressRegex = /.*0x[0-9a-z]{40}.*/i
+my.xpubRegex = /xpub[a-zA-Z0-9]{107}/i
 
 ////////////////////////////////////////
 // Vanilla cypress compilations
@@ -118,6 +119,17 @@ my.getMnemonic = () => {
   }))
 }
 
+my.getXpub = () => {
+  return cy.wrap(new Cypress.Promise((resolve, reject) => {
+    my.goToRequest()
+    cy.contains('button', my.xpubRegex).invoke('text').then(xpub => {
+      cy.log(`Got xpub: ${xpub}`)
+      my.goBack()
+      resolve(xpub)
+    })
+  }))
+}
+
 my.getAccount = () => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     return my.getMnemonic().then(mnemonic => {
@@ -166,8 +178,8 @@ my.deposit = (value) => {
         return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
           cy.contains('span', /processing deposit/i).should('exist')
           cy.contains('span', /deposit confirmed/i).should('exist')
-          cy.resolve(my.getChannelEtherBalance).should('not.contain', '0.00')
-          my.getChannelEtherBalance().then(resolve)
+          cy.resolve(my.getChannelTokenBalance).should('not.contain', '0.00')
+          my.getChannelTokenBalance().then(resolve)
         })
       })
     })
