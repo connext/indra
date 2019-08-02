@@ -2,9 +2,9 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  EXTENDED_PRIVATE_KEY_PATH,
   InstallMessage,
   InstallVirtualMessage,
-  MNEMONIC_PATH,
   Node,
   ProposeMessage,
   ProposeVirtualMessage,
@@ -19,6 +19,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ethers as eth } from "ethers";
+import { HDNode } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
@@ -118,7 +119,12 @@ export const nodeProviderFactory: Provider = {
     const store = postgres.createStoreService("connextHub");
     logger.log("Store created");
     logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
-    await store.set([{ key: MNEMONIC_PATH, value: config.getMnemonic() }]);
+    await store.set([
+      {
+        key: EXTENDED_PRIVATE_KEY_PATH,
+        value: HDNode.fromMnemonic(config.getMnemonic()).extendedKey,
+      },
+    ]);
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
     const addr = eth.Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;

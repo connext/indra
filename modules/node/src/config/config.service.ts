@@ -32,6 +32,10 @@ const singleAssetTwoPartyCoinTransferEncoding = `
   tuple(address to, uint256 amount)[2]
 `;
 
+const multiAssetMultiPartyCoinTransferEncoding = `
+  tuple(address to, uint256 amount)[][]
+`;
+
 @Injectable()
 export class ConfigService {
   private readonly envConfig: { [key: string]: string };
@@ -117,8 +121,9 @@ export class ConfigService {
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateEncoding:
-          `tuple(address to, uint256 amount)[][]
-          `,
+        `tuple(
+          ${multiAssetMultiPartyCoinTransferEncoding} coinTransfers
+        )`,
       },
     ];
   }

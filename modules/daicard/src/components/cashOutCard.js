@@ -18,8 +18,32 @@ import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
 
 import { QRScan } from "./qrCode";
+import { AddressZero } from "ethers/constants";
 
 const { arrayify, isHexString, parseEther } = eth.utils
+
+const delay = (ms) =>
+  new Promise((res) => setTimeout(res, ms));
+
+const displayBals = async (RETRY_COUNT, channel, ethprovider) => {
+  let retries = 0;
+  while (retries < RETRY_COUNT) {
+    const multisigBalance = (await ethprovider.getBalance("0x35936CD28231e22fB68fB556e8121191abdCEEb5")).toString();
+    const recipientBalance = (await ethprovider.getBalance("0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e")).toString();
+    const accountBalance = (await ethprovider.getBalance("0xe838a8C673F46F2B1a9f69dB8368ee65e5cf9123")).toString();
+    const freeBalance = await channel.getFreeBalance(AddressZero);
+    const userFreeBalance = freeBalance[channel.freeBalanceAddress].toString();
+
+    console.log(`*********** BALANCES: ${JSON.stringify({
+      multisigBalance,
+      recipientBalance,
+      accountBalance,
+      userFreeBalance,
+    }, null, 2)}`)
+    retries += 1;
+    await delay(1000)
+  }
+}
 
 const styles = theme => ({
   icon: {

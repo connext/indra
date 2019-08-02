@@ -5,7 +5,6 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "@connext/types";
-import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
@@ -17,8 +16,8 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
-export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): any => {
-  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, "")).toString();
+export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): BigNumber => {
+  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, ""));
 };
 export class SwapController extends AbstractController {
   private appId: string;
@@ -50,7 +49,7 @@ export class SwapController extends AbstractController {
     // install the swap app
     await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
-    this.log.info(`Swap app successfully installed! Uninstalling without updating state.`);
+    this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     while ((await this.connext.getAppInstances()).length <= preInstallApps) {
       this.log.info(
@@ -61,7 +60,7 @@ export class SwapController extends AbstractController {
     }
 
     // TODO: should we check if its the right app?
-    this.log.info(`Found installed app in app instances`);
+    this.log.info(`Found installed app in app instances, attempting to uninstall..`);
 
     // if app installed, that means swap was accepted
     // now uninstall
@@ -70,14 +69,16 @@ export class SwapController extends AbstractController {
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const postSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    // TODO is this the right syntax? Waiting on ERC20 merge
+    // balance decreases
     const diffFrom = preSwapFromBal[this.connext.freeBalanceAddress].sub(
       postSwapFromBal[this.connext.freeBalanceAddress],
     );
-    const diffTo = preSwapToBal[this.connext.freeBalanceAddress].sub(
-      postSwapToBal[this.connext.freeBalanceAddress],
+    // balance increases
+    const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(
+      preSwapToBal[this.connext.freeBalanceAddress],
     );
-    if (!diffFrom.eq(amount) || !diffTo.eq(amount.mul(swapRate))) {
+    const swappedAmount = calculateExchange(amount, swapRate);
+    if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }
     const newState = await this.connext.getChannel();
@@ -123,13 +124,13 @@ export class SwapController extends AbstractController {
   };
 
   // TODO: fix types of data
-  private rejectInstallSwap = (rej: any, msg: RejectInstallVirtualMessage): any => {
+  private rejectInstallSwap = (rej: any, msg: any): any => {
     // check app id
     if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
-    rej(`Install virtual rejected. Event data: ${JSON.stringify(msg.data, null, 2)}`);
+    rej(`Install rejected. Event data: ${JSON.stringify(msg.data, null, 2)}`);
     return msg.data;
   };
 
@@ -153,22 +154,27 @@ export class SwapController extends AbstractController {
     // TODO: is this the right state and typing?? In contract tests, uses
     // something completely different
 
-    // FIXME: using this encoding (corresponds to MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
-    // outcome type) will currently lead to an unimplemented error after install
-
-    // ALSO, this is *NOT* the right initial state and encoding for the eventual
-    // correct outcome. check the notion doc. typescript defs won't work for the
-    // outcome type either
-    const initialState: any = [[
-      {
-        amount: swappedAmount,
-        to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
-      },
-      {
-        amount,
-        to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
-      },
-    ]];
+    // NOTE: always put the initiators swap information FIRST
+    // followed by responders. If this is not included, the swap will
+    // fail, causing the balances to be indexed on the wrong token
+    // address key in `get-outcome-increments.ts` in cf code base
+    // ideally this would be fixed at some point
+    const initialState: SimpleSwapAppStateBigNumber = {
+      coinTransfers: [
+        [
+          {
+            amount,
+            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
+          },
+        ],
+        [
+          {
+            amount: swappedAmount,
+            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+          },
+        ],
+      ],
+    };
 
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
 

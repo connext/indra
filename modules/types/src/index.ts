@@ -96,7 +96,7 @@ export type AppActionBigNumber = AppAction<BigNumber>;
 
 //////// Swap apps
 export type SimpleSwapAppState<T = string> = {
-  coinTransfers: CoinTransfer<T>[];
+  coinTransfers: CoinTransfer<T>[][];
 };
 export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
 
