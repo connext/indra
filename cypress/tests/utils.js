@@ -178,8 +178,8 @@ my.deposit = (value) => {
         return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
           cy.contains('span', /processing deposit/i).should('exist')
           cy.contains('span', /deposit confirmed/i).should('exist')
-          cy.resolve(my.getChannelTokenBalance).should('not.contain', '0.00')
-          my.getChannelTokenBalance().then(resolve)
+          cy.resolve(my.getChannelEtherBalance).should('not.contain', '0.00')
+          my.getChannelEtherBalance().then(resolve)
         })
       })
     })

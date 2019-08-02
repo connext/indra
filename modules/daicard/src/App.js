@@ -244,13 +244,14 @@ class App extends React.Component {
 
   async autoSwap() {
     const { balance, channel, swapRate, token } = this.state;
-    const weiBalance = toBN(balance.channel.ether);
-    const tokenBalance = toBN(balance.channel.token);
-    if (weiBalance.gt(Zero) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
-      await client.swap({
+    const weiBalance = toBN(balance.channel.ether.toWEI().floor());
+    const tokenBalance = toBN(balance.channel.token.toDEI().floor());
+    if (false /* TODO: rm */ && weiBalance.gt(Zero) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
+      console.log(`Attempting to swap ${balance.channel.ether} for dai at rate ${swapRate}...`);
+      await channel.swap({
         amount: weiBalance.toString(),
         fromAssetId: AddressZero,
-        swapRate,
+        swapRate: parseEther(swapRate).toString(),
         toAssetId: token.address,
       });
     }

@@ -10,7 +10,7 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import { Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { arrayify, isHexString, parseEther } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
@@ -19,11 +19,8 @@ import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
 
 import { QRScan } from "./qrCode";
-import { AddressZero } from "ethers/constants";
 
-const delay = (ms) =>
-  new Promise((res) => setTimeout(res, ms));
-
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 const displayBals = async (RETRY_COUNT, channel, ethprovider) => {
   let retries = 0;
   while (retries < RETRY_COUNT) {
