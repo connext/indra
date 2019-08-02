@@ -38,7 +38,7 @@ export class ResolveConditionController extends AbstractController {
 
     await this.node.resolveLinkedTransfer(paymentId, preImage, amount, assetId);
 
-    // sanity check, free balance decreased by payment amount
+    // sanity check, free balance increased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
     const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
     if (!diff.eq(amount)) {
