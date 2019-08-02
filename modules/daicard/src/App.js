@@ -1,7 +1,7 @@
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
 import React from "react";
@@ -77,13 +77,13 @@ class App extends React.Component {
         onChain: { token: Currency.DEI("0", swapRate), ether: Currency.WEI("0", swapRate) },
       },
       ethprovider: null,
-      swapRate,
       freeBalanceAddress: null,
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
       pending: { type: "", complete: false, closed: false },
       sendScanArgs: { amount: null, recipient: null },
+      swapRate,
       token: null,
       xpub: "",
     };
@@ -195,16 +195,11 @@ class App extends React.Component {
       console.warn(`Channel not available yet.`);
       return;
     }
-
-    const bnBalance = {
-      ether: toBN(balance.onChain.ether),
-      token: toBN(balance.onChain.token),
-    };
-
+    const bnBalance = { ether: toBN(balance.onChain.ether), token: toBN(balance.onChain.token) };
     const minWei = minDeposit.toWEI().floor();
     const maxWei = maxDeposit.toWEI().floor();
 
-    if (bnBalance.token.gt(eth.constants.Zero)) {
+    if (bnBalance.token.gt(Zero)) {
       const tokenDepositParams = {
         amount: bnBalance.token.toString(),
         assetId: token.address.toLowerCase(),
@@ -231,9 +226,7 @@ class App extends React.Component {
         );
         return;
       }
-
       const ethDepositParams = { amount: bnBalance.ether.sub(minWei).toString() };
-
       const channelState = await channel.getChannel();
       console.log(
         `Attempting to deposit ${ethDepositParams.amount} wei into channel: ${JSON.stringify(
@@ -242,22 +235,24 @@ class App extends React.Component {
           2,
         )}...`,
       );
-
       this.setPending({ type: "deposit", complete: false, closed: false });
       const result = await channel.deposit(ethDepositParams);
       this.setPending({ type: "deposit", complete: true, closed: false });
-
       console.log(`Successfully deposited! Result: ${JSON.stringify(result, null, 2)}`);
     }
-
   }
 
   async autoSwap() {
-    const { balance, channel } = this.state;
+    const { balance, channel, swapRate, token } = this.state;
     const weiBalance = toBN(balance.channel.ether);
     const tokenBalance = toBN(balance.channel.token);
-    if (false && weiBalance.gt(toBN("0")) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
-      await channel.swap(weiBalance, "wei");
+    if (weiBalance.gt(Zero) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
+      await client.swap({
+        amount: weiBalance.toString(),
+        fromAssetId: AddressZero,
+        swapRate,
+        toAssetId: token.address,
+      });
     }
   }
 

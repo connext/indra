@@ -105,7 +105,7 @@ describe('Daicard', () => {
       })
     })
 
-    it.skip(`Should not withdraw to an invalid address`, () => {
+    it(`Should not withdraw to an invalid address`, () => {
       my.deposit(depositEth).then(ethDeposited => {
         my.goToCashout()
         cy.get('input[type="text"]').clear().type('0xabc123')
