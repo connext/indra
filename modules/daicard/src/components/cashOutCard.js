@@ -10,7 +10,8 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import { ethers as eth } from "ethers";
+import { AddressZero, Zero } from "ethers/constants";
+import { arrayify, isHexString, parseEther } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 
@@ -18,13 +19,8 @@ import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
 
 import { QRScan } from "./qrCode";
-import { AddressZero } from "ethers/constants";
 
-const { arrayify, isHexString, parseEther } = eth.utils
-
-const delay = (ms) =>
-  new Promise((res) => setTimeout(res, ms));
-
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 const displayBals = async (RETRY_COUNT, channel, ethprovider) => {
   let retries = 0;
   while (retries < RETRY_COUNT) {
@@ -33,7 +29,6 @@ const displayBals = async (RETRY_COUNT, channel, ethprovider) => {
     const accountBalance = (await ethprovider.getBalance("0xe838a8C673F46F2B1a9f69dB8368ee65e5cf9123")).toString();
     const freeBalance = await channel.getFreeBalance(AddressZero);
     const userFreeBalance = freeBalance[channel.freeBalanceAddress].toString();
-
     console.log(`*********** BALANCES: ${JSON.stringify({
       multisigBalance,
       recipientBalance,
@@ -108,7 +103,7 @@ class CashOutCard extends Component {
     const recipient = this.state.recipient.value
     if (!recipient) return
     const amount = parseEther(balance.channel.ether.toETH().amount)
-    if (amount.lte(eth.constants.Zero)) return
+    if (amount.lte(Zero)) return
     setPending({ type: "withdrawal", complete: false, closed: false })
     this.setState({ withdrawing: true });
     const result = await channel.withdraw({ amount: amount.toString(), recipient });

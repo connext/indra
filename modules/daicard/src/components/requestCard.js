@@ -6,8 +6,7 @@ import {
   Typography,
   withStyles,
 } from "@material-ui/core";
-import { SaveAlt as RequestIcon } from "@material-ui/icons";
-import { ethers as eth } from "ethers";
+import { Zero } from "ethers/constants";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
@@ -41,7 +40,7 @@ class RequestCard extends Component {
   generateQrUrl(value) {
     return `${window.location.origin}/send?` +
       `amountToken=${value || "0"}&` +
-      `recipient=${this.props.address || eth.constants.AddressZero}`;
+      `recipient=${this.props.xpub}`;
   }
 
   handleCopy() {
@@ -59,7 +58,7 @@ class RequestCard extends Component {
     if (value && value.amountWad.gt(maxDeposit.toDAI().amountWad)) {
       error = `Channel balances are capped at ${maxDeposit.toDAI()}`
     }
-    if (value && value.amountWad.lte(eth.constants.Zero)) {
+    if (value && value.amountWad.lte(Zero)) {
       error = "Please enter a payment amount above 0"
     }
     this.setState({
@@ -70,7 +69,7 @@ class RequestCard extends Component {
   };
 
   render() {
-    const { classes } = this.props;
+    const { xpub } = this.props;
     const { qrUrl, error, displayValue, copied } = this.state;
     return (
       <Grid
@@ -89,26 +88,33 @@ class RequestCard extends Component {
         <MySnackbar
           variant="success"
           openWhen={copied}
-          onClose={this.closeModal}
+          onClose={this.closeModal.bind(this)}
           message="Copied!"
         />
-        <Grid
-          container
-          wrap="nowrap"
-          direction="row"
-          justify="center"
-          alignItems="center"
-        >
-          <Grid item xs={12}>
-            <RequestIcon className={classes.icon} />
-          </Grid>
-        </Grid>
         <Grid item xs={12}>
           <QRGenerate value={qrUrl} />
         </Grid>
         <Grid item xs={12}>
           <CopyToClipboard
-            onCopy={this.handleCopy}
+            onCopy={this.handleCopy.bind(this)}
+            text={xpub}
+          >
+            <Button variant="outlined" fullWidth>
+              <Typography noWrap variant="body1">
+                <Tooltip
+                  disableFocusListener
+                  disableTouchListener
+                  title={"Click to Copy"}
+                >
+                  <span>{xpub}</span>
+                </Tooltip>
+              </Typography>
+            </Button>
+          </CopyToClipboard>
+        </Grid>
+        <Grid item xs={12}>
+          <CopyToClipboard
+            onCopy={this.handleCopy.bind(this)}
             text={error ? '' : qrUrl}
           >
             <Button variant="outlined" fullWidth>
@@ -131,7 +137,7 @@ class RequestCard extends Component {
             label="Amount"
             value={displayValue}
             type="number"
-            margin="normal"
+            margin="dense"
             variant="outlined"
             onChange={evt => this.updatePaymentHandler(evt.target.value)}
             error={!!error}

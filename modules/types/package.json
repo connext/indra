@@ -7,10 +7,6 @@
   "types": "dist/src/index.d.ts",
   "iife": "dist/index-iife.js",
   "license": "MIT",
-  "engines": {
-    "yarn": "1.17.3",
-    "node": "10.16.0"
-  },
   "scripts": {
     "build": "./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
     "prepare": "npm run build",
@@ -24,7 +20,7 @@
     "@counterfactual/types": "0.0.29",
     "@types/jest": "24.0.16",
     "jest": "24.8.0",
-    "rollup": "1.17.0",
+    "rollup": "1.18.0",
     "rollup-plugin-typescript2": "0.22.1",
     "ts-jest": "24.0.2",
     "typescript": "3.5.3"
