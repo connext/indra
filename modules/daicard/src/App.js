@@ -134,6 +134,16 @@ class App extends React.Component {
       this.setState({ swapRate: formatEther(res.swapRate) });
     })
 
+    console.log(`Creating a payment profile..`)
+    await channel.addPaymentProfile({
+      amountToCollateralize: parseEther("10").toString(),
+      minimumMaintainedCollateral: parseEther("5").toString(),
+      tokenAddress: token.address,
+    });
+
+    console.log(`Requesting collateral for token ${token}`)
+    await channel.requestCollateral(token.address);
+
     this.setState({
       address: cfWallet.address,
       channel,
@@ -246,8 +256,8 @@ class App extends React.Component {
     const { balance, channel, swapRate, token } = this.state;
     const weiBalance = toBN(balance.channel.ether.toWEI().floor());
     const tokenBalance = toBN(balance.channel.token.toDEI().floor());
-    if (false /* TODO: rm */ && weiBalance.gt(Zero) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
-      console.log(`Attempting to swap ${balance.channel.ether} for dai at rate ${swapRate}...`);
+    if (weiBalance.gt(Zero) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
+      console.log(`Attempting to swap ${balance.channel.ether.toETH()} for dai at rate ${swapRate}`);
       await channel.swap({
         amount: weiBalance.toString(),
         fromAssetId: AddressZero,
