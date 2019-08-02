@@ -520,7 +520,7 @@ export function convertTransferParametersToAsset<To extends NumericTypeName>(
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
-): AssetAmount<NumericTypes[To]> {
+): WithdrawParameters<NumericTypes[To]> {
   const asset: any = {
     ...obj,
   };

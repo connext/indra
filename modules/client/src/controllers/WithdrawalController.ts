@@ -11,8 +11,7 @@ export class WithdrawalController extends AbstractController {
   public async withdraw(params: WithdrawParameters): Promise<ChannelState> {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
-    const { amount, assetId } = convert.Withdraw("bignumber", params);
-    const { recipient } = params;
+    const { amount, assetId, recipient } = convert.Withdraw("bignumber", params);
 
     const invalid = await this.validateInputs(amount, assetId, recipient);
     if (invalid) {
