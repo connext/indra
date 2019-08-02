@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-export ETH_RPC_URL="http://172.17.0.1:8545"
-export NODE_URL="nats://172.17.0.1:4222"
+# export ETH_RPC_URL="http://172.17.0.1:8545"
+# export NODE_URL="nats://172.17.0.1:4222"
+
+export ETH_RPC_URL="http://host.docker.internal:8545"
+export NODE_URL="nats://host.docker.internal:4222"
 
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
 
