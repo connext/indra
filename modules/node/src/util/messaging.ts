@@ -1,4 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
+import { RpcException } from "@nestjs/microservices";
+
+import { isXpub } from "../validator";
 
 import { CLogger } from "./logger";
 
@@ -10,6 +13,14 @@ export interface IMessagingProvider {
 
 export abstract class AbstractMessagingProvider implements IMessagingProvider {
   constructor(protected readonly messaging: IMessagingService) {}
+
+  getPublicIdentifierFromSubject(subject: string): string {
+    const pubId = subject.split(".").pop(); // last item of subscription is pubId
+    if (!pubId || !isXpub(pubId)) {
+      throw new RpcException("Invalid public identifier in message subject");
+    }
+    return pubId;
+  }
 
   async connectRequestReponse(
     pattern: string,

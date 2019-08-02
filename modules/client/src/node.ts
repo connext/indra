@@ -14,7 +14,7 @@ import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
 
 // TODO: move to types.ts?
-const API_TIMEOUT = 5000;
+const API_TIMEOUT = 30000;
 
 export interface INodeApiClient {
   addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
@@ -26,7 +26,13 @@ export interface INodeApiClient {
   createChannel(): Promise<CreateChannelResponse>;
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
-  requestCollateral(tokenAddress: string): Promise<void>;
+  requestCollateral(assetId: string): Promise<void>;
+  resolveLinkedTransfer(
+    paymentId: string,
+    preImage: string,
+    amount: string,
+    assetId: string,
+  ): Promise<void>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
 }
@@ -52,6 +58,7 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PUBLIC
 
+  // @layne why the try catches that dont do anything?
   public async appRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
@@ -98,11 +105,11 @@ export class NodeApiClient implements INodeApiClient {
 
   // FIXME: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(tokenAddress: string): Promise<void> {
+  public async requestCollateral(assetId: string): Promise<void> {
     try {
       const channelRes = await this.send(
         `channel.request-collateral.${this.userPublicIdentifier}`,
-        { tokenAddress },
+        { assetId },
       );
       return channelRes;
     } catch (e) {
@@ -113,6 +120,20 @@ export class NodeApiClient implements INodeApiClient {
       }
       return Promise.reject(e);
     }
+  }
+
+  public async resolveLinkedTransfer(
+    paymentId: string,
+    preImage: string,
+    amount: string,
+    assetId: string,
+  ): Promise<void> {
+    return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
+      amount,
+      assetId,
+      paymentId,
+      preImage,
+    });
   }
 
   // TODO: best way to check hub side for limitations?

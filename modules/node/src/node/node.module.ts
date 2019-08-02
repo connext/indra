@@ -6,11 +6,12 @@ import { UserModule } from "../user/user.module";
 
 import { NodeController } from "./node.controller";
 import { nodeProviderFactory, postgresProviderFactory } from "./node.provider";
+import { NodeService } from "./node.service";
 
 @Module({
   controllers: [NodeController],
-  exports: [nodeProviderFactory],
+  exports: [nodeProviderFactory, NodeService],
   imports: [ConfigModule, MessagingModule, UserModule],
-  providers: [nodeProviderFactory, postgresProviderFactory],
+  providers: [nodeProviderFactory, postgresProviderFactory, NodeService],
 })
 export class NodeModule {}

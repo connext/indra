@@ -16,11 +16,11 @@ import { ChannelService } from "./channel.service";
   controllers: [],
   exports: [ChannelService],
   imports: [
-    ConfigModule,
     MessagingModule,
     NodeModule,
     TypeOrmModule.forFeature([ChannelRepository, UserRepository, PaymentProfileRepository]),
     UserModule,
+    ConfigModule,
   ],
   providers: [ChannelService, channelProviderFactory],
 })

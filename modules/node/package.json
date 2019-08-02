@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.0.3",
+    "@connext/types": "0.0.7",
     "@counterfactual/contracts": "0.1.15",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.37",
@@ -42,7 +43,6 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
-    "@connext/types": "0.0.6",
     "@counterfactual/types": "0.0.29",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.0",

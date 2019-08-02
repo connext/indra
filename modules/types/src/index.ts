@@ -22,6 +22,7 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 export const SupportedApplications = {
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
+  UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
   UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
@@ -86,12 +87,16 @@ export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
 // all the types of counterfactual app states
 // TODO: add swap app
-export type AppState<T = string> = UnidirectionalTransferAppState<T>;
+export type AppState<T = string> =
+  | UnidirectionalTransferAppState<T>
+  | UnidirectionalLinkedTransferAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
 // TODO: add swap app
-export type AppAction<T = string> = UnidirectionalTransferAppAction<T>;
+export type AppAction<T = string> =
+  | UnidirectionalTransferAppAction<T>
+  | UnidirectionalLinkedTransferAppAction<T>;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 //////// Swap apps
@@ -122,6 +127,35 @@ export type UnidirectionalTransferAppAction<T = string> = {
 export enum UnidirectionalTransferAppStage {
   POST_FUND,
   MONEY_SENT,
+  CHANNEL_CLOSED,
+}
+
+////// Unidirectional linked transfer app
+export type UnidirectionalLinkedTransferAppState<T = string> = {
+  stage: UnidirectionalLinkedTransferAppStage;
+  transfers: [CoinTransfer<T>, CoinTransfer<T>];
+  linkedHash: string;
+  turnNum: T;
+  finalized: false;
+};
+export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<
+  BigNumber
+>;
+
+export type UnidirectionalLinkedTransferAppAction<T = string> = {
+  amount: T;
+  assetId: Address;
+  paymentId: string;
+  preImage: string;
+};
+
+export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<
+  BigNumber
+>;
+
+export enum UnidirectionalLinkedTransferAppStage {
+  POST_FUND,
+  PAYMENT_CLAIMED,
   CHANNEL_CLOSED,
 }
 
@@ -207,14 +241,16 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
 
-export enum KnownNodeAppNames {
-  SIMPLE_TWO_PARTY_SWAP = "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_TRANSFER = "UnidirectionalTransferApp",
-}
+export const KnownNodeAppNames = {
+  SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
+  UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
+  UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
+};
+export type KnownNodeApp = keyof typeof KnownNodeAppNames;
 
 export type ContractAddresses = NetworkContext & {
   Token: string;
-  [KnownNodeAppNames: string]: string;
+  [KnownNodeApp: string]: string;
 };
 
 export interface NodeConfig {
@@ -289,6 +325,60 @@ export type WithdrawParameters<T = string> = DepositParameters<T> & {
 };
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 
+///// Resolve condition types
+
+// linked transfer
+export type ResolveLinkedTransferParameters<T = string> = LinkedTransferParameters<T> & {
+  paymentId: string;
+  preImage: string;
+};
+export type ResolveLinkedTransferResponse = {
+  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  paymentId: string;
+};
+
+// resolver union types
+// FIXME: should be union type of all supported conditions
+export type ResolveConditionParameters<T = string> = ResolveLinkedTransferParameters;
+
+// FIXME: should be union type of all supported conditions
+export type ResolveConditionResponse<T = string> = ResolveLinkedTransferResponse;
+
+///// Conditional transfer types
+
+// TODO: maybe not an enum?
+export const TransferConditions = {
+  LINKED_TRANSFER: "LINKED_TRANSFER",
+};
+export type TransferCondition = keyof typeof TransferConditions;
+
+// linked transfer types
+export type LinkedTransferParameters<T = string> = {
+  conditionType: "LINKED_TRANSFER";
+  amount: T;
+  assetId: Address; // make optional?
+};
+export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
+
+export type LinkedTransferResponse = {
+  paymentId: string;
+  preImage: string;
+  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+};
+
+// FIXME: should be union type of all supported conditions
+export type ConditionalTransferParameters<T = string> = LinkedTransferParameters<T>;
+export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
+
+// FIXME: should be union type of all supported conditions
+export type ConditionalTransferResponse = LinkedTransferResponse;
+
+// condition initial states
+// FIXME: should be union type of all supported conditions
+export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
+// FIXME: should be union type of all supported conditions
+export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
+
 /////////////////////////////////
 ///////// CONVERSION FNS
 
@@ -354,6 +444,18 @@ export const convertFields = (
  * work for any types with only the numeric field "amount" with properly added
  * overloading definitions
  */
+
+type GenericAmountObject<T> = any & {
+  amount: T;
+};
+export function convertAmountField<To extends NumericTypeName>(
+  to: To,
+  obj: GenericAmountObject<any>,
+): GenericAmountObject<NumericTypes[To]> {
+  const fromType = getType(obj.amount);
+  return convertFields(fromType, to, ["amount"], obj);
+}
+
 export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any>,
@@ -366,8 +468,7 @@ export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any> | CoinTransfer<any>,
 ): any {
-  const fromType = getType(obj.amount);
-  return convertFields(fromType, to, ["amount"], obj);
+  return convertAmountField(to, obj);
 }
 
 export function convertMultisig<To extends NumericTypeName>(
@@ -414,23 +515,20 @@ export function convertTransferParametersToAsset<To extends NumericTypeName>(
   if (!asset.assetId) {
     asset.assetId = constants.AddressZero;
   }
-  return {
-    ...asset,
-    ...convertAssetAmount(to, asset),
-  };
+  return convertAmountField(to, asset);
 }
 
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
-): AssetAmount<NumericTypes[To]> {
+): WithdrawParameters<NumericTypes[To]> {
   const asset: any = {
     ...obj,
   };
   if (!asset.assetId) {
     asset.assetId = constants.AddressZero;
   }
-  return convertAssetAmount(to, asset);
+  return convertAmountField(to, asset);
 }
 
 export function convertAppState<To extends NumericTypeName>(
@@ -439,16 +537,18 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    transfers: [convertAssetAmount(to, obj.transfers[0]), convertAssetAmount(to, obj.transfers[1])],
+    transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
   };
 }
 
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
-export const convert: any = {
+export const convert = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
+  LinkedTransfer: convertAmountField,
   Multisig: convertMultisig,
+  ResolveLinkedTransfer: convertAmountField,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,

@@ -40,14 +40,14 @@ export class ChannelRepository extends Repository<Channel> {
     }
 
     const existing = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.tokenAddress === paymentProfile.tokenAddress,
+      (prof: PaymentProfile) => prof.assetId === paymentProfile.assetId,
     );
 
     await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.save(paymentProfile);
 
       if (existing) {
-        logger.log(`Found existing profile for token ${paymentProfile.tokenAddress}, replacing`);
+        logger.log(`Found existing profile for token ${paymentProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
           .relation(Channel, "paymentProfiles")
@@ -66,7 +66,7 @@ export class ChannelRepository extends Repository<Channel> {
 
   async getPaymentProfileForChannelAndToken(
     userPublicIdentifier: string,
-    tokenAddress: string = AddressZero,
+    assetId: string = AddressZero,
   ): Promise<PaymentProfile> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
@@ -80,16 +80,17 @@ export class ChannelRepository extends Repository<Channel> {
     }
 
     const profile = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.tokenAddress === tokenAddress,
+      (prof: PaymentProfile) => prof.assetId === assetId,
     );
 
     if (!profile) {
-      if (tokenAddress === AddressZero) {
+      if (assetId === AddressZero) {
         return defaultPaymentProfileEth;
       }
       // TODO: add default token profiles?
       throw new Error(
-        `Payment profile does not exists for user ${userPublicIdentifier} and token ${tokenAddress}`,
+        `Payment profile does not exists for user ${userPublicIdentifier}
+        and token ${assetId}`,
       );
     }
     return profile;

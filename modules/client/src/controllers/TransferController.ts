@@ -2,6 +2,8 @@ import {
   convert,
   NodeChannel,
   RegisteredAppDetails,
+  SupportedApplication,
+  SupportedApplications,
   TransferParameters,
   UnidirectionalTransferAppActionType,
   UnidirectionalTransferAppStage,
@@ -35,18 +37,13 @@ export class TransferController extends AbstractController {
       throw new Error(invalid.toString());
     }
 
-    // check that there is sufficient free balance for amount
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
-    // TODO: check if the recipient is the node, and if so transfer without
-    // installing an app (is this possible?)
-
-    // TODO: check if recipient has a channel with the hub w/sufficient balance
-    // or if there is a route available through the node
-
     // verify app is supported without swallowing errors
-    const appInfo = this.connext.getRegisteredAppDetails("UnidirectionalTransferApp");
+    const appInfo = this.connext.getRegisteredAppDetails(
+      SupportedApplications.UnidirectionalTransferApp as SupportedApplication,
+    );
 
     // install the transfer application
     const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo);

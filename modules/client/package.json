@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.0.3",
+    "@connext/types": "0.0.7",
     "@counterfactual/node": "0.2.37",
     "core-js": "3.1.4",
     "ethers": "4.0.33",
@@ -22,7 +23,6 @@
   },
   "devDependencies": {
     "@babel/polyfill": "7.4.4",
-    "@connext/types": "0.0.6",
     "@counterfactual/types": "0.0.29",
     "@types/jest": "24.0.16",
     "@types/node-fetch": "2.5.0",

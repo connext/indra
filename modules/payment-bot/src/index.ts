@@ -1,5 +1,10 @@
 import * as connext from "@connext/client";
-import { DepositParameters, WithdrawParameters } from "@connext/types";
+import {
+  DepositParameters,
+  LinkedTransferParameters,
+  ResolveLinkedTransferParameters,
+  WithdrawParameters,
+} from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -7,15 +12,21 @@ import { registerClientListeners } from "./bot";
 import { config } from "./config";
 import { store } from "./store";
 
-process.on("warning", (e: any): any => {
-  console.warn(e);
-  process.exit(1);
-});
+process.on(
+  "warning",
+  (e: any): any => {
+    console.warn(e);
+    process.exit(1);
+  },
+);
 
-process.on("unhandledRejection", (e: any): any => {
-  console.error(e);
-  process.exit(1);
-});
+process.on(
+  "unhandledRejection",
+  (e: any): any => {
+    console.error(e);
+    process.exit(1);
+  },
+);
 
 let client: connext.ConnextInternal;
 
@@ -107,6 +118,38 @@ async function run(): Promise<void> {
     });
     console.log(`Successfully swapped!`);
     process.exit(0);
+  }
+
+  if (config.linked && !config.paymentId) {
+    const linkedParams: LinkedTransferParameters = {
+      amount: parseEther(config.linked).toString(),
+      assetId: config.assetId || AddressZero,
+      conditionType: "LINKED_TRANSFER",
+    };
+    console.log(`Attempting to create link with ${config.linked} of ${linkedParams.assetId}...`);
+    const res = await client.conditionalTransfer(linkedParams);
+    console.log(`Successfully created! Linked response: ${JSON.stringify(res, null, 2)}`);
+  }
+
+  if (config.paymentId) {
+    if (!config.preImage) {
+      throw new Error(`Cannot redeem a linked payment without an associated preImage.`);
+    }
+    if (!config.linked) {
+      throw new Error(`Cannot redeem a linked payment without an associated amount`);
+    }
+    const resolveParams: ResolveLinkedTransferParameters = {
+      amount: parseEther(config.linked).toString(),
+      assetId: config.assetId || AddressZero,
+      conditionType: "LINKED_TRANSFER",
+      paymentId: config.paymentId,
+      preImage: config.preImage,
+    };
+    console.log(
+      `Attempting to redeem link with parameters: ${JSON.stringify(resolveParams, null, 2)}...`,
+    );
+    const res = await client.resolveCondition(resolveParams);
+    console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, null, 2)}`);
   }
 
   if (config.withdraw) {
