@@ -417,6 +417,7 @@ class App extends React.Component {
                   channel={channel}
                   swapRate={swapRate}
                   setPending={this.setPending.bind(this)}
+                  ethprovider={this.state.ethprovider}
                 />
               )}
             />

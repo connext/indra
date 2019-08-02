@@ -1,9 +1,10 @@
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import SimpleTwoPartySwapApp from "../build/SimpleTwoPartySwapApp.json";
+import { SolidityABIEncoderV2Type } from "@counterfactual/types";
 
 chai.use(waffle.solidity);
 
@@ -13,34 +14,37 @@ type CoinTransfer = {
 };
 
 type SimpleSwapAppState = {
-  coinTransfers: CoinTransfer[];
+  coinTransfers: CoinTransfer[][];
 };
 
 const { expect } = chai;
+
+const multiAssetMultiPartyCoinTransferEncoding = `
+  tuple(address to, uint256 amount)[][]
+`;
+
+const swapAppStateEncoding = `tuple(
+  ${multiAssetMultiPartyCoinTransferEncoding} coinTransfers
+)`;
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
 }
 
+// FIXME: why does this have to use the multiAsset one?
+const decodeAppState = (encodedAppState: string): CoinTransfer[][] =>
+  defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
+
+const encodeAppState = (state: SimpleSwapAppState, onlyCoinTransfers: boolean = false): string => {
+  if (!onlyCoinTransfers) return defaultAbiCoder.encode([swapAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
+};
+
 describe("SimpleTwoPartySwapApp", () => {
   let simpleSwapApp: Contract;
 
-  function encodeState(state: SimpleSwapAppState) {
-    return defaultAbiCoder.encode(
-      [
-        `tuple(
-          tuple(
-            address to,
-            uint256 amount
-          )[] coinTransfers
-        )`
-      ],
-      [state]
-    );
-  }
-
-  async function computeOutcome(state: SimpleSwapAppState) {
-    return await simpleSwapApp.functions.computeOutcome(encodeState(state));
+  async function computeOutcome(state: SimpleSwapAppState): Promise<string> {
+    return await simpleSwapApp.functions.computeOutcome(encodeAppState(state));
   }
 
   before(async () => {
@@ -55,39 +59,48 @@ describe("SimpleTwoPartySwapApp", () => {
       const receiverAddr = mkAddress("0xB");
       const tokenAmt = new BigNumber(10000);
       const ethAmt = new BigNumber(500);
+
       const preState: SimpleSwapAppState = {
         coinTransfers: [
-          {
-            to: senderAddr,
-            amount: tokenAmt
-          },
-          {
-            to: receiverAddr,
-            amount: ethAmt
-          }
-        ]
+          [
+            {
+              amount: tokenAmt,
+              to: senderAddr,
+            },
+          ],
+          [
+            {
+              amount: ethAmt,
+              to: receiverAddr,
+            },
+          ],
+        ],
       };
 
       const state: SimpleSwapAppState = {
         coinTransfers: [
-          {
-            to: senderAddr,
-            amount: ethAmt
-          },
-          {
-            to: receiverAddr,
-            amount: tokenAmt
-          }
-        ]
+          [
+            {
+              amount: ethAmt,
+              to: senderAddr,
+            },
+          ],
+          [
+            {
+              amount: tokenAmt,
+              to: receiverAddr,
+            },
+          ],
+        ],
       };
 
       const ret = await computeOutcome(preState);
-      expect(ret).to.eq(
-        defaultAbiCoder.encode(
-          [`tuple(address to, uint256 amount)[]`],
-          [state.coinTransfers]
-        )
-      );
+      expect(ret).to.eq(encodeAppState(state, true));
+      const decoded = decodeAppState(ret);
+      expect(decoded[0][0].to).eq(state.coinTransfers[0][0].to);
+      expect(decoded[0][0].amount.toString()).eq(state.coinTransfers[0][0].amount.toString());
+      expect(decoded[1][0].to).eq(state.coinTransfers[1][0].to);
+      expect(decoded[1][0].amount.toString()).eq(state.coinTransfers[1][0].amount.toString());
     });
   });
 });

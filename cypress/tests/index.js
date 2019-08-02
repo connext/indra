@@ -94,7 +94,7 @@ describe('Daicard', () => {
   })
 
   describe('Withdraw', () => {
-    it(`Should withdraw to a valid address`, () => {
+    it.skip(`Should withdraw to a valid address`, () => {
       my.deposit(depositEth).then(ethDeposited => {
         my.getOnchainBalance().then(balanceBefore => {
           my.cashout()
@@ -105,7 +105,7 @@ describe('Daicard', () => {
       })
     })
 
-    it(`Should not withdraw to an invalid address`, () => {
+    it.skip(`Should not withdraw to an invalid address`, () => {
       my.deposit(depositEth).then(ethDeposited => {
         my.goToCashout()
         cy.get('input[type="text"]').clear().type('0xabc123')
