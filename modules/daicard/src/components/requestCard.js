@@ -6,8 +6,7 @@ import {
   Typography,
   withStyles,
 } from "@material-ui/core";
-import { SaveAlt as RequestIcon } from "@material-ui/icons";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
@@ -70,7 +69,7 @@ class RequestCard extends Component {
   };
 
   render() {
-    const { classes, xpub } = this.props;
+    const { xpub } = this.props;
     const { qrUrl, error, displayValue, copied } = this.state;
     return (
       <Grid

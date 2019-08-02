@@ -16,7 +16,7 @@ import {
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from 'ethers/constants';
-import { arrayify, isHexString, randomBytes } from 'ethers/utils';
+import { randomBytes } from 'ethers/utils';
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 import queryString from "query-string";
