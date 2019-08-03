@@ -14,6 +14,7 @@ import {
   WithdrawMessage,
 } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { bigNumberify } from "ethers/utils";
 import { EventEmitter } from "events";
 
 import { ConnextInternal } from "./connext";
@@ -191,7 +192,6 @@ export class ConnextListener extends EventEmitter {
   private matchAppInstance = async (
     data: ProposeVirtualMessage | ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    console.log("data:", JSON.stringify(data));
     // TODO: @layne why were we getting proposed apps instead of using the proposal which has
     // all the details we need.
 
@@ -241,8 +241,10 @@ export class ConnextListener extends EventEmitter {
       appInfo: {
         ...data.data.params,
         identityHash: data.data.appInstanceId,
+        initiatorDeposit: bigNumberify(data.data.params.initiatorDeposit),
         initiatorDepositTokenAddress: data.data.params.initiatorDepositTokenAddress,
         proposedByIdentifier: data.from,
+        responderDeposit: bigNumberify(data.data.params.responderDeposit),
         responderDepositTokenAddress: data.data.params.responderDepositTokenAddress,
       },
       matchedApp: filteredApps[0],
