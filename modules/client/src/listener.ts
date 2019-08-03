@@ -14,6 +14,7 @@ import {
   WithdrawMessage,
 } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { bigNumberify } from "ethers/utils";
 import { EventEmitter } from "events";
 
 import { ConnextInternal } from "./connext";
@@ -22,7 +23,7 @@ import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
 type CallbackStruct = {
-  [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void
+  [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void;
 };
 
 export class ConnextListener extends EventEmitter {
@@ -112,8 +113,8 @@ export class ConnextListener extends EventEmitter {
       // FIXME: type of ProposeMessage should extend Node.NodeMessage, which
       // has a from field, but ProposeMessage does not
       if ((data as any).from === this.cfModule.publicIdentifier) {
-        this.log.warn(
-          `Received proposal from our own node, this shouldn't happen, ${JSON.stringify(data)}`,
+        this.log.info(
+          `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
         );
         return;
       }
@@ -191,30 +192,37 @@ export class ConnextListener extends EventEmitter {
   private matchAppInstance = async (
     data: ProposeVirtualMessage | ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    const proposedApps = await this.connext.getProposedAppInstanceDetails();
-    if (!proposedApps) {
-      this.log.error(`Could not find any proposed apps after catching a 'PROPOSE_*' event...`);
-      return undefined;
-    }
-    const appInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
-      return app.identityHash === data.data.appInstanceId;
-    });
-    if (appInfos.length !== 1) {
-      this.log.error(
-        `Proposed application could not be found, or multiple instances found. Caught id: ${
-          data.data.appInstanceId
-        }. Proposed apps: ${JSON.stringify(proposedApps.appInstances, null, 2)}`,
-      );
-      return undefined;
-    }
-    const appInfo = appInfos[0];
+    // TODO: @layne why were we getting proposed apps instead of using the proposal which has
+    // all the details we need.
+
+    // const proposedApps = await this.connext.getProposedAppInstanceDetails();
+    // if (!proposedApps) {
+    //   this.log.error(`Could not find any proposed apps after catching a 'PROPOSE_*' event...`);
+    //   return undefined;
+    // }
+    // const appInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
+    //   return app.identityHash === data.data.appInstanceId;
+    // });
+    // if (appInfos.length !== 1) {
+    //   this.log.error(
+    //     `Proposed application could not be found, or multiple instances found. Caught id: ${
+    //       data.data.appInstanceId
+    //     }. Proposed apps: ${JSON.stringify(proposedApps.appInstances, null, 2)}`,
+    //   );
+    //   return undefined;
+    // }
+    // const appInfo = appInfos[0];
+    // const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
+    //   return app.appDefinitionAddress === appInfo.appDefinition;
+    // });
+
     const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
-      return app.appDefinitionAddress === appInfo.appDefinition;
+      return app.appDefinitionAddress === data.data.params.appDefinition;
     });
 
     if (!filteredApps || filteredApps.length === 0) {
       this.log.info(
-        `Proposed app not in registered applications. App: ${JSON.stringify(appInfo, null, 2)}`,
+        `Proposed app not in registered applications. App: ${JSON.stringify(data, null, 2)}`,
       );
       return undefined;
     }
@@ -224,12 +232,23 @@ export class ConnextListener extends EventEmitter {
       this.log.error(
         `Proposed app matched ${
           filteredApps.length
-        } registered applications by definition address. App: ${JSON.stringify(appInfo, null, 2)}`,
+        } registered applications by definition address. App: ${JSON.stringify(data, null, 2)}`,
       );
       return undefined;
     }
     // matched app, take appropriate default actions
-    return { matchedApp: filteredApps[0], appInfo };
+    return {
+      appInfo: {
+        ...data.data.params,
+        identityHash: data.data.appInstanceId,
+        initiatorDeposit: bigNumberify(data.data.params.initiatorDeposit),
+        initiatorDepositTokenAddress: data.data.params.initiatorDepositTokenAddress,
+        proposedByIdentifier: data.from,
+        responderDeposit: bigNumberify(data.data.params.responderDeposit),
+        responderDepositTokenAddress: data.data.params.responderDepositTokenAddress,
+      },
+      matchedApp: filteredApps[0],
+    };
   };
 
   private verifyAndInstallKnownApp = async (
@@ -258,7 +277,7 @@ export class ConnextListener extends EventEmitter {
       return;
     }
     this.log.info(`Proposal for app install successful, attempting install now...`);
-    let res;
+    let res: NodeTypes.InstallResult;
     if (isVirtual) {
       res = await this.connext.installVirtualApp(appInstance.identityHash);
     } else {
