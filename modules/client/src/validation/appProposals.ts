@@ -1,6 +1,6 @@
 import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { AppInstanceInfo } from "@counterfactual/types";
-import { AddressZero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
 import { freeBalanceAddressFromXpub } from "../lib/utils";
@@ -120,19 +120,19 @@ const baseAppValidation = async (
 
   // check that the outcome type is the same
   // TODO: what checks needed for the interpreter params?
-  if (app.initiatorDeposit.isZero() && app.responderDeposit.isZero()) {
+  if (bigNumberify(app.initiatorDeposit).isZero() && bigNumberify(app.responderDeposit).isZero()) {
     return `Refusing to install app with two zero value deposits. Proposed app: ${prettyLog(app)}`;
   }
 
   // check that there is enough in the free balance of desired currency
   // to install app
   // FIXME: how to get assetId
-  const assetId = AddressZero;
-  const ethFreeBalance = await connext.getFreeBalance(assetId);
-  if (
-    ethFreeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)].lt(app.initiatorDeposit)
-  ) {
-    return `Insufficient free balance for requested asset. Proposed app: ${prettyLog(app)}`;
+  const assetId = app.responderDepositTokenAddress;
+  const freeBalance = await connext.getFreeBalance(assetId);
+  if (freeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)].lt(app.responderDeposit)) {
+    return `Insufficient free balance for requested asset,
+      freeBalance: ${freeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)].toString()}
+      required: ${app.responderDeposit}. Proposed app: ${prettyLog(app)}`;
   }
 
   // check that the intermediary includes your node if it is not an app with
