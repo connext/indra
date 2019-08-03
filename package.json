@@ -32,7 +32,7 @@
 		"@counterfactual/node": "0.2.37",
 		"@counterfactual/postgresql-node-connector": "0.0.3",
 		"@counterfactual/types": "0.0.29",
-		"@material-ui/core": "4.3.0",
+		"@material-ui/core": "4.3.1",
 		"@material-ui/icons": "4.2.1",
 		"@material-ui/styles": "4.3.0",
 		"@nestjs/common": "6.5.3",
