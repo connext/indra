@@ -64,8 +64,6 @@ if [[ "$INDRA_V2_MODE" == "test" ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
-  expose_nats='ports:
-      - "4222:4222"'
 else
   db_volume="database"
   db_secret="${project}_database"
@@ -217,7 +215,8 @@ services:
 
   nats:
     image: $nats_image
-    $expose_nats
+    ports:
+      - "4222:4222"
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
