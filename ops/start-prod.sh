@@ -184,6 +184,7 @@ services:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: $eth_mnemonic_file
       INDRA_ETH_RPC_URL: $eth_rpc_url
+      INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID: $INDRA_V2_NATS_CLUSTER_ID
       INDRA_NATS_SERVERS: nats://nats:$nats_port
       INDRA_NATS_TOKEN: $INDRA_V2_NATS_TOKEN
@@ -214,6 +215,7 @@ services:
       - $db_volume:/var/lib/postgresql/data
 
   nats:
+    command: -V
     image: $nats_image
     ports:
       - "4222:4222"

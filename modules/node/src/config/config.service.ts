@@ -71,7 +71,7 @@ export class ConfigService {
       if (ethAddresses.Migrations) delete ethAddresses.Migrations;
       return ethAddresses;
     };
-    let ethAddresses = {} as any;
+    const ethAddresses = {} as any;
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
       ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
@@ -145,7 +145,7 @@ export class ConfigService {
   }
 
   getLogLevel(): number {
-    return parseInt(this.get("INDRA_LOG_LEVEL"), 10);
+    return parseInt(this.get("INDRA_LOG_LEVEL") || "3", 10);
   }
 
   getMnemonic(): string {
