@@ -56,6 +56,7 @@ export function getConnextClient(): connext.ConnextInternal {
 let latestSwapRate;
 
 async function run(): Promise<void> {
+  setAssetId(config.assetId);
   await getOrCreateChannel(config.assetId);
   if (config.assetId) {
     await client.subscribeToSwapRates(AddressZero, config.assetId, (msg: any) => {
