@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.0.7",
-    "@connext/types": "0.0.7",
+    "@connext/types": "0.0.8",
     "@counterfactual/node": "0.2.37",
     "core-js": "3.1.4",
     "ethers": "4.0.33",
