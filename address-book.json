@@ -73,6 +73,15 @@
     },
     "Token": {
       "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
+    },
+    "SimpleTwoPartySwapApp": {
+      "address": "0x4ef587366633BBb3cbC4deB7d54238B11BE2fdD6"
+    },
+    "UnidirectionalTransferApp": {
+      "address": "0x5402983cAb62beCeB0aac232840eC8D875a78116"
+    },
+    "UnidirectionalLinkedTransferApp": {
+      "address": "0x649424773412df24A92f2562513b3f6277825d57"
     }
   },
   "42": {

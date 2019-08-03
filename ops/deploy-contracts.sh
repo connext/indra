@@ -39,27 +39,27 @@ sleep 1 # give the user a sec to ctrl-c in case above is wrong
 # Docker swarm mode needs to be enabled to use the secret store
 docker swarm init 2> /dev/null || true
 
-ETH_MNEMONIC_FILE=node_key_$ETH_NETWORK
+ETH_MNEMONIC_FILE=indra_mnemonic_$ETH_NETWORK
 if [[ "$ETH_NETWORK" != "ganache" ]]
 then
   # Sanity check: does this secret already exist?
   if [[ -n "`docker secret ls | grep " $ETH_MNEMONIC_FILE"`" ]]
-  then echo "A secret called $ETH_MNEMONIC_FILE already exists, aborting"
-       echo "Remove existing secret to reset: docker secret rm $ETH_MNEMONIC_FILE"
-       exit
-  fi
+  then
+    echo "A secret called $ETH_MNEMONIC_FILE already exists"
+    echo "Remove existing secret to reset: docker secret rm $ETH_MNEMONIC_FILE"
+  else
+    echo "Copy your $ETH_MNEMONIC_FILE secret to your clipboard"
+    echo "Paste it below & hit enter (no echo)"
+    echo -n "> "
+    read -s secret
+    echo
 
-  echo "Copy your $ETH_MNEMONIC_FILE secret to your clipboard"
-  echo "Paste it below & hit enter (no echo)"
-  echo -n "> "
-  read -s secret
-  echo
-
-  id="`echo $secret | tr -d ' \n\r' | docker secret create $ETH_MNEMONIC_FILE -`"
-  if [[ "$?" == "0" ]]
-  then echo "Successfully loaded secret into secret store"
-       echo "name=$ETH_MNEMONIC_FILE id=$id"
-  else echo "Something went wrong creating secret called $ETH_MNEMONIC_FILE"
+    id="`echo $secret | tr -d '\n\r' | docker secret create $ETH_MNEMONIC_FILE -`"
+    if [[ "$?" == "0" ]]
+    then echo "Successfully loaded secret into secret store"
+         echo "name=$ETH_MNEMONIC_FILE id=$id"
+    else echo "Something went wrong creating secret called $ETH_MNEMONIC_FILE"
+    fi
   fi
 fi
 
