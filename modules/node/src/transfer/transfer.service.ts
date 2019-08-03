@@ -106,13 +106,14 @@ export class TransferService {
       channel.multisigAddress,
       assetId,
     );
-    const diff = postTransferBal[
-      freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
-    ].sub(preTransferBal);
 
+    // pre - post = amount
+    const diff = preTransferBal.sub(
+      postTransferBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)],
+    );
     if (!diff.eq(amount)) {
       logger.warn(
-        `Welp it appears the difference of the free balance before and after
+        `It appears the difference of the free balance before and after
         uninstalling is not what we expected......`,
       );
       logger.warn(
@@ -207,6 +208,10 @@ export class TransferService {
 
     // display final state of app
     const appInfo = await this.nodeService.getAppState(this.appId);
+
+    // TODO: was getting an error here, printing this in case it happens again
+    console.log("this.appId: ", this.appId);
+    console.log("appInfo: ", appInfo);
     (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
     (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
 
