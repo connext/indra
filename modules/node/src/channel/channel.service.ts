@@ -3,11 +3,11 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { AddressZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { NodeService } from "../node/node.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { CLogger, freeBalanceAddressFromXpub, toBig } from "../util";
+import { CLogger, freeBalanceAddressFromXpub } from "../util";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -73,22 +73,20 @@ export class ChannelService implements OnModuleInit {
     return undefined;
   }
 
-  // TODO: standardize to BigNumber at service level
   async addPaymentProfileToChannel(
     userPubId: string,
     assetId: string,
-    minimumMaintainedCollateral: string,
-    amountToCollateralize: string,
+    minimumMaintainedCollateral: BigNumber,
+    amountToCollateralize: BigNumber,
   ): Promise<PaymentProfile> {
     const profile = new PaymentProfile();
     profile.assetId = assetId;
-    profile.minimumMaintainedCollateral = toBig(minimumMaintainedCollateral);
-    profile.amountToCollateralize = toBig(amountToCollateralize);
+    profile.minimumMaintainedCollateral = minimumMaintainedCollateral;
+    profile.amountToCollateralize = amountToCollateralize;
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
   }
 
   onModuleInit(): void {
-    // TODO MOVE TO NODE SERVICE
     this.nodeService.registerCfNodeListener(
       NodeTypes.EventName.CREATE_CHANNEL,
       async (creationData: CreateChannelMessage) => {

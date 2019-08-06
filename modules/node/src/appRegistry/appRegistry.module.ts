@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ConfigModule } from "../config/config.module";
 import { NodeModule } from "../node/node.module";
+import { SwapRateModule } from "../swapRate/swapRate.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { appRegistryProviderFactory } from "./appRegistry.provider";
@@ -12,7 +13,12 @@ import { AppRegistryService } from "./appRegistry.service";
 @Module({
   controllers: [AppRegistryController],
   exports: [],
-  imports: [ConfigModule, TypeOrmModule.forFeature([AppRegistryRepository]), NodeModule],
+  imports: [
+    ConfigModule,
+    TypeOrmModule.forFeature([AppRegistryRepository]),
+    NodeModule,
+    SwapRateModule,
+  ],
   providers: [appRegistryProviderFactory, AppRegistryService],
 })
 export class AppRegistryModule {}

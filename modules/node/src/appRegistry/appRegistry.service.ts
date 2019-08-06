@@ -1,25 +1,52 @@
 import { KnownNodeAppNames } from "@connext/types";
 import { ProposeMessage } from "@counterfactual/node";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
+import { bigNumberify, parseEther } from "ethers/utils";
 
+import { ConfigService } from "../config/config.service";
 import { NodeService } from "../node/node.service";
-import { CLogger, toBig } from "../util";
+import { SwapRateService } from "../swapRate/swapRate.service";
+import { CLogger } from "../util";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
 
 const logger = new CLogger("AppRegistryService");
 
+type AllowedSwap = {
+  from: string;
+  to: string;
+};
+
+type AllowedSwaps = AllowedSwap[];
+
+const ALLOWED_DISCREPANCY_PCT = 5;
+
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
     private readonly nodeService: NodeService,
+    private readonly configService: ConfigService,
+    private readonly swapRateService: SwapRateService,
     private readonly appRegistryRepository: AppRegistryRepository,
   ) {}
 
-  private appProposalMatchesRegistry(proposal: AppInstanceInfo, registry: AppRegistry): boolean {
+  private async getValidSwaps(): Promise<AllowedSwaps> {
+    const allowedSwaps: AllowedSwaps = [
+      {
+        from: await this.configService.getTokenAddress(),
+        to: AddressZero,
+      },
+    ];
+    return allowedSwaps;
+  }
+
+  private appProposalMatchesRegistry(
+    proposal: NodeTypes.ProposeInstallParams,
+    registry: AppRegistry,
+  ): boolean {
     return (
       proposal.appDefinition === registry.appDefinitionAddress &&
       proposal.abiEncodings.actionEncoding === registry.actionEncoding &&
@@ -27,13 +54,50 @@ export class AppRegistryService implements OnModuleInit {
     );
   }
 
-  private validateSwap(params: NodeTypes.ProposeInstallParams): void {
-    console.log("TODO: VALIDATE THIS INITIAL STATE:");
+  private async validateSwap(params: NodeTypes.ProposeInstallParams): Promise<void> {
     console.log("params: ", JSON.stringify(params));
+    const validSwaps = await this.getValidSwaps();
+    if (
+      !validSwaps.find(
+        (swap: AllowedSwap) =>
+          swap.from === params.responderDepositTokenAddress &&
+          swap.to === params.initiatorDepositTokenAddress,
+      )
+    ) {
+      throw new Error(
+        `Swap from ${params.initiatorDepositTokenAddress} to ` +
+          `${params.responderDepositTokenAddress} is not valid. Valid swaps: ${JSON.stringify(
+            validSwaps,
+          )}`,
+      );
+    }
+
+    // |our rate - derived rate| / our rate = discrepancy
+    const derivedRate = parseEther(
+      bigNumberify(params.responderDeposit)
+        .div(bigNumberify(params.initiatorDeposit))
+        .toString(),
+    );
+
+    const ourRate = bigNumberify(await this.swapRateService.getOrFetchRate());
+    const discrepancy = ourRate.sub(derivedRate).abs();
+    const discrepancyPct = discrepancy.mul(100).div(ourRate);
+
+    if (discrepancyPct.gt(ALLOWED_DISCREPANCY_PCT)) {
+      throw new Error(
+        `Derived rate is ${derivedRate.toString()}, more than ${ALLOWED_DISCREPANCY_PCT}% ` +
+          `larger discrepancy than our rate of ${ourRate.toString()}`,
+      );
+    }
+
+    logger.log(
+      `Derived rate is ${derivedRate.toString()}, within ${ALLOWED_DISCREPANCY_PCT}% ` +
+        `of our rate ${ourRate.toString()}`,
+    );
   }
 
-  private validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): void {
-    if (toBig(params.responderDeposit).gt(Zero)) {
+  private async validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
+    if (bigNumberify(params.responderDeposit).gt(Zero)) {
       throw new Error(
         `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
           params,
@@ -46,38 +110,14 @@ export class AppRegistryService implements OnModuleInit {
     params: NodeTypes.ProposeInstallParams;
     appInstanceId: string;
   }): Promise<void> {
-    const proposedApps = await this.nodeService.getProposedAppInstances();
-    const proposedAppInfos = proposedApps.filter((app: AppInstanceInfo) => {
-      return app.identityHash === proposedAppParams.appInstanceId;
-    });
-
-    if (
-      proposedAppParams.params.proposedToIdentifier !== this.nodeService.cfNode.publicIdentifier
-    ) {
-      throw new Error(
-        `proposedToIdentifier is not node publicIdentifier: ${JSON.stringify(
-          proposedAppParams.params,
-        )}`,
-      );
-    }
-
-    if (proposedAppInfos.length !== 1) {
-      throw new Error(
-        `Proposed application could not be found, or multiple instances found. Caught id: ${
-          proposedAppParams.appInstanceId
-        }. Proposed apps: ${JSON.stringify(proposedApps, null, 2)}`,
-      );
-    }
-
-    const proposedAppInfo = proposedAppInfos[0];
-
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      proposedAppInfo.appDefinition,
+      proposedAppParams.params.appDefinition,
     );
 
     if (!registryAppInfo) {
       throw new Error(
-        `App does not exist in registry for definition address ${proposedAppInfo.appDefinition}`,
+        `App does not exist in registry for definition
+        address ${proposedAppParams.params.appDefinition}`,
       );
     }
 
@@ -85,10 +125,10 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    if (!this.appProposalMatchesRegistry(proposedAppInfo, registryAppInfo)) {
+    if (!this.appProposalMatchesRegistry(proposedAppParams.params, registryAppInfo)) {
       throw new Error(
         `Proposed app details ${JSON.stringify(
-          proposedAppInfo,
+          proposedAppParams.params,
         )} does not match registry ${JSON.stringify(registryAppInfo)}`,
       );
     }
