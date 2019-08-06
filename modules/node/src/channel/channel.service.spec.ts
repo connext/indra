@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getConnectionToken } from "@nestjs/typeorm";
 import { AddressZero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 import { Connection } from "typeorm";
 
 import { ChannelModule } from "../channel/channel.module";
@@ -17,7 +18,6 @@ import {
   mockNodeProvider,
   mockStateDepositHolderAddress,
 } from "../test";
-import { toBig } from "../util";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
@@ -66,14 +66,14 @@ describe("ChannelService", () => {
     const channel = await createTestChannel(channelRepository);
 
     let profile = new PaymentProfile();
-    profile.amountToCollateralize = toBig(2000);
-    profile.minimumMaintainedCollateral = toBig(600);
+    profile.amountToCollateralize = bigNumberify(2000);
+    profile.minimumMaintainedCollateral = bigNumberify(600);
     profile.assetId = AddressZero;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
     profile = new PaymentProfile();
-    profile.amountToCollateralize = toBig(3000);
-    profile.minimumMaintainedCollateral = toBig(1000);
+    profile.amountToCollateralize = bigNumberify(3000);
+    profile.minimumMaintainedCollateral = bigNumberify(1000);
     profile.assetId = tokenAddress;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
@@ -81,16 +81,16 @@ describe("ChannelService", () => {
       channel.userPublicIdentifier,
     );
 
-    expect(profile.amountToCollateralize).toStrictEqual(toBig(2000));
-    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(600));
+    expect(profile.amountToCollateralize).toStrictEqual(bigNumberify(2000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(bigNumberify(600));
 
     profile = await channelRepository.getPaymentProfileForChannelAndToken(
       channel.userPublicIdentifier,
       tokenAddress,
     );
 
-    expect(profile.amountToCollateralize).toStrictEqual(toBig(3000));
-    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(1000));
+    expect(profile.amountToCollateralize).toStrictEqual(bigNumberify(3000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(bigNumberify(1000));
   });
 
   it("should get a default payment profile", async () => {
@@ -101,10 +101,10 @@ describe("ChannelService", () => {
     );
 
     expect(profile.amountToCollateralize).toStrictEqual(
-      toBig(defaultPaymentProfileEth.amountToCollateralize),
+      bigNumberify(defaultPaymentProfileEth.amountToCollateralize),
     );
     expect(profile.minimumMaintainedCollateral).toStrictEqual(
-      toBig(defaultPaymentProfileEth.minimumMaintainedCollateral),
+      bigNumberify(defaultPaymentProfileEth.minimumMaintainedCollateral),
     );
   });
 
@@ -112,8 +112,8 @@ describe("ChannelService", () => {
     const tokenAddress = mkAddress("0xeee");
     const channel = await createTestChannel(channelRepository);
     let profile = new PaymentProfile();
-    profile.amountToCollateralize = toBig(2000);
-    profile.minimumMaintainedCollateral = toBig(600);
+    profile.amountToCollateralize = bigNumberify(2000);
+    profile.minimumMaintainedCollateral = bigNumberify(600);
     profile.assetId = tokenAddress;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
@@ -122,12 +122,12 @@ describe("ChannelService", () => {
       tokenAddress,
     );
 
-    expect(profile.amountToCollateralize).toStrictEqual(toBig(2000));
-    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(600));
+    expect(profile.amountToCollateralize).toStrictEqual(bigNumberify(2000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(bigNumberify(600));
 
     profile = new PaymentProfile();
-    profile.amountToCollateralize = toBig(4000);
-    profile.minimumMaintainedCollateral = toBig(1200);
+    profile.amountToCollateralize = bigNumberify(4000);
+    profile.minimumMaintainedCollateral = bigNumberify(1200);
     profile.assetId = tokenAddress;
     await channelRepository.addPaymentProfileToChannel(channel.userPublicIdentifier, profile);
 
@@ -136,7 +136,7 @@ describe("ChannelService", () => {
       tokenAddress,
     );
 
-    expect(profile.amountToCollateralize).toStrictEqual(toBig(4000));
-    expect(profile.minimumMaintainedCollateral).toStrictEqual(toBig(1200));
+    expect(profile.amountToCollateralize).toStrictEqual(bigNumberify(4000));
+    expect(profile.minimumMaintainedCollateral).toStrictEqual(bigNumberify(1200));
   });
 });
