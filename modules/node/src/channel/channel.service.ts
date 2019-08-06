@@ -73,22 +73,20 @@ export class ChannelService implements OnModuleInit {
     return undefined;
   }
 
-  // TODO: standardize to BigNumber at service level
   async addPaymentProfileToChannel(
     userPubId: string,
     assetId: string,
-    minimumMaintainedCollateral: string,
-    amountToCollateralize: string,
+    minimumMaintainedCollateral: BigNumber,
+    amountToCollateralize: BigNumber,
   ): Promise<PaymentProfile> {
     const profile = new PaymentProfile();
     profile.assetId = assetId;
-    profile.minimumMaintainedCollateral = bigNumberify(minimumMaintainedCollateral);
-    profile.amountToCollateralize = bigNumberify(amountToCollateralize);
+    profile.minimumMaintainedCollateral = minimumMaintainedCollateral;
+    profile.amountToCollateralize = amountToCollateralize;
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
   }
 
   onModuleInit(): void {
-    // TODO MOVE TO NODE SERVICE
     this.nodeService.registerCfNodeListener(
       NodeTypes.EventName.CREATE_CHANNEL,
       async (creationData: CreateChannelMessage) => {
