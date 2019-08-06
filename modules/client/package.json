@@ -13,7 +13,7 @@
   "dependencies": {
     "@connext/messaging": "0.0.7",
     "@connext/types": "0.0.8",
-    "@counterfactual/node": "0.2.37",
+    "@counterfactual/node": "0.2.40",
     "core-js": "3.1.4",
     "ethers": "4.0.33",
     "human-standard-token-abi": "2.0.0",
@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@babel/polyfill": "7.4.4",
-    "@counterfactual/types": "0.0.29",
-    "@types/jest": "24.0.16",
+    "@counterfactual/types": "0.0.30",
+    "@types/jest": "24.0.17",
     "@types/node-fetch": "2.5.0",
     "@types/uuid": "3.4.5",
     "jest": "24.8.0",
