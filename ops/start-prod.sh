@@ -10,7 +10,7 @@ docker swarm init 2> /dev/null || true
 INDRA_V2_DOMAINNAME="${INDRA_V2_DOMAINNAME:-localhost}"
 INDRA_V2_EMAIL="${INDRA_V2_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_V2_ETH_PROVIDER="${INDRA_V2_ETH_PROVIDER}"
-INDRA_V2_MODE="${INDRA_V2_MODE:-staging}" # set to "live" to use versioned docker images
+INDRA_V2_MODE="${INDRA_V2_MODE:-staging}" # set to "prod" to use versioned docker images
 
 ####################
 # Internal Config
@@ -122,7 +122,7 @@ pull_if_unavailable $nats_image
 
 if [[ "$INDRA_V2_DOMAINNAME" != "localhost" ]]
 then
-  if [[ "$INDRA_V2_MODE" == "live" ]]
+  if [[ "$INDRA_V2_MODE" == "prod" ]]
   then version="`cat package.json | jq .version | tr -d '"'`"
   elif [[ "$INDRA_V2_MODE" == "staging" ]]
   then version="latest"
