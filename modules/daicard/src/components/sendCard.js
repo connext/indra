@@ -88,7 +88,7 @@ class SendCard extends Component {
     } catch (e) {
       error = e.message
     }
-    if (value && value.amountWad.gt(balance.channel.ether.toETH().amountWad)) {
+    if (value && value.amountWad.gt(balance.channel.token.toDAI().amountWad)) {
       error = `Invalid amount: must be less than your balance`
     }
     if (value && value.amountWad.lte(Zero)) {
@@ -209,7 +209,7 @@ class SendCard extends Component {
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
               <span>
-                {this.props.balance.channel.ether.toETH().toString()}
+                {this.props.balance.channel.token.toDAI().toString()}
               </span>
             </Typography>
           </Grid>
