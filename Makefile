@@ -9,7 +9,7 @@ SHELL=/bin/bash
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 registry=docker.io/$(organization)
-version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
+version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
