@@ -35,11 +35,6 @@ export class SwapRateService {
     const oldRate = this.latestSwapRate;
     try {
       this.latestSwapRate = bigNumberify((await this.medianizer.peek())[0]).toString();
-      logger.debug(
-        `Got swap rate from medianizer at block ${blockNumber}: ${formatEther(
-          this.latestSwapRate,
-        )}`,
-      );
     } catch (e) {
       logger.warn(`Failed to fetch swap rate from medianizer`);
       if (process.env.NODE_ENV === "development" && !this.latestSwapRate) {
@@ -48,6 +43,11 @@ export class SwapRateService {
       }
     }
     if (oldRate !== this.latestSwapRate) {
+      logger.log(
+        `Got new swap rate from medianizer at block ${blockNumber}: ${formatEther(
+          this.latestSwapRate,
+        )}`,
+      );
       this.broadcastRate(); // Only broadcast the rate if it's changed
     }
     return this.latestSwapRate;
