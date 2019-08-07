@@ -13,10 +13,8 @@ fi
 
 if [[ -z "$INDRA_ETH_MNEMONIC" && -n "$INDRA_ETH_MNEMONIC_FILE" ]]
 then
-  echo "catting $INDRA_ETH_MNEMONIC_FILE -> `cat $INDRA_ETH_MNEMONIC_FILE`"
   export INDRA_ETH_MNEMONIC="`cat $INDRA_ETH_MNEMONIC_FILE`"
 fi
-echo "mnemonic: $INDRA_ETH_MNEMONIC"
 
 function wait_for {
   name=$1
