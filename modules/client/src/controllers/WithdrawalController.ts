@@ -63,7 +63,7 @@ export class WithdrawalController extends AbstractController {
 
       this.log.info("Withdrawn!");
     } catch (e) {
-      this.log.error(`Failed to withdraw... ${e}`);
+      this.log.error(`Failed to withdraw... ${JSON.stringify(e, null, 2)}`);
       this.removeListeners();
       throw new Error(e);
     }
@@ -106,6 +106,7 @@ export class WithdrawalController extends AbstractController {
   };
 
   private withdrawFailedCallback = (data: any): void => {
+    console.log(`Withdrawal failed with data: ${JSON.stringify(data, null, 2)}`)
     this.removeListeners();
   };
 
