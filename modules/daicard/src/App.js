@@ -345,6 +345,7 @@ class App extends React.Component {
       minDeposit,
       pending,
       sendScanArgs,
+      token,
       xpub,
     } = this.state;
     const { classes } = this.props;
@@ -406,6 +407,7 @@ class App extends React.Component {
                   balance={balance}
                   channel={channel}
                   scanArgs={sendScanArgs}
+                  token={token}
                 />
               )}
             />

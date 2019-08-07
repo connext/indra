@@ -123,14 +123,14 @@ class SendCard extends Component {
   }
 
   async paymentHandler() {
-    const { channel } = this.props;
+    const { channel, token } = this.props;
     const { amount, recipient } = this.state;
     if (amount.error || recipient.error) return;
     // TODO: check if recipient needs collateral & tell server to collateralize if more is needed
     try {
       console.log(`Sending ${amount.value} to ${recipient.value}`);
       await channel.transfer({
-        assetId: AddressZero, // TODO: token address
+        assetId: token.address,
         amount: amount.value.toDEI().floor(),
         recipient: recipient.value,
       });
