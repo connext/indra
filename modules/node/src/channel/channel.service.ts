@@ -69,7 +69,7 @@ export class ChannelService implements OnModuleInit {
       logger.log(`Collateralizing ${userPubId} with ${amountDeposit.toString()}, token ${assetId}`);
       return this.deposit(channel.multisigAddress, amountDeposit, assetId);
     }
-    logger.log(`User ${userPubId} does not need additional collateral for token ${assetId}`);
+    logger.log(`${userPubId} already has collateral of ${nodeFreeBalance} for asset ${assetId}`);
     return undefined;
   }
 
