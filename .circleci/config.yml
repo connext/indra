@@ -39,6 +39,7 @@ jobs:
       - run:
           command: |
             ssh ubuntu@$STAGING_URL "bash -s" <<EOF
+              set -e
               git clone https://github.com/ConnextProject/indra-v2.git || true
               cd indra-v2
               git checkout --force $CIRCLE_BRANCH
@@ -58,6 +59,7 @@ jobs:
       - run:
           command: |
             ssh ubuntu@$RINKEBY_URL "bash -s" <<EOF
+              set -e
               git clone https://github.com/ConnextProject/indra-v2.git || true
               cd indra-v2
               git checkout --force $CIRCLE_BRANCH
