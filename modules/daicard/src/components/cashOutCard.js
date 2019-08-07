@@ -10,7 +10,7 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { arrayify, isHexString, parseEther } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
@@ -20,7 +20,8 @@ import DaiIcon from "../assets/dai.svg";
 
 import { QRScan } from "./qrCode";
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+/*
+import { AddressZero } from "ethers/constants";
 const displayBals = async (RETRY_COUNT, channel, ethprovider) => {
   let retries = 0;
   while (retries < RETRY_COUNT) {
@@ -36,9 +37,10 @@ const displayBals = async (RETRY_COUNT, channel, ethprovider) => {
       userFreeBalance,
     }, null, 2)}`)
     retries += 1;
-    await delay(1000)
+    await new Promise((res) => setTimeout(res, 1000))
   }
 }
+*/
 
 const styles = theme => ({
   icon: {
