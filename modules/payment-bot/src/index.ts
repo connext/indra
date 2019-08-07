@@ -13,6 +13,7 @@ import { formatEther, parseEther } from "ethers/utils";
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
 import { store } from "./store";
+import { logEthFreeBalance } from "./utils";
 
 process.on("warning", (e: any): any => {
   console.warn(e);
@@ -41,8 +42,8 @@ export function getMultisigAddress(): string {
   return client.opts.multisigAddress;
 }
 
-export function getWalletAddress(): string {
-  return client.wallet.address;
+export function getFreeBalanceAddress(): string {
+  return client.freeBalanceAddress;
 }
 
 export function getConnextClient(): connext.ConnextInternal {
@@ -198,9 +199,9 @@ async function run(): Promise<void> {
     console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
-  client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+  logEthFreeBalance(AddressZero, await client.getFreeBalance());
   if (config.assetId) {
-    client.logEthFreeBalance(config.assetId, await client.getFreeBalance(config.assetId));
+    logEthFreeBalance(config.assetId, await client.getFreeBalance(config.assetId));
   }
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
