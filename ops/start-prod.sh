@@ -91,7 +91,7 @@ then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   eth_mnemonic_name="indra_mnemonic_ganache"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
-  eth_volume="chain_dev"
+  eth_volume="chain_dev:"
   ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
   pull_if_unavailable "$ethprovider_image"
   number_of_services=$(( $number_of_services + 1 ))
@@ -102,7 +102,7 @@ then
     ports:
       - 8545:8545
     volumes:
-      - $eth_volume:/data
+      - $eth_volume/data
   "
   INDRA_V2_ETH_PROVIDER="http://ethprovider:8545"
 else echo "Eth network \"$chainId\" is not supported for $INDRA_V2_MODE-mode deployments" && exit 1
@@ -158,7 +158,7 @@ secrets:
 volumes:
   certs:
   $db_volume:
-  $eth_volume:
+  $eth_volume
 
 services:
   $ethprovider_service
