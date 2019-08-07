@@ -15,7 +15,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { delay } from "../lib/utils";
+import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -154,12 +154,11 @@ export class TransferController extends AbstractController {
       transfers: [
         {
           amount,
-          to: getAddress(this.wallet.address),
-          // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
+          to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
         },
         {
           amount: Zero,
-          to: getAddress(fromExtendedKey(recipient).derivePath("0").address),
+          to: freeBalanceAddressFromXpub(recipient),
         },
       ],
       turnNum: Zero,
