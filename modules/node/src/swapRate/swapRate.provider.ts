@@ -19,16 +19,11 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async getLatestSwapRate(subject: string): Promise<any> {
-    const tokenAddress = await this.config.getTokenAddress();
+  async getLatestSwapRate(subject: string): Promise<string> {
     const pieces = subject.split(".");
     const [subj, from, to] = pieces;
 
-    if (from === AddressZero && to.toLowerCase() === tokenAddress) {
-      return this.swapRateService.getOrFetchRate();
-    }
-    logger.log(`No rate exists for ${from}.${to}`);
-    return "none";
+    return this.swapRateService.getOrFetchRate(from, to);
   }
 
   async setupSubscriptions(): Promise<void> {

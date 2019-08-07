@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
@@ -16,8 +16,8 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
-export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, ""));
+export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
+  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
 };
 export class SwapController extends AbstractController {
   private appId: string;
@@ -29,6 +29,7 @@ export class SwapController extends AbstractController {
       "bignumber",
       params,
     );
+
     const invalid = await this.validate(amount, toAssetId, fromAssetId, swapRate);
     if (invalid) {
       throw new Error(invalid.toString());
@@ -93,7 +94,7 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
-    swapRate: BigNumber, // (wei tokens) / eth
+    swapRate: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
@@ -106,7 +107,7 @@ export class SwapController extends AbstractController {
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
       notLessThanOrEqualTo(swappedAmount, nodeBal),
-      notPositive(swapRate),
+      notPositive(parseEther(swapRate)),
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
@@ -139,7 +140,7 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
-    swapRate: BigNumber,
+    swapRate: string,
     appInfo: RegisteredAppDetails,
   ): Promise<any> => {
     let boundResolve;
@@ -148,7 +149,8 @@ export class SwapController extends AbstractController {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.info(
-      `Installing swap app. Swapping ${amount.toString()} of ${fromAssetId} for ${swappedAmount.toString()} of ${toAssetId}`,
+      `Installing swap app. Swapping ${amount.toString()} of ${fromAssetId}` +
+        ` for ${swappedAmount.toString()} of ${toAssetId}`,
     );
 
     // TODO: is this the right state and typing?? In contract tests, uses

@@ -1,11 +1,10 @@
-import { KnownNodeAppNames } from "@connext/types";
+import { AllowedSwap, KnownNodeAppNames } from "@connext/types";
 import { ProposeMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { AddressZero, Zero } from "ethers/constants";
-import { bigNumberify, parseEther } from "ethers/utils";
+import { Zero } from "ethers/constants";
+import { bigNumberify, parseEther, formatEther } from "ethers/utils";
 
-import { ConfigService } from "../config/config.service";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { CLogger } from "../util";
@@ -15,33 +14,15 @@ import { AppRegistryRepository } from "./appRegistry.repository";
 
 const logger = new CLogger("AppRegistryService");
 
-type AllowedSwap = {
-  from: string;
-  to: string;
-};
-
-type AllowedSwaps = AllowedSwap[];
-
 const ALLOWED_DISCREPANCY_PCT = 5;
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
     private readonly nodeService: NodeService,
-    private readonly configService: ConfigService,
     private readonly swapRateService: SwapRateService,
     private readonly appRegistryRepository: AppRegistryRepository,
   ) {}
-
-  private async getValidSwaps(): Promise<AllowedSwaps> {
-    const allowedSwaps: AllowedSwaps = [
-      {
-        from: await this.configService.getTokenAddress(),
-        to: AddressZero,
-      },
-    ];
-    return allowedSwaps;
-  }
 
   private appProposalMatchesRegistry(
     proposal: NodeTypes.ProposeInstallParams,
@@ -55,13 +36,12 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   private async validateSwap(params: NodeTypes.ProposeInstallParams): Promise<void> {
-    console.log("params: ", JSON.stringify(params));
-    const validSwaps = await this.getValidSwaps();
+    const validSwaps = await this.swapRateService.getValidSwaps();
     if (
       !validSwaps.find(
         (swap: AllowedSwap) =>
-          swap.from === params.responderDepositTokenAddress &&
-          swap.to === params.initiatorDepositTokenAddress,
+          swap.from === params.initiatorDepositTokenAddress &&
+          swap.to === params.responderDepositTokenAddress,
       )
     ) {
       throw new Error(
@@ -73,17 +53,20 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     // |our rate - derived rate| / our rate = discrepancy
-    const derivedRate = parseEther(
-      bigNumberify(params.responderDeposit)
-        .div(bigNumberify(params.initiatorDeposit))
-        .toString(),
+    const derivedRate =
+      parseFloat(formatEther(params.responderDeposit)) /
+      parseFloat(formatEther(params.initiatorDeposit));
+
+    const ourRate = parseFloat(
+      await this.swapRateService.getOrFetchRate(
+        params.initiatorDepositTokenAddress,
+        params.responderDepositTokenAddress,
+      ),
     );
+    const discrepancy = Math.abs(ourRate - derivedRate);
+    const discrepancyPct = (discrepancy * 100) / ourRate;
 
-    const ourRate = bigNumberify(await this.swapRateService.getOrFetchRate());
-    const discrepancy = ourRate.sub(derivedRate).abs();
-    const discrepancyPct = discrepancy.mul(100).div(ourRate);
-
-    if (discrepancyPct.gt(ALLOWED_DISCREPANCY_PCT)) {
+    if (discrepancyPct > ALLOWED_DISCREPANCY_PCT) {
       throw new Error(
         `Derived rate is ${derivedRate.toString()}, more than ${ALLOWED_DISCREPANCY_PCT}% ` +
           `larger discrepancy than our rate of ${ourRate.toString()}`,
@@ -150,6 +133,9 @@ export class AppRegistryService implements OnModuleInit {
     data: ProposeMessage,
   ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> => {
     try {
+      if (data.from === this.nodeService.cfNode.publicIdentifier) {
+        logger.log(`Got our own event, not doing anything.`);
+      }
       await this.verifyAppProposal(data.data);
       return await this.nodeService.installApp(data.data.appInstanceId);
     } catch (e) {
