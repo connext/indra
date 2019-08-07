@@ -8,7 +8,7 @@ import {
 } from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { providers, utils, Wallet } from "ethers";
+import { providers, utils } from "ethers";
 
 import { NodeApiClient } from "./node";
 
@@ -52,7 +52,6 @@ export type InternalClientOptions = ClientOptions & {
   node: NodeApiClient;
   nodePublicIdentifier: string;
   ethProvider: providers.JsonRpcProvider;
-  wallet: Wallet; // signing wallet/information
 };
 
 // TODO: define properly!!
