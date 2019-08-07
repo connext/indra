@@ -44,7 +44,6 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
 import {
   freeBalanceAddressFromXpub,
-  logEthFreeBalance,
   publicIdentifierToAddress,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
@@ -274,15 +273,6 @@ export abstract class ConnextChannel {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     return await this.internal.getFreeBalance(assetId);
-  };
-
-  // FIXME: remove
-  public logEthFreeBalance = (
-    assetId: string,
-    freeBalance: NodeTypes.GetFreeBalanceStateResult,
-    log?: Logger,
-  ): void => {
-    logEthFreeBalance(assetId, freeBalance, log);
   };
 
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
