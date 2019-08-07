@@ -2,9 +2,9 @@
 set -e
 
 hostname="$1"
-network="${2:-kovan}"
+network="${2:-rinkeby}"
 user="ubuntu"
-key_name="node_mnemonic_$network" # name of docker secret to store private key in
+key_name="indra_mnemonic_$network" # name of docker secret to store mnemonic in
 pubkey="$HOME/.ssh/circleci.pub"
 prvkey="$HOME/.ssh/connext-aws"
 
