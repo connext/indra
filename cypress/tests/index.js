@@ -6,7 +6,7 @@ const depositToken = '5'
 const payTokens = '3.14'
 
 // hard-code this to the xpub for a daicard you have open in a separate browser
-const externalRecipient = 'xpub6DnQdFpgotppbt8JmxdoqWpCgSgoPTjcPH2PjY65ya2jAia17yyZXHhei2Lw2m4nqZW5qYdvKVb65rWTynhRDvjGd6U8Tmp6hxV6YYTVWaF'
+const externalRecipient = 'xpub6DYJf3DZDovXfvnrnLmypQuCtVT2nq8pGkcqtd98mDBH47Pr7Jk2DDbjx5gyEQuagwimkHNJimeZgZavJbHQLmcktD5PBmkW28fboHNhXbV'
 
 describe('Daicard', () => {
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('Daicard', () => {
     it.skip(`Should send a payment when a link payment is opened in another card`, () => {
       my.getMnemonic().then(recipientMnemonic => {
         my.burnCard() // also decollateralizes the channel
-        my.deposit(depositEth).then(ethDeposited => {
+        my.deposit(depositEth).then(tokensDeposited => {
           my.linkPay(payTokens).then(redeemLink => {
             my.restoreMnemonic(recipientMnemonic)
             cy.visit(redeemLink)
@@ -42,13 +42,13 @@ describe('Daicard', () => {
     })
 
     it(`Should display feedback if input is invalid`, () => {
-      my.deposit(depositEth).then(ethDeposited => {
+      my.deposit(depositEth).then(tokensDeposited => {
         my.goToSend()
         // No zero payments
         cy.get('input[type="number"]').clear().type('0')
         cy.contains('p', /greater than 0/i).should('exist')
         // No payments greater than the card's balance
-        cy.get('input[type="number"]').clear().type('1' + ethDeposited)
+        cy.get('input[type="number"]').clear().type('1' + tokensDeposited)
         cy.contains('p', /less than your balance/i).should('exist')
         // No invalid xpub addresses
         cy.get('input[type="string"]').clear().type('0xabc123')
@@ -57,7 +57,7 @@ describe('Daicard', () => {
     })
 
     it.skip(`Should send a payment to a card that has already been collateralized`, () => {
-      my.deposit(depositEth).then(ethDeposited => {
+      my.deposit(depositEth).then(tokensDeposited => {
         my.pay(externalRecipient, '0.01')
       })
     })
@@ -95,7 +95,7 @@ describe('Daicard', () => {
 
   describe('Withdraw', () => {
     it.skip(`Should withdraw to a valid address`, () => {
-      my.deposit(depositEth).then(ethDeposited => {
+      my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainBalance().then(balanceBefore => {
           my.cashout()
           cy.resolve(my.getOnchainBalance).should(balanceAfter => {
@@ -106,7 +106,7 @@ describe('Daicard', () => {
     })
 
     it(`Should not withdraw to an invalid address`, () => {
-      my.deposit(depositEth).then(ethDeposited => {
+      my.deposit(depositEth).then(tokensDeposited => {
         my.goToCashout()
         cy.get('input[type="text"]').clear().type('0xabc123')
         cy.contains('p', /invalid/i).should('exist')
