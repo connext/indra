@@ -1,42 +1,31 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra_v2"
-registry="connextproject"
-
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
 ####################
 # External Env Vars
 
-# Config
 INDRA_V2_DOMAINNAME="${INDRA_V2_DOMAINNAME:-localhost}"
 INDRA_V2_EMAIL="${INDRA_V2_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
-INDRA_V2_ETH_NETWORK="${INDRA_V2_ETH_NETWORK:-kovan}"
-INDRA_V2_MODE="${INDRA_V2_MODE:-staging}" # set to "live" to use versioned docker images
+INDRA_V2_ETH_PROVIDER="${INDRA_V2_ETH_PROVIDER}"
+INDRA_V2_MODE="${INDRA_V2_MODE:-staging}" # set to "prod" to use versioned docker images
 
-# Auth & API Keys
-INDRA_V2_NATS_CLUSTER_ID="${INDRA_V2_NATS_CLUSTER_ID:-abc123}"
-INDRA_V2_NATS_TOKEN="${INDRA_V2_NATS_TOKEN:-abc123}"
-INDRA_V2_ETH_RPC_KEY_RINKEBY="${INDRA_V2_ETH_RPC_KEY_RINKEBY:-abc123}"
-INDRA_V2_ETH_RPC_KEY_KOVAN="${INDRA_V2_ETH_RPC_KEY_KOVAN:-abc123}"
+####################
+# Internal Config
+
+ganache_chain_id="4447"
+log_level="3" # set to 5 for all logs or to 0 for none
+nats_port="4222"
+node_port="8080"
+number_of_services="5" # NOTE: Gotta update this manually when adding/removing services :(
+project="indra_v2"
 
 ####################
 # Helper Functions
 
-# Get images that we aren't building locally
-function pull_if_unavailable {
-  if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
-  then
-    # But actually don't pull images if we're running locally
-    if [[ "$INDRA_V2_DOMAINNAME" != "localhost" ]]
-    then docker pull $1
-    fi
-  fi
-}
-
-# Initialize random new secrets
+# Initialize new secrets (random if no value is given)
 function new_secret {
   secret="$2"
   if [[ -z "$secret" ]]
@@ -49,24 +38,29 @@ function new_secret {
   fi
 }
 
-####################
-# Internal Config
+# Get images that we aren't building locally
+function pull_if_unavailable {
+  if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
+  then
+    # But actually don't pull images if we're running locally
+    if [[ "$INDRA_V2_DOMAINNAME" != "localhost" ]]
+    then docker pull $1
+    fi
+  fi
+}
 
-log_level="3" # set to 5 for all logs or to 0 for none
-eth_mnemonic_name="node_mnemonic_$INDRA_V2_ETH_NETWORK"
-eth_mnemonic_file="/run/secrets/$eth_mnemonic_name"
-
-# Docker image settings
-node_port=8080
-nats_port=4222
+########################################
+## Database Conig
 
 if [[ "$INDRA_V2_MODE" == "test" ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
+  new_secret "$db_secret" "$project"
 else
   db_volume="database"
   db_secret="${project}_database"
+  new_secret $db_secret
 fi
 
 # database connection settings
@@ -76,68 +70,78 @@ postgres_password_file="/run/secrets/$db_secret"
 postgres_port="5432"
 postgres_user="$project"
 
-number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
+########################################
+## Ethereum Config
 
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+if [[ -z "$INDRA_V2_ETH_PROVIDER" ]]
+then echo "An env var called INDRA_V2_ETH_PROVIDER is required" && exit 1
+elif [[ "$INDRA_V2_ETH_PROVIDER" =~ .*://localhost:.* ]]
+then chainId="$ganache_chain_id"
+else chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_V2_ETH_PROVIDER | jq .result | tr -d '"'`"
+fi
 
-if [[ "$INDRA_V2_ETH_NETWORK" == "mainnet" ]]
+echo "eth provider: $INDRA_V2_ETH_PROVIDER w chainId: $chainId"
+
+if [[ "$chainId" == "4" ]]
+then eth_mnemonic_name="indra_mnemonic_rinkeby"
+elif [[ "$chainId" == "42" ]]
+then eth_mnemonic_name="indra_mnemonic_kovan"
+elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_V2_MODE" == "test" ]]
 then
-  eth_rpc_url="https://eth-mainnet.alchemyapi.io/jsonrpc/$INDRA_V2_ETH_RPC_KEY_MAINNET"
-elif [[ "$INDRA_V2_ETH_NETWORK" == "rinkeby" ]]
-then
-  eth_rpc_url="https://eth-rinkeby.alchemyapi.io/jsonrpc/$INDRA_V2_ETH_RPC_KEY_RINKEBY"
-elif [[ "$INDRA_V2_ETH_NETWORK" == "kovan" ]]
-then 
-  eth_rpc_url="https://eth-kovan.alchemyapi.io/jsonrpc/$INDRA_V2_ETH_RPC_KEY_KOVAN"
-elif [[ "$INDRA_V2_ETH_NETWORK" == "ganache" && "$INDRA_V2_MODE" == "test" ]]
-then
-  eth_rpc_url="http://ethprovider:8545"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
-  number_of_services=$(( $number_of_services + 1 ))
+  eth_mnemonic_name="indra_mnemonic_ganache"
+  new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
+  ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
+  pull_if_unavailable "$ethprovider_image"
+  number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
     image: $ethprovider_image
-    command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=4447\"]
+    command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=$ganache_chain_id\"]
     ports:
       - 8545:8545
     volumes:
       - $eth_volume/data
   "
-  make deployed-contracts
-  new_secret "$eth_mnemonic_name" "$eth_mnemonic"
-  pull_if_unavailable "$ethprovider_image"
-else echo "Network $INDRA_ETH_NETWORK not supported for $INDRA_V2_MODE-mode deployments" && exit 1
+  INDRA_V2_ETH_PROVIDER="http://ethprovider:8545"
+else echo "Eth network \"$chainId\" is not supported for $INDRA_V2_MODE-mode deployments" && exit 1
 fi
 
-# Figure out which images we should use
+eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+
+########################################
+## Docker Image Conig
+
+registry="docker.io/connextproject"
+
+database_image="postgres:9-alpine"
+nats_image="nats:2.0.0-linux"
+pull_if_unavailable $database_image
+pull_if_unavailable $nats_image
+
 if [[ "$INDRA_V2_DOMAINNAME" != "localhost" ]]
 then
-  if [[ "$INDRA_V2_MODE" == "live" ]]
+  if [[ "$INDRA_V2_MODE" == "prod" ]]
   then version="`cat package.json | jq .version | tr -d '"'`"
-  else version="latest" # staging mode
+  elif [[ "$INDRA_V2_MODE" == "staging" ]]
+  then version="latest"
+  else echo "Unknown mode ($INDRA_V2_MODE) for domain: $INDRA_V2_DOMAINNAME. Aborting" && exit 1
   fi
-  database_image="postgres:9-alpine"
-  nats_image="nats:2.0.0-linux"
   node_image="$registry/indra_v2_node:$version"
   proxy_image="$registry/indra_v2_proxy:$version"
   relay_image="$registry/indra_v2_relay:$version"
-else # local mode, don't use images from registry
-  database_image="postgres:9-alpine"
-  nats_image="nats:2.0.0-linux"
+  pull_if_unavailable $node_image
+  pull_if_unavailable $proxy_image
+  pull_if_unavailable $relay_image
+else # local/testing mode, don't use images from registry
   node_image="indra_v2_node:latest"
   proxy_image="indra_v2_proxy:latest"
   relay_image="indra_v2_relay:latest"
 fi
 
-####################
-# Deploy according to above configuration
-
-pull_if_unavailable $database_image
-pull_if_unavailable $nats_image
-pull_if_unavailable $node_image
-new_secret $db_secret
+########################################
+## Deploy according to configuration
 
 echo "Deploying node image: $node_image to $INDRA_V2_DOMAINNAME"
 
@@ -152,8 +156,8 @@ secrets:
     external: true
 
 volumes:
-  $db_volume:
   certs:
+  $db_volume:
   $eth_volume
 
 services:
@@ -164,7 +168,7 @@ services:
     environment:
       DOMAINNAME: $INDRA_V2_DOMAINNAME
       EMAIL: $INDRA_V2_EMAIL
-      ETH_RPC_URL: $eth_rpc_url
+      ETH_RPC_URL: $INDRA_V2_ETH_PROVIDER
       MESSAGING_URL: http://relay:4223
       MODE: prod
     ports:
@@ -182,12 +186,12 @@ services:
     entrypoint: bash ops/entry.sh
     environment:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
-      INDRA_ETH_MNEMONIC_FILE: $eth_mnemonic_file
-      INDRA_ETH_RPC_URL: $eth_rpc_url
+      INDRA_ETH_MNEMONIC_FILE: /run/secrets/$eth_mnemonic_name
+      INDRA_ETH_RPC_URL: $INDRA_V2_ETH_PROVIDER
       INDRA_LOG_LEVEL: $log_level
-      INDRA_NATS_CLUSTER_ID: $INDRA_V2_NATS_CLUSTER_ID
+      INDRA_NATS_CLUSTER_ID: abc123
       INDRA_NATS_SERVERS: nats://nats:$nats_port
-      INDRA_NATS_TOKEN: $INDRA_V2_NATS_TOKEN
+      INDRA_NATS_TOKEN: abc123
       INDRA_PG_DATABASE: $postgres_db
       INDRA_PG_HOST: $postgres_host
       INDRA_PG_PASSWORD_FILE: $postgres_password_file
@@ -204,8 +208,6 @@ services:
     deploy:
       mode: global
     environment:
-      ETH_NETWORK: $INDRA_V2_ETH_NETWORK
-      MODE: dev
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $project
