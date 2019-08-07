@@ -141,8 +141,14 @@ class App extends React.Component {
       tokenAddress: token.address,
     });
 
-    console.log(`Requesting collateral for token ${token}`)
-    await channel.requestCollateral(token.address);
+    const freeTokenBalance = await channel.getFreeBalance(token.address);
+    const hubFreeBalanceAddress = Object.keys(freeTokenBalance).filter(addr => addr.toLowerCase() !== channel.freeBalanceAddress)[0]
+    if (freeTokenBalance[hubFreeBalanceAddress].eq(Zero)) {
+      console.log(`Requesting collateral for token ${token.address}`)
+      await channel.requestCollateral(token.address);
+    } else {
+      console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`)
+    }
 
     this.setState({
       address: cfWallet.address,
