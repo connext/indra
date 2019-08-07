@@ -45,7 +45,7 @@ jobs:
               git fetch
               git reset --hard origin/$CIRCLE_BRANCH
               export INDRA_V2_MODE="staging"
-              export INDRA_V2_ETH_PROVIDER=$INDRA_V2_ETH_PROVIDER_RINKEBY
+              export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
               export INDRA_V2_DOMAINNAME="$STAGING_URL"
               make restart-prod
               docker container prune -f
