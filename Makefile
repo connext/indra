@@ -84,7 +84,7 @@ push-latest: prod
 push-prod: prod
 	bash ops/push-images.sh $(version) node proxy relay
 
-deployed-contracts: node-modules
+deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
