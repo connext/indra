@@ -29,7 +29,7 @@ import {
 } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, HDNode, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
@@ -63,9 +63,8 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
 
-  // create a new wallet
+  // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-  const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
   const network = await ethProvider.getNetwork();
 
   // special case for ganache
@@ -162,7 +161,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
-    wallet,
     ...opts, // use any provided opts by default
   });
 }
@@ -315,7 +313,6 @@ export class ConnextInternal extends ConnextChannel {
   public opts: InternalClientOptions;
   public cfModule: Node;
   public publicIdentifier: string;
-  public wallet: Wallet;
   public ethProvider: providers.JsonRpcProvider;
   public node: NodeApiClient;
   public messaging: IMessagingService;
@@ -343,7 +340,6 @@ export class ConnextInternal extends ConnextChannel {
     this.opts = opts;
 
     this.ethProvider = opts.ethProvider;
-    this.wallet = opts.wallet;
     this.node = opts.node;
     this.messaging = opts.messaging;
 
@@ -768,7 +764,6 @@ export class ConnextInternal extends ConnextChannel {
     return rejectResponse.result.result as NodeTypes.RejectInstallResult;
   };
 
-  // TODO: erc20 support?
   public cfWithdraw = async (
     assetId: string,
     amount: BigNumber,
