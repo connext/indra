@@ -17,11 +17,19 @@ trap cleanup EXIT
 ########################################
 ## Run Tests
 
-echo;echo "Starting recipient payment bot";echo;sleep 1
+echo;echo "Requesting eth collateral for recipient bot";echo;sleep 1
 
-bash ops/payment-bot.sh -i 1 -q &
+bash ops/payment-bot.sh -i 1 -q
 
-sleep 10;echo;echo "Depositing eth into sender bot";echo;sleep 1
+echo;echo "Requesting token collateral for recipient bot";echo;sleep 1
+
+bash ops/payment-bot.sh -i 1 -q -a $tokenAddress
+
+echo;echo "Starting recipient bot in background, waiting for payments";echo;sleep 1
+
+bash ops/payment-bot.sh -i 1 &
+
+sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -d 0.1
 
@@ -33,10 +41,8 @@ sleep 1;echo;echo "Sending eth to recipient bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id
 
-sleep 3;echo;echo "Tests finished successfully";echo
-
-exit # doing more than one transfer throws an error
-
 sleep 1;echo;echo "Sending tokens to recipient bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress
+
+sleep 3;echo;echo "Tests finished successfully";echo

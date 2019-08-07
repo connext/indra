@@ -12,21 +12,15 @@ import { registerClientListeners } from "./bot";
 import { config } from "./config";
 import { store } from "./store";
 
-process.on(
-  "warning",
-  (e: any): any => {
-    console.warn(e);
-    process.exit(1);
-  },
-);
+process.on("warning", (e: any): any => {
+  console.warn(e);
+  process.exit(1);
+});
 
-process.on(
-  "unhandledRejection",
-  (e: any): any => {
-    console.error(e);
-    process.exit(1);
-  },
-);
+process.on("unhandledRejection", (e: any): any => {
+  console.error(e);
+  process.exit(1);
+});
 
 let client: connext.ConnextInternal;
 
@@ -90,6 +84,7 @@ async function run(): Promise<void> {
     console.log(`Requesting collateral...`);
     await client.requestCollateral(config.assetId || AddressZero);
     console.log(`Successfully received collateral!`);
+    process.exit(0);
   }
 
   if (config.transfer) {
@@ -130,6 +125,7 @@ async function run(): Promise<void> {
     console.log(`Attempting to create link with ${config.linked} of ${linkedParams.assetId}...`);
     const res = await client.conditionalTransfer(linkedParams);
     console.log(`Successfully created! Linked response: ${JSON.stringify(res, null, 2)}`);
+    process.exit(0);
   }
 
   if (config.paymentId) {
@@ -151,6 +147,7 @@ async function run(): Promise<void> {
     );
     const res = await client.resolveCondition(resolveParams);
     console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, null, 2)}`);
+    process.exit(0);
   }
 
   if (config.withdraw) {
@@ -177,6 +174,7 @@ async function run(): Promise<void> {
     await client.uninstallApp(config.uninstall);
     console.log(`Successfully uninstalled ${config.uninstall}`);
     console.log(`Installed apps: ${await client.getAppInstances()}`);
+    process.exit(0);
   }
 
   if (config.uninstallVirtual) {
@@ -184,6 +182,7 @@ async function run(): Promise<void> {
     await client.uninstallVirtualApp(config.uninstallVirtual);
     console.log(`Successfully uninstalled ${config.uninstallVirtual}`);
     console.log(`Installed apps: ${await client.getAppInstances()}`);
+    process.exit(0);
   }
 
   client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
