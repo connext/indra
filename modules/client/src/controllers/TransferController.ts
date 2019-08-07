@@ -13,7 +13,6 @@ import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
@@ -31,7 +30,6 @@ export class TransferController extends AbstractController {
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
-    this.log.info(`********** assetId: ${assetId}`);
     const invalid = await this.validate(recipient, amount, assetId);
     if (invalid) {
       throw new Error(invalid.toString());
@@ -55,7 +53,6 @@ export class TransferController extends AbstractController {
     const appState = await this.connext.getAppState(appId);
     (appState.state as any).transfers[0].amount = (appState.state as any).transfers[0].amount.toString();
     (appState.state as any).transfers[1].amount = (appState.state as any).transfers[1].amount.toString();
-    this.log.info(`******** app state installed: ${JSON.stringify(appState, null, 2)}`);
 
     // update state
     await this.connext.takeAction(this.appId, {
@@ -224,16 +221,12 @@ export class TransferController extends AbstractController {
     const appInfo = await this.connext.getAppState(appId);
     (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
     (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
-    this.log.info(`******** app state finalized: ${JSON.stringify(appInfo, null, 2)}`);
 
     await this.connext.uninstallVirtualApp(appId);
     // TODO: cf does not emit uninstall virtual event on the node
     // that has called this function but ALSO does not immediately
     // uninstall the apps. This will be a problem when trying to
     // display balances...
-    const openApps = await this.connext.getAppInstances();
-    this.log.info(`Open apps: ${openApps.length}`);
-    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.identityHash))}`);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
