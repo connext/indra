@@ -3,13 +3,12 @@ import { GetChannelResponse, GetConfigResponse, RequestCollateralResponse } from
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { RpcException } from "@nestjs/microservices";
+import { bigNumberify } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId, NodeProviderId } from "../constants";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { AbstractMessagingProvider } from "../util";
-import { isXpub } from "../validator";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
@@ -81,8 +80,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return await this.channelService.addPaymentProfileToChannel(
       pubId,
       data.tokenAddress,
-      data.minimumMaintainedCollateral,
-      data.amountToCollateralize,
+      bigNumberify(data.minimumMaintainedCollateral),
+      bigNumberify(data.amountToCollateralize),
     );
   }
 

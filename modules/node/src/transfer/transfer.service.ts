@@ -267,8 +267,10 @@ export class TransferService {
         };
         let retries = 0;
         while (!(await getAppIds()).includes(this.appId) && retries <= 30) {
-          logger.log(`did not find app id ${this.appId} in the open apps... retrying...`);
-          await delay(500);
+          logger.log(
+            `did not find app id ${this.appId} in the open apps... retry number ${retries}...`,
+          );
+          await delay(100);
           retries = retries + 1;
         }
 

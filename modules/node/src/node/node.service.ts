@@ -146,14 +146,16 @@ export class NodeService implements OnModuleInit {
   async createChannel(
     counterpartyPublicIdentifier: string,
   ): Promise<NodeTypes.CreateChannelResult> {
-    const createRes = await this.cfNode.rpcRouter.dispatch({
+    const params = {
       id: Date.now(),
       methodName: NodeTypes.RpcMethodName.CREATE_CHANNEL,
       parameters: {
         owners: [this.cfNode.publicIdentifier, counterpartyPublicIdentifier],
       } as NodeTypes.CreateChannelParams,
-    });
-    logger.log(`createChannel called with result ${JSON.stringify(createRes.result.result)}`);
+    };
+    logger.log(`Calling createChannel with params: ${JSON.stringify(params, null, 2)}`);
+    const createRes = await this.cfNode.rpcRouter.dispatch(params);
+    logger.log(`createChannel returned: ${JSON.stringify(createRes.result.result)}`);
     return createRes.result.result as NodeTypes.CreateChannelResult;
   }
 

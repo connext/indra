@@ -1,15 +1,15 @@
 import { Module } from "@nestjs/common";
 
 import { ConfigModule } from "../config/config.module";
-import { ConfigService } from "../config/config.service";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { swapRateProviderFactory } from "./swapRate.provider";
+import { SwapRateService } from "./swapRate.service";
 
 @Module({
   controllers: [],
-  exports: [swapRateProviderFactory],
+  exports: [swapRateProviderFactory, SwapRateService],
   imports: [MessagingModule, ConfigModule],
-  providers: [swapRateProviderFactory],
+  providers: [swapRateProviderFactory, SwapRateService],
 })
 export class SwapRateModule {}

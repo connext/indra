@@ -9,7 +9,7 @@ SHELL=/bin/bash
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 registry=docker.io/$(organization)
-version=$(shell cat package.json | grep '"version":' | egrep -o "[.0-9]+")
+version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -81,7 +81,10 @@ reset: stop
 push-latest: prod
 	bash ops/push-images.sh latest node proxy relay
 
-deployed-contracts: node-modules
+push-prod: prod
+	bash ops/push-images.sh $(version) node proxy relay
+
+deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
@@ -91,8 +94,8 @@ deployed-contracts: node-modules
 test: test-node
 watch: watch-node
 
-start-e2e: prod
-	 INDRA_V2_ETH_NETWORK=ganache INDRA_V2_MODE=test bash ops/start-prod.sh
+start-e2e: prod deployed-contracts
+	INDRA_V2_ETH_PROVIDER=http://localhost:8545 INDRA_V2_MODE=test bash ops/start-prod.sh
 
 test-e2e-ui: start-e2e
 	./node_modules/.bin/cypress install > /dev/null

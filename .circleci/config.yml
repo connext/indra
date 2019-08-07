@@ -26,21 +26,46 @@ jobs:
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - run: make push-latest
 
+  push-prod-images:
+    machine: true
+    steps:
+      - checkout
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push-prod
+
   deploy-staging:
     machine: true
     steps:
       - run:
           command: |
-            ssh ubuntu@$PRODUCTION_URL "bash -s" <<EOF
+            ssh ubuntu@$STAGING_URL "bash -s" <<EOF
               git clone https://github.com/ConnextProject/indra-v2.git || true
               cd indra-v2
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard origin/$CIRCLE_BRANCH
               export INDRA_V2_MODE="staging"
-              export INDRA_V2_ETH_NETWORK="kovan"
-              export INDRA_V2_ETH_RPC_KEY_KOVAN=$INDRA_V2_ETH_RPC_KEY_KOVAN
-              export INDRA_V2_DOMAINNAME="$PRODUCTION_URL"
+              export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_V2_DOMAINNAME="$STAGING_URL"
+              make restart-prod
+              docker container prune -f
+              docker image ls -q | xargs docker image rm || true
+            EOF
+
+  deploy-prod:
+    machine: true
+    steps:
+      - run:
+          command: |
+            ssh ubuntu@$RINKEBY_URL "bash -s" <<EOF
+              git clone https://github.com/ConnextProject/indra-v2.git || true
+              cd indra-v2
+              git checkout --force $CIRCLE_BRANCH
+              git fetch
+              git reset --hard origin/$CIRCLE_BRANCH
+              export INDRA_V2_MODE="staging"
+              export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_V2_DOMAINNAME="$RINKEBY_URL"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -57,6 +82,15 @@ workflows:
       - push-latest-images:
           filters:
             branches:
+              only: staging
+          requires:
+            - test-node
+            - test-e2e-ui
+            - test-e2e-bot
+
+      - push-prod-images:
+          filters:
+            branches:
               only: master
           requires:
             - test-node
@@ -66,3 +100,7 @@ workflows:
       - deploy-staging:
           requires:
             - push-latest-images
+
+      - deploy-prod:
+          requires:
+            - push-prod-images
