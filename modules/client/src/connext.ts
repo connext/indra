@@ -2,6 +2,7 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   AppActionBigNumber,
   AppRegistry,
+  AppState,
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -263,7 +264,14 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  // FIXME: add in rest of methods!
+
+  public cfDeposit = async (
+    amount: BigNumber,
+    assetId: string,
+    notifyCounterparty: boolean = false,
+  ): Promise<NodeTypes.DepositResult> => {
+    return await this.internal.cfDeposit(amount, assetId, notifyCounterparty);
+  };
 
   public getFreeBalance = async (
     assetId: string = AddressZero,
@@ -285,11 +293,83 @@ export abstract class ConnextChannel {
     return await this.internal.getAppState(appInstanceId);
   };
 
+  public getProposedAppInstances = async (): Promise<
+    NodeTypes.GetProposedAppInstancesResult | undefined
+  > => {
+    return await this.internal.getProposedAppInstances();
+  };
+
+  public getProposedAppInstance = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
+    return await this.internal.getProposedAppInstance(appInstanceId);
+  };
+
+  public proposeInstallApp = async (
+    params: NodeTypes.ProposeInstallParams,
+  ): Promise<NodeTypes.ProposeInstallResult> => {
+    return await this.internal.proposeInstallApp(params);
+  };
+
+  public proposeInstallVirtualApp = async (
+    params: NodeTypes.ProposeInstallVirtualParams,
+  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
+    return await this.internal.proposeInstallVirtualApp(params);
+  };
+
+  public installVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.InstallVirtualResult> => {
+    return await this.internal.installVirtualApp(appInstanceId);
+  };
+
+  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
+    return await this.internal.installApp(appInstanceId);
+  };
+
+  public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+    return await this.internal.rejectInstallApp(appInstanceId);
+  };
+
+  public rejectInstallVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallVirtualResult> => {
+    return await this.internal.rejectInstallVirtualApp(appInstanceId);
+  };
+
+  public takeAction = async (
+    appInstanceId: string,
+    action: AppActionBigNumber,
+  ): Promise<NodeTypes.TakeActionResult> => {
+    return await this.internal.takeAction(appInstanceId, action);
+  };
+
+  public updateState = async (
+    appInstanceId: string,
+    newState: AppState | any, // cast to any bc no supported apps use
+    // the update state method
+  ): Promise<NodeTypes.UpdateStateResult> => {
+    return await this.updateState(appInstanceId, newState);
+  };
+
+  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+    return await this.uninstallApp(appInstanceId);
+  };
+
   public uninstallVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.UninstallVirtualResult> => {
     return await this.internal.uninstallVirtualApp(appInstanceId);
   };
+
+  public cfWithdraw = async (
+    assetId: string,
+    amount: BigNumber,
+    recipient: string,
+  ): Promise<NodeTypes.WithdrawResult> => {
+    return await this.internal.cfWithdraw(assetId, amount, recipient);
+  };
+
 }
 
 /**
@@ -404,9 +484,6 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // CF MODULE METHODS
 
-  // FIXME: add normal installation methods
-  // and other wrappers for all cf node methods
-
   public cfDeposit = async (
     amount: BigNumber,
     assetId: string,
@@ -489,7 +566,7 @@ export class ConnextInternal extends ConnextChannel {
     }
   };
 
-  public getProposedAppInstanceDetails = async (): Promise<
+  public getProposedAppInstances = async (): Promise<
     NodeTypes.GetProposedAppInstancesResult | undefined
   > => {
     const proposedRes = await this.cfModule.rpcRouter.dispatch({
@@ -498,6 +575,19 @@ export class ConnextInternal extends ConnextChannel {
       parameters: {} as NodeTypes.GetProposedAppInstancesParams,
     });
     return proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
+  };
+
+  public getProposedAppInstance = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
+    const proposedRes = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.GetProposedAppInstancesParams,
+    });
+    return proposedRes.result.result as NodeTypes.GetProposedAppInstanceResult;
   };
 
   public getAppInstanceDetails = async (
@@ -565,6 +655,34 @@ export class ConnextInternal extends ConnextChannel {
     });
 
     return actionResponse.result.result as NodeTypes.TakeActionResult;
+  };
+
+  public updateState = async (
+    appInstanceId: string,
+    newState: AppState | any, // cast to any bc no supported apps use
+    // the update state method
+  ): Promise<NodeTypes.UpdateStateResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    // check state is not finalized
+    const state: NodeTypes.GetStateResult = await this.getAppState(appInstanceId);
+    // FIXME: casting?
+    if ((state.state as any).finalized) {
+      throw new Error("Cannot take action on an app with a finalized state.");
+    }
+    const updateResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.UPDATE_STATE,
+      parameters: {
+        appInstanceId,
+        newState,
+      } as NodeTypes.UpdateStateParams,
+    });
+    return updateResponse.result.result as NodeTypes.UpdateStateResult;
   };
 
   // TODO: add validation after arjuns refactor merged
