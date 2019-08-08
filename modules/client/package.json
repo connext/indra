@@ -11,9 +11,9 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/messaging": "0.0.7",
-    "@connext/types": "0.0.8",
-    "@counterfactual/node": "0.2.40",
+    "@connext/messaging": "0.0.9",
+    "@connext/types": "0.0.9",
+    "@counterfactual/node": "0.2.41",
     "core-js": "3.1.4",
     "ethers": "4.0.33",
     "human-standard-token-abi": "2.0.0",
