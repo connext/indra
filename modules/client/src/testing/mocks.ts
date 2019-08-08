@@ -122,6 +122,10 @@ export class MockNodeClientApi implements INodeApiClient {
     return MockNodeClientApi.returnValues.createChannel;
   }
 
+  public async recipientOnline(recipientPublicIdentifier: string): Promise<boolean> {
+    return true;
+  }
+
   public async subscribeToSwapRates(
     from: string,
     to: string,
