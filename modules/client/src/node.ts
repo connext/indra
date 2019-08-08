@@ -33,6 +33,7 @@ export interface INodeApiClient {
     amount: string,
     assetId: string,
   ): Promise<void>;
+  recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
 }
@@ -150,6 +151,18 @@ export class NodeApiClient implements INodeApiClient {
       return Promise.reject(e);
     }
   }
+
+  // NOTE: maybe move?
+  public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
+    try {
+      return await this.send(`online.${recipientPublicIdentifier}`);
+    } catch (e) {
+      if (e.message.startsWith("Request timed out")) {
+        return false;
+      }
+      throw e;
+    }
+  };
 
   public setUserPublicIdentifier(publicIdentifier: string): void {
     this.userPublicIdentifier = publicIdentifier;
