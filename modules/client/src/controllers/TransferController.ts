@@ -31,10 +31,15 @@ export class TransferController extends AbstractController {
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
-    this.log.info(`********** assetId: ${assetId}`);
     const invalid = await this.validate(recipient, amount, assetId);
     if (invalid) {
       throw new Error(invalid.toString());
+    }
+
+    // make sure recipient is online
+    const res = await this.node.recipientOnline(`online.${recipient}`);
+    if (!res) {
+      throw new Error(`Recipient is offline.`);
     }
 
     const freeBal = await this.connext.getFreeBalance(assetId);
@@ -127,10 +132,11 @@ export class TransferController extends AbstractController {
   // TODO: fix types of data
   private rejectInstallTransfer = (
     rej: (reason?: any) => void,
-    msg: RejectInstallVirtualMessage,
+    msg: RejectInstallVirtualMessage, // fix typing, not nested in `.data` obj
   ): any => {
+    console.log("************* msg", msg);
     // check app id
-    if (this.appId !== msg.data.appInstanceId) {
+    if (this.appId !== (msg as any).appInstanceId) {
       return;
     }
 
@@ -154,8 +160,7 @@ export class TransferController extends AbstractController {
       transfers: [
         {
           amount,
-          to: getAddress(this.wallet.address),
-          // TODO: replace? fromExtendedKey(this.publicIdentifier).derivePath("0").address
+          to: getAddress(fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address),
         },
         {
           amount: Zero,
