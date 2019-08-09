@@ -7,18 +7,15 @@ import {
 } from "@connext/types";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
+import { calculateExchange, delay, freeBalanceAddressFromXpub } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
-export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, ""));
-};
 export class SwapController extends AbstractController {
   private appId: string;
   private timeout: NodeJS.Timeout;
