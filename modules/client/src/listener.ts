@@ -60,9 +60,6 @@ export class ConnextListener extends EventEmitter {
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
-      if (!appInfo.responderDeposit.isZero()) {
-        // await this.connext.requestCollateral();
-      }
       return;
     },
     UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
@@ -192,30 +189,6 @@ export class ConnextListener extends EventEmitter {
   private matchAppInstance = async (
     data: ProposeVirtualMessage | ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    // TODO: @layne why were we getting proposed apps instead of using the proposal which has
-    // all the details we need.
-
-    // const proposedApps = await this.connext.getProposedAppInstanceDetails();
-    // if (!proposedApps) {
-    //   this.log.error(`Could not find any proposed apps after catching a 'PROPOSE_*' event...`);
-    //   return undefined;
-    // }
-    // const appInfos = proposedApps.appInstances.filter((app: AppInstanceInfo) => {
-    //   return app.identityHash === data.data.appInstanceId;
-    // });
-    // if (appInfos.length !== 1) {
-    //   this.log.error(
-    //     `Proposed application could not be found, or multiple instances found. Caught id: ${
-    //       data.data.appInstanceId
-    //     }. Proposed apps: ${JSON.stringify(proposedApps.appInstances, null, 2)}`,
-    //   );
-    //   return undefined;
-    // }
-    // const appInfo = appInfos[0];
-    // const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
-    //   return app.appDefinitionAddress === appInfo.appDefinition;
-    // });
-
     const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
       return app.appDefinitionAddress === data.data.params.appDefinition;
     });
@@ -273,8 +246,15 @@ export class ConnextListener extends EventEmitter {
     // do not ever automatically install swap app since theres no
     // way to validate the exchange in app against the rate input
     // to controller
+    // this means the hub can only install apps, and cannot propose a swap
+    // and there cant easily be an automatic install swap app between users
     if (matchedApp.name === SupportedApplications.SimpleTwoPartySwapApp) {
       return;
+    }
+
+    if (matchedApp.name === SupportedApplications.UnidirectionalTransferApp) {
+      // request collateral in token of the app
+      await this.connext.requestCollateral(appInstance.initiatorDepositTokenAddress);
     }
     this.log.info(`Proposal for app install successful, attempting install now...`);
     let res: NodeTypes.InstallResult;

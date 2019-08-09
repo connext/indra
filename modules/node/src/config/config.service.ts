@@ -63,14 +63,6 @@ export class ConfigService {
 
   async getContractAddresses(): Promise<ContractAddresses> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
-    const processCfAddressBook = (addressBook: any): any => {
-      const ethAddresses = {} as any;
-      for (const contract of addressBook) {
-        ethAddresses[contract.contractName] = contract.address.toLowerCase();
-      }
-      if (ethAddresses.Migrations) delete ethAddresses.Migrations;
-      return ethAddresses;
-    };
     const ethAddresses = {} as any;
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {

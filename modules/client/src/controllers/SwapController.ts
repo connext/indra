@@ -52,6 +52,7 @@ export class SwapController extends AbstractController {
 
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
+    // FIXME: remove!
     while ((await this.connext.getAppInstances()).length <= preInstallApps) {
       this.log.info(
         `still could not pick up any newly installed apps after ` +
@@ -228,9 +229,6 @@ export class SwapController extends AbstractController {
     // that has called this function but ALSO does not immediately
     // uninstall the apps. This will be a problem when trying to
     // display balances...
-    const openApps = await this.connext.getAppInstances();
-    this.log.info(`Open apps: ${openApps.length}`);
-    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.identityHash))}`);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed

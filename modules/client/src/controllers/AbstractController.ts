@@ -1,5 +1,5 @@
 import { Node } from "@counterfactual/node";
-import { providers, Wallet } from "ethers";
+import { providers } from "ethers";
 
 import { ConnextInternal } from "../connext";
 import { Logger } from "../lib/logger";
@@ -14,7 +14,6 @@ export abstract class AbstractController {
   public cfModule: Node;
   public listener: ConnextListener;
   public ethProvider: providers.JsonRpcProvider;
-  public wallet: Wallet;
 
   public constructor(name: string, connext: ConnextInternal) {
     this.connext = connext;
@@ -24,6 +23,5 @@ export abstract class AbstractController {
     this.listener = connext.listener;
     this.log = new Logger(name, connext.opts.logLevel);
     this.ethProvider = connext.ethProvider;
-    this.wallet = connext.wallet;
   }
 }
