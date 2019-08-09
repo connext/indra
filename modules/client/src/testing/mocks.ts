@@ -10,7 +10,6 @@ import {
 } from "@connext/types";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { providers } from "ethers";
-import { BigNumber } from "ethers/utils";
 
 import { Logger } from "../lib/logger";
 import { INodeApiClient } from "../node";
