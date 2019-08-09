@@ -1,14 +1,16 @@
 import { KnownNodeAppNames } from "@connext/types";
-import { ProposeMessage } from "@counterfactual/node";
+import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, parseEther } from "ethers/utils";
 
+import { ChannelRepository } from "../channel/channel.repository";
+import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { CLogger } from "../util";
+import { CLogger, freeBalanceAddressFromXpub } from "../util";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -31,6 +33,8 @@ export class AppRegistryService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly swapRateService: SwapRateService,
     private readonly appRegistryRepository: AppRegistryRepository,
+    private readonly channelRepository: ChannelRepository,
+    private readonly channelService: ChannelService,
   ) {}
 
   private async getValidSwaps(): Promise<AllowedSwaps> {
@@ -52,6 +56,38 @@ export class AppRegistryService implements OnModuleInit {
       proposal.abiEncodings.actionEncoding === registry.actionEncoding &&
       proposal.abiEncodings.stateEncoding === registry.stateEncoding
     );
+  }
+
+  private async validateTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
+    logger.log(`params: ${JSON.stringify(params)}`);
+    // check if there is sufficient collateral in the channel
+    const recipientXpub = params.proposedToIdentifier;
+    const recipientChan = await this.channelRepository.findByUserPublicIdentifier(recipientXpub);
+    if (!recipientChan) {
+      throw new Error(`No open channel found with recipient ${recipientXpub}`);
+    }
+
+    const recipientFreeBal = await this.nodeService.getFreeBalance(
+      recipientXpub,
+      recipientChan.multisigAddress,
+      params.initiatorDepositTokenAddress,
+    );
+
+    const collateralAvailable =
+      recipientFreeBal[freeBalanceAddressFromXpub(recipientChan.nodePublicIdentifier)];
+
+    if (collateralAvailable.lt(params.initiatorDeposit)) {
+      // TODO: best way to handle case where user is sending payment
+      // *above* amounts specified in the payment profile
+      await this.channelService.requestCollateral(
+        params.proposedToIdentifier,
+        params.initiatorDepositTokenAddress,
+      );
+      throw new Error(
+        `Insufficient collateral detected in responders channel, ` +
+          `retry after channel has been collateralized.`,
+      );
+    }
   }
 
   private async validateSwap(params: NodeTypes.ProposeInstallParams): Promise<void> {
@@ -106,10 +142,13 @@ export class AppRegistryService implements OnModuleInit {
     }
   }
 
-  private async verifyAppProposal(proposedAppParams: {
-    params: NodeTypes.ProposeInstallParams;
-    appInstanceId: string;
-  }): Promise<void> {
+  private async verifyAppProposal(
+    proposedAppParams: {
+      params: NodeTypes.ProposeInstallParams;
+      appInstanceId: string;
+    },
+    isVirtual: boolean = false,
+  ): Promise<void> {
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
       proposedAppParams.params.appDefinition,
     );
@@ -121,7 +160,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    if (!registryAppInfo.allowNodeInstall) {
+    if (!isVirtual && !registryAppInfo.allowNodeInstall) {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
@@ -140,11 +179,27 @@ export class AppRegistryService implements OnModuleInit {
       case KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER:
         await this.validateLinkedTransfer(proposedAppParams.params);
         break;
+      case KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER:
+        await this.validateTransfer(proposedAppParams.params);
+        break;
       default:
         break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
   }
+
+  private rejectVirtual = async (
+    data: ProposeVirtualMessage,
+  ): Promise<void | NodeTypes.RejectInstallResult> => {
+    try {
+      await this.verifyAppProposal(data.data, true);
+    } catch (e) {
+      logger.error(`Caught error during proposed app validation, rejecting virtual install`);
+      // TODO: why doesn't logger.error log this?
+      console.error(e);
+      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
+    }
+  };
 
   private installOrReject = async (
     data: ProposeMessage,
@@ -164,6 +219,11 @@ export class AppRegistryService implements OnModuleInit {
     this.nodeService.registerCfNodeListener(
       NodeTypes.EventName.PROPOSE_INSTALL,
       this.installOrReject,
+      logger.cxt,
+    );
+    this.nodeService.registerCfNodeListener(
+      NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
+      this.rejectVirtual,
       logger.cxt,
     );
   }
