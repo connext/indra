@@ -131,10 +131,11 @@ export class AppRegistryService implements OnModuleInit {
 
   private installOrReject = async (
     data: ProposeMessage,
-  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> => {
+  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult | undefined> => {
     try {
       if (data.from === this.nodeService.cfNode.publicIdentifier) {
         logger.log(`Got our own event, not doing anything.`);
+        return undefined;
       }
       await this.verifyAppProposal(data.data);
       return await this.nodeService.installApp(data.data.appInstanceId);
