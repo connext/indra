@@ -296,18 +296,19 @@ export class ConnextListener extends EventEmitter {
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
-    // const subject = `online.${this.connext.publicIdentifier}`;
-    // await this.connext.messaging.subscribe(subject, async (msg: any) => {
-    //   if (!msg.reply) {
-    //     this.log.info(`No reply found for msg: ${msg}`);
-    //     return;
-    //   }
+    const subject = `online.${this.connext.publicIdentifier}`;
+    await this.connext.messaging.subscribe(subject, async (msg: any) => {
+      if (!msg.reply) {
+        this.log.info(`No reply found for msg: ${msg}`);
+        return;
+      }
 
-    //   const response = true;
-    //   this.connext.messaging.publish(msg.reply, {
-    //     err: null,
-    //     response,
-    //   });
-    // });
+      const response = true;
+      this.connext.messaging.publish(msg.reply, {
+        err: null,
+        response,
+      });
+    });
+    this.log.info(`Connected message pattern "${subject}"`);
   };
 }
