@@ -758,23 +758,6 @@ export class ConnextInternal extends ConnextChannel {
     return rejectResponse.result.result as NodeTypes.RejectInstallResult;
   };
 
-  public rejectInstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<NodeTypes.UninstallVirtualResult> => {
-    const rejectResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.REJECT_INSTALL,
-        params: {
-          appInstanceId,
-        } as NodeTypes.RejectInstallParams,
-      }),
-    );
-
-    return rejectResponse.result.result as NodeTypes.RejectInstallResult;
-  };
-
   // TODO: erc20 support?
   public cfWithdraw = async (
     assetId: string,
