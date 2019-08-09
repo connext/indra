@@ -266,9 +266,11 @@ export class NodeService implements OnModuleInit {
       parameters: {} as NodeTypes.GetAppInstancesParams,
     });
 
-    logger.log(
+    /*
+    logger.debug(
       `getAppInstances called with result ${JSON.stringify(appInstanceResponse.result.result)}`,
     );
+    */
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
