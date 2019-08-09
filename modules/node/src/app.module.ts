@@ -11,7 +11,6 @@ import { NodeController } from "./node/node.controller";
 import { NodeModule } from "./node/node.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
-import { UserModule } from "./user/user.module";
 
 @Module({
   controllers: [AppController, NodeController],
@@ -19,7 +18,6 @@ import { UserModule } from "./user/user.module";
   imports: [
     ConfigModule,
     NodeModule,
-    UserModule,
     ChannelModule,
     DatabaseModule,
     MessagingModule,
