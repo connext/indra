@@ -2,6 +2,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 
 import { getAssetId, getConnextClient } from "./";
+import { logEthFreeBalance } from "./utils";
 
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
@@ -20,17 +21,17 @@ export function registerClientListeners(): void {
         );
         await delay(1000);
       }
-      client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+      logEthFreeBalance(AddressZero, await client.getFreeBalance());
       if (getAssetId()) {
-        client.logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
+        logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
       }
     },
   );
 
   client.on(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, async (data: any) => {
-    client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+    logEthFreeBalance(AddressZero, await client.getFreeBalance());
     if (getAssetId()) {
-      client.logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
+      logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
     }
   });
 
