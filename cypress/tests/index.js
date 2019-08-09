@@ -94,7 +94,7 @@ describe('Daicard', () => {
   })
 
   describe('Withdraw', () => {
-    it.skip(`Should withdraw to a valid address`, () => {
+    it(`Should withdraw to a valid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainBalance().then(balanceBefore => {
           my.cashout()
