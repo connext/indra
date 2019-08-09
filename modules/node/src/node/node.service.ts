@@ -201,7 +201,7 @@ export class NodeService implements OnModuleInit {
     return installRes.result.result as NodeTypes.InstallResult;
   }
 
-  async rejectInstallApp(appInstanceId: string): Promise<NodeTypes.InstallResult> {
+  async rejectInstallApp(appInstanceId: string): Promise<NodeTypes.RejectInstallResult> {
     const rejectRes = await this.cfNode.rpcRouter.dispatch({
       id: Date.now(),
       methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
@@ -210,7 +210,7 @@ export class NodeService implements OnModuleInit {
       } as NodeTypes.RejectInstallParams,
     });
     logger.log(`rejectInstallApp called with result ${JSON.stringify(rejectRes.result.result)}`);
-    return rejectRes.result.result as NodeTypes.InstallResult;
+    return rejectRes.result.result as NodeTypes.RejectInstallResult;
   }
 
   async takeAction(
