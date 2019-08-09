@@ -17,13 +17,13 @@ import {
   SaveAlt as ReceiveIcon,
 } from "@material-ui/icons";
 import { Zero } from "ethers/constants";
-import { isHexString, formatEther, parseEther } from "ethers/utils";
+import { isHexString, parseEther, formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import React, { Component } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import queryString from "query-string";
 
-import { Currency, toBN } from "../utils";
+import { Currency } from "../utils";
 import MySnackbar from "../components/snackBar";
 
 import { QRGenerate } from "./qrCode";
@@ -97,8 +97,8 @@ class RedeemCard extends Component {
   }
 
   async redeemPayment() {
-    const { secret, paymentId, amount, assetId, conditionType, redeemPaymentState } = this.state;
-    const { channel } = this.props;
+    const { secret, paymentId, amount, assetId, redeemPaymentState } = this.state;
+    const { channel, token } = this.props;
     if (!channel) { return; }
     // only proceed if status is redeeming
     if (redeemPaymentState !== RedeemPaymentStates.Redeeming) {
@@ -113,6 +113,19 @@ class RedeemCard extends Component {
       return;
     }
     try {
+
+      // Request token collateral if we don't have any yet
+      let freeTokenBalance = await channel.getFreeBalance(token.address);
+      let hubFreeBalanceAddress = Object.keys(freeTokenBalance).filter(
+        addr => addr.toLowerCase() !== channel.freeBalanceAddress.toLowerCase(),
+      )[0]
+      if (freeTokenBalance[hubFreeBalanceAddress].eq(Zero)) {
+        console.log(`Requesting collateral for token ${token.address}`)
+        await channel.requestCollateral(token.address);
+      }
+      freeTokenBalance = await channel.getFreeBalance(token.address);
+      console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`)
+
       const result = await channel.resolveCondition({
         amount: parseEther(amount).toString(),
         assetId, // TODO: sanity check this
@@ -176,7 +189,7 @@ class RedeemCard extends Component {
     // they click to copy. should display a warning text
     // if the secret or if the amount token is not valid
     // or does not correspond to the generated URL
-    const { secret, paymentId, assetId, amount, copied } = this.state
+    const { secret, amount, copied } = this.state
     let errs = []
     // state not yet set
     if (!secret || !amount) {

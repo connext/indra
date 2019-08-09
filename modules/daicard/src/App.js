@@ -420,6 +420,7 @@ class App extends React.Component {
                   balance={balance}
                   channel={channel}
                   pending={pending}
+                  token={token}
                 />
               )}
             />
