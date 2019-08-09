@@ -37,7 +37,7 @@ export class TransferController extends AbstractController {
     }
 
     // make sure recipient is online
-    const res = await this.node.recipientOnline(`online.${recipient}`);
+    const res = await this.node.recipientOnline(recipient);
     if (!res) {
       throw new Error(`Recipient is offline.`);
     }
