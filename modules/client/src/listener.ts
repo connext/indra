@@ -266,29 +266,14 @@ export class ConnextListener extends EventEmitter {
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,
+      isVirtual,
       this.connext,
     );
-    const rejectProposal = async (appId: string): Promise<void> => {
-      isVirtual
-        ? await this.connext.rejectInstallVirtualApp(appId)
-        : await this.connext.rejectInstallApp(appId);
-      return;
-    };
 
     if (invalidProposal) {
       // reject app installation
       this.log.error(`Proposed app is invalid. ${invalidProposal}`);
-      await rejectProposal(appInstance.identityHash);
-      return;
-    }
-
-    // check that the node has sufficient collateral in the asset
-    // before installing else reject the install
-    const freeBalance = await this.connext.getFreeBalance(appInstance.initiatorDepositTokenAddress);
-    const nodeCollateral =
-      freeBalance[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
-    if (nodeCollateral.lt(appInstance.initiatorDeposit)) {
-      await rejectProposal(appInstance.identityHash);
+      await this.connext.rejectInstallApp(appInstance.identityHash);
       return;
     }
 
@@ -311,18 +296,18 @@ export class ConnextListener extends EventEmitter {
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
-    const subject = `online.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(subject, async (msg: any) => {
-      if (!msg.reply) {
-        this.log.info(`No reply found for msg: ${msg}`);
-        return;
-      }
+    // const subject = `online.${this.connext.publicIdentifier}`;
+    // await this.connext.messaging.subscribe(subject, async (msg: any) => {
+    //   if (!msg.reply) {
+    //     this.log.info(`No reply found for msg: ${msg}`);
+    //     return;
+    //   }
 
-      const response = true;
-      this.connext.messaging.publish(msg.reply, {
-        err: null,
-        response,
-      });
-    });
+    //   const response = true;
+    //   this.connext.messaging.publish(msg.reply, {
+    //     err: null,
+    //     response,
+    //   });
+    // });
   };
 }
