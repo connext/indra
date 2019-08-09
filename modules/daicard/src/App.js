@@ -2,7 +2,7 @@ import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { formatEther, parseEther } from "ethers/utils";
+import { formatEther, parseEther, bigNumberify } from "ethers/utils";
 import interval from "interval-promise";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
@@ -236,6 +236,8 @@ class App extends React.Component {
 
     if (bnBalance.ether.gt(minWei)) {
       if (bnBalance.ether.gt(maxWei)) {
+        // TODO: display something for the users to know
+        // theyve over shot it
         console.log(
           `Attempting to deposit more than the limit: ` +
             `${formatEther(bnBalance.ether)} > ${maxDeposit.toETH()}`,
@@ -243,6 +245,25 @@ class App extends React.Component {
         return;
       }
       const ethDepositParams = { amount: bnBalance.ether.sub(minWei).toString() };
+      // update the payment profile to handle the collateral needed
+      // for a token to eth swap
+      const daiRate = await channel.getLatestSwapRate(AddressZero, token.address.toLowerCase());
+      const exchangedTokenForEthVal = connext.utils.calculateExchange(bigNumberify(ethDepositParams.amount), daiRate)
+      await channel.addPaymentProfile({
+        amountToCollateralize: exchangedTokenForEthVal.toString(),
+        minimumMaintainedCollateral: exchangedTokenForEthVal.toString(),
+        tokenAddress: token.address,
+      });
+      // if deposit is gt than collateral, request collateral with new payment
+      // profile
+      const freeBal = await channel.getFreeBalance(token.address)
+      const collateral = freeBal[connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier)]
+      if (collateral.lt(exchangedTokenForEthVal)) {
+        console.log("Insufficient token collateral for deposit + swap, requesting additional collateral.");
+        await channel.requestCollateral(token.address);
+        return;
+      }
+
       const channelState = await channel.getChannel();
       console.log(
         `Attempting to deposit ${ethDepositParams.amount} wei into channel: ${JSON.stringify(
