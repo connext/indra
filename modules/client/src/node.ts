@@ -154,14 +154,15 @@ export class NodeApiClient implements INodeApiClient {
 
   // NOTE: maybe move?
   public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
-    try {
-      return await this.send(`online.${recipientPublicIdentifier}`);
-    } catch (e) {
-      if (e.message.startsWith("Request timed out")) {
-        return false;
-      }
-      throw e;
-    }
+    // try {
+    //   return await this.send(`online.${recipientPublicIdentifier}`);
+    // } catch (e) {
+    //   if (e.message.startsWith("Request timed out")) {
+    //     return false;
+    //   }
+    //   throw e;
+    // }
+    return true;
   };
 
   public setUserPublicIdentifier(publicIdentifier: string): void {
