@@ -19,7 +19,7 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
-    "@connext/types": "0.0.9",
+    "@connext/types": "0.0.10",
     "@counterfactual/types": "0.0.31",
     "env-cmd": "9.0.3",
     "nodemon": "1.19.1",
