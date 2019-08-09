@@ -134,7 +134,6 @@ export class TransferController extends AbstractController {
     rej: (reason?: any) => void,
     msg: RejectInstallVirtualMessage, // fix typing, not nested in `.data` obj
   ): any => {
-    console.log("************* msg", msg);
     // check app id
     if (this.appId !== (msg as any).appInstanceId) {
       return;
