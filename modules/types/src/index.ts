@@ -512,8 +512,7 @@ export function convertSwapParameters<To extends NumericTypeName>(
   to: To,
   obj: SwapParameters<any>,
 ): SwapParameters<NumericTypes[To]> {
-  const fromType = getType(obj.amount);
-  return convertFields(fromType, to, ["amount"], obj);
+  return convertAmountField(to, obj);
 }
 
 export function convertTransferParametersToAsset<To extends NumericTypeName>(
