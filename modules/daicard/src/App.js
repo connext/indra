@@ -141,29 +141,6 @@ class App extends React.Component {
       tokenAddress: token.address,
     });
 
-    let freeTokenBalance = await channel.getFreeBalance(token.address);
-    let freeEtherBalance = await channel.getFreeBalance();
-
-    let hubFreeBalanceAddress = Object.keys(freeTokenBalance).filter(
-      addr => addr.toLowerCase() !== channel.freeBalanceAddress.toLowerCase(),
-    )[0]
-
-    if (freeTokenBalance[hubFreeBalanceAddress].eq(Zero)) {
-      console.log(`Requesting collateral for token ${token.address}`)
-      await channel.requestCollateral(token.address);
-    }
-
-    if (freeEtherBalance[hubFreeBalanceAddress].eq(Zero)) {
-      console.log(`Requesting ether collateral`)
-      await channel.requestCollateral();
-    }
-
-    freeTokenBalance = await channel.getFreeBalance(token.address);
-    freeEtherBalance = await channel.getFreeBalance();
-
-    console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`)
-    console.log(`Hub has collateralized us with ${formatEther(freeEtherBalance[hubFreeBalanceAddress])} ether`)
-
     this.setState({
       address: cfWallet.address,
       channel,
@@ -277,6 +254,16 @@ class App extends React.Component {
     const weiBalance = toBN(balance.channel.ether.toWEI().floor());
     const tokenBalance = toBN(balance.channel.token.toDEI().floor());
     if (weiBalance.gt(Zero) && tokenBalance.lte(HUB_EXCHANGE_CEILING)) {
+      let freeTokenBalance = await channel.getFreeBalance(token.address);
+      let hubFreeBalanceAddress = Object.keys(freeTokenBalance).filter(
+        addr => addr.toLowerCase() !== channel.freeBalanceAddress.toLowerCase(),
+      )[0]
+      if (freeTokenBalance[hubFreeBalanceAddress].eq(Zero)) {
+        console.log(`Requesting collateral for token ${token.address}`)
+        await channel.requestCollateral(token.address);
+      }
+      freeTokenBalance = await channel.getFreeBalance(token.address);
+      console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`)
       console.log(`Attempting to swap ${balance.channel.ether.toETH()} for dai at rate ${swapRate}`);
       await channel.swap({
         amount: weiBalance.toString(),
